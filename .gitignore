@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Uploads and logs (runtime data, never versioned)
+uploads/*
+!uploads/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Testing
+coverage/
+
+# Prisma
+*.db
+
+# IDE / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# Misc
+*.tsbuildinfo
+.turbo/

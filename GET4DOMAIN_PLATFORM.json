@@ -1,0 +1,75 @@
+{
+  "platform": "Get4Domain",
+  "version": "1.0.0",
+  "description": "Get4Domain SaaS managed service company — engineering standards, prompt library, shared tools, and future customer portal.",
+  "repository": "github.com/ksmwebservices/get4domain",
+  "businessModel": {
+    "type": "SaaS managed service",
+    "delivery": "Industry-specific business web applications for clients",
+    "pricing": "Implementation fee + annual managed hosting + optional AMC",
+    "paymentTerms": "50% advance -> development -> 50% final -> production deployment",
+    "sourceCodeDelivery": "Not delivered to clients unless separately contracted"
+  },
+  "workflow": {
+    "chatgpt": {
+      "role": "Business Analyst, Solution Architect, Prompt Generator",
+      "writesCode": false
+    },
+    "claudeCode": {
+      "role": "Backend, Database, APIs, Auth, Integration, Testing, Deployment",
+      "writesCode": true
+    },
+    "bolt": {
+      "role": "Frontend UI only",
+      "writesCode": true,
+      "scope": "UI only, never backend"
+    }
+  },
+  "techStack": {
+    "frontend": "Next.js (latest stable) + TypeScript",
+    "styling": "Tailwind CSS + shadcn/ui",
+    "backend": "NestJS + TypeScript",
+    "database": "PostgreSQL",
+    "orm": "Prisma",
+    "auth": "JWT + Refresh Token + Role-Based Access Control",
+    "packageManager": "npm",
+    "containers": "Docker + Docker Compose",
+    "webServer": "Nginx (reverse proxy)",
+    "versionControl": "Git + GitHub",
+    "devOS": "Windows",
+    "prodOS": "Ubuntu"
+  },
+  "engineeringPhases": [
+    { "phase": "P000", "owner": "Claude Code", "description": "One-time Get4Domain workspace initialization" },
+    { "phase": "P001", "owner": "Claude Code", "description": "New client project initialization" },
+    { "phase": "P002", "owner": "Bolt", "description": "Frontend UI — public site + admin dashboard" },
+    { "phase": "P003", "owner": "Claude Code", "description": "Backend — auth, DB models, APIs, business modules" },
+    { "phase": "P004", "owner": "Claude Code", "description": "Integration — connect Bolt UI to backend APIs" },
+    { "phase": "P005", "owner": "Claude Code", "description": "Testing — build, lint, unit tests, API tests" },
+    { "phase": "P006", "owner": "Claude Code", "description": "Deployment — Docker, Nginx, production server" }
+  ],
+  "environmentUrlPattern": {
+    "development": "{client}-dev.get4domain.com",
+    "staging": "{client}-staging.get4domain.com",
+    "production": "{client}.get4domain.com"
+  },
+  "industryPacks": [
+    "travel",
+    "real-estate",
+    "hospital",
+    "school",
+    "restaurant",
+    "hr",
+    "retail"
+  ],
+  "activeClients": [
+    {
+      "clientId": "MR_TRAVELS_001",
+      "clientName": "M.R. Travels & Tours",
+      "industry": "travel",
+      "repo": "github.com/ksmwebservices/mr-travels-001",
+      "devUrl": "mr-travels-dev.get4domain.com",
+      "currentPhase": "P001 complete -> P003 next"
+    }
+  ]
+}
