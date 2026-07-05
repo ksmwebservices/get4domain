@@ -20,8 +20,8 @@ Dev URL:       mr-travels-dev.get4domain.com
 ## CURRENT STATUS
 
 ```
-Phase:   Waiting for Engineering Package
-Status:  BLOCKED — awaiting ChatGPT Engineering Package
+Phase:   P001 complete — Waiting for Engineering Package
+Status:  BLOCKED — awaiting ChatGPT Engineering Package (required before P002/P003)
 Owner:   ChatGPT (currently generating docs)
 ```
 
@@ -74,7 +74,7 @@ ChatGPT must deliver all 20 files to client docs/ before P001:
 | Phase | Status      | Completed | Notes                              |
 |-------|-------------|-----------|-------------------------------------|
 | P000  | Complete    | 2025-07-04| Get4Domain workspace initialized    |
-| P001  | Not started | —         | Waits for Engineering Package       |
+| P001  | Complete    | 2026-07-05| Engineering foundation scaffolded   |
 | P002  | Not started | —         | Waits for P001 + Engineering Package|
 | P003  | Not started | —         | Waits for P001 + Engineering Package|
 | P004  | Not started | —         | Waits for P002 + P003               |

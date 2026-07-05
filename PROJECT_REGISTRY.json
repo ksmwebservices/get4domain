@@ -1,7 +1,7 @@
 {
   "_readme": "Master registry of all Get4Domain client projects. Update after every phase change.",
   "_version": "1.1",
-  "_lastUpdated": "2025-07-04",
+  "_lastUpdated": "2026-07-05",
 
   "platform": {
     "name": "Get4Domain",
@@ -63,6 +63,7 @@
       "status": "active",
       "currentPhase": "waiting-for-engineering-package",
       "phaseStatus": "blocked",
+      "note": "P001 complete. P002/P003 blocked pending Engineering Package.",
       "github": "https://github.com/ksmwebservices/mr-travels-001",
       "localPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\CLIENTS\\MR_TRAVELS_001",
       "devUrl": "mr-travels-dev.get4domain.com",
@@ -82,7 +83,7 @@
       },
       "phases": {
         "P000": { "status": "complete",     "completedAt": "2025-07-04", "notes": "Workspace initialized" },
-        "P001": { "status": "not-started",  "completedAt": null, "notes": "Waits for engineering package" },
+        "P001": { "status": "complete",     "completedAt": "2026-07-05", "notes": "Engineering foundation scaffolded (frontend, backend, docker, prisma shell)" },
         "P002": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
         "P003": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
         "P004": { "status": "not-started",  "completedAt": null, "notes": "Waits for P002 + P003" },
