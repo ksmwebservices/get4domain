@@ -1,0 +1,2844 @@
+tml
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F5A623">
+<meta name="description" content="Get4Domain — India's #1 Instant Website Launch Platform. Website, Hosting, Domain, Digital Marketing — all in one place.">
+<title>Get4Domain — Instant Launch Your Business Online</title>
+<link rel="manifest" href="#" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════
+   GET4DOMAIN — LIGHT + DARK GOLDEN LUXURY THEME
+   ══════════════════════════════════════════════════════════ */
+:root {
+  /* Light base */
+  --bg: #FAFAF7;
+  --bg2: #F3F1EA;
+  --bg3: #EDE9DC;
+  --surface: #FFFFFF;
+  --surface2: #F8F6EE;
+  --surface3: #F0EDE0;
+
+  /* Text */
+  --text: #1A1208;
+  --text2: #4A3F28;
+  --text3: #7A6F58;
+  --text4: #A89E8A;
+
+  /* Golden palette */
+  --gold: #C8860A;
+  --gold2: #E8A020;
+  --gold3: #F5B835;
+  --gold-light: #FDF3DC;
+  --gold-pale: rgba(200,134,10,0.08);
+  --gold-glow: rgba(200,134,10,0.25);
+
+  /* Dark golden accents */
+  --dark-gold: #7A4F00;
+  --deep-brown: #2D1F00;
+  --amber: #D4780A;
+
+  /* UI colors */
+  --green: #16A34A;
+  --green-pale: rgba(22,163,74,0.08);
+  --red: #DC2626;
+  --red-pale: rgba(220,38,38,0.08);
+  --blue: #1D6FA4;
+  --blue-pale: rgba(29,111,164,0.08);
+
+  /* Borders */
+  --border: rgba(200,134,10,0.15);
+  --border2: rgba(200,134,10,0.25);
+  --border-dark: rgba(26,18,8,0.1);
+
+  /* Gradients */
+  --grad: linear-gradient(135deg, #C8860A 0%, #F5B835 100%);
+  --grad-dark: linear-gradient(135deg, #7A4F00 0%, #C8860A 100%);
+  --grad-warm: linear-gradient(135deg, #2D1F00 0%, #7A4F00 50%, #C8860A 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(26,18,8,0.08);
+  --shadow-md: 0 4px 16px rgba(26,18,8,0.1);
+  --shadow-lg: 0 12px 40px rgba(26,18,8,0.12);
+  --shadow-xl: 0 24px 64px rgba(26,18,8,0.15);
+  --shadow-gold: 0 8px 32px rgba(200,134,10,0.2);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; line-height: 1.6; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--gold2); border-radius: 4px; }
+button { font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; }
+input, select, textarea { font-family: 'DM Sans', sans-serif; }
+a { text-decoration: none; color: inherit; }
+img { max-width: 100%; }
+
+/* ─── PAGES ─── */
+.page { display: none; min-height: 100vh; }
+.page.active { display: block; }
+
+/* ─── NAV ─── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  background: rgba(250,250,247,0.92); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border); transition: all 0.3s;
+}
+.nav.scrolled { box-shadow: var(--shadow-md); }
+.nav-inner {
+  max-width: 1320px; margin: 0 auto; padding: 0 24px;
+  height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.logo { display: flex; align-items: center; gap: 10px; cursor: pointer; flex-shrink: 0; }
+.logo-mark {
+  width: 38px; height: 38px; background: var(--grad-dark); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 19px;
+  box-shadow: var(--shadow-gold);
+}
+.logo-text { display: flex; flex-direction: column; }
+.logo-name {
+  font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 800;
+  color: var(--deep-brown); line-height: 1;
+}
+.logo-name span { color: var(--gold); }
+.logo-tag { font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); }
+
+.nav-links { display: flex; align-items: center; gap: 2px; }
+.nav-link {
+  padding: 8px 14px; border-radius: 8px; font-size: 14px; font-weight: 500;
+  color: var(--text2); cursor: pointer; transition: all 0.18s; position: relative;
+  background: none; border: none; display: flex; align-items: center; gap: 5px;
+}
+.nav-link:hover { color: var(--gold); background: var(--gold-pale); }
+.nav-link.active { color: var(--gold); }
+
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.btn-outline-gold {
+  padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+  color: var(--gold); border: 1.5px solid var(--border2); background: none;
+  transition: all 0.18s; white-space: nowrap;
+}
+.btn-outline-gold:hover { background: var(--gold-pale); }
+.btn-gold {
+  padding: 9px 22px; background: var(--grad-dark); border-radius: 9px;
+  font-size: 13px; font-weight: 700; color: #fff; border: none;
+  transition: all 0.2s; white-space: nowrap; box-shadow: var(--shadow-gold);
+}
+.btn-gold:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(200,134,10,0.35); }
+.cart-btn-nav {
+  display: flex; align-items: center; gap: 7px; padding: 9px 18px;
+  background: var(--surface2); border: 1.5px solid var(--border2); border-radius: 9px;
+  font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; transition: all 0.18s;
+}
+.cart-btn-nav:hover { border-color: var(--gold); color: var(--gold); }
+.cart-badge {
+  background: var(--gold); color: #fff; border-radius: 50%;
+  width: 19px; height: 19px; font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.hamburger {
+  display: none; flex-direction: column; gap: 5px; padding: 9px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+}
+.hamburger span { width: 20px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+
+/* ─── MOBILE MENU ─── */
+.mobile-nav {
+  display: none; position: fixed; inset: 0; top: 68px; z-index: 999;
+  background: var(--surface); padding: 20px; overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+.mobile-nav.open { display: block; }
+.mob-section { margin-bottom: 24px; }
+.mob-section-title { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); padding: 0 8px; margin-bottom: 8px; }
+.mob-link {
+  display: flex; align-items: center; gap: 12px; padding: 12px;
+  border-radius: 10px; font-size: 15px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: all 0.18s;
+}
+.mob-link:hover { background: var(--gold-pale); color: var(--gold); }
+.mob-icon { font-size: 18px; width: 36px; height: 36px; background: var(--surface2); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh; padding: 100px 24px 60px;
+  position: relative; overflow: hidden;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, var(--bg3) 100%);
+}
+.hero-ornament {
+  position: absolute; top: 0; right: 0; width: 55%; height: 100%;
+  background: linear-gradient(135deg, transparent 0%, rgba(200,134,10,0.04) 50%, rgba(200,134,10,0.08) 100%);
+  clip-path: polygon(20% 0%, 100% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+.hero-grid-pattern {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+  background-image: 
+    linear-gradient(rgba(200,134,10,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,134,10,0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.hero-inner {
+  max-width: 1320px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--gold-light); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 6px 16px; font-size: 12px; font-weight: 700;
+  color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px;
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.5);} }
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(38px, 4.5vw, 66px);
+  font-weight: 900; line-height: 1.05; letter-spacing: -1px;
+  color: var(--deep-brown); margin-bottom: 20px;
+}
+.hero h1 .gold-text {
+  background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero h1 .italic-text { font-style: italic; }
+.hero-sub {
+  font-size: 17px; color: var(--text2); line-height: 1.7; max-width: 480px;
+  margin-bottom: 36px; font-weight: 400;
+}
+.hero-sub strong { color: var(--gold); font-weight: 600; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 48px; }
+.btn-hero {
+  padding: 15px 34px; background: var(--grad-dark); border-radius: 12px;
+  font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.2px;
+  box-shadow: var(--shadow-gold); transition: all 0.2s;
+}
+.btn-hero:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(200,134,10,0.4); }
+.btn-hero-ghost {
+  padding: 15px 34px; background: var(--surface); border: 1.5px solid var(--border2);
+  border-radius: 12px; font-size: 15px; font-weight: 600; color: var(--dark-gold); transition: all 0.2s;
+}
+.btn-hero-ghost:hover { background: var(--gold-light); border-color: var(--gold); }
+
+.hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+.h-stat { }
+.h-stat-num { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold); }
+.h-stat-label { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.h-divider { width: 1px; height: 40px; background: var(--border2); align-self: center; }
+
+.hero-right { display: flex; flex-direction: column; gap: 16px; }
+.hero-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+  padding: 20px; display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow-sm); transition: all 0.3s;
+}
+.hero-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.hero-card:nth-child(2) { margin-left: 28px; }
+.hc-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.hc-info { flex: 1; }
+.hc-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.hc-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.hc-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+
+/* ─── HOW IT WORKS ─── */
+.how-section { background: var(--bg2); padding: 90px 24px; }
+.section-inner { max-width: 1320px; margin: 0 auto; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+.section-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 800; color: var(--deep-brown); line-height: 1.1; letter-spacing: -0.5px; margin-bottom: 16px; }
+.section-desc { font-size: 16px; color: var(--text2); max-width: 520px; line-height: 1.7; }
+
+.steps-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 56px; position: relative; }
+.steps-grid::after {
+  content: ''; position: absolute; top: 32px; left: 10%; right: 10%; height: 2px;
+  background: linear-gradient(90deg, var(--gold-pale), var(--gold2), var(--gold-pale));
+  z-index: 0;
+}
+.step-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 28px 20px; text-align: center; position: relative; z-index: 1;
+  transition: all 0.25s; box-shadow: var(--shadow-sm);
+}
+.step-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-gold); border-color: var(--gold2); }
+.step-num {
+  width: 44px; height: 44px; border-radius: 50%; background: var(--grad-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #fff; margin: 0 auto 16px;
+  box-shadow: var(--shadow-gold);
+}
+.step-icon { font-size: 30px; margin-bottom: 12px; }
+.step-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.step-desc { font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+/* ─── INDUSTRIES ─── */
+.industries-section { padding: 90px 24px; background: var(--bg); }
+.ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-top: 44px; }
+.ind-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 22px 16px; cursor: pointer; transition: all 0.22s; position: relative;
+  text-align: center;
+}
+.ind-card:hover, .ind-card.selected {
+  border-color: var(--gold2); background: var(--gold-light);
+  box-shadow: var(--shadow-gold); transform: translateY(-3px);
+}
+.ind-card.selected { border-color: var(--gold); }
+.ind-check {
+  position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--gold); display: none; align-items: center;
+  justify-content: center; font-size: 11px; color: #fff; font-weight: 800;
+}
+.ind-card.selected .ind-check { display: flex; }
+.ind-icon { font-size: 32px; margin-bottom: 10px; }
+.ind-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.ind-count { font-size: 11px; color: var(--text3); }
+
+.ind-cta-bar {
+  margin-top: 32px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 16px; padding: 22px 28px; display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.ind-cta-text { font-size: 15px; font-weight: 600; color: var(--text); }
+.ind-cta-text span { color: var(--gold); }
+
+/* ─── PRICING ─── */
+.pricing-section { padding: 90px 24px; background: var(--bg2); }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 44px; }
+.pricing-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 24px;
+  overflow: hidden; transition: all 0.3s; position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.pricing-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+.pricing-card.featured { border-color: var(--gold); box-shadow: var(--shadow-gold); }
+.plan-ribbon {
+  background: var(--grad-dark); text-align: center; padding: 10px;
+  font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff;
+}
+.plan-head { padding: 28px 28px 0; }
+.pricing-card.featured .plan-head { margin-top: 0; }
+.plan-tier { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.plan-name { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--deep-brown); margin-bottom: 6px; }
+.plan-tagline { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+.plan-price-block { padding: 0 28px 20px; border-bottom: 1px solid var(--border); }
+.plan-price-row { display: flex; align-items: flex-end; gap: 6px; }
+.plan-curr { font-size: 22px; font-weight: 600; color: var(--text3); align-self: flex-start; margin-top: 10px; }
+.plan-amount { font-family: 'Playfair Display', serif; font-size: 52px; font-weight: 700; color: var(--deep-brown); line-height: 1; letter-spacing: -2px; }
+.plan-per { font-size: 13px; color: var(--text3); align-self: flex-end; margin-bottom: 6px; }
+.plan-orig { font-size: 12px; color: var(--text3); text-decoration: line-through; margin-top: 4px; }
+.plan-note { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.plan-lock-note { font-size: 11px; color: var(--gold); font-weight: 600; margin-top: 4px; background: var(--gold-light); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+.plan-features { padding: 20px 28px; }
+.feat-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+.feat-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.feat-item:last-child { border: none; }
+.feat-dot { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.feat-info { flex: 1; }
+.feat-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.feat-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.plan-footer { padding: 20px 28px 28px; }
+.plan-btn {
+  width: 100%; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700;
+  transition: all 0.2s; letter-spacing: -0.2px;
+}
+.plan-btn.primary { background: var(--grad-dark); color: #fff; box-shadow: var(--shadow-gold); }
+.plan-btn.primary:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(200,134,10,0.4); }
+.plan-btn.secondary { background: var(--gold-light); color: var(--dark-gold); border: 1.5px solid var(--border2); }
+.plan-btn.secondary:hover { background: var(--gold-pale); border-color: var(--gold); }
+.plan-btn.added { background: var(--green-pale) !important; color: var(--green) !important; border: 1.5px solid rgba(22,163,74,0.3) !important; }
+
+/* ─── HOSTING ─── */
+.hosting-section { padding: 90px 24px; background: var(--bg); }
+.hosting-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 44px; }
+.hosting-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 22px;
+  padding: 32px; transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden;
+}
+.hosting-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: var(--grad);
+}
+.hosting-card:hover { box-shadow: var(--shadow-gold); border-color: var(--gold2); transform: translateY(-4px); }
+.hosting-card.featured-host { border-color: var(--gold); box-shadow: var(--shadow-gold); }
+.host-icon { font-size: 40px; margin-bottom: 16px; }
+.host-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--deep-brown); margin-bottom: 6px; }
+.host-price-main { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700; color: var(--gold); }
+.host-price-per { font-size: 14px; color: var(--text3); }
+.host-desc { font-size: 13px; color: var(--text2); margin: 14px 0; line-height: 1.6; }
+.host-features { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.host-feat { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+.host-feat::before { content: '✦'; color: var(--gold3); font-size: 9px; }
+.host-btn { margin-top: 24px; width: 100%; padding: 13px; border-radius: 11px; font-size: 14px; font-weight: 700; transition: all 0.2s; }
+.host-btn.primary { background: var(--grad-dark); color: #fff; }
+.host-btn.secondary { background: var(--gold-light); color: var(--dark-gold); border: 1.5px solid var(--border2); }
+.host-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-gold); }
+
+/* ─── DIGITAL MARKETING ─── */
+.marketing-section { padding: 90px 24px; background: var(--bg2); }
+.marketing-banner {
+  background: linear-gradient(135deg, var(--deep-brown) 0%, var(--dark-gold) 100%);
+  border-radius: 24px; padding: 50px; margin-bottom: 60px;
+  display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center;
+}
+.banner-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 14px; line-height: 1.2; }
+.banner-desc { font-size: 15px; color: rgba(255,255,255,0.75); line-height: 1.7; }
+.banner-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.banner-stat { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 18px; }
+.banner-stat-num { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--gold3); }
+.banner-stat-label { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 3px; line-height: 1.4; }
+
+.mkt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; }
+.mkt-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 24px; transition: all 0.22s; cursor: pointer; position: relative; overflow: hidden;
+}
+.mkt-card:hover { border-color: var(--gold2); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.mkt-card.selected { border-color: var(--green); background: var(--green-pale); }
+.mkt-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.mkt-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.mkt-sel {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.2s;
+}
+.mkt-card.selected .mkt-sel { background: var(--green); border-color: var(--green); color: #fff; }
+.mkt-name { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.mkt-desc { font-size: 13px; color: var(--text2); line-height: 1.55; margin-bottom: 14px; }
+.mkt-feats { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+.mkt-feat { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.mkt-feat::before { content: '✦'; font-size: 9px; color: var(--gold); }
+.mkt-footer { display: flex; align-items: center; justify-content: space-between; }
+.mkt-price { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--dark-gold); }
+.mkt-period { font-size: 12px; color: var(--text3); }
+.mkt-btn {
+  padding: 8px 18px; border-radius: 9px; font-size: 13px; font-weight: 700;
+  background: var(--gold-light); color: var(--dark-gold); border: 1.5px solid var(--border2);
+  transition: all 0.18s;
+}
+.mkt-btn:hover, .mkt-btn.added { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* ─── DOMAIN SEARCH ─── */
+.domain-section { padding: 90px 24px; background: var(--bg3); }
+.domain-box {
+  margin-top: 44px; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 24px; padding: 40px; box-shadow: var(--shadow-md);
+}
+.domain-search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.domain-input-wrap {
+  flex: 1; display: flex; align-items: center; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
+  transition: border-color 0.18s;
+}
+.domain-input-wrap:focus-within { border-color: var(--gold); }
+.domain-www { padding: 14px 16px; font-size: 14px; font-weight: 600; color: var(--text3); background: var(--surface3); border-right: 1px solid var(--border); }
+.domain-field { flex: 1; padding: 14px 16px; font-size: 15px; background: none; border: none; outline: none; color: var(--text); }
+.domain-search-btn {
+  padding: 14px 28px; background: var(--grad-dark); border-radius: 12px;
+  font-size: 15px; font-weight: 700; color: #fff; transition: all 0.2s;
+}
+.domain-search-btn:hover { box-shadow: var(--shadow-gold); transform: translateY(-1px); }
+.tld-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; align-items: center; }
+.tld-pill {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  background: var(--surface2); border: 1.5px solid var(--border); color: var(--text2);
+  cursor: pointer; transition: all 0.18s;
+}
+.tld-pill.active { background: var(--gold-light); border-color: var(--gold2); color: var(--gold); }
+.domain-results { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.domain-result {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px 20px;
+  border-radius: 12px; border: 1.5px solid var(--border); transition: all 0.2s;
+}
+.domain-result.available { background: var(--green-pale); border-color: rgba(22,163,74,0.3); }
+.domain-result.taken { background: var(--red-pale); border-color: rgba(220,38,38,0.15); opacity: 0.7; }
+.domain-name-display { font-size: 16px; font-weight: 700; color: var(--text); }
+.domain-name-display span { color: var(--gold); }
+.domain-tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.domain-tag.av { background: var(--green-pale); color: var(--green); }
+.domain-tag.tk { background: var(--red-pale); color: var(--red); }
+.domain-price-val { font-size: 15px; font-weight: 700; color: var(--deep-brown); }
+.domain-renew-info { font-size: 11px; color: var(--text3); }
+.domain-add-btn {
+  padding: 9px 20px; border-radius: 9px; font-size: 13px; font-weight: 700;
+  background: var(--grad-dark); color: #fff; transition: all 0.2s;
+}
+.domain-add-btn:hover { box-shadow: var(--shadow-gold); }
+.domain-add-btn.added { background: var(--green); }
+.domain-add-btn.taken-btn { background: var(--surface2); color: var(--text3); }
+.domain-pricing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 32px; }
+.domain-price-tile {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 14px; text-align: center; cursor: pointer; transition: all 0.18s;
+}
+.domain-price-tile:hover { border-color: var(--gold2); background: var(--gold-light); }
+.dp-tld { font-size: 16px; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
+.dp-price { font-size: 14px; font-weight: 700; color: var(--text); }
+.dp-renew { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* ─── WHY US ─── */
+.why-section { padding: 90px 24px; background: var(--bg); }
+.why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
+.why-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 32px 28px; transition: all 0.25s;
+}
+.why-card:hover { box-shadow: var(--shadow-gold); border-color: var(--gold2); transform: translateY(-3px); }
+.why-icon { font-size: 36px; margin-bottom: 16px; }
+.why-title { font-size: 17px; font-weight: 700; color: var(--deep-brown); margin-bottom: 10px; }
+.why-desc { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+/* ─── FOOTER ─── */
+.footer { background: var(--deep-brown); padding: 70px 24px 30px; }
+.footer-inner { max-width: 1320px; margin: 0 auto; }
+.footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 50px; }
+.footer-brand .footer-logo-name { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 800; color: #fff; }
+.footer-brand .footer-logo-name span { color: var(--gold3); }
+.footer-desc { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-top: 12px; max-width: 280px; }
+.footer-socials { display: flex; gap: 10px; margin-top: 20px; }
+.footer-social { width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: all 0.18s; }
+.footer-social:hover { background: var(--gold); border-color: var(--gold); }
+.footer-col h4 { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 16px; }
+.footer-link { font-size: 14px; color: rgba(255,255,255,0.65); cursor: pointer; padding: 5px 0; transition: color 0.18s; display: block; }
+.footer-link:hover { color: var(--gold3); }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.footer-copy { font-size: 13px; color: rgba(255,255,255,0.4); }
+.footer-legal { display: flex; gap: 20px; }
+.footer-legal span { font-size: 13px; color: rgba(255,255,255,0.4); cursor: pointer; transition: color 0.18s; }
+.footer-legal span:hover { color: var(--gold3); }
+
+/* ─── CART DRAWER ─── */
+.backdrop {
+  position: fixed; inset: 0; background: rgba(26,18,8,0.4); z-index: 1100;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(3px);
+}
+.backdrop.open { opacity: 1; pointer-events: all; }
+.cart-drawer {
+  position: fixed; right: -440px; top: 0; bottom: 0; width: 440px; z-index: 1200;
+  background: var(--surface); box-shadow: -20px 0 60px rgba(26,18,8,0.2);
+  transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+.cart-drawer.open { right: 0; }
+.drawer-head {
+  padding: 22px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.drawer-head h3 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--deep-brown); }
+.drawer-close {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--surface2);
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+  font-size: 16px; cursor: pointer; transition: all 0.18s; color: var(--text);
+}
+.drawer-close:hover { background: var(--red-pale); color: var(--red); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+.cart-section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); padding: 12px 4px 8px; }
+.cart-item {
+  display: flex; align-items: center; gap: 12px; padding: 14px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px;
+}
+.cart-item-icon { font-size: 24px; flex-shrink: 0; }
+.cart-item-info { flex: 1; }
+.cart-item-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.cart-item-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.cart-item-right { text-align: right; }
+.cart-item-price { font-size: 15px; font-weight: 800; color: var(--dark-gold); }
+.cart-remove { font-size: 11px; color: var(--red); cursor: pointer; margin-top: 4px; display: block; font-weight: 600; }
+.cart-remove:hover { text-decoration: underline; }
+.empty-cart { text-align: center; padding: 60px 30px; color: var(--text3); }
+.empty-cart .empty-icon { font-size: 56px; margin-bottom: 16px; }
+.empty-cart h4 { font-size: 18px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+.empty-cart p { font-size: 14px; line-height: 1.7; }
+.drawer-footer {
+  padding: 16px 24px 24px; border-top: 1px solid var(--border);
+  background: var(--surface2); flex-shrink: 0;
+}
+.totals-block { margin-bottom: 16px; }
+.totals-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 14px; color: var(--text2); }
+.totals-row.total { font-size: 17px; font-weight: 800; color: var(--deep-brown); border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+.totals-row .t-val { color: var(--gold); }
+.save-tag { background: var(--green-pale); color: var(--green); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; margin-left: 6px; }
+.checkout-btn {
+  width: 100%; padding: 15px; background: var(--grad-dark); border-radius: 12px;
+  font-size: 16px; font-weight: 700; color: #fff; box-shadow: var(--shadow-gold); transition: all 0.2s;
+}
+.checkout-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(200,134,10,0.4); }
+.checkout-btn:disabled { background: var(--surface3); color: var(--text3); box-shadow: none; transform: none; }
+.pay-chips { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.pay-chip { font-size: 11px; font-weight: 600; padding: 4px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text3); }
+.lock-amount-note { font-size: 11px; color: var(--gold); text-align: center; margin-top: 8px; font-weight: 600; }
+
+/* ─── PAYMENT MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1300; background: rgba(26,18,8,0.6);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border-radius: 24px; width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
+}
+.modal-head { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-head h3 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--deep-brown); }
+.modal-body { padding: 24px 28px; }
+.order-summary { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+.order-summary h4 { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.order-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 14px; color: var(--text2); }
+.order-row.bold { font-weight: 700; color: var(--deep-brown); font-size: 15px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 4px; }
+.lock-box {
+  background: var(--gold-light); border: 1.5px solid var(--border2); border-radius: 14px;
+  padding: 16px; margin-bottom: 20px; text-align: center;
+}
+.lock-box-title { font-size: 15px; font-weight: 700; color: var(--dark-gold); margin-bottom: 6px; }
+.lock-box-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.lock-box-amount { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 800; color: var(--gold); margin: 8px 0 4px; }
+.pay-methods { display: flex; gap: 10px; margin-bottom: 18px; }
+.pay-method {
+  flex: 1; padding: 12px 8px; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; transition: all 0.18s;
+  display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text2);
+}
+.pay-method:hover, .pay-method.active { border-color: var(--gold); background: var(--gold-light); color: var(--gold); }
+.pay-method .pm-icon { font-size: 20px; }
+.form-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 6px; display: block; }
+.form-input {
+  width: 100%; padding: 12px 14px; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 14px; color: var(--text); outline: none; transition: border-color 0.18s;
+  margin-bottom: 14px;
+}
+.form-input:focus { border-color: var(--gold); background: var(--gold-light); }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pay-btn {
+  width: 100%; padding: 15px; background: var(--grad-dark); border-radius: 12px;
+  font-size: 16px; font-weight: 700; color: #fff; box-shadow: var(--shadow-gold); margin-top: 8px; transition: all 0.2s;
+}
+.pay-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(200,134,10,0.4); }
+.pay-btn:disabled { background: var(--surface3); color: var(--text3); box-shadow: none; }
+.ssl-note { font-size: 12px; color: var(--text3); text-align: center; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.success-screen { text-align: center; padding: 30px 0; }
+.success-emoji { font-size: 64px; margin-bottom: 20px; }
+.success-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 800; color: var(--deep-brown); margin-bottom: 12px; }
+.success-desc { font-size: 15px; color: var(--text2); line-height: 1.7; max-width: 360px; margin: 0 auto 24px; }
+.order-code { background: var(--gold-light); border: 1.5px solid var(--border2); border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 700; color: var(--dark-gold); letter-spacing: 2px; display: inline-block; margin-bottom: 20px; }
+.success-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.success-btn { padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; transition: all 0.2s; }
+.success-btn.primary { background: var(--grad-dark); color: #fff; }
+.success-btn.secondary { background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); }
+
+/* ─── TOAST ─── */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9000; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--deep-brown); color: #fff; padding: 13px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg);
+  border-left: 3px solid var(--gold3); animation: slideInRight 0.3s ease;
+  max-width: 300px;
+}
+@keyframes slideInRight { from{opacity:0;transform:translateX(20px);} to{opacity:1;transform:translateX(0);} }
+
+/* ─── USER DASHBOARD ─── */
+.dashboard-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+.sidebar {
+  background: var(--deep-brown); padding: 24px 0; position: fixed; left: 0; top: 0;
+  bottom: 0; width: 260px; overflow-y: auto; z-index: 100;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.sidebar-logo { padding: 16px 24px 28px; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 16px; }
+.sidebar-logo .logo-name { color: #fff; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 800; }
+.sidebar-logo .logo-name span { color: var(--gold3); }
+.sidebar-user { padding: 12px 16px; margin: 0 12px 16px; background: rgba(255,255,255,0.06); border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+.sidebar-user-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
+.sidebar-user-name { font-size: 14px; font-weight: 700; color: #fff; }
+.sidebar-user-email { font-size: 11px; color: rgba(255,255,255,0.45); }
+.sidebar-section-title { font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 12px 24px 6px; }
+.sidebar-nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 24px; margin: 1px 8px;
+  border-radius: 10px; font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6);
+  cursor: pointer; transition: all 0.18s;
+}
+.sidebar-nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+.sidebar-nav-item.active { background: rgba(200,134,10,0.2); color: var(--gold3); border-left: 3px solid var(--gold3); margin-left: 5px; }
+.sidebar-nav-item .nav-icon { font-size: 17px; width: 20px; text-align: center; }
+.sidebar-badge { margin-left: auto; background: var(--gold); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; }
+.dashboard-main { margin-left: 260px; padding: 32px; background: var(--bg); min-height: 100vh; }
+.dash-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.dash-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--deep-brown); }
+.dash-subtitle { font-size: 14px; color: var(--text3); margin-top: 2px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.topbar-btn { padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; transition: all 0.18s; }
+.topbar-btn.primary { background: var(--grad-dark); color: #fff; }
+.topbar-btn.secondary { background: var(--surface); border: 1.5px solid var(--border); color: var(--text2); }
+.notif-btn { position: relative; width: 38px; height: 38px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: all 0.18s; }
+.notif-btn:hover { border-color: var(--gold); background: var(--gold-light); }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--red); border: 2px solid var(--surface); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 22px; transition: all 0.22s; box-shadow: var(--shadow-sm);
+}
+.stat-card:hover { box-shadow: var(--shadow-gold); border-color: var(--gold2); transform: translateY(-2px); }
+.stat-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+.stat-card-val { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--deep-brown); }
+.stat-card-label { font-size: 13px; color: var(--text3); margin-top: 3px; }
+.stat-card-change { font-size: 12px; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.stat-card-change.up { color: var(--green); }
+.stat-card-change.down { color: var(--red); }
+
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.dash-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.dash-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--shadow-sm); }
+.dash-card-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.dash-card-action { font-size: 12px; color: var(--gold); cursor: pointer; font-weight: 600; }
+.dash-card-action:hover { text-decoration: underline; }
+
+/* Service status items */
+.service-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.service-item:last-child { border: none; }
+.service-icon-wrap { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.service-info { flex: 1; }
+.service-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.service-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.service-status { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.status-badge.active { background: var(--green-pale); color: var(--green); }
+.status-badge.pending { background: rgba(245,184,53,0.15); color: var(--amber); }
+.status-badge.progress { background: var(--blue-pale); color: var(--blue); }
+.status-badge.inactive { background: var(--surface2); color: var(--text3); }
+
+/* Payment schedule */
+.payment-item {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px;
+}
+.payment-item-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--gold-light); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.payment-item-info { flex: 1; }
+.payment-item-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.payment-item-date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.payment-item-amount { font-size: 16px; font-weight: 800; color: var(--dark-gold); }
+.payment-item-status { font-size: 11px; font-weight: 700; }
+.payment-item-status.due { color: var(--amber); }
+.payment-item-status.paid { color: var(--green); }
+
+/* Invoice */
+.invoice-item {
+  display: flex; align-items: center; gap: 14px; padding: 14px;
+  border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 10px; transition: all 0.18s; background: var(--surface);
+}
+.invoice-item:hover { border-color: var(--gold2); box-shadow: var(--shadow-sm); }
+.invoice-icon { width: 42px; height: 42px; background: var(--gold-light); border: 1px solid var(--border2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.invoice-info { flex: 1; }
+.invoice-id { font-size: 14px; font-weight: 700; color: var(--text); }
+.invoice-desc { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.invoice-amount { font-size: 16px; font-weight: 800; color: var(--deep-brown); }
+.invoice-download { padding: 8px 16px; background: var(--gold-light); border: 1px solid var(--border2); border-radius: 9px; font-size: 12px; font-weight: 700; color: var(--dark-gold); cursor: pointer; transition: all 0.18s; }
+.invoice-download:hover { background: var(--gold); color: #fff; border-color: var(--gold); }
+
+/* ─── ADMIN DASHBOARD ─── */
+.admin-sidebar { background: #12100A; }
+.admin-sidebar .sidebar-nav-item.active { background: rgba(200,134,10,0.15); }
+
+.user-management-table { width: 100%; border-collapse: collapse; }
+.umt thead tr { background: var(--surface2); }
+.umt th { padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); text-align: left; border-bottom: 1px solid var(--border); }
+.umt td { padding: 14px 16px; font-size: 14px; color: var(--text); border-bottom: 1px solid var(--border); }
+.umt tbody tr:hover { background: var(--surface2); }
+.umt tbody tr:last-child td { border: none; }
+.user-avatar-cell { display: flex; align-items: center; gap: 10px; }
+.user-avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: var(--grad); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.action-btns { display: flex; gap: 6px; }
+.action-btn { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s; border: none; }
+.action-btn.view { background: var(--blue-pale); color: var(--blue); }
+.action-btn.edit { background: var(--gold-pale); color: var(--gold); }
+.action-btn.delete { background: var(--red-pale); color: var(--red); }
+.action-btn:hover { opacity: 0.8; }
+
+/* Project progress */
+.project-task {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px; margin-bottom: 10px;
+}
+.project-task-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.project-task-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.project-task-client { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.progress-bar-wrap { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+.progress-bar-fill { height: 100%; border-radius: 3px; background: var(--grad); transition: width 1s ease; }
+.progress-pct { font-size: 12px; font-weight: 700; color: var(--gold); }
+.task-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+.task-tag { padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+
+/* Notification item */
+.notif-item {
+  display: flex; gap: 12px; padding: 14px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.18s;
+}
+.notif-item:hover { border-color: var(--gold2); }
+.notif-item.unread { border-left: 3px solid var(--gold); background: var(--gold-light); }
+.notif-icon-wrap { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.notif-text { flex: 1; }
+.notif-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.notif-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.notif-time { font-size: 11px; color: var(--text4); align-self: flex-start; white-space: nowrap; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+  .hero-right { display: none; }
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+  .steps-grid::after { display: none; }
+  .pricing-grid, .hosting-grid, .footer-top { grid-template-columns: 1fr; }
+  .why-grid { grid-template-columns: repeat(2, 1fr); }
+  .catalog-grid { grid-template-columns: 1fr; }
+  .dashboard-layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .dashboard-main { margin-left: 0; padding: 20px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+  .marketing-banner { grid-template-columns: 1fr; }
+  .banner-stats { grid-template-columns: repeat(2, 1fr); }
+  .domain-search-row { flex-direction: column; }
+}
+@media (max-width: 640px) {
+  .nav-inner { padding: 0 16px; }
+  .hero { padding: 80px 16px 50px; }
+  .hero h1 { font-size: 34px; }
+  .section-wrap { padding: 60px 16px; }
+  .how-section, .industries-section, .pricing-section, .hosting-section, .marketing-section, .domain-section, .why-section { padding: 60px 16px; }
+  .steps-grid { grid-template-columns: 1fr; }
+  .why-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .hero-stats { gap: 16px; }
+  .hero-actions { flex-direction: column; }
+  .btn-hero, .btn-hero-ghost { width: 100%; text-align: center; }
+  .pricing-grid, .hosting-grid { grid-template-columns: 1fr; }
+  .marketing-banner { padding: 32px 24px; }
+  .banner-title { font-size: 26px; }
+  .cart-drawer { width: 100%; right: -100%; }
+  .modal-box { border-radius: 18px; }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+  .ind-grid { grid-template-columns: repeat(2, 1fr); }
+  .domain-box { padding: 24px 18px; }
+  .dash-topbar { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── UTILITY ─── */
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.mt-4 { margin-top: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.text-gold { color: var(--gold); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text3); }
+.font-serif { font-family: 'Playfair Display', serif; }
+.fw-700 { font-weight: 700; }
+.fw-800 { font-weight: 800; }
+.section-wrap { padding: 90px 24px; }
+.search-anim { display: flex; gap: 6px; justify-content: center; padding: 30px; }
+.search-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); animation: dotPulse 1.4s infinite; }
+.search-dot:nth-child(2) { animation-delay: 0.2s; }
+.search-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%,80%,100%{transform:scale(0.6);opacity:0.4;} 40%{transform:scale(1);opacity:1;} }
+
+/* Tab system */
+.tabs-row { display: flex; gap: 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+.tab-btn { padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.18s; color: var(--text2); background: none; border: none; white-space: nowrap; }
+.tab-btn.active { background: var(--surface); color: var(--deep-brown); box-shadow: var(--shadow-sm); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Mobile sidebar toggle */
+.mob-dash-header { display: none; align-items: center; justify-content: space-between; padding: 16px; background: var(--deep-brown); }
+@media(max-width:1100px) { .mob-dash-header { display: flex; } }
+
+/* ─── FLOATING ACTION BUTTON (mobile) ─── */
+.fab {
+  display: none; position: fixed; bottom: 24px; left: 24px; z-index: 800;
+  width: 52px; height: 52px; border-radius: 50%; background: var(--grad-dark);
+  align-items: center; justify-content: center; font-size: 22px; color: #fff;
+  box-shadow: var(--shadow-gold); cursor: pointer;
+}
+@media(max-width:1100px) { .fab { display: flex; } }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════
+     NAVIGATION (shared across all pages)
+════════════════════════════════════════════════ -->
+<nav class="nav" id="mainNav">
+  <div class="nav-inner">
+    <div class="logo" onclick="showPage('home')">
+      <div class="logo-mark">⚡</div>
+      <div class="logo-text">
+        <div class="logo-name">Get4<span>domain</span></div>
+        <div class="logo-tag">Digital Partner</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="scrollToSection('industries')">Industries</button>
+      <button class="nav-link" onclick="scrollToSection('pricing')">Pricing</button>
+      <button class="nav-link" onclick="scrollToSection('hosting')">Hosting</button>
+      <button class="nav-link" onclick="scrollToSection('marketing')">Marketing</button>
+      <button class="nav-link" onclick="scrollToSection('domain')">Domain</button>
+    </div>
+    <div class="nav-right">
+      <button class="cart-btn-nav" onclick="openDrawer()">
+        🛒 Cart <span class="cart-badge" id="cartBadge">0</span>
+      </button>
+      <button class="btn-outline-gold" onclick="showPage('user-dashboard')">Login</button>
+      <button class="btn-gold" onclick="scrollToSection('pricing')">Get Started →</button>
+      <div class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobileNav">
+  <div class="mob-section">
+    <div class="mob-section-title">Pages</div>
+    <div class="mob-link" onclick="scrollToSection('industries');toggleMobileNav()"><span class="mob-icon">🏭</span>Industries</div>
+    <div class="mob-link" onclick="scrollToSection('pricing');toggleMobileNav()"><span class="mob-icon">💰</span>Pricing Plans</div>
+    <div class="mob-link" onclick="scrollToSection('hosting');toggleMobileNav()"><span class="mob-icon">☁️</span>Hosting</div>
+    <div class="mob-link" onclick="scrollToSection('marketing');toggleMobileNav()"><span class="mob-icon">📢</span>Digital Marketing</div>
+    <div class="mob-link" onclick="scrollToSection('domain');toggleMobileNav()"><span class="mob-icon">🌐</span>Domain Search</div>
+  </div>
+  <div class="mob-section">
+    <div class="mob-section-title">Account</div>
+    <div class="mob-link" onclick="showPage('user-dashboard');toggleMobileNav()"><span class="mob-icon">👤</span>User Dashboard</div>
+    <div class="mob-link" onclick="showPage('admin-dashboard');toggleMobileNav()"><span class="mob-icon">⚙️</span>Admin Dashboard</div>
+  </div>
+  <div style="padding:16px">
+    <button class="btn-gold" style="width:100%;padding:14px;border-radius:12px;font-size:15px" onclick="scrollToSection('pricing');toggleMobileNav()">Get Started →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     HOME PAGE
+════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-ornament"></div>
+    <div class="hero-grid-pattern"></div>
+    <div class="hero-inner">
+      <div>
+        <div class="hero-eyebrow">
+          <span class="live-dot"></span>
+          🚀 India's #1 Business Website Platform
+        </div>
+        <h1>
+          Launch Your<br>
+          Business <span class="gold-text">Online</span><br>
+          <span class="italic-text">in 24 Hours</span>
+        </h1>
+        <p class="hero-sub">
+          Website + Hosting + Domain + Digital Marketing — <strong>all in one place</strong>.
+          Starting at just <strong>₹2,499</strong> one-time. Professional quality, Indian prices.
+        </p>
+        <div class="hero-actions">
+          <button class="btn-hero" onclick="scrollToSection('industries')">Choose Your Industry →</button>
+          <button class="btn-hero-ghost" onclick="scrollToSection('pricing')">View Pricing Plans</button>
+        </div>
+        <div class="hero-stats">
+          <div class="h-stat">
+            <div class="h-stat-num">2,400+</div>
+            <div class="h-stat-label">Websites Launched</div>
+          </div>
+          <div class="h-divider"></div>
+          <div class="h-stat">
+            <div class="h-stat-num">24hr</div>
+            <div class="h-stat-label">Go-Live Time</div>
+          </div>
+          <div class="h-divider"></div>
+          <div class="h-stat">
+            <div class="h-stat-num">₹2,499</div>
+            <div class="h-stat-label">Starting Price</div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-card">
+          <div class="hc-icon" style="background:rgba(200,134,10,0.1)">🌐</div>
+          <div class="hc-info">
+            <div class="hc-title">Restaurant Website Live!</div>
+            <div class="hc-sub">Spice Garden, Coimbatore · Just launched</div>
+          </div>
+          <span class="hc-badge" style="background:var(--green-pale);color:var(--green)">✓ Live</span>
+        </div>
+        <div class="hero-card">
+          <div class="hc-icon" style="background:rgba(29,111,164,0.1)">📊</div>
+          <div class="hc-info">
+            <div class="hc-title">68% more leads this month</div>
+            <div class="hc-sub">After SEO + Google My Business setup</div>
+          </div>
+          <span class="hc-badge" style="background:var(--gold-light);color:var(--gold)">↑ 68%</span>
+        </div>
+        <div class="hero-card">
+          <div class="hc-icon" style="background:rgba(22,163,74,0.1)">💬</div>
+          <div class="hc-info">
+            <div class="hc-title">WhatsApp Campaign Sent</div>
+            <div class="hc-sub">50,000 messages · 94% delivered</div>
+          </div>
+          <span class="hc-badge" style="background:var(--green-pale);color:var(--green)">Sent</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section" id="how">
+    <div class="section-inner">
+      <div class="eyebrow">How It Works</div>
+      <div class="section-title">Your Website in 5 Simple Steps</div>
+      <div class="section-desc">From selecting your industry to going live — the entire process is designed to be effortless.</div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-icon">🏭</div>
+          <div class="step-title">Pick Your Industry</div>
+          <div class="step-desc">Select from 12 industry templates tailored to your business type.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-icon">💰</div>
+          <div class="step-title">Choose Your Plan</div>
+          <div class="step-desc">Startup ₹2,499 · Growth ₹9,999 · Professional ₹24,999 — one-time.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-icon">🌐</div>
+          <div class="step-title">Add Domain & Hosting</div>
+          <div class="step-desc">Register your domain and choose your hosting plan in minutes.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-icon">🔒</div>
+          <div class="step-title">Pay Lock Amount</div>
+          <div class="step-desc">Pay a small confirmation amount to lock your project and start work.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <div class="step-icon">🚀</div>
+          <div class="step-title">Go Live in 24hrs</div>
+          <div class="step-desc">We build, you review, we publish. Your business is live on Google.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INDUSTRIES -->
+  <section class="industries-section" id="industries">
+    <div class="section-inner">
+      <div class="eyebrow">Step 1 — Choose Your Industry</div>
+      <div class="section-title">We Build for Every<br>Indian Business</div>
+      <div class="section-desc">Choose your industry to see tailored website features and live examples.</div>
+      <div class="ind-grid" id="industriesGrid"></div>
+      <div class="ind-cta-bar">
+        <div class="ind-cta-text">
+          <span id="indSelected">No industry selected yet</span>
+          — Pick one above to get started
+        </div>
+        <button class="btn-gold" onclick="scrollToSection('pricing')">See Pricing Plans →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-inner">
+      <div class="eyebrow">Step 2 — Website Plans</div>
+      <div class="section-title">One-Time Development<br>Pricing — No Monthly Fees</div>
+      <div class="section-desc">Pay once, own your website forever. No subscriptions for development.</div>
+      <div style="background:var(--gold-light);border:1px solid var(--border2);border-radius:12px;padding:14px 20px;margin:20px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:16px">🔒</span>
+        <span style="font-size:14px;color:var(--dark-gold);font-weight:600">Confirmation Lock Amount:</span>
+        <span style="font-size:14px;color:var(--text2)">A minimum lock amount is charged upon plan selection to confirm your project. Work begins immediately after confirmation.</span>
+      </div>
+      <div class="pricing-grid" id="pricingGrid"></div>
+      <div style="margin-top:28px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:24px 28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="font-size:28px">🤝</div>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:700;color:var(--text)">Need a custom quote for your enterprise?</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px">E-commerce with 500+ products, government portals, multilingual sites — we build them all.</div>
+        </div>
+        <button class="btn-outline-gold" onclick="showToast('📞 Our team will contact you within 2 hours!')">Talk to Our Team</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOSTING -->
+  <section class="hosting-section" id="hosting">
+    <div class="section-inner">
+      <div class="eyebrow">Add-On — Web Hosting</div>
+      <div class="section-title">Reliable Indian Hosting<br>Plans — Per Year</div>
+      <div class="section-desc">Fast servers, free SSL, cPanel, and email accounts — hosted in India for maximum speed.</div>
+      <div class="hosting-grid" id="hostingGrid"></div>
+    </div>
+  </section>
+
+  <!-- DIGITAL MARKETING -->
+  <section class="marketing-section" id="marketing">
+    <div class="section-inner">
+      <div class="marketing-banner">
+        <div>
+          <div class="eyebrow" style="color:var(--gold3)">Digital Marketing Services</div>
+          <div class="banner-title">Grow Your Business.<br>Not Just Your Website.</div>
+          <div class="banner-desc">Having a website is step one. Getting customers to find it and buy from it is where we specialise. Add any marketing service to your plan — manage everything from your dashboard.</div>
+        </div>
+        <div class="banner-stats">
+          <div class="banner-stat">
+            <div class="banner-stat-num">3.2×</div>
+            <div class="banner-stat-label">Avg. revenue increase with WhatsApp campaigns</div>
+          </div>
+          <div class="banner-stat">
+            <div class="banner-stat-num">68%</div>
+            <div class="banner-stat-label">More leads with SEO + Google My Business</div>
+          </div>
+          <div class="banner-stat">
+            <div class="banner-stat-num">₹499</div>
+            <div class="banner-stat-label">Starting price for email marketing per month</div>
+          </div>
+          <div class="banner-stat">
+            <div class="banner-stat-num">24hr</div>
+            <div class="banner-stat-label">Campaign go-live after approval</div>
+          </div>
+        </div>
+      </div>
+      <div class="eyebrow">Monthly Add-On Services</div>
+      <div class="section-title" style="margin-bottom:8px">Choose Your Marketing Stack</div>
+      <div class="section-desc" style="margin-bottom:36px">Each is a standalone monthly service. Add or remove any time from your dashboard.</div>
+      <div class="mkt-grid" id="marketingGrid"></div>
+    </div>
+  </section>
+
+  <!-- DOMAIN -->
+  <section class="domain-section" id="domain">
+    <div class="section-inner">
+      <div class="eyebrow">Step 3 — Domain Registration</div>
+      <div class="section-title">Find Your Perfect<br>Domain Name</div>
+      <div class="section-desc">Search and register your business domain instantly. We configure DNS, SSL, and hosting automatically.</div>
+      <div class="domain-box">
+        <div class="domain-search-row">
+          <div class="domain-input-wrap">
+            <div class="domain-www">www.</div>
+            <input class="domain-field" id="domainField" placeholder="yourbusinessname" onkeydown="if(event.key==='Enter')doSearch()">
+          </div>
+          <button class="domain-search-btn" onclick="doSearch()">Search Domains →</button>
+        </div>
+        <div class="tld-pills" id="tldPills">
+          <span style="font-size:12px;color:var(--text3);font-weight:600;align-self:center;flex-shrink:0">Extensions:</span>
+        </div>
+        <div id="domainResults"></div>
+        <div id="domainPricingGrid" style="margin-top:32px">
+          <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">Domain Pricing Reference</div>
+          <div class="domain-pricing-grid" id="dpGrid"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY US -->
+  <section class="why-section" id="why">
+    <div class="section-inner">
+      <div class="eyebrow">Why Choose Get4Domain</div>
+      <div class="section-title">We're Not a Hosting<br>Company. We're Your<br><span style="color:var(--gold)">Digital Partner.</span></div>
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="why-icon">✍️</div>
+          <div class="why-title">Content Written For You</div>
+          <div class="why-desc">Every page professionally written by our content team — in English, Hindi, or Tamil. No lorem ipsum. Real words that sell.</div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">📱</div>
+          <div class="why-title">Mobile-First Design</div>
+          <div class="why-desc">Over 80% of Indian internet users browse on mobile. Every site is built mobile-first with fast load times.</div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🔍</div>
+          <div class="why-title">SEO Ready from Day 1</div>
+          <div class="why-desc">Meta tags, schema markup, Google Search Console setup, and Google My Business — ready to rank from day one.</div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">💰</div>
+          <div class="why-title">Transparent ₹ Pricing</div>
+          <div class="why-desc">No USD conversions. No hidden fees. No surprise renewals. Everything is priced in Indian Rupees.</div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🎧</div>
+          <div class="why-title">Indian Support Team</div>
+          <div class="why-desc">Our team speaks Hindi, Tamil, Telugu, and English. Reach us on WhatsApp, phone, or email — 9am to 9pm, 7 days.</div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">⚡</div>
+          <div class="why-title">Live in 24 Hours</div>
+          <div class="why-desc">Once you pay and fill our onboarding form, your website goes live within 24 business hours.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo-name">Get4<span>domain</span></div>
+          <div class="footer-desc">India's Instant Website Launch Platform. Website, Content Writing, Hosting, SEO, and Digital Marketing — all in one place.</div>
+          <div class="footer-socials">
+            <div class="footer-social">📘</div>
+            <div class="footer-social">📸</div>
+            <div class="footer-social">💼</div>
+            <div class="footer-social">💬</div>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Solutions</h4>
+          <a class="footer-link" onclick="scrollToSection('pricing')">Website Plans</a>
+          <a class="footer-link" onclick="scrollToSection('marketing')">Digital Marketing</a>
+          <a class="footer-link" onclick="scrollToSection('domain')">Domain Registration</a>
+          <a class="footer-link" onclick="scrollToSection('hosting')">Web Hosting</a>
+          <a class="footer-link" onclick="scrollToSection('industries')">Industry Templates</a>
+        </div>
+        <div class="footer-col">
+          <h4>Marketing</h4>
+          <a class="footer-link">WhatsApp Campaigns</a>
+          <a class="footer-link">Email Marketing</a>
+          <a class="footer-link">Social Media</a>
+          <a class="footer-link">SEO Services</a>
+          <a class="footer-link">Google Ads</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a class="footer-link">About Us</a>
+          <a class="footer-link">Client Stories</a>
+          <a class="footer-link" onclick="showPage('user-dashboard')">Client Login</a>
+          <a class="footer-link">Contact Us</a>
+          <a class="footer-link">Blog</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copy">© 2025 Get4Domain · KSM Web Services · All prices include 18% GST · GSTIN: 33AABCK1234Z1ZN</div>
+        <div class="footer-legal">
+          <span>Privacy Policy</span>
+          <span>Terms of Service</span>
+          <span>Refund Policy</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div><!-- end home page -->
+
+
+<!-- ════════════════════════════════════════════════
+     USER DASHBOARD PAGE
+════════════════════════════════════════════════ -->
+<div class="page" id="page-user-dashboard">
+  <div style="display:flex;min-height:100vh">
+    <!-- Sidebar -->
+    <div class="sidebar" id="userSidebar">
+      <div class="sidebar-logo">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="showPage('home')">
+          <div style="width:32px;height:32px;background:var(--grad-dark);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+          <div class="logo-name">Get4<span>domain</span></div>
+        </div>
+      </div>
+      <div class="sidebar-user" style="display:flex;align-items:center;gap:10px;margin:0 12px 16px">
+        <div class="sidebar-user-avatar">RS</div>
+        <div>
+          <div class="sidebar-user-name">Rajesh Sharma</div>
+          <div class="sidebar-user-email">rajesh@example.com</div>
+        </div>
+      </div>
+      <div class="sidebar-section-title">Dashboard</div>
+      <div class="sidebar-nav-item active" onclick="switchUserTab('overview')">
+        <span class="nav-icon">🏠</span>Overview
+      </div>
+      <div class="sidebar-section-title">My Services</div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('services')">
+        <span class="nav-icon">🌐</span>My Services
+      </div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('payments')">
+        <span class="nav-icon">💳</span>Payment Schedule
+        <span class="sidebar-badge">2</span>
+      </div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('history')">
+        <span class="nav-icon">📋</span>Payment History
+      </div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('invoices')">
+        <span class="nav-icon">🧾</span>Invoices
+      </div>
+      <div class="sidebar-section-title">Account</div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('notifications')">
+        <span class="nav-icon">🔔</span>Notifications
+        <span class="sidebar-badge">3</span>
+      </div>
+      <div class="sidebar-nav-item" onclick="switchUserTab('profile')">
+        <span class="nav-icon">👤</span>Profile
+      </div>
+      <div class="sidebar-nav-item" onclick="showPage('home')" style="margin-top:auto">
+        <span class="nav-icon">🛒</span>Add Services
+      </div>
+      <div class="sidebar-nav-item" onclick="showPage('home')">
+        <span class="nav-icon">🚪</span>Logout
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-main">
+      <!-- Mobile Header -->
+      <div class="mob-dash-header" style="background:var(--deep-brown);color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:20px;display:none" id="mobDashHeader">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;background:var(--grad-dark);border-radius:8px;display:flex;align-items:center;justify-content:center">⚡</div>
+          <span style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:#fff">Dashboard</span>
+        </div>
+        <button style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;font-weight:600" onclick="showPage('home')">← Home</button>
+      </div>
+
+      <!-- Tabs for mobile -->
+      <div class="tabs-row" id="userTabsRow" style="display:none">
+        <button class="tab-btn active" onclick="switchUserTab('overview')">Overview</button>
+        <button class="tab-btn" onclick="switchUserTab('services')">Services</button>
+        <button class="tab-btn" onclick="switchUserTab('payments')">Payments</button>
+        <button class="tab-btn" onclick="switchUserTab('invoices')">Invoices</button>
+      </div>
+
+      <!-- ─── OVERVIEW TAB ─── -->
+      <div id="user-tab-overview">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Good Morning, Rajesh 👋</div>
+            <div class="dash-subtitle">Here's what's happening with your account today.</div>
+          </div>
+          <div class="topbar-actions">
+            <div class="notif-btn" onclick="switchUserTab('notifications')">🔔<div class="notif-dot"></div></div>
+            <button class="topbar-btn primary" onclick="showPage('home')">+ Add Services</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--gold-light)">🌐</div>
+            <div class="stat-card-val">2</div>
+            <div class="stat-card-label">Active Websites</div>
+            <div class="stat-card-change up">↑ +1 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--green-pale)">📊</div>
+            <div class="stat-card-val">4</div>
+            <div class="stat-card-label">Active Services</div>
+            <div class="stat-card-change up">↑ Running</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--blue-pale)">💰</div>
+            <div class="stat-card-val">₹12,499</div>
+            <div class="stat-card-label">Total Spent</div>
+            <div class="stat-card-change" style="color:var(--text3)">All-time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:rgba(245,184,53,0.15)">⏰</div>
+            <div class="stat-card-val">₹2,999</div>
+            <div class="stat-card-label">Due This Month</div>
+            <div class="stat-card-change down">Due Jun 15</div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-card-title">My Services <span class="dash-card-action" onclick="switchUserTab('services')">View All →</span></div>
+            <div class="service-item">
+              <div class="service-icon-wrap" style="background:var(--gold-light)">🌐</div>
+              <div class="service-info">
+                <div class="service-name">Business Website — Growth Plan</div>
+                <div class="service-sub">restaurant.spicegarden.in · Launched May 12</div>
+              </div>
+              <div class="service-status"><span class="status-badge active">✓ Live</span></div>
+            </div>
+            <div class="service-item">
+              <div class="service-icon-wrap" style="background:var(--blue-pale)">☁️</div>
+              <div class="service-info">
+                <div class="service-name">Cloud Hosting — Annual Plan</div>
+                <div class="service-sub">Renews Nov 15, 2025</div>
+              </div>
+              <div class="service-status"><span class="status-badge active">✓ Active</span></div>
+            </div>
+            <div class="service-item">
+              <div class="service-icon-wrap" style="background:var(--green-pale)">💬</div>
+              <div class="service-info">
+                <div class="service-name">WhatsApp Campaigns</div>
+                <div class="service-sub">50,000 msgs/mo · 44,200 sent</div>
+              </div>
+              <div class="service-status"><span class="status-badge active">✓ Active</span></div>
+            </div>
+            <div class="service-item">
+              <div class="service-icon-wrap" style="background:rgba(245,184,53,0.15)">🔍</div>
+              <div class="service-info">
+                <div class="service-name">SEO & Content Marketing</div>
+                <div class="service-sub">Monthly audit ongoing</div>
+              </div>
+              <div class="service-status"><span class="status-badge progress">⚙ In Progress</span></div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">Upcoming Payments <span class="dash-card-action" onclick="switchUserTab('payments')">View All →</span></div>
+            <div class="payment-item">
+              <div class="payment-item-icon">💬</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">WhatsApp Campaigns</div>
+                <div class="payment-item-date">Due: June 15, 2025</div>
+              </div>
+              <div>
+                <div class="payment-item-amount">₹999</div>
+                <div class="payment-item-status due">Due Soon</div>
+              </div>
+            </div>
+            <div class="payment-item">
+              <div class="payment-item-icon">🔍</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">SEO & Content Marketing</div>
+                <div class="payment-item-date">Due: June 15, 2025</div>
+              </div>
+              <div>
+                <div class="payment-item-amount">₹2,499</div>
+                <div class="payment-item-status due">Due Soon</div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="plan-btn primary" style="border-radius:10px;padding:12px;font-size:14px" onclick="showToast('💳 Redirecting to payment gateway...')">Pay All Due Now — ₹3,498</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Project Update Notifications <span class="dash-card-action" onclick="switchUserTab('notifications')">View All →</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:4px">
+            <div class="notif-item unread">
+              <div class="notif-icon-wrap" style="background:var(--green-pale)">✅</div>
+              <div class="notif-text">
+                <div class="notif-title">Website Design Approved!</div>
+                <div class="notif-sub">Your homepage layout is approved and development begins today.</div>
+              </div>
+              <div class="notif-time">2hr ago</div>
+            </div>
+            <div class="notif-item unread">
+              <div class="notif-icon-wrap" style="background:var(--gold-light)">🎨</div>
+              <div class="notif-text">
+                <div class="notif-title">New Layout Ready for Review</div>
+                <div class="notif-sub">Your about page and services page are ready. Please review.</div>
+              </div>
+              <div class="notif-time">1 day ago</div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-icon-wrap" style="background:var(--blue-pale)">🔍</div>
+              <div class="notif-text">
+                <div class="notif-title">SEO Audit Completed</div>
+                <div class="notif-sub">Monthly SEO report is ready. 12 improvements identified.</div>
+              </div>
+              <div class="notif-time">3 days ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SERVICES TAB ─── -->
+      <div id="user-tab-services" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">My Services</div>
+            <div class="dash-subtitle">All your active services and their status.</div>
+          </div>
+          <button class="topbar-btn primary" onclick="showPage('home')">+ Add New Service</button>
+        </div>
+
+        <div class="tabs-row" style="margin-bottom:24px">
+          <button class="tab-btn active" id="svcTab1" onclick="switchSvcTab('all')">All Services</button>
+          <button class="tab-btn" id="svcTab2" onclick="switchSvcTab('websites')">Websites</button>
+          <button class="tab-btn" id="svcTab3" onclick="switchSvcTab('hosting')">Hosting</button>
+          <button class="tab-btn" id="svcTab4" onclick="switchSvcTab('marketing')">Marketing</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="dash-card" style="padding:20px 24px">
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+              <div style="width:52px;height:52px;background:var(--gold-light);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🌐</div>
+              <div style="flex:1;min-width:200px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+                  <div style="font-size:16px;font-weight:700;color:var(--text)">Restaurant Website — Growth Plan</div>
+                  <span class="status-badge active">✓ Live</span>
+                </div>
+                <div style="font-size:13px;color:var(--text3)">spicegarden.in · Launched: May 12, 2025 · 5-Page Professional Website</div>
+                <div style="margin-top:12px">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Project Completion</div>
+                  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%"></div></div>
+                  <div style="font-size:12px;color:var(--green);font-weight:700;margin-top:4px">100% Complete — Live</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <div style="font-size:14px;font-weight:800;color:var(--dark-gold)">₹9,999 <span style="font-size:11px;font-weight:400;color:var(--text3)">one-time</span></div>
+                <button class="action-btn view">View Website ↗</button>
+                <button class="action-btn edit">Request Changes</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-card" style="padding:20px 24px">
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+              <div style="width:52px;height:52px;background:var(--blue-pale);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">☁️</div>
+              <div style="flex:1;min-width:200px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+                  <div style="font-size:16px;font-weight:700;color:var(--text)">Cloud Hosting — Standard Plan</div>
+                  <span class="status-badge active">✓ Active</span>
+                </div>
+                <div style="font-size:13px;color:var(--text3)">2 websites, SSL, cPanel, Business Email · Renews: Nov 15, 2025</div>
+                <div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap">
+                  <div style="font-size:12px;color:var(--text2)">⚡ Uptime: <strong>99.98%</strong></div>
+                  <div style="font-size:12px;color:var(--text2)">📧 2 Email Accounts Active</div>
+                  <div style="font-size:12px;color:var(--text2)">🔒 SSL: Valid</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <div style="font-size:14px;font-weight:800;color:var(--dark-gold)">₹2,999 <span style="font-size:11px;font-weight:400;color:var(--text3)">/year</span></div>
+                <button class="action-btn view">cPanel Access ↗</button>
+                <button class="action-btn edit">Upgrade Plan</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-card" style="padding:20px 24px">
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+              <div style="width:52px;height:52px;background:var(--green-pale);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">💬</div>
+              <div style="flex:1;min-width:200px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+                  <div style="font-size:16px;font-weight:700;color:var(--text)">WhatsApp Campaigns</div>
+                  <span class="status-badge active">✓ Active</span>
+                </div>
+                <div style="font-size:13px;color:var(--text3)">50,000 messages/month · Campaign manager + AI chatbot · Monthly service</div>
+                <div style="margin-top:10px">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Messages Used This Month</div>
+                  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:88%"></div></div>
+                  <div style="font-size:12px;color:var(--text3);margin-top:4px">44,200 / 50,000 used</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <div style="font-size:14px;font-weight:800;color:var(--dark-gold)">₹999 <span style="font-size:11px;font-weight:400;color:var(--text3)">/month</span></div>
+                <button class="action-btn view">Campaign Dashboard</button>
+                <button class="action-btn edit">Manage</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-card" style="padding:20px 24px">
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+              <div style="width:52px;height:52px;background:rgba(124,58,237,0.1);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🔍</div>
+              <div style="flex:1;min-width:200px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+                  <div style="font-size:16px;font-weight:700;color:var(--text)">SEO & Content Marketing</div>
+                  <span class="status-badge progress">⚙ In Progress</span>
+                </div>
+                <div style="font-size:13px;color:var(--text3)">Monthly audit + 4 blog articles + Local SEO · Current: June audit in progress</div>
+                <div style="margin-top:12px">
+                  <div style="font-size:12px;color:var(--text3);margin-bottom:6px">This Month's Work</div>
+                  <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:60%;background:var(--blue)"></div></div>
+                  <div style="font-size:12px;color:var(--blue);font-weight:700;margin-top:4px">60% — Audit + 2 of 4 articles done</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                <div style="font-size:14px;font-weight:800;color:var(--dark-gold)">₹2,499 <span style="font-size:11px;font-weight:400;color:var(--text3)">/month</span></div>
+                <button class="action-btn view">View Report</button>
+                <button class="action-btn delete">Cancel Service</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PAYMENTS TAB ─── -->
+      <div id="user-tab-payments" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Payment Schedule</div>
+            <div class="dash-subtitle">Your upcoming and recurring payments.</div>
+          </div>
+          <button class="topbar-btn primary" onclick="showToast('💳 Redirecting to payment...')">Pay All Due — ₹3,498</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:rgba(245,184,53,0.15)">⏰</div>
+            <div class="stat-card-val">₹3,498</div>
+            <div class="stat-card-label">Due This Month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--green-pale)">✅</div>
+            <div class="stat-card-val">₹12,499</div>
+            <div class="stat-card-label">Paid to Date</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--blue-pale)">📅</div>
+            <div class="stat-card-val">3</div>
+            <div class="stat-card-label">Active Subscriptions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background:var(--gold-light)">🔄</div>
+            <div class="stat-card-val">Monthly</div>
+            <div class="stat-card-label">Billing Cycle</div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Due This Month — June 2025</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="payment-item" style="border-left:3px solid var(--amber)">
+              <div class="payment-item-icon">💬</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">WhatsApp Campaigns — Monthly</div>
+                <div class="payment-item-date">📅 Due: June 15, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹999</div>
+                <div class="payment-item-status due">Due</div>
+              </div>
+              <button class="topbar-btn primary" style="padding:9px 16px;font-size:13px" onclick="showToast('💳 Processing payment...')">Pay Now</button>
+            </div>
+            <div class="payment-item" style="border-left:3px solid var(--amber)">
+              <div class="payment-item-icon">🔍</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">SEO & Content Marketing — Monthly</div>
+                <div class="payment-item-date">📅 Due: June 15, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹2,499</div>
+                <div class="payment-item-status due">Due</div>
+              </div>
+              <button class="topbar-btn primary" style="padding:9px 16px;font-size:13px" onclick="showToast('💳 Processing payment...')">Pay Now</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-card" style="margin-top:20px">
+          <div class="dash-card-title">Upcoming Schedule</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="payment-item">
+              <div class="payment-item-icon">☁️</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">Cloud Hosting — Annual Renewal</div>
+                <div class="payment-item-date">📅 Due: November 15, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹2,999</div>
+                <div style="font-size:11px;color:var(--text3)">Annual</div>
+              </div>
+            </div>
+            <div class="payment-item">
+              <div class="payment-item-icon">🌐</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">spicegarden.in — Domain Renewal</div>
+                <div class="payment-item-date">📅 Due: December 10, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹1,099</div>
+                <div style="font-size:11px;color:var(--text3)">Annual</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-card" style="margin-top:20px">
+          <div class="dash-card-title">Payment History <span class="dash-card-action" onclick="switchUserTab('history')">View Full History →</span></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="payment-item">
+              <div class="payment-item-icon">💬</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">WhatsApp Campaigns — May</div>
+                <div class="payment-item-date">Paid: May 15, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹999</div>
+                <div class="payment-item-status paid">✓ Paid</div>
+              </div>
+            </div>
+            <div class="payment-item">
+              <div class="payment-item-icon">🔍</div>
+              <div class="payment-item-info">
+                <div class="payment-item-name">SEO & Content Marketing — May</div>
+                <div class="payment-item-date">Paid: May 15, 2025</div>
+              </div>
+              <div style="text-align:right">
+                <div class="payment-item-amount">₹2,499</div>
+                <div class="payment-item-status paid">✓ Paid</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── HISTORY TAB ─── -->
+      <div id="user-tab-history" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Payment History</div>
+            <div class="dash-subtitle">Complete record of all your transactions.</div>
+          </div>
+        </div>
+        <div class="dash-card">
+          <div style="overflow-x:auto">
+            <table class="user-management-table umt" style="width:100%">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Service</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Invoice</th>
+                </tr>
+              </thead>
+              <tbody id="payHistoryTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── INVOICES TAB ─── -->
+      <div id="user-tab-invoices" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Invoices</div>
+            <div class="dash-subtitle">Download GST invoices for all your payments.</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px" id="invoicesList"></div>
+      </div>
+
+      <!-- ─── NOTIFICATIONS TAB ─── -->
+      <div id="user-tab-notifications" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Notifications</div>
+            <div class="dash-subtitle">Project updates, payment reminders, and alerts.</div>
+          </div>
+          <button class="topbar-btn secondary">Mark All Read</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="notifList"></div>
+      </div>
+
+      <!-- ─── PROFILE TAB ─── -->
+      <div id="user-tab-profile" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">My Profile</div>
+            <div class="dash-subtitle">Manage your account details.</div>
+          </div>
+          <button class="topbar-btn primary" onclick="showToast('✅ Profile saved!')">Save Changes</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px">
+          <div class="dash-card">
+            <div class="dash-card-title">Personal Information</div>
+            <label class="form-label">Full Name</label>
+            <input class="form-input" value="Rajesh Sharma">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" value="rajesh@example.com" type="email">
+            <label class="form-label">Mobile Number</label>
+            <input class="form-input" value="+91 98765 43210" type="tel">
+            <label class="form-label">Business Name</label>
+            <input class="form-input" value="Spice Garden Restaurant">
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-title">Business Details</div>
+            <label class="form-label">Industry</label>
+            <input class="form-input" value="Restaurant & Café">
+            <label class="form-label">City</label>
+            <input class="form-input" value="Coimbatore, Tamil Nadu">
+            <label class="form-label">GSTIN (Optional)</label>
+            <input class="form-input" value="33AABRS1234Z1ZN">
+            <label class="form-label">WhatsApp Number</label>
+            <input class="form-input" value="+91 98765 43210">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end dashboard main -->
+  </div><!-- end dashboard layout -->
+</div><!-- end user dashboard page -->
+
+
+<!-- ════════════════════════════════════════════════
+     ADMIN DASHBOARD PAGE
+════════════════════════════════════════════════ -->
+<div class="page" id="page-admin-dashboard">
+  <div style="display:flex;min-height:100vh">
+    <!-- Admin Sidebar -->
+    <div class="sidebar" style="background:#12100A" id="adminSidebar">
+      <div class="sidebar-logo">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="showPage('home')">
+          <div style="width:32px;height:32px;background:var(--grad-dark);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+          <div class="logo-name" style="color:#fff;font-family:'Playfair Display',serif;font-size:18px;font-weight:800">Admin <span style="color:var(--gold3)">Panel</span></div>
+        </div>
+      </div>
+      <div style="padding:8px 16px 16px;margin:0 12px;background:rgba(200,134,10,0.1);border-radius:12px;border:1px solid rgba(200,134,10,0.2);margin-bottom:16px">
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Logged in as</div>
+        <div style="font-size:14px;font-weight:700;color:#fff">Admin · Get4Domain</div>
+      </div>
+      <div class="sidebar-section-title">Dashboard</div>
+      <div class="sidebar-nav-item active" onclick="switchAdminTab('overview')"><span class="nav-icon">🏠</span>Overview</div>
+      <div class="sidebar-section-title">Management</div>
+      <div class="sidebar-nav-item" onclick="switchAdminTab('users')"><span class="nav-icon">👥</span>User Management</div>
+      <div class="sidebar-nav-item" onclick="switchAdminTab('projects')"><span class="nav-icon">🔧</span>Project Tasks <span class="sidebar-badge">5</span></div>
+      <div class="sidebar-nav-item" onclick="switchAdminTab('payments-admin')"><span class="nav-icon">💰</span>Payment Reports</div>
+      <div class="sidebar-section-title">Communication</div>
+      <div class="sidebar-nav-item" onclick="switchAdminTab('notifications-admin')"><span class="nav-icon">🔔</span>Send Notifications <span class="sidebar-badge">3</span></div>
+      <div class="sidebar-nav-item" onclick="switchAdminTab('reports')"><span class="nav-icon">📊</span>Reports</div>
+      <div class="sidebar-section-title">System</div>
+      <div class="sidebar-nav-item" onclick="showPage('home')"><span class="nav-icon">🌐</span>View Website</div>
+      <div class="sidebar-nav-item" onclick="showPage('home')"><span class="nav-icon">🚪</span>Logout</div>
+    </div>
+
+    <!-- Admin Main -->
+    <div class="dashboard-main" style="background:var(--bg2)">
+
+      <!-- ─── ADMIN OVERVIEW ─── -->
+      <div id="admin-tab-overview">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Admin Dashboard</div>
+            <div class="dash-subtitle">Platform overview for June 2025.</div>
+          </div>
+          <div class="topbar-actions">
+            <div class="notif-btn" onclick="switchAdminTab('notifications-admin')">🔔<div class="notif-dot"></div></div>
+            <button class="topbar-btn primary" onclick="switchAdminTab('users')">+ Add User</button>
+          </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--gold-light)">👥</div><div class="stat-card-val">247</div><div class="stat-card-label">Total Users</div><div class="stat-card-change up">↑ +18 this month</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--green-pale)">🌐</div><div class="stat-card-val">312</div><div class="stat-card-label">Websites Live</div><div class="stat-card-change up">↑ +24 this month</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--blue-pale)">💰</div><div class="stat-card-val">₹8.4L</div><div class="stat-card-label">Revenue This Month</div><div class="stat-card-change up">↑ +22%</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:rgba(245,184,53,0.15)">⚙️</div><div class="stat-card-val">14</div><div class="stat-card-label">Active Projects</div><div class="stat-card-change" style="color:var(--text3)">5 pending</div></div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-card-title">Recent User Signups <span class="dash-card-action" onclick="switchAdminTab('users')">View All →</span></div>
+            <div style="overflow-x:auto">
+              <table class="user-management-table umt" style="width:100%">
+                <thead><tr><th>User</th><th>Plan</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td><div class="user-avatar-cell"><div class="user-avatar-sm">MK</div><div><div style="font-weight:600">Meena Kumar</div><div style="font-size:11px;color:var(--text3)">meena@gmail.com</div></div></div></td><td><span class="status-badge active">Growth</span></td><td><span class="status-badge active">Live</span></td></tr>
+                  <tr><td><div class="user-avatar-cell"><div class="user-avatar-sm" style="background:linear-gradient(135deg,#1D6FA4,#4AA8D4)">AS</div><div><div style="font-weight:600">Arjun Sethi</div><div style="font-size:11px;color:var(--text3)">arjun@biz.in</div></div></div></td><td><span class="status-badge" style="background:var(--blue-pale);color:var(--blue)">Professional</span></td><td><span class="status-badge progress">In Dev</span></td></tr>
+                  <tr><td><div class="user-avatar-cell"><div class="user-avatar-sm" style="background:linear-gradient(135deg,#16A34A,#4ADE80)">PV</div><div><div style="font-weight:600">Priya Venkat</div><div style="font-size:11px;color:var(--text3)">priya@shop.com</div></div></div></td><td><span class="status-badge" style="background:var(--gold-light);color:var(--gold)">Startup</span></td><td><span class="status-badge pending">Pending</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">Active Projects <span class="dash-card-action" onclick="switchAdminTab('projects')">View All →</span></div>
+            <div class="project-task">
+              <div class="project-task-header">
+                <div><div class="project-task-name">E-Commerce Website — Arjun Sethi</div><div class="project-task-client">Professional Plan · Started Jun 5</div></div>
+                <span class="task-tag" style="background:var(--blue-pale);color:var(--blue)">In Dev</span>
+              </div>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:65%"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="progress-pct">65% Complete</div>
+                <div style="font-size:11px;color:var(--text3)">ETA: Jun 20</div>
+              </div>
+            </div>
+            <div class="project-task">
+              <div class="project-task-header">
+                <div><div class="project-task-name">Salon Website — Kavitha P.</div><div class="project-task-client">Startup Plan · Started Jun 8</div></div>
+                <span class="task-tag" style="background:var(--gold-light);color:var(--gold)">Review</span>
+              </div>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:90%"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="progress-pct">90% — Awaiting Client Review</div>
+                <div style="font-size:11px;color:var(--text3)">ETA: Jun 12</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── USER MANAGEMENT ─── -->
+      <div id="admin-tab-users" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">User Management</div>
+            <div class="dash-subtitle">247 total registered users.</div>
+          </div>
+          <div class="topbar-actions">
+            <input class="form-input" style="margin:0;width:220px;padding:9px 14px" placeholder="🔍 Search users...">
+            <button class="topbar-btn primary">+ Add User</button>
+          </div>
+        </div>
+        <div class="dash-card" style="padding:0;overflow:hidden">
+          <div style="overflow-x:auto">
+            <table class="user-management-table umt" id="usersTable">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Industry</th>
+                  <th>Plan</th>
+                  <th>Joined</th>
+                  <th>Total Paid</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PROJECT TASKS ─── -->
+      <div id="admin-tab-projects" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Project Task Management</div>
+            <div class="dash-subtitle">Track development progress and notify clients.</div>
+          </div>
+          <button class="topbar-btn primary">+ New Project</button>
+        </div>
+
+        <div class="tabs-row">
+          <button class="tab-btn active">All (14)</button>
+          <button class="tab-btn">In Progress (5)</button>
+          <button class="tab-btn">Review (3)</button>
+          <button class="tab-btn">Live (6)</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px" id="projectsList"></div>
+      </div>
+
+      <!-- ─── PAYMENT REPORTS ─── -->
+      <div id="admin-tab-payments-admin" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Payment Reports</div>
+            <div class="dash-subtitle">All user payment history and revenue tracking.</div>
+          </div>
+          <button class="topbar-btn secondary">Export CSV</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--green-pale)">💰</div><div class="stat-card-val">₹8.4L</div><div class="stat-card-label">June Revenue</div><div class="stat-card-change up">↑ +22% vs May</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--gold-light)">📋</div><div class="stat-card-val">312</div><div class="stat-card-label">Invoices Issued</div><div class="stat-card-change up">↑ +18</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:rgba(245,184,53,0.15)">⏰</div><div class="stat-card-val">₹42,000</div><div class="stat-card-label">Pending Payments</div><div class="stat-card-change down">12 users overdue</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--blue-pale)">🔄</div><div class="stat-card-val">₹3.2L</div><div class="stat-card-label">Monthly Recurring</div><div class="stat-card-change up">↑ +8 subscriptions</div></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Recent Transactions</div>
+          <div style="overflow-x:auto">
+            <table class="user-management-table umt">
+              <thead><tr><th>Date</th><th>User</th><th>Service</th><th>Amount</th><th>Type</th><th>Status</th></tr></thead>
+              <tbody id="adminPayTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── NOTIFICATIONS ADMIN ─── -->
+      <div id="admin-tab-notifications-admin" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Send Notifications</div>
+            <div class="dash-subtitle">Send project updates and alerts to users.</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="dash-card">
+            <div class="dash-card-title">Send New Notification</div>
+            <label class="form-label">Recipient</label>
+            <select class="form-input">
+              <option>All Users</option>
+              <option>Rajesh Sharma (spicegarden.in)</option>
+              <option>Arjun Sethi</option>
+              <option>Meena Kumar</option>
+            </select>
+            <label class="form-label">Notification Type</label>
+            <select class="form-input">
+              <option>Project Update</option>
+              <option>Payment Reminder</option>
+              <option>Design Ready for Review</option>
+              <option>Website Live</option>
+              <option>Maintenance Notice</option>
+            </select>
+            <label class="form-label">Message</label>
+            <textarea class="form-input" rows="4" placeholder="Type your notification message..."></textarea>
+            <label class="form-label">Send Via</label>
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer"><input type="checkbox" checked> Dashboard</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer"><input type="checkbox"> Email</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer"><input type="checkbox"> WhatsApp</label>
+            </div>
+            <button class="plan-btn primary" onclick="showToast('🔔 Notification sent to user!')">Send Notification →</button>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-title">Recent Sent Notifications</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="notif-item unread">
+                <div class="notif-icon-wrap" style="background:var(--green-pale)">✅</div>
+                <div class="notif-text">
+                  <div class="notif-title">Website Design Approved — Rajesh</div>
+                  <div class="notif-sub">Sent via Dashboard + WhatsApp</div>
+                </div>
+                <div class="notif-time">2hr ago</div>
+              </div>
+              <div class="notif-item">
+                <div class="notif-icon-wrap" style="background:var(--gold-light)">🎨</div>
+                <div class="notif-text">
+                  <div class="notif-title">New Layout — Arjun Sethi</div>
+                  <div class="notif-sub">Sent via Dashboard + Email</div>
+                </div>
+                <div class="notif-time">1 day ago</div>
+              </div>
+              <div class="notif-item">
+                <div class="notif-icon-wrap" style="background:rgba(245,184,53,0.15)">💳</div>
+                <div class="notif-text">
+                  <div class="notif-title">Payment Due Reminder — 12 users</div>
+                  <div class="notif-sub">Bulk send · Dashboard + Email</div>
+                </div>
+                <div class="notif-time">2 days ago</div>
+              </div>
+              <div class="notif-item">
+                <div class="notif-icon-wrap" style="background:var(--green-pale)">🚀</div>
+                <div class="notif-text">
+                  <div class="notif-title">Website Live — Kavitha P.</div>
+                  <div class="notif-sub">Sent via Dashboard + WhatsApp</div>
+                </div>
+                <div class="notif-time">3 days ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── REPORTS ─── -->
+      <div id="admin-tab-reports" style="display:none">
+        <div class="dash-topbar">
+          <div>
+            <div class="dash-title">Reports</div>
+            <div class="dash-subtitle">Detailed analytics and performance reports.</div>
+          </div>
+          <button class="topbar-btn secondary">Download PDF Report</button>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--green-pale)">🌐</div><div class="stat-card-val">312</div><div class="stat-card-label">Total Websites Launched</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--gold-light)">💬</div><div class="stat-card-val">1.8M</div><div class="stat-card-label">WhatsApp Messages Sent</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:var(--blue-pale)">🔍</div><div class="stat-card-val">48</div><div class="stat-card-label">SEO Clients Active</div></div>
+          <div class="stat-card"><div class="stat-card-icon" style="background:rgba(124,58,237,0.1)">📧</div><div class="stat-card-val">92K</div><div class="stat-card-label">Emails Sent This Month</div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="dash-card">
+            <div class="dash-card-title">Revenue by Plan</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:600">Startup (₹2,499)</span><span style="color:var(--gold);font-weight:700">₹1,87,425</span></div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:35%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:600">Growth (₹9,999)</span><span style="color:var(--gold);font-weight:700">₹3,99,960</span></div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:65%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="font-weight:600">Professional (₹24,999)</span><span style="color:var(--gold);font-weight:700">₹2,49,990</span></div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:45%"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-title">Top Industries</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🛍️</span><div style="flex:1"><div style="font-size:13px;font-weight:600">E-Commerce</div><div class="progress-bar-wrap" style="margin-top:4px"><div class="progress-bar-fill" style="width:80%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--gold)">210</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">💻</span><div style="flex:1"><div style="font-size:13px;font-weight:600">Tech & Startup</div><div class="progress-bar-wrap" style="margin-top:4px"><div class="progress-bar-fill" style="width:60%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--gold)">118</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🏠</span><div style="flex:1"><div style="font-size:13px;font-weight:600">Real Estate</div><div class="progress-bar-wrap" style="margin-top:4px"><div class="progress-bar-fill" style="width:40%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--gold)">93</span></div>
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">🍽️</span><div style="flex:1"><div style="font-size:13px;font-weight:600">Restaurant & Café</div><div class="progress-bar-wrap" style="margin-top:4px"><div class="progress-bar-fill" style="width:35%"></div></div></div><span style="font-size:13px;font-weight:700;color:var(--gold)">85</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end admin main -->
+  </div><!-- end admin layout -->
+</div><!-- end admin page -->
+
+
+<!-- ════ CART DRAWER ════ -->
+<div class="backdrop" id="backdrop" onclick="closeDrawer()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="drawer-head">
+    <h3>🛒 Your Launch Cart</h3>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer" id="drawerFooter" style="display:none">
+    <div class="totals-block" id="totalsBlock"></div>
+    <button class="checkout-btn" onclick="openCheckout()" id="checkoutBtn">🔒 Proceed to Checkout →</button>
+    <div class="pay-chips">
+      <span class="pay-chip">💳 Visa/MC</span>
+      <span class="pay-chip">📱 UPI</span>
+      <span class="pay-chip">🏦 NetBanking</span>
+      <span class="pay-chip">₹ Razorpay</span>
+    </div>
+    <div class="lock-amount-note">🔒 Minimum lock amount charged today to confirm your project</div>
+  </div>
+</div>
+
+<!-- ════ PAYMENT MODAL ════ -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">🔐 Secure Checkout</h3>
+      <button class="drawer-close" onclick="closeCheckout()" id="modalCloseBtn">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- FAB for mobile dashboard -->
+<div class="fab" onclick="showPage('home')">🏠</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════════════ */
+const INDUSTRIES = [
+  {id:'restaurant',icon:'🍽️',name:'Restaurant & Café',count:'85 launched'},
+  {id:'ecommerce',icon:'🛍️',name:'E-Commerce Store',count:'210 launched'},
+  {id:'healthcare',icon:'🏥',name:'Clinic & Hospital',count:'64 launched'},
+  {id:'realestate',icon:'🏠',name:'Real Estate',count:'93 launched'},
+  {id:'salon',icon:'✂️',name:'Salon & Beauty',count:'77 launched'},
+  {id:'education',icon:'🎓',name:'Coaching & Education',count:'58 launched'},
+  {id:'gym',icon:'💪',name:'Gym & Fitness',count:'49 launched'},
+  {id:'legal',icon:'⚖️',name:'Legal & Consulting',count:'42 launched'},
+  {id:'tech',icon:'💻',name:'Tech & Startup',count:'118 launched'},
+  {id:'hotel',icon:'🏨',name:'Hotel & Travel',count:'36 launched'},
+  {id:'events',icon:'🎉',name:'Events & Wedding',count:'61 launched'},
+  {id:'auto',icon:'🚗',name:'Auto & Garage',count:'29 launched'},
+];
+
+const PLANS = [
+  {
+    id:'startup', tier:'Starter', name:'Startup',
+    tagline:'For small businesses going online for the first time.',
+    price:2499, lockAmount:499, orig:4999,
+    features:[
+      {icon:'🌐',bg:'rgba(29,111,164,0.1)',name:'5-Page Custom Website',sub:'Home, About, Services, Gallery, Contact'},
+      {icon:'✍️',bg:'rgba(200,134,10,0.1)',name:'Professional Content Writing',sub:'All pages written by our team'},
+      {icon:'⚡',bg:'rgba(200,134,10,0.1)',name:'1-Year Hosting + SSL',sub:'Fast Indian hosting included'},
+      {icon:'📊',bg:'rgba(22,163,74,0.1)',name:'Google Analytics Setup',sub:'Traffic tracking from day one'},
+      {icon:'📍',bg:'rgba(200,134,10,0.1)',name:'Google My Business Setup',sub:'Show up in local search'},
+    ]
+  },
+  {
+    id:'growth', tier:'Growth', name:'Growth', featured:true,
+    tagline:'For businesses ready to generate leads and grow revenue.',
+    price:9999, lockAmount:1499, orig:15999,
+    features:[
+      {icon:'🌐',bg:'rgba(29,111,164,0.1)',name:'10-Page Dynamic Website',sub:'CMS-powered, easy to update'},
+      {icon:'✍️',bg:'rgba(200,134,10,0.1)',name:'SEO-Optimised Content',sub:'Keyword research + written copy'},
+      {icon:'⚡',bg:'rgba(200,134,10,0.1)',name:'Premium Hosting + CDN + SSL',sub:'Fast across all Indian cities'},
+      {icon:'📋',bg:'rgba(124,58,237,0.1)',name:'Lead Capture Forms',sub:'Enquiries saved to your dashboard'},
+      {icon:'📧',bg:'rgba(22,163,74,0.1)',name:'Email Notifications Setup',sub:'Automated welcome + follow-ups'},
+    ]
+  },
+  {
+    id:'professional', tier:'Professional', name:'Professional',
+    tagline:'For established businesses scaling their digital operations.',
+    price:24999, lockAmount:2999, orig:39999,
+    features:[
+      {icon:'🌐',bg:'rgba(29,111,164,0.1)',name:'Unlimited Pages + Integrations',sub:'Custom features, booking, payments'},
+      {icon:'✍️',bg:'rgba(200,134,10,0.1)',name:'Multilingual Content (3 languages)',sub:'English, Hindi, + 1 regional'},
+      {icon:'⚡',bg:'rgba(200,134,10,0.1)',name:'Dedicated Cloud Hosting',sub:'99.99% uptime SLA'},
+      {icon:'📋',bg:'rgba(124,58,237,0.1)',name:'Custom Integrations',sub:'Payment gateway, booking, maps'},
+      {icon:'📧',bg:'rgba(22,163,74,0.1)',name:'Priority Support + Training',sub:'Dedicated account manager'},
+    ]
+  }
+];
+
+const HOSTING = [
+  {id:'shared',icon:'🗄️',name:'Shared Hosting',price:2999,per:'per year',features:['2 Websites','Free SSL Certificate','cPanel Control Panel','5 Business Email Accounts','99.9% Uptime Guarantee'],desc:'Perfect for startups. Fast, secure, and hassle-free.'},
+  {id:'cloud',icon:'☁️',name:'Cloud Hosting',price:4999,per:'per year',featured:true,features:['9 Websites','Free SSL Certificate','cPanel + WHM','Unlimited Email Accounts','CDN + Faster Loading','Daily Backups'],desc:'Best for growing businesses with multiple websites.'},
+  {id:'vps',icon:'🖥️',name:'VPS Hosting',price:6999,per:'per year',features:['Unlimited Websites','SSL + SAN Certificate','2 Core CPU','4 GB RAM','100 GB NVMe SSD','2 TB Monthly Bandwidth'],desc:'Dedicated resources for high-traffic websites.'},
+];
+
+const MARKETING = [
+  {id:'whatsapp',icon:'💬',bg:'rgba(22,163,74,0.1)',name:'WhatsApp Campaigns',desc:'Reach customers directly on WhatsApp with bulk messages, automated follow-ups, and AI chatbot.',features:['50,000 messages/month','Visual campaign builder','AI chatbot with auto-replies','Click tracking & delivery reports'],price:999,period:'/month'},
+  {id:'email',icon:'📧',bg:'rgba(29,111,164,0.1)',name:'Email Marketing Suite',desc:'Professional newsletters, drip campaigns, and automated sequences from your dashboard.',features:['Unlimited subscribers','100+ email templates','A/B testing','Open rate analytics'],price:499,period:'/month'},
+  {id:'social',icon:'📱',bg:'rgba(200,134,10,0.1)',name:'Social Media Management',desc:'We create, schedule, and publish posts across Instagram, Facebook, and LinkedIn for you.',features:['3 platforms managed','12 posts/month','AI captions','Monthly analytics'],price:1499,period:'/month'},
+  {id:'seo',icon:'🔍',bg:'rgba(124,58,237,0.1)',name:'SEO & Content Marketing',desc:'Monthly SEO audits, keyword optimisation, backlink building, and blog content.',features:['Monthly site audit','4 SEO blog articles/month','Local SEO','Competitor analysis'],price:2499,period:'/month'},
+  {id:'google',icon:'🎯',bg:'rgba(220,38,38,0.1)',name:'Google Ads Management',desc:'Paid search campaigns on Google — we set up, optimise, and manage your ad spend.',features:['Campaign setup & targeting','Daily bid optimisation','Ad copy A/B testing','Weekly spend reports'],price:1999,period:'/month + ad spend'},
+  {id:'digitalmkt',icon:'📊',bg:'rgba(155,89,182,0.1)',name:'Digital Marketing Bundle',desc:'Complete digital marketing package — SEO + Social + Email in one bundle.',features:['Social media management','SEO monthly audit','Email marketing','Monthly performance report'],price:3499,period:'/month'},
+];
+
+const TLDS = {'.com':{reg:899,renew:1099},'.in':{reg:499,renew:699},'.co.in':{reg:399,renew:599},'.net':{reg:799,renew:999},'.org':{reg:699,renew:899},'.io':{reg:2999,renew:3499},'.co':{reg:1799,renew:1999},'.store':{reg:299,renew:1999},'.shop':{reg:299,renew:1999}};
+
+const PAY_HISTORY = [
+  {date:'May 15, 2025',service:'WhatsApp Campaigns',type:'Monthly',amount:'₹999',status:'Paid'},
+  {date:'May 15, 2025',service:'SEO & Content Marketing',type:'Monthly',amount:'₹2,499',status:'Paid'},
+  {date:'May 12, 2025',service:'Growth Website Plan',type:'One-Time',amount:'₹9,999',status:'Paid'},
+  {date:'Nov 15, 2024',service:'Cloud Hosting',type:'Annual',amount:'₹4,999',status:'Paid'},
+  {date:'Nov 15, 2024',service:'Domain spicegarden.in',type:'Annual',amount:'₹499',status:'Paid'},
+];
+
+const INVOICES = [
+  {id:'INV-2025-0512',desc:'Growth Website Plan',date:'May 12, 2025',amount:'₹9,999'},
+  {id:'INV-2025-0515',desc:'SEO + WhatsApp May',date:'May 15, 2025',amount:'₹3,498'},
+  {id:'INV-2024-1115',desc:'Cloud Hosting + Domain',date:'Nov 15, 2024',amount:'₹5,498'},
+];
+
+const NOTIFICATIONS = [
+  {icon:'✅',bg:'rgba(22,163,74,0.1)',title:'Website Design Approved!',sub:'Your homepage layout is approved. Development begins today.',time:'2 hrs ago',unread:true},
+  {icon:'🎨',bg:'rgba(200,134,10,0.1)',title:'New Layout Ready for Review',sub:'Your About and Services pages are ready. Please log in to review.',time:'1 day ago',unread:true},
+  {icon:'🔍',bg:'rgba(29,111,164,0.1)',title:'SEO Audit Completed',sub:'June SEO report: 12 improvements identified. 4 blog articles drafted.',time:'3 days ago',unread:true},
+  {icon:'🚀',bg:'rgba(22,163,74,0.1)',title:'Your Website is Now Live!',sub:'spicegarden.in is live on Google. Share it with your customers!',time:'May 12',unread:false},
+  {icon:'💳',bg:'rgba(245,184,53,0.15)',title:'Payment Due Reminder',sub:'₹3,498 is due on June 15 for your monthly services.',time:'Jun 1',unread:false},
+];
+
+const ADMIN_USERS = [
+  {name:'Rajesh Sharma',email:'rajesh@gmail.com',industry:'Restaurant',plan:'Growth',joined:'May 1',paid:'₹14,497',status:'active'},
+  {name:'Meena Kumar',email:'meena@gmail.com',industry:'Salon',plan:'Growth',joined:'May 8',paid:'₹9,999',status:'active'},
+  {name:'Arjun Sethi',email:'arjun@biz.in',industry:'E-Commerce',plan:'Professional',joined:'Jun 5',paid:'₹27,498',status:'progress'},
+  {name:'Priya Venkat',email:'priya@shop.com',industry:'Boutique',plan:'Startup',joined:'Jun 8',paid:'₹2,499',status:'pending'},
+  {name:'Karthik M.',email:'karthik@auto.in',industry:'Auto',plan:'Startup',joined:'Apr 20',paid:'₹4,998',status:'active'},
+];
+
+const ADMIN_PAYMENTS = [
+  {date:'Jun 10',user:'Arjun Sethi',service:'Professional Plan',amount:'₹24,999',type:'One-Time',status:'paid'},
+  {date:'Jun 10',user:'Arjun Sethi',service:'SEO Marketing',amount:'₹2,499',type:'Monthly',status:'paid'},
+  {date:'Jun 8',user:'Priya Venkat',service:'Startup Plan Lock',amount:'₹499',type:'Lock',status:'paid'},
+  {date:'Jun 5',user:'Meena Kumar',service:'WhatsApp Campaigns',amount:'₹999',type:'Monthly',status:'paid'},
+  {date:'Jun 1',user:'Karthik M.',service:'Domain .in',amount:'₹499',type:'Annual',status:'paid'},
+];
+
+const ADMIN_PROJECTS = [
+  {name:'E-Commerce Website — Arjun Sethi',plan:'Professional Plan',start:'Jun 5',progress:65,eta:'Jun 20',status:'In Dev',statusColor:'var(--blue)'},
+  {name:'Salon Website — Kavitha P.',plan:'Startup Plan',start:'Jun 8',progress:90,eta:'Jun 12',status:'Review',statusColor:'var(--amber)'},
+  {name:'Gym Website — Suresh K.',plan:'Growth Plan',start:'Jun 3',progress:40,eta:'Jun 22',status:'In Dev',statusColor:'var(--blue)'},
+  {name:'Hotel Booking Site — Raj Hotels',plan:'Professional Plan',start:'May 28',progress:30,eta:'Jun 25',status:'In Dev',statusColor:'var(--blue)'},
+  {name:'Tech Startup — NextGen AI',plan:'Growth Plan',start:'Jun 1',progress:85,eta:'Jun 15',status:'Review',statusColor:'var(--amber)'},
+];
+
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let cart = [], selIndustry = null, activeTlds = ['.com','.in','.co.in'];
+
+/* ══════════════════════════════════════════════════════
+   PAGE ROUTING
+══════════════════════════════════════════════════════ */
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  
+  const nav = document.getElementById('mainNav');
+  if (page !== 'home') {
+    nav.style.position = 'relative';
+    nav.style.display = 'none';
+    document.getElementById('mobileNav').classList.remove('open');
+    // Show mobile header in dashboards
+    const mobHeader = document.getElementById('mobDashHeader');
+    const tabsRow = document.getElementById('userTabsRow');
+    if (mobHeader) { mobHeader.style.display = window.innerWidth < 1100 ? 'flex' : 'none'; }
+    if (tabsRow) { tabsRow.style.display = window.innerWidth < 1100 ? 'flex' : 'none'; }
+  } else {
+    nav.style.position = 'fixed';
+    nav.style.display = '';
+    window.scrollTo(0,0);
+  }
+}
+
+function scrollToSection(id) {
+  showPage('home');
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+/* ══════════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════════ */
+let mobileNavOpen = false;
+function toggleMobileNav() {
+  mobileNavOpen = !mobileNavOpen;
+  document.getElementById('mobileNav').classList.toggle('open', mobileNavOpen);
+  const spans = document.querySelectorAll('#hamburgerBtn span');
+  if (mobileNavOpen) {
+    spans[0].style.transform = 'rotate(45deg) translate(5px,5px)';
+    spans[1].style.opacity = '0';
+    spans[2].style.transform = 'rotate(-45deg) translate(5px,-5px)';
+  } else {
+    spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+  }
+}
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
+});
+
+/* ══════════════════════════════════════════════════════
+   RENDER FUNCTIONS
+══════════════════════════════════════════════════════ */
+function renderIndustries() {
+  const g = document.getElementById('industriesGrid');
+  g.innerHTML = INDUSTRIES.map(i => `
+    <div class="ind-card ${selIndustry===i.id?'selected':''}" onclick="selectIndustry('${i.id}','${i.name}')">
+      <div class="ind-check">✓</div>
+      <div class="ind-icon">${i.icon}</div>
+      <div class="ind-name">${i.name}</div>
+      <div class="ind-count">${i.count}</div>
+    </div>`).join('');
+}
+
+function selectIndustry(id, name) {
+  selIndustry = id;
+  renderIndustries();
+  document.getElementById('indSelected').innerHTML = `<span>${name}</span> selected`;
+  showToast(INDUSTRIES.find(i=>i.id===id).icon + ' ' + name + ' selected!');
+}
+
+function renderPricing() {
+  document.getElementById('pricingGrid').innerHTML = PLANS.map(p => {
+    const inCart = cart.some(c => c.id === 'plan-' + p.id);
+    return `
+    <div class="pricing-card ${p.featured ? 'featured' : ''}">
+      ${p.featured ? '<div class="plan-ribbon">⭐ Most Popular</div>' : ''}
+      <div class="plan-head">
+        <div class="plan-tier">${p.tier}</div>
+        <div class="plan-name">${p.name}</div>
+        <div class="plan-tagline">${p.tagline}</div>
+      </div>
+      <div class="plan-price-block">
+        <div class="plan-price-row">
+          <span class="plan-curr">₹</span>
+          <span class="plan-amount">${p.price.toLocaleString('en-IN')}</span>
+          <span class="plan-per">one-time</span>
+        </div>
+        <div class="plan-orig">Was ₹${p.orig.toLocaleString('en-IN')}</div>
+        <div class="plan-note">✓ One-time payment, own your site forever</div>
+        <div class="plan-lock-note">🔒 Lock Amount: ₹${p.lockAmount.toLocaleString('en-IN')} to confirm project</div>
+      </div>
+      <div class="plan-features">
+        <div class="feat-label">What's Included</div>
+        ${p.features.map(f => `
+          <div class="feat-item">
+            <div class="feat-dot" style="background:${f.bg}">${f.icon}</div>
+            <div class="feat-info">
+              <div class="feat-title">${f.name}</div>
+              <div class="feat-sub">${f.sub}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="plan-footer">
+        <button class="plan-btn ${p.featured ? 'primary' : 'secondary'} ${inCart ? 'added' : ''}" 
+          onclick="addPlan('${p.id}', this)">
+          ${inCart ? '✓ Added to Cart' : 'Get ' + p.name + ' — ₹' + p.price.toLocaleString('en-IN')}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addPlan(id, btn) {
+  cart = cart.filter(c => !c.id.startsWith('plan-'));
+  const p = PLANS.find(x => x.id === id);
+  cart.push({id:'plan-'+id, name:p.name+' Website Development', sub:'One-time · Lock: ₹'+p.lockAmount.toLocaleString('en-IN'), price:p.price, icon:'🌐', section:'plan'});
+  updateCart(); renderPricing();
+  showToast('🌐 ' + p.name + ' Plan added to cart!');
+  openDrawer();
+}
+
+function renderHosting() {
+  document.getElementById('hostingGrid').innerHTML = HOSTING.map(h => {
+    const inCart = cart.some(c => c.id === 'host-' + h.id);
+    return `
+    <div class="hosting-card ${h.featured ? 'featured-host' : ''}">
+      ${h.featured ? '<div class="plan-ribbon" style="background:var(--grad-dark);position:absolute;top:4px;left:4px;right:4px;border-radius:10px;font-size:10px;text-align:center;padding:5px;color:#fff;font-weight:700">MOST POPULAR</div>' : ''}
+      <div style="margin-top:${h.featured?'36px':'0'}">
+        <div class="host-icon">${h.icon}</div>
+        <div class="host-name">${h.name}</div>
+        <div style="display:flex;align-items:flex-end;gap:4px;margin:8px 0">
+          <span style="font-size:14px;color:var(--text3)">₹</span>
+          <span class="host-price-main">${h.price.toLocaleString('en-IN')}</span>
+          <span class="host-price-per"> ${h.per}</span>
+        </div>
+        <div class="host-desc">${h.desc}</div>
+        <div class="host-features">
+          ${h.features.map(f => `<div class="host-feat">${f}</div>`).join('')}
+        </div>
+        <button class="host-btn ${h.featured ? 'primary' : 'secondary'} ${inCart ? '' : ''}" 
+          onclick="addHosting('${h.id}', this)">
+          ${inCart ? '✓ Added to Cart' : 'Add to Cart — ₹' + h.price.toLocaleString('en-IN') + '/yr'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addHosting(id, btn) {
+  cart = cart.filter(c => !c.id.startsWith('host-'));
+  const h = HOSTING.find(x => x.id === id);
+  cart.push({id:'host-'+id, name:h.name, sub:'Annual hosting plan', price:h.price, icon:'☁️', section:'hosting'});
+  updateCart(); renderHosting();
+  showToast('☁️ ' + h.name + ' added!');
+  openDrawer();
+}
+
+function renderMarketing() {
+  document.getElementById('marketingGrid').innerHTML = MARKETING.map(m => {
+    const sel = cart.some(c => c.id === 'mkt-' + m.id);
+    return `
+    <div class="mkt-card ${sel ? 'selected' : ''}" onclick="toggleMkt('${m.id}')">
+      <div class="mkt-top">
+        <div class="mkt-icon" style="background:${m.bg}">${m.icon}</div>
+        <div class="mkt-sel">${sel ? '✓' : ''}</div>
+      </div>
+      <div class="mkt-name">${m.name}</div>
+      <div class="mkt-desc">${m.desc}</div>
+      <div class="mkt-feats">${m.features.map(f => `<div class="mkt-feat">${f}</div>`).join('')}</div>
+      <div class="mkt-footer">
+        <div><span class="mkt-price">₹${m.price.toLocaleString('en-IN')}</span><span class="mkt-period">${m.period}</span></div>
+        <button class="mkt-btn ${sel ? 'added' : ''}" onclick="event.stopPropagation();toggleMkt('${m.id}')">
+          ${sel ? '✓ Added' : '+ Add'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMkt(id) {
+  const m = MARKETING.find(x => x.id === id);
+  if (cart.some(c => c.id === 'mkt-' + id)) {
+    cart = cart.filter(c => c.id !== 'mkt-' + id);
+    showToast(m.icon + ' ' + m.name + ' removed');
+  } else {
+    cart.push({id:'mkt-'+id, name:m.name, sub:'Monthly service', price:m.price, icon:m.icon, section:'mkt'});
+    showToast(m.icon + ' ' + m.name + ' added!');
+    openDrawer();
+  }
+  updateCart(); renderMarketing();
+}
+
+function initTlds() {
+  const row = document.getElementById('tldPills');
+  Object.keys(TLDS).forEach(tld => {
+    const pill = document.createElement('div');
+    pill.className = 'tld-pill' + (activeTlds.includes(tld) ? ' active' : '');
+    pill.textContent = tld;
+    pill.onclick = () => {
+      pill.classList.toggle('active');
+      if (activeTlds.includes(tld)) activeTlds = activeTlds.filter(x=>x!==tld);
+      else activeTlds.push(tld);
+    };
+    row.appendChild(pill);
+  });
+  renderDomainPricing();
+}
+
+function doSearch() {
+  const raw = document.getElementById('domainField').value.trim().toLowerCase().replace(/[^a-z0-9-]/g,'');
+  if (!raw) { showToast('Please enter a domain name'); return; }
+  const tlds = activeTlds.length ? activeTlds : ['.com','.in','.co.in'];
+  document.getElementById('domainResults').innerHTML = '<div class="search-anim"><div class="search-dot"></div><div class="search-dot"></div><div class="search-dot"></div></div>';
+  setTimeout(() => {
+    document.getElementById('domainResults').innerHTML = '<div class="domain-results">' +
+      tlds.map((tld,i) => {
+        const avail = i !== 0 || Math.random() > 0.4;
+        const p = TLDS[tld] || {reg:699,renew:899};
+        const inCart = cart.some(c => c.id === 'dom-' + raw + tld);
+        return `<div class="domain-result ${avail?'available':'taken'}">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="domain-name-display">${raw}<span>${tld}</span></div>
+            <span class="domain-tag ${avail?'av':'tk'}">${avail?'✓ Available':'✗ Taken'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            ${avail ? `
+              <div style="text-align:right">
+                <div class="domain-price-val">₹${p.reg.toLocaleString('en-IN')}</div>
+                <div class="domain-renew-info">1st yr · ₹${p.renew.toLocaleString('en-IN')} renew</div>
+              </div>
+              <button class="domain-add-btn ${inCart?'added':''}" onclick="addDomain('${raw+tld}',${p.reg},this)" ${inCart?'disabled':''}>
+                ${inCart ? '✓ Added' : 'Add →'}
+              </button>` :
+              `<button class="domain-add-btn taken-btn" disabled>Taken</button>`}
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+  }, 1000);
+}
+
+function addDomain(domain, price, btn) {
+  if (cart.some(c => c.id === 'dom-' + domain)) return;
+  cart.push({id:'dom-'+domain, name:domain, sub:'Domain · 1 year registration', price, icon:'🌐', section:'domain'});
+  btn.textContent = '✓ Added'; btn.className = 'domain-add-btn added'; btn.disabled = true;
+  updateCart(); showToast('🌐 ' + domain + ' added!');
+}
+
+function renderDomainPricing() {
+  document.getElementById('dpGrid').innerHTML = Object.entries(TLDS).map(([tld, p]) => `
+    <div class="domain-price-tile">
+      <div class="dp-tld">${tld}</div>
+      <div class="dp-price">₹${p.reg.toLocaleString('en-IN')}</div>
+      <div class="dp-renew">1st yr · ₹${p.renew.toLocaleString('en-IN')} renew</div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   CART
+══════════════════════════════════════════════════════ */
+function updateCart() {
+  document.getElementById('cartBadge').textContent = cart.length;
+  renderDrawer();
+}
+
+function openDrawer() {
+  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+  renderDrawer();
+}
+
+function closeDrawer() {
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+}
+
+function renderDrawer() {
+  const body = document.getElementById('drawerBody');
+  const foot = document.getElementById('drawerFooter');
+  if (!cart.length) {
+    body.innerHTML = `<div class="empty-cart">
+      <div class="empty-icon">🧳</div>
+      <h4>Your cart is empty</h4>
+      <p>Pick a website plan, register your domain, and add hosting and marketing services to get started.</p>
+    </div>`;
+    foot.style.display = 'none';
+    return;
+  }
+  const sections = {plan:'🌐 Website Plan', hosting:'☁️ Hosting Plan', domain:'🌐 Domain', mkt:'📢 Digital Marketing'};
+  let html = '';
+  ['plan','hosting','domain','mkt'].forEach(s => {
+    const items = cart.filter(c => c.section === s);
+    if (!items.length) return;
+    html += `<div class="cart-section-label">${sections[s]}</div>`;
+    items.forEach(i => {
+      html += `<div class="cart-item">
+        <div class="cart-item-icon">${i.icon}</div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${i.name}</div>
+          <div class="cart-item-sub">${i.sub}</div>
+        </div>
+        <div class="cart-item-right">
+          <div class="cart-item-price">₹${parseFloat(i.price).toLocaleString('en-IN')}</div>
+          <span class="cart-remove" onclick="removeItem('${i.id}')">✕ remove</span>
+        </div>
+      </div>`;
+    });
+  });
+  body.innerHTML = html;
+
+  const sub = cart.reduce((s,i) => s + (parseFloat(i.price)||0), 0);
+  const disc = sub > 15000 ? 2000 : sub > 8000 ? 1000 : 0;
+  const total = sub - disc;
+  const lockPlan = cart.find(c => c.section === 'plan');
+  const lockAmt = lockPlan ? PLANS.find(p => 'plan-'+p.id === lockPlan.id)?.lockAmount || 499 : 499;
+
+  document.getElementById('totalsBlock').innerHTML = `
+    <div class="totals-row"><span>Subtotal</span><span>₹${sub.toLocaleString('en-IN')}</span></div>
+    ${disc > 0 ? `<div class="totals-row"><span>Bundle Discount<span class="save-tag">Save ₹${disc.toLocaleString('en-IN')}</span></span><span class="text-green">−₹${disc.toLocaleString('en-IN')}</span></div>` : ''}
+    <div class="totals-row"><span>Setup & Onboarding</span><span class="text-green">FREE</span></div>
+    <div class="totals-row total"><span>Total</span><span class="t-val">₹${total.toLocaleString('en-IN')}</span></div>`;
+  
+  foot.style.display = 'block';
+}
+
+function removeItem(id) {
+  cart = cart.filter(c => c.id !== id);
+  updateCart(); renderPricing(); renderHosting(); renderMarketing();
+}
+
+/* ══════════════════════════════════════════════════════
+   CHECKOUT
+══════════════════════════════════════════════════════ */
+function openCheckout() {
+  if (!cart.length) return;
+  const sub = cart.reduce((s,i) => s + (parseFloat(i.price)||0), 0);
+  const disc = sub > 15000 ? 2000 : sub > 8000 ? 1000 : 0;
+  const total = sub - disc;
+  const lockPlan = cart.find(c => c.section === 'plan');
+  const lockAmt = lockPlan ? (PLANS.find(p => 'plan-'+p.id === lockPlan.id)?.lockAmount || 499) : 499;
+  const isDevProject = cart.some(c => c.section === 'plan');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="order-summary">
+      <h4>Order Summary</h4>
+      ${cart.map(i => `<div class="order-row"><span>${i.icon} ${i.name}</span><span>₹${parseFloat(i.price).toLocaleString('en-IN')}</span></div>`).join('')}
+      ${disc > 0 ? `<div class="order-row" style="color:var(--green)"><span>Bundle Discount</span><span>−₹${disc.toLocaleString('en-IN')}</span></div>` : ''}
+      <div class="order-row bold"><span>Order Total</span><span>₹${total.toLocaleString('en-IN')}</span></div>
+    </div>
+    ${isDevProject ? `
+    <div class="lock-box">
+      <div class="lock-box-title">🔒 Confirmation Lock Amount</div>
+      <div class="lock-box-amount">₹${lockAmt.toLocaleString('en-IN')}</div>
+      <div class="lock-box-desc">Pay this today to confirm your project. We immediately assign your project to a designer and start coordination. Remaining balance after design approval.</div>
+    </div>` : ''}
+    <div class="pay-methods">
+      <div class="pay-method active" onclick="switchPayMethod('card',this)"><span class="pm-icon">💳</span>Card</div>
+      <div class="pay-method" onclick="switchPayMethod('upi',this)"><span class="pm-icon">📱</span>UPI</div>
+      <div class="pay-method" onclick="switchPayMethod('netbanking',this)"><span class="pm-icon">🏦</span>NetBanking</div>
+    </div>
+    <div id="payFields">
+      <label class="form-label">Card Number</label>
+      <input class="form-input" placeholder="4111 1111 1111 1111" oninput="fmtCard(this)" maxlength="19">
+      <div class="input-row">
+        <div><label class="form-label">Expiry</label><input class="form-input" placeholder="MM / YY" maxlength="7"></div>
+        <div><label class="form-label">CVV</label><input class="form-input" placeholder="•••" maxlength="4"></div>
+      </div>
+      <label class="form-label">Name on Card</label>
+      <input class="form-input" placeholder="Full name">
+    </div>
+    <label class="form-label">Email Address</label>
+    <input class="form-input" placeholder="you@email.com" type="email">
+    <label class="form-label">WhatsApp Number</label>
+    <input class="form-input" placeholder="+91 98765 43210" type="tel">
+    <button class="pay-btn" onclick="processPayment(${isDevProject ? lockAmt : total}, ${total})">
+      🔒 ${isDevProject ? 'Pay Lock Amount ₹' + lockAmt.toLocaleString('en-IN') + ' & Confirm Project →' : 'Pay ₹' + total.toLocaleString('en-IN') + ' →'}
+    </button>
+    <div class="ssl-note">🔒 Secured by Razorpay · 256-bit SSL · PCI DSS Compliant</div>`;
+  
+  document.getElementById('checkoutModal').classList.add('open');
+  closeDrawer();
+}
+
+function closeCheckout() {
+  document.getElementById('checkoutModal').classList.remove('open');
+  document.getElementById('modalTitle').textContent = '🔐 Secure Checkout';
+  document.getElementById('modalCloseBtn').style.display = '';
+}
+
+function switchPayMethod(method, el) {
+  document.querySelectorAll('.pay-method').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const f = document.getElementById('payFields');
+  if (method === 'upi') f.innerHTML = '<label class="form-label">UPI ID</label><input class="form-input" placeholder="yourname@paytm or @gpay">';
+  else if (method === 'netbanking') f.innerHTML = '<label class="form-label">Select Bank</label><select class="form-input" style="cursor:pointer"><option>SBI</option><option>HDFC Bank</option><option>ICICI Bank</option><option>Axis Bank</option><option>Kotak Mahindra</option><option>Yes Bank</option><option>Other</option></select>';
+  else f.innerHTML = '<label class="form-label">Card Number</label><input class="form-input" placeholder="4111 1111 1111 1111" oninput="fmtCard(this)" maxlength="19"><div class="input-row"><div><label class="form-label">Expiry</label><input class="form-input" placeholder="MM / YY"></div><div><label class="form-label">CVV</label><input class="form-input" placeholder="•••"></div></div><label class="form-label">Name on Card</label><input class="form-input" placeholder="Full name">';
+}
+
+function fmtCard(el) { el.value = el.value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim(); }
+
+function processPayment(payNow, totalOrder) {
+  const btn = document.querySelector('.pay-btn');
+  btn.textContent = '⏳ Processing...'; btn.disabled = true;
+  setTimeout(() => {
+    const ordId = 'G4D' + Date.now().toString(36).toUpperCase().slice(-8);
+    document.getElementById('modalTitle').textContent = '';
+    document.getElementById('modalCloseBtn').style.display = 'none';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="success-screen">
+        <div class="success-emoji">🎉</div>
+        <div class="success-title">Project Confirmed!</div>
+        <div class="success-desc">Our team starts immediately. You'll receive a WhatsApp message within 2 hours with your onboarding form and project kickoff details.</div>
+        <div class="order-code">ORDER ${ordId}</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:24px">
+          Paid today: <strong style="color:var(--gold)">₹${payNow.toLocaleString('en-IN')}</strong>
+          ${totalOrder > payNow ? ` · Remaining: <strong>₹${(totalOrder-payNow).toLocaleString('en-IN')}</strong> due after design approval` : ''}
+        </div>
+        <div style="background:var(--gold-light);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:1.7">
+          📋 <strong>What happens next:</strong><br>
+          1. Project assigned to designer (within 2 hrs)<br>
+          2. WhatsApp message with onboarding form<br>
+          3. Layout review & content collection<br>
+          4. Website live within 24-48 hours
+        </div>
+        <div class="success-btns">
+          <button class="success-btn primary" onclick="closeCheckout();resetCart();showPage('user-dashboard')">View My Dashboard →</button>
+          <button class="success-btn secondary" onclick="closeCheckout();resetCart()">Continue Shopping</button>
+        </div>
+      </div>`;
+    showToast('🚀 Order confirmed! Check WhatsApp for updates.');
+  }, 2000);
+}
+
+function resetCart() {
+  cart = [];
+  updateCart(); renderPricing(); renderHosting(); renderMarketing();
+}
+
+/* ══════════════════════════════════════════════════════
+   DASHBOARD TABS
+══════════════════════════════════════════════════════ */
+function switchUserTab(tab) {
+  document.querySelectorAll('[id^="user-tab-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('user-tab-' + tab).style.display = 'block';
+  document.querySelectorAll('#userSidebar .sidebar-nav-item').forEach(el => el.classList.remove('active'));
+  const match = Array.from(document.querySelectorAll('#userSidebar .sidebar-nav-item')).find(el => el.getAttribute('onclick')?.includes("'"+tab+"'"));
+  if (match) match.classList.add('active');
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('[id^="admin-tab-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('admin-tab-' + tab).style.display = 'block';
+  document.querySelectorAll('#adminSidebar .sidebar-nav-item').forEach(el => el.classList.remove('active'));
+  const match = Array.from(document.querySelectorAll('#adminSidebar .sidebar-nav-item')).find(el => el.getAttribute('onclick')?.includes("'"+tab+"'"));
+  if (match) match.classList.add('active');
+}
+
+function switchSvcTab(tab) {
+  ['svcTab1','svcTab2','svcTab3','svcTab4'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER DASHBOARD DATA
+══════════════════════════════════════════════════════ */
+function renderPayHistory() {
+  document.getElementById('payHistoryTable').innerHTML = PAY_HISTORY.map(p => `
+    <tr>
+      <td>${p.date}</td>
+      <td>${p.service}</td>
+      <td><span class="status-badge ${p.type==='Monthly'?'progress':p.type==='Annual'?'active':'pending'}">${p.type}</span></td>
+      <td><strong>${p.amount}</strong></td>
+      <td><span class="status-badge active">✓ ${p.status}</span></td>
+      <td><button class="invoice-download" onclick="showToast('📄 Downloading invoice...')">PDF ↓</button></td>
+    </tr>`).join('');
+}
+
+function renderInvoices() {
+  document.getElementById('invoicesList').innerHTML = INVOICES.map(inv => `
+    <div class="invoice-item">
+      <div class="invoice-icon">🧾</div>
+      <div class="invoice-info">
+        <div class="invoice-id">${inv.id}</div>
+        <div class="invoice-desc">${inv.desc} · ${inv.date}</div>
+      </div>
+      <div class="invoice-amount">${inv.amount}</div>
+      <button class="invoice-download" onclick="showToast('📄 Downloading ${inv.id}...')">Download PDF ↓</button>
+    </div>`).join('');
+}
+
+function renderNotifications() {
+  document.getElementById('notifList').innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}">
+      <div class="notif-icon-wrap" style="background:${n.bg}">${n.icon}</div>
+      <div class="notif-text">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-sub">${n.sub}</div>
+      </div>
+      <div class="notif-time">${n.time}</div>
+    </div>`).join('');
+}
+
+function renderAdminUsers() {
+  const statusMap = {active:'active',progress:'progress',pending:'pending'};
+  document.getElementById('usersTableBody').innerHTML = ADMIN_USERS.map((u,i) => {
+    const initials = u.name.split(' ').map(n=>n[0]).join('');
+    const colors = ['linear-gradient(135deg,#C8860A,#F5B835)','linear-gradient(135deg,#1D6FA4,#4AA8D4)','linear-gradient(135deg,#16A34A,#4ADE80)','linear-gradient(135deg,#9333EA,#C084FC)','linear-gradient(135deg,#DC2626,#F87171)'];
+    return `<tr>
+      <td><div class="user-avatar-cell"><div class="user-avatar-sm" style="background:${colors[i%colors.length]}">${initials}</div><div><div style="font-weight:600">${u.name}</div><div style="font-size:11px;color:var(--text3)">${u.email}</div></div></div></td>
+      <td>${u.industry}</td>
+      <td><span class="status-badge ${u.plan==='Professional'?'progress':u.plan==='Growth'?'active':'pending'}">${u.plan}</span></td>
+      <td>${u.joined}</td>
+      <td><strong>${u.paid}</strong></td>
+      <td><span class="status-badge ${statusMap[u.status]}">${u.status==='active'?'✓ Active':u.status==='progress'?'⚙ In Dev':'⏳ Pending'}</span></td>
+      <td><div class="action-btns"><button class="action-btn view" onclick="showToast('👤 Viewing ${u.name}')">View</button><button class="action-btn edit" onclick="showToast('✉️ Notifying ${u.name}')">Notify</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAdminPayments() {
+  const statusColors = {paid:'active'};
+  document.getElementById('adminPayTable').innerHTML = ADMIN_PAYMENTS.map(p => `
+    <tr>
+      <td>${p.date}</td>
+      <td>${p.user}</td>
+      <td>${p.service}</td>
+      <td><strong>${p.amount}</strong></td>
+      <td><span class="status-badge ${p.type==='Monthly'?'progress':p.type==='Annual'?'active':p.type==='Lock'?'pending':'active'}">${p.type}</span></td>
+      <td><span class="status-badge active">✓ ${p.status}</span></td>
+    </tr>`).join('');
+}
+
+function renderAdminProjects() {
+  document.getElementById('projectsList').innerHTML = ADMIN_PROJECTS.map(p => `
+    <div class="dash-card" style="padding:20px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">${p.name}</div>
+          <div style="font-size:13px;color:var(--text3);margin-top:3px">${p.plan} · Started: ${p.start} · ETA: ${p.eta}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span class="task-tag" style="background:rgba(0,0,0,0.05);color:${p.statusColor};border:1px solid ${p.statusColor}30">${p.status}</span>
+          <button class="action-btn view" onclick="showToast('📋 Opening project details...')">View Details</button>
+          <button class="action-btn edit" onclick="showToast('🔔 Sending update notification...')">Notify Client</button>
+        </div>
+      </div>
+      <div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--text3)">Progress</span>
+          <span style="color:var(--gold);font-weight:700">${p.progress}%</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${p.progress}%"></div></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+function showToast(msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'all .3s'; setTimeout(() => t.remove(), 300); }, 2800);
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+renderIndustries();
+renderPricing();
+renderHosting();
+renderMarketing();
+initTlds();
+renderDrawer();
+renderPayHistory();
+renderInvoices();
+renderNotifications();
+renderAdminUsers();
+renderAdminPayments();
+renderAdminProjects();
+
+// Responsive check
+window.addEventListener('resize', () => {
+  const mobHeader = document.getElementById('mobDashHeader');
+  const tabsRow = document.getElementById('userTabsRow');
+  if (mobHeader && !document.getElementById('page-user-dashboard').classList.contains('active')) return;
+  if (mobHeader) mobHeader.style.display = window.innerWidth < 1100 ? 'flex' : 'none';
+  if (tabsRow) tabsRow.style.display = window.innerWidth < 1100 ? 'flex' : 'none';
+});
+</script>
+</body>
+</html>
