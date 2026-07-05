@@ -20,22 +20,16 @@ Dev URL:       mr-travels-dev.get4domain.com
 ## CURRENT STATUS
 
 ```
-Phase:   P002 (frontend) in progress — EP01 ChatGPT review still pending
-Status:  Bolt frontend (full site: public pages + admin/staff/portal
-         dashboards) was copied into
-         CLIENT_PROJECTS/TRAVEL/CLIENTS/MR_TRAVELS_001/frontend and had
-         mixed Next.js/Tailwind config from a stale P001 install.
-         Claude Code reconciled dependencies (Next 13.5.1 + Tailwind v3
-         aligned across node_modules/package.json/lockfile), removed
-         duplicate config files, fixed two Next-13.5.1 Metadata API
-         incompatibilities, and verified npm run build / typecheck /
-         dev all pass with zero errors. No UI/business logic changed.
-         Committed 069b423 and pushed to origin/develop (2026-07-05).
-         NOTE: this reconciliation was performed directly on a
-         pre-existing Bolt export ahead of the normal EP01 approval
-         gate — the Engineering Package itself still awaits ChatGPT
-         architecture/solution/quality review and final approval.
-Owner:   ChatGPT (EP01 review & approval); Bolt (remaining P002 UI work)
+Phase:   P003 — Backend + Database (in progress)
+Status:  EP01 approved by ChatGPT on 2026-07-05. P002 (frontend UI) is
+         complete. P003 backend foundation is complete: RBAC,
+         Authentication (JWT access + refresh), Users, Roles,
+         Permissions modules, Prisma platform schema, Swagger docs, and
+         seed data are implemented and verified (npm install / build /
+         lint / dev all pass). Business modules (Bookings, Packages,
+         Fleet, CRM, Finance, Customer Portal, Staff Modules, Reports,
+         etc.) are still pending under P003.
+Owner:   Claude Code (P003 backend) — in progress
 ```
 
 ---
@@ -43,14 +37,16 @@ Owner:   ChatGPT (EP01 review & approval); Bolt (remaining P002 UI work)
 ## WHAT HAPPENS NEXT
 
 ```
-Step 1:  Claude Code generates Engineering Package (20 documents) — EP01
-Step 2:  Documents placed in client docs/ folder
-Step 3:  ChatGPT reviews (architecture / solution / quality) and gives final approval
-Step 4:  ChatGPT issues P002/P003 phase prompt
-Step 5:  Claude Code reads all 6 session files + all 20 docs/ documents
-Step 6:  Claude Code executes the instructed phase
-Step 7:  Claude Code reports completion
-Step 8:  ChatGPT reviews and issues next phase prompt
+Step 1:  ChatGPT reviewed the Engineering Package and gave final approval — done
+Step 2:  P002 (frontend UI) completed — done
+Step 3:  P003 backend foundation (RBAC, Authentication, Users, Roles,
+         Permissions, Prisma platform schema, JWT, Swagger, Seed) completed — done
+Step 4:  Configure PostgreSQL for this project
+Step 5:  Run Prisma migrations against that database
+Step 6:  Seed the database (system roles + bootstrap super admin)
+Step 7:  Continue implementing the remaining business modules under P003
+Step 8:  Claude Code reports P003 completion to ChatGPT
+Step 9:  ChatGPT reviews and issues the P004 phase prompt
 ```
 
 ---
@@ -89,9 +85,9 @@ Claude Code must generate all 20 files into client docs/ before P002/P003
 |-------|-------------|-----------|-------------------------------------|
 | P000  | Complete    | 2025-07-04| Get4Domain workspace initialized    |
 | P001  | Complete    | 2026-07-05| Engineering foundation scaffolded   |
-| EP01  | Complete (generation) | 2026-07-05 | 20 docs + 5 phase prompts generated in client repo `docs/` and `engineering/prompts/`; pending ChatGPT review |
-| P002  | In progress | —         | Bolt frontend copied in + dependencies reconciled (commit 069b423, pushed to origin/develop); UI/business logic untouched; EP01 approval still pending |
-| P003  | Not started | —         | Waits for EP01 approval              |
+| EP01  | Complete (approved) | 2026-07-05 | 20 docs + 5 phase prompts generated; ChatGPT reviewed and gave final approval 2026-07-05 |
+| P002  | Complete    | 2026-07-05| Frontend UI complete.               |
+| P003  | In progress | —         | Backend foundation complete: RBAC, Authentication (JWT access + refresh), Users, Roles, Permissions modules, Prisma platform schema (`Role`/`Permission`/`RolePermission`/`User`/`RefreshToken`), Swagger docs, and seed script. Business modules (Bookings, Packages, Fleet, CRM, Finance, Customer Portal, Staff Modules, Reports, etc.) still pending. Next milestone: configure PostgreSQL, run Prisma migrations, seed the database, then continue implementing remaining business modules. |
 | P004  | Not started | —         | Waits for P002 + P003               |
 | P005  | Not started | —         | Waits for P004                      |
 | P006  | Not started | —         | Waits for payment + written approval|
