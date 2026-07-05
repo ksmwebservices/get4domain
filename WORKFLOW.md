@@ -5,11 +5,14 @@
 
 ## Three-Tool Workflow
 
-| Tool        | Role                | Never Does                          |
-|-------------|---------------------|-------------------------------------|
-| ChatGPT     | Architect / Analyst | Write code                          |
-| Bolt        | UI Builder          | Backend, database, APIs             |
-| Claude Code | Engineer            | Generate requirements, design UI    |
+| Tool        | Role                            | Never Does                                |
+|-------------|-----------------------------------|---------------------------------------------|
+| ChatGPT     | Business Consultant / Reviewer  | Write code, write engineering documents      |
+| Bolt        | UI Builder                      | Backend, database, APIs                       |
+| Claude Code | Engineer                        | Design UI                                      |
+
+Claude Code is authorized to generate and maintain the Engineering Package
+for approved projects following Get4Domain Engineering Standards.
 
 ---
 
@@ -22,13 +25,17 @@ P000  Workspace Setup
 
 P001  Client Project Initialization
       Owner: Claude Code | Once per client
-      Gate:  Engineering Package must be delivered first
+  ↓
+
+EP01  Engineering Package Generation
+      Owner: Claude Code | Generates the 20-document Engineering Package
+      Gate:  ChatGPT reviews (architecture/solution/quality) and gives final approval
   ↓
 
 P002  Frontend UI (Bolt)          P003  Backend + Database (Claude)
       Runs in PARALLEL ←────────────────→ Runs in PARALLEL
-      Gate: P001 complete               Gate: P001 complete
-            Engineering Package ready        Engineering Package ready
+      Gate: P001 complete                Gate: P001 complete
+            EP01 approved                     EP01 approved
   ↓
 
 P004  Integration
@@ -50,10 +57,11 @@ P006  Deployment
 
 ---
 
-## Engineering Package (required before P001)
+## Engineering Package (required before P002/P003)
 
-ChatGPT delivers 20 documents to client docs/ folder.
-Claude Code reads ALL before writing any code.
+Claude Code generates 20 documents into the client's docs/ folder (phase EP01).
+ChatGPT reviews and gives final approval before Claude Code writes any code
+for P002 (handed to Bolt) or P003.
 
 ```
 01_PROJECT_BRIEF.md          11_UI_SPECIFICATION.md
@@ -73,9 +81,11 @@ Claude Code reads ALL before writing any code.
 ## Phase Gate Process
 
 ```
-ChatGPT generates Engineering Package
+Claude Code generates Engineering Package (EP01)
        ↓
 Documents placed in client docs/
+       ↓
+ChatGPT reviews (architecture / solution / quality) and gives final approval
        ↓
 ChatGPT issues phase prompt to Claude Code
        ↓
@@ -109,6 +119,13 @@ Claude Code NEVER auto-advances to the next phase.
 - Configures Prisma (empty schema)
 - Docker, Nginx, Git setup
 - Prompt: engineering/prompts/phases/P001-PROJECT-INIT.md
+
+### EP01 — Engineering Package Generation (Claude Code)
+- Generates all 20 Engineering Package documents into client docs/
+- Cross-references all documents internally
+- No source code, no UI, no backend implementation
+- Submits package to ChatGPT for architecture / solution / quality review
+- Prompt: engineering/prompts/phases/EP01-ENGINEERING-PACKAGE.md
 
 ### P002 — Frontend UI (Bolt)
 - Public website
@@ -193,6 +210,7 @@ Status: Complete
 engineering/prompts/phases/
 ├── P000-WORKSPACE-INIT.md
 ├── P001-PROJECT-INIT.md
+├── EP01-ENGINEERING-PACKAGE.md
 ├── P002-BOLT-UI.md
 ├── P003-BACKEND.md
 ├── P004-INTEGRATION.md
