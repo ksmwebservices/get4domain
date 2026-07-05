@@ -1,196 +1,56 @@
-# Travel & Tours — API Guide
-# Get4Domain Engineering Standard v1.0
-# Status: TEMPLATE — Verify and expand after MR_TRAVELS_001 P003 is complete
+# Travel & Tours — Industry Reference: API Guide
+# Get4Domain Engineering Standard v1.1
 
 ---
 
-## Base URL
+## Purpose
 
-```
-Development:  http://localhost:3001/api/v1
-Production:   https://{client-domain}/api/v1
-Swagger:      http://localhost:3001/api/docs  (dev only)
-```
+Recurring REST API patterns for travel & tours engagements, on top of the
+platform-wide conventions (base path `/api/v1`, standard response envelope,
+pagination shape — `C:\Get4Domain\CLAUDE.md` §9, restated per-client in that
+client's own `10_API_SPECIFICATION.md` §2). Patterns here are illustrative;
+a client's own `10_API_SPECIFICATION.md` is the authoritative contract
+(see `MR_TRAVELS_001/docs/10_API_SPECIFICATION.md` for a worked example).
 
----
+## Pattern: Reservation Detail as Sub-Resources of Booking
 
-## Standard Response Format
+Expose reservation types as nested resources under the master booking,
+e.g. `POST /bookings/:bookingId/flight`, `POST /bookings/:bookingId/hotel`,
+rather than top-level `/flight-bookings`, `/hotel-bookings` resources —
+this mirrors the one-master-record data pattern (`DB_GUIDE.md`) and keeps
+authorization checks (can this caller act on this booking?) in one place.
 
-All responses use the global ResponseInterceptor:
+## Pattern: System-Invoked Endpoints Are Not Client-Facing
 
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "message": "Success",
-  "data": {},
-  "timestamp": "2025-07-04T00:00:00.000Z"
-}
-```
+Some state changes should only ever be triggered by another service, never
+called directly by the frontend — e.g. seat-count adjustment on a fixed
+departure, or notification creation on a business event. Document these
+explicitly as "system-invoked" in the API spec so P004 integration doesn't
+accidentally wire a UI button directly to them.
 
-Error response:
-```json
-{
-  "success": false,
-  "statusCode": 404,
-  "message": "Booking not found",
-  "timestamp": "2025-07-04T00:00:00.000Z",
-  "path": "/api/v1/bookings/abc-123",
-  "method": "GET"
-}
-```
+## Pattern: Ownership Filtering Is a Service-Layer Concern
 
----
+"Own" scoping (a sales executive sees only their assigned leads/bookings; a
+customer sees only their own records) is implemented as a `where` filter
+added by the service layer from the authenticated principal — never as a
+query parameter the client supplies and the server trusts.
 
-## Authentication
+## Pattern: Role-Gated State Transitions
 
-```
-Header: Authorization: Bearer {accessToken}
-Token expiry: 15 minutes
-Refresh: POST /api/v1/auth/refresh  { refreshToken: "..." }
-```
+Status transitions with financial or compliance consequences (issuing or
+cancelling a GST invoice, confirming a booking, voiding a payment) should
+be dedicated action endpoints (`POST /invoices/:id/issue`) with their own
+role restriction, distinct from the general `PATCH` used for field edits —
+this keeps the audit trail and the permission model precise.
 
----
+## Pattern: Reports as a Read-Only Aggregation Layer
 
-## Pagination (all list endpoints)
+Cross-module reporting endpoints (`/reports/...`) typically have no owned
+entity — they aggregate over the transactional entities. Scope them last,
+after the entities they read from are finalized.
 
-Query params: `?page=1&limit=10&search=text&sortBy=createdAt&sortOrder=desc`
+## Dependencies
 
-Response data shape for lists:
-```json
-{
-  "data": [...],
-  "meta": {
-    "total": 100,
-    "page": 1,
-    "limit": 10,
-    "totalPages": 10,
-    "hasNextPage": true,
-    "hasPrevPage": false
-  }
-}
-```
-
----
-
-## Endpoint Reference
-
-### Auth
-```
-POST   /auth/login              Public
-POST   /auth/refresh            Public
-POST   /auth/logout             JWT required
-GET    /auth/me                 JWT required
-```
-
-### Users
-```
-GET    /users                   ADMIN, MANAGER
-POST   /users                   ADMIN
-GET    /users/:id               ADMIN, MANAGER
-PATCH  /users/:id               ADMIN
-DELETE /users/:id               ADMIN (soft delete)
-PATCH  /users/:id/status        ADMIN
-```
-
-### Packages
-```
-GET    /packages                All roles
-POST   /packages                ADMIN, MANAGER
-GET    /packages/:id            All roles
-PATCH  /packages/:id            ADMIN, MANAGER
-DELETE /packages/:id            ADMIN
-```
-
-### Vehicles
-```
-GET    /vehicles                ADMIN, MANAGER, STAFF
-POST   /vehicles                ADMIN
-GET    /vehicles/:id            ADMIN, MANAGER, STAFF
-PATCH  /vehicles/:id            ADMIN, MANAGER
-DELETE /vehicles/:id            ADMIN
-PATCH  /vehicles/:id/status     ADMIN, MANAGER
-```
-
-### Drivers
-```
-GET    /drivers                 ADMIN, MANAGER, STAFF
-POST   /drivers                 ADMIN
-GET    /drivers/:id             ADMIN, MANAGER, STAFF
-PATCH  /drivers/:id             ADMIN, MANAGER
-DELETE /drivers/:id             ADMIN
-PATCH  /drivers/:id/status      ADMIN, MANAGER
-GET    /drivers/:id/trips       ADMIN, MANAGER
-```
-
-### Bookings
-```
-GET    /bookings                ADMIN, MANAGER, STAFF
-POST   /bookings                ADMIN, MANAGER, STAFF
-GET    /bookings/:id            ADMIN, MANAGER, STAFF
-PATCH  /bookings/:id            ADMIN, MANAGER
-DELETE /bookings/:id            ADMIN
-POST   /bookings/:id/confirm    ADMIN, MANAGER
-POST   /bookings/:id/assign     ADMIN, MANAGER
-POST   /bookings/:id/cancel     ADMIN, MANAGER
-```
-
-### Trip Sheets
-```
-GET    /tripsheets              ADMIN, MANAGER
-POST   /tripsheets              ADMIN, MANAGER, STAFF
-GET    /tripsheets/:id          ADMIN, MANAGER, STAFF
-PATCH  /tripsheets/:id          ADMIN, MANAGER
-POST   /tripsheets/:id/start    ADMIN, MANAGER
-POST   /tripsheets/:id/close    ADMIN, MANAGER
-```
-
-### Corporate
-```
-GET    /corporate-clients       ADMIN, MANAGER
-POST   /corporate-clients       ADMIN
-GET    /corporate-clients/:id   ADMIN, MANAGER
-PATCH  /corporate-clients/:id   ADMIN
-GET    /corporate-clients/:id/contracts       ADMIN, MANAGER
-POST   /corporate-clients/:id/contracts       ADMIN
-PATCH  /corporate-clients/:id/contracts/:cid  ADMIN
-```
-
-### Invoices
-```
-GET    /invoices                ADMIN, MANAGER
-POST   /invoices                ADMIN, MANAGER
-GET    /invoices/:id            ADMIN, MANAGER
-POST   /invoices/generate       ADMIN, MANAGER
-GET    /invoices/:id/pdf        ADMIN, MANAGER
-PATCH  /invoices/:id/paid       ADMIN
-DELETE /invoices/:id            ADMIN
-```
-
-### Accounts
-```
-GET    /accounts                ADMIN, MANAGER
-POST   /accounts                ADMIN, MANAGER
-GET    /accounts/:id            ADMIN, MANAGER
-PATCH  /accounts/:id            ADMIN
-DELETE /accounts/:id            ADMIN
-GET    /accounts/summary        ADMIN, MANAGER
-```
-
-### Reports
-```
-GET    /reports/bookings        ADMIN, MANAGER
-GET    /reports/revenue         ADMIN, MANAGER
-GET    /reports/vehicles        ADMIN, MANAGER
-GET    /reports/drivers         ADMIN, MANAGER
-GET    /reports/corporate       ADMIN, MANAGER
-```
-
----
-
-## Notes (fill after MR_TRAVELS_001 P003)
-
-- [ ] Document any endpoint additions made during implementation
-- [ ] Document any DTO validation patterns worth reusing
-- [ ] Add rate limiting notes per endpoint category
-- [ ] Note any PDF generation library used for invoices
+- `DB_GUIDE.md` for the entity patterns these endpoints expose.
+- Client's own `10_API_SPECIFICATION.md` for the authoritative contract.
+- Client's own `12_SECURITY_SPECIFICATION.md` for auth/authz detail.

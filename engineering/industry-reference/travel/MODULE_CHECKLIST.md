@@ -1,157 +1,88 @@
-# Travel & Tours — Module Checklist
-# Get4Domain Engineering Standard v1.0
-# Use: Copy this checklist for every new travel industry client
+# Travel & Tours — Industry Reference: Module Scoping Checklist
+# Get4Domain Engineering Standard v1.1
 
 ---
 
-## How to Use
+## Purpose
 
-1. Copy this file into the new client's P001 task tracker
-2. Check off items as each phase is completed
-3. Add client-specific notes in the Notes column
-4. Update IMPLEMENTATION_NOTES.md with any deviations
+A scoping worksheet for EP01 — a set of questions to ask about a new travel
+client, organized by the categories in `MODULES.md`. This is a prompt for
+discussion, not a required or excluded module list. The client's own
+`05_SCOPE.md` and `00_ENGINEERING_INDEX.md` §3 (module registry) are the
+authoritative, approved output of this scoping exercise — this checklist
+never overrides them, and does not itself get copied into a client repo
+(`REPOSITORY_RULES.md` Rule 3).
 
----
+## Sales & CRM
 
-## P001 — Project Initialization
+- [ ] Does the client need lead source tracking, or do all customers arrive
+      pre-qualified (e.g. purely referral/repeat business)?
+- [ ] Is there a dedicated sales team needing lead assignment/reassignment,
+      or is this a small team where every lead is visible to everyone?
 
-- [ ] Next.js + TypeScript + Tailwind + shadcn/ui initialized
-- [ ] NestJS strict TypeScript initialized
-- [ ] Prisma configured (empty schema)
-- [ ] Docker Compose (postgres, backend, frontend, pgadmin)
-- [ ] Multi-stage Dockerfiles (backend + frontend)
-- [ ] Nginx reverse proxy config
-- [ ] Global exception filter wired
-- [ ] Global response interceptor wired
-- [ ] Global validation pipe wired
-- [ ] Common decorators (CurrentUser, Roles, Public)
-- [ ] Module shells: auth, users, roles, permissions
-- [ ] Backend build: 0 errors
-- [ ] Frontend build: 0 errors
+## Product Catalog
 
----
+- [ ] Does the client sell pre-defined tour packages, fully custom
+      itineraries, fixed-departure group tours, or some combination?
+- [ ] Domestic only, international only, or both?
 
-## P003 — Backend Modules
+## Reservations
 
-### Foundation (always first)
-- [ ] Prisma schema — all models per DB_GUIDE.md
-- [ ] `npx prisma migrate dev`
-- [ ] `npx prisma generate`
+- [ ] Which individual service types does the client actually book:
+      flights? hotels? buses? trains? cabs? other ground transport?
+      Only include what's actually sold — don't default to "all of them"
+      or "none of them."
 
-### Auth + Users (always before business modules)
-- [ ] auth module — login, refresh, logout, me
-- [ ] JWT access token (15m) + refresh token (7d)
-- [ ] users module — CRUD + soft delete
-- [ ] roles module
-- [ ] permissions module
-- [ ] JWT guard wired globally (APP_GUARD)
+## Fleet & Operations
 
-### Core Travel Modules
-- [ ] packages module (tour package catalog)
-- [ ] vehicles module (fleet + status)
-- [ ] drivers module (profiles + status)
+- [ ] Does the client own or contract its own vehicles/drivers, or does it
+      purely resell third-party transport/accommodation?
+- [ ] Is there a supplier directory need (multiple hotels/operators/
+      airlines/visa agents/insurance providers/forex dealers)?
 
-### Booking Flow
-- [ ] bookings module (full lifecycle: pending → confirmed → in-progress → completed)
-- [ ] booking assignment (vehicle + driver)
-- [ ] booking number auto-generation (BK-YYYYMMDD-XXXX)
-- [ ] tripsheets module (open → closed)
-- [ ] trip odometer + expense tracking
+## Travel Services (ancillary)
 
-### Revenue Modules
-- [ ] corporate-clients module
-- [ ] corporate contracts
-- [ ] invoices module
-- [ ] GST calculation (CGST/SGST intrastate, IGST interstate)
-- [ ] invoice number auto-generation (INV-YYYYMMDD-XXXX)
-- [ ] PDF generation for invoices
-- [ ] accounts module (income/expense)
+- [ ] Does the client facilitate passports? Visas? Sell travel insurance?
+      Handle forex? Each is independently optional.
 
-### Reports
-- [ ] bookings report (date range, status filter)
-- [ ] revenue report (daily/weekly/monthly grouping)
-- [ ] vehicles report (utilization)
-- [ ] drivers report (trips, earnings)
-- [ ] corporate report (per client)
+## Sales Operations
 
-### Seed Data
-- [ ] Default roles seeded
-- [ ] Super admin user seeded
-- [ ] Sample tour packages (3–5)
-- [ ] Sample vehicles (3–5)
-- [ ] Sample drivers (3–5)
+- [ ] Quotation-to-booking conversion — almost always needed if there's any
+      sales process at all before a booking is confirmed.
 
-### Verification
-- [ ] Backend build: 0 errors
-- [ ] Backend lint: 0 errors
-- [ ] All endpoints visible in Swagger
-- [ ] Auth endpoints tested (login, refresh, logout)
-- [ ] CRUD tested for each module
+## Finance
 
----
+- [ ] Is GST-compliant invoicing required (almost always, for India)?
+- [ ] Is a full accounting ledger in scope, or just payment recording?
+- [ ] Is expense tracking/approval needed, or handled outside the system?
+- [ ] Is payment gateway integration in scope for v1, or manual recording
+      only? (Manual recording is a common v1 default — see
+      `IMPLEMENTATION_NOTES.md`.)
 
-## P002 — Frontend (Bolt)
+## Analytics
 
-- [ ] Login page
-- [ ] Dashboard with summary cards
-- [ ] Bookings list + create form + detail
-- [ ] Packages list + manage
-- [ ] Vehicles list + status management
-- [ ] Drivers list + status management
-- [ ] Trip sheets list + detail
-- [ ] Corporate clients + contracts
-- [ ] Invoices list + PDF download button
-- [ ] Accounts list + summary
-- [ ] Reports page
-- [ ] Responsive layout (mobile + desktop)
-- [ ] Status badges for all modules
-- [ ] Frontend build: 0 errors
+- [ ] Which reports does the business actually use to make decisions today
+      (even informally, e.g. in a spreadsheet)? Scope reporting around
+      those, not a generic "dashboard."
 
----
+## Portals
 
-## P004 — Integration
+- [ ] Does the client want customers to self-serve (view bookings/
+      documents/payments), or is everything staff-mediated?
+- [ ] Is there a need for the client to administer their own staff roles,
+      or will Get4Domain manage role changes as a service?
 
-- [ ] Auth flow wired (login, refresh, logout, protected routes)
-- [ ] Booking CRUD connected
-- [ ] Vehicle management connected
-- [ ] Driver management connected
-- [ ] Trip sheet connected
-- [ ] Corporate module connected
-- [ ] Invoice generation connected
-- [ ] PDF download working
-- [ ] Accounts connected
-- [ ] Reports data loading
-- [ ] Loading states on all pages
-- [ ] Error handling on all forms
-- [ ] Success toasts on all mutations
+## Platform
 
----
+- [ ] Custom role/permission administration by the client, or fixed roles
+      set at launch?
+- [ ] Notification channels needed: email? SMS? WhatsApp? in-app only?
+- [ ] Central document storage with expiry tracking (compliance documents,
+      ID proofs, tickets)?
 
-## P005 — Testing
+## Dependencies
 
-- [ ] Backend build: 0 errors
-- [ ] Backend lint: 0 errors
-- [ ] Frontend build: 0 errors
-- [ ] Frontend lint: 0 errors
-- [ ] Auth unit tests
-- [ ] GST calculation unit tests
-- [ ] Booking service unit tests
-- [ ] Invoice generation unit tests
-- [ ] Docker build: both images
-- [ ] Health check endpoint: 200 OK
-- [ ] Security checklist complete
-
----
-
-## P006 — Deployment
-
-- [ ] Production .env configured
-- [ ] Database migration on production
-- [ ] Docker production build successful
-- [ ] Nginx + SSL configured
-- [ ] Dev URL working: {client}-dev.get4domain.com
-- [ ] Production URL working
-- [ ] Daily backup cron configured
-- [ ] Admin credentials handed to client
-- [ ] Client training completed
-- [ ] Project marked complete in PROJECT_REGISTRY.json
+- `MODULES.md` for the category definitions this checklist walks through.
+- Client's own `05_SCOPE.md` and `00_ENGINEERING_INDEX.md` §3 for the
+  authoritative, approved scope and module registry produced from this
+  exercise.

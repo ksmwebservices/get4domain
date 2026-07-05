@@ -1,114 +1,55 @@
-# Travel & Tours — UI Guide
-# Get4Domain Engineering Standard v1.0
-# Status: TEMPLATE — Fill after MR_TRAVELS_001 P002 is complete
+# Travel & Tours — Industry Reference: UI Guide
+# Get4Domain Engineering Standard v1.1
 
 ---
 
-## Stack
+## Purpose
 
-```
-Framework:    Next.js (App Router)
-Language:     TypeScript
-Styling:      Tailwind CSS
-Components:   shadcn/ui
-Icons:        Lucide React
-Forms:        React Hook Form + Zod
-State:        Zustand
-Server state: TanStack React Query
-HTTP:         Axios
-```
+Recurring UI/portal patterns for travel & tours engagements, for Bolt to
+consult alongside a client's own `11_UI_SPECIFICATION.md` (authoritative)
+during P002. Framework is fixed platform-wide: Tailwind CSS + shadcn/ui
+(`C:\Get4Domain\CLAUDE.md` §5) — not revisited per industry.
 
----
+## Common Portal Shape
 
-## Page Map
+- **Customer Portal** (if in scope for the engagement) — self-service: own
+  bookings, quotations, invoices, payment status (view only, no payment
+  gateway unless separately scoped), documents, and a way to request
+  custom packages or track passport/visa requests if those services are
+  offered.
+- **Staff Portal** — one shell, role-filtered navigation and data; sales,
+  operations, and accounts roles typically see different modules, not a
+  stripped-down copy of each other's screens.
+- **Admin Portal** — superset of the Staff Portal plus user/role
+  administration, notification templates, and system settings.
 
-### Public (no auth)
-```
-/              → Landing or redirect to /login
-/login         → Login form
-/forgot-password → Password reset
-```
+## Pattern: Permission-Driven Navigation
 
-### Protected (auth required)
-```
-/dashboard              → Summary cards: bookings today, vehicles, drivers
-/bookings               → Booking list + create
-/bookings/:id           → Booking detail + actions
-/packages               → Tour packages list + manage
-/vehicles               → Fleet list + status
-/vehicles/:id           → Vehicle detail + trip history
-/drivers                → Driver list + status
-/drivers/:id            → Driver detail + trip history
-/tripsheets             → Trip sheet list
-/tripsheets/:id         → Trip sheet detail
-/corporate              → Corporate clients list
-/corporate/:id          → Client detail + contracts
-/invoices               → Invoice list + generate
-/invoices/:id           → Invoice detail + PDF download
-/accounts               → Income/expense list
-/reports                → Reports dashboard
-/settings               → System settings
-/profile                → User profile
-```
+Generate sidebar navigation from the authenticated user's permission set
+(the client's own `/auth/me`-equivalent endpoint), not hardcoded per role
+in the frontend — this keeps the UI in sync when an admin creates a custom
+role at runtime without requiring a frontend deploy.
 
----
+## Common Shared Components
 
-## Dashboard Cards (summary view)
+- **DataTable** — sort/filter/paginate, used by nearly every list screen.
+- **StatusBadge** — color-coded by enum value (lead status, booking status,
+  invoice status, quotation status, expense status). Exact enum values and
+  colors are defined per client, matching that client's own database enums
+  — do not assume a fixed status set across engagements.
+- **FormField** — wraps input/select/date-picker with validation, used by
+  every create/edit form.
+- **ConfirmDialog** — for destructive/irreversible actions (cancel booking,
+  issue invoice, delete).
+- **FileUploader** — document upload, showing an expiry-date field when the
+  document type requires one (RC, insurance, license, etc.).
+- **SeatMeter** — availability indicator for fixed-departure inventory,
+  where fixed departures are in scope.
+- **Timeline** — chronological activity/interaction history for a lead or
+  customer.
 
-```
-Today's Bookings    (count + status breakdown)
-Active Vehicles     (count + available vs on-trip)
-Available Drivers   (count)
-Revenue This Month  (INR amount)
-Pending Invoices    (count + total amount)
-Upcoming Trips      (next 7 days list)
-```
+## Dependencies
 
----
-
-## Standard Page Layout
-
-```
-Sidebar (desktop) / Drawer (mobile)
-  └── Navigation links (icons + labels)
-      └── Active state highlight
-
-Top Header
-  ├── Page title + breadcrumb
-  ├── Action button (e.g. "New Booking")
-  └── User avatar + dropdown (profile, logout)
-
-Content Area
-  ├── Filter bar (search + dropdowns + date range)
-  ├── Data table (sortable columns + pagination)
-  └── Empty state (when no data)
-```
-
----
-
-## Status Badge Colors
-
-| Status        | Color  | Module       |
-|---------------|--------|--------------|
-| PENDING       | Yellow | Booking      |
-| CONFIRMED     | Blue   | Booking      |
-| IN_PROGRESS   | Purple | Booking      |
-| COMPLETED     | Green  | Booking      |
-| CANCELLED     | Red    | Booking      |
-| AVAILABLE     | Green  | Vehicle, Driver |
-| ON_TRIP       | Blue   | Vehicle, Driver |
-| MAINTENANCE   | Orange | Vehicle      |
-| LEAVE         | Yellow | Driver       |
-| INACTIVE      | Gray   | All          |
-| PAID          | Green  | Invoice      |
-| UNPAID        | Red    | Invoice      |
-
----
-
-## Notes (fill after MR_TRAVELS_001 P002)
-
-- [ ] Document component patterns worth reusing
-- [ ] Document form validation UX decisions
-- [ ] Add screenshots of key screens
-- [ ] Note mobile-specific layout decisions
-- [ ] Document Tamil language support approach (if implemented)
+- `MODULES.md` for which categories typically need a portal surface.
+- Client's own `11_UI_SPECIFICATION.md` and `06_USER_ROLES.md` for the
+  authoritative screen list and role-to-screen mapping.

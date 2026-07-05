@@ -45,7 +45,7 @@ GET4DOMAIN/
 │   ├── templates/            # Project initialization templates
 │   ├── checklists/           # Pre-launch, review checklists
 │   ├── docker-base/          # Base Docker images
-│   └── industry-packs/       # Per-industry module templates
+│   └── industry-reference/   # Per-industry master knowledge base (never duplicated in client repos)
 │       ├── travel/
 │       ├── real-estate/
 │       ├── hospital/

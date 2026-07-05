@@ -1,143 +1,94 @@
-# Travel & Tours — Module Reference
-# Get4Domain Engineering Standard v1.0
+# Travel & Tours — Industry Reference: Module Categories
+# Get4Domain Engineering Standard v1.1
 
 ---
 
-## Module List (Standard MVP)
+## Purpose
 
-| # | Module       | Backend Path             | P003 Priority |
-|---|--------------|--------------------------|---------------|
-| 1 | auth         | modules/auth             | P3-1 (first)  |
-| 2 | users        | modules/users            | P3-1          |
-| 3 | roles        | modules/roles            | P3-1          |
-| 4 | permissions  | modules/permissions      | P3-1          |
-| 5 | packages     | modules/packages         | P3-2          |
-| 6 | vehicles     | modules/vehicles         | P3-2          |
-| 7 | drivers      | modules/drivers          | P3-2          |
-| 8 | bookings     | modules/bookings         | P3-3          |
-| 9 | tripsheets   | modules/tripsheets       | P3-3          |
-| 10| corporate    | modules/corporate        | P3-4          |
-| 11| invoices     | modules/invoices         | P3-4          |
-| 12| accounts     | modules/accounts         | P3-5          |
-| 13| reports      | modules/reports          | P3-5          |
+Describes the *categories* of modules commonly relevant to a travel & tours
+engagement, as a menu to scope from during EP01 — not a fixed list and not
+a set of platform-wide module codes. Module codes (`MOD-01`, `MOD-02`, …)
+are assigned per client, in that client's own `00_ENGINEERING_INDEX.md`,
+and are never global across clients — two travel clients can and will have
+different module counts and different code assignments depending on what
+they actually need. (`MR_TRAVELS_001`, the reference implementation, uses
+all nine categories below across 35 modules — see its own
+`00_ENGINEERING_INDEX.md` §3 for that specific, approved registry.)
 
----
+## Category: Sales & CRM
 
-## Module Details
+Lead capture with source tracking, interaction/activity logging, customer
+records with consolidated history. Almost always in scope — this is the
+funnel every other category feeds.
 
-### 1. auth
-- POST /api/v1/auth/login
-- POST /api/v1/auth/refresh
-- POST /api/v1/auth/logout
-- GET  /api/v1/auth/me
-- JWT access token (15m) + refresh token (7d)
+## Category: Product Catalog
 
-### 2. users
-- CRUD /api/v1/users
-- GET  /api/v1/users/me
-- PATCH /api/v1/users/:id/status (activate/deactivate)
-- Soft delete
+Tour packages (domestic, international, customized, fixed-departure).
+Commonly modeled as one core package entity differentiated by a type field,
+plus a dedicated entity for fixed-departure seat inventory and one for
+bespoke/customized requests — not four near-identical package tables.
 
-### 3–4. roles / permissions
-- CRUD /api/v1/roles
-- CRUD /api/v1/permissions
-- POST /api/v1/roles/:id/permissions
+## Category: Reservations
 
-### 5. packages (Tour Packages)
-- CRUD /api/v1/packages
-- GET  /api/v1/packages?type=local|pilgrimage|corporate
-- Fields: name, description, type, duration, inclusions, price, isActive
+Individual travel services: flights, hotels, buses, trains, cabs, other
+ground transport (e.g. tempo travellers). Only include the service types
+the client actually books/sells — a client with no in-house fleet may not
+need cab/tempo traveller detail tables at all; a client that never handles
+flights doesn't need flight detail, and a full-service agency may need all
+of them. Model each as a detail table attached to one master Booking
+entity, not as independent booking entities.
 
-### 6. vehicles
-- CRUD /api/v1/vehicles
-- GET  /api/v1/vehicles?status=available|on-trip|maintenance
-- PATCH /api/v1/vehicles/:id/status
-- Fields: registrationNo, type, make, model, capacity, ac, status, insuranceExpiry, permitExpiry
+## Category: Fleet & Operations
 
-### 7. drivers
-- CRUD /api/v1/drivers
-- GET  /api/v1/drivers?status=available|on-trip|leave
-- PATCH /api/v1/drivers/:id/status
-- GET  /api/v1/drivers/:id/trips
-- Fields: name, licenseNo, licenseExpiry, phone, address, joiningDate, status
+Vehicle management, driver management, supplier directory. Only relevant if
+the client operates or sub-contracts its own transport; a pure
+package/ticketing agency may not need this category at all.
 
-### 8. bookings
-- CRUD /api/v1/bookings
-- POST /api/v1/bookings/:id/confirm
-- POST /api/v1/bookings/:id/assign (vehicle + driver)
-- POST /api/v1/bookings/:id/cancel
-- GET  /api/v1/bookings?status=pending|confirmed|in-progress|completed|cancelled
-- Fields: bookingNo, customerName, phone, packageId, vehicleId, driverId,
-          startDate, endDate, pickup, drop, passengers, amount, status, notes
+## Category: Travel Services (ancillary)
 
-### 9. tripsheets
-- CRUD /api/v1/tripsheets
-- POST /api/v1/tripsheets/:id/start
-- POST /api/v1/tripsheets/:id/close
-- Fields: bookingId, driverId, vehicleId, startOdometer, endOdometer,
-          startTime, endTime, fuelExpense, tollExpense, otherExpense, notes, status
+Passport facilitation, visa facilitation, travel insurance, forex. Include
+only what the client actually offers — these are frequently "Should" not
+"Must" priority.
 
-### 10. corporate
-- CRUD /api/v1/corporate-clients
-- CRUD /api/v1/corporate-clients/:id/contracts
-- GET  /api/v1/corporate-clients/:id/bookings
-- Fields (client): companyName, gstin, address, contactName, phone, email
-- Fields (contract): startDate, endDate, vehicleType, monthlyRate, tripLimit
+## Category: Sales Operations
 
-### 11. invoices
-- CRUD /api/v1/invoices
-- POST /api/v1/invoices/generate (from booking or contract)
-- GET  /api/v1/invoices/:id/pdf
-- PATCH /api/v1/invoices/:id/paid
-- Fields: invoiceNo, type, bookingId|contractId, customerName, gstin,
-          subtotal, cgst, sgst, igst, total, status, dueDate, paidAt
+Quotation management (itemized, time-bound, converts to booking) and
+booking management (the master record). These two are almost always in
+scope together — a quotation with no booking to convert into is incomplete.
 
-### 12. accounts
-- CRUD /api/v1/accounts
-- GET  /api/v1/accounts/summary?from=DATE&to=DATE
-- Fields: date, type (income|expense), category, amount, reference, notes
+## Category: Finance
 
-### 13. reports
-- GET /api/v1/reports/bookings?from=DATE&to=DATE
-- GET /api/v1/reports/revenue?from=DATE&to=DATE&groupBy=day|week|month
-- GET /api/v1/reports/vehicles?vehicleId=ID
-- GET /api/v1/reports/drivers?driverId=ID
-- GET /api/v1/reports/corporate?clientId=ID
+Payment recording, GST/tax invoicing, an accounts ledger, and expense
+tracking. Ledger and invoicing are usually "Must" for any business needing
+compliant financial records; payment gateway integration (auto-capture) is
+commonly a separate, larger scope — check the client's own `05_SCOPE.md`
+before assuming it's included.
 
----
+## Category: Analytics
 
-## Module Dependencies
+Cross-module reporting (pipeline, revenue, utilization, collections). This
+category typically has no entity of its own — it is a read/aggregation
+layer over the categories above, and is usually scoped last since it
+depends on everything else being defined first.
 
-```
-auth ──────────────────────── (no dependencies)
-users ─────────────────────── auth
-roles / permissions ────────── users
-packages ──────────────────── (no business deps)
-vehicles ──────────────────── (no business deps)
-drivers ───────────────────── (no business deps)
-bookings ──────────────────── packages + vehicles + drivers + users
-tripsheets ────────────────── bookings + vehicles + drivers
-corporate ─────────────────── (no business deps)
-invoices ──────────────────── bookings | corporate
-accounts ──────────────────── invoices
-reports ───────────────────── all modules (read-only aggregation)
-```
+## Category: Portals
 
----
+Customer self-service, staff (role-scoped), and admin (full visibility).
+These are UI surfaces, not data entities — the data-level permission for
+whatever a portal displays comes from the underlying module's own
+permission row, not from the portal itself. Whether a customer-facing
+portal is included is a per-engagement scoping decision.
 
-## Build Order for P003
+## Category: Platform
 
-```
-Step 1:  Prisma schema (all models at once)
-Step 2:  prisma migrate dev
-Step 3:  auth + users + roles + permissions
-Step 4:  packages + vehicles + drivers
-Step 5:  bookings
-Step 6:  tripsheets
-Step 7:  corporate
-Step 8:  invoices
-Step 9:  accounts
-Step 10: reports
-Step 11: seed data
-Step 12: build + lint verification
-```
+Roles & permissions administration, notifications, document management,
+settings. Usually "Must" once a client needs to self-administer roles
+without a Get4Domain change request, and once any document (ID proof,
+ticket, voucher, compliance doc) needs central storage tied to an entity.
+
+## Dependencies
+
+- `OVERVIEW.md` for the domain concepts these categories operate on.
+- `MODULE_CHECKLIST.md` for a scoping worksheet using these categories.
+- Client's own `00_ENGINEERING_INDEX.md` for the actual, approved module
+  registry once EP01 scoping is complete.

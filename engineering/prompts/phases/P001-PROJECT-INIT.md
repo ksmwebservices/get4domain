@@ -20,7 +20,7 @@ before starting P002 or P003.
 1. CLAUDE.md (repo root)
 2. WORKFLOW.md (repo root)
 3. CURRENT_TASK.md (repo root) — confirm client ID and phase
-4. engineering/industry-packs/{industry}/README.md
+4. engineering/industry-reference/{industry}/OVERVIEW.md
 5. This file — then execute
 
 ---
