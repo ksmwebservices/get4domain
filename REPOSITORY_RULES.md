@@ -78,29 +78,32 @@ Until then: no template code exists.
 
 ## Rule 5 — Responsibilities Are Fixed
 
-| Role        | Tool        | Responsibilities                                    |
-|-------------|-------------|-----------------------------------------------------|
-| Architect   | ChatGPT     | BRD, PRD, Functional Spec, DB Design, API Design,   |
-|             |             | Module Spec, UI Spec, Architecture, Prompt generation|
-| UI Builder  | Bolt        | Frontend UI, responsive layouts, components,        |
-|             |             | public website, admin dashboard                     |
-| Engineer    | Claude Code | Project init, backend, database, APIs,              |
-|             |             | integration, testing, deployment                    |
+| Role                            | Tool        | Responsibilities                                     |
+|----------------------------------|-------------|---------------------------------------------------------|
+| Business Consultant / Reviewer  | ChatGPT     | Business consulting, architecture review, solution     |
+|                                  |             | review, quality review, prompt engineering, final approval |
+| UI Builder                      | Bolt        | Frontend UI, responsive layouts, components,           |
+|                                  |             | public website, admin dashboard                        |
+| Engineer                        | Claude Code | Engineering Package generation, documentation           |
+|                                  |             | maintenance, project init, backend, database, APIs,     |
+|                                  |             | integration, testing, deployment                        |
+
+Claude Code is authorized to generate and maintain the Engineering Package
+for approved projects following Get4Domain Engineering Standards.
 
 Claude Code NEVER:
-- Generates business requirements
-- Generates PRD or Functional Specification
-- Invents business logic not in approved docs
-- Designs UI screens
+- Designs UI screens (Bolt's responsibility)
 
-Claude Code ONLY implements approved engineering documents.
+Claude Code implements and documents approved engineering work; ChatGPT
+retains final review and approval authority over the Engineering Package
+before implementation phases begin.
 
 ---
 
 ## Rule 6 — Engineering Package Required
 
-Before any implementation phase begins, ChatGPT must provide
-the complete Engineering Package into the client's docs/ folder:
+Before any implementation phase (P002/P003) begins, Claude Code generates
+the complete Engineering Package into the client's docs/ folder (phase EP01):
 
   01_PROJECT_BRIEF.md
   02_BUSINESS_REQUIREMENTS.md
@@ -123,8 +126,9 @@ the complete Engineering Package into the client's docs/ folder:
   19_PAYMENT_WORKFLOW.md
   20_CURRENT_TASK.md
 
-Claude Code reads ALL documents before implementation.
-Claude Code skips NO document.
+ChatGPT reviews and gives final approval on the complete package before
+implementation begins. Claude Code skips NO document during generation
+or implementation.
 
 ---
 
@@ -133,7 +137,9 @@ Claude Code skips NO document.
 No phase starts without explicit instruction.
 
 ```
-ChatGPT generates Engineering Package
+Claude Code generates Engineering Package
+         ↓
+ChatGPT reviews (architecture / solution / quality) and gives final approval
          ↓
 Claude Code reads all docs/
          ↓

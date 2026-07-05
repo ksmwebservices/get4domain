@@ -72,17 +72,20 @@ GET4DOMAIN/
 | Database    | PostgreSQL + Prisma ORM                  |
 | Auth        | JWT + Refresh Token + RBAC               |
 | Deployment  | Docker + Docker Compose + Nginx          |
-| AI Workflow | ChatGPT (Architect) + Claude (Engineer) + Bolt (UI) |
+| AI Workflow | ChatGPT (Business Consultant / Reviewer) + Claude Code (Engineer) + Bolt (UI) |
 
 ---
 
 ## 🤖 AI Engineering Workflow
 
-| Role        | Tool       | Responsibility                          |
-|-------------|------------|-----------------------------------------|
-| Architect   | ChatGPT    | PRD, BRD, DB Design, API Spec, Prompts  |
-| Engineer    | Claude     | Backend, Auth, DB, APIs, Deployment     |
-| UI Builder  | Bolt       | Frontend, Dashboard, Components         |
+| Role                            | Tool        | Responsibility                                                                 |
+|----------------------------------|-------------|---------------------------------------------------------------------------------|
+| Business Consultant / Reviewer  | ChatGPT     | Business Consultant, Architecture Review, Solution Review, Prompt Engineering, Final Approval |
+| Engineer                        | Claude Code | Engineering Package Generation, Documentation, Backend Development, Integration, Testing, Deployment |
+| UI Builder                      | Bolt        | Frontend UI                                                                     |
+
+Claude Code is authorized to generate and maintain the Engineering Package
+for approved projects following Get4Domain Engineering Standards.
 
 ---
 
