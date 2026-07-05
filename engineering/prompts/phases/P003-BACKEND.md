@@ -18,7 +18,7 @@ The P001 engineering foundation is already in place. Build on top of it.
 2. Read the client PRD (provided by ChatGPT in `docs/`)
 3. Read the Database Design document (provided by ChatGPT in `docs/`)
 4. Read the API Specification document (provided by ChatGPT in `docs/`)
-5. Read `engineering/industry-packs/{industry}/MODULE_LIST.md`
+5. Read `engineering/industry-reference/{industry}/MODULE_CHECKLIST.md`
 6. Read this file completely — then execute
 
 ---

@@ -1,8 +1,8 @@
 {
   "_readme": "Master registry of all Get4Domain client projects. Update after every phase change.",
   "_version": "1.1",
-  "_lastUpdated": "2026-07-05",
-  "_lastUpdatedNote": "EP01 Engineering Package generated for MR_TRAVELS_001",
+  "_lastUpdated": "2026-07-06",
+  "_lastUpdatedNote": "MR_TRAVELS_001: EP01 approved, P002 complete, P003 complete, P004 complete — frontend wired to live backend across 4 milestones, verified end-to-end incl. full Lead-to-Invoice workflow; several P002/P003 gaps found and logged (see docs/20_CURRENT_TASK.md §8)",
 
   "platform": {
     "name": "Get4Domain",
@@ -62,9 +62,9 @@
       "industry": "TRAVEL",
       "industryReference": "engineering/industry-reference/travel",
       "status": "active",
-      "currentPhase": "engineering-package-review",
-      "phaseStatus": "pending",
-      "note": "EP01 complete: Claude Code generated the 20-document Engineering Package + 5 phase prompts. Pending ChatGPT review and final approval before P002/P003.",
+      "currentPhase": "P004",
+      "phaseStatus": "complete",
+      "note": "EP01 approved by ChatGPT on 2026-07-05 (20-document Engineering Package + 5 phase prompts). P002 (frontend UI) complete. P003 complete: RBAC/Authentication foundation plus all 35 catalog modules implemented per docs/07_MODULE_SPECIFICATION.md. P004 complete (2026-07-06): frontend wired to the live backend across 4 milestones (5 commits) — Auth+Dashboard, CRM+Packages, Bookings+Fleet, Finance+Documents+Reports+Settings+Roles/Users. Verified end-to-end against the running backend + Supabase dev DB, including the full Lead->Customer->Quotation->Booking->Payment->Invoice workflow and GST CGST/SGST/IGST computation both same-state and different-state. Several real bugs found and fixed (Decimal-as-string summing bug, invalid lead status transitions, unauthenticated document download, missing DTO validators). Several P002 UI gaps found and logged, not fixed — no new screens added per phase stop conditions (missing staff-portal routes for Operations/Accounts roles; Suppliers/Travel Services/Ledger/Fixed-Departures/Custom-Requests/reservation-detail types have no screen anywhere in the P002 build). Full detail in docs/20_CURRENT_TASK.md §8. Awaiting explicit instruction for P005 (Testing).",
       "github": "https://github.com/ksmwebservices/mr-travels-001",
       "localPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\CLIENTS\\MR_TRAVELS_001",
       "devUrl": "mr-travels-dev.get4domain.com",
@@ -82,16 +82,17 @@
         "owner": "Claude Code",
         "documentsRequired": 20,
         "documentsDelivered": 20,
-        "reviewStatus": "pending-review",
-        "reviewedBy": "ChatGPT"
+        "reviewStatus": "approved",
+        "reviewedBy": "ChatGPT",
+        "approvedAt": "2026-07-05"
       },
       "phases": {
         "P000": { "status": "complete",     "completedAt": "2025-07-04", "notes": "Workspace initialized" },
         "P001": { "status": "complete",     "completedAt": "2026-07-05", "notes": "Engineering foundation scaffolded (frontend, backend, docker, prisma shell)" },
-        "P002": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
-        "P003": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
-        "P004": { "status": "not-started",  "completedAt": null, "notes": "Waits for P002 + P003" },
-        "P005": { "status": "not-started",  "completedAt": null, "notes": "Waits for P004" },
+        "P002": { "status": "complete",  "completedAt": "2026-07-05", "notes": "Frontend UI complete." },
+        "P003": { "status": "complete",  "completedAt": "2026-07-05", "notes": "RBAC/Authentication foundation plus all 35 catalog modules implemented (Leads/CRM, Customers, Packages, Fleet, Travel Services, Quotations, Bookings + 6 reservation types, Finance, Reports/Dashboard, Notifications, Documents, Settings). Prisma schema migrated and seeded against the live Supabase database. Known follow-ups: invoice PDF endpoint returns JSON pending a rendering library; a few role-based 'Own' scopes derived from related records where the approved schema has no dedicated owner field (documented in code)." },
+        "P004": { "status": "complete",  "completedAt": "2026-07-06", "notes": "Frontend wired to the live P003 backend across 4 milestones (5 commits on mr-travels-001 develop). Verified end-to-end incl. full Lead-to-Invoice workflow and GST split both ways. Real bugs found/fixed: CrudPage sending blank optional fields, missing @IsObject() on CreateTourPackageDto.itinerary, CreateVehicleDto/CreateDriverDto rejecting status on create, unauthenticated document download, systemic Prisma-Decimal-as-string summing bug, invalid lead status transitions, 2 permission-matrix transcription errors. Backend gap found but not fixed (flagged for change request): invoice issue() doesn't post a LedgerEntry per BRULE-010. P002 UI gaps found and logged, not fixed: missing staff-portal routes for Operations/Accounts roles (11_UI_SPECIFICATION.md sec4); Suppliers/Passport/Visa/Insurance/Forex/Ledger/Fixed-Departures/Custom-Requests/reservation-detail-types have no screen anywhere. Full detail in docs/20_CURRENT_TASK.md sec8." },
+        "P005": { "status": "not-started",  "completedAt": null, "notes": "Waits for explicit phase instruction (P004 complete)" },
         "P006": { "status": "not-started",  "completedAt": null, "notes": "Waits for payment + approval" }
       },
       "createdAt": "2025-07-04"

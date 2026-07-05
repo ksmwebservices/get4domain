@@ -1,335 +1,90 @@
-# Travel & Tours — Database Guide
-# Get4Domain Engineering Standard v1.0
-# Status: TEMPLATE — Fill after MR_TRAVELS_001 P003 is complete
+# Travel & Tours — Industry Reference: Database Guide
+# Get4Domain Engineering Standard v1.1
 
 ---
 
-## Standard Prisma Rules (all models)
+## Purpose
 
-Every model must have:
-```prisma
-id        String    @id @default(uuid())
-createdAt DateTime  @default(now())
-updatedAt DateTime  @updatedAt
-deletedAt DateTime?               // soft delete — never hard delete
-```
+Recurring data-modeling patterns for travel & tours engagements, on top of
+the platform-wide conventions in `C:\Get4Domain\CLAUDE.md` §9 (UUID PKs,
+`createdAt`/`updatedAt`/`deletedAt` soft delete, Prisma transactions for
+multi-table writes). These are patterns to apply where relevant, not a
+schema to copy verbatim — a client's `09_DATABASE_DESIGN.md` is the
+authoritative schema for that engagement (see `MR_TRAVELS_001/docs/09_DATABASE_DESIGN.md`
+for a worked example applying every pattern below across 35 modules).
 
----
+## Pattern: One Master Booking, Many Detail Tables
 
-## Model Reference (Travel Standard)
+Model a customer's reservation as one `Booking` record carrying shared
+fields (customer, status lifecycle, totals, dates), with a `bookingType`
+discriminator and a 1:1 detail table per reservation type (e.g.
+`FlightBookingDetail`, `HotelBookingDetail`) attached by `bookingId`. This
+keeps one financial/status lifecycle per engagement instead of scattering
+it across N independent booking tables.
 
-### User
-```prisma
-model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  password         String                          // bcrypt hashed
-  firstName        String
-  lastName         String
-  phone            String?
-  role             UserRole  @default(STAFF)
-  isActive         Boolean   @default(true)
-  refreshTokenHash String?                         // hashed refresh token
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
-  bookings         Booking[]
-}
+## Pattern: Package Type as a Field, Not Separate Tables
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  MANAGER
-  STAFF
-  DRIVER
-  CLIENT
-}
-```
+Domestic, international, customized, and fixed-departure packages are
+usually one `TourPackage` entity with a `packageType` enum, rather than
+four near-identical tables — "domestic" and "international" views are query
+filters on the same entity, not separate modules' worth of schema.
 
-### TourPackage
-```prisma
-model TourPackage {
-  id          String      @id @default(uuid())
-  name        String
-  description String?
-  type        PackageType
-  duration    Int                                  // in days
-  inclusions  String[]
-  basePrice   Decimal     @db.Decimal(10, 2)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-  bookings    Booking[]
-}
+## Pattern: Seat Inventory Must Be Atomic
 
-enum PackageType {
-  LOCAL
-  PILGRIMAGE
-  CORPORATE
-  CUSTOM
-}
-```
+A `FixedDeparture`-style entity needs `totalSeats`/`availableSeats` with the
+decrement-on-confirm / restore-on-cancel logic enforced inside a database
+transaction alongside the booking status change — never as a
+read-then-write from application code without a transaction, or concurrent
+bookings can oversell the departure.
 
-### Vehicle
-```prisma
-model Vehicle {
-  id              String        @id @default(uuid())
-  registrationNo  String        @unique
-  type            VehicleType
-  make            String
-  model           String
-  year            Int
-  capacity        Int
-  isAC            Boolean       @default(false)
-  status          VehicleStatus @default(AVAILABLE)
-  insuranceExpiry DateTime
-  permitExpiry    DateTime
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
-  bookings        Booking[]
-  tripSheets      TripSheet[]
-}
+## Pattern: Money Fields
 
-enum VehicleType {
-  SEDAN
-  SUV
-  TEMPO_TRAVELLER
-  MINI_BUS
-  BUS
-}
+Always `Decimal` (mapped to PostgreSQL `numeric`), never `Float` — floating
+point rounding artifacts are unacceptable in invoicing and ledger contexts.
 
-enum VehicleStatus {
-  AVAILABLE
-  ON_TRIP
-  MAINTENANCE
-  INACTIVE
-}
-```
+## Pattern: Append-Only Ledger
 
-### Driver
-```prisma
-model Driver {
-  id            String       @id @default(uuid())
-  name          String
-  licenseNo     String       @unique
-  licenseExpiry DateTime
-  phone         String       @unique
-  address       String?
-  joiningDate   DateTime
-  status        DriverStatus @default(AVAILABLE)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deletedAt     DateTime?
-  bookings      Booking[]
-  tripSheets    TripSheet[]
-}
+Every payment, invoice, and expense should produce a `LedgerEntry` row via
+the same transaction that creates/updates the source record — never a
+separate, best-effort background job. The ledger should be treated as
+append-only (reversals are new entries, not edits/deletes of prior ones).
 
-enum DriverStatus {
-  AVAILABLE
-  ON_TRIP
-  LEAVE
-  INACTIVE
-}
-```
+## Pattern: Compliance-Gated Assignment
 
-### Booking
-```prisma
-model Booking {
-  id            String        @id @default(uuid())
-  bookingNo     String        @unique                // auto-generated: BK-YYYYMMDD-XXXX
-  customerName  String
-  customerPhone String
-  packageId     String?
-  vehicleId     String?
-  driverId      String?
-  createdById   String
-  startDate     DateTime
-  endDate       DateTime
-  pickupLocation String
-  dropLocation  String?
-  passengers    Int           @default(1)
-  amount        Decimal       @db.Decimal(10, 2)
-  advancePaid   Decimal       @db.Decimal(10, 2)    @default(0)
-  status        BookingStatus @default(PENDING)
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  deletedAt     DateTime?
-  package       TourPackage?  @relation(fields: [packageId], references: [id])
-  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id])
-  driver        Driver?       @relation(fields: [driverId], references: [id])
-  createdBy     User          @relation(fields: [createdById], references: [id])
-  tripSheet     TripSheet?
-  invoice       Invoice?
-}
+Where the client operates vehicles/drivers, expiry-dated fields
+(`insuranceExpiry`, `licenseExpiry`, etc.) should be checked at the moment
+of assignment (booking a vehicle/driver to a trip), not only surfaced as a
+dashboard warning — an expired document should block the assignment at the
+service layer.
 
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-```
+## Pattern: Polymorphic Document Storage
 
-### TripSheet
-```prisma
-model TripSheet {
-  id              String          @id @default(uuid())
-  bookingId       String          @unique
-  vehicleId       String
-  driverId        String
-  startOdometer   Int
-  endOdometer     Int?
-  startTime       DateTime
-  endTime         DateTime?
-  fuelExpense     Decimal         @db.Decimal(10, 2) @default(0)
-  tollExpense     Decimal         @db.Decimal(10, 2) @default(0)
-  otherExpense    Decimal         @db.Decimal(10, 2) @default(0)
-  notes           String?
-  status          TripSheetStatus @default(OPEN)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  booking         Booking         @relation(fields: [bookingId], references: [id])
-  vehicle         Vehicle         @relation(fields: [vehicleId], references: [id])
-  driver          Driver          @relation(fields: [driverId], references: [id])
-}
+A single `Document` entity with `ownerType`/`ownerId` (rather than a
+separate document table per owning entity) works well for ID proofs,
+tickets, vouchers, and compliance documents across customers, bookings,
+drivers, vehicles, and suppliers — paired with an `expiryDate` for
+compliance documents specifically.
 
-enum TripSheetStatus {
-  OPEN
-  CLOSED
-}
-```
-
-### CorporateClient + Contract
-```prisma
-model CorporateClient {
-  id          String              @id @default(uuid())
-  companyName String
-  gstin       String?             @unique
-  address     String
-  contactName String
-  phone       String
-  email       String
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  deletedAt   DateTime?
-  contracts   CorporateContract[]
-  invoices    Invoice[]
-}
-
-model CorporateContract {
-  id              String          @id @default(uuid())
-  clientId        String
-  startDate       DateTime
-  endDate         DateTime
-  vehicleType     VehicleType
-  monthlyRate     Decimal         @db.Decimal(10, 2)
-  tripLimit       Int?
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  client          CorporateClient @relation(fields: [clientId], references: [id])
-  invoices        Invoice[]
-}
-```
-
-### Invoice
-```prisma
-model Invoice {
-  id            String          @id @default(uuid())
-  invoiceNo     String          @unique               // auto-generated: INV-YYYYMMDD-XXXX
-  type          InvoiceType
-  bookingId     String?         @unique
-  contractId    String?
-  corporateId   String?
-  customerName  String
-  customerGstin String?
-  customerAddress String?
-  subtotal      Decimal         @db.Decimal(10, 2)
-  cgst          Decimal         @db.Decimal(10, 2)    @default(0)
-  sgst          Decimal         @db.Decimal(10, 2)    @default(0)
-  igst          Decimal         @db.Decimal(10, 2)    @default(0)
-  total         Decimal         @db.Decimal(10, 2)
-  status        InvoiceStatus   @default(UNPAID)
-  dueDate       DateTime?
-  paidAt        DateTime?
-  notes         String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  booking       Booking?        @relation(fields: [bookingId], references: [id])
-  contract      CorporateContract? @relation(fields: [contractId], references: [id])
-  corporate     CorporateClient?   @relation(fields: [corporateId], references: [id])
-}
-
-enum InvoiceType {
-  BOOKING
-  CORPORATE_MONTHLY
-}
-
-enum InvoiceStatus {
-  UNPAID
-  PAID
-  CANCELLED
-}
-```
-
-### Account
-```prisma
-model Account {
-  id        String      @id @default(uuid())
-  date      DateTime
-  type      AccountType
-  category  String
-  amount    Decimal     @db.Decimal(10, 2)
-  reference String?
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-}
-
-enum AccountType {
-  INCOME
-  EXPENSE
-}
-```
-
----
-
-## GST Calculation Rules (India)
+## GST Calculation Reference (India)
 
 ```
-Intrastate (same state):  CGST 2.5% + SGST 2.5% = 5% total
-Interstate (diff state):  IGST 5%
-SAC Code for transport:   996412 (local) / 996413 (long distance)
-
-Formula:
-  subtotal = base amount
-  tax = if intrastate: cgst = subtotal * 0.025, sgst = subtotal * 0.025
-        if interstate: igst = subtotal * 0.05
-  total = subtotal + cgst + sgst + igst
+Intrastate (customer state == agency's registered state):
+    CGST + SGST, split evenly (e.g. 2.5% + 2.5% for a 5% slab,
+    9% + 9% for an 18% slab) — the split is always half the total rate.
+Interstate (customer state != agency's registered state):
+    IGST at the full slab rate.
 ```
 
----
+The applicable GST rate/slab itself is a commercial detail confirmed with
+the client (varies by service category and current regulation) — the
+CGST+SGST vs. IGST *split logic* above is the stable, structural part.
+Store `placeOfSupply`/customer `state` and the agency's registered state as
+fields the invoice service reads at generation time; never hardcode the
+place-of-supply outcome.
 
-## Indexes to Add (Performance)
+## Dependencies
 
-```prisma
-@@index([status])              // Booking, Vehicle, Driver
-@@index([startDate, endDate])  // Booking
-@@index([deletedAt])           // all soft-delete models
-@@index([createdAt])           // Invoice, Account
-@@index([bookingNo])           // Booking
-@@index([invoiceNo])           // Invoice
-```
-
----
-
-## Notes (fill after MR_TRAVELS_001 P003)
-
-- [ ] Document any schema decisions made during implementation
-- [ ] Document any deviations from this template and reasons
-- [ ] Add query performance notes after testing
+- `C:\Get4Domain\CLAUDE.md` §9 for the non-negotiable platform-wide
+  conventions these patterns build on.
+- `API_GUIDE.md` for how these entities are typically exposed.
+- Client's own `09_DATABASE_DESIGN.md` for the authoritative schema.
