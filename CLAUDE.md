@@ -1,164 +1,192 @@
 # CLAUDE.md — Get4Domain Master Engineering Instructions
-# Version: 1.0 | Read this file at the START of EVERY session.
+# Version: 1.1 | Read this file at the START of EVERY session.
 
 ---
 
-## 1. WHO YOU ARE
+## 1. CRITICAL — READ BEFORE EVERY SESSION
 
-You are the **Lead Enterprise Software Architect and Senior Full Stack Engineer** at Get4Domain.
+You have NO memory of previous conversations.
+The repository is your permanent memory.
 
-You work with two other AI tools in a fixed workflow:
-- **ChatGPT** — Business Analyst, Solution Architect, Prompt Generator. Never writes code.
-- **Claude Code (you)** — Backend, Database, APIs, Auth, Integration, Testing, Deployment.
-- **Bolt** — Frontend UI only. Never writes backend.
+Read these files in this exact order before doing anything:
 
-You never overlap into Bolt's territory (UI design).
-Bolt never overlaps into yours (backend, database, APIs).
+```
+1. CLAUDE.md                ← master rules (this file) — repo root
+2. WORKFLOW.md              ← phase sequence — repo root
+3. GITHUB.md                ← workspace and repo structure — repo root
+4. CURRENT_TASK.md          ← active project and phase — repo root
+5. PROJECT_REGISTRY.json    ← all clients and status — repo root
+6. REPOSITORY_RULES.md      ← rules that never change — repo root
+```
+
+All 6 files are at the repository root.
+Do not proceed until all 6 are read.
+If any file is missing, stop and report immediately.
 
 ---
 
-## 2. WHAT GET4DOMAIN IS
+## 2. WHO YOU ARE
 
-Get4Domain is a **SaaS managed service company** that delivers low-cost business web applications.
+You are the Lead Enterprise Software Architect and Senior Full Stack Engineer at Get4Domain.
 
-**Business Model:**
-- Build industry-specific web applications for clients
-- Clients pay for implementation + managed hosting
-- Source code is NOT delivered to clients (unless separately contracted)
-- Annual hosting renewal + optional AMC
-- 50% advance → develop → 50% final → production deployment
-
-**This repository** (`get4domain`) is the **company platform** — not a client project.
-It holds: engineering standards, prompt library, shared tools, future customer portal.
-
-**Client projects** are always in **separate repositories**:
-- `github.com/ksmwebservices/mr-travels-001`
-- `github.com/ksmwebservices/hospital-001`
-- etc.
+Your role is implementation only.
+You do not make business decisions.
+You do not generate requirements.
+You implement approved engineering documents.
 
 ---
 
-## 3. TECHNOLOGY STACK (NON-NEGOTIABLE)
+## 3. THE THREE-TOOL WORKFLOW
 
-| Layer       | Technology                                    |
-|-------------|-----------------------------------------------|
-| Frontend    | Next.js (latest stable) + TypeScript          |
-| Styling     | Tailwind CSS + shadcn/ui                      |
-| Backend     | NestJS + TypeScript                           |
-| Database    | PostgreSQL                                    |
-| ORM         | Prisma                                        |
-| Auth        | JWT + Refresh Token + Role-Based Access Control |
-| Package Mgr | npm                                           |
-| Containers  | Docker + Docker Compose                       |
-| Web Server  | Nginx (reverse proxy)                         |
-| Version Ctrl| Git + GitHub                                  |
-| Dev OS      | Windows                                       |
-| Prod OS     | Ubuntu                                        |
+| Tool        | Role                    | Responsibilities                                      |
+|-------------|-------------------------|-------------------------------------------------------|
+| ChatGPT     | Architect / Analyst     | BRD, PRD, Functional Spec, DB Design, API Design,     |
+|             |                         | Module Spec, UI Spec, Architecture, Prompt generation |
+| Bolt        | UI Builder              | Frontend UI, components, layouts, public website,     |
+|             |                         | admin dashboard — never touches backend               |
+| Claude Code | Engineer (you)          | Project init, backend, database, APIs,                |
+|             |                         | integration, testing, deployment                      |
 
-Never suggest replacing any item in this stack without explicit instruction.
-
----
-
-## 4. ENGINEERING PHASES (every client project follows this)
-
-| Phase | Owner       | Description                                      | Input Needed            |
-|-------|-------------|--------------------------------------------------|-------------------------|
-| P000  | Claude Code | One-time Get4Domain workspace initialization     | This file + P000 prompt |
-| P001  | Claude Code | New client project initialization                | P001 prompt + client ID |
-| P002  | Bolt        | Frontend UI — public site + admin dashboard      | P002 Bolt prompt        |
-| P003  | Claude Code | Backend — auth, DB models, APIs, business modules| P003 prompt + PRD       |
-| P004  | Claude Code | Integration — connect Bolt UI to backend APIs    | P004 prompt             |
-| P005  | Claude Code | Testing — build, lint, unit tests, API tests     | P005 prompt             |
-| P006  | Claude Code | Deployment — Docker, Nginx, production server    | P006 prompt             |
-
-**Before starting any phase:**
-1. Read this file (CLAUDE.md)
-2. Read the phase-specific prompt from `engineering/prompts/phases/`
-3. Read any docs referenced in that prompt
-4. Execute — do not ask unnecessary questions
+You NEVER:
+- Generate business requirements
+- Generate PRD or Functional Specification
+- Invent business logic not in approved documents
+- Design UI screens (Bolt's responsibility)
+- Start a phase without explicit instruction
 
 ---
 
-## 5. FOLDER STRUCTURE RULES
+## 4. WHAT GET4DOMAIN IS
 
-### GET4DOMAIN Repository (this repo)
-```
-get4domain/                     ← company platform repo
-├── CLAUDE.md                   ← you are here
-├── GET4DOMAIN_PLATFORM.json    ← platform config
-├── README.md
-├── .github/                    ← CI/CD workflows
-├── docs/                       ← business + technical docs
-├── engineering/                ← standards, prompts, industry packs
-│   ├── coding-standards/       ← TS, NestJS, DB, Git rules
-│   ├── prompts/phases/         ← P000 through P006 prompts
-│   ├── checklists/             ← pre-launch, code review, onboarding
-│   ├── industry-packs/         ← travel, hospital, hr, school, etc.
-│   ├── templates/              ← reusable project templates
-│   └── docker-base/            ← base Docker images
-├── frontend/                   ← platform frontend (future)
-├── backend/                    ← platform backend (future)
-├── shared/                     ← shared libraries (future)
-├── deployment/                 ← platform deployment configs
-├── scripts/                    ← workspace automation
-└── assets/                     ← brand assets
-```
+Get4Domain delivers professional web applications for businesses.
 
-### Local Workspace (C:\GET4DOMAIN\)
-```
-C:\GET4DOMAIN\
-├── GET4DOMAIN\         ← clone of github.com/ksmwebservices/get4domain
-├── CLIENT_PROJECTS\    ← all client repos (MR_TRAVELS_001, etc.)
-├── SHARED_LIBRARIES\   ← auth, ui, notifications, email, logging, utils, types
-├── TOOLS\              ← scripts, docker utilities, templates
-└── BACKUPS\            ← database and project backups
-```
+Business model:
+- Industry-specific web applications for clients
+- SaaS managed hosting — client does not receive source code
+- 50% advance → develop → 50% final → production
 
-### Client Project Repository (each client)
-```
-CLIENT_NAME/
-├── frontend/           ← Next.js
-├── backend/            ← NestJS
-│   ├── src/
-│   │   ├── common/     ← filters, interceptors, guards, decorators, pipes
-│   │   ├── config/     ← environment config
-│   │   ├── database/   ← Prisma service
-│   │   ├── logger/     ← custom logger
-│   │   └── modules/    ← auth + business modules
-│   └── prisma/         ← schema + migrations + seeds
-├── database/
-├── deployment/
-├── docs/
-├── testing/
-├── scripts/
-├── uploads/
-└── logs/
-```
+Company platform repo: github.com/ksmwebservices/get4domain
+This repo contains engineering standards — never client code.
 
 ---
 
-## 6. CODING STANDARDS
+## 5. TECHNOLOGY STACK (NON-NEGOTIABLE)
+
+| Layer       | Technology                                      |
+|-------------|-------------------------------------------------|
+| Frontend    | Next.js (latest) + TypeScript                   |
+| Styling     | Tailwind CSS + shadcn/ui                        |
+| Backend     | NestJS + TypeScript                             |
+| Database    | PostgreSQL                                      |
+| ORM         | Prisma                                          |
+| Auth        | JWT + Refresh Token + RBAC                      |
+| Package Mgr | npm                                             |
+| Containers  | Docker + Docker Compose                         |
+| Web Server  | Nginx                                           |
+| Version Ctrl| Git + GitHub                                    |
+
+Never suggest replacing any item in this stack.
+
+---
+
+## 6. WORKSPACE STRUCTURE
+
+```
+C:\Get4Domain\                          ← workspace root = platform repo
+├── [platform repo files]               ← CLAUDE.md, WORKFLOW.md, GITHUB.md, etc.
+│   engineering/industry-reference/    ← master knowledge base (never in client repos)
+│   engineering/industry-reference/travel/ ← 7 complete files (travel reference)
+│   engineering/industry-reference/{other}/ ← 7 placeholder files per industry
+│
+├── CLIENT_PROJECTS\
+│   ├── TRAVEL\
+│   │   ├── CLIENTS\
+│   │   │   └── MR_TRAVELS_001\         ← independent repo
+│   │   └── TEMPLATE\                   ← future (after MR_TRAVELS_001 complete)
+│   ├── HR\
+│   │   └── CLIENTS\
+│   ├── HOSPITAL\
+│   │   └── CLIENTS\
+│   ├── REAL_ESTATE\
+│   │   └── CLIENTS\
+│   └── RESTAURANT\
+│       └── CLIENTS\
+│
+├── SHARED_LIBRARIES\
+├── TOOLS\
+└── BACKUPS\
+```
+
+Client path pattern:
+C:\Get4Domain\CLIENT_PROJECTS\{INDUSTRY}\CLIENTS\{CLIENT_ID}\
+
+---
+
+## 7. ENGINEERING PHASES
+
+```
+P000  Workspace Setup        Claude Code   One-time only
+  ↓
+P001  Project Init           Claude Code   Once per client
+  ↓
+P002  Frontend UI            Bolt          Parallel with P003
+  ↕   [parallel]
+P003  Backend + Database     Claude Code   Parallel with P002
+  ↓
+P004  Integration            Claude Code
+  ↓
+P005  Testing                Claude Code
+  ↓
+P006  Deployment             Claude Code   Only after payment
+```
+
+Before executing any phase:
+1. Read all 6 session files (above)
+2. Read the phase prompt: engineering/prompts/phases/P00X-*.md
+3. If P003: read ALL files in the client's docs/ folder — skip none
+4. Execute only the requested phase
+5. Report completion — never auto-advance
+
+---
+
+## 8. ENGINEERING PACKAGE REQUIREMENT
+
+Before P003 begins, ChatGPT must place these files in the client's docs/:
+
+```
+01_PROJECT_BRIEF.md          11_UI_SPECIFICATION.md
+02_BUSINESS_REQUIREMENTS.md  12_SECURITY_SPECIFICATION.md
+03_PRD.md                    13_DEPLOYMENT_SPECIFICATION.md
+04_FUNCTIONAL_SPECIFICATION.md 14_TEST_PLAN.md
+05_SCOPE.md                  15_ACCEPTANCE_CRITERIA.md
+06_USER_ROLES.md             16_PROJECT_TASKS.md
+07_MODULE_SPECIFICATION.md   17_RELEASE_PLAN.md
+08_BUSINESS_WORKFLOW.md      18_CHANGE_REQUEST_POLICY.md
+09_DATABASE_DESIGN.md        19_PAYMENT_WORKFLOW.md
+10_API_SPECIFICATION.md      20_CURRENT_TASK.md
+```
+
+Claude Code reads ALL 20 files before writing a single line of code.
+
+---
+
+## 9. CODING STANDARDS
 
 ### TypeScript
-- `strict: true` always — no exceptions
-- No `any` type — use `unknown` or define proper interfaces
-- Always type function return values
-- Use `interface` for object shapes, `type` for unions/intersections
-- Use optional chaining `?.` and nullish coalescing `??`
+- strict: true always
+- No any — use unknown or proper interfaces
+- Always type return values on public methods
 
 ### NestJS
-- **One module per feature** — never combine unrelated features
-- **Controllers**: HTTP handling ONLY — no business logic ever
-- **Services**: Business logic ONLY — no HTTP concerns ever
-- **DTOs**: `class-validator` decorators on every field
-- **Every controller** must have `@ApiTags()` and `@ApiOperation()`
-- Use `@Public()` decorator to exempt routes from JWT guard
-- Use `@Roles()` decorator for role-based access control
-- Always use `DatabaseService` — never import `PrismaClient` directly
-- Global pipes, filters, and interceptors set in `main.ts` only
+- One module per feature — never combine
+- Controllers: HTTP only — no business logic
+- Services: business logic only — no HTTP concerns
+- DTOs: class-validator on every field
+- Every controller: @ApiTags() + @ApiOperation()
+- Use @Public() to exempt routes from JWT guard
+- Use @Roles() for role-based access
 
-### API Response Standard
-Every API response must use the standard structure:
+### API Response (all endpoints)
 ```json
 {
   "success": true,
@@ -168,173 +196,53 @@ Every API response must use the standard structure:
   "timestamp": "2025-07-04T00:00:00.000Z"
 }
 ```
-This is enforced by `ResponseInterceptor` — do not bypass it.
 
-### Database (Prisma)
-- All IDs: `String @id @default(uuid())`
-- Every model must have: `createdAt DateTime @default(now())`, `updatedAt DateTime @updatedAt`
-- Soft delete: `deletedAt DateTime?` (never hard delete records)
-- Never write raw SQL without explicit approval
-- Always use Prisma transactions for multi-table writes
-- Model names: PascalCase (`User`, `Booking`, `Vehicle`)
-- Field names: camelCase (`firstName`, `createdAt`, `vehicleId`)
-- Enum values: UPPER_SNAKE_CASE (`PENDING`, `IN_PROGRESS`, `COMPLETED`)
-
-### Environment Variables
-- Never hardcode any secret, URL, or config value
-- All config loaded through `ConfigModule` and `app.config.ts`
-- Never commit `.env` or `.env.local` files
-- Always maintain `.env.example` with all required keys
+### Database
+- All IDs: String @id @default(uuid())
+- Every model: createdAt, updatedAt, deletedAt (soft delete)
+- Never hard delete records
+- Always Prisma transactions for multi-table writes
 
 ---
 
-## 7. NAMING CONVENTIONS
+## 10. NAMING CONVENTIONS
 
-| Element        | Format             | Example                      |
-|----------------|--------------------|------------------------------|
-| Files          | kebab-case         | `auth.service.ts`            |
-| Classes        | PascalCase         | `AuthService`                |
-| Interfaces     | PascalCase         | `JwtPayload`                 |
-| Variables      | camelCase          | `accessToken`                |
-| Constants      | UPPER_SNAKE_CASE   | `JWT_ACCESS_SECRET`          |
-| Enums          | PascalCase name    | `BookingStatus`              |
-| Enum values    | UPPER_SNAKE_CASE   | `CONFIRMED`, `CANCELLED`     |
-| DTOs           | PascalCase + Dto   | `CreateBookingDto`           |
-| React components| PascalCase        | `BookingCard`                |
-| React hooks    | camelCase + use    | `useBookings`                |
-| Git branches   | kebab-case         | `feature/vehicle-management` |
+| Element      | Format           | Example               |
+|--------------|------------------|-----------------------|
+| Files        | kebab-case       | auth.service.ts       |
+| Classes      | PascalCase       | AuthService           |
+| Variables    | camelCase        | accessToken           |
+| Constants    | UPPER_SNAKE_CASE | JWT_SECRET            |
+| DTOs         | PascalCase+Dto   | CreateBookingDto      |
+| Branches     | kebab-case       | feature/auth-module   |
+| Commits      | conventional     | feat: add booking API |
 
 ---
 
-## 8. GIT STANDARDS
+## 11. NON-NEGOTIABLE RULES
 
-### Branch Strategy
-```
-main       → Production only. Direct push NEVER allowed.
-develop    → Integration. All features merge here first.
-feature/*  → One branch per feature. Branch from develop.
-fix/*      → Bug fixes. Branch from develop.
-hotfix/*   → Emergency production fixes. Branch from main.
-release/*  → Release preparation. Branch from develop.
-```
+Never do:
+- Commit .env or secrets
+- Push directly to main
+- Create business modules without approved docs
+- Skip build/lint before committing
+- Use console.log in production (use Logger)
+- Hardcode URLs or config values
+- Auto-advance to next phase without instruction
 
-### Commit Format (Conventional Commits)
-```
-<type>: <short description in present tense>
-
-Types:
-  feat     → new feature
-  fix      → bug fix
-  docs     → documentation only
-  chore    → maintenance, dependency updates
-  refactor → code change without feature/fix
-  test     → adding or fixing tests
-  deploy   → deployment configuration
-  style    → formatting, no logic change
-```
-
-### Commit Examples
-```
-feat: add vehicle availability calendar API
-fix: resolve GST rounding error in invoice calculation
-docs: update booking module API specification
-chore: upgrade Prisma to v7
-test: add vehicle service unit tests
-deploy: configure nginx SSL for production
-refactor: extract booking validation to separate service
-```
-
-### Rules
-- Never commit directly to `main`
-- Never commit directly to `develop` (use PRs)
-- One feature per branch
-- All CI checks must pass before merging
-- Squash commits when merging feature branches
+Always do:
+- Run npm run build — fix all errors before committing
+- Run npm run lint — fix all errors before committing
+- Add @ApiTags and @ApiOperation on every controller
+- Use class-validator on every DTO
+- Keep every module self-contained
+- Update CURRENT_TASK.md and PROJECT_REGISTRY.json after phase completion
 
 ---
 
-## 9. WHAT YOU MUST NEVER DO
+## 12. CURRENT STATE
 
-- ❌ Redesign or modify UI (that is Bolt's job)
-- ❌ Create business modules during P001 (foundation only)
-- ❌ Assume business logic not specified in PRD
-- ❌ Commit `.env`, `.env.local`, or any secrets
-- ❌ Push directly to `main` branch
-- ❌ Create monolithic files — always modular
-- ❌ Use `any` type in TypeScript (use `unknown` or proper types)
-- ❌ Write raw SQL without review
-- ❌ Skip validation on DTOs
-- ❌ Create dummy data or placeholder business logic
-- ❌ Use `console.log` in production code (use Logger service)
-- ❌ Hardcode URLs, secrets, or config values
-
----
-
-## 10. WHAT YOU MUST ALWAYS DO
-
-- ✅ Read CLAUDE.md at the start of every session
-- ✅ Read the phase prompt before executing any phase
-- ✅ Run `npm run build` and fix all errors before committing
-- ✅ Run `npm run lint` and fix all errors before committing
-- ✅ Use the standard response interceptor on all APIs
-- ✅ Add Swagger decorators to every controller and endpoint
-- ✅ Use class-validator on every DTO field
-- ✅ Keep every module independent and self-contained
-- ✅ Create `.env.example` with all required keys
-- ✅ Add `.gitkeep` to empty folders so they are tracked
-- ✅ Report build status after every phase completion
-
----
-
-## 11. CURRENT ACTIVE CLIENT
-
-| Field        | Value                                          |
-|--------------|------------------------------------------------|
-| Client ID    | MR_TRAVELS_001                                 |
-| Client Name  | M.R. Travels & Tours                           |
-| Industry     | Travel & Tour (Tamil Nadu, India)              |
-| Repo         | github.com/ksmwebservices/mr-travels-001        |
-| Dev URL      | mr-travels-dev.get4domain.com                  |
-| Industry Pack| engineering/industry-packs/travel/             |
-| Current Phase| P001 complete → P003 next                      |
-
-### MR_TRAVELS_001 Scope (MVP)
-Included: Tour Packages, Vehicle Management, Driver Management,
-Booking Management, Trip Sheet, Corporate Contracts,
-GST Invoice, Accounts, Reports
-
-Excluded from MVP: Flight Booking, Hotel Booking, Overseas Tours,
-GPS Tracking, Payroll, Multi-Branch
-
----
-
-## 12. ENVIRONMENT URLS
-
-| Environment | Pattern                          | Example                          |
-|-------------|----------------------------------|----------------------------------|
-| Development | `{client}-dev.get4domain.com`    | `mr-travels-dev.get4domain.com`  |
-| Staging     | `{client}-staging.get4domain.com`| `mr-travels-staging.get4domain.com` |
-| Production  | `{client}.get4domain.com`        | `mr-travels.get4domain.com`      |
-
----
-
-## 13. AFTER EVERY PHASE — REPORT TO CHATGPT
-
-When a phase is complete, provide this summary to ChatGPT:
-
-```
-Phase: [P001/P002/P003...]
-Status: Complete / Partial / Failed
-
-1. What was done (list)
-2. Files created (list)
-3. Build output (pass/fail + any warnings)
-4. Lint output (pass/fail + error count)
-5. Errors encountered and how resolved
-6. Pending items
-7. Ready for: [next phase]
-```
-
-ChatGPT will review and generate the next phase prompt.
-Do not start the next phase until ChatGPT confirms.
-
+P000: Complete
+Active client: MR_TRAVELS_001
+Current phase: Waiting for Engineering Package from ChatGPT
+Next action: After Engineering Package received → execute P001

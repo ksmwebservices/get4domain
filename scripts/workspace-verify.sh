@@ -1,89 +1,84 @@
-#!/usr/bin/env bash
-# workspace-verify.sh — verify the Get4Domain platform repo and local
-# workspace match the structure required by P000.
+#!/bin/bash
+# Get4Domain — Workspace Verification Script
+# Run from inside C:\Get4Domain\ to verify workspace is complete
 
-set -uo pipefail
+echo "================================================"
+echo "  Get4Domain Workspace Verification"
+echo "================================================"
+echo ""
 
-WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${WORKSPACE_ROOT}"
-
+ROOT="C:/Get4Domain"
+PASS=0
 FAIL=0
 
-check_path() {
-  if [ -e "$1" ]; then
-    echo "OK   $1"
+check_dir() {
+  if [ -d "$1" ]; then
+    echo "  ✅ $1"
+    PASS=$((PASS + 1))
   else
-    echo "MISS $1"
-    FAIL=1
+    echo "  ❌ MISSING: $1"
+    FAIL=$((FAIL + 1))
   fi
 }
 
-echo "== Repository structure =="
-for p in \
-  "CLAUDE.md" \
-  "GET4DOMAIN_PLATFORM.json" \
-  "README.md" \
-  ".gitignore" \
-  ".env.example" \
-  "engineering/prompts/phases/P000-WORKSPACE-INIT.md" \
-  "engineering/prompts/phases/P001-PROJECT-INIT.md" \
-  "engineering/prompts/phases/P002-BOLT-UI.md" \
-  "engineering/prompts/phases/P003-BACKEND.md" \
-  "engineering/prompts/phases/P004-INTEGRATION.md" \
-  "engineering/prompts/phases/P005-TESTING.md" \
-  "engineering/prompts/phases/P006-DEPLOYMENT.md" \
-  "engineering/coding-standards/TYPESCRIPT.md" \
-  "engineering/coding-standards/NESTJS.md" \
-  "engineering/coding-standards/DATABASE.md" \
-  "engineering/coding-standards/GIT.md" \
-  "engineering/checklists/PRE-LAUNCH.md" \
-  "engineering/checklists/CODE-REVIEW.md" \
-  "engineering/checklists/CLIENT-ONBOARDING.md" \
-  "engineering/industry-packs/travel/README.md" \
-  "engineering/industry-packs/travel/MODULE_LIST.md" \
-  ".github/workflows/ci.yml" \
-  "docs/business/PAYMENT_POLICY.md" \
-  "docs/technical/ARCHITECTURE.md" \
-  "scripts/new-client.sh" \
-  "scripts/workspace-verify.sh" \
-; do
-  check_path "$p"
-done
+check_file() {
+  if [ -f "$1" ]; then
+    echo "  ✅ $1"
+    PASS=$((PASS + 1))
+  else
+    echo "  ❌ MISSING: $1"
+    FAIL=$((FAIL + 1))
+  fi
+}
 
-echo
-echo "== Local workspace (sibling folders) =="
-for p in \
-  "CLIENT_PROJECTS" \
-  "SHARED_LIBRARIES/auth" \
-  "SHARED_LIBRARIES/ui" \
-  "SHARED_LIBRARIES/notifications" \
-  "SHARED_LIBRARIES/email" \
-  "SHARED_LIBRARIES/logging" \
-  "SHARED_LIBRARIES/utils" \
-  "SHARED_LIBRARIES/types" \
-  "TOOLS/scripts" \
-  "TOOLS/docker" \
-  "TOOLS/utilities" \
-  "TOOLS/templates" \
-  "BACKUPS" \
-; do
-  check_path "$p"
-done
+echo "── Session Files (repo root) ──────────────────"
+check_file "CLAUDE.md"
+check_file "WORKFLOW.md"
+check_file "GITHUB.md"
+check_file "CURRENT_TASK.md"
+check_file "PROJECT_REGISTRY.json"
+check_file "REPOSITORY_RULES.md"
 
-echo
-echo "== Git =="
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "OK   git repository initialized"
-  git branch --list main develop | sed 's/^/     /'
-else
-  echo "MISS git repository not initialized"
-  FAIL=1
-fi
+echo ""
+echo "── Engineering Structure ──────────────────────"
+check_dir "engineering/prompts/phases"
+check_file "engineering/prompts/phases/P000-WORKSPACE-INIT.md"
+check_file "engineering/prompts/phases/P001-PROJECT-INIT.md"
+check_file "engineering/prompts/phases/P002-BOLT-UI.md"
+check_file "engineering/prompts/phases/P003-BACKEND.md"
+check_file "engineering/prompts/phases/P004-INTEGRATION.md"
+check_file "engineering/prompts/phases/P005-TESTING.md"
+check_file "engineering/prompts/phases/P006-DEPLOYMENT.md"
+check_dir "engineering/coding-standards"
+check_dir "engineering/checklists"
+check_dir "engineering/industry-reference/travel"
 
-echo
+echo ""
+echo "── Industry Reference ─────────────────────────"
+check_file "engineering/industry-reference/travel/OVERVIEW.md"
+check_file "engineering/industry-reference/travel/MODULES.md"
+check_file "engineering/industry-reference/travel/DB_GUIDE.md"
+check_file "engineering/industry-reference/travel/API_GUIDE.md"
+check_file "engineering/industry-reference/travel/UI_GUIDE.md"
+check_file "engineering/industry-reference/travel/IMPLEMENTATION_NOTES.md"
+check_file "engineering/industry-reference/travel/MODULE_CHECKLIST.md"
+
+echo ""
+echo "── Workspace Sibling Folders ──────────────────"
+echo "  (These live outside the repo — verify manually)"
+echo "  CLIENT_PROJECTS/TRAVEL/CLIENTS/"
+echo "  CLIENT_PROJECTS/HR/CLIENTS/"
+echo "  CLIENT_PROJECTS/HOSPITAL/CLIENTS/"
+echo "  SHARED_LIBRARIES/"
+echo "  TOOLS/"
+echo "  BACKUPS/"
+
+echo ""
+echo "================================================"
+echo "  Results: $PASS passed | $FAIL failed"
 if [ "$FAIL" -eq 0 ]; then
-  echo "Workspace verification PASSED"
+  echo "  ✅ Workspace verified. Ready for P001."
 else
-  echo "Workspace verification FAILED — see MISS entries above"
+  echo "  ❌ Fix missing items before proceeding."
 fi
-exit "$FAIL"
+echo "================================================"

@@ -1,102 +1,177 @@
-# P006 — Deployment
+# P006 — Production Deployment
 # Get4Domain Engineering Standard v1.0
-# Phase: P006 | Owner: Claude Code | Runs after P005 (Testing) passes
+# Phase: P006 | Owner: Claude Code | ONLY after full payment received
 
 ---
 
-## YOUR ROLE IN THIS PHASE
+## PRE-CONDITIONS — ALL MUST BE TRUE BEFORE STARTING
 
-Deploy the client application to its target environment (dev, staging, or
-production) using Docker, Nginx, and the Ubuntu production host.
+- [ ] P005 testing complete — all builds passing
+- [ ] Client has reviewed dev URL and given written approval
+- [ ] Final 50% payment received (confirmed by Get4Domain admin)
+- [ ] Production server provisioned (Ubuntu)
+- [ ] Domain DNS configured → production server IP
+- [ ] SSL certificate ready (or Let's Encrypt)
 
----
-
-## READ FIRST
-
-1. Read `CLAUDE.md` in the GET4DOMAIN repo
-2. Read `engineering/checklists/PRE-LAUNCH.md` — run through it before
-   deploying to production specifically
-3. Read the P005 deliverables — testing must have passed
-4. Read this file completely — then execute
+If ANY item above is unchecked — STOP. Do not deploy.
 
 ---
 
-## TASK 1 — ENVIRONMENT CONFIGURATION
-
-- Confirm the target environment (`dev`/`staging`/`prod`) and its URL per
-  the pattern `{client}[-env].get4domain.com`
-- Create the real `.env` for that environment from `.env.example`
-  (never committed — placed directly on the server or in a secrets
-  manager)
-- Confirm database name/credentials are unique per environment
-
----
-
-## TASK 2 — DOCKER BUILD
+## TASK 1 — PRODUCTION ENVIRONMENT SETUP (SERVER)
 
 ```bash
-docker compose -f docker-compose.yml build
-```
+# On Ubuntu production server
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y docker.io docker-compose-v2 nginx certbot python3-certbot-nginx git
 
-- `backend` and `frontend` images build using their `production` Docker
-  stage (see P001 Task 6)
-- Confirm image sizes are reasonable (no dev dependencies leaking into the
-  production stage)
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker $USER
+```
 
 ---
 
-## TASK 3 — DATABASE MIGRATION
+## TASK 2 — CREATE PRODUCTION .ENV
+
+On the server, create `/app/{client-id}/.env.production`:
+```
+NODE_ENV=production
+PORT=3001
+DATABASE_URL=postgresql://postgres:STRONG_PASSWORD@postgres:5432/{db_name}
+JWT_ACCESS_SECRET={32+ char random string}
+JWT_REFRESH_SECRET={32+ char random string}
+CLIENT_URL=https://{production-domain}
+```
+
+Generate secrets:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+---
+
+## TASK 3 — PRODUCTION DOCKER COMPOSE
+
+Create `docker-compose.prod.yml` on server:
+```yaml
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    networks: [app_network]
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    restart: always
+    depends_on: [postgres]
+    env_file: .env.production
+    networks: [app_network]
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    restart: always
+    networks: [app_network]
+
+networks:
+  app_network:
+volumes:
+  postgres_data:
+```
+
+---
+
+## TASK 4 — NGINX CONFIGURATION
+
+```nginx
+server {
+    listen 80;
+    server_name {production-domain};
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name {production-domain};
+
+    ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
+
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+    }
+
+    location /uploads/ {
+        alias /app/{client-id}/uploads/;
+    }
+
+    client_max_body_size 20M;
+}
+```
+
+---
+
+## TASK 5 — DEPLOY
 
 ```bash
-docker compose run --rm backend npx prisma migrate deploy
+# On production server
+cd /app
+git clone https://github.com/ksmwebservices/{repo} {client-id}
+cd {client-id}
+
+# Run migrations
+docker compose -f docker-compose.prod.yml run backend npx prisma migrate deploy
+
+# Start all services
+docker compose -f docker-compose.prod.yml up --build -d
+
+# Verify
+docker compose -f docker-compose.prod.yml ps
+curl https://{production-domain}/api/v1/health
 ```
 
-- Use `migrate deploy` (not `migrate dev`) in every non-dev environment
-- Confirm the migration history matches what's committed in
-  `backend/prisma/migrations/`
-- Take a backup before migrating an environment that already has data
-  (see `BACKUPS\` workspace convention)
-
 ---
 
-## TASK 4 — NGINX REVERSE PROXY
-
-Configure `deployment/nginx/{client}.conf`:
-
-- Reverse proxy `/` to the frontend container, `/api/` to the backend
-  container
-- SSL termination (Let's Encrypt via certbot, or provided certs)
-- Security headers (HSTS, X-Frame-Options, X-Content-Type-Options)
-- Gzip/compression at the proxy layer if not already handled by the app
-
----
-
-## TASK 5 — START SERVICES
+## TASK 6 — BACKUP CONFIGURATION
 
 ```bash
-docker compose up -d
-docker compose ps
+# Create daily backup script
+cat > /root/backup.sh << 'EOF'
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+docker exec postgres pg_dump -U postgres {db_name} > /backups/{client-id}_$DATE.sql
+find /backups -name "{client-id}_*.sql" -mtime +30 -delete
+EOF
+chmod +x /root/backup.sh
+
+# Schedule: daily at 2am
+echo "0 2 * * * /root/backup.sh" | crontab -
 ```
 
-Confirm all services report healthy, especially the `postgres` health
-check.
-
 ---
 
-## TASK 6 — SMOKE TEST
+## TASK 7 — SSL CERTIFICATE
 
-- Hit the health check endpoint through Nginx, not just directly against
-  the container
-- Log in as a seeded/admin user and exercise one full CRUD flow through
-  the real domain
-- Confirm Swagger is disabled (or access-restricted) in production
-
----
-
-## TASK 7 — DNS (PRODUCTION ONLY)
-
-- Point the `{client}.get4domain.com` DNS record at the production host
-- Confirm SSL certificate covers the exact domain being served
+```bash
+sudo certbot --nginx -d {production-domain}
+sudo systemctl reload nginx
+```
 
 ---
 
@@ -104,29 +179,17 @@ check.
 
 ```
 P006 — DEPLOYMENT COMPLETE
-============================
+===========================
+1. Server: Ubuntu, Docker, Nginx running ✅/❌
+2. SSL: Certificate installed ✅/❌
+3. Database: Migrations applied, seed data ✅/❌
+4. Backend: Running on production ✅/❌
+5. Frontend: Serving on HTTPS ✅/❌
+6. Health check: https://{domain}/api/v1/health ✅/❌
+7. Backups: Cron job configured ✅/❌
+8. Production URL: https://{domain}
+9. Admin credentials: [handed to client]
 
-1. ENVIRONMENT: dev / staging / prod
-2. URL: {client}[-env].get4domain.com
-3. DOCKER: images built ✅/❌, services healthy ✅/❌
-4. MIGRATION: applied ✅/❌, backup taken ✅/❌ (non-dev only)
-5. NGINX: SSL ✅/❌, security headers ✅/❌
-6. SMOKE TEST: ✅/❌ [what was exercised]
-7. PRE-LAUNCH CHECKLIST: complete ✅/❌ (production only)
-8. READY FOR: handover to client / next environment promotion
+PROJECT COMPLETE — Hand over to client.
 ```
 
----
-
-## STRICT RULES
-
-- ✅ Run `engineering/checklists/PRE-LAUNCH.md` in full before any
-      production deployment
-- ✅ Take a database backup before migrating an environment with existing
-      data
-- ✅ Use `prisma migrate deploy`, never `migrate dev`, outside of local
-      development
-- ❌ Do NOT deploy to production before final payment is confirmed
-      (see `docs/business/PAYMENT_POLICY.md`)
-- ❌ Do NOT expose Swagger docs publicly in production
-- ❌ Do NOT commit the real `.env` file anywhere

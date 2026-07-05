@@ -1,0 +1,106 @@
+{
+  "_readme": "Master registry of all Get4Domain client projects. Update after every phase change.",
+  "_version": "1.1",
+  "_lastUpdated": "2025-07-04",
+
+  "platform": {
+    "name": "Get4Domain",
+    "github": "https://github.com/ksmwebservices/get4domain",
+    "localPath": "C:\\Get4Domain",
+    "engineeringStandard": "v1.0"
+  },
+
+  "workspace": {
+    "root": "C:\\Get4Domain",
+    "clientProjects": "C:\\Get4Domain\\CLIENT_PROJECTS",
+    "pathPattern": "C:\\Get4Domain\\CLIENT_PROJECTS\\{INDUSTRY}\\CLIENTS\\{CLIENT_ID}",
+    "sharedLibraries": "C:\\Get4Domain\\SHARED_LIBRARIES",
+    "tools": "C:\\Get4Domain\\TOOLS",
+    "backups": "C:\\Get4Domain\\BACKUPS"
+  },
+
+  "activeProject": "MR_TRAVELS_001",
+
+  "industries": {
+    "TRAVEL": {
+      "reference": "engineering/industry-reference/travel",
+      "clientsPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\CLIENTS",
+      "templatePath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\TEMPLATE",
+      "templateStatus": "pending — created after MR_TRAVELS_001 completes"
+    },
+    "HR": {
+      "reference": "engineering/industry-reference/hr",
+      "clientsPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\HR\\CLIENTS",
+      "templatePath": "C:\\Get4Domain\\CLIENT_PROJECTS\\HR\\TEMPLATE",
+      "templateStatus": "reserved"
+    },
+    "HOSPITAL": {
+      "reference": "engineering/industry-reference/hospital",
+      "clientsPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\HOSPITAL\\CLIENTS",
+      "templatePath": "C:\\Get4Domain\\CLIENT_PROJECTS\\HOSPITAL\\TEMPLATE",
+      "templateStatus": "reserved"
+    },
+    "REAL_ESTATE": {
+      "reference": "engineering/industry-reference/real-estate",
+      "clientsPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\REAL_ESTATE\\CLIENTS",
+      "templatePath": "C:\\Get4Domain\\CLIENT_PROJECTS\\REAL_ESTATE\\TEMPLATE",
+      "templateStatus": "reserved"
+    },
+    "RESTAURANT": {
+      "reference": "engineering/industry-reference/restaurant",
+      "clientsPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\RESTAURANT\\CLIENTS",
+      "templatePath": "C:\\Get4Domain\\CLIENT_PROJECTS\\RESTAURANT\\TEMPLATE",
+      "templateStatus": "reserved"
+    }
+  },
+
+  "clients": [
+    {
+      "id": "MR_TRAVELS_001",
+      "name": "M.R. Travels & Tours",
+      "industry": "TRAVEL",
+      "industryReference": "engineering/industry-reference/travel",
+      "status": "active",
+      "currentPhase": "waiting-for-engineering-package",
+      "phaseStatus": "blocked",
+      "github": "https://github.com/ksmwebservices/mr-travels-001",
+      "localPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\CLIENTS\\MR_TRAVELS_001",
+      "devUrl": "mr-travels-dev.get4domain.com",
+      "prodUrl": null,
+      "database": {
+        "dev": "mr_travels_dev",
+        "prod": "mr_travels_prod"
+      },
+      "payment": {
+        "advance": "pending",
+        "final": "pending"
+      },
+      "engineeringPackage": {
+        "status": "awaiting",
+        "documentsRequired": 20,
+        "documentsDelivered": 0
+      },
+      "phases": {
+        "P000": { "status": "complete",     "completedAt": "2025-07-04", "notes": "Workspace initialized" },
+        "P001": { "status": "not-started",  "completedAt": null, "notes": "Waits for engineering package" },
+        "P002": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
+        "P003": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
+        "P004": { "status": "not-started",  "completedAt": null, "notes": "Waits for P002 + P003" },
+        "P005": { "status": "not-started",  "completedAt": null, "notes": "Waits for P004" },
+        "P006": { "status": "not-started",  "completedAt": null, "notes": "Waits for payment + approval" }
+      },
+      "createdAt": "2025-07-04"
+    }
+  ],
+
+  "statusValues": ["not-started", "waiting-for-engineering-package", "in-progress", "complete", "blocked"],
+  "clientStatusValues": ["reserved", "active", "on-hold", "complete", "cancelled"],
+
+  "updateInstructions": [
+    "After phase complete: set phases[PXX].status = complete, completedAt = date",
+    "Set currentPhase to next phase, phaseStatus to in-progress",
+    "Update _lastUpdated",
+    "Update CURRENT_TASK.md to match",
+    "Commit: chore: P001 complete – update project registry"
+  ]
+}

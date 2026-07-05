@@ -1,69 +1,27 @@
-# Architecture Overview — Get4Domain
+# Get4Domain Platform Architecture — v1.0
 
-## High-Level Shape
+## Platform Structure
 
-Every client project follows the same architecture, regardless of
-industry:
+GET4DOMAIN (this repo) — Company platform
+  Not for client code. Contains standards, docs, future portal.
 
-```
-Browser
-  │
-  ▼
-Nginx (reverse proxy, SSL termination)
-  │
-  ├──▶ Next.js frontend (SSR/static, TypeScript, Tailwind + shadcn/ui)
-  │
-  └──▶ NestJS backend (REST API, TypeScript)
-          │
-          ▼
-      PostgreSQL (via Prisma ORM)
-```
+CLIENT_PROJECTS (separate repos)
+  Each client = separate GitHub repository
+  Example: github.com/ksmwebservices/mr-travels-001
 
-Frontend and backend are separate deployable units, each with their own
-Docker image, communicating over a versioned REST API
-(`/api/v1/...`).
+## Standard Deployment
 
-## Backend Layering
+client-dev.get4domain.com     — Development review
+client.get4domain.com         — Production (after full payment)
 
-```
-Controller  → HTTP only (routing, params, decorators)
-Service     → business logic
-DatabaseService (Prisma wrapper) → persistence
-```
+## Module Boundaries
 
-Cross-cutting concerns (auth, validation, logging, error handling,
-response shaping) are implemented once as global guards/pipes/filters/
-interceptors in `main.ts` and `AppModule`, not repeated per module.
+Platform modules (this repo):
+  auth, users, clients, projects, invoices, payments, hosting
 
-## Auth Model
+Client-specific modules (client repos):
+  Defined per industry pack (travel, hospital, hr, etc.)
 
-JWT access token (short-lived, ~15 min) + refresh token (long-lived, ~7
-days, hashed in DB) issued at login. Role claims are embedded in the access
-token and checked by `RolesGuard` against `@Roles()` metadata on each route.
-
-## Multi-Tenancy Model
-
-Get4Domain does **not** run a single multi-tenant database shared across
-clients. Each client gets its own database (dev/staging/prod), its own
-backend deployment, and its own subdomain
-(`{client}[-env].get4domain.com`). This keeps client data fully isolated
-and lets each project evolve independently.
-
-## Environments
-
-| Environment | URL pattern                          | Purpose                     |
-|-------------|----------------------------------------|-------------------------------|
-| Development | `{client}-dev.get4domain.com`          | Active development, Swagger on |
-| Staging     | `{client}-staging.get4domain.com`      | Client review/UAT             |
-| Production  | `{client}.get4domain.com`              | Live traffic                  |
-
-## Deployment
-
-Docker Compose runs `postgres`, `backend`, and `frontend` services behind
-an Nginx reverse proxy on the production Ubuntu host. See P006 for the full
-deployment procedure.
-
-## Platform vs. Client Repos
-
-This repository (`get4domain`) holds only the shared engineering standard
-and prompt library — it is not part of any client's runtime architecture.
+## Data Isolation
+  Each client has a separate PostgreSQL database.
+  Cross-client data access is strictly prohibited.

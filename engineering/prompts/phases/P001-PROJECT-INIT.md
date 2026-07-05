@@ -6,62 +6,57 @@
 
 ## YOUR ROLE IN THIS PHASE
 
-Initialize a complete, production-ready engineering foundation for a new client project.
-No business modules. No UI. No dummy data. Pure engineering skeleton only.
+Initialize a clean, production-ready engineering foundation for a new client project.
+
+No business modules. No UI screens. No API implementation. No database tables.
+Pure engineering skeleton only. Stop when initialization is complete.
+Wait for the full engineering package (PRD, Functional Spec, DB Design, API Spec)
+before starting P002 or P003.
 
 ---
 
 ## READ FIRST
 
-1. Read `CLAUDE.md` (in get4domain repo root) — all sections
-2. Read `engineering/industry-packs/{industry}/README.md` — understand client industry
-3. Read `engineering/industry-packs/{industry}/MODULE_LIST.md` — know upcoming modules
-4. Read any PRD or BRD documents provided by ChatGPT in `docs/`
-5. Read this file completely — then execute
+1. CLAUDE.md (repo root)
+2. WORKFLOW.md (repo root)
+3. CURRENT_TASK.md (repo root) — confirm client ID and phase
+4. engineering/industry-packs/{industry}/README.md
+5. This file — then execute
 
 ---
 
-## CLIENT INFORMATION (fill before running)
+## CLIENT DETAILS (confirm from CURRENT_TASK.md)
 
 ```
-Client ID:       [e.g. MR_TRAVELS_001]
-Client Name:     [e.g. M.R. Travels & Tours]
-Industry:        [e.g. travel]
-GitHub Repo:     [e.g. github.com/ksmwebservices/mr-travels-001]
-Dev URL:         [e.g. mr-travels-dev.get4domain.com]
-DB Name (dev):   [e.g. mr_travels_dev]
-DB Name (prod):  [e.g. mr_travels_prod]
-```
-
----
-
-## TASK 1 — CREATE PROJECT FOLDER IN CLIENT_PROJECTS
-
-```
-C:\GET4DOMAIN\CLIENT_PROJECTS\{CLIENT_ID}\
-```
-
-The GitHub repo should already be created before P001 starts.
-Clone it locally:
-```bash
-cd C:\GET4DOMAIN\CLIENT_PROJECTS
-git clone https://github.com/ksmwebservices/{repo-name} {CLIENT_ID}
-cd {CLIENT_ID}
+Client ID:    MR_TRAVELS_001
+Client Name:  M.R. Travels & Tours
+Industry:     Travel & Tours
+Repo:         github.com/ksmwebservices/mr-travels-001
+Local:        C:\Get4Domain\CLIENT_PROJECTS\MR_TRAVELS_001\
+DB Dev:       mr_travels_dev
+DB Prod:      mr_travels_prod
 ```
 
 ---
 
-## TASK 2 — CREATE PROJECT STRUCTURE
+## IMPORTANT — INDEPENDENT REPOSITORY
+
+This project is completely independent from the Get4Domain platform repo.
+
+- Create at: `C:\Get4Domain\CLIENT_PROJECTS\MR_TRAVELS_001\`
+- Its own Git repository — separate from get4domain
+- Its own GitHub repo: github.com/ksmwebservices/mr-travels-001
+- Never place client code inside the get4domain repo
+
+---
+
+## TASK 1 — ROOT PROJECT STRUCTURE
 
 ```
-{CLIENT_ID}/
+MR_TRAVELS_001/
 ├── frontend/
 ├── backend/
-├── database/
-│   ├── migrations/
-│   └── seeds/
-├── docs/
-│   └── prompts/
+├── docs/                     ← client-specific docs only
 ├── deployment/
 │   ├── docker/
 │   ├── nginx/
@@ -80,92 +75,72 @@ cd {CLIENT_ID}
 ├── .env.example
 ├── .gitignore
 ├── README.md
+├── CLAUDE.md                 ← project-level instructions
 └── docker-compose.yml
 ```
 
+> Industry reference documentation lives in the Get4Domain platform repo at
+> `engineering/industry-reference/travel/` — NOT duplicated here.
+> This client repo contains only client-specific code and documentation.
+
 ---
 
-## TASK 3 — INITIALIZE FRONTEND (Next.js)
+## TASK 2 — INITIALIZE FRONTEND (Next.js)
 
 ```bash
 cd frontend
 npx create-next-app@latest . \
-  --typescript \
-  --tailwind \
-  --eslint \
-  --app \
-  --src-dir \
-  --import-alias "@/*" \
-  --no-git \
-  --yes
+  --typescript --tailwind --eslint \
+  --app --src-dir --import-alias "@/*" \
+  --no-git --yes
 ```
 
-Install additional packages:
+Install packages:
 ```bash
 npm install \
-  @radix-ui/react-slot \
-  class-variance-authority \
-  clsx \
-  tailwind-merge \
-  lucide-react \
-  axios \
-  @tanstack/react-query \
-  zustand \
-  react-hook-form \
-  @hookform/resolvers \
-  zod
+  @radix-ui/react-slot class-variance-authority clsx \
+  tailwind-merge lucide-react \
+  axios @tanstack/react-query zustand \
+  react-hook-form @hookform/resolvers zod
 
 npm install -D prettier prettier-plugin-tailwindcss
 ```
 
-Create src folder structure:
+Create src/ structure:
 ```
 frontend/src/
 ├── app/
-│   ├── layout.tsx           ← root layout, metadata
-│   ├── page.tsx             ← placeholder only ("P001 complete")
-│   ├── globals.css          ← shadcn/ui CSS variables
-│   └── not-found.tsx        ← 404 placeholder
+│   ├── layout.tsx          ← root layout + metadata
+│   ├── page.tsx            ← placeholder only
+│   ├── globals.css         ← shadcn/ui CSS variables
+│   └── not-found.tsx
 ├── components/
-│   ├── ui/                  ← shadcn/ui components (Bolt adds here)
-│   ├── layout/              ← header, sidebar, footer (Bolt adds here)
-│   └── common/              ← shared components (Bolt adds here)
+│   ├── ui/                 ← shadcn/ui (Bolt fills this in P002)
+│   ├── layout/             ← Bolt fills in P002
+│   └── common/             ← Bolt fills in P002
 ├── lib/
-│   ├── utils.ts             ← cn() helper for shadcn
-│   └── axios.ts             ← API client with interceptors
-├── hooks/                   ← custom React hooks (P004)
+│   ├── utils.ts            ← cn() helper
+│   └── axios.ts            ← API client + interceptors
+├── hooks/                  ← custom hooks (P004)
 ├── types/
-│   └── index.ts             ← global TypeScript types
+│   └── index.ts            ← ApiResponse, User, AuthTokens, etc.
 ├── services/
-│   └── api/                 ← per-module API functions (P004)
-├── store/                   ← Zustand stores (P004)
-├── utils/                   ← helper functions
+│   └── api/                ← per-module API functions (P004)
+├── store/                  ← Zustand stores (P004)
+├── utils/
 ├── constants/
-│   └── index.ts             ← route constants, role constants
-└── styles/                  ← additional CSS if needed
+│   └── index.ts            ← ROUTES, ROLES, APP_NAME
+└── styles/
 ```
 
-Configure `next.config.ts`:
-- output: 'standalone'
-- API rewrites to backend
-- Image domains
-- Security headers
-
-Create `.prettierrc`:
-```json
-{
-  "semi": true,
-  "trailingComma": "all",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "plugins": ["prettier-plugin-tailwindcss"]
-}
-```
+Configure:
+- `next.config.ts` — standalone output, API rewrites, security headers
+- `.prettierrc` — semi, singleQuote, tailwindcss plugin
+- `tsconfig.json` — ensure `@/*` alias and strict mode
 
 ---
 
-## TASK 4 — INITIALIZE BACKEND (NestJS)
+## TASK 3 — INITIALIZE BACKEND (NestJS)
 
 ```bash
 cd backend
@@ -175,105 +150,95 @@ npx @nestjs/cli new . --package-manager npm --skip-git --strict --yes
 Install packages:
 ```bash
 npm install \
-  @nestjs/config \
-  @nestjs/jwt \
-  @nestjs/passport \
-  @nestjs/swagger \
-  @nestjs/throttler \
-  @nestjs/terminus \
-  passport \
-  passport-jwt \
-  passport-local \
-  bcryptjs \
-  class-validator \
-  class-transformer \
-  @prisma/client \
-  prisma \
-  helmet \
-  compression \
-  cookie-parser \
-  uuid
+  @nestjs/config @nestjs/jwt @nestjs/passport \
+  @nestjs/swagger @nestjs/throttler @nestjs/terminus \
+  passport passport-jwt passport-local \
+  bcryptjs class-validator class-transformer \
+  @prisma/client prisma \
+  helmet compression cookie-parser uuid
 
 npm install -D \
-  @types/passport-jwt \
-  @types/passport-local \
-  @types/bcryptjs \
-  @types/cookie-parser \
-  @types/compression \
-  @types/uuid
+  @types/passport-jwt @types/passport-local \
+  @types/bcryptjs @types/cookie-parser \
+  @types/compression @types/uuid
 ```
 
-Create backend structure:
+Create src/ structure:
 ```
 backend/src/
-├── main.ts                  ← bootstrap: helmet, CORS, Swagger, pipes, filters
-├── app.module.ts            ← root: ConfigModule, ThrottlerModule, DatabaseModule
-├── app.controller.ts        ← health check endpoint only
-├── app.service.ts           ← health check service only
+├── main.ts                        ← helmet, CORS, Swagger, global wiring
+├── app.module.ts                  ← ConfigModule, ThrottlerModule, DatabaseModule
+├── app.controller.ts              ← health check only
+├── app.service.ts                 ← health check only
 ├── config/
-│   ├── app.config.ts        ← all env vars typed and loaded
+│   ├── app.config.ts              ← all env vars typed
 │   └── index.ts
 ├── database/
-│   ├── database.module.ts   ← @Global() module
-│   └── database.service.ts  ← PrismaClient wrapper
+│   ├── database.module.ts         ← @Global()
+│   └── database.service.ts        ← PrismaClient wrapper
 ├── logger/
 │   ├── logger.module.ts
-│   └── logger.service.ts    ← structured logger
+│   └── logger.service.ts
 ├── common/
 │   ├── filters/
-│   │   └── http-exception.filter.ts  ← catches all exceptions
+│   │   └── http-exception.filter.ts
 │   ├── interceptors/
 │   │   └── response.interceptor.ts   ← standard JSON response
 │   ├── pipes/
-│   │   └── validation.pipe.ts        ← global ValidationPipe
-│   ├── guards/
-│   │   └── (jwt.guard.ts added in P003)
+│   │   └── validation.pipe.ts
+│   ├── guards/                        ← jwt.guard.ts added in P003
 │   ├── decorators/
 │   │   ├── current-user.decorator.ts
 │   │   ├── roles.decorator.ts
 │   │   └── public.decorator.ts
 │   ├── interfaces/
-│   │   └── index.ts          ← JwtPayload, PaginatedResult, etc.
+│   │   └── index.ts                   ← JwtPayload, PaginatedResult
 │   ├── constants/
-│   │   └── index.ts          ← ROLES, RESPONSE_MESSAGES, APP_CONSTANTS
+│   │   └── index.ts                   ← ROLES, RESPONSE_MESSAGES
 │   ├── utils/
 │   │   └── pagination.util.ts
-│   └── dto/                  ← shared DTOs
+│   └── dto/
 └── modules/
-    ├── auth/                 ← shell only in P001 (implemented in P003)
+    ├── auth/                          ← shell only (P003 implements)
     │   ├── auth.module.ts
     │   ├── dto/
     │   ├── guards/
     │   └── strategies/
-    ├── users/                ← shell only
+    ├── users/
     │   ├── users.module.ts
     │   └── dto/
-    ├── roles/                ← shell only
+    ├── roles/
     │   ├── roles.module.ts
     │   └── dto/
-    ├── permissions/          ← shell only
-    │   ├── permissions.module.ts
-    │   └── dto/
-    └── [business-modules]/   ← created in P003
+    └── permissions/
+        ├── permissions.module.ts
+        └── dto/
 ```
 
-### main.ts must configure:
+main.ts must configure:
 - `helmet()` — security headers
 - `compression()` — gzip
-- `cookieParser()` — cookie support
+- `cookieParser()` — cookies
 - `enableCors()` — frontend URL only
-- `setGlobalPrefix('api/v1')` — all routes prefixed
-- `useGlobalPipes(globalValidationPipe)` — validation
-- `useGlobalFilters(new AllExceptionsFilter())` — error handling
-- `useGlobalInterceptors(new ResponseInterceptor())` — standard response
-- `SwaggerModule.setup()` — Swagger UI (dev only)
-- `void bootstrap()` — no floating promises
+- `setGlobalPrefix('api/v1')`
+- `useGlobalPipes(globalValidationPipe)`
+- `useGlobalFilters(new AllExceptionsFilter())`
+- `useGlobalInterceptors(new ResponseInterceptor())`
+- Swagger (dev only)
+- `void bootstrap()`
 
 ---
 
-## TASK 5 — CONFIGURE PRISMA
+## TASK 4 — CONFIGURE PRISMA
 
-Create `backend/prisma/schema.prisma`:
+```
+backend/prisma/
+├── schema.prisma     ← generator + datasource only, no models yet
+├── migrations/       ← empty, models added in P003
+└── seeds/            ← empty, seeds added in P003
+```
+
+schema.prisma:
 ```prisma
 generator client {
   provider = "prisma-client-js"
@@ -284,158 +249,171 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Business models added in P003
+// Business models will be added in P003
+// after PRD and DB Design are received
 ```
-
-Create folders:
-- `backend/prisma/migrations/`
-- `backend/prisma/seeds/`
 
 ---
 
-## TASK 6 — CREATE DOCKER FILES
+## TASK 5 — DOCKER
 
-### `docker-compose.yml` (root level) must include:
-- `postgres` service (postgres:16-alpine)
-- `backend` service (NestJS)
-- `frontend` service (Next.js)
-- `pgadmin` service (profile: tools)
-- Named network
-- Named volume for postgres data
-- Health checks on postgres
+docker-compose.yml (root) — services:
+- `postgres` (postgres:16-alpine, health check, named volume)
+- `backend` (dev stage, depends on postgres)
+- `frontend` (dev stage, depends on backend)
+- `pgadmin` (profile: tools)
+- Named network, named volume
 
-### `backend/Dockerfile` — multi-stage:
-- `base` stage: node:22-alpine
-- `development` stage: npm ci + dev server
-- `builder` stage: npm ci + prisma generate + npm run build
-- `production` stage: production deps only + distroless user
+backend/Dockerfile — multi-stage:
+- `base`: node:22-alpine
+- `development`: npm ci + dev server
+- `builder`: npm ci + prisma generate + npm run build
+- `production`: prod deps + non-root user
 
-### `frontend/Dockerfile` — multi-stage:
-- `base` stage: node:22-alpine
-- `development` stage: npm ci + dev server
-- `builder` stage: npm ci + npm run build
-- `production` stage: standalone output + non-root user
+frontend/Dockerfile — multi-stage:
+- `base`: node:22-alpine
+- `development`: npm ci + dev server
+- `builder`: npm ci + npm run build
+- `production`: standalone output + non-root user
+
+deployment/nginx/nginx.conf:
+- Reverse proxy: /api/ → backend:3001
+- Frontend: / → frontend:3000
+- SSL-ready structure (certs added in P006)
 
 ---
 
-## TASK 7 — CREATE ROOT ENVIRONMENT FILES
+## TASK 6 — ROOT FILES
 
-### `.env.example` (root):
+### .env.example
 ```
-APP_NAME="Client Name"
+APP_NAME="M.R. Travels & Tours"
 NODE_ENV=development
 PORT=3001
-API_PREFIX=api/v1
 CLIENT_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
-DATABASE_URL=postgresql://postgres:PASSWORD@localhost:5432/{db_name}
+
+DATABASE_URL=postgresql://postgres:PASSWORD@localhost:5432/mr_travels_dev
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_strong_password
-POSTGRES_DB={db_name}
-POSTGRES_PORT=5432
+POSTGRES_DB=mr_travels_dev
+
 JWT_ACCESS_SECRET=your_access_secret_min_32_chars
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=your_refresh_secret_min_32_chars
 JWT_REFRESH_EXPIRES_IN=7d
+
 BCRYPT_SALT_ROUNDS=10
 THROTTLE_TTL=60
 THROTTLE_LIMIT=100
 MAX_FILE_SIZE=10485760
-UPLOAD_PATH=./uploads
 ```
 
----
+### CLAUDE.md (project-level)
+Project-specific instructions:
+- Client: MR_TRAVELS_001
+- Phase tracker reference
+- Module list
+- Do not modify rules
 
-## TASK 8 — CREATE SCRIPTS
-
-```
-scripts/
-├── dev.sh          ← start postgres + backend + frontend
-├── build.sh        ← build frontend + backend
-├── migrate.sh      ← run prisma migrate dev
-└── seed.sh         ← run prisma db seed
-```
-
----
-
-## TASK 9 — CREATE README.md
-
-Include:
-- Project name and client info
+### README.md
+- Project name + client info
 - Technology stack table
-- Quick start (clone → env setup → install → run)
-- Development phase table (P001-P006)
-- Branch strategy
-- Commit standards
-- Environment URLs
+- Quick start (clone → env → install → run)
+- Phase table
+- Dev URLs
 
 ---
 
-## TASK 10 — INITIALIZE GIT
+## TASK 7 — GIT
 
 ```bash
 git init
 git config user.email "dev@get4domain.com"
 git config user.name "Get4Domain Engineering"
 git branch -m main
-git remote add origin https://github.com/ksmwebservices/{repo-name}
+git remote add origin https://github.com/ksmwebservices/mr-travels-001
 git add .
-git commit -m "feat: P001 – {Client Name} engineering foundation
+git commit -m "feat: P001 – MR_TRAVELS_001 engineering foundation
 
 Get4Domain Engineering Standard v1.0
+Client: M.R. Travels & Tours
 Stack: Next.js + NestJS + Prisma + PostgreSQL
-Auth: JWT + Refresh Token + RBAC
-Docker: Multi-stage dev/prod builds"
+Auth: JWT + Refresh Token + RBAC architecture
+Docker: Multi-stage dev/prod builds
+Industry reference: travel/ (documentation)"
+
 git checkout -b develop
 ```
 
 ---
 
-## TASK 11 — VERIFY BUILD
+## TASK 8 — BUILD VERIFICATION
 
 ```bash
-# Backend must build with 0 errors
-cd backend && npm run build
-cd backend && npm run lint
-
-# Frontend must build with 0 errors
-cd frontend && npm run build
-cd frontend && npm run lint
+cd backend && npm run build    # 0 errors required
+cd backend && npm run lint     # 0 errors required
+cd frontend && npm run build   # 0 errors required
+cd frontend && npm run lint    # 0 errors required
 ```
 
-Fix ALL errors before committing. Warnings are acceptable.
+Fix ALL errors. Warnings acceptable.
 
 ---
 
 ## DELIVERABLES
 
+Provide this report when complete:
+
 ```
-P001 — PROJECT INITIALIZATION COMPLETE
-=======================================
+P001 — MR_TRAVELS_001 INITIALIZATION COMPLETE
+===============================================
 
-Client: {CLIENT_NAME}
-Repo:   {GITHUB_REPO}
+1. FOLDER TREE: [full tree]
 
-1. FOLDER STRUCTURE: [full tree]
-2. PACKAGES INSTALLED: [backend + frontend key packages]
-3. BUILD STATUS: backend ✅/❌ | frontend ✅/❌
-4. LINT STATUS: backend ✅/❌ | frontend ✅/❌
-5. GIT: [branches] [commit count] [last commit]
-6. PENDING: [list anything incomplete]
-7. READY FOR: P002 (Bolt) + P003 (Backend) — run simultaneously
+2. TECHNOLOGIES INSTALLED:
+   Frontend: Next.js vX, React vX, Tailwind vX, [packages]
+   Backend: NestJS vX, Prisma vX, [packages]
+
+3. CONFIGURATION:
+   - TypeScript strict: ✅
+   - ESLint: ✅
+   - Prettier: ✅
+   - Docker: ✅
+   - Swagger: ✅ (dev only)
+   - Global exception filter: ✅
+   - Global response interceptor: ✅
+   - Global validation pipe: ✅
+
+4. BUILD STATUS:
+   Backend build: ✅ PASS / ❌ FAIL
+   Backend lint:  ✅ PASS / ❌ FAIL
+   Frontend build: ✅ PASS / ❌ FAIL
+   Frontend lint:  ✅ PASS / ❌ FAIL
+
+5. GIT:
+   Branches: main, develop
+   Remote: github.com/ksmwebservices/mr-travels-001
+   Commits: [count]
+   Last commit: [message]
+
+6. INDUSTRY REFERENCE:
+   engineering/industry-reference/travel/ — [file count] files created
+
+7. PENDING:
+   - Push to GitHub (manual — requires credentials)
+   - Awaiting full engineering package:
+     PRD, Functional Spec, Database Design, API Spec
+
+8. READY FOR:
+   P002 (Bolt UI) + P003 (Backend) — after engineering package received
 ```
 
 ---
 
-## STRICT RULES
+## STOP HERE
 
-- ✅ Initialize only — foundation, not features
-- ✅ Backend build must pass with 0 errors
-- ✅ Frontend build must pass with 0 errors
-- ✅ Standard response interceptor must be wired globally
-- ✅ Swagger must be configured (dev only)
-- ❌ Do NOT create business modules
-- ❌ Do NOT design or build any UI screens
-- ❌ Do NOT add dummy/sample data
-- ❌ Do NOT modify the GET4DOMAIN platform repo
-
+Do not start P002 or P003.
+Do not create business modules.
+Do not design UI screens.
+Wait for ChatGPT to provide the complete engineering package before proceeding.

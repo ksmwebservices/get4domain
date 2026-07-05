@@ -1,30 +1,24 @@
 ---
-name: Bug report
-about: Report a defect in the platform or a client project
-title: "[BUG] "
+name: Bug Report
+about: Report a bug
 labels: bug
 ---
 
 ## Description
-
-A clear description of what the bug is.
+[Clear description of the bug]
 
 ## Steps to Reproduce
-
 1.
 2.
 3.
 
 ## Expected Behavior
+[What should happen]
 
 ## Actual Behavior
+[What actually happens]
 
 ## Environment
-
-- Repo:
-- Environment (dev/staging/prod):
-- Branch/commit:
-
-## Additional Context
-
-Logs, screenshots, or anything else relevant.
+- Module:
+- Browser/Device:
+- User Role:

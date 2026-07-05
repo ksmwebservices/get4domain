@@ -1,50 +1,35 @@
-# New Client Questionnaire — Get4Domain
+# New Client Questionnaire — Get4Domain v1.0
 
-Filled in by ChatGPT (Business Analyst) during initial client discovery,
-before P001 starts.
+## Company Information
+- Company Name:
+- Industry:
+- Location:
+- Contact Name:
+- Phone:
+- Email:
+- GST Number:
 
-## Business Basics
+## Project Requirements
+- What is the main problem to solve?
+- How many users will use the system?
+- User types/roles:
+- Key features needed (list):
+- Features NOT needed:
 
-1. Business/company name?
-2. Industry (match to an existing pack in `engineering/industry-packs/` or
-   flag as new)?
-3. Primary location(s) and any region-specific regulatory requirements
-   (e.g. GST for India)?
-4. Number of expected users (admin/staff) and roles?
-5. Number of expected end-customers (if the app is customer-facing)?
+## Technical Preferences
+- Do you have an existing website? URL:
+- Do you have existing data to migrate? Format:
+- Any specific integrations needed? (WhatsApp, payment, etc.)
+- Preferred language for the system: English / Tamil / Both
 
-## Scope
+## Timeline
+- Target go-live date:
+- Any fixed deadlines or events?
 
-6. What are the must-have modules for launch (MVP)?
-7. What is explicitly out of scope for MVP?
-8. Any existing system being replaced or integrated with?
-9. Any required third-party integrations (payments, SMS, email, maps)?
+## Budget
+- Budget range:
+- Payment preference: Bank transfer / UPI / Cheque
 
-## Branding & UI
-
-10. Do they have existing brand assets (logo, colors)? Where are they
-    stored (`assets/`)?
-11. Any reference sites/apps they like the look of? (for Bolt/P002)
-
-## Data
-
-12. Is there existing data to migrate? Format and volume?
-13. Any data residency/privacy requirements?
-
-## Commercial
-
-14. Agreed implementation fee and payment schedule (50/50 default)?
-15. Agreed annual hosting fee?
-16. AMC opted in?
-17. Source code delivery contracted separately? (default: no)
-
-## Technical
-
-18. Desired dev/staging/prod subdomain slugs (client-slug for
-    `{slug}[-env].get4domain.com`)?
-19. Any hard deadline driving the timeline?
-
-## Output
-
-Once this questionnaire is complete, ChatGPT drafts the PRD/BRD and hands
-off to Claude Code for P001.
+## Additional
+- Any competitor systems you admire?
+- Any must-have reports or documents (invoices, etc.)?

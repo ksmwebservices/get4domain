@@ -1,45 +1,32 @@
-# Client Repository Guide — Get4Domain
+# Client Repository Guide — Get4Domain v1.0
 
-## One Repository Per Client
+## When Starting a New Client
 
-Every client project lives in its own GitHub repository under
-`github.com/ksmwebservices/{client-slug}` — never inside the `get4domain`
-platform repository.
+1. Collect requirements (industry questionnaire)
+2. Create GitHub repo: github.com/ksmwebservices/{client-id}
+3. Run P001 (Claude initializes project)
+4. Run P002 (Bolt builds UI)
+5. Run P003 (Claude builds backend)
+6. Run P004 (Integration)
+7. Run P005 (Testing)
+8. Deploy to dev URL for client review
+9. After approval + payment: Run P006 (Production deployment)
 
-Naming convention: lowercase, kebab-case, with a numeric suffix for the
-engagement, e.g. `mr-travels-001`, `hospital-001`.
+## Naming Convention
 
-## Local Layout
+Client IDs:
+  MR_TRAVELS_001    — M.R. Travels & Tours (first travel client)
+  HOSPITAL_001      — First hospital client
+  HR_001            — First HR client
 
-Client repos are cloned locally under:
+GitHub repos:
+  github.com/ksmwebservices/mr-travels-001
+  github.com/ksmwebservices/hospital-001
+  github.com/ksmwebservices/hr-001
 
-```
-CLIENT_PROJECTS\{CLIENT_ID}\
-```
+Dev URLs:
+  mr-travels-dev.get4domain.com
+  hospital-dev.get4domain.com
 
-where `{CLIENT_ID}` is the upper-snake-case client identifier used across
-`GET4DOMAIN_PLATFORM.json` and engineering prompts, e.g. `MR_TRAVELS_001`.
-
-## What Belongs in a Client Repo
-
-Everything specific to that client's application: `frontend/`, `backend/`,
-`database/`, `deployment/`, `docs/`, `testing/`, `scripts/`, `uploads/`,
-`logs/` — per the structure defined in `CLAUDE.md` section 5.
-
-## What Never Goes in a Client Repo
-
-- Engineering standards, phase prompts, or industry packs — those live only
-  in the platform repo and are referenced, not copied.
-- Other clients' code, credentials, or data.
-
-## What Never Goes in the Platform Repo
-
-- Client business logic, client-specific modules, or client data of any
-  kind.
-- Client secrets or environment files.
-
-## Cross-Referencing
-
-Client project READMEs may link back to the relevant
-`engineering/industry-packs/{industry}/` docs in the platform repo for
-context, but should not duplicate their content.
+Production URLs:
+  mr-travels.get4domain.com  OR  client's own domain

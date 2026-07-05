@@ -1,22 +1,19 @@
 ---
-name: Feature request
-about: Propose a new feature or module
-title: "[FEATURE] "
+name: Feature Request
+about: Suggest a new feature
 labels: enhancement
 ---
 
-## Problem
+## Feature Description
+[Clear description of the feature]
 
-What problem does this feature solve? Who is asking for it?
+## Business Reason
+[Why is this needed]
 
-## Proposed Solution
+## Acceptance Criteria
+- [ ]
+- [ ]
+- [ ]
 
-Describe the feature. Include which phase it belongs to (P002 UI / P003
-backend / etc.) and which owner (Bolt or Claude Code).
-
-## Scope
-
-- In scope:
-- Out of scope:
-
-## Additional Context
+## Module
+[Which module does this belong to]

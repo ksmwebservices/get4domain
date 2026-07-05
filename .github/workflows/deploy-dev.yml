@@ -1,3 +1,6 @@
+# Get4Domain Engineering Standard v1.0
+# Auto-deploy to development server on push to develop
+
 name: Deploy Dev
 
 on:
@@ -5,16 +8,11 @@ on:
     branches: [develop]
 
 jobs:
-  deploy-dev:
-    name: Deploy to development environment
+  deploy:
+    name: Deploy to Dev Server
     runs-on: ubuntu-latest
-    environment: development
     steps:
       - uses: actions/checkout@v4
-
-      # This job is a placeholder wired up during P006 (Deployment) for each
-      # client project. It documents the expected shape of the dev deploy
-      # pipeline for the platform repo itself and is not yet connected to a
-      # live server.
-      - name: Placeholder — no deploy target configured yet
-        run: echo "Configure SSH/Docker deploy steps in P006."
+      - name: Deploy via SSH
+        run: echo "Configure SSH deployment here"
+        # Add: SSH key, server IP, docker compose commands

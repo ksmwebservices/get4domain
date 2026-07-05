@@ -1,92 +1,107 @@
-# P005 — Testing
+# P005 — Testing + Build Verification
 # Get4Domain Engineering Standard v1.0
-# Phase: P005 | Owner: Claude Code | Runs after P004 (Integration) complete
+# Phase: P005 | Owner: Claude Code | Runs after P004 complete
 
 ---
 
 ## YOUR ROLE IN THIS PHASE
 
-Verify the integrated application actually works — build, lint, unit
-tests, and API tests — before the project moves to deployment.
+Verify the complete application is production-ready.
+Fix all errors. Write critical unit tests. Verify Docker build.
 
 ---
 
-## READ FIRST
-
-1. Read `CLAUDE.md` in the GET4DOMAIN repo
-2. Read the P003 deliverables (modules, endpoints) and P004 deliverables
-   (integration points)
-3. Read this file completely — then execute
-
----
-
-## TASK 1 — BUILD VERIFICATION
+## TASK 1 — BACKEND BUILD + LINT
 
 ```bash
-cd backend && npm run build
-cd frontend && npm run build
+cd backend
+npm run build       # must be 0 errors
+npm run lint        # must be 0 errors
+npm run test        # must pass
 ```
 
-Both must complete with 0 errors. Warnings are acceptable but should be
-reviewed — do not silence them with blanket eslint-disable comments.
+Fix every error before proceeding. Warnings are acceptable.
 
 ---
 
-## TASK 2 — LINT VERIFICATION
+## TASK 2 — FRONTEND BUILD + LINT
 
 ```bash
-cd backend && npm run lint
-cd frontend && npm run lint
+cd frontend
+npm run build       # must be 0 errors
+npm run lint        # must be 0 errors
 ```
 
-Both must complete with 0 errors.
+Fix every error before proceeding.
 
 ---
 
-## TASK 3 — BACKEND UNIT TESTS
+## TASK 3 — API ENDPOINT TESTING
 
-For every service in `backend/src/modules/*/`, add unit tests under
-`testing/unit/` (or co-located `*.spec.ts` per NestJS convention) covering:
+Test every endpoint manually or with a test script:
 
-- Happy path for each public method
-- Not-found case (`NotFoundException`)
-- Duplicate/conflict case where applicable (`ConflictException`)
-- Soft-delete filtering (deleted records excluded from `findAll`)
-- Role/permission checks where logic lives in the service layer
+For each module verify:
+- [ ] GET /api/v1/{module} → returns paginated list
+- [ ] POST /api/v1/{module} → creates record, returns created object
+- [ ] GET /api/v1/{module}/:id → returns single record
+- [ ] PATCH /api/v1/{module}/:id → updates record
+- [ ] DELETE /api/v1/{module}/:id → soft deletes (deletedAt set)
+- [ ] Auth required (401 without token)
+- [ ] Role required (403 with wrong role)
 
-Mock `DatabaseService` — do not hit a real database in unit tests.
+---
+
+## TASK 4 — UNIT TESTS (CRITICAL SERVICES)
+
+Write unit tests for:
+- AuthService (login, refresh, logout)
+- Any service with complex business logic
+- GST calculation (if applicable)
+- Invoice generation logic
+
+Test file pattern:
+```
+backend/src/modules/auth/auth.service.spec.ts
+backend/src/modules/invoices/invoices.service.spec.ts
+```
+
+Run:
+```bash
+npm run test
+npm run test:cov    # check coverage
+```
+
+---
+
+## TASK 5 — DOCKER BUILD VERIFICATION
 
 ```bash
-cd backend && npm run test
+# Build both images
+docker build -t mr-travels-backend ./backend
+docker build -t mr-travels-frontend ./frontend
+
+# Test full stack with docker compose
+docker compose up --build -d
+docker compose ps      # all services healthy?
+docker compose logs backend --tail=50
 ```
 
----
-
-## TASK 4 — API (INTEGRATION) TESTS
-
-Under `testing/integration/`, cover the real HTTP surface against a test
-database:
-
-- Auth flow: login → access protected route → refresh → logout
-- CRUD flow per business module, including validation failures (400) and
-  auth failures (401/403)
-- Response shape matches the standard `ResponseInterceptor` envelope on
-  both success and error paths
+Verify:
+- [ ] Backend starts without errors
+- [ ] Frontend builds and serves
+- [ ] Database connects
+- [ ] Health check: http://localhost:3001/api/v1/health → 200 OK
 
 ---
 
-## TASK 5 — E2E TESTS (IF IN SCOPE)
+## TASK 6 — SECURITY CHECKLIST
 
-Under `testing/e2e/`, cover the critical user journeys end-to-end
-(login → core module flow → logout) against a running dev instance, if the
-client engagement scope includes E2E coverage.
-
----
-
-## TASK 6 — REPORT
-
-Record pass/fail counts per suite, not just "tests pass" — the deliverables
-report must include actual numbers.
+- [ ] No .env files committed
+- [ ] No secrets in code
+- [ ] All endpoints require auth (except /auth/login, /auth/refresh, public pages)
+- [ ] Input validation on all POST/PATCH endpoints
+- [ ] File upload size limits configured
+- [ ] Rate limiting active
 
 ---
 
@@ -94,24 +109,15 @@ report must include actual numbers.
 
 ```
 P005 — TESTING COMPLETE
-=========================
-
-1. BUILD: backend ✅/❌ | frontend ✅/❌
-2. LINT: backend ✅/❌ [errors] | frontend ✅/❌ [errors]
-3. UNIT TESTS: [passed]/[total], coverage: [module list]
-4. INTEGRATION TESTS: [passed]/[total]
-5. E2E TESTS: [passed]/[total] or "not in scope"
-6. KNOWN ISSUES: [list, or "none"]
-7. READY FOR: P006 (Deployment)
+========================
+1. Backend build: ✅/❌
+2. Backend lint: ✅/❌ [X errors, Y warnings]
+3. Frontend build: ✅/❌
+4. Frontend lint: ✅/❌
+5. API tests: [X/Y endpoints passing]
+6. Unit tests: [X passing, Y failing]
+7. Docker build: ✅/❌
+8. Security checklist: [X/Y items checked]
+9. Ready for: P006 (Deployment) — pending client approval + full payment
 ```
 
----
-
-## STRICT RULES
-
-- ✅ Every business module has at least one unit test file
-- ✅ Every auth-protected endpoint has at least one integration test for
-      the unauthorized case
-- ❌ Do NOT mark this phase complete with failing tests
-- ❌ Do NOT skip tests with `.skip`/`xit` to force a green run without
-      fixing the underlying issue
