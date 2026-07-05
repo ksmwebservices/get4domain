@@ -2,7 +2,7 @@
   "_readme": "Master registry of all Get4Domain client projects. Update after every phase change.",
   "_version": "1.1",
   "_lastUpdated": "2026-07-05",
-  "_lastUpdatedNote": "EP01 Engineering Package generated for MR_TRAVELS_001",
+  "_lastUpdatedNote": "P002 frontend dependency reconciliation committed and pushed (069b423) for MR_TRAVELS_001; EP01 review still pending",
 
   "platform": {
     "name": "Get4Domain",
@@ -62,9 +62,9 @@
       "industry": "TRAVEL",
       "industryReference": "engineering/industry-reference/travel",
       "status": "active",
-      "currentPhase": "engineering-package-review",
-      "phaseStatus": "pending",
-      "note": "EP01 complete: Claude Code generated the 20-document Engineering Package + 5 phase prompts. Pending ChatGPT review and final approval before P002/P003.",
+      "currentPhase": "P002",
+      "phaseStatus": "in-progress",
+      "note": "EP01 complete (generation): 20-document Engineering Package + 5 phase prompts, pending ChatGPT review. P002: Bolt frontend copied into frontend/ and dependency-reconciled (Next 13.5.1 + Tailwind v3 aligned, duplicate configs removed, build/typecheck/dev verified clean, no UI/business logic changed); commit 069b423 pushed to origin/develop. This reconciliation proceeded ahead of the normal EP01 approval gate since a Bolt export already existed.",
       "github": "https://github.com/ksmwebservices/mr-travels-001",
       "localPath": "C:\\Get4Domain\\CLIENT_PROJECTS\\TRAVEL\\CLIENTS\\MR_TRAVELS_001",
       "devUrl": "mr-travels-dev.get4domain.com",
@@ -88,7 +88,7 @@
       "phases": {
         "P000": { "status": "complete",     "completedAt": "2025-07-04", "notes": "Workspace initialized" },
         "P001": { "status": "complete",     "completedAt": "2026-07-05", "notes": "Engineering foundation scaffolded (frontend, backend, docker, prisma shell)" },
-        "P002": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
+        "P002": { "status": "in-progress",  "completedAt": null, "notes": "Bolt frontend (public site + admin/staff/portal dashboards) copied in and dependency-reconciled: Next 13.5.1 + Tailwind v3 aligned across node_modules/package.json/lockfile, duplicate next.config/postcss.config/eslint configs removed, orphaned pre-Bolt src/app placeholder removed, two Next-13.5.1 Metadata API fixes (viewport/themeColor). npm run build/typecheck/dev all verified clean; no UI or business logic changed. Commit 069b423 pushed to origin/develop 2026-07-05. Remaining full P002 UI build/sign-off still pending." },
         "P003": { "status": "not-started",  "completedAt": null, "notes": "Waits for P001 + eng. package" },
         "P004": { "status": "not-started",  "completedAt": null, "notes": "Waits for P002 + P003" },
         "P005": { "status": "not-started",  "completedAt": null, "notes": "Waits for P004" },
