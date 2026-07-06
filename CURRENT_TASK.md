@@ -20,25 +20,30 @@ Dev URL:       mr-travels-dev.get4domain.com
 ## CURRENT STATUS
 
 ```
-Phase:   P005 — Testing, QA & Release Validation (complete)
-Status:  Full testing/QA/security-hardening pass on the P004 build.
-         120/120 automated tests passing (57 new Jest unit tests covering
-         every BRULE-001..010; 63 new Supertest integration tests covering
-         auth, RBAC across all 9 roles, the full Lead->Invoice workflow,
-         GST both directions, documents, notifications, reports,
-         settings). Playwright responsive smoke test across desktop/
-         tablet/mobile. 7 genuine bugs found and fixed (2 Critical: rate
-         limiting was never enforced despite being "configured"; document
-         uploads had no MIME-type validation. 1 High: Settings write
-         endpoint rejected every request. 3 Medium/1 Low — see report).
-         5 findings logged, not fixed (out of phase scope, incl. a
-         recommended new CR for customer-portal account provisioning,
-         which has no API path anywhere in the approved package).
-         npm run build/lint/typecheck clean on both frontend and backend.
-         Full detail in MR_TRAVELS_001's docs/P005_QA_REPORT.md,
-         docs/P005_BUG_REPORT.md, docs/P005_RELEASE_READINESS_REPORT.md,
-         and docs/20_CURRENT_TASK.md §9.
-Owner:   Claude Code — P005 complete, awaiting instruction for P005.5/P006
+Phase:   P006 — Deployment (PREPARATION complete; deployment NOT executed)
+Status:  All production deployment artifacts prepared and build-verified
+         per owner instruction: hardened production Dockerfiles
+         (HEALTHCHECK added), docker-compose.prod.yml (backend+frontend+
+         nginx, no postgres — Supabase is external), three-subdomain
+         Nginx config (get4domain.com existing static site untouched,
+         api.get4domain.com -> backend, mrtravels.get4domain.com ->
+         frontend; SSL-ready via host-run Certbot, security headers,
+         gzip, rate limiting), production .env templates for both apps,
+         deploy/backup/rollback scripts, and docs/13_DEPLOYMENT_
+         SPECIFICATION.md updated to v2.0 (supersedes the v1.0 single-
+         domain/containerized-Postgres draft from EP01 — actual
+         architecture uses external Supabase + multi-subdomain routing).
+         backend/frontend npm run build/lint both clean (0 errors);
+         Docker itself unavailable in this dev environment, so container
+         builds were not executed locally (documented limitation). No
+         application code modified, no business features added, no
+         server contacted. Payment/client-approval gate (REPOSITORY_
+         RULES.md Rule 8) NOT yet clear — PROJECT_REGISTRY.json still
+         shows both payment fields "pending". Full detail in
+         MR_TRAVELS_001's docs/DEPLOYMENT_READINESS_REPORT.md and
+         docs/20_CURRENT_TASK.md §10.
+Owner:   Claude Code — P006 prep complete, awaiting payment/approval gate
+         and owner authorization before executing scripts/deploy.sh
 ```
 
 ---
@@ -58,7 +63,16 @@ Step 8:  ChatGPT logs CR-001 (missing staff-portal pages), defers it — done, 2
 Step 9:  P005 (Testing) executed — done, 2026-07-06. 120/120 tests
          passing, 7 bugs fixed, 5 findings logged for disposition.
 Step 10: Awaiting ChatGPT's review of P005's findings and instruction for
-         P005.5 (CR-001 staff pages) vs P006 (deployment prep) next.
+         P005.5 (CR-001 staff pages) vs P006 (deployment prep) next —
+         resolved: owner instructed P006 deployment PREPARATION directly.
+Step 11: P006 deployment preparation executed — done, 2026-07-06. All
+         artifacts prepared and build-verified; deployment itself NOT
+         executed (out of scope for this instruction; payment/approval
+         gate also not yet clear).
+Step 12: Awaiting: (a) CR-001/FINDING-02 disposition (still open),
+         (b) client written approval + final payment confirmation,
+         (c) explicit owner authorization to run scripts/deploy.sh
+         against the production server.
 ```
 
 ---
@@ -102,7 +116,7 @@ Claude Code must generate all 20 files into client docs/ before P002/P003
 | P003  | Complete    | 2026-07-05| RBAC/Authentication foundation plus all 35 catalog modules implemented (Leads/CRM, Customers, Packages, Fleet, Travel Services, Quotations, Bookings + 6 reservation types, Finance, Reports/Dashboard, Notifications, Documents, Settings). Prisma schema migrated and seeded against the live Supabase database. Known follow-ups: invoice PDF endpoint returns JSON pending a rendering library; a few role-based "Own" scopes derived from related records where the approved schema has no dedicated owner field (documented in code). |
 | P004  | Complete    | 2026-07-06| Frontend wired to the live P003 backend across 4 milestones (Auth+Dashboard, CRM+Packages, Bookings+Fleet, Finance+Documents+Reports+Settings+Roles/Users), 5 commits. Verified end-to-end incl. full Lead-to-Invoice workflow and GST split both ways. Several real bugs found/fixed (Decimal-as-string summing, invalid lead status transitions, unauthenticated document download, missing DTO decorators). Several P002 UI gaps found/logged, not fixed — no new screens added (missing staff-portal routes for Ops/Accounts roles, Suppliers/Travel Services/Ledger/Fixed-Departures/Custom-Requests have no screens anywhere). Full detail in MR_TRAVELS_001 docs/20_CURRENT_TASK.md §8. |
 | P005  | Complete    | 2026-07-06| Testing/QA/security hardening pass. 120/120 automated tests passing (57 unit + 63 integration, new). 7 genuine bugs found/fixed: 2 Critical (rate limiting never enforced; document uploads had no MIME-type validation), 1 High (Settings write endpoint rejected every request), 3 Medium (invoice issue/cancel missing LedgerEntry; customer notifications unreachable by the customer; "payment received" notification never sent), 1 Low (tablet-breakpoint horizontal scroll). 5 findings logged, not fixed (broken stock photo; no customer-portal provisioning endpoint — recommend new CR; missing DB indexes at scale — schema change, out of scope; vehicle/driver expiry notifications need a scheduler that doesn't exist; CR-001 unchanged). Full detail in MR_TRAVELS_001 docs/P005_QA_REPORT.md, docs/P005_BUG_REPORT.md, docs/P005_RELEASE_READINESS_REPORT.md. |
-| P006  | Not started | —         | Waits for P005.5 (if prioritized) + payment + written approval|
+| P006  | Preparation complete; deployment not executed | 2026-07-06 | All deployment artifacts prepared and build-verified (hardened Dockerfiles, docker-compose.prod.yml, 3-subdomain Nginx config, env templates, deploy/backup/rollback scripts, 13_DEPLOYMENT_SPECIFICATION.md v2.0). Docker unavailable locally, container builds not executed (documented limitation). Deployment itself gated on client approval + final payment, neither yet confirmed — scripts/deploy.sh has not been run, no server contacted. Full detail in MR_TRAVELS_001 docs/DEPLOYMENT_READINESS_REPORT.md. |
 
 ---
 
