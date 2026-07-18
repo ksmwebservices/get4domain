@@ -13,6 +13,7 @@ export interface LoginResult {
     email: string;
     role: string;
     businessName: string;
+    industry: string | null;
   };
 }
 
@@ -49,6 +50,7 @@ export class AuthService {
         email: vendor.email,
         role: vendor.role,
         businessName: vendor.businessName,
+        industry: vendor.industry,
       },
     };
   }

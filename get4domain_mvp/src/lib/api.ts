@@ -92,6 +92,15 @@ export const api = {
   deleteProduct: (id: string) =>
     apiCall(`/cms/products/${id}`, { method: 'DELETE' }),
 
+  // AI Assistant
+  chat: (data: {
+    message: string;
+    conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    context?: 'marketing' | 'dashboard';
+    industry?: string;
+    vendorName?: string;
+  }) => apiCall('/ai/chat', { method: 'POST', body: JSON.stringify(data) }),
+
   // Support
   createTicket: (data: any) =>
     apiCall('/support/tickets', { method: 'POST', body: JSON.stringify(data) }),

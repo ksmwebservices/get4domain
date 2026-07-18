@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   role: 'vendor' | 'admin' | 'super_admin';
   businessName?: string;
+  industry?: string;
   plan?: string;
   initials: string;
 }
@@ -85,6 +86,7 @@ export async function loginWithCredentials(
       email: backendUser.email,
       role: mapRole(backendUser.role),
       businessName: backendUser.businessName,
+      industry: backendUser.industry ?? undefined,
       plan: 'DomainApp Startup',
       initials: getInitials(backendUser.name),
     };

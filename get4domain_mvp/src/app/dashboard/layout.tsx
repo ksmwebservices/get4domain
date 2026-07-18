@@ -8,6 +8,7 @@ import {
   CreditCard, Bell, Settings, LogOut, Menu, X, ChevronRight, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import DashboardChatBot from '@/components/DashboardChatBot';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard',          href: '/dashboard' },
@@ -140,6 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
         <main className="flex-1 overflow-y-auto p-5 lg:p-8">{children}</main>
       </div>
+      <DashboardChatBot vendorName={user.name} industry={user.industry} />
     </div>
   );
 }
