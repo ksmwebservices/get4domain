@@ -9,6 +9,8 @@ import {
   BarChart3, Globe, Megaphone, CalendarCheck
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Overview',      href: '/admin' },
@@ -29,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -39,6 +42,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (user?.role !== 'super_admin') return;
+    requestNotificationPermission().then((granted) => {
+      if (granted) {
+        subscribeToPush().then((subscription) => {
+          if (subscription) {
+            api.subscribeToPushNotifications(subscription).catch(() => {});
+          }
+        });
+      }
+    });
+  }, [user]);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const result = await api.getUnreadNotifications();
+        setNotifCount(result.data?.count ?? 0);
+      } catch {
+        // Backend notifications endpoint not implemented yet — stay at 0
+      }
+    };
+    check();
+    const interval = setInterval(check, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!mounted || loading || !user) {
@@ -127,7 +157,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
             <Link href="/admin/support" className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-error-500" />
+              {notifCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-error-500 text-[10px] font-bold text-white">
+                  {notifCount > 9 ? '9+' : notifCount}
+                </span>
+              )}
             </Link>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
               {user.initials}

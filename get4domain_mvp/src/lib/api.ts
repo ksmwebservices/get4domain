@@ -111,4 +111,9 @@ export const api = {
     apiCall(`/support/tickets/${id}/reply`, { method: 'PUT', body: JSON.stringify({ adminReply }) }),
   resolveTicket: (id: string) =>
     apiCall(`/support/tickets/${id}/resolve`, { method: 'PUT' }),
+
+  // Notifications (not yet implemented on the backend — calls fail silently until it is)
+  getUnreadNotifications: () => apiCall('/notifications/unread'),
+  subscribeToPushNotifications: (subscription: PushSubscription) =>
+    apiCall('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
 };
