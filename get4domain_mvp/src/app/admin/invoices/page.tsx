@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Send, Download, Loader2 } from 'lucide-react';
+import { CheckCircle2, Send, Download, Loader2, Plus, BadgeCheck } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 
 interface Invoice {
@@ -18,6 +19,14 @@ interface Invoice {
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
   vendor: { name: string; businessName: string };
 }
+
+interface Vendor {
+  id: string;
+  name: string;
+  businessName: string;
+}
+
+const emptyForm = { vendorId: '', description: '', amount: '', dueDate: '' };
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   PAID: { label: 'Paid', color: 'bg-success-500/20 text-success-400 border-success-500/30' },
@@ -36,12 +45,26 @@ export default function AdminInvoicesPage() {
   const [error, setError] = useState('');
   const [sending, setSending] = useState<string | null>(null);
   const [sent, setSent] = useState<string[]>([]);
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [creating, setCreating] = useState(false);
+
+  async function loadInvoices() {
+    try {
+      const res = await api.getInvoices();
+      setInvoices(res.data ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invoices');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    api.getInvoices()
-      .then((res) => setInvoices(res.data ?? []))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load invoices'))
-      .finally(() => setLoading(false));
+    loadInvoices();
+    api.getVendors().then((res) => setVendors(res.data ?? [])).catch(() => {});
   }, []);
 
   async function sendPaymentLink(id: string) {
@@ -56,6 +79,43 @@ export default function AdminInvoicesPage() {
     }
   }
 
+  async function markPaid(id: string) {
+    setMarkingPaid(id);
+    try {
+      await api.markPaid(id);
+      await loadInvoices();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark as paid');
+    } finally {
+      setMarkingPaid(null);
+    }
+  }
+
+  function openCreate() {
+    setForm(emptyForm);
+    setCreateOpen(true);
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    try {
+      await api.createInvoice({
+        vendorId: form.vendorId,
+        description: form.description,
+        amount: Math.round(Number(form.amount) * 100),
+        dueDate: form.dueDate || undefined,
+      });
+      setCreateOpen(false);
+      await loadInvoices();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create invoice');
+    } finally {
+      setCreating(false);
+    }
+  }
+
   const totalPaid = invoices.filter(i => i.status === 'PAID').reduce((s, i) => s + i.totalAmount, 0);
   const totalPending = invoices.filter(i => i.status === 'PENDING').reduce((s, i) => s + i.totalAmount, 0);
 
@@ -66,6 +126,7 @@ export default function AdminInvoicesPage() {
           <h2 className="text-xl font-bold text-white">Invoices</h2>
           <p className="mt-1 text-sm text-slate-400">All GST invoices and payment status.</p>
         </div>
+        <Button size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openCreate}>Create Invoice</Button>
       </div>
 
       {error && (
@@ -134,18 +195,27 @@ export default function AdminInvoicesPage() {
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {inv.status === 'PENDING' && (
-                      wasSent ? (
-                        <span className="flex items-center gap-1.5 text-xs font-semibold text-success-400">
-                          <CheckCircle2 className="h-4 w-4" />Payment link sent to client
-                        </span>
-                      ) : (
-                        <Button size="sm" loading={sending === inv.id}
-                          onClick={() => sendPaymentLink(inv.id)}
-                          leftIcon={<Send className="h-3.5 w-3.5" />}
-                          className="bg-primary-600 hover:bg-primary-700 text-white">
-                          Send Payment Link to Client
+                      <>
+                        {wasSent ? (
+                          <span className="flex items-center gap-1.5 text-xs font-semibold text-success-400">
+                            <CheckCircle2 className="h-4 w-4" />Payment link sent to client
+                          </span>
+                        ) : (
+                          <Button size="sm" loading={sending === inv.id}
+                            onClick={() => sendPaymentLink(inv.id)}
+                            leftIcon={<Send className="h-3.5 w-3.5" />}
+                            className="bg-primary-600 hover:bg-primary-700 text-white">
+                            Send Payment Link to Client
+                          </Button>
+                        )}
+                        <Button size="sm" loading={markingPaid === inv.id}
+                          onClick={() => markPaid(inv.id)}
+                          leftIcon={<BadgeCheck className="h-3.5 w-3.5" />}
+                          variant="outline"
+                          className="border-slate-700 text-slate-300 hover:border-success-500 hover:text-success-400">
+                          Mark as Paid
                         </Button>
-                      )
+                      </>
                     )}
                     {inv.status === 'PAID' && (
                       <Button size="sm" leftIcon={<Download className="h-3.5 w-3.5" />}
@@ -167,6 +237,42 @@ export default function AdminInvoicesPage() {
           </div>
         </>
       )}
+
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Create Invoice" maxWidth="max-w-lg">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600">Vendor</label>
+            <select required value={form.vendorId} onChange={(e) => setForm({ ...form, vendorId: e.target.value })}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+              <option value="">Select vendor</option>
+              {vendors.map((v) => <option key={v.id} value={v.id}>{v.businessName} — {v.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600">Description</label>
+            <input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="e.g. DomainApp Enterprise — annual subscription"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Amount (₹, before GST)</label>
+              <input required type="number" min="1" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Due Date</label>
+              <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            </div>
+          </div>
+          {form.amount && (
+            <p className="text-xs text-slate-500">
+              Total with 18% GST: ₹{Math.round(Number(form.amount) * 1.18).toLocaleString('en-IN')}
+            </p>
+          )}
+          <Button type="submit" fullWidth loading={creating}>Create Invoice</Button>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -4,23 +4,23 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Rocket, LayoutDashboard, Users, FileText, CreditCard, Bell,
-  Settings, LogOut, Menu, X, ChevronRight, MessageSquare,
-  Package, BarChart3, Globe, Megaphone, CalendarCheck
+  Rocket, LayoutDashboard, Users, FileText, Bell,
+  Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
+  BarChart3, Globe, Megaphone, CalendarCheck
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Overview',      href: '/admin' },
-  { icon: CalendarCheck,   label: 'Demo Bookings', href: '/admin/leads',     badge: '3' },
-  { icon: Users,           label: 'Customers',     href: '/admin/customers' },
+  { icon: CalendarCheck,   label: 'Demo Bookings', href: '/admin/leads' },
+  { icon: Users,           label: 'Vendors',       href: '/admin/customers' },
   { icon: FileText,        label: 'Invoices',      href: '/admin/invoices' },
-  { icon: CreditCard,      label: 'Payments',      href: '/admin/invoices' },
-  { icon: Globe,           label: 'DomainApp',     href: '/admin/plans' },
-  { icon: Megaphone,       label: 'DomainCampaign',href: '/admin/plans' },
-  { icon: MessageSquare,   label: 'Support',       href: '/admin/support',   badge: '2' },
-  { icon: BarChart3,       label: 'Analytics',     href: '/admin' },
-  { icon: Settings,        label: 'Settings',      href: '/admin/settings' },
+  { icon: RefreshCw,       label: 'Renewals',      href: '/admin/renewals' },
+  { icon: BarChart3,       label: 'Accounting',    href: '/admin/accounting' },
+  { icon: Megaphone,       label: 'Campaigns',     href: '/admin/campaigns' },
+  { icon: MessageSquare,   label: 'Support',       href: '/admin/support' },
+  { icon: Globe,           label: 'Website CMS',   href: '/admin/cms' },
+  { icon: Settings,        label: 'API Settings',  href: '/admin/api-settings' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -99,9 +99,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-primary-400' : 'text-slate-500'}`} />
                 <span className="flex-1">{item.label}</span>
-                {'badge' in item && item.badge && (
-                  <span className="rounded-full bg-error-600 px-1.5 py-0.5 text-xs font-bold text-white leading-none">{item.badge}</span>
-                )}
               </Link>
             );
           })}
