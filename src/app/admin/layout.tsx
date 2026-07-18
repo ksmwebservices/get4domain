@@ -28,6 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -36,7 +37,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
-  if (loading || !user) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="flex flex-col items-center gap-3">
