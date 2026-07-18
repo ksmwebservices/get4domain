@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { Rocket, Mail, Lock, Eye, EyeOff, AlertCircle, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { loginWithCredentials, getSession } from '@/lib/auth';
+import { useAuth } from '@/lib/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,20 +25,19 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
     setError('');
     setLoading(true);
-    setTimeout(() => {
-      const result = loginWithCredentials(email, password);
-      setLoading(false);
-      if (result.success && result.user) {
-        router.push(result.user.role === 'vendor' ? '/dashboard' : '/admin');
-      } else {
-        setError(result.error ?? 'Login failed. Please try again.');
-      }
-    }, 500);
+    const result = await loginWithCredentials(email, password);
+    setLoading(false);
+    if (result.success && result.user) {
+      refresh();
+      router.push(result.user.role === 'vendor' ? '/dashboard' : '/admin');
+    } else {
+      setError(result.error ?? 'Login failed. Please try again.');
+    }
   };
 
   return (

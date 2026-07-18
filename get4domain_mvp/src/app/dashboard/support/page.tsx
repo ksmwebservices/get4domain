@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MessageCircle, Phone, Mail, CheckCircle2, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { api } from '@/lib/api';
 
 const categories = [
   'Technical Issue', 'Billing / Payment', 'Website Changes', 'Plan Upgrade',
@@ -12,12 +13,30 @@ const categories = [
 export default function SupportPage() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [category, setCategory] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSubmitted(true); }, 1200);
+    try {
+      await api.createTicket({ category, subject, message });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit ticket. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setSubmitted(false);
+    setCategory('');
+    setSubject('');
+    setMessage('');
   };
 
   if (submitted) {
@@ -29,7 +48,7 @@ export default function SupportPage() {
         <h2 className="text-xl font-bold text-slate-900">Ticket Raised!</h2>
         <p className="mt-2 text-sm text-slate-500">Our team will respond within 24 hours on your registered email and WhatsApp.</p>
         <div className="mt-6">
-          <Button onClick={() => setSubmitted(false)} variant="outline" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
+          <Button onClick={resetForm} variant="outline" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
             Raise Another Ticket
           </Button>
         </div>
@@ -75,6 +94,11 @@ export default function SupportPage() {
       {/* Ticket form */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-bold text-slate-900 mb-5">Raise a Support Ticket</h3>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Category <span className="text-error-500">*</span></label>
@@ -93,6 +117,8 @@ export default function SupportPage() {
             <input
               required
               type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
               placeholder="Brief description of your issue"
               className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
             />
@@ -102,6 +128,8 @@ export default function SupportPage() {
             <textarea
               required
               rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Describe your issue in detail. The more context you give, the faster we can help."
               className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none"
             />

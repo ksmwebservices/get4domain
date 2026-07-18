@@ -1,19 +1,63 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Globe, Megaphone, CreditCard, FileText, Bell, ArrowRight,
-  CheckCircle2, Clock, ExternalLink, CalendarCheck, Zap, BarChart3, Users
+  CheckCircle2, Clock, ExternalLink, CalendarCheck, Zap, BarChart3, Users, Loader2
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
+
+interface VendorCms {
+  businessName: string | null;
+}
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  description: string;
+  totalAmount: number;
+  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+  createdAt: string;
+  dueDate: string | null;
+}
+
+const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const [cms, setCms] = useState<VendorCms | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    Promise.all([api.getVendorCMS(user.id), api.getVendorInvoices(user.id)])
+      .then(([cmsRes, invoicesRes]) => {
+        if (cancelled) return;
+        setCms(cmsRes.data ?? null);
+        setInvoices(invoicesRes.data ?? []);
+      })
+      .catch(() => {
+        // Non-fatal — dashboard still renders with whatever loaded
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   const firstName = user?.name?.split(' ')[0] ?? 'there';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const pendingInvoices = invoices.filter(i => i.status === 'PENDING');
+  const recentInvoices = invoices.slice(0, 3);
+  const websiteLabel = cms?.businessName ?? user?.businessName ?? 'Your website';
 
   return (
     <div className="space-y-6">
@@ -25,9 +69,9 @@ export default function DashboardHome() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { icon: Globe,    label: 'Website',      value: 'Live',          color: 'text-success-600',   bg: 'bg-success-50' },
+          { icon: Globe,    label: 'Website',      value: websiteLabel,   color: 'text-success-600',   bg: 'bg-success-50' },
           { icon: Users,    label: 'Active Plan',  value: user?.plan ?? 'Startup', color: 'text-primary-600', bg: 'bg-primary-50' },
-          { icon: BarChart3, label: 'Renewal',     value: '15 Jan 2027',   color: 'text-slate-700',     bg: 'bg-slate-50' },
+          { icon: FileText, label: 'Pending Invoices', value: String(pendingInvoices.length), color: 'text-warning-600', bg: 'bg-warning-50' },
           { icon: Zap,      label: 'Modules',      value: '5 Active',      color: 'text-secondary-600', bg: 'bg-secondary-50' },
         ].map((stat) => {
           const Icon = stat.icon;
@@ -53,25 +97,12 @@ export default function DashboardHome() {
               </div>
               <div>
                 <div className="text-base font-bold text-slate-900">DomainApp</div>
-                <div className="text-xs text-slate-500">Enterprise Plan</div>
+                <div className="text-xs text-slate-500">{user?.plan ?? 'Startup'} Plan</div>
               </div>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700">
               <span className="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse" />Active
             </span>
-          </div>
-          <div className="mb-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Website</span>
-              <a href="https://mrtravels.get4domain.com" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 font-medium text-primary-600 hover:underline text-xs">
-                mrtravels.get4domain.com <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Renews</span>
-              <span className="font-medium text-slate-900">15 Jan 2027</span>
-            </div>
           </div>
           <div className="mb-4 flex flex-wrap gap-1.5">
             {['Website', 'Fleet CRM', 'Invoicing', 'Trip Sheets', 'Reports'].map((m) => (
@@ -81,9 +112,6 @@ export default function DashboardHome() {
             ))}
           </div>
           <div className="flex gap-2">
-            <a href="https://mrtravels.get4domain.com" target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button size="sm" variant="outline" fullWidth leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>View Site</Button>
-            </a>
             <Link href="/dashboard/domain-app" className="flex-1">
               <Button size="sm" fullWidth rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Manage</Button>
             </Link>
@@ -124,34 +152,38 @@ export default function DashboardHome() {
             <h3 className="text-base font-bold text-slate-900">Recent Invoices</h3>
             <Link href="/dashboard/invoices" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">INV-001</div>
-                <div className="text-xs text-slate-500">DomainApp Enterprise · 15 Jan 2026</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-slate-900">₹29,499</div>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-success-700">
-                  <CheckCircle2 className="h-3 w-3" />Paid
-                </span>
-              </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-warning-50 border border-warning-100 p-3">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">INV-002</div>
-                <div className="text-xs text-slate-500">DomainCampaign Business · Due 25 Jan</div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-slate-900">₹35,399</div>
-                <Link href="/dashboard/billing">
-                  <span className="text-xs font-semibold text-warning-700 hover:underline cursor-pointer flex items-center gap-1">
-                    <Clock className="h-3 w-3" />Pay Now
-                  </span>
-                </Link>
-              </div>
+          ) : recentInvoices.length === 0 ? (
+            <p className="text-sm text-slate-400 py-4">No invoices yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentInvoices.map((inv) => (
+                <div key={inv.id} className={`flex items-center justify-between rounded-xl p-3 ${inv.status === 'PENDING' ? 'bg-warning-50 border border-warning-100' : 'bg-slate-50'}`}>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{inv.invoiceNumber}</div>
+                    <div className="text-xs text-slate-500">{inv.description}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-slate-900">{formatCurrency(inv.totalAmount)}</div>
+                    {inv.status === 'PAID' ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-success-700">
+                        <CheckCircle2 className="h-3 w-3" />Paid
+                      </span>
+                    ) : (
+                      <Link href="/dashboard/billing">
+                        <span className="text-xs font-semibold text-warning-700 hover:underline cursor-pointer flex items-center gap-1">
+                          <Clock className="h-3 w-3" />Pay Now
+                        </span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -160,19 +192,20 @@ export default function DashboardHome() {
             <Link href="/dashboard/notifications" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
           </div>
           <div className="space-y-3">
-            {[
-              { msg: 'Payment pending — INV-002 due 25 Jan 2026', time: 'Today', urgent: true },
-              { msg: 'Your website is live at mrtravels.get4domain.com', time: '2 days ago', urgent: false },
-              { msg: 'Invoice INV-001 paid — ₹29,499', time: '15 Jan', urgent: false },
-            ].map((n, i) => (
-              <div key={i} className={`flex items-start gap-3 rounded-xl p-3 ${n.urgent ? 'bg-warning-50' : 'bg-slate-50'}`}>
-                <Bell className={`h-4 w-4 mt-0.5 flex-shrink-0 ${n.urgent ? 'text-warning-600' : 'text-primary-400'}`} />
+            {pendingInvoices.length > 0 && (
+              <div className="flex items-start gap-3 rounded-xl p-3 bg-warning-50">
+                <Bell className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning-600" />
                 <div>
-                  <div className="text-sm text-slate-700">{n.msg}</div>
-                  <div className="text-xs text-slate-400 mt-0.5">{n.time}</div>
+                  <div className="text-sm text-slate-700">
+                    {pendingInvoices.length} invoice{pendingInvoices.length > 1 ? 's' : ''} pending payment
+                  </div>
+                  <div className="text-xs text-slate-400 mt-0.5">Now</div>
                 </div>
               </div>
-            ))}
+            )}
+            {pendingInvoices.length === 0 && !loading && (
+              <p className="text-sm text-slate-400">No new notifications.</p>
+            )}
           </div>
         </div>
       </div>

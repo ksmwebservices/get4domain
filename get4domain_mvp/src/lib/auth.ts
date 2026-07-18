@@ -1,7 +1,5 @@
 // ============================================================
-// GET4DOMAIN AUTH — Production-ready credential auth
-// Credentials set via environment variables (no hardcoding)
-// Google/Facebook OAuth: added via NextAuth.js (Task below)
+// GET4DOMAIN AUTH — backed by the real NestJS API
 // ============================================================
 
 export interface AuthUser {
@@ -15,7 +13,6 @@ export interface AuthUser {
 }
 
 // Session stored in localStorage (client-side)
-// Phase 2: replace with httpOnly JWT cookie from NestJS backend
 export function setSession(user: AuthUser): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('g4d_user', JSON.stringify(user));
@@ -34,6 +31,7 @@ export function getSession(): AuthUser | null {
 export function clearSession(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem('g4d_user');
+  localStorage.removeItem('g4d_token');
 }
 
 export function isAuthenticated(): boolean {
@@ -45,72 +43,55 @@ export function isAdmin(): boolean {
   return user?.role === 'admin' || user?.role === 'super_admin';
 }
 
-// ── Production credentials from environment variables ──
-// Set these in your .env.local file (never commit to git)
-// NEXT_PUBLIC_ADMIN_EMAIL=admin@get4domain.com
-// NEXT_PUBLIC_ADMIN_PASSWORD=YourStrongPassword123!
-// NEXT_PUBLIC_ADMIN_NAME=Admin
-
 function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-export function loginWithCredentials(
+function mapRole(backendRole: string): AuthUser['role'] {
+  if (backendRole === 'SUPER_ADMIN') return 'super_admin';
+  if (backendRole === 'ADMIN') return 'admin';
+  return 'vendor';
+}
+
+export async function loginWithCredentials(
   email: string,
   password: string
-): { success: boolean; user?: AuthUser; error?: string } {
-  const inputEmail = email.toLowerCase().trim();
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+    const response = await fetch(`${apiBase}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-  // Check admin credentials from environment
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.toLowerCase().trim();
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-  const adminName = process.env.NEXT_PUBLIC_ADMIN_NAME ?? 'Admin';
+    const body = await response.json();
 
-  if (adminEmail && inputEmail === adminEmail) {
-    if (password !== adminPassword) {
-      return { success: false, error: 'Incorrect password.' };
+    if (!response.ok) {
+      return { success: false, error: body.message || 'Invalid credentials' };
     }
+
+    // Backend wraps responses as { success, statusCode, message, data, timestamp }
+    // and /auth/login's data payload is { accessToken, user }.
+    const { accessToken, user: backendUser } = body.data;
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('g4d_token', accessToken);
+    }
+
     const user: AuthUser = {
-      id: 'adm_001',
-      name: adminName,
-      email: inputEmail,
-      role: 'super_admin',
-      initials: getInitials(adminName),
+      id: backendUser.id,
+      name: backendUser.name,
+      email: backendUser.email,
+      role: mapRole(backendUser.role),
+      businessName: backendUser.businessName,
+      plan: 'DomainApp Startup',
+      initials: getInitials(backendUser.name),
     };
+
     setSession(user);
     return { success: true, user };
+  } catch {
+    return { success: false, error: 'Connection error. Please try again.' };
   }
-
-  // Vendor credentials — in Phase 2 this calls the NestJS API
-  // For now: vendors are created manually by admin and given credentials
-  // Check against VENDOR_* env vars (support multiple vendors via numbered vars)
-  // NEXT_PUBLIC_VENDOR_1_EMAIL, NEXT_PUBLIC_VENDOR_1_PASSWORD, etc.
-  for (let i = 1; i <= 20; i++) {
-    const vendorEmail = process.env[`NEXT_PUBLIC_VENDOR_${i}_EMAIL`]?.toLowerCase().trim();
-    const vendorPassword = process.env[`NEXT_PUBLIC_VENDOR_${i}_PASSWORD`];
-    const vendorName = process.env[`NEXT_PUBLIC_VENDOR_${i}_NAME`] ?? 'Vendor';
-    const vendorBusiness = process.env[`NEXT_PUBLIC_VENDOR_${i}_BUSINESS`] ?? '';
-    const vendorPlan = process.env[`NEXT_PUBLIC_VENDOR_${i}_PLAN`] ?? 'DomainApp Startup';
-
-    if (!vendorEmail) break; // no more vendors configured
-
-    if (inputEmail === vendorEmail) {
-      if (password !== vendorPassword) {
-        return { success: false, error: 'Incorrect password.' };
-      }
-      const user: AuthUser = {
-        id: `usr_00${i}`,
-        name: vendorName,
-        email: inputEmail,
-        role: 'vendor',
-        businessName: vendorBusiness,
-        plan: vendorPlan,
-        initials: getInitials(vendorName),
-      };
-      setSession(user);
-      return { success: true, user };
-    }
-  }
-
-  return { success: false, error: 'No account found with this email. Contact support@get4domain.com' };
 }
