@@ -8,10 +8,10 @@ services:
     container_name: get4domain_frontend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "3006:3006"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=3006
     networks:
       - get4domain_net
 
