@@ -3,7 +3,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://get4domain.in'),
+  metadataBase: new URL('https://get4domain.com'),
   title: {
     default: 'Get4Domain — Professional Business Launch Made Easy',
     template: '%s | Get4Domain',
@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   creator: 'Get4Domain',
   publisher: 'Get4Domain',
   manifest: '/manifest.webmanifest',
-  alternates: { canonical: 'https://get4domain.in' },
+  alternates: { canonical: 'https://get4domain.com' },
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://get4domain.in',
+    url: 'https://get4domain.com',
     siteName: 'Get4Domain',
     title: 'Get4Domain — Professional Business Launch Made Easy',
     description: "India's SaaS platform for professional business websites, digital marketing and business management.",
@@ -65,8 +65,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'Get4Domain',
-              url: 'https://get4domain.in',
-              logo: 'https://get4domain.in/logo.png',
+              url: 'https://get4domain.com',
+              logo: 'https://get4domain.com/logo.png',
               description: "India's SaaS platform for professional business websites, digital marketing and business management.",
               address: {
                 '@type': 'PostalAddress',

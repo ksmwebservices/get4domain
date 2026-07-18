@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
           <div className="grid gap-4">
             {[
               { label: 'Support Phone', defaultValue: '+91 98765 43210', type: 'tel' },
-              { label: 'Support Email', defaultValue: 'support@get4domain.in', type: 'email' },
+              { label: 'Support Email', defaultValue: 'support@get4domain.com', type: 'email' },
               { label: 'WhatsApp Number', defaultValue: '+91 98765 43210', type: 'tel' },
               { label: 'Office Address', defaultValue: 'Chennai, Tamil Nadu, India', type: 'text' },
             ].map((field) => (

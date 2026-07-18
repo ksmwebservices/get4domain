@@ -57,7 +57,7 @@ export default function RefundPolicyPage() {
             <>
               <p>To request a refund:</p>
               <ol className="list-decimal pl-5 space-y-1">
-                <li>Email support@get4domain.in with your order number</li>
+                <li>Email support@get4domain.com with your order number</li>
                 <li>Provide the reason for your refund request</li>
                 <li>Our team will review within 48 hours</li>
                 <li>Approved refunds are processed within 5-7 business days</li>
@@ -69,7 +69,7 @@ export default function RefundPolicyPage() {
         { heading: '5. Domain & Hosting', content: (<p>If a domain has already been registered on your behalf, the domain registration fee (₹500-₹1,000) is non-refundable. You will retain ownership of the domain and can transfer it to another provider.</p>) },
         { heading: '6. Add-on Services', content: (<p>Add-on services (SEO, social media, content writing, etc.) are eligible for refund only if the service has not been started. Once work has begun, the service is non-refundable.</p>) },
         { heading: '7. Partial Refunds', content: (<p>In certain cases, partial refunds may be offered at our discretion — for example, if only some components of a package were delivered. Partial refund amounts are determined on a case-by-case basis.</p>) },
-        { heading: '8. Contact Us', content: (<p>For refund requests or questions about this policy, contact us at support@get4domain.in or call +91 98765 43210. Our support team is available Monday to Saturday, 9:00 AM - 8:00 PM IST.</p>) },
+        { heading: '8. Contact Us', content: (<p>For refund requests or questions about this policy, contact us at support@get4domain.com or call +91 98765 43210. Our support team is available Monday to Saturday, 9:00 AM - 8:00 PM IST.</p>) },
       ]}
     />
   );

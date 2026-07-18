@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://get4domain.in/sitemap.xml',
-    host: 'https://get4domain.in',
+    sitemap: 'https://get4domain.com/sitemap.xml',
+    host: 'https://get4domain.com',
   };
 }

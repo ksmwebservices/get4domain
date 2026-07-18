@@ -79,7 +79,7 @@ export default function PrivacyPolicyPage() {
                 <li>Opt out of marketing communications</li>
                 <li>Withdraw consent at any time</li>
               </ul>
-              <p>To exercise these rights, contact us at support@get4domain.in</p>
+              <p>To exercise these rights, contact us at support@get4domain.com</p>
             </>
           ),
         },
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
         },
         {
           heading: '8. Contact Us',
-          content: (<p>If you have questions about this Privacy Policy, please contact us at support@get4domain.in or call +91 98765 43210.</p>),
+          content: (<p>If you have questions about this Privacy Policy, please contact us at support@get4domain.com or call +91 98765 43210.</p>),
         },
       ]}
     />

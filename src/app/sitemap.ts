@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const BASE = 'https://get4domain.in';
+const BASE = 'https://get4domain.com';
 
 // All public-facing pages with correct SEO priorities
 const pages: { path: string; priority: number; changeFreq: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [

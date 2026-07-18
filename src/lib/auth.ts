@@ -47,7 +47,7 @@ export function isAdmin(): boolean {
 
 // ── Production credentials from environment variables ──
 // Set these in your .env.local file (never commit to git)
-// NEXT_PUBLIC_ADMIN_EMAIL=admin@get4domain.in
+// NEXT_PUBLIC_ADMIN_EMAIL=admin@get4domain.com
 // NEXT_PUBLIC_ADMIN_PASSWORD=YourStrongPassword123!
 // NEXT_PUBLIC_ADMIN_NAME=Admin
 
@@ -112,5 +112,5 @@ export function loginWithCredentials(
     }
   }
 
-  return { success: false, error: 'No account found with this email. Contact support@get4domain.in' };
+  return { success: false, error: 'No account found with this email. Contact support@get4domain.com' };
 }

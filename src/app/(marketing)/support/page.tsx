@@ -16,7 +16,7 @@ export const metadata: Metadata = createPageMetadata({
 const supportOptions = [
   { icon: Phone, title: 'Call Support', value: '+91 98765 43210', desc: 'Mon - Sat, 9 AM - 8 PM IST', action: 'Call Now' },
   { icon: MessageCircle, title: 'WhatsApp', value: '+91 98765 43210', desc: 'Quick responses, 24/7', action: 'Chat Now' },
-  { icon: Mail, title: 'Email Support', value: 'support@get4domain.in', desc: 'Reply within 4 hours', action: 'Send Email' },
+  { icon: Mail, title: 'Email Support', value: 'support@get4domain.com', desc: 'Reply within 4 hours', action: 'Send Email' },
   { icon: Headphones, title: 'Help Center', value: 'Browse Articles', desc: 'Self-service guides & docs', action: 'Browse' },
 ];
 

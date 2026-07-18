@@ -73,7 +73,7 @@ export default function LoginPage() {
                 <div>
                   <p className="text-sm text-error-700 font-medium">{error}</p>
                   <p className="text-xs text-error-600 mt-0.5">
-                    Contact <a href="mailto:support@get4domain.in" className="underline">support@get4domain.in</a> if you need help.
+                    Contact <a href="mailto:support@get4domain.com" className="underline">support@get4domain.com</a> if you need help.
                   </p>
                 </div>
               </div>
@@ -134,10 +134,10 @@ export default function LoginPage() {
                 Your login credentials are provided by Get4Domain when your account is activated.
               </p>
               <a
-                href="mailto:support@get4domain.in"
+                href="mailto:support@get4domain.com"
                 className="mt-1.5 inline-block text-xs font-semibold text-primary-600 hover:underline"
               >
-                support@get4domain.in
+                support@get4domain.com
               </a>
             </div>
           </div>

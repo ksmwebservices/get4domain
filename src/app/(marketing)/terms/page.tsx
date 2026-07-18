@@ -61,7 +61,7 @@ export default function TermsPage() {
         { heading: '7. Support', content: (<p>The ₹4,999 package includes 30 days of support from the date of deployment. Support covers bug fixes, minor content changes, and technical assistance. Additional support and maintenance are available as add-on services.</p>) },
         { heading: '8. Limitation of Liability', content: (<p>Get4Domain shall not be liable for any indirect, incidental, or consequential damages. Our total liability shall not exceed the amount paid by you for our services.</p>) },
         { heading: '9. Termination', content: (<p>We reserve the right to terminate or suspend services if you violate these Terms. Upon termination, your website may be taken offline unless you migrate to another hosting provider.</p>) },
-        { heading: '10. Contact', content: (<p>For questions about these Terms, contact us at support@get4domain.in or call +91 98765 43210.</p>) },
+        { heading: '10. Contact', content: (<p>For questions about these Terms, contact us at support@get4domain.com or call +91 98765 43210.</p>) },
       ]}
     />
   );

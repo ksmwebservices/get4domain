@@ -49,7 +49,7 @@ export default function SupportPage() {
         {[
           { icon: MessageCircle, label: 'WhatsApp', value: '+91 98765 43210', href: 'https://wa.me/919876543210', color: 'text-success-600', bg: 'bg-success-50' },
           { icon: Phone, label: 'Call', value: '+91 98765 43210', href: 'tel:+919876543210', color: 'text-primary-600', bg: 'bg-primary-50' },
-          { icon: Mail, label: 'Email', value: 'support@get4domain.in', href: 'mailto:support@get4domain.in', color: 'text-slate-600', bg: 'bg-slate-50' },
+          { icon: Mail, label: 'Email', value: 'support@get4domain.com', href: 'mailto:support@get4domain.com', color: 'text-slate-600', bg: 'bg-slate-50' },
         ].map((contact) => {
           const Icon = contact.icon;
           return (

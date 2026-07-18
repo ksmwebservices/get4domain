@@ -7,7 +7,7 @@ import Button from './ui/Button';
 const contactCards = [
   { icon: Phone, title: 'Call Us', label: 'Sales & Support', value: '+91 98765 43210', action: 'Call Now', color: 'bg-primary-50 text-primary-600' },
   { icon: MessageCircle, title: 'WhatsApp', label: 'Quick Chat', value: '+91 98765 43210', action: 'Chat Now', color: 'bg-success-50 text-success-600' },
-  { icon: Mail, title: 'Email', label: 'Support', value: 'support@get4domain.in', action: 'Send Email', color: 'bg-secondary-50 text-secondary-600' },
+  { icon: Mail, title: 'Email', label: 'Support', value: 'support@get4domain.com', action: 'Send Email', color: 'bg-secondary-50 text-secondary-600' },
 ];
 
 export default function Contact() {

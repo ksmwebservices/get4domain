@@ -1,6 +1,6 @@
 export const siteConfig = {
   name: 'Get4Domain',
-  url: 'https://get4domain.in',
+  url: 'https://get4domain.com',
   tagline: 'Professional Business Launch Made Easy',
   description:
     "India's SaaS platform for professional business websites, digital marketing and business management. Trusted by SMBs across India.",
@@ -18,8 +18,8 @@ export const siteConfig = {
   creator: 'Get4Domain',
   contact: {
     phone: '+91 98765 43210',
-    email: 'hello@get4domain.in',
-    support: 'support@get4domain.in',
+    email: 'hello@get4domain.com',
+    support: 'support@get4domain.com',
     address: 'Chennai, Tamil Nadu, India',
   },
   social: {
