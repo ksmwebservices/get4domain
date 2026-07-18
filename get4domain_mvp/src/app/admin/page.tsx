@@ -50,6 +50,7 @@ const statusColors: Record<string, string> = {
 const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
 export default function AdminHome() {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -57,7 +58,10 @@ export default function AdminHome() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     let cancelled = false;
 
     async function loadStats() {
@@ -73,8 +77,10 @@ export default function AdminHome() {
         setInvoices(invoicesRes.data ?? []);
         setSubscriptions(subscriptionsRes.data ?? []);
         setTickets(ticketsRes.data ?? []);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load dashboard stats');
+      } catch {
+        // Network/server errors show as an empty state below, not a raw error message.
+        // 401s are handled globally in api.ts (redirects to /login).
+        if (!cancelled) setError('Could not load live data — showing what we have.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,7 +88,7 @@ export default function AdminHome() {
 
     loadStats();
     return () => { cancelled = true; };
-  }, []);
+  }, [mounted]);
 
   const now = new Date();
   const revenueThisMonth = invoices

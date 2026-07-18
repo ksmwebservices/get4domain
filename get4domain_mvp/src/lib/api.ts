@@ -20,6 +20,13 @@ export async function apiCall(
   const data = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('g4d_token');
+      localStorage.removeItem('g4d_user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     throw new Error(data.message || 'API error');
   }
 

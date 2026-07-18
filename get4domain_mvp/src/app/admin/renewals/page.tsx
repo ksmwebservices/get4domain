@@ -30,18 +30,22 @@ function urgencyOf(endDate: string | null): { label: string; color: string; days
 }
 
 export default function RenewalsPage() {
+  const [mounted, setMounted] = useState(false);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [invoiced, setInvoiced] = useState<string[]>([]);
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     api.getSubscriptions()
-      .then((res) => setSubscriptions(res.data ?? []))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load subscriptions'))
+      .then((res) => { setSubscriptions(res.data ?? []); setError(''); })
+      .catch(() => setError('Could not load live data — showing what we have.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [mounted]);
 
   const upcoming = subscriptions
     .filter((s) => s.status === 'ACTIVE')

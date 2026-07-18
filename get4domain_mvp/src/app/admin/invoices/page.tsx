@@ -40,6 +40,7 @@ const formatDate = (date: string | null): string =>
   date ? new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export default function AdminInvoicesPage() {
+  const [mounted, setMounted] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,21 +52,25 @@ export default function AdminInvoicesPage() {
   const [form, setForm] = useState(emptyForm);
   const [creating, setCreating] = useState(false);
 
+  useEffect(() => { setMounted(true); }, []);
+
   async function loadInvoices() {
     try {
       const res = await api.getInvoices();
       setInvoices(res.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load invoices');
+      setError('');
+    } catch {
+      setError('Could not load live data — showing what we have.');
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    if (!mounted) return;
     loadInvoices();
     api.getVendors().then((res) => setVendors(res.data ?? [])).catch(() => {});
-  }, []);
+  }, [mounted]);
 
   async function sendPaymentLink(id: string) {
     setSending(id);

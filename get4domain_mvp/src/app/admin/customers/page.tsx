@@ -29,6 +29,7 @@ interface Vendor {
 }
 
 export default function AdminCustomersPage() {
+  const [mounted, setMounted] = useState(false);
   const [customers, setCustomers] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,20 +39,24 @@ export default function AdminCustomersPage() {
   const [creating, setCreating] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
 
+  useEffect(() => { setMounted(true); }, []);
+
   async function loadVendors() {
     try {
       const res = await api.getVendors();
       setCustomers(res.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load customers');
+      setError('');
+    } catch {
+      setError('Could not load live data — showing what we have.');
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    if (!mounted) return;
     loadVendors();
-  }, []);
+  }, [mounted]);
 
   async function toggleStatus(vendor: Vendor) {
     setActioningId(vendor.id);

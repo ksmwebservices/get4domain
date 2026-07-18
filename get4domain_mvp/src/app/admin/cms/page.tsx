@@ -17,18 +17,22 @@ const FIELDS: Array<{ key: string; label: string; placeholder?: string }> = [
 ];
 
 export default function AdminCmsPage() {
+  const [mounted, setMounted] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     api.getPlatformCMS()
-      .then((res) => setValues(res.data ?? {}))
-      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load settings'))
+      .then((res) => { setValues(res.data ?? {}); setError(''); })
+      .catch(() => setError('Could not load live data — showing what we have.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [mounted]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
