@@ -38,7 +38,6 @@ export const navLinks = [
   { label: 'DomainApp', href: '/domain-app' },
   { label: 'DomainCampaign', href: '/domain-campaign' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'Portfolio', href: '/portfolio' },
   { label: 'Contact', href: '/contact' },
 ];
 

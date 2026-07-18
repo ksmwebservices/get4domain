@@ -1,6 +1,6 @@
 import { portfolioItems } from '@/data/content';
 import { SectionHeading } from './ui/Accordion';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ExternalLink, Rocket } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Button from './ui/Button';
@@ -11,6 +11,29 @@ interface PortfolioProps {
 
 export default function Portfolio({ limit }: PortfolioProps) {
   const items = limit ? portfolioItems.slice(0, limit) : portfolioItems;
+
+  if (items.length === 0) {
+    return (
+      <section id="portfolio">
+        <div className="container-mx container-px">
+          <SectionHeading
+            eyebrow="Portfolio"
+            title="Businesses Launched on Get4Domain"
+            description="Real businesses across India using DomainApp for their online presence and business management."
+          />
+          <div className="mx-auto max-w-lg rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50">
+              <Rocket className="h-6 w-6 text-primary-600" />
+            </div>
+            <p className="text-slate-600 text-sm">Portfolio coming soon — we're building more client websites.</p>
+            <Link href="/book-demo" className="mt-5 inline-block">
+              <Button size="sm" variant="outline">Be Our Next Success Story</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="portfolio">

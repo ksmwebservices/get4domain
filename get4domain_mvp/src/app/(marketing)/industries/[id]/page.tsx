@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, ArrowRight, CalendarCheck, ExternalLink, Globe } from 'lucide-react';
+import { Check, ArrowRight, CalendarCheck, Globe } from 'lucide-react';
 import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
 import PageHero from '@/components/PageHero';
@@ -29,8 +29,6 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
   const industry = industries.find((i) => i.id === id);
   if (!content || !industry) notFound();
 
-  const isLive = id === 'travel';
-
   return (
     <>
       <PageHero
@@ -39,22 +37,6 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
         description={content.shortDesc}
         breadcrumbs={[{ label: 'Industries', href: '/industries' }, { label: content.name }]}
       />
-
-      {isLive && (
-        <div className="bg-success-50 border-y border-success-200 py-3">
-          <div className="container-mx container-px flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-success-500 animate-pulse" />
-              <span className="text-sm font-semibold text-success-800">Live Demo — MR Travels is built on this exact platform and is live today</span>
-            </div>
-            <a href="https://mrtravels.get4domain.com" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />} className="border-success-400 text-success-700 hover:bg-success-100">
-                Visit Live Site
-              </Button>
-            </a>
-          </div>
-        </div>
-      )}
 
       <section className="py-12 lg:py-16">
         <div className="container-mx container-px">

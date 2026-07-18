@@ -3,8 +3,6 @@ import Hero from '@/components/Hero';
 import TrustBar from '@/components/TrustBar';
 import IndustryMarketplace from '@/components/IndustryMarketplace';
 import HowItWorks from '@/components/HowItWorks';
-import Portfolio from '@/components/Portfolio';
-import Testimonials from '@/components/Testimonials';
 import FAQ from '@/components/FAQ';
 import CTABanner from '@/components/CTABanner';
 import SectionLink from '@/components/SectionLink';
@@ -30,15 +28,6 @@ export default function HomePage() {
       </div>
 
       <HowItWorks />
-
-      <div className="section-py">
-        <Portfolio limit={4} />
-        <SectionLink to="/portfolio" label="View Full Portfolio" />
-      </div>
-
-      <div className="section-py bg-gradient-to-b from-white to-slate-50">
-        <Testimonials limit={3} />
-      </div>
 
       <div className="section-py">
         <FAQ limit={5} />

@@ -380,16 +380,8 @@ export interface PortfolioItem {
   city: string;
 }
 
-export const portfolioItems: PortfolioItem[] = [
-  { id: 'p1', industry: 'Restaurant', businessName: 'Spice Garden', image: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Mumbai' },
-  { id: 'p2', industry: 'Travel', businessName: 'MR Travels', image: 'https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=600', url: 'https://mrtravels.get4domain.com', city: 'Chennai' },
-  { id: 'p3', industry: 'Clinic', businessName: 'CareWell Clinic', image: 'https://images.pexels.com/photos/263402/pexels-photo-263402.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Pune' },
-  { id: 'p4', industry: 'School', businessName: 'Bright Future Academy', image: 'https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Jaipur' },
-  { id: 'p5', industry: 'Salon', businessName: 'Glow Beauty Lounge', image: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Hyderabad' },
-  { id: 'p6', industry: 'Retail', businessName: 'Trendy Bazaar', image: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Bengaluru' },
-  { id: 'p7', industry: 'Construction', businessName: 'BuildRight Infra', image: 'https://images.pexels.com/photos/159306/house-server-architecture-internet-159306.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Ahmedabad' },
-  { id: 'p8', industry: 'Real Estate', businessName: 'Prime Properties', image: 'https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=600', url: '#', city: 'Delhi' },
-];
+// No client websites launched yet — Portfolio component shows a "coming soon" state when this is empty.
+export const portfolioItems: PortfolioItem[] = [];
 
 export interface Testimonial {
   id: string;
