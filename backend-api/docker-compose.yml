@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: get4domain_backend
+    restart: unless-stopped
+    ports:
+      - "3008:3008"
+    env_file:
+      - .env.local
+    networks:
+      - get4domain_backend_net
+networks:
+  get4domain_backend_net:
+    driver: bridge

@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Vendor {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  businessName String
+  phone        String?
+  industry     String?
+  subdomain    String?  @unique
+  customDomain String?
+  role         Role     @default(VENDOR)
+  status       VendorStatus @default(ACTIVE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptions Subscription[]
+  invoices      Invoice[]
+  tickets       SupportTicket[]
+  cms           VendorCMS?
+  products      VendorProduct[]
+}
+
+model Subscription {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  product    Product
+  plan       Plan
+  status     SubStatus @default(PENDING)
+  startDate  DateTime?
+  endDate    DateTime?
+  amount     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  invoices   Invoice[]
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  invoiceNumber  String   @unique
+  vendorId       String
+  vendor         Vendor   @relation(fields: [vendorId], references: [id])
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  description    String
+  amount         Int
+  gstAmount      Int
+  totalAmount    Int
+  gstNumber      String?
+  status         InvoiceStatus @default(PENDING)
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  paidAt         DateTime?
+  dueDate        DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  category  String
+  subject   String
+  message   String
+  status    TicketStatus @default(OPEN)
+  adminReply String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VendorCMS {
+  id           String   @id @default(cuid())
+  vendorId     String   @unique
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  businessName String?
+  tagline      String?
+  about        String?
+  logo         String?
+  favicon      String?
+  seoTitle     String?
+  seoDesc      String?
+  seoKeywords  String?
+  phone        String?
+  email        String?
+  address      String?
+  whatsapp     String?
+  facebook     String?
+  instagram    String?
+  linkedin     String?
+  youtube      String?
+  googleMaps   String?
+  googleAnalyticsId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VendorProduct {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  name        String
+  description String?
+  price       String?
+  image       String?
+  category    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PlatformCMS {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  VENDOR
+}
+
+enum VendorStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum Product {
+  DOMAIN_APP
+  DOMAIN_CAMPAIGN
+  BOTH
+}
+
+enum Plan {
+  STARTUP
+  ENTERPRISE
+  STARTER
+  BUSINESS
+}
+
+enum SubStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
