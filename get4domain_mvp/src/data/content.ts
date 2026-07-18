@@ -55,7 +55,6 @@ export const industries: Industry[] = [
     color: 'text-sky-600',
     bgColor: 'bg-sky-50',
     features: ['Tour Packages', 'Itinerary Builder', 'Booking Form', 'Trip Gallery'],
-    badge: 'Demo Live',
   },
   {
     id: 'realestate',
