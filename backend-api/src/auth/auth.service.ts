@@ -14,6 +14,7 @@ export interface LoginResult {
     role: string;
     businessName: string;
     industry: string | null;
+    subdomain: string | null;
   };
 }
 
@@ -51,6 +52,7 @@ export class AuthService {
         role: vendor.role,
         businessName: vendor.businessName,
         industry: vendor.industry,
+        subdomain: vendor.subdomain,
       },
     };
   }

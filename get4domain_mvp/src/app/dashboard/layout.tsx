@@ -4,21 +4,23 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Rocket, LayoutDashboard, Globe, Megaphone, FileText,
+  Rocket, LayoutDashboard, Globe, Megaphone, FileText, Package, ShoppingBag,
   CreditCard, Bell, Settings, LogOut, Menu, X, ChevronRight, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardChatBot from '@/components/DashboardChatBot';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard',          href: '/dashboard' },
-  { icon: Globe,           label: 'My DomainApp',       href: '/dashboard/domain-app' },
-  { icon: Megaphone,       label: 'My DomainCampaign',  href: '/dashboard/domain-campaign' },
-  { icon: CreditCard,      label: 'Billing & Payments', href: '/dashboard/billing' },
-  { icon: FileText,        label: 'Invoices',           href: '/dashboard/invoices' },
-  { icon: Bell,            label: 'Notifications',      href: '/dashboard/notifications', badge: '1' },
-  { icon: HelpCircle,      label: 'Support',            href: '/dashboard/support' },
-  { icon: Settings,        label: 'Settings',           href: '/dashboard/settings' },
+  { icon: LayoutDashboard, label: 'Overview',           href: '/dashboard' },
+  { icon: Package,         label: 'My Plans & Services', href: '/dashboard/my-services' },
+  { icon: CreditCard,      label: 'Billing & Payments',  href: '/dashboard/billing' },
+  { icon: FileText,        label: 'My Invoices',         href: '/dashboard/invoices' },
+  { icon: Globe,           label: 'My Website',          href: '/dashboard/my-website' },
+  { icon: ShoppingBag,     label: 'My Products',         href: '/dashboard/my-products' },
+  { icon: Megaphone,       label: 'My Campaign',         href: '/dashboard/my-campaign' },
+  { icon: HelpCircle,      label: 'Support',             href: '/dashboard/support' },
+  { icon: Bell,            label: 'Notifications',       href: '/dashboard/notifications', badge: '1' },
+  { icon: Settings,        label: 'Settings',            href: '/dashboard/settings' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -83,6 +85,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-slate-900">{user.name}</div>
               <div className="truncate text-xs text-slate-500">{user.businessName ?? user.email}</div>
+              {user.industry && (
+                <div className="mt-0.5 text-xs text-primary-600 capitalize">
+                  {user.industry.replace('-', ' & ')} Industry
+                </div>
+              )}
             </div>
           </div>
           {user.plan && (
