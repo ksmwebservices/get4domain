@@ -38,6 +38,9 @@ export const api = {
   getVendors: () => apiCall('/vendors'),
   createVendor: (data: any) =>
     apiCall('/vendors', { method: 'POST', body: JSON.stringify(data) }),
+  getVendor: (id: string) => apiCall(`/vendors/${id}`),
+  updateVendor: (id: string, data: any) =>
+    apiCall(`/vendors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   suspendVendor: (id: string) =>
     apiCall(`/vendors/${id}/suspend`, { method: 'POST' }),
   activateVendor: (id: string) =>
@@ -47,15 +50,20 @@ export const api = {
   getInvoices: () => apiCall('/invoices'),
   createInvoice: (data: any) =>
     apiCall('/invoices', { method: 'POST', body: JSON.stringify(data) }),
-  sendPaymentLink: (id: string) =>
-    apiCall(`/invoices/${id}/send-payment-link`, { method: 'POST' }),
   getVendorInvoices: (vendorId: string) =>
     apiCall(`/invoices/vendor/${vendorId}`),
+  getInvoice: (id: string) => apiCall(`/invoices/${id}`),
+  sendPaymentLink: (id: string) =>
+    apiCall(`/invoices/${id}/send-payment-link`, { method: 'POST' }),
+  markPaid: (id: string) =>
+    apiCall(`/invoices/${id}/mark-paid`, { method: 'POST' }),
 
   // Subscriptions
   createSubscription: (data: any) =>
     apiCall('/subscriptions', { method: 'POST', body: JSON.stringify(data) }),
   getSubscriptions: () => apiCall('/subscriptions'),
+  activateSubscription: (id: string) =>
+    apiCall(`/subscriptions/${id}/activate`, { method: 'PUT' }),
 
   // Payments
   createOrder: (data: { amount: number; currency?: string; receipt: string }) =>
@@ -79,6 +87,10 @@ export const api = {
     apiCall(`/cms/vendor/${vendorId}/products`),
   addProduct: (vendorId: string, data: any) =>
     apiCall(`/cms/vendor/${vendorId}/products`, { method: 'POST', body: JSON.stringify(data) }),
+  updateProduct: (id: string, data: any) =>
+    apiCall(`/cms/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProduct: (id: string) =>
+    apiCall(`/cms/products/${id}`, { method: 'DELETE' }),
 
   // Support
   createTicket: (data: any) =>
