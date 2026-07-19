@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CalendarCheck, Check, Phone, MessageCircle, ArrowRight, Globe, Megaphone, Building2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PageHero from '@/components/PageHero';
+import { api } from '@/lib/api';
 
 const industries = [
   'Restaurant & Food', 'Travel & Tours', 'Real Estate', 'Clinic & Hospital',
@@ -28,15 +29,40 @@ export default function BookDemoPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    business: '',
+    industry: '',
+    message: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selected) {
+      setError('Please select what you are interested in.');
+      return;
+    }
+    setError('');
     setLoading(true);
-    // Simulate API call — backend integration in Phase 2
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await api.createLead({
+        name: form.name,
+        phone: form.phone,
+        email: form.email || undefined,
+        business: form.business,
+        industry: form.industry,
+        interest: interestedIn.find((i) => i.id === selected)?.label ?? selected,
+        message: form.message || undefined,
+      });
       setSubmitted(true);
-    }, 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit your request — please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -107,19 +133,19 @@ export default function BookDemoPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">Full Name <span className="text-error-500">*</span></label>
-                    <input required type="text" placeholder="Ravi Kumar" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                    <input required type="text" placeholder="Ravi Kumar" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">Mobile Number <span className="text-error-500">*</span></label>
-                    <input required type="tel" placeholder="+91 98765 43210" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                    <input required type="tel" placeholder="+91 98765 43210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">Email Address</label>
-                    <input type="email" placeholder="you@example.com" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                    <input type="email" placeholder="you@example.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-slate-700">Business Name <span className="text-error-500">*</span></label>
-                    <input required type="text" placeholder="Ravi Enterprises" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                    <input required type="text" placeholder="Ravi Enterprises" value={form.business} onChange={(e) => setForm({ ...form, business: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   </div>
                 </div>
               </div>
@@ -127,7 +153,7 @@ export default function BookDemoPage() {
               {/* Industry */}
               <div className="card-base p-6">
                 <h3 className="text-base font-bold text-slate-900 mb-5">Business Industry <span className="text-error-500">*</span></h3>
-                <select required className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                <select required value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
                   <option value="">Select your industry</option>
                   {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
                 </select>
@@ -168,9 +194,15 @@ export default function BookDemoPage() {
                 <textarea
                   rows={3}
                   placeholder="e.g. I want to see how the booking system works for a travel business..."
+                  value={form.message}
+                  onChange={(e) => setForm({ ...form, message: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none"
                 />
               </div>
+
+              {error && (
+                <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>
+              )}
 
               <Button
                 type="submit"

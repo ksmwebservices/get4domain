@@ -47,10 +47,10 @@ export class PaymentsService {
         razorpayOrderId: dto.razorpayOrderId,
         razorpayPaymentId: dto.razorpayPaymentId,
       },
-      include: { vendor: true },
+      include: { vendor: true, subscription: true },
     });
 
-    await this.emailService.sendPaymentConfirmation(invoice.vendor, invoice);
+    await this.emailService.sendPaymentConfirmation(invoice.vendor, invoice, invoice.subscription);
 
     return { verified: true };
   }
@@ -107,9 +107,9 @@ export class PaymentsService {
             paidAt: new Date(),
             razorpayPaymentId: event.payload.payment?.entity.id,
           },
-          include: { vendor: true },
+          include: { vendor: true, subscription: true },
         });
-        await this.emailService.sendPaymentConfirmation(updated.vendor, updated);
+        await this.emailService.sendPaymentConfirmation(updated.vendor, updated, updated.subscription);
       }
     }
   }

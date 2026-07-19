@@ -119,6 +119,13 @@ export const api = {
   resolveTicket: (id: string) =>
     apiCall(`/support/tickets/${id}/resolve`, { method: 'PUT' }),
 
+  // Leads (demo bookings)
+  createLead: (data: any) =>
+    apiCall('/leads', { method: 'POST', body: JSON.stringify(data) }),
+  getLeads: () => apiCall('/leads'),
+  updateLeadStatus: (id: string, status: string) =>
+    apiCall(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
   // Notifications (not yet implemented on the backend — calls fail silently until it is)
   getUnreadNotifications: () => apiCall('/notifications/unread'),
   subscribeToPushNotifications: (subscription: PushSubscription) =>

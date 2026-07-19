@@ -107,10 +107,10 @@ export class InvoicesService {
     const updated = await this.prisma.invoice.update({
       where: { id },
       data: { status: 'PAID', paidAt: new Date(), razorpayPaymentId: paymentId },
-      include: { vendor: true },
+      include: { vendor: true, subscription: true },
     });
 
-    await this.emailService.sendPaymentConfirmation(updated.vendor, updated);
+    await this.emailService.sendPaymentConfirmation(updated.vendor, updated, updated.subscription);
     return updated;
   }
 }

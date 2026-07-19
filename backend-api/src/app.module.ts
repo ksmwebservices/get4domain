@@ -11,6 +11,7 @@ import { CmsModule } from './cms/cms.module';
 import { EmailModule } from './email/email.module';
 import { SupportModule } from './support/support.module';
 import { AiModule } from './ai/ai.module';
+import { LeadsModule } from './leads/leads.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -29,6 +30,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     EmailModule,
     SupportModule,
     AiModule,
+    LeadsModule,
   ],
   providers: [
     {

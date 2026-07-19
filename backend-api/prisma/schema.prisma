@@ -127,6 +127,21 @@ model PlatformCMS {
   updatedAt   DateTime @updatedAt
 }
 
+model Lead {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String
+  email      String?
+  business   String
+  industry   String
+  interest   String
+  message    String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@map("g4d_leads")
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN
