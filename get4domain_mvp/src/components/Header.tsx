@@ -59,7 +59,12 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between lg:h-18">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src="/logo.png" alt="Get4Domain" className="h-8 w-auto" />
+            <img
+              src="/logo.png"
+              alt="Get4Domain"
+              className="h-10 w-auto object-contain"
+              style={{ maxHeight: '40px' }}
+            />
           </Link>
 
           {/* Desktop Nav */}

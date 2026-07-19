@@ -58,7 +58,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Get4Domain" className="h-8 w-auto brightness-0 invert" />
+              <img src="/logo.png" alt="Get4Domain" className="h-9 w-auto object-contain brightness-0 invert" />
             </Link>
             <p className="mt-4 text-sm leading-relaxed max-w-xs">
               Professional Business Launch Made Easy. SaaS platform for Indian SMBs — websites, business management and managed digital marketing.

@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   creator: 'Get4Domain',
   publisher: 'Get4Domain',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
   alternates: { canonical: 'https://get4domain.com' },
   openGraph: {
     type: 'website',

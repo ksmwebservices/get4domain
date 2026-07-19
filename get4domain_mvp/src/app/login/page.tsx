@@ -45,7 +45,7 @@ export default function LoginPage() {
       <header className="pt-8 px-5">
         <div className="mx-auto max-w-7xl">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <img src="/logo.png" alt="Get4Domain" className="h-10 w-auto" />
+            <img src="/logo.png" alt="Get4Domain" className="h-12 w-auto object-contain" />
           </Link>
         </div>
       </header>

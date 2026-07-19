@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-slate-200 transition-transform duration-300 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-16 items-center justify-between border-b border-slate-100 px-5">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Get4Domain" className="h-7 w-auto" />
+            <img src="/logo.png" alt="Get4Domain" className="h-9 w-auto object-contain" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 lg:hidden">
             <X className="h-5 w-5" />
