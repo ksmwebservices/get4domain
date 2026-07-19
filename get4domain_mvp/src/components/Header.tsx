@@ -59,12 +59,7 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between lg:h-18">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 shadow-md">
-              <Rocket className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-slate-900">
-              Get4<span className="text-primary-600">Domain</span>
-            </span>
+            <img src="/logo.png" alt="Get4Domain" className="h-8 w-auto" />
           </Link>
 
           {/* Desktop Nav */}

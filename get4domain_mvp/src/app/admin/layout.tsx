@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Rocket, LayoutDashboard, Users, FileText, Bell,
+  LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
   BarChart3, Globe, Megaphone, CalendarCheck
 } from 'lucide-react';
@@ -93,11 +93,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-600 to-primary-500">
-              <Rocket className="h-4 w-4 text-white" />
-            </div>
+            <img src="/logo.png" alt="Get4Domain" className="h-7 w-auto" />
             <div>
-              <span className="text-sm font-bold text-white">Get4Domain</span>
               <div className="text-xs text-slate-500 leading-none">Admin Panel</div>
             </div>
           </Link>

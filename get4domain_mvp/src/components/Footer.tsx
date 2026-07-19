@@ -1,4 +1,4 @@
-import { Rocket, Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 const footerSections = [
@@ -58,12 +58,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 shadow-md">
-                <Rocket className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-bold text-white">
-                Get4<span className="text-primary-400">Domain</span>
-              </span>
+              <img src="/logo.png" alt="Get4Domain" className="h-8 w-auto brightness-0 invert" />
             </Link>
             <p className="mt-4 text-sm leading-relaxed max-w-xs">
               Professional Business Launch Made Easy. SaaS platform for Indian SMBs — websites, business management and managed digital marketing.

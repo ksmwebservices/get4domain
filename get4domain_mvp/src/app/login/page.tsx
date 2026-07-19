@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Rocket, Mail, Lock, Eye, EyeOff, AlertCircle, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Shield } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { loginWithCredentials, getSession } from '@/lib/auth';
 import { useAuth } from '@/lib/auth-context';
@@ -45,12 +45,7 @@ export default function LoginPage() {
       <header className="pt-8 px-5">
         <div className="mx-auto max-w-7xl">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 shadow-md">
-              <Rocket className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-bold text-slate-900">
-              Get4<span className="text-primary-600">Domain</span>
-            </span>
+            <img src="/logo.png" alt="Get4Domain" className="h-10 w-auto" />
           </Link>
         </div>
       </header>
