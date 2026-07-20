@@ -59,12 +59,17 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between lg:h-18">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <img
-              src="/logo.png"
-              alt="Get4Domain"
-              className="h-14 w-auto object-contain"
-              style={{ maxHeight: '56px', maxWidth: '220px' }}
-            />
+            <div className="flex items-center">
+              <img
+                src="/logo.png"
+                alt="Get4Domain"
+                className="h-14 w-auto object-contain"
+                style={{
+                  maxHeight: '56px',
+                  mixBlendMode: 'multiply',
+                }}
+              />
+            </div>
           </Link>
 
           {/* Desktop Nav */}

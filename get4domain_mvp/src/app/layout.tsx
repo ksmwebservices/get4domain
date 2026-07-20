@@ -4,10 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://get4domain.com'),
-  title: {
-    default: 'Get4Domain — Your Online Identity Partner for Indian SMBs',
-    template: '%s | Get4Domain',
-  },
+  title: 'Get4Domain — Your Online Identity Partner | BOS Websites for Indian SMBs',
   description: 'Get4Domain gives Indian SMBs a complete digital platform — professional websites, business management software and managed digital marketing.',
   keywords: [
     'business website india', 'domainapp', 'domaincampaign',
