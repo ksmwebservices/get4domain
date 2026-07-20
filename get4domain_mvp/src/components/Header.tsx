@@ -62,8 +62,8 @@ export default function Header() {
             <img
               src="/logo.png"
               alt="Get4Domain"
-              className="h-10 w-auto object-contain"
-              style={{ maxHeight: '40px' }}
+              className="h-14 w-auto object-contain"
+              style={{ maxHeight: '56px', maxWidth: '220px' }}
             />
           </Link>
 

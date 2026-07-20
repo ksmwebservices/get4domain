@@ -5,10 +5,10 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://get4domain.com'),
   title: {
-    default: 'Get4Domain — Your Online Identity Partner',
+    default: 'Get4Domain — Your Online Identity Partner for Indian SMBs',
     template: '%s | Get4Domain',
   },
-  description: 'Website + BOS + Digital Campaign for Indian SMBs',
+  description: 'Get4Domain gives Indian SMBs a complete digital platform — professional websites, business management software and managed digital marketing.',
   keywords: [
     'business website india', 'domainapp', 'domaincampaign',
     'business management software india', 'managed digital marketing india',
@@ -20,8 +20,10 @@ export const metadata: Metadata = {
   publisher: 'Get4Domain',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/favicon.png',
-    shortcut: '/favicon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/favicon.png', sizes: '64x64', type: 'image/png' },
+    ],
     apple: '/favicon.png',
   },
   alternates: { canonical: 'https://get4domain.com' },

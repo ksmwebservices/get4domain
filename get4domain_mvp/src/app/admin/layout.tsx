@@ -93,7 +93,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-5">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Get4Domain" className="h-9 w-auto object-contain" />
+            <img
+              src="/logo.png"
+              alt="Get4Domain"
+              className="h-12 w-auto object-contain"
+              style={{ maxHeight: '48px', maxWidth: '180px' }}
+            />
             <div>
               <div className="text-xs text-slate-500 leading-none">Admin Panel</div>
             </div>
