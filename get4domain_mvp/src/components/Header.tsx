@@ -64,9 +64,9 @@ export default function Header() {
                 src="/logo.png"
                 alt="Get4Domain"
                 width={200}
-                height={150}
+                height={250}
                 style={{
-                  height: '150px',
+                  height: '250px',
                   width: 'auto',
                   objectFit: 'contain',
                   display: 'block',

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   publisher: 'Get4Domain',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/favicon.ico',
+    icon: [{ url: '/favicon.png', sizes: '192x192', type: 'image/png' }],
     shortcut: '/favicon.ico',
     apple: '/favicon.png',
   },
