@@ -63,10 +63,13 @@ export default function Header() {
               <img
                 src="/logo.png"
                 alt="Get4Domain"
-                className="h-14 w-auto object-contain"
+                width={200}
+                height={60}
                 style={{
-                  maxHeight: '56px',
-                  mixBlendMode: 'multiply',
+                  height: '50px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
                 }}
               />
             </div>
