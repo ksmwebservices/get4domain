@@ -14,7 +14,7 @@ export default function ChatBot() {
   return (
     <ChatWidget
       context="marketing"
-      position="left"
+      position="right"
       title="Get4Domain Assistant"
       subtitle="Typically replies instantly"
       greeting="Hi! I'm the Get4Domain assistant. How can I help you today?"

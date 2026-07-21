@@ -1,53 +1,30 @@
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 const footerSections = [
   {
     title: 'Products',
     links: [
-      { label: 'DomainApp — Startup', href: '/domain-app' },
-      { label: 'DomainApp — Enterprise', href: '/domain-app' },
-      { label: 'DomainCampaign — Starter', href: '/domain-campaign' },
-      { label: 'DomainCampaign — Business', href: '/domain-campaign' },
-      { label: 'View All Pricing', href: '/pricing' },
-    ],
-  },
-  {
-    title: 'Industries',
-    links: [
-      { label: 'Restaurant & Food', href: '/industries' },
-      { label: 'Travel & Tours', href: '/industries' },
-      { label: 'Clinic & Hospital', href: '/industries' },
-      { label: 'School & College', href: '/industries' },
-      { label: 'View All 20+ Industries', href: '/industries' },
+      { label: 'DomainCampaign', href: '/domain-campaign' },
+      { label: 'DomainApp', href: '/domain-app' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'Portfolio', href: '/portfolio' },
-      { label: 'How It Works', href: '/how-it-works' },
-      { label: 'Book a Demo', href: '/book-demo' },
-      { label: 'Contact Us', href: '/contact' },
+      { label: 'About Us', href: '/about' },
+      { label: 'Contact', href: '/contact' },
       { label: 'Support', href: '/support' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Terms & Conditions', href: '/terms' },
       { label: 'Privacy Policy', href: '/privacy-policy' },
+      { label: 'Terms of Use', href: '/terms' },
       { label: 'Refund Policy', href: '/refund-policy' },
     ],
   },
-];
-
-const socialLinks = [
-  { icon: Facebook, label: 'Facebook' },
-  { icon: Instagram, label: 'Instagram' },
-  { icon: Linkedin, label: 'LinkedIn' },
-  { icon: Youtube, label: 'YouTube' },
-  { icon: Twitter, label: 'Twitter' },
 ];
 
 export default function Footer() {
@@ -66,36 +43,21 @@ export default function Footer() {
             <div className="mt-6 space-y-2.5">
               <div className="flex items-center gap-2.5 text-sm">
                 <Phone className="h-4 w-4 text-primary-400" />
-                <span>+91 98765 43210</span>
+                <span>+91 75500 47567</span>
               </div>
               <div className="flex items-center gap-2.5 text-sm">
                 <Mail className="h-4 w-4 text-primary-400" />
-                <span>hello@get4domain.com</span>
+                <span>support@get4domain.com</span>
               </div>
-              <div className="flex items-center gap-2.5 text-sm">
-                <MapPin className="h-4 w-4 text-primary-400" />
-                <span>Chennai, Tamil Nadu, India</span>
+              <div className="flex items-start gap-2.5 text-sm">
+                <MapPin className="h-4 w-4 text-primary-400 mt-0.5 flex-shrink-0" />
+                <span>Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113</span>
               </div>
-            </div>
-            <div className="mt-6 flex gap-2">
-              {socialLinks.map((social) => {
-                const Icon = social.icon;
-                return (
-                  <a
-                    key={social.label}
-                    href="#"
-                    aria-label={social.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 text-slate-400 transition-colors hover:bg-primary-600 hover:text-white"
-                  >
-                    <Icon className="h-4 w-4" />
-                  </a>
-                );
-              })}
             </div>
           </div>
 
           {/* Links */}
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 lg:col-span-8">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-8">
             {footerSections.map((section) => (
               <div key={section.title}>
                 <h4 className="mb-4 text-sm font-semibold text-white">{section.title}</h4>

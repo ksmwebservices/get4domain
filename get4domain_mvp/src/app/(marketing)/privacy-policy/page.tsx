@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
           heading: '1. Introduction',
           content: (
             <>
-              <p>Get4Domain ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our platform and services.</p>
+              <p>Get4Domain (operated by KSM Quantum Technologies, "we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your personal information when you use our platform and services.</p>
               <p>By using Get4Domain, you agree to the collection and use of information in accordance with this policy.</p>
             </>
           ),
@@ -89,7 +89,12 @@ export default function PrivacyPolicyPage() {
         },
         {
           heading: '8. Contact Us',
-          content: (<p>If you have questions about this Privacy Policy, please contact us at support@get4domain.com or call +91 98765 43210.</p>),
+          content: (
+            <>
+              <p>If you have questions about this Privacy Policy, please contact us:</p>
+              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com<br />Phone: +91 75500 47567</p>
+            </>
+          ),
         },
       ]}
     />

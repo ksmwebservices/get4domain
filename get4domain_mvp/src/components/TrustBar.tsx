@@ -1,6 +1,6 @@
 export default function TrustBar() {
   const stats = [
-    { value: '500+', label: 'Businesses Online' },
+    { value: '50+', label: 'Businesses Online' },
     { value: '20+', label: 'Industries' },
     { value: '99.9%', label: 'Uptime' },
     { value: '< 24h', label: 'Consultant Call' },

@@ -5,8 +5,8 @@ import { SectionHeading } from './ui/Accordion';
 import Button from './ui/Button';
 
 const contactCards = [
-  { icon: Phone, title: 'Call Us', label: 'Sales & Support', value: '+91 98765 43210', action: 'Call Now', color: 'bg-primary-50 text-primary-600' },
-  { icon: MessageCircle, title: 'WhatsApp', label: 'Quick Chat', value: '+91 98765 43210', action: 'Chat Now', color: 'bg-success-50 text-success-600' },
+  { icon: Phone, title: 'Call Us', label: 'Sales & Support', value: '+91 75500 47567', action: 'Call Now', color: 'bg-primary-50 text-primary-600' },
+  { icon: MessageCircle, title: 'WhatsApp', label: 'Quick Chat', value: '+91 75500 47567', action: 'Chat Now', color: 'bg-success-50 text-success-600' },
   { icon: Mail, title: 'Email', label: 'Support', value: 'support@get4domain.com', action: 'Send Email', color: 'bg-secondary-50 text-secondary-600' },
 ];
 
@@ -37,13 +37,22 @@ export default function Contact() {
                 <div><p className="text-sm font-bold text-slate-900">Dedicated Support</p><p className="text-xs text-slate-500">30 days included with every package</p></div>
               </div>
               <div className="flex items-center gap-2 text-sm text-slate-600"><Clock className="h-4 w-4 text-slate-400" /><span>Mon - Sat: 9:00 AM - 8:00 PM IST</span></div>
+              <div className="mt-2 flex items-start gap-2 text-sm text-slate-600"><MapPin className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" /><span>Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113</span></div>
             </div>
           </div>
           <div className="space-y-4">
             <div className="card-base overflow-hidden">
               <div className="relative h-64 bg-slate-100">
-                <iframe title="Get4Domain Office Location" src="https://www.openstreetmap.org/export/embed.html?bbox=72.8%2C19.05%2C72.9%2C19.15&layer=mapnik" className="h-full w-full border-0" loading="lazy" />
-                <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 shadow-md backdrop-blur"><MapPin className="h-4 w-4 text-primary-600" /><span className="text-xs font-medium text-slate-700">Mumbai, India</span></div>
+                <iframe
+                  title="Get4Domain Office Location"
+                  src="https://www.google.com/maps?q=Tidel+Park,+Tharamani,+Chennai,+Tamil+Nadu+600113&output=embed"
+                  className="h-full w-full border-0"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-lg bg-white/95 px-3 py-2 shadow-md backdrop-blur">
+                  <MapPin className="h-4 w-4 text-primary-600" />
+                  <span className="text-xs font-medium text-slate-700">Tidel Park, Tharamani, Chennai - 600113</span>
+                </div>
               </div>
             </div>
             <div className="card-base p-5">

@@ -6,9 +6,9 @@ import Image from 'next/image';
 import Button from './ui/Button';
 
 const stats = [
-  { value: '500+', label: 'Businesses Launched' },
+  { value: '50+', label: 'Businesses Launched' },
   { value: '20+', label: 'Industries Served' },
-  { value: '₹6,999', label: 'Starting / Year' },
+  { value: '₹999', label: 'Starting' },
 ];
 
 export default function Hero() {

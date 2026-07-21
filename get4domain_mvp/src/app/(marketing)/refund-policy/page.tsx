@@ -15,7 +15,7 @@ export default function RefundPolicyPage() {
       breadcrumb="Refund Policy"
       lastUpdated="January 2026"
       sections={[
-        { heading: '1. Our Commitment', content: (<p>At Get4Domain, we are committed to your satisfaction. We stand behind our service with a clear refund policy to ensure you can purchase with confidence.</p>) },
+        { heading: '1. Our Commitment', content: (<p>At Get4Domain (operated by KSM Quantum Technologies), we are committed to your satisfaction. We stand behind our service with a clear refund policy to ensure you can purchase with confidence.</p>) },
         {
           heading: '2. Full Refund Guarantee',
           content: (
@@ -69,7 +69,26 @@ export default function RefundPolicyPage() {
         { heading: '5. Domain & Hosting', content: (<p>If a domain has already been registered on your behalf, the domain registration fee (₹500-₹1,000) is non-refundable. You will retain ownership of the domain and can transfer it to another provider.</p>) },
         { heading: '6. Add-on Services', content: (<p>Add-on services (SEO, social media, content writing, etc.) are eligible for refund only if the service has not been started. Once work has begun, the service is non-refundable.</p>) },
         { heading: '7. Partial Refunds', content: (<p>In certain cases, partial refunds may be offered at our discretion — for example, if only some components of a package were delivered. Partial refund amounts are determined on a case-by-case basis.</p>) },
-        { heading: '8. Contact Us', content: (<p>For refund requests or questions about this policy, contact us at support@get4domain.com or call +91 98765 43210. Our support team is available Monday to Saturday, 9:00 AM - 8:00 PM IST.</p>) },
+        {
+          heading: '8. DomainCampaign & DomainApp Refunds',
+          content: (
+            <ul className="list-disc pl-5 space-y-1">
+              <li>DomainCampaign wallet credits: non-refundable after use.</li>
+              <li>DomainApp setup fee: non-refundable after work begins.</li>
+              <li>Monthly subscription: refundable within 7 days if no work has started.</li>
+            </ul>
+          ),
+        },
+        {
+          heading: '9. Contact Us',
+          content: (
+            <>
+              <p>For refund requests or questions about this policy, contact us:</p>
+              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com<br />Phone: +91 75500 47567</p>
+              <p>Our support team is available Monday to Saturday, 9:00 AM - 8:00 PM IST.</p>
+            </>
+          ),
+        },
       ]}
     />
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Rocket, X, Send, Phone, MessageCircle as WhatsAppIcon } from 'lucide-react';
+import { X, Send, Phone, MessageCircle as WhatsAppIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface ChatMessage {
@@ -92,7 +92,7 @@ export default function ChatWidget({
         aria-label={open ? 'Close chat' : 'Open chat'}
         className={`fixed bottom-6 ${positionClass} z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 shadow-lg hover:bg-primary-700 transition-all hover:scale-110`}
       >
-        {open ? <X className="h-6 w-6 text-white" /> : <Rocket className="h-6 w-6 text-white" />}
+        {open ? <X className="h-6 w-6 text-white" /> : <img src="/favicon.png" alt="G4D" className="w-8 h-8" />}
       </button>
 
       {open && (
