@@ -50,7 +50,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (granted) {
         subscribeToPush().then((subscription) => {
           if (subscription) {
-            api.subscribeToPushNotifications(subscription).catch(() => {});
+            api.subscribeToPush({ fcmToken: subscription.endpoint, device: 'web', userType: 'ADMIN' }).catch(() => {});
           }
         });
       }
@@ -60,10 +60,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const check = async () => {
       try {
-        const result = await api.getUnreadNotifications();
-        setNotifCount(result.data?.count ?? 0);
+        const result = await api.getNotifications();
+        const items = (result.data ?? []) as Array<{ read: boolean }>;
+        setNotifCount(items.filter((n) => !n.read).length);
       } catch {
-        // Backend notifications endpoint not implemented yet — stay at 0
+        // Stay at 0 if the request fails
       }
     };
     check();

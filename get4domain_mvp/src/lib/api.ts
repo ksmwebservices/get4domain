@@ -126,8 +126,83 @@ export const api = {
   updateLeadStatus: (id: string, status: string) =>
     apiCall(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
-  // Notifications (not yet implemented on the backend — calls fail silently until it is)
-  getUnreadNotifications: () => apiCall('/notifications/unread'),
-  subscribeToPushNotifications: (subscription: PushSubscription) =>
-    apiCall('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+  // Notifications
+  getNotifications: () => apiCall('/notifications'),
+  markNotificationRead: (id: string) =>
+    apiCall(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllNotificationsRead: () =>
+    apiCall('/notifications/read-all', { method: 'PUT' }),
+  subscribeToPush: (data: { fcmToken: string; device: string; userType: 'VENDOR' | 'ADMIN' }) =>
+    apiCall('/notifications/subscribe', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Wallet
+  getWalletBalance: () => apiCall('/wallet/balance'),
+  getWalletTransactions: (page = 1, limit = 20) =>
+    apiCall(`/wallet/transactions?page=${page}&limit=${limit}`),
+  createWalletTopup: (amount: number) =>
+    apiCall('/wallet/topup', { method: 'POST', body: JSON.stringify({ amount }) }),
+  verifyWalletTopup: (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
+    apiCall('/wallet/topup/verify', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Campaign Pages
+  generateCampaignPage: (data: { industry: string; businessName: string; offerTitle: string; description: string; phone: string; whatsapp: string }) =>
+    apiCall('/campaign-pages/generate', { method: 'POST', body: JSON.stringify(data) }),
+  createCampaignPage: (data: any) =>
+    apiCall('/campaign-pages', { method: 'POST', body: JSON.stringify(data) }),
+  getCampaignPages: () => apiCall('/campaign-pages'),
+  getCampaignPage: (id: string) => apiCall(`/campaign-pages/${id}`),
+  updateCampaignPage: (id: string, data: any) =>
+    apiCall(`/campaign-pages/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCampaignPage: (id: string) =>
+    apiCall(`/campaign-pages/${id}`, { method: 'DELETE' }),
+  getCampaignPageAnalytics: (id: string) => apiCall(`/campaign-pages/${id}/analytics`),
+
+  // Public /go/:slug campaign pages (no auth)
+  getPublicCampaignPage: (slug: string) => apiCall(`/go/${slug}`),
+  submitCampaignPageLead: (slug: string, data: { name: string; phone: string; message?: string }) =>
+    apiCall(`/go/${slug}/lead`, { method: 'POST', body: JSON.stringify(data) }),
+  incrementCampaignPageView: (pageId: string) =>
+    apiCall(`/campaign-pages/${pageId}/view`, { method: 'POST' }),
+
+  // Campaigns
+  createCampaign: (data: { name: string; description?: string; channels: string[]; content: Record<string, unknown>; startDate?: string; endDate?: string }) =>
+    apiCall('/campaigns', { method: 'POST', body: JSON.stringify(data) }),
+  getCampaigns: () => apiCall('/campaigns'),
+  getCampaign: (id: string) => apiCall(`/campaigns/${id}`),
+  approveCampaign: (id: string) =>
+    apiCall(`/campaigns/${id}/approve`, { method: 'POST' }),
+  getCampaignAnalytics: (id: string) => apiCall(`/campaigns/${id}/analytics`),
+
+  // CRM
+  getCrmLeads: (filters?: { status?: string; source?: string; from?: string; to?: string }) => {
+    const params = new URLSearchParams(filters as Record<string, string>).toString();
+    return apiCall(`/crm/leads${params ? `?${params}` : ''}`);
+  },
+  createCrmLead: (data: { name: string; phone: string; message?: string; source?: string }) =>
+    apiCall('/crm/leads', { method: 'POST', body: JSON.stringify(data) }),
+  getCrmLead: (id: string) => apiCall(`/crm/leads/${id}`),
+  updateCrmLead: (id: string, data: { status?: string; notes?: string; assignedTo?: string; followUpDate?: string }) =>
+    apiCall(`/crm/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  logCrmCall: (id: string, data: { duration?: number; outcome?: string; notes?: string; aiSummary?: string; followUpAt?: string }) =>
+    apiCall(`/crm/leads/${id}/call`, { method: 'POST', body: JSON.stringify(data) }),
+  getTelecrmQueue: () => apiCall('/crm/telecrm/queue'),
+  getTelecrmFollowups: () => apiCall('/crm/telecrm/followups'),
+
+  // Team
+  inviteTeamMember: (data: { name: string; email?: string; phone?: string; role: string; modules: string[] }) =>
+    apiCall('/team/invite', { method: 'POST', body: JSON.stringify(data) }),
+  getTeamMembers: () => apiCall('/team/members'),
+  updateTeamMember: (id: string, data: { role?: string; modules?: string[] }) =>
+    apiCall(`/team/members/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  removeTeamMember: (id: string) =>
+    apiCall(`/team/members/${id}`, { method: 'DELETE' }),
+  acceptTeamInvite: (data: { inviteToken: string; password: string }) =>
+    apiCall('/team/invite/accept', { method: 'POST', body: JSON.stringify(data) }),
+  getTeamActivity: () => apiCall('/team/activity'),
+
+  // AI campaign content
+  generateAiContent: (data: { channel: string; vendorIndustry: string; offerDetails: string; tone?: string }) =>
+    apiCall('/ai/generate-content', { method: 'POST', body: JSON.stringify(data) }),
+  generateAiCallSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) =>
+    apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
 };

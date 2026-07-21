@@ -4,23 +4,30 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Globe, Megaphone, FileText, Package, ShoppingBag,
-  CreditCard, Bell, Settings, LogOut, Menu, X, ChevronRight, HelpCircle
+  LayoutDashboard, FileText, Users, Phone, Megaphone, BarChart3,
+  Wallet, UserPlus, HelpCircle, Bell, Settings, LogOut, Menu, X, ChevronRight, Home
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardChatBot from '@/components/DashboardChatBot';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Overview',           href: '/dashboard' },
-  { icon: Package,         label: 'My Plans & Services', href: '/dashboard/my-services' },
-  { icon: CreditCard,      label: 'Billing & Payments',  href: '/dashboard/billing' },
-  { icon: FileText,        label: 'My Invoices',         href: '/dashboard/invoices' },
-  { icon: Globe,           label: 'My Website',          href: '/dashboard/my-website' },
-  { icon: ShoppingBag,     label: 'My Products',         href: '/dashboard/my-products' },
-  { icon: Megaphone,       label: 'My Campaign',         href: '/dashboard/my-campaign' },
-  { icon: HelpCircle,      label: 'Support',             href: '/dashboard/support' },
-  { icon: Bell,            label: 'Notifications',       href: '/dashboard/notifications', badge: '1' },
-  { icon: Settings,        label: 'Settings',            href: '/dashboard/settings' },
+  { icon: LayoutDashboard, label: 'Overview',      href: '/dashboard' },
+  { icon: FileText,        label: 'My Page',        href: '/dashboard/landing-page' },
+  { icon: Users,           label: 'CRM',            href: '/dashboard/crm' },
+  { icon: Phone,           label: 'TeleCRM',        href: '/dashboard/telecrm' },
+  { icon: Megaphone,       label: 'Campaigns',      href: '/dashboard/campaigns' },
+  { icon: BarChart3,       label: 'Reports',        href: '/dashboard/reports' },
+  { icon: Wallet,          label: 'Wallet',         href: '/dashboard/wallet' },
+  { icon: UserPlus,        label: 'Team',           href: '/dashboard/team' },
+  { icon: HelpCircle,      label: 'Support',        href: '/dashboard/support' },
+  { icon: Bell,            label: 'Notifications',  href: '/dashboard/notifications' },
+];
+
+const mobileNavItems = [
+  { icon: Home,      label: 'Home',     href: '/dashboard' },
+  { icon: Users,     label: 'CRM',      href: '/dashboard/crm' },
+  { icon: Megaphone, label: 'Campaign', href: '/dashboard/campaigns' },
+  { icon: BarChart3, label: 'Reports',  href: '/dashboard/reports' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -111,9 +118,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-slate-400'}`} />
                 <span className="flex-1">{item.label}</span>
-                {'badge' in item && item.badge && (
-                  <span className="rounded-full bg-error-500 px-1.5 py-0.5 text-xs font-bold text-white leading-none">{item.badge}</span>
-                )}
                 {isActive && <ChevronRight className="h-3.5 w-3.5 text-primary-400" />}
               </Link>
             );
@@ -148,8 +152,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-5 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-slate-200 bg-white lg:hidden">
+        {mobileNavItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-primary-600' : 'text-slate-500'}`}
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500"
+        >
+          <Menu className="h-5 w-5" />
+          More
+        </button>
+      </nav>
       <DashboardChatBot vendorName={user.name} industry={user.industry} />
     </div>
   );

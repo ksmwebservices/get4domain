@@ -3,44 +3,76 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  Globe, Megaphone, CreditCard, FileText, Bell, ArrowRight,
-  CheckCircle2, Clock, ExternalLink, CalendarCheck, Zap, BarChart3, Users, Loader2
+  Users, Megaphone, Wallet, Plus, UserPlus, HelpCircle, ArrowRight,
+  Bell, Clock, Phone, Loader2, CalendarClock,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 
-interface VendorCms {
-  businessName: string | null;
+interface CrmLead {
+  id: string;
+  name: string;
+  phone: string;
+  source: string | null;
+  status: string;
+  createdAt: string;
+  followUpDate: string | null;
 }
 
-interface Invoice {
+interface NotificationItem {
   id: string;
-  invoiceNumber: string;
-  description: string;
-  totalAmount: number;
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+  title: string;
+  message: string;
+  read: boolean;
   createdAt: string;
-  dueDate: string | null;
+}
+
+interface Campaign {
+  id: string;
+  status: string;
 }
 
 const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
+const timeAgo = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+};
+
 export default function DashboardHome() {
   const { user } = useAuth();
-  const [cms, setCms] = useState<VendorCms | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [leads, setLeads] = useState<CrmLead[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [followups, setFollowups] = useState<CrmLead[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [activeCampaigns, setActiveCampaigns] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
-    Promise.all([api.getVendorCMS(user.id), api.getVendorInvoices(user.id)])
-      .then(([cmsRes, invoicesRes]) => {
+    Promise.all([
+      api.getCrmLeads(),
+      api.getNotifications(),
+      api.getTelecrmFollowups(),
+      api.getWalletBalance(),
+      api.getCampaigns(),
+    ])
+      .then(([leadsRes, notifRes, followupsRes, walletRes, campaignsRes]) => {
         if (cancelled) return;
-        setCms(cmsRes.data ?? null);
-        setInvoices(invoicesRes.data ?? []);
+        setLeads(leadsRes.data ?? []);
+        setNotifications(notifRes.data ?? []);
+        setFollowups(followupsRes.data ?? []);
+        setWalletBalance(walletRes.data?.balance ?? 0);
+        const campaigns = (campaignsRes.data ?? []) as Campaign[];
+        setActiveCampaigns(campaigns.filter((c) => c.status === 'approved' || c.status === 'running').length);
       })
       .catch(() => {
         // Non-fatal — dashboard still renders with whatever loaded
@@ -55,24 +87,37 @@ export default function DashboardHome() {
   const firstName = user?.name?.split(' ')[0] ?? 'there';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const pendingInvoices = invoices.filter(i => i.status === 'PENDING');
-  const recentInvoices = invoices.slice(0, 3);
-  const websiteLabel = cms?.businessName ?? user?.businessName ?? 'Your website';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const leadsToday = leads.filter((l) => new Date(l.createdAt) >= today).length;
+  const recentLeads = leads.slice(0, 5);
+  const recentNotifications = notifications.slice(0, 3);
+  const upcomingFollowups = followups.slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">{greeting}, {firstName} 👋</h2>
-        <p className="mt-1 text-sm text-slate-500">Here&apos;s your Get4Domain account overview.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {user?.businessName ?? 'Your business'}{user?.industry ? ` · ${user.industry.replace('-', ' & ')}` : ''}
+        </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-3 gap-4">
         {[
-          { icon: Globe,    label: 'Website',      value: websiteLabel,   color: 'text-success-600',   bg: 'bg-success-50' },
-          { icon: Users,    label: 'Active Plan',  value: user?.plan ?? 'Startup', color: 'text-primary-600', bg: 'bg-primary-50' },
-          { icon: FileText, label: 'Pending Invoices', value: String(pendingInvoices.length), color: 'text-warning-600', bg: 'bg-warning-50' },
-          { icon: Zap,      label: 'Modules',      value: '5 Active',      color: 'text-secondary-600', bg: 'bg-secondary-50' },
+          { icon: Users, label: 'Leads Today', value: String(leadsToday), color: 'text-primary-600', bg: 'bg-primary-50' },
+          { icon: Megaphone, label: 'Active Campaigns', value: String(activeCampaigns), color: 'text-secondary-600', bg: 'bg-secondary-50' },
+          { icon: Wallet, label: 'Wallet Balance', value: walletBalance !== null ? formatCurrency(walletBalance) : '—', color: 'text-success-600', bg: 'bg-success-50' },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -87,98 +132,35 @@ export default function DashboardHome() {
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* DomainApp */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600">
-                <Globe className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <div className="text-base font-bold text-slate-900">DomainApp</div>
-                <div className="text-xs text-slate-500">{user?.plan ?? 'Startup'} Plan</div>
-              </div>
-            </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-success-500 animate-pulse" />Active
-            </span>
-          </div>
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {['Website', 'Fleet CRM', 'Invoicing', 'Trip Sheets', 'Reports'].map((m) => (
-              <span key={m} className="flex items-center gap-1 rounded-lg bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700">
-                <CheckCircle2 className="h-3 w-3" />{m}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Link href="/dashboard/domain-app" className="flex-1">
-              <Button size="sm" fullWidth rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Manage</Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* DomainCampaign upsell */}
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-200">
-                <Megaphone className="h-5 w-5 text-slate-500" />
-              </div>
-              <div>
-                <div className="text-base font-bold text-slate-700">DomainCampaign</div>
-                <div className="text-xs text-slate-400">Not subscribed</div>
-              </div>
-            </div>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Inactive</span>
-          </div>
-          <div className="mb-5 space-y-2">
-            {['120 social posts / month', 'SEO management', 'Google Business Profile', 'Campaign reports'].map((f) => (
-              <div key={f} className="flex items-center gap-2 text-sm text-slate-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-300 flex-shrink-0" />{f}
-              </div>
-            ))}
-          </div>
-          <Link href="/dashboard/domain-campaign">
-            <Button size="sm" fullWidth leftIcon={<CalendarCheck className="h-3.5 w-3.5" />}>Add DomainCampaign</Button>
-          </Link>
-        </div>
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-3">
+        <Link href="/dashboard/campaigns"><Button size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />}>Create Campaign</Button></Link>
+        <Link href="/dashboard/crm"><Button size="sm" variant="outline" leftIcon={<UserPlus className="h-3.5 w-3.5" />}>Add Lead</Button></Link>
+        <Link href="/dashboard/support"><Button size="sm" variant="outline" leftIcon={<HelpCircle className="h-3.5 w-3.5" />}>Get Support</Button></Link>
       </div>
 
-      {/* Invoices + Notifications */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent leads */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Recent Invoices</h3>
-            <Link href="/dashboard/invoices" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
+            <h3 className="text-base font-bold text-slate-900">Recent Leads</h3>
+            <Link href="/dashboard/crm" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
           </div>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-            </div>
-          ) : recentInvoices.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">No invoices yet.</p>
+          {recentLeads.length === 0 ? (
+            <p className="text-sm text-slate-400 py-4">No leads yet.</p>
           ) : (
             <div className="space-y-3">
-              {recentInvoices.map((inv) => (
-                <div key={inv.id} className={`flex items-center justify-between rounded-xl p-3 ${inv.status === 'PENDING' ? 'bg-warning-50 border border-warning-100' : 'bg-slate-50'}`}>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900">{inv.invoiceNumber}</div>
-                    <div className="text-xs text-slate-500">{inv.description}</div>
+              {recentLeads.map((lead) => (
+                <div key={lead.id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-slate-900 truncate">{lead.name}</div>
+                    <div className="text-xs text-slate-500">{lead.phone} · {lead.source ?? 'manual'}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-slate-900">{formatCurrency(inv.totalAmount)}</div>
-                    {inv.status === 'PAID' ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-success-700">
-                        <CheckCircle2 className="h-3 w-3" />Paid
-                      </span>
-                    ) : (
-                      <Link href="/dashboard/billing">
-                        <span className="text-xs font-semibold text-warning-700 hover:underline cursor-pointer flex items-center gap-1">
-                          <Clock className="h-3 w-3" />Pay Now
-                        </span>
-                      </Link>
-                    )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 capitalize">{lead.status}</span>
+                    <a href={`tel:${lead.phone}`} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-primary-600">
+                      <Phone className="h-3.5 w-3.5" />
+                    </a>
                   </div>
                 </div>
               ))}
@@ -186,34 +168,58 @@ export default function DashboardHome() {
           )}
         </div>
 
+        {/* Recent notifications */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-slate-900">Notifications</h3>
             <Link href="/dashboard/notifications" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
           </div>
-          <div className="space-y-3">
-            {pendingInvoices.length > 0 && (
-              <div className="flex items-start gap-3 rounded-xl p-3 bg-warning-50">
-                <Bell className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning-600" />
-                <div>
-                  <div className="text-sm text-slate-700">
-                    {pendingInvoices.length} invoice{pendingInvoices.length > 1 ? 's' : ''} pending payment
+          {recentNotifications.length === 0 ? (
+            <p className="text-sm text-slate-400 py-4">No new notifications.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentNotifications.map((n) => (
+                <div key={n.id} className={`flex items-start gap-3 rounded-xl p-3 ${n.read ? 'bg-slate-50' : 'bg-primary-50'}`}>
+                  <Bell className={`h-4 w-4 mt-0.5 flex-shrink-0 ${n.read ? 'text-slate-400' : 'text-primary-600'}`} />
+                  <div className="min-w-0">
+                    <div className="text-sm text-slate-700 truncate">{n.title}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{timeAgo(n.createdAt)}</div>
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">Now</div>
                 </div>
-              </div>
-            )}
-            {pendingInvoices.length === 0 && !loading && (
-              <p className="text-sm text-slate-400">No new notifications.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Upcoming follow-ups */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-900">Upcoming Follow-ups</h3>
+          <Link href="/dashboard/telecrm" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
+        </div>
+        {upcomingFollowups.length === 0 ? (
+          <p className="text-sm text-slate-400 py-4">No follow-ups scheduled.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {upcomingFollowups.map((lead) => (
+              <div key={lead.id} className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center gap-1.5 text-xs text-warning-700 font-semibold">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
+                </div>
+                <div className="mt-1.5 text-sm font-semibold text-slate-900 truncate">{lead.name}</div>
+                <div className="text-xs text-slate-500">{lead.phone}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-primary-100 bg-primary-50 p-5 flex items-center justify-between">
         <div>
           <div className="text-sm font-bold text-slate-900">Need help or want to request changes?</div>
-          <div className="text-xs text-slate-500 mt-0.5">We respond within 24 hours on WhatsApp and email.</div>
+          <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1"><Clock className="h-3 w-3" />We respond within 24 hours on WhatsApp and email.</div>
         </div>
         <Link href="/dashboard/support">
           <Button size="sm" variant="outline" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Get Support</Button>
