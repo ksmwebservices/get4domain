@@ -35,7 +35,12 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-4">
             <Link href="/" className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Get4Domain" className="h-28 w-auto object-contain brightness-0 invert" />
+              <img
+                src="/logo.png"
+                alt="Get4Domain"
+                className="h-16 w-auto object-contain"
+                style={{ maxHeight: '64px', filter: 'brightness(0) invert(1)' }}
+              />
             </Link>
             <p className="mt-4 text-sm leading-relaxed max-w-xs">
               Professional Business Launch Made Easy. SaaS platform for Indian SMBs — websites, business management and managed digital marketing.

@@ -9,9 +9,9 @@ import SectionLink from '@/components/SectionLink';
 import ProductsOverview from '@/components/ProductsOverview';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Digital Business Platform for Indian SMBs | Website + BOS + Campaigns',
+  title: 'Get4Domain — Your Online Identity Partner',
   description:
-    "Get4Domain gives Indian SMBs a complete digital platform — professional websites, business management software and managed digital marketing. Starting ₹999.",
+    'Get4Domain gives Indian SMBs a complete digital platform — professional websites, business management software and managed digital marketing. Starting ₹999.',
 };
 
 export default function HomePage() {

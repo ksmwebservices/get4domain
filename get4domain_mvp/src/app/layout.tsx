@@ -31,8 +31,7 @@ export const metadata: Metadata = {
   publisher: 'KSM Quantum Technologies',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: [{ url: '/favicon.png', sizes: '64x64', type: 'image/png' }],
-    shortcut: '/favicon.ico',
+    icon: [{ url: '/favicon.png', sizes: '192x192', type: 'image/png' }],
     apple: '/favicon.png',
   },
   alternates: { canonical: 'https://get4domain.com' },
