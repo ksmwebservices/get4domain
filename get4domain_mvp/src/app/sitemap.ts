@@ -2,24 +2,21 @@ import type { MetadataRoute } from 'next';
 
 const BASE = 'https://get4domain.com';
 
-// All public-facing pages with correct SEO priorities
-const pages: { path: string; priority: number; changeFreq: MetadataRoute.Sitemap[number]['changeFrequency'] }[] = [
-  { path: '/',                   priority: 1.0,  changeFreq: 'weekly' },
-  { path: '/domain-app',         priority: 0.95, changeFreq: 'monthly' },
-  { path: '/domain-campaign',    priority: 0.95, changeFreq: 'monthly' },
-  { path: '/pricing',            priority: 0.9,  changeFreq: 'monthly' },
-  { path: '/industries',         priority: 0.9,  changeFreq: 'monthly' },
-  { path: '/book-demo',          priority: 0.9,  changeFreq: 'monthly' },
-  { path: '/how-it-works',       priority: 0.8,  changeFreq: 'monthly' },
-  { path: '/portfolio',          priority: 0.8,  changeFreq: 'weekly'  },
-  { path: '/contact',            priority: 0.75, changeFreq: 'monthly' },
-  { path: '/support',            priority: 0.7,  changeFreq: 'monthly' },
-  { path: '/terms',              priority: 0.3,  changeFreq: 'yearly'  },
-  { path: '/privacy-policy',     priority: 0.3,  changeFreq: 'yearly'  },
-  { path: '/refund-policy',      priority: 0.3,  changeFreq: 'yearly'  },
+const pages = [
+  { path: '/',                 priority: 1.0,  changeFreq: 'weekly' as const },
+  { path: '/domain-campaign',  priority: 0.95, changeFreq: 'monthly' as const },
+  { path: '/domain-app',       priority: 0.95, changeFreq: 'monthly' as const },
+  { path: '/pricing',          priority: 0.9,  changeFreq: 'monthly' as const },
+  { path: '/industries',       priority: 0.9,  changeFreq: 'monthly' as const },
+  { path: '/book-demo',        priority: 0.9,  changeFreq: 'monthly' as const },
+  { path: '/contact',          priority: 0.75, changeFreq: 'monthly' as const },
+  { path: '/support',          priority: 0.7,  changeFreq: 'monthly' as const },
+  { path: '/about',            priority: 0.7,  changeFreq: 'monthly' as const },
+  { path: '/terms',            priority: 0.3,  changeFreq: 'yearly' as const },
+  { path: '/privacy-policy',   priority: 0.3,  changeFreq: 'yearly' as const },
+  { path: '/refund-policy',    priority: 0.3,  changeFreq: 'yearly' as const },
 ];
 
-// Industry sub-pages — each one is a landing target for GMB / local SEO
 const industries = [
   'restaurant', 'travel', 'realestate', 'healthcare', 'education',
   'construction', 'retail', 'beauty', 'fitness', 'professional',
@@ -37,13 +34,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority,
   }));
 
-  // Industry anchor links — /industries#restaurant etc become crawlable signals
   const industryPages = industries.map((id) => ({
-    url: `${BASE}/industries`,
+    url: `${BASE}/industries/${id}`,
     lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.85,
   }));
 
-  return [...staticPages];
+  return [...staticPages, ...industryPages];
 }

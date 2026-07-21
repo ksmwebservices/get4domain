@@ -4,8 +4,8 @@ import IndustryMarketplace from '@/components/IndustryMarketplace';
 import CTABanner from '@/components/CTABanner';
 
 export const metadata: Metadata = {
-  title: 'Industries — 20+ Business Solutions | Get4Domain',
-  description: 'Get4Domain supports 20+ industries. Choose your industry to see a live demo, explore features and book your consultation.',
+  title: '20+ Industry Solutions — Restaurant, Travel, Clinic & More | Get4Domain',
+  description: 'Get4Domain serves 20+ industries with industry-specific websites and business software. Restaurant, Travel, Clinic, School, Retail and more.',
 };
 
 export default function IndustriesPage() {

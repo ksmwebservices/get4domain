@@ -7,8 +7,8 @@ import Button from '@/components/ui/Button';
 import { domainAppStartupFeatures, domainAppEnterpriseFeatures, domainCampaignStarterFeatures, domainCampaignBusinessFeatures } from '@/data/content';
 
 export const metadata: Metadata = {
-  title: 'Pricing — DomainApp & DomainCampaign | Get4Domain',
-  description: 'Transparent pricing for DomainApp and DomainCampaign. Book a demo to get a custom quote for your business.',
+  title: 'Pricing — DomainCampaign & DomainApp Plans | Get4Domain',
+  description: 'Simple transparent pricing. DomainCampaign: wallet-based from ₹999. DomainApp: ₹2,999/month with setup. No hidden charges.',
 };
 
 const plans = [
