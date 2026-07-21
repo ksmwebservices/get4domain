@@ -90,13 +90,13 @@ export default function ChatWidget({
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Close chat' : 'Open chat'}
-        className={`fixed bottom-6 ${positionClass} z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 shadow-lg hover:bg-primary-700 transition-all hover:scale-110`}
+        className={`fixed bottom-6 ${positionClass} z-50 flex h-32 w-32 items-center justify-center rounded-full bg-primary-600 shadow-lg hover:bg-primary-700 transition-all hover:scale-110`}
       >
-        {open ? <X className="h-6 w-6 text-white" /> : <img src="/favicon.png" alt="G4D" className="w-8 h-8" />}
+        {open ? <X className="h-10 w-10 text-white" /> : <img src="/favicon.png" alt="G4D" className="w-24 h-24" />}
       </button>
 
       {open && (
-        <div className={`fixed bottom-24 ${panelPositionClass} z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-premium animate-fade-in`}>
+        <div className={`fixed bottom-40 ${panelPositionClass} z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-premium animate-fade-in`}>
           <div className="flex items-center justify-between bg-primary-600 px-4 py-3.5 text-white">
             <div>
               <div className="text-sm font-bold">{title}</div>
