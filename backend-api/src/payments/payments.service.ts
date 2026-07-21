@@ -1,10 +1,16 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
+import { Invoice, Subscription, Vendor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { WhatsAppService } from '../notifications/whatsapp.service';
+import { renderInvoiceHtml } from '../invoices/templates/invoice.template';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+
+type PaidInvoice = Invoice & { vendor: Vendor; subscription: Subscription | null };
 
 @Injectable()
 export class PaymentsService {
@@ -14,6 +20,8 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly notificationsService: NotificationsService,
+    private readonly whatsappService: WhatsAppService,
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID as string,
@@ -50,7 +58,7 @@ export class PaymentsService {
       include: { vendor: true, subscription: true },
     });
 
-    await this.emailService.sendPaymentConfirmation(invoice.vendor, invoice, invoice.subscription);
+    await this.finalizePayment(invoice);
 
     return { verified: true };
   }
@@ -109,8 +117,46 @@ export class PaymentsService {
           },
           include: { vendor: true, subscription: true },
         });
-        await this.emailService.sendPaymentConfirmation(updated.vendor, updated, updated.subscription);
+        await this.finalizePayment(updated);
       }
+    }
+  }
+
+  private async finalizePayment(invoice: PaidInvoice): Promise<void> {
+    if (invoice.subscriptionId) {
+      await this.prisma.subscription.update({
+        where: { id: invoice.subscriptionId },
+        data: { status: 'ACTIVE', startDate: invoice.subscription?.startDate ?? new Date() },
+      });
+    }
+
+    await this.prisma.platformIncome.create({
+      data: {
+        vendorId: invoice.vendorId,
+        invoiceId: invoice.id,
+        amount: invoice.totalAmount,
+        source: invoice.subscriptionId ? 'subscription' : 'invoice',
+        description: invoice.description,
+      },
+    });
+
+    const pdfHtml = renderInvoiceHtml(invoice, invoice.vendor);
+    await this.emailService.sendInvoiceEmail(invoice.vendor, invoice, pdfHtml);
+    await this.emailService.sendPaymentConfirmation(invoice.vendor, invoice, invoice.subscription);
+
+    await this.notificationsService.notifyAdmin(
+      'payment_received',
+      'Payment received',
+      `₹${(invoice.totalAmount / 100).toFixed(2)} received from ${invoice.vendor.businessName}`,
+      { priority: 'INFO', actionType: 'view_invoice', actionData: { invoiceId: invoice.id } },
+    );
+
+    const adminWhatsApp = process.env.ADMIN_WHATSAPP_NUMBER ?? process.env.COMPANY_PHONE;
+    if (adminWhatsApp) {
+      await this.whatsappService.sendTemplate(adminWhatsApp, 'payment_received', [
+        invoice.vendor.businessName,
+        `₹${(invoice.totalAmount / 100).toFixed(2)}`,
+      ]);
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-import { Vendor, Invoice, Subscription, SupportTicket } from '@prisma/client';
+import { Vendor, Invoice, Subscription, SupportTicket, TeamMember } from '@prisma/client';
 
 const formatDate = (date: Date | null | undefined): string =>
   date ? new Date(date).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
@@ -88,6 +88,32 @@ export class EmailService {
         <p>Hi ${vendor.name},</p>
         <p>We've received your support ticket regarding <strong>${ticket.subject}</strong> (category: ${ticket.category}).</p>
         <p>Our team will respond as soon as possible.</p>
+      `,
+    });
+  }
+
+  async sendTeamInvite(member: TeamMember, vendor: Vendor): Promise<void> {
+    if (!member.email) return;
+    await this.send({
+      to: member.email,
+      subject: `You've been invited to join ${vendor.businessName} on Get4Domain`,
+      html: `
+        <p>Hi ${member.name},</p>
+        <p>${vendor.businessName} has invited you to join their Get4Domain team as <strong>${member.role}</strong>.</p>
+        <p>Accept your invite and set a password: <a href="${this.frontendUrl}/team/accept-invite?token=${member.inviteToken}">${this.frontendUrl}/team/accept-invite?token=${member.inviteToken}</a></p>
+        <p>Team Get4Domain</p>
+      `,
+    });
+  }
+
+  async sendSupportReplyEmail(vendor: Vendor, ticket: SupportTicket): Promise<void> {
+    await this.send({
+      to: vendor.email,
+      subject: `Reply to your support ticket: ${ticket.subject}`,
+      html: `
+        <p>Hi ${vendor.name},</p>
+        <p>Our team replied to your support ticket <strong>${ticket.subject}</strong>:</p>
+        <blockquote style="border-left:3px solid #2563eb;padding-left:12px;color:#334155;">${ticket.adminReply}</blockquote>
       `,
     });
   }

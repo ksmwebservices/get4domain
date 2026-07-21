@@ -12,6 +12,12 @@ import { EmailModule } from './email/email.module';
 import { SupportModule } from './support/support.module';
 import { AiModule } from './ai/ai.module';
 import { LeadsModule } from './leads/leads.module';
+import { WalletModule } from './wallet/wallet.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { CampaignPagesModule } from './campaign-pages/campaign-pages.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
+import { CrmModule } from './crm/crm.module';
+import { TeamModule } from './team/team.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -31,6 +37,12 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     SupportModule,
     AiModule,
     LeadsModule,
+    WalletModule,
+    NotificationsModule,
+    CampaignPagesModule,
+    CampaignsModule,
+    CrmModule,
+    TeamModule,
   ],
   providers: [
     {

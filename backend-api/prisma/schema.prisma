@@ -28,6 +28,12 @@ model Vendor {
   tickets       SupportTicket[]
   cms           VendorCMS?
   products      VendorProduct[]
+
+  wallet           Wallet?
+  walletTxns       WalletTransaction[]
+  campaignPages    CampaignPage[]
+  campaignLeads    CampaignLead[]
+  teamMembers      TeamMember[]
 }
 
 model Subscription {
@@ -140,6 +146,171 @@ model Lead {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   @@map("g4d_leads")
+}
+
+model Wallet {
+  id            String              @id @default(cuid())
+  vendorId      String              @unique
+  vendor        Vendor              @relation(fields: [vendorId], references: [id])
+  balance       Int                 @default(0)
+  totalCredited Int                 @default(0)
+  totalDebited  Int                 @default(0)
+  updatedAt     DateTime            @updatedAt
+  transactions  WalletTransaction[]
+  @@map("g4d_wallets")
+}
+
+model WalletTransaction {
+  id           String    @id @default(cuid())
+  vendorId     String
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
+  walletId     String
+  wallet       Wallet    @relation(fields: [walletId], references: [id])
+  type         String
+  amount       Int
+  description  String
+  service      String
+  balanceAfter Int
+  expiresAt    DateTime?
+  razorpayId   String?
+  createdAt    DateTime  @default(now())
+  @@map("g4d_wallet_transactions")
+}
+
+model CampaignPage {
+  id           String         @id @default(cuid())
+  vendorId     String
+  vendor       Vendor         @relation(fields: [vendorId], references: [id])
+  slug         String         @unique
+  title        String
+  headline     String
+  subheadline  String?
+  benefits     Json
+  aboutText    String?
+  heroImage    String?
+  photos       Json?
+  style        String         @default("LIGHT")
+  phone        String
+  whatsapp     String
+  email        String?
+  address      String?
+  mapsLink     String?
+  testimonials Json?
+  ctaText      String         @default("Enquire Now")
+  active       Boolean        @default(true)
+  views        Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  leads        CampaignLead[]
+  @@map("g4d_campaign_pages")
+}
+
+model CampaignLead {
+  id             String        @id @default(cuid())
+  campaignPageId String?
+  campaignPage   CampaignPage? @relation(fields: [campaignPageId], references: [id])
+  vendorId       String
+  vendor         Vendor        @relation(fields: [vendorId], references: [id])
+  name           String
+  phone          String
+  message        String?
+  source         String?
+  status         String        @default("new")
+  notes          String?
+  assignedTo     String?
+  followUpDate   DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  callLogs       CallLog[]
+  @@map("g4d_campaign_leads")
+}
+
+model CallLog {
+  id         String       @id @default(cuid())
+  leadId     String
+  lead       CampaignLead @relation(fields: [leadId], references: [id])
+  vendorId   String
+  calledBy   String
+  duration   Int?
+  outcome    String?
+  notes      String?
+  aiSummary  String?
+  followUpAt DateTime?
+  createdAt  DateTime     @default(now())
+  @@map("g4d_call_logs")
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  vendorId    String
+  name        String
+  description String?
+  status      String    @default("draft")
+  channels    Json
+  content     Json
+  walletCost  Int       @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  analytics   Json?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("g4d_campaigns")
+}
+
+model TeamMember {
+  id          String    @id @default(cuid())
+  vendorId    String
+  vendor      Vendor    @relation(fields: [vendorId], references: [id])
+  name        String
+  email       String?
+  phone       String?
+  role        String
+  modules     Json
+  status      String    @default("active")
+  inviteToken String?
+  password    String?
+  lastLogin   DateTime?
+  createdAt   DateTime  @default(now())
+  @@map("g4d_team_members")
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  recipientId    String
+  recipientType  String
+  type           String
+  priority       String   @default("INFO")
+  title          String
+  message        String
+  data           Json?
+  read           Boolean  @default(false)
+  actionRequired Boolean  @default(false)
+  actionType     String?
+  actionData     Json?
+  createdAt      DateTime @default(now())
+  @@map("g4d_notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  userType  String
+  fcmToken  String
+  device    String
+  createdAt DateTime @default(now())
+  @@map("g4d_push_subscriptions")
+}
+
+model PlatformIncome {
+  id          String   @id @default(cuid())
+  vendorId    String
+  invoiceId   String?
+  amount      Int
+  source      String
+  description String?
+  createdAt   DateTime @default(now())
+  @@map("g4d_platform_income")
 }
 
 enum Role {
