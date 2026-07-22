@@ -44,7 +44,12 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          <a href="https://get4domain.com/login" target="_blank" rel="noopener noreferrer">
+            <button className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+              👤 Login
+            </button>
+          </a>
           <button
             onClick={() => openModal()}
             className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-slate-900 font-semibold px-5 py-2 rounded-lg transition-colors"
@@ -91,6 +96,11 @@ export default function Navbar() {
                 </Link>
               ))}
             </nav>
+            <a href="https://get4domain.com/login" target="_blank" rel="noopener noreferrer">
+              <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
+                👤 Login
+              </button>
+            </a>
             <button
               onClick={() => {
                 setMobileOpen(false);

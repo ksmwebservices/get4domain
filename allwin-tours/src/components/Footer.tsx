@@ -61,6 +61,36 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <a
+                href="https://get4domain.com/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-grey hover:text-accent transition-colors"
+              >
+                Vendor Login
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://get4domain.com/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-grey hover:text-accent transition-colors"
+              >
+                Customer Login
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://get4domain.com/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-text-grey hover:text-accent transition-colors"
+              >
+                Staff Login
+              </a>
+            </li>
           </ul>
         </div>
 

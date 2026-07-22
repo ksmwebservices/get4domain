@@ -3,7 +3,6 @@ import './globals.css';
 import { BookingModalProvider } from '@/components/BookingModalContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import WhatsAppButton from '@/components/WhatsAppButton';
 import BookingModal from '@/components/BookingModal';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import ChatBot from '@/components/ChatBot';
@@ -34,7 +33,6 @@ export default function RootLayout({
           <Navbar />
           <main className="pb-16 md:pb-0">{children}</main>
           <Footer />
-          <WhatsAppButton />
           <ChatBot />
           <MobileBottomNav />
           <BookingModal />

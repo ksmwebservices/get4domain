@@ -101,7 +101,7 @@ export default function ChatBot() {
             <img src="/favicon.png" alt="Allwin logo" className="w-8 h-8 rounded-full bg-white object-contain" />
             <div>
               <p className="font-semibold text-sm">Allwin Tours Assistant</p>
-              <p className="text-xs text-white/70">Powered by Claude AI</p>
+              <p className="text-xs text-white/70">Powered by Get4Domain</p>
             </div>
             <button
               onClick={() => setOpen(false)}
