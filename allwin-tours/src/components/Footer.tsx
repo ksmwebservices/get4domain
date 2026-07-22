@@ -15,7 +15,11 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         <div>
           <div className="flex items-center gap-2 font-bold text-lg text-white mb-3">
-            <span className="text-2xl">🚐</span>
+            <img
+              src="/logo.png"
+              alt="Allwin Tours & Travels"
+              className="h-20 w-auto object-contain brightness-0 invert"
+            />
             <span>{BUSINESS.name}</span>
           </div>
           <p className="text-sm text-text-grey">

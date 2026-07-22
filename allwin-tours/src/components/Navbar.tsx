@@ -24,7 +24,11 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg text-white">
-          <span className="text-2xl">🚐</span>
+          <img
+            src="/logo.png"
+            alt="Allwin Tours & Travels"
+            className="h-16 w-auto object-contain"
+          />
           <span>Allwin Tours &amp; Travels</span>
         </Link>
 
