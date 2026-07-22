@@ -296,7 +296,9 @@ model PushSubscription {
   id        String   @id @default(cuid())
   userId    String
   userType  String
-  fcmToken  String
+  endpoint  String
+  p256dh    String
+  auth      String
   device    String
   createdAt DateTime @default(now())
   @@map("g4d_push_subscriptions")

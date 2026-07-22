@@ -132,8 +132,12 @@ export const api = {
     apiCall(`/notifications/${id}/read`, { method: 'PUT' }),
   markAllNotificationsRead: () =>
     apiCall('/notifications/read-all', { method: 'PUT' }),
-  subscribeToPush: (data: { fcmToken: string; device: string; userType: 'VENDOR' | 'ADMIN' }) =>
-    apiCall('/notifications/subscribe', { method: 'POST', body: JSON.stringify(data) }),
+  subscribeToPush: (data: {
+    endpoint: string;
+    keys: { p256dh: string; auth: string };
+    device: string;
+    userType: 'VENDOR' | 'ADMIN';
+  }) => apiCall('/notifications/subscribe', { method: 'POST', body: JSON.stringify(data) }),
 
   // Wallet
   getWalletBalance: () => apiCall('/wallet/balance'),

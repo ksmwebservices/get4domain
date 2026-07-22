@@ -7,7 +7,9 @@ const KEYS = [
   { label: 'Razorpay Key ID', masked: 'rzp_live_*****' },
   { label: 'Razorpay Key Secret', masked: '*******' },
   { label: 'Claude API Key', masked: 'sk-ant-*****' },
+  { label: 'OpenAI API Key', masked: 'sk-*****' },
   { label: 'Resend API Key', masked: 're_*****' },
+  { label: 'VAPID Public Key (Web Push)', masked: 'BFVYM*****' },
 ];
 
 export default function ApiSettingsPage() {

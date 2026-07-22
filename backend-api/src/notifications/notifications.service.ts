@@ -83,10 +83,17 @@ export class NotificationsService {
     return { count: result.count };
   }
 
-  async subscribe(userId: string, userType: string, fcmToken: string, device: string): Promise<void> {
-    const existing = await this.prisma.pushSubscription.findFirst({ where: { userId, fcmToken } });
+  async subscribe(
+    userId: string,
+    userType: string,
+    endpoint: string,
+    p256dh: string,
+    auth: string,
+    device: string,
+  ): Promise<void> {
+    const existing = await this.prisma.pushSubscription.findFirst({ where: { userId, endpoint } });
     if (existing) return;
-    await this.prisma.pushSubscription.create({ data: { userId, userType, fcmToken, device } });
+    await this.prisma.pushSubscription.create({ data: { userId, userType, endpoint, p256dh, auth, device } });
   }
 
   private async pushToRecipient(recipientId: string, recipientType: string, title: string, body: string): Promise<void> {
@@ -94,6 +101,16 @@ export class NotificationsService {
       where: recipientType === 'ADMIN' ? { userType: 'ADMIN' } : { userId: recipientId, userType: 'VENDOR' },
     });
 
-    await Promise.all(subscriptions.map((sub) => this.pushService.send(sub.fcmToken, title, body)));
+    const results = await Promise.all(
+      subscriptions.map(async (sub) => ({
+        id: sub.id,
+        result: await this.pushService.send({ endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth }, title, body),
+      })),
+    );
+
+    const expiredIds = results.filter((r) => r.result.expired).map((r) => r.id);
+    if (expiredIds.length > 0) {
+      await this.prisma.pushSubscription.deleteMany({ where: { id: { in: expiredIds } } });
+    }
   }
 }

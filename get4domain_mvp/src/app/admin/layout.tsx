@@ -50,7 +50,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (granted) {
         subscribeToPush().then((subscription) => {
           if (subscription) {
-            api.subscribeToPush({ fcmToken: subscription.endpoint, device: 'web', userType: 'ADMIN' }).catch(() => {});
+            const { endpoint, keys } = subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+            api.subscribeToPush({ endpoint, keys, device: 'web', userType: 'ADMIN' }).catch(() => {});
           }
         });
       }

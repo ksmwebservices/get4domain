@@ -1,10 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsIn, IsString, ValidateNested } from 'class-validator';
+
+class PushKeysDto {
+  @ApiProperty({ example: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM' })
+  @IsString()
+  p256dh!: string;
+
+  @ApiProperty({ example: 'tBHItJI5svbpez7KI4CCXg' })
+  @IsString()
+  auth!: string;
+}
 
 export class SubscribeDto {
-  @ApiProperty({ example: 'fcm-device-token' })
+  @ApiProperty({ example: 'https://fcm.googleapis.com/fcm/send/...' })
   @IsString()
-  fcmToken!: string;
+  endpoint!: string;
+
+  @ApiProperty({ type: PushKeysDto })
+  @ValidateNested()
+  @Type(() => PushKeysDto)
+  keys!: PushKeysDto;
 
   @ApiProperty({ example: 'web' })
   @IsString()

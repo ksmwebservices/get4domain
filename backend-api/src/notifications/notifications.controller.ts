@@ -33,10 +33,17 @@ export class NotificationsController {
   }
 
   @Post('subscribe')
-  @ApiOperation({ summary: 'Register an FCM push token for the current vendor/admin' })
+  @ApiOperation({ summary: 'Register a Web Push subscription for the current vendor/admin' })
   subscribe(@CurrentUser() user: AuthenticatedUser, @Body() dto: SubscribeDto) {
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
-    return this.notificationsService.subscribe(isAdmin ? ADMIN_RECIPIENT_ID : user.sub, dto.userType, dto.fcmToken, dto.device);
+    return this.notificationsService.subscribe(
+      isAdmin ? ADMIN_RECIPIENT_ID : user.sub,
+      dto.userType,
+      dto.endpoint,
+      dto.keys.p256dh,
+      dto.keys.auth,
+      dto.device,
+    );
   }
 
   @UseGuards(AdminGuard)
