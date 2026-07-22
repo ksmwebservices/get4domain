@@ -5,11 +5,17 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import BookingModal from '@/components/BookingModal';
+import MobileBottomNav from '@/components/MobileBottomNav';
+import ChatBot from '@/components/ChatBot';
 
 export const metadata: Metadata = {
-  title: 'Allwin Tours & Travels | Cuddalore Tamil Nadu',
-  description:
-    'Premium cab services, expert drivers, and unforgettable tour experiences across Tamil Nadu & South India. Pilgrimage, Packages, Airport Transfers, Weddings.',
+  title: 'Allwin Tours & Travels — Cuddalore',
+  description: 'Premium cab services and tour packages from Cuddalore, Tamil Nadu.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -19,12 +25,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#1a3a5c" />
+      </head>
       <body className="antialiased">
         <BookingModalProvider>
           <Navbar />
-          <main>{children}</main>
+          <main className="pb-16 md:pb-0">{children}</main>
           <Footer />
           <WhatsAppButton />
+          <ChatBot />
+          <MobileBottomNav />
           <BookingModal />
         </BookingModalProvider>
       </body>

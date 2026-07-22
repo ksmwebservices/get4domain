@@ -18,12 +18,12 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-slate-900/90 transition-shadow ${
-        scrolled ? 'shadow-lg shadow-black/30' : ''
+      className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow ${
+        scrolled ? 'shadow-md' : ''
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-white">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-[#1a3a5c]">
           <img
             src="/logo.png"
             alt="Allwin Tours & Travels"
@@ -37,7 +37,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm text-text-light hover:text-accent transition-colors"
+              className="text-sm text-[#1a3a5c] hover:text-accent transition-colors"
             >
               {link.label}
             </Link>
@@ -54,7 +54,7 @@ export default function Navbar() {
         </div>
 
         <button
-          className="md:hidden text-white text-2xl"
+          className="md:hidden text-[#1a3a5c] text-2xl"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
         >
@@ -68,11 +68,11 @@ export default function Navbar() {
             className="absolute inset-0 bg-black/60"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute right-0 top-0 bottom-0 w-72 bg-slate-900 border-l border-slate-800 p-6 animate-slide-down flex flex-col gap-6">
+          <div className="absolute right-0 top-0 bottom-0 w-72 bg-white border-l border-slate-200 p-6 animate-slide-down flex flex-col gap-6">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-white">Menu</span>
+              <span className="font-bold text-[#1a3a5c]">Menu</span>
               <button
-                className="text-white text-2xl"
+                className="text-[#1a3a5c] text-2xl"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
               >
@@ -85,7 +85,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="text-text-light hover:text-accent transition-colors"
+                  className="text-[#1a3a5c] hover:text-accent transition-colors"
                 >
                   {link.label}
                 </Link>
