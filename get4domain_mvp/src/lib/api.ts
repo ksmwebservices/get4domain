@@ -209,4 +209,71 @@ export const api = {
     apiCall('/ai/generate-content', { method: 'POST', body: JSON.stringify(data) }),
   generateAiCallSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) =>
     apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
+
+  // ── v2.0 DomainApp platform ──
+
+  // Industry config
+  getIndustries: (summary = false) => apiCall(`/industries${summary ? '?summary=true' : ''}`),
+  getIndustryConfig: (key: string) => apiCall(`/industries/${key}`),
+
+  // Modules & addons (per-vendor toggle state)
+  getModules: () => apiCall('/modules'),
+  getVendorModules: () => apiCall('/modules/vendor'),
+  getAddons: () => apiCall('/addons'),
+  getVendorAddons: () => apiCall('/addons/vendor'),
+  // admin-only toggles (target vendor via body)
+  setVendorModule: (key: string, vendorId: string, enable: boolean) =>
+    apiCall(`/modules/vendor/${key}/${enable ? 'enable' : 'disable'}`, {
+      method: 'POST',
+      body: JSON.stringify({ vendorId }),
+    }),
+  setVendorAddon: (key: string, vendorId: string, enable: boolean) =>
+    apiCall(`/addons/vendor/${key}/${enable ? 'enable' : 'disable'}`, {
+      method: 'POST',
+      body: JSON.stringify({ vendorId }),
+    }),
+
+  // DomainApp core — contacts
+  daGetContacts: (params = '') => apiCall(`/domainapp/contacts${params}`),
+  daCreateContact: (data: Record<string, unknown>) =>
+    apiCall('/domainapp/contacts', { method: 'POST', body: JSON.stringify(data) }),
+  daGetContact: (id: string) => apiCall(`/domainapp/contacts/${id}`),
+  daUpdateContact: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/domainapp/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  daDeleteContact: (id: string) => apiCall(`/domainapp/contacts/${id}`, { method: 'DELETE' }),
+
+  // DomainApp core — catalog
+  daGetCatalog: (params = '') => apiCall(`/domainapp/catalog${params}`),
+  daCreateCatalogItem: (data: Record<string, unknown>) =>
+    apiCall('/domainapp/catalog', { method: 'POST', body: JSON.stringify(data) }),
+  daGetCatalogItem: (id: string) => apiCall(`/domainapp/catalog/${id}`),
+  daUpdateCatalogItem: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/domainapp/catalog/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  daDeleteCatalogItem: (id: string) => apiCall(`/domainapp/catalog/${id}`, { method: 'DELETE' }),
+
+  // DomainApp core — records
+  daGetRecords: (params = '') => apiCall(`/domainapp/records${params}`),
+  daCreateRecord: (data: Record<string, unknown>) =>
+    apiCall('/domainapp/records', { method: 'POST', body: JSON.stringify(data) }),
+  daGetRecord: (id: string) => apiCall(`/domainapp/records/${id}`),
+  daUpdateRecord: (id: string, data: Record<string, unknown>) =>
+    apiCall(`/domainapp/records/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  daUpdateRecordStatus: (id: string, status: string) =>
+    apiCall(`/domainapp/records/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  daDeleteRecord: (id: string) => apiCall(`/domainapp/records/${id}`, { method: 'DELETE' }),
+
+  // DomainApp core — invoices
+  daGetInvoices: (params = '') => apiCall(`/domainapp/invoices${params}`),
+  daCreateInvoice: (data: Record<string, unknown>) =>
+    apiCall('/domainapp/invoices', { method: 'POST', body: JSON.stringify(data) }),
+  daGetInvoice: (id: string) => apiCall(`/domainapp/invoices/${id}`),
+  daInvoicePdfUrl: (id: string) =>
+    `${API_BASE}/domainapp/invoices/${id}/pdf`,
+  daSendInvoiceLink: (id: string) =>
+    apiCall(`/domainapp/invoices/${id}/send-link`, { method: 'POST' }),
+  daMarkInvoicePaid: (id: string) =>
+    apiCall(`/domainapp/invoices/${id}/mark-paid`, { method: 'PUT' }),
+
+  // DomainApp dashboard summary
+  daGetSummary: () => apiCall('/domainapp/summary'),
 };
