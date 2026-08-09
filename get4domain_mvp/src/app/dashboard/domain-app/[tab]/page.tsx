@@ -1,0 +1,62 @@
+'use client';
+
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
+import { useDashboardConfig } from '@/lib/dashboard-config';
+import { resolveView } from '@/domainapp/tab-registry';
+import RecordsView from '@/domainapp/shared/RecordsView';
+import ContactsView from '@/domainapp/shared/ContactsView';
+import CatalogView from '@/domainapp/shared/CatalogView';
+import InvoicingView from '@/domainapp/shared/InvoicingView';
+import ComingSoon from '@/domainapp/shared/ComingSoon';
+import Card from '@/components/ui/Card';
+import { Lock } from 'lucide-react';
+
+export default function DomainAppTabPage() {
+  const params = useParams();
+  const tabKey = String(params.tab);
+  const { user } = useAuth();
+  const cfg = useDashboardConfig(user?.industry);
+
+  if (cfg.loading && !cfg.industry) {
+    return <div className="py-16 text-center text-sm text-slate-400">Loading workspace…</div>;
+  }
+  if (!cfg.industry) {
+    return <div className="py-16 text-center text-sm text-slate-400">Unable to load your industry workspace.</div>;
+  }
+
+  // Direct-URL guard: DomainApp core must be enabled for this vendor.
+  if (cfg.modules.domainapp === false) {
+    return (
+      <Card className="mx-auto mt-10 max-w-lg text-center" padded>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+          <Lock className="h-6 w-6 text-primary-600" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900">DomainApp is not active</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Your plan doesn&apos;t include the DomainApp workspace yet. Book a demo to enable it.
+        </p>
+        <a href="/#contact" className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
+          Book a Demo
+        </a>
+      </Card>
+    );
+  }
+
+  const tab = cfg.industry.dashboardTabs.find((t) => t.key === tabKey);
+  const icon = tab?.icon ?? cfg.industry.icon;
+  const view = resolveView(tabKey);
+
+  switch (view) {
+    case 'contacts':
+      return <ContactsView industry={cfg.industry} icon={icon} />;
+    case 'catalog':
+      return <CatalogView industry={cfg.industry} icon={icon} />;
+    case 'billing':
+      return <InvoicingView industry={cfg.industry} actionLabel={tabKey === 'fees' ? 'Fee Receipt' : 'Invoice'} />;
+    case 'addon':
+      return <ComingSoon label={tab?.label ?? tabKey} icon={icon} />;
+    default:
+      return <RecordsView industry={cfg.industry} icon={icon} />;
+  }
+}
