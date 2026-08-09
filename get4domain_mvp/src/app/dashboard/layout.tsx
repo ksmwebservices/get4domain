@@ -6,9 +6,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X, ChevronRight, Bell } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig, TAB_ADDON_REQUIREMENT } from '@/lib/dashboard-config';
+import { api } from '@/lib/api';
+import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import Icon from '@/components/ui/Icon';
 import LockedBadge from '@/components/ui/LockedBadge';
 import UpgradeModal from '@/components/UpgradeModal';
+import InstallPrompt from '@/components/InstallPrompt';
 import DashboardChatBot from '@/components/DashboardChatBot';
 
 interface NavItem {
@@ -41,6 +44,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
   useEffect(() => { setMounted(true); }, []);
+
+  // Register push for the vendor (reuses existing VAPID/Web Push implementation).
+  useEffect(() => {
+    if (!user || user.role !== 'vendor') return;
+    requestNotificationPermission().then((granted) => {
+      if (!granted) return;
+      subscribeToPush().then((sub) => {
+        if (!sub) return;
+        const { endpoint, keys } = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+        api.subscribeToPush({ endpoint, keys, device: 'web', userType: 'VENDOR' }).catch(() => {});
+      });
+    });
+  }, [user]);
 
   const sections = useMemo<NavSection[]>(() => {
     const industryTabs: NavItem[] = (cfg.industry?.dashboardTabs ?? []).map((tab) => ({
@@ -275,6 +291,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         kind={upgrade?.kind ?? 'plan'}
       />
 
+      <InstallPrompt />
       <DashboardChatBot vendorName={user.name} industry={user.industry} />
     </div>
   );
