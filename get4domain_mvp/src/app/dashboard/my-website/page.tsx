@@ -1,233 +1,200 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Globe, ExternalLink, Copy, Share2, CheckCircle2, Loader2, Save, ArrowRight } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, Plus, Trash2, LayoutTemplate } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
+import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 
-const industryModules: Record<string, string[]> = {
-  travel: ['Tour Packages', 'Fleet Management', 'Booking Forms', 'Trip Gallery', 'Driver Tracking'],
-  restaurant: ['Digital Menu', 'Table Reservations', 'Online Orders', 'Food Gallery', 'Reviews'],
-  healthcare: ['Doctor Profiles', 'Appointments', 'Services', 'Emergency Contact', 'Departments'],
-  education: ['Course Catalog', 'Admissions', 'Faculty Profiles', 'Events', 'Gallery'],
-  realestate: ['Property Listings', 'Agent Profiles', 'EMI Calculator', 'Site Visits', 'Projects'],
-  retail: ['Product Catalog', 'Offers', 'Store Locator', 'Customer Reviews', 'Brands'],
-  beauty: ['Service Menu', 'Appointments', 'Gallery', 'Stylist Profiles', 'Gift Cards'],
-  fitness: ['Class Schedule', 'Memberships', 'Trainer Profiles', 'Gallery', 'BMI Calculator'],
-  construction: ['Project Portfolio', 'Services', 'Quote Request', 'Team', 'Gallery'],
-  professional: ['Services', 'Team Profiles', 'Case Studies', 'Blog', 'Consultation Booking'],
-  events: ['Event Gallery', 'Packages', 'Booking Form', 'Client Showcase', 'Venue'],
-  finance: ['Products', 'Calculators', 'Team', 'Blog', 'Lead Forms'],
-  automobile: ['Vehicle Listings', 'Test Drive', 'EMI Calculator', 'Service Center', 'Offers'],
-  logistics: ['Routes', 'Fleet Info', 'Freight Enquiry', 'Tracking', 'Areas Served'],
-  hotel: ['Room Listings', 'Amenities', 'Booking', 'Gallery', 'Offers'],
-  diagnostics: ['Test Packages', 'Home Collection', 'Reports', 'Health Packages', 'Locations'],
-  photography: ['Portfolio', 'Packages', 'Booking', 'Client Work', 'Video Showreel'],
-  technology: ['Services', 'Case Studies', 'Tech Stack', 'Team', 'Blog'],
-  agriculture: ['Products', 'Farm Story', 'Bulk Orders', 'Certifications', 'Seasonal'],
-  coaching: ['Courses', 'Faculty', 'Results', 'Batch Schedule', 'Admissions'],
-};
+type Tab = 'basic' | 'about' | 'seo' | 'services' | 'template';
 
 interface VendorCms {
-  businessName: string | null;
-  tagline: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  address: string | null;
+  businessName: string | null; tagline: string | null; about: string | null;
+  phone: string | null; whatsapp: string | null; email: string | null; address: string | null;
+  facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
+  seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
+interface Product { id: string; name: string; description?: string; price?: string; category?: string }
 
-export default function MyWebsitePage() {
+const EMPTY: VendorCms = {
+  businessName: '', tagline: '', about: '', phone: '', whatsapp: '', email: '', address: '',
+  facebook: '', instagram: '', linkedin: '', youtube: '', googleMaps: '',
+  seoTitle: '', seoDesc: '', seoKeywords: '', googleAnalyticsId: '',
+};
+
+const field = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
+
+export default function WebsiteManagerPage() {
   const { user } = useAuth();
-  const [cms, setCms] = useState<VendorCms>({ businessName: '', tagline: '', phone: '', whatsapp: '', email: '', address: '' });
+  const cfg = useDashboardConfig(user?.industry);
+  const [tab, setTab] = useState<Tab>('basic');
+  const [cms, setCms] = useState<VendorCms>(EMPTY);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [customDomain, setCustomDomain] = useState('');
-  const [domainRequested, setDomainRequested] = useState(false);
   const [error, setError] = useState('');
+  const [newProduct, setNewProduct] = useState<Partial<Product>>({});
 
   const subdomainUrl = user?.subdomain ? `https://${user.subdomain}.get4domain.com` : '';
-  const modules = industryModules[user?.industry ?? ''] ?? [];
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!user) return;
-    api.getVendorCMS(user.id)
-      .then((res) => {
-        if (res.data) {
-          setCms({
-            businessName: res.data.businessName ?? user.businessName ?? '',
-            tagline: res.data.tagline ?? '',
-            phone: res.data.phone ?? '',
-            whatsapp: res.data.whatsapp ?? '',
-            email: res.data.email ?? user.email ?? '',
-            address: res.data.address ?? '',
-          });
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    api.getVendorCMS(user.id).then((res) => {
+      if (res.data) setCms({ ...EMPTY, ...res.data, businessName: res.data.businessName ?? user.businessName ?? '' });
+    }).catch(() => {}).finally(() => setLoading(false));
+    api.getVendorProducts(user.id).then((res) => setProducts(res.data ?? [])).catch(() => setProducts([]));
   }, [user]);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => { load(); }, [load]);
+
+  const set = (k: keyof VendorCms, v: string) => setCms((p) => ({ ...p, [k]: v }));
+
+  const save = async () => {
     if (!user) return;
-    setSaving(true);
-    setError('');
-    setSaved(false);
+    setSaving(true); setError(''); setSaved(false);
     try {
       await api.updateVendorCMS(user.id, cms);
       setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save changes');
-    } finally {
-      setSaving(false);
-    }
-  }
+      setError(err instanceof Error ? err.message : 'Failed to save');
+    } finally { setSaving(false); }
+  };
 
-  async function requestDomainMapping() {
-    if (!customDomain.trim()) return;
-    try {
-      await api.createTicket({
-        category: 'Website Changes',
-        subject: 'Custom domain mapping request',
-        message: `Please map my custom domain "${customDomain}" to my Get4Domain website.`,
-      });
-      setDomainRequested(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send request');
-    }
-  }
+  const addProduct = async () => {
+    if (!user || !newProduct.name) return;
+    const res = await api.addProduct(user.id, newProduct);
+    setProducts((p) => [...p, res.data]);
+    setNewProduct({});
+  };
+  const deleteProduct = async (id: string) => {
+    await api.deleteProduct(id);
+    setProducts((p) => p.filter((x) => x.id !== id));
+  };
 
-  function copyUrl() {
-    navigator.clipboard.writeText(subdomainUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const copyUrl = () => { navigator.clipboard.writeText(subdomainUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
-  if (loading) {
-    return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
-  }
+  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+
+  const tabs: { key: Tab; label: string }[] = [
+    { key: 'basic', label: 'Basic Info' },
+    { key: 'about', label: 'About & Social' },
+    { key: 'services', label: cfg.industry?.entities.catalogItem.labelPlural ?? 'Services' },
+    { key: 'seo', label: 'SEO' },
+    { key: 'template', label: 'Template' },
+  ];
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">My Website</h2>
-        <p className="mt-1 text-sm text-slate-500">Manage your website details and active modules.</p>
-      </div>
-
-      {error && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
-
-      {/* Website URL */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5">
-        {subdomainUrl ? (
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2 text-sm font-mono text-slate-700">
-              <Globe className="h-4 w-4 text-primary-500" />{subdomainUrl.replace('https://', '')}
-            </div>
-            <div className="flex items-center gap-2">
-              <a href={subdomainUrl} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Visit</Button>
-              </a>
-              <Button size="sm" variant="ghost" leftIcon={copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success-600" /> : <Copy className="h-3.5 w-3.5" />} onClick={copyUrl}>
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-              <a href={`https://wa.me/?text=${encodeURIComponent(subdomainUrl)}`} target="_blank" rel="noopener noreferrer">
-                <Button size="sm" variant="ghost" leftIcon={<Share2 className="h-3.5 w-3.5" />}>Share</Button>
-              </a>
-            </div>
+    <div className="max-w-3xl">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Website Manager</h1>
+          <p className="text-sm text-slate-500">Edit your site content — templates are handled for you.</p>
+        </div>
+        {subdomainUrl && (
+          <div className="flex items-center gap-2">
+            <a href={subdomainUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Visit</Button></a>
+            <Button size="sm" variant="ghost" leftIcon={copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success-600" /> : <Copy className="h-3.5 w-3.5" />} onClick={copyUrl}>{copied ? 'Copied' : 'Copy URL'}</Button>
           </div>
-        ) : (
-          <p className="text-sm text-slate-500">Your website subdomain hasn't been set up yet — contact us to get started.</p>
         )}
       </div>
 
-      {/* Active modules */}
-      {modules.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="text-sm font-bold text-slate-900 mb-3">Active Modules</h3>
-          <div className="flex flex-wrap gap-2">
-            {modules.map((m) => (
-              <span key={m} className="flex items-center gap-1.5 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700">
-                <CheckCircle2 className="h-3 w-3" />{m}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
-      {/* CMS form */}
-      <form onSubmit={handleSave} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">Website Details</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Business Name</label>
-            <input value={cms.businessName ?? ''} onChange={(e) => setCms({ ...cms, businessName: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Tagline</label>
-            <input value={cms.tagline ?? ''} onChange={(e) => setCms({ ...cms, tagline: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Phone</label>
-            <input value={cms.phone ?? ''} onChange={(e) => setCms({ ...cms, phone: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">WhatsApp</label>
-            <input value={cms.whatsapp ?? ''} onChange={(e) => setCms({ ...cms, whatsapp: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Email</label>
-            <input value={cms.email ?? ''} onChange={(e) => setCms({ ...cms, email: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Address</label>
-            <input value={cms.address ?? ''} onChange={(e) => setCms({ ...cms, address: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" loading={saving} leftIcon={<Save className="h-3.5 w-3.5" />}>Save Changes</Button>
-          {saved && <span className="text-xs font-medium text-success-600 flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Saved</span>}
-        </div>
-      </form>
+      <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
+        {tabs.map((t) => (
+          <button key={t.key} onClick={() => setTab(t.key)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === t.key ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>{t.label}</button>
+        ))}
+      </div>
 
-      {/* Custom domain */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
-        <h3 className="text-sm font-bold text-slate-900">Custom Domain</h3>
-        {domainRequested ? (
-          <p className="text-sm text-success-700 flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" />Request sent — our team will set up DNS and confirm with you.</p>
-        ) : (
-          <>
-            <div className="flex gap-2">
-              <input
-                value={customDomain}
-                onChange={(e) => setCustomDomain(e.target.value)}
-                placeholder="your-domain.com"
-                className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
-              />
-              <Button size="sm" onClick={requestDomainMapping} disabled={!customDomain.trim()}>Request Mapping</Button>
+      <Card>
+        {tab === 'basic' && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Business Name</label><input className={field} value={cms.businessName ?? ''} onChange={(e) => set('businessName', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Tagline</label><input className={field} value={cms.tagline ?? ''} onChange={(e) => set('tagline', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Phone</label><input className={field} value={cms.phone ?? ''} onChange={(e) => set('phone', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">WhatsApp</label><input className={field} value={cms.whatsapp ?? ''} onChange={(e) => set('whatsapp', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Email</label><input className={field} value={cms.email ?? ''} onChange={(e) => set('email', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Address</label><input className={field} value={cms.address ?? ''} onChange={(e) => set('address', e.target.value)} /></div>
+          </div>
+        )}
+
+        {tab === 'about' && (
+          <div className="space-y-4">
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">About your business</label><textarea rows={4} className={field} value={cms.about ?? ''} onChange={(e) => set('about', e.target.value)} /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Facebook</label><input className={field} value={cms.facebook ?? ''} onChange={(e) => set('facebook', e.target.value)} /></div>
+              <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Instagram</label><input className={field} value={cms.instagram ?? ''} onChange={(e) => set('instagram', e.target.value)} /></div>
+              <div><label className="mb-1.5 block text-xs font-medium text-slate-600">LinkedIn</label><input className={field} value={cms.linkedin ?? ''} onChange={(e) => set('linkedin', e.target.value)} /></div>
+              <div><label className="mb-1.5 block text-xs font-medium text-slate-600">YouTube</label><input className={field} value={cms.youtube ?? ''} onChange={(e) => set('youtube', e.target.value)} /></div>
+              <div className="sm:col-span-2"><label className="mb-1.5 block text-xs font-medium text-slate-600">Google Maps link</label><input className={field} value={cms.googleMaps ?? ''} onChange={(e) => set('googleMaps', e.target.value)} /></div>
             </div>
-            {customDomain && (
-              <p className="text-xs text-slate-500">
-                Once approved, point your domain's DNS: CNAME record → <code className="rounded bg-slate-100 px-1.5 py-0.5">get4domain.com</code>
+          </div>
+        )}
+
+        {tab === 'seo' && (
+          <div className="space-y-4">
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">SEO Title</label><input className={field} value={cms.seoTitle ?? ''} onChange={(e) => set('seoTitle', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Meta Description</label><textarea rows={2} className={field} value={cms.seoDesc ?? ''} onChange={(e) => set('seoDesc', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Keywords (comma separated)</label><input className={field} value={cms.seoKeywords ?? ''} onChange={(e) => set('seoKeywords', e.target.value)} /></div>
+            <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Google Analytics ID</label><input className={field} placeholder="G-XXXXXXX" value={cms.googleAnalyticsId ?? ''} onChange={(e) => set('googleAnalyticsId', e.target.value)} /></div>
+          </div>
+        )}
+
+        {tab === 'services' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {products.length === 0 ? <p className="text-sm text-slate-400">No items yet.</p> : products.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
+                  <div><div className="text-sm font-semibold text-slate-900">{p.name}</div>{p.price && <div className="text-xs text-slate-500">₹{p.price}</div>}</div>
+                  <button onClick={() => deleteProduct(p.id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-error-600"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl bg-slate-50 p-3">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <input className={field} placeholder="Name" value={newProduct.name ?? ''} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
+                <input className={field} placeholder="Price" value={newProduct.price ?? ''} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
+                <Button leftIcon={<Plus className="h-4 w-4" />} onClick={addProduct} disabled={!newProduct.name}>Add</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'template' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-xl bg-primary-50 p-4">
+              <LayoutTemplate className="h-6 w-6 text-primary-600" />
+              <div>
+                <div className="text-sm font-bold text-slate-900 capitalize">{cfg.industry?.websiteTemplate ?? 'default'} template</div>
+                <div className="text-xs text-slate-500">Auto-selected for the {cfg.industry?.label ?? 'general'} industry.</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700"><Globe className="h-4 w-4 text-primary-500" />Live preview</div>
+              {subdomainUrl ? (
+                <a href={subdomainUrl} target="_blank" rel="noreferrer" className="text-sm text-primary-600 hover:underline">{subdomainUrl.replace('https://', '')}</a>
+              ) : (
+                <p className="text-sm text-slate-500">Your subdomain isn&apos;t set up yet — contact support to publish.</p>
+              )}
+              <p className="mt-3 text-xs text-slate-400">
+                Get4Domain-designed templates handle layout automatically. Industries without a
+                dedicated template fall back to a clean default. (Hero images, gallery and
+                testimonials editing arrive with the next template release.)
               </p>
-            )}
-          </>
+            </div>
+          </div>
         )}
-      </div>
 
-      <Link href="/dashboard/support">
-        <Button variant="outline" fullWidth rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Request Other Website Changes</Button>
-      </Link>
+        <div className="mt-5 flex items-center gap-3 border-t border-slate-100 pt-4">
+          <Button loading={saving} leftIcon={<Save className="h-4 w-4" />} onClick={save}>Save Changes</Button>
+          {saved && <span className="flex items-center gap-1 text-xs font-medium text-success-600"><CheckCircle2 className="h-3.5 w-3.5" />Saved</span>}
+        </div>
+      </Card>
     </div>
   );
 }
