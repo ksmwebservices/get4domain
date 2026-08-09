@@ -161,6 +161,9 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   Kept blue-600 primary (tokens already on-target). Commit fa0cb73. Shell links to
   Stage 3/4 routes (/dashboard/domain-app/:tab, /ai-studio, /communication,
   /customer-hub) that are built in later stages. Proceeding to Stage 3 Batch 1.
+- 2026-08-10: Stage 3 (Industry-Specific Dashboards) complete for ALL 20 industries
+  via config-driven shared views + one dynamic route (b6e2d08) — see Stage 3
+  ARCHITECTURE NOTE above. Addon/peripheral tabs render Coming Soon stubs (follow-up).
 - 2026-08-10: Stage 4 PARTIAL. Backend mock provider layers (WhatsApp/SMS/Meta/
   Google Ads, key-resolution via platform-settings) + Growth Hub publish/ads
   endpoints done (3278e8a). AI Studio frontend done (efef5eb). Growth Hub API
@@ -178,3 +181,7 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
     * Stage 6: PWA polish (H). Stage 7: VM deploy report + smoke test (I) — note
       the STAGE 1 VM REPORT already lists the migration + PLATFORM_SETTINGS_KEY.
   No blockers. Resume: read this ledger, continue from first unchecked item.
+- 2026-08-10: PAUSED by owner for VM testing before continuing. Do NOT proceed to
+  remaining Stage 4 items (C1-C3, D1/D2/D3 frontend, E1-E3) or Stages 5-7 until the
+  owner confirms. All work committed + pushed; branch get4domain-site in sync with
+  origin. Both apps build 0 errors. Last commit at pause: a49dd0d (+ this log update).
