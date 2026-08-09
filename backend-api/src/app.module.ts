@@ -20,6 +20,8 @@ import { CrmModule } from './crm/crm.module';
 import { TeamModule } from './team/team.module';
 import { IndustriesModule } from './industries/industries.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
+import { AddonsModule } from './addons/addons.module';
+import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -47,6 +49,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     TeamModule,
     IndustriesModule,
     DomainAppModule,
+    AddonsModule,
+    PlatformSettingsModule,
   ],
   providers: [
     {
