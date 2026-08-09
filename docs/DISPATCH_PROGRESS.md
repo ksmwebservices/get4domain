@@ -100,21 +100,23 @@ Soon stub until their addon backends are built.
 
 ## STAGE 6 — MOBILE/PWA POLISH (Dispatch H)
 
-- [ ] H1. PWA manifest audit across all apps
-- [ ] H2. Offline support basics
-- [ ] H3. Install prompts
-- [ ] H4. Push notification wiring verification (all modules)
-- [ ] H5. npm run build 0 errors, commit, push
+- [x] H1. PWA manifest audit — get4domain_mvp manifest.ts (name/theme #2563eb/icons/start_url) verified; allwin-tours public/manifest.json verified healthy — b3f37df
+- [x] H2. Offline support — sw.js network-first navigations + /offline fallback page precached — b3f37df
+- [x] H3. Install prompt (beforeinstallprompt banner) mounted in dashboard — b3f37df
+- [x] H4. Push wiring — vendor dashboard now registers Web Push (VAPID, userType VENDOR), reusing existing impl (admin already did) — b3f37df
+- [x] H5. build 0 errors, committed, pushed
 
 ## STAGE 7 — INTEGRATION & DEPLOY (Dispatch I)
 
-- [ ] I1. Full VM deployment (all stages)
-- [ ] I2. Migration run (backend-api)
-- [ ] I3. Smoke test: auth, wallet, one industry dashboard end-to-end
-- [ ] I4. Verify MR Travels still healthy (port 3000/3001)
-- [ ] I5. Verify Allwin Tours still healthy (port 3010)
-- [ ] I6. Cloudflare cache purge
-- [ ] I7. Final report to human
+- [x] I7. DEPLOYMENT REPORT + SMOKE TEST CHECKLIST produced — docs/DEPLOYMENT_REPORT_V2.md
+- [!] I1. Full VM deployment — REQUIRES VM ACCESS (human). Steps in DEPLOYMENT_REPORT_V2.md §1-§4.
+- [!] I2. Migration run — REQUIRES DB/VM ACCESS (human). Generate migration then `migrate deploy` (report §3). Claude Code has no DB access to safely generate the migration file.
+- [!] I3. Smoke test end-to-end — REQUIRES running VM (human). Checklist in report.
+- [!] I4. Verify MR Travels (3000/3001) — REQUIRES VM (human). curl in report §5.
+- [!] I5. Verify Allwin Tours (3010) — REQUIRES VM (human). curl in report §5.
+- [!] I6. Cloudflare cache purge — REQUIRES Cloudflare access (human). Report §6.
+  NOTE: I1-I6 are inherently VM/DB/Cloudflare operations outside Claude Code's reach —
+  this is the expected Stage 7 hand-off ("produces a DEPLOYMENT REPORT for the human to execute").
 
 ---
 
@@ -185,3 +187,10 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   remaining Stage 4 items (C1-C3, D1/D2/D3 frontend, E1-E3) or Stages 5-7 until the
   owner confirms. All work committed + pushed; branch get4domain-site in sync with
   origin. Both apps build 0 errors. Last commit at pause: a49dd0d (+ this log update).
+- 2026-08-10: RESUMED in full autonomous mode. Completed rest of Stage 4 (TeleCRM
+  8bc8d84, Growth Hub 44e0adf, Communication+Customer backend 2c62c01, E frontend
+  2419d64), Stage 5 (Analytics+Website 9aed01a, Admin Integrations+Vendor Access
+  d17ed21), Stage 6 (PWA polish b3f37df), Stage 7 (DEPLOYMENT_REPORT_V2.md). Both apps
+  build 0 errors throughout. ALL DISPATCH_MASTER coding work is DONE. Remaining I1-I6
+  are VM/DB/Cloudflare operations for the human (see DEPLOYMENT_REPORT_V2.md). This is
+  the end-of-Stage-7 stop point.
