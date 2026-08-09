@@ -276,4 +276,12 @@ export const api = {
 
   // DomainApp dashboard summary
   daGetSummary: () => apiCall('/domainapp/summary'),
+
+  // Growth Hub (mock Meta/Ads layer)
+  growthPublish: (data: { platform: 'facebook' | 'instagram'; content: string; imageUrl?: string }) =>
+    apiCall('/growth-hub/publish', { method: 'POST', body: JSON.stringify(data) }),
+  growthRequestAd: (data: { name?: string; objective: string; budget: number; durationDays: number; audience: string; channel?: 'meta_ads' | 'google_ads' }) =>
+    apiCall('/growth-hub/ads', { method: 'POST', body: JSON.stringify(data) }),
+  growthListAds: () => apiCall('/growth-hub/ads'),
+  growthLaunchAd: (id: string) => apiCall(`/growth-hub/ads/${id}/launch`, { method: 'POST' }),
 };
