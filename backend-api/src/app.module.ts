@@ -22,6 +22,11 @@ import { IndustriesModule } from './industries/industries.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { SmsModule } from './sms/sms.module';
+import { MetaModule } from './meta/meta.module';
+import { GoogleAdsModule } from './google-ads/google-ads.module';
+import { GrowthHubModule } from './growth-hub/growth-hub.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -51,6 +56,11 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     DomainAppModule,
     AddonsModule,
     PlatformSettingsModule,
+    WhatsappModule,
+    SmsModule,
+    MetaModule,
+    GoogleAdsModule,
+    GrowthHubModule,
   ],
   providers: [
     {
