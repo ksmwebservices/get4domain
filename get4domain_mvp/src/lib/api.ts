@@ -284,4 +284,13 @@ export const api = {
     apiCall('/growth-hub/ads', { method: 'POST', body: JSON.stringify(data) }),
   growthListAds: () => apiCall('/growth-hub/ads'),
   growthLaunchAd: (id: string) => apiCall(`/growth-hub/ads/${id}/launch`, { method: 'POST' }),
+
+  // Communication Hub
+  commThreads: () => apiCall('/communication/threads'),
+  commSend: (data: { channel: 'whatsapp' | 'email' | 'sms'; to: string; message: string; subject?: string }) =>
+    apiCall('/communication/send', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Customer Hub (vendor side)
+  customerInvite: (contactId: string) =>
+    apiCall('/customer/invite', { method: 'POST', body: JSON.stringify({ contactId }) }),
 };
