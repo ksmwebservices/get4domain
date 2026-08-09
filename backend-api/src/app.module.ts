@@ -27,6 +27,8 @@ import { SmsModule } from './sms/sms.module';
 import { MetaModule } from './meta/meta.module';
 import { GoogleAdsModule } from './google-ads/google-ads.module';
 import { GrowthHubModule } from './growth-hub/growth-hub.module';
+import { CommunicationModule } from './communication/communication.module';
+import { CustomerModule } from './customer/customer.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -61,6 +63,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     MetaModule,
     GoogleAdsModule,
     GrowthHubModule,
+    CommunicationModule,
+    CustomerModule,
   ],
   providers: [
     {

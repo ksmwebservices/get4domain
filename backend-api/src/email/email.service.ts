@@ -126,6 +126,11 @@ export class EmailService {
     });
   }
 
+  /** Generic email send used by the Communication Hub (real via Resend). */
+  async sendGeneric(to: string, subject: string, html: string): Promise<void> {
+    await this.send({ to, subject, html });
+  }
+
   private async send(params: { to: string; subject: string; html: string }): Promise<void> {
     try {
       await this.resend.emails.send({
