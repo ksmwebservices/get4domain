@@ -18,6 +18,7 @@ import { CampaignPagesModule } from './campaign-pages/campaign-pages.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { CrmModule } from './crm/crm.module';
 import { TeamModule } from './team/team.module';
+import { IndustriesModule } from './industries/industries.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -43,6 +44,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     CampaignsModule,
     CrmModule,
     TeamModule,
+    IndustriesModule,
   ],
   providers: [
     {
