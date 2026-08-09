@@ -64,25 +64,25 @@ Soon stub until their addon backends are built.
 ## STAGE 4 — UNIVERSAL MODULES (Dispatch C, D, E)
 
 ### Dispatch C — TeleCRM + AI Studio
-- [ ] C1. TeleCRM 3-panel layout (Queue/Detail/Activity) — NOT STARTED (existing /dashboard/telecrm + /crm remain as-is; refactor pending)
-- [ ] C2. Call flow modal + voice-note AI summary wiring — NOT STARTED (backend /ai/call-summary + /crm/leads/:id/call already exist)
-- [ ] C3. Pipeline Kanban view — NOT STARTED
+- [x] C1. TeleCRM 3-panel layout (Queue/Detail/Activity) — 8bc8d84
+- [x] C2. Call flow modal + voice-note (Web Speech API) → AI summary (/ai/call-summary, ₹3) — 8bc8d84
+- [x] C3. Pipeline Kanban view (drag-drop status change) — 8bc8d84
 - [x] C4. AI Studio content-type grid + generation flow — efef5eb
 - [x] C5. AI Studio Library tab (localStorage-backed) — efef5eb
 - [x] C6. build 0 errors, committed, pushed (AI Studio portion)
 
 ### Dispatch D — Growth Hub (refactor existing Campaign module)
-- [~] D1. Naming done in shell (Growth Hub → /dashboard/campaigns). Page-level restructure of existing campaigns UI still pending.
-- [x] D2. Backend publish flow (mock Meta) — POST /growth-hub/publish (3278e8a) + API client method (8247ed4). Frontend publish button in campaign approval step: PENDING.
-- [x] D3. Backend paid-ads flow (mock Meta/Google Ads) — POST /growth-hub/ads, GET /growth-hub/ads, admin launch (3278e8a) + API methods (8247ed4). Frontend Ads tab UI: PENDING.
-- [x] D4. backend build 0 errors, committed, pushed
+- [x] D1. Growth Hub rename + Campaigns/Ads tab switcher on /dashboard/campaigns — 44e0adf
+- [x] D2. Social publish buttons (Facebook/Instagram) in review step → POST /growth-hub/publish (mock Meta) — 44e0adf
+- [x] D3. Paid-ads request flow (form + AI creative + submit Pending Review + list) → /growth-hub/ads — 44e0adf
+- [x] D4. build 0 errors, committed, pushed
 
 ### Dispatch E — Customer Hub + Communication Hub (mock layer)
-- [ ] E1. Customer Portal (OTP login, Records, Invoices, Support) — NOT STARTED
-- [ ] E2. Customer Hub vendor-side settings tab — NOT STARTED
-- [ ] E3. Communication Hub unified inbox UI — NOT STARTED (shell links to /dashboard/communication)
+- [x] E1. Customer Portal at /customer (mock OTP login, Records, Invoices, Support, mobile bottom nav) — backend 2c62c01, frontend 2419d64
+- [x] E2. Customer Hub vendor-side settings tab (/dashboard/customer-hub: portal on/off, URL copy, send invites) — 2419d64
+- [x] E3. Communication Hub unified inbox (/dashboard/communication: WhatsApp/Email/SMS, threads, compose; email real via Resend) — backend 2c62c01, frontend 2419d64
 - [x] E4. Mock service layer: whatsapp/sms/meta/google-ads services (real-gateway swap-ready, read keys via platform-settings) — 3278e8a
-- [x] E5. backend build 0 errors, committed, pushed (E4 portion)
+- [x] E5. build 0 errors, committed, pushed. NOTE: customer portal sessions are in-memory opaque tokens (mock); swap for persisted/JWT when going live.
 
 ## STAGE 5 — PLATFORM POLISH (Dispatch F, G)
 
