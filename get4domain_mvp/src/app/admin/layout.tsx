@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
-  BarChart3, Globe, Megaphone, CalendarCheck
+  BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
@@ -22,7 +22,8 @@ const navItems = [
   { icon: Megaphone,       label: 'Campaigns',     href: '/admin/campaigns' },
   { icon: MessageSquare,   label: 'Support',       href: '/admin/support' },
   { icon: Globe,           label: 'Website CMS',   href: '/admin/cms' },
-  { icon: Settings,        label: 'API Settings',  href: '/admin/api-settings' },
+  { icon: SlidersHorizontal, label: 'Vendor Access', href: '/admin/vendor-access' },
+  { icon: Settings,        label: 'Integrations',  href: '/admin/api-settings' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -102,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               style={{ maxHeight: '48px', maxWidth: '180px' }}
             />
             <div>
-              <div className="text-xs text-slate-500 leading-none">Admin Panel</div>
+              <div className="text-xs text-slate-500 leading-none">Admin Platform</div>
             </div>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-1 text-slate-500 hover:bg-slate-800 lg:hidden">
@@ -155,7 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block">
-            <h1 className="text-sm font-semibold text-white">Get4Domain Admin Panel</h1>
+            <h1 className="text-sm font-semibold text-white">Get4Domain Admin Platform</h1>
             <p className="text-xs text-slate-500">Manage customers, invoices and demo bookings</p>
           </div>
           <div className="flex items-center gap-3">

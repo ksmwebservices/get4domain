@@ -293,4 +293,15 @@ export const api = {
   // Customer Hub (vendor side)
   customerInvite: (contactId: string) =>
     apiCall('/customer/invite', { method: 'POST', body: JSON.stringify({ contactId }) }),
+
+  // Admin — platform settings (integrations)
+  getPlatformSettings: () => apiCall('/platform-settings'),
+  setPlatformSetting: (category: string, key: string, value: string) =>
+    apiCall(`/platform-settings/${category}/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
+  testPlatformSetting: (category: string, key: string) =>
+    apiCall(`/platform-settings/${category}/${key}/test`, { method: 'POST' }),
+
+  // Admin — per-vendor module/addon state (pass vendorId)
+  adminGetVendorModules: (vendorId: string) => apiCall(`/modules/vendor?vendorId=${vendorId}`),
+  adminGetVendorAddons: (vendorId: string) => apiCall(`/addons/vendor?vendorId=${vendorId}`),
 };
