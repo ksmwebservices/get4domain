@@ -87,16 +87,16 @@ Soon stub until their addon backends are built.
 ## STAGE 5 — PLATFORM POLISH (Dispatch F, G)
 
 ### Dispatch F — Analytics Hub + Website Manager
-- [ ] F1. Analytics Hub (revenue, leads funnel, campaign performance, wallet usage)
-- [ ] F2. Website Manager CMS engine
-- [ ] F3. Industry design template mapping
-- [ ] F4. npm run build 0 errors, commit, push
+- [x] F1. Analytics Hub — revenue-by-month, lead funnel, wallet-by-service, campaigns (CSS/SVG charts, no new lib) — 9aed01a
+- [x] F2. Website Manager — tabbed CMS (Basic/About&Social/SEO/Services/Template) extending VendorCMS + VendorProducts — 9aed01a
+- [x] F3. Industry template mapping (websiteTemplate key → preview/label; default fallback noted) — 9aed01a
+- [x] F4. build 0 errors, committed, pushed. FOLLOW-UP: hero/gallery/testimonials editing needs new VendorCMS JSON fields (schema change) — deferred.
 
 ### Dispatch G — Admin Platform rebuild
-- [ ] G1. Settings → Integrations UI (all API keys, encrypted, test-connection)
-- [ ] G2. Module/Addon toggle UI per vendor
-- [ ] G3. Vendor onboarding flow (industry pick, module/addon assignment)
-- [ ] G4. npm run build 0 errors, commit, push
+- [x] G1. Integrations UI (/admin/api-settings) consuming /platform-settings — masked values, per-field save, Test button — d17ed21
+- [x] G2. Vendor Access module/addon toggle UI per vendor (/admin/vendor-access) — d17ed21
+- [x] G3. Vendor onboarding (industry picker from GET /industries + default addon/module seeding) — d17ed21
+- [x] G4. build 0 errors, committed, pushed. Admin chrome renamed to "Admin Platform"; nav "API Settings"→"Integrations" + "Vendor Access" added.
 
 ## STAGE 6 — MOBILE/PWA POLISH (Dispatch H)
 
