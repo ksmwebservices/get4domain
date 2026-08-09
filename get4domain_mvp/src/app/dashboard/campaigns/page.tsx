@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, Loader2, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, X, Wallet,
+  Send, Megaphone, Facebook, Instagram,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
@@ -15,6 +16,15 @@ interface Campaign {
   status: string;
   channels: string[];
   walletCost: number;
+  createdAt: string;
+}
+
+interface AdCampaign {
+  id: string;
+  name: string;
+  status: string;
+  description: string | null;
+  content: { objective?: string; budget?: number; durationDays?: number; audience?: string };
   createdAt: string;
 }
 
@@ -46,6 +56,14 @@ export default function CampaignsPage() {
   const [content, setContent] = useState<Record<string, GeneratedContent>>({});
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [publishing, setPublishing] = useState('');
+
+  // Tabs + Ads state (Growth Hub)
+  const [tab, setTab] = useState<'campaigns' | 'ads'>('campaigns');
+  const [ads, setAds] = useState<AdCampaign[]>([]);
+  const [adForm, setAdForm] = useState({ objective: 'lead_generation', budget: 5000, durationDays: 7, audience: '', channel: 'meta_ads' as 'meta_ads' | 'google_ads' });
+  const [adCreative, setAdCreative] = useState('');
+  const [adBusy, setAdBusy] = useState(false);
 
   function load() {
     setLoading(true);
@@ -53,9 +71,57 @@ export default function CampaignsPage() {
       .then((res) => setCampaigns(res.data ?? []))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load campaigns'))
       .finally(() => setLoading(false));
+    api.growthListAds().then((res) => setAds(res.data ?? [])).catch(() => setAds([]));
   }
 
   useEffect(() => { load(); }, []);
+
+  async function publish(platform: 'facebook' | 'instagram', text: string) {
+    setPublishing(platform);
+    setError('');
+    try {
+      const res = await api.growthPublish({ platform, content: text });
+      const url = res.data?.postUrl;
+      alert(res.data?.mock ? `Queued (mock) — ${platform} publishing will go live once Meta App Review is approved.\n${url ?? ''}` : `Published: ${url}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Publish failed');
+    } finally {
+      setPublishing('');
+    }
+  }
+
+  async function generateAdCreative() {
+    setAdBusy(true);
+    try {
+      const res = await api.generateAiContent({
+        channel: 'ad_creative',
+        vendorIndustry: user?.industry ?? 'general',
+        offerDetails: `${adForm.objective} ad. Audience: ${adForm.audience}`,
+        tone: 'excited',
+      });
+      setAdCreative(res.data?.caption ?? res.data?.content ?? '');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ad creative generation failed');
+    } finally {
+      setAdBusy(false);
+    }
+  }
+
+  async function submitAd() {
+    if (!adForm.audience.trim()) return;
+    setAdBusy(true);
+    try {
+      await api.growthRequestAd(adForm);
+      setAdCreative('');
+      setAdForm({ objective: 'lead_generation', budget: 5000, durationDays: 7, audience: '', channel: 'meta_ads' });
+      const res = await api.growthListAds();
+      setAds(res.data ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not submit ad request');
+    } finally {
+      setAdBusy(false);
+    }
+  }
 
   const pendingCount = campaigns.filter((c) => c.status === 'pending_approval' || c.status === 'approved').length;
   const totalCost = channels.reduce((sum, c) => sum + (CHANNELS.find((ch) => ch.id === c)?.cost ?? 0), 0);
@@ -129,14 +195,86 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Campaigns</h2>
-          <p className="mt-1 text-sm text-slate-500">Create and track your marketing campaigns.</p>
+          <h2 className="text-xl font-bold text-slate-900">Growth Hub</h2>
+          <p className="mt-1 text-sm text-slate-500">Campaigns, publishing and paid ads.</p>
         </div>
-        <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => { resetWizard(); setWizardOpen(true); }}>Create Campaign</Button>
+        {tab === 'campaigns' && (
+          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => { resetWizard(); setWizardOpen(true); }}>Create Campaign</Button>
+        )}
+      </div>
+
+      <div className="flex w-fit rounded-xl border border-slate-200 bg-white p-1">
+        <button onClick={() => setTab('campaigns')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'campaigns' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><Megaphone className="h-4 w-4" />Campaigns</button>
+        <button onClick={() => setTab('ads')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'ads' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><Sparkles className="h-4 w-4" />Ads</button>
       </div>
 
       {error && !wizardOpen && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
+      {tab === 'ads' && (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Request a paid ad campaign</h3>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Objective</label>
+              <select value={adForm.objective} onChange={(e) => setAdForm({ ...adForm, objective: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                <option value="lead_generation">Lead Generation</option>
+                <option value="awareness">Brand Awareness</option>
+                <option value="traffic">Website Traffic</option>
+                <option value="engagement">Engagement</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-600">Budget (₹)</label>
+                <input type="number" value={adForm.budget} onChange={(e) => setAdForm({ ...adForm, budget: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-600">Duration (days)</label>
+                <input type="number" value={adForm.durationDays} onChange={(e) => setAdForm({ ...adForm, durationDays: Number(e.target.value) })}
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Channel</label>
+              <select value={adForm.channel} onChange={(e) => setAdForm({ ...adForm, channel: e.target.value as 'meta_ads' | 'google_ads' })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                <option value="meta_ads">Meta (Facebook/Instagram) Ads</option>
+                <option value="google_ads">Google Ads</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Audience description</label>
+              <textarea rows={2} value={adForm.audience} onChange={(e) => setAdForm({ ...adForm, audience: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" loading={adBusy} leftIcon={<Sparkles className="h-4 w-4" />} onClick={generateAdCreative} disabled={!adForm.audience.trim()}>Generate creative</Button>
+              <Button fullWidth loading={adBusy} onClick={submitAd} disabled={!adForm.audience.trim()}>Submit for Review</Button>
+            </div>
+            {adCreative && <div className="rounded-xl bg-primary-50 p-3 text-sm text-slate-700">{adCreative}</div>}
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-base font-bold text-slate-900">Your ad campaigns</h3>
+            {ads.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">No ad campaigns yet.</div>
+            ) : ads.map((ad) => (
+              <div key={ad.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-slate-900">{ad.name}</span>
+                  <span className="rounded-full bg-warning-50 px-2.5 py-1 text-xs font-semibold capitalize text-warning-700">{ad.status.replace('_', ' ')}</span>
+                </div>
+                <div className="mt-1 text-xs text-slate-500">₹{ad.content?.budget?.toLocaleString('en-IN')} · {ad.content?.durationDays} days · {ad.content?.objective?.replace('_', ' ')}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'campaigns' && (
+      <>
       {pendingCount > 0 && (
         <div className="rounded-2xl border border-warning-200 bg-warning-50 px-5 py-3.5 text-sm font-medium text-warning-800">
           {pendingCount} campaign{pendingCount > 1 ? 's' : ''} pending our team&apos;s action
@@ -159,6 +297,8 @@ export default function CampaignsPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
 
       {/* Wizard */}
@@ -247,6 +387,17 @@ export default function CampaignsPage() {
                       />
                       {content[ch]?.hashtags && content[ch].hashtags!.length > 0 && (
                         <div className="mt-1.5 text-xs text-slate-400">{content[ch].hashtags!.map((h) => `#${h}`).join(' ')}</div>
+                      )}
+                      {(ch === 'facebook' || ch === 'instagram') && (
+                        <button
+                          onClick={() => publish(ch, content[ch]?.caption ?? '')}
+                          disabled={publishing === ch}
+                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 disabled:opacity-50"
+                        >
+                          {ch === 'facebook' ? <Facebook className="h-3.5 w-3.5" /> : <Instagram className="h-3.5 w-3.5" />}
+                          {publishing === ch ? 'Publishing…' : `Publish to ${ch === 'facebook' ? 'Facebook' : 'Instagram'}`}
+                          <Send className="h-3 w-3" />
+                        </button>
                       )}
                     </div>
                   ))}
