@@ -15,7 +15,7 @@ model Vendor {
   password     String
   businessName String
   phone        String?
-  industry     String?
+  industry     String?  @default("general")
   subdomain    String?  @unique
   customDomain String?
   role         Role     @default(VENDOR)
@@ -34,6 +34,13 @@ model Vendor {
   campaignPages    CampaignPage[]
   campaignLeads    CampaignLead[]
   teamMembers      TeamMember[]
+
+  contacts         Contact[]
+  catalogItems     CatalogItem[]
+  records          Record[]
+  genericInvoices  GenericInvoice[]
+  addons           VendorAddon[]
+  modules          VendorModule[]
 }
 
 model Subscription {
@@ -313,6 +320,135 @@ model PlatformIncome {
   description String?
   createdAt   DateTime @default(now())
   @@map("g4d_platform_income")
+}
+
+// ===========================================================================
+// DomainApp v2.0 core — shared, generic backend engine for ALL industries.
+// One set of tables stores data for every industry; the frontend tailors the
+// experience per industry via the industry config system. Multi-tenant: every
+// row is scoped by vendorId.
+// ===========================================================================
+
+model Contact {
+  id           String           @id @default(cuid())
+  vendorId     String
+  vendor       Vendor           @relation(fields: [vendorId], references: [id])
+  name         String
+  phone        String
+  email        String?
+  type         String           @default("customer")
+  address      String?
+  portalAccess Boolean          @default(false)
+  customFields Json?
+  tags         Json?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  records      Record[]
+  invoices     GenericInvoice[]
+  @@index([vendorId])
+  @@map("g4d_contacts")
+}
+
+model CatalogItem {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  name         String
+  description  String?
+  price        Float
+  unit         String?
+  image        String?
+  active       Boolean  @default(true)
+  customFields Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  records      Record[]
+  @@index([vendorId])
+  @@map("g4d_catalog_items")
+}
+
+model Record {
+  id            String          @id @default(cuid())
+  vendorId      String
+  vendor        Vendor          @relation(fields: [vendorId], references: [id])
+  contactId     String?
+  contact       Contact?        @relation(fields: [contactId], references: [id])
+  catalogItemId String?
+  catalogItem   CatalogItem?    @relation(fields: [catalogItemId], references: [id])
+  status        String          @default("draft")
+  date          DateTime
+  amount        Float           @default(0)
+  notes         String?
+  customFields  Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  invoice       GenericInvoice?
+  @@index([vendorId])
+  @@index([status])
+  @@map("g4d_records")
+}
+
+// Generic DomainApp invoice (distinct from the subscription `Invoice` model).
+model GenericInvoice {
+  id             String    @id @default(cuid())
+  vendorId       String
+  vendor         Vendor    @relation(fields: [vendorId], references: [id])
+  recordId       String?   @unique
+  record         Record?   @relation(fields: [recordId], references: [id])
+  contactId      String
+  contact        Contact   @relation(fields: [contactId], references: [id])
+  invoiceNumber  String    @unique
+  items          Json
+  subtotal       Float
+  gstRate        Float     @default(0)
+  gstAmount      Float     @default(0)
+  total          Float
+  status         String    @default("PENDING")
+  dueDate        DateTime?
+  paidAt         DateTime?
+  razorpayLinkId String?
+  pdfUrl         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  @@index([vendorId])
+  @@map("g4d_generic_invoices")
+}
+
+model VendorAddon {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  addonKey  String
+  enabled   Boolean  @default(true)
+  enabledAt DateTime @default(now())
+  config    Json?
+  @@unique([vendorId, addonKey])
+  @@map("g4d_vendor_addons")
+}
+
+model VendorModule {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  moduleKey String
+  enabled   Boolean  @default(true)
+  enabledAt DateTime @default(now())
+  @@unique([vendorId, moduleKey])
+  @@map("g4d_vendor_modules")
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  category  String
+  key       String
+  value     String
+  encrypted Boolean  @default(true)
+  status    String   @default("NOT_CONFIGURED")
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  @@unique([category, key])
+  @@map("g4d_platform_settings")
 }
 
 enum Role {
