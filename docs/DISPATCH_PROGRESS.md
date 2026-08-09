@@ -64,25 +64,25 @@ Soon stub until their addon backends are built.
 ## STAGE 4 — UNIVERSAL MODULES (Dispatch C, D, E)
 
 ### Dispatch C — TeleCRM + AI Studio
-- [ ] C1. TeleCRM 3-panel layout (Queue/Detail/Activity)
-- [ ] C2. Call flow modal + voice-note AI summary wiring
-- [ ] C3. Pipeline Kanban view
-- [ ] C4. AI Studio content-type grid + generation flow
-- [ ] C5. AI Studio Library tab
-- [ ] C6. npm run build 0 errors, commit, push
+- [ ] C1. TeleCRM 3-panel layout (Queue/Detail/Activity) — NOT STARTED (existing /dashboard/telecrm + /crm remain as-is; refactor pending)
+- [ ] C2. Call flow modal + voice-note AI summary wiring — NOT STARTED (backend /ai/call-summary + /crm/leads/:id/call already exist)
+- [ ] C3. Pipeline Kanban view — NOT STARTED
+- [x] C4. AI Studio content-type grid + generation flow — efef5eb
+- [x] C5. AI Studio Library tab (localStorage-backed) — efef5eb
+- [x] C6. build 0 errors, committed, pushed (AI Studio portion)
 
 ### Dispatch D — Growth Hub (refactor existing Campaign module)
-- [ ] D1. Rename/restructure Campaign → Growth Hub in UI
-- [ ] D2. Direct social publish flow (mock Meta service layer)
-- [ ] D3. Paid ads request flow (mock Meta/Google Ads service layer)
-- [ ] D4. npm run build 0 errors, commit, push
+- [~] D1. Naming done in shell (Growth Hub → /dashboard/campaigns). Page-level restructure of existing campaigns UI still pending.
+- [x] D2. Backend publish flow (mock Meta) — POST /growth-hub/publish (3278e8a) + API client method (8247ed4). Frontend publish button in campaign approval step: PENDING.
+- [x] D3. Backend paid-ads flow (mock Meta/Google Ads) — POST /growth-hub/ads, GET /growth-hub/ads, admin launch (3278e8a) + API methods (8247ed4). Frontend Ads tab UI: PENDING.
+- [x] D4. backend build 0 errors, committed, pushed
 
 ### Dispatch E — Customer Hub + Communication Hub (mock layer)
-- [ ] E1. Customer Portal (OTP login, Records, Invoices, Support)
-- [ ] E2. Customer Hub vendor-side settings tab
-- [ ] E3. Communication Hub unified inbox UI
-- [ ] E4. Mock service layer: whatsapp.service.ts, meta.service.ts, google-ads.service.ts, sms.service.ts (real gateway swap-ready)
-- [ ] E5. npm run build 0 errors, commit, push
+- [ ] E1. Customer Portal (OTP login, Records, Invoices, Support) — NOT STARTED
+- [ ] E2. Customer Hub vendor-side settings tab — NOT STARTED
+- [ ] E3. Communication Hub unified inbox UI — NOT STARTED (shell links to /dashboard/communication)
+- [x] E4. Mock service layer: whatsapp/sms/meta/google-ads services (real-gateway swap-ready, read keys via platform-settings) — 3278e8a
+- [x] E5. backend build 0 errors, committed, pushed (E4 portion)
 
 ## STAGE 5 — PLATFORM POLISH (Dispatch F, G)
 
@@ -161,3 +161,20 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   Kept blue-600 primary (tokens already on-target). Commit fa0cb73. Shell links to
   Stage 3/4 routes (/dashboard/domain-app/:tab, /ai-studio, /communication,
   /customer-hub) that are built in later stages. Proceeding to Stage 3 Batch 1.
+- 2026-08-10: Stage 4 PARTIAL. Backend mock provider layers (WhatsApp/SMS/Meta/
+  Google Ads, key-resolution via platform-settings) + Growth Hub publish/ads
+  endpoints done (3278e8a). AI Studio frontend done (efef5eb). Growth Hub API
+  client methods (8247ed4). REMAINING for next session (all builds currently green):
+    * C1-C3 TeleCRM 3-panel + call flow + Kanban (frontend refactor of existing
+      /dashboard/telecrm; backend /crm/* and /ai/call-summary already exist)
+    * D1 restructure campaigns page UI; D2/D3 frontend publish button + Ads tab
+      (backend + api client ready — wire buttons to api.growthPublish / growthRequestAd)
+    * E1 Customer Portal (src/app/customer/*), E2 Customer Hub vendor settings tab,
+      E3 Communication Hub inbox (email real via Resend, WhatsApp/SMS via mocks)
+    * Stage 5: F Analytics Hub (use /domainapp/summary + existing tables) +
+      Website Manager (extend VendorCMS); G Admin Integrations UI (consume
+      /platform-settings) + module/addon toggle UI (consume /modules,/addons) +
+      vendor onboarding industry picker (GET /industries)
+    * Stage 6: PWA polish (H). Stage 7: VM deploy report + smoke test (I) — note
+      the STAGE 1 VM REPORT already lists the migration + PLATFORM_SETTINGS_KEY.
+  No blockers. Resume: read this ledger, continue from first unchecked item.
