@@ -20,13 +20,13 @@ Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
 
 ## STAGE 2 — FRONTEND DESIGN SYSTEM (Dispatch B1)
 
-- [ ] B1.1. v2.0 design tokens (colors, spacing, typography — Stripe/Linear/Notion inspired)
-- [ ] B1.2. Shared UI primitives audit — extend existing components, don't duplicate
-- [ ] B1.3. Config-driven dashboard shell (reads vendor's modules+addons+industry)
-- [ ] B1.4. Locked/unlocked tab system + upgrade modal
-- [ ] B1.5. Mobile bottom nav (dynamic per vendor's active modules)
-- [ ] B1.6. Module naming migration in UI (Growth Hub, TeleCRM, AI Studio, etc.)
-- [ ] B1.7. npm run build (frontend) 0 errors, commit, push
+- [x] B1.1. Design tokens — existing tailwind tokens already match Stripe/Linear/Notion (primary #2563eb = the blue-600 option, slate neutrals, Inter, rounded-2xl cards, subtle shadows). Kept blue-600 (not indigo) to avoid a risky global swap across 79 pages; "reuse don't rebuild". — fa0cb73
+- [x] B1.2. UI primitives added (reused Button/Modal): Card, StatCard, Badge, Input/Textarea/Select, DataTable, LockedBadge, Icon (dynamic lucide by name) — fa0cb73
+- [x] B1.3. Config-driven dashboard shell — fetches GET /modules/vendor, /addons/vendor, /industries/:key via useDashboardConfig (session-cached); sections: Overview, industry DomainApp tabs, Grow, Manage, Account — fa0cb73
+- [x] B1.4. Locked tab system + UpgradeModal (wallet vs plan CTA) — fa0cb73
+- [x] B1.5. Dynamic mobile bottom nav (Home + top active modules + More) — fa0cb73
+- [x] B1.6. Naming migration in shell (Growth Hub, TeleCRM, AI Studio, Communication Hub, Website Manager, Analytics Hub, Wallet & Billing). NOTE: deeper per-page label copy + admin "Admin Platform" chrome refined in later stages. — fa0cb73
+- [x] B1.7. npm run build (frontend) 0 errors, commit fa0cb73, pushed
 
 ## STAGE 3 — INDUSTRY-SPECIFIC DASHBOARDS (Dispatch B2-B5, 5 industries each)
 
@@ -138,4 +138,15 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
 
 ## SESSION LOG (append briefly each session)
 
-(none yet)
+- 2026-08-09: Stage 1 (Backend Foundation) complete. Added DomainApp core schema
+  (GenericInvoice named to avoid Invoice collision), 20 industry configs + general
+  fallback with /industries endpoints, generic DomainApp CRUD (contacts/catalog/
+  records/invoices/summary), addon+module toggle system, and AES-256-GCM platform
+  settings. All builds 0 errors. Commits: 5e4852d, 7bf7b79, d7fcc6f, a294222,
+  9cccede, c5b382e. Migration deferred to VM (see VM REPORT). Proceeding to Stage 2.
+- 2026-08-09: Stage 2 (Frontend Design System & Dashboard Shell) complete. Config-
+  driven shell reads industry config + module/addon toggles; locked tabs open an
+  UpgradeModal; dynamic mobile nav; new reusable UI primitives; naming migration.
+  Kept blue-600 primary (tokens already on-target). Commit fa0cb73. Shell links to
+  Stage 3/4 routes (/dashboard/domain-app/:tab, /ai-studio, /communication,
+  /customer-hub) that are built in later stages. Proceeding to Stage 3 Batch 1.
