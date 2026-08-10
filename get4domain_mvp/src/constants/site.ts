@@ -17,10 +17,10 @@ export const siteConfig = {
   authors: [{ name: 'Get4Domain' }],
   creator: 'Get4Domain',
   contact: {
-    phone: '+91 98765 43210',
-    email: 'hello@get4domain.com',
+    phone: '+91 75500 47567',
+    email: 'support@get4domain.com',
     support: 'support@get4domain.com',
-    address: 'Chennai, Tamil Nadu, India',
+    address: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113',
   },
   social: {
     facebook: '#',
@@ -28,7 +28,7 @@ export const siteConfig = {
     instagram: '#',
     linkedin: '#',
     youtube: '#',
-    whatsapp: 'https://wa.me/919876543210',
+    whatsapp: 'https://wa.me/917550047567',
   },
 };
 

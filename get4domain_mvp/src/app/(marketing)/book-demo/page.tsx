@@ -19,9 +19,8 @@ const industries = [
 const interestedIn = [
   { id: 'domainapp-startup', label: 'DomainApp Startup', desc: '₹6,999/yr', icon: Globe },
   { id: 'domainapp-enterprise', label: 'DomainApp Enterprise', desc: '₹24,999/yr', icon: Globe },
-  { id: 'campaign-starter', label: 'DomainCampaign Starter', desc: '₹6,999/yr', icon: Megaphone },
-  { id: 'campaign-business', label: 'DomainCampaign Business', desc: '₹29,999/yr', icon: Megaphone },
-  { id: 'both', label: 'DomainApp + DomainCampaign', desc: 'Combined', icon: Building2 },
+  { id: 'domaincampaign', label: 'DomainCampaign', desc: 'Wallet from ₹999', icon: Megaphone },
+  { id: 'both', label: 'DomainApp + DomainCampaign', desc: 'Combo — save 20%', icon: Building2 },
   { id: 'not-sure', label: 'Not sure — advise me', desc: 'Consultant will guide', icon: CalendarCheck },
 ];
 
