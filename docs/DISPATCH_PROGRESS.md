@@ -79,6 +79,31 @@ Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
   Invoice + PlatformSetting tables). Not live-tested (no VM/Razorpay from Claude
   Code) — build-verified; the topup→invoice path needs a real top-up to confirm.
 
+### Item 4 — AI Studio video/reel generation (dispatch #4)
+Owner chose BOTH providers (admin-selectable). Runway ML and HeyGen keys already
+existed in the `video` settings category.
+- [x] Backend `video` module (mock-first, provider-abstracted): VideoService
+  picks the active provider (runway if runway_api_key set, else heygen, else
+  none=mock). Async model: POST /video/generate returns {jobId, provider, status,
+  mock}; GET /video/status?provider&jobId polls until done/failed. GET
+  /video/provider returns {provider, cost}.
+- [x] Wallet: deducts `video_generation` rate (pricing category, ₹50 fallback) on
+  successful submit; pre-checks balance; INTERNAL admin staff free (same
+  isInternalStaff bypass as AI Studio). Mock mode charges nothing + returns a
+  sample clip so the full UX is demonstrable pre-keys.
+- [x] Real API calls implemented to documented shapes — Runway
+  (image_to_video/tasks) + HeyGen (v2 generate / v1 video_status). ⚠️ NOT
+  live-tested from Claude Code; verify request/response once real keys added.
+  Everything degrades to MOCK when unkeyed (never throws).
+- [x] Frontend AI Studio: new "Reel / Video" card → modal fetches active provider
+  and shows the matching input (Runway=visual prompt, HeyGen=script), wallet-cost
+  preview (Free for internal), Generate → polls every 4s → renders <video> +
+  download. Graceful "not configured" state. Registered VideoModule in AppModule.
+- [x] backend + frontend build 0 errors. No new DB migration. Behind auth →
+  build-verified, not click-tested from Claude Code.
+- NOTE (deduction timing): charged on submit, not on completion; a later provider
+  failure won't auto-refund — acceptable for now, revisit if needed.
+
 ---
 
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)

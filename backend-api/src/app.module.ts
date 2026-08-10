@@ -33,6 +33,7 @@ import { GrowthHubModule } from './growth-hub/growth-hub.module';
 import { CommunicationModule } from './communication/communication.module';
 import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
+import { VideoModule } from './video/video.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -73,6 +74,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     CommunicationModule,
     CustomerModule,
     OtpModule,
+    VideoModule,
   ],
   providers: [
     {

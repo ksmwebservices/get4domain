@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, MessageSquare, Video, FileText, Image as ImageIcon,
@@ -107,6 +107,53 @@ export default function AiStudioPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [activeDoc, setActiveDoc] = useState<DocKey | null>(null);
   const [docFields, setDocFields] = useState<DocFields>({ business: '', person: '', designation: '', phone: '', email: '', address: '' });
+
+  // Video / Reel generation (Runway or HeyGen, admin-selectable; async job).
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoProvider, setVideoProvider] = useState<'runway' | 'heygen' | 'none'>('none');
+  const [videoCost, setVideoCost] = useState(0);
+  const [videoInput, setVideoInput] = useState('');
+  const [videoBusy, setVideoBusy] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState('');
+  const videoPoll = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = () => { if (videoPoll.current) { clearInterval(videoPoll.current); videoPoll.current = null; } };
+  useEffect(() => () => stopPolling(), []);
+
+  const openVideo = async () => {
+    setVideoOpen(true); setVideoInput(''); setVideoUrl(null); setVideoError(''); setVideoBusy(false);
+    try {
+      const res = await api.getVideoProvider();
+      setVideoProvider(res.data?.provider ?? 'none');
+      setVideoCost(res.data?.cost ?? 0);
+    } catch { setVideoProvider('none'); setVideoCost(0); }
+  };
+
+  const closeVideo = () => { stopPolling(); setVideoOpen(false); };
+
+  const generateVideo = async () => {
+    setVideoBusy(true); setVideoUrl(null); setVideoError('');
+    try {
+      const payload = videoProvider === 'heygen' ? { script: videoInput } : { prompt: videoInput };
+      const res = await api.generateVideo(payload);
+      const { jobId, provider } = res.data ?? {};
+      if (!jobId) throw new Error('Could not start the video job.');
+      // Poll until done/failed (video takes ~30–90s).
+      stopPolling();
+      videoPoll.current = setInterval(async () => {
+        try {
+          const s = await api.getVideoStatus(provider ?? videoProvider, jobId);
+          if (s.data?.status === 'done') { stopPolling(); setVideoUrl(s.data?.url ?? null); setVideoBusy(false); }
+          else if (s.data?.status === 'failed') { stopPolling(); setVideoError('Video generation failed. Please try again.'); setVideoBusy(false); }
+        } catch { /* keep polling */ }
+      }, 4000);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Video generation failed';
+      setVideoError(/wallet|insufficient|balance/i.test(msg) ? 'Your wallet balance is too low for a video. Top up to continue.' : msg);
+      setVideoBusy(false);
+    }
+  };
 
   const openDoc = (key: DocKey) => {
     setActiveDoc(key);
@@ -243,6 +290,11 @@ export default function AiStudioPage() {
                 </Card>
               );
             })}
+            <Card hover className="cursor-pointer" onClick={openVideo}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
+              <h3 className="mt-3 font-semibold text-slate-900">Reel / Video</h3>
+              <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'wallet — per video'}</p>
+            </Card>
           </div>
 
           <div>
@@ -347,6 +399,59 @@ export default function AiStudioPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Video / Reel generator */}
+      <Modal isOpen={videoOpen} onClose={closeVideo} title="Generate Reel / Video" maxWidth="max-w-2xl">
+        <div className="space-y-4">
+          {videoProvider === 'none' ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Video generation isn&apos;t configured yet. An admin can add a Runway ML or HeyGen key in
+              Admin → Integrations → Video. You can still preview the flow below with a sample clip.
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">
+              Provider: <span className="font-semibold text-slate-700">{videoProvider === 'heygen' ? 'HeyGen (avatar presenter)' : 'Runway ML (generative reel)'}</span>
+            </p>
+          )}
+
+          {videoProvider === 'heygen' ? (
+            <Textarea label="Script (what the presenter says)" placeholder="Hi! This Diwali, visit Ravi Sweets for 20% off all boxes…" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
+          ) : (
+            <Textarea label="Visual prompt" placeholder="Warm festive Diwali reel of a sweet shop, sparklers, golden light, slow pan" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
+          )}
+
+          <div className="flex items-center justify-between rounded-xl bg-primary-50 px-4 py-2.5">
+            <span className="text-sm text-primary-700">Estimated cost</span>
+            <span className="text-sm font-bold text-primary-700">{isInternalStaff ? 'Free (internal)' : videoProvider === 'none' ? 'Free (mock)' : `~₹${(videoCost / 100).toFixed(0)}`}</span>
+          </div>
+
+          {videoError && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <p>{videoError}</p>
+              {/wallet|balance|low/i.test(videoError) && (
+                <Link href="/dashboard/wallet" className="mt-2 inline-block rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">Top Up Wallet</Link>
+              )}
+            </div>
+          )}
+
+          {videoUrl && (
+            <div>
+              <div className="mb-1.5 text-sm font-medium text-slate-700">Result</div>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={videoUrl} controls className="w-full rounded-xl border border-slate-200" />
+              <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600"><Download className="h-4 w-4" /> Download / open</a>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={closeVideo}>Close</Button>
+            <Button leftIcon={<Video className="h-4 w-4" />} loading={videoBusy} disabled={!videoInput.trim() || videoBusy} onClick={generateVideo}>
+              {videoBusy ? 'Generating…' : videoUrl ? 'Regenerate' : 'Generate video'}
+            </Button>
+          </div>
+          {videoBusy && <p className="text-center text-xs text-slate-400">Rendering your video — this can take up to a minute.</p>}
+        </div>
       </Modal>
     </div>
   );

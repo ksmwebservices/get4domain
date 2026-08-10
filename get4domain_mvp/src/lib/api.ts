@@ -249,6 +249,13 @@ export const api = {
   generateAiCallSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) =>
     apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
 
+  // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
+  getVideoProvider: () => apiCall('/video/provider'),
+  generateVideo: (data: { prompt?: string; script?: string; imageUrl?: string }) =>
+    apiCall('/video/generate', { method: 'POST', body: JSON.stringify(data) }),
+  getVideoStatus: (provider: string, jobId: string) =>
+    apiCall(`/video/status?provider=${encodeURIComponent(provider)}&jobId=${encodeURIComponent(jobId)}`),
+
   // ── v2.0 DomainApp platform ──
 
   // Industry config
