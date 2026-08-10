@@ -35,6 +35,22 @@ Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
   older CLAUDE_MEMORY_V2 "WhatsApp via BSP partner (Interakt/AiSensy)" note for now.
   Not integration-tested (no VM/live key from Claude Code) — build-verified only.
 
+### Item 2b — TeleCRM UX overhaul (shared TeleCrmBoard.tsx)
+- [x] List view removed entirely; Kanban is the only + default view. Removed the
+  view toggle, QueueSection/LeadCard, and orphaned relativeContact/skip/setSkipped
+  + LayoutList/Columns3/SkipForward imports (0 unused → build clean).
+- [x] Scroll-gesture fix on the Kanban horizontal scroll container
+  (overscroll-behavior-x: contain + touch-action: pan-x) so drag-scroll no longer
+  fights the PWA nav / browser back-swipe on touch.
+- [x] Mobile stage quick-nav (owner chose "Add stage quick-nav bar"): fixed
+  lg:hidden bar at bottom-16 (above the shell's global bottom nav) with the 6
+  stage chips + counts; tap snaps the board to that column (scrollIntoView,
+  scroll-ml-2). Root padded pb-14 lg:pb-0 so content clears the bar.
+- [x] No re-skin — colors/theme untouched, structural only.
+- [x] frontend build 0 errors. NOTE: board is behind auth; build-verified, not
+  click-tested from Claude Code (no login/VM). Mobile gesture behaviour should be
+  spot-checked on a real device / DevTools touch emulation after deploy.
+
 ---
 
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)

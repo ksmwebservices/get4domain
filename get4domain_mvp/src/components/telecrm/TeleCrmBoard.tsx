@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Phone, Loader2, X, ThumbsUp, ThumbsDown, PhoneCall, Trophy, PhoneOff,
-  Mic, Sparkles, LayoutList, Columns3, SkipForward,
+  Mic, Sparkles,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -69,15 +69,6 @@ function dayBucket(followUpDate: string | null): 'overdue' | 'today' | 'upcoming
   return 'upcoming';
 }
 
-function relativeContact(lead: TeleCrmLead): string {
-  const last = lead.callLogs?.[0]?.createdAt;
-  if (!last) return 'Never contacted';
-  const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
-  if (days <= 0) return 'Contacted today';
-  if (days === 1) return '1 day ago';
-  return `${days} days ago`;
-}
-
 // Follow-up quick-select → ISO date.
 function followUpIso(choice: string, custom: string): string | undefined {
   const now = new Date();
@@ -104,8 +95,9 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   const [leads, setLeads] = useState<TeleCrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [view, setView] = useState<'queue' | 'pipeline'>('queue');
-  const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  // Kanban is the only view now (List removed). `skipped` still powers the
+  // Call-Next queue traversal below (leads skipped during a session).
+  const [skipped] = useState<Set<string>>(new Set());
 
   // Call flow
   const [precall, setPrecall] = useState<TeleCrmLead | null>(null); // pre-call overlay
@@ -149,6 +141,19 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     [buckets],
   );
 
+  // Mobile stage quick-nav: tap a stage chip to snap the Kanban to that column.
+  const colRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [activeStage, setActiveStage] = useState<string>(PIPELINE[0].key);
+  const jumpToStage = (key: string) => {
+    setActiveStage(key);
+    colRefs.current[key]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+  };
+  const stageCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of PIPELINE) m[s.key] = leads.filter((l) => (l.status || 'new') === s.key).length;
+    return m;
+  }, [leads]);
+
   const openFeedback = useCallback((lead: TeleCrmLead) => {
     setFeedbackLead(lead);
     setOutcome(null);
@@ -184,10 +189,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
       openFeedback(lead);
       window.open(`tel:${lead.phone}`, '_self');
     }, 1600);
-  };
-
-  const skip = (lead: TeleCrmLead) => {
-    setSkipped((prev) => new Set(prev).add(lead.id));
   };
 
   const toggleRecording = () => {
@@ -249,86 +250,64 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   }
 
-  const LeadCard = ({ lead }: { lead: TeleCrmLead }) => (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-base font-bold text-slate-900">{lead.name}</div>
-          <div className="text-sm text-slate-500">{lead.phone}</div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium capitalize text-slate-600">{lead.status || 'new'}</span>
-            <span className="text-[11px] text-slate-400">{relativeContact(lead)}</span>
-          </div>
-        </div>
-      </div>
-      <div className="mt-3 flex gap-2">
-        <Button size="sm" fullWidth leftIcon={<Phone className="h-4 w-4" />} onClick={() => initiateCall(lead)}>Call</Button>
-        <Button size="sm" variant="outline" leftIcon={<SkipForward className="h-4 w-4" />} onClick={() => skip(lead)}>Skip</Button>
-      </div>
-    </div>
-  );
-
-  const QueueSection = ({ label, color, items }: { label: string; color: string; items: TeleCrmLead[] }) => (
-    <div>
-      <div className="mb-2 flex items-center gap-2 px-1">
-        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>{label}</span>
-        <span className="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-500">{items.length}</span>
-      </div>
-      <div className="space-y-2.5">
-        {items.map((lead) => <LeadCard key={lead.id} lead={lead} />)}
-        {items.length === 0 && <p className="px-1 py-1 text-xs text-slate-400">Nothing here.</p>}
-      </div>
-    </div>
-  );
-
   return (
-    <div>
+    <div className="pb-14 lg:pb-0">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">{title}</h1>
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1">
-          <button onClick={() => setView('queue')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${view === 'queue' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><LayoutList className="h-4 w-4" />List</button>
-          <button onClick={() => setView('pipeline')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${view === 'pipeline' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><Columns3 className="h-4 w-4" />Kanban</button>
-        </div>
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
-      {view === 'queue' ? (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <QueueSection label="🔴 Overdue" color="#dc2626" items={buckets.overdue} />
-          <QueueSection label="🟡 Today / New" color="#f59e0b" items={[...buckets.today, ...buckets.none]} />
-          <QueueSection label="🟢 Upcoming" color="#16a34a" items={buckets.upcoming} />
-        </div>
-      ) : (
-        <div className="flex gap-3 overflow-x-auto pb-4">
-          {PIPELINE.map((stage) => {
-            const items = leads.filter((l) => (l.status || 'new') === stage.key);
-            return (
-              <div key={stage.key} className="w-64 flex-shrink-0"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { const id = e.dataTransfer.getData('text/plain'); const lead = leads.find((l) => l.id === id); if (lead) changeStatus(lead, stage.key); }}>
-                <div className="mb-2 flex items-center justify-between px-1">
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />{stage.label}</span>
-                  <span className="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-500">{items.length}</span>
-                </div>
-                <div className="min-h-[120px] space-y-2 rounded-xl bg-slate-50 p-2">
-                  {items.map((lead) => (
-                    <div key={lead.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', lead.id)}
-                      className="cursor-grab rounded-lg border border-slate-200 bg-white p-2.5 active:cursor-grabbing">
-                      <div className="text-sm font-semibold text-slate-900">{lead.name}</div>
-                      <div className="text-xs text-slate-500">{lead.phone}</div>
-                      <button onClick={() => initiateCall(lead)} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
-                    </div>
-                  ))}
-                </div>
+      {/* Kanban pipeline — the only view. `touch-action: pan-x` + `overscroll-x:
+          contain` keep the horizontal drag-scroll from fighting the PWA nav /
+          browser back-swipe on touch devices. */}
+      <div
+        className="flex gap-3 overflow-x-auto pb-4"
+        style={{ overscrollBehaviorX: 'contain', touchAction: 'pan-x' }}
+      >
+        {PIPELINE.map((stage) => {
+          const items = leads.filter((l) => (l.status || 'new') === stage.key);
+          return (
+            <div key={stage.key} ref={(el) => { colRefs.current[stage.key] = el; }} className="w-64 flex-shrink-0 scroll-ml-2"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { const id = e.dataTransfer.getData('text/plain'); const lead = leads.find((l) => l.id === id); if (lead) changeStatus(lead, stage.key); }}>
+              <div className="mb-2 flex items-center justify-between px-1">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-700"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />{stage.label}</span>
+                <span className="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-500">{items.length}</span>
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="min-h-[120px] space-y-2 rounded-xl bg-slate-50 p-2">
+                {items.map((lead) => (
+                  <div key={lead.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', lead.id)}
+                    className="cursor-grab rounded-lg border border-slate-200 bg-white p-2.5 active:cursor-grabbing">
+                    <div className="text-sm font-semibold text-slate-900">{lead.name}</div>
+                    <div className="text-xs text-slate-500">{lead.phone}</div>
+                    <button onClick={() => initiateCall(lead)} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Mobile stage quick-nav — matches the PWA bottom-nav pattern, sits just
+          above the shell's global bottom nav (h-16). Tap a stage to jump. */}
+      <div className="fixed inset-x-0 bottom-16 z-30 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur lg:hidden">
+        {PIPELINE.map((stage) => {
+          const active = activeStage === stage.key;
+          return (
+            <button key={stage.key} onClick={() => jumpToStage(stage.key)}
+              className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${active ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />
+              {stage.label}
+              <span className="rounded-full bg-slate-100 px-1 text-[10px] font-semibold text-slate-500">{stageCounts[stage.key]}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* PRE-CALL overlay */}
       {precall && (
