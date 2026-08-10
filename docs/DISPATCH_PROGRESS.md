@@ -120,6 +120,37 @@ Soon stub until their addon backends are built.
 
 ---
 
+## POST-DEPLOY BUGFIXES (not part of the original 7 stages)
+
+### PD-BUG-1 — Invoice "Send Payment Link" 500 (admin + vendor) — 23da856
+- [x] Root cause: PaymentsService.generatePaymentLink called the Razorpay SDK
+  with no error handling. The SDK rejects with a plain object
+  `{ statusCode, error: { description, code } }` — NOT an Error — so
+  HttpExceptionFilter's `instanceof Error` branch dropped the message + stack,
+  leaving only a bare `POST /invoices/.../send-payment-link` log line and an
+  opaque 500 to the client.
+- [x] HttpExceptionFilter now logs full detail for any thrown value (Error,
+  plain object via JSON, or primitive) and extracts a useful client message
+  from SDK-style error objects.
+- [x] generatePaymentLink: fail-fast when Razorpay keys missing/placeholder;
+  wrap the SDK call and rethrow the real description as 502; unique reference_id
+  (`${invoiceId}-${Date.now()}`) so re-sends no longer collide.
+- [x] Cleared "Duplicate DTO detected: CreateInvoiceDto" warning — renamed
+  domainapp `CreateInvoiceDto` → `CreateGenericInvoiceDto` (two classes shared
+  a name with different schemas).
+- [x] backend-api build 0 errors.
+
+### PD-BUG-2 — Admin Platform unusable on mobile PWA — 98c9d54
+- [x] Admin layout had only a header hamburger (no mobile bottom nav, no
+  bottom padding), so Sign Out at the very bottom of the drawer was effectively
+  unreachable on phones. Brought admin to parity with the vendor dashboard's
+  mobile treatment: fixed mobile bottom nav (Overview/Bookings/Invoices + More)
+  under lg, "More" opens the off-canvas drawer where Sign Out sits below the
+  scroll area; `<main>` padded pb-24 on mobile to clear the nav.
+- [x] frontend build 0 errors.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
@@ -194,3 +225,9 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   build 0 errors throughout. ALL DISPATCH_MASTER coding work is DONE. Remaining I1-I6
   are VM/DB/Cloudflare operations for the human (see DEPLOYMENT_REPORT_V2.md). This is
   the end-of-Stage-7 stop point.
+- 2026-08-10: POST-DEPLOY BUGFIXES (see section above). PD-BUG-1 (23da856):
+  invoice send-payment-link 500 root-caused to Razorpay's non-Error rejection
+  being swallowed by HttpExceptionFilter; fixed filter logging + hardened
+  generatePaymentLink + renamed duplicate CreateInvoiceDto. PD-BUG-2 (98c9d54):
+  admin mobile bottom nav + main padding for reachable Sign Out. Both apps build
+  0 errors. Proceeding to post-deploy ADMIN INTERNAL-TEAM feature addition.
