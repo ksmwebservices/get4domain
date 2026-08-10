@@ -6,31 +6,43 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
-  BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal
+  BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal,
+  Phone, Sparkles, FileSignature, ShieldCheck, Lock,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import type { AdminRole } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
+import AdminAccessModal from '@/components/AdminAccessModal';
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Overview',      href: '/admin' },
-  { icon: CalendarCheck,   label: 'Demo Bookings', href: '/admin/leads' },
-  { icon: Users,           label: 'Vendors',       href: '/admin/customers' },
-  { icon: FileText,        label: 'Invoices',      href: '/admin/invoices' },
-  { icon: RefreshCw,       label: 'Renewals',      href: '/admin/renewals' },
-  { icon: BarChart3,       label: 'Accounting',    href: '/admin/accounting' },
-  { icon: Megaphone,       label: 'Campaigns',     href: '/admin/campaigns' },
-  { icon: MessageSquare,   label: 'Support',       href: '/admin/support' },
-  { icon: Globe,           label: 'Website CMS',   href: '/admin/cms' },
-  { icon: SlidersHorizontal, label: 'Vendor Access', href: '/admin/vendor-access' },
-  { icon: Settings,        label: 'Integrations',  href: '/admin/api-settings' },
-];
+// Role visibility groups (locked-tab pattern, same as vendor Stage 2).
+const SUPER: AdminRole[] = ['SUPER_ADMIN'];
+const SUPER_MKT: AdminRole[] = ['SUPER_ADMIN', 'MARKETING'];
+const SUPER_OPS: AdminRole[] = ['SUPER_ADMIN', 'OPERATIONS'];
 
-// Quick links for the mobile bottom nav (the rest live behind "More").
-const mobileNavItems = [
-  { icon: LayoutDashboard, label: 'Overview',      href: '/admin' },
-  { icon: CalendarCheck,   label: 'Bookings',      href: '/admin/leads' },
-  { icon: FileText,        label: 'Invoices',      href: '/admin/invoices' },
+interface AdminNavItem {
+  icon: typeof LayoutDashboard;
+  label: string;
+  href: string;
+  roles: AdminRole[];
+}
+
+const navItems: AdminNavItem[] = [
+  { icon: LayoutDashboard,   label: 'Overview',      href: '/admin',              roles: SUPER },
+  { icon: Phone,             label: 'TeleCRM',       href: '/admin/telecrm',      roles: SUPER_MKT },
+  { icon: Sparkles,          label: 'AI Studio',     href: '/admin/ai-studio',    roles: SUPER_MKT },
+  { icon: FileSignature,     label: 'Send Quote',    href: '/admin/send-quote',   roles: SUPER_MKT },
+  { icon: CalendarCheck,     label: 'Demo Bookings', href: '/admin/leads',        roles: SUPER },
+  { icon: Users,             label: 'Vendors',       href: '/admin/customers',    roles: SUPER },
+  { icon: FileText,          label: 'Invoices',      href: '/admin/invoices',     roles: SUPER_OPS },
+  { icon: RefreshCw,         label: 'Renewals',      href: '/admin/renewals',     roles: SUPER_OPS },
+  { icon: BarChart3,         label: 'Accounting',    href: '/admin/accounting',   roles: SUPER },
+  { icon: Megaphone,         label: 'Campaigns',     href: '/admin/campaigns',    roles: SUPER },
+  { icon: MessageSquare,     label: 'Support',       href: '/admin/support',      roles: SUPER_OPS },
+  { icon: Globe,             label: 'Website CMS',   href: '/admin/cms',          roles: SUPER_OPS },
+  { icon: SlidersHorizontal, label: 'Vendor Access', href: '/admin/vendor-access', roles: SUPER },
+  { icon: Settings,          label: 'Integrations',  href: '/admin/api-settings', roles: SUPER },
+  { icon: ShieldCheck,       label: 'Team',          href: '/admin/team',         roles: SUPER },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -40,11 +52,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [accessDenied, setAccessDenied] = useState<string | null>(null);
+
+  // Resolve the internal staff role. Legacy admin sessions (no adminRole yet)
+  // and the bootstrap admin@get4domain.com are treated as SUPER_ADMIN.
+  const adminRole: AdminRole = user?.adminRole ?? (user?.role === 'vendor' ? 'OPERATIONS' : 'SUPER_ADMIN');
+  const canAccess = (item: AdminNavItem) => item.roles.includes(adminRole);
+  const allowedItems = navItems.filter(canAccess);
+  const firstAllowedHref = allowedItems[0]?.href ?? '/admin';
+
+  const isItemActive = (href: string) =>
+    pathname === href || (href !== '/admin' && pathname.startsWith(href));
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
     if (!loading && user && user.role === 'vendor') router.push('/dashboard');
   }, [user, loading, router]);
+
+  // Redirect a staff member who lands directly on a section outside their role.
+  useEffect(() => {
+    if (loading || !user || user.role === 'vendor') return;
+    const current = navItems.find((i) => isItemActive(i.href));
+    if (current && !current.roles.includes(adminRole)) {
+      router.replace(firstAllowedHref);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, loading, user, adminRole]);
 
   useEffect(() => { setSidebarOpen(false); }, [pathname]);
 
@@ -126,7 +159,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-white">{user.name}</div>
-              <div className="text-xs text-slate-400">Super Admin</div>
+              <div className="text-xs text-slate-400">{adminRole.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</div>
             </div>
           </div>
         </div>
@@ -134,7 +167,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+            const isActive = isItemActive(item.href);
+            const locked = !canAccess(item);
+            if (locked) {
+              return (
+                <button key={`${item.href}-${item.label}`} onClick={() => { setAccessDenied(item.label); setSidebarOpen(false); }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-800/60"
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0 text-slate-600" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  <Lock className="h-3.5 w-3.5 text-slate-600" />
+                </button>
+              );
+            }
             return (
               <Link key={`${item.href}-${item.label}`} href={item.href}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive ? 'bg-primary-600/20 text-primary-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
@@ -187,9 +232,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           "More" button that opens the full off-canvas drawer (Sign Out lives there,
           pinned below the scroll area so it is always reachable). */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-slate-800 bg-slate-900 lg:hidden">
-        {mobileNavItems.map((item) => {
+        {allowedItems.slice(0, 3).map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+          const active = isItemActive(item.href);
           return (
             <Link
               key={item.href}
@@ -209,6 +254,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           More
         </button>
       </nav>
+
+      <AdminAccessModal isOpen={accessDenied !== null} onClose={() => setAccessDenied(null)} feature={accessDenied ?? ''} />
     </div>
   );
 }
