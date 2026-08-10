@@ -4,8 +4,8 @@ import { Check, ArrowRight } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'DomainApp — Business Workspace for Indian SMBs | Website + CRM + Invoicing',
-  description: 'DomainApp is your complete business workspace — website, operations, CRM, GST invoicing, HR and more, adapted to your industry. From ₹6,999/year.',
+  title: 'DomainApp — Industry Website + Business Workspace + AI Studio',
+  description: 'DomainApp is everything in one plan at ₹6,999/year — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹999 free credit.',
   alternates: { canonical: 'https://get4domain.com/domain-app' },
 };
 
@@ -80,17 +80,12 @@ export default function DomainAppPage() {
       {/* Pricing + addons */}
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900">Startup</h3>
-              <p className="mt-2 text-3xl font-bold text-slate-900">₹6,999<span className="text-sm font-normal text-slate-400">/yr</span></p>
-              <p className="mt-1 text-sm text-slate-500">Professional website + basics</p>
-            </div>
-            <div className="rounded-2xl border-2 border-blue-500 bg-white p-6 text-center shadow-md">
-              <h3 className="text-lg font-bold text-slate-900">Enterprise</h3>
-              <p className="mt-2 text-3xl font-bold text-slate-900">₹24,999<span className="text-sm font-normal text-slate-400">/yr</span></p>
-              <p className="mt-1 text-sm text-slate-500">Full Business OS, all modules</p>
-            </div>
+          <div className="mx-auto max-w-md rounded-2xl border-2 border-blue-500 bg-white p-8 text-center shadow-md">
+            <span className="inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">All-in-One</span>
+            <h3 className="mt-3 text-xl font-bold text-slate-900">DomainApp</h3>
+            <p className="mt-2 text-4xl font-bold text-slate-900">₹6,999<span className="text-base font-normal text-slate-400">/year</span></p>
+            <p className="mt-1 text-sm text-slate-500">₹583/month · Everything included · Cancel anytime</p>
+            <p className="mt-3 text-sm text-slate-600">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio (₹999 free credit)</p>
           </div>
 
           <div className="mt-12">

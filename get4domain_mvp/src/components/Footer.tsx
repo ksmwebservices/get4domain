@@ -6,9 +6,9 @@ const footerSections = [
     title: 'Platform',
     links: [
       { label: 'DomainApp', href: '/domain-app' },
-      { label: 'DomainCampaign', href: '/domain-campaign' },
       { label: 'Industries', href: '/industries' },
       { label: 'Pricing', href: '/pricing' },
+      { label: 'AI Studio', href: '/pricing' },
     ],
   },
   {

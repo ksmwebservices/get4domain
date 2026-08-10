@@ -3,24 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Rocket, ChevronDown, Globe, Megaphone } from 'lucide-react';
+import { Rocket, ChevronDown, Globe, LayoutGrid, Megaphone, Sparkles } from 'lucide-react';
 import Button from './ui/Button';
 
 const productDropdown = [
-  {
-    label: 'DomainApp',
-    href: '/domain-app',
-    icon: Globe,
-    desc: 'Industry-specific workspace with CRM, invoicing, HR and more',
-    badge: null as string | null,
-  },
-  {
-    label: 'DomainCampaign',
-    href: '/domain-campaign',
-    icon: Megaphone,
-    desc: 'Managed campaigns, AI content, social media, leads',
-    badge: 'Managed',
-  },
+  { label: 'Industry Website', href: '/domain-app', icon: Globe, desc: 'Professional website for your business', badge: null as string | null },
+  { label: 'Business Workspace', href: '/domain-app', icon: LayoutGrid, desc: 'CRM, invoicing, contacts, operations', badge: null as string | null },
+  { label: 'Campaigns', href: '/domain-campaign', icon: Megaphone, desc: 'Landing pages, social media, lead generation', badge: null as string | null },
+  { label: 'AI Studio', href: '/pricing', icon: Sparkles, desc: 'Posters, reels, content, documents', badge: null as string | null },
 ];
 
 const centerLinks = [
@@ -83,7 +73,7 @@ export default function Header() {
                   {productDropdown.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <Link key={item.href} href={item.href} className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-slate-50">
+                      <Link key={item.label} href={item.href} className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-slate-50">
                         <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 transition-colors group-hover:bg-blue-100">
                           <Icon className="h-4 w-4 text-blue-600" />
                         </div>

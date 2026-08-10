@@ -4,11 +4,22 @@ import { ArrowRight, Check } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Identity Partner | Business Platform for Indian SMBs',
+  title: 'Get4Domain — Your Online Identity Partner | ₹6,999/year',
   description:
-    "Get4Domain is India's complete online identity platform. Professional websites, business operations, CRM, AI marketing campaigns, invoicing and more — all in one platform. Starting ₹999.",
+    "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹6,999/year: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
   alternates: { canonical: 'https://get4domain.com' },
 };
+
+// Everything included in the single DomainApp plan.
+const PLAN_FEATURES = [
+  'Professional industry website (we build)',
+  'Mini BOS workspace (contacts, catalog, records, invoicing)',
+  'CRM + TeleCRM',
+  'Campaign pages + social media',
+  'AI Studio with ₹999 free credit',
+  'Team access',
+  'Free subdomain + hosting + SSL',
+];
 
 const MODULES = [
   { icon: '📋', title: 'DomainApp', desc: 'Contacts, catalog, records, invoicing — adapted to your industry' },
@@ -46,28 +57,10 @@ const TESTIMONIALS = [
   { quote: "The best part is the AI content — I don't need to hire a social media manager anymore.", name: 'Salon owner', biz: 'Bangalore' },
 ];
 
-const APP_FEATURES = [
-  'Industry-specific workspace (20+ industries)',
-  'Professional website with CMS',
-  'GST invoicing & payment collection',
-  'Contacts, catalog & records management',
-  'HR, payroll & attendance',
-  'Design studio (letterheads, ID cards, quotes)',
-];
-
-const CAMPAIGN_FEATURES = [
-  'AI-powered content creation',
-  'Social media management (we post for you)',
-  'WhatsApp, SMS & email campaigns',
-  'Landing pages with lead capture',
-  'TeleCRM for follow-ups',
-  'Monthly performance reports',
-];
-
 const FAQS = [
   { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, HR), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
   { q: 'Do I need technical knowledge to use it?', a: 'No. We set up your website, dashboard and integrations for you within 5-7 days. You simply log in to a workspace tailored to your industry and start working — no coding or design skills needed.' },
-  { q: 'How much does it cost?', a: 'DomainApp starts at ₹6,999/year for a professional website and goes up to ₹24,999/year for the full business workspace. DomainCampaign is wallet-based with no subscription — start with a ₹999 top-up and pay only for what you use.' },
+  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹6,999/year (just ₹583/month) and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹999 of free AI credit. Top up your wallet only when you need more AI content, campaigns or messaging.' },
 ];
 
 export default function HomePage() {
@@ -86,7 +79,7 @@ export default function HomePage() {
             <p className="mt-6 max-w-xl text-lg text-slate-600">
               One platform for your business website, operations, CRM, marketing campaigns, and customer management. Built for Indian SMBs.
             </p>
-            <p className="mt-5 text-sm font-medium text-slate-500">500+ Businesses · 20+ Industries · Starting ₹999/month</p>
+            <p className="mt-5 text-sm font-medium text-slate-500">50+ Businesses · 20+ Industries · ₹6,999/year — Everything Included</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">
                 Get Started Free <ArrowRight className="h-4 w-4" />
@@ -163,53 +156,29 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 4 — TWO PRODUCTS */}
+      {/* SECTION 4 — ONE PLAN */}
       <section className="bg-slate-50 py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Two Products. Choose What You Need.</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">One Plan. Everything You Need.</h2>
           </div>
-          <div className="mt-12 grid gap-6 lg:grid-cols-2">
-            {/* DomainApp */}
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="text-3xl">📋</div>
-              <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp</h3>
-              <p className="mt-1 font-medium text-blue-600">Your Business Workspace</p>
-              <p className="mt-3 text-sm text-slate-600">Website + operations + CRM + invoicing + HR — everything to run your business digitally.</p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {APP_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{f}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 text-sm font-semibold text-slate-900">From ₹2,999/month · Setup from ₹10,000</p>
-              <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-                <Link href="/domain-app" className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700">Explore DomainApp <ArrowRight className="h-4 w-4" /></Link>
-                <Link href="/book-demo" className="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Book Demo</Link>
-              </div>
+          <div className="mt-12 rounded-2xl border-2 border-blue-500 bg-white p-8 shadow-md">
+            <div className="text-3xl">📋</div>
+            <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp — ₹6,999<span className="text-base font-normal text-slate-400">/year</span></h3>
+            <p className="mt-1 font-medium text-blue-600">Industry website + Business workspace + Campaigns + AI Studio</p>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+              {PLAN_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{f}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm text-slate-600">Plus wallet top-up for campaigns, AI content &amp; messaging.</p>
+            <div className="mt-6">
+              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">Get Started — ₹6,999/year <ArrowRight className="h-4 w-4" /></Link>
             </div>
-            {/* DomainCampaign */}
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="text-3xl">📣</div>
-              <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainCampaign</h3>
-              <p className="mt-1 font-medium text-indigo-600">Growth &amp; Marketing Engine</p>
-              <p className="mt-3 text-sm text-slate-600">We create content, manage your social media, run campaigns, and generate leads. You focus on your business.</p>
-              <ul className="mt-6 flex-1 space-y-3">
-                {CAMPAIGN_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{f}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 text-sm font-semibold text-slate-900">Wallet-based · Start with ₹999 · No subscription</p>
-              <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-                <Link href="/domain-campaign" className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700">Explore DomainCampaign <ArrowRight className="h-4 w-4" /></Link>
-                <Link href="/book-demo" className="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Get Started</Link>
-              </div>
-            </div>
+            <p className="mt-4 text-center text-sm text-slate-400">That&apos;s just ₹583/month. Cancel anytime.</p>
           </div>
-          <p className="mt-8 text-center text-sm text-slate-600">Need both? Get the <span className="font-semibold text-slate-900">Combo</span> and save 20% on DomainApp.</p>
         </div>
       </section>
 
