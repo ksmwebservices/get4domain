@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Sparkles, MessageSquare, Video, FileText, Image as ImageIcon,
-  Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library,
+  Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library, Wallet,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -50,9 +51,16 @@ export default function AiStudioPage() {
   const [details, setDetails] = useState('');
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState('');
+  const [genError, setGenError] = useState('');
   const [library, setLibrary] = useState<SavedItem[]>([]);
+  const [balance, setBalance] = useState<number | null>(null);
 
   const storageKey = `g4d_ai_library_${user?.id ?? 'anon'}`;
+
+  const refreshBalance = useCallback(() => {
+    api.getWalletBalance().then((res) => setBalance(res.data?.balance ?? 0)).catch(() => setBalance(null));
+  }, []);
+  useEffect(() => { refreshBalance(); }, [refreshBalance]);
 
   const loadLibrary = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -73,6 +81,7 @@ export default function AiStudioPage() {
     if (!active) return;
     setGenerating(true);
     setResult('');
+    setGenError('');
     try {
       const res = await api.generateAiContent({
         channel: active.key,
@@ -80,9 +89,18 @@ export default function AiStudioPage() {
         offerDetails: `${purpose}. Details: ${details}`,
         tone,
       });
-      setResult(res.data?.content ?? res.data?.text ?? JSON.stringify(res.data));
+      setResult(res.data?.caption ?? res.data?.content ?? res.data?.text ?? JSON.stringify(res.data));
+      refreshBalance();
     } catch (e) {
-      setResult(`Error: ${e instanceof Error ? e.message : 'generation failed'}`);
+      const msg = e instanceof Error ? e.message : 'generation failed';
+      // Graceful, never a dead-end: distinguish config vs. wallet vs. transient.
+      if (/not configured|api key|gateway|unauthor/i.test(msg)) {
+        setGenError('AI Studio needs to be configured by your administrator. Please contact support.');
+      } else if (/wallet|insufficient|balance/i.test(msg)) {
+        setGenError('Your wallet balance is too low for this generation. Top up to continue.');
+      } else {
+        setGenError(`Could not generate right now: ${msg}. Please try again.`);
+      }
     } finally {
       setGenerating(false);
     }
@@ -117,6 +135,14 @@ export default function AiStudioPage() {
           </h1>
           <p className="text-sm text-slate-500">Generate on-brand content in seconds</p>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+            <Wallet className="h-4 w-4 text-primary-600" />{balance !== null ? `₹${(balance / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}
+          </span>
+          <Link href="/dashboard/wallet" className="rounded-xl bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">+ Top Up</Link>
+        </div>
+      </div>
+      <div className="mb-5 flex justify-end">
         <div className="flex rounded-xl border border-slate-200 bg-white p-1">
           <button onClick={() => setTab('create')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'create' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>Create</button>
           <button onClick={() => { setTab('library'); loadLibrary(); }} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'library' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>Library</button>
@@ -169,6 +195,17 @@ export default function AiStudioPage() {
               <span className="text-sm text-primary-700">Estimated cost</span>
               <span className="text-sm font-bold text-primary-700">~₹{active.cost}</span>
             </div>
+
+            {genError && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p>{genError}</p>
+                <div className="mt-2 flex gap-2">
+                  {/wallet|balance|low/i.test(genError)
+                    ? <Link href="/dashboard/wallet" className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">Top Up Wallet</Link>
+                    : <Link href="/dashboard/support" className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white">Contact Support</Link>}
+                </div>
+              </div>
+            )}
 
             {result && (
               <div>
