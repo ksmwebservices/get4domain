@@ -26,6 +26,13 @@ const navItems = [
   { icon: Settings,        label: 'Integrations',  href: '/admin/api-settings' },
 ];
 
+// Quick links for the mobile bottom nav (the rest live behind "More").
+const mobileNavItems = [
+  { icon: LayoutDashboard, label: 'Overview',      href: '/admin' },
+  { icon: CalendarCheck,   label: 'Bookings',      href: '/admin/leads' },
+  { icon: FileText,        label: 'Invoices',      href: '/admin/invoices' },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
@@ -173,8 +180,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-5 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
+
+      {/* Mobile bottom nav — mirrors the vendor dashboard pattern: quick links + a
+          "More" button that opens the full off-canvas drawer (Sign Out lives there,
+          pinned below the scroll area so it is always reachable). */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-slate-800 bg-slate-900 lg:hidden">
+        {mobileNavItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${active ? 'text-primary-400' : 'text-slate-400'}`}
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-400"
+        >
+          <Menu className="h-5 w-5" />
+          More
+        </button>
+      </nav>
     </div>
   );
 }
