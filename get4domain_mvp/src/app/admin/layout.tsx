@@ -14,6 +14,7 @@ import type { AdminRole } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import AdminAccessModal from '@/components/AdminAccessModal';
+import BottomSheet from '@/components/ui/BottomSheet';
 
 // Role visibility groups (locked-tab pattern, same as vendor Stage 2).
 const SUPER: AdminRole[] = ['SUPER_ADMIN'];
@@ -54,6 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mounted, setMounted] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
   const [accessDenied, setAccessDenied] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<null | 'work' | 'more'>(null);
 
   // Resolve the internal staff role. Legacy admin sessions (no adminRole yet)
   // and the bootstrap admin@get4domain.com are treated as SUPER_ADMIN.
@@ -61,6 +63,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const canAccess = (item: AdminNavItem) => item.roles.includes(adminRole);
   const allowedItems = navItems.filter(canAccess);
   const firstAllowedHref = allowedItems[0]?.href ?? '/admin';
+  const byHref = (href: string) => navItems.find((i) => i.href === href);
+  const workItems = ['/admin/customers', '/admin/invoices', '/admin/support', '/admin/renewals'].map(byHref).filter(Boolean) as AdminNavItem[];
+
+  // A fixed bottom-nav tab: navigates if allowed, else opens the access modal.
+  const renderTabLink = (href: string, label: string, IconC: typeof LayoutDashboard) => {
+    const item = byHref(href);
+    const allowed = item ? canAccess(item) : true;
+    const active = isItemActive(href);
+    if (!allowed) {
+      return (
+        <button onClick={() => setAccessDenied(item?.label ?? label)} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-600">
+          <IconC className="h-5 w-5" />{label}
+        </button>
+      );
+    }
+    return (
+      <Link href={href} className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${active ? 'text-primary-400' : 'text-slate-400'}`}>
+        <IconC className="h-5 w-5" />{label}
+      </Link>
+    );
+  };
+
+  // Sheet renders on a white BottomSheet panel → use light-on-white styling.
+  const renderSheetItem = (item: AdminNavItem) => {
+    const Ic = item.icon;
+    if (!canAccess(item)) {
+      return (
+        <button key={item.href} onClick={() => { setSheet(null); setAccessDenied(item.label); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-50">
+          <Ic className="h-4 w-4 flex-shrink-0 text-slate-300" /><span className="flex-1 text-left">{item.label}</span><Lock className="h-3.5 w-3.5" />
+        </button>
+      );
+    }
+    return (
+      <Link key={item.href} href={item.href} onClick={() => setSheet(null)} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${isItemActive(item.href) ? 'bg-primary-50 text-primary-700' : 'text-slate-700 hover:bg-slate-50'}`}>
+        <Ic className={`h-4 w-4 flex-shrink-0 ${isItemActive(item.href) ? 'text-primary-600' : 'text-slate-400'}`} /><span className="flex-1">{item.label}</span>
+      </Link>
+    );
+  };
 
   const isItemActive = (href: string) =>
     pathname === href || (href !== '/admin' && pathname.startsWith(href));
@@ -240,32 +280,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <main className="flex-1 overflow-y-auto bg-slate-950 p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
 
-      {/* Mobile bottom nav — mirrors the vendor dashboard pattern: quick links + a
-          "More" button that opens the full off-canvas drawer (Sign Out lives there,
-          pinned below the scroll area so it is always reachable). */}
+      {/* Mobile bottom nav — fixed 5 tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-slate-800 bg-slate-900 lg:hidden">
-        {allowedItems.slice(0, 3).map((item) => {
-          const Icon = item.icon;
-          const active = isItemActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${active ? 'text-primary-400' : 'text-slate-400'}`}
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-400"
-        >
-          <Menu className="h-5 w-5" />
-          More
+        {renderTabLink('/admin', 'Overview', LayoutDashboard)}
+        {renderTabLink('/admin/telecrm', 'TeleCRM', Phone)}
+        {renderTabLink('/admin/ai-studio', 'AI', Sparkles)}
+        <button onClick={() => setSheet('work')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-400">
+          <FileText className="h-5 w-5" />Work
+        </button>
+        <button onClick={() => setSheet('more')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-400">
+          <Menu className="h-5 w-5" />More
         </button>
       </nav>
+
+      <BottomSheet isOpen={sheet === 'work'} onClose={() => setSheet(null)} title="Work">
+        <div className="space-y-0.5">{workItems.map(renderSheetItem)}</div>
+      </BottomSheet>
+      <BottomSheet isOpen={sheet === 'more'} onClose={() => setSheet(null)} title="Admin Menu">
+        <div className="space-y-0.5">
+          {navItems.map(renderSheetItem)}
+          <button onClick={() => { setSheet(null); logout(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-error-400">
+            <LogOut className="h-4 w-4" />Sign Out
+          </button>
+        </div>
+      </BottomSheet>
 
       <AdminAccessModal isOpen={accessDenied !== null} onClose={() => setAccessDenied(null)} feature={accessDenied ?? ''} />
     </div>

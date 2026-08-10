@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -40,9 +40,11 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         onClick={onClose}
         aria-hidden="true"
       />
+      {/* Mobile: bottom sheet (flush, rounded top). sm+: centered modal. */}
       <div
-        className={`relative w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl animate-scale-in`}
+        className={`relative w-full ${maxWidth} max-h-[88vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-scale-in sm:rounded-2xl`}
       >
+        <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" />
         {title && (
           <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur px-6 py-4">
             <h3 className="text-xl font-bold text-slate-900">{title}</h3>

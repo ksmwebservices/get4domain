@@ -187,7 +187,7 @@ function CrmPageInner() {
 
       {/* Add Lead modal */}
       {addOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setAddOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4" onClick={() => setAddOpen(false)}>
           <form onClick={(e) => e.stopPropagation()} onSubmit={handleAddLead} className="w-full max-w-sm rounded-2xl bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">Add Lead</h3>
@@ -206,7 +206,7 @@ function CrmPageInner() {
 
       {/* Note modal */}
       {noteFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => setNoteFor(null)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4" onClick={() => setNoteFor(null)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl bg-white p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900">Note — {noteFor.name}</h3>

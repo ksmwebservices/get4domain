@@ -3,41 +3,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  Users, Megaphone, Wallet, Plus, UserPlus, HelpCircle, ArrowRight,
-  Bell, Clock, Phone, Loader2, CalendarClock,
+  UserPlus, Phone, Sparkles, FileText, Wallet, Users, IndianRupee, CalendarClock,
+  Loader2, ArrowRight, Clock,
 } from 'lucide-react';
-import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 
-interface CrmLead {
-  id: string;
-  name: string;
-  phone: string;
-  source: string | null;
-  status: string;
-  createdAt: string;
-  followUpDate: string | null;
-}
+interface CrmLead { id: string; name: string; phone: string; source: string | null; status: string; createdAt: string; followUpDate: string | null }
+interface GenericInvoice { id: string; invoiceNumber: string; total: number; status: string; paidAt: string | null; createdAt: string; contact?: { name?: string } }
+interface ActivityItem { id: string; label: string; sub: string; at: string; href: string }
 
-interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: string;
-}
-
-interface Campaign {
-  id: string;
-  status: string;
-}
-
-const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+const rupees = (n: number): string => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+const walletRupees = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
 const timeAgo = (iso: string): string => {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60000);
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -48,39 +28,28 @@ const timeAgo = (iso: string): string => {
 export default function DashboardHome() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<CrmLead[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [followups, setFollowups] = useState<CrmLead[]>([]);
+  const [invoices, setInvoices] = useState<GenericInvoice[]>([]);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [activeCampaigns, setActiveCampaigns] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-
     Promise.all([
-      api.getCrmLeads(),
-      api.getNotifications(),
-      api.getTelecrmFollowups(),
-      api.getWalletBalance(),
-      api.getCampaigns(),
+      api.getCrmLeads().catch(() => ({ data: [] })),
+      api.getTelecrmFollowups().catch(() => ({ data: [] })),
+      api.getWalletBalance().catch(() => ({ data: { balance: 0 } })),
+      api.daGetInvoices('?limit=50').catch(() => ({ data: { items: [] } })),
     ])
-      .then(([leadsRes, notifRes, followupsRes, walletRes, campaignsRes]) => {
+      .then(([leadsRes, followupsRes, walletRes, invRes]) => {
         if (cancelled) return;
         setLeads(leadsRes.data ?? []);
-        setNotifications(notifRes.data ?? []);
         setFollowups(followupsRes.data ?? []);
         setWalletBalance(walletRes.data?.balance ?? 0);
-        const campaigns = (campaignsRes.data ?? []) as Campaign[];
-        setActiveCampaigns(campaigns.filter((c) => c.status === 'approved' || c.status === 'running').length);
+        setInvoices(invRes.data?.items ?? invRes.data ?? []);
       })
-      .catch(() => {
-        // Non-fatal — dashboard still renders with whatever loaded
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [user]);
 
@@ -88,142 +57,134 @@ export default function DashboardHome() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const leadsToday = leads.filter((l) => new Date(l.createdAt) >= today).length;
-  const recentLeads = leads.slice(0, 5);
-  const recentNotifications = notifications.slice(0, 3);
-  const upcomingFollowups = followups.slice(0, 3);
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  const startMonth = new Date(); startMonth.setDate(1); startMonth.setHours(0, 0, 0, 0);
+
+  const leadsToday = leads.filter((l) => new Date(l.createdAt) >= startToday).length;
+  const monthlyRevenue = invoices
+    .filter((i) => i.status === 'PAID' && i.paidAt && new Date(i.paidAt) >= startMonth)
+    .reduce((sum, i) => sum + (i.total ?? 0), 0);
+  const pendingFollowups = followups.length;
+
+  // Recent activity — merge newest leads and paid invoices.
+  const activity: ActivityItem[] = [
+    ...leads.slice(0, 5).map((l) => ({ id: `lead-${l.id}`, label: `New lead: ${l.name}`, sub: `${l.source ?? 'manual'} · ${l.phone}`, at: l.createdAt, href: '/dashboard/telecrm' })),
+    ...invoices.filter((i) => i.status === 'PAID' && i.paidAt).slice(0, 5).map((i) => ({ id: `inv-${i.id}`, label: `Invoice ${i.invoiceNumber} paid`, sub: rupees(i.total), at: i.paidAt as string, href: '/dashboard/invoices' })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 5);
+
+  const upcoming = followups.slice(0, 3);
+
+  const QUICK = [
+    { label: 'New Lead', icon: UserPlus, href: '/dashboard/crm', bg: 'bg-primary-600' },
+    { label: 'Call Next', icon: Phone, href: '/dashboard/telecrm', bg: 'bg-emerald-600' },
+    { label: 'Create Content', icon: Sparkles, href: '/dashboard/ai-studio', bg: 'bg-indigo-600' },
+    { label: 'New Invoice', icon: FileText, href: '/dashboard/invoices', bg: 'bg-amber-600' },
+  ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-slate-900">{greeting}, {firstName} 👋</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          {user?.businessName ?? 'Your business'}{user?.industry ? ` · ${user.industry.replace('-', ' & ')}` : ''}
-        </p>
+      {/* Top */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">{greeting}, {firstName} 👋</h2>
+          <p className="mt-1 text-sm text-slate-500">{user?.businessName ?? 'Your business'}{user?.industry ? ` · ${user.industry.replace('-', ' & ')}` : ''}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+            <Wallet className="h-4 w-4 text-primary-600" />{walletBalance !== null ? walletRupees(walletBalance) : '—'}
+          </span>
+          <Link href="/dashboard/wallet" className="rounded-xl bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">Top Up</Link>
+        </div>
+      </div>
+
+      {/* Quick actions — horizontal scroll on mobile */}
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+        {QUICK.map((q) => {
+          const Icon = q.icon;
+          return (
+            <Link key={q.label} href={q.href} className="flex min-w-[128px] flex-1 flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${q.bg} text-white`}><Icon className="h-4 w-4" /></span>
+              <span className="text-sm font-semibold text-slate-800">{q.label}</span>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
           { icon: Users, label: 'Leads Today', value: String(leadsToday), color: 'text-primary-600', bg: 'bg-primary-50' },
-          { icon: Megaphone, label: 'Active Campaigns', value: String(activeCampaigns), color: 'text-secondary-600', bg: 'bg-secondary-50' },
-          { icon: Wallet, label: 'Wallet Balance', value: walletBalance !== null ? formatCurrency(walletBalance) : '—', color: 'text-success-600', bg: 'bg-success-50' },
+          { icon: IndianRupee, label: 'Monthly Revenue', value: rupees(monthlyRevenue), color: 'text-success-600', bg: 'bg-success-50' },
+          { icon: CalendarClock, label: 'Pending Follow-ups', value: String(pendingFollowups), color: 'text-warning-600', bg: 'bg-warning-50' },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${stat.bg}`}>
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-              <div className="text-lg font-bold text-slate-900 truncate">{stat.value}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{stat.label}</div>
+              <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${stat.bg}`}><Icon className={`h-4 w-4 ${stat.color}`} /></div>
+              <div className="truncate text-lg font-bold text-slate-900">{stat.value}</div>
+              <div className="mt-0.5 text-xs text-slate-500">{stat.label}</div>
             </div>
           );
         })}
       </div>
 
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-3">
-        <Link href="/dashboard/campaigns"><Button size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />}>Create Campaign</Button></Link>
-        <Link href="/dashboard/crm"><Button size="sm" variant="outline" leftIcon={<UserPlus className="h-3.5 w-3.5" />}>Add Lead</Button></Link>
-        <Link href="/dashboard/support"><Button size="sm" variant="outline" leftIcon={<HelpCircle className="h-3.5 w-3.5" />}>Get Support</Button></Link>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent leads */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Recent Leads</h3>
-            <Link href="/dashboard/crm" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
-          </div>
-          {recentLeads.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">No leads yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900 truncate">{lead.name}</div>
-                    <div className="text-xs text-slate-500">{lead.phone} · {lead.source ?? 'manual'}</div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700 capitalize">{lead.status}</span>
-                    <a href={`tel:${lead.phone}`} className="rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-primary-600">
-                      <Phone className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
+      {/* Recent activity */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h3 className="mb-4 text-base font-bold text-slate-900">Recent Activity</h3>
+        {activity.length === 0 ? (
+          <p className="py-4 text-sm text-slate-400">No activity yet.</p>
+        ) : (
+          <div className="space-y-2.5">
+            {activity.map((a) => (
+              <Link key={a.id} href={a.href} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 hover:bg-slate-100">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">{a.label}</div>
+                  <div className="text-xs text-slate-500">{a.sub}</div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent notifications */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-900">Notifications</h3>
-            <Link href="/dashboard/notifications" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
+                <span className="flex-shrink-0 text-xs text-slate-400">{timeAgo(a.at)}</span>
+              </Link>
+            ))}
           </div>
-          {recentNotifications.length === 0 ? (
-            <p className="text-sm text-slate-400 py-4">No new notifications.</p>
-          ) : (
-            <div className="space-y-3">
-              {recentNotifications.map((n) => (
-                <div key={n.id} className={`flex items-start gap-3 rounded-xl p-3 ${n.read ? 'bg-slate-50' : 'bg-primary-50'}`}>
-                  <Bell className={`h-4 w-4 mt-0.5 flex-shrink-0 ${n.read ? 'text-slate-400' : 'text-primary-600'}`} />
-                  <div className="min-w-0">
-                    <div className="text-sm text-slate-700 truncate">{n.title}</div>
-                    <div className="text-xs text-slate-400 mt-0.5">{timeAgo(n.createdAt)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Upcoming follow-ups */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-bold text-slate-900">Upcoming Follow-ups</h3>
           <Link href="/dashboard/telecrm" className="text-xs font-semibold text-primary-600 hover:underline">View all</Link>
         </div>
-        {upcomingFollowups.length === 0 ? (
-          <p className="text-sm text-slate-400 py-4">No follow-ups scheduled.</p>
+        {upcoming.length === 0 ? (
+          <p className="py-4 text-sm text-slate-400">No follow-ups scheduled.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-3">
-            {upcomingFollowups.map((lead) => (
+            {upcoming.map((lead) => (
               <div key={lead.id} className="rounded-xl border border-slate-200 p-3">
-                <div className="flex items-center gap-1.5 text-xs text-warning-700 font-semibold">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-warning-700">
                   <CalendarClock className="h-3.5 w-3.5" />
                   {lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
                 </div>
-                <div className="mt-1.5 text-sm font-semibold text-slate-900 truncate">{lead.name}</div>
+                <div className="mt-1.5 truncate text-sm font-semibold text-slate-900">{lead.name}</div>
                 <div className="text-xs text-slate-500">{lead.phone}</div>
+                <a href={`tel:${lead.phone}`} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700">
+                  <Phone className="h-3.5 w-3.5" />Call Now
+                </a>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <div className="rounded-2xl border border-primary-100 bg-primary-50 p-5 flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 p-5">
         <div>
           <div className="text-sm font-bold text-slate-900">Need help or want to request changes?</div>
-          <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1"><Clock className="h-3 w-3" />We respond within 24 hours on WhatsApp and email.</div>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-500"><Clock className="h-3 w-3" />We respond within 24 hours on WhatsApp and email.</div>
         </div>
-        <Link href="/dashboard/support">
-          <Button size="sm" variant="outline" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Get Support</Button>
-        </Link>
+        <Link href="/dashboard/support" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Get Support <ArrowRight className="h-3.5 w-3.5" /></Link>
       </div>
     </div>
   );

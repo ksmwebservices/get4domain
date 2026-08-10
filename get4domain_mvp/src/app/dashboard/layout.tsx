@@ -11,6 +11,7 @@ import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notif
 import Icon from '@/components/ui/Icon';
 import LockedBadge from '@/components/ui/LockedBadge';
 import UpgradeModal from '@/components/UpgradeModal';
+import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
 
 interface NavItem {
@@ -31,6 +32,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | 'business' | 'campaign' | 'more'>(null);
   const [mounted, setMounted] = useState(false);
   const [upgrade, setUpgrade] = useState<{ feature: string; module: string; kind: 'wallet' | 'plan' } | null>(null);
 
@@ -120,25 +122,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setSidebarOpen(false);
   };
 
-  // Mobile bottom nav: Home + up to 3 top active modules + More.
-  const mobileItems = useMemo<NavItem[]>(() => {
-    const candidates: NavItem[] = [
-      { label: 'Home', href: '/dashboard', icon: 'Home' },
-      ...(cfg.industry?.dashboardTabs?.[0]
-        ? [{
-            label: cfg.industry.dashboardTabs[0].label,
-            href: `/dashboard/domain-app/${cfg.industry.dashboardTabs[0].key}`,
-            icon: cfg.industry.dashboardTabs[0].icon,
-            moduleKey: 'domainapp',
-          }]
-        : []),
-      { label: 'Growth', href: '/dashboard/campaigns', icon: 'Megaphone', moduleKey: 'growth_hub' },
-      { label: 'TeleCRM', href: '/dashboard/telecrm', icon: 'Phone', moduleKey: 'telecrm' },
-      { label: 'AI', href: '/dashboard/ai-studio', icon: 'Sparkles', walletGated: true },
-    ];
-    return candidates.filter((c) => !isLocked(c)).slice(0, 4);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg.industry, cfg.modules, cfg.addons, cfg.loading]);
+  // Sheet contents for the fixed mobile bottom nav.
+  const businessItems = sections[1]?.items ?? [];
+  const campaignItems = (sections.find((s) => s.title === 'Grow')?.items ?? []).filter((i) => i.label !== 'AI Studio');
+
+  // Renders a nav item respecting the locked/upgrade pattern; closes the sheet on tap.
+  const renderSheetItem = (item: NavItem) => {
+    const locked = isLocked(item);
+    if (locked) {
+      return (
+        <button key={item.href} onClick={() => { openUpgrade(item); setSheet(null); }}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-slate-50">
+          <Icon name={item.icon} className="h-4 w-4 flex-shrink-0 text-slate-300" />
+          <span className="flex-1 text-left">{item.label}</span>
+          <LockedBadge />
+        </button>
+      );
+    }
+    return (
+      <Link key={item.href} href={item.href} onClick={() => setSheet(null)}
+        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${isActive(item.href) ? 'bg-primary-50 text-primary-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+        <Icon name={item.icon} className={`h-4 w-4 flex-shrink-0 ${isActive(item.href) ? 'text-primary-600' : 'text-slate-400'}`} />
+        <span className="flex-1">{item.label}</span>
+      </Link>
+    );
+  };
 
   if (!mounted || loading || !user) {
     return (
@@ -243,7 +251,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="flex flex-1 flex-col min-w-0">
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-5 lg:px-8">
-          <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden">
+          <button onClick={() => setSheet('more')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden">
             <Menu className="h-5 w-5" />
           </button>
           <div className="hidden lg:block">
@@ -268,26 +276,47 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — fixed 5 tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center border-t border-slate-200 bg-white lg:hidden">
-        {mobileItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${isActive(item.href) ? 'text-primary-600' : 'text-slate-500'}`}
-          >
-            <Icon name={item.icon} className="h-5 w-5" />
-            {item.label}
-          </Link>
-        ))}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500"
-        >
-          <Menu className="h-5 w-5" />
-          More
+        <Link href="/dashboard" className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${pathname === '/dashboard' ? 'text-primary-600' : 'text-slate-500'}`}>
+          <Icon name="Home" className="h-5 w-5" />Home
+        </Link>
+        <button onClick={() => setSheet('business')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
+          <Icon name="ClipboardList" className="h-5 w-5" />Business
+        </button>
+        <button onClick={() => setSheet('campaign')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
+          <Icon name="Megaphone" className="h-5 w-5" />Campaign
+        </button>
+        <Link href="/dashboard/ai-studio" className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${isActive('/dashboard/ai-studio') ? 'text-primary-600' : 'text-slate-500'}`}>
+          <Icon name="Sparkles" className="h-5 w-5" />AI
+        </Link>
+        <button onClick={() => setSheet('more')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
+          <Menu className="h-5 w-5" />More
         </button>
       </nav>
+
+      {/* Bottom-sheet menus for the mobile nav */}
+      <BottomSheet isOpen={sheet === 'business'} onClose={() => setSheet(null)} title={cfg.industry?.label ?? 'Business'}>
+        <div className="space-y-0.5">{businessItems.length ? businessItems.map(renderSheetItem) : <p className="px-3 py-4 text-sm text-slate-400">No business tabs available.</p>}</div>
+      </BottomSheet>
+      <BottomSheet isOpen={sheet === 'campaign'} onClose={() => setSheet(null)} title="Campaign">
+        <div className="space-y-0.5">{campaignItems.map(renderSheetItem)}</div>
+      </BottomSheet>
+      <BottomSheet isOpen={sheet === 'more'} onClose={() => setSheet(null)} title="Menu">
+        <div className="space-y-4">
+          {sections.map((section, si) => (
+            section.items.length === 0 ? null : (
+              <div key={section.title ?? si}>
+                {section.title && <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{section.title}</div>}
+                <div className="space-y-0.5">{section.items.map(renderSheetItem)}</div>
+              </div>
+            )
+          ))}
+          <button onClick={() => { setSheet(null); logout(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-error-600">
+            <LogOut className="h-4 w-4" />Sign Out
+          </button>
+        </div>
+      </BottomSheet>
 
       <UpgradeModal
         isOpen={upgrade !== null}

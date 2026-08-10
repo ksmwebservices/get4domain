@@ -34,6 +34,54 @@ const CONTENT_TYPES: ContentType[] = [
 
 const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 
+// Document generators — simple HTML templates filled with the vendor's business
+// data, downloaded via browser print-to-PDF. No wallet cost, no AI backend.
+type DocKey = 'letterhead' | 'id_card' | 'visiting_card';
+const DOC_TYPES: { key: DocKey; label: string; icon: string; desc: string }[] = [
+  { key: 'letterhead', label: 'Letterhead', icon: '📄', desc: 'Company header — print to PDF' },
+  { key: 'id_card', label: 'ID Card', icon: '🪪', desc: 'Employee ID — print to PDF' },
+  { key: 'visiting_card', label: 'Visiting Card', icon: '💼', desc: 'Business card — print to PDF' },
+];
+
+interface DocFields { business: string; person: string; designation: string; phone: string; email: string; address: string }
+
+function docHtml(kind: DocKey, f: DocFields): string {
+  const brand = '#2563eb';
+  const base = `font-family: Arial, Helvetica, sans-serif; color:#0f172a;`;
+  if (kind === 'letterhead') {
+    return `<div style="${base} max-width:720px;margin:0 auto;padding:0;">
+      <div style="border-bottom:4px solid ${brand};padding:24px 32px;display:flex;justify-content:space-between;align-items:flex-end;">
+        <div><div style="font-size:26px;font-weight:800;color:${brand};">${f.business}</div>
+        <div style="font-size:12px;color:#475569;margin-top:4px;">${f.address}</div></div>
+        <div style="text-align:right;font-size:12px;color:#475569;">${f.phone}<br/>${f.email}</div>
+      </div>
+      <div style="min-height:520px;padding:40px 32px;color:#94a3b8;font-size:13px;">Date: _____________<br/><br/>Dear _____________,<br/><br/>[ Your letter content here ]</div>
+      <div style="border-top:1px solid #e2e8f0;padding:14px 32px;text-align:center;font-size:11px;color:#94a3b8;">${f.business} · ${f.phone} · ${f.email}</div>
+    </div>`;
+  }
+  if (kind === 'id_card') {
+    return `<div style="${base} width:320px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+      <div style="background:${brand};color:#fff;padding:16px;text-align:center;font-weight:800;">${f.business}</div>
+      <div style="padding:20px;text-align:center;">
+        <div style="width:96px;height:96px;border-radius:50%;background:#e2e8f0;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">PHOTO</div>
+        <div style="font-size:18px;font-weight:700;margin-top:12px;">${f.person}</div>
+        <div style="font-size:13px;color:${brand};">${f.designation}</div>
+        <div style="font-size:12px;color:#475569;margin-top:10px;">${f.phone}<br/>${f.email}</div>
+      </div>
+      <div style="background:#f8fafc;padding:8px;text-align:center;font-size:10px;color:#94a3b8;">${f.address}</div>
+    </div>`;
+  }
+  return `<div style="${base} display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+    <div style="width:340px;height:190px;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+      <div style="font-size:20px;font-weight:800;color:${brand};">${f.business}</div>
+      <div style="margin-top:26px;font-size:16px;font-weight:700;">${f.person}</div>
+      <div style="font-size:12px;color:${brand};">${f.designation}</div>
+      <div style="position:relative;margin-top:22px;font-size:11px;color:#475569;">${f.phone} · ${f.email}<br/>${f.address}</div>
+    </div>
+    <div style="width:340px;height:190px;border-radius:12px;background:${brand};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;">${f.business}</div>
+  </div>`;
+}
+
 interface SavedItem {
   id: string;
   type: string;
@@ -54,6 +102,29 @@ export default function AiStudioPage() {
   const [genError, setGenError] = useState('');
   const [library, setLibrary] = useState<SavedItem[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
+  const [activeDoc, setActiveDoc] = useState<DocKey | null>(null);
+  const [docFields, setDocFields] = useState<DocFields>({ business: '', person: '', designation: '', phone: '', email: '', address: '' });
+
+  const openDoc = (key: DocKey) => {
+    setActiveDoc(key);
+    setDocFields({
+      business: user?.businessName ?? 'Your Business',
+      person: user?.name ?? '',
+      designation: 'Proprietor',
+      phone: '+91 ',
+      email: user?.email ?? '',
+      address: 'Chennai, Tamil Nadu',
+    });
+  };
+
+  const printDoc = () => {
+    if (!activeDoc) return;
+    const html = docHtml(activeDoc, docFields);
+    const w = window.open('', '_blank', 'width=800,height=900');
+    if (!w) return;
+    w.document.write(`<!doctype html><html><head><title>${activeDoc}</title><style>@media print{body{margin:0}}body{margin:24px;background:#fff}</style></head><body>${html}<script>window.onload=function(){window.print();}</script></body></html>`);
+    w.document.close();
+  };
 
   const storageKey = `g4d_ai_library_${user?.id ?? 'anon'}`;
 
@@ -150,17 +221,33 @@ export default function AiStudioPage() {
       </div>
 
       {tab === 'create' ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {CONTENT_TYPES.map((ct) => {
-            const Ic = ct.icon;
-            return (
-              <Card key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
-                <h3 className="mt-3 font-semibold text-slate-900">{ct.label}</h3>
-                <p className="mt-0.5 text-xs text-slate-400">~₹{ct.cost} / generation</p>
-              </Card>
-            );
-          })}
+        <div className="space-y-8">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {CONTENT_TYPES.map((ct) => {
+              const Ic = ct.icon;
+              return (
+                <Card key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                  <h3 className="mt-3 font-semibold text-slate-900">{ct.label}</h3>
+                  <p className="mt-0.5 text-xs text-slate-400">~₹{ct.cost} / generation</p>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Documents</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {DOC_TYPES.map((d) => (
+                <Card key={d.key} hover className="cursor-pointer" onClick={() => openDoc(d.key)}>
+                  <div className="text-2xl">{d.icon}</div>
+                  <h3 className="mt-3 font-semibold text-slate-900">{d.label}</h3>
+                  <p className="mt-0.5 text-xs text-slate-400">{d.desc}</p>
+                </Card>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-400">Presentation generator — coming soon.</p>
+          </div>
         </div>
       ) : library.length === 0 ? (
         <EmptyState icon="Library" title="Your library is empty" subtitle="Saved generations show up here." />
@@ -224,6 +311,29 @@ export default function AiStudioPage() {
               ) : (
                 <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>Generate (~₹{active.cost})</Button>
               )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Document generator */}
+      <Modal isOpen={activeDoc !== null} onClose={() => setActiveDoc(null)} title={activeDoc ? DOC_TYPES.find((d) => d.key === activeDoc)?.label : ''} maxWidth="max-w-3xl">
+        {activeDoc && (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input label="Business name" value={docFields.business} onChange={(e) => setDocFields({ ...docFields, business: e.target.value })} />
+              <Input label="Person name" value={docFields.person} onChange={(e) => setDocFields({ ...docFields, person: e.target.value })} />
+              <Input label="Designation" value={docFields.designation} onChange={(e) => setDocFields({ ...docFields, designation: e.target.value })} />
+              <Input label="Phone" value={docFields.phone} onChange={(e) => setDocFields({ ...docFields, phone: e.target.value })} />
+              <Input label="Email" value={docFields.email} onChange={(e) => setDocFields({ ...docFields, email: e.target.value })} />
+              <Input label="Address" value={docFields.address} onChange={(e) => setDocFields({ ...docFields, address: e.target.value })} />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-2 text-xs font-medium text-slate-500">Preview</div>
+              <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docHtml(activeDoc, docFields) }} />
+            </div>
+            <div className="flex justify-end">
+              <Button leftIcon={<Download className="h-4 w-4" />} onClick={printDoc}>Download / Print as PDF</Button>
             </div>
           </div>
         )}

@@ -16,6 +16,15 @@ export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
 const IMAGE_CHANNELS = new Set(['facebook', 'instagram', 'poster']);
 const CALL_SUMMARY_COST_PAISE = 300;
 
+// Maps AI content channels to admin-managed pricing keys (g4d_platform_settings).
+const CONTENT_PRICING_KEY: Record<string, string> = {
+  facebook: 'social_post',
+  instagram: 'social_post',
+  reel: 'reel_script',
+  poster: 'festival_poster',
+  blog: 'blog_article',
+};
+
 const MARKETING_PROMPT = `You are the Get4Domain AI assistant on get4domain.com.
 Get4Domain is a SaaS platform for Indian SMBs.
 
@@ -148,7 +157,11 @@ export class AiService {
     vendorId: string,
     dto: GenerateContentDto,
   ): Promise<{ caption: string; hashtags: string[]; imagePrompt: string; imageUrl: string | null }> {
-    const cost = CONTENT_CHANNEL_COST_PAISE[dto.channel] ?? 500;
+    // DB-managed rate first (admin Pricing Manager), else hardcoded default.
+    const cost = await this.walletService.getRate(
+      CONTENT_PRICING_KEY[dto.channel] ?? '',
+      CONTENT_CHANNEL_COST_PAISE[dto.channel] ?? 500,
+    );
 
     const prompt = `Write a ${dto.channel} marketing post for an Indian small business in the ${dto.vendorIndustry} industry.
 Offer/details: ${dto.offerDetails}

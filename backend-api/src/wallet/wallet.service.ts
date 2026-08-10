@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { Wallet, WalletTransaction } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { decryptSecret } from '../platform-settings/crypto.util';
 import { TopupDto } from './dto/topup.dto';
 import { VerifyTopupDto } from './dto/verify-topup.dto';
 
@@ -150,5 +151,26 @@ export class WalletService {
   async hasSufficientBalance(vendorId: string, amount: number): Promise<boolean> {
     const wallet = await this.getOrCreateWallet(vendorId);
     return wallet.balance >= amount;
+  }
+
+  /**
+   * Resolve a wallet rate (in paise) from the admin-managed pricing settings
+   * (g4d_platform_settings, category "pricing"), falling back to a hardcoded
+   * default when the key is not configured. Stored values are rupees.
+   */
+  async getRate(key: string, fallbackPaise: number): Promise<number> {
+    if (!key) return fallbackPaise;
+    try {
+      const row = await this.prisma.platformSetting.findUnique({
+        where: { category_key: { category: 'pricing', key } },
+      });
+      if (row?.value) {
+        const rupees = parseFloat(decryptSecret(row.value));
+        if (!Number.isNaN(rupees) && rupees >= 0) return Math.round(rupees * 100);
+      }
+    } catch (err) {
+      this.logger.warn(`getRate(${key}) fell back to default: ${err instanceof Error ? err.message : 'error'}`);
+    }
+    return fallbackPaise;
   }
 }
