@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Check, ArrowRight, CalendarCheck, Globe } from 'lucide-react';
 import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
+import { INDUSTRIES } from '@/data/industries-list';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import Button from '@/components/ui/Button';
@@ -29,6 +30,8 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
   const industry = industries.find((i) => i.id === id);
   if (!content || !industry) notFound();
 
+  const workspace = INDUSTRIES.find((i) => i.id === id);
+
   return (
     <>
       <PageHero
@@ -43,6 +46,22 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
           <div className="mx-auto max-w-3xl">
             <p className="text-lg text-slate-600 leading-relaxed">{content.fullDesc}</p>
           </div>
+
+          {workspace && (
+            <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-primary-100 bg-primary-50 p-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Your {content.name} Workspace</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Configured for how you actually work — your records become{' '}
+                <span className="font-semibold text-slate-900">{workspace.records}</span> and your contacts become{' '}
+                <span className="font-semibold text-slate-900">{workspace.contacts}</span>.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[`Your ${workspace.records} management`, `Your ${workspace.contacts} database`, 'GST invoicing', 'Accounts & reports', 'Website & CMS', 'Industry addons'].map((f) => (
+                  <span key={f} className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-700">{f}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
