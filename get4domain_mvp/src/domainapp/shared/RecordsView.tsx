@@ -49,6 +49,20 @@ export default function RecordsView({ industry, icon }: { industry: IndustryConf
   const [detail, setDetail] = useState<RecordRow | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [summary, setSummary] = useState<{ total: number; byStatus: Record<string, number>; pending: number } | null>(null);
+  const refreshSummary = useCallback(async () => {
+    try {
+      const res = await api.daGetSummary();
+      const d = res.data;
+      setSummary({
+        total: d.counts?.records ?? 0,
+        byStatus: Object.fromEntries((d.recordsByStatus ?? []).map((r: { status: string; count: number }) => [r.status, r.count])),
+        pending: d.revenue?.pending ?? 0,
+      });
+    } catch { /* summary is best-effort */ }
+  }, []);
+  useEffect(() => { refreshSummary(); }, [refreshSummary]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -114,6 +128,7 @@ export default function RecordsView({ industry, icon }: { industry: IndustryConf
       else await api.daCreateRecord(payload);
       setModalOpen(false);
       await load();
+      refreshSummary();
     } finally {
       setSaving(false);
     }
@@ -125,6 +140,7 @@ export default function RecordsView({ industry, icon }: { industry: IndustryConf
       await api.daUpdateRecordStatus(r.id, status);
       setDetail({ ...r, status });
       await load();
+      refreshSummary();
     } finally {
       setBusy(false);
     }
@@ -175,6 +191,28 @@ export default function RecordsView({ industry, icon }: { industry: IndustryConf
         </div>
         <Button leftIcon={<Plus className="h-4 w-4" />} onClick={openCreate}>New {label}</Button>
       </div>
+
+      {/* Booking overview */}
+      {summary && summary.total > 0 && (
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-medium text-slate-500">Total {labelPlural}</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">{summary.total}</div>
+          </div>
+          {statuses.slice(0, 2).map((s) => (
+            <div key={s.key} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />{s.label}
+              </div>
+              <div className="mt-1 text-2xl font-bold text-slate-900">{summary.byStatus[s.key] ?? 0}</div>
+            </div>
+          ))}
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-medium text-slate-500">Pending Value</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">₹{(summary.pending ?? 0).toLocaleString('en-IN')}</div>
+          </div>
+        </div>
+      )}
 
       {/* Status filter pills */}
       <div className="mb-4 flex flex-wrap gap-2">

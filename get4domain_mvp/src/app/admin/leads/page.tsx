@@ -16,6 +16,8 @@ interface Lead {
   industry: string;
   interest: string;
   message: string | null;
+  preferredDate: string | null;
+  preferredSlot: string | null;
   status: Status;
   createdAt: string;
 }
@@ -114,6 +116,14 @@ export default function AdminLeadsPage() {
                   <div className="text-xs text-slate-500 mb-0.5">Phone</div>
                   <div className="text-sm font-semibold text-white">{lead.phone}</div>
                 </div>
+                {lead.preferredSlot && (
+                  <div className="rounded-xl border border-primary-500/30 bg-primary-500/10 px-3 py-2 sm:col-span-2">
+                    <div className="text-xs text-primary-400 mb-0.5 flex items-center gap-1"><Clock className="h-3 w-3" /> Preferred Demo Slot</div>
+                    <div className="text-sm font-semibold text-white">
+                      {lead.preferredDate ? formatDate(lead.preferredDate) : ''}{lead.preferredDate ? ' · ' : ''}{lead.preferredSlot}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {lead.message && (

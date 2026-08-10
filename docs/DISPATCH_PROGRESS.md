@@ -297,6 +297,45 @@ generator noted as future follow-up. Both apps build 0 errors; routes 200.
 
 ---
 
+## POST-DEPLOY ADDITION — BOOKING DEMO REVAMP + ADMIN AI STUDIO FREE (owner request)
+
+Owner asks: (1) admin AI Studio must NOT require wallet/credit; (2) the demo
+chat/booking wrongly showed the retired 2-product + old pricing; (3) enhance
+Book-a-Demo (slot picker, multi-step wizard, industry-aware, mobile) and improve
+booking UI in both admin + vendor dashboards.
+
+- [x] Admin AI Studio free — backend skips wallet deduct for internal staff
+  (AiService.generateContent/callSummary take `internal` flag; AiController
+  computes it via `isInternalStaff` = has adminRole || kind==='admin_member').
+  Frontend AI Studio (shared page) hides wallet chip/Top-Up/₹ costs and shows a
+  "Free for internal team" badge when user.role is admin/super_admin.
+- [x] Marketing chatbot pricing fixed — MARKETING_PROMPT rewritten to the single
+  DomainApp ₹6,999/year (everything included) model; removed DomainCampaign +
+  ₹3,999/₹13,999/₹24,999/₹29,999. ChatBot quick-reply "What is DomainCampaign?"
+  → "What's included?".
+- [x] Book-a-Demo redesign (marketing) — 4-step wizard (Goal+Industry → Details →
+  Date/Time slot → Confirm) with stepper, industry-aware copy, mobile-first slot
+  picker (next 8 working days + 6 time slots), review screen. Interest options
+  reframed as goals within the ONE product (no plan/pricing framing). Success
+  screen echoes the chosen slot.
+- [x] Admin Demo Bookings (/admin/leads) shows the preferred date/time slot.
+- [x] Vendor Records/booking view (domainapp shared RecordsView) gains a booking
+  overview strip (total, top-2 status counts, pending value) via /domainapp/summary.
+- [x] Both apps build 0 errors. Book-demo route compiles + renders (verified step 0
+  in preview, no console errors; full click-through not done — preview pane not
+  displayable this session).
+- [~] TeleCRM board detail panel does NOT yet show preferredSlot (shared component;
+  deferred — Demo Bookings page covers the admin need).
+
+VM MIGRATION for this addition (Lead gains 2 columns):
+  New nullable columns on g4d_leads: preferredDate (DateTime?), preferredSlot (String?)
+  cd backend-api && npx prisma migrate dev --name v2_lead_preferred_slot   # --create-only
+  # commit prisma/migrations/*, then on VM: npx prisma migrate deploy && npx prisma generate
+  Until migrated, Book-a-Demo still submits (preferred slot is optional); the
+  columns just won't persist on the old schema.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

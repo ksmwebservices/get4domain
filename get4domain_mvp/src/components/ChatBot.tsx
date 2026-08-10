@@ -4,7 +4,7 @@ import ChatWidget from './ChatWidget';
 
 const QUICK_REPLIES = [
   'What is DomainApp?',
-  'What is DomainCampaign?',
+  "What's included?",
   'View Pricing',
   'Book a Demo',
   'Talk to a human',

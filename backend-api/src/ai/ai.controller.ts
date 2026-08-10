@@ -22,9 +22,9 @@ export class AiController {
 
   @ApiBearerAuth()
   @Post('generate-content')
-  @ApiOperation({ summary: 'Generate campaign content for a channel (deducts wallet credits)' })
+  @ApiOperation({ summary: 'Generate campaign content for a channel (deducts wallet credits; free for internal admin staff)' })
   generateContent(@CurrentUser() user: AuthenticatedUser, @Body() dto: GenerateContentDto) {
-    return this.aiService.generateContent(user.sub, dto);
+    return this.aiService.generateContent(user.sub, dto, isInternalStaff(user));
   }
 
   @ApiBearerAuth()
@@ -36,8 +36,18 @@ export class AiController {
 
   @ApiBearerAuth()
   @Post('call-summary')
-  @ApiOperation({ summary: 'Summarize a TeleCRM call note (deducts wallet credits)' })
+  @ApiOperation({ summary: 'Summarize a TeleCRM call note (deducts wallet credits; free for internal admin staff)' })
   callSummary(@CurrentUser() user: AuthenticatedUser, @Body() dto: CallSummaryDto) {
-    return this.aiService.callSummary(user.sub, dto);
+    return this.aiService.callSummary(user.sub, dto, isInternalStaff(user));
   }
+}
+
+/**
+ * Internal Get4Domain staff (Vendor SUPER_ADMIN `admin@get4domain.com` and any
+ * standalone AdminTeamMember) carry an `adminRole` / `kind: 'admin_member'` claim.
+ * Their AI Studio usage on the Admin Platform is free — no wallet required — so
+ * the team can test and use content generation without topping up credits.
+ */
+function isInternalStaff(user: AuthenticatedUser): boolean {
+  return Boolean(user.adminRole) || user.kind === 'admin_member';
 }

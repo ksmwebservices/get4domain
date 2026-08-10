@@ -150,6 +150,9 @@ model Lead {
   interest     String
   message      String?
   status       String        @default("pending")
+  // Preferred demo slot chosen by the visitor in the Book-a-Demo wizard.
+  preferredDate DateTime?
+  preferredSlot String?
   // TeleCRM fields (admin marketing team works these enquiries).
   notes        String?
   assignedTo   String?

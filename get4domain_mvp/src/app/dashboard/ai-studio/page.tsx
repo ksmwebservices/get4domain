@@ -92,6 +92,9 @@ interface SavedItem {
 
 export default function AiStudioPage() {
   const { user } = useAuth();
+  // Internal Get4Domain staff (Admin Platform) use AI Studio for free — the
+  // backend skips wallet deduction for them — so hide all wallet/credit UI.
+  const isInternalStaff = user?.role === 'admin' || user?.role === 'super_admin';
   const [tab, setTab] = useState<'create' | 'library'>('create');
   const [active, setActive] = useState<ContentType | null>(null);
   const [purpose, setPurpose] = useState('');
@@ -129,8 +132,9 @@ export default function AiStudioPage() {
   const storageKey = `g4d_ai_library_${user?.id ?? 'anon'}`;
 
   const refreshBalance = useCallback(() => {
+    if (isInternalStaff) return; // no wallet for internal staff
     api.getWalletBalance().then((res) => setBalance(res.data?.balance ?? 0)).catch(() => setBalance(null));
-  }, []);
+  }, [isInternalStaff]);
   useEffect(() => { refreshBalance(); }, [refreshBalance]);
 
   const loadLibrary = useCallback(() => {
@@ -206,12 +210,18 @@ export default function AiStudioPage() {
           </h1>
           <p className="text-sm text-slate-500">Generate on-brand content in seconds</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
-            <Wallet className="h-4 w-4 text-primary-600" />{balance !== null ? `₹${(balance / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}
+        {isInternalStaff ? (
+          <span className="inline-flex items-center gap-1.5 rounded-xl border border-success-200 bg-success-50 px-3 py-1.5 text-sm font-semibold text-success-700">
+            <Sparkles className="h-4 w-4" /> Free for internal team
           </span>
-          <Link href="/dashboard/wallet" className="rounded-xl bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">+ Top Up</Link>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
+              <Wallet className="h-4 w-4 text-primary-600" />{balance !== null ? `₹${(balance / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}` : '—'}
+            </span>
+            <Link href="/dashboard/wallet" className="rounded-xl bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700">+ Top Up</Link>
+          </div>
+        )}
       </div>
       <div className="mb-5 flex justify-end">
         <div className="flex rounded-xl border border-slate-200 bg-white p-1">
@@ -229,7 +239,7 @@ export default function AiStudioPage() {
                 <Card key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
                   <h3 className="mt-3 font-semibold text-slate-900">{ct.label}</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">~₹{ct.cost} / generation</p>
+                  <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : `~₹${ct.cost} / generation`}</p>
                 </Card>
               );
             })}
@@ -280,7 +290,7 @@ export default function AiStudioPage() {
 
             <div className="flex items-center justify-between rounded-xl bg-primary-50 px-4 py-2.5">
               <span className="text-sm text-primary-700">Estimated cost</span>
-              <span className="text-sm font-bold text-primary-700">~₹{active.cost}</span>
+              <span className="text-sm font-bold text-primary-700">{isInternalStaff ? 'Free (internal)' : `~₹${active.cost}`}</span>
             </div>
 
             {genError && (
@@ -309,7 +319,7 @@ export default function AiStudioPage() {
                   <Button leftIcon={<Save className="h-4 w-4" />} onClick={saveToLibrary}>Save to Library</Button>
                 </>
               ) : (
-                <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>Generate (~₹{active.cost})</Button>
+                <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>{isInternalStaff ? 'Generate' : `Generate (~₹${active.cost})`}</Button>
               )}
             </div>
           </div>

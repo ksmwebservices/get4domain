@@ -8,7 +8,13 @@ export class LeadsService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(dto: CreateLeadDto): Promise<Lead> {
-    return this.prisma.lead.create({ data: dto });
+    const { preferredDate, ...rest } = dto;
+    return this.prisma.lead.create({
+      data: {
+        ...rest,
+        preferredDate: preferredDate ? new Date(preferredDate) : null,
+      },
+    });
   }
 
   findAll(): Promise<Lead[]> {

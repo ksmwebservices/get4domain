@@ -28,14 +28,18 @@ const CONTENT_PRICING_KEY: Record<string, string> = {
 const MARKETING_PROMPT = `You are the Get4Domain AI assistant on get4domain.com.
 Get4Domain is a SaaS platform for Indian SMBs.
 
-Products:
-1. DomainApp - Business Operating System
-   Startup: ₹3,999 (6mo) / ₹6,999 (yearly)
-   Enterprise: ₹13,999 (6mo) / ₹24,999 (yearly)
+Product (ONE simple plan — everything included):
+  DomainApp — the complete Business Operating System.
+  Price: ₹6,999 per year, all features included.
+  What's inside: an industry website, business management (records,
+  contacts, catalog, invoicing), TeleCRM, Campaigns (social, WhatsApp,
+  SMS, leads), and AI Studio for content — all in one product.
+  A wallet (pay-as-you-go top-up) covers optional usage-based extras
+  such as AI generation and messaging credits. Custom domain optional.
 
-2. DomainCampaign - Managed Digital Marketing
-   Starter: ₹3,999 (6mo) / ₹6,999 (yearly)
-   Business: ₹16,999 (6mo) / ₹29,999 (yearly)
+There is only ONE product now. Do NOT mention a separate
+"DomainCampaign" plan or any ₹3,999 / ₹13,999 / ₹24,999 / ₹29,999
+pricing — those are outdated. Campaigns and AI are included in DomainApp.
 
 We support 20+ industries: restaurant, travel, healthcare,
 education, real estate, retail, beauty, fitness, construction,
@@ -156,6 +160,7 @@ export class AiService {
   async generateContent(
     vendorId: string,
     dto: GenerateContentDto,
+    internal = false,
   ): Promise<{ caption: string; hashtags: string[]; imagePrompt: string; imageUrl: string | null }> {
     // DB-managed rate first (admin Pricing Manager), else hardcoded default.
     const cost = await this.walletService.getRate(
@@ -174,7 +179,10 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
     const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
     const parsed = JSON.parse(jsonText) as { caption: string; hashtags: string[]; imagePrompt: string };
 
-    await this.walletService.deduct(vendorId, cost, `AI ${dto.channel} content generated`, `ai_content_${dto.channel}`);
+    // Internal admin staff use AI Studio for free — no wallet deduction.
+    if (!internal) {
+      await this.walletService.deduct(vendorId, cost, `AI ${dto.channel} content generated`, `ai_content_${dto.channel}`);
+    }
 
     const imageUrl = IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
 
@@ -206,6 +214,7 @@ Respond with ONLY a JSON object (no markdown fences, no commentary) in this exac
   async callSummary(
     vendorId: string,
     dto: CallSummaryDto,
+    internal = false,
   ): Promise<{ summary: string; nextAction: string; sentiment: string }> {
     const prompt = `Summarize this sales call note for a CRM.
 
@@ -220,7 +229,10 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
     const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
     const parsed = JSON.parse(jsonText) as { summary: string; nextAction: string; sentiment: string };
 
-    await this.walletService.deduct(vendorId, CALL_SUMMARY_COST_PAISE, 'AI call summary generated', 'ai_call_summary');
+    // Internal admin staff use AI Studio for free — no wallet deduction.
+    if (!internal) {
+      await this.walletService.deduct(vendorId, CALL_SUMMARY_COST_PAISE, 'AI call summary generated', 'ai_call_summary');
+    }
 
     return parsed;
   }
