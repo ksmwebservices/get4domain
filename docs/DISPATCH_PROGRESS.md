@@ -242,6 +242,57 @@ in a later cleanup.
 
 ---
 
+## POST-DEPLOY ADDITION — UX OVERHAUL (DISPATCH_FIX_UX.md, Sections A-J)
+
+Business model change: ONE product — DomainApp ₹6,999/year, everything included
+(campaigns + AI Studio are inside it; DomainCampaign is no longer separate).
+
+- [x] A — Single-product pricing everywhere (b976183): home one-plan card + hero
+  stat "₹6,999/year"; pricing page (includes groups + wallet + custom domain +
+  6 FAQs); domain-app single plan; domain-campaign reframed "Campaign Features —
+  included in DomainApp"; header dropdown → feature categories; footer; root SEO
+  title + Offer JSON-LD single ₹6,999.
+- [x] B — TeleCRM overhaul (f1ceb4d): click-to-call (pre-call screen →
+  tel:_self), Page Visibility return-feedback, bottom-sheet feedback with large
+  one-tap outcomes + follow-up quick-select + AI summary, Save & Call Next
+  auto-advance, List/Kanban. Shared board → vendor + admin both benefit.
+- [x] C — AI Studio (5488d2d): wallet balance chip + Top Up, cost-on-button
+  (already present), graceful config/low-wallet/transient states (no dead ends).
+  PARTIAL: extra content-type cards (letterhead/ID card/visiting card/presentation)
+  and real image/PDF rendering deferred — existing 8 text/image types retained.
+- [~] D — Vendor dashboard: D3 comm-hub Coming Soon (f8b3a07) [x]; D4 BottomSheet
+  component (b156246) [x] created (migrating every existing form to it is a
+  follow-up). D1 overview redesign and D2 exact 5-tab bottom-sheet mobile nav
+  NOT done — existing overview + dynamic bottom nav retained. [deferred]
+- [~] E — Admin: E2 Pricing Manager (b156246) [x] /admin/pricing writing to new
+  g4d_platform_settings "pricing" category; E3 (b156246) [x] Video (Runway/HeyGen)
+  + Domain (ResellerClub) categories added to Integrations catalog. E1 admin
+  overview real-data redesign NOT done — existing overview retained. [deferred]
+- [x] F — Logo already h-10/h-12 (fixed earlier), marketing bottom nav + chatbot
+  Chat tab verified, book-demo form POSTs /leads with 20-industry dropdown.
+- [x] G — Domain Management (b156246): /dashboard/domain-management 3 tabs
+  (My Domain / Buy [coming soon] / Connect w/ DNS + verify), in Manage nav.
+- [x] H — Build both apps 0 errors; all routes 200 (marketing + dashboard +
+  admin); pricing shows single ₹6,999 plan; robots 7-disallow + sitemap 32 URLs;
+  390px mobile verified.
+- [x] I — Campaign flow (703eee6): channel set + costs to single-product model;
+  Coming Soon badges on unconfigured channels (social/WhatsApp/SMS).
+- [x] J — Marketing audit (703eee6): about single-product; book-demo options
+  Website/Campaigns/Both; refund policy "₹999 AI Studio credit non-refundable
+  after use"; industry [id] pages show ₹6,999/year.
+
+VM MIGRATION for this dispatch: none new beyond prior dispatches — the "pricing"
+platform-settings category stores rows in the existing g4d_platform_settings
+table (no schema change). Backend wallet-deduction reading live pricing rows
+(vs. hardcoded defaults) is a noted follow-up.
+
+DEFERRED (recommend focused follow-up with a logged-in session to test):
+D1 vendor overview redesign, D2 exact 5-tab mobile nav, E1 admin overview
+real-data redesign, applying BottomSheet to all existing forms, AI Studio extra
+document generators.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
@@ -336,3 +387,11 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   32-URL sitemap), mobile bottom nav. Task 13 (admin-editable marketing CMS) left as
   the dispatch-specified follow-up. Verified at 390px + all key routes 200. Frontend
   build 0 errors.
+- 2026-08-10: UX OVERHAUL (DISPATCH_FIX_UX.md Sections A-J) — see section above.
+  Single-product pricing (b976183), TeleCRM click-to-call overhaul (f1ceb4d),
+  campaign flow + marketing audit (703eee6), admin pricing manager + domain mgmt
+  + bottom sheet (b156246), AI Studio wallet/graceful (5488d2d), comm-hub
+  coming-soon (f8b3a07). Both apps build 0 errors; routes 200; 390px verified.
+  Deferred (honest): D1/D2/E1 dashboard-overview redesigns, form→BottomSheet
+  migration, AI Studio extra document generators — best done with a logged-in
+  session to test the authenticated flows.
