@@ -151,6 +151,48 @@ Soon stub until their addon backends are built.
 
 ---
 
+## POST-DEPLOY ADDITION — ADMIN INTERNAL-TEAM TOOLING (not part of Stages 1-7)
+
+Turns the Admin Platform into the working tool for Get4Domain's OWN team
+(SUPER_ADMIN / MARKETING / OPERATIONS), alongside the existing platform-mgmt.
+
+- [x] Task 1 — Admin team roles + invite flow — a71f4fd
+  - AdminRole enum + AdminTeamMember model (g4d_admin_team_members).
+  - Internal staff authenticate as `admin_member` JWT principals; token carries
+    adminRole + kind. admin@get4domain.com (Vendor SUPER_ADMIN) = SUPER_ADMIN.
+  - admin-team module: invite/list/update/remove (Super Admin) + public
+    accept-invite. /admin/team page + public /admin-team/accept-invite page.
+- [x] Task 2 — Role-gated Admin sidebar (locked-tab pattern) — 06be4cd
+  - nav items carry a `roles` set; out-of-role tabs render locked and open
+    AdminAccessModal ("contact your Super Admin"); direct URLs redirect to the
+    member's first allowed tab. AI Studio mounted at /admin/ai-studio (reuse).
+  - Visibility: MKT→TeleCRM/AI Studio/Send Quote; OPS→Invoices/Support/Renewals/
+    Website CMS; SUPER→everything else incl. Team.
+- [x] Task 3 — TeleCRM for admin over g4d_leads — aefa31c
+  - TeleCRM UI extracted to components/telecrm/TeleCrmBoard.tsx (adapter-driven);
+    vendor page is now a thin wrapper. /admin/telecrm points the same board at
+    demo-booking leads. Lead gains notes/assignedTo/followUpDate + LeadCallLog.
+- [x] Task 4 — Send Quote — 3f00973
+  - /admin/send-quote: vendor-or-prospect, quote type/amount/notes, optional AI
+    copy, Email/WhatsApp/SMS via Communication Hub; quotes logged with status
+    chip (sent→viewed→accepted). Quote model (g4d_quotes), amount in paise.
+- [x] Both apps build 0 errors after every task.
+
+### VM MIGRATION for this addition (run after merge, same flow as Stage 1)
+New enum: AdminRole (SUPER_ADMIN/MARKETING/OPERATIONS)
+New tables: g4d_admin_team_members, g4d_lead_call_logs, g4d_quotes
+Altered table: g4d_leads (+ notes, assignedTo, followUpDate)
+  cd backend-api && npx prisma migrate dev --name v2_admin_internal_team   # local/--create-only
+  # commit prisma/migrations/*, then on VM:
+  cd backend-api && npx prisma migrate deploy && npx prisma generate
+NOTE (backend hardening follow-up): new /admin/crm and /admin/quotes endpoints
+use AdminGuard (any admin principal); per-role enforcement is currently in the
+UI locked-tab layer. Add a MARKETING/OPERATIONS guard on these routes when
+tightening. AI quote-copy deducts the caller's wallet, so it is best-effort for
+admin_member staff without a wallet (message stays hand-editable).
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
@@ -231,3 +273,10 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   generatePaymentLink + renamed duplicate CreateInvoiceDto. PD-BUG-2 (98c9d54):
   admin mobile bottom nav + main padding for reachable Sign Out. Both apps build
   0 errors. Proceeding to post-deploy ADMIN INTERNAL-TEAM feature addition.
+- 2026-08-10: POST-DEPLOY ADMIN INTERNAL-TEAM ADDITION complete (see section
+  above). Task 1 roles+invite (a71f4fd), Task 2 role-gated sidebar (06be4cd),
+  Task 3 admin TeleCRM over g4d_leads (aefa31c), Task 4 Send Quote (3f00973).
+  Adapter-based TeleCRM reuse; locked-tab pattern reused from vendor Stage 2; AI
+  Studio re-exported under /admin. New migration deferred to VM (AdminRole enum;
+  tables g4d_admin_team_members / g4d_lead_call_logs / g4d_quotes; g4d_leads +3
+  columns). Both apps build 0 errors throughout.
