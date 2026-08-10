@@ -212,6 +212,24 @@ export const api = {
   adminLogCrmCall: (id: string, data: { duration?: number; outcome?: string; notes?: string; aiSummary?: string; followUpAt?: string }) =>
     apiCall(`/admin/crm/leads/${id}/call`, { method: 'POST', body: JSON.stringify(data) }),
 
+  // Admin Send Quote
+  createQuote: (data: {
+    vendorId?: string;
+    prospectName: string;
+    prospectPhone?: string;
+    prospectEmail?: string;
+    quoteType: 'domainapp_plan' | 'domaincampaign_wallet' | 'custom';
+    itemLabel: string;
+    amount: number;
+    notes?: string;
+    channel: 'email' | 'whatsapp' | 'sms';
+    message: string;
+    subject?: string;
+  }) => apiCall('/admin/quotes', { method: 'POST', body: JSON.stringify(data) }),
+  getQuotes: () => apiCall('/admin/quotes'),
+  updateQuoteStatus: (id: string, status: 'sent' | 'viewed' | 'accepted') =>
+    apiCall(`/admin/quotes/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
   // Admin Team (internal Get4Domain staff — Super Admin manages)
   adminTeamMe: () => apiCall('/admin-team/me'),
   inviteAdminMember: (data: { name: string; email: string; phone?: string; role: 'SUPER_ADMIN' | 'MARKETING' | 'OPERATIONS' }) =>

@@ -478,6 +478,25 @@ enum Role {
   VENDOR
 }
 
+// Quotes sent by the admin marketing team to existing vendors or new prospects.
+model Quote {
+  id            String    @id @default(cuid())
+  vendorId      String? // set when quoting an existing vendor
+  prospectName  String
+  prospectPhone String?
+  prospectEmail String?
+  quoteType     String // domainapp_plan | domaincampaign_wallet | custom
+  itemLabel     String // human label of what is being quoted
+  amount        Int // in paise
+  notes         String?
+  channel       String // email | whatsapp | sms
+  status        String    @default("sent") // sent | viewed | accepted
+  sentBy        String? // admin email/id that sent it
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@map("g4d_quotes")
+}
+
 // Get4Domain's OWN internal staff roles (distinct from vendor Role above).
 enum AdminRole {
   SUPER_ADMIN

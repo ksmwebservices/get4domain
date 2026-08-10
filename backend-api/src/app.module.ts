@@ -20,6 +20,7 @@ import { CrmModule } from './crm/crm.module';
 import { TeamModule } from './team/team.module';
 import { AdminTeamModule } from './admin-team/admin-team.module';
 import { AdminCrmModule } from './admin-crm/admin-crm.module';
+import { QuotesModule } from './quotes/quotes.module';
 import { IndustriesModule } from './industries/industries.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
@@ -58,6 +59,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     TeamModule,
     AdminTeamModule,
     AdminCrmModule,
+    QuotesModule,
     IndustriesModule,
     DomainAppModule,
     AddonsModule,
