@@ -70,12 +70,13 @@ export default function RefundPolicyPage() {
         { heading: '6. Add-on Services', content: (<p>Add-on services (SEO, social media, content writing, etc.) are eligible for refund only if the service has not been started. Once work has begun, the service is non-refundable.</p>) },
         { heading: '7. Partial Refunds', content: (<p>In certain cases, partial refunds may be offered at our discretion — for example, if only some components of a package were delivered. Partial refund amounts are determined on a case-by-case basis.</p>) },
         {
-          heading: '8. DomainCampaign & DomainApp Refunds',
+          heading: '8. DomainApp Plan & Wallet Refunds',
           content: (
             <ul className="list-disc pl-5 space-y-1">
-              <li>DomainCampaign wallet credits: non-refundable after use.</li>
+              <li>₹999 AI Studio credit: non-refundable after use.</li>
+              <li>Wallet top-up credits: non-refundable after use.</li>
               <li>DomainApp setup fee: non-refundable after work begins.</li>
-              <li>Monthly subscription: refundable within 7 days if no work has started.</li>
+              <li>Annual subscription: refundable within 7 days if no work has started.</li>
             </ul>
           ),
         },

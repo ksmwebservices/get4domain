@@ -28,16 +28,17 @@ interface AdCampaign {
   createdAt: string;
 }
 
+// Costs are in paise. `comingSoon` channels depend on provider config not yet
+// live (WhatsApp BSP / SMS gateway / social posting) — shown but not selectable.
 const CHANNELS = [
-  { id: 'whatsapp', label: 'WhatsApp Broadcast', cost: 100 },
-  { id: 'sms', label: 'SMS Blast', cost: 50 },
-  { id: 'email', label: 'Email Campaign', cost: 10 },
-  { id: 'facebook', label: 'Facebook Post', cost: 1000 },
-  { id: 'instagram', label: 'Instagram Post', cost: 500 },
-  { id: 'paid_ads', label: 'Paid Ads', cost: 20000 },
+  { id: 'landing_page', label: 'Campaign landing page', cost: 2000, comingSoon: false },
+  { id: 'social_post', label: 'Social media post (we post on your page)', cost: 1000, comingSoon: true },
+  { id: 'whatsapp', label: 'WhatsApp to contacts (per message)', cost: 100, comingSoon: true },
+  { id: 'sms', label: 'SMS to contacts (per message)', cost: 50, comingSoon: true },
+  { id: 'email', label: 'Email to contacts (per email)', cost: 10, comingSoon: false },
 ];
 
-const AI_CHANNELS = new Set(['facebook', 'instagram']);
+const AI_CHANNELS = new Set(['social_post', 'landing_page']);
 
 const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
@@ -135,6 +136,7 @@ export default function CampaignsPage() {
   }
 
   function toggleChannel(id: string) {
+    if (CHANNELS.find((c) => c.id === id)?.comingSoon) return; // not selectable until configured
     setChannels((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   }
 
@@ -350,10 +352,11 @@ export default function CampaignsPage() {
                 <h3 className="text-base font-bold text-slate-900">Step 2 — Select Channels</h3>
                 <div className="space-y-2">
                   {CHANNELS.map((ch) => (
-                    <label key={ch.id} className={`flex items-center justify-between rounded-xl border p-3.5 cursor-pointer transition-colors ${channels.includes(ch.id) ? 'border-primary-400 bg-primary-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                    <label key={ch.id} className={`flex items-center justify-between rounded-xl border p-3.5 transition-colors ${ch.comingSoon ? 'cursor-not-allowed border-slate-200 opacity-70' : channels.includes(ch.id) ? 'cursor-pointer border-primary-400 bg-primary-50' : 'cursor-pointer border-slate-200 hover:bg-slate-50'}`}>
                       <div className="flex items-center gap-3">
-                        <input type="checkbox" checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-400" />
+                        <input type="checkbox" disabled={ch.comingSoon} checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-400" />
                         <span className="text-sm font-medium text-slate-800">{ch.label}</span>
+                        {ch.comingSoon && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Coming Soon</span>}
                       </div>
                       <span className="text-xs font-semibold text-slate-500">{formatCurrency(ch.cost)}</span>
                     </label>

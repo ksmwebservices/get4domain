@@ -17,10 +17,9 @@ const industries = [
 ];
 
 const interestedIn = [
-  { id: 'domainapp-startup', label: 'DomainApp Startup', desc: '₹6,999/yr', icon: Globe },
-  { id: 'domainapp-enterprise', label: 'DomainApp Enterprise', desc: '₹24,999/yr', icon: Globe },
-  { id: 'domaincampaign', label: 'DomainCampaign', desc: 'Wallet from ₹999', icon: Megaphone },
-  { id: 'both', label: 'DomainApp + DomainCampaign', desc: 'Combo — save 20%', icon: Building2 },
+  { id: 'website', label: 'Website', desc: 'Professional industry website', icon: Globe },
+  { id: 'campaigns', label: 'Campaigns', desc: 'Social, WhatsApp, leads, AI content', icon: Megaphone },
+  { id: 'both', label: 'Both', desc: 'Website + Campaigns (all in DomainApp)', icon: Building2 },
   { id: 'not-sure', label: 'Not sure — advise me', desc: 'Consultant will guide', icon: CalendarCheck },
 ];
 
