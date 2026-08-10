@@ -32,6 +32,7 @@ import { GoogleAdsModule } from './google-ads/google-ads.module';
 import { GrowthHubModule } from './growth-hub/growth-hub.module';
 import { CommunicationModule } from './communication/communication.module';
 import { CustomerModule } from './customer/customer.module';
+import { OtpModule } from './otp/otp.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -71,6 +72,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     GrowthHubModule,
     CommunicationModule,
     CustomerModule,
+    OtpModule,
   ],
   providers: [
     {

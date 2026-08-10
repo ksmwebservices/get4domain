@@ -50,6 +50,20 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     ],
   },
   {
+    // Fast2SMS — single central Get4Domain account funding SMS + OTP + WhatsApp.
+    // Preferred provider for the v2.0 Communication Hub / Book-Demo OTP. Vendors
+    // never see Fast2SMS; usage is debited from their wallet per message.
+    key: 'fast2sms',
+    label: 'Fast2SMS (SMS · OTP · WhatsApp)',
+    settings: [
+      { key: 'api_key', label: 'Fast2SMS API Key', envFallback: 'FAST2SMS_API_KEY', secret: true },
+      { key: 'sender_id', label: 'DLT Sender ID', envFallback: 'FAST2SMS_SENDER_ID', secret: false },
+      { key: 'dlt_entity_id', label: 'DLT Entity ID', envFallback: 'FAST2SMS_ENTITY_ID', secret: false },
+      { key: 'sms_message_id', label: 'DLT SMS Template/Message ID', envFallback: 'FAST2SMS_SMS_MESSAGE_ID', secret: false },
+      { key: 'wa_message_id', label: 'WhatsApp Template/Message ID', envFallback: 'FAST2SMS_WA_MESSAGE_ID', secret: false },
+    ],
+  },
+  {
     key: 'email',
     label: 'Email (Resend)',
     settings: [

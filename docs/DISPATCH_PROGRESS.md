@@ -6,6 +6,37 @@ Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
 
 ---
 
+## DISPATCH — GET4DOMAIN_DISPATCH_10AUG2026 (6 items, in progress)
+
+### Item 1 — Fast2SMS wiring + TeleCRM db push (2a)
+- [x] 1.1 `fast2sms` settings category (api_key/sender_id/dlt_entity_id/sms_message_id/
+  wa_message_id) in platform-settings.constants → shows in Admin → Integrations,
+  encrypted at rest, env fallback. Single central Get4Domain account.
+- [x] 1.2 SmsService → real Fast2SMS API (bulkV2): `sendSms` (DLT route when
+  sender+template set, else quick 'q' route) + `sendOtp` (Fast2SMS OTP route).
+  Mock-first: logs + returns mock when api_key absent; try/catch never throws.
+- [x] 1.3 WhatsappService → real Fast2SMS WhatsApp API (/dev/whatsapp via
+  message template id). Mock fallback when key/template absent.
+- [x] 1.4 Communication Hub per-vendor wallet debit — CommunicationService reads
+  pricing rate (sms_message/whatsapp_message/email_message; getRate + fallback
+  paise), pre-checks balance (throws INSUFFICIENT_WALLET_BALANCE), deducts ONLY
+  on real (non-mock) sends. WalletModule imported.
+- [x] 1.5 OtpModule — OtpService (6-digit, 5-min TTL, 30s resend cooldown, 5-attempt
+  cap, in-memory store) + public POST /otp/request, /otp/verify. Foundation for
+  Book-Demo Phase 1. Registered in AppModule.
+- [x] 1.6 backend build 0 errors.
+- [!] 2a TeleCRM `prisma db push` — VM-ONLY, cannot run from Claude Code (no SSH).
+  HUMAN STEP on VM: `docker exec get4domain_backend npx prisma db push`
+  (applies preferredDate/preferredSlot + the fast2sms rows need no schema change).
+- [!] Fast2SMS ACCOUNT + ₹10k funding + DLT registration — external/human. Once
+  done, enter the API key in Admin → Integrations → Fast2SMS; code goes live with
+  zero further changes (mock→real automatically).
+- NOTE: dispatch specifies Fast2SMS for BOTH SMS + WhatsApp; this SUPERSEDES the
+  older CLAUDE_MEMORY_V2 "WhatsApp via BSP partner (Interakt/AiSensy)" note for now.
+  Not integration-tested (no VM/live key from Claude Code) — build-verified only.
+
+---
+
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)
 
 - [x] A1. DomainApp core schema (Contact, CatalogItem, Record, GenericInvoice) — 5e4852d

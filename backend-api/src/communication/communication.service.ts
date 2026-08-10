@@ -1,10 +1,19 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { SmsService } from '../sms/sms.service';
+import { WalletService } from '../wallet/wallet.service';
 
 export type Channel = 'whatsapp' | 'email' | 'sms';
+
+// Per-message wallet rate keys (pricing category) + fallback in paise. Vendors
+// are debited only for REAL sends — never for mock (unconfigured) sends.
+const CHANNEL_RATE: Record<Channel, { key: string; fallbackPaise: number }> = {
+  sms: { key: 'sms_message', fallbackPaise: 50 },
+  whatsapp: { key: 'whatsapp_message', fallbackPaise: 100 },
+  email: { key: 'email_message', fallbackPaise: 20 },
+};
 
 export interface SendResult {
   channel: Channel;
@@ -22,11 +31,13 @@ export class CommunicationService {
     private readonly email: EmailService,
     private readonly whatsapp: WhatsappService,
     private readonly sms: SmsService,
+    private readonly wallet: WalletService,
   ) {}
 
   /**
-   * Unified send. Email is REAL (Resend); WhatsApp/SMS use the mock provider
-   * layer until BSP/gateway credentials are configured.
+   * Unified send. Email is REAL (Resend); WhatsApp/SMS go via Fast2SMS once
+   * configured (mock until then). Usage is debited from the vendor's wallet
+   * per message — but only for REAL (non-mock) sends, never for mock sends.
    */
   async send(
     vendorId: string,
@@ -35,16 +46,30 @@ export class CommunicationService {
     message: string,
     subject?: string,
   ): Promise<SendResult> {
+    const rate = CHANNEL_RATE[channel];
+    const cost = await this.wallet.getRate(rate.key, rate.fallbackPaise);
+
+    // Fail before sending a paid message if the wallet can't cover it.
+    if (cost > 0 && !(await this.wallet.hasSufficientBalance(vendorId, cost))) {
+      throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    }
+
+    let result: SendResult;
     if (channel === 'email') {
       await this.email.sendGeneric(to, subject ?? 'Message from your service provider', `<p>${message}</p>`);
-      return { channel, status: 'sent', mock: false };
-    }
-    if (channel === 'whatsapp') {
+      result = { channel, status: 'sent', mock: false };
+    } else if (channel === 'whatsapp') {
       const r = await this.whatsapp.sendMessage(to, message);
-      return { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
+      result = { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
+    } else {
+      const r = await this.sms.sendSms(to, message);
+      result = { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
     }
-    const r = await this.sms.sendSms(to, message);
-    return { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
+
+    if (cost > 0 && !result.mock) {
+      await this.wallet.deduct(vendorId, cost, `${channel.toUpperCase()} message sent`, `comm_${channel}`);
+    }
+    return result;
   }
 
   /**
