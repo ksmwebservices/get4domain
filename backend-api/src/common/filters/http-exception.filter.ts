@@ -30,10 +30,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? (exceptionResponse as { message: string | string[] }).message
         : exception instanceof Error
           ? exception.message
-          : 'Internal server error';
+          : this.extractMessage(exception);
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : undefined);
+      // Log the full error detail, not just the route. Some SDKs (e.g. Razorpay)
+      // reject with a plain object rather than an Error, so `instanceof Error`
+      // fails and we would otherwise lose the message and stack entirely.
+      this.logger.error(
+        `${request.method} ${request.url} -> ${statusCode}: ${this.describe(exception)}`,
+        exception instanceof Error ? exception.stack : undefined,
+      );
     }
 
     response.status(statusCode).json({
@@ -43,5 +49,28 @@ export class HttpExceptionFilter implements ExceptionFilter {
       data: null,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  /** Best-effort human-readable message for non-Error / non-HttpException throws. */
+  private extractMessage(exception: unknown): string {
+    if (exception && typeof exception === 'object') {
+      const err = exception as { error?: { description?: string }; message?: string };
+      if (err.error?.description) return err.error.description;
+      if (typeof err.message === 'string' && err.message) return err.message;
+    }
+    return 'Internal server error';
+  }
+
+  /** Full description of any thrown value for server logs (Error, plain object, or primitive). */
+  private describe(exception: unknown): string {
+    if (exception instanceof Error) return `${exception.name}: ${exception.message}`;
+    if (exception && typeof exception === 'object') {
+      try {
+        return JSON.stringify(exception);
+      } catch {
+        return String(exception);
+      }
+    }
+    return String(exception);
   }
 }

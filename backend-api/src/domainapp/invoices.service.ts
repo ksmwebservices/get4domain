@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma, GenericInvoice } from '@prisma/client';
 import Razorpay from 'razorpay';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateInvoiceDto, InvoiceLineItemDto } from './dto/invoice.dto';
+import { CreateGenericInvoiceDto, InvoiceLineItemDto } from './dto/invoice.dto';
 import { ListQueryDto } from './dto/list-query.dto';
 import { Paginated } from './contacts.service';
 import { renderGenericInvoiceHtml } from './templates/generic-invoice.template';
@@ -31,7 +31,7 @@ export class DomainAppInvoicesService {
     return `INV-${vendorId.slice(0, 6).toUpperCase()}-${seq}`;
   }
 
-  async create(vendorId: string, dto: CreateInvoiceDto): Promise<GenericInvoice> {
+  async create(vendorId: string, dto: CreateGenericInvoiceDto): Promise<GenericInvoice> {
     const contact = await this.prisma.contact.findFirst({ where: { id: dto.contactId, vendorId } });
     if (!contact) {
       throw new BadRequestException('contactId does not belong to this vendor');

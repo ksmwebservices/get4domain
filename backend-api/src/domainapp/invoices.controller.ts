@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, Query, Res } from '@nestjs/com
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { DomainAppInvoicesService } from './invoices.service';
-import { CreateInvoiceDto } from './dto/invoice.dto';
+import { CreateGenericInvoiceDto } from './dto/invoice.dto';
 import { ListQueryDto } from './dto/list-query.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
@@ -20,7 +20,7 @@ export class DomainAppInvoicesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a GST-compliant invoice' })
-  create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateInvoiceDto) {
+  create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateGenericInvoiceDto) {
     return this.invoicesService.create(user.sub, dto);
   }
 

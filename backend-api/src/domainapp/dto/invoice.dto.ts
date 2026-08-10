@@ -26,7 +26,7 @@ export class InvoiceLineItemDto {
   rate!: number;
 }
 
-export class CreateInvoiceDto {
+export class CreateGenericInvoiceDto {
   @ApiProperty({ description: 'Contact to bill' })
   @IsString()
   contactId!: string;

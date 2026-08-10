@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { Invoice, Subscription, Vendor } from '@prisma/client';
@@ -64,15 +71,25 @@ export class PaymentsService {
   }
 
   async generatePaymentLink(invoiceId: string, amount: number, vendorEmail: string): Promise<{ shortUrl: string }> {
-    const paymentLink = await this.razorpay.paymentLink.create({
-      amount,
-      currency: 'INR',
-      customer: { email: vendorEmail },
-      notify: { email: true, sms: false },
-      reference_id: invoiceId,
-      callback_url: `${process.env.FRONTEND_URL ?? 'https://get4domain.com'}/dashboard/billing`,
-      callback_method: 'get',
-    });
+    this.assertRazorpayConfigured();
+
+    let paymentLink: { id: string; short_url: string };
+    try {
+      paymentLink = await this.razorpay.paymentLink.create({
+        amount,
+        currency: 'INR',
+        customer: { email: vendorEmail },
+        notify: { email: true, sms: false },
+        // reference_id must be unique per payment link on the Razorpay account.
+        // Reusing the bare invoice id makes every re-send fail with
+        // "Payment link with reference id already exists"; suffix keeps it unique.
+        reference_id: `${invoiceId}-${Date.now()}`,
+        callback_url: `${process.env.FRONTEND_URL ?? 'https://get4domain.com'}/dashboard/billing`,
+        callback_method: 'get',
+      });
+    } catch (err) {
+      throw this.toPaymentGatewayError(err, 'create payment link');
+    }
 
     await this.prisma.invoice.update({
       where: { id: invoiceId },
@@ -80,6 +97,38 @@ export class PaymentsService {
     });
 
     return { shortUrl: paymentLink.short_url };
+  }
+
+  /** Fail fast with a clear message when Razorpay credentials are missing or still placeholders. */
+  private assertRazorpayConfigured(): void {
+    const keyId = process.env.RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const unconfigured =
+      !keyId || !keySecret || keyId.startsWith('placeholder') || keySecret.startsWith('placeholder');
+    if (unconfigured) {
+      this.logger.error('Razorpay is not configured (RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET missing or placeholder)');
+      throw new ServiceUnavailableException(
+        'Payment gateway is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.',
+      );
+    }
+  }
+
+  /**
+   * Convert a failed Razorpay call into a proper HttpException. The SDK rejects
+   * with a plain object `{ statusCode, error: { description, code } }` rather than
+   * an Error, which is why raw failures previously surfaced as an opaque 500 with
+   * no message or stack in the logs.
+   */
+  private toPaymentGatewayError(err: unknown, action: string): HttpException {
+    if (err instanceof HttpException) {
+      return err;
+    }
+    const rzp = err as { statusCode?: number; error?: { description?: string; code?: string } };
+    const code = rzp?.error?.code ?? 'UNKNOWN';
+    const description =
+      rzp?.error?.description ?? (err instanceof Error ? err.message : 'Unknown payment gateway error');
+    this.logger.error(`Razorpay failed to ${action}: [${code}] ${description} (status ${rzp?.statusCode ?? 'n/a'})`);
+    return new BadGatewayException(`Payment gateway error: ${description}`);
   }
 
   verifyWebhookSignature(rawBody: string, signature: string): boolean {
