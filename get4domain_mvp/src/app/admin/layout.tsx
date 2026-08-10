@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
   BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal,
-  Phone, Sparkles, FileSignature, ShieldCheck, Lock,
+  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import type { AdminRole } from '@/lib/auth';
@@ -164,7 +164,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <nav
+          className="flex-1 px-3 py-4 space-y-0.5"
+          style={{
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            maxHeight: 'calc(100vh - 120px)',
+          }}
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = isItemActive(item.href);
@@ -191,13 +199,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="border-t border-slate-800 p-3 space-y-1">
+        <div className="border-t border-slate-800 p-3">
           <Link href="/" className="flex items-center gap-3 rounded-xl px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
             <Globe className="h-4 w-4" />View Public Site
           </Link>
-          <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs text-slate-500 hover:text-error-400 transition-colors">
-            <LogOut className="h-4 w-4" />Sign Out
-          </button>
         </div>
       </aside>
 
@@ -211,8 +216,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h1 className="text-sm font-semibold text-white">Get4Domain Admin Platform</h1>
             <p className="text-xs text-slate-500">Manage customers, invoices and demo bookings</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/support" className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link href="/admin/support" title="Help & Support" aria-label="Help & Support" className="rounded-lg p-2 text-slate-400 hover:bg-slate-800">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
+            <Link href="/admin/support" aria-label="Notifications" className="relative rounded-lg p-2 text-slate-400 hover:bg-slate-800">
               <Bell className="h-5 w-5" />
               {notifCount > 0 && (
                 <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-error-500 text-[10px] font-bold text-white">
@@ -220,6 +228,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </span>
               )}
             </Link>
+            <button onClick={logout} title="Sign Out" aria-label="Sign Out" className="rounded-lg p-2 text-slate-400 hover:bg-red-500/10 hover:text-error-400">
+              <LogOut className="h-5 w-5" />
+            </button>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">
               {user.initials}
             </div>

@@ -19,6 +19,8 @@ export default function ChatBot() {
       subtitle="Typically replies instantly"
       greeting="Hi! I'm the Get4Domain assistant. How can I help you today?"
       quickReplies={QUICK_REPLIES}
+      hideLauncherOnMobile
+      respondToOpenEvent
     />
   );
 }

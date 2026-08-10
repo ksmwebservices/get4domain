@@ -10,6 +10,9 @@ interface ChatMessage {
   suggestedActions?: string[];
 }
 
+/** Custom event other components can dispatch to open the chat (e.g. a mobile bottom-nav "Chat" tab). */
+export const OPEN_CHAT_EVENT = 'g4d:open-chat';
+
 interface ChatWidgetProps {
   context: 'marketing' | 'dashboard';
   position?: 'left' | 'right';
@@ -19,6 +22,10 @@ interface ChatWidgetProps {
   quickReplies: string[];
   vendorName?: string;
   industry?: string;
+  /** Hide the floating launcher below md (used when a mobile bottom-nav tab opens the chat instead). */
+  hideLauncherOnMobile?: boolean;
+  /** Listen for the global OPEN_CHAT_EVENT so external triggers can open the panel. */
+  respondToOpenEvent?: boolean;
 }
 
 function isOfficeHours(): boolean {
@@ -40,6 +47,8 @@ export default function ChatWidget({
   quickReplies,
   vendorName,
   industry,
+  hideLauncherOnMobile = false,
+  respondToOpenEvent = false,
 }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -50,6 +59,14 @@ export default function ChatWidget({
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Allow external triggers (e.g. the marketing mobile bottom-nav "Chat" tab) to open the panel.
+  useEffect(() => {
+    if (!respondToOpenEvent) return;
+    const openChat = () => setOpen(true);
+    window.addEventListener(OPEN_CHAT_EVENT, openChat);
+    return () => window.removeEventListener(OPEN_CHAT_EVENT, openChat);
+  }, [respondToOpenEvent]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || loading) return;
@@ -89,7 +106,7 @@ export default function ChatWidget({
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`fixed bottom-6 ${positionClass} z-50`}
+        className={`fixed bottom-6 ${positionClass} z-50 ${hideLauncherOnMobile ? 'hidden md:block' : ''}`}
         aria-label="Chat with us"
       >
         <img
