@@ -83,6 +83,45 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'vapid_private_key', label: 'VAPID Private Key', envFallback: 'VAPID_PRIVATE_KEY', secret: true },
     ],
   },
+  {
+    key: 'video',
+    label: 'Video (Runway / HeyGen)',
+    settings: [
+      { key: 'runway_api_key', label: 'Runway ML API Key', envFallback: 'RUNWAY_API_KEY', secret: true },
+      { key: 'heygen_api_key', label: 'HeyGen API Key', envFallback: 'HEYGEN_API_KEY', secret: true },
+    ],
+  },
+  {
+    key: 'domain',
+    label: 'Domain (ResellerClub)',
+    settings: [
+      { key: 'resellerclub_api_key', label: 'ResellerClub API Key', envFallback: 'RESELLERCLUB_API_KEY', secret: true },
+      { key: 'resellerclub_reseller_id', label: 'ResellerClub Reseller ID', envFallback: 'RESELLERCLUB_RESELLER_ID', secret: false },
+    ],
+  },
+  {
+    // Non-secret wallet rate card. Admin-editable; backend deduction logic can
+    // read these (falls back to hardcoded defaults until wired end-to-end).
+    key: 'pricing',
+    label: 'Pricing (Wallet Rates)',
+    settings: [
+      { key: 'social_post', label: 'Social media post (₹)', envFallback: 'PRICE_SOCIAL_POST', secret: false },
+      { key: 'festival_poster', label: 'Festival poster (₹)', envFallback: 'PRICE_FESTIVAL_POSTER', secret: false },
+      { key: 'blog_article', label: 'Blog article (₹)', envFallback: 'PRICE_BLOG_ARTICLE', secret: false },
+      { key: 'reel_script', label: 'Reel/Video script (₹)', envFallback: 'PRICE_REEL_SCRIPT', secret: false },
+      { key: 'video_generation', label: 'Video generation (₹)', envFallback: 'PRICE_VIDEO_GENERATION', secret: false },
+      { key: 'document', label: 'Document (₹)', envFallback: 'PRICE_DOCUMENT', secret: false },
+      { key: 'whatsapp_message', label: 'WhatsApp per message (₹)', envFallback: 'PRICE_WHATSAPP', secret: false },
+      { key: 'sms_message', label: 'SMS per message (₹)', envFallback: 'PRICE_SMS', secret: false },
+      { key: 'email_message', label: 'Email per email (₹)', envFallback: 'PRICE_EMAIL', secret: false },
+      { key: 'social_post_publish', label: 'Social post (we post) (₹)', envFallback: 'PRICE_SOCIAL_PUBLISH', secret: false },
+      { key: 'extra_campaign_page', label: 'Extra campaign page (₹)', envFallback: 'PRICE_CAMPAIGN_PAGE', secret: false },
+      { key: 'domainapp_annual', label: 'DomainApp annual (₹)', envFallback: 'PRICE_DOMAINAPP_ANNUAL', secret: false },
+      { key: 'topup_999_credits', label: '₹999 top-up → credits', envFallback: 'PRICE_TOPUP_999', secret: false },
+      { key: 'topup_2499_credits', label: '₹2,499 top-up → credits', envFallback: 'PRICE_TOPUP_2499', secret: false },
+      { key: 'topup_4999_credits', label: '₹4,999 top-up → credits', envFallback: 'PRICE_TOPUP_4999', secret: false },
+    ],
+  },
 ];
 
 export const CATEGORY_MAP = new Map(SETTING_CATEGORIES.map((c) => [c.key, c]));

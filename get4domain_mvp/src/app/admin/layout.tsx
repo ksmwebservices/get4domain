@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
   BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal,
-  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle,
+  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle, IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import type { AdminRole } from '@/lib/auth';
@@ -41,6 +41,7 @@ const navItems: AdminNavItem[] = [
   { icon: MessageSquare,     label: 'Support',       href: '/admin/support',      roles: SUPER_OPS },
   { icon: Globe,             label: 'Website CMS',   href: '/admin/cms',          roles: SUPER_OPS },
   { icon: SlidersHorizontal, label: 'Vendor Access', href: '/admin/vendor-access', roles: SUPER },
+  { icon: IndianRupee,       label: 'Pricing Manager', href: '/admin/pricing',    roles: SUPER },
   { icon: Settings,          label: 'Integrations',  href: '/admin/api-settings', roles: SUPER },
   { icon: ShieldCheck,       label: 'Team',          href: '/admin/team',         roles: SUPER },
 ];
