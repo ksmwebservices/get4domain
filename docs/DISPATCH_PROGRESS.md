@@ -193,6 +193,55 @@ admin_member staff without a wallet (message stays hand-editable).
 
 ---
 
+## POST-DEPLOY ADDITION — MARKETING PAGES v2.0 REDESIGN (DISPATCH_MARKETING_PAGES.md)
+
+Complete redesign of all public marketing pages to the v2.0 product vision
+(Stripe/Linear-inspired), correct pricing/products, mobile bottom nav, full SEO.
+
+- [x] Task 1 — Design system: reused existing tailwind tokens (primary=blue-600,
+  slate neutrals) + spec spacing/components; no token file needed.
+- [x] Task 2 — Header (e61d657): fixed the 250px-logo bug (now h-10/h-12 w-auto),
+  Products dropdown + Industries/Pricing/Contact, Login + Book a Demo; removed the
+  mobile hamburger (bottom nav handles mobile). Sticky, blur, shadow-on-scroll.
+- [x] Task 3 — Footer (e61d657): dark 4-column (Brand/Platform/Company/Legal),
+  correct contact, "Made in India | GST Compliant" bar.
+- [x] Task 4 — Mobile bottom nav: verified (Home/Products/Industries/Demo/Chat;
+  Chat opens chatbot inline; floating launcher hidden on mobile, desktop unchanged).
+- [x] Task 5 — Home (e61d657): full rewrite — hero + dashboard mockup, trust bar,
+  10-module showcase, two-product comparison (correct pricing), industries grid,
+  3-step how-it-works, testimonials, FAQ (+schema), dark CTA.
+- [x] Task 6 — Pricing (6512a7a): DomainApp Startup ₹6,999/yr & Enterprise
+  ₹24,999/yr; DomainCampaign wallet (top-ups, free-included, usage rates) + Combo;
+  6 FAQs w/ FAQPage schema.
+- [x] Task 7 — DomainApp (6512a7a): workspace framing, 20-industry strip, plans,
+  addons, People-Also-Ask FAQ.
+- [x] Task 8 — DomainCampaign (6512a7a): 5-step flow, channels, wallet rate card, FAQ.
+- [x] Task 9 — Industries list (6512a7a): all 20 with "Records become X, Contacts
+  become Y"; shared data in data/industries-list.ts.
+- [x] Task 10 — Industry [id] pages (6512a7a): kept the working rich per-industry
+  pages (SEO + preview + book-demo) and added a v2.0 workspace-labels strip.
+- [x] Task 11 — Other pages (627b56b): book-demo options updated to wallet model
+  (already POSTs to /leads); site.ts contact corrected. contact/support/about/
+  login/legal already had correct v2.0 info; login already links to Book a Demo.
+- [x] Task 12 — SEO (e61d657): root metadata/keywords/OG refreshed; SoftwareApplication
+  JSON-LD → AggregateOffer (₹999–₹24999); robots +/customer/; reusable Faq component
+  emits FAQPage schema on home/pricing/domain-app/domain-campaign (AEO); sitemap
+  verified 32 URLs (12 static + 20 industries); per-page titles + canonicals set.
+- [~] Task 13 — Website CMS extension (hero/testimonials/product copy editable from
+  admin): FOLLOW-UP as the dispatch itself specifies. Marketing content stays
+  hardcoded in the pages for now.
+- [x] Task 14 — Verified: build 0 errors; robots.txt + sitemap.xml (32 URLs) correct;
+  key routes (/,/pricing,/domain-app,/domain-campaign,/industries,/industries/travel,
+  /book-demo,/contact,/about,/support,/login) all 200; FAQPage + AggregateOffer JSON-LD
+  present; no console errors; mobile 390px shows header (no hamburger) + bottom nav +
+  hidden floating chat launcher.
+
+NOTE: old v1.0 marketing components (Hero, TrustBar, ProductsOverview, FAQ, etc.)
+remain in src/components but are now unused by the rewritten pages — safe to prune
+in a later cleanup.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
@@ -280,3 +329,10 @@ Health checks unchanged: ports 3006, 3008, 3000 (MR Travels), 3010 (Allwin Tours
   Studio re-exported under /admin. New migration deferred to VM (AdminRole enum;
   tables g4d_admin_team_members / g4d_lead_call_logs / g4d_quotes; g4d_leads +3
   columns). Both apps build 0 errors throughout.
+- 2026-08-10: MARKETING PAGES v2.0 REDESIGN complete (see section above) —
+  DISPATCH_MARKETING_PAGES.md Tasks 1-14. Header/Footer/Home (e61d657), pricing +
+  product + industries pages (6512a7a), book-demo + contact constants (627b56b).
+  Correct v2.0 pricing/products, full SEO (AggregateOffer + FAQPage schema, robots,
+  32-URL sitemap), mobile bottom nav. Task 13 (admin-editable marketing CMS) left as
+  the dispatch-specified follow-up. Verified at 390px + all key routes 200. Frontend
+  build 0 errors.
