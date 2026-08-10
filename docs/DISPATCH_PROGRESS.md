@@ -286,10 +286,14 @@ platform-settings category stores rows in the existing g4d_platform_settings
 table (no schema change). Backend wallet-deduction reading live pricing rows
 (vs. hardcoded defaults) is a noted follow-up.
 
-DEFERRED (recommend focused follow-up with a logged-in session to test):
-D1 vendor overview redesign, D2 exact 5-tab mobile nav, E1 admin overview
-real-data redesign, applying BottomSheet to all existing forms, AI Studio extra
-document generators.
+DEFERRED — NOW RESOLVED (cc9d504): D1 vendor overview redesign, D2 exact 5-tab
+mobile nav (vendor Home/Business/Campaign/AI/More + admin Overview/TeleCRM/AI/
+Work/More with BottomSheet menus), E1 admin overview real-data redesign,
+BottomSheet applied (shared Modal docks on mobile + CRM/Team/Campaign overlays),
+Item 5 wallet deduction reads g4d_platform_settings "pricing" via
+WalletService.getRate (fallback to defaults), Item 6 AI Studio document
+generators (Letterhead/ID Card/Visiting Card via print-to-PDF). Presentation
+generator noted as future follow-up. Both apps build 0 errors; routes 200.
 
 ---
 
