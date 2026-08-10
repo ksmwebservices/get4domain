@@ -16,6 +16,21 @@ export interface CategoryDefinition {
 // encrypted at rest; each falls back to process.env until configured in DB.
 export const SETTING_CATEGORIES: CategoryDefinition[] = [
   {
+    // Company details printed on GST invoices (Get4Domain / KSM Quantum). Admin
+    // sets the real GSTIN/PAN/address once; invoices read these (env fallback).
+    key: 'company',
+    label: 'Company (Invoice Details)',
+    settings: [
+      { key: 'name', label: 'Legal Company Name', envFallback: 'COMPANY_NAME', secret: false },
+      { key: 'gstin', label: 'GSTIN', envFallback: 'COMPANY_GST', secret: false },
+      { key: 'pan', label: 'PAN', envFallback: 'COMPANY_PAN', secret: false },
+      { key: 'address', label: 'Registered Address', envFallback: 'COMPANY_ADDRESS', secret: false },
+      { key: 'phone', label: 'Phone', envFallback: 'COMPANY_PHONE', secret: false },
+      { key: 'email', label: 'Billing Email', envFallback: 'COMPANY_EMAIL', secret: false },
+      { key: 'logo_url', label: 'Logo URL (https)', envFallback: 'COMPANY_LOGO_URL', secret: false },
+    ],
+  },
+  {
     key: 'payment',
     label: 'Payment (Razorpay)',
     settings: [

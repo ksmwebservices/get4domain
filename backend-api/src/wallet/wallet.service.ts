@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { decryptSecret } from '../platform-settings/crypto.util';
 import { TopupDto } from './dto/topup.dto';
 import { VerifyTopupDto } from './dto/verify-topup.dto';
+import { InvoicesService } from '../invoices/invoices.service';
 
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
@@ -21,7 +22,10 @@ export class WalletService {
   private readonly logger = new Logger(WalletService.name);
   private readonly razorpay: Razorpay;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly invoices: InvoicesService,
+  ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID as string,
       key_secret: process.env.RAZORPAY_KEY_SECRET as string,
@@ -95,8 +99,8 @@ export class WalletService {
     const credits = Math.round(paidAmount + (paidAmount * bonusPercent) / 100);
     const expiresAt = new Date(Date.now() + NINETY_DAYS_MS);
 
-    return this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.upsert({
+    const wallet = await this.prisma.$transaction(async (tx) => {
+      const w = await tx.wallet.upsert({
         where: { vendorId },
         create: { vendorId, balance: credits, totalCredited: credits },
         update: { balance: { increment: credits }, totalCredited: { increment: credits } },
@@ -105,19 +109,25 @@ export class WalletService {
       await tx.walletTransaction.create({
         data: {
           vendorId,
-          walletId: wallet.id,
+          walletId: w.id,
           type: 'credit',
           amount: credits,
           description: `Wallet top-up (₹${(paidAmount / 100).toFixed(2)} paid, ${bonusPercent}% bonus)`,
           service: 'topup',
-          balanceAfter: wallet.balance,
+          balanceAfter: w.balance,
           expiresAt,
           razorpayId: dto.razorpayPaymentId,
         },
       });
 
-      return wallet;
+      return w;
     });
+
+    // Auto-generate a GST invoice for the top-up and email it. Best-effort —
+    // never blocks/undoes the credit (the method itself swallows failures).
+    await this.invoices.createPaidTopupInvoice(vendorId, paidAmount, credits, dto.razorpayPaymentId);
+
+    return wallet;
   }
 
   async deduct(vendorId: string, amount: number, description: string, service: string): Promise<Wallet> {

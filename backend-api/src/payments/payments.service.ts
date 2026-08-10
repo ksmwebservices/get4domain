@@ -13,7 +13,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
-import { renderInvoiceHtml } from '../invoices/templates/invoice.template';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { renderInvoiceHtml, InvoiceCompany } from '../invoices/templates/invoice.template';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 
@@ -29,11 +30,30 @@ export class PaymentsService {
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
     private readonly whatsappService: WhatsAppService,
+    private readonly settings: PlatformSettingsService,
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID as string,
       key_secret: process.env.RAZORPAY_KEY_SECRET as string,
     });
+  }
+
+  /** Company invoice details from Admin → Integrations (env fallback in template). */
+  private async resolveCompany(): Promise<Partial<InvoiceCompany>> {
+    const [name, gstin, pan, address, phone, email, logoUrl] = await Promise.all([
+      this.settings.getResolvedValue('company', 'name'),
+      this.settings.getResolvedValue('company', 'gstin'),
+      this.settings.getResolvedValue('company', 'pan'),
+      this.settings.getResolvedValue('company', 'address'),
+      this.settings.getResolvedValue('company', 'phone'),
+      this.settings.getResolvedValue('company', 'email'),
+      this.settings.getResolvedValue('company', 'logo_url'),
+    ]);
+    return {
+      name: name ?? undefined, gstin: gstin ?? undefined, pan: pan ?? undefined,
+      address: address ?? undefined, phone: phone ?? undefined, email: email ?? undefined,
+      logoUrl: logoUrl ?? undefined,
+    };
   }
 
   async createOrder(dto: CreateOrderDto) {
@@ -189,7 +209,10 @@ export class PaymentsService {
       },
     });
 
-    const pdfHtml = renderInvoiceHtml(invoice, invoice.vendor);
+    const pdfHtml = renderInvoiceHtml(invoice, invoice.vendor, {
+      company: await this.resolveCompany(),
+      nextRenewal: invoice.subscription?.endDate ?? null,
+    });
     await this.emailService.sendInvoiceEmail(invoice.vendor, invoice, pdfHtml);
     await this.emailService.sendPaymentConfirmation(invoice.vendor, invoice, invoice.subscription);
 

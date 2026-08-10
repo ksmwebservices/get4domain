@@ -51,6 +51,34 @@ Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
   click-tested from Claude Code (no login/VM). Mobile gesture behaviour should be
   spot-checked on a real device / DevTools touch emulation after deploy.
 
+### Item 3 — Invoice generation full automation (dispatch #5)
+- [x] Enhanced PDF template (invoice.template.ts): "TAX INVOICE", logo (logo_url
+  or gradient), config-driven company (name/GSTIN/PAN/address/phone/email),
+  billed-to vendor, line items w/ per-item Price + Discount + Amount, Subtotal +
+  Discount total (when any) + Taxable + GST(18%) + Grand Total, payment mode,
+  RENEWAL REMINDER note (next renewal date), T&C footer. Stored invoice totals
+  stay authoritative; lineItems are the breakdown. Backward compatible.
+- [x] Config-driven company details: new 'company' settings category (Admin →
+  Integrations) so GSTIN/PAN/address/logo are set without redeploy (env fallback).
+  Resolved in InvoicesService + PaymentsService.
+- [x] Wallet top-up auto-invoice: WalletService.verifyTopup now calls
+  InvoicesService.createPaidTopupInvoice — PAID GST invoice + email via Resend +
+  platformIncome row. Best-effort (never undoes the credit). GST is back-calculated
+  INCLUSIVE (taxable = paid/1.18) so invoice total == amount charged.
+  ⚠️ ASSUMPTION TO CONFIRM: prices (₹6,999 / ₹999 top-ups) are treated as
+  GST-INCLUSIVE. If they should be GST-EXCLUSIVE (customer pays price+18%), the
+  back-calc + charged amounts must change — flag for finance.
+- [x] Signup invoice: subscription payment already auto-emails via
+  PaymentsService.finalizePayment; now also passes company + renewal note.
+  (Self-serve ₹6,999 signup that CREATES the subscription+invoice is Book-Demo
+  Phase 5 / item 6 — this makes the invoice side ready.)
+- [x] Vendor Invoices tab rewritten from hardcoded mock (old ₹24,999/₹29,999) to
+  REAL data (getVendorInvoices) with a working Download (fetch /invoices/:id/pdf
+  → print-to-PDF window). Added api.getInvoicePdf. Mobile-friendly rows.
+- [x] backend + frontend build 0 errors. No new DB migration (uses existing
+  Invoice + PlatformSetting tables). Not live-tested (no VM/Razorpay from Claude
+  Code) — build-verified; the topup→invoice path needs a real top-up to confirm.
+
 ---
 
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)
