@@ -124,6 +124,33 @@ Minimal OTP-gated entry that replaces the old segmented "what matters most" form
 - [!] VM: the pending `prisma db push` now also adds Lead.source (alongside
   preferredDate/preferredSlot from the last deploy). Same single db push applies all.
 
+### Item 6 — Book-Demo Phases 2–6 (dispatch #3)
+Owner decisions: sandbox = REAL Vendor with isSandbox flag (converts to live on
+pay); THIS SESSION = Phase 2 + 3; Phases 5–6 DEFERRED. Phase 2 reuses existing
+MarketingBottomNav + ChatBot + item 1 Fast2SMS WhatsApp (no parallel versions).
+
+- [x] Phase 2 — Industry website SPA. Backend `demo` module: GET /demo/site/:industry
+  (public) returns {label, entities, content}. Frontend /demo/[industry] renders a
+  full config-driven sample business site (hero/tagline, services from demo content
+  with prices, testimonials, WhatsApp enquiry) with its OWN chrome (outside the
+  marketing layout). Reuses <ChatBot/> + <MarketingBottomNav/>. Public POST
+  /demo/enquiry logs a lead + sends a WhatsApp confirmation via item 1's Fast2SMS
+  (mock until keyed).
+- [x] Phase 3 — Per-industry seed data. demo-content.ts: believable content for all
+  20 industries (+ config-derived fallback). DemoService.seedVendor(vendorId,
+  industry) populates a vendor with catalog items, 5 contacts, 6 records (spread
+  across the industry's statuses/dates), and 2 invoices (1 paid/1 pending), in a
+  transaction. Admin POST /demo/seed to run it; designed to be called by Phase 4
+  sandbox provisioning.
+- [x] backend + frontend build 0 errors. /demo/[industry] is backend-data-driven →
+  build-verified (needs the API running to render real content).
+- [ ] Phase 4 — Interactive tour + sandbox provisioning (Vendor.isSandbox + expiry,
+  seed via DemoService, route lead through site→vendor dashboard→customer portal).
+  NEXT SESSION.
+- [~] Phases 5–6 — Buy-now (Razorpay ₹6,999 → convert sandbox to live) + auto
+  activation. DEFERRED per owner (handle when live-payment testing is possible).
+- NOTE (Phase 4 will need a migration): Vendor.isSandbox + expiresAt columns.
+
 ---
 
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)

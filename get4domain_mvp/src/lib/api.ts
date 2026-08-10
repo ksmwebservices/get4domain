@@ -128,6 +128,10 @@ export const api = {
     apiCall('/otp/request', { method: 'POST', body: JSON.stringify({ phone }) }),
   verifyDemoLead: (data: { name: string; phone: string; industry: string; code: string }) =>
     apiCall('/leads/demo', { method: 'POST', body: JSON.stringify(data) }),
+  // Book-Demo Phase 2 — industry demo website + enquiry (Fast2SMS WhatsApp)
+  getDemoSite: (industry: string) => apiCall(`/demo/site/${encodeURIComponent(industry)}`),
+  demoEnquiry: (data: { name: string; phone: string; industry: string; message?: string }) =>
+    apiCall('/demo/enquiry', { method: 'POST', body: JSON.stringify(data) }),
   getLeads: () => apiCall('/leads'),
   updateLeadStatus: (id: string, status: string) =>
     apiCall(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
