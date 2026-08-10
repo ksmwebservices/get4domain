@@ -104,6 +104,26 @@ existed in the `video` settings category.
 - NOTE (deduction timing): charged on submit, not on completion; a later provider
   failure won't auto-refund — acceptable for now, revisit if needed.
 
+### Item 5 — Book-Demo Phase 1 (dispatch #3, Phase 1)
+Minimal OTP-gated entry that replaces the old segmented "what matters most" form.
+- [x] Backend: Lead gains `source` column (schema). New public POST /leads/demo
+  (VerifyDemoLeadDto: name/phone/industry/code) → verifies OTP via OtpService
+  (item 1) then create/updates a lead with source="demo", status="verified"
+  (retention safety net; TeleCRM works it). LeadsModule imports OtpModule.
+- [x] OTP dev affordance: OtpService.request returns `devCode` ONLY when SMS is
+  unconfigured (mock) AND env OTP_DEV_ECHO=true — lets the owner test the funnel
+  before Fast2SMS is live. Off by default; never echoes once a key is set.
+- [x] Frontend: book-demo rewritten to Phase 1 — Industry → Name+Mobile (Send
+  Code → /otp/request) → OTP verify (/leads/demo) → verified success screen with
+  a "Start Demo Tour" CTA (disabled; wired in Phase 4/item 6). Stepper, mobile-
+  first, resend + change-number. Shows the dev code inline when echoed.
+- [x] Verified render at localhost:3020/book-demo (step 1 correct, no console
+  errors). OTP send/verify needs the backend+Fast2SMS (or OTP_DEV_ECHO) to test
+  end-to-end — not runnable from Claude Code (no VM/DB).
+- [x] backend + frontend build 0 errors.
+- [!] VM: the pending `prisma db push` now also adds Lead.source (alongside
+  preferredDate/preferredSlot from the last deploy). Same single db push applies all.
+
 ---
 
 ## STAGE 1 — BACKEND FOUNDATION (Dispatch A)

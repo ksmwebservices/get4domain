@@ -150,6 +150,8 @@ model Lead {
   interest     String
   message      String?
   status       String        @default("pending")
+  // Lead origin: "demo" = Book-Demo funnel (Phase 1 OTP-verified), else campaign/etc.
+  source       String?
   // Preferred demo slot chosen by the visitor in the Book-a-Demo wizard.
   preferredDate DateTime?
   preferredSlot String?

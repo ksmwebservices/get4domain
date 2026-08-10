@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Lead } from '@prisma/client';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
+import { VerifyDemoLeadDto } from './dto/verify-demo-lead.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { Public } from '../common/decorators/public.decorator';
@@ -17,6 +18,13 @@ export class LeadsController {
   @ApiOperation({ summary: 'Save a demo booking lead from the public Book a Demo form' })
   create(@Body() dto: CreateLeadDto): Promise<Lead> {
     return this.leadsService.create(dto);
+  }
+
+  @Public()
+  @Post('demo')
+  @ApiOperation({ summary: 'Book-Demo Phase 1 — verify mobile OTP and create/update a verified demo lead' })
+  verifyDemo(@Body() dto: VerifyDemoLeadDto): Promise<Lead> {
+    return this.leadsService.verifyDemoLead(dto);
   }
 
   @ApiBearerAuth()

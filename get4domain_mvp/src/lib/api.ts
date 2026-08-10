@@ -123,6 +123,11 @@ export const api = {
   // Leads (demo bookings)
   createLead: (data: any) =>
     apiCall('/leads', { method: 'POST', body: JSON.stringify(data) }),
+  // Book-Demo Phase 1 — OTP request + verify (creates a "verified" demo lead)
+  requestOtp: (phone: string) =>
+    apiCall('/otp/request', { method: 'POST', body: JSON.stringify({ phone }) }),
+  verifyDemoLead: (data: { name: string; phone: string; industry: string; code: string }) =>
+    apiCall('/leads/demo', { method: 'POST', body: JSON.stringify(data) }),
   getLeads: () => apiCall('/leads'),
   updateLeadStatus: (id: string, status: string) =>
     apiCall(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),

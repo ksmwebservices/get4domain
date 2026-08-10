@@ -31,7 +31,7 @@ export class OtpService {
   }
 
   /** Generate + send a 6-digit code. Returns whether it went out for real or mock. */
-  async request(phone: string): Promise<{ sent: boolean; mock: boolean; expiresInSec: number }> {
+  async request(phone: string): Promise<{ sent: boolean; mock: boolean; expiresInSec: number; devCode?: string }> {
     const key = this.key(phone);
     if (key.length !== 10) throw new BadRequestException('A valid 10-digit mobile number is required');
 
@@ -46,7 +46,11 @@ export class OtpService {
 
     const res = await this.sms.sendOtp(phone, code);
     if (res.mock) this.logger.log(`[MOCK] OTP for ${key} is ${code} (Fast2SMS not configured)`);
-    return { sent: true, mock: res.mock, expiresInSec: Math.floor(TTL_MS / 1000) };
+    // Opt-in DEV affordance: echo the code in the response ONLY when SMS is not
+    // configured (mock) AND OTP_DEV_ECHO=true. Lets the owner test the funnel
+    // before Fast2SMS is live. Off by default; never echoes once a key is set.
+    const devCode = res.mock && process.env.OTP_DEV_ECHO === 'true' ? code : undefined;
+    return { sent: true, mock: res.mock, expiresInSec: Math.floor(TTL_MS / 1000), devCode };
   }
 
   /** Verify a code. Consumes it on success. */
