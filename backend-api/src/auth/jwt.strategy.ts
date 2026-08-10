@@ -8,6 +8,8 @@ interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  adminRole?: string;
+  kind?: string;
 }
 
 @Injectable()
@@ -21,12 +23,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    // Standalone internal-staff principal (invited Marketing/Operations members).
+    if (payload.kind === 'admin_member') {
+      const member = await this.prisma.adminTeamMember.findUnique({ where: { id: payload.sub } });
+      if (!member || member.status !== 'active') {
+        throw new UnauthorizedException('Account not found or removed');
+      }
+      return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: member.role, kind: 'admin_member' };
+    }
+
     const vendor = await this.prisma.vendor.findUnique({ where: { id: payload.sub } });
 
     if (!vendor || vendor.status === 'SUSPENDED') {
       throw new UnauthorizedException('Account not found or suspended');
     }
 
-    return { sub: payload.sub, email: payload.email, role: payload.role };
+    // The bootstrap admin Vendor is treated as SUPER_ADMIN internal staff.
+    const isAdmin = vendor.role === 'ADMIN' || vendor.role === 'SUPER_ADMIN';
+    return {
+      sub: vendor.id,
+      email: vendor.email,
+      role: vendor.role,
+      adminRole: isAdmin ? 'SUPER_ADMIN' : undefined,
+    };
   }
 }

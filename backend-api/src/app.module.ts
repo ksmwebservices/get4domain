@@ -18,6 +18,7 @@ import { CampaignPagesModule } from './campaign-pages/campaign-pages.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { CrmModule } from './crm/crm.module';
 import { TeamModule } from './team/team.module';
+import { AdminTeamModule } from './admin-team/admin-team.module';
 import { IndustriesModule } from './industries/industries.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
@@ -54,6 +55,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     CampaignsModule,
     CrmModule,
     TeamModule,
+    AdminTeamModule,
     IndustriesModule,
     DomainAppModule,
     AddonsModule,

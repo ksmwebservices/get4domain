@@ -126,6 +126,20 @@ export class EmailService {
     });
   }
 
+  /** Invite for an internal Get4Domain staff member (admin platform). */
+  async sendAdminTeamInvite(member: { name: string; email: string; role: string; inviteToken: string | null }): Promise<void> {
+    await this.send({
+      to: member.email,
+      subject: 'You have been invited to the Get4Domain Admin Platform',
+      html: `
+        <p>Hi ${member.name},</p>
+        <p>You have been invited to join the Get4Domain internal team as <strong>${member.role}</strong>.</p>
+        <p>Accept your invite and set a password: <a href="${this.frontendUrl}/admin-team/accept-invite?token=${member.inviteToken}">${this.frontendUrl}/admin-team/accept-invite?token=${member.inviteToken}</a></p>
+        <p>Team Get4Domain</p>
+      `,
+    });
+  }
+
   /** Generic email send used by the Communication Hub (real via Resend). */
   async sendGeneric(to: string, subject: string, html: string): Promise<void> {
     await this.send({ to, subject, html });

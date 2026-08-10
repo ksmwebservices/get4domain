@@ -2,11 +2,15 @@
 // GET4DOMAIN AUTH — backed by the real NestJS API
 // ============================================================
 
+export type AdminRole = 'SUPER_ADMIN' | 'MARKETING' | 'OPERATIONS';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   role: 'vendor' | 'admin' | 'super_admin';
+  /** Internal Get4Domain staff role — present for admin/super_admin users. */
+  adminRole?: AdminRole;
   businessName?: string;
   industry?: string;
   subdomain?: string;
@@ -86,6 +90,7 @@ export async function loginWithCredentials(
       name: backendUser.name,
       email: backendUser.email,
       role: mapRole(backendUser.role),
+      adminRole: backendUser.adminRole ?? undefined,
       businessName: backendUser.businessName,
       industry: backendUser.industry ?? undefined,
       subdomain: backendUser.subdomain ?? undefined,

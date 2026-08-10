@@ -457,6 +457,32 @@ enum Role {
   VENDOR
 }
 
+// Get4Domain's OWN internal staff roles (distinct from vendor Role above).
+enum AdminRole {
+  SUPER_ADMIN
+  MARKETING
+  OPERATIONS
+}
+
+// Internal Get4Domain team members (marketing / operations staff). Mirrors the
+// vendor-side TeamMember in spirit but is scoped to the platform, not a vendor.
+// The bootstrap admin@get4domain.com stays a Vendor(role=SUPER_ADMIN); invited
+// staff live here and authenticate as admin_member principals (see auth).
+model AdminTeamMember {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  phone       String?
+  role        AdminRole @default(OPERATIONS)
+  status      String    @default("invited") // invited | active | removed
+  inviteToken String?
+  password    String?
+  lastLogin   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("g4d_admin_team_members")
+}
+
 enum VendorStatus {
   ACTIVE
   SUSPENDED

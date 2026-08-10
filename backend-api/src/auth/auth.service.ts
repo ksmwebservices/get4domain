@@ -12,6 +12,7 @@ export interface LoginResult {
     name: string;
     email: string;
     role: string;
+    adminRole?: string;
     businessName: string;
     industry: string | null;
     subdomain: string | null;
@@ -28,41 +29,90 @@ export class AuthService {
   async login(dto: LoginDto): Promise<LoginResult> {
     const vendor = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
 
-    if (!vendor) {
+    if (vendor) {
+      if (vendor.status === 'SUSPENDED') {
+        throw new UnauthorizedException('This account has been suspended');
+      }
+
+      const passwordMatches = await bcrypt.compare(dto.password, vendor.password);
+      if (!passwordMatches) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      // Bootstrap admin Vendor (role ADMIN/SUPER_ADMIN) is full SUPER_ADMIN staff.
+      const isAdmin = vendor.role === 'ADMIN' || vendor.role === 'SUPER_ADMIN';
+      const adminRole = isAdmin ? 'SUPER_ADMIN' : undefined;
+      const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role, adminRole });
+
+      return {
+        accessToken,
+        user: {
+          id: vendor.id,
+          name: vendor.name,
+          email: vendor.email,
+          role: vendor.role,
+          adminRole,
+          businessName: vendor.businessName,
+          industry: vendor.industry,
+          subdomain: vendor.subdomain,
+        },
+      };
+    }
+
+    // Internal Get4Domain staff (invited Marketing/Operations members).
+    const member = await this.prisma.adminTeamMember.findUnique({ where: { email: dto.email } });
+    if (!member || member.status !== 'active' || !member.password) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    if (vendor.status === 'SUSPENDED') {
-      throw new UnauthorizedException('This account has been suspended');
-    }
-
-    const passwordMatches = await bcrypt.compare(dto.password, vendor.password);
-    if (!passwordMatches) {
+    const memberPasswordMatches = await bcrypt.compare(dto.password, member.password);
+    if (!memberPasswordMatches) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
+    await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { lastLogin: new Date() } });
+
+    const accessToken = this.signToken({
+      sub: member.id,
+      email: member.email,
+      role: 'ADMIN',
+      adminRole: member.role,
+      kind: 'admin_member',
+    });
 
     return {
       accessToken,
       user: {
-        id: vendor.id,
-        name: vendor.name,
-        email: vendor.email,
-        role: vendor.role,
-        businessName: vendor.businessName,
-        industry: vendor.industry,
-        subdomain: vendor.subdomain,
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        role: 'ADMIN',
+        adminRole: member.role,
+        businessName: 'Get4Domain',
+        industry: null,
+        subdomain: null,
       },
     };
   }
 
   refresh(user: AuthenticatedUser): { accessToken: string } {
-    const accessToken = this.signToken({ sub: user.sub, email: user.email, role: user.role });
+    const accessToken = this.signToken({
+      sub: user.sub,
+      email: user.email,
+      role: user.role,
+      adminRole: user.adminRole,
+      kind: user.kind,
+    });
     return { accessToken };
   }
 
-  private signToken(payload: { sub: string; email: string; role: string }): string {
+  private signToken(payload: {
+    sub: string;
+    email: string;
+    role: string;
+    adminRole?: string;
+    kind?: string;
+  }): string {
     return this.jwtService.sign(payload, { expiresIn: '7d' });
   }
 

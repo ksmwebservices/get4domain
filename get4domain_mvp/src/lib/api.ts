@@ -204,6 +204,18 @@ export const api = {
     apiCall('/team/invite/accept', { method: 'POST', body: JSON.stringify(data) }),
   getTeamActivity: () => apiCall('/team/activity'),
 
+  // Admin Team (internal Get4Domain staff — Super Admin manages)
+  adminTeamMe: () => apiCall('/admin-team/me'),
+  inviteAdminMember: (data: { name: string; email: string; phone?: string; role: 'SUPER_ADMIN' | 'MARKETING' | 'OPERATIONS' }) =>
+    apiCall('/admin-team/invite', { method: 'POST', body: JSON.stringify(data) }),
+  getAdminMembers: () => apiCall('/admin-team/members'),
+  updateAdminMember: (id: string, data: { role?: string; status?: string }) =>
+    apiCall(`/admin-team/members/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  removeAdminMember: (id: string) =>
+    apiCall(`/admin-team/members/${id}`, { method: 'DELETE' }),
+  acceptAdminInvite: (data: { inviteToken: string; password: string }) =>
+    apiCall('/admin-team/invite/accept', { method: 'POST', body: JSON.stringify(data) }),
+
   // AI campaign content
   generateAiContent: (data: { channel: string; vendorIndustry: string; offerDetails: string; tone?: string }) =>
     apiCall('/ai/generate-content', { method: 'POST', body: JSON.stringify(data) }),
