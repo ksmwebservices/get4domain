@@ -204,6 +204,14 @@ export const api = {
     apiCall('/team/invite/accept', { method: 'POST', body: JSON.stringify(data) }),
   getTeamActivity: () => apiCall('/team/activity'),
 
+  // Admin TeleCRM (demo-booking leads / g4d_leads)
+  adminCrmLeads: () => apiCall('/admin/crm/leads'),
+  adminCrmLead: (id: string) => apiCall(`/admin/crm/leads/${id}`),
+  adminUpdateCrmLead: (id: string, data: { status?: string; notes?: string; assignedTo?: string; followUpDate?: string }) =>
+    apiCall(`/admin/crm/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminLogCrmCall: (id: string, data: { duration?: number; outcome?: string; notes?: string; aiSummary?: string; followUpAt?: string }) =>
+    apiCall(`/admin/crm/leads/${id}/call`, { method: 'POST', body: JSON.stringify(data) }),
+
   // Admin Team (internal Get4Domain staff — Super Admin manages)
   adminTeamMe: () => apiCall('/admin-team/me'),
   inviteAdminMember: (data: { name: string; email: string; phone?: string; role: 'SUPER_ADMIN' | 'MARKETING' | 'OPERATIONS' }) =>

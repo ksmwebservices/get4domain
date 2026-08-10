@@ -141,18 +141,39 @@ model PlatformCMS {
 }
 
 model Lead {
-  id         String   @id @default(cuid())
-  name       String
-  phone      String
-  email      String?
-  business   String
-  industry   String
-  interest   String
-  message    String?
-  status     String   @default("pending")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String        @id @default(cuid())
+  name         String
+  phone        String
+  email        String?
+  business     String
+  industry     String
+  interest     String
+  message      String?
+  status       String        @default("pending")
+  // TeleCRM fields (admin marketing team works these enquiries).
+  notes        String?
+  assignedTo   String?
+  followUpDate DateTime?
+  callLogs     LeadCallLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   @@map("g4d_leads")
+}
+
+// Call activity logged against a demo-booking Lead by the admin marketing team.
+// Mirrors CallLog (which is bound to vendor CampaignLead) but for platform leads.
+model LeadCallLog {
+  id         String    @id @default(cuid())
+  leadId     String
+  lead       Lead      @relation(fields: [leadId], references: [id])
+  calledBy   String?
+  duration   Int?
+  outcome    String?
+  notes      String?
+  aiSummary  String?
+  followUpAt DateTime?
+  createdAt  DateTime  @default(now())
+  @@map("g4d_lead_call_logs")
 }
 
 model Wallet {
