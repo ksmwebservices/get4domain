@@ -3,10 +3,12 @@ import Link from 'next/link';
 
 const footerSections = [
   {
-    title: 'Products',
+    title: 'Platform',
     links: [
-      { label: 'DomainCampaign', href: '/domain-campaign' },
       { label: 'DomainApp', href: '/domain-app' },
+      { label: 'DomainCampaign', href: '/domain-campaign' },
+      { label: 'Industries', href: '/industries' },
+      { label: 'Pricing', href: '/pricing' },
     ],
   },
   {
@@ -15,6 +17,7 @@ const footerSections = [
       { label: 'About Us', href: '/about' },
       { label: 'Contact', href: '/contact' },
       { label: 'Support', href: '/support' },
+      { label: 'Blog', href: '#' },
     ],
   },
   {
@@ -30,7 +33,7 @@ const footerSections = [
 export default function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-400">
-      <div className="container-mx container-px py-16">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-12">
           {/* Brand */}
           <div className="lg:col-span-4">
@@ -38,24 +41,25 @@ export default function Footer() {
               <img
                 src="/logo.png"
                 alt="Get4Domain"
-                className="h-16 w-auto object-contain"
-                style={{ maxHeight: '64px', filter: 'brightness(0) invert(1)' }}
+                className="h-10 w-auto object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }}
               />
             </Link>
-            <p className="mt-4 text-sm leading-relaxed max-w-xs">
-              Professional Business Launch Made Easy. SaaS platform for Indian SMBs — websites, business management and managed digital marketing.
+            <p className="mt-4 text-sm font-semibold text-white">Your Online Identity Partner</p>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed">
+              Build, manage and grow your complete online business identity.
             </p>
             <div className="mt-6 space-y-2.5">
               <div className="flex items-center gap-2.5 text-sm">
-                <Phone className="h-4 w-4 text-primary-400" />
-                <span>+91 75500 47567</span>
+                <Phone className="h-4 w-4 text-blue-400" />
+                <a href="tel:+917550047567" className="hover:text-blue-400">+91 75500 47567</a>
               </div>
               <div className="flex items-center gap-2.5 text-sm">
-                <Mail className="h-4 w-4 text-primary-400" />
-                <span>support@get4domain.com</span>
+                <Mail className="h-4 w-4 text-blue-400" />
+                <a href="mailto:support@get4domain.com" className="hover:text-blue-400">support@get4domain.com</a>
               </div>
               <div className="flex items-start gap-2.5 text-sm">
-                <MapPin className="h-4 w-4 text-primary-400 mt-0.5 flex-shrink-0" />
+                <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400" />
                 <span>Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113</span>
               </div>
             </div>
@@ -69,7 +73,7 @@ export default function Footer() {
                 <ul className="space-y-2.5">
                   {section.links.map((link) => (
                     <li key={link.label}>
-                      <Link href={link.href} className="text-sm text-slate-400 transition-colors hover:text-primary-400">
+                      <Link href={link.href} className="text-sm text-slate-400 transition-colors hover:text-blue-400">
                         {link.label}
                       </Link>
                     </li>
@@ -82,14 +86,12 @@ export default function Footer() {
       </div>
 
       <div className="border-t border-slate-800">
-        <div className="container-mx container-px py-6">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-slate-500">
-              &copy; {new Date().getFullYear()} Get4Domain. All rights reserved.
+              &copy; {new Date().getFullYear()} Get4Domain by KSM Quantum Technologies. All rights reserved.
             </p>
-            <p className="text-xs text-slate-600">
-              DomainApp · DomainCampaign · GST-Compliant Platform · Made in India 🇮🇳
-            </p>
+            <p className="text-xs text-slate-600">Made in India 🇮🇳 | GST Compliant</p>
           </div>
         </div>
       </div>
