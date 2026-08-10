@@ -21,6 +21,10 @@ const CHANNELS: { key: Channel; label: string; icon: typeof Mail }[] = [
   { key: 'sms', label: 'SMS', icon: Smartphone },
 ];
 
+// Email is live (Resend). WhatsApp/SMS need BSP/gateway config — show Coming Soon.
+const COMING_SOON: Record<Channel, boolean> = { whatsapp: true, email: false, sms: true };
+const CHANNEL_LABEL: Record<Channel, string> = { whatsapp: 'WhatsApp Messaging', email: 'Email', sms: 'SMS Messaging' };
+
 export default function CommunicationPage() {
   const [channel, setChannel] = useState<Channel>('whatsapp');
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -69,11 +73,21 @@ export default function CommunicationPage() {
             <button key={c.key} onClick={() => setChannel(c.key)}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${channel === c.key ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>
               <Ic className="h-4 w-4" />{c.label}
+              {COMING_SOON[c.key] && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">Soon</span>}
             </button>
           );
         })}
       </div>
 
+      {COMING_SOON[channel] ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-2xl">💬</div>
+          <h2 className="text-lg font-bold text-slate-900">{CHANNEL_LABEL[channel]}</h2>
+          <p className="mt-2 text-sm text-slate-500">This feature is being set up for your account.</p>
+          <p className="text-sm text-slate-500">You&apos;ll be notified when it&apos;s ready.</p>
+          <a href="/dashboard/support" className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">📞 Contact Support for Updates</a>
+        </div>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
         {/* Conversation list */}
         <div className={`rounded-2xl border border-slate-200 bg-white ${active ? 'hidden lg:block' : ''}`}>
@@ -143,6 +157,7 @@ export default function CommunicationPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
