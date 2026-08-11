@@ -8,41 +8,10 @@ import {
 import Button from '@/components/ui/Button';
 import PageHero from '@/components/PageHero';
 import { api } from '@/lib/api';
+import { INDUSTRIES } from '@/data/industries-list';
 
-const industries = [
-  'Restaurant & Food', 'Travel & Tours', 'Real Estate', 'Clinic & Hospital',
-  'School & College', 'Construction & Interior', 'Retail & Shopping', 'Salon & Spa',
-  'Gym & Fitness', 'CA & Professional Services', 'Events & Entertainment',
-  'Finance & Insurance', 'Automobile & Showroom', 'Logistics & Transport',
-  'Diagnostic Lab', 'Hotel & Hospitality', 'Photography & Studio',
-  'IT & Software Company', 'Agriculture & Farm', 'Coaching & Tuition', 'Other',
-];
-
-// Maps the dropdown labels to the backend industry-config keys used by the demo
-// site route (/demo/[industry]). Unmapped → 'general' (config falls back too).
-const INDUSTRY_KEY: Record<string, string> = {
-  'Restaurant & Food': 'restaurant',
-  'Travel & Tours': 'travel',
-  'Real Estate': 'realestate',
-  'Clinic & Hospital': 'clinic',
-  'School & College': 'education',
-  'Construction & Interior': 'construction',
-  'Retail & Shopping': 'retail',
-  'Salon & Spa': 'salon',
-  'Gym & Fitness': 'gym',
-  'CA & Professional Services': 'professional',
-  'Events & Entertainment': 'events',
-  'Finance & Insurance': 'finance',
-  'Automobile & Showroom': 'automobile',
-  'Logistics & Transport': 'logistics',
-  'Diagnostic Lab': 'diagnostics',
-  'Hotel & Hospitality': 'hotel',
-  'Photography & Studio': 'photography',
-  'IT & Software Company': 'technology',
-  'Agriculture & Farm': 'agriculture',
-  'Coaching & Tuition': 'coaching',
-  Other: 'general',
-};
+// Canonical industry list — the SAME 20 used by /industries and /demo/[id]. The
+// dropdown value is the canonical `id`, so it feeds /demo/[id] + seedVendor directly.
 
 type Step = 'industry' | 'details' | 'otp' | 'done';
 const STEPS: { key: Step; label: string }[] = [
@@ -69,6 +38,7 @@ export default function BookDemoPage() {
     return d.length > 10 ? d.slice(-10) : d;
   })();
   const validPhone = normalizedPhone.length === 10;
+  const industryName = INDUSTRIES.find((i) => i.id === industry)?.name ?? '';
 
   const sendOtp = async () => {
     if (!validPhone) { setError('Enter a valid 10-digit mobile number.'); return; }
@@ -117,11 +87,11 @@ export default function BookDemoPage() {
             </div>
             <h1 className="text-2xl font-bold text-slate-900">Mobile verified 🎉</h1>
             <p className="mt-3 text-slate-600">
-              Thanks, {name.split(' ')[0] || 'there'}. Your {industry || 'business'} demo is ready. Take an interactive tour
+              Thanks, {name.split(' ')[0] || 'there'}. Your {industryName || 'business'} demo is ready. Take an interactive tour
               of Get4Domain, or our team will call you to walk through it.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row justify-center">
-              <Link href={`/demo/${INDUSTRY_KEY[industry] ?? 'general'}`}><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
+              <Link href={`/demo/${industry || 'general'}`}><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
               <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled title="Interactive demo tour — coming soon">Start Demo Tour</Button>
             </div>
             <p className="mt-4 text-xs text-slate-400">The guided interactive demo is rolling out shortly. You&apos;re on the list.</p>
@@ -168,7 +138,7 @@ export default function BookDemoPage() {
                 <select required value={industry} onChange={(e) => setIndustry(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
                   <option value="">Select your industry</option>
-                  {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+                  {INDUSTRIES.map((ind) => <option key={ind.id} value={ind.id}>{ind.icon} {ind.name}</option>)}
                 </select>
                 <Button className="mt-6" size="lg" fullWidth disabled={!industry} onClick={() => { setError(''); setStep('details'); }} rightIcon={<ArrowRight className="h-4 w-4" />}>Continue</Button>
               </div>

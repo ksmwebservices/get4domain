@@ -530,6 +530,46 @@ VM MIGRATION for this addition (Lead gains 2 columns):
 
 ---
 
+## DISPATCH — GET4DOMAIN_PHASE4_DISPATCH_11AUG2026 (in progress)
+
+### Pre-work — CTA bug fix
+- [x] Post-OTP-verify "Explore Industries" loop already fixed last session (5e741ab);
+  now points to /demo/[industry]. Re-confirmed + folded into the canonical fix below.
+
+### Category-list audit (investigate + fix canonical list)
+- [x] AUDIT — all three lists cover the SAME 20 industries; only 3 slugs differed:
+    | industry | marketing (/industries, industry-content) | backend config (/demo) |
+    | clinic   | healthcare | clinic |
+    | salon    | beauty     | salon  |
+    | gym      | fitness    | gym    |
+  Effect: /demo/healthcare|beauty|fitness fell back to `general`. Book-Demo dropdown
+  also used its own 21 ad-hoc labels + a local key map (independent of both lists).
+- [x] FIX — canonical id = the marketing slug (SEO routes already indexed). Backend
+  getIndustryConfig now resolves aliases (healthcare→clinic, beauty→salon,
+  fitness→gym) via INDUSTRY_ALIASES + resolveIndustryKey — no risky config rename.
+  Book-Demo dropdown now imports the shared INDUSTRIES list (data/industries-list),
+  option value = canonical id, so it feeds /demo/[id] + seedVendor directly; dropped
+  the ad-hoc labels + local map + the "Other" option (not a real category). Lead now
+  stores the canonical id. All three lists (dropdown, /industries, /demo configs)
+  are now the same 20 canonical ids. Both apps build 0 errors.
+
+### Phase 2 enhancement (multi-section demo sites, all categories) — NEXT
+- [ ] Rebuild /demo/[industry] as a multi-section site matching each industry's
+  own marketing "Website Pages Included" (industry-content.websitePages), with real
+  section navigation, populated by Phase 3 seed data. Config-driven single renderer
+  (not 20 hand-built pages). PLANNED.
+
+### Phase 4 (interactive tour) — BLOCKED on 2 design decisions (dispatch mandates confirm)
+- [!] DECISION 1: sandbox session/auth after OTP verify (short-lived signed token /
+  magic-link scoped to sandbox vendorId — confirm vs existing auth patterns).
+- [!] DECISION 2: per-lead sandbox vendor vs shared per-industry demo vendor
+  (dispatch recommends per-lead + expiry — confirm).
+- [ ] Then: Vendor.isSandbox + expiresAt (migration), provision on OTP verify +
+  seedVendor(), route site→dashboard→customer portal (reuse shared components,
+  vendorId-scoped), auto-expire + cleanup. Phases 5–6 remain OUT OF SCOPE.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

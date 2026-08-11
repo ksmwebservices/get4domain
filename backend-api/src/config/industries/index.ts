@@ -47,12 +47,28 @@ export const INDUSTRY_CONFIGS: Record<string, IndustryConfig> = {
   technology: technologyConfig,
 };
 
-/** Returns the config for `key`, falling back to `general` for unknown keys. */
+// Canonical slug aliases: the marketing site (/industries, sitemap) uses these
+// SEO slugs, while the DomainApp configs historically used different keys. Map
+// them so /demo/[industry], seedVendor(), and the industries API all resolve the
+// same canonical id to one config. Keeping both keys avoids a risky rename.
+export const INDUSTRY_ALIASES: Record<string, string> = {
+  healthcare: 'clinic',
+  beauty: 'salon',
+  fitness: 'gym',
+};
+
+/** Resolve a canonical/alias slug to its config key. */
+export function resolveIndustryKey(key?: string | null): string | null {
+  if (!key) return null;
+  if (INDUSTRY_CONFIGS[key]) return key;
+  const alias = INDUSTRY_ALIASES[key];
+  return alias && INDUSTRY_CONFIGS[alias] ? alias : null;
+}
+
+/** Returns the config for `key` (accepts canonical aliases), falling back to `general`. */
 export function getIndustryConfig(key?: string | null): IndustryConfig {
-  if (key && INDUSTRY_CONFIGS[key]) {
-    return INDUSTRY_CONFIGS[key];
-  }
-  return INDUSTRY_CONFIGS.general;
+  const resolved = resolveIndustryKey(key);
+  return resolved ? INDUSTRY_CONFIGS[resolved] : INDUSTRY_CONFIGS.general;
 }
 
 /** Lightweight list of all industries for dropdowns (key + label + icon). */
