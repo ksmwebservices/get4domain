@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, Phone, MessageCircle, Star, Check, CalendarDays, Users, Sparkles } from 'lucide-react';
+import { Loader2, Phone, MessageCircle, Star, Check, CalendarDays, Sparkles } from 'lucide-react';
 import ChatBot from '@/components/ChatBot';
-import MarketingBottomNav from '@/components/MarketingBottomNav';
 import { api } from '@/lib/api';
+import { industryContent } from '@/data/industry-content';
 
 interface Service { name: string; price: number; desc: string }
 type Section =
@@ -74,10 +74,13 @@ export default function DemoIndustrySite() {
 
   // Nav: Home + a link per meaningful section (skip reviews to keep it tight).
   const navSections = site.sections.filter((s) => s.type !== 'reviews');
+  const cover = industryContent.find((c) => c.id === industry)?.coverImage ?? null;
 
   return (
-    <div className="min-h-screen bg-white pb-20 md:pb-0">
-      {/* Header + section nav */}
+    <div className="min-h-screen bg-white">
+      {/* Header — the demo site's OWN lightweight nav (in-page section links), not
+          Get4Domain's app nav. Desktop shows inline links; mobile gets a scrollable
+          pill row. No app bottom-nav is borrowed here. */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-3">
           <a href="#top" className="flex items-center gap-2">
@@ -92,11 +95,26 @@ export default function DemoIndustrySite() {
           </nav>
           <a href={`#${secId('contact')}`} className="rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-primary-700">Enquire</a>
         </div>
+        {/* Mobile in-page section nav */}
+        <div className="flex gap-1 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <a href="#top" className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600">Home</a>
+          {navSections.map((s) => (
+            <a key={s.type} href={`#${secId(s.type)}`} className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600">{s.label}</a>
+          ))}
+        </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero — real industry banner image with a readable overlay */}
       <section id="top" className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-500" />
+        {cover ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={cover} alt={site.business} className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/70 to-primary-700/60" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-500" />
+        )}
         <div className="relative mx-auto max-w-5xl px-5 py-16 text-white sm:py-24">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{site.label}</span>
           <h1 className="mt-4 max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">{site.tagline}</h1>
@@ -136,9 +154,11 @@ export default function DemoIndustrySite() {
               <div className="mx-auto max-w-5xl scroll-mt-20 px-5">
                 <h2 className="text-2xl font-bold text-slate-900">{s.label}</h2>
                 <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                  {s.members.map((m) => (
+                  {s.members.map((m, i) => (
                     <div key={m.name} className="rounded-2xl border border-slate-200 bg-white p-5 text-center">
-                      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-700"><Users className="h-7 w-7" /></div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`https://i.pravatar.cc/160?img=${((i * 7 + industry.length) % 70) + 1}`} alt={m.name}
+                        className="mx-auto h-16 w-16 rounded-full object-cover" />
                       <h3 className="mt-3 font-bold text-slate-900">{m.name}</h3>
                       <p className="text-sm text-primary-600">{m.role}</p>
                     </div>
@@ -230,9 +250,8 @@ export default function DemoIndustrySite() {
         <Link href="/book-demo" className="mt-1 inline-block font-semibold text-primary-600">Build your own with Get4Domain →</Link>
       </footer>
 
-      {/* Reused platform components — no parallel versions */}
+      {/* Floating chat only — no app bottom-nav on the public demo site */}
       <ChatBot />
-      <MarketingBottomNav />
     </div>
   );
 }

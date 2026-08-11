@@ -664,6 +664,20 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
 
 ---
 
+## DISPATCH — GET4DOMAIN_POLISH_DISPATCH_11AUG2026 (in progress)
+
+- [x] 1. Demo site real images. /demo/[industry] hero now uses the industry's real
+  banner (industry-content.coverImage, pexels, keyed by the same marketing id the
+  route uses) with a dark gradient overlay for readable text; team members show real
+  avatar photos (pravatar). Raw <img> (no next/image domain config needed).
+- [x] 2. Demo site mobile nav bug. Removed <MarketingBottomNav/> (the app nav the
+  demo site was borrowing). The demo site now has its OWN lightweight nav: desktop
+  inline section links + a mobile scrollable pill row of in-page section anchors
+  (Home + each section). ChatBot floating widget kept. Dropped the pb-20 that was
+  clearing the old bottom nav.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
