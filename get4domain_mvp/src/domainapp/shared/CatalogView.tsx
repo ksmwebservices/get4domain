@@ -18,6 +18,7 @@ interface CatalogItem {
   description?: string;
   price: number;
   unit?: string;
+  image?: string;
   active: boolean;
   customFields?: Record<string, unknown>;
 }
@@ -33,6 +34,17 @@ export default function CatalogView({ industry, icon }: { industry: IndustryConf
   const [form, setForm] = useState<Partial<CatalogItem>>({});
   const [custom, setCustom] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
+
+  const uploadItemImage = async (file: File) => {
+    setUploadingImg(true);
+    try {
+      const r = await api.uploadImage(file);
+      if (r.data?.url) setForm((f) => ({ ...f, image: r.data!.url }));
+    } catch { /* ignore — optional */ } finally {
+      setUploadingImg(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +72,7 @@ export default function CatalogView({ industry, icon }: { industry: IndustryConf
         description: form.description,
         price: Number(form.price),
         unit: form.unit,
+        image: form.image ?? null,
         active: form.active ?? true,
         customFields: custom,
       };
@@ -92,6 +105,10 @@ export default function CatalogView({ industry, icon }: { industry: IndustryConf
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((item) => (
             <Card key={item.id} hover className="cursor-pointer" onClick={() => openEdit(item)}>
+              {item.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.image} alt={item.name} className="mb-3 h-32 w-full rounded-lg object-cover" />
+              )}
               <div className="flex items-start justify-between">
                 <h3 className="font-semibold text-slate-900">{item.name}</h3>
                 <Badge tone={item.active ? 'success' : 'neutral'}>{item.active ? 'Active' : 'Inactive'}</Badge>
@@ -113,6 +130,21 @@ export default function CatalogView({ industry, icon }: { industry: IndustryConf
           <div className="grid grid-cols-2 gap-3">
             <Input label="Price (₹)" required type="number" value={form.price ?? ''} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
             <Input label="Unit" placeholder="e.g. per person" value={form.unit ?? ''} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+          </div>
+          {/* Product/service photo (uploaded to our server) */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Photo <span className="font-normal text-slate-400">(optional)</span></label>
+            <div className="flex items-center gap-3">
+              {form.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.image} alt="Item" className="h-14 w-14 rounded-lg border border-slate-200 object-cover" />
+              )}
+              <label className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
+                {uploadingImg ? 'Uploading…' : form.image ? 'Change photo' : 'Upload photo'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadItemImage(f); }} />
+              </label>
+              {form.image && <button onClick={() => setForm({ ...form, image: undefined })} className="text-xs font-medium text-slate-500 hover:text-error-600">Remove</button>}
+            </div>
           </div>
           <CustomFieldInputs fields={industry.catalogCustomFields} values={custom} onChange={(k, v) => setCustom({ ...custom, [k]: v })} />
           <div className="flex justify-end gap-2 pt-2">

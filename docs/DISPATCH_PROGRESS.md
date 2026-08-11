@@ -852,6 +852,39 @@ needed. Frontend api.uploadImage(file) posts multipart with the auth token.
   * Set PUBLIC_API_URL=https://gapi.get4domain.com so returned URLs are https behind
     the nginx proxy (otherwise they inherit the proxied req protocol).
 
+## DISPATCH — DEMO SITE ARCHITECTURE + 2 ADDITIONS (12 Aug 2026)
+
+### Addition 1 — catalog item image upload (DONE)
+- [x] DomainApp CatalogView: item form now has a "Photo" uploader (reuses
+  api.uploadImage → CatalogItem.image; backend DTO already accepted `image`).
+  Preview + Change/Remove; the photo shows on catalog cards. Same pattern as the
+  logo upload. Frontend build 0 errors; no backend change needed.
+
+### Addition 2 — inbound message capture INVESTIGATION (report only, no code)
+FINDINGS (grounded in the codebase + provider APIs):
+- Resend = OUTBOUND ONLY in our use (resend.emails.send). Resend is a transactional
+  SEND API; it does NOT provide inbound email parsing/receiving. Capturing replies
+  needs an inbound-parse provider (SendGrid Inbound Parse / Mailgun Routes / Postmark
+  inbound / Cloudflare Email Workers) or MX-based receiving — not Resend.
+- Fast2SMS WhatsApp = OUTBOUND ONLY (/dev/whatsapp template send). Fast2SMS is a
+  bulk WhatsApp/SMS SENDER, not a two-way BSP; it does NOT expose inbound WhatsApp
+  webhooks for capturing replies. Real two-way WhatsApp needs a WhatsApp Business
+  API/BSP (Meta Cloud API directly, or Interakt / AiSensy / Gupshup / Wati) with a
+  configured webhook.
+- Fast2SMS SMS = OUTBOUND ONLY (DLT-gated bulk). Inbound SMS needs a two-way virtual
+  long/short-code provider with delivery webhooks — not in the Fast2SMS bulk API.
+- Only webhook in the app today = Razorpay (payments).
+VERDICT: inbound capture is NOT buildable with the current providers — the persisted
+inbox we built stores OUTBOUND history only. To add true inbound (two-way), swap in:
+WhatsApp → a BSP/Meta Cloud API; Email → an inbound-parse provider. The mock-first
+provider layer is already swap-ready for this. NO webhook code written (per the
+"investigate first" instruction).
+CONSEQUENCE for dispatch item 3.5 (WhatsApp auto-reply on demo sites): a TRUE
+inbound-triggered auto-reply is NOT possible with Fast2SMS. Feasible instead: the
+site's WhatsApp CTA opens wa.me with an industry-aware prefilled message, and the
+Enquire form already sends an outbound WhatsApp confirmation (Fast2SMS) — that is the
+closest "automated first response" our providers allow. Implemented that way.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
