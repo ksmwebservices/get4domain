@@ -18,6 +18,32 @@ const industries = [
   'IT & Software Company', 'Agriculture & Farm', 'Coaching & Tuition', 'Other',
 ];
 
+// Maps the dropdown labels to the backend industry-config keys used by the demo
+// site route (/demo/[industry]). Unmapped → 'general' (config falls back too).
+const INDUSTRY_KEY: Record<string, string> = {
+  'Restaurant & Food': 'restaurant',
+  'Travel & Tours': 'travel',
+  'Real Estate': 'realestate',
+  'Clinic & Hospital': 'clinic',
+  'School & College': 'education',
+  'Construction & Interior': 'construction',
+  'Retail & Shopping': 'retail',
+  'Salon & Spa': 'salon',
+  'Gym & Fitness': 'gym',
+  'CA & Professional Services': 'professional',
+  'Events & Entertainment': 'events',
+  'Finance & Insurance': 'finance',
+  'Automobile & Showroom': 'automobile',
+  'Logistics & Transport': 'logistics',
+  'Diagnostic Lab': 'diagnostics',
+  'Hotel & Hospitality': 'hotel',
+  'Photography & Studio': 'photography',
+  'IT & Software Company': 'technology',
+  'Agriculture & Farm': 'agriculture',
+  'Coaching & Tuition': 'coaching',
+  Other: 'general',
+};
+
 type Step = 'industry' | 'details' | 'otp' | 'done';
 const STEPS: { key: Step; label: string }[] = [
   { key: 'industry', label: 'Industry' },
@@ -95,7 +121,7 @@ export default function BookDemoPage() {
               of Get4Domain, or our team will call you to walk through it.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row justify-center">
-              <Link href="/industries"><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Industries</Button></Link>
+              <Link href={`/demo/${INDUSTRY_KEY[industry] ?? 'general'}`}><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
               <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled title="Interactive demo tour — coming soon">Start Demo Tour</Button>
             </div>
             <p className="mt-4 text-xs text-slate-400">The guided interactive demo is rolling out shortly. You&apos;re on the list.</p>
