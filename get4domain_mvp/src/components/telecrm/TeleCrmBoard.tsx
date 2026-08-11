@@ -118,6 +118,13 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     setDetail(lead); // optimistic
     try { setDetail(await adapter.getLead(lead.id)); } catch { /* keep card data */ }
   };
+  // Schedule a follow-up reminder (no AI) — persisted on the lead's followUpDate and
+  // surfaced back on the board (card badge) when it's due.
+  const scheduleFollowUp = async (iso?: string) => {
+    if (!detail || !iso) return;
+    setDetail({ ...detail, followUpDate: iso });
+    try { await adapter.updateLead(detail.id, { followUpDate: iso }); } finally { load(); }
+  };
 
   const callStartRef = useRef<number>(0);
   const pendingFeedbackRef = useRef<TeleCrmLead | null>(null);
@@ -269,7 +276,14 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                     className="cursor-pointer rounded-lg border border-slate-200 bg-white p-2.5 hover:border-primary-300 active:cursor-grabbing">
                     <div className="text-sm font-semibold text-slate-900">{lead.name}</div>
                     <div className="text-xs text-slate-500">{lead.phone}</div>
-                    <button onClick={(e) => { e.stopPropagation(); initiateCall(lead); }} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
+                    {lead.followUpDate && (() => {
+                      const b = dayBucket(lead.followUpDate);
+                      if (b === 'none') return null;
+                      const cls = b === 'overdue' ? 'bg-error-50 text-error-600' : b === 'today' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500';
+                      const label = b === 'overdue' ? 'Follow-up overdue' : b === 'today' ? 'Follow-up today' : `Follow-up ${new Date(lead.followUpDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`;
+                      return <span className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${cls}`}><CalendarClock className="h-3 w-3" />{label}</span>;
+                    })()}
+                    <button onClick={(e) => { e.stopPropagation(); initiateCall(lead); }} className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
                   </div>
                 ))}
               </div>
@@ -323,6 +337,22 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+
+              {/* Follow-up reminder (no AI) */}
+              <div className="mt-4">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Follow-up reminder</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {[{ k: 'tomorrow', l: 'Tomorrow' }, { k: '2days', l: 'In 2 days' }, { k: 'week', l: 'Next week' }].map((f) => (
+                    <button key={f.k} onClick={() => scheduleFollowUp(followUpIso(f.k, ''))}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-primary-400 hover:text-primary-700">{f.l}</button>
+                  ))}
+                  <input type="date" onChange={(e) => e.target.value && scheduleFollowUp(new Date(e.target.value).toISOString())}
+                    className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs text-slate-600 focus:border-primary-400 focus:outline-none" />
+                </div>
+                {detail.followUpDate && (
+                  <p className="mt-2 text-xs text-primary-700">Reminder set for {new Date(detail.followUpDate).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} — it&apos;ll flag on the board when due.</p>
                 )}
               </div>
 

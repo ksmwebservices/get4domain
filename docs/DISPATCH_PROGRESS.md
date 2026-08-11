@@ -683,6 +683,18 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
   print-to-PDF download. NOTE: needs a real top-up/payment to produce one (sandbox
   seeds DomainApp GenericInvoices, not platform Invoices); COMPANY_LOGO_URL sets the
   logo (else the company initial).
+- [x] 5. TeleCRM follow-up scheduling (NO AI). Per-lead summary panel now has a
+  "Follow-up reminder" — Tomorrow / In 2 days / Next week / custom date — persisted
+  to the lead's followUpDate via adapter.updateLead. Surfaced back on the board:
+  each card shows a follow-up badge when due (red=overdue, amber=today, else the
+  date), so the team sees who to call the next day. Pure scheduling, no AI.
+- [x] 7. Audit — all 20 industry demo sites resolve to REAL content (not fallback):
+  programmatic cross-check confirms every marketing id (incl. healthcare/beauty/
+  fitness via alias) maps to a DEMO_CONTENT entry + SECTION_META + a hero coverImage.
+  So every /demo/[industry] renders real multi-section content and its sandbox
+  provisioning uses a valid config → reaches the vendor dashboard. (Data/code-level
+  verified; full 20-way live click-through needs the VM — recommend a smoke test.)
+- [~] 6. Vendor dashboard UI polish — lower-priority; see note below.
 - [x] 4. Trial/Pro free credit now actually GRANTED (was only editable). New
   WalletService.grantCredit (free credit, 90-day validity, logged). vendors.service
   .create grants trial_free_credit (Pricing Manager, ₹100 fallback) on signup;
