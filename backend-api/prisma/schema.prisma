@@ -106,6 +106,7 @@ model VendorCMS {
   tagline      String?
   about        String?
   logo         String?
+  banner       String?
   favicon      String?
   seoTitle     String?
   seoDesc      String?
@@ -133,6 +134,10 @@ model VendorProduct {
   price       String?
   image       String?
   category    String?
+  // Rich per-category listing fields (area/config/type for real estate, course/diet
+  // for restaurant, duration/department for healthcare, …). Shape driven by
+  // listing-fields.ts on the frontend. Additive/nullable — no data migration needed.
+  customFields Json?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

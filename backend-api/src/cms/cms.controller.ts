@@ -37,6 +37,13 @@ export class CmsController {
   }
 
   @Public()
+  @Get('site/:subdomain')
+  @ApiOperation({ summary: 'Resolve a live vendor public site by subdomain (public — powers /site/[subdomain])' })
+  getSite(@Param('subdomain') subdomain: string) {
+    return this.cmsService.getSiteBySubdomain(subdomain);
+  }
+
+  @Public()
   @Get('vendor/:vendorId')
   @ApiOperation({ summary: "Get a vendor's website CMS settings (public — powers their vendor site)" })
   getVendorCms(@Param('vendorId') vendorId: string): Promise<VendorCMS | null> {

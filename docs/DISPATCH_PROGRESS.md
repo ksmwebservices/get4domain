@@ -997,6 +997,52 @@ itself, already real), so no work needed there.
   categories without curated subs have only "general" = their category content (real).
   NOTHING now falls back to inherited content across the curated set — full coverage.
 
+### DISPATCH — GET4DOMAIN_CMS_EDITOR_DISPATCH — Vendor-facing website CMS (code DONE; VM steps pending)
+Step 1 — AUDIT (reported to user before building):
+- Website Manager exists: dashboard/my-website (Basic/About+Social/Services/SEO/Template)
+  + dashboard/my-products (full CRUD + image URL + per-industry LABELS but GENERIC fields).
+  Both edit the VendorProduct model via /cms. The my-website Services tab is a simple
+  name+price add/delete.
+- Rich per-category fields already existed but only on the DomainApp CatalogView →
+  CatalogItem (g4d_catalog_items, ops app), NOT the website's VendorProduct.
+- Business profile: my-website edits VendorCMS (name/tagline/about/phone/socials/SEO).
+  VendorCMS had logo+favicon but NO banner, and no logo/banner uploader in the vendor UI.
+- CRITICAL: no live vendor site rendered ANYWHERE — no [subdomain] route/middleware/rewrite.
+  Only /demo/[category] (sample data) rendered. So Step 3 = build the live renderer new.
+User decisions (AskUserQuestion): (1) source of truth = extend VendorProduct; (2) routing =
+path route /site/[subdomain] now.
+Step 2/3/4 — BUILD:
+- [x] Schema (additive, nullable): VendorProduct.customFields Json?, VendorCMS.banner String?.
+- [x] Backend: create-product.dto customFields (IsObject); update-vendor-cms.dto banner;
+  cms.service add/updateProduct persist customFields (Prisma.InputJsonValue) + NEW public
+  getSiteBySubdomain (404s on missing OR isSandbox); cms.controller GET /cms/site/:subdomain
+  (@Public). Backend build 0 errors.
+- [x] listing-fields.ts: per-category input schema aligned to demo-catalog fields
+  (realestate area/config/type, restaurant course/diet/serves, healthcare duration/dept,
+  hotel occupancy/amenities, …; GENERIC fallback).
+- [x] my-products editor: rich per-category fields + tags + PHOTO UPLOAD (api.uploadImage,
+  preview/change/remove/paste-URL) + "Preview my site" → /site/[subdomain]. Sends customFields.
+- [x] my-website: new "Logo & Banner" tab — banner + logo upload (reuses upload infra);
+  header "Preview my site" → /site/[subdomain]. VendorCms interface gained logo+banner.
+- [x] LIVE SITE (Step 3): app/site/[subdomain]/[[...rest]]/page.tsx (force-dynamic) — fetches
+  /cms/site/:subdomain, maps real VendorProduct → the SAME DemoCatalogGrid the demo uses
+  (flow/ctaLabel from resolveCatalog(industry), fields from customFields via listing-fields,
+  tags, price ₹-normalised), real banner/logo/about/contact, LocalBusiness JSON-LD, ChatBot,
+  DemoContactSection lead capture (demoEnquiry) + wa.me. Home/listings/contact pages. Sandbox
+  vendors 404 (backend guard) — demo (/demo) path untouched, no data crossover.
+- [x] Step 4 preview button in both editors → opens the live /site/[subdomain] in a new tab.
+- [x] Frontend build 0 errors, 340 static pages; live route dynamic. Safe runtime check:
+  /site/__nope__ → app 404 "Page Not Found" + "Site not found" title (graceful; sandbox/
+  unknown handled), /demo/restaurant unaffected.
+- [!] VM STEPS (human, cannot run from Claude Code): (a) `prisma db push` for
+  VendorProduct.customFields + VendorCMS.banner; (b) deploy backend (new /cms/site endpoint +
+  DTO changes); (c) map {subdomain}.get4domain.com → /site/[subdomain] via nginx rewrite when
+  ready. Dev frontend targets PROD api (gapi.get4domain.com) and there is no local backend/DB.
+- [!] END-TO-END TEST DEFERRED (autonomy: pause before touching real vendor data): adding a
+  listing as a real test vendor + confirming it renders on the live site writes real data to
+  the (as-yet-unmigrated) prod DB — NOT done here. Do after the VM steps, ideally with a
+  dedicated test vendor. Sandbox-unaffected + image-upload-both-places to be confirmed then.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

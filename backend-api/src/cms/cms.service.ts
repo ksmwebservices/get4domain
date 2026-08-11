@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { VendorCMS, VendorProduct } from '@prisma/client';
+import { Prisma, VendorCMS, VendorProduct } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePlatformCmsDto } from './dto/update-platform-cms.dto';
 import { UpdateVendorCmsDto } from './dto/update-vendor-cms.dto';
@@ -86,7 +86,10 @@ export class CmsService {
   }
 
   addProduct(vendorId: string, dto: CreateProductDto): Promise<VendorProduct> {
-    return this.prisma.vendorProduct.create({ data: { vendorId, ...dto } });
+    const { customFields, ...rest } = dto;
+    return this.prisma.vendorProduct.create({
+      data: { vendorId, ...rest, ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}) },
+    });
   }
 
   async updateProduct(productId: string, dto: UpdateProductDto): Promise<VendorProduct> {
@@ -94,7 +97,40 @@ export class CmsService {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-    return this.prisma.vendorProduct.update({ where: { id: productId }, data: dto });
+    const { customFields, ...rest } = dto;
+    return this.prisma.vendorProduct.update({
+      where: { id: productId },
+      data: { ...rest, ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}) },
+    });
+  }
+
+  /** Public: resolve a live (non-sandbox) vendor's public site by subdomain. */
+  async getSiteBySubdomain(subdomain: string): Promise<{
+    vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
+    cms: VendorCMS | null;
+    products: VendorProduct[];
+  }> {
+    const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
+    if (!vendor || vendor.isSandbox) {
+      throw new NotFoundException('Site not found');
+    }
+    const [cms, products] = await Promise.all([
+      this.prisma.vendorCMS.findUnique({ where: { vendorId: vendor.id } }),
+      this.prisma.vendorProduct.findMany({
+        where: { vendorId: vendor.id, active: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+    return {
+      vendor: {
+        id: vendor.id,
+        businessName: vendor.businessName,
+        industry: vendor.industry ?? 'general',
+        subdomain: vendor.subdomain,
+      },
+      cms,
+      products,
+    };
   }
 
   async deleteProduct(productId: string): Promise<VendorProduct> {

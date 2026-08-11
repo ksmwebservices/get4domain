@@ -92,6 +92,7 @@ export const api = {
     apiCall(`/cms/vendor/${vendorId}`),
   updateVendorCMS: (vendorId: string, data: any) =>
     apiCall(`/cms/vendor/${vendorId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getSite: (subdomain: string) => apiCall(`/cms/site/${subdomain}`),
   getVendorProducts: (vendorId: string) =>
     apiCall(`/cms/vendor/${vendorId}/products`),
   addProduct: (vendorId: string, data: any) =>

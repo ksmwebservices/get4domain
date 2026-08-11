@@ -1,17 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, Plus, Trash2, LayoutTemplate } from 'lucide-react';
+import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, Plus, Trash2, LayoutTemplate, Upload, Image as ImageIcon } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 
-type Tab = 'basic' | 'about' | 'seo' | 'services' | 'template';
+type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'services' | 'template';
 
 interface VendorCms {
   businessName: string | null; tagline: string | null; about: string | null;
+  logo: string | null; banner: string | null;
   phone: string | null; whatsapp: string | null; email: string | null; address: string | null;
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
@@ -19,7 +20,7 @@ interface VendorCms {
 interface Product { id: string; name: string; description?: string; price?: string; category?: string }
 
 const EMPTY: VendorCms = {
-  businessName: '', tagline: '', about: '', phone: '', whatsapp: '', email: '', address: '',
+  businessName: '', tagline: '', about: '', logo: '', banner: '', phone: '', whatsapp: '', email: '', address: '',
   facebook: '', instagram: '', linkedin: '', youtube: '', googleMaps: '',
   seoTitle: '', seoDesc: '', seoKeywords: '', googleAnalyticsId: '',
 };
@@ -38,8 +39,22 @@ export default function WebsiteManagerPage() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
+  const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
 
   const subdomainUrl = user?.subdomain ? `https://${user.subdomain}.get4domain.com` : '';
+  const previewUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
+
+  const uploadFor = async (kind: 'logo' | 'banner', file: File) => {
+    setUploading(kind);
+    try {
+      const r = await api.uploadImage(file);
+      if (r.data?.url) set(kind, r.data.url);
+    } catch {
+      /* optional */
+    } finally {
+      setUploading(null);
+    }
+  };
 
   const load = useCallback(() => {
     if (!user) return;
@@ -82,6 +97,7 @@ export default function WebsiteManagerPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'basic', label: 'Basic Info' },
+    { key: 'branding', label: 'Logo & Banner' },
     { key: 'about', label: 'About & Social' },
     { key: 'services', label: cfg.industry?.entities.catalogItem.labelPlural ?? 'Services' },
     { key: 'seo', label: 'SEO' },
@@ -95,9 +111,9 @@ export default function WebsiteManagerPage() {
           <h1 className="text-xl font-bold text-slate-900">Website Manager</h1>
           <p className="text-sm text-slate-500">Edit your site content — templates are handled for you.</p>
         </div>
-        {subdomainUrl && (
+        {previewUrl && (
           <div className="flex items-center gap-2">
-            <a href={subdomainUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Visit</Button></a>
+            <a href={previewUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Preview my site</Button></a>
             <Button size="sm" variant="ghost" leftIcon={copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success-600" /> : <Copy className="h-3.5 w-3.5" />} onClick={copyUrl}>{copied ? 'Copied' : 'Copy URL'}</Button>
           </div>
         )}
@@ -120,6 +136,49 @@ export default function WebsiteManagerPage() {
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">WhatsApp</label><input className={field} value={cms.whatsapp ?? ''} onChange={(e) => set('whatsapp', e.target.value)} /></div>
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Email</label><input className={field} value={cms.email ?? ''} onChange={(e) => set('email', e.target.value)} /></div>
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Address</label><input className={field} value={cms.address ?? ''} onChange={(e) => set('address', e.target.value)} /></div>
+          </div>
+        )}
+
+        {tab === 'branding' && (
+          <div className="space-y-6">
+            {/* Banner */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Banner image <span className="text-slate-400">— the hero photo at the top of your site</span></label>
+              <div className="overflow-hidden rounded-xl border border-slate-200">
+                {cms.banner ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={cms.banner} alt="Banner" className="h-40 w-full object-cover" />
+                ) : (
+                  <div className="flex h-40 w-full items-center justify-center bg-slate-100 text-slate-400"><ImageIcon className="h-8 w-8" /></div>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  {uploading === 'banner' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {cms.banner ? 'Change banner' : 'Upload banner'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFor('banner', f); }} />
+                </label>
+                {cms.banner && <button type="button" onClick={() => set('banner', '')} className="text-xs text-error-600 hover:underline">Remove</button>}
+              </div>
+            </div>
+            {/* Logo */}
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">Logo</label>
+              <div className="flex items-center gap-3">
+                {cms.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={cms.logo} alt="Logo" className="h-16 w-16 rounded-xl border border-slate-200 object-contain p-1" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><ImageIcon className="h-6 w-6" /></div>
+                )}
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  {uploading === 'logo' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {cms.logo ? 'Change logo' : 'Upload logo'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFor('logo', f); }} />
+                </label>
+                {cms.logo && <button type="button" onClick={() => set('logo', '')} className="text-xs text-error-600 hover:underline">Remove</button>}
+              </div>
+            </div>
           </div>
         )}
 
