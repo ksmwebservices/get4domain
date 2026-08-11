@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 /** Strip +91 / 0 / spaces / dashes / brackets to a clean 10-digit Indian mobile. */
 const toTenDigits = ({ value }: { value: unknown }): unknown => {
@@ -17,6 +17,44 @@ export class SeedVendorDto {
   @ApiProperty({ example: 'travel' })
   @IsString()
   industry!: string;
+}
+
+/** Phase 5 — profile + payment collected at the buy-now conversion. */
+export class ConfirmBuyDto {
+  @ApiProperty({ example: 'Ravi Enterprises' })
+  @IsString()
+  businessName!: string;
+
+  @ApiProperty({ example: 'ravi@example.com' })
+  @IsEmail()
+  email!: string;
+
+  @ApiProperty({ example: 'S3curePass' })
+  @IsString()
+  @MinLength(6)
+  password!: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty()
+  @IsString()
+  razorpayOrderId!: string;
+
+  @ApiProperty()
+  @IsString()
+  razorpayPaymentId!: string;
+
+  @ApiProperty()
+  @IsString()
+  razorpaySignature!: string;
 }
 
 export class DemoEnquiryDto {

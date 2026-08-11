@@ -712,6 +712,53 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
 
 ---
 
+## DISPATCH — GET4DOMAIN_PHASE5_6_DISPATCH_11AUG2026 (Book-Demo buy-now conversion)
+
+Build against Razorpay TEST-MODE keys; live keys are a separate explicit step (not
+this dispatch's completion criteria). Build-verified here (0 errors) — the money flow
+must be tested in test mode on the VM.
+
+### Phase 5 — Buy-now conversion
+- [x] Entry points: "Go live" banner on the vendor dashboard Overview (shown only for
+  sandbox sessions, user.plan==='Demo Sandbox') + a full /dashboard/go-live page.
+  Reachable any time during the tour, not just the end.
+- [x] Full profile + REAL email + password collected at buy-now (not before) —
+  go-live form (businessName/email/password/name/phone), prefilled from the sandbox
+  session where possible.
+- [x] Razorpay checkout for ₹6,999/yr: POST /demo/buy/order creates the order (amount
+  from Pricing Manager domainapp_annual, ₹6,999 fallback) via the existing
+  PaymentsService; frontend opens Razorpay (NEXT_PUBLIC_RAZORPAY_KEY_ID), same pattern
+  as wallet top-up.
+- [x] On payment success → POST /demo/buy/confirm: verifies the signature
+  (PaymentsService.verifySignature) BEFORE any change, then CONVERTS THE SAME Vendor
+  row (no delete/recreate): isSandbox→false, expiresAt→null, real businessName/email/
+  name/phone/password (hashed). Seeded demo data survives (same vendorId). Bad
+  signature throws first → sandbox untouched (still expires normally).
+- [x] Real credentials: reuses the existing pattern — the lead sets a password;
+  EmailService.sendWelcomeEmail delivers it. Returns a real vendor JWT
+  (AuthService.mintVendorToken) so they're logged straight in.
+
+### Phase 6 — Automation on payment success (fully automatic, no admin step)
+- [x] Invoice: REUSES the existing paid-invoice automation — refactored
+  createPaidTopupInvoice into a shared createPaidInvoice; the ₹6,999 signup calls the
+  SAME path (GST-inclusive back-calc, PAID invoice, platformIncome, branded PDF via
+  Resend). No second invoice path.
+- [x] Pro-tier ₹999 AI Studio credit granted at conversion via WalletService.grantCredit
+  (pro_free_credit from Pricing Manager, ₹999 fallback) — the upgrade hook the polish
+  dispatch flagged as missing.
+- [x] Notify: welcome email (credentials) + Fast2SMS Quick SMS "your account is live".
+- [x] Subscription created (DOMAIN_APP / STARTUP / ACTIVE, +1yr) linked to the invoice.
+- [x] Sales-assisted TeleCRM fallback for unconverted verified leads is UNCHANGED.
+- [x] backend + frontend build 0 errors; no new DB migration (uses existing Vendor/
+  Subscription/Invoice/Wallet tables + the Phase 4 isSandbox/expiresAt columns).
+- NOTE (profile scope): Vendor has no address/GSTIN columns, so those aren't collected/
+  stored (would need a migration) — captured businessName/email/name/phone/password.
+- [!] VM TEST (test mode): sandbox lead → Go live → Razorpay TEST payment → confirm the
+  SAME row converts (not new), real login works, invoice PDF generates + email sends,
+  ₹999 credit appears; confirm an abandoned payment leaves the sandbox intact.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

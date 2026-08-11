@@ -117,52 +117,70 @@ export class InvoicesService {
   }
 
   /**
-   * Auto-generate a PAID GST invoice for a successful wallet top-up and email it.
-   * The top-up amount the vendor paid is GST-INCLUSIVE, so GST is back-calculated
-   * (taxable = total / 1.18) — the invoice total always equals the amount charged.
-   * Best-effort: never throws (a failure must not undo the wallet credit).
+   * The single reusable "paid GST invoice" path — used by wallet top-ups AND the
+   * ₹6,999 signup conversion. The amount paid is GST-INCLUSIVE, so GST is
+   * back-calculated (taxable = total / 1.18) — the invoice total always equals the
+   * amount charged. Records platform income + emails the branded PDF (Resend).
+   * Best-effort: never throws (a failure must not undo the payment/credit).
    */
-  async createPaidTopupInvoice(
-    vendorId: string,
-    paidPaise: number,
-    credits: number,
-    paymentId?: string,
-  ): Promise<Invoice | null> {
+  async createPaidInvoice(opts: {
+    vendorId: string;
+    paidPaise: number;
+    description: string;
+    paymentMode: string;
+    source: string;
+    paymentId?: string;
+    subscriptionId?: string;
+    nextRenewal?: Date | null;
+  }): Promise<Invoice | null> {
     try {
-      const taxable = Math.round(paidPaise / (1 + GST_RATE));
-      const gstAmount = paidPaise - taxable;
+      const taxable = Math.round(opts.paidPaise / (1 + GST_RATE));
+      const gstAmount = opts.paidPaise - taxable;
       const invoiceNumber = await this.generateInvoiceNumber();
-      const description = `Wallet top-up — ₹${(paidPaise / 100).toFixed(2)} paid, ${(credits / 100).toFixed(2)} credits added`;
 
       const invoice = await this.prisma.invoice.create({
         data: {
           invoiceNumber,
-          vendorId,
-          description,
+          vendorId: opts.vendorId,
+          subscriptionId: opts.subscriptionId,
+          description: opts.description,
           amount: taxable,
           gstAmount,
-          totalAmount: paidPaise,
+          totalAmount: opts.paidPaise,
           status: 'PAID',
           paidAt: new Date(),
-          razorpayPaymentId: paymentId,
+          razorpayPaymentId: opts.paymentId,
         },
         include: { vendor: true },
       });
 
       await this.prisma.platformIncome.create({
-        data: { vendorId, invoiceId: invoice.id, amount: paidPaise, source: 'wallet_topup', description },
+        data: { vendorId: opts.vendorId, invoiceId: invoice.id, amount: opts.paidPaise, source: opts.source, description: opts.description },
       });
 
       const html = renderInvoiceHtml(invoice, invoice.vendor, {
         company: await this.resolveCompany(),
-        paymentMode: 'Wallet Top-up (Razorpay)',
-        lineItems: [{ description, price: taxable, discount: 0 }],
+        paymentMode: opts.paymentMode,
+        nextRenewal: opts.nextRenewal ?? null,
+        lineItems: [{ description: opts.description, price: taxable, discount: 0 }],
       });
       await this.emailService.sendInvoiceEmail(invoice.vendor, invoice, html);
       return invoice;
     } catch {
       return null;
     }
+  }
+
+  /** Wallet top-up invoice — thin wrapper over the shared createPaidInvoice path. */
+  async createPaidTopupInvoice(vendorId: string, paidPaise: number, credits: number, paymentId?: string): Promise<Invoice | null> {
+    return this.createPaidInvoice({
+      vendorId,
+      paidPaise,
+      description: `Wallet top-up — ₹${(paidPaise / 100).toFixed(2)} paid, ${(credits / 100).toFixed(2)} credits added`,
+      paymentMode: 'Wallet Top-up (Razorpay)',
+      source: 'wallet_topup',
+      paymentId,
+    });
   }
 
   async sendPaymentLink(id: string): Promise<{ shortUrl: string }> {

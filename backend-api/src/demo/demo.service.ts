@@ -1,9 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Vendor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WalletService } from '../wallet/wallet.service';
+import { PaymentsService } from '../payments/payments.service';
+import { InvoicesService } from '../invoices/invoices.service';
+import { AuthService } from '../auth/auth.service';
+import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
+import { ConfirmBuyDto } from './dto/demo.dto';
 import { getIndustryConfig } from '../config/industries';
 import { DEMO_CONTENT, buildFallback, NAME_POOL, DemoContent, getSectionMeta } from './demo-content';
 
@@ -23,7 +29,80 @@ export class DemoService {
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsappService,
     private readonly wallet: WalletService,
+    private readonly payments: PaymentsService,
+    private readonly invoices: InvoicesService,
+    private readonly auth: AuthService,
+    private readonly email: EmailService,
+    private readonly sms: SmsService,
   ) {}
+
+  /** Phase 5 — create a Razorpay order for the ₹6,999/yr go-live upgrade of a sandbox. */
+  async createBuyOrder(vendorId: string): Promise<{ orderId: string; amount: number; currency: string }> {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor || !vendor.isSandbox) throw new BadRequestException('No active demo sandbox to upgrade');
+    const amount = await this.wallet.getRate('domainapp_annual', 699900); // paise
+    const order = await this.payments.createOrder({ amount, currency: 'INR', receipt: `golive_${vendorId}_${Date.now()}` });
+    return { orderId: order.id, amount: Number(order.amount), currency: order.currency };
+  }
+
+  /**
+   * Phase 5 & 6 — on verified payment, CONVERT the sandbox row in place (no delete/
+   * recreate): flip isSandbox off, clear expiry, attach the real profile + password.
+   * Then (Phase 6, automatic): create the subscription, the paid GST invoice (shared
+   * path), grant the Pro AI-Studio credit, and email/SMS "your account is live".
+   * A bad signature throws BEFORE any conversion, so an abandoned/failed payment
+   * leaves the sandbox untouched (it still expires normally).
+   */
+  async convertSandbox(vendorId: string, dto: ConfirmBuyDto): Promise<{ token: string; vendorId: string }> {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor || !vendor.isSandbox) throw new BadRequestException('This demo session is no longer available');
+
+    if (!this.payments.verifySignature(dto.razorpayOrderId, dto.razorpayPaymentId, dto.razorpaySignature)) {
+      throw new BadRequestException('Payment verification failed'); // sandbox left untouched
+    }
+
+    const clash = await this.prisma.vendor.findFirst({ where: { email: dto.email, id: { not: vendorId } } });
+    if (clash) throw new BadRequestException('That email is already registered — please use another or log in.');
+
+    const hashed = await AuthService.hashPassword(dto.password);
+    const converted = await this.prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        isSandbox: false,
+        expiresAt: null,
+        businessName: dto.businessName,
+        email: dto.email,
+        name: dto.name || vendor.name,
+        phone: dto.phone || vendor.phone,
+        password: hashed,
+      },
+    });
+
+    const now = new Date();
+    const end = new Date(now); end.setFullYear(end.getFullYear() + 1);
+    const amount = await this.wallet.getRate('domainapp_annual', 699900);
+    const sub = await this.prisma.subscription.create({
+      data: { vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount, status: 'ACTIVE', startDate: now, endDate: end },
+    });
+
+    // Phase 6 automation — all best-effort; conversion already succeeded.
+    try {
+      await this.invoices.createPaidInvoice({
+        vendorId, paidPaise: amount, description: 'DomainApp Annual Subscription (₹6,999/year)',
+        paymentMode: 'Razorpay', source: 'subscription', paymentId: dto.razorpayPaymentId,
+        subscriptionId: sub.id, nextRenewal: end,
+      });
+    } catch (e) { this.logger.error(`Signup invoice failed for ${vendorId}: ${e instanceof Error ? e.message : 'unknown'}`); }
+    try {
+      const proCredit = await this.wallet.getRate('pro_free_credit', 99900); // ₹999
+      await this.wallet.grantCredit(vendorId, proCredit, 'Pro plan AI Studio credit', 'pro_credit');
+    } catch { /* best-effort */ }
+    try { await this.email.sendWelcomeEmail(converted, dto.password); } catch { /* best-effort */ }
+    try { await this.sms.sendSms(converted.phone ?? dto.phone ?? '', 'Your Get4Domain account is live! Log in at get4domain.com/login'); } catch { /* best-effort */ }
+
+    this.logger.log(`Sandbox ${vendorId} converted to a live vendor (subscription ${sub.id})`);
+    return { token: this.auth.mintVendorToken(vendorId, converted.email), vendorId };
+  }
 
   /** Multi-section industry website payload (Phase 2): hero + navigable sections. */
   getSite(industryKey: string) {

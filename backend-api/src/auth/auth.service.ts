@@ -125,6 +125,11 @@ export class AuthService {
     );
   }
 
+  /** Full vendor token issued after a sandbox converts to a real paid account (Phase 5). */
+  mintVendorToken(vendorId: string, email: string): string {
+    return this.signToken({ sub: vendorId, email, role: 'VENDOR' });
+  }
+
   static async hashPassword(plain: string): Promise<string> {
     return bcrypt.hash(plain, 10);
   }

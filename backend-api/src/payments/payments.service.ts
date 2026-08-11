@@ -64,6 +64,16 @@ export class PaymentsService {
     });
   }
 
+  /** Pure Razorpay checkout signature check (order|payment HMAC). Reusable by
+   *  flows that aren't tied to a pre-existing invoice (e.g. the buy-now conversion). */
+  verifySignature(orderId: string, paymentId: string, signature: string): boolean {
+    const expected = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+    return expected === signature;
+  }
+
   async verifyPayment(dto: VerifyPaymentDto): Promise<{ verified: boolean }> {
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)

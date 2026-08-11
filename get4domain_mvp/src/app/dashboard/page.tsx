@@ -85,8 +85,23 @@ export default function DashboardHome() {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   }
 
+  const isSandbox = user?.plan === 'Demo Sandbox';
+
   return (
     <div className="space-y-6">
+      {/* Sandbox → go-live banner (Phase 5). Shown only for demo sandbox sessions. */}
+      {isSandbox && (
+        <Link href="/dashboard/go-live" className="block rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 p-5 text-white transition-shadow hover:shadow-lg">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-base font-bold">You&apos;re exploring a demo sandbox</div>
+              <div className="mt-0.5 text-sm text-white/90">Loved it? Go live with your real account — everything included for ₹6,999/year. Your demo data carries over.</div>
+            </div>
+            <span className="flex-shrink-0 rounded-xl bg-white px-4 py-2 text-sm font-bold text-primary-700">Go live →</span>
+          </div>
+        </Link>
+      )}
+
       {/* Top */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
