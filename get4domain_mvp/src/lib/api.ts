@@ -260,12 +260,26 @@ export const api = {
     apiCall('/admin-team/invite/accept', { method: 'POST', body: JSON.stringify(data) }),
 
   // AI campaign content
-  generateAiContent: (data: { channel: string; vendorIndustry: string; offerDetails: string; tone?: string }) =>
+  generateAiContent: (data: { channel: string; vendorIndustry: string; offerDetails: string; tone?: string; skipImage?: boolean }) =>
     apiCall('/ai/generate-content', { method: 'POST', body: JSON.stringify(data) }),
   generateAiCallSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) =>
     apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
   generateDesignImage: (prompt: string) =>
     apiCall('/ai/generate-image', { method: 'POST', body: JSON.stringify({ prompt }) }),
+  // Image upload (multipart) — stored on the VM disk, returns { data: { url } }.
+  uploadImage: async (file: File): Promise<{ data?: { url: string } }> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API_BASE}/uploads`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload failed');
+    return data;
+  },
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
   getVideoProvider: () => apiCall('/video/provider'),

@@ -245,8 +245,9 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
       await this.walletService.deduct(vendorId, cost, `AI ${dto.channel} content generated`, `ai_content_${dto.channel}`);
     }
 
-    // Image is a best-effort add-on to the text — a failure here doesn't fail the post.
-    const img = IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
+    // Image is a best-effort add-on to the text — a failure here doesn't fail the
+    // post. Skipped entirely when the vendor supplied their own image (skipImage).
+    const img = !dto.skipImage && IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
 
     return { ...parsed, imageUrl: img?.url ?? null };
   }

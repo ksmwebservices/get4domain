@@ -35,6 +35,7 @@ import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -77,6 +78,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     OtpModule,
     VideoModule,
     DemoModule,
+    UploadsModule,
   ],
   providers: [
     {

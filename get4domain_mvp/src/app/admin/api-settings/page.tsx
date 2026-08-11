@@ -55,6 +55,22 @@ export default function IntegrationsPage() {
     }
   };
 
+  const [logoUploading, setLogoUploading] = useState(false);
+  const uploadLogo = async (file: File) => {
+    setLogoUploading(true); setError('');
+    try {
+      const r = await api.uploadImage(file);
+      const url = r.data?.url;
+      if (!url) throw new Error('Upload returned no URL');
+      await api.setPlatformSetting('company', 'logo_url', url);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logo upload failed');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const test = async (category: string, key: string) => {
     try {
       const res = await api.testPlatformSetting(category, key);
@@ -112,22 +128,36 @@ export default function IntegrationsPage() {
                       {tr.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}{tr.msg}
                     </div>
                   )}
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type={s.secret ? 'password' : 'text'}
-                      placeholder={`New ${s.label}`}
-                      value={drafts[id(s.category, s.key)] ?? ''}
-                      onChange={(e) => setDrafts((d) => ({ ...d, [id(s.category, s.key)]: e.target.value }))}
-                      className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-primary-500 focus:outline-none"
-                    />
-                    <button
-                      onClick={() => save(s.category, s.key)}
-                      disabled={!drafts[id(s.category, s.key)] || savingKey === id(s.category, s.key)}
-                      className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-40"
-                    >
-                      <Save className="h-4 w-4" />Save
-                    </button>
-                  </div>
+                  {s.category === 'company' && s.key === 'logo_url' ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      {s.maskedValue?.startsWith('http') && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.maskedValue} alt="Company logo" className="h-12 w-auto max-w-[160px] rounded bg-white p-1 object-contain" />
+                      )}
+                      <label className="cursor-pointer rounded-xl border border-slate-700 px-3.5 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">
+                        {logoUploading ? 'Uploading…' : s.maskedValue ? 'Replace logo' : 'Upload logo'}
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} />
+                      </label>
+                      <span className="text-xs text-slate-500">Stored on our server — the URL is set automatically. No external hosting needed.</span>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type={s.secret ? 'password' : 'text'}
+                        placeholder={`New ${s.label}`}
+                        value={drafts[id(s.category, s.key)] ?? ''}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [id(s.category, s.key)]: e.target.value }))}
+                        className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-primary-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => save(s.category, s.key)}
+                        disabled={!drafts[id(s.category, s.key)] || savingKey === id(s.category, s.key)}
+                        className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-40"
+                      >
+                        <Save className="h-4 w-4" />Save
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}

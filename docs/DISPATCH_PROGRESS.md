@@ -826,6 +826,32 @@ must be tested in test mode on the VM.
   → Owner: retry now; the surfaced message will say exactly what OpenAI rejected
   (most likely an invalid/expired key or missing image/billing access on the account).
 
+## FEATURE — Image upload (local VM disk storage) (12 Aug 2026)
+
+Shared storage: uploaded images are written to `<cwd>/uploads` on the VM disk and
+served by the backend at `/uploads/*` (main.ts app.useStaticAssets). New authed
+endpoint POST /uploads (UploadsModule) — in-memory FileInterceptor (5MB, image
+mimetypes only), writes the buffer with a unique name + real extension, returns an
+absolute URL (PUBLIC_API_URL or the request host). No @types/multer / cloud storage
+needed. Frontend api.uploadImage(file) posts multipart with the auth token.
+
+- [x] Item 1 — AI Studio content generation: for image-relevant types (Social Post,
+  Festival Poster, Ad Creative) the generation modal now has an "Your own image
+  (optional)" uploader — use a real product/property photo or logo. When an image is
+  uploaded, generateContent is called with skipImage:true (no AI image cost) and the
+  result shows the vendor's image + the AI caption; otherwise the AI image is shown.
+  (Content-gen previously didn't display any image at all — now it does.)
+- [x] Item 2 — Admin → Integrations → Company Logo: the logo_url text field is
+  replaced with a file-upload widget (preview + Replace). Upload stores the file on
+  our server and sets company/logo_url to the returned URL automatically — no external
+  hosting required. Invoices then render the real KSM logo.
+- [x] backend + frontend build 0 errors.
+- [!] VM DEPLOY NOTES:
+  * Persist the uploads folder — mount `<backend>/uploads` (or /app/uploads in Docker)
+    as a VOLUME so uploaded files survive container restarts/redeploys.
+  * Set PUBLIC_API_URL=https://gapi.get4domain.com so returned URLs are https behind
+    the nginx proxy (otherwise they inherit the proxied req protocol).
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

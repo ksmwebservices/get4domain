@@ -34,6 +34,10 @@ const CONTENT_TYPES: ContentType[] = [
 
 const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 
+// Content types where a visual image makes sense — these show the "upload your own
+// image" option (use a real product/property photo or logo instead of AI imagery).
+const IMAGE_TYPES = new Set(['social_post', 'festival_poster', 'ad_creative']);
+
 // Document generators — simple HTML templates filled with the vendor's business
 // data, downloaded via browser print-to-PDF. No wallet cost, no AI backend.
 type DocKey = 'letterhead' | 'id_card' | 'visiting_card';
@@ -224,8 +228,25 @@ export default function AiStudioPage() {
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
 
+  const [uploadImg, setUploadImg] = useState<string | null>(null);
+  const [resultImg, setResultImg] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadContentImage = async (file: File) => {
+    setUploading(true); setGenError('');
+    try {
+      const r = await api.uploadImage(file);
+      setUploadImg(r.data?.url ?? null);
+    } catch (e) {
+      setGenError(e instanceof Error ? e.message : 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const openType = (ct: ContentType) => {
     setActive(ct); setPurpose(''); setDetails(''); setTone(TONES[0]); setResult('');
+    setUploadImg(null); setResultImg(null);
   };
 
   const generate = async () => {
@@ -239,8 +260,10 @@ export default function AiStudioPage() {
         vendorIndustry: user?.industry ?? 'general',
         offerDetails: `${purpose}. Details: ${details}`,
         tone,
+        skipImage: !!uploadImg, // vendor supplied their own image → skip AI image
       });
       setResult(res.data?.caption ?? res.data?.content ?? res.data?.text ?? JSON.stringify(res.data));
+      setResultImg(uploadImg ?? (res.data?.imageUrl as string | null) ?? null);
       refreshBalance();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'generation failed';
@@ -369,6 +392,29 @@ export default function AiStudioPage() {
             </Select>
             <Textarea label="Key details" placeholder="What should this content say?" value={details} onChange={(e) => setDetails(e.target.value)} />
 
+            {IMAGE_TYPES.has(active.key) && (
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-slate-800">Your own image <span className="font-normal text-slate-400">(optional)</span></div>
+                    <div className="text-xs text-slate-400">Use a real product/property photo or your logo instead of AI imagery.</div>
+                  </div>
+                  <label className="flex-shrink-0 cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
+                    {uploading ? 'Uploading…' : uploadImg ? 'Change' : 'Upload'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadContentImage(f); }} />
+                  </label>
+                </div>
+                {uploadImg && (
+                  <div className="mt-3 flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={uploadImg} alt="Your upload" className="h-14 w-14 rounded-lg border border-slate-200 object-cover" />
+                    <span className="text-xs text-success-600">Will be used instead of an AI image.</span>
+                    <button onClick={() => setUploadImg(null)} className="ml-auto text-xs font-medium text-slate-500 hover:text-error-600">Remove</button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-between rounded-xl bg-primary-50 px-4 py-2.5">
               <span className="text-sm text-primary-700">Estimated cost</span>
               <span className="text-sm font-bold text-primary-700">{isInternalStaff ? 'Free (internal)' : `~₹${active.cost}`}</span>
@@ -388,6 +434,13 @@ export default function AiStudioPage() {
             {result && (
               <div>
                 <div className="mb-1.5 text-sm font-medium text-slate-700">Result</div>
+                {resultImg && (
+                  <div className="mb-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={resultImg} alt="Content" className="max-h-64 w-full rounded-xl border border-slate-200 object-contain" />
+                    <a href={resultImg} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Download className="h-3 w-3" /> Open / download image</a>
+                  </div>
+                )}
                 <Textarea value={result} onChange={(e) => setResult(e.target.value)} className="min-h-[160px]" />
               </div>
             )}

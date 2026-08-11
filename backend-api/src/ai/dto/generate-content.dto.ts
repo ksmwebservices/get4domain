@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 
 export const CONTENT_CHANNELS = [
   // AI Studio content types
@@ -25,4 +25,9 @@ export class GenerateContentDto {
   @IsOptional()
   @IsString()
   tone?: string;
+
+  @ApiProperty({ required: false, description: 'Skip AI image generation (vendor supplied their own image)' })
+  @IsOptional()
+  @IsBoolean()
+  skipImage?: boolean;
 }
