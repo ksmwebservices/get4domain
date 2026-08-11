@@ -303,6 +303,45 @@ export const DEMO_CONTENT: Record<string, DemoContent> = {
   },
 };
 
+// ── Multi-section site metadata (Phase 4 dispatch) ─────────────────────────
+// Per-industry section labels for the multi-section demo site. Keyed by the
+// DomainApp config key (clinic/salon/gym — canonical aliases resolve to these).
+// Sections are assembled in demo.service.buildSections() from this + DEMO_CONTENT.
+export interface SectionMeta {
+  catalogLabel: string;       // Menu / Tour Packages / Services / Products …
+  bookingLabel?: string;      // Appointments / Reservations / Book a Trip …
+  teamLabel?: string;         // "Our Doctors" — omit where a team doesn't fit
+  teamRole?: string;          // Doctor / Stylist / Trainer …
+}
+
+export const SECTION_META: Record<string, SectionMeta> = {
+  travel: { catalogLabel: 'Tour Packages', bookingLabel: 'Book a Trip' },
+  restaurant: { catalogLabel: 'Menu', bookingLabel: 'Reservations' },
+  clinic: { catalogLabel: 'Services', bookingLabel: 'Appointments', teamLabel: 'Our Doctors', teamRole: 'Doctor' },
+  hotel: { catalogLabel: 'Rooms & Halls', bookingLabel: 'Reservations' },
+  salon: { catalogLabel: 'Services', bookingLabel: 'Appointments', teamLabel: 'Our Stylists', teamRole: 'Stylist' },
+  gym: { catalogLabel: 'Memberships', bookingLabel: 'Book a Session', teamLabel: 'Our Trainers', teamRole: 'Trainer' },
+  realestate: { catalogLabel: 'Listings', bookingLabel: 'Book a Visit', teamLabel: 'Our Agents', teamRole: 'Agent' },
+  education: { catalogLabel: 'Courses', bookingLabel: 'Enrol Now', teamLabel: 'Our Faculty', teamRole: 'Teacher' },
+  retail: { catalogLabel: 'Products', bookingLabel: 'Enquire' },
+  construction: { catalogLabel: 'Services', bookingLabel: 'Get a Quote', teamLabel: 'Our Team', teamRole: 'Engineer' },
+  events: { catalogLabel: 'Packages', bookingLabel: 'Book an Event', teamLabel: 'Our Team', teamRole: 'Planner' },
+  finance: { catalogLabel: 'Services', bookingLabel: 'Book a Consultation', teamLabel: 'Our Advisors', teamRole: 'Advisor' },
+  automobile: { catalogLabel: 'Services', bookingLabel: 'Book a Service' },
+  logistics: { catalogLabel: 'Services', bookingLabel: 'Get a Quote' },
+  diagnostics: { catalogLabel: 'Tests', bookingLabel: 'Book a Test' },
+  photography: { catalogLabel: 'Packages', bookingLabel: 'Book a Shoot', teamLabel: 'Our Photographers', teamRole: 'Photographer' },
+  professional: { catalogLabel: 'Services', bookingLabel: 'Book a Consultation', teamLabel: 'Our Team', teamRole: 'Consultant' },
+  agriculture: { catalogLabel: 'Products', bookingLabel: 'Enquire' },
+  coaching: { catalogLabel: 'Programs', bookingLabel: 'Join a Batch', teamLabel: 'Our Coaches', teamRole: 'Coach' },
+  technology: { catalogLabel: 'Services', bookingLabel: 'Get a Quote', teamLabel: 'Our Team', teamRole: 'Engineer' },
+  general: { catalogLabel: 'Services', bookingLabel: 'Enquire' },
+};
+
+export function getSectionMeta(key: string): SectionMeta {
+  return SECTION_META[key] ?? SECTION_META.general;
+}
+
 /** Generic content derived from an industry config, for keys not in DEMO_CONTENT. */
 export function buildFallback(label: string, catalogPlural: string): DemoContent {
   return {

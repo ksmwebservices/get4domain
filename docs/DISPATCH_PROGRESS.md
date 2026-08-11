@@ -553,20 +553,29 @@ VM MIGRATION for this addition (Lead gains 2 columns):
   stores the canonical id. All three lists (dropdown, /industries, /demo configs)
   are now the same 20 canonical ids. Both apps build 0 errors.
 
-### Phase 2 enhancement (multi-section demo sites, all categories) — NEXT
-- [ ] Rebuild /demo/[industry] as a multi-section site matching each industry's
-  own marketing "Website Pages Included" (industry-content.websitePages), with real
-  section navigation, populated by Phase 3 seed data. Config-driven single renderer
-  (not 20 hand-built pages). PLANNED.
+### Phase 2 enhancement (multi-section demo sites, all categories) — DONE
+- [x] /demo/[industry] rebuilt as a navigable multi-section site: sticky header nav
+  + hero + sections (catalog, team, booking, reviews, about, contact) per industry.
+  Config-driven single renderer (not 20 files). Sections come from SECTION_META
+  (per-industry labels: Menu/Tour Packages/Doctors/Appointments/…) + demo content;
+  team + booking records derive from the SAME NAME_POOL + services that seedVendor
+  writes, so the public site and the seeded DB share one source. Covers all 20 via
+  canonical aliases + general fallback. Reuses ChatBot + MarketingBottomNav +
+  Fast2SMS enquiry. Both apps build 0 errors. (Backend-data-driven → build-verified;
+  render needs the API running.)
 
-### Phase 4 (interactive tour) — BLOCKED on 2 design decisions (dispatch mandates confirm)
-- [!] DECISION 1: sandbox session/auth after OTP verify (short-lived signed token /
-  magic-link scoped to sandbox vendorId — confirm vs existing auth patterns).
-- [!] DECISION 2: per-lead sandbox vendor vs shared per-industry demo vendor
-  (dispatch recommends per-lead + expiry — confirm).
-- [ ] Then: Vendor.isSandbox + expiresAt (migration), provision on OTP verify +
-  seedVendor(), route site→dashboard→customer portal (reuse shared components,
-  vendorId-scoped), auto-expire + cleanup. Phases 5–6 remain OUT OF SCOPE.
+### Phase 4 (interactive tour) — decisions CONFIRMED, build NEXT
+Confirmed: (1) short-lived sandbox JWT (kind:'sandbox', vendorId, exp ~24–48h),
+read like a normal vendor token; (2) per-lead sandbox Vendor + expiry (auto-clean);
+(3) [Phase 2] static per-section samples as the shared source — done above.
+- [ ] Vendor.isSandbox + expiresAt columns (Prisma migration).
+- [ ] On OTP verify (verifyDemoLead): provision a per-lead sandbox Vendor scoped to
+  the selected industry, call seedVendor(), mint a scoped sandbox JWT, return it so
+  the tour can open the dashboard.
+- [ ] Tour routing: demo site → vendor dashboard → customer portal, all backed by
+  the sandbox vendorId (reuse shared components, normal vendorId scoping).
+- [ ] Auto-expire + cleanup job (or filter expired sandboxes from admin views).
+- Phases 5–6 (Razorpay checkout, auto-activation) remain OUT OF SCOPE.
 
 ---
 

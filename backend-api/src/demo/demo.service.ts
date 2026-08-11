@@ -2,7 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { getIndustryConfig } from '../config/industries';
-import { DEMO_CONTENT, buildFallback, NAME_POOL, DemoContent } from './demo-content';
+import { DEMO_CONTENT, buildFallback, NAME_POOL, DemoContent, getSectionMeta } from './demo-content';
+
+type SiteSection =
+  | { type: 'catalog'; label: string; items: { name: string; price: number; desc: string }[] }
+  | { type: 'team'; label: string; members: { name: string; role: string }[] }
+  | { type: 'booking'; label: string; records: { title: string; when: string; status: string }[] }
+  | { type: 'reviews'; label: string; items: { name: string; text: string }[] }
+  | { type: 'about'; label: string; text: string }
+  | { type: 'contact'; label: string };
 
 @Injectable()
 export class DemoService {
@@ -13,7 +21,7 @@ export class DemoService {
     private readonly whatsapp: WhatsappService,
   ) {}
 
-  /** Industry website payload (Phase 2): labels from config + demo content. */
+  /** Multi-section industry website payload (Phase 2): hero + navigable sections. */
   getSite(industryKey: string) {
     const config = getIndustryConfig(industryKey);
     const content = this.resolveContent(config.key);
@@ -22,8 +30,47 @@ export class DemoService {
       label: config.label,
       icon: config.icon,
       entities: config.entities,
-      content,
+      business: content.business,
+      tagline: content.tagline,
+      about: content.about,
+      sections: this.buildSections(config.key, content),
     };
+  }
+
+  /** Assemble the ordered, navigable sections for an industry's demo site. */
+  private buildSections(key: string, content: DemoContent): SiteSection[] {
+    const config = getIndustryConfig(key);
+    const meta = getSectionMeta(config.key);
+    const statuses = config.recordStatuses.length ? config.recordStatuses : [{ key: 'confirmed', label: 'Confirmed', color: '#2563eb' }];
+    const when = ['Today', 'Tomorrow', 'In 2 days', 'In 3 days', 'Next week'];
+
+    const sections: SiteSection[] = [];
+    sections.push({ type: 'catalog', label: meta.catalogLabel, items: content.services });
+
+    if (meta.teamLabel && meta.teamRole) {
+      sections.push({
+        type: 'team',
+        label: meta.teamLabel,
+        members: NAME_POOL.slice(0, 3).map((name) => ({ name, role: meta.teamRole as string })),
+      });
+    }
+
+    if (meta.bookingLabel) {
+      sections.push({
+        type: 'booking',
+        label: meta.bookingLabel,
+        records: content.services.slice(0, 4).map((s, i) => ({
+          title: `${s.name} — ${NAME_POOL[i % NAME_POOL.length]}`,
+          when: when[i % when.length],
+          status: statuses[i % statuses.length].label,
+        })),
+      });
+    }
+
+    sections.push({ type: 'reviews', label: 'Reviews', items: content.testimonials });
+    sections.push({ type: 'about', label: 'About', text: content.about });
+    sections.push({ type: 'contact', label: 'Contact' });
+    return sections;
   }
 
   private resolveContent(key: string): DemoContent {
