@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Home, FileText, Receipt, LifeBuoy, LogOut, Phone, Loader2 } from 'lucide-react';
+import TourNav from '@/components/TourNav';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 const TOKEN_KEY = 'g4d_customer_token';
@@ -229,6 +230,7 @@ export default function CustomerPortal() {
           );
         })}
       </nav>
+      <TourNav />
     </div>
   );
 }

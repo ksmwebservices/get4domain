@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Phone, MessageCircle, Star, Check, CalendarDays, Sparkles } from 'lucide-react';
 import ChatBot from '@/components/ChatBot';
+import TourNav from '@/components/TourNav';
 import { api } from '@/lib/api';
 import { industryContent } from '@/data/industry-content';
 
@@ -252,6 +253,7 @@ export default function DemoIndustrySite() {
 
       {/* Floating chat only — no app bottom-nav on the public demo site */}
       <ChatBot />
+      <TourNav />
     </div>
   );
 }

@@ -71,10 +71,13 @@ export default function BookDemoPage() {
     }
   };
 
-  // Seat the short-lived sandbox session and open the vendor dashboard tour.
+  // Seat the sandbox session + tour context and enter the unified tour on the
+  // demo website. The floating TourNav then switches between website / dashboard /
+  // customer portal in the same session (no re-auth).
   const startTour = () => {
     if (!sandbox) return;
     localStorage.setItem('g4d_token', sandbox.token);
+    localStorage.setItem('g4d_tour', JSON.stringify({ industry: sandbox.industry, customerToken: sandbox.customerToken ?? null }));
     setSession({
       id: sandbox.vendorId,
       name: name || 'Demo User',
@@ -85,14 +88,7 @@ export default function BookDemoPage() {
       plan: 'Demo Sandbox',
       initials: (name || 'D').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
     });
-    window.location.href = '/dashboard';
-  };
-
-  // Seat the scoped customer-portal session and open the customer side of the tour.
-  const startCustomerTour = () => {
-    if (!sandbox?.customerToken) return;
-    localStorage.setItem('g4d_customer_token', sandbox.customerToken);
-    window.location.href = '/customer';
+    window.location.href = `/demo/${sandbox.industry}`;
   };
 
   /* --------------------------------- done ---------------------------------- */
@@ -119,19 +115,16 @@ export default function BookDemoPage() {
               Thanks, {name.split(' ')[0] || 'there'}. Your {industryName || 'business'} demo is ready. Take an interactive tour
               of Get4Domain, or our team will call you to walk through it.
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row justify-center">
-              <Link href={`/demo/${industry || 'general'}`}><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
-              <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled={!sandbox} onClick={startTour}
-                title={sandbox ? 'Open your live sandbox dashboard' : 'Setting up your sandbox…'}>Start Demo Tour</Button>
+            <div className="mt-6 flex justify-center">
+              {sandbox ? (
+                <Button size="lg" leftIcon={<PlayCircle className="h-5 w-5" />} onClick={startTour}>Start Interactive Tour</Button>
+              ) : (
+                <Link href={`/demo/${industry || 'general'}`}><Button size="lg" variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
+              )}
             </div>
-            {sandbox?.customerToken && (
-              <button onClick={startCustomerTour} className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700">
-                Or see the customer portal side →
-              </button>
-            )}
             <p className="mt-4 text-xs text-slate-400">
               {sandbox
-                ? 'Your sandbox dashboard is preloaded with sample data and expires in 48 hours.'
+                ? 'One tour, everything included — switch between your website, dashboard and customer portal from the floating menu. Sandbox expires in 48 hours.'
                 : 'The guided interactive demo is rolling out shortly. You’re on the list.'}
             </p>
           </div>

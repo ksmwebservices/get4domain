@@ -786,7 +786,25 @@ must be tested in test mode on the VM.
   status), send passes contactId + reloads. Inbound (provider webhooks) noted as future.
 - [!] VM MIGRATION: new g4d_messages table — `prisma db push` (folds in with prior
   pending columns). Build-verified; not live-tested.
-- [ ] Item 1 (tour consolidation + unified switcher + View Website) — NEXT.
+### Item 1 — Tour consolidation + unified switcher + View Website
+- [x] Single entry: the book-demo success screen now shows ONE "Start Interactive
+  Tour" button (replaces Explore Demo Site / Start Demo Tour / Customer Portal). It
+  seats the sandbox session + a tour context (g4d_tour = {industry, customerToken})
+  and enters the tour on the demo website. Falls back to a plain "Explore Demo Site"
+  link if provisioning failed.
+- [x] In-context switcher: new <TourNav/> floating nav (Website / Dashboard /
+  Customer + Go live + Exit), mounted on the demo site, the vendor dashboard, and the
+  customer portal. Renders only when a tour is active (g4d_tour present), so it's safe
+  everywhere. Switches within the SAME session — website is public, dashboard uses the
+  seated sandbox JWT, and the Customer tab seats the pre-minted customer-portal token
+  (g4d_customer_token) before navigating, BRIDGING the portal's separate auth to the
+  same sandbox session — no OTP re-login to switch.
+- [x] Persistent "View Website" link in the vendor dashboard sidebar (opens
+  /demo/[industry] in a new tab) — available from the dashboard for every vendor, plus
+  the TourNav Website tab from inside the tour. Not a one-way entry.
+- [x] frontend builds 0 errors. NOTE: customer-portal sessions are in-memory (Phase 4
+  limitation) — a backend restart drops them and the Customer tab falls back to the
+  portal login. Build-verified; live click-through needs the VM.
 
 ---
 

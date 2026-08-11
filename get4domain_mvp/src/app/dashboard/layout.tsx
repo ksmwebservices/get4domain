@@ -13,6 +13,7 @@ import LockedBadge from '@/components/ui/LockedBadge';
 import UpgradeModal from '@/components/UpgradeModal';
 import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
+import TourNav from '@/components/TourNav';
 
 interface NavItem {
   label: string;
@@ -198,6 +199,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
 
+        {/* Persistent link to the public website (opens in a new tab) */}
+        <a href={`/demo/${user.industry ?? 'general'}`} target="_blank" rel="noopener noreferrer"
+          className="mx-3 mt-3 flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
+          <Icon name="Globe" className="h-4 w-4" /> View Website
+        </a>
+
         <nav
           className="flex-1 px-3 py-4 space-y-4"
           style={{
@@ -328,6 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       />
 
       <InstallPrompt />
+      <TourNav />
     </div>
   );
 }
