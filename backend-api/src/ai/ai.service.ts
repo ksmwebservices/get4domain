@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ChatDto } from './dto/chat.dto';
 import { GenerateContentDto } from './dto/generate-content.dto';
 import { AiGeneratePageDto } from './dto/generate-page.dto';
@@ -148,6 +148,25 @@ export class AiService {
 
     const data = (await response.json()) as AnthropicResponse;
     return data.content.find((block) => block.type === 'text')?.text ?? '';
+  }
+
+  /**
+   * Design-only background image for a structured document (Letterhead / Visiting
+   * Card / ID Card). The real business text is overlaid crisply by the client — the
+   * image is JUST the design (no text), so nothing gets garbled. Free for internal
+   * staff; returns null when no image key is configured (client falls back to a
+   * CSS design).
+   */
+  async generateDesignImage(vendorId: string, prompt: string, internal = false): Promise<{ imageUrl: string | null }> {
+    const cost = await this.walletService.getRate('document', 1500);
+    if (!internal && !(await this.walletService.hasSufficientBalance(vendorId, cost))) {
+      throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    }
+    const imageUrl = await this.generateImage(prompt);
+    if (imageUrl && !internal) {
+      await this.walletService.deduct(vendorId, cost, 'AI document design image', 'ai_doc_design');
+    }
+    return { imageUrl };
   }
 
   private async generateImage(prompt: string): Promise<string | null> {

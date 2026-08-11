@@ -622,18 +622,23 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
   gesture-native: snap-x snap-mandatory horizontal swipe, hidden scrollbar
   ([scrollbar-width:none] + [&::-webkit-scrollbar]:hidden), mobile columns ~86vw so
   one stage fills the screen and you swipe between stages; desktop shows several.
-- [!] A4. TeleCRM "Summary" — needs the owner to confirm intent (AI call summary in
-  the feedback sheet vs a separate stats summary). ASKED.
+- [x] A4. TeleCRM "Summary" — owner clarified: a PER-LEAD summary panel. Added a
+  lead-summary drawer (tap any Kanban card): brief (business/industry/interest/
+  follow-up/notes) + full call history (outcome/date/notes/AI summary) + Call &
+  WhatsApp actions. Uses adapter.getLead; board TeleCrmLead extended with optional
+  business/industry/interest/email.
 - [x] B5. "Post creation not available." Root cause: GenerateContentDto validated
   @IsIn(['facebook','instagram','reel','poster','blog']) but AI Studio sends its
   content-type keys (social_post, festival_poster, …) → 400, never generated. Fixed:
   CONTENT_CHANNELS + cost/pricing/image maps now include all AI Studio content-type
   keys (social_post/reel_script/blog_post/festival_poster/ad_creative/email/whatsapp/
   sms) plus the legacy Growth Hub channels. All content types generate now.
-- [!] B6. Image gen for Letterhead/Visiting/ID card — TRADEOFF to confirm. These are
-  currently print-to-PDF HTML docs (crisp, correct text). The dispatch asks for
-  poster-style AI IMAGE generation — but raw image models garble text/contact
-  details. ASKED which the owner wants.
+- [x] B6. Letterhead/Visiting/ID card — owner chose HYBRID (AI design + real text).
+  New backend POST /ai/generate-image → design-ONLY DALL-E background (prompt says
+  "no text"), wallet-charged ('document' rate, free for internal, graceful null when
+  unkeyed). Frontend doc generator: "Generate AI design" button overlays that image
+  behind the doc with an 85% white wash so the REAL business/contact text stays
+  crisp; print-to-PDF unchanged. Falls back to the clean CSS design when no image.
 - [x] B7. Wallet credit tiers configurable in Pricing Manager. Added trial_free_credit
   + pro_free_credit to the pricing settings category + the admin Pricing Manager
   groups (editable, stored in g4d_platform_settings "pricing"). NOTE: granting these

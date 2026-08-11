@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Phone, Loader2, X, ThumbsUp, ThumbsDown, PhoneCall, Trophy, PhoneOff,
-  Mic, Sparkles,
+  Mic, Sparkles, MessageCircle, CalendarClock, Building2, Tag,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -25,6 +25,11 @@ export interface TeleCrmLead {
   followUpDate: string | null;
   createdAt: string;
   callLogs?: TeleCrmCallLog[];
+  // Optional brief fields (present for admin demo-booking leads).
+  business?: string | null;
+  industry?: string | null;
+  interest?: string | null;
+  email?: string | null;
 }
 
 /** Data source for the board — swap to point at vendor campaign leads or admin demo-booking leads. */
@@ -110,6 +115,13 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   const [recording, setRecording] = useState(false);
   const [aiSummary, setAiSummary] = useState('');
   const [summarizing, setSummarizing] = useState(false);
+
+  // Per-lead summary panel (A4): tap a card to see the lead brief + call history.
+  const [detail, setDetail] = useState<TeleCrmLead | null>(null);
+  const openDetail = async (lead: TeleCrmLead) => {
+    setDetail(lead); // optimistic
+    try { setDetail(await adapter.getLead(lead.id)); } catch { /* keep card data */ }
+  };
 
   const callStartRef = useRef<number>(0);
   const pendingFeedbackRef = useRef<TeleCrmLead | null>(null);
@@ -271,10 +283,11 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
               <div className="min-h-[120px] space-y-2 rounded-xl bg-slate-50 p-2">
                 {items.map((lead) => (
                   <div key={lead.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', lead.id)}
-                    className="cursor-grab rounded-lg border border-slate-200 bg-white p-2.5 active:cursor-grabbing">
+                    onClick={() => openDetail(lead)}
+                    className="cursor-pointer rounded-lg border border-slate-200 bg-white p-2.5 hover:border-primary-300 active:cursor-grabbing">
                     <div className="text-sm font-semibold text-slate-900">{lead.name}</div>
                     <div className="text-xs text-slate-500">{lead.phone}</div>
-                    <button onClick={() => initiateCall(lead)} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
+                    <button onClick={(e) => { e.stopPropagation(); initiateCall(lead); }} className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Phone className="h-3 w-3" />Call</button>
                   </div>
                 ))}
               </div>
@@ -282,6 +295,67 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
           );
         })}
       </div>
+
+      {/* Per-lead SUMMARY panel (A4) — bottom sheet on mobile, centered on desktop */}
+      {detail && (() => {
+        const stage = PIPELINE.find((s) => s.key === (detail.status || 'new'));
+        const logs = detail.callLogs ?? [];
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center" onClick={() => setDetail(null)}>
+            <div onClick={(e) => e.stopPropagation()} className="max-h-[88vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 sm:max-w-md sm:rounded-2xl">
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" />
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{detail.name}</h3>
+                  <a href={`tel:${detail.phone}`} className="text-sm text-primary-600">{detail.phone}</a>
+                </div>
+                <div className="flex items-center gap-2">
+                  {stage && <span className="rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ backgroundColor: stage.color }}>{stage.label}</span>}
+                  <button onClick={() => setDetail(null)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+                </div>
+              </div>
+
+              {/* Brief */}
+              <div className="mt-4 space-y-1.5 text-sm">
+                {detail.business && <div className="flex items-center gap-2 text-slate-600"><Building2 className="h-4 w-4 text-slate-400" />{detail.business}</div>}
+                {detail.industry && <div className="flex items-center gap-2 text-slate-600"><Tag className="h-4 w-4 text-slate-400" />{detail.industry}</div>}
+                {detail.interest && <div className="text-slate-600"><span className="text-slate-400">Interested in:</span> {detail.interest}</div>}
+                {detail.followUpDate && <div className="flex items-center gap-2 text-slate-600"><CalendarClock className="h-4 w-4 text-slate-400" />Follow-up: {new Date(detail.followUpDate).toLocaleString('en-IN')}</div>}
+                {detail.notes && <div className="rounded-lg bg-slate-50 p-2.5 text-slate-600">{detail.notes}</div>}
+              </div>
+
+              {/* Call history */}
+              <div className="mt-4">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Call history ({logs.length})</div>
+                {logs.length === 0 ? (
+                  <p className="text-sm text-slate-400">No calls logged yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {logs.map((cl) => (
+                      <div key={cl.id} className="rounded-xl border border-slate-200 p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold capitalize text-slate-800">{cl.outcome?.replace(/_/g, ' ') || 'Call'}</span>
+                          <span className="text-xs text-slate-400">{new Date(cl.createdAt).toLocaleDateString('en-IN')}{cl.duration ? ` · ${cl.duration}s` : ''}</span>
+                        </div>
+                        {cl.notes && <p className="mt-1 text-sm text-slate-600">{cl.notes}</p>}
+                        {cl.aiSummary && <p className="mt-1 rounded-lg bg-primary-50 p-2 text-xs text-slate-700"><Sparkles className="mr-1 inline h-3 w-3 text-primary-600" />{cl.aiSummary}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="mt-5 flex gap-2">
+                <Button fullWidth leftIcon={<Phone className="h-4 w-4" />} onClick={() => { setDetail(null); initiateCall(detail); }}>Call</Button>
+                <a href={`https://wa.me/${detail.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Button fullWidth variant="outline" leftIcon={<MessageCircle className="h-4 w-4" />}>WhatsApp</Button>
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* PRE-CALL overlay */}
       {precall && (

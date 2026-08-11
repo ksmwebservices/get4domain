@@ -258,6 +258,8 @@ export const api = {
     apiCall('/ai/generate-content', { method: 'POST', body: JSON.stringify(data) }),
   generateAiCallSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) =>
     apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
+  generateDesignImage: (prompt: string) =>
+    apiCall('/ai/generate-image', { method: 'POST', body: JSON.stringify({ prompt }) }),
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
   getVideoProvider: () => apiCall('/video/provider'),

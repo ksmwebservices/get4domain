@@ -5,6 +5,7 @@ import { ChatDto } from './dto/chat.dto';
 import { GenerateContentDto } from './dto/generate-content.dto';
 import { AiGeneratePageDto } from './dto/generate-page.dto';
 import { CallSummaryDto } from './dto/call-summary.dto';
+import { GenerateImageDto } from './dto/generate-image.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
@@ -39,6 +40,13 @@ export class AiController {
   @ApiOperation({ summary: 'Summarize a TeleCRM call note (deducts wallet credits; free for internal admin staff)' })
   callSummary(@CurrentUser() user: AuthenticatedUser, @Body() dto: CallSummaryDto) {
     return this.aiService.callSummary(user.sub, dto, isInternalStaff(user));
+  }
+
+  @ApiBearerAuth()
+  @Post('generate-image')
+  @ApiOperation({ summary: 'Generate a design-only background image for a document (text overlaid client-side)' })
+  generateImage(@CurrentUser() user: AuthenticatedUser, @Body() dto: GenerateImageDto) {
+    return this.aiService.generateDesignImage(user.sub, dto.prompt, isInternalStaff(user));
   }
 }
 

@@ -45,11 +45,13 @@ const DOC_TYPES: { key: DocKey; label: string; icon: string; desc: string }[] = 
 
 interface DocFields { business: string; person: string; designation: string; phone: string; email: string; address: string }
 
-function docHtml(kind: DocKey, f: DocFields): string {
+function docHtml(kind: DocKey, f: DocFields, bg?: string | null): string {
   const brand = '#2563eb';
   const base = `font-family: Arial, Helvetica, sans-serif; color:#0f172a;`;
+  // AI design as a background layer with a white wash so the REAL text stays crisp.
+  const bgLayer = bg ? `background-image:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85)),url('${bg}');background-size:cover;background-position:center;` : '';
   if (kind === 'letterhead') {
-    return `<div style="${base} max-width:720px;margin:0 auto;padding:0;">
+    return `<div style="${base} ${bgLayer} max-width:720px;margin:0 auto;padding:0;">
       <div style="border-bottom:4px solid ${brand};padding:24px 32px;display:flex;justify-content:space-between;align-items:flex-end;">
         <div><div style="font-size:26px;font-weight:800;color:${brand};">${f.business}</div>
         <div style="font-size:12px;color:#475569;margin-top:4px;">${f.address}</div></div>
@@ -62,7 +64,7 @@ function docHtml(kind: DocKey, f: DocFields): string {
   if (kind === 'id_card') {
     return `<div style="${base} width:320px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
       <div style="background:${brand};color:#fff;padding:16px;text-align:center;font-weight:800;">${f.business}</div>
-      <div style="padding:20px;text-align:center;">
+      <div style="${bgLayer} padding:20px;text-align:center;">
         <div style="width:96px;height:96px;border-radius:50%;background:#e2e8f0;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">PHOTO</div>
         <div style="font-size:18px;font-weight:700;margin-top:12px;">${f.person}</div>
         <div style="font-size:13px;color:${brand};">${f.designation}</div>
@@ -72,7 +74,7 @@ function docHtml(kind: DocKey, f: DocFields): string {
     </div>`;
   }
   return `<div style="${base} display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
-    <div style="width:340px;height:190px;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
+    <div style="${bgLayer} width:340px;height:190px;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
       <div style="font-size:20px;font-weight:800;color:${brand};">${f.business}</div>
       <div style="margin-top:26px;font-size:16px;font-weight:700;">${f.person}</div>
       <div style="font-size:12px;color:${brand};">${f.designation}</div>
@@ -155,8 +157,31 @@ export default function AiStudioPage() {
     }
   };
 
+  const [docBg, setDocBg] = useState<string | null>(null);
+  const [docBgLoading, setDocBgLoading] = useState(false);
+  const [docBgNote, setDocBgNote] = useState('');
+
+  const generateDocBg = async () => {
+    if (!activeDoc) return;
+    setDocBgLoading(true); setDocBgNote('');
+    const kindLabel = DOC_TYPES.find((d) => d.key === activeDoc)?.label ?? 'document';
+    const prompt = `Elegant professional ${kindLabel.toLowerCase()} background design, subtle abstract geometric pattern in blue and white, clean corporate style, plenty of empty space, NO text, NO words, NO letters`;
+    try {
+      const res = await api.generateDesignImage(prompt);
+      const url = res.data?.imageUrl as string | null | undefined;
+      if (url) setDocBg(url);
+      else setDocBgNote('AI image isn’t configured yet — using the clean default design.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not generate design';
+      setDocBgNote(/wallet|insufficient|balance/i.test(msg) ? 'Wallet balance too low for an AI design.' : 'Could not generate the design right now.');
+    } finally {
+      setDocBgLoading(false);
+    }
+  };
+
   const openDoc = (key: DocKey) => {
     setActiveDoc(key);
+    setDocBg(null); setDocBgNote('');
     setDocFields({
       business: user?.businessName ?? 'Your Business',
       person: user?.name ?? '',
@@ -169,7 +194,7 @@ export default function AiStudioPage() {
 
   const printDoc = () => {
     if (!activeDoc) return;
-    const html = docHtml(activeDoc, docFields);
+    const html = docHtml(activeDoc, docFields, docBg);
     const w = window.open('', '_blank', 'width=800,height=900');
     if (!w) return;
     w.document.write(`<!doctype html><html><head><title>${activeDoc}</title><style>@media print{body{margin:0}}body{margin:24px;background:#fff}</style></head><body>${html}<script>window.onload=function(){window.print();}</script></body></html>`);
@@ -390,9 +415,19 @@ export default function AiStudioPage() {
               <Input label="Email" value={docFields.email} onChange={(e) => setDocFields({ ...docFields, email: e.target.value })} />
               <Input label="Address" value={docFields.address} onChange={(e) => setDocFields({ ...docFields, address: e.target.value })} />
             </div>
+            <div className="flex items-center justify-between rounded-xl bg-primary-50 px-3 py-2">
+              <span className="text-xs text-primary-700">AI design background — your details stay crisp on top{isInternalStaff ? ' · Free' : ''}</span>
+              <div className="flex items-center gap-2">
+                {docBg && <button onClick={() => setDocBg(null)} className="text-xs font-medium text-slate-500 hover:text-slate-700">Remove</button>}
+                <Button size="sm" variant="outline" leftIcon={<Sparkles className="h-3.5 w-3.5" />} loading={docBgLoading} onClick={generateDocBg}>
+                  {docBg ? 'Regenerate design' : 'Generate AI design'}
+                </Button>
+              </div>
+            </div>
+            {docBgNote && <p className="text-xs text-amber-700">{docBgNote}</p>}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-2 text-xs font-medium text-slate-500">Preview</div>
-              <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docHtml(activeDoc, docFields) }} />
+              <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docHtml(activeDoc, docFields, docBg) }} />
             </div>
             <div className="flex justify-end">
               <Button leftIcon={<Download className="h-4 w-4" />} onClick={printDoc}>Download / Print as PDF</Button>
