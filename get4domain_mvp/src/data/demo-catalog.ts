@@ -39,7 +39,11 @@ export interface CategoryCatalog {
   catalogNoun: string;    // "listings" | "dishes" | "services" …
   items: DemoListing[];
   team?: DemoTeamMember[];
+  coverImage?: string;    // subcategory-specific banner (overrides the category cover)
 }
+
+/** Pexels CDN helper (all IDs verified to return a real image). */
+const px = (id: number) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800`;
 
 // ── Category catalogs (all 20) ───────────────────────────────────────────────
 export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
@@ -285,8 +289,22 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
 // Everything else inherits the category catalog above.
 const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> = {
   healthcare: {
+    'general-physician': {
+      catalogNoun: 'services', coverImage: px(5407206),
+      items: [
+        { name: 'General Consultation', price: '₹500', desc: 'Diagnosis and treatment for everyday illnesses.', fields: [{ label: 'Duration', value: '15 min' }, { label: 'Department', value: 'General Medicine' }] },
+        { name: 'Fever & Infection Treatment', price: '₹500', desc: 'Viral, bacterial and seasonal infection care.', fields: [{ label: 'Duration', value: '15 min' }] },
+        { name: 'Diabetes & BP Management', price: '₹600', desc: 'Chronic-care review with monitoring and diet plan.', fields: [{ label: 'Duration', value: '20 min' }] },
+        { name: 'Adult Vaccination', price: '₹800', desc: 'Flu, typhoid, tetanus and travel vaccines.', fields: [{ label: 'Duration', value: '10 min' }] },
+        { name: 'Fitness / Health Certificate', price: '₹300', desc: 'Medical fitness certificate on the same day.', fields: [{ label: 'Duration', value: '15 min' }] },
+      ],
+      team: [
+        { name: 'Dr. Anjali Rao', role: 'General Physician', note: 'MBBS, MD · 14 yrs' },
+        { name: 'Dr. Mohan Das', role: 'Family Physician', note: 'MBBS · 9 yrs' },
+      ],
+    },
     dental: {
-      catalogNoun: 'treatments',
+      catalogNoun: 'treatments', coverImage: px(3845810),
       items: [
         { name: 'Dental Consultation & X-Ray', price: '₹300', desc: 'Examination with digital X-ray.', fields: [{ label: 'Duration', value: '20 min' }] },
         { name: 'Cleaning & Scaling', price: '₹1,200', desc: 'Removes plaque and tartar, polish included.', fields: [{ label: 'Duration', value: '30 min' }] },
@@ -300,7 +318,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
     physiotherapy: {
-      catalogNoun: 'treatments',
+      catalogNoun: 'treatments', coverImage: px(4506109),
       items: [
         { name: 'Back & Neck Pain Therapy', price: '₹600 / session', desc: 'Manual therapy and posture correction.', fields: [{ label: 'Duration', value: '45 min' }] },
         { name: 'Post-Surgery Rehab', price: '₹800 / session', desc: 'Guided recovery after orthopaedic surgery.', fields: [{ label: 'Duration', value: '60 min' }] },
@@ -312,7 +330,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
     hospital: {
-      catalogNoun: 'departments',
+      catalogNoun: 'departments', coverImage: px(1692693),
       items: [
         { name: 'Emergency & Trauma (24/7)', price: 'Insurance / cashless', desc: 'Round-the-clock casualty and ambulance.', tags: ['24/7'], fields: [{ label: 'Availability', value: '24 hours' }] },
         { name: 'General Surgery', price: 'Consult ₹700', desc: 'Laparoscopic and general procedures.', fields: [{ label: 'Department', value: 'Surgery' }] },
@@ -322,8 +340,18 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
     },
   },
   realestate: {
+    residential: {
+      catalogNoun: 'homes', coverImage: px(1396122),
+      items: [
+        { name: '2 BHK Apartment · Velachery', price: '₹68 Lakh', desc: 'Ready-to-move flat in a gated community.', tags: ['For Sale', 'Ready to Move'], fields: [{ label: 'Area', value: '1,050 sqft' }, { label: 'Config', value: '2 Bed · 2 Bath' }] },
+        { name: '3 BHK Villa · ECR', price: '₹1.45 Cr', desc: 'Independent villa with a private garden.', tags: ['For Sale'], fields: [{ label: 'Area', value: '1,800 sqft' }, { label: 'Config', value: '3 Bed · 3 Bath' }] },
+        { name: '3 BHK Apartment · Anna Nagar', price: '₹1.1 Cr', desc: 'Spacious flat with covered parking and lift.', tags: ['For Sale'], fields: [{ label: 'Area', value: '1,450 sqft' }, { label: 'Config', value: '3 Bed · 2 Bath' }] },
+        { name: '2 BHK Builder Floor · Adyar', price: '₹85 Lakh', desc: 'Newly built floor close to the beach.', tags: ['For Sale'], fields: [{ label: 'Area', value: '1,150 sqft' }, { label: 'Config', value: '2 Bed · 2 Bath' }] },
+        { name: 'Independent House · Porur', price: '₹1.2 Cr', desc: 'Two-storey house with car park and terrace.', tags: ['For Sale'], fields: [{ label: 'Area', value: '1,600 sqft' }, { label: 'Config', value: '3 Bed · 3 Bath' }] },
+      ],
+    },
     commercial: {
-      catalogNoun: 'commercial spaces',
+      catalogNoun: 'commercial spaces', coverImage: px(380769),
       items: [
         { name: 'IT Office Space · OMR', price: '₹95,000 / month', desc: 'Plug-and-play fitted office.', tags: ['For Rent'], fields: [{ label: 'Area', value: '1,200 sqft' }, { label: 'Seats', value: '~30' }] },
         { name: 'Retail Showroom · Anna Nagar', price: '₹1.8 Lakh / month', desc: 'Ground-floor showroom, high footfall.', tags: ['For Rent'], fields: [{ label: 'Area', value: '2,500 sqft' }] },
@@ -332,7 +360,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
     rental: {
-      catalogNoun: 'rentals',
+      catalogNoun: 'rentals', coverImage: px(1571460),
       items: [
         { name: '1 BHK Flat · Tambaram', price: '₹14,000 / month', desc: 'Near railway station, semi-furnished.', tags: ['For Rent'], fields: [{ label: 'Area', value: '620 sqft' }, { label: 'Config', value: '1 Bed · 1 Bath' }] },
         { name: '2 BHK Flat · Velachery', price: '₹22,000 / month', desc: 'Gated community with parking.', tags: ['For Rent'], fields: [{ label: 'Area', value: '1,050 sqft' }, { label: 'Config', value: '2 Bed · 2 Bath' }] },
@@ -342,8 +370,18 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
     },
   },
   restaurant: {
+    'cloud-kitchen': {
+      flow: 'enquire-order', ctaLabel: 'Order Now', catalogNoun: 'menu', coverImage: px(4252137),
+      items: [
+        { name: 'Butter Chicken Combo', price: '₹280', desc: 'Butter chicken with 2 butter naan.', tags: ['Non-veg', 'Delivery only'], fields: [{ label: 'Serves', value: '1' }] },
+        { name: 'Veg Meals Box', price: '₹150', desc: 'Rice, dal, sabzi, roti and curd.', tags: ['Veg', 'Delivery only'], fields: [{ label: 'Serves', value: '1' }] },
+        { name: 'Chicken Biryani (Single)', price: '₹220', desc: 'Hyderabadi dum biryani with raita.', tags: ['Non-veg'], fields: [{ label: 'Serves', value: '1' }] },
+        { name: 'Paneer Kathi Wrap', price: '₹120', desc: 'Spiced paneer rolled in a soft paratha.', tags: ['Veg'], fields: [{ label: 'Serves', value: '1' }] },
+        { name: 'Family Combo', price: '₹650', desc: '2 mains, 6 rotis, rice and dessert.', tags: ['Value'], fields: [{ label: 'Serves', value: '4' }] },
+      ],
+    },
     cafe: {
-      catalogNoun: 'menu',
+      catalogNoun: 'menu', coverImage: px(302899),
       items: [
         { name: 'Cappuccino', price: '₹150', desc: 'Double-shot espresso with steamed milk.', tags: ['Veg'], fields: [{ label: 'Course', value: 'Coffee' }] },
         { name: 'Cold Coffee with Ice Cream', price: '₹180', desc: 'Blended cold coffee topped with ice cream.', tags: ['Veg'], fields: [{ label: 'Course', value: 'Beverage' }] },
@@ -353,7 +391,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
     bakery: {
-      catalogNoun: 'bakes',
+      catalogNoun: 'bakes', coverImage: px(291528),
       items: [
         { name: 'Black Forest Cake (1/2 kg)', price: '₹450', desc: 'Chocolate sponge with cherries and cream.', tags: ['Eggless option'], fields: [{ label: 'Weight', value: '500 g' }] },
         { name: 'Fresh Bread Loaf', price: '₹45', desc: 'Soft daily-baked sandwich loaf.', tags: ['Veg'], fields: [{ label: 'Unit', value: '400 g' }] },
@@ -365,7 +403,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
   },
   beauty: {
     spa: {
-      catalogNoun: 'therapies',
+      catalogNoun: 'therapies', coverImage: px(3757952),
       items: [
         { name: 'Swedish Full Body Massage', price: '₹2,000', desc: 'Relaxing full-body massage.', fields: [{ label: 'Duration', value: '60 min' }] },
         { name: 'Aromatherapy', price: '₹2,500', desc: 'Essential-oil massage for stress relief.', tags: ['Popular'], fields: [{ label: 'Duration', value: '75 min' }] },
@@ -373,15 +411,68 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Head & Shoulder Massage', price: '₹900', desc: 'Quick de-stress for neck and shoulders.', fields: [{ label: 'Duration', value: '30 min' }] },
       ],
     },
+    nails: {
+      catalogNoun: 'services', coverImage: px(704815),
+      items: [
+        { name: 'Classic Manicure', price: '₹500', desc: 'Cleanup, cuticle care, shaping and polish.', fields: [{ label: 'Duration', value: '40 min' }] },
+        { name: 'Gel Nail Extensions', price: '₹1,800', desc: 'Long-lasting gel extensions with finish.', tags: ['Popular'], fields: [{ label: 'Duration', value: '90 min' }] },
+        { name: 'Nail Art (per hand)', price: '₹600', desc: 'Custom designs, stones and chrome.', fields: [{ label: 'Duration', value: '45 min' }] },
+        { name: 'Deluxe Pedicure', price: '₹900', desc: 'Scrub, mask and relaxing foot massage.', fields: [{ label: 'Duration', value: '60 min' }] },
+        { name: 'Acrylic Refill', price: '₹1,200', desc: 'Refill and reshape existing acrylics.', fields: [{ label: 'Duration', value: '60 min' }] },
+      ],
+    },
   },
   fitness: {
+    crossfit: {
+      catalogNoun: 'plans', coverImage: px(2261485),
+      items: [
+        { name: 'Drop-in Class', price: '₹400 / session', desc: 'Single WOD session with a coach.', fields: [{ label: 'Duration', value: '60 min' }] },
+        { name: 'Monthly Unlimited', price: '₹3,500 / month', desc: 'Unlimited WODs plus coaching.', tags: ['Popular'], fields: [{ label: 'Duration', value: '1 Month' }, { label: 'Includes', value: 'All classes' }] },
+        { name: 'Foundations (Beginner)', price: '₹5,000', desc: 'Two-week on-ramp for new athletes.', fields: [{ label: 'Duration', value: '2 Weeks' }] },
+        { name: '3-Month Athlete', price: '₹9,000', desc: 'Quarterly plan with progress tracking.', fields: [{ label: 'Duration', value: '3 Months' }] },
+        { name: 'Personal WOD Coaching', price: '₹7,000 / month', desc: 'One-on-one programming and coaching.', fields: [{ label: 'Duration', value: '12 sessions' }] },
+      ],
+      team: [
+        { name: 'Arjun Rana', role: 'Head CrossFit Coach', note: 'CF-L2 · 8 yrs' },
+        { name: 'Divya Pillai', role: 'Mobility & Conditioning', note: '6 yrs' },
+      ],
+    },
     yoga: {
-      catalogNoun: 'classes',
+      catalogNoun: 'classes', coverImage: px(3822622),
       items: [
         { name: 'Hatha Yoga (Group)', price: '₹1,200 / month', desc: 'Foundational postures and breathing.', fields: [{ label: 'Duration', value: '1 Month' }, { label: 'Mode', value: 'Group' }] },
         { name: 'Power Yoga', price: '₹1,800 / month', desc: 'Dynamic, strength-building flow.', tags: ['Popular'], fields: [{ label: 'Duration', value: '1 Month' }] },
         { name: 'Prenatal Yoga', price: '₹2,000 / month', desc: 'Safe practice for expecting mothers.', fields: [{ label: 'Duration', value: '1 Month' }] },
         { name: 'Personal Yoga Session', price: '₹500 / session', desc: 'One-on-one guided practice.', fields: [{ label: 'Duration', value: '60 min' }] },
+      ],
+    },
+  },
+  education: {
+    coaching: {
+      catalogNoun: 'courses', coverImage: px(5905445),
+      items: [
+        { name: 'IIT-JEE Integrated', price: '₹1,40,000', desc: 'Two-year JEE Main + Advanced program.', fields: [{ label: 'Duration', value: '2 Years' }, { label: 'Mode', value: 'Classroom' }] },
+        { name: 'NEET Repeater Batch', price: '₹90,000', desc: 'One-year intensive for droppers.', tags: ['Popular'], fields: [{ label: 'Duration', value: '1 Year' }] },
+        { name: 'Class 10 Foundation', price: '₹35,000', desc: 'Board + competitive foundation building.', fields: [{ label: 'Duration', value: '1 Year' }] },
+        { name: 'Board Crash Course', price: '₹15,000', desc: 'Focused revision before board exams.', fields: [{ label: 'Duration', value: '3 Months' }] },
+      ],
+      team: [
+        { name: 'Mr. Rajesh Verma', role: 'Physics Faculty', note: 'IIT-JEE · 16 yrs' },
+        { name: 'Dr. Sunita Rao', role: 'Biology Faculty', note: 'NEET · 12 yrs' },
+      ],
+    },
+    college: {
+      catalogNoun: 'programs', coverImage: px(1454360),
+      items: [
+        { name: 'B.E. Computer Science', price: '₹85,000 / year', desc: 'AICTE-approved four-year engineering degree.', fields: [{ label: 'Duration', value: '4 Years' }, { label: 'Seats', value: '120' }] },
+        { name: 'B.Com (General)', price: '₹40,000 / year', desc: 'Commerce degree with accounting and finance.', fields: [{ label: 'Duration', value: '3 Years' }, { label: 'Seats', value: '80' }] },
+        { name: 'BBA', price: '₹55,000 / year', desc: 'Business administration with industry projects.', fields: [{ label: 'Duration', value: '3 Years' }] },
+        { name: 'MBA', price: '₹1,20,000 / year', desc: 'Postgraduate management with specialisations.', tags: ['Popular'], fields: [{ label: 'Duration', value: '2 Years' }] },
+        { name: 'Diploma in Mechanical', price: '₹30,000 / year', desc: 'Hands-on polytechnic diploma programme.', fields: [{ label: 'Duration', value: '3 Years' }] },
+      ],
+      team: [
+        { name: 'Dr. K. Srinivasan', role: 'Principal', note: 'Ph.D · 25 yrs' },
+        { name: 'Prof. Meena Iyer', role: 'HOD — CSE', note: 'M.Tech · 18 yrs' },
       ],
     },
   },

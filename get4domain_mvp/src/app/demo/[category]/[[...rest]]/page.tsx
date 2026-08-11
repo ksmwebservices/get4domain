@@ -55,6 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const sub = getSubcategory(category, parsed.subId);
   const section = parsed.sectionSlug ? getSection(category, parsed.sectionSlug) : undefined;
   const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
+  const ogImage = resolveCatalog(category, isSub ? parsed.subId : undefined)?.coverImage ?? cat.coverImage;
   const siteName = isSub ? `${sub.name} ${cat.name}` : cat.name;
   // Root layout adds "| Get4Domain" via title.template — don't repeat it here.
   const title = section
@@ -70,9 +71,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     keywords: cat.seoKeywords,
     openGraph: {
       title: ogTitle, description, type: 'website',
-      images: [{ url: cat.coverImage, width: 800, height: 600, alt: `${cat.name} website` }],
+      images: [{ url: ogImage, width: 800, height: 600, alt: `${siteName} website` }],
     },
-    twitter: { card: 'summary_large_image', title: ogTitle, description, images: [cat.coverImage] },
+    twitter: { card: 'summary_large_image', title: ogTitle, description, images: [ogImage] },
   };
 }
 
@@ -90,12 +91,13 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
   const brand = sub.name;
   const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
   const catalog = resolveCatalog(category, isSub ? parsed.subId : undefined);
+  const coverImage = catalog?.coverImage ?? cat.coverImage;
   const catalogSection = sections.find((s) => s.type === 'catalog');
   const waText = encodeURIComponent(`Hi ${brand}, I saw your ${cat.name.toLowerCase()} website and I'm interested. Could you share details?`);
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness',
-    name: `${brand} — ${cat.name}`, description: cat.shortDesc, image: cat.coverImage,
+    name: `${brand} — ${cat.name}`, description: cat.shortDesc, image: coverImage,
     url: `https://get4domain.com${base}${section ? `/${section.slug}` : ''}`,
     areaServed: 'IN', priceRange: '₹₹',
   };
@@ -109,7 +111,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
       {/* Banner */}
       <section className="relative overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={cat.coverImage} alt={cat.name} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={coverImage} alt={brand} className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/70 to-primary-700/60" />
         <div className="relative mx-auto max-w-5xl px-5 py-14 text-white sm:py-20">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{cat.name}{parsed.subId && parsed.subId !== 'general' ? ` · ${sub.name}` : ''}</span>
@@ -152,7 +154,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
                 </div>
                 <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
                 <div className="mt-5">
-                  <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={cat.coverImage} limit={3} />
+                  <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={coverImage} limit={3} />
                 </div>
               </div>
             )}
@@ -193,7 +195,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={cat.coverImage} alt={`${cat.name} ${i + 1}`} className="h-40 w-full rounded-xl object-cover" />
+                <img key={i} src={coverImage} alt={`${brand} ${i + 1}`} className="h-40 w-full rounded-xl object-cover" />
               ))}
             </div>
           </div>
@@ -210,7 +212,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
             <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
             <div className="mt-6">
               {catalog ? (
-                <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={cat.coverImage} />
+                <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={coverImage} />
               ) : (
                 <p className="text-slate-500">Details coming soon.</p>
               )}

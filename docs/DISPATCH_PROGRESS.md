@@ -963,6 +963,40 @@ industry-specific listings with real fields, a native business flow, and lead ca
   (general-physician, residential, cloud-kitchen, nails, crossfit, education subs, etc.)
   inherit their category's real catalog — real, not generic — pending bespoke overrides.
 
+### DISPATCH — GET4DOMAIN_SUBCATEGORY_COMPLETION_11AUG2026 — DONE
+Extends content depth to EVERY curated subcategory (was ~9, now all 16) + gives each its
+own banner image. Uncurated categories have only a "general" subcategory (== the category
+itself, already real), so no work needed there.
+- [x] 7 NEW bespoke subcategory overrides added to demo-catalog.ts, each with real
+  subcategory-specific fields + its OWN banner image (verified pexels URL) + a flow that
+  fits: healthcare→general-physician (fever/diabetes/vaccination/fitness-cert · Book
+  Appointment · img 5407206); realestate→residential (homes for sale, sqft/config · Book
+  Site Visit · img 1396122); restaurant→cloud-kitchen (delivery-only combos · flow
+  changed to enquire-order → "Order Now" · img 4252137); beauty→nails (mani/gel/nail-art ·
+  Book a Slot · img 704815); fitness→crossfit (drop-in/WOD/foundations · Enquire/Join ·
+  img 2261485); education→coaching (JEE/NEET/foundation · Enquire/Enroll · img 5905445);
+  education→college (B.E./B.Com/BBA/MBA/Diploma, fee-per-year/seats · Enquire/Enroll ·
+  img 1454360). Teams added for general-physician, crossfit, coaching, college.
+- [x] Own banner image for the 9 PRE-EXISTING curated subs too (req #2): coverImage added
+  to dental (3845810), physiotherapy (4506109), hospital (1692693), commercial (380769),
+  rental (1571460), cafe (302899), bakery (291528), spa (3757952), yoga (3822622). All 16
+  curated subs now have a distinct banner, not the parent category cover.
+- [x] Data model: CategoryCatalog gained optional coverImage; resolveCatalog merges it.
+  Page computes coverImage = catalog?.coverImage ?? cat.coverImage and uses it for the
+  banner, gallery, JSON-LD image and the card fallback; generateMetadata resolves the same
+  for OG/Twitter images. All 20 image IDs curl-verified (200 image/jpeg) before use.
+- [x] Reuses DemoCatalogGrid (no parallel components); same demoEnquiry + WhatsApp lead
+  capture; subcategory routes render with the parent page structure. Build 0 errors, 340
+  static pages, console clean. Verified live: cloud-kitchen (Order Now + own banner
+  4252137), college (degree programs), general-physician (distinct from dental).
+- Subcategory-by-subcategory status: BESPOKE now — healthcare: dental, physiotherapy,
+  hospital, general-physician (general=Clinic baseline). realestate: commercial, rental,
+  residential (general=baseline). restaurant: cafe, bakery, cloud-kitchen (general=
+  baseline). beauty: spa, nails (general=Salon baseline). fitness: yoga, crossfit
+  (general=Gym baseline). education: coaching, college (general=School baseline). The 14
+  categories without curated subs have only "general" = their category content (real).
+  NOTHING now falls back to inherited content across the curated set — full coverage.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
