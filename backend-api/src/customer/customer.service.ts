@@ -64,6 +64,22 @@ export class CustomerService {
     };
   }
 
+  /**
+   * Book-Demo Phase 4: seat a customer-portal session for a seeded contact of a
+   * sandbox vendor, so the tour can show the customer side without a real OTP
+   * login. Same opaque-token session as verify(); scoped to the sandbox vendorId.
+   */
+  async createSandboxSession(vendorId: string): Promise<{ token: string; contactName: string } | null> {
+    const contact = await this.prisma.contact.findFirst({
+      where: { vendorId },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!contact) return null;
+    const token = crypto.randomBytes(24).toString('hex');
+    this.sessions.set(token, { contactId: contact.id, vendorId, expires: Date.now() + SESSION_TTL_MS });
+    return { token, contactName: contact.name };
+  }
+
   private resolve(authHeader?: string): Session {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
     const session = token ? this.sessions.get(token) : undefined;

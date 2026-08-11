@@ -6,8 +6,16 @@ import { VerifyDemoLeadDto } from './dto/verify-demo-lead.dto';
 import { OtpService } from '../otp/otp.service';
 import { DemoService } from '../demo/demo.service';
 import { AuthService } from '../auth/auth.service';
+import { CustomerService } from '../customer/customer.service';
 
-export interface SandboxSession { vendorId: string; token: string; expiresAt: Date | null; industry: string }
+export interface SandboxSession {
+  vendorId: string;
+  token: string;
+  expiresAt: Date | null;
+  industry: string;
+  /** Opaque customer-portal session token for a seeded contact (Phase 4 tour). */
+  customerToken?: string | null;
+}
 
 @Injectable()
 export class LeadsService {
@@ -18,6 +26,7 @@ export class LeadsService {
     private readonly otp: OtpService,
     private readonly demo: DemoService,
     private readonly auth: AuthService,
+    private readonly customer: CustomerService,
   ) {}
 
   /**
@@ -56,11 +65,13 @@ export class LeadsService {
     let sandbox: SandboxSession | null = null;
     try {
       const vendor = await this.demo.provisionSandbox(dto.industry, dto.name, dto.phone);
+      const customerSession = await this.customer.createSandboxSession(vendor.id);
       sandbox = {
         vendorId: vendor.id,
         token: this.auth.mintSandboxToken(vendor.id, vendor.email),
         expiresAt: vendor.expiresAt,
         industry: dto.industry,
+        customerToken: customerSession?.token ?? null,
       };
     } catch (err) {
       this.logger.error(`Sandbox provisioning failed for ${dto.name}: ${err instanceof Error ? err.message : 'unknown'}`);

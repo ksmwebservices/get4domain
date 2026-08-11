@@ -11,7 +11,7 @@ import { api } from '@/lib/api';
 import { INDUSTRIES } from '@/data/industries-list';
 import { setSession } from '@/lib/auth';
 
-interface Sandbox { vendorId: string; token: string; industry: string; expiresAt: string | null }
+interface Sandbox { vendorId: string; token: string; industry: string; expiresAt: string | null; customerToken?: string | null }
 
 // Canonical industry list — the SAME 20 used by /industries and /demo/[id]. The
 // dropdown value is the canonical `id`, so it feeds /demo/[id] + seedVendor directly.
@@ -88,6 +88,13 @@ export default function BookDemoPage() {
     window.location.href = '/dashboard';
   };
 
+  // Seat the scoped customer-portal session and open the customer side of the tour.
+  const startCustomerTour = () => {
+    if (!sandbox?.customerToken) return;
+    localStorage.setItem('g4d_customer_token', sandbox.customerToken);
+    window.location.href = '/customer';
+  };
+
   /* --------------------------------- done ---------------------------------- */
   if (step === 'done') {
     return (
@@ -117,6 +124,11 @@ export default function BookDemoPage() {
               <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled={!sandbox} onClick={startTour}
                 title={sandbox ? 'Open your live sandbox dashboard' : 'Setting up your sandbox…'}>Start Demo Tour</Button>
             </div>
+            {sandbox?.customerToken && (
+              <button onClick={startCustomerTour} className="mt-3 text-sm font-semibold text-primary-600 hover:text-primary-700">
+                Or see the customer portal side →
+              </button>
+            )}
             <p className="mt-4 text-xs text-slate-400">
               {sandbox
                 ? 'Your sandbox dashboard is preloaded with sample data and expires in 48 hours.'

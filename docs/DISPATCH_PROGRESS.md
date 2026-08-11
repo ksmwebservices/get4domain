@@ -584,10 +584,20 @@ Confirmed: (1) short-lived sandbox JWT; (2) per-lead sandbox Vendor + expiry;
 - [x] Cleanup: DemoService.cleanupExpiredSandboxes() deletes expired sandbox vendors
   + their seeded rows; admin POST /demo/cleanup-sandboxes. Admin vendor list
   (VendorsService.findAll) now excludes isSandbox vendors. Both apps build 0 errors.
-- [~] REMAINING (next pass): (a) customer-portal leg of the tour (dashboard →
-  /customer scoped to the sandbox — customer portal has its own auth, needs wiring);
-  (b) a scheduled cron for cleanup (currently manual endpoint + JWT-expiry guard;
-  needs @nestjs/schedule). Not blocking the core tour.
+- [x] Vendor-dashboard leg CONFIRMED WORKING on the live VM (sandbox JWT +
+  provisioning solid).
+- [x] Customer-portal leg — CustomerService.createSandboxSession(vendorId) mints an
+  opaque customer-portal session (same in-memory session as verify()) for a seeded
+  contact of the sandbox vendor; verifyDemoLead returns it as sandbox.customerToken.
+  Frontend "Or see the customer portal side →" seats g4d_customer_token + opens
+  /customer, which auto-loads the sandbox contact's records/invoices (vendorId +
+  contactId scoped). Both apps build 0 errors.
+  NOTE: customer sessions are IN-MEMORY (like the existing portal) — a backend
+  restart between provisioning and the click drops the session (portal then shows
+  its login). Session TTL 24h vs sandbox 48h — fine for a demo.
+- [~] REMAINING (next pass): a scheduled cron for cleanup (currently manual admin
+  endpoint /demo/cleanup-sandboxes + JWT-expiry guard + admin-list filter; a cron
+  needs @nestjs/schedule). Not blocking.
 - Phases 5–6 (Razorpay checkout, auto-activation) remain OUT OF SCOPE.
 
 ### VM MIGRATION for this dispatch
