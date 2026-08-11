@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, Sparkles, Star, Users } from 'lucide-react';
+import { ArrowRight, Star, Users, MessageCircle } from 'lucide-react';
 import {
   getCategory, getSubcategory, getSubcategories, getSections, getSection, CATEGORY_IDS,
 } from '@/data/demo-site';
+import { resolveCatalog } from '@/data/demo-catalog';
 import DemoSiteNav from '@/components/DemoSiteNav';
 import DemoContactSection from '@/components/DemoContactSection';
+import DemoCatalogGrid from '@/components/DemoCatalogGrid';
 import ChatBot from '@/components/ChatBot';
 import TourNav from '@/components/TourNav';
 
@@ -86,6 +88,10 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
   const section = parsed.sectionSlug ? getSection(category, parsed.sectionSlug) : undefined;
   const base = parsed.subId && parsed.subId !== 'general' ? `/demo/${category}/${parsed.subId}` : `/demo/${category}`;
   const brand = sub.name;
+  const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
+  const catalog = resolveCatalog(category, isSub ? parsed.subId : undefined);
+  const catalogSection = sections.find((s) => s.type === 'catalog');
+  const waText = encodeURIComponent(`Hi ${brand}, I saw your ${cat.name.toLowerCase()} website and I'm interested. Could you share details?`);
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness',
@@ -109,6 +115,17 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{cat.name}{parsed.subId && parsed.subId !== 'general' ? ` · ${sub.name}` : ''}</span>
           <h1 className="mt-4 max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">{section ? section.label : cat.sampleContent.heroHeadline}</h1>
           <p className="mt-4 max-w-xl text-base text-white/90 sm:text-lg">{section ? cat.shortDesc : cat.sampleContent.heroSubline}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {catalog && catalogSection && (
+              <Link href={`${base}/${catalogSection.slug}`} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-700 hover:bg-white/90">
+                Browse {catalog.catalogNoun} <ArrowRight className="h-4 w-4" />
+              </Link>
+            )}
+            <a href={`https://wa.me/?text=${waText}`} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-success-500 px-5 py-3 text-sm font-bold text-white hover:bg-success-600">
+              <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
+            </a>
+          </div>
         </div>
       </section>
 
@@ -127,18 +144,18 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
                 ))}
               </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Popular</h2>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {cat.sampleContent.services.map((svc) => (
-                  <div key={svc} className="rounded-2xl border border-slate-200 p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles className="h-5 w-5" /></div>
-                    <h3 className="mt-3 font-bold text-slate-900">{svc}</h3>
-                    <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
-                  </div>
-                ))}
+            {catalog && (
+              <div>
+                <div className="flex items-end justify-between">
+                  <h2 className="text-2xl font-bold text-slate-900">Popular {catalog.catalogNoun}</h2>
+                  {catalogSection && <Link href={`${base}/${catalogSection.slug}`} className="text-sm font-semibold text-primary-600 hover:text-primary-700">View all →</Link>}
+                </div>
+                <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
+                <div className="mt-5">
+                  <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={cat.coverImage} limit={3} />
+                </div>
               </div>
-            </div>
+            )}
             <div className="rounded-2xl bg-slate-50 p-6 text-center">
               <p className="text-slate-600">{cat.fullDesc}</p>
               {sections.find((s) => s.type === 'contact') && (
@@ -160,11 +177,12 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
           <div>
             <h2 className="text-2xl font-bold text-slate-900">{section.label}</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {SAMPLE_NAMES.slice(0, 3).map((n) => (
-                <div key={n} className="rounded-2xl border border-slate-200 p-5 text-center">
+              {(catalog?.team ?? SAMPLE_NAMES.slice(0, 3).map((n) => ({ name: n, role: cat.name, note: undefined }))).map((m) => (
+                <div key={m.name} className="rounded-2xl border border-slate-200 p-5 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-primary-700"><Users className="h-7 w-7" /></div>
-                  <h3 className="mt-3 font-bold text-slate-900">{n}</h3>
-                  <p className="text-sm text-primary-600">{cat.name}</p>
+                  <h3 className="mt-3 font-bold text-slate-900">{m.name}</h3>
+                  <p className="text-sm text-primary-600">{m.role}</p>
+                  {m.note && <p className="mt-0.5 text-xs text-slate-400">{m.note}</p>}
                 </div>
               ))}
             </div>
@@ -189,15 +207,13 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
           // catalog (menu / services / packages / listings / products …)
           <div>
             <h2 className="text-2xl font-bold text-slate-900">{section.label}</h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {cat.sampleContent.services.map((svc) => (
-                <div key={svc} className="rounded-2xl border border-slate-200 p-5 transition-shadow hover:shadow-md">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Sparkles className="h-5 w-5" /></div>
-                  <h3 className="mt-3 font-bold text-slate-900">{svc}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
-                  <Link href={`${base}/${sections.find((s) => s.type === 'contact')?.slug ?? ''}`} className="mt-3 inline-flex rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700">Enquire</Link>
-                </div>
-              ))}
+            <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
+            <div className="mt-6">
+              {catalog ? (
+                <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={cat.coverImage} />
+              ) : (
+                <p className="text-slate-500">Details coming soon.</p>
+              )}
             </div>
           </div>
         )}

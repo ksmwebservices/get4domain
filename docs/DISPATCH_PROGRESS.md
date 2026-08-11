@@ -919,6 +919,50 @@ closest "automated first response" our providers allow. Implemented that way.
   still-pending item — tonight was STRUCTURE. Section content reuses industry-content
   sampleContent (services/hero/about) + generated team/gallery.
 
+### DISPATCH — GET4DOMAIN_CONTENT_DEPTH_FULL_11AUG2026 — DONE
+Fills the content-substance gap above: every category/subcategory now shows real,
+industry-specific listings with real fields, a native business flow, and lead capture
+— not the generic "Enquire / ₹4,999" card.
+- [x] Data: new src/data/demo-catalog.ts — rich DEMO_CATALOG for ALL 20 categories.
+  Each item has real fields per the dispatch table (price + category-specific fields:
+  realestate area/config/type, restaurant course/serves + veg tags, healthcare
+  duration/department, hotel occupancy/amenities, fitness duration/includes, education
+  duration/seats, diagnostics report-time/sample, etc.), description and tags. Team
+  arrays (doctors/agents/faculty/stylists/vehicles/advisors) for the categories with a
+  team page. NOT a new model — reuses the generic CatalogItem concept; per-listing
+  photos fall back to the category coverImage (real vendors upload via the image infra).
+- [x] Flows (browse → native action): per-category DemoFlow + CTA label —
+  realestate Book Site Visit · restaurant Reserve a Table · healthcare Book Appointment ·
+  beauty Book a Slot · fitness/coaching Enquire/Join · hotel Check Availability ·
+  retail Enquire/Order · education Enquire/Enroll · automobile Book Service ·
+  diagnostics Book Test · photography Book a Shoot · travel Book Package ·
+  finance/professional Book Consultation · construction/logistics/technology Get a Quote ·
+  events Check Date & Enquire · agriculture Enquire. Date/slot picker shown for the
+  dated flows (DATED_FLOWS).
+- [x] Subcategory overrides (medically/structurally distinct): healthcare→dental,
+  physiotherapy, hospital; realestate→commercial, rental; restaurant→cafe, bakery;
+  beauty→spa; fitness→yoga. All other subcategories inherit the category catalog (still
+  real content, never generic). resolveCatalog(cat, sub) merges override over base.
+- [x] Consistent UI: single shared client component DemoCatalogGrid (card grid + a
+  flow-aware booking/enquiry modal). Same visual language across all 20 — only data,
+  fields and CTA label differ.
+- [x] Lead capture throughout: every card's CTA opens the modal → api.demoEnquiry
+  (name, phone, optional date/slot, and a summary line "CTA: item (price)…"). Modal also
+  has an "Ask on WhatsApp" wa.me deep link. No dead ends.
+- [x] WhatsApp from home level: prominent "Chat on WhatsApp" button in the banner on
+  EVERY page (incl. category/subcategory home), beside a "Browse {noun}" button.
+- [x] Page wiring: demo page home shows a "Popular {noun}" preview (3 items) + View all;
+  catalog sections render the full grid; team sections use catalog.team when present.
+- [x] frontend build 0 errors; 340 static pages; console clean. Verified live:
+  realestate/properties-buy (sqft/config/For-Sale · Book Site Visit), hotel/rooms
+  (occupancy/amenities · Check Availability), healthcare/dental/services (RCT/whitening ·
+  Book Appointment override), restaurant home (Popular dishes preview + banner WhatsApp).
+- Category status: all 20 have real category-level content. Curated subcategory-specific
+  content: healthcare (dental/physio/hospital), realestate (commercial/rental),
+  restaurant (cafe/bakery), beauty (spa), fitness (yoga). Remaining subcategories
+  (general-physician, residential, cloud-kitchen, nails, crossfit, education subs, etc.)
+  inherit their category's real catalog — real, not generic — pending bespoke overrides.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
