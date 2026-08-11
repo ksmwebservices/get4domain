@@ -694,7 +694,15 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
   So every /demo/[industry] renders real multi-section content and its sandbox
   provisioning uses a valid config → reaches the vendor dashboard. (Data/code-level
   verified; full 20-way live click-through needs the VM — recommend a smoke test.)
-- [~] 6. Vendor dashboard UI polish — lower-priority; see note below.
+- [~] 6. Vendor dashboard UI polish — DEFERRED to a live visual pass (with reason).
+  Checked what's objectively verifiable: dashboard page titles are already consistent
+  (25/26 text-xl; the one text-lg is a legitimate inbox channel sub-heading, not a
+  title). The rest of item 6 (color/spacing consistency across Overview/TeleCRM/AI
+  Studio/Business/More) is subjective and needs eyes-on rendering — the authed
+  dashboard can't be rendered from Claude Code (login against the live backend), so
+  blind CSS changes risk hurting consistency rather than helping. Best done as a
+  focused pass with screenshots or a logged-in preview. Dispatch itself marked this
+  lower-priority ("after the functional items").
 - [x] 4. Trial/Pro free credit now actually GRANTED (was only editable). New
   WalletService.grantCredit (free credit, 90-day validity, logged). vendors.service
   .create grants trial_free_credit (Pricing Manager, ₹100 fallback) on signup;
