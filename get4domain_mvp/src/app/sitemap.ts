@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { allDemoPaths } from '@/data/demo-site';
 
 const BASE = 'https://get4domain.com';
 
@@ -41,5 +42,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  return [...staticPages, ...industryPages];
+  // All demo-site pages (category homes + subcategory homes + section routes).
+  const demoPages = allDemoPaths().map((path) => ({
+    url: `${BASE}${path}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }));
+
+  return [...staticPages, ...industryPages, ...demoPages];
 }

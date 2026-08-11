@@ -885,6 +885,40 @@ site's WhatsApp CTA opens wa.me with an industry-aware prefilled message, and th
 Enquire form already sends an outbound WhatsApp confirmation (Fast2SMS) — that is the
 closest "automated first response" our providers allow. Implemented that way.
 
+### Demo Site Architecture (main dispatch) — DONE
+- [x] 0.5 Category→Subcategory model: new src/data/demo-site.ts layered over the 20
+  industries (industry-content.ts). Categories = the 20; SUBCATEGORIES curated for a
+  few (healthcare→dental/physiotherapy/general-physician/hospital; realestate,
+  restaurant, beauty, fitness, education) + a "general" fallback for the rest.
+  Unknown subcategory → category baseline (additive, no migration). Sections derived
+  from each category's "Website Pages" (websitePages) + a type classifier.
+- [x] 1. Real multi-page routes (not anchors): app/demo/[category]/[[...rest]]/page.tsx
+  — one optional catch-all server component handling /demo/[category] (home),
+  /demo/[category]/[subcategory] (home), /demo/[category]/[section], and
+  /demo/[category]/[subcategory]/[section]. Removed the old single-page
+  app/demo/[industry]/page.tsx. Build prerenders 340 pages (was ~92) — real separate
+  URLs per section. Verified /demo/restaurant/menu, /demo/healthcare/dental/* live.
+- [x] 2. SEO/AEO per page: generateMetadata gives section-specific title + meta
+  (root template adds "| Get4Domain") + OpenGraph + Twitter card (coverImage), and a
+  LocalBusiness JSON-LD block per page.
+- [x] 3. Mobile-native nav: new DemoSiteNav — desktop top links + a FIXED mobile
+  bottom nav (icon+label tabs, the app's bottom-nav pattern) with the site's real
+  section routes (Home + sections + Contact). Not Get4Domain's app nav.
+- [x] 3.5 Banner image per page (reuses the per-industry coverImage) + WhatsApp: given
+  the addition-2 finding (Fast2SMS has NO inbound webhook), a true inbound auto-reply
+  isn't possible — implemented the feasible version: the Contact/Booking section's
+  WhatsApp CTA opens wa.me with an industry-aware prefilled message, and the Enquire
+  form sends an outbound WhatsApp confirmation via Fast2SMS (closest automated first
+  response). DemoContactSection component.
+- [x] 4. sitemap.xml extended (allDemoPaths → every category/subcategory/section URL,
+  one unified sitemap); robots.ts already allows /demo/* (indexable).
+- [x] frontend build 0 errors; 340 static pages. Existing links (/demo/[id] from the
+  tour/book-demo/dashboard) still resolve — the id IS the category. TourNav + ChatBot
+  still mounted on the new pages.
+- NOTE (scope): content SUBSTANCE (real prices/listings/team) is the separate,
+  still-pending item — tonight was STRUCTURE. Section content reuses industry-content
+  sampleContent (services/hero/about) + generated team/gallery.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
