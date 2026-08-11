@@ -3,8 +3,12 @@ import { Vendor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AuthService } from '../auth/auth.service';
+import { WalletService } from '../wallet/wallet.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
+
+// Default free wallet credit (paise) if the Trial tier amount isn't set in Pricing Manager.
+const TRIAL_CREDIT_FALLBACK_PAISE = 10000; // ₹100
 
 @Injectable()
 export class VendorsService {
@@ -13,6 +17,7 @@ export class VendorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly wallet: WalletService,
   ) {}
 
   findAll(): Promise<Vendor[]> {
@@ -49,6 +54,14 @@ export class VendorsService {
         customDomain: dto.customDomain,
       },
     });
+
+    // Grant the Trial-plan free wallet credit (admin-editable in Pricing Manager).
+    try {
+      const creditPaise = await this.wallet.getRate('trial_free_credit', TRIAL_CREDIT_FALLBACK_PAISE);
+      await this.wallet.grantCredit(vendor.id, creditPaise, 'Trial plan welcome credit', 'trial_credit');
+    } catch (error) {
+      this.logger.error(`Failed to grant trial credit to ${vendor.email}`, error instanceof Error ? error.stack : undefined);
+    }
 
     try {
       await this.emailService.sendWelcomeEmail(vendor, dto.password);

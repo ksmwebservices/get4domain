@@ -130,6 +130,26 @@ export class WalletService {
     return wallet;
   }
 
+  /**
+   * Grant free wallet credit (plan/trial welcome credit — not a paid top-up).
+   * 90-day validity, logged as a credit transaction. Idempotency is the caller's
+   * concern. No-op for amount <= 0.
+   */
+  async grantCredit(vendorId: string, amount: number, description: string, service = 'plan_credit'): Promise<void> {
+    if (amount <= 0) return;
+    const expiresAt = new Date(Date.now() + NINETY_DAYS_MS);
+    await this.prisma.$transaction(async (tx) => {
+      const wallet = await tx.wallet.upsert({
+        where: { vendorId },
+        create: { vendorId, balance: amount, totalCredited: amount },
+        update: { balance: { increment: amount }, totalCredited: { increment: amount } },
+      });
+      await tx.walletTransaction.create({
+        data: { vendorId, walletId: wallet.id, type: 'credit', amount, description, service, balanceAfter: wallet.balance, expiresAt },
+      });
+    });
+  }
+
   async deduct(vendorId: string, amount: number, description: string, service: string): Promise<Wallet> {
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { vendorId } });

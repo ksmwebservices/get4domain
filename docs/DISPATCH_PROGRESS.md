@@ -675,6 +675,20 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
   inline section links + a mobile scrollable pill row of in-page section anchors
   (Home + each section). ChatBot floating widget kept. Dropped the pb-20 that was
   clearing the old bottom nav.
+- [x] 3. Invoice visibility — ROOT CAUSE: the branded Invoices page (/dashboard/
+  invoices, with download + Email + WhatsApp) had NO nav link in the vendor shell —
+  unreachable. Added "Invoices" to the Account nav section. Generation/download path
+  itself is correct: a platform Invoice is created on wallet top-up
+  (createPaidTopupInvoice) or subscription payment; it then lists here with a working
+  print-to-PDF download. NOTE: needs a real top-up/payment to produce one (sandbox
+  seeds DomainApp GenericInvoices, not platform Invoices); COMPANY_LOGO_URL sets the
+  logo (else the company initial).
+- [x] 4. Trial/Pro free credit now actually GRANTED (was only editable). New
+  WalletService.grantCredit (free credit, 90-day validity, logged). vendors.service
+  .create grants trial_free_credit (Pricing Manager, ₹100 fallback) on signup;
+  demo.provisionSandbox grants it too so the tour's AI Studio works. Best-effort
+  (never fails signup). NOTE: Pro-tier credit on plan UPGRADE is a follow-up — needs
+  the subscription/plan-assignment hook; this covers signup + sandbox.
 
 ---
 

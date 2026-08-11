@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { Vendor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WalletService } from '../wallet/wallet.service';
 import { getIndustryConfig } from '../config/industries';
 import { DEMO_CONTENT, buildFallback, NAME_POOL, DemoContent, getSectionMeta } from './demo-content';
 
@@ -21,6 +22,7 @@ export class DemoService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsappService,
+    private readonly wallet: WalletService,
   ) {}
 
   /** Multi-section industry website payload (Phase 2): hero + navigable sections. */
@@ -195,6 +197,11 @@ export class DemoService {
       },
     });
     await this.seedVendor(vendor.id, config.key);
+    // Give the sandbox the same Trial credit so the tour's AI Studio etc. work.
+    try {
+      const creditPaise = await this.wallet.getRate('trial_free_credit', 10000);
+      await this.wallet.grantCredit(vendor.id, creditPaise, 'Demo sandbox credit', 'trial_credit');
+    } catch { /* best-effort */ }
     this.logger.log(`Provisioned sandbox vendor ${vendor.id} (${config.key}) for ${name}`);
     return vendor;
   }
