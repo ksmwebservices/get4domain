@@ -622,11 +622,16 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
   gesture-native: snap-x snap-mandatory horizontal swipe, hidden scrollbar
   ([scrollbar-width:none] + [&::-webkit-scrollbar]:hidden), mobile columns ~86vw so
   one stage fills the screen and you swipe between stages; desktop shows several.
-- [x] A4. TeleCRM "Summary" — owner clarified: a PER-LEAD summary panel. Added a
-  lead-summary drawer (tap any Kanban card): brief (business/industry/interest/
-  follow-up/notes) + full call history (outcome/date/notes/AI summary) + Call &
-  WhatsApp actions. Uses adapter.getLead; board TeleCrmLead extended with optional
-  business/industry/interest/email.
+- [x] A4. TeleCRM "Summary" — owner clarified: a PER-LEAD summary panel, NO AI.
+  Added a lead-summary drawer (tap any Kanban card): brief (business/industry/
+  interest/follow-up/notes) + full call history (outcome/date/duration/notes) +
+  Call & WhatsApp. All pulled directly from the lead's logged data (adapter.getLead).
+  REFINEMENT: removed AI entirely from this view — deleted the "Summarize" AI
+  call-summary button + the aiSummary state/handler + the aiSummary display in both
+  the feedback sheet and the panel; removed aiSummary from the TeleCrmAdapter
+  interface + both page adapters. Nothing here is AI-generated or AI-rewritten.
+  (Backend /ai/call-summary + api.generateAiCallSummary remain in the codebase but
+  are no longer wired to TeleCRM.)
 - [x] B5. "Post creation not available." Root cause: GenerateContentDto validated
   @IsIn(['facebook','instagram','reel','poster','blog']) but AI Studio sends its
   content-type keys (social_post, festival_poster, …) → 400, never generated. Fixed:

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Phone, Loader2, X, ThumbsUp, ThumbsDown, PhoneCall, Trophy, PhoneOff,
-  Mic, Sparkles, MessageCircle, CalendarClock, Building2, Tag,
+  Mic, MessageCircle, CalendarClock, Building2, Tag,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -39,9 +39,8 @@ export interface TeleCrmAdapter {
   updateLead: (id: string, data: { status?: string; notes?: string; followUpDate?: string }) => Promise<void>;
   logCall: (
     id: string,
-    data: { duration?: number; outcome?: string; notes?: string; aiSummary?: string; followUpAt?: string },
+    data: { duration?: number; outcome?: string; notes?: string; followUpAt?: string },
   ) => Promise<void>;
-  aiSummary: (data: { textNotes: string; leadName: string; callDuration?: number }) => Promise<string>;
 }
 
 const PIPELINE = [
@@ -61,7 +60,6 @@ const OUTCOMES = [
   { value: 'no_answer', label: 'No Answer', icon: PhoneOff, status: 'contacted', cls: 'border-slate-300 bg-slate-50 text-slate-600' },
 ];
 
-const AI_SUMMARY_COST = 3;
 
 function dayBucket(followUpDate: string | null): 'overdue' | 'today' | 'upcoming' | 'none' {
   if (!followUpDate) return 'none';
@@ -113,8 +111,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   const [customDate, setCustomDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [aiSummary, setAiSummary] = useState('');
-  const [summarizing, setSummarizing] = useState(false);
 
   // Per-lead summary panel (A4): tap a card to see the lead brief + call history.
   const [detail, setDetail] = useState<TeleCrmLead | null>(null);
@@ -160,7 +156,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     setNotes('');
     setFollowChoice(null);
     setCustomDate('');
-    setAiSummary('');
   }, []);
 
   // When the vendor returns to the tab after the dialer, show the feedback sheet.
@@ -207,19 +202,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     recognitionRef.current = rec; rec.start(); setRecording(true);
   };
 
-  const runAiSummary = async () => {
-    if (!feedbackLead || !notes.trim()) return;
-    setSummarizing(true);
-    try {
-      const s = await adapter.aiSummary({ textNotes: notes, leadName: feedbackLead.name, callDuration: Math.round((Date.now() - callStartRef.current) / 1000) });
-      setAiSummary(s);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'AI summary failed');
-    } finally {
-      setSummarizing(false);
-    }
-  };
-
   const saveFeedback = async (callNext: boolean) => {
     if (!feedbackLead) return;
     setSaving(true);
@@ -228,7 +210,7 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     const followUpAt = followChoice ? followUpIso(followChoice, customDate) : undefined;
     try {
       const duration = Math.round((Date.now() - callStartRef.current) / 1000);
-      await adapter.logCall(current.id, { duration, outcome: outcome ?? undefined, notes: notes || undefined, aiSummary: aiSummary || undefined, followUpAt });
+      await adapter.logCall(current.id, { duration, outcome: outcome ?? undefined, notes: notes || undefined, followUpAt });
       if (oc) await adapter.updateLead(current.id, { status: oc.status, followUpDate: followUpAt });
       setFeedbackLead(null);
       const next = callNext ? queueOrder.find((l) => l.id !== current.id && !skipped.has(l.id)) : undefined;
@@ -338,7 +320,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                           <span className="text-xs text-slate-400">{new Date(cl.createdAt).toLocaleDateString('en-IN')}{cl.duration ? ` · ${cl.duration}s` : ''}</span>
                         </div>
                         {cl.notes && <p className="mt-1 text-sm text-slate-600">{cl.notes}</p>}
-                        {cl.aiSummary && <p className="mt-1 rounded-lg bg-primary-50 p-2 text-xs text-slate-700"><Sparkles className="mr-1 inline h-3 w-3 text-primary-600" />{cl.aiSummary}</p>}
                       </div>
                     ))}
                   </div>
@@ -411,12 +392,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                 )}
               </div>
             )}
-
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">AI call summary</span>
-              <Button size="sm" variant="outline" leftIcon={<Sparkles className="h-3.5 w-3.5" />} loading={summarizing} onClick={runAiSummary} disabled={!notes.trim()}>Summarize (~₹{AI_SUMMARY_COST})</Button>
-            </div>
-            {aiSummary && <p className="mt-2 rounded-lg bg-primary-50 p-2.5 text-xs text-slate-700">{aiSummary}</p>}
 
             <div className="mt-4 space-y-2">
               <Button fullWidth loading={saving} onClick={() => saveFeedback(true)}>💾 Save &amp; Call Next →</Button>

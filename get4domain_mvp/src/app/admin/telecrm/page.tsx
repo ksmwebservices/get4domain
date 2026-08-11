@@ -10,10 +10,6 @@ const adminAdapter: TeleCrmAdapter = {
   getLead: async (id) => (await api.adminCrmLead(id)).data,
   updateLead: async (id, data) => { await api.adminUpdateCrmLead(id, data); },
   logCall: async (id, data) => { await api.adminLogCrmCall(id, data); },
-  aiSummary: async (data) => {
-    const res = await api.generateAiCallSummary(data);
-    return res.data?.summary ?? res.data?.content ?? String(res.data);
-  },
 };
 
 export default function AdminTeleCrmPage() {

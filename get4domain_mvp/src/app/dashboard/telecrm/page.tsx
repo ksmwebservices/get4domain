@@ -9,10 +9,6 @@ const vendorAdapter: TeleCrmAdapter = {
   getLead: async (id) => (await api.getCrmLead(id)).data,
   updateLead: async (id, data) => { await api.updateCrmLead(id, data); },
   logCall: async (id, data) => { await api.logCrmCall(id, data); },
-  aiSummary: async (data) => {
-    const res = await api.generateAiCallSummary(data);
-    return res.data?.summary ?? res.data?.content ?? String(res.data);
-  },
 };
 
 export default function TeleCrmPage() {
