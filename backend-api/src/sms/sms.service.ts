@@ -28,33 +28,49 @@ export class SmsService {
 
   private async apiKey(): Promise<string | null> {
     // Prefer the central Fast2SMS key; fall back to the legacy sms category.
-    return (
+    const key =
       (await this.settings.getResolvedValue('fast2sms', 'api_key')) ??
-      (await this.settings.getResolvedValue('sms', 'sms_api_key'))
-    );
+      (await this.settings.getResolvedValue('sms', 'sms_api_key'));
+    if (!key) {
+      this.logger.warn('Fast2SMS api_key did not resolve (fast2sms/api_key or sms/sms_api_key). Check Admin → Integrations and PLATFORM_SETTINGS_KEY.');
+    }
+    return key;
   }
 
   private async call(params: Record<string, string>, endpoint: string = FAST2SMS_ENDPOINT): Promise<ProviderResult> {
     const apiKey = await this.apiKey();
     const numbers = params.numbers;
 
+    // MOCK only when there is genuinely no key. A real attempt that errors is
+    // reported as `failed` (mock:false) so the true cause is never hidden.
     if (!apiKey) {
       this.logger.log(`[MOCK] SMS -> ${numbers} (${params.route ?? 'q'}) not sent (Fast2SMS not configured)`);
       return { providerMessageId: `mock_sms_${Date.now()}`, status: 'mock', mock: true };
     }
 
+    const url = `${endpoint}?${new URLSearchParams({ authorization: apiKey, flash: '0', ...params }).toString()}`;
+    const masked = url.replace(apiKey, `${apiKey.slice(0, 4)}…`);
     try {
-      const qs = new URLSearchParams({ authorization: apiKey, flash: '0', ...params }).toString();
-      const res = await fetch(`${endpoint}?${qs}`, { method: 'GET' });
-      const data = (await res.json()) as { return?: boolean; request_id?: string; message?: string[] };
-      if (!res.ok || data.return !== true) {
-        this.logger.error(`Fast2SMS SMS error ${res.status}: ${JSON.stringify(data)}`);
-        return { providerMessageId: `err_sms_${Date.now()}`, status: 'mock', mock: true };
+      const res = await fetch(url, { method: 'GET' });
+      const body = await res.text();
+      let data: { return?: boolean; request_id?: string; message?: unknown } | null = null;
+      try { data = JSON.parse(body); } catch { /* some endpoints return non-JSON */ }
+
+      const ok = res.ok && (data?.return === true || Boolean(data?.request_id));
+      if (!ok) {
+        this.logger.error(`Fast2SMS ${res.status} for ${masked} :: ${body.slice(0, 300)}`);
+        const msg = Array.isArray((data as { message?: unknown })?.message)
+          ? String((data as { message: unknown[] }).message[0])
+          : (data as { message?: unknown })?.message
+            ? String((data as { message: unknown }).message)
+            : `Fast2SMS HTTP ${res.status}`;
+        return { providerMessageId: `err_sms_${Date.now()}`, status: 'failed', mock: false, error: msg };
       }
-      return { providerMessageId: data.request_id ?? `sms_${Date.now()}`, status: 'sent', mock: false };
+      this.logger.log(`Fast2SMS sent (${params.route}) -> ${numbers} via ${endpoint}`);
+      return { providerMessageId: data?.request_id ?? `sms_${Date.now()}`, status: 'sent', mock: false };
     } catch (err) {
-      this.logger.error(`Fast2SMS SMS request failed: ${err instanceof Error ? err.message : 'unknown'}`);
-      return { providerMessageId: `err_sms_${Date.now()}`, status: 'mock', mock: true };
+      this.logger.error(`Fast2SMS request failed for ${masked}: ${err instanceof Error ? err.message : 'unknown'}`);
+      return { providerMessageId: `err_sms_${Date.now()}`, status: 'failed', mock: false, error: err instanceof Error ? err.message : 'network error' };
     }
   }
 
@@ -80,14 +96,17 @@ export class SmsService {
   }
 
   /**
-   * One-time password via the plain OTP route on /dev/bulk. We generate + store
-   * the code ourselves (OtpService); Fast2SMS just delivers "Your OTP: <code>".
-   * No DLT, no website verification (avoids the Smart-OTP status_code 996).
+   * One-time password via the plain OTP route (route=otp, our own generated code
+   * as variables_values). No DLT, no website verification (the Smart-OTP API
+   * /dev/otp/send is the one that 996s). Tries /dev/bulk first, then falls back to
+   * /dev/bulkV2 if that errors — so it works whichever endpoint the account
+   * accepts. `mock` is returned only when no key is configured.
    */
   async sendOtp(to: string, code: string): Promise<ProviderResult> {
-    return this.call(
-      { route: 'otp', variables_values: code, numbers: this.normalize(to) },
-      FAST2SMS_OTP_ENDPOINT,
-    );
+    const params = { route: 'otp', variables_values: code, numbers: this.normalize(to) };
+    const primary = await this.call(params, FAST2SMS_OTP_ENDPOINT);
+    if (primary.mock || primary.status === 'sent') return primary;
+    this.logger.warn('OTP via /dev/bulk did not succeed — retrying on /dev/bulkV2 route=otp');
+    return this.call(params, FAST2SMS_ENDPOINT);
   }
 }

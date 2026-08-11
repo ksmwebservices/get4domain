@@ -66,7 +66,8 @@ export class CommunicationService {
       result = { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
     }
 
-    if (cost > 0 && !result.mock) {
+    // Charge only for a confirmed real send — never for mock (no key) or failed.
+    if (cost > 0 && result.status === 'sent') {
       await this.wallet.deduct(vendorId, cost, `${channel.toUpperCase()} message sent`, `comm_${channel}`);
     }
     return result;

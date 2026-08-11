@@ -140,6 +140,27 @@ Minimal OTP-gated entry that replaces the old segmented "what matters most" form
 - [!] REAL SMS DELIVERY not testable from Claude Code (no Fast2SMS key, can't
   receive SMS). Owner must confirm on the VM once the key is set — see repo notes.
 
+#### OTP flow fixes — round 2 (live-testing findings)
+- [x] Fix 1 — DTO validation rejected formatted numbers. RequestOtpDto/VerifyOtpDto/
+  VerifyDemoLeadDto/DemoEnquiryDto now @Transform(phone → last-10-digits) BEFORE
+  @Matches(/^\d{10}$/) (global ValidationPipe transform:true). "+91 98765 43210",
+  spaces, dashes, leading 0 all pass; the DB/SmsService receive a clean 10-digit.
+- [x] Fix 2 — `mock:true` even with a configured key. ROOT CAUSE: the SMS error/
+  exception branches all returned mock:true, masking real API failures as "mock"
+  (OTP has NO DLT gate — sendOtp never checks sender/entity/template, so that
+  wasn't it). Now: mock ONLY when the api_key doesn't resolve (with a warn log
+  naming PLATFORM_SETTINGS_KEY); a real attempt that errors returns status
+  'failed' + the Fast2SMS message (mock:false), logged with the masked URL + raw
+  body. ProviderResult gained 'failed' + error. sendOtp tries /dev/bulk then falls
+  back to /dev/bulkV2 route=otp. OtpService.request surfaces sent/mock/error.
+  CommunicationService now debits the wallet only on status==='sent' (never on a
+  failed send).
+- [x] Verified: DTO transform+regex across 7 formats; backend builds 0 errors.
+- [!] After deploy, `curl .../otp/request -d '{"phone":"7550010567"}'` returns:
+  {sent:true,mock:false} = real SMS sent · {mock:true} = key not resolving (check
+  PLATFORM_SETTINGS_KEY / Admin key) · {sent:false,mock:false,error:"…"} = Fast2SMS
+  rejected it (error text says why). No longer masked as mock either way.
+
 ### Item 6 — Book-Demo Phases 2–6 (dispatch #3)
 Owner decisions: sandbox = REAL Vendor with isSandbox flag (converts to live on
 pay); THIS SESSION = Phase 2 + 3; Phases 5–6 DEFERRED. Phase 2 reuses existing
