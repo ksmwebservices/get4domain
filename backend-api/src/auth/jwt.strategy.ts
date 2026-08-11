@@ -38,6 +38,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Account not found or suspended');
     }
 
+    // Expired demo sandboxes can't be used even with an unexpired token.
+    if (vendor.isSandbox && vendor.expiresAt && vendor.expiresAt < new Date()) {
+      throw new UnauthorizedException('This demo session has expired');
+    }
+
     // The bootstrap admin Vendor is treated as SUPER_ADMIN internal staff.
     const isAdmin = vendor.role === 'ADMIN' || vendor.role === 'SUPER_ADMIN';
     return {

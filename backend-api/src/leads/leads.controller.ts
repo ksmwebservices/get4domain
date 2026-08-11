@@ -22,8 +22,8 @@ export class LeadsController {
 
   @Public()
   @Post('demo')
-  @ApiOperation({ summary: 'Book-Demo Phase 1 — verify mobile OTP and create/update a verified demo lead' })
-  verifyDemo(@Body() dto: VerifyDemoLeadDto): Promise<Lead> {
+  @ApiOperation({ summary: 'Book-Demo Phase 1 — verify OTP, create a verified lead, provision a sandbox (Phase 4)' })
+  verifyDemo(@Body() dto: VerifyDemoLeadDto) {
     return this.leadsService.verifyDemoLead(dto);
   }
 

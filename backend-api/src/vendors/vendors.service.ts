@@ -16,7 +16,9 @@ export class VendorsService {
   ) {}
 
   findAll(): Promise<Vendor[]> {
-    return this.prisma.vendor.findMany({ orderBy: { createdAt: 'desc' } });
+    // Exclude Book-Demo sandbox vendors — they are throwaway demo accounts, not
+    // real clients, and must never appear in admin vendor management.
+    return this.prisma.vendor.findMany({ where: { isSandbox: false }, orderBy: { createdAt: 'desc' } });
   }
 
   async findOne(id: string): Promise<Vendor> {

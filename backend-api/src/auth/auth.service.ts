@@ -116,6 +116,15 @@ export class AuthService {
     return this.jwtService.sign(payload, { expiresIn: '7d' });
   }
 
+  /** Short-lived token for a Book-Demo sandbox vendor (Phase 4). Scoped to the
+   *  sandbox vendorId; the dashboard reads it like any vendor token. */
+  mintSandboxToken(vendorId: string, email: string): string {
+    return this.jwtService.sign(
+      { sub: vendorId, email, role: 'VENDOR', kind: 'sandbox' },
+      { expiresIn: '48h' },
+    );
+  }
+
   static async hashPassword(plain: string): Promise<string> {
     return bcrypt.hash(plain, 10);
   }

@@ -9,6 +9,9 @@ import Button from '@/components/ui/Button';
 import PageHero from '@/components/PageHero';
 import { api } from '@/lib/api';
 import { INDUSTRIES } from '@/data/industries-list';
+import { setSession } from '@/lib/auth';
+
+interface Sandbox { vendorId: string; token: string; industry: string; expiresAt: string | null }
 
 // Canonical industry list — the SAME 20 used by /industries and /demo/[id]. The
 // dropdown value is the canonical `id`, so it feeds /demo/[id] + seedVendor directly.
@@ -27,6 +30,7 @@ export default function BookDemoPage() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState<string | null>(null);
+  const [sandbox, setSandbox] = useState<Sandbox | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -57,13 +61,31 @@ export default function BookDemoPage() {
   const verify = async () => {
     setError(''); setLoading(true);
     try {
-      await api.verifyDemoLead({ name, phone: normalizedPhone, industry, code });
+      const res = await api.verifyDemoLead({ name, phone: normalizedPhone, industry, code });
+      setSandbox((res.data?.sandbox as Sandbox | undefined) ?? null);
       setStep('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Seat the short-lived sandbox session and open the vendor dashboard tour.
+  const startTour = () => {
+    if (!sandbox) return;
+    localStorage.setItem('g4d_token', sandbox.token);
+    setSession({
+      id: sandbox.vendorId,
+      name: name || 'Demo User',
+      email: '',
+      role: 'vendor',
+      businessName: `${industryName || 'Your'} Demo`,
+      industry: sandbox.industry,
+      plan: 'Demo Sandbox',
+      initials: (name || 'D').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
+    });
+    window.location.href = '/dashboard';
   };
 
   /* --------------------------------- done ---------------------------------- */
@@ -92,9 +114,14 @@ export default function BookDemoPage() {
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row justify-center">
               <Link href={`/demo/${industry || 'general'}`}><Button variant="outline" rightIcon={<ArrowRight className="h-4 w-4" />}>Explore Your Demo Site</Button></Link>
-              <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled title="Interactive demo tour — coming soon">Start Demo Tour</Button>
+              <Button leftIcon={<PlayCircle className="h-4 w-4" />} disabled={!sandbox} onClick={startTour}
+                title={sandbox ? 'Open your live sandbox dashboard' : 'Setting up your sandbox…'}>Start Demo Tour</Button>
             </div>
-            <p className="mt-4 text-xs text-slate-400">The guided interactive demo is rolling out shortly. You&apos;re on the list.</p>
+            <p className="mt-4 text-xs text-slate-400">
+              {sandbox
+                ? 'Your sandbox dashboard is preloaded with sample data and expires in 48 hours.'
+                : 'The guided interactive demo is rolling out shortly. You’re on the list.'}
+            </p>
           </div>
         </div>
       </div>

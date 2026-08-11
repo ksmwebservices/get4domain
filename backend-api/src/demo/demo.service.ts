@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
+import { Vendor } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { getIndustryConfig } from '../config/industries';
@@ -166,6 +168,56 @@ export class DemoService {
 
       return { contacts: contacts.length, catalog: catalog.length, records: records.length, invoices: invoiceCount };
     });
+  }
+
+  /**
+   * Phase 4 — provision a per-lead SANDBOX vendor for the interactive tour: a real
+   * Vendor row flagged isSandbox with a 48h expiry, seeded for its industry. The
+   * lead accesses it via a short-lived sandbox JWT (no password). Converts to a
+   * real account at Phase 5 (buy-now).
+   */
+  async provisionSandbox(industry: string, name: string, phone: string): Promise<Vendor> {
+    const config = getIndustryConfig(industry);
+    const content = this.resolveContent(config.key);
+    const stamp = Date.now();
+    const vendor = await this.prisma.vendor.create({
+      data: {
+        name: name || 'Demo User',
+        email: `sbx_${stamp}_${crypto.randomBytes(3).toString('hex')}@sandbox.get4domain.com`,
+        password: crypto.randomBytes(24).toString('hex'), // unusable; auth is via sandbox JWT only
+        businessName: content.business,
+        phone,
+        industry: config.key,
+        role: 'VENDOR',
+        status: 'ACTIVE',
+        isSandbox: true,
+        expiresAt: new Date(stamp + 48 * 60 * 60 * 1000),
+      },
+    });
+    await this.seedVendor(vendor.id, config.key);
+    this.logger.log(`Provisioned sandbox vendor ${vendor.id} (${config.key}) for ${name}`);
+    return vendor;
+  }
+
+  /** Delete expired sandbox vendors and their seeded data (Phase 4 cleanup). */
+  async cleanupExpiredSandboxes(): Promise<{ removed: number }> {
+    const expired = await this.prisma.vendor.findMany({
+      where: { isSandbox: true, expiresAt: { lt: new Date() } },
+      select: { id: true },
+    });
+    let removed = 0;
+    for (const v of expired) {
+      await this.prisma.$transaction([
+        this.prisma.genericInvoice.deleteMany({ where: { vendorId: v.id } }),
+        this.prisma.record.deleteMany({ where: { vendorId: v.id } }),
+        this.prisma.catalogItem.deleteMany({ where: { vendorId: v.id } }),
+        this.prisma.contact.deleteMany({ where: { vendorId: v.id } }),
+        this.prisma.vendor.delete({ where: { id: v.id } }),
+      ]);
+      removed += 1;
+    }
+    if (removed) this.logger.log(`Cleaned up ${removed} expired sandbox vendor(s)`);
+    return { removed };
   }
 
   /**

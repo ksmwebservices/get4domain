@@ -20,6 +20,10 @@ model Vendor {
   customDomain String?
   role         Role     @default(VENDOR)
   status       VendorStatus @default(ACTIVE)
+  // Book-Demo Phase 4: a per-lead demo account, auto-expiring. Converts to a real
+  // account at Phase 5 (buy-now). Filtered out of admin/real views.
+  isSandbox    Boolean  @default(false)
+  expiresAt    DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

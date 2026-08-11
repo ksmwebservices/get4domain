@@ -31,4 +31,12 @@ export class DemoController {
   seed(@Body() dto: SeedVendorDto) {
     return this.demo.seedVendor(dto.vendorId, dto.industry);
   }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminGuard)
+  @Post('cleanup-sandboxes')
+  @ApiOperation({ summary: 'Delete expired Book-Demo sandbox vendors + their seeded data (Phase 4 cleanup)' })
+  cleanup() {
+    return this.demo.cleanupExpiredSandboxes();
+  }
 }

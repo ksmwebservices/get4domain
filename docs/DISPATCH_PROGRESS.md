@@ -564,18 +564,35 @@ VM MIGRATION for this addition (Lead gains 2 columns):
   Fast2SMS enquiry. Both apps build 0 errors. (Backend-data-driven → build-verified;
   render needs the API running.)
 
-### Phase 4 (interactive tour) — decisions CONFIRMED, build NEXT
-Confirmed: (1) short-lived sandbox JWT (kind:'sandbox', vendorId, exp ~24–48h),
-read like a normal vendor token; (2) per-lead sandbox Vendor + expiry (auto-clean);
-(3) [Phase 2] static per-section samples as the shared source — done above.
-- [ ] Vendor.isSandbox + expiresAt columns (Prisma migration).
-- [ ] On OTP verify (verifyDemoLead): provision a per-lead sandbox Vendor scoped to
-  the selected industry, call seedVendor(), mint a scoped sandbox JWT, return it so
-  the tour can open the dashboard.
-- [ ] Tour routing: demo site → vendor dashboard → customer portal, all backed by
-  the sandbox vendorId (reuse shared components, normal vendorId scoping).
-- [ ] Auto-expire + cleanup job (or filter expired sandboxes from admin views).
+### Phase 4 (interactive tour) — CORE DONE
+Confirmed: (1) short-lived sandbox JWT; (2) per-lead sandbox Vendor + expiry;
+(3) [Phase 2] static per-section shared samples — done above.
+- [x] Vendor.isSandbox (Boolean) + expiresAt (DateTime?) columns — schema updated
+  (VM `prisma db push` required, folds in with the other pending Lead columns).
+- [x] Provisioning: verifyDemoLead (OTP verify) now calls DemoService.provisionSandbox
+  — creates a per-lead sandbox Vendor (isSandbox, expiresAt +48h, synthetic email,
+  unusable password), seeds it via seedVendor(), mints a scoped sandbox JWT
+  (AuthService.mintSandboxToken, kind:'sandbox', exp 48h), returns { lead, sandbox }.
+  Best-effort — a provisioning failure never fails the verified lead.
+- [x] Auth: jwt.strategy validates a sandbox vendor like a normal vendor (real row,
+  sub=vendorId → all vendorId-scoped endpoints work) AND rejects it once
+  expiresAt passes, even with an unexpired token.
+- [x] Tour launch (frontend): "Start Demo Tour" seats the sandbox session
+  (g4d_token + g4d_user) and opens /dashboard — the seeded sandbox data renders via
+  normal vendorId scoping (shared components, no parallel versions). "Explore Your
+  Demo Site" → /demo/[industry] (Phase 2).
+- [x] Cleanup: DemoService.cleanupExpiredSandboxes() deletes expired sandbox vendors
+  + their seeded rows; admin POST /demo/cleanup-sandboxes. Admin vendor list
+  (VendorsService.findAll) now excludes isSandbox vendors. Both apps build 0 errors.
+- [~] REMAINING (next pass): (a) customer-portal leg of the tour (dashboard →
+  /customer scoped to the sandbox — customer portal has its own auth, needs wiring);
+  (b) a scheduled cron for cleanup (currently manual endpoint + JWT-expiry guard;
+  needs @nestjs/schedule). Not blocking the core tour.
 - Phases 5–6 (Razorpay checkout, auto-activation) remain OUT OF SCOPE.
+
+### VM MIGRATION for this dispatch
+`prisma db push` now also adds Vendor.isSandbox + Vendor.expiresAt (alongside the
+still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
 
 ---
 
