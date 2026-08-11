@@ -36,12 +36,19 @@ export default function BookDemoPage() {
   const [error, setError] = useState('');
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
-  const validPhone = phone.replace(/\D/g, '').length >= 10;
+  // Normalise to a clean 10-digit Indian mobile: strip +91 / 0 prefix, spaces,
+  // dashes, brackets — keep the last 10 digits. This is what's sent everywhere.
+  const normalizedPhone = (() => {
+    const d = phone.replace(/\D/g, '');
+    return d.length > 10 ? d.slice(-10) : d;
+  })();
+  const validPhone = normalizedPhone.length === 10;
 
   const sendOtp = async () => {
+    if (!validPhone) { setError('Enter a valid 10-digit mobile number.'); return; }
     setError(''); setLoading(true); setDevCode(null);
     try {
-      const res = await api.requestOtp(phone);
+      const res = await api.requestOtp(normalizedPhone);
       if (res.data?.devCode) setDevCode(res.data.devCode as string);
       setStep('otp');
     } catch (err) {
@@ -54,7 +61,7 @@ export default function BookDemoPage() {
   const verify = async () => {
     setError(''); setLoading(true);
     try {
-      await api.verifyDemoLead({ name, phone, industry, code });
+      await api.verifyDemoLead({ name, phone: normalizedPhone, industry, code });
       setStep('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
@@ -166,7 +173,7 @@ export default function BookDemoPage() {
             {step === 'otp' && (
               <div className="card-base p-6 space-y-4">
                 <h3 className="flex items-center gap-2 text-base font-bold text-slate-900"><ShieldCheck className="h-4 w-4 text-primary-600" /> Verify your mobile</h3>
-                <p className="text-sm text-slate-500">Enter the 6-digit code sent to <strong className="text-slate-700">{phone}</strong>.</p>
+                <p className="text-sm text-slate-500">Enter the 6-digit code sent to <strong className="text-slate-700">+91 {normalizedPhone}</strong>.</p>
                 {devCode && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
                     Dev mode (SMS not configured): your code is <strong>{devCode}</strong>.

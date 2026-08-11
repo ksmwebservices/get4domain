@@ -124,6 +124,22 @@ Minimal OTP-gated entry that replaces the old segmented "what matters most" form
 - [!] VM: the pending `prisma db push` now also adds Lead.source (alongside
   preferredDate/preferredSlot from the last deploy). Same single db push applies all.
 
+#### OTP flow fixes (follow-up on item 5)
+- [x] Fix 1 — SmsService.sendOtp switched from the Smart-OTP path (route=otp on
+  bulkV2, which behaves like /dev/otp/send and 996s until "website verification")
+  to the PLAIN OTP route on `https://www.fast2sms.com/dev/bulk` (route=otp,
+  variables_values=<our generated code>). No DLT, no website verification. Generic
+  SMS stays on bulkV2. `call()` now takes an endpoint param.
+- [x] Fix 2 — Book-Demo phone normalization: strips +91 / leading 0 / spaces /
+  dashes / brackets to a clean 10-digit number; validates EXACTLY 10 before
+  allowing OTP send; the normalized number is what's sent to /otp/request and
+  /leads/demo. Backend SmsService.normalize + OtpService.key already slice to the
+  last 10, so both ends agree.
+- [x] Verified normalization + the built OTP URL for 7 input formats (all → clean
+  10-digit; short input rejected); both apps build 0 errors.
+- [!] REAL SMS DELIVERY not testable from Claude Code (no Fast2SMS key, can't
+  receive SMS). Owner must confirm on the VM once the key is set — see repo notes.
+
 ### Item 6 — Book-Demo Phases 2–6 (dispatch #3)
 Owner decisions: sandbox = REAL Vendor with isSandbox flag (converts to live on
 pay); THIS SESSION = Phase 2 + 3; Phases 5–6 DEFERRED. Phase 2 reuses existing
