@@ -808,6 +808,24 @@ must be tested in test mode on the VM.
 
 ---
 
+## FIX — OpenAI image "not configured" masking (12 Aug 2026)
+- INVESTIGATION 1 (naming): NO mismatch. generateImage resolves
+  getResolvedValue('ai','openai_api_key') — the SAME 'ai' category as Claude's
+  'anthropic_api_key'. The key resolves fine if present (DB or OPENAI_API_KEY env).
+- INVESTIGATION 2 (the real bug): generateImage returned `null` for BOTH "no key"
+  AND any real OpenAI API error (invalid/expired key, quota, no DALL-E access), and
+  the doc-design frontend rendered any null as "isn't configured". So a resolving-but-
+  rejected key showed "not configured", masking the true cause (same class of bug as
+  the Fast2SMS mock:true masking).
+- FIX: generateImage now returns { url, status: 'ok'|'not_configured'|'failed', error }
+  and parses the real OpenAI error message from the response. generateDesignImage
+  surfaces status+error; the AI Studio doc generator shows the REAL error ("AI image
+  failed: <openai message>") vs. a true "not configured — add an OpenAI key" only when
+  the key genuinely doesn't resolve. Content-gen image add-on reads .url (image
+  failure still never fails the text). Both apps build 0 errors.
+  → Owner: retry now; the surfaced message will say exactly what OpenAI rejected
+  (most likely an invalid/expired key or missing image/billing access on the account).
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

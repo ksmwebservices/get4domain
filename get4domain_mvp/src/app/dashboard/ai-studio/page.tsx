@@ -169,8 +169,12 @@ export default function AiStudioPage() {
     try {
       const res = await api.generateDesignImage(prompt);
       const url = res.data?.imageUrl as string | null | undefined;
-      if (url) setDocBg(url);
-      else setDocBgNote('AI image isn’t configured yet — using the clean default design.');
+      if (url) { setDocBg(url); return; }
+      // Honest failure: distinguish "no key" from a real OpenAI API error.
+      const status = res.data?.status as string | undefined;
+      const err = res.data?.error as string | undefined;
+      if (status === 'not_configured') setDocBgNote('AI image isn’t configured — add an OpenAI key in Admin → Integrations. Using the clean default design.');
+      else setDocBgNote(`AI image failed: ${err ?? 'unknown error'}. Using the clean default design.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not generate design';
       setDocBgNote(/wallet|insufficient|balance/i.test(msg) ? 'Wallet balance too low for an AI design.' : 'Could not generate the design right now.');

@@ -166,23 +166,29 @@ export class AiService {
    * staff; returns null when no image key is configured (client falls back to a
    * CSS design).
    */
-  async generateDesignImage(vendorId: string, prompt: string, internal = false): Promise<{ imageUrl: string | null }> {
+  async generateDesignImage(vendorId: string, prompt: string, internal = false): Promise<{ imageUrl: string | null; status: string; error?: string }> {
     const cost = await this.walletService.getRate('document', 1500);
     if (!internal && !(await this.walletService.hasSufficientBalance(vendorId, cost))) {
       throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
     }
-    const imageUrl = await this.generateImage(prompt);
-    if (imageUrl && !internal) {
+    const img = await this.generateImage(prompt);
+    // Charge only when an image was actually produced.
+    if (img.url && !internal) {
       await this.walletService.deduct(vendorId, cost, 'AI document design image', 'ai_doc_design');
     }
-    return { imageUrl };
+    return { imageUrl: img.url, status: img.status, error: img.error };
   }
 
-  private async generateImage(prompt: string): Promise<string | null> {
+  /**
+   * DALL-E image generation. Returns a discriminated result so callers can tell
+   * "no key configured" apart from a real OpenAI API failure (invalid/expired key,
+   * quota, no image access, …) — never masks an API error as "not configured".
+   */
+  private async generateImage(prompt: string): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string }> {
     const apiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
     if (!apiKey) {
-      this.logger.warn('OPENAI_API_KEY not configured — skipping DALL-E image generation');
-      return null;
+      this.logger.warn('OpenAI image key not resolved (ai/openai_api_key or OPENAI_API_KEY env)');
+      return { url: null, status: 'not_configured' };
     }
 
     try {
@@ -192,16 +198,23 @@ export class AiService {
         body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024' }),
       });
 
+      const body = await response.text();
       if (!response.ok) {
-        this.logger.error(`DALL-E error ${response.status}: ${await response.text()}`);
-        return null;
+        let message = `OpenAI HTTP ${response.status}`;
+        try {
+          const parsed = JSON.parse(body) as { error?: { message?: string } };
+          if (parsed?.error?.message) message = parsed.error.message;
+        } catch { /* non-JSON body */ }
+        this.logger.error(`DALL-E error ${response.status}: ${body.slice(0, 400)}`);
+        return { url: null, status: 'failed', error: message };
       }
 
-      const data = (await response.json()) as { data: Array<{ url: string }> };
-      return data.data[0]?.url ?? null;
+      const data = JSON.parse(body) as { data: Array<{ url: string }> };
+      return { url: data.data[0]?.url ?? null, status: 'ok' };
     } catch (error) {
-      this.logger.error('DALL-E image generation failed', error instanceof Error ? error.stack : undefined);
-      return null;
+      const message = error instanceof Error ? error.message : 'network error';
+      this.logger.error(`DALL-E image request failed: ${message}`);
+      return { url: null, status: 'failed', error: message };
     }
   }
 
@@ -232,9 +245,10 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
       await this.walletService.deduct(vendorId, cost, `AI ${dto.channel} content generated`, `ai_content_${dto.channel}`);
     }
 
-    const imageUrl = IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
+    // Image is a best-effort add-on to the text — a failure here doesn't fail the post.
+    const img = IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
 
-    return { ...parsed, imageUrl };
+    return { ...parsed, imageUrl: img?.url ?? null };
   }
 
   async generatePage(dto: AiGeneratePageDto): Promise<{
