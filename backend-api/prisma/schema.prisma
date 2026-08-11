@@ -45,6 +45,7 @@ model Vendor {
   genericInvoices  GenericInvoice[]
   addons           VendorAddon[]
   modules          VendorModule[]
+  messages         Message[]
 }
 
 model Subscription {
@@ -376,8 +377,29 @@ model Contact {
   updatedAt    DateTime         @updatedAt
   records      Record[]
   invoices     GenericInvoice[]
+  messages     Message[]
   @@index([vendorId])
   @@map("g4d_contacts")
+}
+
+// Communication Hub message history (Phase: real unified inbox). Outbound messages
+// are persisted on send; inbound would be captured by provider webhooks (future).
+model Message {
+  id                String   @id @default(cuid())
+  vendorId          String
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
+  contactId         String?
+  contact           Contact? @relation(fields: [contactId], references: [id])
+  channel           String   // whatsapp | email | sms
+  direction         String   @default("out") // out | in
+  subject           String?
+  body              String
+  status            String   @default("sent") // sent | mock | failed | received
+  providerMessageId String?
+  createdAt         DateTime @default(now())
+  @@index([vendorId])
+  @@index([contactId])
+  @@map("g4d_messages")
 }
 
 model CatalogItem {

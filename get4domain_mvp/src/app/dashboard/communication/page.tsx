@@ -15,6 +15,15 @@ interface Thread {
   lastMessage: string;
 }
 
+interface Msg {
+  id: string;
+  direction: 'out' | 'in';
+  subject: string | null;
+  body: string;
+  status: string;
+  createdAt: string;
+}
+
 const CHANNELS: { key: Channel; label: string; icon: typeof Mail }[] = [
   { key: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
   { key: 'email', label: 'Email', icon: Mail },
@@ -33,7 +42,7 @@ export default function CommunicationPage() {
   const [draft, setDraft] = useState('');
   const [subject, setSubject] = useState('');
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState<{ text: string; mock: boolean }[]>([]);
+  const [messages, setMessages] = useState<Msg[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -41,7 +50,13 @@ export default function CommunicationPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setSent([]); }, [active, channel]);
+
+  // Load the persisted conversation history when a thread/channel is opened.
+  const loadHistory = useCallback(() => {
+    if (!active) { setMessages([]); return; }
+    api.commHistory(active.contactId, channel).then((res) => setMessages(res.data ?? [])).catch(() => setMessages([]));
+  }, [active, channel]);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const send = async () => {
     if (!active || !draft.trim()) return;
@@ -49,9 +64,9 @@ export default function CommunicationPage() {
     if (!to) { alert(`No ${channel === 'email' ? 'email' : 'phone'} on file for this contact.`); return; }
     setSending(true);
     try {
-      const res = await api.commSend({ channel, to, message: draft, subject: subject || undefined });
-      setSent((prev) => [...prev, { text: draft, mock: res.data?.mock ?? false }]);
+      await api.commSend({ channel, to, message: draft, subject: subject || undefined, contactId: active.contactId });
       setDraft('');
+      loadHistory(); // reload persisted thread
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Send failed');
     } finally {
@@ -126,16 +141,24 @@ export default function CommunicationPage() {
               </div>
 
               <div className="flex-1 space-y-2 overflow-y-auto p-4">
-                {active.lastMessage && (
-                  <div className="max-w-[75%] rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2 text-sm text-slate-700">{active.lastMessage}</div>
-                )}
-                {sent.map((m, i) => (
-                  <div key={i} className="ml-auto max-w-[75%] rounded-2xl rounded-tr-sm bg-primary-600 px-3.5 py-2 text-sm text-white">
-                    {m.text}
-                    {m.mock && <span className="mt-0.5 block text-[10px] text-primary-100">sent (mock — provider pending)</span>}
-                  </div>
+                {messages.map((m) => (
+                  m.direction === 'out' ? (
+                    <div key={m.id} className="ml-auto max-w-[75%] rounded-2xl rounded-tr-sm bg-primary-600 px-3.5 py-2 text-sm text-white">
+                      {m.subject && <div className="mb-0.5 text-[11px] font-semibold text-primary-100">{m.subject}</div>}
+                      {m.body}
+                      <span className="mt-0.5 block text-[10px] text-primary-100">
+                        {new Date(m.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {m.status === 'mock' ? ' · mock (provider pending)' : m.status === 'failed' ? ' · failed' : ' · sent'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div key={m.id} className="max-w-[75%] rounded-2xl rounded-tl-sm bg-slate-100 px-3.5 py-2 text-sm text-slate-700">
+                      {m.body}
+                      <span className="mt-0.5 block text-[10px] text-slate-400">{new Date(m.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )
                 ))}
-                {!active.lastMessage && sent.length === 0 && (
+                {messages.length === 0 && (
                   <div className="flex h-full items-center justify-center text-sm text-slate-400">No messages yet. Start the conversation.</div>
                 )}
               </div>

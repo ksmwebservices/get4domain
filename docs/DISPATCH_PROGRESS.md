@@ -759,6 +759,37 @@ must be tested in test mode on the VM.
 
 ---
 
+## DISPATCH — TOUR + AI-KEY + COMM-HUB (12 Aug 2026)
+
+### Item 2 — AI Studio "needs to be configured" gate
+- [x] ROOT CAUSE (separate from the B5 DTO fix): AiService read the Claude key ONLY
+  from process.env.CLAUDE_API_KEY (and OpenAI from process.env.OPENAI_API_KEY) — it
+  never read the key admin saves in Admin → Integrations (ai/anthropic_api_key). So a
+  DB-configured key was ignored and, if the env var wasn't set, every generation threw
+  "not configured" → the frontend's "contact your administrator" message.
+  FIX: callClaude + chat now resolve via settings.getResolvedValue('ai',
+  'anthropic_api_key') and generateImage via ('ai','openai_api_key') — DB value first,
+  env fallback (envFallback already CLAUDE_API_KEY/OPENAI_API_KEY). AiModule imports
+  PlatformSettingsModule. Now a saved admin key works without an env var.
+
+### Item 3 — Communication Hub audit + build
+- [x] AUDIT: the inbox UI WAS built (real 3-panel: channel switcher, contact/thread
+  list, thread view + compose/send; email real via Resend, WA/SMS via Fast2SMS/mock
+  with wallet debit). The GAP was NO persistence — sent messages lived only in React
+  state (lost on reload), each "thread" was a contact with its notes as one bubble,
+  no inbound capture.
+- [x] BUILT message persistence → a real inbox: new Message model (g4d_messages:
+  vendorId/contactId/channel/direction/subject/body/status/providerMessageId). send()
+  persists each outbound message (best-effort); threads() shows each contact's latest
+  real message; new GET /communication/history?contactId&channel returns the persisted
+  thread. Frontend loads real history on open (direction-aware bubbles + timestamps +
+  status), send passes contactId + reloads. Inbound (provider webhooks) noted as future.
+- [!] VM MIGRATION: new g4d_messages table — `prisma db push` (folds in with prior
+  pending columns). Build-verified; not live-tested.
+- [ ] Item 1 (tour consolidation + unified switcher + View Website) — NEXT.
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

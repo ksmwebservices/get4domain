@@ -45,6 +45,7 @@ export class CommunicationService {
     to: string,
     message: string,
     subject?: string,
+    contactId?: string,
   ): Promise<SendResult> {
     const rate = CHANNEL_RATE[channel];
     const cost = await this.wallet.getRate(rate.key, rate.fallbackPaise);
@@ -70,26 +71,55 @@ export class CommunicationService {
     if (cost > 0 && result.status === 'sent') {
       await this.wallet.deduct(vendorId, cost, `${channel.toUpperCase()} message sent`, `comm_${channel}`);
     }
+
+    // Persist to the inbox history (outbound). Best-effort — never fail the send.
+    try {
+      await this.prisma.message.create({
+        data: {
+          vendorId,
+          contactId: contactId ?? null,
+          channel,
+          direction: 'out',
+          subject: subject ?? null,
+          body: message,
+          status: result.status,
+          providerMessageId: result.providerMessageId ?? null,
+        },
+      });
+    } catch { /* history is best-effort */ }
+
     return result;
   }
 
+  /** Persisted message history for one contact + channel (the real inbox thread). */
+  async history(vendorId: string, contactId: string, channel?: Channel) {
+    return this.prisma.message.findMany({
+      where: { vendorId, contactId, ...(channel ? { channel } : {}) },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+  }
+
   /**
-   * Conversation list derived from the vendor's contacts (unified inbox). Real
-   * message history arrives once provider webhooks are wired; for now each
-   * contact is a thread seeded from their stored notes.
+   * Conversation list (unified inbox): the vendor's contacts, each showing their
+   * most recent PERSISTED message (falls back to the contact's notes if none yet).
+   * Inbound messages will appear here once provider webhooks are wired (future).
    */
   async threads(vendorId: string): Promise<{ contactId: string; name: string; phone: string; email: string | null; lastMessage: string }[]> {
-    const contacts = await this.prisma.contact.findMany({
-      where: { vendorId },
-      orderBy: { updatedAt: 'desc' },
-      take: 50,
-    });
+    const [contacts, recent] = await Promise.all([
+      this.prisma.contact.findMany({ where: { vendorId }, orderBy: { updatedAt: 'desc' }, take: 50 }),
+      this.prisma.message.findMany({ where: { vendorId, contactId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 300 }),
+    ]);
+    const lastByContact = new Map<string, string>();
+    for (const m of recent) {
+      if (m.contactId && !lastByContact.has(m.contactId)) lastByContact.set(m.contactId, m.body);
+    }
     return contacts.map((c) => ({
       contactId: c.id,
       name: c.name,
       phone: c.phone,
       email: c.email,
-      lastMessage: c.notes ?? '',
+      lastMessage: lastByContact.get(c.id) ?? c.notes ?? '',
     }));
   }
 }

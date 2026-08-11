@@ -18,4 +18,9 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   subject?: string;
+
+  @ApiPropertyOptional({ description: 'Contact this message belongs to (for inbox history)' })
+  @IsOptional()
+  @IsString()
+  contactId?: string;
 }

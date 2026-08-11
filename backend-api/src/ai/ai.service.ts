@@ -4,6 +4,7 @@ import { GenerateContentDto } from './dto/generate-content.dto';
 import { AiGeneratePageDto } from './dto/generate-page.dto';
 import { CallSummaryDto } from './dto/call-summary.dto';
 import { WalletService } from '../wallet/wallet.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
   // AI Studio content-type keys (source of truth for the grid).
@@ -119,10 +120,18 @@ export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly model = 'claude-haiku-4-5-20251001';
 
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly settings: PlatformSettingsService,
+  ) {}
+
+  /** Claude key from Admin → Integrations (ai/anthropic_api_key), env fallback. */
+  private claudeKey(): Promise<string | null> {
+    return this.settings.getResolvedValue('ai', 'anthropic_api_key');
+  }
 
   private async callClaude(prompt: string, maxTokens: number): Promise<string> {
-    const apiKey = process.env.CLAUDE_API_KEY;
+    const apiKey = await this.claudeKey();
     if (!apiKey) {
       throw new ServiceUnavailableException('AI content generation is not configured');
     }
@@ -170,7 +179,7 @@ export class AiService {
   }
 
   private async generateImage(prompt: string): Promise<string | null> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
     if (!apiKey) {
       this.logger.warn('OPENAI_API_KEY not configured — skipping DALL-E image generation');
       return null;
@@ -277,7 +286,7 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
   }
 
   async chat(dto: ChatDto): Promise<{ reply: string; suggestedActions: string[] }> {
-    const apiKey = process.env.CLAUDE_API_KEY;
+    const apiKey = await this.claudeKey();
     if (!apiKey) {
       throw new ServiceUnavailableException('AI assistant is not configured');
     }

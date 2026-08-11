@@ -351,8 +351,10 @@ export const api = {
 
   // Communication Hub
   commThreads: () => apiCall('/communication/threads'),
-  commSend: (data: { channel: 'whatsapp' | 'email' | 'sms'; to: string; message: string; subject?: string }) =>
+  commSend: (data: { channel: 'whatsapp' | 'email' | 'sms'; to: string; message: string; subject?: string; contactId?: string }) =>
     apiCall('/communication/send', { method: 'POST', body: JSON.stringify(data) }),
+  commHistory: (contactId: string, channel: string) =>
+    apiCall(`/communication/history?contactId=${encodeURIComponent(contactId)}&channel=${encodeURIComponent(channel)}`),
 
   // Customer Hub (vendor side)
   customerInvite: (contactId: string) =>
