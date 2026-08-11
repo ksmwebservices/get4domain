@@ -161,6 +161,16 @@ Minimal OTP-gated entry that replaces the old segmented "what matters most" form
   PLATFORM_SETTINGS_KEY / Admin key) · {sent:false,mock:false,error:"…"} = Fast2SMS
   rejected it (error text says why). No longer masked as mock either way.
 
+#### OTP flow fixes — round 3 (working route confirmed)
+- [x] This account's working route is Quick SMS (route=q), NOT route=otp. sendOtp
+  now sends route=q on /dev/bulkV2 with a PLAIN message ("Your Get4Domain OTP is
+  {code}. Valid for 5 minutes.") + numbers=<10-digit>. Removed the /dev/bulk
+  endpoint + route=otp variables_values + the fallback. Request now matches the
+  dashboard-confirmed shape (verified URL build). No DLT / no verification.
+- [x] Known tradeoff: Quick SMS ≈ ₹5/SMS. TODO(cost): move to a cheaper DLT
+  template route (needs Sender ID + DLT template) as a later optimisation.
+- [x] backend builds 0 errors.
+
 ### Item 6 — Book-Demo Phases 2–6 (dispatch #3)
 Owner decisions: sandbox = REAL Vendor with isSandbox flag (converts to live on
 pay); THIS SESSION = Phase 2 + 3; Phases 5–6 DEFERRED. Phase 2 reuses existing

@@ -3,10 +3,6 @@ import { PlatformSettingsService } from '../platform-settings/platform-settings.
 import { ProviderResult } from '../whatsapp/whatsapp.service';
 
 const FAST2SMS_ENDPOINT = 'https://www.fast2sms.com/dev/bulkV2';
-// Plain OTP route on the v1 /dev/bulk endpoint: route=otp with our own generated
-// code as variables_values. Needs NO DLT and NO "website verification" — unlike
-// the Smart OTP API (/dev/otp/send), which returns status_code 996 until verified.
-const FAST2SMS_OTP_ENDPOINT = 'https://www.fast2sms.com/dev/bulk';
 
 /**
  * SMS provider — Fast2SMS (mock-first until the central API key is configured).
@@ -96,17 +92,14 @@ export class SmsService {
   }
 
   /**
-   * One-time password via the plain OTP route (route=otp, our own generated code
-   * as variables_values). No DLT, no website verification (the Smart-OTP API
-   * /dev/otp/send is the one that 996s). Tries /dev/bulk first, then falls back to
-   * /dev/bulkV2 if that errors — so it works whichever endpoint the account
-   * accepts. `mock` is returned only when no key is configured.
+   * One-time password via the Quick SMS route (route=q, plain text) on bulkV2 —
+   * the route confirmed working for this account. No DLT, no website verification.
+   * We generate + store the code ourselves (OtpService); Fast2SMS just delivers
+   * the plain message. Costs ~₹5/SMS — a cheaper DLT template route is a later
+   * optimisation. `mock` is returned only when no key is configured.
    */
   async sendOtp(to: string, code: string): Promise<ProviderResult> {
-    const params = { route: 'otp', variables_values: code, numbers: this.normalize(to) };
-    const primary = await this.call(params, FAST2SMS_OTP_ENDPOINT);
-    if (primary.mock || primary.status === 'sent') return primary;
-    this.logger.warn('OTP via /dev/bulk did not succeed — retrying on /dev/bulkV2 route=otp');
-    return this.call(params, FAST2SMS_ENDPOINT);
+    const message = `Your Get4Domain OTP is ${code}. Valid for 5 minutes.`;
+    return this.call({ route: 'q', message, numbers: this.normalize(to) });
   }
 }
