@@ -61,6 +61,7 @@ export const api = {
     apiCall(`/invoices/vendor/${vendorId}`),
   getInvoice: (id: string) => apiCall(`/invoices/${id}`),
   getInvoicePdf: (id: string) => apiCall(`/invoices/${id}/pdf`),
+  emailInvoice: (id: string) => apiCall(`/invoices/${id}/email`, { method: 'POST' }),
   sendPaymentLink: (id: string) =>
     apiCall(`/invoices/${id}/send-payment-link`, { method: 'POST' }),
   markPaid: (id: string) =>

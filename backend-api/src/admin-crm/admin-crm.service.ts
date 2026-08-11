@@ -24,7 +24,11 @@ interface TeleCrmLead {
 export class AdminCrmService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // g4d_leads default to "pending"; the TeleCRM Kanban's first stage is "new".
+  // TeleCRM Kanban stages. Any lead status outside this set (e.g. the Book-Demo
+  // "pending"/"verified" statuses) is bucketed into "new" so it still shows in the
+  // pipeline — otherwise verified demo leads (the Phase 5–6 safety net) go invisible.
+  private static readonly PIPELINE = new Set(['new', 'contacted', 'interested', 'quoted', 'won', 'lost']);
+
   private toCrmLead(lead: Lead & { callLogs?: LeadCallLog[] }): TeleCrmLead {
     return {
       id: lead.id,
@@ -34,7 +38,7 @@ export class AdminCrmService {
       business: lead.business,
       industry: lead.industry,
       interest: lead.interest,
-      status: lead.status === 'pending' ? 'new' : lead.status,
+      status: AdminCrmService.PIPELINE.has(lead.status) ? lead.status : 'new',
       notes: lead.notes,
       followUpDate: lead.followUpDate,
       createdAt: lead.createdAt,

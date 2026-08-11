@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Download, CheckCircle2, Clock, FileText, Loader2 } from 'lucide-react';
+import { Download, CheckCircle2, Clock, FileText, Loader2, Mail, MessageCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -59,6 +59,24 @@ export default function InvoicesPage() {
     }
   };
 
+  const [emailingId, setEmailingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const emailInvoice = async (inv: Invoice) => {
+    setEmailingId(inv.id); setError(''); setNotice('');
+    try {
+      await api.emailInvoice(inv.id);
+      setNotice(`Invoice ${inv.invoiceNumber} emailed to your registered email.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not email the invoice.');
+    } finally {
+      setEmailingId(null);
+    }
+  };
+  const shareWhatsApp = (inv: Invoice) => {
+    const msg = `Invoice ${inv.invoiceNumber} from Get4Domain — Total ${inr(inv.totalAmount)} (${inv.status}). ${inv.description}. You can view/download it from your Get4Domain dashboard.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   return (
     <div className="max-w-3xl space-y-6">
       <div>
@@ -67,6 +85,7 @@ export default function InvoicesPage() {
       </div>
 
       {error && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
+      {notice && <div className="rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">{notice}</div>}
 
       {loading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
@@ -106,13 +125,17 @@ export default function InvoicesPage() {
                       <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700">
                         <CheckCircle2 className="h-3 w-3" /> Paid
                       </span>
-                      <button
-                        onClick={() => download(inv)}
-                        disabled={downloading === inv.id}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-primary-600 transition-colors disabled:opacity-50"
-                        title="Download PDF"
-                      >
+                      <button onClick={() => download(inv)} disabled={downloading === inv.id}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-primary-600 transition-colors disabled:opacity-50" title="Download PDF">
                         {downloading === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      </button>
+                      <button onClick={() => emailInvoice(inv)} disabled={emailingId === inv.id}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-primary-600 transition-colors disabled:opacity-50" title="Email invoice">
+                        {emailingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                      </button>
+                      <button onClick={() => shareWhatsApp(inv)}
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-success-600 transition-colors" title="Share on WhatsApp">
+                        <MessageCircle className="h-4 w-4" />
                       </button>
                     </div>
                   ) : (

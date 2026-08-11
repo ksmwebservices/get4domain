@@ -606,6 +606,54 @@ still-pending Lead.preferredDate/preferredSlot/source). One db push applies all.
 
 ---
 
+## DISPATCH — GET4DOMAIN_BUGFIX_DISPATCH_11AUG2026 (in progress)
+
+- [x] A1. Admin "Recent Bookings → View all" crash ("Something went wrong"). Root
+  cause: /admin/leads did `statusConfig[lead.status].color` but a verified demo lead
+  has status 'verified' (not in the pending/called/converted map) → threw. Fixed:
+  statusConfig is now Record<string> with verified/new entries + a safe `statusOf()`
+  fallback; added a "verified" filter tab.
+- [x] A2. Demo leads missing from TeleCRM. Root cause: admin-crm.toCrmLead only
+  mapped pending→new; a 'verified' demo lead matched no Kanban stage → invisible.
+  Fixed: any status outside the pipeline set now buckets to 'new' (Krisha & all
+  verified demo leads now appear). SAFETY-NET pipeline for Phase 5–6 restored.
+- [x] A3. TeleCRM Kanban UX rework (shared board, admin + vendor). Removed the fixed
+  bottom-16 stage quick-nav bar (the "duplicate nav mid-screen" bug). Board is now
+  gesture-native: snap-x snap-mandatory horizontal swipe, hidden scrollbar
+  ([scrollbar-width:none] + [&::-webkit-scrollbar]:hidden), mobile columns ~86vw so
+  one stage fills the screen and you swipe between stages; desktop shows several.
+- [!] A4. TeleCRM "Summary" — needs the owner to confirm intent (AI call summary in
+  the feedback sheet vs a separate stats summary). ASKED.
+- [x] B5. "Post creation not available." Root cause: GenerateContentDto validated
+  @IsIn(['facebook','instagram','reel','poster','blog']) but AI Studio sends its
+  content-type keys (social_post, festival_poster, …) → 400, never generated. Fixed:
+  CONTENT_CHANNELS + cost/pricing/image maps now include all AI Studio content-type
+  keys (social_post/reel_script/blog_post/festival_poster/ad_creative/email/whatsapp/
+  sms) plus the legacy Growth Hub channels. All content types generate now.
+- [!] B6. Image gen for Letterhead/Visiting/ID card — TRADEOFF to confirm. These are
+  currently print-to-PDF HTML docs (crisp, correct text). The dispatch asks for
+  poster-style AI IMAGE generation — but raw image models garble text/contact
+  details. ASKED which the owner wants.
+- [x] B7. Wallet credit tiers configurable in Pricing Manager. Added trial_free_credit
+  + pro_free_credit to the pricing settings category + the admin Pricing Manager
+  groups (editable, stored in g4d_platform_settings "pricing"). NOTE: granting these
+  on signup is Phase 5–6 wiring; this dispatch makes the amounts admin-editable.
+- [ ] B8. Template library (admin-curated pre-made templates) — LOGGED as a planned
+  v2 feature, NOT built this dispatch (per instruction).
+- [x] C9. Invoice PDF redesigned into a proper branded bill: blue brand band with
+  KSM logo (logo_url) / initial, meta strip with PAID/PENDING badge, From/Bill-To,
+  dark-header line-items table (description/price/discount/amount), right-aligned
+  totals box with emphasized Grand Total, payment method, renewal note strip, T&C +
+  footer. Config-driven company (GSTIN/PAN/address from Admin → Integrations).
+- [x] C10. Invoice share — vendor Invoices tab now has Download + Email (backend
+  POST /invoices/:id/email → Resend) + WhatsApp (wa.me prefilled summary) per invoice.
+- [x] D11. Demo-lead WhatsApp outreach — admin leads WhatsApp button now opens a real
+  industry-aware outreach template (intro Get4Domain, reference their industry,
+  invite to the demo site, offer a proposal + ₹6,999/yr), not an empty chat.
+- [x] backend + frontend build 0 errors. Build-verified (no VM/live here).
+
+---
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

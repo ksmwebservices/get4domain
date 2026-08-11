@@ -142,18 +142,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   );
 
   // Mobile stage quick-nav: tap a stage chip to snap the Kanban to that column.
-  const colRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [activeStage, setActiveStage] = useState<string>(PIPELINE[0].key);
-  const jumpToStage = (key: string) => {
-    setActiveStage(key);
-    colRefs.current[key]?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-  };
-  const stageCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const s of PIPELINE) m[s.key] = leads.filter((l) => (l.status || 'new') === s.key).length;
-    return m;
-  }, [leads]);
-
   const openFeedback = useCallback((lead: TeleCrmLead) => {
     setFeedbackLead(lead);
     setOutcome(null);
@@ -251,7 +239,7 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   }
 
   return (
-    <div className="pb-14 lg:pb-0">
+    <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">{title}</h1>
@@ -261,17 +249,19 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
 
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
-      {/* Kanban pipeline — the only view. `touch-action: pan-x` + `overscroll-x:
-          contain` keep the horizontal drag-scroll from fighting the PWA nav /
-          browser back-swipe on touch devices. */}
+      {/* Kanban pipeline — gesture-native: horizontal swipe with scroll-snap and
+          NO visible scrollbar (reads app-native, not webapp). `touch-action: pan-x`
+          + `overscroll-x: contain` keep the swipe from fighting the PWA nav / browser
+          back-swipe. On mobile each column is ~86vw so one stage fills the screen and
+          you swipe between stages; desktop shows several at once. */}
       <div
-        className="flex gap-3 overflow-x-auto pb-4"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ overscrollBehaviorX: 'contain', touchAction: 'pan-x' }}
       >
         {PIPELINE.map((stage) => {
           const items = leads.filter((l) => (l.status || 'new') === stage.key);
           return (
-            <div key={stage.key} ref={(el) => { colRefs.current[stage.key] = el; }} className="w-64 flex-shrink-0 scroll-ml-2"
+            <div key={stage.key} className="w-[86vw] max-w-[20rem] flex-shrink-0 snap-start sm:w-72 lg:w-64"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => { const id = e.dataTransfer.getData('text/plain'); const lead = leads.find((l) => l.id === id); if (lead) changeStatus(lead, stage.key); }}>
               <div className="mb-2 flex items-center justify-between px-1">
@@ -289,22 +279,6 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                 ))}
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Mobile stage quick-nav — matches the PWA bottom-nav pattern, sits just
-          above the shell's global bottom nav (h-16). Tap a stage to jump. */}
-      <div className="fixed inset-x-0 bottom-16 z-30 flex gap-1 overflow-x-auto border-t border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur lg:hidden">
-        {PIPELINE.map((stage) => {
-          const active = activeStage === stage.key;
-          return (
-            <button key={stage.key} onClick={() => jumpToStage(stage.key)}
-              className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${active ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: stage.color }} />
-              {stage.label}
-              <span className="rounded-full bg-slate-100 px-1 text-[10px] font-semibold text-slate-500">{stageCounts[stage.key]}</span>
-            </button>
           );
         })}
       </div>

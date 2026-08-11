@@ -12,6 +12,7 @@ const DEFAULTS: Record<string, string> = {
   video_generation: '50', document: '15', whatsapp_message: '1', sms_message: '0.50',
   email_message: '0.10', social_post_publish: '10', extra_campaign_page: '20',
   domainapp_annual: '6999', topup_999_credits: '1100', topup_2499_credits: '3000', topup_4999_credits: '6500',
+  trial_free_credit: '100', pro_free_credit: '999',
 };
 
 const GROUPS: { title: string; keys: string[] }[] = [
@@ -20,6 +21,7 @@ const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Campaign', keys: ['social_post_publish', 'extra_campaign_page'] },
   { title: 'Subscription', keys: ['domainapp_annual'] },
   { title: 'Wallet Top-up Bonuses (credits given)', keys: ['topup_999_credits', 'topup_2499_credits', 'topup_4999_credits'] },
+  { title: 'Plan Free Credit (per tier)', keys: ['trial_free_credit', 'pro_free_credit'] },
 ];
 
 export default function AdminPricingPage() {

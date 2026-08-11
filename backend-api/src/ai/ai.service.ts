@@ -6,18 +6,38 @@ import { CallSummaryDto } from './dto/call-summary.dto';
 import { WalletService } from '../wallet/wallet.service';
 
 export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
+  // AI Studio content-type keys (source of truth for the grid).
+  social_post: 500,
+  reel_script: 800,
+  blog_post: 1500,
+  festival_poster: 1200,
+  ad_creative: 1000,
+  email: 600,
+  whatsapp: 300,
+  sms: 200,
+  // Legacy channel keys still used by Growth Hub publish flows.
   facebook: 500,
   instagram: 500,
   reel: 1000,
-  poster: 800,
+  poster: 1200,
   blog: 1500,
 };
 
-const IMAGE_CHANNELS = new Set(['facebook', 'instagram', 'poster']);
+// Channels that also produce a generated image (DALL-E), same as Poster.
+const IMAGE_CHANNELS = new Set(['social_post', 'festival_poster', 'ad_creative', 'facebook', 'instagram', 'poster']);
 const CALL_SUMMARY_COST_PAISE = 300;
 
 // Maps AI content channels to admin-managed pricing keys (g4d_platform_settings).
 const CONTENT_PRICING_KEY: Record<string, string> = {
+  social_post: 'social_post',
+  reel_script: 'reel_script',
+  blog_post: 'blog_article',
+  festival_poster: 'festival_poster',
+  ad_creative: 'social_post',
+  email: 'email_message',
+  whatsapp: 'whatsapp_message',
+  sms: 'sms_message',
+  // Legacy
   facebook: 'social_post',
   instagram: 'social_post',
   reel: 'reel_script',

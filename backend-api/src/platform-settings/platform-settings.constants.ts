@@ -149,6 +149,10 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'topup_999_credits', label: '₹999 top-up → credits', envFallback: 'PRICE_TOPUP_999', secret: false },
       { key: 'topup_2499_credits', label: '₹2,499 top-up → credits', envFallback: 'PRICE_TOPUP_2499', secret: false },
       { key: 'topup_4999_credits', label: '₹4,999 top-up → credits', envFallback: 'PRICE_TOPUP_4999', secret: false },
+      // Plan-tier free wallet credit (admin-editable). Trial gets its own free
+      // amount; Pro includes the ₹999 AI Studio credit from the pricing model.
+      { key: 'trial_free_credit', label: 'Trial plan — free credit (₹)', envFallback: 'PRICE_TRIAL_FREE_CREDIT', secret: false },
+      { key: 'pro_free_credit', label: 'Pro plan — free credit (₹)', envFallback: 'PRICE_PRO_FREE_CREDIT', secret: false },
     ],
   },
 ];

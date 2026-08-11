@@ -65,6 +65,14 @@ export class InvoicesController {
     return { html };
   }
 
+  @Post(':id/email')
+  @ApiOperation({ summary: 'Email this invoice PDF to the vendor (vendor sends own, admin any)' })
+  async email(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const invoice = await this.invoicesService.findOne(id);
+    assertOwnerOrAdmin(user, invoice.vendorId);
+    return this.invoicesService.sendInvoiceEmail(id);
+  }
+
   @UseGuards(AdminGuard)
   @Post(':id/send-payment-link')
   @ApiOperation({ summary: 'Generate and email a Razorpay payment link for this invoice (admin only)' })

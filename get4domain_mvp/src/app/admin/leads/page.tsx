@@ -5,7 +5,7 @@ import { Phone, MessageCircle, Check, Clock, Building2, Tag, Calendar, Loader2 }
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 
-type Status = 'pending' | 'called' | 'converted';
+type Status = 'pending' | 'verified' | 'new' | 'called' | 'converted';
 
 interface Lead {
   id: string;
@@ -22,14 +22,35 @@ interface Lead {
   createdAt: string;
 }
 
-const statusConfig: Record<Status, { label: string; color: string }> = {
+const statusConfig: Record<string, { label: string; color: string }> = {
   pending:   { label: 'Pending Call',  color: 'bg-warning-500/20 text-warning-400 border-warning-500/30' },
+  verified:  { label: 'Verified (Demo)', color: 'bg-success-500/20 text-success-400 border-success-500/30' },
+  new:       { label: 'New',           color: 'bg-primary-500/20 text-primary-400 border-primary-500/30' },
   called:    { label: 'Called',        color: 'bg-primary-500/20 text-primary-400 border-primary-500/30' },
   converted: { label: 'Converted',     color: 'bg-success-500/20 text-success-400 border-success-500/30' },
 };
 
+// Safe lookup — never crash on an unexpected status (e.g. a new pipeline stage).
+const statusOf = (s: string) => statusConfig[s] ?? { label: s || 'Unknown', color: 'bg-slate-700/40 text-slate-300 border-slate-600/40' };
+
 const formatDate = (date: string): string =>
   new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// Real outreach copy for a demo-booking lead — introduces Get4Domain, references
+// their industry interest, invites them to their demo site, and offers a proposal.
+const outreachMessage = (lead: Lead): string => {
+  const first = lead.name.split(' ')[0] || 'there';
+  const industry = lead.industry ? lead.industry.toLowerCase() : 'business';
+  return (
+    `Hi ${first}, this is the Get4Domain team 👋\n\n` +
+    `Thanks for booking a demo for your ${industry}! Get4Domain gives you a complete online setup in one place — a professional ${industry} website, online bookings/enquiries, GST invoicing, WhatsApp & campaigns, and a simple dashboard to run it all.\n\n` +
+    `We've set up a live demo site tailored to your business — I'd love to walk you through it and share a proposal for going live (just ₹6,999/year, everything included).\n\n` +
+    `When would be a good time for a quick 10-minute call?`
+  );
+};
+
+const waLink = (lead: Lead): string =>
+  `https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(outreachMessage(lead))}`;
 
 export default function AdminLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -72,7 +93,7 @@ export default function AdminLeadsPage() {
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
-        {(['all', 'pending', 'called', 'converted'] as const).map((f) => (
+        {(['all', 'verified', 'pending', 'called', 'converted'] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)}
             className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all capitalize ${filter === f ? 'bg-primary-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}>
             {f === 'all' ? `All (${leads.length})` : `${f} (${leads.filter((l) => l.status === f).length})`}
@@ -102,8 +123,8 @@ export default function AdminLeadsPage() {
                     </div>
                   </div>
                 </div>
-                <span className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusConfig[lead.status].color}`}>
-                  {statusConfig[lead.status].label}
+                <span className={`flex-shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${statusOf(lead.status).color}`}>
+                  {statusOf(lead.status).label}
                 </span>
               </div>
 
@@ -139,7 +160,7 @@ export default function AdminLeadsPage() {
                     Call Now
                   </Button>
                 </a>
-                <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                <a href={waLink(lead)} target="_blank" rel="noopener noreferrer">
                   <Button size="sm" leftIcon={<MessageCircle className="h-3.5 w-3.5" />} className="bg-success-600 hover:bg-success-700 text-white">
                     WhatsApp
                   </Button>

@@ -59,10 +59,6 @@ export function renderInvoiceHtml(invoice: Invoice, vendor: Vendor, opts: Invoic
   const paymentMode = opts.paymentMode ?? (invoice.status === 'PAID' ? 'Razorpay' : 'Pending — Razorpay');
   const paidNote = invoice.status === 'PAID' ? ` — Paid on ${formatDate(invoice.paidAt)}` : '';
 
-  const logo = co.logoUrl
-    ? `<img src="${co.logoUrl}" alt="${co.name}" style="height:44px;width:auto;" />`
-    : `<div style="width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(135deg,#2563eb,#3b82f6); display: inline-block;"></div>`;
-
   const itemRows = items.map((i) => `
         <tr>
           <td style="padding: 10px; border: 1px solid #e2e8f0;">${i.description}</td>
@@ -77,91 +73,114 @@ export function renderInvoiceHtml(invoice: Invoice, vendor: Vendor, opts: Invoic
       </div>`
     : '';
 
+  const paid = invoice.status === 'PAID';
+  const statusBadge = `<span style="display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.4px;${paid ? 'background:#dcfce7;color:#166534;' : 'background:#fef3c7;color:#92400e;'}">${paid ? 'PAID' : String(invoice.status).toUpperCase()}</span>`;
+  const bandLogo = co.logoUrl
+    ? `<img src="${co.logoUrl}" alt="${co.name}" style="height:40px;width:auto;background:#fff;border-radius:8px;padding:4px;" />`
+    : `<div style="width:44px;height:44px;border-radius:10px;background:#ffffff;color:#2563eb;font-weight:800;font-size:20px;line-height:44px;text-align:center;font-family:Arial,sans-serif;">${co.name.charAt(0)}</div>`;
+
   return `
-  <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; color: #1e293b;">
-    <table width="100%" style="border-bottom: 3px solid #2563eb; padding-bottom: 16px; margin-bottom: 24px;">
+  <div style="font-family: Arial, Helvetica, sans-serif; max-width: 720px; margin: 0 auto; color: #1e293b; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden;">
+
+    <!-- Brand band -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#2563eb;color:#fff;">
       <tr>
-        <td>
-          ${logo}
-          <div style="font-size: 20px; font-weight: 700; margin-top: 8px;">${co.name}</div>
-          <div style="font-size: 13px; color: #64748b;">Brand: Get4Domain — get4domain.com</div>
+        <td style="padding:22px 28px;vertical-align:middle;">
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:12px;">${bandLogo}</td>
+            <td style="vertical-align:middle;">
+              <div style="font-size:18px;font-weight:800;line-height:1.2;">${co.name}</div>
+              <div style="font-size:12px;color:#dbeafe;">Get4Domain · get4domain.com</div>
+            </td>
+          </tr></table>
         </td>
-        <td align="right" style="vertical-align: top;">
-          <div style="font-size: 22px; font-weight: 700; color: #2563eb;">TAX INVOICE</div>
-          <div style="font-size: 13px; color: #64748b;">${invoice.invoiceNumber}</div>
+        <td align="right" style="padding:22px 28px;vertical-align:middle;">
+          <div style="font-size:22px;font-weight:800;letter-spacing:1px;">TAX INVOICE</div>
+          <div style="font-size:13px;color:#dbeafe;">${invoice.invoiceNumber}</div>
         </td>
       </tr>
     </table>
 
-    <table width="100%" style="margin-bottom: 24px;">
+    <!-- Meta strip -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
       <tr>
-        <td style="vertical-align: top; width: 50%;">
-          <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Billed To</div>
-          <div style="font-weight: 600;">${vendor.businessName}</div>
-          <div>${vendor.name}</div>
-          <div>${vendor.email}</div>
-          ${vendor.phone ? `<div>${vendor.phone}</div>` : ''}
+        <td style="padding:12px 28px;font-size:12px;color:#475569;">
+          <strong style="color:#0f172a;">Invoice Date:</strong> ${formatDate(invoice.createdAt)}
+          &nbsp;&nbsp;·&nbsp;&nbsp;<strong style="color:#0f172a;">Due:</strong> ${formatDate(invoice.dueDate)}
         </td>
-        <td style="vertical-align: top; width: 50%;" align="right">
-          <div><strong>Invoice Date:</strong> ${formatDate(invoice.createdAt)}</div>
-          <div><strong>Due Date:</strong> ${formatDate(invoice.dueDate)}</div>
-          <div><strong>GSTIN:</strong> ${co.gstin}</div>
-          <div><strong>PAN:</strong> ${co.pan}</div>
-        </td>
+        <td align="right" style="padding:12px 28px;">${statusBadge}</td>
       </tr>
     </table>
 
-    <table width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
-      <thead>
-        <tr style="background: #f1f5f9;">
-          <th align="left" style="padding: 10px; border: 1px solid #e2e8f0;">Description</th>
-          <th align="right" style="padding: 10px; border: 1px solid #e2e8f0;">Price</th>
-          <th align="right" style="padding: 10px; border: 1px solid #e2e8f0;">Discount</th>
-          <th align="right" style="padding: 10px; border: 1px solid #e2e8f0;">Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemRows}
-        ${hasDiscount ? `
+    <div style="padding:24px 28px;">
+      <!-- From / Bill To -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:22px;">
         <tr>
-          <td colspan="3" style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: right; color:#64748b;">Subtotal</td>
-          <td align="right" style="padding: 8px 10px; border: 1px solid #e2e8f0;">${formatCurrency(grossSubtotal)}</td>
+          <td style="vertical-align:top;width:50%;">
+            <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">From</div>
+            <div style="font-weight:700;">${co.name}</div>
+            <div style="font-size:13px;color:#475569;">${co.address}</div>
+            <div style="font-size:13px;color:#475569;">GSTIN: ${co.gstin} · PAN: ${co.pan}</div>
+            <div style="font-size:13px;color:#475569;">${co.phone} · ${co.email}</div>
+          </td>
+          <td style="vertical-align:top;width:50%;" align="right">
+            <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Billed To</div>
+            <div style="font-weight:700;">${vendor.businessName}</div>
+            <div style="font-size:13px;color:#475569;">${vendor.name}</div>
+            <div style="font-size:13px;color:#475569;">${vendor.email}</div>
+            ${vendor.phone ? `<div style="font-size:13px;color:#475569;">${vendor.phone}</div>` : ''}
+          </td>
         </tr>
-        <tr>
-          <td colspan="3" style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: right; color:#64748b;">Discount</td>
-          <td align="right" style="padding: 8px 10px; border: 1px solid #e2e8f0;">– ${formatCurrency(discountTotal)}</td>
-        </tr>` : ''}
-        <tr>
-          <td colspan="3" style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: right; color:#64748b;">Taxable Value</td>
-          <td align="right" style="padding: 8px 10px; border: 1px solid #e2e8f0;">${formatCurrency(invoice.amount)}</td>
-        </tr>
-        <tr>
-          <td colspan="3" style="padding: 8px 10px; border: 1px solid #e2e8f0; text-align: right; color:#64748b;">GST (18%)</td>
-          <td align="right" style="padding: 8px 10px; border: 1px solid #e2e8f0;">${formatCurrency(invoice.gstAmount)}</td>
-        </tr>
-        <tr style="font-weight: 700; background: #f8fafc;">
-          <td colspan="3" style="padding: 10px; border: 1px solid #e2e8f0; text-align: right;">Grand Total</td>
-          <td align="right" style="padding: 10px; border: 1px solid #e2e8f0;">${formatCurrency(invoice.totalAmount)}</td>
-        </tr>
-      </tbody>
-    </table>
+      </table>
 
-    ${renewalNote}
+      <!-- Line items -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px;">
+        <thead>
+          <tr style="background:#0f172a;color:#fff;">
+            <th align="left" style="padding:10px 12px;font-size:12px;">Description</th>
+            <th align="right" style="padding:10px 12px;font-size:12px;">Price</th>
+            <th align="right" style="padding:10px 12px;font-size:12px;">Discount</th>
+            <th align="right" style="padding:10px 12px;font-size:12px;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+      </table>
 
-    <div style="margin-bottom: 24px;">
-      <div style="font-size: 12px; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Payment Method</div>
-      <div>${paymentMode}${paidNote}</div>
+      <!-- Totals -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+        <tr>
+          <td style="width:55%;"></td>
+          <td style="width:45%;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+              ${hasDiscount ? `
+              <tr><td style="padding:5px 0;color:#64748b;">Subtotal</td><td align="right" style="padding:5px 0;">${formatCurrency(grossSubtotal)}</td></tr>
+              <tr><td style="padding:5px 0;color:#64748b;">Discount</td><td align="right" style="padding:5px 0;color:#16a34a;">– ${formatCurrency(discountTotal)}</td></tr>` : ''}
+              <tr><td style="padding:5px 0;color:#64748b;">Taxable Value</td><td align="right" style="padding:5px 0;">${formatCurrency(invoice.amount)}</td></tr>
+              <tr><td style="padding:5px 0;color:#64748b;">GST (18%)</td><td align="right" style="padding:5px 0;">${formatCurrency(invoice.gstAmount)}</td></tr>
+              <tr><td style="padding:10px 12px;background:#2563eb;color:#fff;font-weight:800;border-radius:8px 0 0 8px;">Grand Total</td><td align="right" style="padding:10px 12px;background:#2563eb;color:#fff;font-weight:800;border-radius:0 8px 8px 0;">${formatCurrency(invoice.totalAmount)}</td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;">
+        <tr>
+          <td style="font-size:12px;color:#475569;"><span style="color:#94a3b8;text-transform:uppercase;font-size:11px;letter-spacing:.5px;">Payment Method</span><br/>${paymentMode}${paidNote}</td>
+        </tr>
+      </table>
+
+      ${renewalNote}
+
+      <div style="font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:14px;">
+        <strong>Terms &amp; Conditions:</strong> Payment is due by the date specified above. Late payments may result in
+        service suspension. All amounts are in Indian Rupees (INR) and inclusive of applicable GST. Wallet credits are
+        valid for 90 days from top-up and are non-refundable once consumed. This is a system-generated tax invoice.
+      </div>
     </div>
 
-    <div style="font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-bottom: 16px;">
-      <strong>Terms &amp; Conditions:</strong> Payment is due by the date specified above. Late payments may result in
-      service suspension. All amounts are in Indian Rupees (INR) and inclusive of applicable GST. Wallet credits are
-      valid for 90 days from top-up and are non-refundable once consumed. This is a system-generated tax invoice.
-    </div>
-
-    <div style="font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+    <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 28px;font-size:11px;color:#94a3b8;text-align:center;">
       ${co.name} &middot; ${co.address} &middot; ${co.phone} &middot; ${co.email}<br/>
-      This is a computer generated invoice and does not require a signature.
+      This is a computer-generated invoice and does not require a signature.
     </div>
   </div>
   `;
