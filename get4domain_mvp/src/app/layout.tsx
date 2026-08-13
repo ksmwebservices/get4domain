@@ -36,8 +36,12 @@ export const metadata: Metadata = {
   publisher: 'KSM Quantum Technologies',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: [{ url: '/favicon.png', sizes: '192x192', type: 'image/png' }],
-    apple: '/favicon.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   alternates: { canonical: 'https://get4domain.com' },
   robots: {
@@ -58,13 +62,13 @@ export const metadata: Metadata = {
     siteName: 'Get4Domain',
     title: 'Get4Domain — Your Online Identity Partner',
     description: "India's complete online identity platform for SMBs. Website + Business Operations + Marketing. Starting ₹999.",
-    images: [{ url: '/logo.png', width: 1200, height: 630, alt: 'Get4Domain' }],
+    images: [{ url: '/og-image.png', width: 1536, height: 1024, alt: 'Get4Domain' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Get4Domain — Your Online Identity Partner',
     description: "India's complete digital business platform for SMBs.",
-    images: ['/logo.png'],
+    images: ['/og-image.png'],
   },
   verification: {
     google: 'ADD_YOUR_GOOGLE_SEARCH_CONSOLE_CODE_HERE',
@@ -81,7 +85,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

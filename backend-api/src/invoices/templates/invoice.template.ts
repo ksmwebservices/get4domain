@@ -41,7 +41,9 @@ function resolveCompany(c?: Partial<InvoiceCompany>): InvoiceCompany {
     address: c?.address ?? process.env.COMPANY_ADDRESS ?? 'Tidel Park, D Block, Tharamani, Chennai 600113',
     phone: c?.phone ?? process.env.COMPANY_PHONE ?? '',
     email: c?.email ?? process.env.COMPANY_EMAIL ?? 'admin@get4domain.com',
-    logoUrl: c?.logoUrl ?? process.env.COMPANY_LOGO_URL ?? null,
+    // Default to the canonical brand logo so invoices stay consistent with the site
+    // header/favicon when no explicit Company Logo is uploaded in Admin.
+    logoUrl: c?.logoUrl ?? process.env.COMPANY_LOGO_URL ?? 'https://get4domain.com/logo.png',
   };
 }
 
