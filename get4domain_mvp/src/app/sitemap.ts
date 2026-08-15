@@ -19,8 +19,8 @@ const pages = [
 ];
 
 const industries = [
-  'restaurant', 'travel', 'realestate', 'healthcare', 'education',
-  'construction', 'retail', 'beauty', 'fitness', 'professional',
+  'restaurant', 'travel', 'realestate', 'clinic', 'education',
+  'construction', 'retail', 'salon', 'gym', 'professional',
   'events', 'finance', 'automobile', 'logistics', 'diagnostics',
   'hotel', 'photography', 'technology', 'agriculture', 'coaching',
 ];

@@ -28,7 +28,7 @@ const FIELDS: Record<string, ListingField[]> = {
     { key: 'diet', label: 'Dietary', type: 'select', options: ['Veg', 'Non-veg', 'Vegan', 'Egg'] },
     { key: 'serves', label: 'Serves', placeholder: 'e.g. 1–2' },
   ],
-  healthcare: [
+  clinic: [
     { key: 'duration', label: 'Duration', placeholder: 'e.g. 30 min' },
     { key: 'department', label: 'Department', placeholder: 'e.g. Dental' },
   ],
@@ -40,10 +40,10 @@ const FIELDS: Record<string, ListingField[]> = {
     { key: 'occupancy', label: 'Occupancy', placeholder: 'e.g. 2 Adults' },
     { key: 'amenities', label: 'Amenities', placeholder: 'e.g. AC · WiFi · Breakfast' },
   ],
-  beauty: [
+  salon: [
     { key: 'duration', label: 'Duration', placeholder: 'e.g. 45 min' },
   ],
-  fitness: [
+  gym: [
     { key: 'duration', label: 'Duration', placeholder: 'e.g. 1 Month' },
     { key: 'includes', label: 'Includes', placeholder: 'e.g. Gym + Cardio' },
   ],
@@ -97,6 +97,12 @@ const FIELDS: Record<string, ListingField[]> = {
   ],
 };
 
+// Legacy SEO slugs → canonical industry keys, so a stored vendor.industry='healthcare'
+// still gets the right field set after the Aug 2026 key standardization.
+const FIELD_ALIASES: Record<string, string> = { healthcare: 'clinic', beauty: 'salon', fitness: 'gym' };
+
 export function getListingFields(categoryId?: string): ListingField[] {
-  return (categoryId && FIELDS[categoryId]) || GENERIC;
+  if (!categoryId) return GENERIC;
+  const key = FIELD_ALIASES[categoryId] ?? categoryId;
+  return FIELDS[key] || GENERIC;
 }

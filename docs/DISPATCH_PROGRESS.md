@@ -1043,6 +1043,49 @@ Step 2/3/4 — BUILD:
   the (as-yet-unmigrated) prod DB — NOT done here. Do after the VM steps, ideally with a
   dedicated test vendor. Sandbox-unaffected + image-upload-both-places to be confirmed then.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_15AUG2026 — PHASE 1 (code done; VM steps pending)
+Locked Phase 0 model: single product DomainApp ₹999/month ONLY (no annual), wallet min ₹499,
+industry keys standardized to backend set (clinic/salon/gym), hybrid frontend architecture.
+- [x] 1.1 Pricing sweep → ₹999/month everywhere (removed all ₹6,999/₹583/annual + tier UIs):
+  marketing (home, pricing, domain-app, domain-campaign, industries/[id], about, refund-policy),
+  root layout (title/desc + SoftwareApplication JSON-LD offer 999), admin (leads WA template,
+  plans → single plan, pricing DEFAULTS domainapp_annual→domainapp_monthly '999', send-quote,
+  invoices examples), dashboard (go-live checkout desc + summary, page sandbox banner,
+  domain-campaign reframed "included in DomainApp", my-services collapsed to single plan +
+  REMOVED the 6-Months/Yearly toggle), api.ts comment, orphaned ProductsOverview. Wallet min:
+  added ₹499 tier (frontend TOPUPS + wallet TOPUP_TIERS). Backend: platform-settings key
+  domainapp_annual→domainapp_monthly (label + PRICE_DOMAINAPP_MONTHLY env), demo.service buy
+  flow amount 699900→99900 + endDate +1yr→+1mo + invoice desc monthly, demo.controller summary,
+  ai.service assistant pricing context, invoices.service comment, invoice/quote DTO examples.
+  KEPT (correctly): domain-registration ₹599/₹999-per-year prices; demo-content/demo-catalog
+  sample service prices (a ₹6,999 hotel suite etc. are vendor demo data, not the plan).
+  RAZORPAY: flow is a ONE-TIME order (no subscription object) — amount changed to ₹999, period
+  to monthly (one-time charge, manual renewal). A true auto-recurring Razorpay Subscription/
+  autopay mandate was NOT built (that's the paused checkout-flow change) — awaiting KSM decision.
+- [x] 1.2 Broken CTA: no `href="\..."` backslash exists anywhere in the repo (pricing line 95
+  already uses `/book-demo`). Verified via repo-wide grep. Nothing to fix.
+- [x] 1.3 Industry-key migration (frontend → backend keys, backend UNtouched): renamed
+  healthcare→clinic, beauty→salon, fitness→gym across industry-content ids, content.ts
+  (id + industryId), industries-list, demo-site SUBCATEGORIES, demo-catalog DEMO_CATALOG +
+  DEMO_SUBCATALOG, listing-fields FIELDS, sitemap industries[], my-products labels,
+  admin/customers select, marketing industry-card hrefs. Added a frontend alias bridge
+  (canonicalIndustryId in demo-site + CATALOG_ALIASES + FIELD_ALIASES) mirroring the backend's
+  existing INDUSTRY_ALIASES, so legacy /demo/healthcare URLs and any stored vendor.industry=
+  'healthcare' still resolve. Verified live: /demo/clinic, /demo/clinic/dental, /demo/salon,
+  /demo/gym render; /demo/healthcare renders Clinic via alias; /industries/clinic renders;
+  retired /industries/healthcare → not-found (canonical is /clinic). Frontend fetches dashboard
+  config from backend (getIndustryConfig, alias-aware) so stored values resolve there too.
+- [!] 1.4 Schema sync — VM ONLY (cannot run from Claude Code, no SSH): `npx prisma db push`
+  inside the backend container for VendorProduct.customFields + VendorCMS.banner (already in
+  schema from the CMS-editor dispatch, still pending on prod). PAUSE per instruction: confirm no
+  data loss on tables with existing rows before running --accept-data-loss against production.
+- [!] 1.5 AI Studio smoke test — VM ONLY: run a real text + image generation as a test vendor.
+  If image still fails after key resolution, likely cause = OpenAI account lacks billing
+  (DALL-E needs a funded account) — check platform.openai.com, report rather than debug code.
+- Build: frontend 0 errors (340 static pages), backend 0 errors, console clean. NOT deployed to
+  VM (deploy/db push/docker ps require SSH — human step). Existing vendor.industry='healthcare'
+  rows keep working via aliases; an optional DB normalization to 'clinic' touches live data → deferred.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

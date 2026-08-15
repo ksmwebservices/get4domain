@@ -73,7 +73,7 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Swift Dzire', role: '4-Seater Sedan', note: 'Airport & city transfers' },
     ],
   },
-  healthcare: {
+  clinic: {
     flow: 'book-appointment', ctaLabel: 'Book Appointment', catalogNoun: 'services',
     items: [
       { name: 'General Consultation', price: '₹500', desc: 'Consult an experienced physician for common ailments.', fields: [{ label: 'Duration', value: '15 min' }, { label: 'Department', value: 'General Medicine' }] },
@@ -135,7 +135,7 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Bluetooth Earbuds', price: '₹1,499', desc: 'TWS earbuds with 30h battery case.', tags: ['Bestseller'], fields: [{ label: 'Category', value: 'Electronics' }] },
     ],
   },
-  beauty: {
+  salon: {
     flow: 'book-slot', ctaLabel: 'Book a Slot', catalogNoun: 'services',
     items: [
       { name: 'Haircut & Styling', price: '₹350', desc: 'Consultation, cut and blow-dry.', fields: [{ label: 'Duration', value: '30 min' }] },
@@ -150,7 +150,7 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Pooja Nair', role: 'Skin & Spa Therapist', note: '7 yrs' },
     ],
   },
-  fitness: {
+  gym: {
     flow: 'enquire-join', ctaLabel: 'Enquire / Join', catalogNoun: 'plans',
     items: [
       { name: 'Monthly Membership', price: '₹1,500 / month', desc: 'Full gym floor, cardio and locker access.', fields: [{ label: 'Duration', value: '1 Month' }, { label: 'Includes', value: 'Gym + Cardio' }] },
@@ -288,7 +288,7 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
 // Everything else inherits the category catalog above.
 const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> = {
-  healthcare: {
+  clinic: {
     'general-physician': {
       catalogNoun: 'services', coverImage: px(5407206),
       items: [
@@ -401,7 +401,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
   },
-  beauty: {
+  salon: {
     spa: {
       catalogNoun: 'therapies', coverImage: px(3757952),
       items: [
@@ -422,7 +422,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
   },
-  fitness: {
+  gym: {
     crossfit: {
       catalogNoun: 'plans', coverImage: px(2261485),
       items: [
@@ -478,10 +478,15 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
   },
 };
 
+// Legacy SEO slugs → canonical industry keys (mirrors backend/demo-site aliases), so
+// a stored vendor.industry='healthcare' still resolves its catalog after the rename.
+const CATALOG_ALIASES: Record<string, string> = { healthcare: 'clinic', beauty: 'salon', fitness: 'gym' };
+
 /** Resolve a catalog for a category + optional subcategory (override merged on top). */
 export function resolveCatalog(categoryId: string, subId?: string): CategoryCatalog | undefined {
-  const base = DEMO_CATALOG[categoryId];
+  const key = CATALOG_ALIASES[categoryId] ?? categoryId;
+  const base = DEMO_CATALOG[key];
   if (!base) return undefined;
-  const override = subId ? DEMO_SUBCATALOG[categoryId]?.[subId] : undefined;
+  const override = subId ? DEMO_SUBCATALOG[key]?.[subId] : undefined;
   return override ? { ...base, ...override } : base;
 }

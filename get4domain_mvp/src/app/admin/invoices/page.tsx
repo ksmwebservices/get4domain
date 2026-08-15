@@ -255,7 +255,7 @@ export default function AdminInvoicesPage() {
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Description</label>
-            <input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="e.g. DomainApp Enterprise — annual subscription"
+            <input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="e.g. DomainApp — monthly subscription"
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

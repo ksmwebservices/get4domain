@@ -58,7 +58,7 @@ export default function GoLivePage() {
       if (!Razorpay) throw new Error('Razorpay checkout unavailable');
       const rzp = new Razorpay({
         key, amount: order.amount, currency: order.currency, order_id: order.orderId,
-        name: 'Get4Domain', description: 'DomainApp — Annual (₹6,999/year)',
+        name: 'Get4Domain', description: 'DomainApp — Monthly (₹999/month)',
         prefill: { name: form.name, email: form.email, contact: form.phone },
         handler: async (r: RazorpayResponse) => {
           try {
@@ -73,7 +73,7 @@ export default function GoLivePage() {
               setSession({
                 id: res.data?.vendorId ?? user?.id ?? '', name: form.name || 'Owner', email: form.email,
                 role: 'vendor', businessName: form.businessName, industry: user?.industry,
-                plan: 'DomainApp Annual', initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
+                plan: 'DomainApp Monthly', initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
               });
               refresh();
             }
@@ -108,7 +108,7 @@ export default function GoLivePage() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><Rocket className="h-6 w-6 text-primary-600" /> Go live</h1>
-        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — everything included for <strong>₹6,999/year</strong>.</p>
+        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — everything included for <strong>₹999/month</strong>.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">
@@ -126,13 +126,13 @@ export default function GoLivePage() {
           </div>
           {error && <div className="mt-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
           <Button className="mt-5" size="lg" fullWidth loading={paying} disabled={!valid || paying} onClick={goLive} leftIcon={<ShieldCheck className="h-5 w-5" />}>
-            Pay ₹6,999 &amp; Go Live
+            Pay ₹999 &amp; Go Live
           </Button>
           <p className="mt-2 text-center text-xs text-slate-400">Secure payment via Razorpay. Your demo data carries over.</p>
         </div>
 
         <div className="md:col-span-2 rounded-2xl border border-primary-100 bg-primary-50/50 p-6">
-          <div className="text-3xl font-bold text-slate-900">₹6,999<span className="text-base font-medium text-slate-500">/year</span></div>
+          <div className="text-3xl font-bold text-slate-900">₹999<span className="text-base font-medium text-slate-500">/month</span></div>
           <div className="mt-4 space-y-2.5">
             {INCLUDED.map((f) => (
               <div key={f} className="flex items-start gap-2 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-600" />{f}</div>

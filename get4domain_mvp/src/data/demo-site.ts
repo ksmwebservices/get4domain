@@ -10,10 +10,16 @@ export interface Subcategory { id: string; name: string }
 
 export const CATEGORY_IDS = industryContent.map((c) => c.id);
 
+// Legacy SEO slugs → canonical industry keys (mirrors the backend INDUSTRY_ALIASES).
+// After the Aug 2026 key standardization the canonical ids are clinic/salon/gym; this
+// keeps old /demo/healthcare URLs and any stored vendor.industry='healthcare' resolving.
+const INDUSTRY_ALIASES: Record<string, string> = { healthcare: 'clinic', beauty: 'salon', fitness: 'gym' };
+export function canonicalIndustryId(id: string): string { return INDUSTRY_ALIASES[id] ?? id; }
+
 // Curated subcategories; categories not listed get a single "general" derived from
 // the category name. Additive — extend anytime without a migration.
 const SUBCATEGORIES: Record<string, Subcategory[]> = {
-  healthcare: [
+  clinic: [
     { id: 'general', name: 'Clinic' }, { id: 'dental', name: 'Dental' },
     { id: 'physiotherapy', name: 'Physiotherapy' }, { id: 'general-physician', name: 'General Physician' },
     { id: 'hospital', name: 'Hospital' },
@@ -26,10 +32,10 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
     { id: 'general', name: 'Restaurant' }, { id: 'cafe', name: 'Cafe' },
     { id: 'cloud-kitchen', name: 'Cloud Kitchen' }, { id: 'bakery', name: 'Bakery' },
   ],
-  beauty: [
+  salon: [
     { id: 'general', name: 'Salon' }, { id: 'spa', name: 'Spa' }, { id: 'nails', name: 'Nail Studio' },
   ],
-  fitness: [
+  gym: [
     { id: 'general', name: 'Gym' }, { id: 'yoga', name: 'Yoga Studio' }, { id: 'crossfit', name: 'CrossFit' },
   ],
   education: [
@@ -38,12 +44,14 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
 };
 
 export function getCategory(id: string): IndustryContent | undefined {
-  return industryContent.find((c) => c.id === id);
+  const canonical = canonicalIndustryId(id);
+  return industryContent.find((c) => c.id === canonical);
 }
 
 export function getSubcategories(categoryId: string): Subcategory[] {
-  const cat = getCategory(categoryId);
-  return SUBCATEGORIES[categoryId] ?? [{ id: 'general', name: cat?.name ?? 'General' }];
+  const canonical = canonicalIndustryId(categoryId);
+  const cat = getCategory(canonical);
+  return SUBCATEGORIES[canonical] ?? [{ id: 'general', name: cat?.name ?? 'General' }];
 }
 
 /** Resolve a subcategory, falling back to the category baseline (the "general" one). */

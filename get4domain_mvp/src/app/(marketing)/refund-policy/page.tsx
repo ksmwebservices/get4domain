@@ -76,7 +76,7 @@ export default function RefundPolicyPage() {
               <li>₹999 AI Studio credit: non-refundable after use.</li>
               <li>Wallet top-up credits: non-refundable after use.</li>
               <li>DomainApp setup fee: non-refundable after work begins.</li>
-              <li>Annual subscription: refundable within 7 days if no work has started.</li>
+              <li>Monthly subscription: refundable within 7 days if no work has started.</li>
             </ul>
           ),
         },

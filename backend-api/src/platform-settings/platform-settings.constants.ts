@@ -145,7 +145,7 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'email_message', label: 'Email per email (₹)', envFallback: 'PRICE_EMAIL', secret: false },
       { key: 'social_post_publish', label: 'Social post (we post) (₹)', envFallback: 'PRICE_SOCIAL_PUBLISH', secret: false },
       { key: 'extra_campaign_page', label: 'Extra campaign page (₹)', envFallback: 'PRICE_CAMPAIGN_PAGE', secret: false },
-      { key: 'domainapp_annual', label: 'DomainApp annual (₹)', envFallback: 'PRICE_DOMAINAPP_ANNUAL', secret: false },
+      { key: 'domainapp_monthly', label: 'DomainApp monthly (₹)', envFallback: 'PRICE_DOMAINAPP_MONTHLY', secret: false },
       { key: 'topup_999_credits', label: '₹999 top-up → credits', envFallback: 'PRICE_TOPUP_999', secret: false },
       { key: 'topup_2499_credits', label: '₹2,499 top-up → credits', envFallback: 'PRICE_TOPUP_2499', secret: false },
       { key: 'topup_4999_credits', label: '₹4,999 top-up → credits', envFallback: 'PRICE_TOPUP_4999', secret: false },

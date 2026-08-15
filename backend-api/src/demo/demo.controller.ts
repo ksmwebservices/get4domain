@@ -35,7 +35,7 @@ export class DemoController {
 
   @ApiBearerAuth()
   @Post('buy/order')
-  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live (₹6,999/yr) for the caller’s sandbox' })
+  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live (₹999/month) for the caller’s sandbox' })
   buyOrder(@CurrentUser() user: AuthenticatedUser) {
     return this.demo.createBuyOrder(user.sub);
   }

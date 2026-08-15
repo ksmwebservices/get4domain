@@ -46,6 +46,7 @@ declare global {
 }
 
 const TOPUP_TIERS = [
+  { amount: 49900, credits: 49900, label: '₹499', creditsLabel: '₹499' },
   { amount: 99900, credits: 110000, label: '₹999', creditsLabel: '₹1,100' },
   { amount: 249900, credits: 300000, label: '₹2,499', creditsLabel: '₹3,000' },
   { amount: 499900, credits: 650000, label: '₹4,999', creditsLabel: '₹6,500' },

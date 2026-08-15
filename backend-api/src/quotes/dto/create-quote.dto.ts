@@ -25,7 +25,7 @@ export class CreateQuoteDto {
   @IsIn(['domainapp_plan', 'domaincampaign_wallet', 'custom'])
   quoteType!: string;
 
-  @ApiProperty({ example: 'DomainApp Enterprise — annual' })
+  @ApiProperty({ example: 'DomainApp — monthly' })
   @IsString()
   itemLabel!: string;
 

@@ -9,22 +9,8 @@ import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 
-const PLANS = {
-  domainapp: {
-    label: 'DomainApp',
-    plans: {
-      startup: { halfYear: 3999, yearly: 6999, label: 'Startup' },
-      enterprise: { halfYear: 13999, yearly: 24999, label: 'Enterprise' },
-    },
-  },
-  domaincampaign: {
-    label: 'DomainCampaign',
-    plans: {
-      starter: { halfYear: 3999, yearly: 6999, label: 'Starter' },
-      business: { halfYear: 16999, yearly: 29999, label: 'Business' },
-    },
-  },
-};
+// Single product, single price (locked Aug 2026): DomainApp ₹999/month, everything included.
+const PLAN = { product: 'domainapp', label: 'DomainApp', monthly: 999 };
 
 const ADDONS = [
   { id: 'whatsapp', name: 'WhatsApp Campaign', price: 1999, period: 'per month', icon: MessageCircle },
@@ -50,7 +36,6 @@ type SelectedItem = { kind: 'plan'; product: string; plan: string; label: string
 
 export default function MyServicesPage() {
   const { user } = useAuth();
-  const [duration, setDuration] = useState<'halfYear' | 'yearly'>('yearly');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<SelectedItem | null>(null);
@@ -114,50 +99,35 @@ export default function MyServicesPage() {
         )}
       </div>
 
-      {/* Duration toggle */}
-      <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 p-1 w-fit mx-auto">
-        {(['halfYear', 'yearly'] as const).map((d) => (
-          <button
-            key={d}
-            onClick={() => setDuration(d)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${duration === d ? 'bg-white text-primary-600 shadow-sm' : 'text-slate-500'}`}
-          >
-            {d === 'halfYear' ? '6 Months' : 'Yearly (Save more)'}
-          </button>
-        ))}
-      </div>
-
-      {/* Plans grid */}
-      {Object.entries(PLANS).map(([productKey, product]) => (
-        <div key={productKey}>
-          <h3 className="text-base font-bold text-slate-900 mb-3">{product.label}</h3>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {Object.entries(product.plans).map(([planKey, plan]) => {
-              const amount = plan[duration];
-              const label = `${product.label} ${plan.label}`;
-              const alreadyRequested = requestedIds.includes(label);
-              return (
-                <div key={planKey} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                    <span className="text-lg font-bold text-primary-600">{formatCurrency(amount)}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 mb-4">{duration === 'halfYear' ? '6 months' : '1 year'}</p>
-                  <Button
-                    size="sm"
-                    fullWidth
-                    variant={alreadyRequested ? 'outline' : 'primary'}
-                    disabled={alreadyRequested}
-                    onClick={() => setSelected({ kind: 'plan', product: productKey, plan: planKey, label, amount, duration: duration === 'halfYear' ? '6 months' : '1 year' })}
-                  >
-                    {alreadyRequested ? 'Request Sent' : 'Request This Plan'}
-                  </Button>
+      {/* Plan — single product, ₹999/month */}
+      <div>
+        <h3 className="text-base font-bold text-slate-900 mb-3">{PLAN.label}</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(() => {
+            const amount = PLAN.monthly;
+            const label = PLAN.label;
+            const alreadyRequested = requestedIds.includes(label);
+            return (
+              <div className="rounded-2xl border-2 border-primary-200 bg-white p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-slate-900">Everything included</span>
+                  <span className="text-lg font-bold text-primary-600">{formatCurrency(amount)}<span className="text-xs font-normal text-slate-400">/month</span></span>
                 </div>
-              );
-            })}
-          </div>
+                <p className="text-xs text-slate-500 mb-4">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio</p>
+                <Button
+                  size="sm"
+                  fullWidth
+                  variant={alreadyRequested ? 'outline' : 'primary'}
+                  disabled={alreadyRequested}
+                  onClick={() => setSelected({ kind: 'plan', product: PLAN.product, plan: PLAN.product, label, amount, duration: 'per month' })}
+                >
+                  {alreadyRequested ? 'Request Sent' : 'Request This Plan'}
+                </Button>
+              </div>
+            );
+          })()}
         </div>
-      ))}
+      </div>
 
       {/* Add-ons */}
       <div>

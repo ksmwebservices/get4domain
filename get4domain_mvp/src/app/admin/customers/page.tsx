@@ -8,7 +8,7 @@ import Modal from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 
 const INDUSTRIES = [
-  'restaurant', 'travel', 'healthcare', 'education', 'realestate', 'retail', 'beauty', 'fitness',
+  'restaurant', 'travel', 'clinic', 'education', 'realestate', 'retail', 'salon', 'gym',
   'construction', 'professional', 'events', 'finance', 'automobile', 'logistics', 'hotel',
   'diagnostics', 'photography', 'technology', 'agriculture', 'coaching',
 ];

@@ -4,7 +4,7 @@ import { ArrowRight, Check } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Campaign Features | DomainApp',
-  description: 'Campaigns are included in your DomainApp plan (₹6,999/year) — landing pages, social media, WhatsApp/SMS/email messaging and AI content. No separate subscription.',
+  description: 'Campaigns are included in your DomainApp plan (₹999/month) — landing pages, social media, WhatsApp/SMS/email messaging and AI content. No separate subscription.',
   alternates: { canonical: 'https://get4domain.com/domain-campaign' },
 };
 
@@ -42,7 +42,7 @@ export default function CampaignFeaturesPage() {
           </p>
           <p className="mt-3 text-sm font-semibold text-slate-900">Included in your DomainApp plan — no extra subscription.</p>
           <div className="mt-8">
-            <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Get Started with DomainApp — ₹6,999/year <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Get Started with DomainApp — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>
@@ -86,7 +86,7 @@ export default function CampaignFeaturesPage() {
       <section className="bg-slate-900">
         <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white md:text-3xl">One plan. Website, workspace, campaigns &amp; AI.</h2>
-          <p className="mt-3 text-slate-300">Everything included at ₹6,999/year.</p>
+          <p className="mt-3 text-slate-300">Everything included at ₹999/month.</p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/domain-app" className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-slate-900 hover:bg-slate-100">Explore DomainApp <ArrowRight className="h-4 w-4" /></Link>
             <Link href="/book-demo" className="inline-flex items-center justify-center rounded-lg border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800">Book a Free Demo</Link>

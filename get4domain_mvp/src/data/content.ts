@@ -67,7 +67,7 @@ export const industries: Industry[] = [
     features: ['Property Listings', 'Agent Profiles', 'Enquiry Forms', 'Map View'],
   },
   {
-    id: 'healthcare',
+    id: 'clinic',
     name: 'Clinic & Hospital',
     description: 'Doctor profiles, appointment booking, services and patient information.',
     icon: HeartPulse,
@@ -109,7 +109,7 @@ export const industries: Industry[] = [
     badge: 'Popular',
   },
   {
-    id: 'beauty',
+    id: 'salon',
     name: 'Salon & Spa',
     description: 'Service menus, appointment booking, galleries and stylist profiles.',
     icon: Sparkles,
@@ -119,7 +119,7 @@ export const industries: Industry[] = [
     features: ['Service Menu', 'Appointment Booking', 'Before/After Gallery', 'Stylists'],
   },
   {
-    id: 'fitness',
+    id: 'gym',
     name: 'Gym & Fitness',
     description: 'Class schedules, trainer profiles, membership plans and galleries.',
     icon: Dumbbell,
@@ -277,7 +277,7 @@ export const themes: ThemeTemplate[] = [
   {
     id: 'healthcare-a',
     name: 'CareWell Medical',
-    industryId: 'healthcare',
+    industryId: 'clinic',
     previewImage: 'https://images.pexels.com/photos/263402/pexels-photo-263402.jpeg?auto=compress&cs=tinysrgb&w=1200',
     features: ['Doctor Profiles', 'Appointment Booking', 'Service Catalog', 'Patient Portal', 'Emergency Contact'],
     pagesIncluded: ['Home', 'Services', 'Doctors', 'About', 'Appointment', 'Contact'],
@@ -309,7 +309,7 @@ export const themes: ThemeTemplate[] = [
   {
     id: 'beauty-a',
     name: 'Glow Studio',
-    industryId: 'beauty',
+    industryId: 'salon',
     previewImage: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=1200',
     features: ['Service Menu', 'Appointment Booking', 'Before/After Gallery', 'Stylist Profiles', 'Gift Cards'],
     pagesIncluded: ['Home', 'Services', 'Gallery', 'Stylists', 'Booking', 'Contact'],
@@ -317,7 +317,7 @@ export const themes: ThemeTemplate[] = [
   {
     id: 'fitness-a',
     name: 'PowerHouse Gym',
-    industryId: 'fitness',
+    industryId: 'gym',
     previewImage: 'https://images.pexels.com/photos/1954524/pexels-photo-1954524.jpeg?auto=compress&cs=tinysrgb&w=1200',
     features: ['Class Schedule', 'Trainer Profiles', 'Membership Plans', 'Workout Gallery', 'Progress Tracking'],
     pagesIncluded: ['Home', 'Classes', 'Trainers', 'Membership', 'Gallery', 'Contact'],

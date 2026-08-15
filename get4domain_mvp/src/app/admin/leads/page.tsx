@@ -44,7 +44,7 @@ const outreachMessage = (lead: Lead): string => {
   return (
     `Hi ${first}, this is the Get4Domain team 👋\n\n` +
     `Thanks for booking a demo for your ${industry}! Get4Domain gives you a complete online setup in one place — a professional ${industry} website, online bookings/enquiries, GST invoicing, WhatsApp & campaigns, and a simple dashboard to run it all.\n\n` +
-    `We've set up a live demo site tailored to your business — I'd love to walk you through it and share a proposal for going live (just ₹6,999/year, everything included).\n\n` +
+    `We've set up a live demo site tailored to your business — I'd love to walk you through it and share a proposal for going live (just ₹999/month, everything included).\n\n` +
     `When would be a good time for a quick 10-minute call?`
   );
 };

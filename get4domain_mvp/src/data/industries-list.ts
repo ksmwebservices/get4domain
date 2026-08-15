@@ -11,10 +11,10 @@ export interface IndustryListItem {
 export const INDUSTRIES: IndustryListItem[] = [
   { id: 'travel', icon: '🚗', name: 'Travel & Tours', records: 'Bookings', contacts: 'Passengers' },
   { id: 'restaurant', icon: '🍽️', name: 'Restaurant & Cafe', records: 'Orders', contacts: 'Customers' },
-  { id: 'healthcare', icon: '🏥', name: 'Clinic & Healthcare', records: 'Appointments', contacts: 'Patients' },
+  { id: 'clinic', icon: '🏥', name: 'Clinic & Healthcare', records: 'Appointments', contacts: 'Patients' },
   { id: 'hotel', icon: '🏨', name: 'Hotel & Hospitality', records: 'Reservations', contacts: 'Guests' },
-  { id: 'beauty', icon: '💇', name: 'Salon & Beauty', records: 'Appointments', contacts: 'Clients' },
-  { id: 'fitness', icon: '🏋️', name: 'Gym & Fitness', records: 'Memberships', contacts: 'Members' },
+  { id: 'salon', icon: '💇', name: 'Salon & Beauty', records: 'Appointments', contacts: 'Clients' },
+  { id: 'gym', icon: '🏋️', name: 'Gym & Fitness', records: 'Memberships', contacts: 'Members' },
   { id: 'realestate', icon: '🏠', name: 'Real Estate', records: 'Deals', contacts: 'Clients' },
   { id: 'education', icon: '🎓', name: 'Education & Schools', records: 'Enrolments', contacts: 'Students' },
   { id: 'retail', icon: '🛒', name: 'Retail & E-commerce', records: 'Orders', contacts: 'Customers' },

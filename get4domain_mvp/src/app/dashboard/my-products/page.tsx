@@ -18,12 +18,12 @@ function getProductLabel(industry?: string): ProductLabels {
   const labels: Record<string, ProductLabels> = {
     travel: { singular: 'Tour Package', plural: 'Tour Packages', placeholder: 'e.g. Ooty 3N/4D Package' },
     restaurant: { singular: 'Menu Item', plural: 'Menu Items', placeholder: 'e.g. Chicken Biryani' },
-    healthcare: { singular: 'Service', plural: 'Services & Packages', placeholder: 'e.g. Full Body Checkup' },
+    clinic: { singular: 'Service', plural: 'Services & Packages', placeholder: 'e.g. Full Body Checkup' },
     education: { singular: 'Course', plural: 'Courses', placeholder: 'e.g. JEE Foundation Course' },
     realestate: { singular: 'Property', plural: 'Properties', placeholder: 'e.g. 3BHK Apartment' },
     retail: { singular: 'Product', plural: 'Products', placeholder: 'e.g. Basmati Rice 5kg' },
-    beauty: { singular: 'Service', plural: 'Services', placeholder: 'e.g. Bridal Package' },
-    fitness: { singular: 'Membership', plural: 'Memberships & Classes', placeholder: 'e.g. 6-Month Gym Membership' },
+    salon: { singular: 'Service', plural: 'Services', placeholder: 'e.g. Bridal Package' },
+    gym: { singular: 'Membership', plural: 'Memberships & Classes', placeholder: 'e.g. 6-Month Gym Membership' },
     construction: { singular: 'Service', plural: 'Services', placeholder: 'e.g. Interior Design' },
     hotel: { singular: 'Room Type', plural: 'Rooms & Packages', placeholder: 'e.g. Deluxe Room' },
   };

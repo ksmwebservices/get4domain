@@ -36,11 +36,13 @@ export class DemoService {
     private readonly sms: SmsService,
   ) {}
 
-  /** Phase 5 — create a Razorpay order for the ₹6,999/yr go-live upgrade of a sandbox. */
+  /** Phase 5 — create a one-time Razorpay order for the ₹999/month go-live upgrade of a
+   *  sandbox. NOTE: this is a one-time charge (not a Razorpay auto-recurring subscription
+   *  object); monthly renewal is handled via invoice/payment-link. */
   async createBuyOrder(vendorId: string): Promise<{ orderId: string; amount: number; currency: string }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor || !vendor.isSandbox) throw new BadRequestException('No active demo sandbox to upgrade');
-    const amount = await this.wallet.getRate('domainapp_annual', 699900); // paise
+    const amount = await this.wallet.getRate('domainapp_monthly', 99900); // paise (₹999)
     const order = await this.payments.createOrder({ amount, currency: 'INR', receipt: `golive_${vendorId}_${Date.now()}` });
     return { orderId: order.id, amount: Number(order.amount), currency: order.currency };
   }
@@ -79,8 +81,8 @@ export class DemoService {
     });
 
     const now = new Date();
-    const end = new Date(now); end.setFullYear(end.getFullYear() + 1);
-    const amount = await this.wallet.getRate('domainapp_annual', 699900);
+    const end = new Date(now); end.setMonth(end.getMonth() + 1);
+    const amount = await this.wallet.getRate('domainapp_monthly', 99900);
     const sub = await this.prisma.subscription.create({
       data: { vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount, status: 'ACTIVE', startDate: now, endDate: end },
     });
@@ -88,7 +90,7 @@ export class DemoService {
     // Phase 6 automation — all best-effort; conversion already succeeded.
     try {
       await this.invoices.createPaidInvoice({
-        vendorId, paidPaise: amount, description: 'DomainApp Annual Subscription (₹6,999/year)',
+        vendorId, paidPaise: amount, description: 'DomainApp Monthly Subscription (₹999/month)',
         paymentMode: 'Razorpay', source: 'subscription', paymentId: dto.razorpayPaymentId,
         subscriptionId: sub.id, nextRenewal: end,
       });

@@ -51,7 +51,7 @@ Get4Domain is a SaaS platform for Indian SMBs.
 
 Product (ONE simple plan — everything included):
   DomainApp — the complete Business Operating System.
-  Price: ₹6,999 per year, all features included.
+  Price: ₹999 per month, all features included.
   What's inside: an industry website, business management (records,
   contacts, catalog, invoicing), TeleCRM, Campaigns (social, WhatsApp,
   SMS, leads), and AI Studio for content — all in one product.

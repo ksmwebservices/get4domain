@@ -35,7 +35,7 @@ export default function AboutPage() {
               <strong className="text-slate-900">KSM Quantum Technologies</strong> is the company behind Get4Domain — a SaaS platform purpose-built for small and medium businesses across India. We believe every business, regardless of size, deserves a professional online presence and the tools to run and grow it, without needing an in-house tech team.
             </p>
             <p>
-              Our product — <strong className="text-slate-900">DomainApp</strong> (₹6,999/year, everything included) — gives an SMB a professional industry website, a business workspace (CRM, invoicing, contacts, records), built-in campaigns and an AI Studio, all in one platform to launch, operate and grow online.
+              Our product — <strong className="text-slate-900">DomainApp</strong> (₹999/month, everything included) — gives an SMB a professional industry website, a business workspace (CRM, invoicing, contacts, records), built-in campaigns and an AI Studio, all in one platform to launch, operate and grow online.
             </p>
           </div>
 

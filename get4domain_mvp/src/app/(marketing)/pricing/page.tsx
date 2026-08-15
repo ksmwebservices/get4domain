@@ -4,8 +4,8 @@ import { Check, ArrowRight } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'Pricing — DomainApp ₹6,999/year, Everything Included',
-  description: 'Simple pricing. One plan — DomainApp ₹6,999/year: industry website, business workspace, CRM, campaigns and AI Studio with ₹999 free credit. Top up only when you use more.',
+  title: 'Pricing — DomainApp ₹999/month, Everything Included',
+  description: 'Simple pricing. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio with ₹999 free credit. Top up only when you use more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 
@@ -37,6 +37,7 @@ const INCLUDED = [
 ];
 
 const TOPUPS = [
+  { pay: '₹499', credits: '₹499 credits', bonus: 'Minimum top-up' },
   { pay: '₹999', credits: '₹1,100 credits', bonus: '10% bonus' },
   { pay: '₹2,499', credits: '₹3,000 credits', bonus: '20% bonus' },
   { pay: '₹4,999', credits: '₹6,500 credits', bonus: '30% bonus' },
@@ -50,12 +51,12 @@ const USAGE: [string, string][] = [
 ];
 
 const FAQS = [
-  { q: 'What happens after I pay ₹6,999?', a: 'We build your industry website in 5-7 days, set up your dashboard, and give you ₹999 AI Studio credit to start creating content immediately.' },
+  { q: 'What happens after I pay ₹999?', a: 'We build your industry website in 5-7 days, set up your dashboard, and give you ₹999 AI Studio credit to start creating content immediately.' },
   { q: 'What is Mini BOS?', a: 'A lightweight business workspace tailored to your industry. Manage contacts, services, bookings/orders, and invoices — without the complexity of heavy ERP software.' },
-  { q: 'How does the wallet work?', a: 'Your plan includes ₹999 free credit. Use it for AI content, campaigns, and messaging. When it runs low, top up from ₹999. Credits are valid for 90 days.' },
+  { q: 'How does the wallet work?', a: 'Your plan includes ₹999 free credit. Use it for AI content, campaigns, and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. Buy a domain through our dashboard or connect your existing domain. Free subdomain included with every plan.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your workspace adapts to your industry.' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Annual subscription, but you can cancel anytime. Website stays live until the subscription period ends.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Monthly subscription — cancel anytime. Your website stays live until the current month ends.' },
 ];
 
 export default function PricingPage() {
@@ -74,8 +75,8 @@ export default function PricingPage() {
           <div className="rounded-2xl border-2 border-blue-500 bg-white p-8 shadow-lg">
             <span className="inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">All-in-One</span>
             <h2 className="mt-4 text-2xl font-bold text-slate-900">DomainApp</h2>
-            <p className="mt-2 text-4xl font-bold text-slate-900">₹6,999 <span className="text-lg font-normal text-slate-400">/year</span></p>
-            <p className="text-sm text-slate-500">₹583/month · Cancel anytime</p>
+            <p className="mt-2 text-4xl font-bold text-slate-900">₹999 <span className="text-lg font-normal text-slate-400">/month</span></p>
+            <p className="text-sm text-slate-500">Everything included · Cancel anytime</p>
 
             <div className="mt-6 space-y-5">
               {INCLUDED.map((section) => (
@@ -91,7 +92,7 @@ export default function PricingPage() {
             </div>
 
             <div className="mt-8 space-y-3">
-              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Get Started — ₹6,999/year <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Get Started — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
               <Link href="/book-demo" className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-6 py-3 font-medium text-slate-700 hover:bg-slate-50">Book a Free Demo</Link>
             </div>
           </div>

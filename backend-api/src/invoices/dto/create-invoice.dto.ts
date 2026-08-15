@@ -11,7 +11,7 @@ export class CreateInvoiceDto {
   @IsString()
   subscriptionId?: string;
 
-  @ApiProperty({ example: 'DomainApp Enterprise — annual subscription' })
+  @ApiProperty({ example: 'DomainApp — monthly subscription' })
   @IsString()
   description!: string;
 

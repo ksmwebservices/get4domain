@@ -118,7 +118,7 @@ export class InvoicesService {
 
   /**
    * The single reusable "paid GST invoice" path — used by wallet top-ups AND the
-   * ₹6,999 signup conversion. The amount paid is GST-INCLUSIVE, so GST is
+   * ₹999 signup conversion. The amount paid is GST-INCLUSIVE, so GST is
    * back-calculated (taxable = total / 1.18) — the invoice total always equals the
    * amount charged. Records platform income + emails the branded PDF (Resend).
    * Best-effort: never throws (a failure must not undo the payment/credit).

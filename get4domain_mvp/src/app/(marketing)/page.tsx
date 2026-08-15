@@ -4,9 +4,9 @@ import { ArrowRight, Check } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Identity Partner | ₹6,999/year',
+  title: 'Get4Domain — Your Online Identity Partner | ₹999/month',
   description:
-    "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹6,999/year: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
+    "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
   alternates: { canonical: 'https://get4domain.com' },
 };
 
@@ -37,9 +37,9 @@ const MODULES = [
 const INDUSTRIES = [
   { icon: '🚗', label: 'Travel & Tours', href: '/industries/travel' },
   { icon: '🍽️', label: 'Restaurant & Cafe', href: '/industries/restaurant' },
-  { icon: '🏥', label: 'Clinic & Healthcare', href: '/industries/healthcare' },
+  { icon: '🏥', label: 'Clinic & Healthcare', href: '/industries/clinic' },
   { icon: '🏨', label: 'Hotel & Hospitality', href: '/industries/hotel' },
-  { icon: '💇', label: 'Salon & Beauty', href: '/industries/beauty' },
+  { icon: '💇', label: 'Salon & Beauty', href: '/industries/salon' },
   { icon: '🏗️', label: 'Construction', href: '/industries/construction' },
   { icon: '🎓', label: 'Education & Coaching', href: '/industries/education' },
   { icon: '🛒', label: 'Retail & E-commerce', href: '/industries/retail' },
@@ -60,7 +60,7 @@ const TESTIMONIALS = [
 const FAQS = [
   { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, HR), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
   { q: 'Do I need technical knowledge to use it?', a: 'No. We set up your website, dashboard and integrations for you within 5-7 days. You simply log in to a workspace tailored to your industry and start working — no coding or design skills needed.' },
-  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹6,999/year (just ₹583/month) and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹999 of free AI credit. Top up your wallet only when you need more AI content, campaigns or messaging.' },
+  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹999/month and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹999 of free AI credit. Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging.' },
 ];
 
 export default function HomePage() {
@@ -79,7 +79,7 @@ export default function HomePage() {
             <p className="mt-6 max-w-xl text-lg text-slate-600">
               One platform for your business website, operations, CRM, marketing campaigns, and customer management. Built for Indian SMBs.
             </p>
-            <p className="mt-5 text-sm font-medium text-slate-500">50+ Businesses · 20+ Industries · ₹6,999/year — Everything Included</p>
+            <p className="mt-5 text-sm font-medium text-slate-500">50+ Businesses · 20+ Industries · ₹999/month — Everything Included</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">
                 Get Started Free <ArrowRight className="h-4 w-4" />
@@ -164,7 +164,7 @@ export default function HomePage() {
           </div>
           <div className="mt-12 rounded-2xl border-2 border-blue-500 bg-white p-8 shadow-md">
             <div className="text-3xl">📋</div>
-            <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp — ₹6,999<span className="text-base font-normal text-slate-400">/year</span></h3>
+            <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp — ₹999<span className="text-base font-normal text-slate-400">/month</span></h3>
             <p className="mt-1 font-medium text-blue-600">Industry website + Business workspace + Campaigns + AI Studio</p>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {PLAN_FEATURES.map((f) => (
@@ -175,9 +175,9 @@ export default function HomePage() {
             </ul>
             <p className="mt-6 text-sm text-slate-600">Plus wallet top-up for campaigns, AI content &amp; messaging.</p>
             <div className="mt-6">
-              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">Get Started — ₹6,999/year <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">Get Started — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
             </div>
-            <p className="mt-4 text-center text-sm text-slate-400">That&apos;s just ₹583/month. Cancel anytime.</p>
+            <p className="mt-4 text-center text-sm text-slate-400">Just ₹999/month. Cancel anytime.</p>
           </div>
         </div>
       </section>

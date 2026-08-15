@@ -65,7 +65,7 @@ export const industryContent: IndustryContent[] = [
     coverImage: 'https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
   {
-    id: 'healthcare',
+    id: 'clinic',
     name: 'Clinic & Hospital',
     tagline: 'Professional Medical Website. Online Appointments.',
     shortDesc: 'Medical website with doctor profiles, appointment booking, service catalog and patient information.',
@@ -141,7 +141,7 @@ export const industryContent: IndustryContent[] = [
     coverImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
   {
-    id: 'beauty',
+    id: 'salon',
     name: 'Salon & Spa',
     tagline: 'Book Appointments. Showcase Work. Build Loyalty.',
     shortDesc: 'Salon website with service menu, appointment booking, stylist profiles and before/after gallery.',
@@ -160,7 +160,7 @@ export const industryContent: IndustryContent[] = [
     coverImage: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
   {
-    id: 'fitness',
+    id: 'gym',
     name: 'Gym & Fitness',
     tagline: 'Show Your Facility. Get Memberships Online.',
     shortDesc: 'Gym website with class schedules, trainer profiles, membership plans and facility gallery.',

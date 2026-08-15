@@ -12,7 +12,7 @@ const products = [
     badgeBg: 'bg-primary-50 text-primary-700',
     title: 'DomainApp',
     desc: 'A complete Business Operating System for Indian SMBs. Professional website, CRM, HR, accounting, invoicing, inventory and reports — all in one subscription.',
-    plans: ['Startup — ₹6,999/yr', 'Enterprise — ₹24,999/yr'],
+    plans: ['₹999/month — everything included'],
     highlights: [
       'Professional industry website with CMS',
       'Lead CRM, Customer CRM, Telecalling',
@@ -35,7 +35,7 @@ const products = [
     badgeBg: 'bg-secondary-50 text-secondary-700',
     title: 'DomainCampaign',
     desc: 'Fully managed digital marketing. Our team creates content, manages social media, runs SEO and delivers monthly reports. You focus on running your business.',
-    plans: ['Starter — ₹6,999/yr', 'Business — ₹29,999/yr'],
+    plans: ['Included in DomainApp'],
     highlights: [
       'Up to 120 social media posts/month',
       'SEO — up to 10 keywords',

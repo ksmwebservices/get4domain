@@ -5,10 +5,10 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://get4domain.com'),
   title: {
-    default: 'Get4Domain — Your Online Identity Partner | ₹6,999/year',
+    default: 'Get4Domain — Your Online Identity Partner | ₹999/month',
     template: '%s | Get4Domain',
   },
-  description: "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹6,999/year: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
+  description: "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
   keywords: [
     'business website India',
     'online identity platform India',
@@ -127,8 +127,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               operatingSystem: 'Web',
               offers: {
                 '@type': 'Offer',
-                name: 'DomainApp — annual, everything included',
-                price: '6999',
+                name: 'DomainApp — monthly, everything included',
+                price: '999',
                 priceCurrency: 'INR',
               },
               provider: {

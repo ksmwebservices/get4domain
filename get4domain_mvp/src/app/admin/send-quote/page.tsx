@@ -182,7 +182,7 @@ export default function SendQuotePage() {
             </div>
           </div>
 
-          <input placeholder="What is being quoted (e.g. DomainApp Enterprise — annual)" value={itemLabel} onChange={(e) => setItemLabel(e.target.value)} className={inputClass} />
+          <input placeholder="What is being quoted (e.g. DomainApp — monthly subscription)" value={itemLabel} onChange={(e) => setItemLabel(e.target.value)} className={inputClass} />
 
           <textarea rows={2} placeholder="Internal notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
 
