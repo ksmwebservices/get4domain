@@ -30,7 +30,7 @@ function loadRazorpay(): Promise<void> {
 
 const INCLUDED = [
   'Your industry website + customer portal', 'Bookings, contacts, catalog & GST invoicing',
-  'TeleCRM, Campaigns & AI Studio', 'WhatsApp / SMS / Email (wallet)', '₹999 Pro AI Studio credit included',
+  'TeleCRM, Campaigns & AI Studio', 'WhatsApp / SMS / Email (wallet)', '₹499 Pro AI Studio credit included',
 ];
 
 export default function GoLivePage() {
@@ -98,7 +98,7 @@ export default function GoLivePage() {
       <div className="mx-auto max-w-md py-16 text-center">
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-success-100"><Check className="h-10 w-10 text-success-600" /></div>
         <h1 className="text-2xl font-bold text-slate-900">You&apos;re live! 🎉</h1>
-        <p className="mt-3 text-slate-600">Your account is now a full DomainApp subscription. Your GST invoice has been emailed, and your ₹999 AI Studio credit is added.</p>
+        <p className="mt-3 text-slate-600">Your account is now a full DomainApp subscription. Your GST invoice has been emailed, and your ₹499 AI Studio credit is added.</p>
         <a href="/dashboard"><Button className="mt-6" leftIcon={<Rocket className="h-4 w-4" />}>Go to my dashboard</Button></a>
       </div>
     );

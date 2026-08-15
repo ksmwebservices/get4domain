@@ -5,7 +5,7 @@ import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
   title: 'Pricing — DomainApp ₹999/month, Everything Included',
-  description: 'Simple pricing. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio with ₹999 free credit. Top up only when you use more.',
+  description: 'Simple pricing. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio with ₹499 free credit. Top up only when you use more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 
@@ -28,7 +28,7 @@ const INCLUDED = [
   },
   {
     group: 'AI STUDIO',
-    items: ['₹999 free credit included', 'Text, images, posters, reels, documents'],
+    items: ['₹499 free credit included', 'Text, images, posters, reels, documents'],
   },
   {
     group: 'TEAM & SUPPORT',
@@ -51,9 +51,9 @@ const USAGE: [string, string][] = [
 ];
 
 const FAQS = [
-  { q: 'What happens after I pay ₹999?', a: 'We build your industry website in 5-7 days, set up your dashboard, and give you ₹999 AI Studio credit to start creating content immediately.' },
+  { q: 'What happens after I pay ₹999?', a: 'We build your industry website in 5-7 days, set up your dashboard, and give you ₹499 AI Studio credit to start creating content immediately.' },
   { q: 'What is Mini BOS?', a: 'A lightweight business workspace tailored to your industry. Manage contacts, services, bookings/orders, and invoices — without the complexity of heavy ERP software.' },
-  { q: 'How does the wallet work?', a: 'Your plan includes ₹999 free credit. Use it for AI content, campaigns, and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
+  { q: 'How does the wallet work?', a: 'Your plan includes ₹499 free credit. Use it for AI content, campaigns, and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. Buy a domain through our dashboard or connect your existing domain. Free subdomain included with every plan.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your workspace adapts to your industry.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Monthly subscription — cancel anytime. Your website stays live until the current month ends.' },
@@ -104,7 +104,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h3 className="text-2xl font-bold text-slate-900">Pay As You Use</h3>
-            <p className="mt-2 text-slate-600">Your plan includes ₹999 free AI Studio credit. Need more? Top up anytime.</p>
+            <p className="mt-2 text-slate-600">Your plan includes ₹499 free AI Studio credit. Need more? Top up anytime.</p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {TOPUPS.map((t) => (

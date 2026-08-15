@@ -73,7 +73,7 @@ export default function RefundPolicyPage() {
           heading: '8. DomainApp Plan & Wallet Refunds',
           content: (
             <ul className="list-disc pl-5 space-y-1">
-              <li>₹999 AI Studio credit: non-refundable after use.</li>
+              <li>₹499 AI Studio credit: non-refundable after use.</li>
               <li>Wallet top-up credits: non-refundable after use.</li>
               <li>DomainApp setup fee: non-refundable after work begins.</li>
               <li>Monthly subscription: refundable within 7 days if no work has started.</li>

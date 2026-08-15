@@ -5,7 +5,7 @@ import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
   title: 'DomainApp — Industry Website + Business Workspace + AI Studio',
-  description: 'DomainApp is everything in one plan at ₹999/month — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹999 free credit.',
+  description: 'DomainApp is everything in one plan at ₹999/month — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹499 free credit.',
   alternates: { canonical: 'https://get4domain.com/domain-app' },
 };
 
@@ -85,7 +85,7 @@ export default function DomainAppPage() {
             <h3 className="mt-3 text-xl font-bold text-slate-900">DomainApp</h3>
             <p className="mt-2 text-4xl font-bold text-slate-900">₹999<span className="text-base font-normal text-slate-400">/month</span></p>
             <p className="mt-1 text-sm text-slate-500">Everything included · Cancel anytime</p>
-            <p className="mt-3 text-sm text-slate-600">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio (₹999 free credit)</p>
+            <p className="mt-3 text-sm text-slate-600">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio (₹499 free credit)</p>
           </div>
 
           <div className="mt-12">

@@ -72,7 +72,7 @@ export default function CampaignFeaturesPage() {
               <li key={c} className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{c}</li>
             ))}
           </ul>
-          <p className="mt-8 text-center text-sm text-slate-600">Campaign &amp; messaging usage is billed from your wallet (₹999 free credit included):</p>
+          <p className="mt-8 text-center text-sm text-slate-600">Campaign &amp; messaging usage is billed from your wallet (₹499 free credit included):</p>
           <div className="mx-auto mt-4 max-w-md overflow-hidden rounded-2xl border border-slate-200">
             {RATES.map(([label, rate], i) => (
               <div key={label} className={`flex items-center justify-between px-5 py-2.5 text-sm ${i % 2 ? 'bg-white' : 'bg-slate-50'}`}>

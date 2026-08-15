@@ -16,7 +16,7 @@ const PLAN_FEATURES = [
   'Mini BOS workspace (contacts, catalog, records, invoicing)',
   'CRM + TeleCRM',
   'Campaign pages + social media',
-  'AI Studio with ₹999 free credit',
+  'AI Studio with ₹499 free credit',
   'Team access',
   'Free subdomain + hosting + SSL',
 ];
@@ -60,7 +60,7 @@ const TESTIMONIALS = [
 const FAQS = [
   { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, HR), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
   { q: 'Do I need technical knowledge to use it?', a: 'No. We set up your website, dashboard and integrations for you within 5-7 days. You simply log in to a workspace tailored to your industry and start working — no coding or design skills needed.' },
-  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹999/month and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹999 of free AI credit. Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging.' },
+  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹999/month and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹499 of free AI credit. Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging.' },
 ];
 
 export default function HomePage() {

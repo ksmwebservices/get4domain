@@ -96,7 +96,7 @@ export class DemoService {
       });
     } catch (e) { this.logger.error(`Signup invoice failed for ${vendorId}: ${e instanceof Error ? e.message : 'unknown'}`); }
     try {
-      const proCredit = await this.wallet.getRate('pro_free_credit', 99900); // ₹999
+      const proCredit = await this.wallet.getRate('pro_free_credit', 49900); // ₹499 (forward-only; already-granted credit unchanged)
       await this.wallet.grantCredit(vendorId, proCredit, 'Pro plan AI Studio credit', 'pro_credit');
     } catch { /* best-effort */ }
     try { await this.email.sendWelcomeEmail(converted, dto.password); } catch { /* best-effort */ }

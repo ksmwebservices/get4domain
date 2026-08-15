@@ -1086,6 +1086,27 @@ industry keys standardized to backend set (clinic/salon/gym), hybrid frontend ar
   VM (deploy/db push/docker ps require SSH — human step). Existing vendor.industry='healthcare'
   rows keep working via aliases; an optional DB normalization to 'clinic' touches live data → deferred.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_15AUG2026_PHASE1B — DECISION 1 (free credit ₹999→₹499) DONE
+Decision 2 (Razorpay Subscriptions) NOT started — awaiting KSM go-ahead (plan_id + mandate
+capability, per Phase1B 2.1). Phase 2/3 of the original dispatch also not started.
+- [x] Free-credit value: backend demo.service pro_free_credit default 99900→49900 (₹499);
+  admin/pricing DEFAULTS pro_free_credit '999'→'499'; platform-settings comment ₹999→₹499.
+  FORWARD-ONLY: the value is read at sandbox→live conversion time (grantCredit), so only NEW
+  signups get ₹499 — already-granted wallet credit (stored txns) is untouched. No retroactive
+  change made (respects the pause rule).
+- [x] Copy echoing the old ₹999 free credit → ₹499: marketing home (feature list + FAQ),
+  pricing (meta desc, AI-Studio include, 2 FAQs, wallet section), domain-app (meta + summary),
+  domain-campaign (wallet note), refund-policy (non-refundable line), dashboard/go-live (2:
+  included-list + success message).
+- [x] PRESERVED (correctly NOT changed): the ₹999/month PRICE everywhere, the ₹999 wallet
+  TOP-UP tier (→₹1,100), topup_999_credits key, my-services/ProductsOverview price, and the
+  "What happens after I pay ₹999?" FAQ question (that ₹999 is the price; only its answer's
+  credit figure changed). trial_free_credit (₹100) unchanged.
+- Build: frontend 0 errors (340 pages), backend 0 errors, console clean. Verified live: pricing
+  shows ₹999/month price + ₹499 free credit. NOT deployed (VM steps below still pending).
+- Admin note: on prod, if a `pro_free_credit` setting row already exists at 99900 it will
+  OVERRIDE the new code default — set it to 49900 (₹499) in Admin → Pricing after deploy.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

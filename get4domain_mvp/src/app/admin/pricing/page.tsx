@@ -12,7 +12,7 @@ const DEFAULTS: Record<string, string> = {
   video_generation: '50', document: '15', whatsapp_message: '1', sms_message: '0.50',
   email_message: '0.10', social_post_publish: '10', extra_campaign_page: '20',
   domainapp_monthly: '999', topup_999_credits: '1100', topup_2499_credits: '3000', topup_4999_credits: '6500',
-  trial_free_credit: '100', pro_free_credit: '999',
+  trial_free_credit: '100', pro_free_credit: '499',
 };
 
 const GROUPS: { title: string; keys: string[] }[] = [
