@@ -94,6 +94,13 @@ export const api = {
     apiCall(`/cms/vendor/${vendorId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getSite: (subdomain: string) => apiCall(`/cms/site/${subdomain}`),
 
+  // Accounting (2C) — expenses, P&L, GST statement (vendorId-scoped server-side)
+  getExpenses: (q = '') => apiCall(`/accounting/expenses${q}`),
+  createExpense: (data: any) => apiCall('/accounting/expenses', { method: 'POST', body: JSON.stringify(data) }),
+  deleteExpense: (id: string) => apiCall(`/accounting/expenses/${id}`, { method: 'DELETE' }),
+  expenseVoucher: (id: string) => apiCall(`/accounting/expenses/${id}/voucher`),
+  accountingSummary: (q = '') => apiCall(`/accounting/summary${q}`),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

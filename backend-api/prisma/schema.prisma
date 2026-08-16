@@ -46,6 +46,7 @@ model Vendor {
   addons           VendorAddon[]
   modules          VendorModule[]
   messages         Message[]
+  expenses         Expense[]
 }
 
 model Subscription {
@@ -635,4 +636,26 @@ model WebsiteTheme {
   updatedAt   DateTime @updatedAt
   @@index([industry])
   @@map("g4d_website_themes")
+}
+
+// ── Track B 2C: vendor expense entry (bookkeeping support). GST is EXCLUSIVE —
+// `amount` is the taxable base, gstAmount = amount*gstRate/100, total = amount+gst
+// (mirrors GenericInvoice + the invoice service). Rupee floats, vendorId-scoped. ──
+model Expense {
+  id            String   @id @default(cuid())
+  vendorId      String
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
+  description   String
+  category      String?
+  amount        Float    // taxable base (₹, exclusive of GST)
+  gstRate       Float    @default(0)   // 0 = not GST-claimable
+  gstAmount     Float    @default(0)
+  total         Float    // amount + gstAmount
+  paymentMethod String   @default("offline") // online | offline (cash)
+  attachment    String?  // receipt photo URL
+  date          DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([vendorId])
+  @@map("g4d_expenses")
 }
