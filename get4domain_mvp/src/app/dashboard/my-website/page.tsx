@@ -12,15 +12,16 @@ type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'services' | 'template';
 
 interface VendorCms {
   businessName: string | null; tagline: string | null; about: string | null;
-  logo: string | null; banner: string | null;
+  logo: string | null; banner: string | null; themeId: string | null;
   phone: string | null; whatsapp: string | null; email: string | null; address: string | null;
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
 interface Product { id: string; name: string; description?: string; price?: string; category?: string }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; isDefault: boolean }
 
 const EMPTY: VendorCms = {
-  businessName: '', tagline: '', about: '', logo: '', banner: '', phone: '', whatsapp: '', email: '', address: '',
+  businessName: '', tagline: '', about: '', logo: '', banner: '', themeId: '', phone: '', whatsapp: '', email: '', address: '',
   facebook: '', instagram: '', linkedin: '', youtube: '', googleMaps: '',
   seoTitle: '', seoDesc: '', seoKeywords: '', googleAnalyticsId: '',
 };
@@ -40,6 +41,12 @@ export default function WebsiteManagerPage() {
   const [error, setError] = useState('');
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
+  const [themes, setThemes] = useState<WebsiteTheme[]>([]);
+
+  useEffect(() => {
+    const q = user?.industry ? `?industry=${encodeURIComponent(user.industry)}` : '';
+    api.websiteThemes(q).then((res) => setThemes(res.data ?? [])).catch(() => setThemes([]));
+  }, [user?.industry]);
 
   const subdomainUrl = user?.subdomain ? `https://${user.subdomain}.get4domain.com` : '';
   const previewUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
@@ -233,6 +240,30 @@ export default function WebsiteManagerPage() {
                 <div className="text-xs text-slate-500">Auto-selected for the {cfg.industry?.label ?? 'general'} industry.</div>
               </div>
             </div>
+            {themes.length > 0 && (
+              <div>
+                <div className="mb-2 text-sm font-semibold text-slate-700">Choose a theme</div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {themes.map((t) => {
+                    const selected = cms.themeId === t.id || (!cms.themeId && t.isDefault);
+                    const primary = t.cssVars?.['--primary'] ?? '#2563eb';
+                    const accent = t.cssVars?.['--accent'] ?? primary;
+                    return (
+                      <button key={t.id} type="button" onClick={() => set('themeId', t.id)}
+                        className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="h-6 w-6 rounded-md" style={{ background: primary }} />
+                          <span className="h-6 w-6 rounded-md" style={{ background: accent }} />
+                          <span className="ml-auto text-xs font-semibold text-slate-500">{selected ? 'Selected' : t.isDefault ? 'Default' : ''}</span>
+                        </div>
+                        <div className="mt-2 text-sm font-bold text-slate-900">{t.name}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-slate-400">Themes are CSS-variable driven — switching one restyles your site without rebuilding it. Click Save Changes to apply.</p>
+              </div>
+            )}
             <div className="rounded-xl border border-slate-200 p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700"><Globe className="h-4 w-4 text-primary-500" />Live preview</div>
               {subdomainUrl ? (

@@ -32,6 +32,7 @@ const navItems: AdminNavItem[] = [
   { icon: LayoutDashboard,   label: 'Overview',      href: '/admin',              roles: SUPER },
   { icon: Phone,             label: 'TeleCRM',       href: '/admin/telecrm',      roles: SUPER_MKT },
   { icon: Sparkles,          label: 'AI Studio',     href: '/admin/ai-studio',    roles: SUPER_MKT },
+  { icon: Sparkles,          label: 'Content Library', href: '/admin/library',    roles: SUPER_MKT },
   { icon: FileSignature,     label: 'Send Quote',    href: '/admin/send-quote',   roles: SUPER_MKT },
   { icon: CalendarCheck,     label: 'Demo Bookings', href: '/admin/leads',        roles: SUPER },
   { icon: Users,             label: 'Vendors',       href: '/admin/customers',    roles: SUPER },

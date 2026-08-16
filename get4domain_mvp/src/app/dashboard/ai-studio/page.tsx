@@ -103,6 +103,7 @@ export default function AiStudioPage() {
   const isInternalStaff = user?.role === 'admin' || user?.role === 'super_admin';
   const [tab, setTab] = useState<'create' | 'library'>('create');
   const [active, setActive] = useState<ContentType | null>(null);
+  const [templates, setTemplates] = useState<{ id: string; name: string; prompt: string; thumbnail?: string | null }[]>([]);
   const [purpose, setPurpose] = useState('');
   const [tone, setTone] = useState(TONES[0]);
   const [details, setDetails] = useState('');
@@ -227,6 +228,16 @@ export default function AiStudioPage() {
   }, [storageKey]);
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
+
+  // AI template library (2.2) — load admin-created starting-point templates for the
+  // selected content type + this vendor's industry when the generation modal opens.
+  useEffect(() => {
+    if (!active) { setTemplates([]); return; }
+    let cancelled = false;
+    const q = `?contentType=${encodeURIComponent(active.key)}${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
+    api.aiTemplates(q).then((res) => { if (!cancelled) setTemplates(res.data ?? []); }).catch(() => { if (!cancelled) setTemplates([]); });
+    return () => { cancelled = true; };
+  }, [active, user?.industry]);
 
   const [uploadImg, setUploadImg] = useState<string | null>(null);
   const [resultImg, setResultImg] = useState<string | null>(null);
@@ -386,6 +397,20 @@ export default function AiStudioPage() {
       <Modal isOpen={active !== null} onClose={() => setActive(null)} title={active ? `Generate ${active.label}` : ''} maxWidth="max-w-2xl">
         {active && (
           <div className="space-y-4">
+            {templates.length > 0 && (
+              <div className="rounded-xl border border-primary-100 bg-primary-50/40 p-3">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-primary-700"><Library className="h-3.5 w-3.5" /> Start from a template</div>
+                <div className="flex flex-wrap gap-2">
+                  {templates.map((t) => (
+                    <button key={t.id} type="button"
+                      onClick={() => { setDetails(t.prompt); if (!purpose) setPurpose(t.name); }}
+                      className="rounded-lg border border-primary-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-primary-400 hover:bg-primary-50">
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <Input label="Purpose / Occasion" placeholder="e.g. Diwali offer, new service launch" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
             <Select label="Tone" value={tone} onChange={(e) => setTone(e.target.value)}>
               {TONES.map((t) => <option key={t} value={t}>{t}</option>)}
