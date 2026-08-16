@@ -1,32 +1,37 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import * as crypto from 'crypto';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { getIndustryConfig } from '../config/industries';
 
 interface OtpEntry { otp: string; expires: number; contactId: string; vendorId: string }
-interface Session { contactId: string; vendorId: string; expires: number }
+interface CustomerSession { contactId: string; vendorId: string }
+interface CustomerJwt { sub: string; vendorId: string; kind: string }
 
 const OTP_TTL_MS = 5 * 60 * 1000;
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Customer-facing portal auth + data. MOCK OTP (returned in dev, logged) until
- * the SMS gateway is live. Sessions are in-memory opaque tokens — acceptable
- * for the mock portal; swap for a persisted/JWT session when going live.
+ * Customer-facing portal auth + data. Sessions are STATELESS JWTs (3A) signed with
+ * a customer-specific secret, so they survive restarts/scale and can never be used
+ * against vendor routes. Data is real and tenant-scoped (vendorId + contactId). The
+ * OTP delivery rides the SmsService provider layer (real when configured).
  */
 @Injectable()
 export class CustomerService {
   private readonly logger = new Logger(CustomerService.name);
   private readonly otps = new Map<string, OtpEntry>();
-  private readonly sessions = new Map<string, Session>();
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
     private readonly sms: SmsService,
     private readonly whatsapp: WhatsappService,
   ) {}
+
+  private issueToken(contactId: string, vendorId: string): string {
+    return this.jwt.sign({ sub: contactId, vendorId, kind: 'customer' });
+  }
 
   async requestOtp(phone: string): Promise<{ sent: boolean; contactExists: boolean; devOtp?: string }> {
     const contact = await this.prisma.contact.findFirst({ where: { phone } });
@@ -51,8 +56,7 @@ export class CustomerService {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
     this.otps.delete(phone);
-    const token = crypto.randomBytes(24).toString('hex');
-    this.sessions.set(token, { contactId: entry.contactId, vendorId: entry.vendorId, expires: Date.now() + SESSION_TTL_MS });
+    const token = this.issueToken(entry.contactId, entry.vendorId);
 
     const contact = await this.prisma.contact.findUnique({ where: { id: entry.contactId } });
     const vendor = await this.prisma.vendor.findUnique({ where: { id: entry.vendorId } });
@@ -75,18 +79,20 @@ export class CustomerService {
       orderBy: { createdAt: 'asc' },
     });
     if (!contact) return null;
-    const token = crypto.randomBytes(24).toString('hex');
-    this.sessions.set(token, { contactId: contact.id, vendorId, expires: Date.now() + SESSION_TTL_MS });
+    const token = this.issueToken(contact.id, vendorId);
     return { token, contactName: contact.name };
   }
 
-  private resolve(authHeader?: string): Session {
+  private resolve(authHeader?: string): CustomerSession {
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-    const session = token ? this.sessions.get(token) : undefined;
-    if (!session || session.expires < Date.now()) {
+    if (!token) throw new UnauthorizedException('Customer session expired');
+    try {
+      const p = this.jwt.verify<CustomerJwt>(token);
+      if (p.kind !== 'customer' || !p.sub || !p.vendorId) throw new Error('bad token');
+      return { contactId: p.sub, vendorId: p.vendorId };
+    } catch {
       throw new UnauthorizedException('Customer session expired');
     }
-    return session;
   }
 
   async me(authHeader?: string) {
