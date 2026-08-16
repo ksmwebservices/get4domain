@@ -1159,14 +1159,20 @@ TRACK B — 2A–2D done, 2E–2G pending:
 TRACK C — 3D done; 3A/3B/3C/3E pending:
 - [x] 3D department-based team invites — additive TeamMember.department + invite Department
   picker (Sales/Support/Accounts/Marketing) prefilling default module access. 3e4176b.
-- [ ] 3A real customer portal (make the mock OTP portal real, vendor-tenant-scoped) — pending.
-- [ ] 3B embeddable widget + API (per-vendor public key; leads → same TeleCRM pipeline;
-  reuses 2B bot) — pending. (2B is live, so unblocked.)
-- [ ] 3C admin per-vendor template/field override — builds on the 2.3 theme system (live);
-  DB-driven, no redeploy — pending.
-- [ ] 3E Stability AI (primary image) + multi video-provider config (priority/fallback) —
-  BUILD CONFIG WITHOUT ASSUMING FUNDED CREDIT (Stop 4). Provider funded-credit check is
-  harness-blocked here → KSM confirms which providers have credit. Pending.
+- [x] 3C admin per-vendor override (Vendor.configOverride; /industries/me merges skin +
+  override live; admin vendor-access panel: accent/welcome/template). 025d734.
+- [x] 3A real customer portal — was already real (OTP+SMS, tenant-scoped Record/GenericInvoice);
+  closed the one flagged gap: in-memory sessions → stateless JWT with a customer-specific
+  secret (can't be replayed on vendor routes). 6f3e11e.
+- [x] 3B embeddable widget + API — Vendor.widgetKey (public, unique); /widget config/lead/
+  chat/embed.js (reuses 2B AiService; leads → CampaignLead source='widget'); vendor Embed
+  page; CORS→origin:true (safe, Bearer-authed). embed.js node --check-verified. b1da62c.
+- [~] 3E provider config scaffolding (credit-agnostic): ai/stability_api_key +
+  video/kling_api_key settings, video chain runway→heygen→kling→none. 8b3a014.
+  ⏸ STOP 4 — real Stability image call + real Kling/HeyGen/Runway video integrations NOT
+  written (unverifiable/harness-blocked; don't assume funded credit). AWAITING KSM: which
+  providers have funded working accounts.
+TRACK C: 3A/3B/3C/3D DONE; 3E scaffolded + paused at Stop 4.
 VM STEPS PENDING (all additive/non-destructive): `prisma db push` for: Phase-1
 (VendorProduct.customFields, VendorCMS.banner); Track-A (g4d_ai_templates,
 g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses, g4d_stationery); Track-C
