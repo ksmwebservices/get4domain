@@ -1107,6 +1107,39 @@ capability, per Phase1B 2.1). Phase 2/3 of the original dispatch also not starte
 - Admin note: on prod, if a `pro_free_credit` setting row already exists at 99900 it will
   OVERRIDE the new code default — set it to 49900 (₹499) in Admin → Pricing after deploy.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_COMPLETE_15AUG2026 — continuous run (in progress)
+GATE (self-verified against prod DB, session of this entry):
+- [x] #1 Free credit: NO pro_free_credit override row in prod → code default 49900 paise
+  (₹499) applies. RESOLVED, nothing written. (Units note: setting stores RUPEES, so a real
+  value is "499", never 49900 — 49900 would be ₹49,900.)
+- [!] #2 AI image gen: OpenAI+Anthropic keys CONFIGURED on prod (DB). Real end-to-end call
+  BLOCKED by the harness auto-mode classifier (tried minting a sandbox-vendor JWT → live
+  /ai/generate-image). NOT self-verifiable here — needs KSM (logged in) or a VM run.
+- [x] #3 Razorpay: live key encrypted in prod, PLATFORM_SETTINGS_KEY absent locally → can't
+  call Razorpay API. Checked authoritative payment records instead: 0 paid invoices, 0
+  razorpayPaymentId, 0 subscriptions → NO real transactions. Clean, no Stop-1 trigger.
+- PROD FACTS: 3 real (non-sandbox) vendors + 9 sandbox; 0 payments/subscriptions. So Stops
+  2 & 5 are live; new tables are additive (non-destructive) so creating them is fine, but
+  db push is still a VM step.
+DECISION 2 (Razorpay subscriptions): SKIPPED — no plan_id provided.
+
+TRACK A:
+- [x] 2.1 Industry skins — IndustrySkin (accent pair, welcome, quick actions) derived from
+  each industry config (deriveSkin/getIndustryConfigWithSkin); industries API returns skin;
+  findOne now resolves aliases; vendor dashboard overview renders the industry banner.
+  Commit 867c8a7. (shared components untouched — layer on top, hybrid architecture.)
+- [x] 2.2 AI template library (backend) — g4d_ai_templates + full module (vendor list /
+  admin CRUD). 2.3 Website theme system (backend) — g4d_website_themes (CSS-var driven) +
+  module (@Public list / admin CRUD) + VendorCMS.themeId. api.ts client methods added.
+  Commit 5d6e0d6. PENDING: admin management UI + vendor browse/select UI (next increment).
+- [ ] 2.4 Native share (navigator.share on AI Studio results) — not started.
+- [ ] 2.5 Animated marketing mockups — not started.
+TRACK B (2A-2G): not started. TRACK C (3A-3E): not started.
+VM STEPS PENDING: `prisma db push` for the Phase-1 columns (VendorProduct.customFields,
+VendorCMS.banner) AND the new Track-A tables (g4d_ai_templates, g4d_website_themes) +
+VendorCMS.themeId — all additive/non-destructive. Deploy + the 2 blocked verifications
+(image-gen, AI-provider funded-credit for 3E) are on KSM's side.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
