@@ -79,6 +79,20 @@ export default function DashboardHome() {
 
   const upcoming = followups.slice(0, 3);
 
+  // 2A — real KPI numbers, all vendorId-scoped (from the vendor's own data).
+  const now = new Date();
+  const thisMonth = (iso?: string | null) => { if (!iso) return false; const d = new Date(iso); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); };
+  const leadsThisMonth = leads.filter((l) => thisMonth(l.createdAt)).length;
+  const wonCount = leads.filter((l) => /won/i.test(l.status)).length;
+  const pipelineActive = leads.filter((l) => !/won|lost/i.test(l.status)).length;
+  const revenueThisMonth = invoices.filter((i) => i.status === 'PAID' && thisMonth(i.paidAt)).reduce((s, i) => s + (i.total || 0), 0);
+  const kpis = [
+    { label: 'Leads this month', value: String(leadsThisMonth), sub: `${leads.length} total`, bg: 'from-blue-500 to-blue-600', href: '/dashboard/telecrm' },
+    { label: 'Active pipeline', value: String(pipelineActive), sub: `${wonCount} won`, bg: 'from-indigo-500 to-indigo-600', href: '/dashboard/crm' },
+    { label: 'Revenue this month', value: rupees(revenueThisMonth), sub: 'paid invoices', bg: 'from-emerald-500 to-emerald-600', href: '/dashboard/reports' },
+    { label: 'Follow-ups due', value: String(followups.length), sub: 'to call back', bg: 'from-amber-500 to-amber-600', href: '/dashboard/telecrm' },
+  ];
+
   const QUICK = [
     { label: 'New Lead', icon: UserPlus, href: '/dashboard/crm', bg: 'bg-primary-600' },
     { label: 'Call Next', icon: Phone, href: '/dashboard/telecrm', bg: 'bg-emerald-600' },
@@ -129,6 +143,17 @@ export default function DashboardHome() {
           </div>
         </div>
       )}
+
+      {/* 2A — KPI cards (colorful, mirroring the admin overview) */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k) => (
+          <Link key={k.label} href={k.href} className={`rounded-2xl bg-gradient-to-br ${k.bg} p-4 text-white transition-shadow hover:shadow-lg`}>
+            <div className="text-2xl font-bold leading-none">{k.value}</div>
+            <div className="mt-1 text-xs font-medium text-white/90">{k.label}</div>
+            <div className="mt-0.5 text-[11px] text-white/70">{k.sub}</div>
+          </Link>
+        ))}
+      </div>
 
       {/* Top */}
       <div className="flex flex-wrap items-start justify-between gap-3">
