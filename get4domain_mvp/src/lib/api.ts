@@ -325,6 +325,9 @@ export const api = {
   // Industry config
   getIndustries: (summary = false) => apiCall(`/industries${summary ? '?summary=true' : ''}`),
   getIndustryConfig: (key: string) => apiCall(`/industries/${key}`),
+  getMyIndustryConfig: () => apiCall('/industries/me'), // 3C — skin + per-vendor override merged
+  getVendorOverride: (id: string) => apiCall(`/industries/vendor/${id}/override`),
+  setVendorOverride: (id: string, data: any) => apiCall(`/industries/vendor/${id}/override`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Modules & addons (per-vendor toggle state)
   getModules: () => apiCall('/modules'),

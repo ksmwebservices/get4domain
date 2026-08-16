@@ -20,6 +20,9 @@ model Vendor {
   customDomain String?
   role         Role     @default(VENDOR)
   status       VendorStatus @default(ACTIVE)
+  // 3C: admin per-vendor override layered on the industry skin baseline (accent,
+  // welcome text, website template). DB-driven, applied live, no redeploy.
+  configOverride Json?
   // Book-Demo Phase 4: a per-lead demo account, auto-expiring. Converts to a real
   // account at Phase 5 (buy-now). Filtered out of admin/real views.
   isSandbox    Boolean  @default(false)

@@ -128,7 +128,9 @@ export function useDashboardConfig(industryKey?: string): DashboardConfig {
     async function load() {
       try {
         const [industryRes, modulesRes, addonsRes] = await Promise.all([
-          api.getIndustryConfig(key),
+          // 3C — prefer the caller-vendor's resolved config (industry skin + admin
+          // per-vendor override), falling back to the plain industry config.
+          api.getMyIndustryConfig().catch(() => api.getIndustryConfig(key)),
           api.getVendorModules(),
           api.getVendorAddons(),
         ]);
