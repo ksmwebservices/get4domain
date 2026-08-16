@@ -17,8 +17,11 @@ async function bootstrap(): Promise<void> {
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
   app.useStaticAssets(uploadsDir, { prefix: '/uploads/' });
 
+  // Reflect the request origin (any) so the embeddable widget (3B) works from arbitrary
+  // vendor domains. Safe: the API is Bearer-token authed (no cookie auth), so a random
+  // origin cannot access authed data — CORS is not the auth boundary here.
   app.enableCors({
-    origin: [process.env.FRONTEND_URL ?? 'https://get4domain.com', 'http://localhost:3006'],
+    origin: true,
     credentials: true,
   });
 

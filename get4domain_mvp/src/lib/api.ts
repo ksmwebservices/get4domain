@@ -326,6 +326,7 @@ export const api = {
   getIndustries: (summary = false) => apiCall(`/industries${summary ? '?summary=true' : ''}`),
   getIndustryConfig: (key: string) => apiCall(`/industries/${key}`),
   getMyIndustryConfig: () => apiCall('/industries/me'), // 3C — skin + per-vendor override merged
+  getWidgetKey: () => apiCall('/widget/my-key'), // 3B — embeddable widget key + snippet
   getVendorOverride: (id: string) => apiCall(`/industries/vendor/${id}/override`),
   setVendorOverride: (id: string, data: any) => apiCall(`/industries/vendor/${id}/override`, { method: 'PUT', body: JSON.stringify(data) }),
 

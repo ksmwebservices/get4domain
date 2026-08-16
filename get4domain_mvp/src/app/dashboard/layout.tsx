@@ -88,6 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title: 'Manage',
         items: [
           { label: 'Website Manager', href: '/dashboard/my-website', icon: 'Globe', moduleKey: 'website_manager' },
+          { label: 'Embed / Widget', href: '/dashboard/embed', icon: 'Code', moduleKey: 'website_manager' },
           { label: 'Domain', href: '/dashboard/domain-management', icon: 'Link' },
           { label: 'Customer Hub', href: '/dashboard/customer-hub', icon: 'UserCircle', moduleKey: 'customer_hub' },
           { label: 'Analytics Hub', href: '/dashboard/reports', icon: 'BarChart3', moduleKey: 'analytics_hub' },

@@ -17,6 +17,7 @@ model Vendor {
   phone        String?
   industry     String?  @default("general")
   subdomain    String?  @unique
+  widgetKey    String?  @unique  // 3B: public per-vendor embeddable-widget key
   customDomain String?
   role         Role     @default(VENDOR)
   status       VendorStatus @default(ACTIVE)
