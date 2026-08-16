@@ -1134,11 +1134,34 @@ TRACK A:
   Commit 5d6e0d6. PENDING: admin management UI + vendor browse/select UI (next increment).
 - [ ] 2.4 Native share (navigator.share on AI Studio results) — not started.
 - [ ] 2.5 Animated marketing mockups — not started.
-TRACK B (2A-2G): not started. TRACK C (3A-3E): not started.
-VM STEPS PENDING: `prisma db push` for the Phase-1 columns (VendorProduct.customFields,
-VendorCMS.banner) AND the new Track-A tables (g4d_ai_templates, g4d_website_themes) +
-VendorCMS.themeId — all additive/non-destructive. Deploy + the 2 blocked verifications
-(image-gen, AI-provider funded-credit for 3E) are on KSM's side.
+TRACK A — COMPLETE:
+- [x] 2.1 skins (867c8a7) · 2.2/2.3 backend (5d6e0d6) · 2.2/2.3 UI — admin Content Library
+  + AI Studio template picker + my-website theme picker (369a89f) · 2.4 native share
+  (navigator.share on AI Studio results) + 2.5 animated industry mockups (68f9c2f).
+TRACK B — 2A–2D done, 2E–2G pending:
+- [x] 2A vendor KPI cards on overview (real, vendorId-scoped) — 8398527.
+- [x] 2B auto-bot support (bot-first via /ai/chat; escalation → category='Escalation'
+  ticket for the admin queue; direct-ticket form kept) — 0165dd1.
+- [x] 2C accounting — g4d_expenses + accounting module (GST EXCLUSIVE, matches
+  invoices.service GST_RATE 0.18 + GenericInvoice); vendor Accounts page: P&L cards, GST
+  statement, expense CRUD + branded voucher print, online/offline split — 4e7867d.
+- [x] 2D office/stationery tracker — g4d_stationery + module + vendor page (qty +/-,
+  reorder-level low-stock flag) — ddd671c.
+- [ ] 2E tool-utilization analytics — NOT started. NOTE for builder: derive from existing
+  vendor-scoped tables where possible (WalletTransaction service~ai for AI gens, Message
+  for comms, CampaignPage/CampaignLead for campaigns/leads, CallLog for calls) — check
+  before adding any usage-events table. Vendor view feeds 2A KPIs; admin view = 2F's
+  cross-vendor utilization (build once).
+- [ ] 2F admin: escalation queue (filter SupportTicket category='Escalation' from 2B) +
+  cross-vendor utilization (2E admin half) + aggregate accounting ONLY (platform totals,
+  never a vendor's private expenses) — NOT started.
+- [ ] 2G marketing copy update (mini-BOS positioning) — LAST, after 2A–2F live. NOT started.
+TRACK C (3A-3E): not started.
+VM STEPS PENDING (all additive/non-destructive — new g4d_ tables + nullable columns):
+`prisma db push` for: Phase-1 (VendorProduct.customFields, VendorCMS.banner); Track-A
+(g4d_ai_templates, g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses,
+g4d_stationery). Deploy + the 2 blocked verifications (image-gen, AI-provider funded-credit
+for 3E) are on KSM's side. Decision 2 (Razorpay subscriptions) still SKIPPED (no plan_id).
 
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
