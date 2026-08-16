@@ -93,6 +93,19 @@ export const api = {
   updateVendorCMS: (vendorId: string, data: any) =>
     apiCall(`/cms/vendor/${vendorId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getSite: (subdomain: string) => apiCall(`/cms/site/${subdomain}`),
+
+  // AI template library (2.2)
+  aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
+  aiTemplatesAll: () => apiCall('/ai-templates/all'),
+  createAiTemplate: (data: any) => apiCall('/ai-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateAiTemplate: (id: string, data: any) => apiCall(`/ai-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAiTemplate: (id: string) => apiCall(`/ai-templates/${id}`, { method: 'DELETE' }),
+  // Website theme system (2.3)
+  websiteThemes: (q = '') => apiCall(`/website-themes${q}`),
+  websiteThemesAll: () => apiCall('/website-themes/all'),
+  createWebsiteTheme: (data: any) => apiCall('/website-themes', { method: 'POST', body: JSON.stringify(data) }),
+  updateWebsiteTheme: (id: string, data: any) => apiCall(`/website-themes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWebsiteTheme: (id: string) => apiCall(`/website-themes/${id}`, { method: 'DELETE' }),
   getVendorProducts: (vendorId: string) =>
     apiCall(`/cms/vendor/${vendorId}/products`),
   addProduct: (vendorId: string, data: any) =>

@@ -7,6 +7,7 @@ export class UpdateVendorCmsDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() about?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() logo?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() banner?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() themeId?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() favicon?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() seoTitle?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() seoDesc?: string;

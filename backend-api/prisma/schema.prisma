@@ -108,6 +108,7 @@ model VendorCMS {
   logo         String?
   banner       String?
   favicon      String?
+  themeId      String?  // selected WebsiteTheme (2.3); null = industry default
   seoTitle     String?
   seoDesc      String?
   seoKeywords  String?
@@ -597,4 +598,41 @@ enum TicketStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+}
+
+// ── Track A: AI template library (2.2) — admin-created prebuilt AI designs that
+// vendors browse and use as a starting point in AI Studio. Platform-level (not
+// vendor-scoped); optionally industry-scoped. ─────────────────────────────────
+model AiTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  contentType String   // social_post | festival_poster | blog | ad_creative | document | …
+  industry    String?  // null = all industries
+  prompt      String   // the base prompt/design brief the vendor starts from
+  thumbnail   String?  // preview image URL
+  active      Boolean  @default(true)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([contentType])
+  @@index([industry])
+  @@map("g4d_ai_templates")
+}
+
+// ── Track A: website theme system (2.3) — one base theme per industry with
+// CSS-variable-driven variations, so a theme swap is a variable swap not a fork.
+// Admin-created; a vendor selects one (VendorCMS.themeId). Platform-level. ─────
+model WebsiteTheme {
+  id          String   @id @default(cuid())
+  name        String
+  industry    String?  // null = works for any industry
+  cssVars     Json     // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
+  preview     String?  // preview image URL
+  isDefault   Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([industry])
+  @@map("g4d_website_themes")
 }
