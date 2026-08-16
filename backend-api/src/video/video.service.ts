@@ -3,7 +3,7 @@ import { PlatformSettingsService } from '../platform-settings/platform-settings.
 import { WalletService } from '../wallet/wallet.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 
-export type VideoProvider = 'runway' | 'heygen' | 'none';
+export type VideoProvider = 'runway' | 'heygen' | 'kling' | 'none';
 export type VideoStatus = 'processing' | 'done' | 'failed';
 
 const VIDEO_COST_FALLBACK_PAISE = 5000; // ₹50 default; admin Pricing Manager overrides
@@ -32,9 +32,14 @@ export class VideoService {
     private readonly wallet: WalletService,
   ) {}
 
+  /** Provider priority: whichever key is configured wins, in order. 3E adds Kling.
+   *  This is credit-agnostic — it selects a CONFIGURED provider; if that provider's
+   *  account isn't funded the call fails at runtime and surfaces the real error
+   *  (Stop-4: confirm funded credit before relying on any one provider). */
   async activeProvider(): Promise<VideoProvider> {
     if (await this.settings.getResolvedValue('video', 'runway_api_key')) return 'runway';
     if (await this.settings.getResolvedValue('video', 'heygen_api_key')) return 'heygen';
+    if (await this.settings.getResolvedValue('video', 'kling_api_key')) return 'kling';
     return 'none';
   }
 

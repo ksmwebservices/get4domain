@@ -44,7 +44,10 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     label: 'AI (Claude / OpenAI)',
     settings: [
       { key: 'anthropic_api_key', label: 'Claude / Anthropic API Key', envFallback: 'CLAUDE_API_KEY', secret: true },
-      { key: 'openai_api_key', label: 'OpenAI API Key', envFallback: 'OPENAI_API_KEY', secret: true },
+      { key: 'openai_api_key', label: 'OpenAI API Key (DALL-E fallback)', envFallback: 'OPENAI_API_KEY', secret: true },
+      // 3E — Stability AI is the intended primary image generator (cheaper), DALL-E the
+      // fallback. Real call wiring is Stop-4-gated (confirm funded credit first).
+      { key: 'stability_api_key', label: 'Stability AI API Key (primary images)', envFallback: 'STABILITY_API_KEY', secret: true },
     ],
   },
   {
@@ -114,10 +117,12 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
   },
   {
     key: 'video',
-    label: 'Video (Runway / HeyGen)',
+    label: 'Video (Runway / HeyGen / Kling)',
     settings: [
       { key: 'runway_api_key', label: 'Runway ML API Key', envFallback: 'RUNWAY_API_KEY', secret: true },
       { key: 'heygen_api_key', label: 'HeyGen API Key', envFallback: 'HEYGEN_API_KEY', secret: true },
+      // 3E — added to the provider chain (key-gated). Real Kling call wiring is Stop-4-gated.
+      { key: 'kling_api_key', label: 'Kling AI API Key', envFallback: 'KLING_API_KEY', secret: true },
     ],
   },
   {
