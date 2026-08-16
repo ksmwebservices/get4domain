@@ -21,10 +21,23 @@ export interface CustomField {
   options?: string[];
   required?: boolean;
 }
+export interface QuickAction {
+  key: string;
+  label: string;
+  icon: string;
+  href: string;
+}
+export interface IndustrySkin {
+  accentColor: string;
+  accentColorDark: string;
+  welcomeText: string;
+  quickActions: QuickAction[];
+}
 export interface IndustryConfig {
   key: string;
   label: string;
   icon: string;
+  skin?: IndustrySkin;
   entities: {
     contact: { label: string; labelPlural: string };
     catalogItem: { label: string; labelPlural: string };

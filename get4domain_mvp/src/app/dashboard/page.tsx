@@ -7,6 +7,8 @@ import {
   Loader2, ArrowRight, Clock,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { useDashboardConfig } from '@/lib/dashboard-config';
+import { getCategory } from '@/data/demo-site';
 import { api } from '@/lib/api';
 
 interface CrmLead { id: string; name: string; phone: string; source: string | null; status: string; createdAt: string; followUpDate: string | null }
@@ -27,6 +29,9 @@ const timeAgo = (iso: string): string => {
 
 export default function DashboardHome() {
   const { user } = useAuth();
+  const cfg = useDashboardConfig(user?.industry);
+  const skin = cfg.industry?.skin;
+  const cover = getCategory(user?.industry ?? '')?.coverImage;
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [followups, setFollowups] = useState<CrmLead[]>([]);
   const [invoices, setInvoices] = useState<GenericInvoice[]>([]);
@@ -100,6 +105,29 @@ export default function DashboardHome() {
             <span className="flex-shrink-0 rounded-xl bg-white px-4 py-2 text-sm font-bold text-primary-700">Go live →</span>
           </div>
         </Link>
+      )}
+
+      {/* Industry skin banner (2.1) — accent + cover + welcome + quick actions, driven by industry config */}
+      {skin && cfg.industry && !isSandbox && (
+        <div className="relative overflow-hidden rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${skin.accentColor}, ${skin.accentColorDark})` }}>
+          {cover && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+          )}
+          <div className="relative">
+            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold backdrop-blur">{cfg.industry.label}</span>
+            <p className="mt-2 max-w-xl text-sm font-medium text-white/95">{skin.welcomeText}</p>
+            {skin.quickActions.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {skin.quickActions.map((qa) => (
+                  <Link key={qa.key} href={qa.href} className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition-colors hover:bg-white/25">
+                    {qa.label} <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Top */}

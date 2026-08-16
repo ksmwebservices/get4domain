@@ -1,4 +1,4 @@
-import { IndustryConfig } from './types';
+import { IndustryConfig, IndustrySkin, QuickAction } from './types';
 import { generalConfig } from './general';
 import { travelConfig } from './travel';
 import { restaurantConfig } from './restaurant';
@@ -69,6 +69,39 @@ export function resolveIndustryKey(key?: string | null): string | null {
 export function getIndustryConfig(key?: string | null): IndustryConfig {
   const resolved = resolveIndustryKey(key);
   return resolved ? INDUSTRY_CONFIGS[resolved] : INDUSTRY_CONFIGS.general;
+}
+
+// ── Industry skin layer (2.1) ────────────────────────────────────────────────
+// Per-industry accent [primary, dark] — drives the dashboard banner + accents.
+const SKIN_ACCENTS: Record<string, [string, string]> = {
+  travel: ['#0284c7', '#0369a1'], restaurant: ['#ea580c', '#c2410c'], clinic: ['#e11d48', '#be123c'],
+  hotel: ['#7c3aed', '#6d28d9'], salon: ['#db2777', '#be185d'], gym: ['#16a34a', '#15803d'],
+  realestate: ['#059669', '#047857'], education: ['#4f46e5', '#4338ca'], retail: ['#d97706', '#b45309'],
+  construction: ['#78716c', '#57534e'], events: ['#c026d3', '#a21caf'], finance: ['#0891b2', '#0e7490'],
+  automobile: ['#dc2626', '#b91c1c'], logistics: ['#2563eb', '#1d4ed8'], diagnostics: ['#0d9488', '#0f766e'],
+  photography: ['#9333ea', '#7e22ce'], professional: ['#475569', '#334155'], agriculture: ['#65a30d', '#4d7c0f'],
+  coaching: ['#ca8a04', '#a16207'], technology: ['#4338ca', '#3730a3'], general: ['#2563eb', '#1d4ed8'],
+};
+
+/** Derive a skin from a config — accent, greeting, and quick actions from the
+ *  industry's own labels/tabs. Explicit `config.skin` (if ever authored) wins. */
+export function deriveSkin(cfg: IndustryConfig): IndustrySkin {
+  const [accentColor, accentColorDark] = SKIN_ACCENTS[cfg.key] ?? SKIN_ACCENTS.general;
+  const quickActions: QuickAction[] = cfg.dashboardTabs.slice(0, 3).map((t) => ({
+    key: t.key, label: t.label, icon: t.icon, href: `/dashboard/domain-app/${t.key}`,
+  }));
+  return {
+    accentColor,
+    accentColorDark,
+    welcomeText: `Your ${cfg.label} workspace — manage ${cfg.entities.record.labelPlural.toLowerCase()}, ${cfg.entities.contact.labelPlural.toLowerCase()} and ${cfg.entities.catalogItem.labelPlural.toLowerCase()} in one place.`,
+    quickActions,
+  };
+}
+
+/** Config for `key` with its skin attached (used by the industries API). */
+export function getIndustryConfigWithSkin(key?: string | null): IndustryConfig {
+  const cfg = getIndustryConfig(key);
+  return { ...cfg, skin: cfg.skin ?? deriveSkin(cfg) };
 }
 
 /** Lightweight list of all industries for dropdowns (key + label + icon). */

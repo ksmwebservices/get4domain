@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   INDUSTRY_CONFIGS,
   IndustryConfig,
-  getIndustryConfig,
+  getIndustryConfigWithSkin,
+  resolveIndustryKey,
   listIndustries,
 } from '../config/industries';
 
@@ -24,9 +25,11 @@ export class IndustriesService {
    * explicit lookup of a non-existent, non-general key returns 404.
    */
   findOne(key: string): IndustryConfig {
-    if (!INDUSTRY_CONFIGS[key]) {
+    // Accept canonical keys AND legacy aliases (healthcare→clinic, …); only a
+    // genuinely unknown key 404s. Returns the config with its skin attached.
+    if (!resolveIndustryKey(key)) {
       throw new NotFoundException(`Unknown industry: ${key}`);
     }
-    return getIndustryConfig(key);
+    return getIndustryConfigWithSkin(key);
   }
 }

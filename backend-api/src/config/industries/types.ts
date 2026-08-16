@@ -18,6 +18,20 @@ export interface DashboardTab {
   icon: string;
 }
 
+/** Per-industry visual skin layered on the shared dashboard components (2.1). */
+export interface QuickAction {
+  key: string;
+  label: string;
+  icon: string;
+  href: string;
+}
+export interface IndustrySkin {
+  accentColor: string;      // hex — primary accent for this industry
+  accentColorDark: string;  // hex — gradient end / hover
+  welcomeText: string;      // industry-appropriate dashboard greeting
+  quickActions: QuickAction[];
+}
+
 export interface IndustryConfig {
   key: string;
   label: string;
@@ -34,6 +48,7 @@ export interface IndustryConfig {
   availableAddons: string[];
   websiteTemplate: string;
   dashboardTabs: DashboardTab[];
+  skin?: IndustrySkin;
 }
 
 // Shared, GST-compliant default status set. Industries override where a more
