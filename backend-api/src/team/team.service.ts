@@ -26,6 +26,7 @@ export class TeamService {
         email: dto.email,
         phone: dto.phone,
         role: dto.role,
+        department: dto.department,
         modules: dto.modules,
         status: 'invited',
         inviteToken,

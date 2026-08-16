@@ -242,7 +242,7 @@ export const api = {
   getTelecrmFollowups: () => apiCall('/crm/telecrm/followups'),
 
   // Team
-  inviteTeamMember: (data: { name: string; email?: string; phone?: string; role: string; modules: string[] }) =>
+  inviteTeamMember: (data: { name: string; email?: string; phone?: string; role: string; department?: string; modules: string[] }) =>
     apiCall('/team/invite', { method: 'POST', body: JSON.stringify(data) }),
   getTeamMembers: () => apiCall('/team/members'),
   updateTeamMember: (id: string, data: { role?: string; modules?: string[] }) =>

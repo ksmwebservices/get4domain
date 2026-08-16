@@ -312,6 +312,7 @@ model TeamMember {
   email       String?
   phone       String?
   role        String
+  department  String?   // 3D: Sales | Support | Accounts | Marketing — prefills module access
   modules     Json
   status      String    @default("active")
   inviteToken String?

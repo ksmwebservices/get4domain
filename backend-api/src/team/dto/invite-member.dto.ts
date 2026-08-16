@@ -20,6 +20,11 @@ export class InviteMemberDto {
   @IsString()
   role!: string;
 
+  @ApiProperty({ required: false, enum: ['Sales', 'Support', 'Accounts', 'Marketing'], description: '3D: department scope (prefills access)' })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
   @ApiProperty({ type: [String], example: ['crm', 'campaigns'] })
   @IsArray()
   modules!: string[];
