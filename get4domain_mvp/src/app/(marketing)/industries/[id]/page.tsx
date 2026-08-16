@@ -76,8 +76,23 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
             <h2 className="text-2xl font-bold text-slate-900">What Your Website Will Look Like</h2>
             <p className="mt-2 text-slate-500 text-sm">Sample content — your actual business details will be used</p>
           </div>
-          <div className="mx-auto max-w-2xl">
-            <div className="rounded-2xl border-2 border-primary-200 bg-white overflow-hidden shadow-premium">
+          <div className="relative mx-auto max-w-2xl">
+            {/* Floating phone mockup (2.5) — animated, desktop only */}
+            <div className="animate-g4d-float-slow absolute -bottom-6 -right-4 z-10 hidden w-32 rounded-[1.75rem] border-4 border-slate-800 bg-slate-800 shadow-2xl lg:block">
+              <div className="overflow-hidden rounded-[1.4rem] bg-white">
+                <div className="relative h-28">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={content.coverImage} alt="" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-primary-600 px-2 py-0.5 text-[9px] font-bold text-white">Book Now</span>
+                </div>
+                <div className="space-y-1 p-2">
+                  <div className="h-1.5 w-3/4 rounded bg-slate-200" />
+                  <div className="h-1.5 w-1/2 rounded bg-slate-100" />
+                </div>
+              </div>
+            </div>
+            <div className="animate-g4d-float rounded-2xl border-2 border-primary-200 bg-white overflow-hidden shadow-premium">
               <div className="bg-slate-100 px-4 py-2.5 flex items-center gap-2 border-b border-slate-200">
                 <div className="flex gap-1.5">
                   <div className="h-3 w-3 rounded-full bg-red-400" />

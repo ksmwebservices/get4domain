@@ -92,3 +92,11 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Track A 2.5 — animated marketing mockups (respects reduced-motion) */
+@keyframes g4dFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.animate-g4d-float { animation: g4dFloat 5s ease-in-out infinite; }
+.animate-g4d-float-slow { animation: g4dFloat 7s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-g4d-float, .animate-g4d-float-slow { animation: none; }
+}

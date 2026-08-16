@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Sparkles, MessageSquare, Video, FileText, Image as ImageIcon,
-  Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library, Wallet,
+  Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library, Wallet, Share2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -311,6 +311,28 @@ export default function AiStudioPage() {
     a.href = url; a.download = `${name}.txt`; a.click();
   };
 
+  // Native share (2.4) — vendor taps Share and the OS share sheet opens the native
+  // FB/IG/WhatsApp/etc. app pre-loaded (no Meta API needed). Falls back to copy.
+  const shareResult = async () => {
+    const nav = navigator as Navigator & { canShare?: (d?: unknown) => boolean };
+    try {
+      if (resultImg && typeof nav.share === 'function' && typeof nav.canShare === 'function') {
+        try {
+          const resp = await fetch(resultImg);
+          const blob = await resp.blob();
+          const file = new File([blob], 'get4domain.png', { type: blob.type || 'image/png' });
+          if (nav.canShare({ files: [file] })) { await nav.share({ files: [file], text: result }); return; }
+        } catch { /* image share unavailable — fall through to text */ }
+      }
+      if (typeof nav.share === 'function') {
+        await nav.share({ title: 'Get4Domain', text: result });
+      } else {
+        await navigator.clipboard.writeText(result);
+        setGenError('Copied to clipboard — sharing isn’t supported on this browser.');
+      }
+    } catch { /* user cancelled or share failed — no-op */ }
+  };
+
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -475,6 +497,7 @@ export default function AiStudioPage() {
                 <>
                   <Button variant="outline" leftIcon={<RefreshCw className="h-4 w-4" />} loading={generating} onClick={generate}>Regenerate</Button>
                   <Button variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(result, active.label)}>Download</Button>
+                  <Button variant="outline" leftIcon={<Share2 className="h-4 w-4" />} onClick={shareResult}>Share</Button>
                   <Button leftIcon={<Save className="h-4 w-4" />} onClick={saveToLibrary}>Save to Library</Button>
                 </>
               ) : (
