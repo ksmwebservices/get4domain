@@ -1147,21 +1147,32 @@ TRACK B — 2A–2D done, 2E–2G pending:
   statement, expense CRUD + branded voucher print, online/offline split — 4e7867d.
 - [x] 2D office/stationery tracker — g4d_stationery + module + vendor page (qty +/-,
   reorder-level low-stock flag) — ddd671c.
-- [ ] 2E tool-utilization analytics — NOT started. NOTE for builder: derive from existing
-  vendor-scoped tables where possible (WalletTransaction service~ai for AI gens, Message
-  for comms, CampaignPage/CampaignLead for campaigns/leads, CallLog for calls) — check
-  before adding any usage-events table. Vendor view feeds 2A KPIs; admin view = 2F's
-  cross-vendor utilization (build once).
-- [ ] 2F admin: escalation queue (filter SupportTicket category='Escalation' from 2B) +
-  cross-vendor utilization (2E admin half) + aggregate accounting ONLY (platform totals,
-  never a vendor's private expenses) — NOT started.
-- [ ] 2G marketing copy update (mini-BOS positioning) — LAST, after 2A–2F live. NOT started.
-TRACK C (3A-3E): not started.
-VM STEPS PENDING (all additive/non-destructive — new g4d_ tables + nullable columns):
-`prisma db push` for: Phase-1 (VendorProduct.customFields, VendorCMS.banner); Track-A
-(g4d_ai_templates, g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses,
-g4d_stationery). Deploy + the 2 blocked verifications (image-gen, AI-provider funded-credit
-for 3E) are on KSM's side. Decision 2 (Razorpay subscriptions) still SKIPPED (no plan_id).
+- [x] 2E tool-utilization analytics — DERIVED from existing tables (no usage-events table;
+  wiring verified: AI=WalletTransaction service~'ai_', comms=Message out, campaigns=
+  CampaignPage, leads=CampaignLead, calls=CallLog, listings=VendorProduct). /analytics/usage
+  (vendor) + /analytics/usage/all (admin). Vendor: Analytics Hub 'usage this month'. c63ad15.
+- [x] 2F admin — escalation queue (admin Support All/Escalations filter on category=
+  'Escalation'), cross-vendor utilization (/admin/utilization uses usage/all), aggregate
+  accounting (/analytics/platform-accounting — totals only, NO vendor private expenses). 97c6dac.
+- [x] 2G marketing copy — mini-BOS positioning (accounts/GST, stationery, AI support) +
+  existing-website FAQ; truthful, only shipped features. 74d213f. TRACK B COMPLETE.
+TRACK C — 3D done; 3A/3B/3C/3E pending:
+- [x] 3D department-based team invites — additive TeamMember.department + invite Department
+  picker (Sales/Support/Accounts/Marketing) prefilling default module access. 3e4176b.
+- [ ] 3A real customer portal (make the mock OTP portal real, vendor-tenant-scoped) — pending.
+- [ ] 3B embeddable widget + API (per-vendor public key; leads → same TeleCRM pipeline;
+  reuses 2B bot) — pending. (2B is live, so unblocked.)
+- [ ] 3C admin per-vendor template/field override — builds on the 2.3 theme system (live);
+  DB-driven, no redeploy — pending.
+- [ ] 3E Stability AI (primary image) + multi video-provider config (priority/fallback) —
+  BUILD CONFIG WITHOUT ASSUMING FUNDED CREDIT (Stop 4). Provider funded-credit check is
+  harness-blocked here → KSM confirms which providers have credit. Pending.
+VM STEPS PENDING (all additive/non-destructive): `prisma db push` for: Phase-1
+(VendorProduct.customFields, VendorCMS.banner); Track-A (g4d_ai_templates,
+g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses, g4d_stationery); Track-C
+(TeamMember.department). Deploy + the 2 blocked verifications (image-gen, AI-provider
+funded-credit for 3E) are on KSM's side. Decision 2 (Razorpay subscriptions) still SKIPPED
+(no plan_id).
 
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
