@@ -4,6 +4,19 @@
 
 Legend: [ ] not started · [~] in progress · [x] done · [!] blocked
 
+═══════════════════════════════════════════════════════════════════════════════
+## AUG 2026 CONTINUOUS RUN — COMPLETE (bar 2 parked items). Deploy: docs/VM_DEPLOY_RUNBOOK.md
+Done end-to-end: Phase 1 + 1B/Decision 1 · Vendor CMS editor · Track A (2.1-2.5) ·
+Track B (2A-2G) · Track C 3A/3B/3C/3D. Every unit built + committed with 0-error builds;
+full-tree rebuild + prisma validate re-verified at run end (both apps clean, 345 FE pages).
+PARKED until KSM answers directly (do NOT build):
+  • 3E real AI-provider wiring — needs the funded-provider list (Stop 4). Scaffolding shipped.
+  • Decision 2 Razorpay subscriptions — needs a plan_id + mandate. Checkout stays one-time ₹999.
+NEXT ACTION FOR KSM: run docs/VM_DEPLOY_RUNBOOK.md (one clean deploy — all schema additive),
+then the 2 blocked verifications (real image-gen; funded-provider confirmation).
+Latest commit at run end: 2de3729 (+ this docs commit).
+═══════════════════════════════════════════════════════════════════════════════
+
 ---
 
 ## DISPATCH — GET4DOMAIN_DISPATCH_10AUG2026 (6 items, in progress)
