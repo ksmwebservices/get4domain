@@ -24,22 +24,26 @@ export default function AnalyticsHubPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [txns, setTxns] = useState<WalletTxn[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [usage, setUsage] = useState<{ leads: number; calls: number; aiGenerations: number; messages: number; campaigns: number; listings: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
     Promise.all([
       api.getCrmLeads().catch(() => ({ data: [] })),
       api.getCampaigns().catch(() => ({ data: [] })),
       api.daGetInvoices('?limit=100').catch(() => ({ data: { items: [] } })),
       api.getWalletTransactions(1, 100).catch(() => ({ data: { items: [] } })),
       api.daGetSummary().catch(() => ({ data: null })),
+      api.getUsage(`?from=${monthStart}`).catch(() => ({ data: null })),
     ])
-      .then(([l, c, inv, w, s]) => {
+      .then(([l, c, inv, w, s, u]) => {
         setLeads(l.data ?? []);
         setCampaigns(c.data ?? []);
         setInvoices(inv.data?.items ?? []);
         setTxns(w.data?.items ?? []);
         setSummary(s.data ?? null);
+        setUsage(u.data ?? null);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -85,6 +89,25 @@ export default function AnalyticsHubPage() {
         <StatCard label="Conversion" value={`${conversion}%`} icon={<TrendingUp className="h-5 w-5" />} tone="warning" />
         <StatCard label="Wallet Spent" value={`₹${walletSpent.toLocaleString('en-IN')}`} icon={<Wallet className="h-5 w-5" />} tone="neutral" />
       </div>
+
+      {/* 2E — tool usage this month (feeds the overview KPIs) */}
+      {usage && (
+        <Card>
+          <h3 className="mb-4 text-base font-bold text-slate-900">Your tool usage this month</h3>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {[
+              { label: 'Leads', value: usage.leads }, { label: 'Calls', value: usage.calls },
+              { label: 'AI generations', value: usage.aiGenerations }, { label: 'Messages', value: usage.messages },
+              { label: 'Campaigns', value: usage.campaigns }, { label: 'Listings', value: usage.listings },
+            ].map((m) => (
+              <div key={m.label} className="rounded-xl bg-slate-50 p-3 text-center">
+                <div className="text-xl font-bold text-slate-900">{m.value}</div>
+                <div className="mt-0.5 text-[11px] font-medium text-slate-500">{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <h3 className="mb-4 text-base font-bold text-slate-900">Revenue (last 6 months)</h3>

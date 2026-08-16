@@ -94,6 +94,10 @@ export const api = {
     apiCall(`/cms/vendor/${vendorId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getSite: (subdomain: string) => apiCall(`/cms/site/${subdomain}`),
 
+  // Tool utilization analytics (2E / 2F)
+  getUsage: (q = '') => apiCall(`/analytics/usage${q}`),
+  getAllUsage: (q = '') => apiCall(`/analytics/usage/all${q}`),
+
   // Stationery (2D)
   getStationery: () => apiCall('/stationery'),
   createStationery: (data: any) => apiCall('/stationery', { method: 'POST', body: JSON.stringify(data) }),
