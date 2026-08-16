@@ -22,4 +22,11 @@ export class AnalyticsController {
   allUsage(@Query('from') from?: string, @Query('to') to?: string): Promise<VendorUsageRow[]> {
     return this.service.allUsage(from, to);
   }
+
+  @UseGuards(AdminGuard)
+  @Get('platform-accounting')
+  @ApiOperation({ summary: 'Platform accounting AGGREGATE (admin) — totals only, no vendor expenses' })
+  platformAccounting() {
+    return this.service.platformAccounting();
+  }
 }

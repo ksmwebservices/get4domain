@@ -39,6 +39,7 @@ const navItems: AdminNavItem[] = [
   { icon: FileText,          label: 'Invoices',      href: '/admin/invoices',     roles: SUPER_OPS },
   { icon: RefreshCw,         label: 'Renewals',      href: '/admin/renewals',     roles: SUPER_OPS },
   { icon: BarChart3,         label: 'Accounting',    href: '/admin/accounting',   roles: SUPER },
+  { icon: BarChart3,         label: 'Utilization',   href: '/admin/utilization',  roles: SUPER },
   { icon: Megaphone,         label: 'Campaigns',     href: '/admin/campaigns',    roles: SUPER },
   { icon: MessageSquare,     label: 'Support',       href: '/admin/support',      roles: SUPER_OPS },
   { icon: Globe,             label: 'Website CMS',   href: '/admin/cms',          roles: SUPER_OPS },

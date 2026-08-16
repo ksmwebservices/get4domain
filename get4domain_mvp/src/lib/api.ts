@@ -97,6 +97,7 @@ export const api = {
   // Tool utilization analytics (2E / 2F)
   getUsage: (q = '') => apiCall(`/analytics/usage${q}`),
   getAllUsage: (q = '') => apiCall(`/analytics/usage/all${q}`),
+  getPlatformAccounting: () => apiCall('/analytics/platform-accounting'),
 
   // Stationery (2D)
   getStationery: () => apiCall('/stationery'),

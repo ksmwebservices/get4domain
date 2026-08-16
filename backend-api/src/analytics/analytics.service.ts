@@ -54,6 +54,32 @@ export class AnalyticsService {
       g.reduce<Record<string, number>>((acc, row) => { acc[row.vendorId] = row._count._all; return acc; }, {});
     const leads = toMap(leadsG), calls = toMap(callsG), ai = toMap(aiG), msg = toMap(msgG), camp = toMap(campG), list = toMap(listG);
 
+    return this.mergeUsage(vendors, { leads, calls, ai, msg, camp, list });
+  }
+
+  /** Platform-wide accounting AGGREGATE for admin (2F): totals only — invoices
+   *  issued + GST collected + gross revenue across all vendors. Deliberately does
+   *  NOT expose any individual vendor's private expenses/bookkeeping. */
+  async platformAccounting(): Promise<{ invoicesIssued: number; gstCollected: number; revenueGross: number; paidCount: number }> {
+    const invoices = await this.prisma.genericInvoice.findMany({
+      where: { vendor: { isSandbox: false } },
+      select: { gstAmount: true, total: true, paidAt: true },
+    });
+    const paid = invoices.filter((i) => i.paidAt);
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    return {
+      invoicesIssued: invoices.length,
+      paidCount: paid.length,
+      gstCollected: round2(paid.reduce((s, i) => s + i.gstAmount, 0)),
+      revenueGross: round2(paid.reduce((s, i) => s + i.total, 0)),
+    };
+  }
+
+  private mergeUsage(
+    vendors: { id: string; businessName: string; industry: string | null }[],
+    m: { leads: Record<string, number>; calls: Record<string, number>; ai: Record<string, number>; msg: Record<string, number>; camp: Record<string, number>; list: Record<string, number> },
+  ): VendorUsageRow[] {
+    const { leads, calls, ai, msg, camp, list } = m;
     return vendors.map((v) => {
       const counts: UsageCounts = {
         leads: leads[v.id] ?? 0, calls: calls[v.id] ?? 0, aiGenerations: ai[v.id] ?? 0,

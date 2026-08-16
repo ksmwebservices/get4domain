@@ -22,6 +22,7 @@ const formatDate = (date: string): string =>
 export default function AdminSupportPage() {
   const [mounted, setMounted] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [filter, setFilter] = useState<'all' | 'escalation'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [replies, setReplies] = useState<Record<string, string>>({});
@@ -75,6 +76,8 @@ export default function AdminSupportPage() {
   }
 
   const openTickets = tickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS');
+  const escalationCount = tickets.filter((t) => t.category === 'Escalation').length;
+  const visibleTickets = filter === 'escalation' ? tickets.filter((t) => t.category === 'Escalation') : tickets;
   const statusConfig: Record<Ticket['status'], { label: string; color: string }> = {
     OPEN: { label: 'Open', color: 'bg-warning-500/20 text-warning-400 border-warning-500/30' },
     IN_PROGRESS: { label: 'Replied', color: 'bg-primary-500/20 text-primary-400 border-primary-500/30' },
@@ -84,9 +87,18 @@ export default function AdminSupportPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-white">Support Tickets</h2>
-        <p className="mt-1 text-sm text-slate-400">{openTickets.length} open ticket{openTickets.length !== 1 ? 's' : ''}.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">Support Tickets</h2>
+          <p className="mt-1 text-sm text-slate-400">{openTickets.length} open · {escalationCount} escalation{escalationCount !== 1 ? 's' : ''} (auto-bot didn&apos;t resolve — call back).</p>
+        </div>
+        <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
+          {(['all', 'escalation'] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize ${filter === f ? 'bg-primary-600 text-white' : 'text-slate-400'}`}>
+              {f === 'escalation' ? `Escalations (${escalationCount})` : 'All'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && <div className="rounded-xl border border-error-800 bg-error-950/50 px-4 py-3 text-sm text-error-400">{error}</div>}
@@ -101,7 +113,7 @@ export default function AdminSupportPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {tickets.map((ticket) => {
+          {visibleTickets.map((ticket) => {
             const cfg = statusConfig[ticket.status];
             const isOpen = ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS';
             return (
