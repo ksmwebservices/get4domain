@@ -16,7 +16,7 @@ const INCLUDED = [
   },
   {
     group: 'BUSINESS WORKSPACE (Mini BOS)',
-    items: ['Contacts management (industry-labeled)', 'Products/Services catalog', 'Bookings/Orders/Appointments', 'GST invoicing', 'Basic accounts (income/expense/P&L)'],
+    items: ['Contacts management (industry-labeled)', 'Products/Services catalog', 'Bookings/Orders/Appointments', 'GST invoicing', 'Accounts — expenses, P&L & GST statement', 'Office/stationery tracker'],
   },
   {
     group: 'CRM & CALLING',
@@ -32,7 +32,7 @@ const INCLUDED = [
   },
   {
     group: 'TEAM & SUPPORT',
-    items: ['Team access with roles', '24/7 AI support + human within 24hrs'],
+    items: ['Team access with roles', 'Instant AI support assistant (human callback if needed)'],
   },
 ];
 
