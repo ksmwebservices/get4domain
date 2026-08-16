@@ -47,6 +47,7 @@ model Vendor {
   modules          VendorModule[]
   messages         Message[]
   expenses         Expense[]
+  stationery       StationeryItem[]
 }
 
 model Subscription {
@@ -658,4 +659,19 @@ model Expense {
   updatedAt     DateTime @updatedAt
   @@index([vendorId])
   @@map("g4d_expenses")
+}
+
+// ── Track B 2D: office/stationery tracker (simple list, not procurement). ──────
+model StationeryItem {
+  id               String   @id @default(cuid())
+  vendorId         String
+  vendor           Vendor   @relation(fields: [vendorId], references: [id])
+  name             String
+  unit             String?  // e.g. box, ream, pcs
+  quantity         Float    @default(0)
+  reorderThreshold Float?   // low-stock marker (optional)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  @@index([vendorId])
+  @@map("g4d_stationery")
 }

@@ -25,6 +25,7 @@ import { IndustriesModule } from './industries/industries.module';
 import { AiTemplatesModule } from './ai-templates/ai-templates.module';
 import { WebsiteThemesModule } from './website-themes/website-themes.module';
 import { AccountingModule } from './accounting/accounting.module';
+import { StationeryModule } from './stationery/stationery.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
@@ -71,6 +72,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     AiTemplatesModule,
     WebsiteThemesModule,
     AccountingModule,
+    StationeryModule,
     DomainAppModule,
     AddonsModule,
     PlatformSettingsModule,

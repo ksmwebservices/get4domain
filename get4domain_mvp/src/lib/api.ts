@@ -94,6 +94,12 @@ export const api = {
     apiCall(`/cms/vendor/${vendorId}`, { method: 'PUT', body: JSON.stringify(data) }),
   getSite: (subdomain: string) => apiCall(`/cms/site/${subdomain}`),
 
+  // Stationery (2D)
+  getStationery: () => apiCall('/stationery'),
+  createStationery: (data: any) => apiCall('/stationery', { method: 'POST', body: JSON.stringify(data) }),
+  updateStationery: (id: string, data: any) => apiCall(`/stationery/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteStationery: (id: string) => apiCall(`/stationery/${id}`, { method: 'DELETE' }),
+
   // Accounting (2C) — expenses, P&L, GST statement (vendorId-scoped server-side)
   getExpenses: (q = '') => apiCall(`/accounting/expenses${q}`),
   createExpense: (data: any) => apiCall('/accounting/expenses', { method: 'POST', body: JSON.stringify(data) }),
