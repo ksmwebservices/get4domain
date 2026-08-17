@@ -1193,6 +1193,19 @@ g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses, g4d_stationery); 
 funded-credit for 3E) are on KSM's side. Decision 2 (Razorpay subscriptions) still SKIPPED
 (no plan_id).
 
+### DISPATCH — GET4DOMAIN_DISPATCH_TELECRM_REDESIGN_17AUG2026 (in progress)
+Reverses the earlier "TeleCRM Kanban-only" decision: list/dialer as the DEFAULT, Kanban
+demoted to a secondary "Pipeline" tab (kept, not removed).
+- [x] A — vendor home business-module cards (TeleCRM/Growth Hub/AI Studio/Accounts/Comms/
+  Website, one real stat + Open, reuses 2A + /analytics/usage). d015030.
+- [x] B backend — CampaignLead.customFields (additive); POST /crm/leads/import (call-list
+  import, CRM-only, NOT messaging consent); GET /crm/telecrm/recent-calls; api methods. 7c4edd7.
+- [ ] B frontend — TeleCrmBoard redesign: list default (search + Today's Tasks + Recent
+  Calls + Contact list), add/CSV-import modal (consent-labeled "for your call list"),
+  professional empty states everywhere, Pipeline (Kanban) as a secondary tab, industry-aware
+  contact fields from the industry config (recordCustomFields; travel/clinic first). IN PROGRESS.
+VM: db push adds CampaignLead.customFields (additive).
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
