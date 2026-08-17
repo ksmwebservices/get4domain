@@ -1254,6 +1254,19 @@ both greenfield: g4d_ai_templates had no source/canvaTemplateId; no cmsSchema; n
   4 prereqs (Enterprise account, private integration, ≥1 Brand Template published, creds in Admin →
   Integrations). Not built — UI scaffolding only. Template-Driven CMS cmsSchema also not built
   (used fixed field lists now, structured to adopt it later).
+- [x] KSM feedback correction (5399d1b): reduced to TWO creation modes — "AI Generate" +
+  "AI Template" (Business Documents folded into AI Template as entries, not a 3rd mode). Removed
+  ALL user-facing "Canva" wording (provider-agnostic copy); internal source='canva'/canvaTemplateId
+  unchanged. Admin Content Library filters now All/AI Prompt/AI Template; business docs folded in.
+- [x] Showcases (0137333): both modes are showcase/browse entry points showing pricing up front.
+  New GET /ai/costs resolves per-use content pricing from the SAME rate table + key map the
+  deduction uses (one source of truth) — frontend no longer hardcodes a 2nd price copy. AI Template
+  = category grid (Business Card/Letterhead/ID Card/Poster/Flyer/Brochure/Social Graphic) w/ pricing
+  → gallery (synced-by-category + staged placeholders; swap-in = data change). Business docs Free.
+- [!] QUALITY GAP (flag for KSM): the coded business-document PDFs are functional but NOT yet
+  visually polished. Real fix needs better-designed coded templates OR the design-provider
+  integration once connected — not a relabel.
+- [x] Both apps build 0 errors throughout.
 VM: db push adds AiTemplate.source/canvaTemplateId/fields (additive) — in VM_DEPLOY_RUNBOOK.
 
 ## BLOCKERS LOG (append here whenever [!] is used above)
