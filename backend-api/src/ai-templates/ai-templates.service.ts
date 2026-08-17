@@ -26,19 +26,27 @@ export class AiTemplatesService {
     return this.prisma.aiTemplate.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
+  private jsonFields(dto: { fields?: unknown[]; editorJson?: Record<string, unknown>; videoConfig?: Record<string, unknown> }) {
+    return {
+      ...(dto.fields !== undefined ? { fields: dto.fields as Prisma.InputJsonValue } : {}),
+      ...(dto.editorJson !== undefined ? { editorJson: dto.editorJson as Prisma.InputJsonValue } : {}),
+      ...(dto.videoConfig !== undefined ? { videoConfig: dto.videoConfig as Prisma.InputJsonValue } : {}),
+    };
+  }
+
   create(dto: CreateAiTemplateDto, createdBy?: string): Promise<AiTemplate> {
-    const { fields, ...rest } = dto;
+    const { fields, editorJson, videoConfig, ...rest } = dto;
     return this.prisma.aiTemplate.create({
-      data: { ...rest, createdBy, ...(fields !== undefined ? { fields: fields as Prisma.InputJsonValue } : {}) },
+      data: { ...rest, createdBy, ...this.jsonFields({ fields, editorJson, videoConfig }) },
     });
   }
 
   async update(id: string, dto: UpdateAiTemplateDto): Promise<AiTemplate> {
     if (!(await this.prisma.aiTemplate.findUnique({ where: { id } }))) throw new NotFoundException('Template not found');
-    const { fields, ...rest } = dto;
+    const { fields, editorJson, videoConfig, ...rest } = dto;
     return this.prisma.aiTemplate.update({
       where: { id },
-      data: { ...rest, ...(fields !== undefined ? { fields: fields as Prisma.InputJsonValue } : {}) },
+      data: { ...rest, ...this.jsonFields({ fields, editorJson, videoConfig }) },
     });
   }
 

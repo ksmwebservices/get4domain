@@ -618,12 +618,14 @@ model AiTemplate {
   industry    String?  // null = all industries
   prompt      String   // the base prompt/design brief the vendor starts from
   thumbnail   String?  // preview image URL
-  // AI Studio Redesign (17 Aug): one library, three template kinds. `source`
+  // AI Studio Redesign (17 Aug): one library, several template kinds. `source`
   // discriminates the row so the Content Library + AI Studio picker can show/
   // filter all types in one list. 'prompt' = the existing AI-generation flow;
-  // 'canva' = a synced Canva Brand Template (Canva Integration dispatch, gated on
-  // KSM's Enterprise prereqs); 'document' = a coded business-document layout.
-  source      String   @default("prompt") // prompt | canva | document
+  // 'canva' = a synced Canva Brand Template (Canva Integration dispatch, parked);
+  // 'document' = a coded business-document layout; 'polotno' = an in-app editable
+  // design template (Polotno scene in editorJson); 'reel' = a Remotion reel
+  // template (slot/text/music config in videoConfig).
+  source      String   @default("prompt") // prompt | canva | document | polotno | reel
   // Canva Integration: the Canva brand_template_id this row mirrors (source=canva).
   canvaTemplateId String?
   // Data-fill field definitions (cmsSchema-style) for canva/document templates —
@@ -631,6 +633,13 @@ model AiTemplate {
   // AI Studio data-collection form render only what THIS template needs. Adopts the
   // Template-Driven CMS `cmsSchema` shape later without a rewrite.
   fields      Json?
+  // Template Editor dispatch (17 Aug): Polotno scene JSON for source='polotno'
+  // (the editable canvas — layers, text boxes, image slots). Stored here, not in a
+  // parallel table.
+  editorJson  Json?
+  // Remotion reel template config for source='reel' — { slots (image count), text
+  // overlay spec, aspect, durationInFrames, fps, allowedTrackIds }.
+  videoConfig Json?
   active      Boolean  @default(true)
   createdBy   String?
   createdAt   DateTime @default(now())
