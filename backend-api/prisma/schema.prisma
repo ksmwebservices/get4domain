@@ -266,6 +266,7 @@ model CampaignLead {
   message        String?
   source         String?
   status         String        @default("new")
+  customFields   Json?         // industry-specific contact fields (config-driven form)
   notes          String?
   assignedTo     String?
   followUpDate   DateTime?

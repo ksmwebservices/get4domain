@@ -231,7 +231,10 @@ export const api = {
     const params = new URLSearchParams(filters as Record<string, string>).toString();
     return apiCall(`/crm/leads${params ? `?${params}` : ''}`);
   },
-  createCrmLead: (data: { name: string; phone: string; message?: string; source?: string }) =>
+  importCrmLeads: (contacts: Array<{ name: string; phone: string; customFields?: Record<string, unknown> }>) =>
+    apiCall('/crm/leads/import', { method: 'POST', body: JSON.stringify({ contacts }) }),
+  getRecentCalls: () => apiCall('/crm/telecrm/recent-calls'),
+  createCrmLead: (data: { name: string; phone: string; message?: string; source?: string; customFields?: Record<string, unknown> }) =>
     apiCall('/crm/leads', { method: 'POST', body: JSON.stringify(data) }),
   getCrmLead: (id: string) => apiCall(`/crm/leads/${id}`),
   updateCrmLead: (id: string, data: { status?: string; notes?: string; assignedTo?: string; followUpDate?: string }) =>

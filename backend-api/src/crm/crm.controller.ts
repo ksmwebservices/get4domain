@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CrmService } from './crm.service';
-import { CreateCrmLeadDto } from './dto/create-crm-lead.dto';
+import { CreateCrmLeadDto, ImportCrmLeadsDto } from './dto/create-crm-lead.dto';
 import { UpdateCrmLeadDto } from './dto/update-crm-lead.dto';
 import { LogCallDto } from './dto/log-call.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -28,6 +28,18 @@ export class CrmController {
   @ApiOperation({ summary: 'Add a manual lead' })
   createLead(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateCrmLeadDto) {
     return this.crmService.createLead(user.sub, dto);
+  }
+
+  @Post('leads/import')
+  @ApiOperation({ summary: "Bulk-import contacts into the vendor's OWN call list (CRM only, not messaging consent)" })
+  importLeads(@CurrentUser() user: AuthenticatedUser, @Body() dto: ImportCrmLeadsDto) {
+    return this.crmService.importLeads(user.sub, dto.contacts);
+  }
+
+  @Get('telecrm/recent-calls')
+  @ApiOperation({ summary: 'Recent calls across all leads (most recent first)' })
+  recentCalls(@CurrentUser() user: AuthenticatedUser) {
+    return this.crmService.recentCalls(user.sub);
   }
 
   @Get('leads/:id')

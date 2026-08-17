@@ -31,6 +31,7 @@ export class CrmService {
   }
 
   createLead(vendorId: string, dto: CreateCrmLeadDto): Promise<CampaignLead> {
+    const { customFields } = dto;
     return this.prisma.campaignLead.create({
       data: {
         vendorId,
@@ -38,8 +39,41 @@ export class CrmService {
         phone: dto.phone,
         message: dto.message,
         source: dto.source ?? 'manual',
+        ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}),
       },
     });
+  }
+
+  /** Bulk CSV/list import into the vendor's OWN CRM call list. This is a call-list
+   *  import only — it does NOT grant any bulk-messaging consent (that stays opt-in). */
+  async importLeads(vendorId: string, contacts: { name: string; phone: string; customFields?: Record<string, unknown> }[]): Promise<{ imported: number }> {
+    const rows = contacts
+      .filter((c) => c.name?.trim() && c.phone?.trim())
+      .map((c) => ({
+        vendorId,
+        name: c.name.trim(),
+        phone: c.phone.trim(),
+        source: 'import',
+        ...(c.customFields ? { customFields: c.customFields as Prisma.InputJsonValue } : {}),
+      }));
+    if (rows.length === 0) return { imported: 0 };
+    const res = await this.prisma.campaignLead.createMany({ data: rows });
+    return { imported: res.count };
+  }
+
+  /** Recent calls across all the vendor's leads (most recent first) for the
+   *  "Recent Calls" list — surfaces existing call-log history. */
+  async recentCalls(vendorId: string, limit = 15): Promise<Array<{ id: string; leadId: string; name: string; phone: string; outcome: string | null; notes: string | null; duration: number | null; createdAt: Date }>> {
+    const logs = await this.prisma.callLog.findMany({
+      where: { vendorId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: { lead: { select: { id: true, name: true, phone: true } } },
+    });
+    return logs.map((l) => ({
+      id: l.id, leadId: l.lead.id, name: l.lead.name, phone: l.lead.phone,
+      outcome: l.outcome, notes: l.notes, duration: l.duration, createdAt: l.createdAt,
+    }));
   }
 
   async findOne(id: string, vendorId: string): Promise<CampaignLead & { callLogs: CallLog[] }> {
