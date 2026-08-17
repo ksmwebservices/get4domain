@@ -15,6 +15,7 @@ type TypeFilter = 'all' | 'prompt' | 'template';
 
 interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; source: string; canvaTemplateId: string | null; active: boolean }
 interface DocBuiltin { key: string; label: string; description: string; fields: { key: string; label: string }[] }
+interface DesignBuiltin { id: string; name: string; category: string; width: number; height: number; fields: { key: string; label: string }[] }
 interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview: string | null; isDefault: boolean; active: boolean }
 
 const CONTENT_TYPES = ['social_post', 'festival_poster', 'blog_post', 'ad_creative', 'email', 'whatsapp', 'sms', 'document'];
@@ -24,10 +25,13 @@ const inputCls = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py
 
 // Badge per row. 'prompt' → AI Prompt; anything else (synced design templates,
 // business documents) shows under the single "AI Template" category.
+const AI_TEMPLATE_BADGE = { label: 'AI Template', cls: 'bg-violet-500/15 text-violet-300' };
 const SOURCE_META: Record<string, { label: string; cls: string }> = {
   prompt: { label: 'AI Prompt', cls: 'bg-primary-500/15 text-primary-300' },
-  canva: { label: 'AI Template', cls: 'bg-violet-500/15 text-violet-300' },
-  document: { label: 'AI Template', cls: 'bg-violet-500/15 text-violet-300' },
+  canva: AI_TEMPLATE_BADGE,
+  document: AI_TEMPLATE_BADGE,
+  polotno: AI_TEMPLATE_BADGE,
+  reel: AI_TEMPLATE_BADGE,
 };
 
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
@@ -41,6 +45,7 @@ export default function AdminLibraryPage() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [templates, setTemplates] = useState<AiTemplate[]>([]);
   const [docBuiltins, setDocBuiltins] = useState<DocBuiltin[]>([]);
+  const [designBuiltins, setDesignBuiltins] = useState<DesignBuiltin[]>([]);
   const [themes, setThemes] = useState<WebsiteTheme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,10 +58,11 @@ export default function AdminLibraryPage() {
   async function load() {
     setLoading(true);
     try {
-      const [t, th, docs] = await Promise.all([api.aiTemplatesAll(), api.websiteThemesAll(), api.businessDocTemplates()]);
+      const [t, th, docs, designs] = await Promise.all([api.aiTemplatesAll(), api.websiteThemesAll(), api.businessDocTemplates(), api.designTemplates()]);
       setTemplates(t.data ?? []);
       setThemes(th.data ?? []);
       setDocBuiltins(docs.data ?? []);
+      setDesignBuiltins(designs.data ?? []);
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load'); }
     finally { setLoading(false); }
   }
@@ -170,7 +176,21 @@ export default function AdminLibraryPage() {
               </div>
             ))}
 
-            {visibleTemplates.length === 0 && !(showDocs && docBuiltins.length) && (
+            {/* Editable design templates (Polotno) — built-in samples, opened in AI Studio's editor */}
+            {showDocs && designBuiltins.map((d) => (
+              <div key={d.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${AI_TEMPLATE_BADGE.cls}`}>{AI_TEMPLATE_BADGE.label}</span>
+                    <Palette className="h-3.5 w-3.5 text-slate-500" />{d.name}
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500"><Lock className="h-3 w-3" />Editable · Built-in</span>
+                  </div>
+                  <div className="truncate text-xs text-slate-500">{d.category} · {d.width}×{d.height} · in-app editor · fields: {d.fields.map((f) => f.label).join(', ')}</div>
+                </div>
+              </div>
+            ))}
+
+            {visibleTemplates.length === 0 && !(showDocs && (docBuiltins.length || designBuiltins.length)) && (
               <p className="text-sm text-slate-500">No templates yet.</p>
             )}
           </div>
