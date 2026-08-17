@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 type Tab = 'templates' | 'themes';
 
 interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; active: boolean }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; isDefault: boolean; active: boolean }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview: string | null; isDefault: boolean; active: boolean }
 
 const CONTENT_TYPES = ['social_post', 'festival_poster', 'blog_post', 'ad_creative', 'email', 'whatsapp', 'sms', 'document'];
 const INDUSTRIES = ['', 'travel', 'restaurant', 'clinic', 'hotel', 'salon', 'gym', 'realestate', 'education', 'retail', 'construction', 'events', 'finance', 'automobile', 'logistics', 'diagnostics', 'photography', 'professional', 'agriculture', 'coaching', 'technology'];
@@ -25,7 +25,7 @@ export default function AdminLibraryPage() {
   const [savingTh, setSavingTh] = useState(false);
 
   const [tpl, setTpl] = useState({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
-  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', isDefault: false });
+  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false });
 
   async function load() {
     setLoading(true);
@@ -51,8 +51,8 @@ export default function AdminLibraryPage() {
     if (!theme.name) return;
     setSavingTh(true); setError('');
     try {
-      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, cssVars: { '--primary': theme.primary, '--accent': theme.accent, '--radius': theme.radius } });
-      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', isDefault: false });
+      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars: { '--primary': theme.primary, '--accent': theme.accent, '--radius': theme.radius } });
+      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false });
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingTh(false); }
   }
@@ -110,13 +110,19 @@ export default function AdminLibraryPage() {
               <label className="flex items-center gap-2 text-sm text-slate-300">Primary <input type="color" value={theme.primary} onChange={(e) => setTheme({ ...theme, primary: e.target.value })} className="h-8 w-12 rounded border border-slate-700 bg-slate-900" /></label>
               <label className="flex items-center gap-2 text-sm text-slate-300">Accent <input type="color" value={theme.accent} onChange={(e) => setTheme({ ...theme, accent: e.target.value })} className="h-8 w-12 rounded border border-slate-700 bg-slate-900" /></label>
               <input className={inputCls} placeholder="Radius (e.g. 16px)" value={theme.radius} onChange={(e) => setTheme({ ...theme, radius: e.target.value })} />
+              <input className={inputCls} placeholder="Preview thumbnail URL (optional)" value={theme.preview} onChange={(e) => setTheme({ ...theme, preview: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={theme.isDefault} onChange={(e) => setTheme({ ...theme, isDefault: e.target.checked })} /> Default for this industry</label>
             </div>
+            <p className="mt-2 text-xs text-slate-500">Add several themes per industry — each with its own preview thumbnail — so vendors pick from a set, not one fixed look. Templates can be sourced from Bolt-built designs (upload the preview here).</p>
             <button onClick={addTheme} disabled={savingTh || !theme.name} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingTh ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Add theme</button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {themes.length === 0 ? <p className="text-sm text-slate-500">No themes yet.</p> : themes.map((t) => (
               <div key={t.id} className="rounded-xl border border-slate-800 bg-slate-900 p-3">
+                {t.preview && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={t.preview} alt={`${t.name} preview`} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-800" />
+                )}
                 <div className="flex items-center gap-1.5">
                   <span className="h-6 w-6 rounded-md" style={{ background: t.cssVars?.['--primary'] ?? '#2563eb' }} />
                   <span className="h-6 w-6 rounded-md" style={{ background: t.cssVars?.['--accent'] ?? '#3b82f6' }} />

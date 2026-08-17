@@ -18,7 +18,7 @@ interface VendorCms {
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
 interface Product { id: string; name: string; description?: string; price?: string; category?: string }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; isDefault: boolean }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean }
 
 const EMPTY: VendorCms = {
   businessName: '', tagline: '', about: '', logo: '', banner: '', themeId: '', phone: '', whatsapp: '', email: '', address: '',
@@ -251,6 +251,10 @@ export default function WebsiteManagerPage() {
                     return (
                       <button key={t.id} type="button" onClick={() => set('themeId', t.id)}
                         className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
+                        {t.preview && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={t.preview} alt={`${t.name} preview`} className="mb-2 h-24 w-full rounded-lg object-cover ring-1 ring-slate-200" />
+                        )}
                         <div className="flex items-center gap-1.5">
                           <span className="h-6 w-6 rounded-md" style={{ background: primary }} />
                           <span className="h-6 w-6 rounded-md" style={{ background: accent }} />
