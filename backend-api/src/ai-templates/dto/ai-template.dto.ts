@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 
 export class CreateAiTemplateDto {
   @ApiProperty({ example: 'Diwali Sale Poster' })
@@ -23,6 +23,21 @@ export class CreateAiTemplateDto {
   @IsOptional()
   @IsString()
   thumbnail?: string;
+
+  @ApiProperty({ required: false, enum: ['prompt', 'canva', 'document'], default: 'prompt' })
+  @IsOptional()
+  @IsIn(['prompt', 'canva', 'document'])
+  source?: string;
+
+  @ApiProperty({ required: false, description: 'Canva brand_template_id (source=canva)' })
+  @IsOptional()
+  @IsString()
+  canvaTemplateId?: string;
+
+  @ApiProperty({ required: false, description: 'Data-fill field definitions (cmsSchema-style array)' })
+  @IsOptional()
+  @IsArray()
+  fields?: unknown[];
 }
 
 export class UpdateAiTemplateDto extends PartialType(CreateAiTemplateDto) {

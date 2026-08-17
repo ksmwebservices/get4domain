@@ -13,9 +13,13 @@ export class AiTemplatesController {
   constructor(private readonly service: AiTemplatesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List active AI templates (vendor-facing); filter by ?contentType= & ?industry=' })
-  list(@Query('contentType') contentType?: string, @Query('industry') industry?: string): Promise<AiTemplate[]> {
-    return this.service.list(contentType, industry);
+  @ApiOperation({ summary: 'List active AI templates (vendor-facing); filter by ?contentType= & ?industry= & ?source=' })
+  list(
+    @Query('contentType') contentType?: string,
+    @Query('industry') industry?: string,
+    @Query('source') source?: string,
+  ): Promise<AiTemplate[]> {
+    return this.service.list(contentType, industry, source);
   }
 
   @UseGuards(AdminGuard)

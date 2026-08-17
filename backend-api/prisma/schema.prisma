@@ -618,12 +618,26 @@ model AiTemplate {
   industry    String?  // null = all industries
   prompt      String   // the base prompt/design brief the vendor starts from
   thumbnail   String?  // preview image URL
+  // AI Studio Redesign (17 Aug): one library, three template kinds. `source`
+  // discriminates the row so the Content Library + AI Studio picker can show/
+  // filter all types in one list. 'prompt' = the existing AI-generation flow;
+  // 'canva' = a synced Canva Brand Template (Canva Integration dispatch, gated on
+  // KSM's Enterprise prereqs); 'document' = a coded business-document layout.
+  source      String   @default("prompt") // prompt | canva | document
+  // Canva Integration: the Canva brand_template_id this row mirrors (source=canva).
+  canvaTemplateId String?
+  // Data-fill field definitions (cmsSchema-style) for canva/document templates —
+  // an array of { key, label, type, required, maxLength?, prefillFrom? }. Lets the
+  // AI Studio data-collection form render only what THIS template needs. Adopts the
+  // Template-Driven CMS `cmsSchema` shape later without a rewrite.
+  fields      Json?
   active      Boolean  @default(true)
   createdBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   @@index([contentType])
   @@index([industry])
+  @@index([source])
   @@map("g4d_ai_templates")
 }
 
