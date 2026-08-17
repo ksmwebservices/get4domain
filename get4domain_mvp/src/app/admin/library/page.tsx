@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Loader2, Sparkles, Palette } from 'lucide-react';
+import { Plus, Trash2, Loader2, Sparkles, Palette, FileText, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
 
-// Admin management for the AI template library (2.2) and website themes (2.3).
+// Admin Content Library — one place for all template kinds (AI prompt, Canva,
+// business documents) plus website themes. The "Templates" tab is a single list
+// filterable by type, not three disconnected screens.
 type Tab = 'templates' | 'themes';
+type TypeFilter = 'all' | 'prompt' | 'canva' | 'document';
 
-interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; active: boolean }
+interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; source: string; canvaTemplateId: string | null; active: boolean }
+interface DocBuiltin { key: string; label: string; description: string; fields: { key: string; label: string }[] }
 interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview: string | null; isDefault: boolean; active: boolean }
 
 const CONTENT_TYPES = ['social_post', 'festival_poster', 'blog_post', 'ad_creative', 'email', 'whatsapp', 'sms', 'document'];
@@ -15,9 +19,24 @@ const INDUSTRIES = ['', 'travel', 'restaurant', 'clinic', 'hotel', 'salon', 'gym
 
 const inputCls = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-primary-500 focus:outline-none';
 
+const SOURCE_META: Record<string, { label: string; cls: string }> = {
+  prompt: { label: 'AI Prompt', cls: 'bg-primary-500/15 text-primary-300' },
+  canva: { label: 'Canva', cls: 'bg-violet-500/15 text-violet-300' },
+  document: { label: 'Business Document', cls: 'bg-emerald-500/15 text-emerald-300' },
+};
+
+const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'prompt', label: 'AI Prompt' },
+  { key: 'canva', label: 'Canva' },
+  { key: 'document', label: 'Business Document' },
+];
+
 export default function AdminLibraryPage() {
   const [tab, setTab] = useState<Tab>('templates');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [templates, setTemplates] = useState<AiTemplate[]>([]);
+  const [docBuiltins, setDocBuiltins] = useState<DocBuiltin[]>([]);
   const [themes, setThemes] = useState<WebsiteTheme[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,9 +49,10 @@ export default function AdminLibraryPage() {
   async function load() {
     setLoading(true);
     try {
-      const [t, th] = await Promise.all([api.aiTemplatesAll(), api.websiteThemesAll()]);
+      const [t, th, docs] = await Promise.all([api.aiTemplatesAll(), api.websiteThemesAll(), api.businessDocTemplates()]);
       setTemplates(t.data ?? []);
       setThemes(th.data ?? []);
+      setDocBuiltins(docs.data ?? []);
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load'); }
     finally { setLoading(false); }
   }
@@ -42,7 +62,9 @@ export default function AdminLibraryPage() {
     if (!tpl.name || !tpl.prompt) return;
     setSavingT(true); setError('');
     try {
-      await api.createAiTemplate({ name: tpl.name, contentType: tpl.contentType, industry: tpl.industry || undefined, prompt: tpl.prompt, thumbnail: tpl.thumbnail || undefined });
+      // The only admin-createable template kind is AI prompt — Canva templates are
+      // synced from Canva, business documents are coded. So source is always 'prompt'.
+      await api.createAiTemplate({ name: tpl.name, contentType: tpl.contentType, industry: tpl.industry || undefined, prompt: tpl.prompt, thumbnail: tpl.thumbnail || undefined, source: 'prompt' });
       setTpl({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingT(false); }
@@ -59,17 +81,22 @@ export default function AdminLibraryPage() {
   async function delTemplate(id: string) { await api.deleteAiTemplate(id).catch(() => {}); await load(); }
   async function delTheme(id: string) { await api.deleteWebsiteTheme(id).catch(() => {}); await load(); }
 
+  // Prompt/Canva templates are DB rows; business documents are the coded built-ins.
+  const visibleTemplates = templates.filter((t) => typeFilter === 'all' || (t.source ?? 'prompt') === typeFilter);
+  const showDocs = typeFilter === 'all' || typeFilter === 'document';
+  const showCreate = typeFilter === 'all' || typeFilter === 'prompt';
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white">Content Library</h2>
-        <p className="mt-1 text-sm text-slate-400">Prebuilt AI templates and website themes vendors can use.</p>
+        <p className="mt-1 text-sm text-slate-400">All template kinds — AI prompts, Canva templates, business documents — plus website themes.</p>
       </div>
 
       <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1 w-fit">
         {(['templates', 'themes'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-medium ${tab === t ? 'bg-primary-600 text-white' : 'text-slate-400'}`}>
-            {t === 'templates' ? <Sparkles className="h-3.5 w-3.5" /> : <Palette className="h-3.5 w-3.5" />}{t === 'templates' ? 'AI Templates' : 'Website Themes'}
+            {t === 'templates' ? <Sparkles className="h-3.5 w-3.5" /> : <Palette className="h-3.5 w-3.5" />}{t === 'templates' ? 'Templates' : 'Website Themes'}
           </button>
         ))}
       </div>
@@ -77,27 +104,72 @@ export default function AdminLibraryPage() {
       {error && <div className="rounded-xl border border-error-500/40 bg-error-500/10 px-4 py-3 text-sm text-error-300">{error}</div>}
       {loading ? <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-500" /></div> : tab === 'templates' ? (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-            <div className="mb-3 text-sm font-bold text-white">New AI template</div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input className={inputCls} placeholder="Name" value={tpl.name} onChange={(e) => setTpl({ ...tpl, name: e.target.value })} />
-              <select className={inputCls} value={tpl.contentType} onChange={(e) => setTpl({ ...tpl, contentType: e.target.value })}>{CONTENT_TYPES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
-              <select className={inputCls} value={tpl.industry} onChange={(e) => setTpl({ ...tpl, industry: e.target.value })}>{INDUSTRIES.map((i) => <option key={i} value={i}>{i || 'All industries'}</option>)}</select>
-              <input className={inputCls} placeholder="Thumbnail URL (optional)" value={tpl.thumbnail} onChange={(e) => setTpl({ ...tpl, thumbnail: e.target.value })} />
-            </div>
-            <textarea className={`${inputCls} mt-2`} rows={3} placeholder="Base prompt / design brief the vendor starts from" value={tpl.prompt} onChange={(e) => setTpl({ ...tpl, prompt: e.target.value })} />
-            <button onClick={addTemplate} disabled={savingT || !tpl.name || !tpl.prompt} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingT ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Add template</button>
+          {/* Type filter — one list across all three template kinds */}
+          <div className="flex flex-wrap gap-1.5">
+            {TYPE_FILTERS.map((f) => (
+              <button key={f.key} onClick={() => setTypeFilter(f.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${typeFilter === f.key ? 'bg-primary-600 text-white' : 'border border-slate-700 text-slate-400 hover:text-slate-200'}`}>
+                {f.label}
+              </button>
+            ))}
           </div>
+
+          {showCreate && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+              <div className="mb-3 text-sm font-bold text-white">New AI prompt template</div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input className={inputCls} placeholder="Name" value={tpl.name} onChange={(e) => setTpl({ ...tpl, name: e.target.value })} />
+                <select className={inputCls} value={tpl.contentType} onChange={(e) => setTpl({ ...tpl, contentType: e.target.value })}>{CONTENT_TYPES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                <select className={inputCls} value={tpl.industry} onChange={(e) => setTpl({ ...tpl, industry: e.target.value })}>{INDUSTRIES.map((i) => <option key={i} value={i}>{i || 'All industries'}</option>)}</select>
+                <input className={inputCls} placeholder="Thumbnail URL (optional)" value={tpl.thumbnail} onChange={(e) => setTpl({ ...tpl, thumbnail: e.target.value })} />
+              </div>
+              <textarea className={`${inputCls} mt-2`} rows={3} placeholder="Base prompt / design brief the vendor starts from" value={tpl.prompt} onChange={(e) => setTpl({ ...tpl, prompt: e.target.value })} />
+              <button onClick={addTemplate} disabled={savingT || !tpl.name || !tpl.prompt} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingT ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Add template</button>
+            </div>
+          )}
+
+          {typeFilter === 'canva' && visibleTemplates.length === 0 && (
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">
+              Canva templates are <span className="text-slate-200">synced from Canva</span>, not created here. Once KSM connects the
+              Canva Enterprise account (Admin → Integrations) and publishes Brand Templates, they appear in this list automatically.
+            </div>
+          )}
+
+          {/* DB template rows (prompt + canva) */}
           <div className="space-y-2">
-            {templates.length === 0 ? <p className="text-sm text-slate-500">No templates yet.</p> : templates.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-white">{t.name} <span className="text-xs font-normal text-slate-500">· {t.contentType} · {t.industry ?? 'all'}</span></div>
-                  <div className="truncate text-xs text-slate-500">{t.prompt}</div>
+            {visibleTemplates.map((t) => {
+              const meta = SOURCE_META[t.source ?? 'prompt'] ?? SOURCE_META.prompt;
+              return (
+                <div key={t.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>
+                      {t.name} <span className="text-xs font-normal text-slate-500">· {t.contentType} · {t.industry ?? 'all'}</span>
+                    </div>
+                    <div className="truncate text-xs text-slate-500">{t.source === 'canva' ? `Canva template ${t.canvaTemplateId ?? ''}` : t.prompt}</div>
+                  </div>
+                  <button onClick={() => delTemplate(t.id)} className="ml-3 rounded-lg p-2 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <button onClick={() => delTemplate(t.id)} className="ml-3 rounded-lg p-2 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
+              );
+            })}
+
+            {/* Business-document built-ins (coded, read-only) */}
+            {showDocs && docBuiltins.map((d) => (
+              <div key={d.key} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${SOURCE_META.document.cls}`}>{SOURCE_META.document.label}</span>
+                    <FileText className="h-3.5 w-3.5 text-slate-500" />{d.label}
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500"><Lock className="h-3 w-3" />Built-in</span>
+                  </div>
+                  <div className="truncate text-xs text-slate-500">{d.description} · fields: {d.fields.map((f) => f.label).join(', ')}</div>
+                </div>
               </div>
             ))}
+
+            {visibleTemplates.length === 0 && !(showDocs && docBuiltins.length) && typeFilter !== 'canva' && (
+              <p className="text-sm text-slate-500">No templates yet.</p>
+            )}
           </div>
         </div>
       ) : (
