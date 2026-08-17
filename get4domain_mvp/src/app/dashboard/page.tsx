@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   UserPlus, Phone, Sparkles, FileText, Wallet, Users, IndianRupee, CalendarClock,
-  Loader2, ArrowRight, Clock,
+  Loader2, ArrowRight, Clock, Megaphone, Receipt, MessagesSquare, Globe,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig } from '@/lib/dashboard-config';
@@ -36,23 +36,27 @@ export default function DashboardHome() {
   const [followups, setFollowups] = useState<CrmLead[]>([]);
   const [invoices, setInvoices] = useState<GenericInvoice[]>([]);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [usage, setUsage] = useState<{ leads: number; calls: number; aiGenerations: number; messages: number; campaigns: number; listings: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
     Promise.all([
       api.getCrmLeads().catch(() => ({ data: [] })),
       api.getTelecrmFollowups().catch(() => ({ data: [] })),
       api.getWalletBalance().catch(() => ({ data: { balance: 0 } })),
       api.daGetInvoices('?limit=50').catch(() => ({ data: { items: [] } })),
+      api.getUsage(`?from=${monthStart}`).catch(() => ({ data: null })),
     ])
-      .then(([leadsRes, followupsRes, walletRes, invRes]) => {
+      .then(([leadsRes, followupsRes, walletRes, invRes, usageRes]) => {
         if (cancelled) return;
         setLeads(leadsRes.data ?? []);
         setFollowups(followupsRes.data ?? []);
         setWalletBalance(walletRes.data?.balance ?? 0);
         setInvoices(invRes.data?.items ?? invRes.data ?? []);
+        setUsage(usageRes.data ?? null);
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -91,6 +95,16 @@ export default function DashboardHome() {
     { label: 'Active pipeline', value: String(pipelineActive), sub: `${wonCount} won`, bg: 'from-indigo-500 to-indigo-600', href: '/dashboard/crm' },
     { label: 'Revenue this month', value: rupees(revenueThisMonth), sub: 'paid invoices', bg: 'from-emerald-500 to-emerald-600', href: '/dashboard/reports' },
     { label: 'Follow-ups due', value: String(followups.length), sub: 'to call back', bg: 'from-amber-500 to-amber-600', href: '/dashboard/telecrm' },
+  ];
+
+  // Section A — business-module cards: the map of the product. One real stat + Open.
+  const moduleCards = [
+    { title: 'TeleCRM', desc: 'Call leads & log outcomes', stat: `${usage?.leads ?? leadsThisMonth} leads this month`, icon: Phone, tint: 'bg-blue-50 text-blue-600', href: '/dashboard/telecrm' },
+    { title: 'Growth Hub', desc: 'Campaigns & landing pages', stat: `${usage?.campaigns ?? 0} campaign${(usage?.campaigns ?? 0) === 1 ? '' : 's'}`, icon: Megaphone, tint: 'bg-fuchsia-50 text-fuchsia-600', href: '/dashboard/campaigns' },
+    { title: 'AI Studio', desc: 'Generate content in seconds', stat: `${usage?.aiGenerations ?? 0} generations`, icon: Sparkles, tint: 'bg-indigo-50 text-indigo-600', href: '/dashboard/ai-studio' },
+    { title: 'Accounts', desc: 'Expenses, P&L & GST', stat: `${rupees(revenueThisMonth)} revenue`, icon: Receipt, tint: 'bg-emerald-50 text-emerald-600', href: '/dashboard/accounts' },
+    { title: 'Communication Hub', desc: 'WhatsApp, SMS & Email', stat: `${usage?.messages ?? 0} messages sent`, icon: MessagesSquare, tint: 'bg-teal-50 text-teal-600', href: '/dashboard/communication' },
+    { title: 'Website Manager', desc: 'Your site & listings', stat: `${usage?.listings ?? 0} listings`, icon: Globe, tint: 'bg-violet-50 text-violet-600', href: '/dashboard/my-website' },
   ];
 
   const QUICK = [
@@ -153,6 +167,29 @@ export default function DashboardHome() {
             <div className="mt-0.5 text-[11px] text-white/70">{k.sub}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Section A — business-module cards (the map of the product) */}
+      <div>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-400">Your tools</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {moduleCards.map((m) => {
+            const Ic = m.icon;
+            return (
+              <Link key={m.title} href={m.href} className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-all hover:border-primary-200 hover:shadow-md">
+                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${m.tint}`}><Ic className="h-5 w-5" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-900">{m.title}</span>
+                    <span className="flex items-center gap-0.5 text-xs font-semibold text-primary-600 opacity-0 transition-opacity group-hover:opacity-100">Open <ArrowRight className="h-3.5 w-3.5" /></span>
+                  </div>
+                  <div className="text-xs text-slate-400">{m.desc}</div>
+                  <div className="mt-0.5 text-xs font-semibold text-slate-600">{m.stat}</div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* Top */}
