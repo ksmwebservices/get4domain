@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, Loader2, Sparkles, Palette, FileText, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
 
-// Admin Content Library — one place for all template kinds (AI prompt, Canva,
-// business documents) plus website themes. The "Templates" tab is a single list
-// filterable by type, not three disconnected screens.
+// Admin Content Library — one place for all template kinds (AI prompt, pick-and-
+// fill design templates, business documents) plus website themes. The "Templates"
+// tab is a single list filterable by type, not disconnected screens.
 type Tab = 'templates' | 'themes';
-type TypeFilter = 'all' | 'prompt' | 'canva' | 'document';
+// Two vendor-facing template kinds: 'prompt' feeds AI Generate; 'template' is the
+// pick-and-fill library (synced design templates + business documents). No provider
+// branding — the design provider stays out of the UI.
+type TypeFilter = 'all' | 'prompt' | 'template';
 
 interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; source: string; canvaTemplateId: string | null; active: boolean }
 interface DocBuiltin { key: string; label: string; description: string; fields: { key: string; label: string }[] }
@@ -19,17 +22,18 @@ const INDUSTRIES = ['', 'travel', 'restaurant', 'clinic', 'hotel', 'salon', 'gym
 
 const inputCls = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-primary-500 focus:outline-none';
 
+// Badge per row. 'prompt' → AI Prompt; anything else (synced design templates,
+// business documents) shows under the single "AI Template" category.
 const SOURCE_META: Record<string, { label: string; cls: string }> = {
   prompt: { label: 'AI Prompt', cls: 'bg-primary-500/15 text-primary-300' },
-  canva: { label: 'Canva', cls: 'bg-violet-500/15 text-violet-300' },
-  document: { label: 'Business Document', cls: 'bg-emerald-500/15 text-emerald-300' },
+  canva: { label: 'AI Template', cls: 'bg-violet-500/15 text-violet-300' },
+  document: { label: 'AI Template', cls: 'bg-violet-500/15 text-violet-300' },
 };
 
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'prompt', label: 'AI Prompt' },
-  { key: 'canva', label: 'Canva' },
-  { key: 'document', label: 'Business Document' },
+  { key: 'template', label: 'AI Template' },
 ];
 
 export default function AdminLibraryPage() {
@@ -62,8 +66,8 @@ export default function AdminLibraryPage() {
     if (!tpl.name || !tpl.prompt) return;
     setSavingT(true); setError('');
     try {
-      // The only admin-createable template kind is AI prompt — Canva templates are
-      // synced from Canva, business documents are coded. So source is always 'prompt'.
+      // The only admin-createable template kind is AI prompt — design templates are
+      // synced from the provider, business documents are coded. So source is 'prompt'.
       await api.createAiTemplate({ name: tpl.name, contentType: tpl.contentType, industry: tpl.industry || undefined, prompt: tpl.prompt, thumbnail: tpl.thumbnail || undefined, source: 'prompt' });
       setTpl({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
       await load();
@@ -81,16 +85,22 @@ export default function AdminLibraryPage() {
   async function delTemplate(id: string) { await api.deleteAiTemplate(id).catch(() => {}); await load(); }
   async function delTheme(id: string) { await api.deleteWebsiteTheme(id).catch(() => {}); await load(); }
 
-  // Prompt/Canva templates are DB rows; business documents are the coded built-ins.
-  const visibleTemplates = templates.filter((t) => typeFilter === 'all' || (t.source ?? 'prompt') === typeFilter);
-  const showDocs = typeFilter === 'all' || typeFilter === 'document';
+  // 'prompt' rows are AI-prompt templates; every other source (synced design
+  // templates, etc.) + the coded business documents make up the "AI Template" kind.
+  const visibleTemplates = templates.filter((t) => {
+    const src = t.source ?? 'prompt';
+    if (typeFilter === 'all') return true;
+    if (typeFilter === 'prompt') return src === 'prompt';
+    return src !== 'prompt'; // 'template'
+  });
+  const showDocs = typeFilter === 'all' || typeFilter === 'template';
   const showCreate = typeFilter === 'all' || typeFilter === 'prompt';
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white">Content Library</h2>
-        <p className="mt-1 text-sm text-slate-400">All template kinds — AI prompts, Canva templates, business documents — plus website themes.</p>
+        <p className="mt-1 text-sm text-slate-400">AI prompt templates and pick-and-fill templates (including business documents), plus website themes.</p>
       </div>
 
       <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1 w-fit">
@@ -128,14 +138,7 @@ export default function AdminLibraryPage() {
             </div>
           )}
 
-          {typeFilter === 'canva' && visibleTemplates.length === 0 && (
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-sm text-slate-400">
-              Canva templates are <span className="text-slate-200">synced from Canva</span>, not created here. Once KSM connects the
-              Canva Enterprise account (Admin → Integrations) and publishes Brand Templates, they appear in this list automatically.
-            </div>
-          )}
-
-          {/* DB template rows (prompt + canva) */}
+          {/* One list — AI-prompt + design templates (DB rows) and business documents together */}
           <div className="space-y-2">
             {visibleTemplates.map((t) => {
               const meta = SOURCE_META[t.source ?? 'prompt'] ?? SOURCE_META.prompt;
@@ -146,14 +149,14 @@ export default function AdminLibraryPage() {
                       <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${meta.cls}`}>{meta.label}</span>
                       {t.name} <span className="text-xs font-normal text-slate-500">· {t.contentType} · {t.industry ?? 'all'}</span>
                     </div>
-                    <div className="truncate text-xs text-slate-500">{t.source === 'canva' ? `Canva template ${t.canvaTemplateId ?? ''}` : t.prompt}</div>
+                    <div className="truncate text-xs text-slate-500">{t.source && t.source !== 'prompt' ? `Design template ${t.canvaTemplateId ?? ''}` : t.prompt}</div>
                   </div>
                   <button onClick={() => delTemplate(t.id)} className="ml-3 rounded-lg p-2 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
               );
             })}
 
-            {/* Business-document built-ins (coded, read-only) */}
+            {/* Business documents — coded built-ins, folded into the same AI Template list */}
             {showDocs && docBuiltins.map((d) => (
               <div key={d.key} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
                 <div className="min-w-0">
@@ -167,7 +170,7 @@ export default function AdminLibraryPage() {
               </div>
             ))}
 
-            {visibleTemplates.length === 0 && !(showDocs && docBuiltins.length) && typeFilter !== 'canva' && (
+            {visibleTemplates.length === 0 && !(showDocs && docBuiltins.length) && (
               <p className="text-sm text-slate-500">No templates yet.</p>
             )}
           </div>

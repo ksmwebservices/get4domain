@@ -39,12 +39,12 @@ const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 // image" option (use a real product/property photo or logo instead of AI imagery).
 const IMAGE_TYPES = new Set(['social_post', 'festival_poster', 'ad_creative']);
 
-// The three AI Studio modes, chosen up front — each needs a different flow.
-type Mode = 'ai' | 'canva' | 'documents' | 'library';
+// Two creation modes, chosen up front — AI creates from a prompt, or you pick a
+// ready-made template and fill in your details. (Library holds saved work.)
+type Mode = 'ai' | 'template' | 'library';
 const MODES: { key: Mode; label: string; icon: typeof Sparkles; blurb: string }[] = [
-  { key: 'ai', label: 'AI Generate', icon: Sparkles, blurb: 'Prompt-based creative — posts, posters, ad copy' },
-  { key: 'canva', label: 'Canva Templates', icon: Palette, blurb: 'Pick a branded template, fill in your details' },
-  { key: 'documents', label: 'Business Documents', icon: FileText, blurb: 'Letterhead, visiting card, ID card — instant PDF' },
+  { key: 'ai', label: 'AI Generate', icon: Sparkles, blurb: 'Describe it — AI creates an original design' },
+  { key: 'template', label: 'AI Template', icon: Palette, blurb: 'Pick a ready-made template, fill in your details' },
   { key: 'library', label: 'Library', icon: Library, blurb: 'Your saved generations' },
 ];
 
@@ -66,7 +66,9 @@ interface FieldDef {
   prefillFrom?: 'businessName' | 'name' | 'email';
 }
 interface DocTemplate { key: string; label: string; description: string; fields: FieldDef[] }
-interface CanvaTemplate { id: string; name: string; thumbnail?: string | null; industry?: string | null; fields?: FieldDef[] | null }
+// A ready-made design template synced from the design provider (kept provider-agnostic
+// in the UI). `source=canva` is only an internal identifier for the current provider.
+interface DesignTemplate { id: string; name: string; thumbnail?: string | null; industry?: string | null; fields?: FieldDef[] | null }
 
 interface SavedItem {
   id: string;
@@ -114,7 +116,7 @@ export default function AiStudioPage() {
   const [docBusy, setDocBusy] = useState(false);
 
   useEffect(() => {
-    if (mode !== 'documents' || docTemplates.length) return;
+    if (mode !== 'template' || docTemplates.length) return;
     api.businessDocTemplates().then((r) => setDocTemplates((r.data ?? []) as DocTemplate[])).catch(() => setDocTemplates([]));
   }, [mode, docTemplates.length]);
 
@@ -150,22 +152,23 @@ export default function AiStudioPage() {
     w.document.close();
   };
 
-  // ── Canva Templates (gated on KSM's Canva Enterprise prereqs) ──────────────
-  const [canvaTemplates, setCanvaTemplates] = useState<CanvaTemplate[]>([]);
-  const [canvaLoading, setCanvaLoading] = useState(false);
-  const [canvaSel, setCanvaSel] = useState<CanvaTemplate | null>(null);
-  const [canvaValues, setCanvaValues] = useState<Record<string, string>>({});
+  // ── Ready-made design templates (synced from the design provider; provider is
+  //    kept out of the UI and gated on the account being connected) ─────────────
+  const [designTemplates, setDesignTemplates] = useState<DesignTemplate[]>([]);
+  const [designLoading, setDesignLoading] = useState(false);
+  const [designSel, setDesignSel] = useState<DesignTemplate | null>(null);
+  const [designValues, setDesignValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (mode !== 'canva') return;
-    setCanvaLoading(true);
+    if (mode !== 'template') return;
+    setDesignLoading(true);
     const q = `?source=canva${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
-    api.aiTemplates(q).then((r) => setCanvaTemplates((r.data ?? []) as CanvaTemplate[])).catch(() => setCanvaTemplates([])).finally(() => setCanvaLoading(false));
+    api.aiTemplates(q).then((r) => setDesignTemplates((r.data ?? []) as DesignTemplate[])).catch(() => setDesignTemplates([])).finally(() => setDesignLoading(false));
   }, [mode, user?.industry]);
 
-  const openCanva = (t: CanvaTemplate) => {
-    setCanvaSel(t);
-    setCanvaValues(prefill(t.fields ?? []));
+  const openDesign = (t: DesignTemplate) => {
+    setDesignSel(t);
+    setDesignValues(prefill(t.fields ?? []));
   };
 
   // Video / Reel generation (Runway or HeyGen, admin-selectable; async job).
@@ -401,43 +404,13 @@ export default function AiStudioPage() {
         </div>
       )}
 
-      {/* ── MODE: CANVA TEMPLATES ─────────────────────────────────────────── */}
-      {mode === 'canva' && (
-        <div>
-          {canvaLoading ? (
-            <p className="py-16 text-center text-sm text-slate-400">Loading templates…</p>
-          ) : canvaTemplates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-12 text-center">
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-500 shadow-sm ring-1 ring-slate-100"><Palette className="h-5 w-5" /></div>
-              <p className="mt-3 text-sm font-semibold text-slate-700">Canva templates aren’t set up yet</p>
-              <p className="mx-auto mt-1 max-w-md text-xs text-slate-500">
-                Your Get4Domain team designs branded, ready-to-use templates in Canva and syncs them here.
-                Once they’re published, you’ll pick one, fill in a couple of details, and download — no design skills needed.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {canvaTemplates.map((t) => (
-                <Card key={t.id} hover className="cursor-pointer" onClick={() => openCanva(t)}>
-                  {t.thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
-                  ) : (
-                    <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
-                  )}
-                  <h3 className="font-semibold text-slate-900">{t.name}</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">{t.industry ?? 'All industries'}</p>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── MODE: BUSINESS DOCUMENTS ──────────────────────────────────────── */}
-      {mode === 'documents' && (
-        <div>
+      {/* ── MODE: AI TEMPLATE ─────────────────────────────────────────────── */}
+      {/* One library of ready-made templates: business documents (always available)
+          + synced design templates (when the provider account is connected). */}
+      {mode === 'template' && (
+        <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {/* Business documents — coded, print-ready, always available */}
             {docTemplates.map((t) => {
               const Ic = DOC_ICON[t.key] ?? FileText;
               return (
@@ -448,8 +421,23 @@ export default function AiStudioPage() {
                 </Card>
               );
             })}
+            {/* Synced design templates (provider kept out of the UI) */}
+            {designTemplates.map((t) => (
+              <Card key={t.id} hover className="cursor-pointer" onClick={() => openDesign(t)}>
+                {t.thumbnail ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
+                ) : (
+                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
+                )}
+                <h3 className="font-semibold text-slate-900">{t.name}</h3>
+                <p className="mt-0.5 text-xs text-slate-400">{t.industry ?? 'All industries'}</p>
+              </Card>
+            ))}
           </div>
-          <p className="mt-3 text-xs text-slate-400">Branded, print-ready PDFs — the same document engine as your invoices. No AI, no design work.</p>
+          {!designLoading && designTemplates.length === 0 && (
+            <p className="text-xs text-slate-400">More ready-made design templates are on the way — for now, pick a business document above to fill in and download.</p>
+          )}
         </div>
       )}
 
@@ -593,24 +581,24 @@ export default function AiStudioPage() {
         )}
       </Modal>
 
-      {/* Canva template data-fill (autofill runs once KSM's Canva Enterprise is connected) */}
-      <Modal isOpen={canvaSel !== null} onClose={() => setCanvaSel(null)} title={canvaSel?.name ?? ''} maxWidth="max-w-2xl">
-        {canvaSel && (
+      {/* Design-template data-fill (generation runs once the design account is connected) */}
+      <Modal isOpen={designSel !== null} onClose={() => setDesignSel(null)} title={designSel?.name ?? ''} maxWidth="max-w-2xl">
+        {designSel && (
           <div className="space-y-4">
-            {canvaSel.thumbnail && (
+            {designSel.thumbnail && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={canvaSel.thumbnail} alt={canvaSel.name} className="max-h-56 w-full rounded-xl border border-slate-200 object-contain" />
+              <img src={designSel.thumbnail} alt={designSel.name} className="max-h-56 w-full rounded-xl border border-slate-200 object-contain" />
             )}
-            {(canvaSel.fields ?? []).map((f) => (
+            {(designSel.fields ?? []).map((f) => (
               <Input key={f.key} label={f.label} maxLength={f.maxLength}
-                value={canvaValues[f.key] ?? ''} onChange={(e) => setCanvaValues((v) => ({ ...v, [f.key]: e.target.value }))} />
+                value={designValues[f.key] ?? ''} onChange={(e) => setDesignValues((v) => ({ ...v, [f.key]: e.target.value }))} />
             ))}
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Canva autofill will be enabled once your Get4Domain team connects the Canva account.
-              Your details are ready — generation and the “open in Canva to fine-tune” link light up then.
+              This template isn’t ready to generate yet — your Get4Domain team is finishing the design setup.
+              Your details are saved, and generation lights up as soon as it’s connected.
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setCanvaSel(null)}>Close</Button>
+              <Button variant="outline" onClick={() => setDesignSel(null)}>Close</Button>
               <Button disabled leftIcon={<ExternalLink className="h-4 w-4" />}>Generate (coming soon)</Button>
             </div>
           </div>
