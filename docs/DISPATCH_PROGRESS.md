@@ -1193,18 +1193,26 @@ g4d_website_themes, VendorCMS.themeId); Track-B (g4d_expenses, g4d_stationery); 
 funded-credit for 3E) are on KSM's side. Decision 2 (Razorpay subscriptions) still SKIPPED
 (no plan_id).
 
-### DISPATCH — GET4DOMAIN_DISPATCH_TELECRM_REDESIGN_17AUG2026 (in progress)
+### DISPATCH — GET4DOMAIN_DISPATCH_TELECRM_REDESIGN_17AUG2026 — COMPLETE
 Reverses the earlier "TeleCRM Kanban-only" decision: list/dialer as the DEFAULT, Kanban
 demoted to a secondary "Pipeline" tab (kept, not removed).
 - [x] A — vendor home business-module cards (TeleCRM/Growth Hub/AI Studio/Accounts/Comms/
   Website, one real stat + Open, reuses 2A + /analytics/usage). d015030.
 - [x] B backend — CampaignLead.customFields (additive); POST /crm/leads/import (call-list
   import, CRM-only, NOT messaging consent); GET /crm/telecrm/recent-calls; api methods. 7c4edd7.
-- [ ] B frontend — TeleCrmBoard redesign: list default (search + Today's Tasks + Recent
-  Calls + Contact list), add/CSV-import modal (consent-labeled "for your call list"),
-  professional empty states everywhere, Pipeline (Kanban) as a secondary tab, industry-aware
-  contact fields from the industry config (recordCustomFields; travel/clinic first). IN PROGRESS.
-VM: db push adds CampaignLead.customFields (additive).
+- [x] B frontend — TeleCrmBoard redesign (40f4525): List is now the DEFAULT view —
+  always-visible search (name/number), Today's Tasks (Overdue/Today from follow-up
+  reminders), Recent Calls (call-log history via /crm/telecrm/recent-calls), and a flat
+  contact list (status badge + last-called). Add/CSV-import modal writes to the vendor's
+  OWN call list with the consent boundary labeled in-UI ("your call list, NOT a campaign
+  list — no bulk-messaging consent"). Professional empty states (branded icon tile + line
+  + action) on every section. Kanban preserved as a secondary "Pipeline" tab. Industry-aware:
+  contactFields from recordCustomFields + contactNoun from the industry contact label
+  (reuses useDashboardConfig; all 20 industries via config, no per-industry files).
+  admin/telecrm unaffected (optional adapter methods absent → add/import/recent auto-hide).
+- Both apps build 0 errors. Behind auth → build-verified, not click-tested from Claude Code.
+VM: db push adds CampaignLead.customFields (additive) — folds into the single pending push
+in docs/VM_DEPLOY_RUNBOOK.md. No other new migration.
 
 ## BLOCKERS LOG (append here whenever [!] is used above)
 

@@ -27,6 +27,7 @@ Branch: `get4domain-site`  ·  Latest commit at time of writing: `2de3729`
 | `Vendor` | `configOverride Json?` | Track C 3C |
 | `Vendor` | `widgetKey String? @unique` | Track C 3B |
 | `TeamMember` | `department String?` | Track C 3D |
+| `CampaignLead` | `customFields Json?` | TeleCRM redesign 17AUG (industry contact fields) |
 
 **New tables** (all `g4d_`-prefixed):
 | Table | From |
