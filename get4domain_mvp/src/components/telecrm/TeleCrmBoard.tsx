@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Phone, Loader2, X, ThumbsUp, ThumbsDown, PhoneCall, Trophy, PhoneOff,
   Mic, MessageCircle, CalendarClock, Building2, Tag,
+  Search, UserPlus, LayoutGrid, List as ListIcon, Upload, Inbox, PhoneIncoming, AlertTriangle, Users,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -32,6 +33,16 @@ export interface TeleCrmLead {
   email?: string | null;
 }
 
+export interface TeleCrmRecentCall {
+  id: string; leadId: string; name: string; phone: string;
+  outcome: string | null; notes: string | null; duration: number | null; createdAt: string;
+}
+
+/** An industry-config-driven extra contact field (reuses backend recordCustomFields). */
+export interface TeleCrmContactField {
+  key: string; label: string; type?: 'text' | 'number' | 'date' | 'select' | 'textarea'; options?: string[]; required?: boolean;
+}
+
 /** Data source for the board — swap to point at vendor campaign leads or admin demo-booking leads. */
 export interface TeleCrmAdapter {
   listLeads: () => Promise<TeleCrmLead[]>;
@@ -41,6 +52,10 @@ export interface TeleCrmAdapter {
     id: string,
     data: { duration?: number; outcome?: string; notes?: string; followUpAt?: string },
   ) => Promise<void>;
+  // Optional — present for the vendor's own CRM (add/import a call list, recent calls).
+  createLead?: (data: { name: string; phone: string; customFields?: Record<string, unknown> }) => Promise<void>;
+  importLeads?: (contacts: Array<{ name: string; phone: string; customFields?: Record<string, unknown> }>) => Promise<{ imported: number }>;
+  recentCalls?: () => Promise<TeleCrmRecentCall[]>;
 }
 
 const PIPELINE = [
@@ -92,15 +107,23 @@ interface TeleCrmBoardProps {
   adapter: TeleCrmAdapter;
   title?: string;
   subtitle?: string;
+  /** Industry-specific extra contact fields (from the industry config). */
+  contactFields?: TeleCrmContactField[];
+  /** Singular label for a contact/lead in this industry (e.g. "Patient", "Passenger"). */
+  contactNoun?: string;
 }
 
-export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'Call leads, log outcomes, move the pipeline.' }: TeleCrmBoardProps) {
+export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'Call your contacts, log outcomes, follow up.', contactFields = [], contactNoun = 'Contact' }: TeleCrmBoardProps) {
   const [leads, setLeads] = useState<TeleCrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  // Kanban is the only view now (List removed). `skipped` still powers the
-  // Call-Next queue traversal below (leads skipped during a session).
   const [skipped] = useState<Set<string>>(new Set());
+
+  // Primary view is now the list/dialer (Kanban demoted to a secondary "Pipeline" tab).
+  const [view, setView] = useState<'list' | 'pipeline'>('list');
+  const [search, setSearch] = useState('');
+  const [recent, setRecent] = useState<TeleCrmRecentCall[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
 
   // Call flow
   const [precall, setPrecall] = useState<TeleCrmLead | null>(null); // pre-call overlay
@@ -139,6 +162,19 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   }, [adapter]);
 
   useEffect(() => { load(); }, [load]);
+
+  const loadRecent = useCallback(() => {
+    if (!adapter.recentCalls) return;
+    adapter.recentCalls().then((r) => setRecent(r ?? [])).catch(() => setRecent([]));
+  }, [adapter]);
+  useEffect(() => { loadRecent(); }, [loadRecent]);
+
+  // Search across the contact list (name or number).
+  const filteredLeads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return leads;
+    return leads.filter((l) => (l.name || '').toLowerCase().includes(q) || (l.phone || '').includes(q));
+  }, [leads, search]);
 
   const buckets = useMemo(() => {
     const visible = leads.filter((l) => !skipped.has(l.id));
@@ -235,21 +271,160 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
     try { await adapter.updateLead(lead.id, { status }); } catch { load(); }
   };
 
+  // Add / import contacts (vendor CRM only — see the consent note in the modal).
+  const [addForm, setAddForm] = useState<{ name: string; phone: string; custom: Record<string, string> }>({ name: '', phone: '', custom: {} });
+  const [addBusy, setAddBusy] = useState(false);
+  const [importMsg, setImportMsg] = useState('');
+  const resetAdd = () => setAddForm({ name: '', phone: '', custom: {} });
+
+  const addContact = async () => {
+    if (!adapter.createLead || !addForm.name.trim() || !addForm.phone.trim()) return;
+    setAddBusy(true); setError('');
+    try {
+      const customFields = Object.fromEntries(Object.entries(addForm.custom).filter(([, v]) => v?.trim()));
+      await adapter.createLead({ name: addForm.name.trim(), phone: addForm.phone.trim(), customFields: Object.keys(customFields).length ? customFields : undefined });
+      resetAdd(); setAddOpen(false); load();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not add contact'); } finally { setAddBusy(false); }
+  };
+
+  const importCsv = async (file: File) => {
+    if (!adapter.importLeads) return;
+    setAddBusy(true); setImportMsg('');
+    try {
+      const text = await file.text();
+      const rows = text.split(/\r?\n/).map((line) => line.split(',')).filter((c) => c.length >= 2);
+      const contacts = rows
+        .map(([name, phone]) => ({ name: (name || '').trim(), phone: (phone || '').trim() }))
+        .filter((c) => c.name && c.phone && !/^name$/i.test(c.name)); // skip blanks + a header row
+      if (contacts.length === 0) { setImportMsg('No valid rows found. Expected: name,phone per line.'); return; }
+      const res = await adapter.importLeads(contacts);
+      setImportMsg(`Imported ${res.imported} contact${res.imported === 1 ? '' : 's'} into your call list.`);
+      load();
+    } catch (e) { setImportMsg(e instanceof Error ? e.message : 'Import failed'); } finally { setAddBusy(false); }
+  };
+
+  const tasks = [
+    ...buckets.overdue.map((l) => ({ lead: l, group: 'overdue' as const })),
+    ...buckets.today.map((l) => ({ lead: l, group: 'today' as const })),
+  ];
+
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   }
 
   return (
     <div>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">{title}</h1>
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
+        {adapter.createLead && (
+          <Button size="sm" leftIcon={<UserPlus className="h-4 w-4" />} onClick={() => { resetAdd(); setImportMsg(''); setAddOpen(true); }}>Add {contactNoun}</Button>
+        )}
+      </div>
+
+      {/* View toggle — List is the default landing view; Pipeline (Kanban) is secondary */}
+      <div className="mb-4 flex w-fit gap-1 rounded-xl border border-slate-200 bg-white p-1">
+        {([['list', 'List', ListIcon], ['pipeline', 'Pipeline', LayoutGrid]] as const).map(([v, label, Ic]) => (
+          <button key={v} onClick={() => setView(v)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${view === v ? 'bg-primary-50 text-primary-700' : 'text-slate-500 hover:text-slate-700'}`}>
+            <Ic className="h-3.5 w-3.5" />{label}
+          </button>
+        ))}
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
+      {/* ── LIST VIEW (default) ─────────────────────────────────────────────── */}
+      {view === 'list' && (
+        <div className="space-y-5">
+          {/* Search — always visible */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={`Search ${contactNoun.toLowerCase()}s by name or number…`}
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+          </div>
+
+          {/* Today's Tasks */}
+          <section>
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900"><CalendarClock className="h-4 w-4 text-amber-500" />Today&apos;s Tasks {tasks.length > 0 && <span className="rounded-full bg-amber-100 px-1.5 text-[11px] font-semibold text-amber-700">{tasks.length}</span>}</h2>
+            {tasks.length === 0 ? (
+              <EmptyState icon={CalendarClock} title="No follow-ups due" desc="Follow-ups you schedule after a call show up here — grouped into Overdue and Today." />
+            ) : (
+              <div className="space-y-2">
+                {tasks.map(({ lead, group }) => (
+                  <div key={lead.id} className={`flex items-center justify-between rounded-xl border p-3 ${group === 'overdue' ? 'border-error-200 bg-error-50' : 'border-amber-200 bg-amber-50'}`}>
+                    <button onClick={() => openDetail(lead)} className="min-w-0 text-left">
+                      <div className="text-sm font-semibold text-slate-900">{lead.name}</div>
+                      <div className="flex items-center gap-1 text-xs font-medium"><span className={group === 'overdue' ? 'text-error-600' : 'text-amber-700'}>{group === 'overdue' ? 'Overdue' : 'Today'}</span><span className="text-slate-400">· {lead.phone}</span></div>
+                    </button>
+                    <button onClick={() => initiateCall(lead)} className="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700"><Phone className="h-3.5 w-3.5" />Call</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Recent Calls */}
+          {adapter.recentCalls && (
+            <section>
+              <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900"><PhoneIncoming className="h-4 w-4 text-emerald-500" />Recent Calls</h2>
+              {recent.length === 0 ? (
+                <EmptyState icon={PhoneIncoming} title="No calls yet" desc="Your call history appears here after you make your first call and log the outcome." />
+              ) : (
+                <div className="space-y-2">
+                  {recent.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-900">{c.name}</div>
+                        <div className="text-xs text-slate-500"><span className="capitalize">{c.outcome?.replace(/_/g, ' ') || 'Call'}</span> · {new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{c.duration ? ` · ${c.duration}s` : ''}</div>
+                      </div>
+                      <a href={`tel:${c.phone}`} className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-primary-600 hover:bg-slate-50"><Phone className="h-3.5 w-3.5" />Call</a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Contact list */}
+          <section>
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900"><Users className="h-4 w-4 text-primary-500" />{contactNoun}s {leads.length > 0 && <span className="rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-500">{leads.length}</span>}</h2>
+            {leads.length === 0 ? (
+              <EmptyState icon={Inbox} title={`No ${contactNoun.toLowerCase()}s yet`} desc={`Add your first ${contactNoun.toLowerCase()} — a name and number is all it takes — to start calling and tracking.`}
+                action={adapter.createLead ? { label: `Add your first ${contactNoun.toLowerCase()}`, onClick: () => { resetAdd(); setAddOpen(true); } } : undefined} />
+            ) : filteredLeads.length === 0 ? (
+              <EmptyState icon={Search} title="No matches" desc={`No ${contactNoun.toLowerCase()}s match “${search}”.`} />
+            ) : (
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                {filteredLeads.map((lead) => {
+                  const stage = PIPELINE.find((s) => s.key === (lead.status || 'new'));
+                  const last = lead.callLogs?.[0]?.createdAt ?? null;
+                  return (
+                    <div key={lead.id} className="flex items-center gap-3 p-3 hover:bg-slate-50">
+                      <button onClick={() => openDetail(lead)} className="min-w-0 flex-1 text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-slate-900">{lead.name}</span>
+                          {stage && <span className="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold text-white" style={{ backgroundColor: stage.color }}>{stage.label}</span>}
+                        </div>
+                        <div className="text-xs text-slate-500">{lead.phone}{last ? ` · last called ${new Date(last).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}</div>
+                      </button>
+                      <button onClick={() => initiateCall(lead)} className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700"><Phone className="h-3.5 w-3.5" />Call</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* ── PIPELINE VIEW (secondary — the demoted Kanban) ──────────────────── */}
+      {view === 'pipeline' && (
+      <>
+      {leads.length === 0 && (
+        <EmptyState icon={LayoutGrid} title="Your pipeline is empty" desc="As you add contacts and move them through stages, they'll appear on this board. Prefer a simple list? Switch to the List tab above." />
+      )}
       {/* Kanban pipeline — gesture-native: horizontal swipe with scroll-snap and
           NO visible scrollbar (reads app-native, not webapp). `touch-action: pan-x`
           + `overscroll-x: contain` keep the swipe from fighting the PWA nav / browser
@@ -291,6 +466,8 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
           );
         })}
       </div>
+      </>
+      )}
 
       {/* Per-lead SUMMARY panel (A4) — bottom sheet on mobile, centered on desktop */}
       {detail && (() => {
@@ -430,6 +607,81 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
           </div>
         </div>
       )}
+
+      {/* ADD / IMPORT contacts (vendor CRM call list only) */}
+      {addOpen && adapter.createLead && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center" onClick={() => setAddOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 sm:max-w-md sm:rounded-2xl">
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" />
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-900">Add {contactNoun}</h3>
+              <button onClick={() => setAddOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+            </div>
+
+            {/* Single add */}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Name</label>
+                <input value={addForm.name} onChange={(e) => setAddForm((f) => ({ ...f, name: e.target.value }))} placeholder={`${contactNoun} name`}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-500">Phone number</label>
+                <input value={addForm.phone} onChange={(e) => setAddForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+91…" inputMode="tel"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+              {contactFields.map((cf) => (
+                <div key={cf.key}>
+                  <label className="mb-1 block text-xs font-medium text-slate-500">{cf.label}</label>
+                  {cf.type === 'select' && cf.options ? (
+                    <select value={addForm.custom[cf.key] ?? ''} onChange={(e) => setAddForm((f) => ({ ...f, custom: { ...f.custom, [cf.key]: e.target.value } }))}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                      <option value="">Select…</option>
+                      {cf.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input type={cf.type === 'number' ? 'number' : cf.type === 'date' ? 'date' : 'text'} value={addForm.custom[cf.key] ?? ''}
+                      onChange={(e) => setAddForm((f) => ({ ...f, custom: { ...f.custom, [cf.key]: e.target.value } }))}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                  )}
+                </div>
+              ))}
+              <Button fullWidth loading={addBusy} disabled={!addForm.name.trim() || !addForm.phone.trim()} onClick={addContact}>Add to call list</Button>
+            </div>
+
+            {/* CSV import */}
+            {adapter.importLeads && (
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="mb-1 text-sm font-semibold text-slate-800">Import a list (CSV)</div>
+                <p className="mb-3 text-xs text-slate-500">One contact per line: <code className="rounded bg-slate-100 px-1">name,phone</code>. A header row is skipped automatically.</p>
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-4 text-sm font-medium text-slate-600 hover:border-primary-400 hover:text-primary-700">
+                  <Upload className="h-4 w-4" />Choose CSV file
+                  <input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importCsv(f); e.target.value = ''; }} />
+                </label>
+                {importMsg && <p className="mt-2 text-xs font-medium text-emerald-700">{importMsg}</p>}
+              </div>
+            )}
+
+            {/* Consent boundary — this is the important labeling from the dispatch */}
+            <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+              <span>These contacts go into <strong>your call list</strong> for one-to-one calling and follow-ups — <strong>not a campaign list</strong>. Uploading here does <strong>not</strong> give consent to bulk-message them by SMS, WhatsApp or email; that still needs each contact&apos;s opt-in.</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Professional empty state — branded icon tile + one line + optional action. */
+function EmptyState({ icon: Icon, title, desc, action }: { icon: typeof Inbox; title: string; desc: string; action?: { label: string; onClick: () => void } }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-10 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-500 shadow-sm ring-1 ring-slate-100"><Icon className="h-5 w-5" /></div>
+      <p className="mt-3 text-sm font-semibold text-slate-700">{title}</p>
+      <p className="mt-1 max-w-xs text-xs text-slate-500">{desc}</p>
+      {action && <button onClick={action.onClick} className="mt-3 inline-flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700"><UserPlus className="h-3.5 w-3.5" />{action.label}</button>}
     </div>
   );
 }
