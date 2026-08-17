@@ -1,0 +1,23 @@
+{
+  "name": "get4domain-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Server-side reel renderer (photos + text + optional licensed music → MP4). Invoked by the backend reels module via child process. Runs on the VM (needs headless Chrome + FFmpeg).",
+  "type": "module",
+  "scripts": {
+    "render": "node render.mjs",
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.0",
+    "@remotion/renderer": "4.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5"
+  }
+}

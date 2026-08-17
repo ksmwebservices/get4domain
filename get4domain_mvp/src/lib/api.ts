@@ -120,6 +120,10 @@ export const api = {
   // Design editor (Polotno) — publishable key + built-in sample scene templates.
   designConfig: () => apiCall('/design/config'),
   designTemplates: () => apiCall('/design/templates'),
+  // Photo reels (Remotion) — licensed music tracks + server-side MP4 render.
+  reelTracks: () => apiCall('/reels/tracks'),
+  renderReel: (data: { images: string[]; text?: string; trackId?: string; accent?: string }) =>
+    apiCall('/reels/render', { method: 'POST', body: JSON.stringify(data) }),
   // Business documents (AI Studio Redesign) — coded templates + invoice-style render.
   businessDocTemplates: () => apiCall('/business-documents/templates'),
   renderBusinessDocument: (data: { type: string; values: Record<string, string>; brand?: { color?: string; logoUrl?: string } }) =>

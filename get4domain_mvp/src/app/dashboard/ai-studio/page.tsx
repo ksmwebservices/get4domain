@@ -251,6 +251,42 @@ export default function AiStudioPage() {
   const stopPolling = () => { if (videoPoll.current) { clearInterval(videoPoll.current); videoPoll.current = null; } };
   useEffect(() => () => stopPolling(), []);
 
+  // ── Photo Reel (Remotion) — vendor's own photos + text + optional licensed music ──
+  const [reelOpen, setReelOpen] = useState(false);
+  const [reelImages, setReelImages] = useState<string[]>([]);
+  const [reelText, setReelText] = useState('');
+  const [reelTrack, setReelTrack] = useState('');
+  const [reelTracks, setReelTracks] = useState<{ id: string; name: string }[]>([]);
+  const [reelUploading, setReelUploading] = useState(false);
+  const [reelBusy, setReelBusy] = useState(false);
+  const [reelUrl, setReelUrl] = useState<string | null>(null);
+  const [reelMsg, setReelMsg] = useState('');
+
+  const openReel = async () => {
+    setReelOpen(true); setReelImages([]); setReelText(''); setReelTrack(''); setReelUrl(null); setReelMsg('');
+    try { const r = await api.reelTracks(); setReelTracks((r.data ?? []) as { id: string; name: string }[]); } catch { setReelTracks([]); }
+  };
+  const addReelPhoto = async (file: File) => {
+    setReelUploading(true); setReelMsg('');
+    try { const r = await api.uploadImage(file); if (r.data?.url) setReelImages((imgs) => [...imgs, r.data!.url]); }
+    catch (e) { setReelMsg(e instanceof Error ? e.message : 'Photo upload failed'); }
+    finally { setReelUploading(false); }
+  };
+  const createReel = async () => {
+    if (reelImages.length === 0) return;
+    setReelBusy(true); setReelUrl(null); setReelMsg('');
+    try {
+      const r = await api.renderReel({ images: reelImages, text: reelText || undefined, trackId: reelTrack || undefined });
+      const status = r.data?.status as string | undefined;
+      if (status === 'done' && r.data?.url) setReelUrl(r.data.url as string);
+      else if (status === 'not_configured') setReelMsg(r.data?.message as string ?? 'The reel renderer isn’t set up on the server yet.');
+      else setReelMsg(r.data?.message as string ?? 'Could not render the reel right now.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Reel render failed';
+      setReelMsg(/wallet|insufficient|balance/i.test(msg) ? 'Your wallet balance is too low for a reel. Top up to continue.' : msg);
+    } finally { setReelBusy(false); }
+  };
+
   const openVideo = async () => {
     setVideoOpen(true); setVideoInput(''); setVideoUrl(null); setVideoError(''); setVideoBusy(false);
     try {
@@ -476,6 +512,14 @@ export default function AiStudioPage() {
               </div>
               <h3 className="mt-3 font-semibold text-slate-900">Reel / Video</h3>
               <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'per video'}</p>
+            </Card>
+            <Card hover className="cursor-pointer" onClick={openReel}>
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{isInternalStaff ? 'Free' : 'wallet'}</span>
+              </div>
+              <h3 className="mt-3 font-semibold text-slate-900">Photo Reel</h3>
+              <p className="mt-0.5 text-xs text-slate-400">Your photos + music → MP4</p>
             </Card>
           </div>
         </div>
@@ -770,6 +814,57 @@ export default function AiStudioPage() {
             </Button>
           </div>
           {videoBusy && <p className="text-center text-xs text-slate-400">Rendering your video — this can take up to a minute.</p>}
+        </div>
+      </Modal>
+
+      {/* Photo Reel builder — your own photos + text + optional licensed music → MP4 */}
+      <Modal isOpen={reelOpen} onClose={() => setReelOpen(false)} title="Photo Reel" maxWidth="max-w-2xl">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500">Add your own photos, a line of text and (optionally) a music track — we render a short reel you can post.</p>
+
+          <div>
+            <div className="mb-1.5 text-sm font-medium text-slate-700">Photos {reelImages.length > 0 && <span className="text-slate-400">({reelImages.length})</span>}</div>
+            <div className="flex flex-wrap gap-2">
+              {reelImages.map((src, i) => (
+                <div key={i} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-16 w-16 rounded-lg border border-slate-200 object-cover" />
+                  <button onClick={() => setReelImages((imgs) => imgs.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 rounded-full bg-slate-700 px-1 text-[10px] font-bold text-white">×</button>
+                </div>
+              ))}
+              <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs font-medium text-slate-500 hover:border-primary-400 hover:text-primary-700">
+                {reelUploading ? '…' : '+ Add'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) addReelPhoto(f); e.target.value = ''; }} />
+              </label>
+            </div>
+          </div>
+
+          <Input label="Text overlay (optional)" placeholder="e.g. Diwali Special — 20% off" value={reelText} onChange={(e) => setReelText(e.target.value)} />
+
+          <Select label="Music" value={reelTrack} onChange={(e) => setReelTrack(e.target.value)}>
+            <option value="">No music (silent reel)</option>
+            {reelTracks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </Select>
+          {reelTracks.length === 0 && <p className="-mt-2 text-xs text-slate-400">Licensed music tracks are added by your Get4Domain team — until then reels are silent.</p>}
+
+          {reelMsg && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{reelMsg}</div>}
+
+          {reelUrl && (
+            <div>
+              <div className="mb-1.5 text-sm font-medium text-slate-700">Result</div>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video src={reelUrl} controls className="w-full rounded-xl border border-slate-200" />
+              <a href={reelUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600"><Download className="h-4 w-4" /> Download / open</a>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setReelOpen(false)}>Close</Button>
+            <Button leftIcon={<Video className="h-4 w-4" />} loading={reelBusy} disabled={reelImages.length === 0 || reelBusy} onClick={createReel}>
+              {reelBusy ? 'Rendering…' : reelUrl ? 'Re-render' : 'Create reel'}
+            </Button>
+          </div>
+          {reelBusy && <p className="text-center text-xs text-slate-400">Rendering your reel — this can take a little while.</p>}
         </div>
       </Modal>
     </div>
