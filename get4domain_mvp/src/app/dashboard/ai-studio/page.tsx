@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Sparkles, MessageSquare, Video, FileText, Image as ImageIcon,
   Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library, Wallet, Share2,
+  Palette, CreditCard, IdCard, ExternalLink,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -38,55 +39,34 @@ const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 // image" option (use a real product/property photo or logo instead of AI imagery).
 const IMAGE_TYPES = new Set(['social_post', 'festival_poster', 'ad_creative']);
 
-// Document generators — simple HTML templates filled with the vendor's business
-// data, downloaded via browser print-to-PDF. No wallet cost, no AI backend.
-type DocKey = 'letterhead' | 'id_card' | 'visiting_card';
-const DOC_TYPES: { key: DocKey; label: string; icon: string; desc: string }[] = [
-  { key: 'letterhead', label: 'Letterhead', icon: '📄', desc: 'Company header — print to PDF' },
-  { key: 'id_card', label: 'ID Card', icon: '🪪', desc: 'Employee ID — print to PDF' },
-  { key: 'visiting_card', label: 'Visiting Card', icon: '💼', desc: 'Business card — print to PDF' },
+// The three AI Studio modes, chosen up front — each needs a different flow.
+type Mode = 'ai' | 'canva' | 'documents' | 'library';
+const MODES: { key: Mode; label: string; icon: typeof Sparkles; blurb: string }[] = [
+  { key: 'ai', label: 'AI Generate', icon: Sparkles, blurb: 'Prompt-based creative — posts, posters, ad copy' },
+  { key: 'canva', label: 'Canva Templates', icon: Palette, blurb: 'Pick a branded template, fill in your details' },
+  { key: 'documents', label: 'Business Documents', icon: FileText, blurb: 'Letterhead, visiting card, ID card — instant PDF' },
+  { key: 'library', label: 'Library', icon: Library, blurb: 'Your saved generations' },
 ];
 
-interface DocFields { business: string; person: string; designation: string; phone: string; email: string; address: string }
+const DOC_ICON: Record<string, typeof FileText> = {
+  letterhead: FileText,
+  visiting_card: CreditCard,
+  id_card: IdCard,
+};
 
-function docHtml(kind: DocKey, f: DocFields, bg?: string | null): string {
-  const brand = '#2563eb';
-  const base = `font-family: Arial, Helvetica, sans-serif; color:#0f172a;`;
-  // AI design as a background layer with a white wash so the REAL text stays crisp.
-  const bgLayer = bg ? `background-image:linear-gradient(rgba(255,255,255,.85),rgba(255,255,255,.85)),url('${bg}');background-size:cover;background-position:center;` : '';
-  if (kind === 'letterhead') {
-    return `<div style="${base} ${bgLayer} max-width:720px;margin:0 auto;padding:0;">
-      <div style="border-bottom:4px solid ${brand};padding:24px 32px;display:flex;justify-content:space-between;align-items:flex-end;">
-        <div><div style="font-size:26px;font-weight:800;color:${brand};">${f.business}</div>
-        <div style="font-size:12px;color:#475569;margin-top:4px;">${f.address}</div></div>
-        <div style="text-align:right;font-size:12px;color:#475569;">${f.phone}<br/>${f.email}</div>
-      </div>
-      <div style="min-height:520px;padding:40px 32px;color:#94a3b8;font-size:13px;">Date: _____________<br/><br/>Dear _____________,<br/><br/>[ Your letter content here ]</div>
-      <div style="border-top:1px solid #e2e8f0;padding:14px 32px;text-align:center;font-size:11px;color:#94a3b8;">${f.business} · ${f.phone} · ${f.email}</div>
-    </div>`;
-  }
-  if (kind === 'id_card') {
-    return `<div style="${base} width:320px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08);">
-      <div style="background:${brand};color:#fff;padding:16px;text-align:center;font-weight:800;">${f.business}</div>
-      <div style="${bgLayer} padding:20px;text-align:center;">
-        <div style="width:96px;height:96px;border-radius:50%;background:#e2e8f0;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;">PHOTO</div>
-        <div style="font-size:18px;font-weight:700;margin-top:12px;">${f.person}</div>
-        <div style="font-size:13px;color:${brand};">${f.designation}</div>
-        <div style="font-size:12px;color:#475569;margin-top:10px;">${f.phone}<br/>${f.email}</div>
-      </div>
-      <div style="background:#f8fafc;padding:8px;text-align:center;font-size:10px;color:#94a3b8;">${f.address}</div>
-    </div>`;
-  }
-  return `<div style="${base} display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
-    <div style="${bgLayer} width:340px;height:190px;border-radius:12px;border:1px solid #e2e8f0;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08);">
-      <div style="font-size:20px;font-weight:800;color:${brand};">${f.business}</div>
-      <div style="margin-top:26px;font-size:16px;font-weight:700;">${f.person}</div>
-      <div style="font-size:12px;color:${brand};">${f.designation}</div>
-      <div style="position:relative;margin-top:22px;font-size:11px;color:#475569;">${f.phone} · ${f.email}<br/>${f.address}</div>
-    </div>
-    <div style="width:340px;height:190px;border-radius:12px;background:${brand};color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;">${f.business}</div>
-  </div>`;
+// A data-fill field definition — the shape the Business-Documents backend returns
+// and (later) the Template-Driven CMS `cmsSchema` will share, so these forms adopt
+// the schema without a rewrite.
+interface FieldDef {
+  key: string;
+  label: string;
+  type?: 'text' | 'textarea';
+  required?: boolean;
+  maxLength?: number;
+  prefillFrom?: 'businessName' | 'name' | 'email';
 }
+interface DocTemplate { key: string; label: string; description: string; fields: FieldDef[] }
+interface CanvaTemplate { id: string; name: string; thumbnail?: string | null; industry?: string | null; fields?: FieldDef[] | null }
 
 interface SavedItem {
   id: string;
@@ -101,7 +81,7 @@ export default function AiStudioPage() {
   // Internal Get4Domain staff (Admin Platform) use AI Studio for free — the
   // backend skips wallet deduction for them — so hide all wallet/credit UI.
   const isInternalStaff = user?.role === 'admin' || user?.role === 'super_admin';
-  const [tab, setTab] = useState<'create' | 'library'>('create');
+  const [mode, setMode] = useState<Mode>('ai');
   const [active, setActive] = useState<ContentType | null>(null);
   const [templates, setTemplates] = useState<{ id: string; name: string; prompt: string; thumbnail?: string | null }[]>([]);
   const [purpose, setPurpose] = useState('');
@@ -112,8 +92,81 @@ export default function AiStudioPage() {
   const [genError, setGenError] = useState('');
   const [library, setLibrary] = useState<SavedItem[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
-  const [activeDoc, setActiveDoc] = useState<DocKey | null>(null);
-  const [docFields, setDocFields] = useState<DocFields>({ business: '', person: '', designation: '', phone: '', email: '', address: '' });
+
+  // Prefill a field-def form from the vendor's known profile data.
+  const prefill = useCallback((fields: FieldDef[]): Record<string, string> => {
+    const map: Record<string, string> = {};
+    for (const f of fields) {
+      if (f.prefillFrom === 'businessName') map[f.key] = user?.businessName ?? '';
+      else if (f.prefillFrom === 'name') map[f.key] = user?.name ?? '';
+      else if (f.prefillFrom === 'email') map[f.key] = user?.email ?? '';
+      else map[f.key] = '';
+    }
+    return map;
+  }, [user]);
+
+  // ── Business Documents ────────────────────────────────────────────────────
+  const [docTemplates, setDocTemplates] = useState<DocTemplate[]>([]);
+  const [docSel, setDocSel] = useState<DocTemplate | null>(null);
+  const [docValues, setDocValues] = useState<Record<string, string>>({});
+  const [docLogo, setDocLogo] = useState('');
+  const [docPreview, setDocPreview] = useState('');
+  const [docBusy, setDocBusy] = useState(false);
+
+  useEffect(() => {
+    if (mode !== 'documents' || docTemplates.length) return;
+    api.businessDocTemplates().then((r) => setDocTemplates((r.data ?? []) as DocTemplate[])).catch(() => setDocTemplates([]));
+  }, [mode, docTemplates.length]);
+
+  const openDoc = (t: DocTemplate) => {
+    setDocSel(t);
+    setDocValues(prefill(t.fields));
+    setDocLogo('');
+    setDocPreview('');
+  };
+
+  const renderDoc = useCallback(async () => {
+    if (!docSel) return;
+    setDocBusy(true);
+    try {
+      const r = await api.renderBusinessDocument({ type: docSel.key, values: docValues, brand: docLogo ? { logoUrl: docLogo } : undefined });
+      setDocPreview((r.data?.html as string) ?? '');
+    } catch { /* preview stays as-is */ } finally { setDocBusy(false); }
+  }, [docSel, docValues, docLogo]);
+
+  // Debounced live preview via the backend renderer (same HTML the print uses).
+  useEffect(() => {
+    if (!docSel) return;
+    const t = setTimeout(renderDoc, 400);
+    return () => clearTimeout(t);
+  }, [docSel, docValues, docLogo, renderDoc]);
+
+  const printDoc = () => {
+    if (!docPreview) return;
+    const w = window.open('', '_blank', 'width=820,height=1000');
+    if (!w) return;
+    // Same print-to-PDF mechanism the invoice download uses.
+    w.document.write(`<!doctype html><html><head><title>${docSel?.label ?? 'document'}</title><style>@media print{body{margin:0}}body{margin:24px;background:#fff}</style></head><body>${docPreview}<script>window.onload=function(){window.print();}</script></body></html>`);
+    w.document.close();
+  };
+
+  // ── Canva Templates (gated on KSM's Canva Enterprise prereqs) ──────────────
+  const [canvaTemplates, setCanvaTemplates] = useState<CanvaTemplate[]>([]);
+  const [canvaLoading, setCanvaLoading] = useState(false);
+  const [canvaSel, setCanvaSel] = useState<CanvaTemplate | null>(null);
+  const [canvaValues, setCanvaValues] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (mode !== 'canva') return;
+    setCanvaLoading(true);
+    const q = `?source=canva${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
+    api.aiTemplates(q).then((r) => setCanvaTemplates((r.data ?? []) as CanvaTemplate[])).catch(() => setCanvaTemplates([])).finally(() => setCanvaLoading(false));
+  }, [mode, user?.industry]);
+
+  const openCanva = (t: CanvaTemplate) => {
+    setCanvaSel(t);
+    setCanvaValues(prefill(t.fields ?? []));
+  };
 
   // Video / Reel generation (Runway or HeyGen, admin-selectable; async job).
   const [videoOpen, setVideoOpen] = useState(false);
@@ -162,54 +215,6 @@ export default function AiStudioPage() {
     }
   };
 
-  const [docBg, setDocBg] = useState<string | null>(null);
-  const [docBgLoading, setDocBgLoading] = useState(false);
-  const [docBgNote, setDocBgNote] = useState('');
-
-  const generateDocBg = async () => {
-    if (!activeDoc) return;
-    setDocBgLoading(true); setDocBgNote('');
-    const kindLabel = DOC_TYPES.find((d) => d.key === activeDoc)?.label ?? 'document';
-    const prompt = `Elegant professional ${kindLabel.toLowerCase()} background design, subtle abstract geometric pattern in blue and white, clean corporate style, plenty of empty space, NO text, NO words, NO letters`;
-    try {
-      const res = await api.generateDesignImage(prompt);
-      const url = res.data?.imageUrl as string | null | undefined;
-      if (url) { setDocBg(url); return; }
-      // Honest failure: distinguish "no key" from a real OpenAI API error.
-      const status = res.data?.status as string | undefined;
-      const err = res.data?.error as string | undefined;
-      if (status === 'not_configured') setDocBgNote('AI image isn’t configured — add an OpenAI key in Admin → Integrations. Using the clean default design.');
-      else setDocBgNote(`AI image failed: ${err ?? 'unknown error'}. Using the clean default design.`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not generate design';
-      setDocBgNote(/wallet|insufficient|balance/i.test(msg) ? 'Wallet balance too low for an AI design.' : 'Could not generate the design right now.');
-    } finally {
-      setDocBgLoading(false);
-    }
-  };
-
-  const openDoc = (key: DocKey) => {
-    setActiveDoc(key);
-    setDocBg(null); setDocBgNote('');
-    setDocFields({
-      business: user?.businessName ?? 'Your Business',
-      person: user?.name ?? '',
-      designation: 'Proprietor',
-      phone: '+91 ',
-      email: user?.email ?? '',
-      address: 'Chennai, Tamil Nadu',
-    });
-  };
-
-  const printDoc = () => {
-    if (!activeDoc) return;
-    const html = docHtml(activeDoc, docFields, docBg);
-    const w = window.open('', '_blank', 'width=800,height=900');
-    if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${activeDoc}</title><style>@media print{body{margin:0}}body{margin:24px;background:#fff}</style></head><body>${html}<script>window.onload=function(){window.print();}</script></body></html>`);
-    w.document.close();
-  };
-
   const storageKey = `g4d_ai_library_${user?.id ?? 'anon'}`;
 
   const refreshBalance = useCallback(() => {
@@ -229,12 +234,12 @@ export default function AiStudioPage() {
 
   useEffect(() => { loadLibrary(); }, [loadLibrary]);
 
-  // AI template library (2.2) — load admin-created starting-point templates for the
-  // selected content type + this vendor's industry when the generation modal opens.
+  // AI template library (2.2) — load admin-created starting-point templates (prompt
+  // source only) for the selected content type + this vendor's industry.
   useEffect(() => {
     if (!active) { setTemplates([]); return; }
     let cancelled = false;
-    const q = `?contentType=${encodeURIComponent(active.key)}${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
+    const q = `?source=prompt&contentType=${encodeURIComponent(active.key)}${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
     api.aiTemplates(q).then((res) => { if (!cancelled) setTemplates(res.data ?? []); }).catch(() => { if (!cancelled) setTemplates([]); });
     return () => { cancelled = true; };
   }, [active, user?.industry]);
@@ -340,7 +345,7 @@ export default function AiStudioPage() {
           <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
             <Sparkles className="h-5 w-5 text-primary-600" /> AI Studio
           </h1>
-          <p className="text-sm text-slate-500">Generate on-brand content in seconds</p>
+          <p className="text-sm text-slate-500">Create on-brand content, templates and documents</p>
         </div>
         {isInternalStaff ? (
           <span className="inline-flex items-center gap-1.5 rounded-xl border border-success-200 bg-success-50 px-3 py-1.5 text-sm font-semibold text-success-700">
@@ -355,15 +360,27 @@ export default function AiStudioPage() {
           </div>
         )}
       </div>
-      <div className="mb-5 flex justify-end">
-        <div className="flex rounded-xl border border-slate-200 bg-white p-1">
-          <button onClick={() => setTab('create')} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'create' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>Create</button>
-          <button onClick={() => { setTab('library'); loadLibrary(); }} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'library' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>Library</button>
-        </div>
+
+      {/* Mode selector — chosen up front, one correct flow per content kind */}
+      <div className="mb-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {MODES.map((m) => {
+          const Ic = m.icon; const on = mode === m.key;
+          return (
+            <button key={m.key} onClick={() => { setMode(m.key); if (m.key === 'library') loadLibrary(); }}
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${on ? 'border-primary-400 bg-primary-50/60 ring-1 ring-primary-200' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+              <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${on ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Ic className="h-5 w-5" /></span>
+              <span className="min-w-0">
+                <span className={`block text-sm font-bold ${on ? 'text-primary-800' : 'text-slate-800'}`}>{m.label}</span>
+                <span className="mt-0.5 block text-xs text-slate-400">{m.blurb}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {tab === 'create' ? (
-        <div className="space-y-8">
+      {/* ── MODE: AI GENERATE ─────────────────────────────────────────────── */}
+      {mode === 'ai' && (
+        <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {CONTENT_TYPES.map((ct) => {
               const Ic = ct.icon;
@@ -381,41 +398,84 @@ export default function AiStudioPage() {
               <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'wallet — per video'}</p>
             </Card>
           </div>
-
-          <div>
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-400">Documents</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {DOC_TYPES.map((d) => (
-                <Card key={d.key} hover className="cursor-pointer" onClick={() => openDoc(d.key)}>
-                  <div className="text-2xl">{d.icon}</div>
-                  <h3 className="mt-3 font-semibold text-slate-900">{d.label}</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">{d.desc}</p>
-                </Card>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-slate-400">Presentation generator — coming soon.</p>
-          </div>
-        </div>
-      ) : library.length === 0 ? (
-        <EmptyState icon="Library" title="Your library is empty" subtitle="Saved generations show up here." />
-      ) : (
-        <div className="space-y-3">
-          {library.map((item) => (
-            <Card key={item.id}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Library className="h-4 w-4 text-primary-600" />{item.typeLabel}</span>
-                <span className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
-              </div>
-              <p className="whitespace-pre-wrap text-sm text-slate-600">{item.content}</p>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(item.content, item.typeLabel)}>Download</Button>
-              </div>
-            </Card>
-          ))}
         </div>
       )}
 
-      {/* Generation flow */}
+      {/* ── MODE: CANVA TEMPLATES ─────────────────────────────────────────── */}
+      {mode === 'canva' && (
+        <div>
+          {canvaLoading ? (
+            <p className="py-16 text-center text-sm text-slate-400">Loading templates…</p>
+          ) : canvaTemplates.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-12 text-center">
+              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-primary-500 shadow-sm ring-1 ring-slate-100"><Palette className="h-5 w-5" /></div>
+              <p className="mt-3 text-sm font-semibold text-slate-700">Canva templates aren’t set up yet</p>
+              <p className="mx-auto mt-1 max-w-md text-xs text-slate-500">
+                Your Get4Domain team designs branded, ready-to-use templates in Canva and syncs them here.
+                Once they’re published, you’ll pick one, fill in a couple of details, and download — no design skills needed.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {canvaTemplates.map((t) => (
+                <Card key={t.id} hover className="cursor-pointer" onClick={() => openCanva(t)}>
+                  {t.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
+                  ) : (
+                    <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
+                  )}
+                  <h3 className="font-semibold text-slate-900">{t.name}</h3>
+                  <p className="mt-0.5 text-xs text-slate-400">{t.industry ?? 'All industries'}</p>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── MODE: BUSINESS DOCUMENTS ──────────────────────────────────────── */}
+      {mode === 'documents' && (
+        <div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {docTemplates.map((t) => {
+              const Ic = DOC_ICON[t.key] ?? FileText;
+              return (
+                <Card key={t.key} hover className="cursor-pointer" onClick={() => openDoc(t)}>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                  <h3 className="mt-3 font-semibold text-slate-900">{t.label}</h3>
+                  <p className="mt-0.5 text-xs text-slate-400">{t.description}</p>
+                </Card>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-xs text-slate-400">Branded, print-ready PDFs — the same document engine as your invoices. No AI, no design work.</p>
+        </div>
+      )}
+
+      {/* ── MODE: LIBRARY ─────────────────────────────────────────────────── */}
+      {mode === 'library' && (
+        library.length === 0 ? (
+          <EmptyState icon="Library" title="Your library is empty" subtitle="Saved generations show up here." />
+        ) : (
+          <div className="space-y-3">
+            {library.map((item) => (
+              <Card key={item.id}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Library className="h-4 w-4 text-primary-600" />{item.typeLabel}</span>
+                  <span className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm text-slate-600">{item.content}</p>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(item.content, item.typeLabel)}>Download</Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Generation flow (AI Generate) */}
       <Modal isOpen={active !== null} onClose={() => setActive(null)} title={active ? `Generate ${active.label}` : ''} maxWidth="max-w-2xl">
         {active && (
           <div className="space-y-4">
@@ -508,34 +568,50 @@ export default function AiStudioPage() {
         )}
       </Modal>
 
-      {/* Document generator */}
-      <Modal isOpen={activeDoc !== null} onClose={() => setActiveDoc(null)} title={activeDoc ? DOC_TYPES.find((d) => d.key === activeDoc)?.label : ''} maxWidth="max-w-3xl">
-        {activeDoc && (
+      {/* Business-document generator (coded template → backend render → print-to-PDF) */}
+      <Modal isOpen={docSel !== null} onClose={() => setDocSel(null)} title={docSel?.label ?? ''} maxWidth="max-w-3xl">
+        {docSel && (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input label="Business name" value={docFields.business} onChange={(e) => setDocFields({ ...docFields, business: e.target.value })} />
-              <Input label="Person name" value={docFields.person} onChange={(e) => setDocFields({ ...docFields, person: e.target.value })} />
-              <Input label="Designation" value={docFields.designation} onChange={(e) => setDocFields({ ...docFields, designation: e.target.value })} />
-              <Input label="Phone" value={docFields.phone} onChange={(e) => setDocFields({ ...docFields, phone: e.target.value })} />
-              <Input label="Email" value={docFields.email} onChange={(e) => setDocFields({ ...docFields, email: e.target.value })} />
-              <Input label="Address" value={docFields.address} onChange={(e) => setDocFields({ ...docFields, address: e.target.value })} />
+              {docSel.fields.map((f) => (
+                <Input key={f.key} label={f.label + (f.required ? ' *' : '')} maxLength={f.maxLength}
+                  value={docValues[f.key] ?? ''} onChange={(e) => setDocValues((v) => ({ ...v, [f.key]: e.target.value }))} />
+              ))}
+              <Input label="Logo URL (optional)" placeholder="https://…/logo.png" value={docLogo} onChange={(e) => setDocLogo(e.target.value)} />
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-primary-50 px-3 py-2">
-              <span className="text-xs text-primary-700">AI design background — your details stay crisp on top{isInternalStaff ? ' · Free' : ''}</span>
-              <div className="flex items-center gap-2">
-                {docBg && <button onClick={() => setDocBg(null)} className="text-xs font-medium text-slate-500 hover:text-slate-700">Remove</button>}
-                <Button size="sm" variant="outline" leftIcon={<Sparkles className="h-3.5 w-3.5" />} loading={docBgLoading} onClick={generateDocBg}>
-                  {docBg ? 'Regenerate design' : 'Generate AI design'}
-                </Button>
-              </div>
-            </div>
-            {docBgNote && <p className="text-xs text-amber-700">{docBgNote}</p>}
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-2 text-xs font-medium text-slate-500">Preview</div>
-              <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docHtml(activeDoc, docFields, docBg) }} />
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-500">Preview</span>
+                {docBusy && <span className="text-xs text-slate-400">Updating…</span>}
+              </div>
+              <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docPreview }} />
             </div>
             <div className="flex justify-end">
-              <Button leftIcon={<Download className="h-4 w-4" />} onClick={printDoc}>Download / Print as PDF</Button>
+              <Button leftIcon={<Download className="h-4 w-4" />} disabled={!docPreview} onClick={printDoc}>Download / Print as PDF</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Canva template data-fill (autofill runs once KSM's Canva Enterprise is connected) */}
+      <Modal isOpen={canvaSel !== null} onClose={() => setCanvaSel(null)} title={canvaSel?.name ?? ''} maxWidth="max-w-2xl">
+        {canvaSel && (
+          <div className="space-y-4">
+            {canvaSel.thumbnail && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={canvaSel.thumbnail} alt={canvaSel.name} className="max-h-56 w-full rounded-xl border border-slate-200 object-contain" />
+            )}
+            {(canvaSel.fields ?? []).map((f) => (
+              <Input key={f.key} label={f.label} maxLength={f.maxLength}
+                value={canvaValues[f.key] ?? ''} onChange={(e) => setCanvaValues((v) => ({ ...v, [f.key]: e.target.value }))} />
+            ))}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Canva autofill will be enabled once your Get4Domain team connects the Canva account.
+              Your details are ready — generation and the “open in Canva to fine-tune” link light up then.
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setCanvaSel(null)}>Close</Button>
+              <Button disabled leftIcon={<ExternalLink className="h-4 w-4" />}>Generate (coming soon)</Button>
             </div>
           </div>
         )}

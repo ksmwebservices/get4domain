@@ -115,6 +115,10 @@ export const api = {
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
+  // Business documents (AI Studio Redesign) — coded templates + invoice-style render.
+  businessDocTemplates: () => apiCall('/business-documents/templates'),
+  renderBusinessDocument: (data: { type: string; values: Record<string, string>; brand?: { color?: string; logoUrl?: string } }) =>
+    apiCall('/business-documents/render', { method: 'POST', body: JSON.stringify(data) }),
   createAiTemplate: (data: any) => apiCall('/ai-templates', { method: 'POST', body: JSON.stringify(data) }),
   updateAiTemplate: (id: string, data: any) => apiCall(`/ai-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAiTemplate: (id: string) => apiCall(`/ai-templates/${id}`, { method: 'DELETE' }),
