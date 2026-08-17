@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   Sparkles, MessageSquare, Video, FileText, Image as ImageIcon,
   Megaphone, Mail, MessageCircle, Smartphone, RefreshCw, Download, Save, Library, Wallet, Share2,
-  Palette, CreditCard, IdCard, ExternalLink,
+  Palette, CreditCard, IdCard,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -15,10 +16,27 @@ import Modal from '@/components/ui/Modal';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
 
+// Polotno is browser-only — load the editor client-side only.
+const PolotnoEditor = dynamic(() => import('@/components/design/PolotnoEditor'), {
+  ssr: false,
+  loading: () => <div className="flex h-[80vh] items-center justify-center text-sm text-slate-400">Loading editor…</div>,
+});
+
 interface ContentType {
   key: string;
   label: string;
   icon: typeof Sparkles;
+}
+
+// A built-in editable design template (Polotno scene) from GET /design/templates.
+interface EditorTemplate {
+  id: string;
+  name: string;
+  category: string;
+  width: number;
+  height: number;
+  fields: { key: string; label: string; prefillFrom?: 'businessName' | 'name' | 'email' }[];
+  editorJson: Record<string, unknown>;
 }
 
 // Costs are NOT hardcoded here — they come from the backend rate table (/ai/costs,
@@ -100,9 +118,6 @@ interface FieldDef {
   prefillFrom?: 'businessName' | 'name' | 'email';
 }
 interface DocTemplate { key: string; label: string; description: string; fields: FieldDef[] }
-// A ready-made design template synced from the design provider (kept provider-agnostic
-// in the UI). `source=canva` is only an internal identifier for the current provider.
-interface DesignTemplate { id: string; name: string; thumbnail?: string | null; industry?: string | null; fields?: FieldDef[] | null }
 
 interface SavedItem {
   id: string;
@@ -154,6 +169,30 @@ export default function AiStudioPage() {
   // AI Template browse: null = category grid; set = template gallery for that category.
   const [browseCat, setBrowseCat] = useState<TemplateCategory | null>(null);
 
+  // Polotno editor: config (publishable key) + built-in editable templates + the
+  // currently-open editor template (with its prefill values).
+  const [polotnoKey, setPolotnoKey] = useState<string | null>(null);
+  const [editorTemplates, setEditorTemplates] = useState<EditorTemplate[]>([]);
+  const [editorTpl, setEditorTpl] = useState<EditorTemplate | null>(null);
+  useEffect(() => {
+    if (polotnoKey !== null || editorTemplates.length) return;
+    if (mode !== 'template') return;
+    api.designConfig().then((r) => setPolotnoKey((r.data?.polotnoKey as string) ?? '')).catch(() => setPolotnoKey(''));
+    api.designTemplates().then((r) => setEditorTemplates((r.data ?? []) as EditorTemplate[])).catch(() => setEditorTemplates([]));
+  }, [mode, polotnoKey, editorTemplates.length]);
+
+  const openEditor = (t: EditorTemplate) => setEditorTpl(t);
+  const editorPrefill = useMemo(() => {
+    if (!editorTpl) return {};
+    const map: Record<string, string> = {};
+    for (const f of editorTpl.fields) {
+      if (f.prefillFrom === 'businessName' && user?.businessName) map[f.key] = user.businessName;
+      else if (f.prefillFrom === 'name' && user?.name) map[f.key] = user.name;
+      else if (f.prefillFrom === 'email' && user?.email) map[f.key] = user.email;
+    }
+    return map;
+  }, [editorTpl, user]);
+
   // ── Business Documents ────────────────────────────────────────────────────
   const [docTemplates, setDocTemplates] = useState<DocTemplate[]>([]);
   const [docSel, setDocSel] = useState<DocTemplate | null>(null);
@@ -197,25 +236,6 @@ export default function AiStudioPage() {
     // Same print-to-PDF mechanism the invoice download uses.
     w.document.write(`<!doctype html><html><head><title>${docSel?.label ?? 'document'}</title><style>@media print{body{margin:0}}body{margin:24px;background:#fff}</style></head><body>${docPreview}<script>window.onload=function(){window.print();}</script></body></html>`);
     w.document.close();
-  };
-
-  // ── Ready-made design templates (synced from the design provider; provider is
-  //    kept out of the UI and gated on the account being connected) ─────────────
-  const [designTemplates, setDesignTemplates] = useState<DesignTemplate[]>([]);
-  const [designLoading, setDesignLoading] = useState(false);
-  const [designSel, setDesignSel] = useState<DesignTemplate | null>(null);
-  const [designValues, setDesignValues] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (mode !== 'template') return;
-    setDesignLoading(true);
-    const q = `?source=canva${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`;
-    api.aiTemplates(q).then((r) => setDesignTemplates((r.data ?? []) as DesignTemplate[])).catch(() => setDesignTemplates([])).finally(() => setDesignLoading(false));
-  }, [mode, user?.industry]);
-
-  const openDesign = (t: DesignTemplate) => {
-    setDesignSel(t);
-    setDesignValues(prefill(t.fields ?? []));
   };
 
   // Video / Reel generation (Runway or HeyGen, admin-selectable; async job).
@@ -474,12 +494,7 @@ export default function AiStudioPage() {
                 const Ic = cat.icon;
                 const price = cat.kind === 'document' ? 'Free' : costLabel(cat.costKey);
                 return (
-                  <Card key={cat.key} hover className="cursor-pointer" onClick={() => {
-                    // Business-doc categories open the coded template directly; design
-                    // categories open their template gallery.
-                    if (cat.kind === 'document') { const dt = docTemplates.find((d) => d.key === cat.docKey); if (dt) openDoc(dt); }
-                    else setBrowseCat(cat);
-                  }}>
+                  <Card key={cat.key} hover className="cursor-pointer" onClick={() => setBrowseCat(cat)}>
                     <div className="flex items-center justify-between">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{price}</span>
@@ -492,43 +507,50 @@ export default function AiStudioPage() {
             </div>
           </div>
         ) : (
-          // Gallery for a design category — synced templates (by category) + staged placeholders.
+          // Gallery for a category — coded doc (Free) + editable Polotno templates + staged placeholders.
           <div className="space-y-4">
             <button onClick={() => setBrowseCat(null)} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700">← All templates</button>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">{browseCat.label}</h2>
-              {!isInternalStaff && <span className="text-sm font-semibold text-slate-600">{costLabel(browseCat.costKey)} / design</span>}
-            </div>
+            <h2 className="text-lg font-bold text-slate-900">{browseCat.label}</h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {/* Real synced templates for this category (filtered by contentType), when connected */}
-              {designTemplates.filter((t) => (t as { contentType?: string }).contentType === browseCat.key).map((t) => (
-                <Card key={t.id} hover className="cursor-pointer" onClick={() => openDesign(t)}>
-                  {t.thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
-                  ) : (
-                    <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
-                  )}
-                  <h3 className="font-semibold text-slate-900">{t.name}</h3>
-                </Card>
-              ))}
-              {/* Staged placeholders — swapped for real synced designs once connected */}
-              {(STAGED_DESIGN_TEMPLATES[browseCat.key] ?? []).map((t) => (
-                <Card key={t.id} hover className="cursor-pointer opacity-90"
-                  onClick={() => openDesign({ id: t.id, name: t.name, thumbnail: null, industry: null, fields: [
-                    { key: 'business', label: 'Business name', prefillFrom: 'businessName' },
-                    { key: 'headline', label: 'Headline / offer' },
-                    { key: 'phone', label: 'Phone' },
-                  ] })}>
-                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-slate-100 text-primary-300"><Palette className="h-7 w-7" /></div>
+              {/* Coded business document for this category — Free, instant PDF */}
+              {browseCat.docKey && (() => {
+                const dt = docTemplates.find((d) => d.key === browseCat.docKey);
+                if (!dt) return null;
+                const Ic = DOC_ICON[dt.key] ?? FileText;
+                return (
+                  <Card key={dt.key} hover className="cursor-pointer" onClick={() => openDoc(dt)}>
+                    <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Ic className="h-7 w-7" /></div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-slate-900">{dt.label}</h3>
+                      <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">Free · PDF</span>
+                    </div>
+                  </Card>
+                );
+              })()}
+              {/* Editable Polotno templates for this category — open the in-app editor */}
+              {editorTemplates.filter((t) => t.category === browseCat.key).map((t) => (
+                <Card key={t.id} hover className="cursor-pointer" onClick={() => openEditor(t)}>
+                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-primary-100 to-teal-50 text-primary-500"><Palette className="h-7 w-7" /></div>
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-900">{t.name}</h3>
-                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Preview</span>
+                    <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700">Editable</span>
+                  </div>
+                </Card>
+              ))}
+              {/* Staged placeholders — replaced by real editable templates as the library grows */}
+              {(STAGED_DESIGN_TEMPLATES[browseCat.key] ?? []).map((t) => (
+                <Card key={t.id} className="opacity-70">
+                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 text-slate-300"><Palette className="h-7 w-7" /></div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-500">{t.name}</h3>
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Soon</span>
                   </div>
                 </Card>
               ))}
             </div>
-            <p className="text-xs text-slate-400">These are sample designs. The full {browseCat.label.toLowerCase()} collection turns on once your Get4Domain team finishes the design setup — your details carry straight over.</p>
+            {polotnoKey === '' && editorTemplates.some((t) => t.category === browseCat.key) && (
+              <p className="text-xs text-amber-700">The in-app editor turns on once your Get4Domain team connects the design editor. Business documents above are ready to use now.</p>
+            )}
           </div>
         )
       )}
@@ -673,27 +695,28 @@ export default function AiStudioPage() {
         )}
       </Modal>
 
-      {/* Design-template data-fill (generation runs once the design account is connected) */}
-      <Modal isOpen={designSel !== null} onClose={() => setDesignSel(null)} title={designSel?.name ?? ''} maxWidth="max-w-2xl">
-        {designSel && (
-          <div className="space-y-4">
-            {designSel.thumbnail && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={designSel.thumbnail} alt={designSel.name} className="max-h-56 w-full rounded-xl border border-slate-200 object-contain" />
-            )}
-            {(designSel.fields ?? []).map((f) => (
-              <Input key={f.key} label={f.label} maxLength={f.maxLength}
-                value={designValues[f.key] ?? ''} onChange={(e) => setDesignValues((v) => ({ ...v, [f.key]: e.target.value }))} />
-            ))}
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              This template isn’t ready to generate yet — your Get4Domain team is finishing the design setup.
-              Your details are saved, and generation lights up as soon as it’s connected.
+      {/* In-app design editor (Polotno) — opens the pickable template pre-filled with vendor data */}
+      <Modal isOpen={editorTpl !== null} onClose={() => setEditorTpl(null)} title={editorTpl?.name ?? ''} maxWidth="max-w-6xl">
+        {editorTpl && (
+          polotnoKey ? (
+            <PolotnoEditor
+              apiKey={polotnoKey}
+              scene={editorTpl.editorJson}
+              prefill={editorPrefill}
+              fileName={editorTpl.name.toLowerCase().replace(/\s+/g, '-')}
+              onClose={() => setEditorTpl(null)}
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                The in-app editor isn’t switched on yet — your Get4Domain team needs to connect the design editor
+                in Admin → Integrations → Design Editor. Business documents in this section are ready to use right now.
+              </div>
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setEditorTpl(null)}>Close</Button>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDesignSel(null)}>Close</Button>
-              <Button disabled leftIcon={<ExternalLink className="h-4 w-4" />}>Generate (coming soon)</Button>
-            </div>
-          </div>
+          )
         )}
       </Modal>
 

@@ -117,6 +117,9 @@ export const api = {
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
   // Resolved per-use AI content costs (paise) — single source of truth for showcase pricing.
   aiCosts: () => apiCall('/ai/costs'),
+  // Design editor (Polotno) — publishable key + built-in sample scene templates.
+  designConfig: () => apiCall('/design/config'),
+  designTemplates: () => apiCall('/design/templates'),
   // Business documents (AI Studio Redesign) — coded templates + invoice-style render.
   businessDocTemplates: () => apiCall('/business-documents/templates'),
   renderBusinessDocument: (data: { type: string; values: Record<string, string>; brand?: { color?: string; logoUrl?: string } }) =>
