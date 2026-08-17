@@ -1214,6 +1214,26 @@ demoted to a secondary "Pipeline" tab (kept, not removed).
 VM: db push adds CampaignLead.customFields (additive) — folds into the single pending push
 in docs/VM_DEPLOY_RUNBOOK.md. No other new migration.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_LEGACY_MIGRATION_17AUG2026 — MR TRAVELS DONE (parallel), cutover GATED
+"Never touch MR Travels/3000/3001" REVOKED by KSM; CLAUDE_MEMORY_V2.md updated to match.
+- [x] Read legacy content first. Legacy Supabase DB unreachable from dev (IP allow-list, VM-only);
+  content read from the live public site + repo BRAND. Legacy DB holds only placeholder catalog
+  (1 test package, 1 test vehicle) — never launched. Inventory: LEGACY_MIGRATION_MRTRAVELS_CONTENT.md.
+- [x] Content Library multi-theme-per-industry ALREADY existed end-to-end; only gap was preview
+  thumbnails → wired admin form/list + vendor picker to WebsiteTheme.preview. 25618e1.
+- [x] MR Travels vendor already existed (admin@mrtravels.com, subdomain mrtravels, owner
+  Jayachandran, non-sandbox) but EMPTY. Migrated content onto it (NO account creation):
+  VendorCMS + 7 VendorProducts + custom "Heritage Gold" travel theme. Idempotent, additive.
+  scripts/migrate-mrtravels.ts + scripts/mrtravels-content.ts. 0d81ea1.
+- [x] VERIFIED LIVE (parallel, NO cutover): get4domain.com/site/mrtravels — hero+tagline+WhatsApp,
+  full About, 7 packages (incl. Munnar ₹8,000 3D/2N on /listings), contact page. Builds 0 errors.
+- [!] HARD STOPS (await KSM): DNS/traffic cutover; deleting legacy MR Travels/Allwin containers/data.
+- [!] KSM decisions: operational-BOS gap (new site is marketing+lightweight core, NOT the full ERP —
+  cutover loses bookings/fleet/quotations/invoicing/portals unless built as addons); real GSTIN;
+  re-upload logo. See docs/LEGACY_MIGRATION_STATUS.md.
+- [ ] Allwin Tours (3010): vendor "allwintours" exists but empty — same content-migration step
+  pending (not started). Its DB likely IP-blocked too; read from its public site.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
