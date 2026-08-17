@@ -1234,6 +1234,28 @@ in docs/VM_DEPLOY_RUNBOOK.md. No other new migration.
 - [ ] Allwin Tours (3010): vendor "allwintours" exists but empty — same content-migration step
   pending (not started). Its DB likely IP-blocked too; read from its public site.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_AI_STUDIO_REDESIGN_17AUG2026 — A + B DONE (Canva scaffolded, gated)
+Depends on Canva Integration (gated on KSM prereqs) + Template-Driven CMS (not built). Verified
+both greenfield: g4d_ai_templates had no source/canvaTemplateId; no cmsSchema; no Canva code.
+- [x] Backend (f74e933): AiTemplate additive source('prompt'|'canva'|'document')/canvaTemplateId/
+  fields; list ?source filter. New business-documents module — coded letterhead/visiting-card/
+  id-card templates reusing the invoice HTML→print-to-PDF mechanism; GET /business-documents/
+  templates + POST /render (stateless, no vendor/payment data). Additive schema → VM db push.
+- [x] Section A (2a14089): vendor AI Studio (admin mount re-exports it) split into 3 modes chosen
+  up front — AI Generate (existing, picker now source=prompt), Business Documents (field-def
+  forms prefilled from profile, live preview + Download/Print via the render endpoint; dropped the
+  old AI-image-background docHtml), Canva Templates (thumbnail picker + data-fill form; honest
+  "not set up yet" + disabled generate since Canva is gated), + Library.
+- [x] Section B (6f82d7a): admin Content Library Templates tab = one list filterable by type
+  (All/AI Prompt/Canva/Business Document). Prompt+Canva = DB rows w/ source badge; Business
+  Documents = coded built-ins shown read-only ("Built-in" lock). Themes stay a separate tab.
+- [x] Both apps build 0 errors. FieldDef form shape = the future cmsSchema shape (no rewrite later).
+- [!] Canva Templates real autofill/export/OAuth = the Canva Integration dispatch, GATED on KSM's
+  4 prereqs (Enterprise account, private integration, ≥1 Brand Template published, creds in Admin →
+  Integrations). Not built — UI scaffolding only. Template-Driven CMS cmsSchema also not built
+  (used fixed field lists now, structured to adopt it later).
+VM: db push adds AiTemplate.source/canvaTemplateId/fields (additive) — in VM_DEPLOY_RUNBOOK.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
