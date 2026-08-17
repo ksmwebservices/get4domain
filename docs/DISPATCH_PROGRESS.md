@@ -1269,6 +1269,33 @@ both greenfield: g4d_ai_templates had no source/canvaTemplateId; no cmsSchema; n
 - [x] Both apps build 0 errors throughout.
 VM: db push adds AiTemplate.source/canvaTemplateId/fields (additive) — in VM_DEPLOY_RUNBOOK.
 
+### DISPATCH — GET4DOMAIN_DISPATCH_TEMPLATE_EDITOR_17AUG2026 — A + B DONE (Polotno + Remotion)
+PRIMARY editable-templates path, ahead of the parked Canva dispatch. Licensing flagged up front;
+KSM confirmed via AskUserQuestion: "Full build — licenses handled" + "You'll provide licensed tracks".
+- [!] LICENSING (confirmed handled by KSM, not open-source as the dispatch assumed): Polotno SDK
+  needs a paid subscription for production (60-day eval); Remotion needs a Company License for 4+
+  person companies. Keys/licenses are KSM's; code is ready. Music: NONE bundled — registry empty,
+  KSM adds cleared tracks with proof (remotion/tracks/README.md).
+- [x] Backend (4623868): AiTemplate additive editorJson (Polotno scene) + videoConfig (Remotion);
+  Admin→Integrations "Design Editor" polotno_api_key (publishable); design module — GET /design/config
+  (public key) + /design/templates (2 built-in Polotno samples: Offer Poster + Visiting Card).
+- [x] Section A Polotno (e63d47a): PolotnoEditor (next/dynamic ssr:false) embedded in AI Template
+  mode — pick a template → in-app canvas pre-filled from profile → export PNG/PDF. Category gallery
+  now merges coded doc (Free) + editable Polotno samples + staged placeholders. Removed parked
+  Canva-fill path from vendor UI. Graceful "editor off" when no key. Route bundle stays ~290kB (lazy).
+- [x] Section B Remotion (726fb0b): standalone backend-api/remotion workspace (Reel composition +
+  render.mjs), invoked by the reels module via child process → nest build stays clean (Chrome+FFmpeg
+  are VM infra). GET /reels/tracks (EMPTY registry) + POST /reels/render (graceful not_configured
+  until VM toolchain installed; wallet via video_generation rate; internal free). Frontend "Photo
+  Reel" builder: upload own photos + text + pick track (empty→silent) → MP4.
+- [x] Section C (bc9e6b0): admin Content Library registers the built-in Polotno design templates in
+  the one list (AI Template · Editable · Built-in); SOURCE_META maps polotno/reel → AI Template.
+- [!] VM INFRA (new, in VM_DEPLOY_RUNBOOK): Polotno key in Admin→Integrations; `cd remotion &&
+  npm install` + `apt-get install ffmpeg` for reels; add licensed music tracks. Actual reel render
+  is VM-only (build-verified here; renderer returns not_configured until installed).
+- [x] Both apps build 0 errors throughout. Polotno bundled + compiled clean on Next 15 / React 19.
+VM: db push adds AiTemplate.editorJson/videoConfig (additive) — in VM_DEPLOY_RUNBOOK.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode

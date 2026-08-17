@@ -31,6 +31,8 @@ Branch: `get4domain-site`  ·  Latest commit at time of writing: `2de3729`
 | `AiTemplate` | `source String @default("prompt")` | AI Studio redesign 17AUG (template kind) |
 | `AiTemplate` | `canvaTemplateId String?` | AI Studio redesign 17AUG (Canva sync, gated) |
 | `AiTemplate` | `fields Json?` | AI Studio redesign 17AUG (data-fill field defs) |
+| `AiTemplate` | `editorJson Json?` | Template Editor 17AUG (Polotno scene JSON) |
+| `AiTemplate` | `videoConfig Json?` | Template Editor 17AUG (Remotion reel config) |
 
 **New tables** (all `g4d_`-prefixed):
 | Table | From |
@@ -97,6 +99,27 @@ cd /srv/get4domain-site/backend-api && npx prisma db push
   - (Existing `ai/openai_api_key`, `ai/anthropic_api_key`, `video/runway_api_key`, `video/heygen_api_key` unchanged.)
 
 > **3E real provider wiring and Decision 2 (Razorpay subscriptions) are intentionally NOT in this deploy** — both are parked pending KSM (funded-provider list; Razorpay `plan_id`).
+
+### Template Editor (Polotno + Remotion) — new this deploy
+
+- **Polotno (in-app design editor):** Admin → Integrations → **Design Editor (Polotno)** →
+  paste the **publishable** Polotno API key (`design / polotno_api_key`). It's a
+  client-side key, served via `GET /design/config`. **Production use requires a valid
+  Polotno subscription** (the 60-day eval aside) — confirm KSM's plan is active. Until
+  a key is set, the editor shows a graceful "not switched on" state; business documents
+  still work.
+- **Remotion (photo-reel MP4 render):** runs in the standalone workspace, not the Nest
+  build. On the VM:
+  ```bash
+  cd /srv/get4domain-site/backend-api/remotion && npm install   # downloads Chrome Headless Shell on first render
+  apt-get install -y ffmpeg                                       # FFmpeg on PATH
+  ```
+  **Remotion needs a paid Company License for 4+ person companies** — confirm KSM's
+  license. Until the workspace is installed, `POST /reels/render` returns
+  `not_configured` (no crash).
+- **Reel music:** none bundled. Add only license-cleared tracks per
+  `backend-api/remotion/tracks/README.md`, then register them in
+  `src/reels/reels.tracks.ts`. Reels render silent until then.
 
 ---
 
