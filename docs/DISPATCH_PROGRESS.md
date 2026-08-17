@@ -1290,6 +1290,13 @@ KSM confirmed via AskUserQuestion: "Full build — licenses handled" + "You'll p
   Reel" builder: upload own photos + text + pick track (empty→silent) → MP4.
 - [x] Section C (bc9e6b0): admin Content Library registers the built-in Polotno design templates in
   the one list (AI Template · Editable · Built-in); SOURCE_META maps polotno/reel → AI Template.
+- [x] Music tracks (d2cd147): KSM added 14 license-cleared MP3s → all registered in reels.tracks.ts
+  with clean names; audio wired via staticFile (publicDir=remotion/tracks); tracks committed so they
+  reach the VM via git pull. One byte-identical duplicate excluded. Polotno key: wiring verified
+  correct end-to-end + createStore signature confirmed vs installed SDK types, but NOT yet resolving
+  (no design/polotno_api_key row in prod, no POLOTNO_API_KEY env, /design/config not deployed) —
+  resolves after VM deploy + key entered in Admin→Integrations→Design Editor. polotno skills plugin
+  not present on disk this session; used the installed package's own .d.ts as the API source instead.
 - [!] VM INFRA (new, in VM_DEPLOY_RUNBOOK): Polotno key in Admin→Integrations; `cd remotion &&
   npm install` + `apt-get install ffmpeg` for reels; add licensed music tracks. Actual reel render
   is VM-only (build-verified here; renderer returns not_configured until installed).
