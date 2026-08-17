@@ -218,6 +218,19 @@ export class AiService {
     }
   }
 
+  /** Resolved per-use cost (paise) for each AI Studio content type — the single
+   *  source of truth for the vendor-facing showcase pricing. Admin Pricing Manager
+   *  overrides (g4d_platform_settings) win over the hardcoded defaults, exactly like
+   *  the deduction path in generateContent below (same key map + fallbacks). */
+  async contentCosts(): Promise<Record<string, number>> {
+    const channels = ['social_post', 'reel_script', 'blog_post', 'festival_poster', 'ad_creative', 'email', 'whatsapp', 'sms'];
+    const out: Record<string, number> = {};
+    for (const ch of channels) {
+      out[ch] = await this.walletService.getRate(CONTENT_PRICING_KEY[ch] ?? '', CONTENT_CHANNEL_COST_PAISE[ch] ?? 500);
+    }
+    return out;
+  }
+
   async generateContent(
     vendorId: string,
     dto: GenerateContentDto,

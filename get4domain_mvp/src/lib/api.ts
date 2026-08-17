@@ -115,6 +115,8 @@ export const api = {
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
+  // Resolved per-use AI content costs (paise) — single source of truth for showcase pricing.
+  aiCosts: () => apiCall('/ai/costs'),
   // Business documents (AI Studio Redesign) — coded templates + invoice-style render.
   businessDocTemplates: () => apiCall('/business-documents/templates'),
   renderBusinessDocument: (data: { type: string; values: Record<string, string>; brand?: { color?: string; logoUrl?: string } }) =>

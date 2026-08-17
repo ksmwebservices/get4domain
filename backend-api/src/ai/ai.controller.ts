@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AiService } from './ai.service';
 import { ChatDto } from './dto/chat.dto';
@@ -19,6 +19,13 @@ export class AiController {
   @ApiOperation({ summary: 'Chat with the Get4Domain AI assistant (marketing site or vendor dashboard)' })
   chat(@Body() dto: ChatDto) {
     return this.aiService.chat(dto);
+  }
+
+  @ApiBearerAuth()
+  @Get('costs')
+  @ApiOperation({ summary: 'Resolved per-use cost (paise) per AI Studio content type — single source of truth for showcase pricing' })
+  costs(): Promise<Record<string, number>> {
+    return this.aiService.contentCosts();
   }
 
   @ApiBearerAuth()

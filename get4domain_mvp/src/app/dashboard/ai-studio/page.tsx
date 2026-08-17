@@ -19,19 +19,53 @@ interface ContentType {
   key: string;
   label: string;
   icon: typeof Sparkles;
-  cost: number;
 }
 
+// Costs are NOT hardcoded here — they come from the backend rate table (/ai/costs,
+// admin Pricing Manager + defaults), the single source of truth. This list is only
+// the labels/icons/order of the showcase.
 const CONTENT_TYPES: ContentType[] = [
-  { key: 'social_post', label: 'Social Post', icon: MessageSquare, cost: 5 },
-  { key: 'reel_script', label: 'Reel Script', icon: Video, cost: 8 },
-  { key: 'blog_post', label: 'Blog Post', icon: FileText, cost: 15 },
-  { key: 'festival_poster', label: 'Festival Poster', icon: ImageIcon, cost: 12 },
-  { key: 'ad_creative', label: 'Ad Creative', icon: Megaphone, cost: 10 },
-  { key: 'email', label: 'Email Content', icon: Mail, cost: 6 },
-  { key: 'whatsapp', label: 'WhatsApp Message', icon: MessageCircle, cost: 3 },
-  { key: 'sms', label: 'SMS Text', icon: Smartphone, cost: 2 },
+  { key: 'social_post', label: 'Social Post', icon: MessageSquare },
+  { key: 'reel_script', label: 'Reel Script', icon: Video },
+  { key: 'blog_post', label: 'Blog Post', icon: FileText },
+  { key: 'festival_poster', label: 'Festival Poster', icon: ImageIcon },
+  { key: 'ad_creative', label: 'Ad Creative', icon: Megaphone },
+  { key: 'email', label: 'Email Content', icon: Mail },
+  { key: 'whatsapp', label: 'WhatsApp Message', icon: MessageCircle },
+  { key: 'sms', label: 'SMS Text', icon: Smartphone },
 ];
+
+// AI Template categories — browse by what you want to make. Business-document
+// categories map to a coded template (Free, print-to-PDF); design categories map
+// to synced design templates + staged placeholders, priced from the rate table via
+// `costKey`. Adding real synced templates later is a data change, not a rebuild.
+interface TemplateCategory {
+  key: string;
+  label: string;
+  icon: typeof Sparkles;
+  kind: 'document' | 'design';
+  docKey?: string;   // for kind='document' → opens that coded business doc
+  costKey?: string;  // for kind='design' → indicative price from the rate table
+  blurb: string;
+}
+const TEMPLATE_CATEGORIES: TemplateCategory[] = [
+  { key: 'business_card', label: 'Business Card', icon: CreditCard, kind: 'document', docKey: 'visiting_card', blurb: 'Double-sided visiting card' },
+  { key: 'letterhead', label: 'Letterhead', icon: FileText, kind: 'document', docKey: 'letterhead', blurb: 'Branded company header' },
+  { key: 'id_card', label: 'ID Card', icon: IdCard, kind: 'document', docKey: 'id_card', blurb: 'Staff identity card' },
+  { key: 'poster', label: 'Poster', icon: ImageIcon, kind: 'design', costKey: 'festival_poster', blurb: 'Promo & festival posters' },
+  { key: 'flyer', label: 'Flyer', icon: FileText, kind: 'design', costKey: 'festival_poster', blurb: 'Single-page flyers' },
+  { key: 'brochure', label: 'Brochure', icon: FileText, kind: 'design', costKey: 'social_post', blurb: 'Multi-panel brochures' },
+  { key: 'social_graphic', label: 'Social Graphic', icon: MessageSquare, kind: 'design', costKey: 'social_post', blurb: 'Posts & story graphics' },
+];
+
+// Staged placeholder templates per design category — swapped for real synced
+// templates (filtered by category) once the design provider is connected.
+const STAGED_DESIGN_TEMPLATES: Record<string, { id: string; name: string }[]> = {
+  poster: [{ id: 'stg-poster-1', name: 'Festival Sale Poster' }, { id: 'stg-poster-2', name: 'Grand Opening Poster' }, { id: 'stg-poster-3', name: 'Discount Offer Poster' }],
+  flyer: [{ id: 'stg-flyer-1', name: 'Service Menu Flyer' }, { id: 'stg-flyer-2', name: 'Event Flyer' }],
+  brochure: [{ id: 'stg-brochure-1', name: 'Tri-fold Brochure' }, { id: 'stg-brochure-2', name: 'Product Catalogue' }],
+  social_graphic: [{ id: 'stg-social-1', name: 'Instagram Post' }, { id: 'stg-social-2', name: 'Story Graphic' }, { id: 'stg-social-3', name: 'Offer Announcement' }],
+};
 
 const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 
@@ -106,6 +140,19 @@ export default function AiStudioPage() {
     }
     return map;
   }, [user]);
+
+  // Per-use costs (paise) from the rate table — the single source of truth for the
+  // showcase pricing (admin Pricing Manager overrides + defaults).
+  const [costs, setCosts] = useState<Record<string, number>>({});
+  useEffect(() => { api.aiCosts().then((r) => setCosts((r.data ?? {}) as Record<string, number>)).catch(() => setCosts({})); }, []);
+  const costLabel = useCallback((key?: string): string => {
+    if (isInternalStaff) return 'Free';
+    if (key && costs[key] != null) return `~₹${Math.round(costs[key] / 100)}`;
+    return 'wallet rate';
+  }, [isInternalStaff, costs]);
+
+  // AI Template browse: null = category grid; set = template gallery for that category.
+  const [browseCat, setBrowseCat] = useState<TemplateCategory | null>(null);
 
   // ── Business Documents ────────────────────────────────────────────────────
   const [docTemplates, setDocTemplates] = useState<DocTemplate[]>([]);
@@ -369,7 +416,7 @@ export default function AiStudioPage() {
         {MODES.map((m) => {
           const Ic = m.icon; const on = mode === m.key;
           return (
-            <button key={m.key} onClick={() => { setMode(m.key); if (m.key === 'library') loadLibrary(); }}
+            <button key={m.key} onClick={() => { setMode(m.key); setBrowseCat(null); if (m.key === 'library') loadLibrary(); }}
               className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${on ? 'border-primary-400 bg-primary-50/60 ring-1 ring-primary-200' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
               <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${on ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Ic className="h-5 w-5" /></span>
               <span className="min-w-0">
@@ -381,64 +428,109 @@ export default function AiStudioPage() {
         })}
       </div>
 
-      {/* ── MODE: AI GENERATE ─────────────────────────────────────────────── */}
+      {/* ── MODE: AI GENERATE (showcase — pick a content type, see the per-use cost) ── */}
       {mode === 'ai' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+            <p className="text-sm font-semibold text-slate-700">Describe what you want — AI creates an original design</p>
+            <p className="mt-0.5 text-xs text-slate-500">Pick a content type below. {isInternalStaff ? 'Free for the internal team.' : 'Per-use pricing is shown up front — you only pay when you generate.'}</p>
+          </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {CONTENT_TYPES.map((ct) => {
               const Ic = ct.icon;
               return (
                 <Card key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{costLabel(ct.key)}</span>
+                  </div>
                   <h3 className="mt-3 font-semibold text-slate-900">{ct.label}</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : `~₹${ct.cost} / generation`}</p>
+                  <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'per generation'}</p>
                 </Card>
               );
             })}
             <Card hover className="cursor-pointer" onClick={openVideo}>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
+              <div className="flex items-center justify-between">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{isInternalStaff ? 'Free' : 'wallet'}</span>
+              </div>
               <h3 className="mt-3 font-semibold text-slate-900">Reel / Video</h3>
-              <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'wallet — per video'}</p>
+              <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'per video'}</p>
             </Card>
           </div>
         </div>
       )}
 
-      {/* ── MODE: AI TEMPLATE ─────────────────────────────────────────────── */}
-      {/* One library of ready-made templates: business documents (always available)
-          + synced design templates (when the provider account is connected). */}
+      {/* ── MODE: AI TEMPLATE (showcase — browse categories, then templates) ── */}
       {mode === 'template' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {/* Business documents — coded, print-ready, always available */}
-            {docTemplates.map((t) => {
-              const Ic = DOC_ICON[t.key] ?? FileText;
-              return (
-                <Card key={t.key} hover className="cursor-pointer" onClick={() => openDoc(t)}>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
-                  <h3 className="mt-3 font-semibold text-slate-900">{t.label}</h3>
-                  <p className="mt-0.5 text-xs text-slate-400">{t.description}</p>
-                </Card>
-              );
-            })}
-            {/* Synced design templates (provider kept out of the UI) */}
-            {designTemplates.map((t) => (
-              <Card key={t.id} hover className="cursor-pointer" onClick={() => openDesign(t)}>
-                {t.thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
-                ) : (
-                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
-                )}
-                <h3 className="font-semibold text-slate-900">{t.name}</h3>
-                <p className="mt-0.5 text-xs text-slate-400">{t.industry ?? 'All industries'}</p>
-              </Card>
-            ))}
+        browseCat === null ? (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-700">Pick a ready-made template, fill in your details</p>
+              <p className="mt-0.5 text-xs text-slate-500">Choose a category to browse designs. Business documents are free to download; design templates show their price up front.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {TEMPLATE_CATEGORIES.map((cat) => {
+                const Ic = cat.icon;
+                const price = cat.kind === 'document' ? 'Free' : costLabel(cat.costKey);
+                return (
+                  <Card key={cat.key} hover className="cursor-pointer" onClick={() => {
+                    // Business-doc categories open the coded template directly; design
+                    // categories open their template gallery.
+                    if (cat.kind === 'document') { const dt = docTemplates.find((d) => d.key === cat.docKey); if (dt) openDoc(dt); }
+                    else setBrowseCat(cat);
+                  }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{price}</span>
+                    </div>
+                    <h3 className="mt-3 font-semibold text-slate-900">{cat.label}</h3>
+                    <p className="mt-0.5 text-xs text-slate-400">{cat.blurb}</p>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-          {!designLoading && designTemplates.length === 0 && (
-            <p className="text-xs text-slate-400">More ready-made design templates are on the way — for now, pick a business document above to fill in and download.</p>
-          )}
-        </div>
+        ) : (
+          // Gallery for a design category — synced templates (by category) + staged placeholders.
+          <div className="space-y-4">
+            <button onClick={() => setBrowseCat(null)} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700">← All templates</button>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">{browseCat.label}</h2>
+              {!isInternalStaff && <span className="text-sm font-semibold text-slate-600">{costLabel(browseCat.costKey)} / design</span>}
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {/* Real synced templates for this category (filtered by contentType), when connected */}
+              {designTemplates.filter((t) => (t as { contentType?: string }).contentType === browseCat.key).map((t) => (
+                <Card key={t.id} hover className="cursor-pointer" onClick={() => openDesign(t)}>
+                  {t.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={t.thumbnail} alt={t.name} className="mb-2 h-28 w-full rounded-lg object-cover ring-1 ring-slate-100" />
+                  ) : (
+                    <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Palette className="h-6 w-6" /></div>
+                  )}
+                  <h3 className="font-semibold text-slate-900">{t.name}</h3>
+                </Card>
+              ))}
+              {/* Staged placeholders — swapped for real synced designs once connected */}
+              {(STAGED_DESIGN_TEMPLATES[browseCat.key] ?? []).map((t) => (
+                <Card key={t.id} hover className="cursor-pointer opacity-90"
+                  onClick={() => openDesign({ id: t.id, name: t.name, thumbnail: null, industry: null, fields: [
+                    { key: 'business', label: 'Business name', prefillFrom: 'businessName' },
+                    { key: 'headline', label: 'Headline / offer' },
+                    { key: 'phone', label: 'Phone' },
+                  ] })}>
+                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-slate-100 text-primary-300"><Palette className="h-7 w-7" /></div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">{t.name}</h3>
+                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Preview</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400">These are sample designs. The full {browseCat.label.toLowerCase()} collection turns on once your Get4Domain team finishes the design setup — your details carry straight over.</p>
+          </div>
+        )
       )}
 
       {/* ── MODE: LIBRARY ─────────────────────────────────────────────────── */}
@@ -512,7 +604,7 @@ export default function AiStudioPage() {
 
             <div className="flex items-center justify-between rounded-xl bg-primary-50 px-4 py-2.5">
               <span className="text-sm text-primary-700">Estimated cost</span>
-              <span className="text-sm font-bold text-primary-700">{isInternalStaff ? 'Free (internal)' : `~₹${active.cost}`}</span>
+              <span className="text-sm font-bold text-primary-700">{isInternalStaff ? 'Free (internal)' : costLabel(active.key)}</span>
             </div>
 
             {genError && (
@@ -549,7 +641,7 @@ export default function AiStudioPage() {
                   <Button leftIcon={<Save className="h-4 w-4" />} onClick={saveToLibrary}>Save to Library</Button>
                 </>
               ) : (
-                <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>{isInternalStaff ? 'Generate' : `Generate (~₹${active.cost})`}</Button>
+                <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>{isInternalStaff ? 'Generate' : `Generate (${costLabel(active.key)})`}</Button>
               )}
             </div>
           </div>
