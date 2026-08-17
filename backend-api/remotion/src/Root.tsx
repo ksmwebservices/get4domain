@@ -14,7 +14,7 @@ export const RemotionRoot: React.FC = () => {
       fps={FPS}
       width={1080}
       height={1920}
-      defaultProps={{ images: [], text: '', audioSrc: null, accent: '#0f766e' } as ReelProps}
+      defaultProps={{ images: [], text: '', audioFile: null, accent: '#0f766e' } as ReelProps}
       // Duration follows the number of photos (min 1) — 2.5s each.
       calculateMetadata={({ props }) => {
         const n = Math.max((props.images ?? []).length, 1);

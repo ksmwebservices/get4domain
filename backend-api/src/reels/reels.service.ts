@@ -64,7 +64,8 @@ export class ReelsService {
     writeFileSync(propsPath, JSON.stringify({
       images: dto.images,
       text: dto.text ?? '',
-      audioSrc: track?.url ?? null,
+      // Filename inside remotion/tracks/ — the composition resolves it via staticFile().
+      audioFile: track?.file ?? null,
       accent: dto.accent ?? '#0f766e',
     }));
 
