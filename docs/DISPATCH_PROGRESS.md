@@ -1318,6 +1318,18 @@ concern is GONE.
   always on (no key). Both apps build 0 errors. VM_DEPLOY_RUNBOOK updated (no key step; Fabric is
   bundled/free). Remotion reels section unchanged.
 
+### UPDATE — Fabric editor rich controls (49142cc)
+Extended the editor (both modes; field-tagging admin-only). NO new library — icons reuse lucide-react.
+- Fixed +Image (surfaces errors vs silent catch; crossOrigin kept so cross-origin API images export
+  untainted — backend CORS origin:true). Text controls (font family/size, bold, italic, colour, stroke
+  colour+width). Palette (8 swatches) + full colour picker → any selected object (icon groups recolour
+  strokes). Canvas background colour picker (serialised). Alignment (text L/C/R + centre-to-canvas H/V).
+  Text presets Heading/Subheading/Body/CTA (size/weight/colour on insert, editable after). Icon insert:
+  searchable picker over ~52 curated lucide icons → renderToStaticMarkup → loadSVGFromString → grouped
+  Fabric object.
+- SCOPED per ask: NO photo/clipart library, NO background-pattern search — both await a sourcing decision.
+- Frontend build 0 errors (react-dom/server bundles fine for the client editor; route bundles unchanged).
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
