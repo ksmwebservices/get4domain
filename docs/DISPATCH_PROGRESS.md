@@ -1303,6 +1303,21 @@ KSM confirmed via AskUserQuestion: "Full build — licenses handled" + "You'll p
 - [x] Both apps build 0 errors throughout. Polotno bundled + compiled clean on Next 15 / React 19.
 VM: db push adds AiTemplate.editorJson/videoConfig (additive) — in VM_DEPLOY_RUNBOOK.
 
+### UPDATE — design editor SWITCHED Polotno → Fabric.js (216598e)
+KSM's call: Polotno's SDK needs a paid subscription (~$100/mo); Fabric.js is MIT/free, no key.
+Same data model (editorJson on g4d_ai_templates), same showcase/gallery flow, same 2 samples —
+only the rendering engine changed. NO licensing gate anymore; the whole Polotno subscription/key
+concern is GONE.
+- Removed: polotno + @blueprintjs/* + mobx deps, PolotnoEditor.tsx, /design/config endpoint, the
+  "Design Editor (Polotno)" key slot in Admin→Integrations. Added: fabric@6 + jspdf.
+- FabricEditor.tsx = TWO modes on one canvas: admin authoring (add/position objects, tag data
+  fields, save → AiTemplate source='design') + vendor fill (prefill tagged fields, drag/edit,
+  export PNG/PDF). Samples re-authored as Fabric scene JSON. source enum 'polotno'→'design'.
+- Admin Content Library gained a "New design template" flow (in-app authoring, no external tool).
+- Vendor AI Template gallery merges built-in samples + admin-authored (source='design'). Editor is
+  always on (no key). Both apps build 0 errors. VM_DEPLOY_RUNBOOK updated (no key step; Fabric is
+  bundled/free). Remotion reels section unchanged.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
