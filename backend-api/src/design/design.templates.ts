@@ -1,15 +1,15 @@
 /**
- * Built-in sample Polotno templates — enough to prove the in-app editor works end
- * to end. The full library is an ongoing design task (each template is authored
- * once directly in Polotno's own JSON format, never imported/flattened).
+ * Built-in sample design templates — Fabric.js scenes (MIT, no subscription).
  *
- * Element `name`s tag the placeholders that get pre-filled from the vendor's
- * profile (see `fields[].prefillFrom`): the editor matches an element's name to a
- * field key and sets its text/image before the vendor starts editing.
+ * Storage shape is unchanged from before: each template is metadata + a scene JSON
+ * in `editorJson` + `fields[]` prefill definitions. Only the scene format switched
+ * from Polotno's to Fabric's (fabric v6 `canvas.toJSON()` shape: an `objects` array
+ * of typed shapes). The editor loads these via `canvas.loadFromJSON`.
  *
- * Licensing: Polotno production use requires a valid Polotno subscription (key set
- * in Admin → Integrations → Design Editor). These sample scenes are original
- * layouts (plain shapes + text), not recreations of any premium/purchased asset.
+ * Placeholders are tagged with a custom `fieldKey` (+ `fieldLabel`) on the object —
+ * that's how vendor-fill mode knows which objects to prefill from profile data, and
+ * how admin-authored templates record their data fields. Original layouts, not
+ * recreations of any premium asset.
  */
 
 export interface DesignFieldDef {
@@ -26,11 +26,15 @@ export interface DesignTemplateDef {
   width: number;
   height: number;
   fields: DesignFieldDef[];
-  /** Polotno scene JSON (store.toJSON() shape). */
+  /** Fabric.js scene JSON (loadFromJSON shape). */
   editorJson: Record<string, unknown>;
 }
 
-// A 1080×1080 festival/offer poster.
+// Small helpers to keep the scenes readable.
+const rect = (o: Record<string, unknown>) => ({ type: 'Rect', ...o });
+const text = (t: string, o: Record<string, unknown>) => ({ type: 'Textbox', text: t, fontFamily: 'Arial', ...o });
+
+// 1080×1080 festival/offer poster.
 const OFFER_POSTER: DesignTemplateDef = {
   id: 'builtin-poster-offer',
   name: 'Festival Offer Poster',
@@ -43,25 +47,19 @@ const OFFER_POSTER: DesignTemplateDef = {
     { key: 'phone', label: 'Phone' },
   ],
   editorJson: {
-    width: 1080,
-    height: 1080,
-    fonts: [],
-    pages: [
-      {
-        id: 'page1',
-        children: [
-          { id: 'bg', type: 'figure', subType: 'rect', x: 0, y: 0, width: 1080, height: 1080, fill: '#0f766e' },
-          { id: 'band', type: 'figure', subType: 'rect', x: 0, y: 430, width: 1080, height: 240, fill: '#d97706' },
-          { id: 'business_name', name: 'business_name', type: 'text', x: 90, y: 150, width: 900, text: 'Your Business', fontSize: 72, fontFamily: 'Roboto', fontWeight: 'bold', align: 'center', fill: '#ffffff' },
-          { id: 'offer_text', name: 'offer_text', type: 'text', x: 90, y: 470, width: 900, text: 'Special Festival Offer', fontSize: 96, fontFamily: 'Roboto', fontWeight: 'bold', align: 'center', fill: '#ffffff' },
-          { id: 'phone', name: 'phone', type: 'text', x: 90, y: 900, width: 900, text: 'Call: +91 ', fontSize: 48, fontFamily: 'Roboto', align: 'center', fill: '#ffffff' },
-        ],
-      },
+    version: '6.9.1',
+    background: '#ffffff',
+    objects: [
+      rect({ left: 0, top: 0, width: 1080, height: 1080, fill: '#0f766e' }),
+      rect({ left: 0, top: 430, width: 1080, height: 240, fill: '#d97706' }),
+      text('Your Business', { left: 90, top: 150, width: 900, fontSize: 72, fontWeight: 'bold', fill: '#ffffff', textAlign: 'center', fieldKey: 'business_name', fieldLabel: 'Business name' }),
+      text('Special Festival Offer', { left: 90, top: 460, width: 900, fontSize: 96, fontWeight: 'bold', fill: '#ffffff', textAlign: 'center', fieldKey: 'offer_text', fieldLabel: 'Offer headline' }),
+      text('Call: +91 ', { left: 90, top: 900, width: 900, fontSize: 48, fill: '#ffffff', textAlign: 'center', fieldKey: 'phone', fieldLabel: 'Phone' }),
     ],
   },
 };
 
-// A 1050×600 visiting card (≈3.5in × 2in at 300 dpi).
+// 1050×600 visiting card (≈3.5in × 2in at 300 dpi).
 const VISITING_CARD: DesignTemplateDef = {
   id: 'builtin-card-visiting',
   name: 'Visiting Card',
@@ -76,22 +74,15 @@ const VISITING_CARD: DesignTemplateDef = {
     { key: 'email', label: 'Email', prefillFrom: 'email' },
   ],
   editorJson: {
-    width: 1050,
-    height: 600,
-    fonts: [],
-    pages: [
-      {
-        id: 'page1',
-        children: [
-          { id: 'bg', type: 'figure', subType: 'rect', x: 0, y: 0, width: 1050, height: 600, fill: '#ffffff' },
-          { id: 'accent', type: 'figure', subType: 'rect', x: 0, y: 0, width: 24, height: 600, fill: '#0f766e' },
-          { id: 'business_name', name: 'business_name', type: 'text', x: 70, y: 70, width: 900, text: 'Your Business', fontSize: 56, fontFamily: 'Roboto', fontWeight: 'bold', fill: '#0f766e' },
-          { id: 'person_name', name: 'person_name', type: 'text', x: 70, y: 300, width: 900, text: 'Your Name', fontSize: 44, fontFamily: 'Roboto', fontWeight: 'bold', fill: '#0f172a' },
-          { id: 'designation', name: 'designation', type: 'text', x: 70, y: 360, width: 900, text: 'Proprietor', fontSize: 30, fontFamily: 'Roboto', fill: '#d97706' },
-          { id: 'phone', name: 'phone', type: 'text', x: 70, y: 470, width: 900, text: '+91 ', fontSize: 28, fontFamily: 'Roboto', fill: '#334155' },
-          { id: 'email', name: 'email', type: 'text', x: 70, y: 515, width: 900, text: 'you@example.com', fontSize: 28, fontFamily: 'Roboto', fill: '#334155' },
-        ],
-      },
+    version: '6.9.1',
+    background: '#ffffff',
+    objects: [
+      rect({ left: 0, top: 0, width: 24, height: 600, fill: '#0f766e' }),
+      text('Your Business', { left: 70, top: 70, width: 900, fontSize: 56, fontWeight: 'bold', fill: '#0f766e', fieldKey: 'business_name', fieldLabel: 'Business name' }),
+      text('Your Name', { left: 70, top: 300, width: 900, fontSize: 44, fontWeight: 'bold', fill: '#0f172a', fieldKey: 'person_name', fieldLabel: 'Person name' }),
+      text('Proprietor', { left: 70, top: 360, width: 900, fontSize: 30, fill: '#d97706', fieldKey: 'designation', fieldLabel: 'Designation' }),
+      text('+91 ', { left: 70, top: 470, width: 900, fontSize: 28, fill: '#334155', fieldKey: 'phone', fieldLabel: 'Phone' }),
+      text('you@example.com', { left: 70, top: 515, width: 900, fontSize: 28, fill: '#334155', fieldKey: 'email', fieldLabel: 'Email' }),
     ],
   },
 };

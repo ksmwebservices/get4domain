@@ -1,8 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Plus, Trash2, Loader2, Sparkles, Palette, FileText, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
+
+// Fabric.js editor is browser-only — used here in admin (authoring) mode.
+const FabricEditor = dynamic(() => import('@/components/design/FabricEditor'), {
+  ssr: false,
+  loading: () => <div className="flex h-[70vh] items-center justify-center text-sm text-slate-400">Loading editor…</div>,
+});
+
+// Design-template categories + canvas size presets for admin authoring.
+const DESIGN_CATEGORIES = ['poster', 'business_card', 'flyer', 'brochure', 'social_graphic'];
+const SIZE_PRESETS: Record<string, { w: number; h: number }> = {
+  poster: { w: 1080, h: 1080 },
+  business_card: { w: 1050, h: 600 },
+  flyer: { w: 1080, h: 1350 },
+  brochure: { w: 1080, h: 1080 },
+  social_graphic: { w: 1080, h: 1080 },
+};
 
 // Admin Content Library — one place for all template kinds (AI prompt, pick-and-
 // fill design templates, business documents) plus website themes. The "Templates"
@@ -30,7 +47,7 @@ const SOURCE_META: Record<string, { label: string; cls: string }> = {
   prompt: { label: 'AI Prompt', cls: 'bg-primary-500/15 text-primary-300' },
   canva: AI_TEMPLATE_BADGE,
   document: AI_TEMPLATE_BADGE,
-  polotno: AI_TEMPLATE_BADGE,
+  design: AI_TEMPLATE_BADGE,
   reel: AI_TEMPLATE_BADGE,
 };
 
@@ -55,6 +72,30 @@ export default function AdminLibraryPage() {
   const [tpl, setTpl] = useState({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
   const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false });
 
+  // Admin design-template authoring (Fabric editor). `starter` collects name/category
+  // + size; `editor` (once opened) holds the size the blank canvas opens at.
+  const [starter, setStarter] = useState<{ name: string; category: string } | null>(null);
+  const [editor, setEditor] = useState<{ name: string; category: string; width: number; height: number } | null>(null);
+  const [savingDesign, setSavingDesign] = useState(false);
+
+  async function saveDesign(data: { editorJson: Record<string, unknown>; fields: { key: string; label: string }[]; width: number; height: number }) {
+    if (!editor) return;
+    setSavingDesign(true); setError('');
+    try {
+      await api.createAiTemplate({
+        name: editor.name,
+        contentType: editor.category,   // category doubles as the AI-template contentType
+        source: 'design',
+        prompt: editor.name,            // prompt column is required; not used for design templates
+        editorJson: { ...data.editorJson, width: data.width, height: data.height },
+        fields: data.fields,
+      });
+      setEditor(null); setStarter(null);
+      await load();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Failed to save template'); }
+    finally { setSavingDesign(false); }
+  }
+
   async function load() {
     setLoading(true);
     try {
@@ -72,8 +113,8 @@ export default function AdminLibraryPage() {
     if (!tpl.name || !tpl.prompt) return;
     setSavingT(true); setError('');
     try {
-      // The only admin-createable template kind is AI prompt — design templates are
-      // synced from the provider, business documents are coded. So source is 'prompt'.
+      // This form creates AI-prompt templates. Design templates are authored in the
+      // Fabric editor (New design template ↓); business documents are coded.
       await api.createAiTemplate({ name: tpl.name, contentType: tpl.contentType, industry: tpl.industry || undefined, prompt: tpl.prompt, thumbnail: tpl.thumbnail || undefined, source: 'prompt' });
       setTpl({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
       await load();
@@ -144,6 +185,29 @@ export default function AdminLibraryPage() {
             </div>
           )}
 
+          {/* Author an editable design template in the in-app Fabric editor (no external tool) */}
+          {(typeFilter === 'all' || typeFilter === 'template') && (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+              <div className="mb-1 flex items-center gap-1.5 text-sm font-bold text-white"><Palette className="h-4 w-4 text-violet-300" />New design template</div>
+              <p className="mb-3 text-xs text-slate-500">Position text/image objects, tag ones as data fields (business_name, offer_text…), save. Vendors pick it, fields prefill, they edit + export.</p>
+              {!starter ? (
+                <button onClick={() => setStarter({ name: '', category: DESIGN_CATEGORIES[0] })} className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"><Plus className="h-4 w-4" />New design template</button>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input className={inputCls} placeholder="Template name (e.g. Diwali Offer Poster)" value={starter.name} onChange={(e) => setStarter({ ...starter, name: e.target.value })} />
+                  <select className={inputCls} value={starter.category} onChange={(e) => setStarter({ ...starter, category: e.target.value })}>{DESIGN_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                  <div className="flex gap-2 sm:col-span-2">
+                    <button
+                      onClick={() => { const s = SIZE_PRESETS[starter.category] ?? { w: 1080, h: 1080 }; setEditor({ name: starter.name, category: starter.category, width: s.w, height: s.h }); }}
+                      disabled={!starter.name.trim()}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50">Open editor →</button>
+                    <button onClick={() => setStarter(null)} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-400 hover:text-slate-200">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* One list — AI-prompt + design templates (DB rows) and business documents together */}
           <div className="space-y-2">
             {visibleTemplates.map((t) => {
@@ -176,7 +240,7 @@ export default function AdminLibraryPage() {
               </div>
             ))}
 
-            {/* Editable design templates (Polotno) — built-in samples, opened in AI Studio's editor */}
+            {/* Editable design templates — built-in samples, opened in AI Studio's Fabric editor */}
             {showDocs && designBuiltins.map((d) => (
               <div key={d.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 p-3">
                 <div className="min-w-0">
@@ -227,6 +291,26 @@ export default function AdminLibraryPage() {
                 <div className="text-xs text-slate-500">{t.industry ?? 'any industry'}</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen Fabric editor overlay — admin authoring mode */}
+      {editor && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-white">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
+            <div className="text-sm font-bold text-slate-800">Editing: {editor.name} <span className="font-normal text-slate-400">· {editor.category} · {editor.width}×{editor.height}</span></div>
+            {savingDesign && <span className="text-xs text-slate-400">Saving…</span>}
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-3">
+            <FabricEditor
+              mode="admin"
+              width={editor.width}
+              height={editor.height}
+              scene={null}
+              onSave={saveDesign}
+              onClose={() => setEditor(null)}
+            />
           </div>
         </div>
       )}

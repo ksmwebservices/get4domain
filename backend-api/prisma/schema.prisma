@@ -622,10 +622,10 @@ model AiTemplate {
   // discriminates the row so the Content Library + AI Studio picker can show/
   // filter all types in one list. 'prompt' = the existing AI-generation flow;
   // 'canva' = a synced Canva Brand Template (Canva Integration dispatch, parked);
-  // 'document' = a coded business-document layout; 'polotno' = an in-app editable
-  // design template (Polotno scene in editorJson); 'reel' = a Remotion reel
+  // 'document' = a coded business-document layout; 'design' = an in-app editable
+  // design template (Fabric.js scene in editorJson); 'reel' = a Remotion reel
   // template (slot/text/music config in videoConfig).
-  source      String   @default("prompt") // prompt | canva | document | polotno | reel
+  source      String   @default("prompt") // prompt | canva | document | design | reel
   // Canva Integration: the Canva brand_template_id this row mirrors (source=canva).
   canvaTemplateId String?
   // Data-fill field definitions (cmsSchema-style) for canva/document templates —
@@ -633,9 +633,9 @@ model AiTemplate {
   // AI Studio data-collection form render only what THIS template needs. Adopts the
   // Template-Driven CMS `cmsSchema` shape later without a rewrite.
   fields      Json?
-  // Template Editor dispatch (17 Aug): Polotno scene JSON for source='polotno'
-  // (the editable canvas — layers, text boxes, image slots). Stored here, not in a
-  // parallel table.
+  // Template Editor dispatch (17 Aug): Fabric.js scene JSON for source='design'
+  // (the editable canvas — text boxes, image objects, shapes; placeholder objects
+  // tagged with fieldKey). Stored here, not in a parallel table.
   editorJson  Json?
   // Remotion reel template config for source='reel' — { slots (image count), text
   // overlay spec, aspect, durationInFrames, fps, allowedTrackIds }.

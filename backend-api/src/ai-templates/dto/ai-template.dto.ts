@@ -24,9 +24,9 @@ export class CreateAiTemplateDto {
   @IsString()
   thumbnail?: string;
 
-  @ApiProperty({ required: false, enum: ['prompt', 'canva', 'document', 'polotno', 'reel'], default: 'prompt' })
+  @ApiProperty({ required: false, enum: ['prompt', 'canva', 'document', 'design', 'reel'], default: 'prompt' })
   @IsOptional()
-  @IsIn(['prompt', 'canva', 'document', 'polotno', 'reel'])
+  @IsIn(['prompt', 'canva', 'document', 'design', 'reel'])
   source?: string;
 
   @ApiProperty({ required: false, description: 'Canva brand_template_id (source=canva)' })
@@ -39,7 +39,7 @@ export class CreateAiTemplateDto {
   @IsArray()
   fields?: unknown[];
 
-  @ApiProperty({ required: false, description: 'Polotno scene JSON (source=polotno)' })
+  @ApiProperty({ required: false, description: 'Fabric.js scene JSON (source=design)' })
   @IsOptional()
   @IsObject()
   editorJson?: Record<string, unknown>;

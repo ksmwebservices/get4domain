@@ -16,10 +16,10 @@ import Modal from '@/components/ui/Modal';
 import { Input, Textarea, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
 
-// Polotno is browser-only — load the editor client-side only.
-const PolotnoEditor = dynamic(() => import('@/components/design/PolotnoEditor'), {
+// The design editor (Fabric.js) is browser-only — load it client-side only.
+const FabricEditor = dynamic(() => import('@/components/design/FabricEditor'), {
   ssr: false,
-  loading: () => <div className="flex h-[80vh] items-center justify-center text-sm text-slate-400">Loading editor…</div>,
+  loading: () => <div className="flex h-[70vh] items-center justify-center text-sm text-slate-400">Loading editor…</div>,
 });
 
 interface ContentType {
@@ -28,7 +28,8 @@ interface ContentType {
   icon: typeof Sparkles;
 }
 
-// A built-in editable design template (Polotno scene) from GET /design/templates.
+// An editable design template (Fabric scene) — built-in from GET /design/templates
+// or admin-authored (g4d_ai_templates, source='design').
 interface EditorTemplate {
   id: string;
   name: string;
@@ -75,15 +76,6 @@ const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   { key: 'brochure', label: 'Brochure', icon: FileText, kind: 'design', costKey: 'social_post', blurb: 'Multi-panel brochures' },
   { key: 'social_graphic', label: 'Social Graphic', icon: MessageSquare, kind: 'design', costKey: 'social_post', blurb: 'Posts & story graphics' },
 ];
-
-// Staged placeholder templates per design category — swapped for real synced
-// templates (filtered by category) once the design provider is connected.
-const STAGED_DESIGN_TEMPLATES: Record<string, { id: string; name: string }[]> = {
-  poster: [{ id: 'stg-poster-1', name: 'Festival Sale Poster' }, { id: 'stg-poster-2', name: 'Grand Opening Poster' }, { id: 'stg-poster-3', name: 'Discount Offer Poster' }],
-  flyer: [{ id: 'stg-flyer-1', name: 'Service Menu Flyer' }, { id: 'stg-flyer-2', name: 'Event Flyer' }],
-  brochure: [{ id: 'stg-brochure-1', name: 'Tri-fold Brochure' }, { id: 'stg-brochure-2', name: 'Product Catalogue' }],
-  social_graphic: [{ id: 'stg-social-1', name: 'Instagram Post' }, { id: 'stg-social-2', name: 'Story Graphic' }, { id: 'stg-social-3', name: 'Offer Announcement' }],
-};
 
 const TONES = ['Professional', 'Friendly', 'Excited', 'Formal', 'Playful'];
 
@@ -169,17 +161,37 @@ export default function AiStudioPage() {
   // AI Template browse: null = category grid; set = template gallery for that category.
   const [browseCat, setBrowseCat] = useState<TemplateCategory | null>(null);
 
-  // Polotno editor: config (publishable key) + built-in editable templates + the
-  // currently-open editor template (with its prefill values).
-  const [polotnoKey, setPolotnoKey] = useState<string | null>(null);
+  // Design editor (Fabric.js — MIT, no key). Templates = built-in samples
+  // (/design/templates) + admin-authored (g4d_ai_templates, source='design').
   const [editorTemplates, setEditorTemplates] = useState<EditorTemplate[]>([]);
+  const [editorLoaded, setEditorLoaded] = useState(false);
   const [editorTpl, setEditorTpl] = useState<EditorTemplate | null>(null);
   useEffect(() => {
-    if (polotnoKey !== null || editorTemplates.length) return;
-    if (mode !== 'template') return;
-    api.designConfig().then((r) => setPolotnoKey((r.data?.polotnoKey as string) ?? '')).catch(() => setPolotnoKey(''));
-    api.designTemplates().then((r) => setEditorTemplates((r.data ?? []) as EditorTemplate[])).catch(() => setEditorTemplates([]));
-  }, [mode, polotnoKey, editorTemplates.length]);
+    if (mode !== 'template' || editorLoaded) return;
+    setEditorLoaded(true);
+    Promise.all([
+      api.designTemplates().then((r) => (r.data ?? []) as EditorTemplate[]).catch(() => []),
+      api.aiTemplates(`?source=design${user?.industry ? `&industry=${encodeURIComponent(user.industry)}` : ''}`)
+        .then((r) => (r.data ?? [])).catch(() => []),
+    ]).then(([builtins, admin]) => {
+      // Map admin AiTemplate rows → EditorTemplate (size lives inside editorJson).
+      const mapped: EditorTemplate[] = (admin as Array<Record<string, unknown>>)
+        .filter((t) => t.editorJson)
+        .map((t) => {
+          const ej = t.editorJson as Record<string, unknown>;
+          return {
+            id: t.id as string,
+            name: t.name as string,
+            category: (t.contentType as string) || 'poster',
+            width: (ej.width as number) || 1080,
+            height: (ej.height as number) || 1080,
+            fields: (t.fields as EditorTemplate['fields']) || [],
+            editorJson: ej,
+          };
+        });
+      setEditorTemplates([...builtins, ...mapped]);
+    });
+  }, [mode, editorLoaded, user?.industry]);
 
   const openEditor = (t: EditorTemplate) => setEditorTpl(t);
   const editorPrefill = useMemo(() => {
@@ -551,7 +563,7 @@ export default function AiStudioPage() {
             </div>
           </div>
         ) : (
-          // Gallery for a category — coded doc (Free) + editable Polotno templates + staged placeholders.
+          // Gallery for a category — coded doc (Free · PDF) + editable design templates (in-app editor).
           <div className="space-y-4">
             <button onClick={() => setBrowseCat(null)} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700">← All templates</button>
             <h2 className="text-lg font-bold text-slate-900">{browseCat.label}</h2>
@@ -571,7 +583,7 @@ export default function AiStudioPage() {
                   </Card>
                 );
               })()}
-              {/* Editable Polotno templates for this category — open the in-app editor */}
+              {/* Editable design templates for this category — open the in-app editor */}
               {editorTemplates.filter((t) => t.category === browseCat.key).map((t) => (
                 <Card key={t.id} hover className="cursor-pointer" onClick={() => openEditor(t)}>
                   <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-primary-100 to-teal-50 text-primary-500"><Palette className="h-7 w-7" /></div>
@@ -581,20 +593,8 @@ export default function AiStudioPage() {
                   </div>
                 </Card>
               ))}
-              {/* Staged placeholders — replaced by real editable templates as the library grows */}
-              {(STAGED_DESIGN_TEMPLATES[browseCat.key] ?? []).map((t) => (
-                <Card key={t.id} className="opacity-70">
-                  <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-slate-50 text-slate-300"><Palette className="h-7 w-7" /></div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-slate-500">{t.name}</h3>
-                    <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Soon</span>
-                  </div>
-                </Card>
-              ))}
             </div>
-            {polotnoKey === '' && editorTemplates.some((t) => t.category === browseCat.key) && (
-              <p className="text-xs text-amber-700">The in-app editor turns on once your Get4Domain team connects the design editor. Business documents above are ready to use now.</p>
-            )}
+            <p className="text-xs text-slate-400">Editable templates open in an in-app design editor — drag, edit and export a PNG or PDF. Business documents above are one-click PDFs.</p>
           </div>
         )
       )}
@@ -739,28 +739,18 @@ export default function AiStudioPage() {
         )}
       </Modal>
 
-      {/* In-app design editor (Polotno) — opens the pickable template pre-filled with vendor data */}
-      <Modal isOpen={editorTpl !== null} onClose={() => setEditorTpl(null)} title={editorTpl?.name ?? ''} maxWidth="max-w-6xl">
+      {/* In-app design editor (Fabric.js) — pickable template pre-filled with vendor data */}
+      <Modal isOpen={editorTpl !== null} onClose={() => setEditorTpl(null)} title={editorTpl?.name ?? ''} maxWidth="max-w-5xl">
         {editorTpl && (
-          polotnoKey ? (
-            <PolotnoEditor
-              apiKey={polotnoKey}
-              scene={editorTpl.editorJson}
-              prefill={editorPrefill}
-              fileName={editorTpl.name.toLowerCase().replace(/\s+/g, '-')}
-              onClose={() => setEditorTpl(null)}
-            />
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                The in-app editor isn’t switched on yet — your Get4Domain team needs to connect the design editor
-                in Admin → Integrations → Design Editor. Business documents in this section are ready to use right now.
-              </div>
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setEditorTpl(null)}>Close</Button>
-              </div>
-            </div>
-          )
+          <FabricEditor
+            mode="vendor"
+            width={editorTpl.width}
+            height={editorTpl.height}
+            scene={editorTpl.editorJson}
+            prefill={editorPrefill}
+            fileName={editorTpl.name.toLowerCase().replace(/\s+/g, '-')}
+            onClose={() => setEditorTpl(null)}
+          />
         )}
       </Modal>
 

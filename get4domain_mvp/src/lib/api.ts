@@ -117,8 +117,7 @@ export const api = {
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
   // Resolved per-use AI content costs (paise) — single source of truth for showcase pricing.
   aiCosts: () => apiCall('/ai/costs'),
-  // Design editor (Polotno) — publishable key + built-in sample scene templates.
-  designConfig: () => apiCall('/design/config'),
+  // Design editor (Fabric.js) — built-in sample scene templates (no key needed).
   designTemplates: () => apiCall('/design/templates'),
   // Photo reels (Remotion) — licensed music tracks + server-side MP4 render.
   reelTracks: () => apiCall('/reels/tracks'),

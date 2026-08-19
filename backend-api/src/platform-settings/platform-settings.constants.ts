@@ -126,17 +126,6 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     ],
   },
   {
-    // Design editor (Polotno). The Polotno API key is a PUBLISHABLE client key
-    // (used in the browser, domain-scoped) — not a secret — so it can be served to
-    // the editor via a public endpoint. Production use requires a valid Polotno
-    // subscription; drop the subscription key here once purchased.
-    key: 'design',
-    label: 'Design Editor (Polotno)',
-    settings: [
-      { key: 'polotno_api_key', label: 'Polotno API Key (publishable)', envFallback: 'POLOTNO_API_KEY', secret: false },
-    ],
-  },
-  {
     key: 'domain',
     label: 'Domain (ResellerClub)',
     settings: [
