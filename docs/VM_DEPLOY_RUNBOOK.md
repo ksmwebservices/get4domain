@@ -88,6 +88,27 @@ _If the container lacks the Prisma CLI/schema, run from the host repo instead (n
 cd /srv/get4domain-site/backend-api && npx prisma db push
 ```
 
+### ⚠️ ALWAYS: re-enable RLS after `db push` adds tables (permanent step)
+
+`prisma db push` creates any new table with **RLS disabled** (Prisma doesn't manage
+RLS), which re-opens Supabase's public API surface for it. **Every time** a `db push`
+adds one or more tables, re-run the RLS-enable script — it's idempotent (only touches
+tables where RLS is off, so it's safe to run even when nothing changed):
+
+Apply `backend-api/prisma/sql/enable_rls_public.sql` as `postgres` — via the Supabase
+SQL Editor, or from the VM:
+```bash
+psql "$DIRECT_URL" -f /srv/get4domain-site/backend-api/prisma/sql/enable_rls_public.sql
+```
+Verify it left nothing exposed (expect **zero rows**):
+```sql
+SELECT tablename FROM pg_tables WHERE schemaname='public' AND rowsecurity=false;
+```
+Enables RLS with **no policies** — safe because the app connects as `postgres`
+(table owner + `BYPASSRLS`), so its Prisma queries are unaffected; only the
+`anon`/`authenticated` public-API roles are closed off. Never use `FORCE`, and do
+not attach policies unless a table is intentionally read via `supabase-js`.
+
 ---
 
 ## 5. POST-DEPLOY CONFIG (Admin panel)
