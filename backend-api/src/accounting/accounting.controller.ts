@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Expense } from '@prisma/client';
 import { AccountingService, AccountingSummary } from './accounting.service';
@@ -7,6 +8,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 
 @ApiTags('accounting')
 @ApiBearerAuth()
+@RequireModule('accounts')
 @Controller('accounting')
 export class AccountingController {
   constructor(private readonly service: AccountingService) {}

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
@@ -7,6 +8,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('campaigns')
 @ApiBearerAuth()
+@RequireModule('campaigns')
 @Controller('campaigns')
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}

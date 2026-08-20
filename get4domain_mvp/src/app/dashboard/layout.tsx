@@ -15,6 +15,19 @@ import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
 import TourNav from '@/components/TourNav';
 
+// Maps a nav item → the team-access area that gates it for a vendor team member
+// (mirrors the backend's team-access areas). Base items have no mapping → visible.
+const TEAM_AREA_BY_MODULE: Record<string, string> = {
+  growth_hub: 'campaigns', telecrm: 'telecrm', communication_hub: 'communication',
+  website_manager: 'website', analytics_hub: 'reports',
+};
+const TEAM_AREA_BY_HREF: Record<string, string> = {
+  '/dashboard/accounts': 'accounts', '/dashboard/wallet': 'wallet', '/dashboard/invoices': 'wallet',
+  '/dashboard/campaigns': 'campaigns', '/dashboard/telecrm': 'telecrm',
+  '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
+  '/dashboard/reports': 'reports', '/dashboard/ai-studio': 'ai_studio',
+};
+
 interface NavItem {
   label: string;
   href: string;
@@ -118,6 +131,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return false;
   };
 
+  // A vendor's team member only sees the areas their department/modules grant.
+  // Items with no team-area mapping are base items (always visible). Server-side
+  // enforcement (backend ModuleGuard) is the real boundary — this just hides the nav.
+  const hiddenForTeam = (item: NavItem): boolean => {
+    if (user?.kind !== 'team_member') return false;
+    if (item.href === '/dashboard/team') return true; // team management is owner-only
+    const area =
+      (item.moduleKey && TEAM_AREA_BY_MODULE[item.moduleKey]) || TEAM_AREA_BY_HREF[item.href];
+    if (!area) return false;
+    return !(user.modules ?? []).includes(area);
+  };
+  const visibleItems = (items: NavItem[]): NavItem[] => items.filter((i) => !hiddenForTeam(i));
+
   const openUpgrade = (item: NavItem) => {
     setUpgrade({
       feature: item.label,
@@ -128,8 +154,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   // Sheet contents for the fixed mobile bottom nav.
-  const businessItems = sections[1]?.items ?? [];
-  const campaignItems = (sections.find((s) => s.title === 'Grow')?.items ?? []).filter((i) => i.label !== 'AI Studio');
+  const businessItems = visibleItems(sections[1]?.items ?? []);
+  const campaignItems = visibleItems((sections.find((s) => s.title === 'Grow')?.items ?? []).filter((i) => i.label !== 'AI Studio'));
 
   // Renders a nav item respecting the locked/upgrade pattern; closes the sheet on tap.
   const renderSheetItem = (item: NavItem) => {
@@ -217,8 +243,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             maxHeight: 'calc(100vh - 120px)',
           }}
         >
-          {sections.map((section, si) => (
-            section.items.length === 0 ? null : (
+          {sections.map((section, si) => {
+            const items = visibleItems(section.items);
+            return items.length === 0 ? null : (
               <div key={section.title ?? si}>
                 {section.title && (
                   <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -226,7 +253,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 )}
                 <div className="space-y-0.5">
-                  {section.items.map((item) => {
+                  {items.map((item) => {
                     const locked = isLocked(item);
                     const active = isActive(item.href);
                     if (locked) {
@@ -254,8 +281,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   })}
                 </div>
               </div>
-            )
-          ))}
+            );
+          })}
         </nav>
       </aside>
 
@@ -315,14 +342,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </BottomSheet>
       <BottomSheet isOpen={sheet === 'more'} onClose={() => setSheet(null)} title="Menu">
         <div className="space-y-4">
-          {sections.map((section, si) => (
-            section.items.length === 0 ? null : (
+          {sections.map((section, si) => {
+            const items = visibleItems(section.items);
+            return items.length === 0 ? null : (
               <div key={section.title ?? si}>
                 {section.title && <div className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{section.title}</div>}
-                <div className="space-y-0.5">{section.items.map(renderSheetItem)}</div>
+                <div className="space-y-0.5">{items.map(renderSheetItem)}</div>
               </div>
-            )
-          ))}
+            );
+          })}
           <button onClick={() => { setSheet(null); logout(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-error-600">
             <LogOut className="h-4 w-4" />Sign Out
           </button>

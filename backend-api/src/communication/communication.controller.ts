@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CommunicationService, Channel } from './communication.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -6,6 +7,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 
 @ApiTags('communication')
 @ApiBearerAuth()
+@RequireModule('communication')
 @Controller('communication')
 export class CommunicationController {
   constructor(private readonly service: CommunicationService) {}

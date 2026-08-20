@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { normalizeModules } from '../team/team-access';
 
 export interface LoginResult {
   accessToken: string;
@@ -16,6 +17,11 @@ export interface LoginResult {
     businessName: string;
     industry: string | null;
     subdomain: string | null;
+    /** Present for a vendor team-member login. */
+    kind?: string;
+    memberId?: string;
+    modules?: string[];
+    department?: string;
   };
 }
 
@@ -61,38 +67,82 @@ export class AuthService {
 
     // Internal Get4Domain staff (invited Marketing/Operations members).
     const member = await this.prisma.adminTeamMember.findUnique({ where: { email: dto.email } });
-    if (!member || member.status !== 'active' || !member.password) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
+    if (member && member.status === 'active' && member.password) {
+      const memberPasswordMatches = await bcrypt.compare(dto.password, member.password);
+      if (!memberPasswordMatches) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
 
-    const memberPasswordMatches = await bcrypt.compare(dto.password, member.password);
-    if (!memberPasswordMatches) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
+      await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { lastLogin: new Date() } });
 
-    await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { lastLogin: new Date() } });
-
-    const accessToken = this.signToken({
-      sub: member.id,
-      email: member.email,
-      role: 'ADMIN',
-      adminRole: member.role,
-      kind: 'admin_member',
-    });
-
-    return {
-      accessToken,
-      user: {
-        id: member.id,
-        name: member.name,
+      const accessToken = this.signToken({
+        sub: member.id,
         email: member.email,
         role: 'ADMIN',
         adminRole: member.role,
-        businessName: 'Get4Domain',
-        industry: null,
-        subdomain: null,
-      },
-    };
+        kind: 'admin_member',
+      });
+
+      return {
+        accessToken,
+        user: {
+          id: member.id,
+          name: member.name,
+          email: member.email,
+          role: 'ADMIN',
+          adminRole: member.role,
+          businessName: 'Get4Domain',
+          industry: null,
+          subdomain: null,
+        },
+      };
+    }
+
+    // A vendor's OWN team member (g4d_team_members). Tried LAST, only after Vendor
+    // and AdminTeamMember both miss — so no existing account is ever intercepted.
+    // The token's `sub` is the PARENT vendorId so every vendorId-scoped endpoint
+    // works unchanged; the member's identity + access ride as separate claims.
+    if (dto.email) {
+      const teamMember = await this.prisma.teamMember.findFirst({
+        where: { email: dto.email, status: 'active', password: { not: null } },
+      });
+      if (teamMember && teamMember.password) {
+        const ok = await bcrypt.compare(dto.password, teamMember.password);
+        if (!ok) throw new UnauthorizedException('Invalid email or password');
+
+        const parent = await this.prisma.vendor.findUnique({ where: { id: teamMember.vendorId } });
+        if (!parent || parent.status === 'SUSPENDED') {
+          throw new UnauthorizedException('This account is unavailable');
+        }
+
+        await this.prisma.teamMember.update({ where: { id: teamMember.id }, data: { lastLogin: new Date() } });
+
+        const modules = normalizeModules(teamMember.modules);
+        const accessToken = this.signToken({
+          sub: parent.id, email: teamMember.email ?? dto.email, role: 'VENDOR',
+          kind: 'team_member', memberId: teamMember.id,
+        });
+
+        return {
+          accessToken,
+          user: {
+            id: teamMember.id,               // the member's own identity
+            name: teamMember.name,
+            email: teamMember.email ?? dto.email,
+            role: 'VENDOR',
+            businessName: parent.businessName, // renders the vendor's business in the shell
+            industry: parent.industry,
+            subdomain: parent.subdomain,
+            kind: 'team_member',
+            memberId: teamMember.id,
+            modules,
+            department: teamMember.department ?? undefined,
+          },
+        };
+      }
+    }
+
+    throw new UnauthorizedException('Invalid email or password');
   }
 
   refresh(user: AuthenticatedUser): { accessToken: string } {
@@ -102,6 +152,7 @@ export class AuthService {
       role: user.role,
       adminRole: user.adminRole,
       kind: user.kind,
+      memberId: user.memberId,
     });
     return { accessToken };
   }
@@ -112,6 +163,7 @@ export class AuthService {
     role: string;
     adminRole?: string;
     kind?: string;
+    memberId?: string;
   }): string {
     return this.jwtService.sign(payload, { expiresIn: '7d' });
   }

@@ -1,4 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AnalyticsService, UsageCounts, VendorUsageRow } from './analytics.service';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -6,6 +7,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 
 @ApiTags('analytics')
 @ApiBearerAuth()
+@RequireModule('reports')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly service: AnalyticsService) {}

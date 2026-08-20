@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CrmService } from './crm.service';
 import { CreateCrmLeadDto, ImportCrmLeadsDto } from './dto/create-crm-lead.dto';
@@ -8,6 +9,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 
 @ApiTags('crm')
 @ApiBearerAuth()
+@RequireModule('telecrm')
 @Controller('crm')
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}

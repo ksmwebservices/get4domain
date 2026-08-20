@@ -46,6 +46,7 @@ import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { ModuleGuard } from './common/guards/module.guard';
 
 @Module({
   imports: [
@@ -102,6 +103,12 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      // Runs AFTER JwtAuthGuard (request.user is populated). No-op unless a route is
+      // @RequireModule()-marked AND the caller is a restricted team member.
+      provide: APP_GUARD,
+      useClass: ModuleGuard,
     },
   ],
 })

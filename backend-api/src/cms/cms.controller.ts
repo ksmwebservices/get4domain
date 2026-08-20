@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { VendorCMS, VendorProduct } from '@prisma/client';
 import { CmsService } from './cms.service';
@@ -17,6 +18,7 @@ function assertOwnerOrAdmin(user: AuthenticatedUser, vendorId: string): void {
 }
 
 @ApiTags('cms')
+@RequireModule('website')
 @Controller('cms')
 export class CmsController {
   constructor(private readonly cmsService: CmsService) {}

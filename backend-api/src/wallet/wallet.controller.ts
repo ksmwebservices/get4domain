@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { TopupDto } from './dto/topup.dto';
@@ -9,6 +10,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
+@RequireModule('wallet')
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}

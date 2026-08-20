@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GrowthHubService } from './growth-hub.service';
 import { AdRequestDto, PublishDto } from './dto/growth-hub.dto';
@@ -7,6 +8,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 
 @ApiTags('growth-hub')
 @ApiBearerAuth()
+@RequireModule('campaigns')
 @Controller('growth-hub')
 export class GrowthHubController {
   constructor(private readonly service: GrowthHubService) {}

@@ -16,6 +16,10 @@ export interface AuthUser {
   subdomain?: string;
   plan?: string;
   initials: string;
+  /** Present for a vendor's team member: 'team_member'. Restricts which modules they see. */
+  kind?: string;
+  /** Canonical access areas granted to a team member (see backend team-access.ts). */
+  modules?: string[];
 }
 
 // Session stored in localStorage (client-side)
@@ -96,6 +100,8 @@ export async function loginWithCredentials(
       subdomain: backendUser.subdomain ?? undefined,
       plan: 'DomainApp Startup',
       initials: getInitials(backendUser.name),
+      kind: backendUser.kind ?? undefined,
+      modules: Array.isArray(backendUser.modules) ? backendUser.modules : undefined,
     };
 
     setSession(user);

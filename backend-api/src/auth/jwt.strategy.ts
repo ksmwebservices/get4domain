@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { normalizeModules } from '../team/team-access';
 
 interface JwtPayload {
   sub: string;
@@ -10,6 +11,7 @@ interface JwtPayload {
   role: string;
   adminRole?: string;
   kind?: string;
+  memberId?: string;
 }
 
 @Injectable()
@@ -30,6 +32,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('Account not found or removed');
       }
       return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: member.role, kind: 'admin_member' };
+    }
+
+    // A vendor's team member. `sub` is the PARENT vendorId (data scoping); the member
+    // is re-loaded each request so removal instantly ends the session and permission
+    // (modules/department) changes take effect without re-login.
+    if (payload.kind === 'team_member') {
+      if (!payload.memberId) throw new UnauthorizedException('Invalid team session');
+      const member = await this.prisma.teamMember.findUnique({ where: { id: payload.memberId } });
+      if (!member || member.status !== 'active' || member.vendorId !== payload.sub) {
+        throw new UnauthorizedException('Account not found or removed');
+      }
+      const parent = await this.prisma.vendor.findUnique({ where: { id: payload.sub } });
+      if (!parent || parent.status === 'SUSPENDED') {
+        throw new UnauthorizedException('Account not found or suspended');
+      }
+      return {
+        sub: parent.id, email: member.email ?? payload.email, role: 'VENDOR',
+        kind: 'team_member', memberId: member.id,
+        modules: normalizeModules(member.modules),
+        department: member.department ?? undefined,
+      };
     }
 
     const vendor = await this.prisma.vendor.findUnique({ where: { id: payload.sub } });
