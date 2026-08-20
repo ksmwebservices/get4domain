@@ -1330,6 +1330,26 @@ Extended the editor (both modes; field-tagging admin-only). NO new library — i
 - SCOPED per ask: NO photo/clipart library, NO background-pattern search — both await a sourcing decision.
 - Frontend build 0 errors (react-dom/server bundles fine for the client editor; route bundles unchanged).
 
+### DISPATCH — GET4DOMAIN_DISPATCH_BOS_COMPLETION_20AUG2026 — PHASE 1 (team access) DONE
+Preceded by the BOS workflow audit (docs/GET4DOMAIN_BOS_WORKFLOW_AUDIT.md). Phase 1 ONLY this
+session (Phases 2/3/4 NOT started, per dispatch — they gate on Phase 1 deploy+verify).
+- [x] Real login for g4d_team_members (dc181b7): auth.service.login team-member branch tried LAST
+  (after Vendor + AdminTeamMember miss → existing logins byte-identical, never intercepted). Token
+  sub = PARENT vendorId (all vendorId-scoped endpoints work unchanged); member id/modules as claims.
+- [x] jwt.strategy team_member branch — reloads member each request (removal ends session instantly;
+  module/dept changes apply without re-login); re-scopes to parent vendor.
+- [x] Enforcement reuses admin RBAC pattern: @RequireModule(area) + global ModuleGuard (after
+  JwtAuthGuard; no-op unless route decorated AND caller is a restricted team_member). Applied to
+  accounting/analytics/campaigns/growth-hub/cms/communication/crm/wallet. team-access.ts normalises
+  the loosely-stored module labels ('CRM','TeleCRM','Accounts'…) → canonical areas.
+- [x] VendorOwnerGuard blocks team members from managing the team (invite/update/remove).
+- [x] Frontend: AuthUser carries kind+modules; dashboard nav hides ungranted areas (server ModuleGuard
+  is the real boundary). NO schema change (TeamMember already had password/modules/department/status).
+- [x] Verified additive: vendors + admins never restricted by the new guard; existing vendor/admin
+  login + JWT unchanged. Both apps build 0 errors. No prod data touched.
+- [ ] Verify on VM: a real team member logs in + sees only their department's modules; existing vendor
+  + admin logins still work. Then Phase 2 (inventory / scheduler / payslip). Phases 3–4 after that.
+
 ## BLOCKERS LOG (append here whenever [!] is used above)
 
 - [resolved] GIT COMMIT/PUSH temporarily blocked (2026-08-09) by the auto-mode
