@@ -123,9 +123,45 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
   ],
   realestate: [
     { id: 'general', name: 'Real Estate' },
-    { id: 'residential', name: 'Residential', keywords: ['residential', 'flats', 'apartments', 'villas', 'houses for sale', 'buy home'] },
-    { id: 'commercial', name: 'Commercial', keywords: ['commercial', 'office space', 'shops', 'showroom', 'commercial property'] },
-    { id: 'rental', name: 'Rentals', keywords: ['rental', 'rent', 'rent flat', 'pg', 'lease', 'rent house'] },
+    {
+      id: 'residential', name: 'Residential',
+      keywords: ['residential', 'flats', 'apartments', 'villas', 'houses for sale', 'buy home'],
+      content: {
+        tagline: 'Find the Home That’s Right for You',
+        shortDesc: 'Residential property website with listings, photo galleries and site-visit booking.',
+        fullDesc: 'A website built for residential real-estate agents and builders. Buyers browse verified listings — apartments, villas and independent houses — filter by budget and configuration, view photos and floor details and book a site visit. Built to turn a serious buyer’s search into a walk-through.',
+        heroHeadline: 'Your Dream Home Is a Click Away',
+        heroSubline: 'Verified apartments, villas and houses — book a site visit online',
+        highlight: 'Verified listings · Real photos · Home-loan assistance · Easy site visits',
+        seoKeywords: ['residential property website', 'flats for sale website india', 'real estate agent website', 'buy apartment website'],
+      },
+    },
+    {
+      id: 'commercial', name: 'Commercial',
+      keywords: ['commercial', 'office space', 'shops', 'showroom', 'commercial property'],
+      content: {
+        tagline: 'Space That Works for Your Business',
+        shortDesc: 'Commercial property website with office, retail and warehouse listings and enquiry booking.',
+        fullDesc: 'A website built for commercial real-estate agents. Businesses browse your listings — office spaces, retail showrooms, warehouses and commercial plots — with area, rent and location details, and enquire for a visit. Built to connect landlords and businesses looking for the right address.',
+        heroHeadline: 'The Right Address for Your Business',
+        heroSubline: 'Offices, showrooms, warehouses and commercial plots — for lease or sale',
+        highlight: 'Prime locations · Ready-to-move · Lease or buy · Verified listings',
+        seoKeywords: ['commercial property website', 'office space for rent website india', 'commercial real estate website', 'showroom for rent website'],
+      },
+    },
+    {
+      id: 'rental', name: 'Rentals',
+      keywords: ['rental', 'rent', 'rent flat', 'pg', 'lease', 'rent house'],
+      content: {
+        tagline: 'Rent Without the Runaround',
+        shortDesc: 'Rental property website with flats, houses and PG listings and quick enquiry booking.',
+        fullDesc: 'A website built for rental agents and property managers. Tenants browse available rentals — flats, independent houses and PG/shared accommodation — filter by budget and locality and enquire directly, no broker chase. Built to fill vacancies fast with genuine, ready-to-move listings.',
+        heroHeadline: 'Move-In Ready Rentals, No Hassle',
+        heroSubline: 'Flats, houses and PGs for rent — filter, enquire and move in',
+        highlight: 'Verified rentals · Semi & fully furnished · PG options · Direct enquiry',
+        seoKeywords: ['rental property website', 'flats for rent website india', 'pg accommodation website', 'house for rent website'],
+      },
+    },
   ],
   restaurant: [
     { id: 'general', name: 'Restaurant' },
@@ -294,8 +330,32 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
   ],
   education: [
     { id: 'general', name: 'School' },
-    { id: 'coaching', name: 'Coaching Centre', keywords: ['coaching', 'coaching centre', 'tuition', 'test prep', 'competitive exam'] },
-    { id: 'college', name: 'College', keywords: ['college', 'university', 'degree', 'higher education'] },
+    {
+      id: 'coaching', name: 'Coaching Centre',
+      keywords: ['coaching', 'coaching centre', 'tuition', 'test prep', 'competitive exam', 'iit jee', 'neet coaching'],
+      content: {
+        tagline: 'Coaching That Delivers Results',
+        shortDesc: 'Coaching centre website with course listings, faculty profiles and admission enquiry.',
+        fullDesc: 'A website built for coaching centres and tuition institutes. Students and parents browse your courses — JEE, NEET, board foundation and crash courses — meet your faculty, see results and enquire for admission. Built to convert the results-driven parent comparing coaching options in your area.',
+        heroHeadline: 'Turn Hard Work into Top Ranks',
+        heroSubline: 'JEE, NEET and board coaching from experienced faculty',
+        highlight: 'Experienced faculty · Proven results · Small batches · Regular tests',
+        seoKeywords: ['coaching centre website', 'coaching institute website india', 'jee neet coaching website', 'tuition centre website'],
+      },
+    },
+    {
+      id: 'college', name: 'College',
+      keywords: ['college', 'university', 'degree', 'higher education', 'admission', 'engineering college'],
+      content: {
+        tagline: 'Where Ambition Meets Opportunity',
+        shortDesc: 'College website with programs, admissions info, campus gallery and enquiry.',
+        fullDesc: 'A website built for colleges and institutes of higher education. Prospective students browse your programs — engineering, commerce, management and diplomas — see campus facilities, placements and admission details and enquire online. Built to be the credible information hub families rely on during admission season.',
+        heroHeadline: 'Build Your Future on a Strong Foundation',
+        heroSubline: 'UG and PG programs with modern campuses and strong placements',
+        highlight: 'Approved programs · Modern campus · Placement support · Scholarships',
+        seoKeywords: ['college website india', 'college admission website', 'university website', 'engineering college website'],
+      },
+    },
   ],
   retail: [
     { id: 'general', name: 'Store' },
