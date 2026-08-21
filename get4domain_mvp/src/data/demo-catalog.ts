@@ -338,6 +338,36 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Maternity & Gynaecology', price: 'Packages from ₹35,000', desc: 'Normal and C-section delivery packages.', fields: [{ label: 'Department', value: 'Obstetrics' }] },
       ],
     },
+    dermatology: {
+      catalogNoun: 'treatments', coverImage: px(3985163),
+      items: [
+        { name: 'Dermatologist Consultation', price: '₹600', desc: 'Skin, hair and nail assessment with a treatment plan.', fields: [{ label: 'Duration', value: '20 min' }] },
+        { name: 'Acne & Pigmentation Treatment', price: 'From ₹1,500 / session', desc: 'Medical peels and targeted therapy for clear skin.', fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: 'Laser Hair Reduction', price: 'From ₹2,000 / session', desc: 'USFDA-approved diode laser, per-area pricing.', tags: ['Popular'], fields: [{ label: 'Sittings', value: '6–8' }] },
+        { name: 'Anti-Ageing & Botox', price: 'From ₹8,000', desc: 'Wrinkle reduction, fillers and skin tightening.', fields: [{ label: 'Duration', value: '45 min' }] },
+        { name: 'PRP Hair Treatment', price: '₹4,000 / session', desc: 'Platelet-rich plasma for hair fall and regrowth.', fields: [{ label: 'Sittings', value: '4–6' }] },
+        { name: 'Hair Transplant (FUE)', price: 'From ₹45,000', desc: 'Follicular unit extraction with natural results.', fields: [{ label: 'Grafts', value: 'Per session' }] },
+      ],
+      team: [
+        { name: 'Dr. Meera Nair', role: 'Dermatologist (MBBS, MD)', note: 'Cosmetology · 12 yrs' },
+        { name: 'Dr. Rohan Kapoor', role: 'Hair Transplant Surgeon', note: 'FUE & FUT · 9 yrs' },
+      ],
+    },
+    orthopedic: {
+      catalogNoun: 'treatments', coverImage: px(7659564),
+      items: [
+        { name: 'Orthopaedic Consultation', price: '₹700', desc: 'Assessment for bone, joint and spine problems.', fields: [{ label: 'Duration', value: '20 min' }] },
+        { name: 'Digital X-Ray (on site)', price: '₹500', desc: 'Instant digital imaging with same-day reporting.', fields: [{ label: 'Duration', value: '15 min' }] },
+        { name: 'Fracture Care & Plaster', price: 'From ₹1,500', desc: 'Casting, splinting and follow-up review.', fields: [{ label: 'Department', value: 'Trauma' }] },
+        { name: 'Arthritis & Joint Pain Care', price: 'Consult ₹700', desc: 'Injections, physiotherapy and long-term management.', fields: [{ label: 'Department', value: 'Joint Care' }] },
+        { name: 'Knee / Hip Replacement', price: 'Packages from ₹1,80,000', desc: 'Total joint replacement with rehab support.', tags: ['Surgery'], fields: [{ label: 'Stay', value: '3–5 days' }] },
+        { name: 'Arthroscopy (Key-hole)', price: 'Packages from ₹90,000', desc: 'Minimally invasive knee and shoulder surgery.', fields: [{ label: 'Department', value: 'Sports Ortho' }] },
+      ],
+      team: [
+        { name: 'Dr. Suresh Iyer', role: 'Orthopaedic Surgeon (MS Ortho)', note: 'Joint replacement · 18 yrs' },
+        { name: 'Dr. Priya Menon', role: 'Sports Injury Specialist', note: 'Arthroscopy · 11 yrs' },
+      ],
+    },
   },
   realestate: {
     residential: {
