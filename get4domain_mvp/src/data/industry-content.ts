@@ -444,4 +444,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-blue-50',
     coverImage: 'https://images.pexels.com/photos/4569340/pexels-photo-4569340.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'astrology',
+    name: 'Astrology & Spiritual',
+    tagline: 'Guidance for Life’s Big Questions',
+    shortDesc: 'Astrology and spiritual services website with consultations, online booking and remedies.',
+    fullDesc: 'Built for astrologers, numerologists, vastu consultants and pandits. Clients browse your services, book consultations in person, by phone or video, and learn about remedies and puja offerings. A trusted, professional presence for practitioners who grow on reputation and referrals. Works for astrology, numerology, vastu, tarot, palmistry and puja services.',
+    whatYouGet: ['Service and consultation list', 'Online / phone / video booking', 'Kundli & report info', 'Remedies and puja details', 'Client testimonials', 'Practitioner profile', 'WhatsApp enquiry button', 'Payment on consultation'],
+    websitePages: ['Home', 'Services', 'Book Consultation', 'About', 'Testimonials', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Clarity, Guidance and Peace of Mind',
+      heroSubline: 'Consult experienced astrologers by phone, video or in person',
+      services: ['Astrology', 'Numerology', 'Vastu', 'Kundli Matching', 'Puja Services'],
+      highlight: 'Experienced practitioners · Phone / video consults · Private · Remedies included',
+    },
+    seoKeywords: ['astrologer website india', 'astrology consultation website', 'online astrology website', 'vastu consultant website'],
+    color: 'text-purple-700',
+    bgColor: 'bg-purple-50',
+    coverImage: 'https://images.pexels.com/photos/6541008/pexels-photo-6541008.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

@@ -632,6 +632,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  astrology: [
+    { id: 'general', name: 'Astrology & Spiritual' },
+    {
+      id: 'astrologer', name: 'Astrologer',
+      keywords: ['astrologer', 'astrology', 'jyotish', 'kundli', 'horoscope', 'zodiac', 'birth chart', 'best astrologer', 'online astrology'],
+      content: {
+        tagline: 'Answers Written in the Stars',
+        shortDesc: 'Astrologer website with consultation services, online booking and client testimonials.',
+        fullDesc: 'A website built for astrologers and jyotish consultants. Clients browse your services — kundli readings, career, marriage and health predictions and remedies — and book a consultation by phone, video or in person. Built to turn a searcher looking for a trusted astrologer into a booked, paid consultation.',
+        heroHeadline: 'Trusted Astrology Guidance',
+        heroSubline: 'Kundli readings and predictions for career, marriage and life',
+        highlight: 'Vedic astrology · Phone / video consults · Remedies · 100% private',
+        seoKeywords: ['astrologer website', 'online astrology consultation website', 'kundli reading website india', 'best astrologer website'],
+      },
+    },
+    {
+      id: 'numerology', name: 'Numerology',
+      keywords: ['numerology', 'numerologist', 'name correction', 'lucky number', 'name numerology', 'business name numerology'],
+      content: {
+        tagline: 'The Power of the Right Numbers',
+        shortDesc: 'Numerology website with reports, name-correction services and online booking.',
+        fullDesc: 'A website built for numerologists. Clients browse your services — personal and business name analysis, name correction, lucky numbers and compatibility reports — and book a consultation online. Built for a practice where a clear, credible site converts curious visitors into paying clients.',
+        heroHeadline: 'Align Your Name with Your Destiny',
+        heroSubline: 'Personal and business numerology, name correction and lucky numbers',
+        highlight: 'Detailed reports · Name correction · Business numerology · Online consults',
+        seoKeywords: ['numerology website', 'numerologist website india', 'name correction numerology website', 'business numerology website'],
+      },
+    },
+    {
+      id: 'vastu', name: 'Vastu Consultant',
+      keywords: ['vastu', 'vastu shastra', 'vastu consultant', 'vastu expert', 'home vastu', 'office vastu', 'vastu for home'],
+      content: {
+        tagline: 'Harmony for Home and Workplace',
+        shortDesc: 'Vastu consultant website with services, on-site/online reviews and enquiry booking.',
+        fullDesc: 'A website built for vastu consultants. Clients browse your services — home, office, plot and factory vastu reviews with practical, no-demolition remedies — and book an on-site or online consultation. Built to establish the authority and trust this advisory business depends on.',
+        heroHeadline: 'Positive Energy by Design',
+        heroSubline: 'Vastu reviews for homes, offices and plots — practical remedies',
+        highlight: 'On-site & online · No-demolition remedies · Home & commercial · Detailed report',
+        seoKeywords: ['vastu consultant website', 'vastu expert website india', 'home vastu consultation website', 'office vastu website'],
+      },
+    },
+    {
+      id: 'pandit-puja', name: 'Pandit & Puja Services',
+      keywords: ['pandit', 'priest', 'puja', 'pooja', 'puja services', 'pandit for puja', 'havan', 'griha pravesh', 'satyanarayan puja'],
+      content: {
+        tagline: 'Sacred Ceremonies, Done Right',
+        shortDesc: 'Pandit and puja-services website with ceremony listings, samagri info and booking.',
+        fullDesc: 'A website built for pandits and puja-service providers. Families browse ceremonies — griha pravesh, satyanarayan puja, havan, wedding and last rites — book an experienced pandit and arrange samagri, in the language and tradition they follow. Built to be the reliable first call for an auspicious occasion.',
+        heroHeadline: 'Experienced Pandits for Every Occasion',
+        heroSubline: 'Griha pravesh, satyanarayan puja, havan, weddings and more',
+        highlight: 'Experienced pandits · Samagri arranged · All traditions · Book by date',
+        seoKeywords: ['pandit booking website', 'puja services website india', 'online pandit website', 'pooja booking website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

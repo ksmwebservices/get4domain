@@ -307,6 +307,20 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Packing Material', price: 'On enquiry', desc: 'Boxes, bubble wrap and cartons for sale.', fields: [{ label: 'Type', value: 'Supplies' }] },
     ],
   },
+  astrology: {
+    flow: 'book-consult', ctaLabel: 'Book Consultation', catalogNoun: 'services',
+    items: [
+      { name: 'Astrology Consultation', price: '₹1,100', desc: 'Detailed kundli reading with predictions and remedies.', tags: ['Popular'], fields: [{ label: 'Duration', value: '30 min' }, { label: 'Mode', value: 'Phone / Video' }] },
+      { name: 'Kundli Matching', price: '₹1,500', desc: 'Horoscope matching for marriage compatibility.', fields: [{ label: 'Duration', value: '40 min' }] },
+      { name: 'Numerology Report', price: '₹2,100', desc: 'Name and number analysis with recommendations.', fields: [{ label: 'Type', value: 'Report' }] },
+      { name: 'Vastu Consultation', price: 'From ₹3,000', desc: 'Home or office vastu review with remedies.', fields: [{ label: 'Mode', value: 'On-site / Online' }] },
+      { name: 'Puja Services', price: 'On enquiry', desc: 'Pandit and puja arrangement with samagri.', fields: [{ label: 'Type', value: 'Ceremony' }] },
+    ],
+    team: [
+      { name: 'Pandit Rakesh Shastri', role: 'Vedic Astrologer', note: 'Jyotish · 20 yrs' },
+      { name: 'Guru Ananya Devi', role: 'Numerologist & Tarot', note: '12 yrs' },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -820,6 +834,49 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Car Transport (Intercity)', price: 'From ₹8,000', desc: 'Enclosed carrier, insured, door-to-door.', tags: ['Insured'], fields: [{ label: 'Type', value: 'Car' }] },
         { name: 'Bike Transport', price: 'From ₹2,500', desc: 'Two-wheeler transport with packing.', fields: [{ label: 'Type', value: 'Bike' }] },
         { name: 'Multi-Vehicle Carrier', price: 'On enquiry', desc: 'For dealers and bulk vehicle movement.', fields: [{ label: 'Type', value: 'Bulk' }] },
+      ],
+    },
+  },
+  astrology: {
+    astrologer: {
+      catalogNoun: 'services', coverImage: px(6980513),
+      items: [
+        { name: 'Kundli Reading', price: '₹1,100', desc: 'Detailed birth-chart reading with predictions.', tags: ['Popular'], fields: [{ label: 'Duration', value: '30 min' }, { label: 'Mode', value: 'Phone / Video' }] },
+        { name: 'Career & Business', price: '₹1,500', desc: 'Guidance on career, job change and business.', fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: 'Marriage & Relationship', price: '₹1,500', desc: 'Timing, compatibility and remedies.', fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: 'Gemstone Recommendation', price: '₹800', desc: 'Suitable gemstones with wearing guidance.', fields: [{ label: 'Type', value: 'Remedy' }] },
+        { name: 'Annual Prediction (Varshphal)', price: '₹2,500', desc: 'Year-ahead forecast report.', fields: [{ label: 'Type', value: 'Report' }] },
+      ],
+      team: [
+        { name: 'Pandit Rakesh Shastri', role: 'Vedic Astrologer', note: 'Jyotish · 20 yrs' },
+      ],
+    },
+    numerology: {
+      catalogNoun: 'services', coverImage: px(4132538),
+      items: [
+        { name: 'Personal Numerology Report', price: '₹2,100', desc: 'Name and birth-number analysis.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Report' }] },
+        { name: 'Name Correction', price: '₹3,100', desc: 'Corrected spelling for luck and success.', fields: [{ label: 'Type', value: 'Correction' }] },
+        { name: 'Business Name Numerology', price: '₹5,100', desc: 'Lucky brand-name and logo advice.', fields: [{ label: 'Type', value: 'Business' }] },
+        { name: 'Compatibility Report', price: '₹2,500', desc: 'Numerology-based relationship match.', fields: [{ label: 'Type', value: 'Report' }] },
+      ],
+    },
+    vastu: {
+      flow: 'book-consult', ctaLabel: 'Book Consultation', catalogNoun: 'services', coverImage: px(6580226),
+      items: [
+        { name: 'Home Vastu Review', price: 'From ₹3,000', desc: 'On-site or online home vastu with remedies.', tags: ['Popular'], fields: [{ label: 'Mode', value: 'On-site / Online' }] },
+        { name: 'Office / Shop Vastu', price: 'From ₹5,000', desc: 'Commercial vastu for growth and harmony.', fields: [{ label: 'Mode', value: 'On-site' }] },
+        { name: 'Plot / Land Vastu', price: 'From ₹4,000', desc: 'Pre-purchase plot evaluation.', fields: [{ label: 'Type', value: 'Plot' }] },
+        { name: 'Factory / Industrial Vastu', price: 'On enquiry', desc: 'Layout and energy planning for units.', fields: [{ label: 'Type', value: 'Industrial' }] },
+      ],
+    },
+    'pandit-puja': {
+      flow: 'book-slot', ctaLabel: 'Book a Pandit', catalogNoun: 'ceremonies', coverImage: px(8112199),
+      items: [
+        { name: 'Griha Pravesh Puja', price: 'From ₹3,100', desc: 'House-warming puja with pandit and samagri.', tags: ['Popular'], fields: [{ label: 'Duration', value: '2–3 hrs' }] },
+        { name: 'Satyanarayan Puja', price: 'From ₹2,500', desc: 'Full puja with katha and prasad.', fields: [{ label: 'Duration', value: '2 hrs' }] },
+        { name: 'Havan / Hawan', price: 'From ₹3,500', desc: 'Havan for peace, health or new beginnings.', fields: [{ label: 'Duration', value: '2–3 hrs' }] },
+        { name: 'Wedding Ceremony', price: 'On enquiry', desc: 'Complete Vedic wedding rituals.', fields: [{ label: 'Type', value: 'Wedding' }] },
+        { name: 'Samagri Kit', price: 'From ₹800', desc: 'Puja materials arranged and delivered.', fields: [{ label: 'Type', value: 'Materials' }] },
       ],
     },
   },
