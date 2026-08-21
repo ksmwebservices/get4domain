@@ -406,4 +406,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-rose-50',
     coverImage: 'https://images.pexels.com/photos/4145153/pexels-photo-4145153.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'petcare',
+    name: 'Pet Care & Veterinary',
+    tagline: 'Caring for Pets, Trusted by Pet Parents',
+    shortDesc: 'Website for vets, groomers and pet businesses with services, appointment booking and a pet gallery.',
+    fullDesc: 'Built for veterinary clinics, pet grooming studios, boarding centres and pet shops. Pet parents browse your services, book appointments for check-ups, vaccinations, grooming or boarding, and shop for pet supplies. Vaccination reminders and a treatment history keep clients coming back. Works for vets, groomers, pet daycares, breeders and pet-supply stores.',
+    whatYouGet: ['Service and pricing list', 'Online appointment booking', 'Vaccination reminder info', 'Pet supplies catalogue', 'Photo gallery', 'Vet / groomer profiles', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Book Appointment', 'Shop', 'Gallery', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Complete Care for Your Furry Family',
+      heroSubline: 'Vet consultations, grooming, boarding and pet supplies — all in one place',
+      services: ['Vet Consultation', 'Vaccination', 'Grooming', 'Boarding', 'Pet Supplies'],
+      highlight: 'Qualified vets · Vaccination reminders · Grooming · Home visits available',
+    },
+    seoKeywords: ['veterinary clinic website', 'pet grooming website india', 'pet care website', 'vet appointment booking website'],
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-50',
+    coverImage: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

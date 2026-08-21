@@ -522,6 +522,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  petcare: [
+    { id: 'general', name: 'Pet Care' },
+    {
+      id: 'veterinary', name: 'Veterinary Clinic',
+      keywords: ['vet', 'veterinary', 'veterinarian', 'pet clinic', 'animal hospital', 'pet doctor', 'pet vaccination', 'dog clinic', 'cat clinic'],
+      content: {
+        tagline: 'Expert Vet Care for Every Pet',
+        shortDesc: 'Veterinary clinic website with services, online appointment booking and vaccination reminders.',
+        fullDesc: 'A website built for veterinary clinics and pet hospitals. Pet parents browse your services — consultations, vaccinations, deworming, surgery and diagnostics — book appointments online and get vaccination reminders. Built to be the trusted first stop when a pet needs a doctor.',
+        heroHeadline: 'Healthy Pets, Happy Families',
+        heroSubline: 'Consultations, vaccinations, surgery and emergency vet care',
+        highlight: 'Qualified vets · Vaccination reminders · Surgery · Emergency care',
+        seoKeywords: ['veterinary clinic website', 'vet appointment booking website', 'animal hospital website india', 'pet doctor website'],
+      },
+    },
+    {
+      id: 'grooming', name: 'Pet Grooming',
+      keywords: ['pet grooming', 'dog grooming', 'cat grooming', 'pet spa', 'pet salon', 'dog bath', 'pet haircut'],
+      content: {
+        tagline: 'Pampering Your Pet, Head to Paw',
+        shortDesc: 'Pet grooming studio website with a grooming menu, packages and online booking.',
+        fullDesc: 'A website built for pet grooming studios and pet spas. Owners browse your grooming services — bath and blow-dry, haircuts, nail trimming, de-shedding and spa packages — and book a slot online or request a home visit. Built for a business where the before/after photos sell every appointment.',
+        heroHeadline: 'Grooming Your Pet Will Love',
+        heroSubline: 'Bath, haircut, nail care and spa packages — in studio or at home',
+        highlight: 'Gentle handling · Breed-specific cuts · Home service · Spa packages',
+        seoKeywords: ['pet grooming website', 'dog grooming website india', 'pet spa website', 'mobile pet grooming website'],
+      },
+    },
+    {
+      id: 'boarding', name: 'Pet Boarding & Daycare',
+      keywords: ['pet boarding', 'dog boarding', 'pet daycare', 'dog hostel', 'pet hostel', 'cattery', 'pet sitting'],
+      content: {
+        tagline: 'A Home Away from Home for Your Pet',
+        shortDesc: 'Pet boarding and daycare website with plans, facility gallery and booking enquiry.',
+        fullDesc: 'A website built for pet boarding and daycare centres. Owners browse your day and overnight plans, see your safe, clean facilities in the gallery and book stays online — with meals, play and updates included. Built to reassure the anxious pet parent leaving town.',
+        heroHeadline: 'Safe, Loving Care While You’re Away',
+        heroSubline: 'Day boarding and overnight stays with play, meals and daily updates',
+        highlight: 'Supervised play · Clean kennels · Daily photo updates · Vet on call',
+        seoKeywords: ['pet boarding website', 'dog boarding daycare website india', 'pet hostel website', 'dog daycare website'],
+      },
+    },
+    {
+      id: 'petshop', name: 'Pet Shop & Supplies',
+      keywords: ['pet shop', 'pet store', 'pet supplies', 'pet food', 'dog food', 'cat food', 'pet accessories', 'aquarium'],
+      content: {
+        tagline: 'Everything Your Pet Needs',
+        shortDesc: 'Pet shop website with a product catalogue, offers and home-delivery enquiry.',
+        fullDesc: 'A website built for pet shops and pet-supply stores. Customers browse your products — pet food, treats, toys, accessories and aquarium supplies — check offers and order for home delivery on WhatsApp. Built to keep regulars restocking with you instead of an app.',
+        heroHeadline: 'Quality Food, Toys & Accessories',
+        heroSubline: 'Premium pet food, treats, toys and accessories — delivered home',
+        highlight: 'Trusted brands · Home delivery · Fresh stock · Aquarium & bird supplies',
+        seoKeywords: ['pet shop website', 'pet supplies website india', 'pet food store website', 'online pet store website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

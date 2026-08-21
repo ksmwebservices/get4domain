@@ -283,6 +283,20 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Ms. Reena George', role: 'Quant Faculty', note: 'Banking · 10 yrs' },
     ],
   },
+  petcare: {
+    flow: 'book-appointment', ctaLabel: 'Book Appointment', catalogNoun: 'services',
+    items: [
+      { name: 'Vet Consultation', price: '₹500', desc: 'General health check-up for your pet.', fields: [{ label: 'Duration', value: '20 min' }] },
+      { name: 'Vaccination', price: 'From ₹600', desc: 'Core and booster shots with reminders.', fields: [{ label: 'Type', value: 'Dog / Cat' }] },
+      { name: 'Pet Grooming', price: 'From ₹800', desc: 'Bath, haircut, nail trim and ear cleaning.', tags: ['Popular'], fields: [{ label: 'Duration', value: '60 min' }] },
+      { name: 'Deworming & Tick Control', price: '₹400', desc: 'Anti-parasite treatment and advice.', fields: [{ label: 'Duration', value: '15 min' }] },
+      { name: 'Boarding (per day)', price: '₹500 / day', desc: 'Safe day/overnight boarding with care.', fields: [{ label: 'Rate', value: 'Per day' }] },
+    ],
+    team: [
+      { name: 'Dr. Sameer Khan', role: 'Veterinary Surgeon (BVSc)', note: 'Small animals · 11 yrs' },
+      { name: 'Ritu Sharma', role: 'Certified Pet Groomer', note: '6 yrs' },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -709,6 +723,54 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
       team: [
         { name: 'Sanjay Malhotra', role: 'Certified Insurance Advisor', note: 'IRDAI · 14 yrs' },
+      ],
+    },
+  },
+  petcare: {
+    veterinary: {
+      catalogNoun: 'services', coverImage: px(6816858),
+      items: [
+        { name: 'Vet Consultation', price: '₹500', desc: 'General health check-up and diagnosis.', fields: [{ label: 'Duration', value: '20 min' }] },
+        { name: 'Vaccination (Dog/Cat)', price: 'From ₹600', desc: 'Core, rabies and booster shots with reminders.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Vaccine' }] },
+        { name: 'Deworming & Tick Control', price: '₹400', desc: 'Anti-parasite treatment and prevention.', fields: [{ label: 'Duration', value: '15 min' }] },
+        { name: 'Surgery & Neutering', price: 'On enquiry', desc: 'Spay/neuter and minor surgical procedures.', fields: [{ label: 'Type', value: 'Surgery' }] },
+        { name: 'Emergency Vet Care', price: 'On call', desc: 'Urgent care for accidents and illness.', tags: ['24/7'], fields: [{ label: 'Availability', value: 'On call' }] },
+      ],
+      team: [
+        { name: 'Dr. Sameer Khan', role: 'Veterinary Surgeon (BVSc)', note: 'Small animals · 11 yrs' },
+        { name: 'Dr. Anita Roy', role: 'Veterinary Physician', note: '8 yrs' },
+      ],
+    },
+    grooming: {
+      flow: 'book-slot', ctaLabel: 'Book Grooming', catalogNoun: 'packages', coverImage: px(6568461),
+      items: [
+        { name: 'Bath & Blow Dry', price: '₹600', desc: 'Shampoo, conditioning and blow dry.', fields: [{ label: 'Duration', value: '45 min' }] },
+        { name: 'Full Grooming Package', price: '₹1,200', desc: 'Bath, haircut, nail trim and ear cleaning.', tags: ['Popular'], fields: [{ label: 'Duration', value: '90 min' }] },
+        { name: 'Nail Trim & Paw Care', price: '₹300', desc: 'Nail clipping and paw pad care.', fields: [{ label: 'Duration', value: '20 min' }] },
+        { name: 'De-shedding Treatment', price: '₹900', desc: 'Coat de-shedding for heavy shedders.', fields: [{ label: 'Duration', value: '60 min' }] },
+        { name: 'Home Grooming Visit', price: 'From ₹1,500', desc: 'Grooming at your doorstep.', tags: ['Home Visit'], fields: [{ label: 'Duration', value: '90 min' }] },
+      ],
+      team: [
+        { name: 'Ritu Sharma', role: 'Certified Pet Groomer', note: '6 yrs' },
+      ],
+    },
+    boarding: {
+      flow: 'check-availability', ctaLabel: 'Check Availability', catalogNoun: 'plans', coverImage: px(1904105),
+      items: [
+        { name: 'Day Boarding', price: '₹500 / day', desc: 'Supervised daytime care with play and meals.', fields: [{ label: 'Rate', value: 'Per day' }] },
+        { name: 'Overnight Boarding', price: '₹800 / night', desc: 'Safe overnight stay with two meals.', tags: ['Popular'], fields: [{ label: 'Rate', value: 'Per night' }] },
+        { name: 'Weekly Boarding', price: '₹4,500 / week', desc: 'Discounted week-long stay for holidays.', fields: [{ label: 'Rate', value: 'Per week' }] },
+        { name: 'Cat Boarding', price: '₹600 / night', desc: 'Separate, quiet cattery space.', fields: [{ label: 'Rate', value: 'Per night' }] },
+      ],
+    },
+    petshop: {
+      flow: 'enquire-order', ctaLabel: 'Order for Delivery', catalogNoun: 'products', coverImage: px(6816856),
+      items: [
+        { name: 'Premium Dog Food (3 kg)', price: '₹1,200', desc: 'Grain-free nutrition for adult dogs.', tags: ['Bestseller'], fields: [{ label: 'Category', value: 'Food' }] },
+        { name: 'Cat Food (1.2 kg)', price: '₹650', desc: 'Complete cat food, chicken flavour.', fields: [{ label: 'Category', value: 'Food' }] },
+        { name: 'Chew Toys & Treats', price: 'From ₹150', desc: 'Toys, treats and dental chews.', fields: [{ label: 'Category', value: 'Toys' }] },
+        { name: 'Collar, Leash & Harness', price: 'From ₹300', desc: 'Durable walking accessories.', fields: [{ label: 'Category', value: 'Accessories' }] },
+        { name: 'Aquarium Starter Kit', price: '₹2,499', desc: 'Tank, filter and starter supplies.', fields: [{ label: 'Category', value: 'Aquarium' }] },
       ],
     },
   },
