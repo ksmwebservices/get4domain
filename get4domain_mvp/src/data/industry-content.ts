@@ -520,4 +520,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-indigo-50',
     coverImage: 'https://images.pexels.com/photos/5691659/pexels-photo-5691659.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'rentalservices',
+    name: 'Rental Services',
+    tagline: 'Rent What You Need, When You Need It',
+    shortDesc: 'Rental services website with a catalogue, daily/monthly rates and availability enquiry.',
+    fullDesc: 'Built for rental businesses that rent out goods, not property. Customers browse your catalogue — furniture, appliances, equipment and event supplies — check daily, weekly and monthly rates and availability, and book with a deposit. Time-based availability and deposit tracking suit the way rental businesses actually work. Works for furniture, appliance, equipment and event rentals.',
+    whatYouGet: ['Rental catalogue with rates', 'Availability enquiry form', 'Daily / weekly / monthly pricing', 'Security deposit info', 'Delivery and pickup details', 'Coverage areas', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Catalogue', 'Book Rental', 'Pricing', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Rent Furniture, Appliances & More',
+      heroSubline: 'Flexible daily, weekly and monthly rentals with delivery and pickup',
+      services: ['Furniture Rental', 'Appliance Rental', 'Equipment Rental', 'Event Rental', 'Vehicle Rental'],
+      highlight: 'Flexible tenure · Free delivery · Refundable deposit · Well-maintained items',
+    },
+    seoKeywords: ['rental services website india', 'furniture rental website', 'appliance rental website', 'equipment rental website'],
+    color: 'text-cyan-700',
+    bgColor: 'bg-cyan-50',
+    coverImage: 'https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

@@ -355,6 +355,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Home Deep Cleaning', price: 'From ₹2,499', desc: 'Full-home cleaning and sanitisation.', fields: [{ label: 'Scope', value: '2–3 BHK' }] },
     ],
   },
+  rentalservices: {
+    flow: 'check-availability', ctaLabel: 'Check Availability', catalogNoun: 'rentals',
+    items: [
+      { name: 'Double Bed (with mattress)', price: '₹499 / month', desc: 'Sturdy bed with clean mattress.', tags: ['Popular'], fields: [{ label: 'Deposit', value: '₹1,500' }] },
+      { name: 'Refrigerator (double door)', price: '₹599 / month', desc: 'Energy-efficient fridge, serviced.', fields: [{ label: 'Deposit', value: '₹2,000' }] },
+      { name: 'Washing Machine', price: '₹499 / month', desc: 'Fully-automatic, installation included.', fields: [{ label: 'Deposit', value: '₹1,500' }] },
+      { name: 'Sofa Set (3+2)', price: '₹899 / month', desc: 'Comfortable fabric sofa set.', fields: [{ label: 'Deposit', value: '₹2,500' }] },
+      { name: 'Combo (Bed + Fridge + WM)', price: '₹1,299 / month', desc: 'Starter combo for new homes.', tags: ['Value'], fields: [{ label: 'Deposit', value: '₹4,000' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -461,7 +471,7 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Commercial Land · GST Road', price: '₹3.2 Cr', desc: 'Highway-facing commercial plot.', tags: ['For Sale'], fields: [{ label: 'Area', value: '10,000 sqft' }] },
       ],
     },
-    rental: {
+    'property-rent': {
       catalogNoun: 'rentals', coverImage: px(1571460),
       items: [
         { name: '1 BHK Flat · Tambaram', price: '₹14,000 / month', desc: 'Near railway station, semi-furnished.', tags: ['For Rent'], fields: [{ label: 'Area', value: '620 sqft' }, { label: 'Config', value: '1 Bed · 1 Bath' }] },
@@ -1033,6 +1043,48 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Kitchen Deep Cleaning', price: '₹1,299', desc: 'Degrease, chimney and cabinet clean.', fields: [{ label: 'Scope', value: 'Kitchen' }] },
         { name: 'Bathroom Cleaning', price: '₹699', desc: 'Descaling and sanitisation per bathroom.', fields: [{ label: 'Scope', value: 'Per bath' }] },
         { name: 'Sofa & Carpet Shampoo', price: 'From ₹599', desc: 'Wet shampoo for sofas and carpets.', fields: [{ label: 'Scope', value: 'Per seat' }] },
+      ],
+    },
+  },
+  rentalservices: {
+    'furniture-rental': {
+      catalogNoun: 'rentals', coverImage: px(1350789),
+      items: [
+        { name: 'Double Bed + Mattress', price: '₹499 / month', desc: 'Sturdy bed with clean mattress.', tags: ['Popular'], fields: [{ label: 'Deposit', value: '₹1,500' }] },
+        { name: 'Sofa Set (3+2)', price: '₹899 / month', desc: 'Comfortable fabric sofa set.', fields: [{ label: 'Deposit', value: '₹2,500' }] },
+        { name: 'Wardrobe (3-door)', price: '₹399 / month', desc: 'Spacious wardrobe with mirror.', fields: [{ label: 'Deposit', value: '₹1,200' }] },
+        { name: 'Dining Table (4-seater)', price: '₹449 / month', desc: 'Wooden dining set with chairs.', fields: [{ label: 'Deposit', value: '₹1,500' }] },
+        { name: 'Home Starter Combo', price: '₹1,499 / month', desc: 'Bed, sofa, wardrobe and dining set.', tags: ['Value'], fields: [{ label: 'Deposit', value: '₹5,000' }] },
+      ],
+    },
+    'appliance-rental': {
+      catalogNoun: 'rentals', coverImage: px(2062426),
+      items: [
+        { name: 'Refrigerator (double door)', price: '₹599 / month', desc: 'Energy-efficient, serviced fridge.', tags: ['Popular'], fields: [{ label: 'Deposit', value: '₹2,000' }] },
+        { name: 'Washing Machine', price: '₹499 / month', desc: 'Fully-automatic with installation.', fields: [{ label: 'Deposit', value: '₹1,500' }] },
+        { name: 'Split AC (1.5 ton)', price: '₹899 / month', desc: 'Includes installation and service.', fields: [{ label: 'Deposit', value: '₹3,000' }] },
+        { name: 'LED TV (43")', price: '₹599 / month', desc: 'Smart TV with wall mount.', fields: [{ label: 'Deposit', value: '₹2,000' }] },
+        { name: 'Appliance Combo', price: '₹1,299 / month', desc: 'Fridge + washing machine + TV.', tags: ['Value'], fields: [{ label: 'Deposit', value: '₹4,000' }] },
+      ],
+    },
+    'equipment-rental': {
+      catalogNoun: 'rentals', coverImage: px(1249611),
+      items: [
+        { name: 'Drill Machine', price: '₹150 / day', desc: 'Heavy-duty impact drill with bits.', fields: [{ label: 'Deposit', value: '₹1,000' }] },
+        { name: 'Concrete Mixer', price: '₹800 / day', desc: 'Portable mixer for small sites.', tags: ['Popular'], fields: [{ label: 'Deposit', value: '₹5,000' }] },
+        { name: 'Scaffolding Set', price: '₹120 / day', desc: 'Per-frame scaffolding for hire.', fields: [{ label: 'Deposit', value: 'Per set' }] },
+        { name: 'Generator (5 KVA)', price: '₹1,200 / day', desc: 'Silent diesel generator.', fields: [{ label: 'Deposit', value: '₹6,000' }] },
+        { name: 'Pressure Washer', price: '₹400 / day', desc: 'High-pressure cleaning machine.', fields: [{ label: 'Deposit', value: '₹2,000' }] },
+      ],
+    },
+    'event-rental': {
+      catalogNoun: 'rentals', coverImage: px(1616113),
+      items: [
+        { name: 'Chairs (per 100)', price: '₹1,000 / day', desc: 'Banquet or plastic chairs.', tags: ['Popular'], fields: [{ label: 'Qty', value: 'Per 100' }] },
+        { name: 'Round Tables (per 10)', price: '₹1,500 / day', desc: 'Tables with covers.', fields: [{ label: 'Qty', value: 'Per 10' }] },
+        { name: 'Shamiana / Tent', price: 'On enquiry', desc: 'Tents and canopies, sizes to fit.', fields: [{ label: 'Type', value: 'Tent' }] },
+        { name: 'Sound & DJ System', price: 'From ₹5,000 / day', desc: 'Speakers, mic and DJ setup.', fields: [{ label: 'Type', value: 'Sound' }] },
+        { name: 'Lighting & Decor', price: 'On enquiry', desc: 'Stage, lighting and floral decor.', fields: [{ label: 'Type', value: 'Decor' }] },
       ],
     },
   },
