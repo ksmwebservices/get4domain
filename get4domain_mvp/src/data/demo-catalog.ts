@@ -365,6 +365,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Combo (Bed + Fridge + WM)', price: '₹1,299 / month', desc: 'Starter combo for new homes.', tags: ['Value'], fields: [{ label: 'Deposit', value: '₹4,000' }] },
     ],
   },
+  printing: {
+    flow: 'enquire-order', ctaLabel: 'Enquire / Order', catalogNoun: 'products',
+    items: [
+      { name: 'Academic & Competitive Books', price: 'MRP', desc: 'School, college and exam-prep titles.', fields: [{ label: 'Category', value: 'Books' }] },
+      { name: 'Notebooks & Stationery', price: 'From ₹20', desc: 'Notebooks, pens, files and supplies.', tags: ['In Stock'], fields: [{ label: 'Category', value: 'Stationery' }] },
+      { name: 'Document Printing / Xerox', price: 'From ₹1 / page', desc: 'B/W and colour printing and copies.', fields: [{ label: 'Type', value: 'Printing' }] },
+      { name: 'Business Cards (per 100)', price: '₹250', desc: 'Full-colour cards on premium stock.', tags: ['Popular'], fields: [{ label: 'Qty', value: 'Per 100' }] },
+      { name: 'Custom T-shirt / Mug', price: 'From ₹250', desc: 'Personalised printing on merchandise.', fields: [{ label: 'Type', value: 'Custom' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -1085,6 +1095,48 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Shamiana / Tent', price: 'On enquiry', desc: 'Tents and canopies, sizes to fit.', fields: [{ label: 'Type', value: 'Tent' }] },
         { name: 'Sound & DJ System', price: 'From ₹5,000 / day', desc: 'Speakers, mic and DJ setup.', fields: [{ label: 'Type', value: 'Sound' }] },
         { name: 'Lighting & Decor', price: 'On enquiry', desc: 'Stage, lighting and floral decor.', fields: [{ label: 'Type', value: 'Decor' }] },
+      ],
+    },
+  },
+  printing: {
+    bookstore: {
+      catalogNoun: 'books', coverImage: px(1370295),
+      items: [
+        { name: 'School Textbooks (per set)', price: 'MRP', desc: 'CBSE/State board sets, all classes.', tags: ['Popular'], fields: [{ label: 'Category', value: 'Academic' }] },
+        { name: 'Competitive Exam Books', price: 'From ₹250', desc: 'NEET, JEE, UPSC and banking guides.', fields: [{ label: 'Category', value: 'Exam Prep' }] },
+        { name: 'Fiction & Novels', price: 'From ₹150', desc: 'Bestsellers and regional titles.', fields: [{ label: 'Category', value: 'Fiction' }] },
+        { name: "Children's Books", price: 'From ₹99', desc: 'Story, activity and picture books.', fields: [{ label: 'Category', value: 'Kids' }] },
+        { name: 'Stationery Combo', price: 'From ₹199', desc: 'Notebooks and pens bundle.', fields: [{ label: 'Category', value: 'Bundle' }] },
+      ],
+    },
+    stationery: {
+      catalogNoun: 'products', coverImage: px(159751),
+      items: [
+        { name: 'Notebooks (pack of 6)', price: '₹240', desc: 'Ruled long notebooks.', tags: ['Popular'], fields: [{ label: 'Category', value: 'Notebooks' }] },
+        { name: 'Pens & Markers', price: 'From ₹10', desc: 'Ball, gel and marker pens.', fields: [{ label: 'Category', value: 'Writing' }] },
+        { name: 'Files & Folders', price: 'From ₹25', desc: 'Box files, folders and sheets.', fields: [{ label: 'Category', value: 'Office' }] },
+        { name: 'Art & Craft Supplies', price: 'From ₹50', desc: 'Colours, chart paper and craft kits.', fields: [{ label: 'Category', value: 'Art' }] },
+        { name: 'Office Supply (Bulk)', price: 'On enquiry', desc: 'Bulk stationery for offices.', tags: ['Bulk'], fields: [{ label: 'Category', value: 'Bulk' }] },
+      ],
+    },
+    'digital-printing': {
+      flow: 'enquire-order', ctaLabel: 'Get a Print Quote', catalogNoun: 'services', coverImage: px(6446226),
+      items: [
+        { name: 'Document Printing (B/W)', price: '₹1 / page', desc: 'Bulk B/W printing and copies.', fields: [{ label: 'Type', value: 'B/W' }] },
+        { name: 'Colour Printing', price: '₹5 / page', desc: 'High-quality colour prints.', fields: [{ label: 'Type', value: 'Colour' }] },
+        { name: 'Business Cards (per 100)', price: '₹250', desc: 'Full-colour on premium stock.', tags: ['Popular'], fields: [{ label: 'Qty', value: 'Per 100' }] },
+        { name: 'Flex / Banner Printing', price: 'From ₹12 / sqft', desc: 'Outdoor flex and vinyl banners.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
+        { name: 'Brochures / Pamphlets', price: 'On enquiry', desc: 'Bulk marketing print material.', fields: [{ label: 'Type', value: 'Marketing' }] },
+      ],
+    },
+    'custom-printing': {
+      flow: 'enquire-order', ctaLabel: 'Order Custom Print', catalogNoun: 'products', coverImage: px(6858600),
+      items: [
+        { name: 'Custom T-shirt', price: 'From ₹250', desc: 'Photo or text print on t-shirts.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Apparel' }] },
+        { name: 'Photo Mug', price: '₹250', desc: 'Personalised ceramic mug.', fields: [{ label: 'Type', value: 'Gift' }] },
+        { name: 'Photo Frame', price: 'From ₹300', desc: 'Framed photo prints, multiple sizes.', fields: [{ label: 'Type', value: 'Gift' }] },
+        { name: 'ID / Visiting Cards', price: 'On enquiry', desc: 'PVC ID cards and lanyards.', fields: [{ label: 'Type', value: 'Cards' }] },
+        { name: 'Corporate Merchandise', price: 'On enquiry', desc: 'Branded pens, diaries and gifts in bulk.', tags: ['Bulk'], fields: [{ label: 'Type', value: 'Corporate' }] },
       ],
     },
   },

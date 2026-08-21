@@ -907,6 +907,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  printing: [
+    { id: 'general', name: 'Books, Stationery & Printing' },
+    {
+      id: 'bookstore', name: 'Bookstore',
+      keywords: ['bookstore', 'book shop', 'books', 'book store', 'buy books', 'academic books', 'novels', 'book seller'],
+      content: {
+        tagline: 'A World of Books, Near You',
+        shortDesc: 'Bookstore website with a catalogue, new arrivals and home-delivery ordering.',
+        fullDesc: 'A website built for bookstores and book sellers. Readers browse your catalogue — academic, competitive-exam, fiction and children’s books — see new arrivals and order for pickup or home delivery. Built for a bookshop that wants regulars ordering online instead of drifting to marketplaces.',
+        heroHeadline: 'Find Your Next Great Read',
+        heroSubline: 'Academic, competitive, fiction and children’s books — order online',
+        highlight: 'Wide range · Exam & academic titles · Home delivery · Order on WhatsApp',
+        seoKeywords: ['bookstore website', 'book shop website india', 'online bookstore website', 'academic books website'],
+      },
+    },
+    {
+      id: 'stationery', name: 'Stationery Shop',
+      keywords: ['stationery', 'stationary', 'stationery shop', 'office supplies', 'school supplies', 'notebooks', 'pens', 'stationery store'],
+      content: {
+        tagline: 'Everything for School & Office',
+        shortDesc: 'Stationery shop website with a product catalogue, bulk supply and delivery ordering.',
+        fullDesc: 'A website built for stationery shops. Customers browse notebooks, pens, files, art supplies and office essentials, place bulk school and office orders and get home delivery. Built to lock in the recurring school-list and office-supply business that keeps a stationer busy.',
+        heroHeadline: 'Stationery & Office Supplies, Delivered',
+        heroSubline: 'Notebooks, pens, files and art supplies — retail and bulk',
+        highlight: 'Bulk & office supply · School lists · Home delivery · Wide range',
+        seoKeywords: ['stationery shop website', 'office supplies website india', 'school stationery website', 'stationery store website'],
+      },
+    },
+    {
+      id: 'digital-printing', name: 'Printing & Xerox',
+      keywords: ['printing', 'xerox', 'photocopy', 'digital printing', 'printing press', 'document printing', 'banner printing', 'flex printing'],
+      content: {
+        tagline: 'Fast, Sharp Printing — Every Time',
+        shortDesc: 'Printing and xerox website with services, print-job enquiry and quick turnaround.',
+        fullDesc: 'A website built for printing presses and xerox centres. Customers submit print jobs — documents, business cards, brochures, banners and flex — get a quote and track the job from order to ready. Built for a print shop that wins repeat business on speed and quality.',
+        heroHeadline: 'Printing Done Right, Done Fast',
+        heroSubline: 'Documents, cards, brochures, banners and flex printing',
+        highlight: 'Same-day printing · Bulk rates · Design help · Colour & B/W',
+        seoKeywords: ['printing press website', 'digital printing website india', 'xerox photocopy shop website', 'document printing website'],
+      },
+    },
+    {
+      id: 'custom-printing', name: 'Custom Printing',
+      keywords: ['custom printing', 't-shirt printing', 'tshirt printing', 'mug printing', 'merchandise printing', 'personalised gifts', 'photo printing', 'id card printing'],
+      content: {
+        tagline: 'Put Your Design on Anything',
+        shortDesc: 'Custom printing website with a product range, design upload and order enquiry.',
+        fullDesc: 'A website built for custom-printing studios. Customers order personalised t-shirts, mugs, photo frames, ID cards and corporate merchandise, upload their design or logo and enquire for bulk orders. Built for a studio whose gifting and corporate-branding orders come from a good product gallery.',
+        heroHeadline: 'Custom Prints for Gifts & Branding',
+        heroSubline: 'T-shirts, mugs, photo frames and corporate merchandise',
+        highlight: 'Personalised gifts · Bulk corporate orders · Design help · Quick turnaround',
+        seoKeywords: ['custom printing website', 't-shirt printing website india', 'mug printing website', 'personalised gifts printing website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

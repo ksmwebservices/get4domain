@@ -539,4 +539,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-cyan-50',
     coverImage: 'https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'printing',
+    name: 'Books, Stationery & Printing',
+    tagline: 'Books, Supplies & Printing — All in One Place',
+    shortDesc: 'Bookstore, stationery and printing website with a catalogue, print-job enquiry and delivery.',
+    fullDesc: 'Built for bookstores, stationery shops and printing businesses. Customers browse books and stationery, order for delivery and submit print jobs — business cards, documents, banners and custom merchandise — tracking each job from order to ready. Works for bookshops, stationers, printing presses, xerox centres and custom-printing studios.',
+    whatYouGet: ['Product catalogue', 'Print-job enquiry form', 'Bulk / office supply orders', 'Custom printing options', 'Delivery details', 'Coverage areas', 'WhatsApp order button', 'Google Maps integration'],
+    websitePages: ['Home', 'Shop', 'Printing', 'Order', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Everything for Study, Office & Print',
+      heroSubline: 'Books, stationery and printing services — order online or in store',
+      services: ['Books', 'Stationery', 'Document Printing', 'Business Cards', 'Custom Printing'],
+      highlight: 'Wide range · Bulk & office supply · Same-day printing · Home delivery',
+    },
+    seoKeywords: ['bookstore website india', 'stationery shop website', 'printing press website', 'online printing website'],
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-50',
+    coverImage: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];
