@@ -572,6 +572,146 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
       ],
     },
   },
+  retail: {
+    fashion: {
+      catalogNoun: 'collection', coverImage: px(996329),
+      items: [
+        { name: 'Anarkali Kurti Set', price: '₹1,499', desc: 'Flared kurti with dupatta, festive collection.', tags: ['New'], fields: [{ label: 'Category', value: 'Ethnic' }, { label: 'Sizes', value: 'S–XXL' }] },
+        { name: 'Cotton Saree', price: '₹1,899', desc: 'Handloom cotton saree with blouse piece.', fields: [{ label: 'Category', value: 'Sarees' }] },
+        { name: "Men's Casual Shirt", price: '₹899', desc: 'Slim-fit cotton shirt, multiple colours.', fields: [{ label: 'Category', value: 'Menswear' }, { label: 'Sizes', value: 'M–XXL' }] },
+        { name: 'Party Wear Gown', price: '₹2,999', desc: 'Designer gown for receptions and parties.', tags: ['Bestseller'], fields: [{ label: 'Category', value: 'Western' }] },
+        { name: 'Kids Ethnic Set', price: '₹1,199', desc: 'Festive kurta-pyjama and lehenga sets.', fields: [{ label: 'Category', value: 'Kidswear' }] },
+      ],
+    },
+    electronics: {
+      catalogNoun: 'products', coverImage: px(699122),
+      items: [
+        { name: 'Smartphone (128 GB)', price: '₹14,999', desc: 'Latest model, no-cost EMI available.', tags: ['EMI'], fields: [{ label: 'Category', value: 'Mobiles' }, { label: 'Warranty', value: '1 Year' }] },
+        { name: 'Wireless Earbuds', price: '₹1,799', desc: 'TWS earbuds with 30h battery case.', tags: ['Bestseller'], fields: [{ label: 'Category', value: 'Audio' }] },
+        { name: 'LED Smart TV (43")', price: '₹27,999', desc: 'Full-HD smart TV with OTT apps.', fields: [{ label: 'Category', value: 'TV' }, { label: 'Warranty', value: '2 Years' }] },
+        { name: 'Laptop (i5, 8GB)', price: '₹45,999', desc: 'Everyday laptop with SSD, exchange offer.', tags: ['Exchange'], fields: [{ label: 'Category', value: 'Computers' }] },
+        { name: 'Washing Machine (7 kg)', price: '₹18,499', desc: 'Fully-automatic front load with warranty.', fields: [{ label: 'Category', value: 'Appliances' }] },
+      ],
+    },
+    grocery: {
+      flow: 'enquire-order', ctaLabel: 'Order for Delivery', catalogNoun: 'essentials', coverImage: px(264636),
+      items: [
+        { name: 'Rice (Sona Masoori, 25 kg)', price: '₹1,350', desc: 'Premium daily-use rice, bulk pack.', fields: [{ label: 'Category', value: 'Staples' }] },
+        { name: 'Toor Dal (1 kg)', price: '₹150', desc: 'Fresh-stock unpolished toor dal.', fields: [{ label: 'Category', value: 'Pulses' }] },
+        { name: 'Fresh Vegetables Combo', price: '₹199', desc: 'Daily basket — onion, tomato, potato and greens.', tags: ['Fresh'], fields: [{ label: 'Category', value: 'Produce' }] },
+        { name: 'Cooking Oil (5 L)', price: '₹720', desc: 'Refined sunflower oil can.', fields: [{ label: 'Category', value: 'Oils' }] },
+        { name: 'Household Combo', price: '₹499', desc: 'Detergent, soaps and cleaning essentials.', tags: ['Value'], fields: [{ label: 'Category', value: 'Home Care' }] },
+      ],
+    },
+    jewellery: {
+      flow: 'enquire', ctaLabel: 'Enquire / Visit Showroom', catalogNoun: 'collection', coverImage: px(1191531),
+      items: [
+        { name: 'Gold Necklace Set (22K)', price: 'Market rate + making', desc: 'Traditional temple-design necklace with earrings.', tags: ['Hallmarked'], fields: [{ label: 'Purity', value: '22K BIS' }] },
+        { name: 'Diamond Ring', price: 'From ₹35,000', desc: 'Certified solitaire and cluster designs.', tags: ['Certified'], fields: [{ label: 'Category', value: 'Diamond' }] },
+        { name: 'Bridal Jewellery Set', price: 'On enquiry', desc: 'Complete bridal set — haar, jhumka and maang tikka.', tags: ['Bridal'], fields: [{ label: 'Category', value: 'Bridal' }] },
+        { name: 'Silver Payal & Anklets', price: 'From ₹2,500', desc: 'Handcrafted pure-silver anklets.', fields: [{ label: 'Category', value: 'Silver' }] },
+        { name: 'Gold Coins (8g)', price: 'Market rate', desc: '24K hallmarked coins for gifting and investment.', fields: [{ label: 'Purity', value: '24K' }] },
+      ],
+    },
+  },
+  travel: {
+    'holiday-packages': {
+      catalogNoun: 'packages', coverImage: px(1450353),
+      items: [
+        { name: 'Kerala Backwaters', price: '₹18,500 / person', desc: 'Munnar, Alleppey houseboat and Kochi.', tags: ['Bestseller'], fields: [{ label: 'Duration', value: '4N / 5D' }, { label: 'Includes', value: 'Houseboat + Hotels' }] },
+        { name: 'Manali–Shimla Hill Tour', price: '₹16,999 / person', desc: 'Snow points, sightseeing and volvo transfers.', fields: [{ label: 'Duration', value: '5N / 6D' }] },
+        { name: 'Goa Beach Holiday', price: '₹13,500 / person', desc: 'North & South Goa with cruise and stay.', fields: [{ label: 'Duration', value: '3N / 4D' }] },
+        { name: 'Andaman Honeymoon', price: '₹28,000 / couple', desc: 'Havelock, Neil Island and water sports.', tags: ['Honeymoon'], fields: [{ label: 'Duration', value: '5N / 6D' }] },
+        { name: 'Rajasthan Heritage', price: '₹22,000 / person', desc: 'Jaipur, Udaipur and Jaisalmer forts.', fields: [{ label: 'Duration', value: '6N / 7D' }] },
+      ],
+    },
+    'cab-rental': {
+      flow: 'check-availability', ctaLabel: 'Book a Cab', catalogNoun: 'fleet', coverImage: px(170811),
+      items: [
+        { name: 'Airport Transfer (Sedan)', price: '₹1,200 one-way', desc: 'Clean AC sedan, on-time pickup, tracked trip.', fields: [{ label: 'Vehicle', value: 'Sedan · 4 seats' }] },
+        { name: 'Local City Package (8h/80km)', price: '₹2,200', desc: 'Full-day city sightseeing with driver.', tags: ['Popular'], fields: [{ label: 'Vehicle', value: 'Sedan / SUV' }] },
+        { name: 'Outstation SUV', price: '₹14 / km', desc: 'Innova Crysta for long-distance trips.', fields: [{ label: 'Vehicle', value: 'SUV · 7 seats' }] },
+        { name: 'Tempo Traveller (Group)', price: '₹22 / km', desc: '12-seater AC for group and corporate travel.', fields: [{ label: 'Vehicle', value: '12 seats' }] },
+      ],
+      team: [
+        { name: 'Toyota Innova Crysta', role: '7-Seater AC', note: 'Ideal for family tours' },
+        { name: 'Swift Dzire', role: '4-Seater Sedan', note: 'Airport & city transfers' },
+        { name: 'Tempo Traveller', role: '12-Seater AC', note: 'Group & corporate travel' },
+      ],
+    },
+    'visa-ticketing': {
+      flow: 'enquire', ctaLabel: 'Enquire Now', catalogNoun: 'services', coverImage: px(346885),
+      items: [
+        { name: 'Domestic Flight Ticketing', price: 'Service charge ₹250', desc: 'Best fares across all airlines.', fields: [{ label: 'Type', value: 'Domestic' }] },
+        { name: 'International Air Tickets', price: 'Service charge ₹500', desc: 'Multi-city and round-trip bookings.', fields: [{ label: 'Type', value: 'International' }] },
+        { name: 'Tourist Visa Assistance', price: 'From ₹1,500 + fees', desc: 'Documentation and application support.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Visa' }] },
+        { name: 'Passport Assistance', price: 'From ₹800', desc: 'New and renewal application help.', fields: [{ label: 'Type', value: 'Passport' }] },
+        { name: 'Travel Insurance', price: 'From ₹450', desc: 'Medical and trip cover for travellers.', fields: [{ label: 'Type', value: 'Insurance' }] },
+      ],
+    },
+    pilgrimage: {
+      catalogNoun: 'yatra packages', coverImage: px(6032424),
+      items: [
+        { name: 'Tirupati Darshan', price: '₹4,999 / person', desc: 'Darshan assistance with stay and transfers.', tags: ['Popular'], fields: [{ label: 'Duration', value: '1N / 2D' }] },
+        { name: 'Char Dham Yatra', price: '₹32,000 / person', desc: 'Yamunotri, Gangotri, Kedarnath and Badrinath.', fields: [{ label: 'Duration', value: '9N / 10D' }] },
+        { name: 'Vaishno Devi', price: '₹9,999 / person', desc: 'Katra stay, yatra assistance and transfers.', fields: [{ label: 'Duration', value: '2N / 3D' }] },
+        { name: 'Kashi–Ayodhya–Prayagraj', price: '₹14,500 / person', desc: 'Temple circuit with guide and stay.', fields: [{ label: 'Duration', value: '4N / 5D' }] },
+        { name: 'Rameshwaram–Madurai', price: '₹11,000 / person', desc: 'South India temple tour with darshan help.', fields: [{ label: 'Duration', value: '3N / 4D' }] },
+      ],
+    },
+  },
+  professional: {
+    'ca-accounting': {
+      catalogNoun: 'services', coverImage: px(6863183),
+      items: [
+        { name: 'GST Registration', price: '₹1,500', desc: 'New GSTIN with end-to-end filing.', fields: [{ label: 'Turnaround', value: '3–5 days' }] },
+        { name: 'GST Return Filing', price: '₹1,000 / month', desc: 'Monthly GSTR-1 & 3B filing.', tags: ['Popular'], fields: [{ label: 'Cycle', value: 'Monthly' }] },
+        { name: 'Income Tax Return (ITR)', price: '₹2,000', desc: 'Salaried and business ITR filing.', fields: [{ label: 'Turnaround', value: '2–3 days' }] },
+        { name: 'Bookkeeping (Monthly)', price: 'From ₹3,000 / month', desc: 'Accounts, ledgers and MIS reports.', fields: [{ label: 'Cycle', value: 'Monthly' }] },
+        { name: 'Tax Audit', price: 'On enquiry', desc: 'Statutory and tax audit for businesses.', fields: [{ label: 'Type', value: 'Audit' }] },
+      ],
+      team: [
+        { name: 'CA Ramesh Gupta', role: 'Chartered Accountant', note: 'Tax & Audit · 15 yrs' },
+        { name: 'CA Sneha Jain', role: 'GST & Compliance', note: '8 yrs' },
+      ],
+    },
+    legal: {
+      catalogNoun: 'practice areas', coverImage: px(5668858),
+      items: [
+        { name: 'Legal Consultation', price: '₹1,000', desc: 'Confidential first consultation on your matter.', fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: 'Property & Documentation', price: 'From ₹3,000', desc: 'Sale deeds, agreements and title verification.', tags: ['Popular'], fields: [{ label: 'Area', value: 'Property' }] },
+        { name: 'Family & Divorce Matters', price: 'On enquiry', desc: 'Divorce, custody and maintenance cases.', fields: [{ label: 'Area', value: 'Family' }] },
+        { name: 'Civil & Criminal Cases', price: 'On enquiry', desc: 'Representation across courts.', fields: [{ label: 'Area', value: 'Litigation' }] },
+        { name: 'Corporate & Contracts', price: 'From ₹5,000', desc: 'Agreements, notices and corporate advisory.', fields: [{ label: 'Area', value: 'Corporate' }] },
+      ],
+      team: [
+        { name: 'Adv. Priya Nair', role: 'Advocate (Property & Civil)', note: 'LLB · 12 yrs' },
+        { name: 'Adv. Karan Mehta', role: 'Advocate (Criminal)', note: '10 yrs' },
+      ],
+    },
+    'company-registration': {
+      catalogNoun: 'services', coverImage: px(3183197),
+      items: [
+        { name: 'Private Limited Registration', price: '₹6,999', desc: 'Pvt Ltd incorporation, end to end.', tags: ['Popular'], fields: [{ label: 'Turnaround', value: '7–10 days' }] },
+        { name: 'LLP Registration', price: '₹5,999', desc: 'Limited liability partnership setup.', fields: [{ label: 'Turnaround', value: '7–10 days' }] },
+        { name: 'Trademark Registration', price: '₹1,999 + govt fee', desc: 'Brand-name and logo trademark filing.', fields: [{ label: 'Type', value: 'IP' }] },
+        { name: 'MSME / Udyam Registration', price: '₹999', desc: 'Same-day MSME registration.', fields: [{ label: 'Turnaround', value: '1 day' }] },
+        { name: 'Annual ROC Compliance', price: 'From ₹8,000 / year', desc: 'Filings, returns and statutory compliance.', fields: [{ label: 'Cycle', value: 'Annual' }] },
+      ],
+    },
+    insurance: {
+      flow: 'enquire', ctaLabel: 'Get Advice', catalogNoun: 'plans', coverImage: px(3760067),
+      items: [
+        { name: 'Term Life Insurance', price: 'From ₹500 / month', desc: 'High cover, low premium for your family.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Life' }] },
+        { name: 'Health / Mediclaim', price: 'From ₹800 / month', desc: 'Family floater with cashless hospitals.', fields: [{ label: 'Type', value: 'Health' }] },
+        { name: 'Motor Insurance', price: 'From ₹2,500 / year', desc: 'Car and two-wheeler cover with quick claims.', fields: [{ label: 'Type', value: 'Motor' }] },
+        { name: 'Investment (ULIP / Endowment)', price: 'On enquiry', desc: 'Savings-linked plans with life cover.', fields: [{ label: 'Type', value: 'Investment' }] },
+      ],
+      team: [
+        { name: 'Sanjay Malhotra', role: 'Certified Insurance Advisor', note: 'IRDAI · 14 yrs' },
+      ],
+    },
+  },
 };
 
 // Legacy SEO slugs → canonical industry keys (mirrors backend/demo-site aliases), so
