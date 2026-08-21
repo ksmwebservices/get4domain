@@ -129,7 +129,19 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
   ],
   restaurant: [
     { id: 'general', name: 'Restaurant' },
-    { id: 'cafe', name: 'Cafe', keywords: ['cafe', 'coffee shop', 'coffee', 'bistro', 'brew'] },
+    {
+      id: 'cafe', name: 'Cafe',
+      keywords: ['cafe', 'coffee shop', 'coffee', 'bistro', 'brew'],
+      content: {
+        tagline: 'Great Coffee, Good Vibes',
+        shortDesc: 'Cafe website with a menu, ambience gallery and table reservations.',
+        fullDesc: 'A website built for cafes and coffee shops. Guests browse your menu — specialty coffee, shakes, sandwiches, pasta and desserts — soak in your ambience through the gallery and reserve a table for their favourite corner. Built for the neighbourhood cafe that people come back to for the vibe as much as the coffee.',
+        heroHeadline: 'Your Favourite Corner in the City',
+        heroSubline: 'Specialty coffee, all-day bites and a place to linger',
+        highlight: 'Freshly brewed · Free Wi-Fi · Cosy seating · Instagram-worthy',
+        seoKeywords: ['cafe website india', 'coffee shop website', 'cafe menu website', 'cafe table booking'],
+      },
+    },
     {
       id: 'cloud-kitchen', name: 'Cloud Kitchen',
       keywords: ['cloud kitchen', 'delivery kitchen', 'ghost kitchen', 'dark kitchen', 'online food delivery', 'delivery only restaurant', 'tiffin service'],
@@ -143,7 +155,32 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
         seoKeywords: ['cloud kitchen website', 'delivery only restaurant website', 'ghost kitchen website india', 'online food ordering system'],
       },
     },
-    { id: 'bakery', name: 'Bakery', keywords: ['bakery', 'cake shop', 'cakes', 'pastry', 'confectionery', 'custom cakes'] },
+    {
+      id: 'bakery', name: 'Bakery',
+      keywords: ['bakery', 'cake shop', 'cakes', 'pastry', 'confectionery', 'custom cakes'],
+      content: {
+        tagline: 'Baked Fresh, Every Day',
+        shortDesc: 'Bakery website with a product menu, custom-cake ordering and a bakes gallery.',
+        fullDesc: 'A website built for bakeries and cake shops. Customers browse your bakes — cakes, breads, cookies and savouries — order custom birthday and wedding cakes online and see a gallery of your creations. Built for a bakery whose custom-cake orders come from photos people fall in love with.',
+        heroHeadline: 'Cakes & Bakes Made with Love',
+        heroSubline: 'Custom cakes, fresh breads, cookies and daily treats',
+        highlight: 'Eggless options · Custom cakes · Same-day pickup · Made fresh daily',
+        seoKeywords: ['bakery website india', 'cake shop website', 'custom cake order website', 'online cake booking'],
+      },
+    },
+    {
+      id: 'fine-dining', name: 'Fine Dining',
+      keywords: ['fine dining', 'restaurant', 'family restaurant', 'multicuisine', 'multi cuisine', 'dine in', 'buffet', 'rooftop restaurant'],
+      content: {
+        tagline: 'An Experience, Not Just a Meal',
+        shortDesc: 'Fine-dining restaurant website with a full menu, ambience gallery and table reservations.',
+        fullDesc: 'A website built for full-service and fine-dining restaurants. Guests browse your multi-cuisine menu, view the ambience and chef’s specials, and reserve a table for the evening. Built to make a special-occasion diner choose you before they even walk in.',
+        heroHeadline: 'Where Every Meal Feels Like an Occasion',
+        heroSubline: 'Multi-cuisine menu, curated ambience and warm hospitality',
+        highlight: 'Table reservations · Private dining · Chef specials · Full bar',
+        seoKeywords: ['fine dining restaurant website', 'multicuisine restaurant website india', 'restaurant table reservation website', 'family restaurant website'],
+      },
+    },
   ],
   salon: [
     { id: 'general', name: 'Salon' },

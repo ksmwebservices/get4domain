@@ -430,6 +430,17 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Custom Birthday Cake (1 kg)', price: 'From ₹700', desc: 'Made-to-order themed cakes.', tags: ['Made to order'], fields: [{ label: 'Weight', value: '1 kg' }] },
       ],
     },
+    'fine-dining': {
+      flow: 'reserve-table', ctaLabel: 'Reserve a Table', catalogNoun: 'menu', coverImage: px(67468),
+      items: [
+        { name: 'Paneer Tikka (Starter)', price: '₹320', desc: 'Char-grilled cottage cheese in tandoori spices.', tags: ['Veg'], fields: [{ label: 'Course', value: 'Starter' }] },
+        { name: 'Murgh Malai Kebab', price: '₹380', desc: 'Creamy, mildly spiced chicken kebabs.', tags: ['Non-veg'], fields: [{ label: 'Course', value: 'Starter' }] },
+        { name: 'Dal Makhani', price: '₹290', desc: 'Slow-cooked black lentils in butter and cream.', tags: ['Veg', 'Signature'], fields: [{ label: 'Course', value: 'Main' }] },
+        { name: 'Hyderabadi Mutton Biryani', price: '₹480', desc: 'Dum-cooked biryani with tender mutton.', tags: ['Non-veg'], fields: [{ label: 'Course', value: 'Main' }] },
+        { name: 'Assorted Breads Basket', price: '₹260', desc: 'Naan, laccha paratha and roti selection.', tags: ['Veg'], fields: [{ label: 'Course', value: 'Bread' }] },
+        { name: 'Gulab Jamun with Rabri', price: '₹180', desc: 'Warm gulab jamun with saffron rabri.', tags: ['Veg'], fields: [{ label: 'Course', value: 'Dessert' }] },
+      ],
+    },
   },
   salon: {
     spa: {
