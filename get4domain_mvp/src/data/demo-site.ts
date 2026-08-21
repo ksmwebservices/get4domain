@@ -797,6 +797,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  homeservices: [
+    { id: 'general', name: 'Home Services' },
+    {
+      id: 'electrician', name: 'Electrician',
+      keywords: ['electrician', 'electrical', 'wiring', 'electrical repair', 'fan repair', 'switch board', 'electric work'],
+      content: {
+        tagline: 'Reliable Electricians, On Call',
+        shortDesc: 'Electrician services website with fixed pricing, online booking and same-day visits.',
+        fullDesc: 'A website built for electricians and electrical services. Customers book wiring, switchboard, fan, light and fault-repair work with upfront pricing and same-day visits. Built to turn the urgent “need an electrician now” search into a booked, trusted visit.',
+        heroHeadline: 'Electrical Work Done Right',
+        heroSubline: 'Wiring, repairs, fans and fittings — verified electricians at your door',
+        highlight: 'Upfront pricing · Same-day visits · Verified electricians · 30-day warranty',
+        seoKeywords: ['electrician website', 'electrician service website india', 'electrical repair booking website'],
+      },
+    },
+    {
+      id: 'plumber', name: 'Plumber',
+      keywords: ['plumber', 'plumbing', 'plumbing repair', 'leak repair', 'tap repair', 'pipe repair', 'bathroom fitting'],
+      content: {
+        tagline: 'Plumbing Problems, Fixed Fast',
+        shortDesc: 'Plumber services website with fixed pricing, online booking and quick response.',
+        fullDesc: 'A website built for plumbers and plumbing services. Customers book leak repairs, tap and pipe work, blockage clearing and bathroom fittings with transparent pricing and fast response. Built for the emergency-leak enquiry that needs a plumber today.',
+        heroHeadline: 'Fast, Reliable Plumbing Help',
+        heroSubline: 'Leaks, taps, blockages and fittings — fixed the same day',
+        highlight: 'Quick response · Upfront pricing · Verified plumbers · Neat work',
+        seoKeywords: ['plumber website', 'plumbing service website india', 'plumber booking website'],
+      },
+    },
+    {
+      id: 'ac-repair', name: 'AC Repair & Service',
+      keywords: ['ac repair', 'ac service', 'air conditioner', 'ac installation', 'ac gas', 'split ac service', 'ac amc'],
+      content: {
+        tagline: 'Cool Comfort, Expert Care',
+        shortDesc: 'AC repair and service website with service plans, AMC and online booking.',
+        fullDesc: 'A website built for AC repair and service businesses. Customers book jet-service cleaning, gas refill, repair and installation for split and window ACs, and sign up for seasonal AMC plans. Built to capture pre-summer service demand and lock in recurring AMC revenue.',
+        heroHeadline: 'Keep Your AC Running Cool',
+        heroSubline: 'Service, gas refill, repair and installation — split and window',
+        highlight: 'Trained technicians · Genuine parts · AMC plans · 30-day service warranty',
+        seoKeywords: ['ac repair website', 'ac service website india', 'ac installation service website', 'ac amc website'],
+      },
+    },
+    {
+      id: 'home-cleaning', name: 'Home Cleaning',
+      keywords: ['home cleaning', 'deep cleaning', 'house cleaning', 'sofa cleaning', 'bathroom cleaning', 'cleaning service', 'housekeeping'],
+      content: {
+        tagline: 'A Spotless Home, Zero Effort',
+        shortDesc: 'Home cleaning services website with packages, add-ons and online booking.',
+        fullDesc: 'A website built for home-cleaning services. Customers book full-home deep cleaning, kitchen and bathroom cleaning, sofa and carpet shampooing with clear per-home pricing and trained staff. Built for a business that wins on trust, thoroughness and repeat bookings.',
+        heroHeadline: 'Deep Cleaning You Can See & Feel',
+        heroSubline: 'Full-home, kitchen, bathroom and sofa cleaning by trained staff',
+        highlight: 'Trained staff · Safe chemicals · Fixed pricing · Same-week slots',
+        seoKeywords: ['home cleaning service website', 'deep cleaning website india', 'house cleaning booking website', 'sofa cleaning website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

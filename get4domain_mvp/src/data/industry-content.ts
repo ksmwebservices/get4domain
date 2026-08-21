@@ -501,4 +501,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-teal-50',
     coverImage: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'homeservices',
+    name: 'Home Services & Repairs',
+    tagline: 'Trusted Help for Every Home Repair',
+    shortDesc: 'Home services website with electricians, plumbers, AC and appliance repair and online booking.',
+    fullDesc: 'Built for home-service and repair businesses. Customers book electricians, plumbers, AC and appliance technicians and cleaners online, track the request from booking to completion and pay after the job. Verified technicians and transparent pricing build the trust on-demand home services depend on. Works for single-trade experts and multi-service handyman businesses.',
+    whatYouGet: ['Service and pricing list', 'Online service booking', 'Technician dispatch info', 'Service warranty details', 'Coverage areas', 'Customer reviews section', 'WhatsApp booking button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Book Service', 'Pricing', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Home Repairs, Sorted in a Tap',
+      heroSubline: 'Verified electricians, plumbers, AC and appliance experts at your door',
+      services: ['Electrician', 'Plumber', 'AC Service', 'Appliance Repair', 'Home Cleaning'],
+      highlight: 'Verified technicians · Upfront pricing · Same-day service · 30-day warranty',
+    },
+    seoKeywords: ['home services website india', 'electrician plumber website', 'ac repair service website', 'home repair website'],
+    color: 'text-indigo-700',
+    bgColor: 'bg-indigo-50',
+    coverImage: 'https://images.pexels.com/photos/5691659/pexels-photo-5691659.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

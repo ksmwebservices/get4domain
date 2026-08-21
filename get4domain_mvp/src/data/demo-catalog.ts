@@ -345,6 +345,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Karthik Menon', role: 'Project Manager', note: 'Turnkey execution' },
     ],
   },
+  homeservices: {
+    flow: 'book-service', ctaLabel: 'Book Service', catalogNoun: 'services',
+    items: [
+      { name: 'Electrician Visit', price: 'From ₹199', desc: 'Wiring, switches, fans and fault repair.', tags: ['Popular'], fields: [{ label: 'Visit', value: 'Inspection ₹99' }] },
+      { name: 'Plumber Visit', price: 'From ₹199', desc: 'Leaks, taps, blockages and fittings.', fields: [{ label: 'Visit', value: 'Inspection ₹99' }] },
+      { name: 'AC Service', price: 'From ₹499', desc: 'Jet-service cleaning, gas and repair.', fields: [{ label: 'Type', value: 'Split / Window' }] },
+      { name: 'Appliance Repair', price: 'From ₹299', desc: 'Fridge, washing machine and microwave.', fields: [{ label: 'Type', value: 'Appliance' }] },
+      { name: 'Home Deep Cleaning', price: 'From ₹2,499', desc: 'Full-home cleaning and sanitisation.', fields: [{ label: 'Scope', value: '2–3 BHK' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -982,6 +992,47 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'POP Ceiling', price: 'From ₹75 / sqft', desc: 'Custom POP designs and mouldings.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
         { name: 'PVC Ceiling', price: 'From ₹90 / sqft', desc: 'Waterproof PVC for kitchens and baths.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
         { name: 'Cove & Profile Lighting', price: 'On enquiry', desc: 'LED cove and profile light integration.', fields: [{ label: 'Type', value: 'Lighting' }] },
+      ],
+    },
+  },
+  homeservices: {
+    electrician: {
+      catalogNoun: 'services', coverImage: px(8005397),
+      items: [
+        { name: 'Inspection Visit', price: '₹99', desc: 'Diagnosis; adjusted against repair cost.', fields: [{ label: 'Type', value: 'Visit' }] },
+        { name: 'Switch / Socket Repair', price: 'From ₹149', desc: 'Replace or repair switches and sockets.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Repair' }] },
+        { name: 'Fan Installation / Repair', price: 'From ₹199', desc: 'Ceiling and exhaust fan work.', fields: [{ label: 'Type', value: 'Fan' }] },
+        { name: 'Wiring & MCB Work', price: 'On inspection', desc: 'New wiring, MCB and DB board work.', fields: [{ label: 'Type', value: 'Wiring' }] },
+        { name: 'Light / Fixture Fitting', price: 'From ₹149', desc: 'Install lights, chandeliers and fixtures.', fields: [{ label: 'Type', value: 'Fitting' }] },
+      ],
+    },
+    plumber: {
+      catalogNoun: 'services', coverImage: px(1078884),
+      items: [
+        { name: 'Inspection Visit', price: '₹99', desc: 'Diagnosis; adjusted against repair cost.', fields: [{ label: 'Type', value: 'Visit' }] },
+        { name: 'Tap / Mixer Repair', price: 'From ₹149', desc: 'Fix or replace taps and mixers.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Repair' }] },
+        { name: 'Leak & Pipe Repair', price: 'From ₹199', desc: 'Fix leaks and damaged pipes.', fields: [{ label: 'Type', value: 'Leak' }] },
+        { name: 'Blockage Clearing', price: 'From ₹299', desc: 'Clear sink, drain and toilet blockages.', fields: [{ label: 'Type', value: 'Blockage' }] },
+        { name: 'Bathroom Fitting', price: 'On inspection', desc: 'Install WC, basin and fittings.', fields: [{ label: 'Type', value: 'Fitting' }] },
+      ],
+    },
+    'ac-repair': {
+      catalogNoun: 'services', coverImage: px(3964736),
+      items: [
+        { name: 'AC Jet Service', price: '₹499', desc: 'Deep cleaning of split/window AC.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Service' }] },
+        { name: 'Gas Refill (Top-up)', price: 'From ₹1,800', desc: 'Refrigerant top-up with leak check.', fields: [{ label: 'Type', value: 'Gas' }] },
+        { name: 'AC Repair', price: 'On inspection', desc: 'Cooling, PCB and compressor issues.', fields: [{ label: 'Type', value: 'Repair' }] },
+        { name: 'AC Installation / Uninstall', price: 'From ₹1,200', desc: 'Split AC fit or removal.', fields: [{ label: 'Type', value: 'Install' }] },
+        { name: 'AC AMC (2 services)', price: '₹1,499 / year', desc: 'Two services a year with priority.', tags: ['AMC'], fields: [{ label: 'Cycle', value: 'Annual' }] },
+      ],
+    },
+    'home-cleaning': {
+      catalogNoun: 'packages', coverImage: px(4239013),
+      items: [
+        { name: 'Full Home Deep Cleaning', price: 'From ₹2,499', desc: 'Complete 2/3 BHK deep clean.', tags: ['Popular'], fields: [{ label: 'Scope', value: '2–3 BHK' }] },
+        { name: 'Kitchen Deep Cleaning', price: '₹1,299', desc: 'Degrease, chimney and cabinet clean.', fields: [{ label: 'Scope', value: 'Kitchen' }] },
+        { name: 'Bathroom Cleaning', price: '₹699', desc: 'Descaling and sanitisation per bathroom.', fields: [{ label: 'Scope', value: 'Per bath' }] },
+        { name: 'Sofa & Carpet Shampoo', price: 'From ₹599', desc: 'Wet shampoo for sofas and carpets.', fields: [{ label: 'Scope', value: 'Per seat' }] },
       ],
     },
   },
