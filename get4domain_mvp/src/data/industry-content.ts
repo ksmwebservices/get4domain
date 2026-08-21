@@ -482,4 +482,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-green-50',
     coverImage: 'https://images.pexels.com/photos/5230983/pexels-photo-5230983.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'interior',
+    name: 'Interior Design & Decor',
+    tagline: 'Spaces That Feel Like You',
+    shortDesc: 'Interior design website with a portfolio, service list and consultation booking.',
+    fullDesc: 'Built for interior designers and decor firms. Clients browse your portfolio, explore services — home and office interiors, modular kitchens and false ceilings — and book a design consultation. A stunning portfolio and a clear process turn browsers into project enquiries. Works for residential, commercial, modular-kitchen and turnkey interior businesses.',
+    whatYouGet: ['Project portfolio gallery', 'Service and package list', 'Design consultation booking', '3D / visualisation info', 'Process and timeline details', 'Client testimonials', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Portfolio', 'Book Consultation', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Design That Transforms Your Space',
+      heroSubline: 'Home and office interiors, modular kitchens and turnkey projects',
+      services: ['Home Interiors', 'Office Interiors', 'Modular Kitchen', 'False Ceiling', 'Turnkey Projects'],
+      highlight: 'Free design consult · 3D visualisation · On-time handover · Transparent quotes',
+    },
+    seoKeywords: ['interior designer website india', 'interior design website', 'modular kitchen website', 'home interior website'],
+    color: 'text-teal-700',
+    bgColor: 'bg-teal-50',
+    coverImage: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

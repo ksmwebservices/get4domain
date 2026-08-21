@@ -742,6 +742,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  interior: [
+    { id: 'general', name: 'Interior Design' },
+    {
+      id: 'residential-interior', name: 'Home Interiors',
+      keywords: ['interior designer', 'home interior', 'residential interior', 'home decor', 'flat interior', 'house interior', 'interior design'],
+      content: {
+        tagline: 'Your Dream Home, Designed Beautifully',
+        shortDesc: 'Home interior design website with a portfolio, packages and consultation booking.',
+        fullDesc: 'A website built for residential interior designers. Homeowners browse your portfolio of living rooms, bedrooms and kitchens, explore turnkey packages with 3D visualisation and book a design consultation. Built so a stunning portfolio does the convincing before the first meeting.',
+        heroHeadline: 'Interiors That Feel Like Home',
+        heroSubline: 'Turnkey home interiors with 3D design and on-time handover',
+        highlight: 'Free consult · 3D visualisation · Turnkey execution · Transparent quotes',
+        seoKeywords: ['home interior designer website', 'residential interior design website india', 'flat interior design website'],
+      },
+    },
+    {
+      id: 'modular-kitchen', name: 'Modular Kitchen',
+      keywords: ['modular kitchen', 'kitchen design', 'modular kitchen designer', 'kitchen interior', 'kitchen cabinets'],
+      content: {
+        tagline: 'A Kitchen That Works as Good as It Looks',
+        shortDesc: 'Modular kitchen website with designs, finishes catalogue and quote enquiry.',
+        fullDesc: 'A website built for modular-kitchen specialists. Customers browse kitchen layouts — L-shape, U-shape, island and parallel — see finishes and accessories and get a quote. Built to convert the homeowner comparing modular-kitchen brands on design and price.',
+        heroHeadline: 'Modular Kitchens Built Around You',
+        heroSubline: 'Smart layouts, quality finishes and premium fittings',
+        highlight: 'Custom layouts · Quality hardware · 10-year warranty · Free 3D design',
+        seoKeywords: ['modular kitchen website', 'modular kitchen designer website india', 'kitchen interior design website'],
+      },
+    },
+    {
+      id: 'commercial-interior', name: 'Office & Commercial',
+      keywords: ['office interior', 'commercial interior', 'office design', 'shop interior', 'showroom interior', 'restaurant interior', 'workspace design'],
+      content: {
+        tagline: 'Workspaces That Work Harder',
+        shortDesc: 'Commercial interior design website with a portfolio, fit-out services and enquiry.',
+        fullDesc: 'A website built for commercial interior designers. Businesses browse your office, retail and hospitality projects, explore fit-out services and enquire for a walkthrough and quote. Built to win the contracts that value process, timelines and a strong project portfolio.',
+        heroHeadline: 'Interiors That Elevate Your Brand',
+        heroSubline: 'Office, retail and hospitality design and fit-out',
+        highlight: 'Space planning · Fast fit-out · Brand-led design · Turnkey delivery',
+        seoKeywords: ['office interior designer website', 'commercial interior design website india', 'shop interior design website'],
+      },
+    },
+    {
+      id: 'false-ceiling', name: 'False Ceiling & POP',
+      keywords: ['false ceiling', 'pop', 'gypsum ceiling', 'pop ceiling', 'ceiling design', 'pvc ceiling'],
+      content: {
+        tagline: 'Ceilings That Make a Room',
+        shortDesc: 'False ceiling and POP website with design options, per-sqft pricing and booking.',
+        fullDesc: 'A website built for false-ceiling and POP contractors. Customers browse gypsum, POP and PVC ceiling designs with cove lighting, see clear per-square-foot pricing and enquire for a site measurement. Built for a trade business where visible work quality wins referrals.',
+        heroHeadline: 'Stylish False Ceilings & POP Work',
+        heroSubline: 'Gypsum, POP and PVC ceilings with modern lighting',
+        highlight: 'Per-sqft pricing · Cove lighting · Neat finish · Quick execution',
+        seoKeywords: ['false ceiling website', 'pop ceiling contractor website india', 'gypsum ceiling design website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

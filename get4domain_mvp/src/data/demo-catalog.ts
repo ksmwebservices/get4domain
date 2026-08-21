@@ -331,6 +331,20 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Annual Maintenance (AMC)', price: 'From ₹4,999 / year', desc: 'Quarterly service with priority visits.', tags: ['AMC'], fields: [{ label: 'Cycle', value: 'Annual' }] },
     ],
   },
+  interior: {
+    flow: 'book-consult', ctaLabel: 'Book Consultation', catalogNoun: 'services',
+    items: [
+      { name: 'Design Consultation', price: 'From ₹2,000', desc: 'On-site consultation with concept and quote.', tags: ['Popular'], fields: [{ label: 'Duration', value: '60 min' }] },
+      { name: 'Full Home Interiors', price: 'From ₹3.5 Lakh', desc: 'Turnkey 2/3 BHK interior with 3D design.', fields: [{ label: 'Scope', value: '2–3 BHK' }] },
+      { name: 'Modular Kitchen', price: 'From ₹1.2 Lakh', desc: 'Custom modular kitchen with fittings.', fields: [{ label: 'Type', value: 'Kitchen' }] },
+      { name: 'False Ceiling & POP', price: 'From ₹60 / sqft', desc: 'Gypsum and POP ceiling with lighting.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
+      { name: 'Office Interiors', price: 'On survey', desc: 'Workspace design and fit-out.', fields: [{ label: 'Scope', value: 'Commercial' }] },
+    ],
+    team: [
+      { name: 'Ar. Nandini Rao', role: 'Principal Interior Designer', note: 'B.Arch · 12 yrs' },
+      { name: 'Karthik Menon', role: 'Project Manager', note: 'Turnkey execution' },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -926,6 +940,48 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: '2/3 BHK Bed Bug Treatment', price: 'From ₹2,800', desc: 'Full-home treatment and follow-up visit.', fields: [{ label: 'Coverage', value: '2–3 BHK' }] },
         { name: 'Hotel / PG Treatment', price: 'On survey', desc: 'Room-by-room treatment for stays.', fields: [{ label: 'Type', value: 'Commercial' }] },
         { name: 'Follow-up Visit', price: 'Included', desc: 'Second visit to ensure full clearance.', fields: [{ label: 'Type', value: 'Follow-up' }] },
+      ],
+    },
+  },
+  interior: {
+    'residential-interior': {
+      catalogNoun: 'packages', coverImage: px(1643383),
+      items: [
+        { name: 'Design Consultation', price: 'From ₹2,000', desc: 'On-site consult with concept and estimate.', tags: ['Popular'], fields: [{ label: 'Duration', value: '60 min' }] },
+        { name: '2 BHK Full Interiors', price: 'From ₹3.5 Lakh', desc: 'Turnkey interiors with 3D design.', fields: [{ label: 'Scope', value: '2 BHK' }] },
+        { name: '3 BHK Full Interiors', price: 'From ₹5.5 Lakh', desc: 'Complete home design and execution.', fields: [{ label: 'Scope', value: '3 BHK' }] },
+        { name: 'Living Room Makeover', price: 'From ₹1.5 Lakh', desc: 'TV unit, false ceiling and decor.', fields: [{ label: 'Scope', value: 'Single room' }] },
+        { name: 'Wardrobe & Storage', price: 'From ₹1,200 / sqft', desc: 'Custom wardrobes and storage units.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
+      ],
+      team: [
+        { name: 'Ar. Nandini Rao', role: 'Principal Interior Designer', note: 'B.Arch · 12 yrs' },
+      ],
+    },
+    'modular-kitchen': {
+      catalogNoun: 'designs', coverImage: px(2724749),
+      items: [
+        { name: 'L-Shaped Modular Kitchen', price: 'From ₹1.2 Lakh', desc: 'Compact layout with premium fittings.', tags: ['Popular'], fields: [{ label: 'Layout', value: 'L-Shape' }] },
+        { name: 'U-Shaped Modular Kitchen', price: 'From ₹1.8 Lakh', desc: 'Maximised storage and counter space.', fields: [{ label: 'Layout', value: 'U-Shape' }] },
+        { name: 'Island Kitchen', price: 'From ₹2.5 Lakh', desc: 'Open-plan island with breakfast counter.', fields: [{ label: 'Layout', value: 'Island' }] },
+        { name: 'Parallel Kitchen', price: 'From ₹1.4 Lakh', desc: 'Efficient galley-style layout.', fields: [{ label: 'Layout', value: 'Parallel' }] },
+      ],
+    },
+    'commercial-interior': {
+      catalogNoun: 'services', coverImage: px(1170412),
+      items: [
+        { name: 'Office Fit-Out', price: 'On survey', desc: 'Space planning, workstations and cabins.', tags: ['Popular'], fields: [{ label: 'Scope', value: 'Office' }] },
+        { name: 'Retail / Showroom Interior', price: 'On survey', desc: 'Display, lighting and brand-led design.', fields: [{ label: 'Scope', value: 'Retail' }] },
+        { name: 'Restaurant / Cafe Interior', price: 'On survey', desc: 'Ambience-driven hospitality design.', fields: [{ label: 'Scope', value: 'Hospitality' }] },
+        { name: 'Clinic / Salon Interior', price: 'On survey', desc: 'Functional, welcoming commercial spaces.', fields: [{ label: 'Scope', value: 'Commercial' }] },
+      ],
+    },
+    'false-ceiling': {
+      catalogNoun: 'services', coverImage: px(6474343),
+      items: [
+        { name: 'Gypsum False Ceiling', price: 'From ₹60 / sqft', desc: 'Smooth gypsum ceiling with cove lighting.', tags: ['Popular'], fields: [{ label: 'Rate', value: 'Per sqft' }] },
+        { name: 'POP Ceiling', price: 'From ₹75 / sqft', desc: 'Custom POP designs and mouldings.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
+        { name: 'PVC Ceiling', price: 'From ₹90 / sqft', desc: 'Waterproof PVC for kitchens and baths.', fields: [{ label: 'Rate', value: 'Per sqft' }] },
+        { name: 'Cove & Profile Lighting', price: 'On enquiry', desc: 'LED cove and profile light integration.', fields: [{ label: 'Type', value: 'Lighting' }] },
       ],
     },
   },
