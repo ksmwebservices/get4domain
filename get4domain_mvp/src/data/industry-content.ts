@@ -425,4 +425,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-amber-50',
     coverImage: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'movers',
+    name: 'Packers & Movers',
+    tagline: 'Safe, Stress-Free Relocation',
+    shortDesc: 'Packers and movers website with services, instant quote enquiry and a move checklist.',
+    fullDesc: 'Built for packers and movers and relocation companies. Customers get quotes for home shifting, office relocation, vehicle transport and storage, share their item inventory and track their move from booking to delivery. Insurance and professional packing build the trust this business runs on. Works for local shifting, intercity moving, warehousing and international relocation.',
+    whatYouGet: ['Service and coverage list', 'Instant quote enquiry form', 'Move inventory checklist', 'Insurance / transit info', 'Photo gallery', 'Coverage areas', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Get a Quote', 'Coverage', 'Gallery', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Relocation Without the Stress',
+      heroSubline: 'Professional packing, safe transport and on-time delivery — home or office',
+      services: ['Home Shifting', 'Office Relocation', 'Vehicle Transport', 'Storage', 'Packing'],
+      highlight: 'Trained crew · Insured transit · On-time delivery · Free survey & quote',
+    },
+    seoKeywords: ['packers and movers website', 'movers website india', 'home shifting website', 'relocation company website'],
+    color: 'text-blue-700',
+    bgColor: 'bg-blue-50',
+    coverImage: 'https://images.pexels.com/photos/4569340/pexels-photo-4569340.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

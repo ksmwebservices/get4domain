@@ -297,6 +297,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Ritu Sharma', role: 'Certified Pet Groomer', note: '6 yrs' },
     ],
   },
+  movers: {
+    flow: 'get-quote', ctaLabel: 'Get a Quote', catalogNoun: 'services',
+    items: [
+      { name: 'Local Home Shifting', price: 'From ₹4,000', desc: 'Within-city shifting with packing and loading.', tags: ['Popular'], fields: [{ label: 'Scope', value: 'Within city' }] },
+      { name: 'Intercity Moving', price: 'On survey', desc: 'City-to-city relocation with insured transit.', fields: [{ label: 'Scope', value: 'Interstate' }] },
+      { name: 'Office Relocation', price: 'On survey', desc: 'Planned office shifting with minimal downtime.', fields: [{ label: 'Scope', value: 'Commercial' }] },
+      { name: 'Vehicle Transport', price: 'From ₹6,000', desc: 'Car and bike transport in covered carriers.', fields: [{ label: 'Type', value: 'Car / Bike' }] },
+      { name: 'Packing Material', price: 'On enquiry', desc: 'Boxes, bubble wrap and cartons for sale.', fields: [{ label: 'Type', value: 'Supplies' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -771,6 +781,45 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Chew Toys & Treats', price: 'From ₹150', desc: 'Toys, treats and dental chews.', fields: [{ label: 'Category', value: 'Toys' }] },
         { name: 'Collar, Leash & Harness', price: 'From ₹300', desc: 'Durable walking accessories.', fields: [{ label: 'Category', value: 'Accessories' }] },
         { name: 'Aquarium Starter Kit', price: '₹2,499', desc: 'Tank, filter and starter supplies.', fields: [{ label: 'Category', value: 'Aquarium' }] },
+      ],
+    },
+  },
+  movers: {
+    'local-shifting': {
+      catalogNoun: 'services', coverImage: px(7464230),
+      items: [
+        { name: '1 BHK Home Shifting', price: 'From ₹4,000', desc: 'Packing, loading and transport within city.', tags: ['Popular'], fields: [{ label: 'Scope', value: 'Within city' }] },
+        { name: '2 BHK Home Shifting', price: 'From ₹7,000', desc: 'Full-home packing and careful transport.', fields: [{ label: 'Scope', value: 'Within city' }] },
+        { name: '3 BHK / Villa Shifting', price: 'On survey', desc: 'Large-home move with extra crew.', fields: [{ label: 'Scope', value: 'Within city' }] },
+        { name: 'Few Items / Single Item', price: 'From ₹1,500', desc: 'Appliance or furniture-only shifting.', fields: [{ label: 'Type', value: 'Partial' }] },
+        { name: 'Labour Only (Load/Unload)', price: 'From ₹1,200', desc: 'Manpower for loading and unloading.', fields: [{ label: 'Type', value: 'Labour' }] },
+      ],
+    },
+    intercity: {
+      catalogNoun: 'services', coverImage: px(1178448),
+      items: [
+        { name: 'Intercity 1 BHK Move', price: 'On survey', desc: 'City-to-city home relocation, insured.', tags: ['Insured'], fields: [{ label: 'Scope', value: 'Interstate' }] },
+        { name: 'Intercity 2/3 BHK Move', price: 'On survey', desc: 'Dedicated vehicle for long-distance moves.', fields: [{ label: 'Scope', value: 'Interstate' }] },
+        { name: 'Shared / Part-load Move', price: 'From ₹8,000', desc: 'Economical shared-truck relocation.', fields: [{ label: 'Type', value: 'Part-load' }] },
+        { name: 'Transit Insurance', price: 'From 3% of value', desc: 'Full coverage against transit damage.', fields: [{ label: 'Type', value: 'Insurance' }] },
+      ],
+    },
+    'office-relocation': {
+      catalogNoun: 'services', coverImage: px(4483610),
+      items: [
+        { name: 'Small Office Move', price: 'On survey', desc: 'Up to 10 workstations, weekend move.', fields: [{ label: 'Scope', value: 'Commercial' }] },
+        { name: 'Corporate Office Move', price: 'On survey', desc: 'Full office with IT and records handling.', tags: ['Popular'], fields: [{ label: 'Scope', value: 'Commercial' }] },
+        { name: 'IT & Server Shifting', price: 'On enquiry', desc: 'Specialised handling for IT equipment.', fields: [{ label: 'Type', value: 'IT' }] },
+        { name: 'Records & Document Move', price: 'On enquiry', desc: 'Indexed, secure file relocation.', fields: [{ label: 'Type', value: 'Records' }] },
+      ],
+    },
+    'vehicle-transport': {
+      catalogNoun: 'services', coverImage: px(2244746),
+      items: [
+        { name: 'Car Transport (Local)', price: 'From ₹4,000', desc: 'Within-state car transport in carrier.', fields: [{ label: 'Type', value: 'Car' }] },
+        { name: 'Car Transport (Intercity)', price: 'From ₹8,000', desc: 'Enclosed carrier, insured, door-to-door.', tags: ['Insured'], fields: [{ label: 'Type', value: 'Car' }] },
+        { name: 'Bike Transport', price: 'From ₹2,500', desc: 'Two-wheeler transport with packing.', fields: [{ label: 'Type', value: 'Bike' }] },
+        { name: 'Multi-Vehicle Carrier', price: 'On enquiry', desc: 'For dealers and bulk vehicle movement.', fields: [{ label: 'Type', value: 'Bulk' }] },
       ],
     },
   },

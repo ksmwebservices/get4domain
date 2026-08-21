@@ -577,6 +577,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  movers: [
+    { id: 'general', name: 'Packers & Movers' },
+    {
+      id: 'local-shifting', name: 'Local Shifting',
+      keywords: ['local shifting', 'house shifting', 'home shifting', 'local movers', 'within city shifting', 'local packers'],
+      content: {
+        tagline: 'Your City Move, Handled with Care',
+        shortDesc: 'Local shifting website with instant quote enquiry, packing services and a move checklist.',
+        fullDesc: 'A website built for local packers and movers. Customers get a quick quote for within-city home shifting, share their item list and book professional packing, loading and transport — all in a day. Built to win the last-minute, price-comparing local mover enquiry with a clear, fast quote.',
+        heroHeadline: 'Fast, Safe Local Home Shifting',
+        heroSubline: 'Same-city moves with professional packing, loading and transport',
+        highlight: 'Same-day moves · Trained crew · Careful packing · Transparent pricing',
+        seoKeywords: ['local shifting website', 'home shifting services website india', 'local packers and movers website'],
+      },
+    },
+    {
+      id: 'intercity', name: 'Intercity Moving',
+      keywords: ['intercity', 'interstate', 'intercity moving', 'city to city shifting', 'long distance moving', 'domestic relocation'],
+      content: {
+        tagline: 'City to City, Door to Door',
+        shortDesc: 'Intercity moving website with quote enquiry, insured transit info and move tracking.',
+        fullDesc: 'A website built for intercity and interstate movers. Customers get quotes for long-distance home relocation, see your insured-transit and coverage details and share their inventory for an accurate estimate. Built to reassure a family moving across states that their belongings are in safe hands.',
+        heroHeadline: 'Long-Distance Moves Made Simple',
+        heroSubline: 'City-to-city relocation with insured transit and on-time delivery',
+        highlight: 'Insured transit · GPS-tracked · Dedicated vehicles · Pan-India coverage',
+        seoKeywords: ['intercity movers website', 'interstate relocation website india', 'long distance packers and movers website'],
+      },
+    },
+    {
+      id: 'office-relocation', name: 'Office Relocation',
+      keywords: ['office relocation', 'office shifting', 'commercial shifting', 'corporate relocation', 'office movers'],
+      content: {
+        tagline: 'Move Your Office, Not Your Momentum',
+        shortDesc: 'Office relocation website with planning services, quote enquiry and minimal-downtime moves.',
+        fullDesc: 'A website built for commercial and office movers. Businesses request a survey and quote for office shifting — IT equipment, furniture and records handled with a planned, minimal-downtime move over weekends. Built to land the corporate contracts that value process over price.',
+        heroHeadline: 'Seamless Office Relocation',
+        heroSubline: 'Planned, minimal-downtime moves for offices and businesses',
+        highlight: 'Weekend moves · IT & furniture handling · Insured · Dedicated coordinator',
+        seoKeywords: ['office relocation website', 'commercial shifting website india', 'corporate movers website'],
+      },
+    },
+    {
+      id: 'vehicle-transport', name: 'Vehicle Transport',
+      keywords: ['vehicle transport', 'car transport', 'bike transport', 'car carrier', 'car shifting', 'two wheeler transport'],
+      content: {
+        tagline: 'Your Vehicle, Delivered Safely',
+        shortDesc: 'Vehicle transport website with quote enquiry, covered-carrier info and tracking.',
+        fullDesc: 'A website built for car and bike transport services. Customers get quotes to move their vehicle city-to-city in enclosed carriers, with insurance and door-to-door pickup and delivery. Built for the relocating professional who needs their car moved without a scratch.',
+        heroHeadline: 'Safe Car & Bike Transport, Anywhere',
+        heroSubline: 'Enclosed carriers, insured transit and door-to-door delivery',
+        highlight: 'Covered carriers · Insured · Door-to-door · GPS tracking',
+        seoKeywords: ['car transport website india', 'vehicle transport service website', 'bike transport website', 'car carrier website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {
