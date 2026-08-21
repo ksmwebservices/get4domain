@@ -321,6 +321,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Guru Ananya Devi', role: 'Numerologist & Tarot', note: '12 yrs' },
     ],
   },
+  pestcontrol: {
+    flow: 'book-service', ctaLabel: 'Book Service', catalogNoun: 'services',
+    items: [
+      { name: 'General Pest Control', price: 'From ₹1,200', desc: 'Cockroach, ant and general pest treatment.', tags: ['Popular'], fields: [{ label: 'Coverage', value: '1 BHK–3 BHK' }] },
+      { name: 'Termite Treatment', price: 'From ₹3,500', desc: 'Anti-termite treatment with warranty.', fields: [{ label: 'Warranty', value: '1–5 years' }] },
+      { name: 'Rodent Control', price: 'From ₹1,500', desc: 'Rat and rodent management, safe baiting.', fields: [{ label: 'Type', value: 'Rodent' }] },
+      { name: 'Mosquito / Fogging', price: 'From ₹1,000', desc: 'Fogging and larvicide for mosquitoes.', fields: [{ label: 'Type', value: 'Mosquito' }] },
+      { name: 'Annual Maintenance (AMC)', price: 'From ₹4,999 / year', desc: 'Quarterly service with priority visits.', tags: ['AMC'], fields: [{ label: 'Cycle', value: 'Annual' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -877,6 +887,45 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Havan / Hawan', price: 'From ₹3,500', desc: 'Havan for peace, health or new beginnings.', fields: [{ label: 'Duration', value: '2–3 hrs' }] },
         { name: 'Wedding Ceremony', price: 'On enquiry', desc: 'Complete Vedic wedding rituals.', fields: [{ label: 'Type', value: 'Wedding' }] },
         { name: 'Samagri Kit', price: 'From ₹800', desc: 'Puja materials arranged and delivered.', fields: [{ label: 'Type', value: 'Materials' }] },
+      ],
+    },
+  },
+  pestcontrol: {
+    'general-pest': {
+      catalogNoun: 'services', coverImage: px(4239146),
+      items: [
+        { name: '1 BHK General Treatment', price: '₹1,200', desc: 'Cockroach, ant and household pest spray.', tags: ['Popular'], fields: [{ label: 'Coverage', value: '1 BHK' }] },
+        { name: '2/3 BHK General Treatment', price: 'From ₹1,800', desc: 'Full-home treatment with gel and spray.', fields: [{ label: 'Coverage', value: '2–3 BHK' }] },
+        { name: 'Kitchen / Cockroach Gel', price: '₹800', desc: 'Odourless gel treatment for kitchens.', fields: [{ label: 'Type', value: 'Gel' }] },
+        { name: 'Full Disinfection', price: 'From ₹1,500', desc: 'Sanitisation and pest treatment combo.', fields: [{ label: 'Type', value: 'Combo' }] },
+        { name: 'AMC (Quarterly)', price: '₹4,999 / year', desc: 'Four visits a year with priority service.', tags: ['AMC'], fields: [{ label: 'Cycle', value: 'Annual' }] },
+      ],
+    },
+    termite: {
+      catalogNoun: 'services', coverImage: px(6474471),
+      items: [
+        { name: 'Post-Construction Treatment', price: 'From ₹3,500', desc: 'Drill-fill-seal treatment with warranty.', tags: ['Warranty'], fields: [{ label: 'Warranty', value: '1–5 years' }] },
+        { name: 'Pre-Construction Treatment', price: 'On survey', desc: 'Soil treatment during construction.', fields: [{ label: 'Type', value: 'New build' }] },
+        { name: 'Wood Borer Treatment', price: 'From ₹2,000', desc: 'Furniture and woodwork protection.', fields: [{ label: 'Type', value: 'Wood borer' }] },
+        { name: 'Free Termite Inspection', price: '₹0', desc: 'On-site inspection and estimate.', tags: ['Free'], fields: [{ label: 'Type', value: 'Inspection' }] },
+      ],
+    },
+    rodent: {
+      catalogNoun: 'services', coverImage: px(6469197),
+      items: [
+        { name: 'Home Rodent Control', price: 'From ₹1,500', desc: 'Baiting and trapping for homes.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Residential' }] },
+        { name: 'Commercial Rodent Control', price: 'On survey', desc: 'Warehouses, kitchens and offices.', fields: [{ label: 'Type', value: 'Commercial' }] },
+        { name: 'Rodent Exclusion / Proofing', price: 'On enquiry', desc: 'Seal entry points to prevent return.', fields: [{ label: 'Type', value: 'Proofing' }] },
+        { name: 'AMC (Rodent)', price: 'From ₹5,999 / year', desc: 'Regular monitoring and baiting.', tags: ['AMC'], fields: [{ label: 'Cycle', value: 'Annual' }] },
+      ],
+    },
+    bedbug: {
+      catalogNoun: 'services', coverImage: px(6197109),
+      items: [
+        { name: '1 BHK Bed Bug Treatment', price: 'From ₹1,800', desc: 'Targeted spray with one follow-up.', tags: ['Popular'], fields: [{ label: 'Coverage', value: '1 BHK' }] },
+        { name: '2/3 BHK Bed Bug Treatment', price: 'From ₹2,800', desc: 'Full-home treatment and follow-up visit.', fields: [{ label: 'Coverage', value: '2–3 BHK' }] },
+        { name: 'Hotel / PG Treatment', price: 'On survey', desc: 'Room-by-room treatment for stays.', fields: [{ label: 'Type', value: 'Commercial' }] },
+        { name: 'Follow-up Visit', price: 'Included', desc: 'Second visit to ensure full clearance.', fields: [{ label: 'Type', value: 'Follow-up' }] },
       ],
     },
   },

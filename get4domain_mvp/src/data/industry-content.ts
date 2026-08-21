@@ -463,4 +463,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-purple-50',
     coverImage: 'https://images.pexels.com/photos/6541008/pexels-photo-6541008.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'pestcontrol',
+    name: 'Pest Control',
+    tagline: 'A Pest-Free Home & Business',
+    shortDesc: 'Pest control website with treatment services, online booking and annual maintenance plans.',
+    fullDesc: 'Built for pest-control companies. Customers browse treatments — general pest, termite, rodent, mosquito and bed-bug control — book a service online and sign up for annual maintenance contracts. Safe, certified treatments and follow-up visits build the trust and recurring revenue this business runs on. Works for residential, commercial and industrial pest control.',
+    whatYouGet: ['Treatment and pricing list', 'Online service booking', 'AMC / annual contract plans', 'Follow-up visit info', 'Safety / certification details', 'Coverage areas', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Book Service', 'AMC Plans', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Say Goodbye to Pests, for Good',
+      heroSubline: 'Safe, certified treatments for homes, offices and industries',
+      services: ['General Pest Control', 'Termite Treatment', 'Rodent Control', 'Mosquito Control', 'Bed Bug Treatment'],
+      highlight: 'Certified chemicals · Pet & child safe · Follow-up visits · AMC available',
+    },
+    seoKeywords: ['pest control website india', 'pest control service website', 'termite treatment website', 'pest control company website'],
+    color: 'text-green-700',
+    bgColor: 'bg-green-50',
+    coverImage: 'https://images.pexels.com/photos/5230983/pexels-photo-5230983.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];

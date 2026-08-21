@@ -687,6 +687,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  pestcontrol: [
+    { id: 'general', name: 'Pest Control' },
+    {
+      id: 'general-pest', name: 'General Pest Control',
+      keywords: ['pest control', 'cockroach', 'cockroach control', 'ant control', 'general pest', 'pest control service', 'disinfection'],
+      content: {
+        tagline: 'A Clean, Pest-Free Home',
+        shortDesc: 'General pest control website with treatment plans, safe-chemical info and online booking.',
+        fullDesc: 'A website built for general pest-control services. Customers book treatment for cockroaches, ants and household pests, see your pet- and child-safe methods and choose one-time or AMC plans. Built to be the reassuring, professional choice over an unknown local sprayer.',
+        heroHeadline: 'Household Pests, Handled Safely',
+        heroSubline: 'Cockroach, ant and general pest treatment — pet & child safe',
+        highlight: 'Odourless chemicals · Pet & child safe · Same-week service · AMC available',
+        seoKeywords: ['general pest control website', 'cockroach control service website', 'pest control booking website india'],
+      },
+    },
+    {
+      id: 'termite', name: 'Termite Treatment',
+      keywords: ['termite', 'termite treatment', 'anti termite', 'white ants', 'wood borer', 'termite control'],
+      content: {
+        tagline: 'Protect Your Home from Termites',
+        shortDesc: 'Anti-termite treatment website with warranty plans, pre/post-construction options and booking.',
+        fullDesc: 'A website built for termite-treatment specialists. Homeowners and builders book anti-termite treatment — pre- and post-construction — with multi-year warranties and drilling/injection methods explained. Built to win the high-value, warranty-backed jobs that protect a property investment.',
+        heroHeadline: 'Stop Termites Before They Spread',
+        heroSubline: 'Warranty-backed anti-termite treatment for homes and buildings',
+        highlight: 'Up to 5-year warranty · Pre & post-construction · Certified · Free inspection',
+        seoKeywords: ['termite treatment website', 'anti termite service website india', 'termite control company website'],
+      },
+    },
+    {
+      id: 'rodent', name: 'Rodent Control',
+      keywords: ['rodent', 'rat control', 'rodent control', 'rats', 'mice', 'mouse control'],
+      content: {
+        tagline: 'Rats Out, Peace of Mind In',
+        shortDesc: 'Rodent control website with safe baiting, exclusion services and booking.',
+        fullDesc: 'A website built for rodent-control services. Homes and businesses book rat and mouse control using safe baiting, trapping and exclusion — with follow-up visits and food-safe methods for kitchens and warehouses. Built for the urgent, don’t-want-to-see-another-rat enquiry.',
+        heroHeadline: 'Effective, Safe Rodent Control',
+        heroSubline: 'Rat and mouse management with baiting, trapping and prevention',
+        highlight: 'Food-safe methods · Warehouses & kitchens · Follow-up visits · Discreet service',
+        seoKeywords: ['rodent control website', 'rat control service website india', 'pest control for rats website'],
+      },
+    },
+    {
+      id: 'bedbug', name: 'Bed Bug Treatment',
+      keywords: ['bed bug', 'bedbug', 'bed bug treatment', 'bed bug control', 'khatmal'],
+      content: {
+        tagline: 'Sleep Easy, Bed-Bug Free',
+        shortDesc: 'Bed bug treatment website with targeted service, hotel/PG plans and booking.',
+        fullDesc: 'A website built for bed-bug treatment specialists. Homes, hotels and PGs book targeted heat and chemical treatment with follow-up visits to fully clear infestations. Built for a discreet, urgent service where results and privacy matter most.',
+        heroHeadline: 'Get Rid of Bed Bugs — Completely',
+        heroSubline: 'Targeted treatment for homes, hotels and PGs with follow-up',
+        highlight: 'Complete elimination · Follow-up included · Homes, hotels & PGs · Discreet',
+        seoKeywords: ['bed bug treatment website', 'bed bug control service website india', 'bed bug pest control website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {
