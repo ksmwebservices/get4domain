@@ -1017,6 +1017,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  government: [
+    { id: 'general', name: 'Government & Utility Services' },
+    {
+      id: 'csc', name: 'Common Service Centre',
+      keywords: ['csc', 'common service centre', 'common service center', 'e-governance', 'e governance', 'jan seva kendra', 'govt service centre', 'digital seva'],
+      content: {
+        tagline: 'Your Local Digital Seva Centre',
+        shortDesc: 'Common Service Centre website with a full government-service list, document guidance and enquiry.',
+        fullDesc: 'A website built for Common Service Centres and e-governance points. Citizens see the wide range of services you assist with — Aadhaar, PAN, certificates, pensions, insurance and bill payments — with the documents needed for each, and enquire or visit. Built to be the neighbourhood’s trusted first stop for any government service.',
+        heroHeadline: 'One Centre for Every Government Service',
+        heroSubline: 'Aadhaar, PAN, certificates, pensions and bill payments — all in one place',
+        highlight: 'Authorised centre · Document guidance · Wide range · Nominal charges',
+        seoKeywords: ['common service centre website', 'csc website india', 'jan seva kendra website', 'e-governance service centre website'],
+      },
+    },
+    {
+      id: 'aadhaar-pan', name: 'Aadhaar & PAN Services',
+      keywords: ['aadhaar', 'aadhar', 'aadhaar card', 'pan card', 'pan', 'aadhaar update', 'pan correction', 'aadhaar center', 'pan card agent'],
+      content: {
+        tagline: 'Aadhaar & PAN, Sorted Quickly',
+        shortDesc: 'Aadhaar and PAN services website with application help, document checklists and enquiry.',
+        fullDesc: 'A website built for Aadhaar and PAN service centres. Visitors get help with new Aadhaar enrolment, address and mobile updates, new PAN cards and corrections — with a clear list of documents to bring. Built to bring in the steady, everyday identity-document footfall.',
+        heroHeadline: 'Aadhaar & PAN Made Easy',
+        heroSubline: 'Enrolment, updates, new PAN and corrections — with document guidance',
+        highlight: 'Quick service · Clear document list · Corrections handled · Nominal charges',
+        seoKeywords: ['aadhaar service centre website', 'pan card service website india', 'aadhaar pan agent website'],
+      },
+    },
+    {
+      id: 'certificates', name: 'Certificate Services',
+      keywords: ['certificate', 'income certificate', 'caste certificate', 'birth certificate', 'domicile certificate', 'certificate service', 'documentation service', 'affidavit'],
+      content: {
+        tagline: 'Certificates & Documents, Hassle-Free',
+        shortDesc: 'Certificate services website with document checklists, application help and status updates.',
+        fullDesc: 'A website built for certificate and documentation services. Citizens see which certificates you help obtain — income, caste, domicile, birth and death — with the exact documents required, and enquire to apply. Application status is shared on request as the work progresses. Built to demystify a confusing, document-heavy process.',
+        heroHeadline: 'Government Certificates, Without the Queues',
+        heroSubline: 'Income, caste, domicile, birth and death certificate assistance',
+        highlight: 'Document checklists · Application help · Status on request · Nominal charges',
+        seoKeywords: ['certificate service website india', 'income caste certificate service website', 'documentation service website'],
+      },
+    },
+    {
+      id: 'bill-payment', name: 'Utility Bill Payment',
+      keywords: ['bill payment', 'utility bill', 'electricity bill', 'water bill', 'gas bill', 'recharge', 'bill payment centre', 'money transfer'],
+      content: {
+        tagline: 'Pay Every Bill in One Place',
+        shortDesc: 'Utility bill payment centre website with a services list, coverage and quick enquiry.',
+        fullDesc: 'A website built for utility bill-payment and mini-banking centres. Customers pay electricity, water, gas and mobile bills, recharge, and use money-transfer and AEPS services at your counter. Built for a high-footfall neighbourhood service point that thrives on trust and convenience.',
+        heroHeadline: 'Bills, Recharges & Payments — Sorted',
+        heroSubline: 'Electricity, water, gas, recharges and money transfer at one counter',
+        highlight: 'All bills accepted · Instant receipts · Money transfer · Open long hours',
+        seoKeywords: ['bill payment centre website', 'utility bill payment website india', 'mini banking csc website', 'money transfer centre website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

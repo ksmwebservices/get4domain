@@ -389,6 +389,16 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Farah Khan', role: 'Executive Search Consultant', note: '9 yrs' },
     ],
   },
+  government: {
+    flow: 'enquire', ctaLabel: 'Enquire', catalogNoun: 'services',
+    items: [
+      { name: 'Aadhaar Update / Enrollment', price: 'Govt fee + service charge', desc: 'Address, mobile and biometric updates.', tags: ['Popular'], fields: [{ label: 'Docs', value: 'ID + Address proof' }] },
+      { name: 'PAN Card (New / Correction)', price: 'Govt fee + service charge', desc: 'New PAN and correction applications.', fields: [{ label: 'Docs', value: 'ID + Photo' }] },
+      { name: 'Income / Caste Certificate', price: 'Service charge', desc: 'Application assistance and follow-up.', fields: [{ label: 'Docs', value: 'As per service' }] },
+      { name: 'Passport Assistance', price: 'Service charge', desc: 'Form filling and appointment help.', fields: [{ label: 'Docs', value: 'ID + Address proof' }] },
+      { name: 'Utility Bill Payment', price: 'Nominal charge', desc: 'Electricity, water, gas and recharge.', fields: [{ label: 'Type', value: 'Bill payment' }] },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -1194,6 +1204,48 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Hospitality — Overseas', price: 'On enquiry', desc: 'Hotel, kitchen and service staff abroad.', fields: [{ label: 'Region', value: 'Gulf / Europe' }] },
         { name: 'Healthcare — Overseas', price: 'On enquiry', desc: 'Nurses and paramedics for overseas roles.', fields: [{ label: 'Region', value: 'Europe / Gulf' }] },
         { name: 'Visa & Documentation Support', price: 'On enquiry', desc: 'End-to-end deployment assistance.', fields: [{ label: 'Type', value: 'Support' }] },
+      ],
+    },
+  },
+  government: {
+    csc: {
+      catalogNoun: 'services', coverImage: px(6801648),
+      items: [
+        { name: 'Aadhaar Services', price: 'Govt fee + charge', desc: 'Enrolment, update and print.', tags: ['Popular'], fields: [{ label: 'Docs', value: 'ID + Address' }] },
+        { name: 'PAN Card', price: 'Govt fee + charge', desc: 'New PAN and corrections.', fields: [{ label: 'Docs', value: 'ID + Photo' }] },
+        { name: 'Insurance & Pension', price: 'Service charge', desc: 'PM schemes, insurance and pension enrolment.', fields: [{ label: 'Type', value: 'Schemes' }] },
+        { name: 'Certificates', price: 'Service charge', desc: 'Income, caste and domicile assistance.', fields: [{ label: 'Type', value: 'Certificate' }] },
+        { name: 'Bill Payment & Recharge', price: 'Nominal charge', desc: 'Electricity, water, gas and mobile.', fields: [{ label: 'Type', value: 'Payments' }] },
+      ],
+    },
+    'aadhaar-pan': {
+      catalogNoun: 'services', coverImage: px(4386370),
+      items: [
+        { name: 'New Aadhaar Enrolment', price: 'As per UIDAI', desc: 'Fresh Aadhaar registration.', fields: [{ label: 'Docs', value: 'ID + Address proof' }] },
+        { name: 'Aadhaar Update', price: 'As per UIDAI', desc: 'Address, mobile and biometric update.', tags: ['Popular'], fields: [{ label: 'Docs', value: 'Supporting proof' }] },
+        { name: 'New PAN Card', price: 'Govt fee + charge', desc: 'Fresh PAN application.', fields: [{ label: 'Docs', value: 'ID + Photo' }] },
+        { name: 'PAN Correction', price: 'Govt fee + charge', desc: 'Name, DOB and detail corrections.', fields: [{ label: 'Docs', value: 'Supporting proof' }] },
+        { name: 'Aadhaar-PAN Linking', price: 'Nominal charge', desc: 'Link Aadhaar with PAN.', fields: [{ label: 'Type', value: 'Linking' }] },
+      ],
+    },
+    certificates: {
+      catalogNoun: 'services', coverImage: px(4482900),
+      items: [
+        { name: 'Income Certificate', price: 'Service charge', desc: 'Application help and follow-up.', tags: ['Popular'], fields: [{ label: 'Docs', value: 'ID + Income proof' }] },
+        { name: 'Caste Certificate', price: 'Service charge', desc: 'Documentation and submission help.', fields: [{ label: 'Docs', value: 'ID + Community proof' }] },
+        { name: 'Domicile / Residence', price: 'Service charge', desc: 'Residence certificate assistance.', fields: [{ label: 'Docs', value: 'ID + Address proof' }] },
+        { name: 'Birth / Death Certificate', price: 'Service charge', desc: 'Registration and copy assistance.', fields: [{ label: 'Docs', value: 'As per case' }] },
+        { name: 'Affidavit / Notary', price: 'On enquiry', desc: 'Affidavit drafting and notary help.', fields: [{ label: 'Type', value: 'Legal doc' }] },
+      ],
+    },
+    'bill-payment': {
+      catalogNoun: 'services', coverImage: px(210742),
+      items: [
+        { name: 'Electricity Bill', price: 'Nominal charge', desc: 'Instant payment with receipt.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Utility' }] },
+        { name: 'Water / Gas Bill', price: 'Nominal charge', desc: 'Municipal and gas bill payments.', fields: [{ label: 'Type', value: 'Utility' }] },
+        { name: 'Mobile / DTH Recharge', price: 'Nominal charge', desc: 'All operators, instant recharge.', fields: [{ label: 'Type', value: 'Recharge' }] },
+        { name: 'Money Transfer (DMT)', price: 'Nominal charge', desc: 'Domestic money transfer service.', fields: [{ label: 'Type', value: 'Banking' }] },
+        { name: 'Cash Withdrawal (AEPS)', price: 'Nominal charge', desc: 'Aadhaar-enabled cash withdrawal.', fields: [{ label: 'Type', value: 'Banking' }] },
       ],
     },
   },

@@ -577,4 +577,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-sky-50',
     coverImage: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'government',
+    name: 'Government & Utility Services',
+    tagline: 'Government Services Made Simple',
+    shortDesc: 'Common service centre website with service listings, document checklists and enquiry.',
+    fullDesc: 'Built for common service centres (CSC), Aadhaar/PAN centres and e-governance points — the private operators who help citizens access government services. Visitors see the services you assist with — Aadhaar, PAN, passport help, certificates and utility bill payments — with the documents required for each, and enquire or visit. Application status is tracked manually as work progresses. Works for CSCs, documentation services and utility payment centres.',
+    whatYouGet: ['Service and charges list', 'Document checklist per service', 'Enquiry / appointment form', 'Utility bill payment info', 'Status update on request', 'Coverage / location', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Documents Required', 'Bill Payment', 'About', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'All Government Services, One Centre',
+      heroSubline: 'Aadhaar, PAN, certificates, passport help and bill payments',
+      services: ['Aadhaar Services', 'PAN Card', 'Certificates', 'Passport Assistance', 'Bill Payment'],
+      highlight: 'Authorised service centre · Document guidance · Quick service · Nominal charges',
+    },
+    seoKeywords: ['common service centre website', 'csc website india', 'aadhaar pan service website', 'government service centre website'],
+    color: 'text-slate-700',
+    bgColor: 'bg-slate-100',
+    coverImage: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];
