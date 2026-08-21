@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight, Star, Users, MessageCircle } from 'lucide-react';
 import {
-  getCategory, getSubcategory, getSubcategories, getSections, getSection, CATEGORY_IDS,
+  getCategory, getSubcategory, getSubcategories, getSections, getSection, getDemoContent, CATEGORY_IDS,
 } from '@/data/demo-site';
 import { resolveCatalog } from '@/data/demo-catalog';
 import DemoSiteNav from '@/components/DemoSiteNav';
@@ -55,20 +55,21 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const sub = getSubcategory(category, parsed.subId);
   const section = parsed.sectionSlug ? getSection(category, parsed.sectionSlug) : undefined;
   const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
+  const content = getDemoContent(category, parsed.subId)!;
   const ogImage = resolveCatalog(category, isSub ? parsed.subId : undefined)?.coverImage ?? cat.coverImage;
   const siteName = isSub ? `${sub.name} ${cat.name}` : cat.name;
   // Root layout adds "| Get4Domain" via title.template — don't repeat it here.
   const title = section
     ? `${section.label} · ${siteName} Demo`
-    : `${siteName} Website Demo — ${cat.tagline}`;
+    : `${siteName} Website Demo — ${content.tagline}`;
   const description = section
-    ? `${section.label} for a ${cat.name.toLowerCase()} business. ${cat.shortDesc}`
-    : cat.shortDesc;
+    ? `${section.label} for a ${siteName.toLowerCase()} business. ${content.shortDesc}`
+    : content.shortDesc;
   const ogTitle = `${title} | Get4Domain`;
   return {
     title,
     description,
-    keywords: cat.seoKeywords,
+    keywords: content.seoKeywords,
     openGraph: {
       title: ogTitle, description, type: 'website',
       images: [{ url: ogImage, width: 800, height: 600, alt: `${siteName} website` }],
@@ -80,11 +81,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function DemoPage({ params }: { params: Promise<Params> }) {
   const { category, rest = [] } = await params;
   const cat = getCategory(category);
+  // Bare sub-category keywords (e.g. /demo/dental) are redirected to the canonical
+  // (category/sub) URL by middleware.ts before this runs; anything unknown here 404s.
   if (!cat) notFound();
   const parsed = parse(category, rest);
   if (!parsed) notFound();
 
   const sub = getSubcategory(category, parsed.subId);
+  const content = getDemoContent(category, parsed.subId)!;
   const sections = getSections(category);
   const section = parsed.sectionSlug ? getSection(category, parsed.sectionSlug) : undefined;
   const base = parsed.subId && parsed.subId !== 'general' ? `/demo/${category}/${parsed.subId}` : `/demo/${category}`;
@@ -97,7 +101,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
 
   const jsonLd = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness',
-    name: `${brand} — ${cat.name}`, description: cat.shortDesc, image: coverImage,
+    name: `${brand} — ${cat.name}`, description: content.shortDesc, image: coverImage,
     url: `https://get4domain.com${base}${section ? `/${section.slug}` : ''}`,
     areaServed: 'IN', priceRange: '₹₹',
   };
@@ -115,8 +119,8 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-primary-900/70 to-primary-700/60" />
         <div className="relative mx-auto max-w-5xl px-5 py-14 text-white sm:py-20">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{cat.name}{parsed.subId && parsed.subId !== 'general' ? ` · ${sub.name}` : ''}</span>
-          <h1 className="mt-4 max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">{section ? section.label : cat.sampleContent.heroHeadline}</h1>
-          <p className="mt-4 max-w-xl text-base text-white/90 sm:text-lg">{section ? cat.shortDesc : cat.sampleContent.heroSubline}</p>
+          <h1 className="mt-4 max-w-2xl text-3xl font-bold leading-tight sm:text-5xl">{section ? section.label : content.heroHeadline}</h1>
+          <p className="mt-4 max-w-xl text-base text-white/90 sm:text-lg">{section ? content.shortDesc : content.heroSubline}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             {catalog && catalogSection && (
               <Link href={`${base}/${catalogSection.slug}`} className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-700 hover:bg-white/90">
@@ -152,14 +156,14 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
                   <h2 className="text-2xl font-bold text-slate-900">Popular {catalog.catalogNoun}</h2>
                   {catalogSection && <Link href={`${base}/${catalogSection.slug}`} className="text-sm font-semibold text-primary-600 hover:text-primary-700">View all →</Link>}
                 </div>
-                <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
+                <p className="mt-1 text-sm text-slate-500">{content.highlight}</p>
                 <div className="mt-5">
                   <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={coverImage} limit={3} />
                 </div>
               </div>
             )}
             <div className="rounded-2xl bg-slate-50 p-6 text-center">
-              <p className="text-slate-600">{cat.fullDesc}</p>
+              <p className="text-slate-600">{content.fullDesc}</p>
               {sections.find((s) => s.type === 'contact') && (
                 <Link href={`${base}/${sections.find((s) => s.type === 'contact')!.slug}`} className="mt-4 inline-flex rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white hover:bg-primary-700">Enquire now</Link>
               )}
@@ -170,7 +174,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
         ) : section.type === 'about' ? (
           <div className="prose max-w-none">
             <h2 className="text-2xl font-bold text-slate-900">About {brand}</h2>
-            <p className="mt-3 text-slate-600">{cat.fullDesc}</p>
+            <p className="mt-3 text-slate-600">{content.fullDesc}</p>
             <ul className="mt-5 grid gap-2 sm:grid-cols-2">
               {cat.whatYouGet.slice(0, 6).map((w) => <li key={w} className="flex items-start gap-2 text-sm text-slate-700"><Star className="mt-0.5 h-4 w-4 text-amber-400" />{w}</li>)}
             </ul>
@@ -209,7 +213,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
           // catalog (menu / services / packages / listings / products …)
           <div>
             <h2 className="text-2xl font-bold text-slate-900">{section.label}</h2>
-            <p className="mt-1 text-sm text-slate-500">{cat.sampleContent.highlight}</p>
+            <p className="mt-1 text-sm text-slate-500">{content.highlight}</p>
             <div className="mt-6">
               {catalog ? (
                 <DemoCatalogGrid catalog={catalog} business={brand} industryLabel={cat.name} coverImage={coverImage} />

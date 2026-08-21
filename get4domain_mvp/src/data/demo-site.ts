@@ -6,7 +6,28 @@ import { industryContent, type IndustryContent } from './industry-content';
 
 export type SectionType = 'catalog' | 'gallery' | 'team' | 'booking' | 'about' | 'contact' | 'blog';
 export interface DemoSection { slug: string; label: string; type: SectionType }
-export interface Subcategory { id: string; name: string }
+
+// Sub-category-specific copy, injected OVER the category baseline (any field left
+// out falls back to the category's own content). Real content per sub-type — not a
+// find-and-replace of the category text.
+export interface SubContent {
+  tagline?: string;
+  shortDesc?: string;      // 1 sentence — cards / meta description
+  fullDesc?: string;       // 3-4 sentences — about section
+  heroHeadline?: string;
+  heroSubline?: string;
+  highlight?: string;      // the small highlight strip under headings
+  seoKeywords?: string[];  // prepended to the category's own keywords
+}
+
+export interface Subcategory {
+  id: string;
+  name: string;
+  /** Extra search terms (besides the name) that resolve to this sub-type. */
+  keywords?: string[];
+  /** Sub-specific copy injected over the category baseline. */
+  content?: SubContent;
+}
 
 export const CATEGORY_IDS = industryContent.map((c) => c.id);
 
@@ -20,26 +41,62 @@ export function canonicalIndustryId(id: string): string { return INDUSTRY_ALIASE
 // the category name. Additive — extend anytime without a migration.
 const SUBCATEGORIES: Record<string, Subcategory[]> = {
   clinic: [
-    { id: 'general', name: 'Clinic' }, { id: 'dental', name: 'Dental' },
-    { id: 'physiotherapy', name: 'Physiotherapy' }, { id: 'general-physician', name: 'General Physician' },
-    { id: 'hospital', name: 'Hospital' },
+    { id: 'general', name: 'Clinic' },
+    {
+      id: 'dental', name: 'Dental',
+      keywords: ['dental', 'dentist', 'dental clinic', 'teeth', 'tooth', 'orthodontist', 'braces', 'root canal', 'dental implant', 'dental care'],
+      content: {
+        tagline: 'Healthy Smiles, Expert Dental Care',
+        shortDesc: 'Dental clinic website with a treatment list, online appointment booking and a smile gallery.',
+        fullDesc: 'A website built for dental clinics and dentists. Patients browse your treatments — from routine cleaning and fillings to root canals, braces, aligners and implants — book appointments online and see before/after smile transformations. Your Google profile is optimised so people searching "dentist near me" find you first.',
+        heroHeadline: 'Gentle, Modern Dentistry for the Whole Family',
+        heroSubline: 'Painless treatments, digital X-rays and same-day appointments',
+        highlight: 'Painless treatment · Digital X-ray · EMI available · Open 6 days a week',
+        seoKeywords: ['dental clinic website india', 'dentist website', 'dental appointment booking software', 'orthodontist website'],
+      },
+    },
+    { id: 'physiotherapy', name: 'Physiotherapy', keywords: ['physiotherapy', 'physio', 'physiotherapist', 'rehab', 'sports injury', 'back pain'] },
+    { id: 'general-physician', name: 'General Physician', keywords: ['general physician', 'gp', 'family doctor', 'clinic', 'consultation'] },
+    { id: 'hospital', name: 'Hospital', keywords: ['hospital', 'multispeciality', 'nursing home', 'medical centre'] },
   ],
   realestate: [
-    { id: 'general', name: 'Real Estate' }, { id: 'residential', name: 'Residential' },
-    { id: 'commercial', name: 'Commercial' }, { id: 'rental', name: 'Rentals' },
+    { id: 'general', name: 'Real Estate' },
+    { id: 'residential', name: 'Residential', keywords: ['residential', 'flats', 'apartments', 'villas', 'houses for sale', 'buy home'] },
+    { id: 'commercial', name: 'Commercial', keywords: ['commercial', 'office space', 'shops', 'showroom', 'commercial property'] },
+    { id: 'rental', name: 'Rentals', keywords: ['rental', 'rent', 'rent flat', 'pg', 'lease', 'rent house'] },
   ],
   restaurant: [
-    { id: 'general', name: 'Restaurant' }, { id: 'cafe', name: 'Cafe' },
-    { id: 'cloud-kitchen', name: 'Cloud Kitchen' }, { id: 'bakery', name: 'Bakery' },
+    { id: 'general', name: 'Restaurant' },
+    { id: 'cafe', name: 'Cafe', keywords: ['cafe', 'coffee shop', 'coffee', 'bistro', 'brew'] },
+    {
+      id: 'cloud-kitchen', name: 'Cloud Kitchen',
+      keywords: ['cloud kitchen', 'delivery kitchen', 'ghost kitchen', 'dark kitchen', 'online food delivery', 'delivery only restaurant', 'tiffin service'],
+      content: {
+        tagline: 'Delivery-First Kitchen — Order Online, Delivered Hot',
+        shortDesc: 'Cloud kitchen website with an online-order menu, delivery areas and WhatsApp ordering.',
+        fullDesc: 'A website built for cloud kitchens and delivery-only food brands. Customers browse your delivery menu, place orders online or on WhatsApp, and check which areas you deliver to — all without a dine-in space. Perfect for multi-brand kitchens, tiffin services and food-delivery startups running on Swiggy and Zomato.',
+        heroHeadline: 'Chef-Cooked Meals, Delivered to Your Door',
+        heroSubline: 'Order online for fast delivery — no dine-in, all the flavour',
+        highlight: 'Delivery only · 30–45 min · Live on Swiggy & Zomato · WhatsApp orders',
+        seoKeywords: ['cloud kitchen website', 'delivery only restaurant website', 'ghost kitchen website india', 'online food ordering system'],
+      },
+    },
+    { id: 'bakery', name: 'Bakery', keywords: ['bakery', 'cake shop', 'cakes', 'pastry', 'confectionery', 'custom cakes'] },
   ],
   salon: [
-    { id: 'general', name: 'Salon' }, { id: 'spa', name: 'Spa' }, { id: 'nails', name: 'Nail Studio' },
+    { id: 'general', name: 'Salon' },
+    { id: 'spa', name: 'Spa', keywords: ['spa', 'massage', 'wellness', 'day spa', 'body spa'] },
+    { id: 'nails', name: 'Nail Studio', keywords: ['nails', 'nail studio', 'nail art', 'manicure', 'pedicure', 'nail salon'] },
   ],
   gym: [
-    { id: 'general', name: 'Gym' }, { id: 'yoga', name: 'Yoga Studio' }, { id: 'crossfit', name: 'CrossFit' },
+    { id: 'general', name: 'Gym' },
+    { id: 'yoga', name: 'Yoga Studio', keywords: ['yoga', 'yoga studio', 'meditation', 'yoga classes'] },
+    { id: 'crossfit', name: 'CrossFit', keywords: ['crossfit', 'functional training', 'strength', 'wod'] },
   ],
   education: [
-    { id: 'general', name: 'School' }, { id: 'coaching', name: 'Coaching Centre' }, { id: 'college', name: 'College' },
+    { id: 'general', name: 'School' },
+    { id: 'coaching', name: 'Coaching Centre', keywords: ['coaching', 'coaching centre', 'tuition', 'test prep', 'competitive exam'] },
+    { id: 'college', name: 'College', keywords: ['college', 'university', 'degree', 'higher education'] },
   ],
 };
 
@@ -58,6 +115,76 @@ export function getSubcategories(categoryId: string): Subcategory[] {
 export function getSubcategory(categoryId: string, subId?: string): Subcategory {
   const subs = getSubcategories(categoryId);
   return subs.find((s) => s.id === subId) ?? subs[0];
+}
+
+// The effective demo copy for a (category, sub) — sub content injected over the
+// category baseline. This is what the demo page renders, so a sub-type shows its
+// OWN hero/description/keywords rather than the generic category text.
+export interface DemoContent {
+  name: string;            // display/brand name for this sub-type
+  tagline: string;
+  shortDesc: string;
+  fullDesc: string;
+  heroHeadline: string;
+  heroSubline: string;
+  highlight: string;
+  seoKeywords: string[];
+}
+
+export function getDemoContent(categoryId: string, subId?: string): DemoContent | undefined {
+  const cat = getCategory(categoryId);
+  if (!cat) return undefined;
+  const sub = getSubcategory(categoryId, subId);
+  const c = sub.content ?? {};
+  const isSub = sub.id !== 'general';
+  return {
+    name: isSub ? sub.name : cat.name,
+    tagline: c.tagline ?? cat.tagline,
+    shortDesc: c.shortDesc ?? cat.shortDesc,
+    fullDesc: c.fullDesc ?? cat.fullDesc,
+    heroHeadline: c.heroHeadline ?? cat.sampleContent.heroHeadline,
+    heroSubline: c.heroSubline ?? cat.sampleContent.heroSubline,
+    highlight: c.highlight ?? cat.sampleContent.highlight,
+    seoKeywords: [...(c.seoKeywords ?? []), ...cat.seoKeywords],
+  };
+}
+
+// ── Search / resolution ────────────────────────────────────────────────────
+// Resolve a free-text keyword (or a URL segment) to a (category, sub-type). A
+// sub-category keyword wins over the plain category so "dental clinic" lands on the
+// tailored dental demo, not the generic clinic one.
+export interface DemoResolution { categoryId: string; subId: string }
+
+function norm(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function containsTerm(haystack: string, term: string): boolean {
+  const t = norm(term);
+  if (!t) return false;
+  return new RegExp(`(^| )${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}( |$)`).test(haystack);
+}
+
+export function resolveDemoQuery(query: string): DemoResolution | null {
+  const q = norm(query);
+  if (!q) return null;
+
+  // 1) Most specific: a sub-category keyword / name.
+  for (const cat of industryContent) {
+    for (const sub of getSubcategories(cat.id)) {
+      if (sub.id === 'general') continue;
+      const terms = [sub.name, sub.id.replace(/-/g, ' '), ...(sub.keywords ?? [])];
+      if (terms.some((t) => containsTerm(q, t))) return { categoryId: cat.id, subId: sub.id };
+    }
+  }
+  // 2) Main category: id, name, or one of its SEO keywords.
+  for (const cat of industryContent) {
+    const terms = [cat.id, cat.name, ...cat.seoKeywords];
+    if (terms.some((t) => containsTerm(q, t))) return { categoryId: cat.id, subId: 'general' };
+  }
+  // 3) Legacy alias (healthcare→clinic, …) as a bare token.
+  const alias = canonicalIndustryId(q.replace(/\s+/g, ''));
+  if (getCategory(alias)) return { categoryId: alias, subId: 'general' };
+  return null;
 }
 
 function slugify(label: string): string {
