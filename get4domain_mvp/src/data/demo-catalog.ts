@@ -451,6 +451,35 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Acrylic Refill', price: '₹1,200', desc: 'Refill and reshape existing acrylics.', fields: [{ label: 'Duration', value: '60 min' }] },
       ],
     },
+    bridal: {
+      catalogNoun: 'packages', coverImage: px(1721558),
+      items: [
+        { name: 'Bridal Makeup (HD)', price: '₹12,000', desc: 'Complete HD bridal look with draping and hairstyling.', tags: ['Signature'], fields: [{ label: 'Duration', value: '2.5 hrs' }, { label: 'Trial', value: 'Included' }] },
+        { name: 'Airbrush Bridal Makeup', price: '₹18,000', desc: 'Long-lasting airbrush finish for the wedding day.', fields: [{ label: 'Duration', value: '3 hrs' }] },
+        { name: 'Engagement / Reception Makeup', price: '₹8,000', desc: 'Glam look for engagement or reception.', fields: [{ label: 'Duration', value: '2 hrs' }] },
+        { name: 'Party / Guest Makeup', price: '₹3,500', desc: 'Soft glam for family and guests.', fields: [{ label: 'Duration', value: '60 min' }] },
+        { name: 'Pre-Bridal Package', price: '₹9,999', desc: 'Facials, clean-up, hair spa and body polishing.', tags: ['Popular'], fields: [{ label: 'Sittings', value: '4–6' }] },
+        { name: 'Mehendi (Bridal)', price: 'From ₹5,000', desc: 'Intricate bridal mehendi for hands and feet.', fields: [{ label: 'Duration', value: '3–4 hrs' }] },
+      ],
+      team: [
+        { name: 'Simran Kaur', role: 'Lead Bridal Makeup Artist', note: 'HD & airbrush · 10 yrs' },
+        { name: 'Aditi Sharma', role: 'Hair & Draping Stylist', note: '7 yrs' },
+      ],
+    },
+    'mens-grooming': {
+      catalogNoun: 'services', coverImage: px(1319460),
+      items: [
+        { name: 'Haircut & Styling', price: '₹250', desc: 'Precision cut and finish by expert barbers.', fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: 'Beard Styling & Shave', price: '₹200', desc: 'Hot-towel shave or beard shaping.', tags: ['Popular'], fields: [{ label: 'Duration', value: '25 min' }] },
+        { name: 'Hair Colour (Men)', price: 'From ₹600', desc: 'Global colour or grey coverage.', fields: [{ label: 'Duration', value: '45 min' }] },
+        { name: "Men's Facial & Cleanup", price: '₹800', desc: 'De-tan facial and skin cleanup.', fields: [{ label: 'Duration', value: '45 min' }] },
+        { name: 'Grooming Membership', price: '₹2,499 / 6 months', desc: 'Unlimited haircuts and beard trims.', tags: ['Membership'], fields: [{ label: 'Validity', value: '6 months' }] },
+      ],
+      team: [
+        { name: 'Rahul Verma', role: 'Master Barber', note: 'Fades & beard · 9 yrs' },
+        { name: 'Imran Sheikh', role: 'Senior Stylist', note: 'Colour & styling · 7 yrs' },
+      ],
+    },
   },
   gym: {
     crossfit: {
