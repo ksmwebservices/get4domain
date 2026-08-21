@@ -937,7 +937,7 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
     },
     {
       id: 'digital-printing', name: 'Printing & Xerox',
-      keywords: ['printing', 'xerox', 'photocopy', 'digital printing', 'printing press', 'document printing', 'banner printing', 'flex printing'],
+      keywords: ['xerox', 'photocopy', 'digital printing', 'printing press', 'document printing', 'banner printing', 'flex printing', 'colour printing', 'brochure printing'],
       content: {
         tagline: 'Fast, Sharp Printing — Every Time',
         shortDesc: 'Printing and xerox website with services, print-job enquiry and quick turnaround.',
