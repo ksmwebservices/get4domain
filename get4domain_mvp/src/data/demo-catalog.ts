@@ -375,6 +375,20 @@ export const DEMO_CATALOG: Record<string, CategoryCatalog> = {
       { name: 'Custom T-shirt / Mug', price: 'From ₹250', desc: 'Personalised printing on merchandise.', fields: [{ label: 'Type', value: 'Custom' }] },
     ],
   },
+  recruitment: {
+    flow: 'enquire', ctaLabel: 'Enquire Now', catalogNoun: 'services',
+    items: [
+      { name: 'Permanent Staffing', price: 'Fee: % of CTC', desc: 'End-to-end hiring for full-time roles.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Permanent' }] },
+      { name: 'Executive Search', price: 'On retainer', desc: 'Leadership and senior-role headhunting.', fields: [{ label: 'Type', value: 'Leadership' }] },
+      { name: 'Bulk / Volume Hiring', price: 'On enquiry', desc: 'Large-scale hiring drives for teams.', fields: [{ label: 'Type', value: 'Bulk' }] },
+      { name: 'Temp / Contract Staffing', price: 'On enquiry', desc: 'Contract and temporary workforce.', fields: [{ label: 'Type', value: 'Contract' }] },
+      { name: 'Overseas Placement', price: 'On enquiry', desc: 'International recruitment and documentation.', fields: [{ label: 'Type', value: 'Overseas' }] },
+    ],
+    team: [
+      { name: 'Ashwin Rao', role: 'Recruitment Head', note: 'IT & Non-IT · 13 yrs' },
+      { name: 'Farah Khan', role: 'Executive Search Consultant', note: '9 yrs' },
+    ],
+  },
 };
 
 // ── Curated subcategory overrides (distinct enough to warrant their own items) ──
@@ -1137,6 +1151,49 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Photo Frame', price: 'From ₹300', desc: 'Framed photo prints, multiple sizes.', fields: [{ label: 'Type', value: 'Gift' }] },
         { name: 'ID / Visiting Cards', price: 'On enquiry', desc: 'PVC ID cards and lanyards.', fields: [{ label: 'Type', value: 'Cards' }] },
         { name: 'Corporate Merchandise', price: 'On enquiry', desc: 'Branded pens, diaries and gifts in bulk.', tags: ['Bulk'], fields: [{ label: 'Type', value: 'Corporate' }] },
+      ],
+    },
+  },
+  recruitment: {
+    staffing: {
+      catalogNoun: 'services', coverImage: px(3183197),
+      items: [
+        { name: 'Permanent Staffing', price: 'Fee: 8.33% of CTC', desc: 'End-to-end hiring for full-time roles.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Permanent' }] },
+        { name: 'IT Recruitment', price: 'On enquiry', desc: 'Developers, QA, DevOps and IT roles.', fields: [{ label: 'Type', value: 'IT' }] },
+        { name: 'Non-IT / Sales Hiring', price: 'On enquiry', desc: 'Sales, ops, finance and admin roles.', fields: [{ label: 'Type', value: 'Non-IT' }] },
+        { name: 'Contract Staffing', price: 'On enquiry', desc: 'Payroll and contract workforce.', fields: [{ label: 'Type', value: 'Contract' }] },
+        { name: 'Post a Requirement', price: 'Free', desc: 'Share your open role and get candidates.', tags: ['Free'], fields: [{ label: 'For', value: 'Employers' }] },
+      ],
+      team: [
+        { name: 'Ashwin Rao', role: 'Recruitment Head', note: 'IT & Non-IT · 13 yrs' },
+      ],
+    },
+    'executive-search': {
+      catalogNoun: 'services', coverImage: px(3760067),
+      items: [
+        { name: 'CXO / Leadership Search', price: 'On retainer', desc: 'CEO, CFO, CTO and director hiring.', tags: ['Popular'], fields: [{ label: 'Level', value: 'Leadership' }] },
+        { name: 'Senior Specialist Search', price: 'On retainer', desc: 'VP, head-of-function and expert roles.', fields: [{ label: 'Level', value: 'Senior' }] },
+        { name: 'Confidential Replacement', price: 'On enquiry', desc: 'Discreet search for sensitive roles.', fields: [{ label: 'Type', value: 'Confidential' }] },
+        { name: 'Board / Advisory Hiring', price: 'On enquiry', desc: 'Independent directors and advisors.', fields: [{ label: 'Level', value: 'Board' }] },
+      ],
+    },
+    'bluecollar-placement': {
+      catalogNoun: 'categories', coverImage: px(1216589),
+      items: [
+        { name: 'Drivers', price: 'On enquiry', desc: 'Verified personal and commercial drivers.', tags: ['Popular'], fields: [{ label: 'Type', value: 'Driver' }] },
+        { name: 'Security Guards', price: 'On enquiry', desc: 'Trained, police-verified guards.', fields: [{ label: 'Type', value: 'Security' }] },
+        { name: 'Housekeeping Staff', price: 'On enquiry', desc: 'Office and facility housekeeping.', fields: [{ label: 'Type', value: 'Housekeeping' }] },
+        { name: 'Factory / Skilled Workers', price: 'On enquiry', desc: 'Operators, helpers and skilled labour.', fields: [{ label: 'Type', value: 'Skilled' }] },
+        { name: 'Bulk Hiring Drive', price: 'On enquiry', desc: 'Large-scale worker deployment.', tags: ['Bulk'], fields: [{ label: 'Type', value: 'Bulk' }] },
+      ],
+    },
+    'overseas-recruitment': {
+      catalogNoun: 'openings', coverImage: px(2007647),
+      items: [
+        { name: 'Gulf — Construction & Trades', price: 'On enquiry', desc: 'Masons, welders, electricians for GCC.', tags: ['Popular'], fields: [{ label: 'Region', value: 'Gulf' }] },
+        { name: 'Hospitality — Overseas', price: 'On enquiry', desc: 'Hotel, kitchen and service staff abroad.', fields: [{ label: 'Region', value: 'Gulf / Europe' }] },
+        { name: 'Healthcare — Overseas', price: 'On enquiry', desc: 'Nurses and paramedics for overseas roles.', fields: [{ label: 'Region', value: 'Europe / Gulf' }] },
+        { name: 'Visa & Documentation Support', price: 'On enquiry', desc: 'End-to-end deployment assistance.', fields: [{ label: 'Type', value: 'Support' }] },
       ],
     },
   },

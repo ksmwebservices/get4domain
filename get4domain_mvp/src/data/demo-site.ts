@@ -962,6 +962,61 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
       },
     },
   ],
+  recruitment: [
+    { id: 'general', name: 'Recruitment & Placement' },
+    {
+      id: 'staffing', name: 'Staffing Agency',
+      keywords: ['staffing', 'staffing agency', 'recruitment agency', 'placement agency', 'job consultancy', 'manpower', 'hr consultancy', 'hiring agency'],
+      content: {
+        tagline: 'Hire Faster, Hire Better',
+        shortDesc: 'Staffing agency website with hiring services, current openings and employer enquiry.',
+        fullDesc: 'A website built for staffing and placement agencies. Companies post requirements and candidates browse openings and submit resumes, while you run permanent and contract hiring across roles. Built to win employer mandates with a credible, results-focused presence.',
+        heroHeadline: 'Your Hiring Partner, End to End',
+        heroSubline: 'Permanent and contract staffing across roles and industries',
+        highlight: 'Verified candidates · Fast turnaround · Replacement guarantee · Multi-industry',
+        seoKeywords: ['staffing agency website', 'recruitment agency website india', 'placement agency website', 'job consultancy website'],
+      },
+    },
+    {
+      id: 'executive-search', name: 'Executive Search',
+      keywords: ['executive search', 'headhunting', 'headhunter', 'leadership hiring', 'senior hiring', 'cxo hiring', 'executive recruitment'],
+      content: {
+        tagline: 'Leaders Who Move Your Business Forward',
+        shortDesc: 'Executive search website with a headhunting process, sector focus and employer enquiry.',
+        fullDesc: 'A website built for executive-search and headhunting firms. Companies engage you to find leadership and senior specialist talent through a discreet, mandate-based search process. Built to project the credibility and confidentiality this high-value business depends on.',
+        heroHeadline: 'Find the Leaders You Need',
+        heroSubline: 'Discreet headhunting for CXO and senior specialist roles',
+        highlight: 'Confidential search · Sector specialists · Mandate-based · Global reach',
+        seoKeywords: ['executive search website', 'headhunting firm website india', 'leadership hiring website', 'cxo recruitment website'],
+      },
+    },
+    {
+      id: 'bluecollar-placement', name: 'Blue-Collar Placement',
+      keywords: ['blue collar', 'blue collar placement', 'worker placement', 'labour supply', 'security guard placement', 'driver placement', 'housekeeping staff', 'skilled worker'],
+      content: {
+        tagline: 'Reliable Workforce, Ready to Deploy',
+        shortDesc: 'Blue-collar placement website with worker categories, bulk hiring and employer enquiry.',
+        fullDesc: 'A website built for blue-collar and skilled-worker placement agencies. Businesses hire drivers, security guards, housekeeping, factory and skilled workers — verified and ready — in single or bulk numbers. Built for the volume-hiring, quick-deployment enquiries this segment runs on.',
+        heroHeadline: 'Verified Workers, When You Need Them',
+        heroSubline: 'Drivers, guards, housekeeping and skilled staff — single or bulk',
+        highlight: 'Police-verified · Bulk supply · Quick deployment · Replacement support',
+        seoKeywords: ['blue collar placement website', 'manpower supply website india', 'worker placement agency website', 'labour supply website'],
+      },
+    },
+    {
+      id: 'overseas-recruitment', name: 'Overseas Recruitment',
+      keywords: ['overseas recruitment', 'overseas jobs', 'gulf jobs', 'abroad jobs', 'international recruitment', 'overseas placement', 'foreign jobs', 'work visa jobs'],
+      content: {
+        tagline: 'Careers Beyond Borders',
+        shortDesc: 'Overseas recruitment website with international openings, process info and candidate enquiry.',
+        fullDesc: 'A website built for overseas recruitment agencies. Candidates browse international openings — Gulf, Europe and beyond — and enquire, while employers engage you for compliant foreign hiring with documentation and visa support. Built to be the trustworthy front for a business where credibility is everything.',
+        heroHeadline: 'Your Gateway to Overseas Jobs',
+        heroSubline: 'Verified international openings with visa and documentation support',
+        highlight: 'Licensed recruiter · Visa & documentation · Gulf & Europe · Genuine openings',
+        seoKeywords: ['overseas recruitment website', 'overseas jobs website india', 'gulf jobs consultancy website', 'international placement agency website'],
+      },
+    },
+  ],
 };
 
 export function getCategory(id: string): IndustryContent | undefined {

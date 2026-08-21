@@ -558,4 +558,23 @@ export const industryContent: IndustryContent[] = [
     bgColor: 'bg-yellow-50',
     coverImage: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=800',
   },
+  {
+    id: 'recruitment',
+    name: 'Recruitment & Placement',
+    tagline: 'The Right Talent, The Right Roles',
+    shortDesc: 'Recruitment agency website with services, current openings and employer/candidate enquiry.',
+    fullDesc: 'Built for recruitment and placement agencies. Companies post hiring requirements and candidates browse current openings and submit resumes. You manage the pipeline from sourcing to placement, all from one professional presence. Works for staffing agencies, executive-search firms, blue-collar and overseas placement and campus recruitment partners.',
+    whatYouGet: ['Service list for employers', 'Current openings board', 'Employer requirement form', 'Candidate resume submission', 'Industry specialisations', 'About and testimonials', 'WhatsApp enquiry button', 'Google Maps integration'],
+    websitePages: ['Home', 'Services', 'Current Openings', 'For Employers', 'For Candidates', 'Contact'],
+    sampleContent: {
+      heroHeadline: 'Connecting Talent with Opportunity',
+      heroSubline: 'Hiring solutions for companies and jobs for candidates',
+      services: ['Permanent Staffing', 'Executive Search', 'Bulk Hiring', 'Overseas Placement', 'Temp Staffing'],
+      highlight: 'Verified candidates · Fast turnaround · Industry specialists · Pan-India network',
+    },
+    seoKeywords: ['recruitment agency website india', 'placement agency website', 'staffing agency website', 'job consultancy website'],
+    color: 'text-sky-700',
+    bgColor: 'bg-sky-50',
+    coverImage: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
+  },
 ];
