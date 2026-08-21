@@ -505,6 +505,32 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Personal Yoga Session', price: '₹500 / session', desc: 'One-on-one guided practice.', fields: [{ label: 'Duration', value: '60 min' }] },
       ],
     },
+    'personal-training': {
+      catalogNoun: 'packages', coverImage: px(1954524),
+      items: [
+        { name: 'Free Fitness Consultation', price: '₹0', desc: 'Goal assessment and body analysis.', tags: ['Free'], fields: [{ label: 'Duration', value: '30 min' }] },
+        { name: '1-on-1 Personal Training', price: '₹8,000 / month', desc: '12 personalised sessions with your coach.', tags: ['Popular'], fields: [{ label: 'Sessions', value: '12 / month' }] },
+        { name: 'Weight-Loss Transformation', price: '₹18,000 / 3 months', desc: 'Training + diet for measurable fat loss.', fields: [{ label: 'Duration', value: '3 Months' }] },
+        { name: 'Online Coaching', price: '₹5,000 / month', desc: 'Remote workout and diet plans with check-ins.', fields: [{ label: 'Mode', value: 'Online' }] },
+        { name: 'Diet & Nutrition Plan', price: '₹3,000', desc: 'Custom meal plan for your goals.', fields: [{ label: 'Validity', value: '1 Month' }] },
+      ],
+      team: [
+        { name: 'Vikram Singh', role: 'Certified Personal Trainer', note: 'ACE · Fat loss · 9 yrs' },
+        { name: 'Neha Gupta', role: 'Sports Nutritionist', note: '7 yrs' },
+      ],
+    },
+    'dance-fitness': {
+      catalogNoun: 'classes', coverImage: px(4498482),
+      items: [
+        { name: 'Zumba (Group Class)', price: '₹1,500 / month', desc: 'High-energy dance cardio, all levels.', tags: ['Popular'], fields: [{ label: 'Duration', value: '1 Month' }, { label: 'Batch', value: 'Morning / Evening' }] },
+        { name: 'Aerobics Batch', price: '₹1,200 / month', desc: 'Cardio and toning workouts.', fields: [{ label: 'Duration', value: '1 Month' }] },
+        { name: 'Weight-Loss Dance Batch', price: '₹2,000 / month', desc: 'Intensive cardio dance for fat loss.', fields: [{ label: 'Duration', value: '1 Month' }] },
+        { name: 'Drop-in Class', price: '₹200 / class', desc: 'Single session, no commitment.', fields: [{ label: 'Duration', value: '60 min' }] },
+      ],
+      team: [
+        { name: 'Pooja Reddy', role: 'Licensed Zumba Instructor', note: 'ZIN · 6 yrs' },
+      ],
+    },
   },
   education: {
     coaching: {
