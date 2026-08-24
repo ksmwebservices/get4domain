@@ -110,7 +110,7 @@ export default function ChatWidget({
         aria-label="Chat with us"
       >
         <img
-          src="/favicon.png"
+          src="/favicon-96x96.png"
           alt="Get4Domain Chat"
           className="w-16 h-16 rounded-full shadow-lg hover:scale-110 transition-transform cursor-pointer"
           style={{ width: '64px', height: '64px' }}

@@ -14,6 +14,7 @@ import UpgradeModal from '@/components/UpgradeModal';
 import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
 import TourNav from '@/components/TourNav';
+import DashboardSplash from '@/components/DashboardSplash';
 
 // Maps a nav item → the team-access area that gates it for a vendor team member
 // (mirrors the backend's team-access areas). Base items have no mapping → visible.
@@ -367,6 +368,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <InstallPrompt />
       <TourNav />
+      <DashboardSplash />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  CalendarCheck, Check, ArrowRight, ArrowLeft, ShieldCheck, Smartphone, Building2, PlayCircle,
+  Check, ArrowRight, ArrowLeft, ShieldCheck, Smartphone, Building2, PlayCircle,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PageHero from '@/components/PageHero';
@@ -141,11 +141,8 @@ export default function BookDemoPage() {
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-primary-50/50 via-white to-white">
         <header className="pt-8 px-5">
           <div className="container-mx">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 shadow-md">
-                <CalendarCheck className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-bold text-slate-900">Get4<span className="text-primary-600">Domain</span></span>
+            <Link href="/" className="inline-flex items-center" aria-label="Get4Domain home">
+              <img src="/logo.png" alt="Get4Domain" className="h-10 w-auto object-contain md:h-11" />
             </Link>
           </div>
         </header>
