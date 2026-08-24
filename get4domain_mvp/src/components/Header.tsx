@@ -48,7 +48,7 @@ export default function Header() {
             <img
               src="/logo.png"
               alt="Get4Domain"
-              className="h-10 w-auto object-contain md:h-12"
+              className="h-16 w-auto object-contain md:h-[72px]"
             />
           </Link>
 

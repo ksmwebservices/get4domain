@@ -182,8 +182,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <img
               src="/logo.png"
               alt="Get4Domain"
-              className="h-12 w-auto object-contain"
-              style={{ maxHeight: '48px', maxWidth: '180px' }}
+              className="h-[72px] w-auto object-contain"
+              style={{ maxHeight: '72px', maxWidth: '240px' }}
             />
             <div>
               <div className="text-xs text-slate-500 leading-none">Admin Platform</div>
