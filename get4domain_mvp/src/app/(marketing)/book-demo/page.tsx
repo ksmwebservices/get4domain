@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Check, ArrowRight, ArrowLeft, ShieldCheck, Smartphone, Building2, PlayCircle,
@@ -58,6 +58,14 @@ export default function BookDemoPage() {
   const [sandbox, setSandbox] = useState<Sandbox | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Deep-link preselect: /book-demo?industry=clinic (from the homepage showcase CTA).
+  // Read client-side to avoid a useSearchParams Suspense boundary. Only accepts a
+  // real category id so a bad param can't break the picker.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('industry');
+    if (q && getCategory(q)) { setIndustry(q); setSubId('general'); }
+  }, []);
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
   // Normalise to a clean 10-digit Indian mobile: strip +91 / 0 prefix, spaces,

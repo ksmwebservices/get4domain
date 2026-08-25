@@ -79,21 +79,21 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
         </div>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-5 lg:px-8">
-          <div className="lg:col-span-3">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-5 lg:px-8">
+          <div className="order-1 lg:order-2 lg:col-span-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Not a website builder — a business platform
             </span>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-white md:text-6xl">
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-white md:text-5xl">
               Not Just a Website.<br />
               <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">Your Whole Business, in One App.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-slate-300">
-              Get4Domain gives you a professional industry website <span className="font-semibold text-white">and</span> the full app to run everything behind it — leads, CRM, bookings, invoices, WhatsApp and AI content — managed from your laptop or your phone. A real business platform, not a static page.
+              Get4Domain gives you a professional industry website <span className="font-semibold text-white">and</span> the full app to run everything behind it — leads, CRM, bookings, invoices, WhatsApp and AI content — managed from your laptop or your phone. Your online identity partner, not a static page.
             </p>
 
             {/* Pricing framing — subscription vs. pay-per-use kept visibly distinct */}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <div className="mt-8 flex flex-col gap-3">
               <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-white">₹999</span>
@@ -121,8 +121,8 @@ export default function HomePage() {
             <p className="mt-5 text-sm text-slate-400">Custom domain available as an add-on · Setup in days · Cancel anytime</p>
           </div>
 
-          {/* Animated laptop + mobile mockup with a real dashboard render */}
-          <div className="lg:col-span-2">
+          {/* Prominent imagery: real website + simulated vendor/client apps, per industry */}
+          <div className="order-2 lg:order-1 lg:col-span-3">
             <HeroMockup />
           </div>
         </div>

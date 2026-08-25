@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'digital marketing platform India',
     'GST invoice software',
     'business management software India',
-    'website builder for SMBs India',
+    'all-in-one business app for SMBs India',
     'AI content creation India',
     'social media management India',
     'lead generation India',
