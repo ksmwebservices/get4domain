@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
+import HeroMockup from '@/components/marketing/HeroMockup';
 
 export const metadata: Metadata = {
   title: 'Get4Domain — Your Online Identity Partner | ₹999/month',
@@ -68,61 +69,61 @@ const FAQS = [
 export default function HomePage() {
   return (
     <>
-      {/* SECTION 1 — HERO */}
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-5 lg:px-8">
-          <div className="lg:col-span-3">
-            <span className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-sm font-medium text-white">
-              🚀 India&apos;s #1 Online Identity Platform
-            </span>
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">
-              Build, Manage &amp; Grow<br />Your Online Identity
-            </h1>
-            <p className="mt-6 max-w-xl text-lg text-slate-600">
-              One platform for your business website, operations, CRM, marketing campaigns, and customer management. Built for Indian SMBs.
-            </p>
-            <p className="mt-5 text-sm font-medium text-slate-500">50+ Businesses · 20+ Industries · ₹999/month — Everything Included</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">
-                Get Started Free <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a href="#modules" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50">
-                Watch Demo
-              </a>
-            </div>
-            <p className="mt-5 text-sm text-slate-400">No credit card required · Setup in 24 hours · Cancel anytime</p>
-          </div>
+      {/* SECTION 1 — HERO (semi-dark, brand red/gold/blue glow) */}
+      <section className="relative overflow-hidden bg-slate-950">
+        {/* Brand-color glows from the logo palette (blue / gold / red) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-primary-600/25 blur-[120px]" />
+          <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-warning-500/20 blur-[120px]" />
+          <div className="absolute -bottom-24 left-1/3 h-96 w-96 rounded-full bg-error-600/15 blur-[130px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
+        </div>
 
-          {/* Dashboard preview mockup */}
-          <div className="lg:col-span-2">
-            <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 p-1.5 shadow-xl">
-              <div className="rounded-xl bg-white p-4">
-                <div className="mb-3 flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-5 lg:px-8">
+          <div className="lg:col-span-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> One stop · Your online identity partner
+            </span>
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-white md:text-6xl">
+              Get Online. Get Leads.<br />
+              <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">Grow Your Business.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-slate-300">
+              Your industry website — hosting, SSL &amp; subdomain included — plus a full Workspace: leads, CRM, TeleCRM and AI Studio. Everything to get online and run your business, in one place.
+            </p>
+
+            {/* Pricing framing — subscription vs. pay-per-use kept visibly distinct */}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-white">₹999</span>
+                  <span className="text-sm text-slate-400">/month</span>
+                  <span className="text-sm text-slate-500">or</span>
+                  <span className="text-lg font-bold text-white">₹9,999</span>
+                  <span className="text-sm text-slate-400">/year</span>
                 </div>
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
-                    <span className="text-xs font-semibold text-slate-700">Today&apos;s Revenue</span>
-                    <span className="text-sm font-bold text-emerald-600">₹42,500</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[{ k: 'Leads', v: 28 }, { k: 'Bookings', v: 16 }, { k: 'Invoices', v: 34 }].map((s) => (
-                      <div key={s.k} className="rounded-lg bg-slate-50 px-2 py-2.5 text-center">
-                        <div className="text-sm font-bold text-slate-900">{s.v}</div>
-                        <div className="text-[10px] text-slate-500">{s.k}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="h-20 rounded-lg bg-gradient-to-t from-blue-100 to-transparent" />
-                  <div className="flex gap-2">
-                    <div className="h-8 flex-1 rounded-lg bg-blue-600" />
-                    <div className="h-8 flex-1 rounded-lg bg-slate-100" />
-                  </div>
-                </div>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">The complete platform — website + Workspace + AI Studio</p>
+              </div>
+              <div className="rounded-xl border border-warning-400/20 bg-warning-400/5 px-4 py-3 backdrop-blur">
+                <div className="text-sm font-semibold text-warning-300">Pay-per-use, from your wallet</div>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">Posters, reels &amp; campaigns — pay only when you create them</p>
               </div>
             </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
+                Get Started <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/demo/clinic" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-6 py-3 font-medium text-white backdrop-blur transition hover:bg-white/10">
+                Try a Live Demo
+              </Link>
+            </div>
+            <p className="mt-5 text-sm text-slate-400">Custom domain available as an add-on · Setup in days · Cancel anytime</p>
+          </div>
+
+          {/* Animated laptop + mobile mockup with a real dashboard render */}
+          <div className="lg:col-span-2">
+            <HeroMockup />
           </div>
         </div>
       </section>
