@@ -2,8 +2,9 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, type LucideProps } from 'lucide-react';
+import { ArrowRight, ShoppingBag, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, type LucideProps } from 'lucide-react';
 import { SHOWCASE, type Tone, type VendorDash, type ClientDash, type DashRow } from '@/data/hero-showcase';
+import InstallPwaButton from './InstallPwaButton';
 
 /**
  * Homepage product showcase. Real website screenshots (Website view) + two
@@ -20,9 +21,6 @@ const VIEWS = [
   { key: 'vendor', label: 'Vendor App', Icon: LayoutDashboard },
   { key: 'client', label: 'Client App', Icon: UserRound },
 ];
-
-// Marketing copy only — the ₹99 trial billing flow is NOT built; do not wire to checkout.
-const FEATURES = ['Task assignment', 'Team management', 'Accounts', 'Invoice generation', 'TeleCRM', 'CRM', 'AI Studio'];
 
 type Icon = ComponentType<LucideProps>;
 const toneBadge: Record<Tone, string> = {
@@ -91,11 +89,31 @@ export default function HeroMockup() {
         })}
       </div>
 
-      {/* Device stage — the phone is IN FLOW (defines height, always present),
-          the laptop sits absolutely behind it (secondary companion). */}
-      <div className="relative mx-auto w-full max-w-md">
-        {/* Laptop (companion, behind) */}
-        <div className="absolute left-0 top-1/2 z-0 w-[60%] max-w-[268px] -translate-y-1/2 sm:left-1">
+      {/* Device stage.
+          Mobile: pure vertical flow — full-width, centered, stacked; NO absolute
+          positioning, NO horizontal offsets, nothing exceeds the viewport width.
+          Desktop (lg+): overlapping composition — phone primary (right), laptop
+          companion (left, behind), product card overlay (bottom-left). */}
+      <div className="relative flex flex-col items-center gap-6 lg:block lg:h-[440px]">
+        {/* Phone (primary) */}
+        <div className="w-[58%] max-w-[200px] lg:absolute lg:right-4 lg:top-1/2 lg:z-10 lg:w-[52%] lg:-translate-y-1/2">
+          <div className="relative rounded-[2.2rem] border border-slate-700/80 bg-gradient-to-b from-slate-800 to-slate-900 p-[5px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10">
+            <div className="absolute -left-[2px] top-[22%] h-9 w-[3px] rounded-l bg-slate-700" />
+            <div className="absolute -right-[2px] top-[30%] h-12 w-[3px] rounded-r bg-slate-700" />
+            <div className="relative overflow-hidden rounded-[1.85rem] bg-slate-950 ring-1 ring-black/40">
+              <div className="pointer-events-none absolute left-1/2 top-1.5 z-20 h-3.5 w-16 -translate-x-1/2 rounded-full bg-slate-900" />
+              <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-br from-white/8 via-transparent to-transparent" />
+              <div key={`p-${cat}-${view}`} className="aspect-[9/19] w-full animate-[hmFade_0.45s_ease]">
+                {view === 0
+                  ? <img src={`/hero-shots/${c.key}-mobile.webp`} alt={`${c.label} on mobile`} width={480} height={1040} loading="eager" className="h-full w-full object-cover object-top" />
+                  : <MobileApp view={view} vendor={c.vendor} client={c.client} />}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Laptop (companion) */}
+        <div className="w-full max-w-[300px] lg:absolute lg:left-0 lg:top-1/2 lg:z-0 lg:w-[58%] lg:max-w-[268px] lg:-translate-y-1/2">
           <div className="rounded-lg border-[5px] border-slate-800 bg-slate-800 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-white/10">
             <div className="overflow-hidden rounded-[3px] bg-slate-950">
               <div className="flex items-center gap-1 border-b border-white/5 bg-slate-900 px-1.5 py-1">
@@ -113,38 +131,33 @@ export default function HeroMockup() {
               </div>
             </div>
           </div>
-          <div className="mx-auto h-1.5 w-[116%] -translate-x-[6.9%] rounded-b-lg bg-slate-700 shadow-lg" />
+          <div className="mx-auto h-1.5 w-full rounded-b-lg bg-slate-700 shadow-lg" />
         </div>
 
-        {/* Phone (primary, in flow) */}
-        <div className="relative z-10 ml-auto w-[56%] max-w-[202px]">
-          <div className="relative rounded-[2.2rem] border border-slate-700/80 bg-gradient-to-b from-slate-800 to-slate-900 p-[5px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10">
-            <div className="absolute -left-[2px] top-[22%] h-9 w-[3px] rounded-l bg-slate-700" />
-            <div className="absolute -right-[2px] top-[30%] h-12 w-[3px] rounded-r bg-slate-700" />
-            <div className="relative overflow-hidden rounded-[1.85rem] bg-slate-950 ring-1 ring-black/40">
-              <div className="pointer-events-none absolute left-1/2 top-1.5 z-20 h-3.5 w-16 -translate-x-1/2 rounded-full bg-slate-900" />
-              <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-br from-white/8 via-transparent to-transparent" />
-              <div key={`p-${cat}-${view}`} className="aspect-[9/19] w-full animate-[hmFade_0.45s_ease]">
-                {view === 0
-                  ? <img src={`/hero-shots/${c.key}-mobile.webp`} alt={`${c.label} on mobile`} width={480} height={1040} loading="eager" className="h-full w-full object-cover object-top" />
-                  : <MobileApp view={view} vendor={c.vendor} client={c.client} />}
+        {/* Buy Now product card (replaces the old price badge) */}
+        <div className="w-full max-w-[320px] lg:absolute lg:bottom-0 lg:left-0 lg:z-20 lg:w-60">
+          <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4 shadow-2xl backdrop-blur">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-primary-300">Get4Domain</div>
+                <div className="text-base font-extrabold tracking-tight text-white">DOMAIN APP</div>
+              </div>
+              <div className="text-right">
+                <div className="whitespace-nowrap text-lg font-bold text-white">₹999<span className="text-xs font-medium text-slate-400">/month</span></div>
+                <div className="text-[11px] text-slate-400">or ₹9,999/year</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Price + feature badge — in-flow on mobile, overlay bottom-left on desktop */}
-        <div className="relative z-20 mx-auto mt-4 w-full max-w-[260px] rounded-xl border border-white/10 bg-slate-900/90 p-2.5 shadow-xl backdrop-blur lg:absolute lg:bottom-0 lg:left-0 lg:mt-0 lg:w-48">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-md bg-warning-400/20 px-2 py-1 text-[11px] font-bold text-warning-200">₹99 Trial</span>
-            <span className="rounded-md bg-primary-500/20 px-2 py-1 text-[11px] font-bold text-primary-200">₹999<span className="font-medium text-slate-300">/mo Pro</span></span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {FEATURES.map((f) => (
-              <span key={f} className="inline-flex items-center gap-0.5 rounded bg-white/5 px-1.5 py-0.5 text-[9px] font-medium text-slate-300">
-                <Check className="h-2.5 w-2.5 text-success-400" />{f}
-              </span>
-            ))}
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {['WebApp', 'Vendor App', 'Client App'].map((t) => (
+                <span key={t} className="rounded-full border border-primary-400/20 bg-primary-500/10 px-2 py-0.5 text-[10px] font-semibold text-primary-200">{t}</span>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              <Link href="/book-demo" className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
+                <ShoppingBag className="h-4 w-4" /> Buy Now
+              </Link>
+              <InstallPwaButton className="w-full" />
+            </div>
           </div>
         </div>
       </div>
