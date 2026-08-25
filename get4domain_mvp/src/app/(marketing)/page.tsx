@@ -82,14 +82,14 @@ export default function HomePage() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-5 lg:px-8">
           <div className="lg:col-span-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> One stop · Your online identity partner
+              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Not a website builder — a business platform
             </span>
             <h1 className="mt-6 text-4xl font-bold tracking-tight text-white md:text-6xl">
-              Get Online. Get Leads.<br />
-              <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">Grow Your Business.</span>
+              Not Just a Website.<br />
+              <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">Your Whole Business, in One App.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-slate-300">
-              Your industry website — hosting, SSL &amp; subdomain included — plus a full Workspace: leads, CRM, TeleCRM and AI Studio. Everything to get online and run your business, in one place.
+              Get4Domain gives you a professional industry website <span className="font-semibold text-white">and</span> the full app to run everything behind it — leads, CRM, bookings, invoices, WhatsApp and AI content — managed from your laptop or your phone. A real business platform, not a static page.
             </p>
 
             {/* Pricing framing — subscription vs. pay-per-use kept visibly distinct */}
