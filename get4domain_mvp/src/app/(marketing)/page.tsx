@@ -79,8 +79,16 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
         </div>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-5 lg:px-8">
-          <div className="order-2 lg:order-2 lg:col-span-2">
+        {/* MOBILE hero — app-like two-screen layout: Screen 1 fills the viewport
+            (title + price, switcher, left-aligned mockup, install button); Screen 2
+            (on scroll) = description + Buy Now / Visit Demo. */}
+        <div className="relative px-4 pb-8 pt-6 sm:px-6 lg:hidden">
+          <HeroMockup variant="mobile" />
+        </div>
+
+        {/* DESKTOP hero */}
+        <div className="relative mx-auto hidden max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid lg:grid-cols-5 lg:px-8">
+          <div className="lg:order-2 lg:col-span-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Your Online Identity Partner
             </span>
@@ -123,9 +131,9 @@ export default function HomePage() {
             <p className="mt-5 text-sm text-slate-400">Custom domain available as an add-on · Setup in days · Cancel anytime</p>
           </div>
 
-          {/* Prominent imagery first (mobile + desktop): real website + simulated vendor/client apps */}
-          <div className="order-1 lg:order-1 lg:col-span-3">
-            <HeroMockup />
+          {/* Prominent imagery: real website + simulated vendor/client apps */}
+          <div className="lg:order-1 lg:col-span-3">
+            <HeroMockup variant="desktop" />
           </div>
         </div>
       </section>
