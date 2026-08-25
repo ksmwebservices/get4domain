@@ -160,6 +160,29 @@ export class AiService {
   }
 
   /**
+   * Grounded WhatsApp-bot reply (fallback when the vendor's knowledge base has no
+   * match). Answers ONLY from the supplied business context (KB + hours/location/
+   * services/pricing) so it uses the vendor's REAL data, never an invented price or
+   * time. Short, WhatsApp-style. Throws (like other AI calls) when no key is
+   * configured — the caller escalates to a human instead.
+   */
+  async whatsappBotReply(params: { businessName: string; context: string; history: string; message: string }): Promise<string> {
+    const prompt = `You are the WhatsApp assistant for "${params.businessName}", an Indian small business. Reply to the customer's latest message using ONLY the business information below. If that information does not contain the answer, say the team will follow up shortly — do NOT invent prices, hours, availability or any fact. Keep it short and friendly (1-3 sentences), plain text, no markdown.
+
+BUSINESS INFORMATION:
+${params.context || '(none provided)'}
+
+CONVERSATION SO FAR:
+${params.history || '(this is the first message)'}
+
+Customer's latest message: ${params.message}
+
+Your reply:`;
+    const text = await this.callClaude(prompt, 300);
+    return text.trim();
+  }
+
+  /**
    * Design-only background image for a structured document (Letterhead / Visiting
    * Card / ID Card). The real business text is overlaid crisply by the client — the
    * image is JUST the design (no text), so nothing gets garbled. Free for internal

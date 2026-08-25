@@ -35,6 +35,7 @@ import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { WhatsappBotModule } from './whatsapp-bot/whatsapp-bot.module';
 import { SmsModule } from './sms/sms.module';
 import { MetaModule } from './meta/meta.module';
 import { GoogleAdsModule } from './google-ads/google-ads.module';
@@ -88,6 +89,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     AddonsModule,
     PlatformSettingsModule,
     WhatsappModule,
+    WhatsappBotModule,
     SmsModule,
     MetaModule,
     GoogleAdsModule,

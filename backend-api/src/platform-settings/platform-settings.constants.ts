@@ -146,6 +146,7 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'video_generation', label: 'Video generation (₹)', envFallback: 'PRICE_VIDEO_GENERATION', secret: false },
       { key: 'document', label: 'Document (₹)', envFallback: 'PRICE_DOCUMENT', secret: false },
       { key: 'whatsapp_message', label: 'WhatsApp per message (₹)', envFallback: 'PRICE_WHATSAPP', secret: false },
+      { key: 'whatsapp_session', label: 'WhatsApp bot per conversation (₹)', envFallback: 'PRICE_WHATSAPP_SESSION', secret: false },
       { key: 'sms_message', label: 'SMS per message (₹)', envFallback: 'PRICE_SMS', secret: false },
       { key: 'email_message', label: 'Email per email (₹)', envFallback: 'PRICE_EMAIL', secret: false },
       { key: 'social_post_publish', label: 'Social post (we post) (₹)', envFallback: 'PRICE_SOCIAL_PUBLISH', secret: false },

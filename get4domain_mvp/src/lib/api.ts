@@ -104,6 +104,13 @@ export const api = {
   createStationery: (data: any) => apiCall('/stationery', { method: 'POST', body: JSON.stringify(data) }),
   updateStationery: (id: string, data: any) => apiCall(`/stationery/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteStationery: (id: string) => apiCall(`/stationery/${id}`, { method: 'DELETE' }),
+  // WhatsApp bot knowledge base (Q&A the bot answers from before falling back to AI)
+  getKbEntries: () => apiCall('/whatsapp-bot/kb'),
+  createKbEntry: (data: { question: string; keywords: string; answer: string; active?: boolean }) =>
+    apiCall('/whatsapp-bot/kb', { method: 'POST', body: JSON.stringify(data) }),
+  updateKbEntry: (id: string, data: Partial<{ question: string; keywords: string; answer: string; active: boolean }>) =>
+    apiCall(`/whatsapp-bot/kb/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteKbEntry: (id: string) => apiCall(`/whatsapp-bot/kb/${id}`, { method: 'DELETE' }),
 
   // Accounting (2C) — expenses, P&L, GST statement (vendorId-scoped server-side)
   getExpenses: (q = '') => apiCall(`/accounting/expenses${q}`),

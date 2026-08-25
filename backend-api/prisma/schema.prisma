@@ -18,6 +18,9 @@ model Vendor {
   industry     String?  @default("general")
   subdomain    String?  @unique
   widgetKey    String?  @unique  // 3B: public per-vendor embeddable-widget key
+  // WhatsApp-bot: the vendor's Fast2SMS phone_number_id, used to route an inbound
+  // webhook to the correct tenant. Set by admin when provisioning the WA number.
+  waPhoneNumberId String? @unique
   customDomain String?
   role         Role     @default(VENDOR)
   status       VendorStatus @default(ACTIVE)
@@ -52,6 +55,8 @@ model Vendor {
   messages         Message[]
   expenses         Expense[]
   stationery       StationeryItem[]
+  kbEntries        KnowledgeBaseEntry[]
+  waConversations  WhatsappConversation[]
 }
 
 model Subscription {
@@ -121,6 +126,9 @@ model VendorCMS {
   phone        String?
   email        String?
   address      String?
+  // Basic business hours shown on the site AND used to ground the WhatsApp bot's
+  // answers (free text, e.g. "Mon–Sat 9am–8pm, Sun closed"). Additive/nullable.
+  businessHours String?
   whatsapp     String?
   facebook     String?
   instagram    String?
@@ -270,6 +278,10 @@ model CampaignLead {
   notes          String?
   assignedTo     String?
   followUpDate   DateTime?
+  // Optional link to the Contact whose Message history is this lead's conversation
+  // transcript (e.g. WhatsApp-bot leads). Lets TeleCRM surface the full chat.
+  contactId      String?
+  contact        Contact?      @relation(fields: [contactId], references: [id])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   callLogs       CallLog[]
@@ -392,6 +404,8 @@ model Contact {
   records      Record[]
   invoices     GenericInvoice[]
   messages     Message[]
+  campaignLeads CampaignLead[]
+  waConversations WhatsappConversation[]
   @@index([vendorId])
   @@map("g4d_contacts")
 }
@@ -703,4 +717,50 @@ model StationeryItem {
   updatedAt        DateTime @updatedAt
   @@index([vendorId])
   @@map("g4d_stationery")
+}
+
+// ── WhatsApp bot: vendor-managed knowledge base (Q&A). The bot answers from THESE
+// first (keyword/pattern match); AI is only the fallback. Primary source of truth
+// so answers use the vendor's real price/hours, not an AI guess. ───────────────
+model KnowledgeBaseEntry {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  // Short label for the vendor's own reference (e.g. "Pricing", "Opening hours").
+  question  String
+  // Comma/space-separated trigger terms matched against the inbound message
+  // (e.g. "price, cost, charges, rate"). Case-insensitive, word-boundary match.
+  keywords  String
+  // The exact answer the bot sends verbatim when this entry matches.
+  answer    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([vendorId])
+  @@map("g4d_kb_entries")
+}
+
+// ── WhatsApp bot: per-customer conversation state + billing window. One row per
+// (vendor, phone). Tracks the bot's state machine and the current billed session
+// window so session messages are billed once per conversation, not per message. ─
+model WhatsappConversation {
+  id            String    @id @default(cuid())
+  vendorId      String
+  vendor        Vendor    @relation(fields: [vendorId], references: [id])
+  contactId     String?
+  contact       Contact?  @relation(fields: [contactId], references: [id])
+  phone         String
+  phoneNumberId String?   // Fast2SMS phone_number_id (the vendor's WA number)
+  // active = bot answering · awaiting_name = asked for name, waiting · agent =
+  // handed off to a human, bot muted.
+  state         String    @default("active")
+  nameCaptured  Boolean   @default(false)
+  leadId        String?   // CampaignLead created once interest + name captured
+  // Start of the current billed 24h session window (null until first billed send).
+  windowStart   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@unique([vendorId, phone])
+  @@index([vendorId])
+  @@map("g4d_wa_conversations")
 }

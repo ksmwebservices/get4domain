@@ -11,6 +11,7 @@ export interface ProviderResult {
 }
 
 const FAST2SMS_WA_ENDPOINT = 'https://www.fast2sms.com/dev/whatsapp';
+const FAST2SMS_WA_SESSION_ENDPOINT = 'https://www.fast2sms.com/dev/whatsapp-session';
 
 /**
  * WhatsApp provider — Fast2SMS WhatsApp API (mock-first until configured).
@@ -60,5 +61,46 @@ export class WhatsappService {
       this.logger.error(`Fast2SMS WhatsApp request failed: ${err instanceof Error ? err.message : 'unknown'}`);
       return { providerMessageId: `err_wa_${Date.now()}`, status: 'failed', mock: false, error: err instanceof Error ? err.message : 'network error' };
     }
+  }
+
+  /**
+   * Free-form SESSION message (WhatsApp bot replies inside the open 24h
+   * conversation window — no template approval needed). Distinct from
+   * sendMessage(), which uses a pre-approved template for cold/outbound alerts.
+   * Mock-first: logs and returns { mock:true } until the Fast2SMS key is set,
+   * so nothing is billed and no external call is made before go-live.
+   */
+  async sendSessionMessage(to: string, text: string, phoneNumberId?: string): Promise<ProviderResult> {
+    const apiKey = await this.settings.getResolvedValue('fast2sms', 'api_key');
+    const numbers = this.normalize(to);
+
+    if (!apiKey) {
+      this.logger.log(`[MOCK] WhatsApp session -> ${numbers}: ${text.slice(0, 80)}`);
+      return { providerMessageId: `mock_was_${Date.now()}`, status: 'mock', mock: true };
+    }
+
+    try {
+      const res = await fetch(FAST2SMS_WA_SESSION_ENDPOINT, {
+        method: 'POST',
+        headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'text', text, to: numbers, phone_number_id: phoneNumberId }),
+      });
+      const body = await res.text();
+      let data: { return?: boolean; request_id?: string } | null = null;
+      try { data = JSON.parse(body); } catch { /* non-JSON */ }
+      if (!res.ok || !(data?.return === true || data?.request_id)) {
+        this.logger.error(`Fast2SMS WA session error ${res.status}: ${body.slice(0, 300)}`);
+        return { providerMessageId: `err_was_${Date.now()}`, status: 'failed', mock: false, error: `Fast2SMS HTTP ${res.status}` };
+      }
+      return { providerMessageId: data?.request_id ?? `was_${Date.now()}`, status: 'sent', mock: false };
+    } catch (err) {
+      this.logger.error(`Fast2SMS WA session request failed: ${err instanceof Error ? err.message : 'unknown'}`);
+      return { providerMessageId: `err_was_${Date.now()}`, status: 'failed', mock: false, error: err instanceof Error ? err.message : 'network error' };
+    }
+  }
+
+  /** The shared webhook secret configured in Admin → Integrations (fast2sms). */
+  getWebhookSecret(): Promise<string | null> {
+    return this.settings.getResolvedValue('fast2sms', 'webhook_secret_key');
   }
 }
