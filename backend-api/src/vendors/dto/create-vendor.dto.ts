@@ -38,4 +38,9 @@ export class CreateVendorDto {
   @IsOptional()
   @IsString()
   customDomain?: string;
+
+  @ApiProperty({ required: false, example: '1122334455', description: 'Fast2SMS phone_number_id — routes WhatsApp-bot webhooks to this vendor' })
+  @IsOptional()
+  @IsString()
+  waPhoneNumberId?: string;
 }

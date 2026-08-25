@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, UserPlus, ToggleLeft, ToggleRight, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 
-interface Vendor { id: string; name: string; businessName: string; email: string; industry?: string }
+interface Vendor { id: string; name: string; businessName: string; email: string; industry?: string; waPhoneNumberId?: string | null }
 interface Toggle { key: string; label: string; enabled: boolean; walletGated?: boolean }
 interface IndustrySummary { key: string; label: string }
 interface IndustryConfig { key: string; label: string; availableAddons: string[]; defaultAddons: string[] }
@@ -22,6 +22,9 @@ export default function VendorAccessPage() {
   const [override, setOverride] = useState({ accentColor: '', accentColorDark: '', welcomeText: '', websiteTemplate: '' });
   const [savingOverride, setSavingOverride] = useState(false);
   const [overrideSaved, setOverrideSaved] = useState(false);
+  const [waNumberId, setWaNumberId] = useState('');
+  const [savingWa, setSavingWa] = useState(false);
+  const [waSaved, setWaSaved] = useState(false);
   const [busyKey, setBusyKey] = useState('');
 
   const [creating, setCreating] = useState(false);
@@ -41,6 +44,7 @@ export default function VendorAccessPage() {
     setSelected(v);
     setModules([]); setAddons([]); setIndustryCfg(null);
     setOverride({ accentColor: '', accentColorDark: '', welcomeText: '', websiteTemplate: '' });
+    setWaNumberId(v.waPhoneNumberId ?? ''); setWaSaved(false);
     try {
       const [m, a, cfg, ov] = await Promise.all([
         api.adminGetVendorModules(v.id),
@@ -142,6 +146,21 @@ export default function VendorAccessPage() {
     } finally { setSavingOverride(false); }
   }
 
+  async function saveWaNumber() {
+    if (!selected) return;
+    setSavingWa(true); setWaSaved(false);
+    try {
+      // Empty clears it (unlink the WhatsApp number from this vendor).
+      const value = waNumberId.trim();
+      await api.updateVendor(selected.id, { waPhoneNumberId: value || null });
+      setSelected({ ...selected, waPhoneNumberId: value || null });
+      setVendors((vs) => vs.map((x) => (x.id === selected.id ? { ...x, waPhoneNumberId: value || null } : x)));
+      setWaSaved(true); setTimeout(() => setWaSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save WhatsApp number');
+    } finally { setSavingWa(false); }
+  }
+
   if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-500" /></div>;
 
   const availableAddonSet = new Set(industryCfg?.availableAddons ?? []);
@@ -234,6 +253,17 @@ export default function VendorAccessPage() {
                 <div className="mt-3 flex items-center gap-3">
                   <button onClick={saveOverride} disabled={savingOverride} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingOverride ? 'Saving…' : 'Save override'}</button>
                   {overrideSaved && <span className="text-xs font-medium text-success-400">Saved — live</span>}
+                </div>
+              </div>
+
+              {/* WhatsApp bot: Fast2SMS phone_number_id — routes inbound webhooks to this vendor. */}
+              <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                <h4 className="text-sm font-bold text-white">WhatsApp Bot</h4>
+                <p className="mt-1 text-xs text-slate-400">The vendor&apos;s Fast2SMS <code className="text-slate-300">phone_number_id</code>. Inbound WhatsApp webhooks are routed to this vendor by matching it — set it after provisioning their WhatsApp number.</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input className={`${inputCls} sm:max-w-xs`} placeholder="e.g. 1122334455" value={waNumberId} onChange={(e) => setWaNumberId(e.target.value)} />
+                  <button onClick={saveWaNumber} disabled={savingWa} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingWa ? 'Saving…' : 'Save'}</button>
+                  {waSaved && <span className="text-xs font-medium text-success-400">Saved</span>}
                 </div>
               </div>
             </div>
