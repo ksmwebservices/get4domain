@@ -82,7 +82,7 @@ export default function HomePage() {
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-5 lg:px-8">
           <div className="order-2 lg:order-2 lg:col-span-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Your Business Online Visible Partner
+              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Your Online Identity Partner
             </span>
             <h1 className="mt-4 text-3xl font-bold leading-[1.15] tracking-tight text-white md:text-[2.6rem]">
               Turn Your Website Into a <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">WebApp</span>
