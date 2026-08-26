@@ -175,20 +175,20 @@ export default function HomePage() {
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">One Plan. Everything You Need.</h2>
           </div>
-          <div className="mt-12 rounded-2xl border-2 border-blue-500 bg-white p-8 shadow-md">
+          <div className="mt-12 rounded-2xl border-2 border-primary-500 bg-white p-8 shadow-md">
             <div className="text-3xl">📋</div>
             <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp — ₹999<span className="text-base font-normal text-slate-400">/month</span></h3>
-            <p className="mt-1 font-medium text-blue-600">Industry website + Business workspace + Campaigns + AI Studio</p>
+            <p className="mt-1 font-medium text-primary-600">Industry website + Business workspace + Campaigns + AI Studio</p>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {PLAN_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{f}
+                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-500" />{f}
                 </li>
               ))}
             </ul>
             <p className="mt-6 text-sm text-slate-600">Plus wallet top-up for campaigns, AI content &amp; messaging.</p>
             <div className="mt-6">
-              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition hover:bg-blue-700">Get Started — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition hover:bg-primary-700">Get Started — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <p className="mt-4 text-center text-sm text-slate-400">Just ₹999/month. Cancel anytime.</p>
           </div>
@@ -211,7 +211,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className="mt-8 text-center">
-            <Link href="/industries" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">View All 20+ Industries <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/industries" className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700">View All 20+ Industries <ArrowRight className="h-4 w-4" /></Link>
           </div>
         </div>
       </section>

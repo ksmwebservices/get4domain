@@ -91,27 +91,27 @@ export default function DashboardHome() {
   const pipelineActive = leads.filter((l) => !/won|lost/i.test(l.status)).length;
   const revenueThisMonth = invoices.filter((i) => i.status === 'PAID' && thisMonth(i.paidAt)).reduce((s, i) => s + (i.total || 0), 0);
   const kpis = [
-    { label: 'Leads this month', value: String(leadsThisMonth), sub: `${leads.length} total`, bg: 'from-blue-500 to-blue-600', href: '/dashboard/telecrm' },
-    { label: 'Active pipeline', value: String(pipelineActive), sub: `${wonCount} won`, bg: 'from-indigo-500 to-indigo-600', href: '/dashboard/crm' },
-    { label: 'Revenue this month', value: rupees(revenueThisMonth), sub: 'paid invoices', bg: 'from-emerald-500 to-emerald-600', href: '/dashboard/reports' },
-    { label: 'Follow-ups due', value: String(followups.length), sub: 'to call back', bg: 'from-amber-500 to-amber-600', href: '/dashboard/telecrm' },
+    { label: 'Leads this month', value: String(leadsThisMonth), sub: `${leads.length} total`, bg: 'from-primary-500 to-primary-600', href: '/dashboard/telecrm' },
+    { label: 'Active pipeline', value: String(pipelineActive), sub: `${wonCount} won`, bg: 'from-primary-600 to-primary-700', href: '/dashboard/crm' },
+    { label: 'Revenue this month', value: rupees(revenueThisMonth), sub: 'paid invoices', bg: 'from-success-500 to-success-600', href: '/dashboard/reports' },
+    { label: 'Follow-ups due', value: String(followups.length), sub: 'to call back', bg: 'from-warning-500 to-warning-600', href: '/dashboard/telecrm' },
   ];
 
   // Section A — business-module cards: the map of the product. One real stat + Open.
   const moduleCards = [
-    { title: 'TeleCRM', desc: 'Call leads & log outcomes', stat: `${usage?.leads ?? leadsThisMonth} leads this month`, icon: Phone, tint: 'bg-blue-50 text-blue-600', href: '/dashboard/telecrm' },
-    { title: 'Growth Hub', desc: 'Campaigns & landing pages', stat: `${usage?.campaigns ?? 0} campaign${(usage?.campaigns ?? 0) === 1 ? '' : 's'}`, icon: Megaphone, tint: 'bg-fuchsia-50 text-fuchsia-600', href: '/dashboard/campaigns' },
-    { title: 'AI Studio', desc: 'Generate content in seconds', stat: `${usage?.aiGenerations ?? 0} generations`, icon: Sparkles, tint: 'bg-indigo-50 text-indigo-600', href: '/dashboard/ai-studio' },
-    { title: 'Accounts', desc: 'Expenses, P&L & GST', stat: `${rupees(revenueThisMonth)} revenue`, icon: Receipt, tint: 'bg-emerald-50 text-emerald-600', href: '/dashboard/accounts' },
-    { title: 'Communication Hub', desc: 'WhatsApp, SMS & Email', stat: `${usage?.messages ?? 0} messages sent`, icon: MessagesSquare, tint: 'bg-teal-50 text-teal-600', href: '/dashboard/communication' },
-    { title: 'Website Manager', desc: 'Your site & listings', stat: `${usage?.listings ?? 0} listings`, icon: Globe, tint: 'bg-violet-50 text-violet-600', href: '/dashboard/my-website' },
+    { title: 'TeleCRM', desc: 'Call leads & log outcomes', stat: `${usage?.leads ?? leadsThisMonth} leads this month`, icon: Phone, tint: 'bg-primary-50 text-primary-600', href: '/dashboard/telecrm' },
+    { title: 'Growth Hub', desc: 'Campaigns & landing pages', stat: `${usage?.campaigns ?? 0} campaign${(usage?.campaigns ?? 0) === 1 ? '' : 's'}`, icon: Megaphone, tint: 'bg-secondary-50 text-secondary-600', href: '/dashboard/campaigns' },
+    { title: 'AI Studio', desc: 'Generate content in seconds', stat: `${usage?.aiGenerations ?? 0} generations`, icon: Sparkles, tint: 'bg-primary-50 text-primary-600', href: '/dashboard/ai-studio' },
+    { title: 'Accounts', desc: 'Expenses, P&L & GST', stat: `${rupees(revenueThisMonth)} revenue`, icon: Receipt, tint: 'bg-success-50 text-success-600', href: '/dashboard/accounts' },
+    { title: 'Communication Hub', desc: 'WhatsApp, SMS & Email', stat: `${usage?.messages ?? 0} messages sent`, icon: MessagesSquare, tint: 'bg-primary-50 text-primary-600', href: '/dashboard/communication' },
+    { title: 'Website Manager', desc: 'Your site & listings', stat: `${usage?.listings ?? 0} listings`, icon: Globe, tint: 'bg-secondary-50 text-secondary-600', href: '/dashboard/my-website' },
   ];
 
   const QUICK = [
     { label: 'New Lead', icon: UserPlus, href: '/dashboard/crm', bg: 'bg-primary-600' },
-    { label: 'Call Next', icon: Phone, href: '/dashboard/telecrm', bg: 'bg-emerald-600' },
-    { label: 'Create Content', icon: Sparkles, href: '/dashboard/ai-studio', bg: 'bg-indigo-600' },
-    { label: 'New Invoice', icon: FileText, href: '/dashboard/invoices', bg: 'bg-amber-600' },
+    { label: 'Call Next', icon: Phone, href: '/dashboard/telecrm', bg: 'bg-success-600' },
+    { label: 'Create Content', icon: Sparkles, href: '/dashboard/ai-studio', bg: 'bg-secondary-600' },
+    { label: 'New Invoice', icon: FileText, href: '/dashboard/invoices', bg: 'bg-warning-600' },
   ];
 
   if (loading) {
