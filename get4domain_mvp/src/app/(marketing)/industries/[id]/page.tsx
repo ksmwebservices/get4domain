@@ -1,13 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Check, ArrowRight, CalendarCheck, Globe } from 'lucide-react';
+import { Check, ArrowRight, CalendarCheck, Globe, Play } from 'lucide-react';
 import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
 import { INDUSTRIES } from '@/data/industries-list';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import Button from '@/components/ui/Button';
+
+// Major-10 categories with real Playwright demo-site screenshots (reused from the
+// homepage showcase — do not recapture). Others fall back to the sample mockup.
+const REAL_SHOTS = new Set(['clinic', 'salon', 'gym', 'restaurant', 'retail', 'professional', 'travel', 'realestate', 'education', 'hotel']);
 
 export async function generateStaticParams() {
   return industryContent.map((ind) => ({ id: ind.id }));
@@ -31,6 +35,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
   if (!content || !industry) notFound();
 
   const workspace = INDUSTRIES.find((i) => i.id === id);
+  const realShot = REAL_SHOTS.has(id) ? `/hero-shots/${id}-home.webp` : null;
 
   return (
     <>
@@ -68,14 +73,36 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
         </div>
       </section>
 
-      {/* Website preview mockup */}
+      {/* Website preview — real Playwright demo screenshot (major-10) or sample mockup */}
       <section className="py-12 bg-slate-50">
         <div className="container-mx container-px">
           <div className="mb-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2">Website Preview</p>
-            <h2 className="text-2xl font-bold text-slate-900">What Your Website Will Look Like</h2>
-            <p className="mt-2 text-slate-500 text-sm">Sample content — your actual business details will be used</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary-600 mb-2">{realShot ? 'Live Demo Site' : 'Website Preview'}</p>
+            <h2 className="text-2xl font-bold text-slate-900">{realShot ? `A real ${content.name} site, built on Get4Domain` : 'What Your Website Will Look Like'}</h2>
+            <p className="mt-2 text-slate-500 text-sm">{realShot ? 'An actual demo site — explore the full experience.' : 'Sample content — your actual business details will be used'}</p>
           </div>
+
+          {realShot ? (
+            <div className="relative mx-auto max-w-3xl">
+              <div className="overflow-hidden rounded-2xl border-2 border-primary-200 bg-white shadow-premium">
+                <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2.5">
+                  <div className="flex gap-1.5">
+                    <div className="h-3 w-3 rounded-full bg-red-400" />
+                    <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                    <div className="h-3 w-3 rounded-full bg-green-400" />
+                  </div>
+                  <div className="mx-3 flex-1 rounded-md border border-slate-200 bg-white px-3 py-1 font-mono text-xs text-slate-400">{id}.get4domain.com</div>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={realShot} alt={`${content.name} demo website built with Get4Domain`} width={1280} height={800} className="w-full" />
+              </div>
+              <div className="mt-5 text-center">
+                <Link href={`/demo/${id}`} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-500">
+                  <Play className="h-4 w-4" /> Visit the live {content.name} demo <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          ) : (
           <div className="relative mx-auto max-w-2xl">
             {/* Floating phone mockup (2.5) — animated, desktop only */}
             <div className="animate-g4d-float-slow absolute -bottom-6 -right-4 z-10 hidden w-32 rounded-[1.75rem] border-4 border-slate-800 bg-slate-800 shadow-2xl lg:block">
@@ -131,6 +158,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
               Sample content only. Built with your business name, photos and details.
             </p>
           </div>
+          )}
         </div>
       </section>
 
@@ -181,9 +209,14 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
             <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
               <Link href={`/book-demo?industry=${id}`}>
                 <Button size="lg" leftIcon={<CalendarCheck className="h-5 w-5" />} rightIcon={<ArrowRight className="h-4 w-4" />}>
-                  Book Free Demo
+                  Book a {content.name} Demo
                 </Button>
               </Link>
+              {realShot && (
+                <Link href={`/demo/${id}`}>
+                  <Button size="lg" variant="outline" leftIcon={<Play className="h-4 w-4" />}>Visit Live Demo</Button>
+                </Link>
+              )}
               <Link href="/industries">
                 <Button size="lg" variant="outline">Browse All Industries</Button>
               </Link>
