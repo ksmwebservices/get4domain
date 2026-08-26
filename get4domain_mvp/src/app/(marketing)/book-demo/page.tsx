@@ -112,6 +112,9 @@ export default function BookDemoPage() {
     try {
       const res = await api.verifyDemoLead({ name, phone: normalizedPhone, industry, code });
       setSandbox((res.data?.sandbox as Sandbox | undefined) ?? null);
+      // Mark the session verified so the demo-gate (DemoGate.tsx) doesn't re-prompt
+      // this already-verified visitor on demo links.
+      try { sessionStorage.setItem('g4d_demo_verified', '1'); } catch { /* ignore */ }
       setStep('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
