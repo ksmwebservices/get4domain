@@ -92,10 +92,11 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Your Online Identity Partner
             </span>
+            {/* Headline copy MUST stay identical to the mobile hero (HeroMockup). Edit both together. */}
             <h1 className="mt-4 text-3xl font-bold leading-[1.15] tracking-tight text-white md:text-[2.6rem]">
               Turn Your Website Into a <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">WebApp</span>
               <span className="mt-1.5 block text-xl font-semibold text-slate-200 md:text-2xl">
-                Manage your full business operations — along with <span className="text-warning-300">AI Studio</span>.
+                Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-slate-300">

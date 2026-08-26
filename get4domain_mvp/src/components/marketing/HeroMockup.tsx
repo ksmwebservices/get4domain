@@ -38,7 +38,7 @@ const toneBadge: Record<Tone, string> = {
 
 export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
   const [cat, setCat] = useState(0);
-  const [view, setView] = useState(0);
+  const [view, setView] = useState(1); // default to Vendor App — this is a business-ops app, not a website
   const [interacted, setInteracted] = useState(false);
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
 
   const c = SHOWCASE[cat];
   const stop = () => setInteracted(true);
-  const selectCat = (i: number) => { setCat(i); setView(0); stop(); };
+  const selectCat = (i: number) => { setCat(i); setView(1); stop(); }; // keep Vendor App as the shown view
   const selectView = (i: number) => { setView(i); stop(); };
 
   if (variant === 'mobile') {
@@ -68,7 +68,13 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-300">Get4Domain · Domain App</div>
-              <div className="mt-0.5 text-2xl font-extrabold tracking-tight text-white">Your Business, in One App</div>
+              {/* Headline copy MUST stay identical to the desktop hero (page.tsx). Edit both together. */}
+              <h1 className="mt-0.5 text-xl font-extrabold leading-tight tracking-tight text-white">
+                Turn Your Website Into a <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">WebApp</span>
+                <span className="mt-1 block text-sm font-semibold text-slate-200">
+                  Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
+                </span>
+              </h1>
             </div>
             <div className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-right">
               <div className="text-base font-bold leading-none text-white">₹999<span className="text-[10px] font-medium text-slate-400">/mo</span></div>
