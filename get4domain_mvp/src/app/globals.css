@@ -135,3 +135,35 @@
 /* No-scrollbar utility (ported from reference .no-scrollbar). */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VENDOR DASHBOARD SKIN (Bolt reference) — Phase 1.
+   All classes are scoped under `.vendor-ui` so they never affect the existing
+   marketing pages or the current light dashboard until a page opts in by adding
+   the `vendor-ui` class to its root. Dark surfaces use the `ink` scale; accents
+   use brand/gold/ruby (our blue/gold/red identity, dashboard-named).
+   ───────────────────────────────────────────────────────────────────────── */
+.vendor-ui { @apply text-ink-100; }
+
+.vendor-ui .glass { @apply bg-ink-900/70 backdrop-blur-xl border border-ink-700/60; }
+.vendor-ui .glass-soft { @apply bg-ink-800/50 backdrop-blur-md border border-ink-700/40; }
+
+.vendor-ui .card { @apply bg-ink-850/80 border border-ink-700/50 rounded-2xl backdrop-blur-sm shadow-v-card; }
+.vendor-ui .card-hover { @apply transition-all duration-200 hover:shadow-v-card-hover hover:border-ink-600/70 hover:-translate-y-0.5; }
+
+.vendor-ui .input { @apply w-full bg-ink-900/60 border border-ink-700/60 rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder:text-ink-500 outline-none transition focus:border-brand-500/70 focus:ring-2 focus:ring-brand-500/20; }
+
+.vendor-ui .btn, .vendor-ui .btn-primary, .vendor-ui .btn-gold, .vendor-ui .btn-ghost, .vendor-ui .btn-ghost-soft { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap; }
+.vendor-ui .btn-primary { @apply bg-brand-600 hover:bg-brand-500 text-white px-4 py-2.5 shadow-glow-brand; }
+.vendor-ui .btn-gold { @apply bg-gold-500 hover:bg-gold-400 text-ink-950 px-4 py-2.5 shadow-glow-gold; }
+.vendor-ui .btn-ghost { @apply bg-ink-800/60 hover:bg-ink-700/60 text-ink-100 border border-ink-700/60 px-4 py-2.5; }
+.vendor-ui .btn-ghost-soft { @apply bg-transparent hover:bg-ink-800/60 text-ink-300 hover:text-ink-100 px-3 py-2; }
+
+.vendor-ui .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium; }
+.vendor-ui .nav-item { @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150; }
+
+.vendor-ui .text-gradient-brand { background: linear-gradient(135deg, #598dff 0%, #3366ff 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.vendor-ui .text-gradient-gold { background: linear-gradient(135deg, #ffcb4a 0%, #f99008 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+.vendor-ui .skeleton { @apply relative overflow-hidden bg-ink-800/60 rounded-md; }
+.vendor-ui .skeleton::after { content: ''; @apply absolute inset-0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); animation: shimmer 1.5s infinite; }
