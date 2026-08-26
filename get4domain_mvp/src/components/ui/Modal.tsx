@@ -9,9 +9,12 @@ interface ModalProps {
   title?: string;
   children: ReactNode;
   maxWidth?: string;
+  /** Theme skin — default 'light' (unchanged for existing consumers). Vendor passes 'dark'. */
+  skin?: 'light' | 'dark';
 }
 
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-4xl' }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-4xl', skin = 'light' }: ModalProps) {
+  const dark = skin === 'dark';
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -36,21 +39,21 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
       aria-label={title}
     >
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        className={`absolute inset-0 backdrop-blur-sm ${dark ? 'bg-ink-950/80' : 'bg-slate-900/60'}`}
         onClick={onClose}
         aria-hidden="true"
       />
       {/* Mobile: bottom sheet (flush, rounded top). sm+: centered modal. */}
       <div
-        className={`relative w-full ${maxWidth} max-h-[88vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl animate-scale-in sm:rounded-2xl`}
+        className={`relative w-full ${maxWidth} max-h-[88vh] overflow-y-auto rounded-t-2xl shadow-2xl animate-scale-in sm:rounded-2xl ${dark ? 'bg-ink-850 border border-ink-700/50' : 'bg-white'}`}
       >
-        <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" />
+        <div className={`mx-auto mt-2 h-1.5 w-10 rounded-full sm:hidden ${dark ? 'bg-ink-700' : 'bg-slate-200'}`} />
         {title && (
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white/95 backdrop-blur px-6 py-4">
-            <h3 className="text-xl font-bold text-slate-900">{title}</h3>
+          <div className={`sticky top-0 z-10 flex items-center justify-between border-b backdrop-blur px-6 py-4 ${dark ? 'border-ink-700/50 bg-ink-900/95' : 'border-slate-100 bg-white/95'}`}>
+            <h3 className={`text-xl font-bold ${dark ? 'text-ink-50' : 'text-slate-900'}`}>{title}</h3>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              className={`rounded-lg p-2 transition-colors ${dark ? 'text-ink-400 hover:bg-ink-800 hover:text-ink-100' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
               aria-label="Close modal"
             >
               <X className="h-5 w-5" />
@@ -60,7 +63,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'ma
         {!title && (
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 z-10 rounded-lg bg-white/90 p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors shadow-sm"
+            className={`absolute right-4 top-4 z-10 rounded-lg p-2 shadow-sm transition-colors ${dark ? 'bg-ink-800/90 text-ink-400 hover:bg-ink-700 hover:text-ink-100' : 'bg-white/90 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
             aria-label="Close modal"
           >
             <X className="h-5 w-5" />
