@@ -12,6 +12,7 @@ const PLANS = {
 
 // Real, defensible comparison — Get4Domain vs. commissioning custom development.
 const COMPARISON = [
+  { feature: 'Instant deploy on a ready-made site', us: true, them: 'Built from scratch' },
   { feature: 'Webapp + vendor + client apps', us: true, them: '₹2–5L+ custom dev' },
   { feature: 'WhatsApp API integration', us: true, them: '₹500–2,000/mo extra' },
   { feature: 'AI content studio', us: true, them: '₹999+/mo separate' },
@@ -19,7 +20,7 @@ const COMPARISON = [
   { feature: 'SMS & email campaigns', us: true, them: '₹500+/mo separate' },
   { feature: 'GST invoicing', us: true, them: '₹500+/mo separate' },
   { feature: 'PWA — install on any phone', us: true, them: 'Rare / costly' },
-  { feature: 'Setup time', us: 'A few days', them: '2–6 months' },
+  { feature: 'Live + customized', us: 'In 24 hours', them: '2–6 months' },
   { feature: 'Monthly cost', us: '₹999', them: '₹5,000–15,000+' },
 ];
 
@@ -105,7 +106,7 @@ export default function HomePricing() {
             ))}
           </div>
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[{ icon: Clock, label: 'Days to launch', desc: 'vs 2–6 months' }, { icon: Wallet, label: '₹999/mo', desc: 'vs ₹5,000–15,000+' }, { icon: Building2, label: '20+ industries', desc: 'vs custom build each' }].map((s) => (
+            {[{ icon: Clock, label: 'Live in 24 hours', desc: 'instant deploy + 24h setup' }, { icon: Wallet, label: '₹999/mo', desc: 'vs ₹5,000–15,000+' }, { icon: Building2, label: '20+ industries', desc: 'vs custom build each' }].map((s) => (
               <div key={s.label} className="rounded-xl border border-white/5 bg-slate-800/60 p-4 text-center backdrop-blur-xl">
                 <s.icon className="mx-auto mb-2 h-5 w-5 text-primary-300" />
                 <div className="text-sm font-semibold text-slate-100">{s.label}</div>

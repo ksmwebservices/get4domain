@@ -36,7 +36,7 @@ const USAGE: [string, string][] = [
 ];
 
 const FAQS = [
-  { q: 'What happens after I pay ₹999?', a: 'We build your industry website in 5-7 days, set up your Workplace dashboard, and give you ₹499 AI Studio credit to start creating content immediately.' },
+  { q: 'What happens after I pay ₹999?', a: 'Your site deploys instantly on a ready-made industry template and we complete content & theme customization within 24 hours. We set up your Workplace dashboard and give you ₹499 AI Studio credit to start creating content immediately.' },
   { q: 'What is the Workplace?', a: 'The Workplace is your central business workspace — contacts, catalog, bookings/orders, invoicing, CRM, campaigns, AI tools and analytics, tailored to your industry, without the complexity of heavy ERP software.' },
   { q: 'How does the wallet work?', a: 'Your plan includes ₹499 free credit. Use it for AI content, campaigns and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. A free subdomain is included with every plan. You can also buy a domain through our dashboard or connect an existing one — custom domain is a separate service.' },

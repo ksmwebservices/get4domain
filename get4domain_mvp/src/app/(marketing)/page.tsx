@@ -30,7 +30,7 @@ const INDUSTRIES = [
 
 const STEPS = [
   { icon: '📋', title: 'Tell Us Your Business', desc: 'Book a free demo. We understand your industry and needs.' },
-  { icon: '⚙️', title: 'We Set Everything Up', desc: 'Website, dashboard, integrations — ready in 5-7 days.' },
+  { icon: '⚙️', title: 'We Deploy & Customize', desc: 'Your site deploys instantly on a ready-made template — content & theme customized within 24 hours.' },
   { icon: '🚀', title: 'You Run Your Business', desc: 'Log in to your workspace. Everything works. We handle the rest.' },
 ];
 
@@ -42,7 +42,7 @@ const TESTIMONIALS = [
 
 const FAQS = [
   { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, HR), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
-  { q: 'Do I need technical knowledge to use it?', a: 'No. We set up your website, dashboard and integrations for you within 5-7 days. You simply log in to a workspace tailored to your industry and start working — no coding or design skills needed.' },
+  { q: 'Do I need technical knowledge to use it?', a: 'No. Your site deploys instantly on a ready-made industry template, and we customize the content and theme within 24 hours. You simply log in to a Workplace tailored to your industry and start working — no coding or design skills needed.' },
   { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹999/month and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹499 of free AI credit. Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging.' },
   { q: 'I already have a website — is this still useful?', a: 'Yes. Use Get4Domain just for the workspace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with expense tracking and GST-statement prep — without needing a new website.' },
 ];
@@ -150,7 +150,7 @@ export default function HomePage() {
               Your business deserves <span className="text-gradient-hero">better software</span>
             </h2>
             <p className="mx-auto mb-8 max-w-xl text-slate-400">
-              Join 50+ businesses running on Get4Domain. Live in days. No setup fees, no contracts, no per-feature pricing.
+              Join 50+ businesses running on Get4Domain. Instant deploy, live in 24 hours. No setup fees, no contracts, no per-feature pricing.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
