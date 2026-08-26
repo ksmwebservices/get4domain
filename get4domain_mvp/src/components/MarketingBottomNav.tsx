@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Building2, CalendarDays, MessageCircle } from 'lucide-react';
+import { Home, Sparkles, Building2, CalendarDays, MessageCircle } from 'lucide-react';
 import { OPEN_CHAT_EVENT } from './ChatWidget';
 
 const TABS = [
   { label: 'Home', href: '/', icon: Home },
-  { label: 'Products', href: '/pricing', icon: Briefcase },
+  { label: 'Features', href: '/features', icon: Sparkles },
   { label: 'Industries', href: '/industries', icon: Building2 },
   { label: 'Demo', href: '/book-demo', icon: CalendarDays },
 ];
