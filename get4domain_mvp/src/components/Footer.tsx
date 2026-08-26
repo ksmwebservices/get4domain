@@ -1,5 +1,11 @@
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+
+// Managed Growth Services are an optional add-on — footer/dashboard-only, never
+// hero/pricing-prominent (PRODUCT_DIRECTION_FINAL §18–19, §28). Requested for
+// scope review via the demo form.
+const MANAGED_HREF = '/book-demo?service=managed-growth';
+const MANAGED_SERVICES = ['SEO', 'Google Business Profile', 'Social Media', 'Content', 'Campaigns', 'Paid Ads', 'GEO', 'AEO'];
 
 const footerSections = [
   {
@@ -17,7 +23,7 @@ const footerSections = [
       { label: 'About Us', href: '/about' },
       { label: 'Contact', href: '/contact' },
       { label: 'Support', href: '/support' },
-      { label: 'Blog', href: '#' },
+      { label: 'Managed Services', href: MANAGED_HREF },
     ],
   },
   {
@@ -81,6 +87,23 @@ export default function Footer() {
                 </ul>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Managed Growth Services — optional add-on, intentionally secondary */}
+      <div className="border-t border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-800 bg-slate-800/30 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-300">Managed Growth Services</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Prefer we do it for you? {MANAGED_SERVICES.join(' · ')}
+              </p>
+            </div>
+            <Link href={MANAGED_HREF} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-700 px-4 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-blue-400/40 hover:text-blue-400">
+              Explore Managed Services <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>
