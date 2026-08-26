@@ -2,9 +2,17 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, type LucideProps } from 'lucide-react';
+import { ArrowRight, ShoppingBag, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, Check, Building2, Users, Star, Clock, MessageCircle, type LucideProps } from 'lucide-react';
 import { SHOWCASE, type Tone, type VendorDash, type ClientDash, type DashRow, type ShowcaseCategory } from '@/data/hero-showcase';
 import InstallPwaButton from './InstallPwaButton';
+
+// Small proof/feature rows shared by both hero variants (honest, current claims).
+export const TRUST: [ComponentType<LucideProps>, string][] = [
+  [Building2, '50+ Businesses'], [Users, '20+ Industries'], [Star, '4.9★ Rating'], [Clock, '24h Support'], [Receipt, 'GST Compliant'],
+];
+export const QUICK_FEATURES: [ComponentType<LucideProps>, string][] = [
+  [MessageCircle, 'WhatsApp'], [Sparkles, 'AI Studio'], [Phone, 'TeleCRM'], [Receipt, 'GST Invoicing'],
+];
 
 /**
  * Homepage product showcase. Real website screenshots (Website view) + two
@@ -59,6 +67,14 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
   const selectCat = (i: number) => { setCat(i); setView(1); stop(); }; // keep Vendor App as the shown view
   const selectView = (i: number) => { setView(i); stop(); };
 
+  // Subtle cursor-driven 3D tilt on the desktop device stage (hover only).
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const onTilt = (e: React.MouseEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTilt({ x: ((e.clientY - r.top) / r.height - 0.5) * -5, y: ((e.clientX - r.left) / r.width - 0.5) * 7 });
+  };
+  const resetTilt = () => setTilt({ x: 0, y: 0 });
+
   if (variant === 'mobile') {
     return (
       <div className="w-full">
@@ -79,6 +95,7 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
             <div className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-right">
               <div className="text-base font-bold leading-none text-white">₹999<span className="text-[10px] font-medium text-slate-400">/mo</span></div>
               <div className="mt-0.5 text-[9px] text-slate-400">or ₹9,999/yr</div>
+              <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[8px] font-semibold text-success-300"><Check className="h-2 w-2" />Save 17%</span>
             </div>
           </div>
 
@@ -120,6 +137,22 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
               Visit Demo <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
+
+          {/* quick feature chips */}
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {QUICK_FEATURES.map(([Ic, label]) => (
+              <span key={label} className="inline-flex items-center gap-1 rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
+                <Ic className="h-3 w-3 text-primary-400" />{label}
+              </span>
+            ))}
+          </div>
+
+          {/* trust strip */}
+          <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-slate-400">
+            {TRUST.map(([Ic, label]) => (
+              <span key={label} className="inline-flex items-center gap-1"><Ic className="h-3 w-3 text-primary-400" />{label}</span>
+            ))}
+          </div>
         </section>
 
         <style>{`@keyframes hmFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}`}</style>
@@ -133,13 +166,18 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
       <CategorySlider cat={cat} onSelect={selectCat} className="mb-4" />
       <div className="mb-4"><ViewSwitcher view={view} onSelect={selectView} /></div>
 
-      {/* Overlapping composition: phone primary (right), laptop companion (left), card. */}
-      <div className="relative h-[440px]">
+      {/* Overlapping composition: phone primary (right), laptop companion (left), card.
+          Cursor-driven 3D tilt (hover) for depth — phone tilts more than the laptop. */}
+      <div className="relative h-[440px] [perspective:1200px]" onMouseMove={onTilt} onMouseLeave={resetTilt}>
         <div className="absolute right-4 top-1/2 z-10 w-[52%] max-w-[200px] -translate-y-1/2">
-          <PhoneFrame c={c} view={view} />
+          <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+            <PhoneFrame c={c} view={view} />
+          </div>
         </div>
         <div className="absolute left-0 top-1/2 z-0 w-[58%] max-w-[268px] -translate-y-1/2">
-          <LaptopFrame c={c} view={view} />
+          <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x * 0.6}deg) rotateY(${tilt.y * 0.6}deg)` }}>
+            <LaptopFrame c={c} view={view} />
+          </div>
         </div>
         <div className="absolute bottom-0 left-0 z-20 w-60">
           <BuyNowCard />
@@ -172,7 +210,7 @@ function CategorySlider({ cat, onSelect, className = '' }: { cat: number; onSele
               key={s.key}
               onClick={() => onSelect(i)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
-                on ? 'border-primary-400/40 bg-primary-500/20 text-white' : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                on ? 'border-primary-400/50 bg-primary-500/20 text-white shadow-[0_0_16px_-2px_rgba(37,99,235,0.55)]' : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
               }`}
             >
               <span>{s.icon}</span>{s.label}
@@ -215,7 +253,10 @@ function BuyNowCard() {
         </div>
         <div className="text-right">
           <div className="whitespace-nowrap text-lg font-bold text-white">₹999<span className="text-xs font-medium text-slate-400">/month</span></div>
-          <div className="text-[11px] text-slate-400">or ₹9,999/year</div>
+          <div className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
+            or ₹9,999/year
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-success-300"><Check className="h-2.5 w-2.5" />Save 17%</span>
+          </div>
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -237,8 +278,12 @@ function BuyNowCard() {
 function PhoneFrame({ c, view }: { c: ShowcaseCategory; view: number }) {
   return (
     <div className="relative rounded-[2.2rem] border border-slate-700/80 bg-gradient-to-b from-slate-800 to-slate-900 p-[5px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10">
-      <div className="absolute -left-[2px] top-[22%] h-9 w-[3px] rounded-l bg-slate-700" />
-      <div className="absolute -right-[2px] top-[30%] h-12 w-[3px] rounded-r bg-slate-700" />
+      {/* brand glow beneath the phone (gold) */}
+      <div className="pointer-events-none absolute -bottom-4 left-1/2 h-6 w-2/3 -translate-x-1/2 rounded-full bg-warning-500/20 blur-2xl" />
+      {/* side buttons for depth */}
+      <div className="absolute -left-[2px] top-[20%] h-6 w-[3px] rounded-l bg-slate-700" />
+      <div className="absolute -left-[2px] top-[32%] h-9 w-[3px] rounded-l bg-slate-700" />
+      <div className="absolute -right-[2px] top-[28%] h-12 w-[3px] rounded-r bg-slate-700" />
       <div className="relative overflow-hidden rounded-[1.85rem] bg-slate-950 ring-1 ring-black/40">
         <div className="pointer-events-none absolute left-1/2 top-1.5 z-20 h-3.5 w-16 -translate-x-1/2 rounded-full bg-slate-900" />
         <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-br from-white/8 via-transparent to-transparent" />
@@ -254,7 +299,9 @@ function PhoneFrame({ c, view }: { c: ShowcaseCategory; view: number }) {
 
 function LaptopFrame({ c, view }: { c: ShowcaseCategory; view: number }) {
   return (
-    <div>
+    <div className="relative">
+      {/* brand glow beneath the laptop (blue) */}
+      <div className="pointer-events-none absolute -bottom-3 left-1/2 h-6 w-3/4 -translate-x-1/2 rounded-full bg-primary-500/20 blur-2xl" />
       <div className="rounded-lg border-[5px] border-slate-800 bg-slate-800 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-white/10">
         <div className="overflow-hidden rounded-[3px] bg-slate-950">
           <div className="flex items-center gap-1 border-b border-white/5 bg-slate-900 px-1.5 py-1">

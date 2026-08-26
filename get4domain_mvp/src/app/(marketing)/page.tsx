@@ -1,8 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Building2, Users, Star, Clock, Receipt, MessageCircle, Sparkles, Phone, ShieldCheck, type LucideIcon } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HeroMockup from '@/components/marketing/HeroMockup';
+
+// Hero proof/feature rows + the below-fold 3-card highlight (honest, current claims).
+const HERO_CHIPS: [LucideIcon, string][] = [
+  [MessageCircle, 'WhatsApp'], [Sparkles, 'AI Studio'], [Phone, 'TeleCRM'], [Receipt, 'GST Invoicing'],
+];
+const HERO_TRUST: [LucideIcon, string][] = [
+  [Building2, '50+ Businesses'], [Users, '20+ Industries'], [Star, '4.9★ Rating'], [Clock, '24h Support'], [Receipt, 'GST Compliant'],
+];
+const FEATURE_CARDS: [LucideIcon, string, string][] = [
+  [ShieldCheck, 'Secure & GST Compliant', 'Bank-grade security with built-in GST invoicing on every transaction.'],
+  [Users, 'Built for every industry', '20+ industry-specific templates and workspaces, tailored to how you actually work.'],
+  [Clock, 'Live in days', 'From sign-up to a live website + workspace in days — no code, no setup fuss.'],
+];
 
 export const metadata: Metadata = {
   title: 'Get4Domain — Your Online Identity Partner | ₹999/month',
@@ -112,6 +125,7 @@ export default function HomePage() {
                   <span className="text-sm text-slate-500">or</span>
                   <span className="text-lg font-bold text-white">₹9,999</span>
                   <span className="text-sm text-slate-400">/year</span>
+                  <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-2 py-0.5 text-[11px] font-semibold text-success-300"><Check className="h-3 w-3" />Save 17%</span>
                 </div>
                 <p className="mt-0.5 text-xs font-medium text-slate-400">The complete platform — website + Workspace + AI Studio</p>
               </div>
@@ -130,6 +144,21 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-5 text-sm text-slate-400">Custom domain available as an add-on · Setup in days · Cancel anytime</p>
+
+            {/* quick feature chips */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              {HERO_CHIPS.map(([Ic, label]) => (
+                <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur">
+                  <Ic className="h-3.5 w-3.5 text-primary-400" />{label}
+                </span>
+              ))}
+            </div>
+            {/* trust strip */}
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-400">
+              {HERO_TRUST.map(([Ic, label]) => (
+                <span key={label} className="inline-flex items-center gap-1.5"><Ic className="h-3.5 w-3.5 text-primary-400" />{label}</span>
+              ))}
+            </div>
           </div>
 
           {/* Prominent imagery: real website + simulated vendor/client apps */}
@@ -139,13 +168,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 2 — TRUST BAR */}
+      {/* SECTION 2 — WHY GET4DOMAIN (3-card highlight; trust proof now lives in the hero) */}
       <section className="border-y border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <p className="text-center text-sm font-medium text-slate-500">Trusted by businesses across India</p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-center">
-            {['50+ Businesses', '20+ Industries', '4.9★ Rating', '24h Support', 'GST Compliant'].map((s) => (
-              <span key={s} className="text-base font-bold text-slate-800">{s}</span>
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {FEATURE_CARDS.map(([Ic, title, desc]) => (
+              <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
+                <h3 className="text-base font-bold text-slate-900">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">{desc}</p>
+              </div>
             ))}
           </div>
         </div>
