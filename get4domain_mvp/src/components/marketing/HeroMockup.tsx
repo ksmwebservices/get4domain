@@ -2,11 +2,11 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ShoppingBag, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, Check, Building2, Users, Star, Clock, MessageCircle, type LucideProps } from 'lucide-react';
+import { ArrowRight, Play, Check, ShoppingBag, LayoutDashboard, Phone, Sparkles, Megaphone, Wallet, Globe, UserRound, CalendarCheck, Receipt, AlertTriangle, Bell, Building2, Users, Star, Clock, MessageCircle, type LucideProps } from 'lucide-react';
 import { SHOWCASE, type Tone, type VendorDash, type ClientDash, type DashRow, type ShowcaseCategory } from '@/data/hero-showcase';
 import InstallPwaButton from './InstallPwaButton';
 
-// Small proof/feature rows shared by both hero variants (honest, current claims).
+// Small proof/feature rows (honest, current claims).
 export const TRUST: [ComponentType<LucideProps>, string][] = [
   [Building2, '50+ Businesses'], [Users, '20+ Industries'], [Star, '4.9★ Rating'], [Clock, '24h Support'], [Receipt, 'GST Compliant'],
 ];
@@ -15,18 +15,15 @@ export const QUICK_FEATURES: [ComponentType<LucideProps>, string][] = [
 ];
 
 /**
- * Homepage product showcase. Real website screenshots (Website view) + two
- * SIMULATED views per industry (Vendor App, Client App) rendered from rich
- * per-industry sample data — no real vendor/customer data, no backend.
+ * Homepage hero — a DIRECT PORT of the Bolt hero reference (Hero.tsx + HeroMockup.tsx).
+ * Reference colors are substituted 1:1 by role: their emerald/teal → our primary blue,
+ * their amber → our warning gold, their ink-900/800 → our slate dark/card tokens.
  *
- * Two purpose-built layouts, chosen by `variant` (the page renders the mobile one
- * inside `lg:hidden` and the desktop one inside `hidden lg:block`):
- *   - mobile: an app-like TWO-SCREEN flow. Screen 1 (fills the viewport): compact
- *     title + price, the compact view switcher ABOVE the left-aligned mockup, and
- *     the install button BELOW it (nothing overlaps the mockup). Screen 2 (on
- *     scroll): description + Buy Now / Visit Demo.
- *   - desktop: the overlapping composition (phone primary, laptop companion, Buy
- *     Now product card, per-category CTA).
+ * Layout comes from the ported `.hero-grid` (globals.css): single column on mobile
+ * (header → mockup → cta), two columns at 640px+ with the device mockup spanning both
+ * rows on the right. We keep OUR real Playwright website screenshots (Website view) plus
+ * two SIMULATED views per industry (Vendor App, Client App) from sample data — no real
+ * vendor/customer data, no backend.
  */
 
 const VIEWS = [
@@ -35,8 +32,8 @@ const VIEWS = [
   { key: 'client', label: 'Client App', Icon: UserRound },
 ];
 
-const DESCRIPTION =
-  'Get4Domain turns your website into a full business app — capture leads, run CRM & TeleCRM, manage bookings, send invoices and create AI content, all from your phone. One platform, your whole business.';
+// Dark glass, ported from the reference `.glass` (their ink-800 → our slate-800).
+const GLASS = 'bg-slate-800/60 backdrop-blur-xl border border-white/5';
 
 type Icon = ComponentType<LucideProps>;
 const toneBadge: Record<Tone, string> = {
@@ -44,7 +41,7 @@ const toneBadge: Record<Tone, string> = {
   green: 'bg-success-500/15 text-success-300', red: 'bg-error-500/15 text-error-300', slate: 'bg-white/10 text-slate-300',
 };
 
-export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
+export default function HomeHero() {
   const [cat, setCat] = useState(0);
   const [view, setView] = useState(1); // default to Vendor App — this is a business-ops app, not a website
   const [interacted, setInteracted] = useState(false);
@@ -67,7 +64,7 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
   const selectCat = (i: number) => { setCat(i); setView(1); stop(); }; // keep Vendor App as the shown view
   const selectView = (i: number) => { setView(i); stop(); };
 
-  // Subtle cursor-driven 3D tilt on the desktop device stage (hover only).
+  // Subtle cursor-driven 3D tilt on the device stage (hover only).
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const onTilt = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -75,134 +72,160 @@ export default function HeroMockup({ variant = 'desktop' }: { variant?: 'desktop
   };
   const resetTilt = () => setTilt({ x: 0, y: 0 });
 
-  if (variant === 'mobile') {
-    return (
-      <div className="w-full">
-        {/* ── SCREEN 1 — fills the viewport, app-like ─────────────────────────── */}
-        <section className="flex min-h-[82svh] flex-col">
-          {/* compact title + price */}
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-300">Get4Domain · Domain App</div>
-              {/* Headline copy MUST stay identical to the desktop hero (page.tsx). Edit both together. */}
-              <h1 className="mt-0.5 text-xl font-extrabold leading-tight tracking-tight text-white">
-                Turn Your Website Into a <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">WebApp</span>
-                <span className="mt-1 block text-sm font-semibold text-slate-200">
-                  Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
-                </span>
-              </h1>
-            </div>
-            <div className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-right">
-              <div className="text-base font-bold leading-none text-white">₹999<span className="text-[10px] font-medium text-slate-400">/mo</span></div>
-              <div className="mt-0.5 text-[9px] text-slate-400">or ₹9,999/yr</div>
-              <span className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[8px] font-semibold text-success-300"><Check className="h-2 w-2" />Save 17%</span>
-            </div>
-          </div>
-
-          {/* category slider (compact) */}
-          <CategorySlider cat={cat} onSelect={selectCat} className="mt-3" />
-
-          {/* view switcher (compact) — ABOVE the mockup */}
-          <div className="mt-2.5"><ViewSwitcher view={view} onSelect={selectView} /></div>
-
-          {/* mockup — LEFT aligned; phone primary (left), laptop companion (behind-right) */}
-          <div className="mt-4 flex justify-start">
-            <div className="relative h-[330px] w-[94%] max-w-[340px]">
-              <div className="absolute right-0 top-1/2 w-[60%] max-w-[206px] -translate-y-1/2">
-                <LaptopFrame c={c} view={view} />
-              </div>
-              <div className="absolute left-0 top-1/2 z-10 w-[46%] max-w-[158px] -translate-y-1/2">
-                <PhoneFrame c={c} view={view} />
-              </div>
-            </div>
-          </div>
-
-          {/* install button — BELOW the mockup, never overlapping it */}
-          <div className="mt-auto pt-5">
-            <InstallPwaButton className="w-full" />
-          </div>
-        </section>
-
-        {/* ── SCREEN 2 — reached by scrolling ─────────────────────────────────── */}
-        <section className="pb-4 pt-12">
-          <h2 className="text-2xl font-bold tracking-tight text-white">
-            Not just a website — <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">your whole business, in one app.</span>
-          </h2>
-          <p className="mt-3 text-base text-slate-300">{DESCRIPTION}</p>
-          <div className="mt-6 flex gap-3">
-            <Link href="/book-demo" className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
-              <ShoppingBag className="h-4 w-4" /> Buy Now
-            </Link>
-            <Link href={`/demo/${c.key}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-              Visit Demo <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          {/* quick feature chips */}
-          <div className="mt-5 flex flex-wrap gap-1.5">
-            {QUICK_FEATURES.map(([Ic, label]) => (
-              <span key={label} className="inline-flex items-center gap-1 rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300">
-                <Ic className="h-3 w-3 text-primary-400" />{label}
-              </span>
-            ))}
-          </div>
-
-          {/* trust strip */}
-          <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-slate-400">
-            {TRUST.map(([Ic, label]) => (
-              <span key={label} className="inline-flex items-center gap-1"><Ic className="h-3 w-3 text-primary-400" />{label}</span>
-            ))}
-          </div>
-        </section>
-
-        <style>{`@keyframes hmFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}`}</style>
-      </div>
-    );
-  }
-
-  /* ── DESKTOP ─────────────────────────────────────────────────────────────── */
   return (
-    <div className="w-full">
-      <CategorySlider cat={cat} onSelect={selectCat} className="mb-4" />
-      <div className="mb-4"><ViewSwitcher view={view} onSelect={selectView} /></div>
-
-      {/* Overlapping composition: phone primary (right), laptop companion (left), card.
-          Cursor-driven 3D tilt (hover) for depth — phone tilts more than the laptop. */}
-      <div className="relative h-[440px] [perspective:1200px]" onMouseMove={onTilt} onMouseLeave={resetTilt}>
-        <div className="absolute right-4 top-1/2 z-10 w-[52%] max-w-[200px] -translate-y-1/2">
-          <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
-            <PhoneFrame c={c} view={view} />
-          </div>
-        </div>
-        <div className="absolute left-0 top-1/2 z-0 w-[58%] max-w-[268px] -translate-y-1/2">
-          <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x * 0.6}deg) rotateY(${tilt.y * 0.6}deg)` }}>
-            <LaptopFrame c={c} view={view} />
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-0 z-20 w-60">
-          <BuyNowCard />
-        </div>
+    <section className="relative overflow-hidden bg-slate-950">
+      {/* Ambient background — ported from the reference, recolored to our blue/gold/red glows. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 -top-40 h-[40rem] w-[40rem] rounded-full bg-primary-600/15 blur-[120px]" />
+        <div className="absolute right-0 top-20 h-[30rem] w-[30rem] rounded-full bg-warning-500/10 blur-[100px]" />
+        <div className="absolute bottom-0 left-1/3 h-[35rem] w-[35rem] rounded-full bg-error-600/10 blur-[120px]" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: 'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
-        <Link href={`/book-demo?industry=${c.key}`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
-          Book a {c.label} demo <ArrowRight className="h-4 w-4" />
-        </Link>
-        <Link href={`/demo/${c.key}`} className="text-sm font-medium text-slate-300 underline-offset-4 hover:text-white hover:underline">
-          or see the live site →
-        </Link>
+      <div className="relative mx-auto w-full max-w-7xl overflow-hidden px-4 pb-8 pt-6 sm:px-6 sm:pt-10 lg:px-8 lg:pt-14">
+        {/* Top row: headline + mockup side-by-side (reference .hero-grid areas). */}
+        <div className="hero-grid gap-5 sm:gap-6 lg:gap-12">
+          {/* HEADER — badge + headline + subheadline + pricing chip */}
+          <div className="hero-grid-header hero-content min-w-0 w-full max-w-[calc(100vw-2rem)] text-center sm:text-left">
+            {/* badge (our tagline; reference pulse-ring dot, recolored to primary) */}
+            <div className="flex animate-fade-up justify-center sm:justify-start">
+              <div className={`inline-flex items-center gap-2 rounded-full ${GLASS} px-3 py-1 text-[11px] font-medium text-slate-200`}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-primary-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-400" />
+                </span>
+                Your Online Identity Partner
+              </div>
+            </div>
+
+            {/* headline — OUR copy (locked); reference sizing/leading */}
+            <h1 className="mt-3 animate-fade-up text-[1.75rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ animationDelay: '60ms' }}>
+              Turn Your Website Into a <span className="text-gradient-hero">WebApp</span>
+              <span className="mt-1.5 block text-lg font-semibold text-slate-200 sm:text-xl lg:text-2xl">
+                Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
+              </span>
+            </h1>
+
+            {/* subheadline */}
+            <p className="mx-auto mt-3 max-w-md animate-fade-up text-sm leading-relaxed text-slate-400 sm:mx-0" style={{ animationDelay: '120ms' }}>
+              A professional industry website <span className="font-medium text-slate-200">and</span> the full web-app behind it — leads, CRM, bookings, invoices, WhatsApp &amp; AI content, from your laptop or phone.
+            </p>
+
+            {/* pricing chip (reference style; amber → our gold) */}
+            <div className="mt-3 flex animate-fade-up justify-center sm:justify-start" style={{ animationDelay: '180ms' }}>
+              <div className="flex max-w-full items-center gap-2 rounded-xl border border-warning-400/30 bg-warning-400/10 px-3 py-2 text-sm">
+                <span className="font-bold text-warning-200">₹999/mo</span>
+                <span className="text-xs text-slate-400">or</span>
+                <span className="font-bold text-warning-200">₹9,999/yr</span>
+                <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[9px] font-medium text-success-300">
+                  <Check className="h-2 w-2" /> Save 17%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* MOCKUP — view switcher + device stage + subdomain label */}
+          <div className="hero-grid-mockup hero-content flex min-w-0 w-full max-w-[calc(100vw-2rem)] animate-fade-up flex-col items-center gap-3" style={{ animationDelay: '160ms' }}>
+            <ViewSwitcher view={view} onSelect={selectView} />
+            {/* Overlapping composition: phone primary (right), laptop companion (left). Cursor-driven tilt for depth. */}
+            <div
+              className="relative mx-auto h-[340px] w-full max-w-[360px] [perspective:1200px] sm:h-[440px] sm:max-w-[460px]"
+              onMouseMove={onTilt}
+              onMouseLeave={resetTilt}
+            >
+              <div className="absolute right-0 top-1/2 z-10 w-[46%] max-w-[160px] -translate-y-1/2 sm:max-w-[200px]">
+                <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+                  <PhoneFrame c={c} view={view} />
+                </div>
+              </div>
+              <div className="absolute left-0 top-1/2 z-0 w-[58%] max-w-[240px] -translate-y-1/2 sm:max-w-[270px]">
+                <div className="transition-transform duration-200 ease-out" style={{ transform: `rotateX(${tilt.x * 0.6}deg) rotateY(${tilt.y * 0.6}deg)` }}>
+                  <LaptopFrame c={c} view={view} />
+                </div>
+              </div>
+            </div>
+            <SubdomainLabel subdomain={`${c.key}.get4domain.com`} />
+          </div>
+
+          {/* CTA — button pair + quick features + trust strip */}
+          <div className="hero-grid-cta hero-content min-w-0 w-full max-w-[calc(100vw-2rem)] text-center sm:text-left">
+            {/* Buy Now / Visit Demo — ported button pair (gold pill + glass) */}
+            <div className="mt-1 flex animate-fade-up flex-col items-center gap-2 sm:flex-row sm:items-start" style={{ animationDelay: '240ms' }}>
+              <Link
+                href="/book-demo"
+                className="group inline-flex w-full max-w-full items-center justify-center gap-1.5 rounded-xl bg-warning-400 px-4 py-2.5 text-sm font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto"
+              >
+                Buy Now
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href={`/demo/${c.key}`}
+                className={`group inline-flex w-full max-w-full items-center justify-center gap-1.5 rounded-xl ${GLASS} px-4 py-2.5 text-sm font-medium text-slate-100 transition-all hover:bg-slate-800/80 sm:w-auto`}
+              >
+                <Play className="h-3.5 w-3.5 text-primary-300" />
+                Visit Demo
+              </Link>
+            </div>
+
+            {/* install / download app — our PWA button */}
+            <div className="mt-2 animate-fade-up" style={{ animationDelay: '270ms' }}>
+              <InstallPwaButton className="w-full sm:w-auto" />
+            </div>
+
+            {/* quick feature chips */}
+            <div className="mt-3 flex animate-fade-up flex-wrap justify-center gap-1.5 sm:justify-start" style={{ animationDelay: '300ms' }}>
+              {QUICK_FEATURES.map(([Ic, label]) => (
+                <div key={label} className="inline-flex items-center gap-1 rounded-full border border-white/5 bg-slate-800/60 px-2 py-0.5 text-[10px] text-slate-300">
+                  <Ic className="h-2.5 w-2.5 text-primary-400" />
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* trust strip */}
+            <div className="mt-3 animate-fade-in" style={{ animationDelay: '360ms' }}>
+              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1.5 text-[11px] text-slate-400 sm:justify-start">
+                {TRUST.map(([Ic, label], i) => (
+                  <div key={label} className="flex items-center gap-1">
+                    <Ic className="h-3 w-3 text-primary-400" />
+                    <span>{label}</span>
+                    {i < TRUST.length - 1 && <span className="hidden text-slate-600 sm:inline">·</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Industry pills — below the fold, horizontally scrollable (controls the mockup). */}
+        <CategorySlider cat={cat} onSelect={selectCat} className="mt-6" />
       </div>
 
       <style>{`@keyframes hmFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}`}</style>
-    </div>
+    </section>
   );
 }
 
 /* ── Shared controls ─────────────────────────────────────────────────────────── */
+function SubdomainLabel({ subdomain }: { subdomain: string }) {
+  return (
+    <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-400" />
+      <span className="font-mono">{subdomain}</span>
+    </div>
+  );
+}
+
 function CategorySlider({ cat, onSelect, className = '' }: { cat: number; onSelect: (i: number) => void; className?: string }) {
   return (
     <div className={`overflow-hidden ${className}`}>
-      <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2 sm:justify-center lg:flex-wrap">
         {SHOWCASE.map((s, i) => {
           const on = i === cat;
           return (
@@ -210,7 +233,7 @@ function CategorySlider({ cat, onSelect, className = '' }: { cat: number; onSele
               key={s.key}
               onClick={() => onSelect(i)}
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
-                on ? 'border-primary-400/50 bg-primary-500/20 text-white shadow-[0_0_16px_-2px_rgba(37,99,235,0.55)]' : 'border-white/10 bg-white/5 text-slate-300 hover:bg-white/10'
+                on ? 'border-primary-400/40 bg-primary-500/15 text-primary-200 shadow-glow' : 'border-white/5 bg-slate-800/50 text-slate-300 hover:border-white/10 hover:bg-slate-800/80 hover:text-slate-100'
               }`}
             >
               <span>{s.icon}</span>{s.label}
@@ -243,41 +266,10 @@ function ViewSwitcher({ view, onSelect }: { view: number; onSelect: (i: number) 
   );
 }
 
-function BuyNowCard() {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4 shadow-2xl backdrop-blur">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-primary-300">Get4Domain</div>
-          <div className="text-base font-extrabold tracking-tight text-white">DOMAIN APP</div>
-        </div>
-        <div className="text-right">
-          <div className="whitespace-nowrap text-lg font-bold text-white">₹999<span className="text-xs font-medium text-slate-400">/month</span></div>
-          <div className="flex items-center justify-end gap-1 text-[11px] text-slate-400">
-            or ₹9,999/year
-            <span className="inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-success-300"><Check className="h-2.5 w-2.5" />Save 17%</span>
-          </div>
-        </div>
-      </div>
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        {['WebApp', 'Vendor App', 'Client App'].map((t) => (
-          <span key={t} className="rounded-full border border-primary-400/20 bg-primary-500/10 px-2 py-0.5 text-[10px] font-semibold text-primary-200">{t}</span>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-col gap-2">
-        <Link href="/book-demo" className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
-          <ShoppingBag className="h-4 w-4" /> Buy Now
-        </Link>
-        <InstallPwaButton className="w-full" />
-      </div>
-    </div>
-  );
-}
-
 /* ── Device frames (reused by both variants) ─────────────────────────────────── */
 function PhoneFrame({ c, view }: { c: ShowcaseCategory; view: number }) {
   return (
-    <div className="relative rounded-[2.2rem] border border-slate-700/80 bg-gradient-to-b from-slate-800 to-slate-900 p-[5px] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10">
+    <div className="relative rounded-[2.2rem] border border-slate-700/80 bg-gradient-to-b from-slate-800 to-slate-900 p-[5px] shadow-device-phone ring-1 ring-white/10">
       {/* brand glow beneath the phone (gold) */}
       <div className="pointer-events-none absolute -bottom-4 left-1/2 h-6 w-2/3 -translate-x-1/2 rounded-full bg-warning-500/20 blur-2xl" />
       {/* side buttons for depth */}
@@ -302,7 +294,7 @@ function LaptopFrame({ c, view }: { c: ShowcaseCategory; view: number }) {
     <div className="relative">
       {/* brand glow beneath the laptop (blue) */}
       <div className="pointer-events-none absolute -bottom-3 left-1/2 h-6 w-3/4 -translate-x-1/2 rounded-full bg-primary-500/20 blur-2xl" />
-      <div className="rounded-lg border-[5px] border-slate-800 bg-slate-800 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.55)] ring-1 ring-white/10">
+      <div className="rounded-lg border-[5px] border-slate-800 bg-slate-800 shadow-device ring-1 ring-white/10">
         <div className="overflow-hidden rounded-[3px] bg-slate-950">
           <div className="flex items-center gap-1 border-b border-white/5 bg-slate-900 px-1.5 py-1">
             <span className="h-1.5 w-1.5 rounded-full bg-error-500/70" />

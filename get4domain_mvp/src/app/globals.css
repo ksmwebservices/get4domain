@@ -98,5 +98,40 @@
 .animate-g4d-float { animation: g4dFloat 5s ease-in-out infinite; }
 .animate-g4d-float-slow { animation: g4dFloat 7s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .animate-g4d-float, .animate-g4d-float-slow { animation: none; }
+  .animate-g4d-float, .animate-g4d-float-slow,
+  .animate-fade-up, .animate-float-slow, .animate-pulse-ring { animation: none; }
 }
+
+/* ── Hero grid — ported 1:1 from the Bolt hero reference (index.css .hero-grid).
+   Single column on mobile (header → mockup → cta); at 640px+ two columns with
+   the mockup spanning both rows on the right. */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas: 'header' 'mockup' 'cta';
+}
+.hero-grid-header { grid-area: header; }
+.hero-grid-mockup { grid-area: mockup; }
+.hero-grid-cta { grid-area: cta; }
+@media (min-width: 640px) {
+  .hero-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'header mockup' 'cta mockup';
+    align-items: center;
+  }
+}
+@media (max-width: 639px) {
+  .hero-content { max-width: calc(100vw - 2rem) !important; overflow-x: hidden; }
+}
+
+/* Hero accent gradient (their from-emerald via-emerald to-amber → our primary→gold). */
+.text-gradient-hero {
+  background-image: linear-gradient(to right, #93c5fd, #60a5fa, #fcd34d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* No-scrollbar utility (ported from reference .no-scrollbar). */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -1,16 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Check, Building2, Users, Star, Clock, Receipt, MessageCircle, Sparkles, Phone, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, Play, Users, Clock, Sparkles, ShieldCheck, type LucideIcon } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HeroMockup from '@/components/marketing/HeroMockup';
 
-// Hero proof/feature rows + the below-fold 3-card highlight (honest, current claims).
-const HERO_CHIPS: [LucideIcon, string][] = [
-  [MessageCircle, 'WhatsApp'], [Sparkles, 'AI Studio'], [Phone, 'TeleCRM'], [Receipt, 'GST Invoicing'],
-];
-const HERO_TRUST: [LucideIcon, string][] = [
-  [Building2, '50+ Businesses'], [Users, '20+ Industries'], [Star, '4.9★ Rating'], [Clock, '24h Support'], [Receipt, 'GST Compliant'],
-];
+// Below-fold 3-card highlight (honest, current claims). Proof/feature rows now live in the hero.
 const FEATURE_CARDS: [LucideIcon, string, string][] = [
   [ShieldCheck, 'Secure & GST Compliant', 'Bank-grade security with built-in GST invoicing on every transaction.'],
   [Users, 'Built for every industry', '20+ industry-specific templates and workspaces, tailored to how you actually work.'],
@@ -82,91 +76,8 @@ const FAQS = [
 export default function HomePage() {
   return (
     <>
-      {/* SECTION 1 — HERO (semi-dark, brand red/gold/blue glow) */}
-      <section className="relative overflow-hidden bg-slate-950">
-        {/* Brand-color glows from the logo palette (blue / gold / red) */}
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-24 -top-24 h-96 w-96 rounded-full bg-primary-600/25 blur-[120px]" />
-          <div className="absolute right-0 top-10 h-80 w-80 rounded-full bg-warning-500/20 blur-[120px]" />
-          <div className="absolute -bottom-24 left-1/3 h-96 w-96 rounded-full bg-error-600/15 blur-[130px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_55%)]" />
-        </div>
-
-        {/* MOBILE hero — app-like two-screen layout: Screen 1 fills the viewport
-            (title + price, switcher, left-aligned mockup, install button); Screen 2
-            (on scroll) = description + Buy Now / Visit Demo. */}
-        <div className="relative px-4 pb-8 pt-6 sm:px-6 lg:hidden">
-          <HeroMockup variant="mobile" />
-        </div>
-
-        {/* DESKTOP hero */}
-        <div className="relative mx-auto hidden max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 md:py-24 lg:grid lg:grid-cols-5 lg:px-8">
-          <div className="lg:order-2 lg:col-span-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-slate-200 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-warning-400" /> Your Online Identity Partner
-            </span>
-            {/* Headline copy MUST stay identical to the mobile hero (HeroMockup). Edit both together. */}
-            <h1 className="mt-4 text-3xl font-bold leading-[1.15] tracking-tight text-white md:text-[2.6rem]">
-              Turn Your Website Into a <span className="bg-gradient-to-r from-primary-400 via-warning-300 to-error-400 bg-clip-text text-transparent">WebApp</span>
-              <span className="mt-1.5 block text-xl font-semibold text-slate-200 md:text-2xl">
-                Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
-              </span>
-            </h1>
-            <p className="mt-6 max-w-xl text-lg text-slate-300">
-              Get4Domain gives you a professional industry website <span className="font-semibold text-white">and</span> the full web-app to run everything behind it — leads, CRM, bookings, invoices, WhatsApp and AI content — managed from your laptop or your phone. A full business web-app, not a static page.
-            </p>
-
-            {/* Pricing framing — subscription vs. pay-per-use kept visibly distinct */}
-            <div className="mt-8 flex flex-col gap-3">
-              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-white">₹999</span>
-                  <span className="text-sm text-slate-400">/month</span>
-                  <span className="text-sm text-slate-500">or</span>
-                  <span className="text-lg font-bold text-white">₹9,999</span>
-                  <span className="text-sm text-slate-400">/year</span>
-                  <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-2 py-0.5 text-[11px] font-semibold text-success-300"><Check className="h-3 w-3" />Save 17%</span>
-                </div>
-                <p className="mt-0.5 text-xs font-medium text-slate-400">The complete platform — website + Workspace + AI Studio</p>
-              </div>
-              <div className="rounded-xl border border-warning-400/20 bg-warning-400/5 px-4 py-3 backdrop-blur">
-                <div className="text-sm font-semibold text-warning-300">Pay-per-use, from your wallet</div>
-                <p className="mt-0.5 text-xs font-medium text-slate-400">Posters, reels &amp; campaigns — pay only when you create them</p>
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white shadow-lg shadow-primary-600/30 transition hover:bg-primary-500">
-                Get Started <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/demo/clinic" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/5 px-6 py-3 font-medium text-white backdrop-blur transition hover:bg-white/10">
-                Try a Live Demo
-              </Link>
-            </div>
-            <p className="mt-5 text-sm text-slate-400">Custom domain available as an add-on · Setup in days · Cancel anytime</p>
-
-            {/* quick feature chips */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              {HERO_CHIPS.map(([Ic, label]) => (
-                <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300 backdrop-blur">
-                  <Ic className="h-3.5 w-3.5 text-primary-400" />{label}
-                </span>
-              ))}
-            </div>
-            {/* trust strip */}
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-400">
-              {HERO_TRUST.map(([Ic, label]) => (
-                <span key={label} className="inline-flex items-center gap-1.5"><Ic className="h-3.5 w-3.5 text-primary-400" />{label}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Prominent imagery: real website + simulated vendor/client apps */}
-          <div className="lg:order-1 lg:col-span-3">
-            <HeroMockup variant="desktop" />
-          </div>
-        </div>
-      </section>
+      {/* SECTION 1 — HERO (direct port of the Bolt hero grid; renders its own dark section) */}
+      <HeroMockup />
 
       {/* SECTION 2 — WHY GET4DOMAIN (3-card highlight; trust proof now lives in the hero) */}
       <section className="border-y border-slate-200 bg-slate-50">
@@ -291,17 +202,41 @@ export default function HomePage() {
 
       <Faq items={FAQS} subtitle="Everything you need to know about the platform." />
 
-      {/* SECTION 8 — CTA */}
-      <section className="bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 md:py-24 lg:px-8">
-          <h2 className="text-3xl font-bold tracking-tight text-white md:text-4xl">Ready to Build Your Online Identity?</h2>
-          <p className="mt-3 text-slate-300">Join 50+ businesses already growing with Get4Domain</p>
-          <div className="mt-8">
-            <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-slate-900 transition hover:bg-slate-100">
-              Book Your Free Demo <ArrowRight className="h-4 w-4" />
-            </Link>
+      {/* SECTION 8 — BOTTOM CTA (direct port of CTAFooter.tsx CTASection; glass card + glow) */}
+      <section className="relative overflow-hidden bg-slate-950 py-16 md:py-20">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
+          <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-slate-800/60 p-8 text-center backdrop-blur-xl sm:p-12">
+            {/* glow */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+              <div className="absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-primary-500/15 blur-[80px]" />
+              <div className="absolute bottom-0 right-1/4 h-48 w-48 rounded-full bg-warning-500/10 blur-[60px]" />
+            </div>
+
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-500/15 px-3.5 py-1.5 text-xs font-medium text-primary-300">
+              <Sparkles className="h-3.5 w-3.5" /> Get started today
+            </div>
+
+            <h2 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Your business deserves <span className="text-gradient-hero">better software</span>
+            </h2>
+            <p className="mx-auto mb-8 max-w-xl text-slate-400">
+              Join 50+ businesses running on Get4Domain. Live in days. No setup fees, no contracts, no per-feature pricing.
+            </p>
+
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link href="/book-demo" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
+                Buy Now — ₹999/mo
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link href="/demo/clinic" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80 sm:w-auto">
+                <Play className="h-4 w-4 text-primary-300" /> Visit Demo
+              </Link>
+            </div>
+
+            <div className="mt-6 text-xs text-slate-400">
+              14-day money-back guarantee · Cancel anytime · GST compliant
+            </div>
           </div>
-          <p className="mt-5 text-sm text-slate-400">No credit card · No commitment · Setup in 24 hours</p>
         </div>
       </section>
     </>

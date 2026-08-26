@@ -84,6 +84,11 @@ module.exports = {
         card: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'card-hover': '0 10px 30px -5px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05)',
         premium: '0 20px 60px -10px rgb(0 0 0 / 0.15), 0 8px 20px -4px rgb(0 0 0 / 0.05)',
+        // Ported from the Bolt hero reference (their emerald → our primary blue; their amber == our warning gold).
+        device: '0 30px 60px -15px rgba(0,0,0,0.6), 0 18px 36px -18px rgba(37,99,235,0.25)',
+        'device-phone': '0 20px 45px -12px rgba(0,0,0,0.55), 0 12px 24px -12px rgba(245,158,11,0.2)',
+        glow: '0 0 0 1px rgba(37,99,235,0.25), 0 8px 30px -6px rgba(37,99,235,0.35)',
+        'glow-amber': '0 0 0 1px rgba(245,158,11,0.25), 0 8px 30px -6px rgba(245,158,11,0.3)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
@@ -91,6 +96,10 @@ module.exports = {
         'slide-down': 'slideDown 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         float: 'float 3s ease-in-out infinite',
+        // Ported from the Bolt hero reference.
+        'fade-up': 'fadeUp 0.5s ease-out forwards',
+        'float-slow': 'floatSlow 8s ease-in-out infinite',
+        'pulse-ring': 'pulseRing 2s ease-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -112,6 +121,20 @@ module.exports = {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
+        },
+        // Ported from the Bolt hero reference.
+        fadeUp: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+        pulseRing: {
+          '0%': { transform: 'scale(0.95)', opacity: '0.7' },
+          '70%': { transform: 'scale(1.1)', opacity: '0' },
+          '100%': { transform: 'scale(0.95)', opacity: '0' },
         },
       },
     },
