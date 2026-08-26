@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Check, Play, Users, Clock, Sparkles, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HeroMockup from '@/components/marketing/HeroMockup';
-
-// Below-fold 3-card highlight (honest, current claims). Proof/feature rows now live in the hero.
-const FEATURE_CARDS: [LucideIcon, string, string][] = [
-  [ShieldCheck, 'Secure & GST Compliant', 'Bank-grade security with built-in GST invoicing on every transaction.'],
-  [Users, 'Built for every industry', '20+ industry-specific templates and workspaces, tailored to how you actually work.'],
-  [Clock, 'Live in days', 'From sign-up to a live website + workspace in days — no code, no setup fuss.'],
-];
+import PlatformSection from '@/components/marketing/home/PlatformSection';
+import FeatureGrid from '@/components/marketing/home/FeatureGrid';
+import DashboardPreview from '@/components/marketing/home/DashboardPreview';
+import CommunicationHub from '@/components/marketing/home/CommunicationHub';
+import AIStudio from '@/components/marketing/home/AIStudio';
+import HomePricing from '@/components/marketing/home/HomePricing';
 
 export const metadata: Metadata = {
   title: 'Get4Domain — Your Online Identity Partner | ₹999/month',
@@ -17,31 +16,6 @@ export const metadata: Metadata = {
     "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
   alternates: { canonical: 'https://get4domain.com' },
 };
-
-// Everything included in the single DomainApp plan.
-const PLAN_FEATURES = [
-  'Professional industry website (we build)',
-  'Workplace (contacts, catalog, records, invoicing)',
-  'Accounts — expenses, P&L & GST statement',
-  'CRM + TeleCRM',
-  'Campaign pages + social media',
-  'AI Studio with ₹499 free credit',
-  'Instant AI support + office/stationery tracker',
-  'Free subdomain + hosting + SSL',
-];
-
-const MODULES = [
-  { icon: '📋', title: 'DomainApp', desc: 'Contacts, catalog, records, invoicing — adapted to your industry' },
-  { icon: '📣', title: 'Growth Hub', desc: 'Landing pages, social media, paid ads — all managed for you' },
-  { icon: '📞', title: 'TeleCRM', desc: 'Smart call queue, AI summaries, pipeline tracking' },
-  { icon: '✨', title: 'AI Studio', desc: 'Social posts, reels, blogs, posters — created by AI in seconds' },
-  { icon: '💬', title: 'Communication Hub', desc: 'Unified inbox for WhatsApp, SMS and Email' },
-  { icon: '🌐', title: 'Website Manager', desc: 'Professional industry website with an easy CMS' },
-  { icon: '👥', title: 'Customer Hub', desc: 'Your customers track bookings, invoices and support' },
-  { icon: '📊', title: 'Analytics Hub', desc: 'Revenue, leads, campaigns — all your numbers in one view' },
-  { icon: '💳', title: 'Wallet & Billing', desc: 'Prepaid wallet for services, transparent usage tracking' },
-  { icon: '⚙️', title: 'Admin Platform', desc: 'Manage your team, integrations and settings' },
-];
 
 const INDUSTRIES = [
   { icon: '🚗', label: 'Travel & Tours', href: '/industries/travel' },
@@ -79,67 +53,23 @@ export default function HomePage() {
       {/* SECTION 1 — HERO (direct port of the Bolt hero grid; renders its own dark section) */}
       <HeroMockup />
 
-      {/* SECTION 2 — WHY GET4DOMAIN (3-card highlight; trust proof now lives in the hero) */}
-      <section className="border-y border-slate-200 bg-slate-50">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {FEATURE_CARDS.map(([Ic, title, desc]) => (
-              <div key={title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
-                <h3 className="text-base font-bold text-slate-900">{title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-slate-600">{desc}</p>
-              </div>
-            ))}
-          </div>
+      {/* SECTIONS 2–7 — PRODUCT SHOWCASE (ported Bolt homepage sections; continuous dark region) */}
+      <div className="relative overflow-hidden bg-slate-950 text-slate-100">
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[60rem]">
+          <div className="absolute left-1/4 top-40 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-primary-600/10 blur-[130px]" />
+          <div className="absolute right-0 top-[36rem] h-[26rem] w-[26rem] rounded-full bg-warning-500/8 blur-[120px]" />
         </div>
-      </section>
-
-      {/* SECTION 3 — 10 MODULES */}
-      <section id="modules" className="py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Everything Your Business Needs. One Platform.</h2>
-            <p className="mt-3 text-slate-600">10 powerful modules that work together seamlessly.</p>
-          </div>
-          <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {MODULES.map((m) => (
-              <div key={m.title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="text-2xl">{m.icon}</div>
-                <h3 className="mt-3 text-base font-bold text-slate-900">{m.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{m.desc}</p>
-              </div>
-            ))}
-          </div>
+        <div className="relative">
+          <PlatformSection />
+          <FeatureGrid />
+          <DashboardPreview />
+          <CommunicationHub />
+          <AIStudio />
+          <HomePricing />
         </div>
-      </section>
+      </div>
 
-      {/* SECTION 4 — ONE PLAN */}
-      <section className="bg-slate-50 py-16 md:py-24">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">One Plan. Everything You Need.</h2>
-          </div>
-          <div className="mt-12 rounded-2xl border-2 border-primary-500 bg-white p-8 shadow-md">
-            <div className="text-3xl">📋</div>
-            <h3 className="mt-4 text-2xl font-bold text-slate-900">DomainApp — ₹999<span className="text-base font-normal text-slate-400">/month</span></h3>
-            <p className="mt-1 font-medium text-primary-600">Industry website + Business workspace + Campaigns + AI Studio</p>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-              {PLAN_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-500" />{f}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-6 text-sm text-slate-600">Plus wallet top-up for campaigns, AI content &amp; messaging.</p>
-            <div className="mt-6">
-              <Link href="/book-demo" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition hover:bg-primary-700">Get Started — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
-            </div>
-            <p className="mt-4 text-center text-sm text-slate-400">Just ₹999/month. Cancel anytime.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5 — INDUSTRIES */}
+      {/* SECTION — INDUSTRIES */}
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
