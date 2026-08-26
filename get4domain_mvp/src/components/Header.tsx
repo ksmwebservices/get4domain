@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Rocket, ChevronDown, Globe, LayoutGrid, Megaphone, Sparkles } from 'lucide-react';
+import { Play, ChevronDown, Globe, LayoutGrid, Megaphone, Sparkles, LogIn } from 'lucide-react';
 import Button from './ui/Button';
 
 const productDropdown = [
@@ -114,14 +114,19 @@ export default function Header() {
 
           {/* Right CTAs (both desktop and mobile) */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login" className="text-sm font-semibold text-slate-600 transition-colors hover:text-blue-600">
-              Login
+            <Link
+              href="/login"
+              aria-label="Login"
+              title="Login"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-blue-600"
+            >
+              <LogIn className="h-4 w-4" />
             </Link>
-            <Link href="/book-demo" className="hidden md:block">
-              <Button size="md" leftIcon={<Rocket className="h-4 w-4" />}>Book a Demo</Button>
+            <Link href="/demo/clinic" className="hidden md:block">
+              <Button size="md" leftIcon={<Play className="h-4 w-4" />}>Visit Demo</Button>
             </Link>
-            <Link href="/book-demo" className="md:hidden">
-              <Button size="sm" leftIcon={<Rocket className="h-3.5 w-3.5" />}>Book Demo</Button>
+            <Link href="/demo/clinic" className="md:hidden">
+              <Button size="sm" leftIcon={<Play className="h-3.5 w-3.5" />}>Visit Demo</Button>
             </Link>
           </div>
         </div>

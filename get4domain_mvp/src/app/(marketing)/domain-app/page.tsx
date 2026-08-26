@@ -85,7 +85,7 @@ export default function DomainAppPage() {
             <h3 className="mt-3 text-xl font-bold text-slate-900">DomainApp</h3>
             <p className="mt-2 text-4xl font-bold text-slate-900">₹999<span className="text-base font-normal text-slate-400">/month</span></p>
             <p className="mt-1 text-sm text-slate-500">Everything included · Cancel anytime</p>
-            <p className="mt-3 text-sm text-slate-600">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio (₹499 free credit)</p>
+            <p className="mt-3 text-sm text-slate-600">Industry website + Workplace + CRM/TeleCRM + Campaigns + AI Studio (₹499 free credit)</p>
           </div>
 
           <div className="mt-12">

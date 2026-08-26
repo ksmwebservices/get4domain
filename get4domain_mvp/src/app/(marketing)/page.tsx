@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 // Everything included in the single DomainApp plan.
 const PLAN_FEATURES = [
   'Professional industry website (we build)',
-  'Mini BOS workspace (contacts, catalog, records, invoicing)',
+  'Workplace (contacts, catalog, records, invoicing)',
   'Accounts — expenses, P&L & GST statement',
   'CRM + TeleCRM',
   'Campaign pages + social media',
