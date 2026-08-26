@@ -33,16 +33,20 @@ const RATES: [string, string][] = [
 export default function CampaignFeaturesPage() {
   return (
     <>
-      <section className="bg-white">
-        <div className="mx-auto max-w-3xl px-4 pb-8 pt-16 text-center sm:px-6 md:pt-24 lg:px-8">
-          <span className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1 text-sm font-medium text-white">📣 Included in DomainApp</span>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">Campaigns, Built In</h1>
-          <p className="mt-5 text-lg text-slate-600">
+      <section className="relative overflow-hidden bg-slate-950 text-slate-100">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-20 -top-32 h-[34rem] w-[34rem] rounded-full bg-primary-600/15 blur-[120px]" />
+          <div className="absolute right-0 top-16 h-[26rem] w-[26rem] rounded-full bg-warning-500/10 blur-[110px]" />
+        </div>
+        <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-20 text-center sm:px-6 md:pt-28 lg:px-8">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">📣 Included in DomainApp</span>
+          <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Campaigns, <span className="text-gradient-hero">Built In</span></h1>
+          <p className="mt-5 text-lg text-slate-400">
             Campaigns aren&apos;t a separate product — they&apos;re part of your DomainApp plan. Create landing pages, post to social, message customers and generate leads, all from one dashboard.
           </p>
-          <p className="mt-3 text-sm font-semibold text-slate-900">Included in your DomainApp plan — no extra subscription.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-200">Included in your DomainApp plan — no extra subscription.</p>
           <div className="mt-8">
-            <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Get Started with DomainApp — ₹999/month <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/book-demo" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">Get Started — ₹999/month <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
           </div>
         </div>
       </section>

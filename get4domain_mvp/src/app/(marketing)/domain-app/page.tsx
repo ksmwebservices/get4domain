@@ -34,14 +34,18 @@ const FAQS = [
 export default function DomainAppPage() {
   return (
     <>
-      <section className="bg-white">
-        <div className="mx-auto max-w-3xl px-4 pb-8 pt-16 text-center sm:px-6 md:pt-24 lg:px-8">
+      <section className="relative overflow-hidden bg-slate-950 text-slate-100">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-20 -top-32 h-[34rem] w-[34rem] rounded-full bg-primary-600/15 blur-[120px]" />
+          <div className="absolute right-0 top-16 h-[26rem] w-[26rem] rounded-full bg-warning-500/10 blur-[110px]" />
+        </div>
+        <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-20 text-center sm:px-6 md:pt-28 lg:px-8">
           <div className="text-4xl">📋</div>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl">DomainApp — Your Business Workspace</h1>
-          <p className="mt-5 text-lg text-slate-600">Website, operations, CRM, invoicing, HR — everything to run your business digitally. Adapted to your industry.</p>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">DomainApp — <span className="text-gradient-hero">Your Business Workspace</span></h1>
+          <p className="mt-5 text-lg text-slate-400">Website, operations, CRM, invoicing — everything to run your business digitally, adapted to your industry.</p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/book-demo?product=app" className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700">Book Demo <ArrowRight className="h-4 w-4" /></Link>
-            <Link href="/pricing" className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 font-medium text-slate-700 hover:bg-slate-50">See Pricing</Link>
+            <Link href="/book-demo?product=app" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">Buy Now — ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
+            <Link href="/pricing" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80">See Pricing</Link>
           </div>
         </div>
       </section>
