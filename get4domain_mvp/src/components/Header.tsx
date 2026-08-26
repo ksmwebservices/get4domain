@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Play, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import Button from './ui/Button';
 
 const centerLinks = [
@@ -59,21 +59,13 @@ export default function Header() {
             })}
           </div>
 
-          {/* Right CTAs (both desktop and mobile) */}
+          {/* Right CTA — Login / Register */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/login"
-              aria-label="Login"
-              title="Login"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-blue-600"
-            >
-              <LogIn className="h-4 w-4" />
+            <Link href="/login" className="hidden md:block">
+              <Button size="md" leftIcon={<LogIn className="h-4 w-4" />}>Login</Button>
             </Link>
-            <Link href="/demo/clinic" className="hidden md:block">
-              <Button size="md" leftIcon={<Play className="h-4 w-4" />}>Visit Demo</Button>
-            </Link>
-            <Link href="/demo/clinic" className="md:hidden">
-              <Button size="sm" leftIcon={<Play className="h-3.5 w-3.5" />}>Visit Demo</Button>
+            <Link href="/login" className="md:hidden">
+              <Button size="sm" leftIcon={<LogIn className="h-3.5 w-3.5" />}>Login</Button>
             </Link>
           </div>
         </div>
