@@ -1,18 +1,19 @@
 import type { Metadata } from 'next';
-import { Target, MapPin, Phone, Mail, Calendar } from 'lucide-react';
+import { Target, MapPin, Phone, Mail, Calendar, UserRound } from 'lucide-react';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import { createPageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = createPageMetadata({
   title: 'About Us',
-  description: 'Get4Domain is built by KSM Quantum Technologies — your complete digital business partner for Indian SMBs.',
+  description: 'Get4Domain is built by KSM Quantum Technologies — founded in Chennai in 2015 by K.S. Murugavel. Your complete digital business partner for Indian SMBs.',
   path: '/about',
 });
 
 const facts = [
   { icon: Target, label: 'Mission', value: 'Your Complete Digital Business Partner for Indian SMBs' },
-  { icon: Calendar, label: 'Founded', value: '2026' },
+  { icon: UserRound, label: 'Founder', value: 'K.S. Murugavel' },
+  { icon: Calendar, label: 'Founded', value: '2015, in Chennai' },
   { icon: MapPin, label: 'Address', value: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113' },
   { icon: Phone, label: 'Phone', value: '+91 75500 47567' },
   { icon: Mail, label: 'Email', value: 'support@get4domain.com' },
@@ -36,6 +37,9 @@ export default function AboutPage() {
             </p>
             <p>
               Our product — <strong className="text-slate-900">DomainApp</strong> (₹999/month, everything included) — gives an SMB a professional industry website, a business workspace (CRM, invoicing, contacts, records), built-in campaigns and an AI Studio, all in one platform to launch, operate and grow online.
+            </p>
+            <p>
+              Get4Domain is built on more than a decade of experience. The company was founded in <strong className="text-slate-900">Chennai in 2015</strong> by <strong className="text-slate-900">K.S. Murugavel</strong>, a computer graduate, as <strong className="text-slate-900">KSM Web Services</strong> — helping local businesses get online. As the focus shifted toward AI and product innovation, it was renamed <strong className="text-slate-900">KSM Quantum Technologies</strong>. Since 2015 we&apos;ve worked with businesses across India, and that experience is distilled into Get4Domain today.
             </p>
           </div>
 
