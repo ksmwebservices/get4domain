@@ -103,6 +103,8 @@ model Vendor {
   projectMaterials     ProjectMaterial[]
   eventBookings        EventBooking[]
   eventVendors         EventVendorAssignment[]
+  financeCases         FinanceCase[]
+  financeCaseDocuments FinanceCaseDocument[]
 }
 
 model Subscription {
@@ -1600,4 +1602,46 @@ model EventVendorAssignment {
   @@index([vendorId])
   @@index([bookingId])
   @@map("g4d_event_vendors")
+}
+
+// ── Phase 3 — Finance & Consulting: case tracking + per-type doc checklist ──
+model FinanceCase {
+  id             String                @id @default(cuid())
+  vendorId       String
+  vendor         Vendor                @relation(fields: [vendorId], references: [id])
+  title          String
+  clientName     String
+  contactId      String?
+  caseType       String                @default("ITR") // ITR | GST | Audit | Loan | Insurance | Other
+  status         String                @default("open") // open | in_review | filed | closed | cancelled
+  feeValue       Float                 @default(0)
+  filingDeadline DateTime?
+  assignedTo     String?
+  notes          String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  documents      FinanceCaseDocument[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_finance_cases")
+}
+
+model FinanceCaseDocument {
+  id         String      @id @default(cuid())
+  vendorId   String
+  vendor     Vendor      @relation(fields: [vendorId], references: [id])
+  caseId     String
+  case       FinanceCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  name       String
+  required   Boolean     @default(true)
+  status     String      @default("pending") // pending | received | waived
+  receivedAt DateTime?
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([vendorId])
+  @@index([caseId])
+  @@map("g4d_finance_case_docs")
 }

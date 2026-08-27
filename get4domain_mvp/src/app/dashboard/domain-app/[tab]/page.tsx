@@ -32,6 +32,8 @@ import ProjectsView from '@/domainapp/construction/ProjectsView';
 import MaterialsView from '@/domainapp/construction/MaterialsView';
 import BookingsView from '@/domainapp/events/BookingsView';
 import EventVendorsView from '@/domainapp/events/VendorsView';
+import CasesView from '@/domainapp/finance/CasesView';
+import FinanceDocumentsView from '@/domainapp/finance/DocumentsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -144,6 +146,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'events') {
     if (tabKey === 'bookings') return <BookingsView />;
     if (tabKey === 'vendors') return <EventVendorsView />;
+  }
+
+  // Phase 3 — Finance: case tracking + document checklist per case type.
+  if (cfg.industry.key === 'finance') {
+    if (tabKey === 'cases') return <CasesView />;
+    if (tabKey === 'documents') return <FinanceDocumentsView />;
   }
 
   const view = resolveView(tabKey);

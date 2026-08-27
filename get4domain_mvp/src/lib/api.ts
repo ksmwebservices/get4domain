@@ -283,6 +283,18 @@ export const api = {
   updateEventVendor: (id: string, data: any) => apiCall(`/events/vendors/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEventVendor: (id: string) => apiCall(`/events/vendors/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Finance operations
+  financeSummary: () => apiCall('/finance/summary'),
+  getCases: () => apiCall('/finance/cases'),
+  getCase: (id: string) => apiCall(`/finance/cases/${id}`),
+  createCase: (data: any) => apiCall('/finance/cases', { method: 'POST', body: JSON.stringify(data) }),
+  updateCase: (id: string, data: any) => apiCall(`/finance/cases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCase: (id: string) => apiCall(`/finance/cases/${id}`, { method: 'DELETE' }),
+  getCaseDocuments: () => apiCall('/finance/documents'),
+  addCaseDocument: (caseId: string, data: any) => apiCall(`/finance/cases/${caseId}/documents`, { method: 'POST', body: JSON.stringify(data) }),
+  updateCaseDocument: (id: string, data: any) => apiCall(`/finance/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCaseDocument: (id: string) => apiCall(`/finance/documents/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
