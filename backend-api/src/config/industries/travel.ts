@@ -17,6 +17,9 @@ export const travelConfig: IndustryConfig = {
     { key: 'cancelled', label: 'Cancelled', color: '#dc2626' },
   ],
   recordCustomFields: [
+    // Local cab / point-to-point bookings: one-way vs round-trip on a single date.
+    // Optional so it doesn't disrupt package-tour bookings that don't need it.
+    { key: 'tripType', label: 'Trip Type', type: 'select', options: ['One-way', 'Round-trip'] },
     { key: 'pickupLocation', label: 'Pickup Location', type: 'text', required: true },
     { key: 'dropLocation', label: 'Drop Location', type: 'text', required: true },
     { key: 'travelDate', label: 'Travel Date', type: 'date', required: true },
