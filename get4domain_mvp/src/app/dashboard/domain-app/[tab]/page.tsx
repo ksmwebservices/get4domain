@@ -45,6 +45,8 @@ import ProduceOrdersView from '@/domainapp/agriculture/OrdersView';
 import ProduceInventoryView from '@/domainapp/agriculture/ProduceInventoryView';
 import CoachingBatchesView from '@/domainapp/coaching/BatchesView';
 import CoachingStudentsView from '@/domainapp/coaching/StudentsView';
+import TechProjectsView from '@/domainapp/technology/ProjectsView';
+import TechTasksView from '@/domainapp/technology/TasksView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -200,6 +202,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'coaching') {
     if (tabKey === 'batches') return <CoachingBatchesView />;
     if (tabKey === 'students') return <CoachingStudentsView />;
+  }
+
+  // Phase 3 — Technology: project + sprint/task tracking.
+  if (cfg.industry.key === 'technology') {
+    if (tabKey === 'projects') return <TechProjectsView />;
+    if (tabKey === 'tasks') return <TechTasksView />;
   }
 
   const view = resolveView(tabKey);

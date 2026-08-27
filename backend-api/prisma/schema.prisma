@@ -118,6 +118,8 @@ model Vendor {
   coachingBatches      CoachingBatch[]
   coachingEnrollments  CoachingEnrollment[]
   coachingSessions     CoachingSession[]
+  techProjects         TechProject[]
+  projectTasks         ProjectTask[]
 }
 
 model Subscription {
@@ -1940,4 +1942,49 @@ model CoachingSession {
   @@index([vendorId])
   @@index([batchId])
   @@map("g4d_coaching_sessions")
+}
+
+// ── Phase 3 — Technology & IT: project + sprint/task tracking ──
+model TechProject {
+  id            String        @id @default(cuid())
+  vendorId      String
+  vendor        Vendor        @relation(fields: [vendorId], references: [id])
+  name          String
+  clientName    String
+  contactId     String?
+  projectType   String        @default("Web") // Web | Mobile | SaaS | AI/ML | Support | Other
+  techStack     String?
+  billingType   String        @default("Fixed") // Fixed | Hourly | Retainer
+  status        String        @default("proposal") // proposal | in_progress | testing | delivered | cancelled
+  contractValue Float         @default(0)
+  deadline      DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  tasks         ProjectTask[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_tech_projects")
+}
+
+model ProjectTask {
+  id            String       @id @default(cuid())
+  vendorId      String
+  vendor        Vendor       @relation(fields: [vendorId], references: [id])
+  projectId     String?
+  project       TechProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title         String
+  sprint        String? // "Sprint 3"
+  status        String       @default("todo") // todo | in_progress | done
+  priority      String       @default("medium") // low | medium | high
+  assignee      String?
+  estimateHours Float?
+  dueDate       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_project_tasks")
 }

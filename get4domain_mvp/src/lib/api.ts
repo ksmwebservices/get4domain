@@ -366,6 +366,17 @@ export const api = {
   updateCoachingEnrollment: (id: string, data: any) => apiCall(`/coaching/enrollments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteCoachingEnrollment: (id: string) => apiCall(`/coaching/enrollments/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Technology operations
+  technologySummary: () => apiCall('/technology/summary'),
+  getTechProjects: () => apiCall('/technology/projects'),
+  createTechProject: (data: any) => apiCall('/technology/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateTechProject: (id: string, data: any) => apiCall(`/technology/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTechProject: (id: string) => apiCall(`/technology/projects/${id}`, { method: 'DELETE' }),
+  getTechTasks: () => apiCall('/technology/tasks'),
+  createTechTask: (data: any) => apiCall('/technology/tasks', { method: 'POST', body: JSON.stringify(data) }),
+  updateTechTask: (id: string, data: any) => apiCall(`/technology/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTechTask: (id: string) => apiCall(`/technology/tasks/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
