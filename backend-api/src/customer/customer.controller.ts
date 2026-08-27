@@ -50,6 +50,20 @@ export class CustomerController {
   }
 
   @Public()
+  @Get('catalog')
+  @ApiOperation({ summary: "Browse the vendor's active catalogue (read-only)" })
+  catalog(@Headers('authorization') auth?: string) {
+    return this.service.catalog(auth);
+  }
+
+  @Public()
+  @Get('contact')
+  @ApiOperation({ summary: "Vendor's contact details for the portal contact modal" })
+  contactDetails(@Headers('authorization') auth?: string) {
+    return this.service.contactDetails(auth);
+  }
+
+  @Public()
   @Get('invoices')
   @ApiOperation({ summary: "Customer's own invoices" })
   invoices(@Headers('authorization') auth?: string) {

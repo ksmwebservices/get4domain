@@ -1,4 +1,4 @@
-import { IndustryConfig, IndustrySkin, QuickAction } from './types';
+import { IndustryConfig, IndustrySkin, QuickAction, CustomerPortalConfig, CustomerTab } from './types';
 import { generalConfig } from './general';
 import { travelConfig } from './travel';
 import { restaurantConfig } from './restaurant';
@@ -111,4 +111,114 @@ export function listIndustries(): { key: string; label: string; icon: string }[]
     label: c.label,
     icon: c.icon,
   }));
+}
+
+// ── Customer portal layer (Customer Portal Upgrade) ──────────────────────────
+// The /customer app is shaped per industry from the SAME config the vendor
+// dashboard uses, so labels can never drift between the two sides.
+
+/**
+ * Industries whose customers do NOT browse a catalogue. These are bespoke,
+ * quoted engagements — a construction client has a project, a finance client
+ * has a case, an IT client has a sprint backlog. Their `catalogItem` label is
+ * the generic "Service", which is an internal billing line, not a menu a
+ * customer would shop from. Everyone else gets a real Catalog tab.
+ */
+const CUSTOMER_PORTAL_NO_CATALOG = new Set([
+  'construction',
+  'finance',
+  'logistics',
+  'professional',
+  'technology',
+]);
+
+/** Industries that bill under a name other than "Invoices". */
+const CUSTOMER_INVOICE_LABELS: Record<string, string> = {
+  education: 'Fees',
+  coaching: 'Fees',
+  restaurant: 'Bills',
+};
+
+/** Lucide icon per record concept, keyed on the industry's own plural label. */
+const CUSTOMER_RECORD_ICONS: Record<string, string> = {
+  Bookings: 'CalendarCheck',
+  Reservations: 'CalendarCheck',
+  Orders: 'ClipboardList',
+  Appointments: 'CalendarClock',
+  Enrollments: 'GraduationCap',
+  Enquiries: 'MessageSquare',
+  Projects: 'HardHat',
+  Cases: 'Briefcase',
+  Engagements: 'Briefcase',
+  Shipments: 'Truck',
+  Jobs: 'Wrench',
+  Transactions: 'FileText',
+};
+
+/** Lucide icon per catalogue concept, keyed on the industry's own plural label. */
+const CUSTOMER_CATALOG_ICONS: Record<string, string> = {
+  Menu: 'BookOpen',
+  Products: 'Package',
+  Produce: 'Sprout',
+  Packages: 'Package',
+  Services: 'Sparkles',
+  'Room Types': 'BedDouble',
+  'Membership Plans': 'Dumbbell',
+  Courses: 'BookOpen',
+  Properties: 'Building2',
+  Tests: 'FlaskConical',
+};
+
+/**
+ * Per-industry icon overrides where the label-keyed maps above would land on a
+ * semantically wrong icon — two industries can share a record/catalogue label
+ * ("Projects" for construction and IT, "Services" for a salon and a garage)
+ * while meaning very different things to the customer looking at the tab.
+ */
+const CUSTOMER_RECORD_ICON_BY_KEY: Record<string, string> = {
+  technology: 'Code2',   // "Projects", but a sprint board, not a building site
+  gym: 'BadgeCheck',     // "Enrollments", but a membership, not a course
+};
+const CUSTOMER_CATALOG_ICON_BY_KEY: Record<string, string> = {
+  clinic: 'Stethoscope', // "Services", but medical, not cosmetic
+  automobile: 'Cog',     // "Services", but mechanical, not cosmetic
+};
+
+/**
+ * Build the customer-portal tab set for an industry. Home and Support are
+ * universal; Records is always present (a customer always has their own
+ * history); Catalog is conditional per `CUSTOMER_PORTAL_NO_CATALOG`.
+ */
+export function deriveCustomerPortal(cfg: IndustryConfig): CustomerPortalConfig {
+  const recordsLabel = cfg.entities.record.labelPlural;
+  const catalogLabel = cfg.entities.catalogItem.labelPlural;
+  const invoicesLabel = CUSTOMER_INVOICE_LABELS[cfg.key] ?? 'Invoices';
+  const showCatalog = !CUSTOMER_PORTAL_NO_CATALOG.has(cfg.key);
+
+  const tabs: CustomerTab[] = [
+    { key: 'home', label: 'Home', icon: 'Home' },
+    {
+      key: 'records',
+      label: recordsLabel,
+      icon: CUSTOMER_RECORD_ICON_BY_KEY[cfg.key] ?? CUSTOMER_RECORD_ICONS[recordsLabel] ?? 'FileText',
+    },
+    ...(showCatalog
+      ? [{
+          key: 'catalog' as const,
+          label: catalogLabel,
+          icon: CUSTOMER_CATALOG_ICON_BY_KEY[cfg.key] ?? CUSTOMER_CATALOG_ICONS[catalogLabel] ?? 'Package',
+        }]
+      : []),
+    { key: 'invoices', label: invoicesLabel, icon: 'Receipt' },
+    { key: 'support', label: 'Support', icon: 'LifeBuoy' },
+  ];
+
+  return {
+    tabs,
+    recordsLabel,
+    recordLabel: cfg.entities.record.label,
+    catalogLabel,
+    invoicesLabel,
+    showCatalog,
+  };
 }

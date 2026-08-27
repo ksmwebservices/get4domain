@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { getIndustryConfig } from '../config/industries';
+import { getIndustryConfig, deriveCustomerPortal } from '../config/industries';
 
 interface OtpEntry { otp: string; expires: number; contactId: string; vendorId: string }
 interface CustomerSession { contactId: string; vendorId: string }
@@ -97,13 +97,74 @@ export class CustomerService {
 
   async me(authHeader?: string) {
     const s = this.resolve(authHeader);
-    const contact = await this.prisma.contact.findUnique({ where: { id: s.contactId } });
-    const vendor = await this.prisma.vendor.findUnique({ where: { id: s.vendorId } });
+    const [contact, vendor] = await Promise.all([
+      this.prisma.contact.findUnique({ where: { id: s.contactId } }),
+      this.prisma.vendor.findUnique({ where: { id: s.vendorId } }),
+    ]);
     const cfg = getIndustryConfig(vendor?.industry);
     return {
       contact: { id: contact?.id, name: contact?.name, phone: contact?.phone, email: contact?.email },
       vendor: { businessName: vendor?.businessName },
-      industry: { key: cfg.key, label: cfg.label, record: cfg.entities.record, contact: cfg.entities.contact },
+      industry: {
+        key: cfg.key,
+        label: cfg.label,
+        record: cfg.entities.record,
+        catalogItem: cfg.entities.catalogItem,
+        contact: cfg.entities.contact,
+      },
+      // Per-industry portal shape — which tabs this customer sees and what they
+      // are called. Derived from the same config the vendor dashboard reads, so
+      // the two sides can never drift apart.
+      portal: deriveCustomerPortal(cfg),
+    };
+  }
+
+  /**
+   * The vendor's real catalogue, browsable by a signed-in customer. READ-ONLY —
+   * this deliberately exposes no ordering/booking path; customer-initiated
+   * writes are separate future work. Only `active` items are returned, and only
+   * for the customer's own vendor (tenant scope comes from the session token,
+   * never from a client-supplied vendorId).
+   */
+  async catalog(authHeader?: string) {
+    const s = this.resolve(authHeader);
+    const items = await this.prisma.catalogItem.findMany({
+      where: { vendorId: s.vendorId, active: true },
+      orderBy: { name: 'asc' },
+    });
+    return items.map((i) => ({
+      id: i.id,
+      name: i.name,
+      description: i.description,
+      price: i.price,
+      unit: i.unit,
+      image: i.image,
+      // `stock` is nullable = untracked. Surface it only where the vendor
+      // actually manages inventory, so the portal can show "Out of stock".
+      inStock: i.stock === null ? null : i.stock > 0,
+    }));
+  }
+
+  /**
+   * Reach-the-business details for the portal's contact modal, sourced from the
+   * vendor's own CMS record (the same data that powers their public website).
+   * Falls back to the Vendor row where CMS fields are blank so the modal is
+   * never empty for a vendor who hasn't filled in their site yet.
+   */
+  async contactDetails(authHeader?: string) {
+    const s = this.resolve(authHeader);
+    const [vendor, cms] = await Promise.all([
+      this.prisma.vendor.findUnique({ where: { id: s.vendorId } }),
+      this.prisma.vendorCMS.findUnique({ where: { vendorId: s.vendorId } }),
+    ]);
+    return {
+      businessName: cms?.businessName ?? vendor?.businessName ?? null,
+      phone: cms?.phone ?? vendor?.phone ?? null,
+      whatsapp: cms?.whatsapp ?? cms?.phone ?? vendor?.phone ?? null,
+      email: cms?.email ?? vendor?.email ?? null,
+      address: cms?.address ?? null,
+      businessHours: cms?.businessHours ?? null,
+      mapsLink: cms?.googleMaps ?? null,
     };
   }
 
