@@ -405,6 +405,17 @@ export const api = {
   deleteRestaurantItem: (id: string) => apiCall(`/restaurant/items/${id}`, { method: 'DELETE' }),
   getRestaurantKitchen: () => apiCall('/restaurant/kitchen'),
 
+  // Final 3 — Retail operations
+  retailSummary: () => apiCall('/retail/summary'),
+  getRetailProducts: () => apiCall('/retail/products'),
+  createRetailProduct: (data: any) => apiCall('/retail/products', { method: 'POST', body: JSON.stringify(data) }),
+  updateRetailProduct: (id: string, data: any) => apiCall(`/retail/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRetailProduct: (id: string) => apiCall(`/retail/products/${id}`, { method: 'DELETE' }),
+  restockRetailProduct: (id: string, delta: number) => apiCall(`/retail/products/${id}/restock`, { method: 'POST', body: JSON.stringify({ delta }) }),
+  getRetailSales: () => apiCall('/retail/sales'),
+  createRetailSale: (data: any) => apiCall('/retail/sales', { method: 'POST', body: JSON.stringify(data) }),
+  refundRetailSale: (id: string) => apiCall(`/retail/sales/${id}/refund`, { method: 'POST' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

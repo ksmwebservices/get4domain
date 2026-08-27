@@ -39,6 +39,7 @@ interface CoachingSummary { activeStudents: number; feesCollected: number; feesP
 interface TechnologySummary { activeProjects: number; contractValue: number; openTasks: number; doneTasks: number; byStatus: { status: string; count: number; value: number }[] }
 interface ClinicSummary { todayAppointments: number; upcoming: number; completedThisMonth: number; revenueThisMonth: number; byDoctor: { doctorId: string; name: string; count: number; revenue: number }[] }
 interface RestaurantSummary { openOrders: number; occupiedTables: number; totalTables: number; kitchenQueue: number; todayRevenue: number; byStatus: { status: string; count: number }[] }
+interface RetailSummary { todaySales: number; todayRevenue: number; totalProducts: number; lowStockProducts: number; stockValue: number }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -100,6 +101,8 @@ export default function AccountsPage() {
   const [clinic, setClinic] = useState<ClinicSummary | null>(null);
   const isRestaurant = user?.industry === 'restaurant';
   const [resto, setResto] = useState<RestaurantSummary | null>(null);
+  const isRetail = user?.industry === 'retail';
+  const [retail, setRetail] = useState<RetailSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -236,6 +239,11 @@ export default function AccountsPage() {
     if (!isRestaurant) return;
     api.restaurantSummary().then((r) => setResto(r.data ?? null)).catch(() => setResto(null));
   }, [isRestaurant]);
+
+  useEffect(() => {
+    if (!isRetail) return;
+    api.retailSummary().then((r) => setRetail(r.data ?? null)).catch(() => setRetail(null));
+  }, [isRetail]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -377,6 +385,19 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isRetail && retail && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Sales &amp; stock</h3><Badge variant="info" size="xs">Retail</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div><div className="text-lg font-extrabold text-brand-300">{retail.todaySales}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Sales today</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(retail.todayRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Revenue today</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{retail.totalProducts}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Products</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{retail.lowStockProducts}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Low stock</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{rupees(retail.stockValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Stock value</div></div>
                 </div>
               </div>
             )}

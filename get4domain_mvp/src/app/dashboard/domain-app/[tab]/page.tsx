@@ -53,6 +53,9 @@ import PrescriptionsView from '@/domainapp/clinic/PrescriptionsView';
 import RestaurantOrdersView from '@/domainapp/restaurant/OrdersView';
 import TablesView from '@/domainapp/restaurant/TablesView';
 import KitchenView from '@/domainapp/restaurant/KitchenView';
+import PosView from '@/domainapp/retail/PosView';
+import RetailProductsView from '@/domainapp/retail/ProductsView';
+import RetailInventoryView from '@/domainapp/retail/InventoryView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -228,6 +231,13 @@ export default function DomainAppTabPage() {
     if (tabKey === 'orders') return <RestaurantOrdersView />;
     if (tabKey === 'tables') return <TablesView />;
     if (tabKey === 'kitchen') return <KitchenView />;
+  }
+
+  // Final 3 — Retail: point-of-sale, product catalog, stock inventory.
+  if (cfg.industry.key === 'retail') {
+    if (tabKey === 'orders') return <PosView />;
+    if (tabKey === 'products') return <RetailProductsView />;
+    if (tabKey === 'inventory') return <RetailInventoryView />;
   }
 
   const view = resolveView(tabKey);
