@@ -24,6 +24,8 @@ import ReservationsView from '@/domainapp/hotel/ReservationsView';
 import ListingsView from '@/domainapp/realestate/ListingsView';
 import DealsView from '@/domainapp/realestate/DealsView';
 import VisitsView from '@/domainapp/realestate/VisitsView';
+import BatchesView from '@/domainapp/education/BatchesView';
+import EnrollmentsView from '@/domainapp/education/EnrollmentsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -112,6 +114,12 @@ export default function DomainAppTabPage() {
     if (tabKey === 'properties') return <ListingsView />;
     if (tabKey === 'enquiries') return <DealsView />;
     if (tabKey === 'visits') return <VisitsView />;
+  }
+
+  // Phase 2 — Education: batch scheduling + enrollment/fee roster.
+  if (cfg.industry.key === 'education') {
+    if (tabKey === 'batches') return <BatchesView />;
+    if (tabKey === 'students') return <EnrollmentsView />;
   }
 
   const view = resolveView(tabKey);

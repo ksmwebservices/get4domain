@@ -25,6 +25,7 @@ interface SalonSummary { todayCount: number; upcomingCount: number; completedRev
 interface GymSummary { activeCount: number; expiringCount: number; expiredCount: number; monthlyRevenue: number; byPlan: { plan: string; count: number; revenue: number }[] }
 interface HotelSummary { totalRooms: number; occupied: number; occupancyPct: number; needsCleaning: number; inHouse: number; monthRevenue: number }
 interface RealEstateSummary { openPipelineValue: number; wonThisMonth: { count: number; value: number }; activeListings: number; upcomingVisits: number; byStage: { stage: string; count: number; value: number }[] }
+interface EducationSummary { activeStudents: number; feesCollected: number; feesPending: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -58,6 +59,8 @@ export default function AccountsPage() {
   const [hotel, setHotel] = useState<HotelSummary | null>(null);
   const isRealEstate = user?.industry === 'realestate';
   const [re, setRe] = useState<RealEstateSummary | null>(null);
+  const isEducation = user?.industry === 'education';
+  const [edu, setEdu] = useState<EducationSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -124,6 +127,11 @@ export default function AccountsPage() {
     if (!isRealEstate) return;
     api.realEstateSummary().then((r) => setRe(r.data ?? null)).catch(() => setRe(null));
   }, [isRealEstate]);
+
+  useEffect(() => {
+    if (!isEducation) return;
+    api.educationSummary().then((r) => setEdu(r.data ?? null)).catch(() => setEdu(null));
+  }, [isEducation]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -266,6 +274,24 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isEducation && edu && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Fees &amp; enrollment by batch</h3><Badge variant="info" size="xs">Education</Badge></div>
+                <div className="mb-3 grid grid-cols-3 gap-3">
+                  <div><div className="text-lg font-extrabold text-success">{rupees(edu.feesCollected)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Fees collected</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{rupees(edu.feesPending)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Fees pending</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{edu.activeStudents}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active students</div></div>
+                </div>
+                {edu.byBatch.length === 0 ? <p className="text-xs text-ink-500">No batches yet.</p> : (
+                  <div className="space-y-1.5">
+                    {edu.byBatch.map((b) => (
+                      <div key={b.batchId} className="flex items-center justify-between text-sm"><span className="text-ink-300">{b.name} <span className="text-ink-500">· {b.students}</span></span><span className="font-semibold text-ink-200">{rupees(b.collected)}{b.pending > 0 && <span className="text-ruby-400"> · {rupees(b.pending)} due</span>}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

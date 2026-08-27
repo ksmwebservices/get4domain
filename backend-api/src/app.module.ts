@@ -54,6 +54,7 @@ import { SalonModule } from './salon/salon.module';
 import { GymModule } from './gym/gym.module';
 import { HotelModule } from './hotel/hotel.module';
 import { RealEstateModule } from './realestate/realestate.module';
+import { EducationModule } from './education/education.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -83,6 +84,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     GymModule,
     HotelModule,
     RealEstateModule,
+    EducationModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

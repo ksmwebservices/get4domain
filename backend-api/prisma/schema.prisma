@@ -92,6 +92,8 @@ model Vendor {
   listings          Listing[]
   deals             Deal[]
   propertyVisits    PropertyVisit[]
+  batches           Batch[]
+  enrollments       StudentEnrollment[]
 }
 
 model Subscription {
@@ -1337,4 +1339,48 @@ model PropertyVisit {
   @@index([vendorId])
   @@index([vendorId, scheduledAt])
   @@map("g4d_property_visits")
+}
+
+// ── Education Operations (Phase 2) ───────────────────────────────────────────
+model Batch {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  name       String
+  courseName String?
+  faculty    String?
+  mode       String   @default("Classroom")  // Classroom | Online | Hybrid
+  startDate  DateTime?
+  endDate    DateTime?
+  schedule   String?                          // "Mon/Wed/Fri 6-8pm"
+  capacity   Int      @default(30)
+  fee        Float    @default(0)
+  status     String   @default("upcoming")    // upcoming | active | completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  enrollments StudentEnrollment[]
+  @@index([vendorId])
+  @@map("g4d_batches")
+}
+
+model StudentEnrollment {
+  id              String   @id @default(cuid())
+  vendorId        String
+  vendor          Vendor   @relation(fields: [vendorId], references: [id])
+  contactId       String?
+  studentName     String
+  studentPhone    String?
+  guardianContact String?
+  batchId         String?
+  batch           Batch?   @relation(fields: [batchId], references: [id])
+  enrollDate      DateTime @default(now())
+  feeAmount       Float    @default(0)
+  feePaid         Float    @default(0)
+  status          String   @default("enrolled")  // enrolled | ongoing | completed | dropped
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_enrollments")
 }

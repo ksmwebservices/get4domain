@@ -233,6 +233,17 @@ export const api = {
   updateVisit: (id: string, data: any) => apiCall(`/realestate/visits/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteVisit: (id: string) => apiCall(`/realestate/visits/${id}`, { method: 'DELETE' }),
 
+  // Phase 2 — Education operations
+  educationSummary: () => apiCall('/education/summary'),
+  getBatches: () => apiCall('/education/batches'),
+  createBatch: (data: any) => apiCall('/education/batches', { method: 'POST', body: JSON.stringify(data) }),
+  updateBatch: (id: string, data: any) => apiCall(`/education/batches/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteBatch: (id: string) => apiCall(`/education/batches/${id}`, { method: 'DELETE' }),
+  getEnrollments: () => apiCall('/education/enrollments'),
+  createEnrollment: (data: any) => apiCall('/education/enrollments', { method: 'POST', body: JSON.stringify(data) }),
+  updateEnrollment: (id: string, data: any) => apiCall(`/education/enrollments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteEnrollment: (id: string) => apiCall(`/education/enrollments/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
