@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, Trash2, Loader2, FileText, Download, IndianRupee, TrendingUp, TrendingDown,
-  Receipt, Percent, Wallet, ArrowLeftRight, PieChart, Banknote, CheckCircle2,
+  Receipt, Percent, Wallet, ArrowLeftRight, PieChart, CheckCircle2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
@@ -30,7 +30,7 @@ type Tab = 'overview' | 'expenses' | 'payments' | 'gst';
 const TABS: { key: Tab; label: string; icon: typeof PieChart }[] = [
   { key: 'overview', label: 'Overview', icon: PieChart },
   { key: 'expenses', label: 'Expenses', icon: Receipt },
-  { key: 'payments', label: 'Payments', icon: Banknote },
+  { key: 'payments', label: 'Payments', icon: IndianRupee },
   { key: 'gst', label: 'GST', icon: Percent },
 ];
 const METHODS = ['upi', 'cash', 'card', 'cheque', 'bank'] as const;
@@ -328,13 +328,13 @@ export default function AccountsPage() {
                     <button onClick={() => setPayOpen(true)} className="btn-primary !py-1.5 !text-xs"><Plus className="h-3.5 w-3.5" /> Record payment</button>
                   </div>
                   {payments.length === 0 ? (
-                    <EmptyState icon="Banknote" title="No payments recorded" description="Track inward and outward payments (UPI, cash, card, cheque, bank) with their status."
+                    <EmptyState icon="IndianRupee" title="No payments recorded" description="Track inward and outward payments (UPI, cash, card, cheque, bank) with their status."
                       action={<button onClick={() => setPayOpen(true)} className="btn-primary !py-2 !text-xs"><Plus className="h-3.5 w-3.5" /> Record a payment</button>} />
                   ) : (
                     <div className="divide-y divide-ink-700/30">
                       {payments.map((p) => (
                         <div key={p.id} className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-ink-800/40">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400"><Banknote className="h-4 w-4" /></div>
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400"><IndianRupee className="h-4 w-4" /></div>
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-semibold text-ink-100">{p.party}<span className="ml-1 text-xs font-normal text-ink-500">· {new Date(p.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {p.method.toUpperCase()}{p.reference ? ` · ${p.reference}` : ''}</span></div>
                             <div className="text-xs"><Badge variant={p.status === 'cleared' ? 'success' : p.status === 'pending' ? 'warning' : 'error'} size="xs">{p.status}</Badge></div>
