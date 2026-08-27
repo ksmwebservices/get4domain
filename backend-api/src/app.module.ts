@@ -67,6 +67,7 @@ import { AgricultureModule } from './agriculture/agriculture.module';
 import { CoachingModule } from './coaching/coaching.module';
 import { TechnologyModule } from './technology/technology.module';
 import { ClinicModule } from './clinic/clinic.module';
+import { RestaurantModule } from './restaurant/restaurant.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -109,6 +110,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     CoachingModule,
     TechnologyModule,
     ClinicModule,
+    RestaurantModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

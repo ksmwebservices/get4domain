@@ -50,6 +50,9 @@ import TechTasksView from '@/domainapp/technology/TasksView';
 import ClinicAppointmentsView from '@/domainapp/clinic/AppointmentsView';
 import DoctorsView from '@/domainapp/clinic/DoctorsView';
 import PrescriptionsView from '@/domainapp/clinic/PrescriptionsView';
+import RestaurantOrdersView from '@/domainapp/restaurant/OrdersView';
+import TablesView from '@/domainapp/restaurant/TablesView';
+import KitchenView from '@/domainapp/restaurant/KitchenView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -218,6 +221,13 @@ export default function DomainAppTabPage() {
     if (tabKey === 'appointments') return <ClinicAppointmentsView />;
     if (tabKey === 'doctors') return <DoctorsView />;
     if (tabKey === 'prescriptions') return <PrescriptionsView />;
+  }
+
+  // Final 3 — Restaurant: menu-linked orders, table floor, kitchen display.
+  if (cfg.industry.key === 'restaurant') {
+    if (tabKey === 'orders') return <RestaurantOrdersView />;
+    if (tabKey === 'tables') return <TablesView />;
+    if (tabKey === 'kitchen') return <KitchenView />;
   }
 
   const view = resolveView(tabKey);

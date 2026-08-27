@@ -388,6 +388,23 @@ export const api = {
   updateClinicAppointment: (id: string, data: any) => apiCall(`/clinic/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteClinicAppointment: (id: string) => apiCall(`/clinic/appointments/${id}`, { method: 'DELETE' }),
 
+  // Final 3 — Restaurant operations
+  restaurantSummary: () => apiCall('/restaurant/summary'),
+  getRestaurantTables: () => apiCall('/restaurant/tables'),
+  createRestaurantTable: (data: any) => apiCall('/restaurant/tables', { method: 'POST', body: JSON.stringify(data) }),
+  updateRestaurantTable: (id: string, data: any) => apiCall(`/restaurant/tables/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRestaurantTable: (id: string) => apiCall(`/restaurant/tables/${id}`, { method: 'DELETE' }),
+  getRestaurantOrders: () => apiCall('/restaurant/orders'),
+  getRestaurantOrder: (id: string) => apiCall(`/restaurant/orders/${id}`),
+  createRestaurantOrder: (data: any) => apiCall('/restaurant/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updateRestaurantOrder: (id: string, data: any) => apiCall(`/restaurant/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  billRestaurantOrder: (id: string, data: any) => apiCall(`/restaurant/orders/${id}/bill`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteRestaurantOrder: (id: string) => apiCall(`/restaurant/orders/${id}`, { method: 'DELETE' }),
+  addRestaurantItem: (orderId: string, data: any) => apiCall(`/restaurant/orders/${orderId}/items`, { method: 'POST', body: JSON.stringify(data) }),
+  updateRestaurantItem: (id: string, data: any) => apiCall(`/restaurant/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRestaurantItem: (id: string) => apiCall(`/restaurant/items/${id}`, { method: 'DELETE' }),
+  getRestaurantKitchen: () => apiCall('/restaurant/kitchen'),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

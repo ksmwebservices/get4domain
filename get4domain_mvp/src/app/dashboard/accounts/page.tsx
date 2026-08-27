@@ -38,6 +38,7 @@ interface AgricultureSummary { openOrders: number; orderValue: number; pendingDi
 interface CoachingSummary { activeStudents: number; feesCollected: number; feesPending: number; sessionsThisWeek: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
 interface TechnologySummary { activeProjects: number; contractValue: number; openTasks: number; doneTasks: number; byStatus: { status: string; count: number; value: number }[] }
 interface ClinicSummary { todayAppointments: number; upcoming: number; completedThisMonth: number; revenueThisMonth: number; byDoctor: { doctorId: string; name: string; count: number; revenue: number }[] }
+interface RestaurantSummary { openOrders: number; occupiedTables: number; totalTables: number; kitchenQueue: number; todayRevenue: number; byStatus: { status: string; count: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -97,6 +98,8 @@ export default function AccountsPage() {
   const [tech, setTech] = useState<TechnologySummary | null>(null);
   const isClinic = user?.industry === 'clinic';
   const [clinic, setClinic] = useState<ClinicSummary | null>(null);
+  const isRestaurant = user?.industry === 'restaurant';
+  const [resto, setResto] = useState<RestaurantSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -228,6 +231,11 @@ export default function AccountsPage() {
     if (!isClinic) return;
     api.clinicSummary().then((r) => setClinic(r.data ?? null)).catch(() => setClinic(null));
   }, [isClinic]);
+
+  useEffect(() => {
+    if (!isRestaurant) return;
+    api.restaurantSummary().then((r) => setResto(r.data ?? null)).catch(() => setResto(null));
+  }, [isRestaurant]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -369,6 +377,18 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isRestaurant && resto && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Service &amp; kitchen</h3><Badge variant="info" size="xs">Restaurant</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{resto.openOrders}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Open orders</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{resto.occupiedTables}/{resto.totalTables}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Tables full</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{resto.kitchenQueue}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">In kitchen</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(resto.todayRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Today&apos;s revenue</div></div>
                 </div>
               </div>
             )}
