@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -58,6 +59,7 @@ import { ModuleGuard } from './common/guards/module.guard';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     VendorsModule,

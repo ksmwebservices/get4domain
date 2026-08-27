@@ -79,6 +79,7 @@ model Vendor {
   drivers          Driver[]
   trips            Trip[]
   visaApplications VisaApplication[]
+  contracts        Contract[]
 }
 
 model Subscription {
@@ -428,6 +429,7 @@ model Contact {
   messages     Message[]
   campaignLeads CampaignLead[]
   waConversations WhatsappConversation[]
+  contracts    Contract[]
   @@index([vendorId])
   @@map("g4d_contacts")
 }
@@ -973,6 +975,7 @@ model Vehicle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   trips     Trip[]
+  contractAssignments ContractAssignment[]
   @@index([vendorId])
   @@map("g4d_vehicles")
 }
@@ -989,6 +992,7 @@ model Driver {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   trips     Trip[]
+  contractAssignments ContractAssignment[]
   @@index([vendorId])
   @@map("g4d_drivers")
 }
@@ -1084,4 +1088,46 @@ model VendorCommsSettings {
   deletedAt DateTime?
 
   @@map("g4d_vendor_comms_settings")
+}
+
+// ── Travel Recurring Contracts ───────────────────────────────────────────────
+// Recurring monthly service contracts (corporate/school/college daily bus/cab).
+// Distinct from Trip (one-off itinerary) and Record/Booking (one-off). Bills a
+// GenericInvoice monthly via the existing invoice path; addon-gated (fleet).
+model Contract {
+  id                String   @id @default(cuid())
+  vendorId          String
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
+  contactId         String                              // the client (school/corporate/college)
+  contact           Contact  @relation(fields: [contactId], references: [id])
+  title             String
+  monthlyRate       Float    @default(0)
+  gstRate           Float    @default(0)                // GST% applied to generated invoices
+  startDate         DateTime
+  endDate           DateTime?                           // null = open-ended
+  billingDayOfMonth Int      @default(1)                // 1–28
+  scheduleNotes     String?
+  status            String   @default("active")         // active | paused | ended
+  lastBilledPeriod  String?                             // "YYYY-MM" idempotency guard
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  assignments       ContractAssignment[]
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_contracts")
+}
+
+// Multiple vehicle/driver assignments per contract (e.g. several bus routes).
+model ContractAssignment {
+  id         String   @id @default(cuid())
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  vehicleId  String?
+  vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
+  driverId   String?
+  driver     Driver?  @relation(fields: [driverId], references: [id])
+  routeLabel String?                                    // "Route 4 — North"
+  createdAt  DateTime @default(now())
+  @@index([contractId])
+  @@map("g4d_contract_assignments")
 }

@@ -174,6 +174,12 @@ export const api = {
   updateVisa: (id: string, data: any) => apiCall(`/travel/visa/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteVisa: (id: string) => apiCall(`/travel/visa/${id}`, { method: 'DELETE' }),
   accountingTravelSummary: () => apiCall('/accounting/travel-summary'),
+  // Travel recurring contracts (addon-gated) + monthly billing.
+  getContracts: () => apiCall('/travel/contracts'),
+  createContract: (data: any) => apiCall('/travel/contracts', { method: 'POST', body: JSON.stringify(data) }),
+  updateContract: (id: string, data: any) => apiCall(`/travel/contracts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteContract: (id: string) => apiCall(`/travel/contracts/${id}`, { method: 'DELETE' }),
+  generateContractInvoices: () => apiCall('/travel/contracts/generate-invoices', { method: 'POST' }),
 
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),

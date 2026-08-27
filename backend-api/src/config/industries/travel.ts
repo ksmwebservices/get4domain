@@ -43,6 +43,7 @@ export const travelConfig: IndustryConfig = {
     { key: 'visa', label: 'Visa', icon: 'Stamp' },
     { key: 'fleet', label: 'Fleet', icon: 'Car' },
     { key: 'drivers', label: 'Drivers', icon: 'UserCog' },
+    { key: 'contracts', label: 'Contracts', icon: 'FileSignature' },
     { key: 'invoicing', label: 'Invoicing', icon: 'FileText' },
   ],
 };

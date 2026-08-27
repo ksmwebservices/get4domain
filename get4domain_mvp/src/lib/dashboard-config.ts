@@ -74,6 +74,7 @@ export interface DashboardConfig {
 export const TAB_ADDON_REQUIREMENT: Record<string, string> = {
   fleet: 'fleet',
   drivers: 'driver',
+  contracts: 'fleet', // recurring contracts assign fleet vehicles — gate on the fleet addon
   // 'trip-sheets' is now the core Trips builder (Phase 1) — no longer addon-gated.
   tables: 'table_management',
   housekeeping: 'room_management',

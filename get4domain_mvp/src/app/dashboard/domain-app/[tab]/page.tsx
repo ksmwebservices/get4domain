@@ -13,6 +13,7 @@ import FleetView from '@/domainapp/travel/FleetView';
 import DriversView from '@/domainapp/travel/DriversView';
 import TripsView from '@/domainapp/travel/TripsView';
 import VisaView from '@/domainapp/travel/VisaView';
+import ContractsView from '@/domainapp/travel/ContractsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -54,8 +55,8 @@ export default function DomainAppTabPage() {
   // Fleet + Drivers keep the existing addon gating (fleet/driver flags); Trips +
   // Visa are core. Bookings/Invoicing still use the shared views below.
   if (cfg.industry.key === 'travel') {
-    if (tabKey === 'fleet' || tabKey === 'drivers') {
-      const addonKey = TAB_ADDON_REQUIREMENT[tabKey]; // fleet -> 'fleet', drivers -> 'driver'
+    if (tabKey === 'fleet' || tabKey === 'drivers' || tabKey === 'contracts') {
+      const addonKey = TAB_ADDON_REQUIREMENT[tabKey]; // fleet/contracts -> 'fleet', drivers -> 'driver'
       // Locked only if the addon was explicitly disabled for this vendor (matches
       // the nav's isLocked). Direct-URL guard — the nav already hides the tab.
       if (addonKey && cfg.addons[addonKey] === false) {
@@ -66,12 +67,12 @@ export default function DomainAppTabPage() {
             </div>
             <h2 className="text-lg font-bold text-slate-900">{tab?.label ?? tabKey} is not enabled</h2>
             <p className="mt-2 text-sm text-slate-500">
-              This is an optional add-on for your workspace. Contact support to enable {tabKey === 'fleet' ? 'fleet' : 'driver'} management.
+              This is an optional add-on for your workspace. Contact support to enable it.
             </p>
           </Card>
         );
       }
-      return tabKey === 'fleet' ? <FleetView /> : <DriversView />;
+      return tabKey === 'fleet' ? <FleetView /> : tabKey === 'drivers' ? <DriversView /> : <ContractsView />;
     }
     if (tabKey === 'trip-sheets') return <TripsView />;
     if (tabKey === 'visa') return <VisaView />;
