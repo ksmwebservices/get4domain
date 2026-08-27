@@ -26,6 +26,7 @@ interface GymSummary { activeCount: number; expiringCount: number; expiredCount:
 interface HotelSummary { totalRooms: number; occupied: number; occupancyPct: number; needsCleaning: number; inHouse: number; monthRevenue: number }
 interface RealEstateSummary { openPipelineValue: number; wonThisMonth: { count: number; value: number }; activeListings: number; upcomingVisits: number; byStage: { stage: string; count: number; value: number }[] }
 interface EducationSummary { activeStudents: number; feesCollected: number; feesPending: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
+interface ProfessionalSummary { activeEngagements: number; engagedValue: number; pendingDocs: number; byType: { type: string; count: number; value: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -61,6 +62,8 @@ export default function AccountsPage() {
   const [re, setRe] = useState<RealEstateSummary | null>(null);
   const isEducation = user?.industry === 'education';
   const [edu, setEdu] = useState<EducationSummary | null>(null);
+  const isProfessional = user?.industry === 'professional';
+  const [pro, setPro] = useState<ProfessionalSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -132,6 +135,11 @@ export default function AccountsPage() {
     if (!isEducation) return;
     api.educationSummary().then((r) => setEdu(r.data ?? null)).catch(() => setEdu(null));
   }, [isEducation]);
+
+  useEffect(() => {
+    if (!isProfessional) return;
+    api.professionalSummary().then((r) => setPro(r.data ?? null)).catch(() => setPro(null));
+  }, [isProfessional]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -274,6 +282,24 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isProfessional && pro && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Engagements &amp; documents</h3><Badge variant="info" size="xs">Professional</Badge></div>
+                <div className="mb-3 grid grid-cols-3 gap-3">
+                  <div><div className="text-lg font-extrabold text-brand-300">{pro.activeEngagements}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active engagements</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(pro.engagedValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Engaged value</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{pro.pendingDocs}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Docs outstanding</div></div>
+                </div>
+                {pro.byType.length === 0 ? <p className="text-xs text-ink-500">No active engagements yet.</p> : (
+                  <div className="space-y-1.5">
+                    {pro.byType.map((t) => (
+                      <div key={t.type} className="flex items-center justify-between text-sm"><span className="text-ink-300">{t.type} <span className="text-ink-500">· {t.count}</span></span><span className="font-semibold text-ink-200">{rupees(t.value)}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

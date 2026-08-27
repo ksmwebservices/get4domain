@@ -244,6 +244,18 @@ export const api = {
   updateEnrollment: (id: string, data: any) => apiCall(`/education/enrollments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEnrollment: (id: string) => apiCall(`/education/enrollments/${id}`, { method: 'DELETE' }),
 
+  // Phase 2 — Professional Services operations
+  professionalSummary: () => apiCall('/professional/summary'),
+  getEngagements: () => apiCall('/professional/engagements'),
+  getEngagement: (id: string) => apiCall(`/professional/engagements/${id}`),
+  createEngagement: (data: any) => apiCall('/professional/engagements', { method: 'POST', body: JSON.stringify(data) }),
+  updateEngagement: (id: string, data: any) => apiCall(`/professional/engagements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteEngagement: (id: string) => apiCall(`/professional/engagements/${id}`, { method: 'DELETE' }),
+  getEngagementDocuments: () => apiCall('/professional/documents'),
+  addEngagementDocument: (engagementId: string, data: any) => apiCall(`/professional/engagements/${engagementId}/documents`, { method: 'POST', body: JSON.stringify(data) }),
+  updateEngagementDocument: (id: string, data: any) => apiCall(`/professional/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteEngagementDocument: (id: string) => apiCall(`/professional/documents/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

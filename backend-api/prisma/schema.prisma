@@ -9,35 +9,35 @@ datasource db {
 }
 
 model Vendor {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  password     String
-  businessName String
-  phone        String?
-  industry     String?  @default("general")
-  subdomain    String?  @unique
-  widgetKey    String?  @unique  // 3B: public per-vendor embeddable-widget key
+  id                     String       @id @default(cuid())
+  name                   String
+  email                  String       @unique
+  password               String
+  businessName           String
+  phone                  String?
+  industry               String?      @default("general")
+  subdomain              String?      @unique
+  widgetKey              String?      @unique // 3B: public per-vendor embeddable-widget key
   // WhatsApp-bot: the vendor's Fast2SMS phone_number_id, used to route an inbound
   // webhook to the correct tenant. Set by admin when provisioning the WA number.
-  waPhoneNumberId String? @unique
-  customDomain String?
+  waPhoneNumberId        String?      @unique
+  customDomain           String?
   // Per-vendor ResellerClub identity, created lazily on first domain registration
   // from the vendor's own business details. Domains register under these instead
   // of the shared default customer/contact once present.
   resellerClubCustomerId String?
   resellerClubContactId  String?
-  role         Role     @default(VENDOR)
-  status       VendorStatus @default(ACTIVE)
+  role                   Role         @default(VENDOR)
+  status                 VendorStatus @default(ACTIVE)
   // 3C: admin per-vendor override layered on the industry skin baseline (accent,
   // welcome text, website template). DB-driven, applied live, no redeploy.
-  configOverride Json?
+  configOverride         Json?
   // Book-Demo Phase 4: a per-lead demo account, auto-expiring. Converts to a real
   // account at Phase 5 (buy-now). Filtered out of admin/real views.
-  isSandbox    Boolean  @default(false)
-  expiresAt    DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isSandbox              Boolean      @default(false)
+  expiresAt              DateTime?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
   subscriptions Subscription[]
   invoices      Invoice[]
@@ -45,34 +45,34 @@ model Vendor {
   cms           VendorCMS?
   products      VendorProduct[]
 
-  wallet           Wallet?
-  walletTxns       WalletTransaction[]
-  campaignPages    CampaignPage[]
-  campaignLeads    CampaignLead[]
-  teamMembers      TeamMember[]
+  wallet        Wallet?
+  walletTxns    WalletTransaction[]
+  campaignPages CampaignPage[]
+  campaignLeads CampaignLead[]
+  teamMembers   TeamMember[]
 
-  contacts         Contact[]
-  catalogItems     CatalogItem[]
-  records          Record[]
-  genericInvoices  GenericInvoice[]
-  addons           VendorAddon[]
-  modules          VendorModule[]
-  messages         Message[]
-  expenses         Expense[]
-  stationery       StationeryItem[]
-  kbEntries        KnowledgeBaseEntry[]
-  waConversations  WhatsappConversation[]
-  commsSettings    VendorCommsSettings?
+  contacts        Contact[]
+  catalogItems    CatalogItem[]
+  records         Record[]
+  genericInvoices GenericInvoice[]
+  addons          VendorAddon[]
+  modules         VendorModule[]
+  messages        Message[]
+  expenses        Expense[]
+  stationery      StationeryItem[]
+  kbEntries       KnowledgeBaseEntry[]
+  waConversations WhatsappConversation[]
+  commsSettings   VendorCommsSettings?
 
   // Vendor-app Phase 4 — operations models (dedicated, vendorId-scoped).
-  vendorTasks      VendorTask[]
-  posTables        PosTable[]
-  kitchenTickets   KitchenTicket[]
-  posSales         PosSale[]
-  appointments     Appointment[]
-  paymentRecords   PaymentRecord[]
-  gstFilings       GstFiling[]
-  domains          DomainRegistration[]
+  vendorTasks    VendorTask[]
+  posTables      PosTable[]
+  kitchenTickets KitchenTicket[]
+  posSales       PosSale[]
+  appointments   Appointment[]
+  paymentRecords PaymentRecord[]
+  gstFilings     GstFiling[]
+  domains        DomainRegistration[]
 
   // Travel Operations (Phase 1)
   vehicles         Vehicle[]
@@ -82,148 +82,151 @@ model Vendor {
   contracts        Contract[]
 
   // Phase 2 — per-industry operations
-  stylists          Stylist[]
-  salonChairs       SalonChair[]
-  salonAppointments SalonAppointment[]
-  gymClasses        GymClass[]
-  memberships       Membership[]
-  rooms             Room[]
-  roomBookings      RoomBooking[]
-  listings          Listing[]
-  deals             Deal[]
-  propertyVisits    PropertyVisit[]
-  batches           Batch[]
-  enrollments       StudentEnrollment[]
+  stylists            Stylist[]
+  salonChairs         SalonChair[]
+  salonAppointments   SalonAppointment[]
+  gymClasses          GymClass[]
+  memberships         Membership[]
+  rooms               Room[]
+  roomBookings        RoomBooking[]
+  listings            Listing[]
+  deals               Deal[]
+  propertyVisits      PropertyVisit[]
+  batches             Batch[]
+  enrollments         StudentEnrollment[]
+  engagements         Engagement[]
+  engagementDocuments EngagementDocument[]
 }
 
 model Subscription {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  product    Product
-  plan       Plan
-  status     SubStatus @default(PENDING)
-  startDate  DateTime?
-  endDate    DateTime?
-  amount     Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String    @id @default(cuid())
+  vendorId  String
+  vendor    Vendor    @relation(fields: [vendorId], references: [id])
+  product   Product
+  plan      Plan
+  status    SubStatus @default(PENDING)
+  startDate DateTime?
+  endDate   DateTime?
+  amount    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  invoices   Invoice[]
+  invoices Invoice[]
 }
 
 model Invoice {
-  id             String   @id @default(cuid())
-  invoiceNumber  String   @unique
-  vendorId       String
-  vendor         Vendor   @relation(fields: [vendorId], references: [id])
-  subscriptionId String?
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  description    String
-  amount         Int
-  gstAmount      Int
-  totalAmount    Int
-  gstNumber      String?
-  status         InvoiceStatus @default(PENDING)
-  razorpayOrderId String?
+  id                String        @id @default(cuid())
+  invoiceNumber     String        @unique
+  vendorId          String
+  vendor            Vendor        @relation(fields: [vendorId], references: [id])
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+  description       String
+  amount            Int
+  gstAmount         Int
+  totalAmount       Int
+  gstNumber         String?
+  status            InvoiceStatus @default(PENDING)
+  razorpayOrderId   String?
   razorpayPaymentId String?
-  paidAt         DateTime?
-  dueDate        DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  paidAt            DateTime?
+  dueDate           DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model SupportTicket {
-  id        String   @id @default(cuid())
-  vendorId  String
-  vendor    Vendor   @relation(fields: [vendorId], references: [id])
-  category  String
-  subject   String
-  message   String
-  status    TicketStatus @default(OPEN)
+  id         String       @id @default(cuid())
+  vendorId   String
+  vendor     Vendor       @relation(fields: [vendorId], references: [id])
+  category   String
+  subject    String
+  message    String
+  status     TicketStatus @default(OPEN)
   adminReply String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 }
 
 model VendorCMS {
-  id           String   @id @default(cuid())
-  vendorId     String   @unique
-  vendor       Vendor   @relation(fields: [vendorId], references: [id])
-  businessName String?
-  tagline      String?
-  about        String?
-  logo         String?
-  banner       String?
-  favicon      String?
-  themeId      String?  // selected WebsiteTheme (2.3); null = industry default
-  seoTitle     String?
-  seoDesc      String?
-  seoKeywords  String?
-  phone        String?
-  email        String?
-  address      String?
+  id                String   @id @default(cuid())
+  vendorId          String   @unique
+  vendor            Vendor   @relation(fields: [vendorId], references: [id])
+  businessName      String?
+  tagline           String?
+  about             String?
+  logo              String?
+  banner            String?
+  favicon           String?
+  themeId           String? // selected WebsiteTheme (2.3); null = industry default
+  seoTitle          String?
+  seoDesc           String?
+  seoKeywords       String?
+  phone             String?
+  email             String?
+  address           String?
   // Basic business hours shown on the site AND used to ground the WhatsApp bot's
   // answers (free text, e.g. "Mon–Sat 9am–8pm, Sun closed"). Additive/nullable.
-  businessHours String?
-  whatsapp     String?
-  facebook     String?
-  instagram    String?
-  linkedin     String?
-  youtube      String?
-  googleMaps   String?
+  businessHours     String?
+  whatsapp          String?
+  facebook          String?
+  instagram         String?
+  linkedin          String?
+  youtube           String?
+  googleMaps        String?
   googleAnalyticsId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model VendorProduct {
-  id          String   @id @default(cuid())
-  vendorId    String
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  name        String
-  description String?
-  price       String?
-  image       String?
-  category    String?
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  name         String
+  description  String?
+  price        String?
+  image        String?
+  category     String?
   // Rich per-category listing fields (area/config/type for real estate, course/diet
   // for restaurant, duration/department for healthcare, …). Shape driven by
   // listing-fields.ts on the frontend. Additive/nullable — no data migration needed.
   customFields Json?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model PlatformCMS {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  value       String
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model Lead {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String
-  email        String?
-  business     String
-  industry     String
-  interest     String
-  message      String?
-  status       String        @default("pending")
+  id            String        @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  business      String
+  industry      String
+  interest      String
+  message       String?
+  status        String        @default("pending")
   // Lead origin: "demo" = Book-Demo funnel (Phase 1 OTP-verified), else campaign/etc.
-  source       String?
+  source        String?
   // Preferred demo slot chosen by the visitor in the Book-a-Demo wizard.
   preferredDate DateTime?
   preferredSlot String?
   // TeleCRM fields (admin marketing team works these enquiries).
-  notes        String?
-  assignedTo   String?
-  followUpDate DateTime?
-  callLogs     LeadCallLog[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  notes         String?
+  assignedTo    String?
+  followUpDate  DateTime?
+  callLogs      LeadCallLog[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
   @@map("g4d_leads")
 }
 
@@ -240,6 +243,7 @@ model LeadCallLog {
   aiSummary  String?
   followUpAt DateTime?
   createdAt  DateTime  @default(now())
+
   @@map("g4d_lead_call_logs")
 }
 
@@ -252,6 +256,7 @@ model Wallet {
   totalDebited  Int                 @default(0)
   updatedAt     DateTime            @updatedAt
   transactions  WalletTransaction[]
+
   @@map("g4d_wallets")
 }
 
@@ -269,6 +274,7 @@ model WalletTransaction {
   expiresAt    DateTime?
   razorpayId   String?
   createdAt    DateTime  @default(now())
+
   @@map("g4d_wallet_transactions")
 }
 
@@ -297,6 +303,7 @@ model CampaignPage {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   leads        CampaignLead[]
+
   @@map("g4d_campaign_pages")
 }
 
@@ -311,7 +318,7 @@ model CampaignLead {
   message        String?
   source         String?
   status         String        @default("new")
-  customFields   Json?         // industry-specific contact fields (config-driven form)
+  customFields   Json? // industry-specific contact fields (config-driven form)
   notes          String?
   assignedTo     String?
   followUpDate   DateTime?
@@ -322,6 +329,7 @@ model CampaignLead {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   callLogs       CallLog[]
+
   @@map("g4d_campaign_leads")
 }
 
@@ -337,6 +345,7 @@ model CallLog {
   aiSummary  String?
   followUpAt DateTime?
   createdAt  DateTime     @default(now())
+
   @@map("g4d_call_logs")
 }
 
@@ -355,6 +364,7 @@ model Campaign {
   approvedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
   @@map("g4d_campaigns")
 }
 
@@ -366,13 +376,14 @@ model TeamMember {
   email       String?
   phone       String?
   role        String
-  department  String?   // 3D: Sales | Support | Accounts | Marketing — prefills module access
+  department  String? // 3D: Sales | Support | Accounts | Marketing — prefills module access
   modules     Json
   status      String    @default("active")
   inviteToken String?
   password    String?
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
+
   @@map("g4d_team_members")
 }
 
@@ -390,6 +401,7 @@ model Notification {
   actionType     String?
   actionData     Json?
   createdAt      DateTime @default(now())
+
   @@map("g4d_notifications")
 }
 
@@ -402,6 +414,7 @@ model PushSubscription {
   auth      String
   device    String
   createdAt DateTime @default(now())
+
   @@map("g4d_push_subscriptions")
 }
 
@@ -413,6 +426,7 @@ model PlatformIncome {
   source      String
   description String?
   createdAt   DateTime @default(now())
+
   @@map("g4d_platform_income")
 }
 
@@ -424,26 +438,27 @@ model PlatformIncome {
 // ===========================================================================
 
 model Contact {
-  id           String           @id @default(cuid())
-  vendorId     String
-  vendor       Vendor           @relation(fields: [vendorId], references: [id])
-  name         String
-  phone        String
-  email        String?
-  type         String           @default("customer")
-  address      String?
-  portalAccess Boolean          @default(false)
-  customFields Json?
-  tags         Json?
-  notes        String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  records      Record[]
-  invoices     GenericInvoice[]
-  messages     Message[]
-  campaignLeads CampaignLead[]
+  id              String                 @id @default(cuid())
+  vendorId        String
+  vendor          Vendor                 @relation(fields: [vendorId], references: [id])
+  name            String
+  phone           String
+  email           String?
+  type            String                 @default("customer")
+  address         String?
+  portalAccess    Boolean                @default(false)
+  customFields    Json?
+  tags            Json?
+  notes           String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  records         Record[]
+  invoices        GenericInvoice[]
+  messages        Message[]
+  campaignLeads   CampaignLead[]
   waConversations WhatsappConversation[]
-  contracts    Contract[]
+  contracts       Contract[]
+
   @@index([vendorId])
   @@map("g4d_contacts")
 }
@@ -456,13 +471,14 @@ model Message {
   vendor            Vendor   @relation(fields: [vendorId], references: [id])
   contactId         String?
   contact           Contact? @relation(fields: [contactId], references: [id])
-  channel           String   // whatsapp | email | sms
+  channel           String // whatsapp | email | sms
   direction         String   @default("out") // out | in
   subject           String?
   body              String
   status            String   @default("sent") // sent | mock | failed | received
   providerMessageId String?
   createdAt         DateTime @default(now())
+
   @@index([vendorId])
   @@index([contactId])
   @@map("g4d_messages")
@@ -485,6 +501,7 @@ model CatalogItem {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   records      Record[]
+
   @@index([vendorId])
   @@map("g4d_catalog_items")
 }
@@ -505,6 +522,7 @@ model Record {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   invoice       GenericInvoice?
+
   @@index([vendorId])
   @@index([status])
   @@map("g4d_records")
@@ -532,6 +550,7 @@ model GenericInvoice {
   pdfUrl         String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
   @@index([vendorId])
   @@map("g4d_generic_invoices")
 }
@@ -544,6 +563,7 @@ model VendorAddon {
   enabled   Boolean  @default(true)
   enabledAt DateTime @default(now())
   config    Json?
+
   @@unique([vendorId, addonKey])
   @@map("g4d_vendor_addons")
 }
@@ -555,6 +575,7 @@ model VendorModule {
   moduleKey String
   enabled   Boolean  @default(true)
   enabledAt DateTime @default(now())
+
   @@unique([vendorId, moduleKey])
   @@map("g4d_vendor_modules")
 }
@@ -568,6 +589,7 @@ model PlatformSetting {
   status    String   @default("NOT_CONFIGURED")
   updatedAt DateTime @updatedAt
   updatedBy String?
+
   @@unique([category, key])
   @@map("g4d_platform_settings")
 }
@@ -580,7 +602,7 @@ enum Role {
 
 // Quotes sent by the admin marketing team to existing vendors or new prospects.
 model Quote {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   vendorId      String? // set when quoting an existing vendor
   prospectName  String
   prospectPhone String?
@@ -590,10 +612,11 @@ model Quote {
   amount        Int // in paise
   notes         String?
   channel       String // email | whatsapp | sms
-  status        String    @default("sent") // sent | viewed | accepted
+  status        String   @default("sent") // sent | viewed | accepted
   sentBy        String? // admin email/id that sent it
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@map("g4d_quotes")
 }
 
@@ -620,6 +643,7 @@ model AdminTeamMember {
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
   @@map("g4d_admin_team_members")
 }
 
@@ -667,12 +691,12 @@ enum TicketStatus {
 // vendors browse and use as a starting point in AI Studio. Platform-level (not
 // vendor-scoped); optionally industry-scoped. ─────────────────────────────────
 model AiTemplate {
-  id          String   @id @default(cuid())
-  name        String
-  contentType String   // social_post | festival_poster | blog | ad_creative | document | …
-  industry    String?  // null = all industries
-  prompt      String   // the base prompt/design brief the vendor starts from
-  thumbnail   String?  // preview image URL
+  id              String   @id @default(cuid())
+  name            String
+  contentType     String // social_post | festival_poster | blog | ad_creative | document | …
+  industry        String? // null = all industries
+  prompt          String // the base prompt/design brief the vendor starts from
+  thumbnail       String? // preview image URL
   // AI Studio Redesign (17 Aug): one library, several template kinds. `source`
   // discriminates the row so the Content Library + AI Studio picker can show/
   // filter all types in one list. 'prompt' = the existing AI-generation flow;
@@ -680,25 +704,26 @@ model AiTemplate {
   // 'document' = a coded business-document layout; 'design' = an in-app editable
   // design template (Fabric.js scene in editorJson); 'reel' = a Remotion reel
   // template (slot/text/music config in videoConfig).
-  source      String   @default("prompt") // prompt | canva | document | design | reel
+  source          String   @default("prompt") // prompt | canva | document | design | reel
   // Canva Integration: the Canva brand_template_id this row mirrors (source=canva).
   canvaTemplateId String?
   // Data-fill field definitions (cmsSchema-style) for canva/document templates —
   // an array of { key, label, type, required, maxLength?, prefillFrom? }. Lets the
   // AI Studio data-collection form render only what THIS template needs. Adopts the
   // Template-Driven CMS `cmsSchema` shape later without a rewrite.
-  fields      Json?
+  fields          Json?
   // Template Editor dispatch (17 Aug): Fabric.js scene JSON for source='design'
   // (the editable canvas — text boxes, image objects, shapes; placeholder objects
   // tagged with fieldKey). Stored here, not in a parallel table.
-  editorJson  Json?
+  editorJson      Json?
   // Remotion reel template config for source='reel' — { slots (image count), text
   // overlay spec, aspect, durationInFrames, fps, allowedTrackIds }.
-  videoConfig Json?
-  active      Boolean  @default(true)
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  videoConfig     Json?
+  active          Boolean  @default(true)
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   @@index([contentType])
   @@index([industry])
   @@index([source])
@@ -709,16 +734,17 @@ model AiTemplate {
 // CSS-variable-driven variations, so a theme swap is a variable swap not a fork.
 // Admin-created; a vendor selects one (VendorCMS.themeId). Platform-level. ─────
 model WebsiteTheme {
-  id          String   @id @default(cuid())
-  name        String
-  industry    String?  // null = works for any industry
-  cssVars     Json     // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
-  preview     String?  // preview image URL
-  isDefault   Boolean  @default(false)
-  active      Boolean  @default(true)
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  industry  String? // null = works for any industry
+  cssVars   Json // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
+  preview   String? // preview image URL
+  isDefault Boolean  @default(false)
+  active    Boolean  @default(true)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([industry])
   @@map("g4d_website_themes")
 }
@@ -732,15 +758,16 @@ model Expense {
   vendor        Vendor   @relation(fields: [vendorId], references: [id])
   description   String
   category      String?
-  amount        Float    // taxable base (₹, exclusive of GST)
-  gstRate       Float    @default(0)   // 0 = not GST-claimable
+  amount        Float // taxable base (₹, exclusive of GST)
+  gstRate       Float    @default(0) // 0 = not GST-claimable
   gstAmount     Float    @default(0)
-  total         Float    // amount + gstAmount
+  total         Float // amount + gstAmount
   paymentMethod String   @default("offline") // online | offline (cash)
-  attachment    String?  // receipt photo URL
+  attachment    String? // receipt photo URL
   date          DateTime
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
   @@index([vendorId])
   @@map("g4d_expenses")
 }
@@ -751,11 +778,12 @@ model StationeryItem {
   vendorId         String
   vendor           Vendor   @relation(fields: [vendorId], references: [id])
   name             String
-  unit             String?  // e.g. box, ream, pcs
+  unit             String? // e.g. box, ream, pcs
   quantity         Float    @default(0)
-  reorderThreshold Float?   // low-stock marker (optional)
+  reorderThreshold Float? // low-stock marker (optional)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
   @@index([vendorId])
   @@map("g4d_stationery")
 }
@@ -777,6 +805,7 @@ model KnowledgeBaseEntry {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@index([vendorId])
   @@map("g4d_kb_entries")
 }
@@ -791,16 +820,17 @@ model WhatsappConversation {
   contactId     String?
   contact       Contact?  @relation(fields: [contactId], references: [id])
   phone         String
-  phoneNumberId String?   // Fast2SMS phone_number_id (the vendor's WA number)
+  phoneNumberId String? // Fast2SMS phone_number_id (the vendor's WA number)
   // active = bot answering · awaiting_name = asked for name, waiting · agent =
   // handed off to a human, bot muted.
   state         String    @default("active")
   nameCaptured  Boolean   @default(false)
-  leadId        String?   // CampaignLead created once interest + name captured
+  leadId        String? // CampaignLead created once interest + name captured
   // Start of the current billed 24h session window (null until first billed send).
   windowStart   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
   @@unique([vendorId, phone])
   @@index([vendorId])
   @@map("g4d_wa_conversations")
@@ -817,19 +847,20 @@ model WhatsappConversation {
 // Kanban task / process board (the reference's drag-drop is non-functional;
 // here `stage` is real and persisted on move).
 model VendorTask {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   vendorId    String
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  vendor      Vendor    @relation(fields: [vendorId], references: [id])
   title       String
   description String?
-  stage       String   @default("new")      // new | assigned | in-progress | review | completed
-  priority    String   @default("medium")   // low | medium | high | urgent
+  stage       String    @default("new") // new | assigned | in-progress | review | completed
+  priority    String    @default("medium") // low | medium | high | urgent
   assignee    String?
   segment     String?
-  subtasks    Json?                          // [{ label: string, done: boolean }]
+  subtasks    Json? // [{ label: string, done: boolean }]
   dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, stage])
   @@map("g4d_vendor_tasks")
@@ -840,27 +871,29 @@ model PosTable {
   id         String   @id @default(cuid())
   vendorId   String
   vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  name       String                          // "T1"
+  name       String // "T1"
   seats      Int      @default(2)
-  status     String   @default("available")  // available | occupied | reserved | cleaning
-  orderTotal Float?                           // current open order total
+  status     String   @default("available") // available | occupied | reserved | cleaning
+  orderTotal Float? // current open order total
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
   @@index([vendorId])
   @@map("g4d_pos_tables")
 }
 
 // Kitchen order queue ("Send to Kitchen" creates one; staff see status update).
 model KitchenTicket {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  tableName  String?
-  items      String                          // human-readable line list
-  total      Float    @default(0)
-  status     String   @default("preparing")  // preparing | ready | overdue | served
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  tableName String?
+  items     String // human-readable line list
+  total     Float    @default(0)
+  status    String   @default("preparing") // preparing | ready | overdue | served
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_kitchen_tickets")
@@ -872,16 +905,17 @@ model PosSale {
   id            String   @id @default(cuid())
   vendorId      String
   vendor        Vendor   @relation(fields: [vendorId], references: [id])
-  type          String   @default("retail")     // retail | food
-  items         Json                            // [{ catalogItemId?, name, qty, price }]
+  type          String   @default("retail") // retail | food
+  items         Json // [{ catalogItemId?, name, qty, price }]
   subtotal      Float
   taxAmount     Float    @default(0)
   total         Float
-  paymentMethod String   @default("cash")        // cash | upi | card | bank
-  status        String   @default("completed")   // completed | refunded
+  paymentMethod String   @default("cash") // cash | upi | card | bank
+  status        String   @default("completed") // completed | refunded
   tableName     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, createdAt])
   @@map("g4d_pos_sales")
@@ -892,16 +926,17 @@ model Appointment {
   id           String   @id @default(cuid())
   vendorId     String
   vendor       Vendor   @relation(fields: [vendorId], references: [id])
-  contactId    String?                          // optional link to g4d_contacts (no FK — soft ref)
+  contactId    String? // optional link to g4d_contacts (no FK — soft ref)
   customerName String
   phone        String?
   service      String?
   startAt      DateTime
   durationMin  Int      @default(30)
-  status       String   @default("booked")      // booked | completed | cancelled | no_show
+  status       String   @default("booked") // booked | completed | cancelled | no_show
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, startAt])
   @@map("g4d_appointments")
@@ -913,14 +948,15 @@ model PaymentRecord {
   vendorId  String
   vendor    Vendor   @relation(fields: [vendorId], references: [id])
   party     String
-  method    String                            // upi | cash | card | cheque | bank
-  direction String                            // inward | outward
+  method    String // upi | cash | card | cheque | bank
+  direction String // inward | outward
   amount    Float
   reference String?
-  status    String   @default("cleared")      // cleared | pending | bounced
+  status    String   @default("cleared") // cleared | pending | bounced
   date      DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, date])
   @@map("g4d_payment_records")
@@ -928,16 +964,17 @@ model PaymentRecord {
 
 // GST return filing-status tracker (Accounts → GST tab).
 model GstFiling {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   vendorId  String
-  vendor    Vendor   @relation(fields: [vendorId], references: [id])
-  period    String                            // e.g. "2026-08"
-  formType  String                            // GSTR-1 | GSTR-3B | GSTR-2B | Annual
-  status    String   @default("pending")      // pending | in_progress | filed | not_due
+  vendor    Vendor    @relation(fields: [vendorId], references: [id])
+  period    String // e.g. "2026-08"
+  formType  String // GSTR-1 | GSTR-3B | GSTR-2B | Annual
+  status    String    @default("pending") // pending | in_progress | filed | not_due
   dueDate   DateTime?
   filedAt   DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
   @@unique([vendorId, period, formType])
   @@index([vendorId])
   @@map("g4d_gst_filings")
@@ -948,24 +985,25 @@ model GstFiling {
 // (dispatch 26-Aug-2026, Phase 2). Mapping status tracks DNS propagation before
 // a domain is marked active.
 model DomainRegistration {
-  id               String    @id @default(cuid())
-  vendorId         String
-  vendor           Vendor    @relation(fields: [vendorId], references: [id])
-  domainName       String                              // full sld.tld
-  tld              String
+  id                String    @id @default(cuid())
+  vendorId          String
+  vendor            Vendor    @relation(fields: [vendorId], references: [id])
+  domainName        String // full sld.tld
+  tld               String
   // registered = bought through Get4Domain; connected = vendor-owned, mapped only
-  source           String    @default("registered")
-  registrar        String    @default("resellerclub")
-  registrarOrderId String?
+  source            String    @default("registered")
+  registrar         String    @default("resellerclub")
+  registrarOrderId  String?
   // pending | registered | mapping_pending | active | failed | cancelled
-  status           String    @default("pending")
-  pricePaise       Int       @default(0)               // amount charged to wallet (0 for connected)
-  years            Int       @default(1)
-  mappingType      String?                             // A | CNAME
+  status            String    @default("pending")
+  pricePaise        Int       @default(0) // amount charged to wallet (0 for connected)
+  years             Int       @default(1)
+  mappingType       String? // A | CNAME
   mappingVerifiedAt DateTime?
-  expiresAt        DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
   @@unique([vendorId, domainName])
   @@index([vendorId])
   @@index([vendorId, status])
@@ -977,62 +1015,65 @@ model DomainRegistration {
 // (existing fleet/driver addon flags); Trips + Visa are core Travel features.
 // Bookings stay on the shared Record model (untouched).
 model Vehicle {
-  id        String   @id @default(cuid())
-  vendorId  String
-  vendor    Vendor   @relation(fields: [vendorId], references: [id])
-  name      String
-  type      String   @default("sedan")       // sedan | suv | tempo | bus | other
-  regNumber String?
-  capacity  Int      @default(4)
-  status    String   @default("available")   // available | on_trip | maintenance
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  trips     Trip[]
+  id                  String               @id @default(cuid())
+  vendorId            String
+  vendor              Vendor               @relation(fields: [vendorId], references: [id])
+  name                String
+  type                String               @default("sedan") // sedan | suv | tempo | bus | other
+  regNumber           String?
+  capacity            Int                  @default(4)
+  status              String               @default("available") // available | on_trip | maintenance
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  trips               Trip[]
   contractAssignments ContractAssignment[]
+
   @@index([vendorId])
   @@map("g4d_vehicles")
 }
 
 model Driver {
-  id        String   @id @default(cuid())
-  vendorId  String
-  vendor    Vendor   @relation(fields: [vendorId], references: [id])
-  name      String
-  phone     String?
-  licenseNo String?
-  status    String   @default("available")   // available | on_trip | off_duty
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  trips     Trip[]
+  id                  String               @id @default(cuid())
+  vendorId            String
+  vendor              Vendor               @relation(fields: [vendorId], references: [id])
+  name                String
+  phone               String?
+  licenseNo           String?
+  status              String               @default("available") // available | on_trip | off_duty
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  trips               Trip[]
   contractAssignments ContractAssignment[]
+
   @@index([vendorId])
   @@map("g4d_drivers")
 }
 
 model Trip {
-  id          String   @id @default(cuid())
+  id          String            @id @default(cuid())
   vendorId    String
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  contactId   String?                          // soft ref to g4d_contacts (customer) — no FK
+  vendor      Vendor            @relation(fields: [vendorId], references: [id])
+  contactId   String? // soft ref to g4d_contacts (customer) — no FK
   title       String
   destination String?
   startDate   DateTime?
   endDate     DateTime?
-  pax         Int      @default(1)
-  status      String   @default("planning")    // planning | confirmed | ongoing | completed | cancelled
-  packageCost Float    @default(0)             // supplier cost
-  sellPrice   Float    @default(0)             // price charged to customer (markup = sell - cost)
-  itinerary   Json?                            // [{ day, title, detail }]
+  pax         Int               @default(1)
+  status      String            @default("planning") // planning | confirmed | ongoing | completed | cancelled
+  packageCost Float             @default(0) // supplier cost
+  sellPrice   Float             @default(0) // price charged to customer (markup = sell - cost)
+  itinerary   Json? // [{ day, title, detail }]
   vehicleId   String?
-  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id])
+  vehicle     Vehicle?          @relation(fields: [vehicleId], references: [id])
   driverId    String?
-  driver      Driver?  @relation(fields: [driverId], references: [id])
+  driver      Driver?           @relation(fields: [driverId], references: [id])
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   visas       VisaApplication[]
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_trips")
@@ -1048,12 +1089,13 @@ model VisaApplication {
   passportNo   String?
   country      String
   visaType     String?
-  status       String    @default("applied")    // applied | in_process | approved | rejected
+  status       String    @default("applied") // applied | in_process | approved | rejected
   appliedDate  DateTime?
   decisionDate DateTime?
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_visa_applications")
@@ -1109,23 +1151,24 @@ model VendorCommsSettings {
 // Distinct from Trip (one-off itinerary) and Record/Booking (one-off). Bills a
 // GenericInvoice monthly via the existing invoice path; addon-gated (fleet).
 model Contract {
-  id                String   @id @default(cuid())
+  id                String               @id @default(cuid())
   vendorId          String
-  vendor            Vendor   @relation(fields: [vendorId], references: [id])
-  contactId         String                              // the client (school/corporate/college)
-  contact           Contact  @relation(fields: [contactId], references: [id])
+  vendor            Vendor               @relation(fields: [vendorId], references: [id])
+  contactId         String // the client (school/corporate/college)
+  contact           Contact              @relation(fields: [contactId], references: [id])
   title             String
-  monthlyRate       Float    @default(0)
-  gstRate           Float    @default(0)                // GST% applied to generated invoices
+  monthlyRate       Float                @default(0)
+  gstRate           Float                @default(0) // GST% applied to generated invoices
   startDate         DateTime
-  endDate           DateTime?                           // null = open-ended
-  billingDayOfMonth Int      @default(1)                // 1–28
+  endDate           DateTime? // null = open-ended
+  billingDayOfMonth Int                  @default(1) // 1–28
   scheduleNotes     String?
-  status            String   @default("active")         // active | paused | ended
-  lastBilledPeriod  String?                             // "YYYY-MM" idempotency guard
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  status            String               @default("active") // active | paused | ended
+  lastBilledPeriod  String? // "YYYY-MM" idempotency guard
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
   assignments       ContractAssignment[]
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_contracts")
@@ -1140,8 +1183,9 @@ model ContractAssignment {
   vehicle    Vehicle? @relation(fields: [vehicleId], references: [id])
   driverId   String?
   driver     Driver?  @relation(fields: [driverId], references: [id])
-  routeLabel String?                                    // "Route 4 — North"
+  routeLabel String? // "Route 4 — North"
   createdAt  DateTime @default(now())
+
   @@index([contractId])
   @@map("g4d_contract_assignments")
 }
@@ -1149,53 +1193,56 @@ model ContractAssignment {
 // ── Salon Operations (Phase 2) ───────────────────────────────────────────────
 // Dedicated models for real service/chair scheduling + stylist assignment.
 model Stylist {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  name       String
-  phone      String?
-  specialty  String?
-  status     String   @default("active")   // active | off_duty
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String             @id @default(cuid())
+  vendorId     String
+  vendor       Vendor             @relation(fields: [vendorId], references: [id])
+  name         String
+  phone        String?
+  specialty    String?
+  status       String             @default("active") // active | off_duty
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   appointments SalonAppointment[]
+
   @@index([vendorId])
   @@map("g4d_stylists")
 }
 
 model SalonChair {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  name       String
-  status     String   @default("available") // available | occupied | maintenance
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String             @id @default(cuid())
+  vendorId     String
+  vendor       Vendor             @relation(fields: [vendorId], references: [id])
+  name         String
+  status       String             @default("available") // available | occupied | maintenance
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
   appointments SalonAppointment[]
+
   @@index([vendorId])
   @@map("g4d_salon_chairs")
 }
 
 model SalonAppointment {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   vendorId    String
-  vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  contactId   String?                          // soft ref to g4d_contacts (client)
+  vendor      Vendor      @relation(fields: [vendorId], references: [id])
+  contactId   String? // soft ref to g4d_contacts (client)
   clientName  String
   clientPhone String?
   serviceName String
   stylistId   String?
-  stylist     Stylist? @relation(fields: [stylistId], references: [id])
+  stylist     Stylist?    @relation(fields: [stylistId], references: [id])
   chairId     String?
   chair       SalonChair? @relation(fields: [chairId], references: [id])
   startAt     DateTime
-  durationMin Int      @default(45)
-  price       Float    @default(0)
-  status      String   @default("scheduled")   // scheduled | confirmed | completed | no_show | cancelled
+  durationMin Int         @default(45)
+  price       Float       @default(0)
+  status      String      @default("scheduled") // scheduled | confirmed | completed | no_show | cancelled
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, startAt])
   @@map("g4d_salon_appointments")
@@ -1208,13 +1255,14 @@ model GymClass {
   vendor      Vendor   @relation(fields: [vendorId], references: [id])
   name        String
   trainer     String?
-  dayOfWeek   String   @default("Mon")   // Mon..Sun | Daily
+  dayOfWeek   String   @default("Mon") // Mon..Sun | Daily
   startTime   String   @default("06:00") // HH:MM
   durationMin Int      @default(60)
   capacity    Int      @default(20)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([vendorId])
   @@map("g4d_gym_classes")
 }
@@ -1223,17 +1271,18 @@ model Membership {
   id          String   @id @default(cuid())
   vendorId    String
   vendor      Vendor   @relation(fields: [vendorId], references: [id])
-  contactId   String?                          // soft ref to g4d_contacts
+  contactId   String? // soft ref to g4d_contacts
   memberName  String
   memberPhone String?
   planName    String
   price       Float    @default(0)
   startDate   DateTime
   endDate     DateTime
-  status      String   @default("active")      // active | frozen | cancelled (expiring/expired derived from endDate)
+  status      String   @default("active") // active | frozen | cancelled (expiring/expired derived from endDate)
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_memberships")
@@ -1241,19 +1290,20 @@ model Membership {
 
 // ── Hotel Operations (Phase 2) ───────────────────────────────────────────────
 model Room {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   vendorId      String
-  vendor        Vendor   @relation(fields: [vendorId], references: [id])
-  number        String                          // "101"
-  roomType      String   @default("Standard")
-  capacity      Int      @default(2)
-  pricePerNight Float    @default(0)
-  status        String   @default("available")  // available | occupied | maintenance
-  housekeeping  String   @default("clean")      // clean | dirty | in_progress
+  vendor        Vendor        @relation(fields: [vendorId], references: [id])
+  number        String // "101"
+  roomType      String        @default("Standard")
+  capacity      Int           @default(2)
+  pricePerNight Float         @default(0)
+  status        String        @default("available") // available | occupied | maintenance
+  housekeeping  String        @default("clean") // clean | dirty | in_progress
   notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
   bookings      RoomBooking[]
+
   @@index([vendorId])
   @@map("g4d_rooms")
 }
@@ -1271,10 +1321,11 @@ model RoomBooking {
   checkOut    DateTime
   guests      Int      @default(1)
   totalAmount Float    @default(0)
-  status      String   @default("booked")       // booked | confirmed | checked_in | checked_out | cancelled
+  status      String   @default("booked") // booked | confirmed | checked_in | checked_out | cancelled
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, checkIn])
   @@map("g4d_room_bookings")
@@ -1282,21 +1333,22 @@ model RoomBooking {
 
 // ── Real Estate Operations (Phase 2) ─────────────────────────────────────────
 model Listing {
-  id           String   @id @default(cuid())
+  id           String          @id @default(cuid())
   vendorId     String
-  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  vendor       Vendor          @relation(fields: [vendorId], references: [id])
   title        String
-  propertyType String   @default("Apartment")  // Apartment | Villa | Plot | Commercial | Office
+  propertyType String          @default("Apartment") // Apartment | Villa | Plot | Commercial | Office
   location     String?
-  price        Float    @default(0)
+  price        Float           @default(0)
   areaSqft     Float?
   bhk          String?
-  status       String   @default("available")  // available | under_offer | sold | rented
+  status       String          @default("available") // available | under_offer | sold | rented
   description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   deals        Deal[]
   visits       PropertyVisit[]
+
   @@index([vendorId])
   @@map("g4d_listings")
 }
@@ -1310,12 +1362,13 @@ model Deal {
   clientPhone String?
   listingId   String?
   listing     Listing? @relation(fields: [listingId], references: [id])
-  stage       String   @default("new")   // new | site_visit | negotiation | closed_won | closed_lost
+  stage       String   @default("new") // new | site_visit | negotiation | closed_won | closed_lost
   value       Float    @default(0)
   agent       String?
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, stage])
   @@map("g4d_deals")
@@ -1332,10 +1385,11 @@ model PropertyVisit {
   listing     Listing? @relation(fields: [listingId], references: [id])
   scheduledAt DateTime
   agent       String?
-  status      String   @default("scheduled")  // scheduled | done | cancelled
+  status      String   @default("scheduled") // scheduled | done | cancelled
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, scheduledAt])
   @@map("g4d_property_visits")
@@ -1343,22 +1397,23 @@ model PropertyVisit {
 
 // ── Education Operations (Phase 2) ───────────────────────────────────────────
 model Batch {
-  id         String   @id @default(cuid())
-  vendorId   String
-  vendor     Vendor   @relation(fields: [vendorId], references: [id])
-  name       String
-  courseName String?
-  faculty    String?
-  mode       String   @default("Classroom")  // Classroom | Online | Hybrid
-  startDate  DateTime?
-  endDate    DateTime?
-  schedule   String?                          // "Mon/Wed/Fri 6-8pm"
-  capacity   Int      @default(30)
-  fee        Float    @default(0)
-  status     String   @default("upcoming")    // upcoming | active | completed
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String              @id @default(cuid())
+  vendorId    String
+  vendor      Vendor              @relation(fields: [vendorId], references: [id])
+  name        String
+  courseName  String?
+  faculty     String?
+  mode        String              @default("Classroom") // Classroom | Online | Hybrid
+  startDate   DateTime?
+  endDate     DateTime?
+  schedule    String? // "Mon/Wed/Fri 6-8pm"
+  capacity    Int                 @default(30)
+  fee         Float               @default(0)
+  status      String              @default("upcoming") // upcoming | active | completed
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   enrollments StudentEnrollment[]
+
   @@index([vendorId])
   @@map("g4d_batches")
 }
@@ -1376,11 +1431,58 @@ model StudentEnrollment {
   enrollDate      DateTime @default(now())
   feeAmount       Float    @default(0)
   feePaid         Float    @default(0)
-  status          String   @default("enrolled")  // enrolled | ongoing | completed | dropped
+  status          String   @default("enrolled") // enrolled | ongoing | completed | dropped
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_enrollments")
+}
+
+// ── Phase 2 — Professional Services: engagement/case tracking + doc checklist ──
+model Engagement {
+  id             String               @id @default(cuid())
+  vendorId       String
+  vendor         Vendor               @relation(fields: [vendorId], references: [id])
+  title          String
+  clientName     String
+  contactId      String? // soft ref to Contact
+  engagementType String               @default("Consulting") // Consulting | Legal | Advisory | Retainer | Other
+  billingType    String               @default("Fixed") // Fixed | Hourly | Retainer
+  status         String               @default("proposal") // proposal | active | on_hold | completed | cancelled
+  feeValue       Float                @default(0) // fixed fee / retainer amount / est. value
+  hourlyRate     Float? // when billingType = Hourly
+  assignedTo     String?
+  startDate      DateTime?
+  dueDate        DateTime?
+  description    String?
+  notes          String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  documents      EngagementDocument[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_engagements")
+}
+
+model EngagementDocument {
+  id           String     @id @default(cuid())
+  vendorId     String
+  vendor       Vendor     @relation(fields: [vendorId], references: [id])
+  engagementId String
+  engagement   Engagement @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  name         String
+  required     Boolean    @default(true)
+  status       String     @default("pending") // pending | received | waived
+  receivedAt   DateTime?
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([vendorId])
+  @@index([engagementId])
+  @@map("g4d_engagement_docs")
 }

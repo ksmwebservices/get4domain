@@ -26,6 +26,8 @@ import DealsView from '@/domainapp/realestate/DealsView';
 import VisitsView from '@/domainapp/realestate/VisitsView';
 import BatchesView from '@/domainapp/education/BatchesView';
 import EnrollmentsView from '@/domainapp/education/EnrollmentsView';
+import EngagementsView from '@/domainapp/professional/EngagementsView';
+import DocumentsView from '@/domainapp/professional/DocumentsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -120,6 +122,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'education') {
     if (tabKey === 'batches') return <BatchesView />;
     if (tabKey === 'students') return <EnrollmentsView />;
+  }
+
+  // Phase 2 — Professional Services: engagement tracking + document checklist.
+  if (cfg.industry.key === 'professional') {
+    if (tabKey === 'engagements') return <EngagementsView />;
+    if (tabKey === 'documents') return <DocumentsView />;
   }
 
   const view = resolveView(tabKey);
