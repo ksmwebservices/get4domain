@@ -295,6 +295,21 @@ export const api = {
   updateCaseDocument: (id: string, data: any) => apiCall(`/finance/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteCaseDocument: (id: string) => apiCall(`/finance/documents/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Automobile operations
+  automobileSummary: () => apiCall('/automobile/summary'),
+  getJobs: () => apiCall('/automobile/jobs'),
+  getJob: (id: string) => apiCall(`/automobile/jobs/${id}`),
+  createJob: (data: any) => apiCall('/automobile/jobs', { method: 'POST', body: JSON.stringify(data) }),
+  updateJob: (id: string, data: any) => apiCall(`/automobile/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteJob: (id: string) => apiCall(`/automobile/jobs/${id}`, { method: 'DELETE' }),
+  addJobLine: (jobId: string, data: any) => apiCall(`/automobile/jobs/${jobId}/lines`, { method: 'POST', body: JSON.stringify(data) }),
+  updateJobLine: (id: string, data: any) => apiCall(`/automobile/lines/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteJobLine: (id: string) => apiCall(`/automobile/lines/${id}`, { method: 'DELETE' }),
+  getParts: () => apiCall('/automobile/parts'),
+  createPart: (data: any) => apiCall('/automobile/parts', { method: 'POST', body: JSON.stringify(data) }),
+  updatePart: (id: string, data: any) => apiCall(`/automobile/parts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePart: (id: string) => apiCall(`/automobile/parts/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

@@ -30,6 +30,7 @@ interface ProfessionalSummary { activeEngagements: number; engagedValue: number;
 interface ConstructionSummary { activeProjects: number; contractValue: number; spent: number; openMilestones: number; byPhase: { phase: string; count: number; value: number }[] }
 interface EventsSummary { upcomingEvents: number; bookedValue: number; advanceCollected: number; vendorCostPending: number; byType: { type: string; count: number; value: number }[] }
 interface FinanceSummary { openCases: number; feeValue: number; deadlinesSoon: number; pendingDocs: number; byType: { type: string; count: number; value: number }[] }
+interface AutomobileSummary { activeJobs: number; inService: number; ready: number; estimatedRevenue: number; lowStockParts: number; byStatus: { status: string; count: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -73,6 +74,8 @@ export default function AccountsPage() {
   const [ev, setEv] = useState<EventsSummary | null>(null);
   const isFinance = user?.industry === 'finance';
   const [fin, setFin] = useState<FinanceSummary | null>(null);
+  const isAutomobile = user?.industry === 'automobile';
+  const [auto, setAuto] = useState<AutomobileSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -164,6 +167,11 @@ export default function AccountsPage() {
     if (!isFinance) return;
     api.financeSummary().then((r) => setFin(r.data ?? null)).catch(() => setFin(null));
   }, [isFinance]);
+
+  useEffect(() => {
+    if (!isAutomobile) return;
+    api.automobileSummary().then((r) => setAuto(r.data ?? null)).catch(() => setAuto(null));
+  }, [isAutomobile]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -305,6 +313,19 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isAutomobile && auto && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Service jobs &amp; parts</h3><Badge variant="info" size="xs">Automobile</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div><div className="text-lg font-extrabold text-brand-300">{auto.activeJobs}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active jobs</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{auto.inService}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">In service</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{auto.ready}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Ready</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(auto.estimatedRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Est. revenue</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{auto.lowStockParts}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Low-stock parts</div></div>
                 </div>
               </div>
             )}

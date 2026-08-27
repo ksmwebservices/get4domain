@@ -34,6 +34,8 @@ import BookingsView from '@/domainapp/events/BookingsView';
 import EventVendorsView from '@/domainapp/events/VendorsView';
 import CasesView from '@/domainapp/finance/CasesView';
 import FinanceDocumentsView from '@/domainapp/finance/DocumentsView';
+import JobsView from '@/domainapp/automobile/JobsView';
+import PartsInventoryView from '@/domainapp/automobile/PartsInventoryView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -152,6 +154,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'finance') {
     if (tabKey === 'cases') return <CasesView />;
     if (tabKey === 'documents') return <FinanceDocumentsView />;
+  }
+
+  // Phase 3 — Automobile: service-job tracking + parts inventory.
+  if (cfg.industry.key === 'automobile') {
+    if (tabKey === 'jobs') return <JobsView />;
+    if (tabKey === 'inventory') return <PartsInventoryView />;
   }
 
   const view = resolveView(tabKey);

@@ -105,6 +105,9 @@ model Vendor {
   eventVendors         EventVendorAssignment[]
   financeCases         FinanceCase[]
   financeCaseDocuments FinanceCaseDocument[]
+  serviceJobs          ServiceJob[]
+  jobLines             JobLine[]
+  partStock            PartStock[]
 }
 
 model Subscription {
@@ -1644,4 +1647,64 @@ model FinanceCaseDocument {
   @@index([vendorId])
   @@index([caseId])
   @@map("g4d_finance_case_docs")
+}
+
+// ── Phase 3 — Automobile Service: service-job + parts/labor, parts inventory ──
+model ServiceJob {
+  id             String    @id @default(cuid())
+  vendorId       String
+  vendor         Vendor    @relation(fields: [vendorId], references: [id])
+  vehicleNumber  String
+  vehicleModel   String?
+  customerName   String
+  contactId      String?
+  jobType        String    @default("General Service") // General Service | Repair | Body Work | Insurance | Other
+  status         String    @default("received") // received | in_service | ready | delivered | cancelled
+  odometer       Int?
+  complaint      String?
+  estimateAmount Float     @default(0)
+  receivedDate   DateTime  @default(now())
+  promisedDate   DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lines          JobLine[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_service_jobs")
+}
+
+model JobLine {
+  id          String     @id @default(cuid())
+  vendorId    String
+  vendor      Vendor     @relation(fields: [vendorId], references: [id])
+  jobId       String
+  job         ServiceJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  kind        String     @default("labor") // part | labor
+  description String
+  quantity    Float      @default(1)
+  rate        Float      @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([vendorId])
+  @@index([jobId])
+  @@map("g4d_job_lines")
+}
+
+model PartStock {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  name         String
+  partNumber   String?
+  quantity     Int      @default(0)
+  reorderLevel Int      @default(5)
+  unitPrice    Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([vendorId])
+  @@map("g4d_part_stock")
 }
