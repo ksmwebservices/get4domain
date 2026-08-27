@@ -37,6 +37,7 @@ interface PhotographySummary { upcomingShoots: number; bookedValue: number; adva
 interface AgricultureSummary { openOrders: number; orderValue: number; pendingDispatch: number; stockValue: number; byStatus: { status: string; count: number }[] }
 interface CoachingSummary { activeStudents: number; feesCollected: number; feesPending: number; sessionsThisWeek: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
 interface TechnologySummary { activeProjects: number; contractValue: number; openTasks: number; doneTasks: number; byStatus: { status: string; count: number; value: number }[] }
+interface ClinicSummary { todayAppointments: number; upcoming: number; completedThisMonth: number; revenueThisMonth: number; byDoctor: { doctorId: string; name: string; count: number; revenue: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -94,6 +95,8 @@ export default function AccountsPage() {
   const [coach, setCoach] = useState<CoachingSummary | null>(null);
   const isTechnology = user?.industry === 'technology';
   const [tech, setTech] = useState<TechnologySummary | null>(null);
+  const isClinic = user?.industry === 'clinic';
+  const [clinic, setClinic] = useState<ClinicSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -220,6 +223,11 @@ export default function AccountsPage() {
     if (!isTechnology) return;
     api.technologySummary().then((r) => setTech(r.data ?? null)).catch(() => setTech(null));
   }, [isTechnology]);
+
+  useEffect(() => {
+    if (!isClinic) return;
+    api.clinicSummary().then((r) => setClinic(r.data ?? null)).catch(() => setClinic(null));
+  }, [isClinic]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -362,6 +370,25 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isClinic && clinic && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Appointments &amp; consultations</h3><Badge variant="info" size="xs">Clinic</Badge></div>
+                <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{clinic.todayAppointments}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Today</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{clinic.upcoming}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{clinic.completedThisMonth}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Completed (mo)</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(clinic.revenueThisMonth)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Revenue (mo)</div></div>
+                </div>
+                {clinic.byDoctor.length === 0 ? <p className="text-xs text-ink-500">No completed visits this month yet.</p> : (
+                  <div className="space-y-1.5">
+                    {clinic.byDoctor.map((d) => (
+                      <div key={d.doctorId ?? 'unassigned'} className="flex items-center justify-between text-sm"><span className="text-ink-300">{d.name} <span className="text-ink-500">· {d.count}</span></span><span className="font-semibold text-ink-200">{rupees(d.revenue)}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

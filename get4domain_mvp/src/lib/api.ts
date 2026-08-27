@@ -377,6 +377,17 @@ export const api = {
   updateTechTask: (id: string, data: any) => apiCall(`/technology/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTechTask: (id: string) => apiCall(`/technology/tasks/${id}`, { method: 'DELETE' }),
 
+  // Final 3 — Clinic operations
+  clinicSummary: () => apiCall('/clinic/summary'),
+  getDoctors: () => apiCall('/clinic/doctors'),
+  createDoctor: (data: any) => apiCall('/clinic/doctors', { method: 'POST', body: JSON.stringify(data) }),
+  updateDoctor: (id: string, data: any) => apiCall(`/clinic/doctors/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDoctor: (id: string) => apiCall(`/clinic/doctors/${id}`, { method: 'DELETE' }),
+  getClinicAppointments: () => apiCall('/clinic/appointments'),
+  createClinicAppointment: (data: any) => apiCall('/clinic/appointments', { method: 'POST', body: JSON.stringify(data) }),
+  updateClinicAppointment: (id: string, data: any) => apiCall(`/clinic/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteClinicAppointment: (id: string) => apiCall(`/clinic/appointments/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

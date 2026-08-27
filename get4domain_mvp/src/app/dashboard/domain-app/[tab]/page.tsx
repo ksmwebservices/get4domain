@@ -47,6 +47,9 @@ import CoachingBatchesView from '@/domainapp/coaching/BatchesView';
 import CoachingStudentsView from '@/domainapp/coaching/StudentsView';
 import TechProjectsView from '@/domainapp/technology/ProjectsView';
 import TechTasksView from '@/domainapp/technology/TasksView';
+import ClinicAppointmentsView from '@/domainapp/clinic/AppointmentsView';
+import DoctorsView from '@/domainapp/clinic/DoctorsView';
+import PrescriptionsView from '@/domainapp/clinic/PrescriptionsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -208,6 +211,13 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'technology') {
     if (tabKey === 'projects') return <TechProjectsView />;
     if (tabKey === 'tasks') return <TechTasksView />;
+  }
+
+  // Final 3 — Clinic: appointment scheduling + doctor assignment + visit tracking.
+  if (cfg.industry.key === 'clinic') {
+    if (tabKey === 'appointments') return <ClinicAppointmentsView />;
+    if (tabKey === 'doctors') return <DoctorsView />;
+    if (tabKey === 'prescriptions') return <PrescriptionsView />;
   }
 
   const view = resolveView(tabKey);

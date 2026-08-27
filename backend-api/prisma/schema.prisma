@@ -120,6 +120,11 @@ model Vendor {
   coachingSessions     CoachingSession[]
   techProjects         TechProject[]
   projectTasks         ProjectTask[]
+  doctors              Doctor[]
+  clinicAppointments   ClinicAppointment[]
+  restaurantOrders     RestaurantOrder[]
+  restaurantOrderItems RestaurantOrderItem[]
+  retailProducts       RetailProduct[]
 }
 
 model Subscription {
@@ -1987,4 +1992,116 @@ model ProjectTask {
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_project_tasks")
+}
+
+// ── Final 3 — Clinic: appointment scheduling + doctor assignment + visit tracking ──
+model Doctor {
+  id              String              @id @default(cuid())
+  vendorId        String
+  vendor          Vendor              @relation(fields: [vendorId], references: [id])
+  name            String
+  specialty       String?
+  phone           String?
+  email           String?
+  consultationFee Float               @default(0)
+  availability    String? // "Mon-Fri 10am-2pm"
+  active          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  appointments    ClinicAppointment[]
+
+  @@index([vendorId])
+  @@map("g4d_doctors")
+}
+
+model ClinicAppointment {
+  id                String    @id @default(cuid())
+  vendorId          String
+  vendor            Vendor    @relation(fields: [vendorId], references: [id])
+  patientName       String
+  contactId         String?
+  patientPhone      String?
+  doctorId          String?
+  doctor            Doctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  startAt           DateTime
+  durationMin       Int       @default(30)
+  status            String    @default("scheduled") // scheduled | confirmed | completed | no_show | cancelled
+  reason            String? // symptoms / reason for visit
+  fee               Float     @default(0)
+  diagnosis         String?
+  prescriptionNotes String?
+  followUpDate      DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorId, startAt])
+  @@index([vendorId, status])
+  @@map("g4d_clinic_appointments")
+}
+
+// ── Final 3 — Restaurant: menu-linked order + kitchen flow (tables reuse PosTable) ──
+model RestaurantOrder {
+  id            String                @id @default(cuid())
+  vendorId      String
+  vendor        Vendor                @relation(fields: [vendorId], references: [id])
+  tableId       String? // soft ref to g4d_pos_tables (reused)
+  tableName     String?
+  orderType     String                @default("Dine-in") // Dine-in | Takeaway | Delivery
+  customerName  String?
+  contactId     String?
+  status        String                @default("new") // new | preparing | ready | served | billed | cancelled
+  subtotal      Float                 @default(0)
+  taxAmount     Float                 @default(0)
+  total         Float                 @default(0)
+  paymentMethod String? // cash | upi | card (set when billed)
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  items         RestaurantOrderItem[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_restaurant_orders")
+}
+
+model RestaurantOrderItem {
+  id            String          @id @default(cuid())
+  vendorId      String
+  vendor        Vendor          @relation(fields: [vendorId], references: [id])
+  orderId       String
+  order         RestaurantOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  catalogItemId String? // soft ref to the menu (VendorProduct)
+  name          String
+  station       String          @default("kitchen") // kitchen | bar
+  quantity      Int             @default(1)
+  price         Float           @default(0)
+  status        String          @default("queued") // queued | preparing | ready | served
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([vendorId])
+  @@index([orderId])
+  @@map("g4d_restaurant_order_items")
+}
+
+// ── Final 3 — Retail: product stock (sales reuse PosSale, decrement on sale) ──
+model RetailProduct {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  name         String
+  sku          String?
+  category     String?
+  price        Float    @default(0)
+  stockQty     Int      @default(0)
+  reorderLevel Int      @default(5)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([vendorId])
+  @@map("g4d_retail_products")
 }
