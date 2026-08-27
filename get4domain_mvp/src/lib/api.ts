@@ -317,6 +317,17 @@ export const api = {
   updateShipment: (id: string, data: any) => apiCall(`/logistics/shipments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteShipment: (id: string) => apiCall(`/logistics/shipments/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Diagnostics operations
+  diagnosticsSummary: () => apiCall('/diagnostics/summary'),
+  getTestOrders: () => apiCall('/diagnostics/orders'),
+  getTestOrder: (id: string) => apiCall(`/diagnostics/orders/${id}`),
+  createTestOrder: (data: any) => apiCall('/diagnostics/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updateTestOrder: (id: string, data: any) => apiCall(`/diagnostics/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTestOrder: (id: string) => apiCall(`/diagnostics/orders/${id}`, { method: 'DELETE' }),
+  addTestOrderItem: (orderId: string, data: any) => apiCall(`/diagnostics/orders/${orderId}/items`, { method: 'POST', body: JSON.stringify(data) }),
+  updateTestOrderItem: (id: string, data: any) => apiCall(`/diagnostics/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTestOrderItem: (id: string) => apiCall(`/diagnostics/items/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

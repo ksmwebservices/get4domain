@@ -32,6 +32,7 @@ interface EventsSummary { upcomingEvents: number; bookedValue: number; advanceCo
 interface FinanceSummary { openCases: number; feeValue: number; deadlinesSoon: number; pendingDocs: number; byType: { type: string; count: number; value: number }[] }
 interface AutomobileSummary { activeJobs: number; inService: number; ready: number; estimatedRevenue: number; lowStockParts: number; byStatus: { status: string; count: number }[] }
 interface LogisticsSummary { activeShipments: number; inTransit: number; deliveredThisMonth: number; freightRevenue: number; byStatus: { status: string; count: number }[] }
+interface DiagnosticsSummary { todayBookings: number; samplesPending: number; processing: number; reportsReady: number; revenue: number; byStatus: { status: string; count: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -79,6 +80,8 @@ export default function AccountsPage() {
   const [auto, setAuto] = useState<AutomobileSummary | null>(null);
   const isLogistics = user?.industry === 'logistics';
   const [logi, setLogi] = useState<LogisticsSummary | null>(null);
+  const isDiagnostics = user?.industry === 'diagnostics';
+  const [diag, setDiag] = useState<DiagnosticsSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -180,6 +183,11 @@ export default function AccountsPage() {
     if (!isLogistics) return;
     api.logisticsSummary().then((r) => setLogi(r.data ?? null)).catch(() => setLogi(null));
   }, [isLogistics]);
+
+  useEffect(() => {
+    if (!isDiagnostics) return;
+    api.diagnosticsSummary().then((r) => setDiag(r.data ?? null)).catch(() => setDiag(null));
+  }, [isDiagnostics]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -321,6 +329,19 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isDiagnostics && diag && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Bookings &amp; reports</h3><Badge variant="info" size="xs">Diagnostics</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div><div className="text-lg font-extrabold text-brand-300">{diag.todayBookings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Today&apos;s bookings</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{diag.samplesPending}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Samples pending</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{diag.processing}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Processing</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{diag.reportsReady}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Reports ready</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(diag.revenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Revenue</div></div>
                 </div>
               </div>
             )}

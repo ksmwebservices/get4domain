@@ -109,6 +109,8 @@ model Vendor {
   jobLines             JobLine[]
   partStock            PartStock[]
   shipments            Shipment[]
+  testOrders           TestOrder[]
+  testOrderItems       TestOrderItem[]
 }
 
 model Subscription {
@@ -1736,4 +1738,46 @@ model Shipment {
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_shipments")
+}
+
+// ── Phase 3 — Diagnostics & Lab: test-order + report tracking ──
+model TestOrder {
+  id              String          @id @default(cuid())
+  vendorId        String
+  vendor          Vendor          @relation(fields: [vendorId], references: [id])
+  patientName     String
+  contactId       String?
+  referringDoctor String?
+  status          String          @default("booked") // booked | sample_collected | processing | report_ready | cancelled
+  amount          Float           @default(0)
+  sampleId        String?
+  testDate        DateTime?
+  collectedAt     DateTime?
+  reportReadyAt   DateTime?
+  reportUrl       String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  items           TestOrderItem[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_test_orders")
+}
+
+model TestOrderItem {
+  id         String    @id @default(cuid())
+  vendorId   String
+  vendor     Vendor    @relation(fields: [vendorId], references: [id])
+  orderId    String
+  order      TestOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  testName   String
+  sampleType String    @default("Blood") // Blood | Urine | Imaging | Swab | Other
+  price      Float     @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@index([orderId])
+  @@map("g4d_test_order_items")
 }

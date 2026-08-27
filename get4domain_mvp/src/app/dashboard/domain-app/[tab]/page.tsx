@@ -37,6 +37,8 @@ import FinanceDocumentsView from '@/domainapp/finance/DocumentsView';
 import JobsView from '@/domainapp/automobile/JobsView';
 import PartsInventoryView from '@/domainapp/automobile/PartsInventoryView';
 import ShipmentsView from '@/domainapp/logistics/ShipmentsView';
+import TestOrdersView from '@/domainapp/diagnostics/TestOrdersView';
+import ReportsView from '@/domainapp/diagnostics/ReportsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -168,6 +170,12 @@ export default function DomainAppTabPage() {
     if (tabKey === 'shipments') return <ShipmentsView />;
     if (tabKey === 'fleet') return <FleetView />;
     if (tabKey === 'drivers') return <DriversView />;
+  }
+
+  // Phase 3 — Diagnostics: test-order tracking + report delivery board.
+  if (cfg.industry.key === 'diagnostics') {
+    if (tabKey === 'bookings') return <TestOrdersView />;
+    if (tabKey === 'reports') return <ReportsView />;
   }
 
   const view = resolveView(tabKey);
