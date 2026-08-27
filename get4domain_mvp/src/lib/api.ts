@@ -271,6 +271,18 @@ export const api = {
   updateMaterial: (id: string, data: any) => apiCall(`/construction/materials/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMaterial: (id: string) => apiCall(`/construction/materials/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Events operations
+  eventsSummary: () => apiCall('/events/summary'),
+  getBookings: () => apiCall('/events/bookings'),
+  getBooking: (id: string) => apiCall(`/events/bookings/${id}`),
+  createBooking: (data: any) => apiCall('/events/bookings', { method: 'POST', body: JSON.stringify(data) }),
+  updateBooking: (id: string, data: any) => apiCall(`/events/bookings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteBooking: (id: string) => apiCall(`/events/bookings/${id}`, { method: 'DELETE' }),
+  addEventVendor: (bookingId: string, data: any) => apiCall(`/events/bookings/${bookingId}/vendors`, { method: 'POST', body: JSON.stringify(data) }),
+  getEventVendors: () => apiCall('/events/vendors'),
+  updateEventVendor: (id: string, data: any) => apiCall(`/events/vendors/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteEventVendor: (id: string) => apiCall(`/events/vendors/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

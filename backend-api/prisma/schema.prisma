@@ -101,6 +101,8 @@ model Vendor {
   constructionProjects ConstructionProject[]
   projectMilestones    ProjectMilestone[]
   projectMaterials     ProjectMaterial[]
+  eventBookings        EventBooking[]
+  eventVendors         EventVendorAssignment[]
 }
 
 model Subscription {
@@ -1553,4 +1555,49 @@ model ProjectMaterial {
 
   @@index([vendorId])
   @@map("g4d_project_materials")
+}
+
+// ── Phase 3 — Events & Wedding: booking + vendor coordination ──
+model EventBooking {
+  id           String                  @id @default(cuid())
+  vendorId     String
+  vendor       Vendor                  @relation(fields: [vendorId], references: [id])
+  title        String
+  clientName   String
+  contactId    String?
+  eventType    String                  @default("Wedding")
+  eventDate    DateTime?
+  venue        String?
+  guestCount   Int                     @default(0)
+  status       String                  @default("enquiry")
+  packageValue Float                   @default(0)
+  advancePaid  Float                   @default(0)
+  notes        String?
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+  vendors      EventVendorAssignment[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_event_bookings")
+}
+
+model EventVendorAssignment {
+  id           String       @id @default(cuid())
+  vendorId     String
+  vendor       Vendor       @relation(fields: [vendorId], references: [id])
+  bookingId    String
+  booking      EventBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  vendorName   String
+  service      String       @default("Catering")
+  contactPhone String?
+  cost         Float        @default(0)
+  status       String       @default("pending")
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([vendorId])
+  @@index([bookingId])
+  @@map("g4d_event_vendors")
 }

@@ -28,6 +28,7 @@ interface RealEstateSummary { openPipelineValue: number; wonThisMonth: { count: 
 interface EducationSummary { activeStudents: number; feesCollected: number; feesPending: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
 interface ProfessionalSummary { activeEngagements: number; engagedValue: number; pendingDocs: number; byType: { type: string; count: number; value: number }[] }
 interface ConstructionSummary { activeProjects: number; contractValue: number; spent: number; openMilestones: number; byPhase: { phase: string; count: number; value: number }[] }
+interface EventsSummary { upcomingEvents: number; bookedValue: number; advanceCollected: number; vendorCostPending: number; byType: { type: string; count: number; value: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -67,6 +68,8 @@ export default function AccountsPage() {
   const [pro, setPro] = useState<ProfessionalSummary | null>(null);
   const isConstruction = user?.industry === 'construction';
   const [cons, setCons] = useState<ConstructionSummary | null>(null);
+  const isEvents = user?.industry === 'events';
+  const [ev, setEv] = useState<EventsSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -148,6 +151,11 @@ export default function AccountsPage() {
     if (!isConstruction) return;
     api.constructionSummary().then((r) => setCons(r.data ?? null)).catch(() => setCons(null));
   }, [isConstruction]);
+
+  useEffect(() => {
+    if (!isEvents) return;
+    api.eventsSummary().then((r) => setEv(r.data ?? null)).catch(() => setEv(null));
+  }, [isEvents]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -290,6 +298,25 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isEvents && ev && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Events &amp; vendor coordination</h3><Badge variant="info" size="xs">Events</Badge></div>
+                <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{ev.upcomingEvents}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming events</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(ev.bookedValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Booked value</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(ev.advanceCollected)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Advance collected</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{rupees(ev.vendorCostPending)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Vendor cost unpaid</div></div>
+                </div>
+                {ev.byType.length === 0 ? <p className="text-xs text-ink-500">No upcoming events yet.</p> : (
+                  <div className="space-y-1.5">
+                    {ev.byType.map((t) => (
+                      <div key={t.type} className="flex items-center justify-between text-sm"><span className="text-ink-300">{t.type} <span className="text-ink-500">· {t.count}</span></span><span className="font-semibold text-ink-200">{rupees(t.value)}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

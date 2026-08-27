@@ -30,6 +30,8 @@ import EngagementsView from '@/domainapp/professional/EngagementsView';
 import DocumentsView from '@/domainapp/professional/DocumentsView';
 import ProjectsView from '@/domainapp/construction/ProjectsView';
 import MaterialsView from '@/domainapp/construction/MaterialsView';
+import BookingsView from '@/domainapp/events/BookingsView';
+import EventVendorsView from '@/domainapp/events/VendorsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -136,6 +138,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'construction') {
     if (tabKey === 'projects') return <ProjectsView />;
     if (tabKey === 'materials') return <MaterialsView />;
+  }
+
+  // Phase 3 — Events: bookings + vendor coordination.
+  if (cfg.industry.key === 'events') {
+    if (tabKey === 'bookings') return <BookingsView />;
+    if (tabKey === 'vendors') return <EventVendorsView />;
   }
 
   const view = resolveView(tabKey);
