@@ -207,6 +207,17 @@ export const api = {
   updateMembership: (id: string, data: any) => apiCall(`/gym/memberships/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteMembership: (id: string) => apiCall(`/gym/memberships/${id}`, { method: 'DELETE' }),
 
+  // Phase 2 — Hotel operations
+  hotelSummary: () => apiCall('/hotel/summary'),
+  getRooms: () => apiCall('/hotel/rooms'),
+  createRoom: (data: any) => apiCall('/hotel/rooms', { method: 'POST', body: JSON.stringify(data) }),
+  updateRoom: (id: string, data: any) => apiCall(`/hotel/rooms/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRoom: (id: string) => apiCall(`/hotel/rooms/${id}`, { method: 'DELETE' }),
+  getRoomBookings: () => apiCall('/hotel/bookings'),
+  createRoomBooking: (data: any) => apiCall('/hotel/bookings', { method: 'POST', body: JSON.stringify(data) }),
+  updateRoomBooking: (id: string, data: any) => apiCall(`/hotel/bookings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRoomBooking: (id: string) => apiCall(`/hotel/bookings/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

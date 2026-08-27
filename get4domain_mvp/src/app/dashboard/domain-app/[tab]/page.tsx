@@ -18,6 +18,9 @@ import StylistsView from '@/domainapp/salon/StylistsView';
 import SalonScheduleView from '@/domainapp/salon/SalonScheduleView';
 import GymClassesView from '@/domainapp/gym/GymClassesView';
 import MembershipsView from '@/domainapp/gym/MembershipsView';
+import RoomsView from '@/domainapp/hotel/RoomsView';
+import HousekeepingView from '@/domainapp/hotel/HousekeepingView';
+import ReservationsView from '@/domainapp/hotel/ReservationsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -92,6 +95,13 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'gym') {
     if (tabKey === 'classes') return <GymClassesView />;
     if (tabKey === 'members') return <MembershipsView />;
+  }
+
+  // Phase 2 — Hotel: room inventory, reservations, housekeeping board.
+  if (cfg.industry.key === 'hotel') {
+    if (tabKey === 'rooms') return <RoomsView />;
+    if (tabKey === 'reservations') return <ReservationsView />;
+    if (tabKey === 'housekeeping') return <HousekeepingView />;
   }
 
   const view = resolveView(tabKey);

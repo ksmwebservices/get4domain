@@ -23,6 +23,7 @@ interface GstFiling { id: string; period: string; formType: string; status: stri
 interface TravelSummary { tripCount: number; totalPackageCost: number; totalSellPrice: number; grossMargin: number; marginPct: number; supplierPaymentsTotal: number; supplierPaymentsCount: number }
 interface SalonSummary { todayCount: number; upcomingCount: number; completedRevenue: number; byStylist: { stylistId: string | null; name: string; count: number; revenue: number }[] }
 interface GymSummary { activeCount: number; expiringCount: number; expiredCount: number; monthlyRevenue: number; byPlan: { plan: string; count: number; revenue: number }[] }
+interface HotelSummary { totalRooms: number; occupied: number; occupancyPct: number; needsCleaning: number; inHouse: number; monthRevenue: number }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -52,6 +53,8 @@ export default function AccountsPage() {
   const [salon, setSalon] = useState<SalonSummary | null>(null);
   const isGym = user?.industry === 'gym';
   const [gym, setGym] = useState<GymSummary | null>(null);
+  const isHotel = user?.industry === 'hotel';
+  const [hotel, setHotel] = useState<HotelSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -106,6 +109,12 @@ export default function AccountsPage() {
     if (!isGym) return;
     api.gymSummary().then((r) => setGym(r.data ?? null)).catch(() => setGym(null));
   }, [isGym]);
+
+  // Hotel accounts depth: occupancy + month revenue.
+  useEffect(() => {
+    if (!isHotel) return;
+    api.hotelSummary().then((r) => setHotel(r.data ?? null)).catch(() => setHotel(null));
+  }, [isHotel]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -239,6 +248,19 @@ export default function AccountsPage() {
             </div>
 
             {/* OVERVIEW */}
+            {tab === 'overview' && isHotel && hotel && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Occupancy &amp; revenue</h3><Badge variant="info" size="xs">Hotel</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <div><div className="text-lg font-extrabold text-ink-50">{hotel.occupancyPct}%</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Occupancy</div></div>
+                  <div><div className="text-lg font-extrabold text-brand-300">{hotel.occupied}/{hotel.totalRooms}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Rooms full</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{hotel.inHouse}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">In-house</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{hotel.needsCleaning}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">To clean</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(hotel.monthRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Month revenue</div></div>
+                </div>
+              </div>
+            )}
+
             {tab === 'overview' && isGym && gym && (
               <div className="card p-5">
                 <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Membership revenue by plan</h3><Badge variant="info" size="xs">Gym</Badge></div>
