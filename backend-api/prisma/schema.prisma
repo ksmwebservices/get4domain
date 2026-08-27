@@ -85,6 +85,8 @@ model Vendor {
   stylists          Stylist[]
   salonChairs       SalonChair[]
   salonAppointments SalonAppointment[]
+  gymClasses        GymClass[]
+  memberships       Membership[]
 }
 
 model Subscription {
@@ -1190,4 +1192,42 @@ model SalonAppointment {
   @@index([vendorId])
   @@index([vendorId, startAt])
   @@map("g4d_salon_appointments")
+}
+
+// ── Gym Operations (Phase 2) ─────────────────────────────────────────────────
+model GymClass {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  name        String
+  trainer     String?
+  dayOfWeek   String   @default("Mon")   // Mon..Sun | Daily
+  startTime   String   @default("06:00") // HH:MM
+  durationMin Int      @default(60)
+  capacity    Int      @default(20)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@map("g4d_gym_classes")
+}
+
+model Membership {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  contactId   String?                          // soft ref to g4d_contacts
+  memberName  String
+  memberPhone String?
+  planName    String
+  price       Float    @default(0)
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("active")      // active | frozen | cancelled (expiring/expired derived from endDate)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_memberships")
 }

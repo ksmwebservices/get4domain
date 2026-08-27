@@ -196,6 +196,17 @@ export const api = {
   updateSalonAppointment: (id: string, data: any) => apiCall(`/salon/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteSalonAppointment: (id: string) => apiCall(`/salon/appointments/${id}`, { method: 'DELETE' }),
 
+  // Phase 2 — Gym operations
+  gymSummary: () => apiCall('/gym/summary'),
+  getGymClasses: () => apiCall('/gym/classes'),
+  createGymClass: (data: any) => apiCall('/gym/classes', { method: 'POST', body: JSON.stringify(data) }),
+  updateGymClass: (id: string, data: any) => apiCall(`/gym/classes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteGymClass: (id: string) => apiCall(`/gym/classes/${id}`, { method: 'DELETE' }),
+  getMemberships: () => apiCall('/gym/memberships'),
+  createMembership: (data: any) => apiCall('/gym/memberships', { method: 'POST', body: JSON.stringify(data) }),
+  updateMembership: (id: string, data: any) => apiCall(`/gym/memberships/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMembership: (id: string) => apiCall(`/gym/memberships/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

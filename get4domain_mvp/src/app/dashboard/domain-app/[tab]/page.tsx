@@ -16,6 +16,8 @@ import VisaView from '@/domainapp/travel/VisaView';
 import ContractsView from '@/domainapp/travel/ContractsView';
 import StylistsView from '@/domainapp/salon/StylistsView';
 import SalonScheduleView from '@/domainapp/salon/SalonScheduleView';
+import GymClassesView from '@/domainapp/gym/GymClassesView';
+import MembershipsView from '@/domainapp/gym/MembershipsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -84,6 +86,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'salon') {
     if (tabKey === 'appointments') return <SalonScheduleView />;
     if (tabKey === 'stylists') return <StylistsView />;
+  }
+
+  // Phase 2 — Gym: class scheduling + membership status tracking.
+  if (cfg.industry.key === 'gym') {
+    if (tabKey === 'classes') return <GymClassesView />;
+    if (tabKey === 'members') return <MembershipsView />;
   }
 
   const view = resolveView(tabKey);

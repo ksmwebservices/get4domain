@@ -22,6 +22,7 @@ interface Payment { id: string; party: string; method: string; direction: 'inwar
 interface GstFiling { id: string; period: string; formType: string; status: string; dueDate: string | null; filedAt: string | null }
 interface TravelSummary { tripCount: number; totalPackageCost: number; totalSellPrice: number; grossMargin: number; marginPct: number; supplierPaymentsTotal: number; supplierPaymentsCount: number }
 interface SalonSummary { todayCount: number; upcomingCount: number; completedRevenue: number; byStylist: { stylistId: string | null; name: string; count: number; revenue: number }[] }
+interface GymSummary { activeCount: number; expiringCount: number; expiredCount: number; monthlyRevenue: number; byPlan: { plan: string; count: number; revenue: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -49,6 +50,8 @@ export default function AccountsPage() {
   const [travel, setTravel] = useState<TravelSummary | null>(null);
   const isSalon = user?.industry === 'salon';
   const [salon, setSalon] = useState<SalonSummary | null>(null);
+  const isGym = user?.industry === 'gym';
+  const [gym, setGym] = useState<GymSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -97,6 +100,12 @@ export default function AccountsPage() {
     if (!isSalon) return;
     api.salonSummary().then((r) => setSalon(r.data ?? null)).catch(() => setSalon(null));
   }, [isSalon]);
+
+  // Gym accounts depth: membership revenue by plan.
+  useEffect(() => {
+    if (!isGym) return;
+    api.gymSummary().then((r) => setGym(r.data ?? null)).catch(() => setGym(null));
+  }, [isGym]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -230,6 +239,25 @@ export default function AccountsPage() {
             </div>
 
             {/* OVERVIEW */}
+            {tab === 'overview' && isGym && gym && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Membership revenue by plan</h3><Badge variant="info" size="xs">Gym</Badge></div>
+                <div className="mb-3 grid grid-cols-4 gap-3">
+                  <div><div className="text-lg font-extrabold text-success">{gym.activeCount}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{gym.expiringCount}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Expiring</div></div>
+                  <div><div className="text-lg font-extrabold text-ruby-400">{gym.expiredCount}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Expired</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(gym.monthlyRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active value</div></div>
+                </div>
+                {gym.byPlan.length === 0 ? <p className="text-xs text-ink-500">No active memberships yet.</p> : (
+                  <div className="space-y-1.5">
+                    {gym.byPlan.map((p) => (
+                      <div key={p.plan} className="flex items-center justify-between text-sm"><span className="text-ink-300">{p.plan} <span className="text-ink-500">· {p.count}</span></span><span className="font-semibold text-ink-200">{rupees(p.revenue)}</span></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {tab === 'overview' && isSalon && salon && (
               <div className="card p-5">
                 <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Salon revenue by stylist</h3><Badge variant="info" size="xs">Salon</Badge></div>

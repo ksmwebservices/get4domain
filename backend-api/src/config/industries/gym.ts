@@ -29,6 +29,7 @@ export const gymConfig: IndustryConfig = {
   websiteTemplate: 'gym',
   dashboardTabs: [
     { key: 'members', label: 'Members', icon: 'Users' },
+    { key: 'classes', label: 'Classes', icon: 'CalendarClock' },
     { key: 'plans', label: 'Plans', icon: 'Package' },
     { key: 'attendance', label: 'Attendance', icon: 'CalendarCheck' },
     { key: 'billing', label: 'Billing', icon: 'Receipt' },

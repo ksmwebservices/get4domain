@@ -51,6 +51,7 @@ import { DomainsModule } from './domains/domains.module';
 import { VendorCommsModule } from './vendor-comms/vendor-comms.module';
 import { TravelModule } from './travel/travel.module';
 import { SalonModule } from './salon/salon.module';
+import { GymModule } from './gym/gym.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -77,6 +78,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     VendorCommsModule,
     TravelModule,
     SalonModule,
+    GymModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,
