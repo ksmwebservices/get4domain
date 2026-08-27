@@ -33,6 +33,7 @@ interface FinanceSummary { openCases: number; feeValue: number; deadlinesSoon: n
 interface AutomobileSummary { activeJobs: number; inService: number; ready: number; estimatedRevenue: number; lowStockParts: number; byStatus: { status: string; count: number }[] }
 interface LogisticsSummary { activeShipments: number; inTransit: number; deliveredThisMonth: number; freightRevenue: number; byStatus: { status: string; count: number }[] }
 interface DiagnosticsSummary { todayBookings: number; samplesPending: number; processing: number; reportsReady: number; revenue: number; byStatus: { status: string; count: number }[] }
+interface PhotographySummary { upcomingShoots: number; bookedValue: number; advanceCollected: number; pendingDeliveries: number; byType: { type: string; count: number; value: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -82,6 +83,8 @@ export default function AccountsPage() {
   const [logi, setLogi] = useState<LogisticsSummary | null>(null);
   const isDiagnostics = user?.industry === 'diagnostics';
   const [diag, setDiag] = useState<DiagnosticsSummary | null>(null);
+  const isPhotography = user?.industry === 'photography';
+  const [photo, setPhoto] = useState<PhotographySummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -188,6 +191,11 @@ export default function AccountsPage() {
     if (!isDiagnostics) return;
     api.diagnosticsSummary().then((r) => setDiag(r.data ?? null)).catch(() => setDiag(null));
   }, [isDiagnostics]);
+
+  useEffect(() => {
+    if (!isPhotography) return;
+    api.photographySummary().then((r) => setPhoto(r.data ?? null)).catch(() => setPhoto(null));
+  }, [isPhotography]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -330,6 +338,25 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isPhotography && photo && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Shoots &amp; deliveries</h3><Badge variant="info" size="xs">Photography</Badge></div>
+                <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{photo.upcomingShoots}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming shoots</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(photo.bookedValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Booked value</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(photo.advanceCollected)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Advance collected</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{photo.pendingDeliveries}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Deliveries pending</div></div>
+                </div>
+                {photo.byType.length === 0 ? <p className="text-xs text-ink-500">No upcoming shoots yet.</p> : (
+                  <div className="space-y-1.5">
+                    {photo.byType.map((t) => (
+                      <div key={t.type} className="flex items-center justify-between text-sm"><span className="text-ink-300">{t.type} <span className="text-ink-500">· {t.count}</span></span><span className="font-semibold text-ink-200">{rupees(t.value)}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

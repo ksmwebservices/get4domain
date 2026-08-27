@@ -328,6 +328,18 @@ export const api = {
   updateTestOrderItem: (id: string, data: any) => apiCall(`/diagnostics/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteTestOrderItem: (id: string) => apiCall(`/diagnostics/items/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Photography operations
+  photographySummary: () => apiCall('/photography/summary'),
+  getShoots: () => apiCall('/photography/shoots'),
+  getShoot: (id: string) => apiCall(`/photography/shoots/${id}`),
+  createShoot: (data: any) => apiCall('/photography/shoots', { method: 'POST', body: JSON.stringify(data) }),
+  updateShoot: (id: string, data: any) => apiCall(`/photography/shoots/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteShoot: (id: string) => apiCall(`/photography/shoots/${id}`, { method: 'DELETE' }),
+  addDeliverable: (shootId: string, data: any) => apiCall(`/photography/shoots/${shootId}/deliverables`, { method: 'POST', body: JSON.stringify(data) }),
+  getDeliverables: () => apiCall('/photography/deliverables'),
+  updateDeliverable: (id: string, data: any) => apiCall(`/photography/deliverables/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDeliverable: (id: string) => apiCall(`/photography/deliverables/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

@@ -39,6 +39,8 @@ import PartsInventoryView from '@/domainapp/automobile/PartsInventoryView';
 import ShipmentsView from '@/domainapp/logistics/ShipmentsView';
 import TestOrdersView from '@/domainapp/diagnostics/TestOrdersView';
 import ReportsView from '@/domainapp/diagnostics/ReportsView';
+import ShootsView from '@/domainapp/photography/ShootsView';
+import DeliveryView from '@/domainapp/photography/DeliveryView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -176,6 +178,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'diagnostics') {
     if (tabKey === 'bookings') return <TestOrdersView />;
     if (tabKey === 'reports') return <ReportsView />;
+  }
+
+  // Phase 3 — Photography: shoot scheduling + delivery tracking.
+  if (cfg.industry.key === 'photography') {
+    if (tabKey === 'bookings') return <ShootsView />;
+    if (tabKey === 'gallery') return <DeliveryView />;
   }
 
   const view = resolveView(tabKey);

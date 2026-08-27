@@ -111,6 +111,8 @@ model Vendor {
   shipments            Shipment[]
   testOrders           TestOrder[]
   testOrderItems       TestOrderItem[]
+  photoShoots          PhotoShoot[]
+  shootDeliverables    ShootDeliverable[]
 }
 
 model Subscription {
@@ -1780,4 +1782,49 @@ model TestOrderItem {
   @@index([vendorId])
   @@index([orderId])
   @@map("g4d_test_order_items")
+}
+
+// ── Phase 3 — Photography: shoot scheduling + delivery tracking ──
+model PhotoShoot {
+  id              String             @id @default(cuid())
+  vendorId        String
+  vendor          Vendor             @relation(fields: [vendorId], references: [id])
+  title           String
+  clientName      String
+  contactId       String?
+  eventType       String             @default("Wedding") // Wedding | Pre-Wedding | Portrait | Product | Event | Other
+  eventDate       DateTime?
+  venue           String?
+  coverageHours   Int?
+  status          String             @default("enquiry") // enquiry | confirmed | shot | delivered | cancelled
+  packageValue    Float              @default(0)
+  advancePaid     Float              @default(0)
+  deliveryDueDate DateTime?
+  deliveredAt     DateTime?
+  galleryUrl      String?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  deliverables    ShootDeliverable[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_photo_shoots")
+}
+
+model ShootDeliverable {
+  id        String     @id @default(cuid())
+  vendorId  String
+  vendor    Vendor     @relation(fields: [vendorId], references: [id])
+  shootId   String
+  shoot     PhotoShoot @relation(fields: [shootId], references: [id], onDelete: Cascade)
+  name      String
+  status    String     @default("pending") // pending | in_progress | delivered
+  dueDate   DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([vendorId])
+  @@index([shootId])
+  @@map("g4d_shoot_deliverables")
 }
