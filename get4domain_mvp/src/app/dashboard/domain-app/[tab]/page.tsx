@@ -2,13 +2,17 @@
 
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { useDashboardConfig } from '@/lib/dashboard-config';
+import { useDashboardConfig, TAB_ADDON_REQUIREMENT } from '@/lib/dashboard-config';
 import { resolveView } from '@/domainapp/tab-registry';
 import RecordsView from '@/domainapp/shared/RecordsView';
 import ContactsView from '@/domainapp/shared/ContactsView';
 import CatalogView from '@/domainapp/shared/CatalogView';
 import InvoicingView from '@/domainapp/shared/InvoicingView';
 import ComingSoon from '@/domainapp/shared/ComingSoon';
+import FleetView from '@/domainapp/travel/FleetView';
+import DriversView from '@/domainapp/travel/DriversView';
+import TripsView from '@/domainapp/travel/TripsView';
+import VisaView from '@/domainapp/travel/VisaView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -45,6 +49,34 @@ export default function DomainAppTabPage() {
 
   const tab = cfg.industry.dashboardTabs.find((t) => t.key === tabKey);
   const icon = tab?.icon ?? cfg.industry.icon;
+
+  // Phase 1 — Travel Operations: dedicated screens replace the generic shell.
+  // Fleet + Drivers keep the existing addon gating (fleet/driver flags); Trips +
+  // Visa are core. Bookings/Invoicing still use the shared views below.
+  if (cfg.industry.key === 'travel') {
+    if (tabKey === 'fleet' || tabKey === 'drivers') {
+      const addonKey = TAB_ADDON_REQUIREMENT[tabKey]; // fleet -> 'fleet', drivers -> 'driver'
+      // Locked only if the addon was explicitly disabled for this vendor (matches
+      // the nav's isLocked). Direct-URL guard — the nav already hides the tab.
+      if (addonKey && cfg.addons[addonKey] === false) {
+        return (
+          <Card className="mx-auto mt-10 max-w-lg text-center" padded>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+              <Lock className="h-6 w-6 text-primary-600" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">{tab?.label ?? tabKey} is not enabled</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              This is an optional add-on for your workspace. Contact support to enable {tabKey === 'fleet' ? 'fleet' : 'driver'} management.
+            </p>
+          </Card>
+        );
+      }
+      return tabKey === 'fleet' ? <FleetView /> : <DriversView />;
+    }
+    if (tabKey === 'trip-sheets') return <TripsView />;
+    if (tabKey === 'visa') return <VisaView />;
+  }
+
   const view = resolveView(tabKey);
 
   switch (view) {

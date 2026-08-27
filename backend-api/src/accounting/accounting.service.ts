@@ -16,6 +16,18 @@ export interface AccountingSummary {
   netGstPayable: number;   // outputGst − inputGst
 }
 
+/** Travel-specific accounts depth (industry-aware layer over the generic module):
+ *  package cost vs. sell price (markup/commission) + supplier payments. */
+export interface TravelAccountingSummary {
+  tripCount: number;
+  totalPackageCost: number;   // what suppliers charged us
+  totalSellPrice: number;     // what customers were charged
+  grossMargin: number;        // sell − cost (the agency's markup/commission)
+  marginPct: number;
+  supplierPaymentsTotal: number;   // outward PaymentRecords (hotels, transport, …)
+  supplierPaymentsCount: number;
+}
+
 @Injectable()
 export class AccountingService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,6 +59,35 @@ export class AccountingService {
       where: { vendorId, ...this.dateRange('date', from, to) },
       orderBy: { date: 'desc' },
     });
+  }
+
+  /**
+   * Travel accounts depth: aggregates trip package cost vs. sell price (the
+   * agency's markup/commission) and supplier payments (outward PaymentRecords).
+   * Reuses the existing Trip + PaymentRecord data — no duplicate accounting store.
+   */
+  async travelSummary(vendorId: string): Promise<TravelAccountingSummary> {
+    const [trips, supplier] = await Promise.all([
+      this.prisma.trip.findMany({ where: { vendorId }, select: { packageCost: true, sellPrice: true } }),
+      this.prisma.paymentRecord.aggregate({
+        where: { vendorId, direction: 'outward' },
+        _sum: { amount: true },
+        _count: true,
+      }),
+    ]);
+    const totalPackageCost = round2(trips.reduce((s, t) => s + t.packageCost, 0));
+    const totalSellPrice = round2(trips.reduce((s, t) => s + t.sellPrice, 0));
+    const grossMargin = round2(totalSellPrice - totalPackageCost);
+    const marginPct = totalSellPrice > 0 ? round2((grossMargin / totalSellPrice) * 100) : 0;
+    return {
+      tripCount: trips.length,
+      totalPackageCost,
+      totalSellPrice,
+      grossMargin,
+      marginPct,
+      supplierPaymentsTotal: round2(supplier._sum.amount ?? 0),
+      supplierPaymentsCount: supplier._count,
+    };
   }
 
   async getExpense(vendorId: string, id: string): Promise<Expense> {

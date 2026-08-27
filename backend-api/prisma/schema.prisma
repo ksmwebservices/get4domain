@@ -72,6 +72,12 @@ model Vendor {
   paymentRecords   PaymentRecord[]
   gstFilings       GstFiling[]
   domains          DomainRegistration[]
+
+  // Travel Operations (Phase 1)
+  vehicles         Vehicle[]
+  drivers          Driver[]
+  trips            Trip[]
+  visaApplications VisaApplication[]
 }
 
 model Subscription {
@@ -947,4 +953,89 @@ model DomainRegistration {
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_domain_registrations")
+}
+
+// ── Travel Operations (Phase 1) ──────────────────────────────────────────────
+// Dedicated models, vendorId-scoped. Fleet + Driver are addon-gated in the UI
+// (existing fleet/driver addon flags); Trips + Visa are core Travel features.
+// Bookings stay on the shared Record model (untouched).
+model Vehicle {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  name      String
+  type      String   @default("sedan")       // sedan | suv | tempo | bus | other
+  regNumber String?
+  capacity  Int      @default(4)
+  status    String   @default("available")   // available | on_trip | maintenance
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trips     Trip[]
+  @@index([vendorId])
+  @@map("g4d_vehicles")
+}
+
+model Driver {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  name      String
+  phone     String?
+  licenseNo String?
+  status    String   @default("available")   // available | on_trip | off_duty
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trips     Trip[]
+  @@index([vendorId])
+  @@map("g4d_drivers")
+}
+
+model Trip {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  contactId   String?                          // soft ref to g4d_contacts (customer) — no FK
+  title       String
+  destination String?
+  startDate   DateTime?
+  endDate     DateTime?
+  pax         Int      @default(1)
+  status      String   @default("planning")    // planning | confirmed | ongoing | completed | cancelled
+  packageCost Float    @default(0)             // supplier cost
+  sellPrice   Float    @default(0)             // price charged to customer (markup = sell - cost)
+  itinerary   Json?                            // [{ day, title, detail }]
+  vehicleId   String?
+  vehicle     Vehicle? @relation(fields: [vehicleId], references: [id])
+  driverId    String?
+  driver      Driver?  @relation(fields: [driverId], references: [id])
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  visas       VisaApplication[]
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_trips")
+}
+
+model VisaApplication {
+  id           String    @id @default(cuid())
+  vendorId     String
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
+  tripId       String?
+  trip         Trip?     @relation(fields: [tripId], references: [id])
+  travelerName String
+  passportNo   String?
+  country      String
+  visaType     String?
+  status       String    @default("applied")    // applied | in_process | approved | rejected
+  appliedDate  DateTime?
+  decisionDate DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_visa_applications")
 }

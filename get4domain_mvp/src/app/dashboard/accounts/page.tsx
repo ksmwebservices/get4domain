@@ -7,6 +7,7 @@ import {
   Receipt, Percent, Wallet, ArrowLeftRight, PieChart, Banknote, CheckCircle2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { Modal } from '@/components/vendor/Modal';
 import { Badge } from '@/components/vendor/Badge';
 import { EmptyState } from '@/components/vendor/EmptyState';
@@ -19,6 +20,7 @@ interface Summary {
 }
 interface Payment { id: string; party: string; method: string; direction: 'inward' | 'outward'; amount: number; reference: string | null; status: string; date: string }
 interface GstFiling { id: string; period: string; formType: string; status: string; dueDate: string | null; filedAt: string | null }
+interface TravelSummary { tripCount: number; totalPackageCost: number; totalSellPrice: number; grossMargin: number; marginPct: number; supplierPaymentsTotal: number; supplierPaymentsCount: number }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -41,6 +43,9 @@ const GST_FORMS = [
 const FILING_STATUSES = ['pending', 'in_progress', 'filed', 'not_due'] as const;
 
 export default function AccountsPage() {
+  const { user } = useAuth();
+  const isTravel = user?.industry === 'travel';
+  const [travel, setTravel] = useState<TravelSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -77,6 +82,12 @@ export default function AccountsPage() {
     finally { setLoading(false); }
   }, [from, to]);
   useEffect(() => { load(); }, [load]);
+
+  // Travel accounts depth (industry-aware): trip markup + supplier payments.
+  useEffect(() => {
+    if (!isTravel) return;
+    api.accountingTravelSummary().then((r) => setTravel(r.data ?? null)).catch(() => setTravel(null));
+  }, [isTravel]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -210,6 +221,19 @@ export default function AccountsPage() {
             </div>
 
             {/* OVERVIEW */}
+            {tab === 'overview' && isTravel && travel && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Travel margin &amp; supplier payments</h3><Badge variant="info" size="xs">Travel</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(travel.totalSellPrice)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Trip sell value · {travel.tripCount} trips</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-200">{rupees(travel.totalPackageCost)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Package cost</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(travel.grossMargin)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Gross margin · {travel.marginPct}%</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{rupees(travel.supplierPaymentsTotal)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Supplier payments · {travel.supplierPaymentsCount}</div></div>
+                </div>
+                <p className="mt-3 text-[11px] text-ink-500">Markup/commission is sell price − package cost across all trips. Record hotel/transport supplier payments as “outward” in the Payments tab.</p>
+              </div>
+            )}
+
             {tab === 'overview' && (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="card p-5">

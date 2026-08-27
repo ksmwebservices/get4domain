@@ -36,9 +36,10 @@ export const travelConfig: IndustryConfig = {
   websiteTemplate: 'travel',
   dashboardTabs: [
     { key: 'bookings', label: 'Bookings', icon: 'CalendarCheck' },
+    { key: 'trip-sheets', label: 'Trips', icon: 'Map' },
+    { key: 'visa', label: 'Visa', icon: 'Stamp' },
     { key: 'fleet', label: 'Fleet', icon: 'Car' },
     { key: 'drivers', label: 'Drivers', icon: 'UserCog' },
-    { key: 'trip-sheets', label: 'Trip Sheets', icon: 'Map' },
     { key: 'invoicing', label: 'Invoicing', icon: 'FileText' },
   ],
 };

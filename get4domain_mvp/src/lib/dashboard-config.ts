@@ -74,7 +74,7 @@ export interface DashboardConfig {
 export const TAB_ADDON_REQUIREMENT: Record<string, string> = {
   fleet: 'fleet',
   drivers: 'driver',
-  'trip-sheets': 'driver',
+  // 'trip-sheets' is now the core Trips builder (Phase 1) — no longer addon-gated.
   tables: 'table_management',
   housekeeping: 'room_management',
   rooms: 'room_management',

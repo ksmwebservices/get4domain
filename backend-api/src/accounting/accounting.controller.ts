@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/commo
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Expense, PaymentRecord, GstFiling } from '@prisma/client';
-import { AccountingService, AccountingSummary } from './accounting.service';
+import { AccountingService, AccountingSummary, TravelAccountingSummary } from './accounting.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpsertGstFilingDto } from './dto/upsert-gst-filing.dto';
@@ -43,6 +43,12 @@ export class AccountingController {
   @ApiOperation({ summary: 'P&L + GST statement for a period (vendorId-scoped)' })
   summary(@CurrentUser() user: AuthenticatedUser, @Query('from') from?: string, @Query('to') to?: string): Promise<AccountingSummary> {
     return this.service.summary(user.sub, from, to);
+  }
+
+  @Get('travel-summary')
+  @ApiOperation({ summary: 'Travel accounts depth: trip markup/commission + supplier payments' })
+  travelSummary(@CurrentUser() user: AuthenticatedUser): Promise<TravelAccountingSummary> {
+    return this.service.travelSummary(user.sub);
   }
 
   // ── Phase 5: Payments ledger ────────────────────────────────────────────

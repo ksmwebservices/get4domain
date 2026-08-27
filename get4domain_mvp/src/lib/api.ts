@@ -137,6 +137,25 @@ export const api = {
   adminDomainRegister: (data: { vendorId: string; domain: string; years?: number }) => apiCall('/admin/domains/register', { method: 'POST', body: JSON.stringify(data) }),
   adminDomainVerify: (data: { vendorId: string; domain: string }) => apiCall('/admin/domains/verify', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Phase 1 — Travel Operations (Fleet/Drivers addon-gated; Trips/Visa core).
+  getVehicles: () => apiCall('/travel/vehicles'),
+  createVehicle: (data: any) => apiCall('/travel/vehicles', { method: 'POST', body: JSON.stringify(data) }),
+  updateVehicle: (id: string, data: any) => apiCall(`/travel/vehicles/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteVehicle: (id: string) => apiCall(`/travel/vehicles/${id}`, { method: 'DELETE' }),
+  getDrivers: () => apiCall('/travel/drivers'),
+  createDriver: (data: any) => apiCall('/travel/drivers', { method: 'POST', body: JSON.stringify(data) }),
+  updateDriver: (id: string, data: any) => apiCall(`/travel/drivers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDriver: (id: string) => apiCall(`/travel/drivers/${id}`, { method: 'DELETE' }),
+  getTrips: () => apiCall('/travel/trips'),
+  createTrip: (data: any) => apiCall('/travel/trips', { method: 'POST', body: JSON.stringify(data) }),
+  updateTrip: (id: string, data: any) => apiCall(`/travel/trips/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTrip: (id: string) => apiCall(`/travel/trips/${id}`, { method: 'DELETE' }),
+  getVisas: () => apiCall('/travel/visa'),
+  createVisa: (data: any) => apiCall('/travel/visa', { method: 'POST', body: JSON.stringify(data) }),
+  updateVisa: (id: string, data: any) => apiCall(`/travel/visa/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteVisa: (id: string) => apiCall(`/travel/visa/${id}`, { method: 'DELETE' }),
+  accountingTravelSummary: () => apiCall('/accounting/travel-summary'),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
