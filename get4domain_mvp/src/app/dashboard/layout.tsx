@@ -183,9 +183,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!mounted || loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="vendor-ui min-h-screen flex items-center justify-center bg-ink-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-ink-700 border-t-brand-500" />
           <p className="text-sm text-slate-500">Loading your dashboard…</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="vendor-ui min-h-screen bg-ink-950 flex">
       {sidebarOpen && (
         <div className="fixed inset-0 z-30 bg-slate-900/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -313,7 +313,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-radial-glow p-5 pb-24 lg:p-8 lg:pb-8">{children}</main>
       </div>
 
       {/* Mobile bottom nav — fixed 5 tabs */}

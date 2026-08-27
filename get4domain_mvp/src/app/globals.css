@@ -223,3 +223,21 @@
 .vendor-ui .text-blue-700, .vendor-ui .text-blue-600 { color: #8eb6ff !important; }
 .vendor-ui .bg-amber-100 { background-color: rgb(249 144 8 / 0.15) !important; }
 .vendor-ui .text-amber-700 { color: #ffcb4a !important; }
+
+/* Phase-1 dark rollout: close override gaps for utilities used by the Operations
+   pages (success/gold scales) and the shared empty-state callout (opacity-modified
+   slate + slate rings) that escaped the bare-class overrides above. */
+.vendor-ui .bg-success-50 { background-color: rgb(22 199 132 / 0.10) !important; }
+.vendor-ui .bg-success-100 { background-color: rgb(22 199 132 / 0.16) !important; }
+.vendor-ui .text-success-500,
+.vendor-ui .text-success-600,
+.vendor-ui .text-success-700 { color: #16c784 !important; }
+.vendor-ui .border-success-100 { border-color: rgb(22 199 132 / 0.22) !important; }
+.vendor-ui .border-success-200 { border-color: rgb(22 199 132 / 0.35) !important; }
+.vendor-ui .bg-gold-50 { background-color: rgb(249 144 8 / 0.12) !important; }
+.vendor-ui .text-gold-500 { color: #ffcb4a !important; }
+.vendor-ui .text-gold-600, .vendor-ui .text-gold-700 { color: #ffb420 !important; }
+/* opacity-modified light surfaces + slate rings (bare-class rules don't match these) */
+.vendor-ui .bg-slate-50\/60 { background-color: rgb(26 33 51 / 0.5) !important; }
+.vendor-ui .ring-slate-100 { --tw-ring-color: rgb(38 47 68 / 0.5) !important; }
+.vendor-ui .ring-slate-200 { --tw-ring-color: rgb(38 47 68 / 0.7) !important; }
