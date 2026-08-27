@@ -57,6 +57,15 @@ model Vendor {
   stationery       StationeryItem[]
   kbEntries        KnowledgeBaseEntry[]
   waConversations  WhatsappConversation[]
+
+  // Vendor-app Phase 4 — operations models (dedicated, vendorId-scoped).
+  vendorTasks      VendorTask[]
+  posTables        PosTable[]
+  kitchenTickets   KitchenTicket[]
+  posSales         PosSale[]
+  appointments     Appointment[]
+  paymentRecords   PaymentRecord[]
+  gstFilings       GstFiling[]
 }
 
 model Subscription {
@@ -440,6 +449,9 @@ model CatalogItem {
   unit         String?
   image        String?
   active       Boolean  @default(true)
+  // Vendor-app Phase 4 — optional live stock for retail POS decrement (nullable
+  // = untracked; only industries that manage inventory set it).
+  stock        Int?
   customFields Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -763,4 +775,141 @@ model WhatsappConversation {
   @@unique([vendorId, phone])
   @@index([vendorId])
   @@map("g4d_wa_conversations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// VENDOR APP — PHASE 4 OPERATIONS MODELS (dedicated, vendorId-scoped).
+// Priority industries: clinic (Appointment), restaurant (PosTable/KitchenTicket/
+// PosSale), retail (PosSale + CatalogItem.stock). Others reuse booking/generic
+// per the inspection report and are BACKLOGGED (gym memberships/classes, hotel
+// rooms/housekeeping, salon chairs) — not modelled here yet.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Kanban task / process board (the reference's drag-drop is non-functional;
+// here `stage` is real and persisted on move).
+model VendorTask {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  title       String
+  description String?
+  stage       String   @default("new")      // new | assigned | in-progress | review | completed
+  priority    String   @default("medium")   // low | medium | high | urgent
+  assignee    String?
+  segment     String?
+  subtasks    Json?                          // [{ label: string, done: boolean }]
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, stage])
+  @@map("g4d_vendor_tasks")
+}
+
+// Restaurant floor/table map.
+model PosTable {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  name       String                          // "T1"
+  seats      Int      @default(2)
+  status     String   @default("available")  // available | occupied | reserved | cleaning
+  orderTotal Float?                           // current open order total
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([vendorId])
+  @@map("g4d_pos_tables")
+}
+
+// Kitchen order queue ("Send to Kitchen" creates one; staff see status update).
+model KitchenTicket {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  tableName  String?
+  items      String                          // human-readable line list
+  total      Float    @default(0)
+  status     String   @default("preparing")  // preparing | ready | overdue | served
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_kitchen_tickets")
+}
+
+// A completed POS sale (retail "Complete Sale" / food order). Line items are
+// value objects on the sale; retail sales decrement CatalogItem.stock.
+model PosSale {
+  id            String   @id @default(cuid())
+  vendorId      String
+  vendor        Vendor   @relation(fields: [vendorId], references: [id])
+  type          String   @default("retail")     // retail | food
+  items         Json                            // [{ catalogItemId?, name, qty, price }]
+  subtotal      Float
+  taxAmount     Float    @default(0)
+  total         Float
+  paymentMethod String   @default("cash")        // cash | upi | card | bank
+  status        String   @default("completed")   // completed | refunded
+  tableName     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, createdAt])
+  @@map("g4d_pos_sales")
+}
+
+// Booking / appointment (clinic, salon, and any booking-mode industry).
+model Appointment {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  contactId    String?                          // optional link to g4d_contacts (no FK — soft ref)
+  customerName String
+  phone        String?
+  service      String?
+  startAt      DateTime
+  durationMin  Int      @default(30)
+  status       String   @default("booked")      // booked | completed | cancelled | no_show
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, startAt])
+  @@map("g4d_appointments")
+}
+
+// Business payments ledger (Accounts → Payments tab).
+model PaymentRecord {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  party     String
+  method    String                            // upi | cash | card | cheque | bank
+  direction String                            // inward | outward
+  amount    Float
+  reference String?
+  status    String   @default("cleared")      // cleared | pending | bounced
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, date])
+  @@map("g4d_payment_records")
+}
+
+// GST return filing-status tracker (Accounts → GST tab).
+model GstFiling {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  period    String                            // e.g. "2026-08"
+  formType  String                            // GSTR-1 | GSTR-3B | GSTR-2B | Annual
+  status    String   @default("pending")      // pending | in_progress | filed | not_due
+  dueDate   DateTime?
+  filedAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([vendorId, period, formType])
+  @@index([vendorId])
+  @@map("g4d_gst_filings")
 }
