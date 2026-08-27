@@ -21,6 +21,7 @@ interface Summary {
 interface Payment { id: string; party: string; method: string; direction: 'inward' | 'outward'; amount: number; reference: string | null; status: string; date: string }
 interface GstFiling { id: string; period: string; formType: string; status: string; dueDate: string | null; filedAt: string | null }
 interface TravelSummary { tripCount: number; totalPackageCost: number; totalSellPrice: number; grossMargin: number; marginPct: number; supplierPaymentsTotal: number; supplierPaymentsCount: number }
+interface SalonSummary { todayCount: number; upcomingCount: number; completedRevenue: number; byStylist: { stylistId: string | null; name: string; count: number; revenue: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -46,6 +47,8 @@ export default function AccountsPage() {
   const { user } = useAuth();
   const isTravel = user?.industry === 'travel';
   const [travel, setTravel] = useState<TravelSummary | null>(null);
+  const isSalon = user?.industry === 'salon';
+  const [salon, setSalon] = useState<SalonSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -88,6 +91,12 @@ export default function AccountsPage() {
     if (!isTravel) return;
     api.accountingTravelSummary().then((r) => setTravel(r.data ?? null)).catch(() => setTravel(null));
   }, [isTravel]);
+
+  // Salon accounts depth: revenue by stylist.
+  useEffect(() => {
+    if (!isSalon) return;
+    api.salonSummary().then((r) => setSalon(r.data ?? null)).catch(() => setSalon(null));
+  }, [isSalon]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -221,6 +230,24 @@ export default function AccountsPage() {
             </div>
 
             {/* OVERVIEW */}
+            {tab === 'overview' && isSalon && salon && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Salon revenue by stylist</h3><Badge variant="info" size="xs">Salon</Badge></div>
+                <div className="mb-3 grid grid-cols-3 gap-3">
+                  <div><div className="text-lg font-extrabold text-ink-50">{salon.todayCount}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Today</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-200">{salon.upcomingCount}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(salon.completedRevenue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Completed revenue</div></div>
+                </div>
+                {salon.byStylist.length === 0 ? <p className="text-xs text-ink-500">No completed appointments yet.</p> : (
+                  <div className="space-y-1.5">
+                    {salon.byStylist.map((s) => (
+                      <div key={s.stylistId ?? 'unassigned'} className="flex items-center justify-between text-sm"><span className="text-ink-300">{s.name} <span className="text-ink-500">· {s.count}</span></span><span className="font-semibold text-ink-200">{rupees(s.revenue)}</span></div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {tab === 'overview' && isTravel && travel && (
               <div className="card p-5">
                 <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Travel margin &amp; supplier payments</h3><Badge variant="info" size="xs">Travel</Badge></div>

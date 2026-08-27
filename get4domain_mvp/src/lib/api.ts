@@ -181,6 +181,21 @@ export const api = {
   deleteContract: (id: string) => apiCall(`/travel/contracts/${id}`, { method: 'DELETE' }),
   generateContractInvoices: () => apiCall('/travel/contracts/generate-invoices', { method: 'POST' }),
 
+  // Phase 2 — Salon operations
+  salonSummary: () => apiCall('/salon/summary'),
+  getStylists: () => apiCall('/salon/stylists'),
+  createStylist: (data: any) => apiCall('/salon/stylists', { method: 'POST', body: JSON.stringify(data) }),
+  updateStylist: (id: string, data: any) => apiCall(`/salon/stylists/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteStylist: (id: string) => apiCall(`/salon/stylists/${id}`, { method: 'DELETE' }),
+  getChairs: () => apiCall('/salon/chairs'),
+  createChair: (data: any) => apiCall('/salon/chairs', { method: 'POST', body: JSON.stringify(data) }),
+  updateChair: (id: string, data: any) => apiCall(`/salon/chairs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteChair: (id: string) => apiCall(`/salon/chairs/${id}`, { method: 'DELETE' }),
+  getSalonAppointments: () => apiCall('/salon/appointments'),
+  createSalonAppointment: (data: any) => apiCall('/salon/appointments', { method: 'POST', body: JSON.stringify(data) }),
+  updateSalonAppointment: (id: string, data: any) => apiCall(`/salon/appointments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteSalonAppointment: (id: string) => apiCall(`/salon/appointments/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

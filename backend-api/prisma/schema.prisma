@@ -80,6 +80,11 @@ model Vendor {
   trips            Trip[]
   visaApplications VisaApplication[]
   contracts        Contract[]
+
+  // Phase 2 — per-industry operations
+  stylists          Stylist[]
+  salonChairs       SalonChair[]
+  salonAppointments SalonAppointment[]
 }
 
 model Subscription {
@@ -1130,4 +1135,59 @@ model ContractAssignment {
   createdAt  DateTime @default(now())
   @@index([contractId])
   @@map("g4d_contract_assignments")
+}
+
+// ── Salon Operations (Phase 2) ───────────────────────────────────────────────
+// Dedicated models for real service/chair scheduling + stylist assignment.
+model Stylist {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  name       String
+  phone      String?
+  specialty  String?
+  status     String   @default("active")   // active | off_duty
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  appointments SalonAppointment[]
+  @@index([vendorId])
+  @@map("g4d_stylists")
+}
+
+model SalonChair {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id])
+  name       String
+  status     String   @default("available") // available | occupied | maintenance
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  appointments SalonAppointment[]
+  @@index([vendorId])
+  @@map("g4d_salon_chairs")
+}
+
+model SalonAppointment {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  contactId   String?                          // soft ref to g4d_contacts (client)
+  clientName  String
+  clientPhone String?
+  serviceName String
+  stylistId   String?
+  stylist     Stylist? @relation(fields: [stylistId], references: [id])
+  chairId     String?
+  chair       SalonChair? @relation(fields: [chairId], references: [id])
+  startAt     DateTime
+  durationMin Int      @default(45)
+  price       Float    @default(0)
+  status      String   @default("scheduled")   // scheduled | confirmed | completed | no_show | cancelled
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, startAt])
+  @@map("g4d_salon_appointments")
 }

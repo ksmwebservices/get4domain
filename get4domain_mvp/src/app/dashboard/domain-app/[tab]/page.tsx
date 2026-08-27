@@ -14,6 +14,8 @@ import DriversView from '@/domainapp/travel/DriversView';
 import TripsView from '@/domainapp/travel/TripsView';
 import VisaView from '@/domainapp/travel/VisaView';
 import ContractsView from '@/domainapp/travel/ContractsView';
+import StylistsView from '@/domainapp/salon/StylistsView';
+import SalonScheduleView from '@/domainapp/salon/SalonScheduleView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -76,6 +78,12 @@ export default function DomainAppTabPage() {
     }
     if (tabKey === 'trip-sheets') return <TripsView />;
     if (tabKey === 'visa') return <VisaView />;
+  }
+
+  // Phase 2 — Salon: real scheduling + stylist/chair management (dedicated models).
+  if (cfg.industry.key === 'salon') {
+    if (tabKey === 'appointments') return <SalonScheduleView />;
+    if (tabKey === 'stylists') return <StylistsView />;
   }
 
   const view = resolveView(tabKey);
