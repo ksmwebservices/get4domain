@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { promises as dns } from 'dns';
-import { DomainRegistration } from '@prisma/client';
+import { DomainRegistration, Vendor, VendorCMS } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
-import { ResellerClubService, AvailabilityResult } from './resellerclub.service';
+import { ResellerClubService, AvailabilityResult, ResellerClubContactDetails } from './resellerclub.service';
 import { RegisterDomainDto } from './dto/register-domain.dto';
 
 // Retail price the vendor pays (paise), per TLD. Admin can later override via
@@ -90,6 +90,82 @@ export class DomainsService {
   }
 
   /**
+   * Assemble the ResellerClub registrant details from the vendor's own profile.
+   * The vendor's identity (name/company/email/phone/address-line-1) is real; the
+   * structured fields the profile doesn't capture (city/state/zipcode) come from
+   * admin-set defaults. Returns null when those defaults or a usable phone are
+   * missing, so we don't fire a call that ResellerClub is guaranteed to reject.
+   */
+  private async buildRegistrantDetails(vendor: Vendor & { cms: VendorCMS | null }): Promise<ResellerClubContactDetails | null> {
+    const [city, state, country, zipcode] = await Promise.all([
+      this.settings.getResolvedValue('domain', 'default_reg_city'),
+      this.settings.getResolvedValue('domain', 'default_reg_state'),
+      this.settings.getResolvedValue('domain', 'default_reg_country'),
+      this.settings.getResolvedValue('domain', 'default_reg_zipcode'),
+    ]);
+    if (!city || !state || !zipcode) return null;
+
+    const rawPhone = (vendor.phone ?? vendor.cms?.phone ?? '').replace(/\D/g, '');
+    const phone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
+    if (phone.length < 10) return null;
+
+    return {
+      name: vendor.name,
+      company: vendor.businessName || vendor.name,
+      email: vendor.email,
+      addressLine1: (vendor.cms?.address || vendor.businessName || vendor.name).slice(0, 64),
+      city,
+      state,
+      country: country || 'IN',
+      zipcode,
+      phoneCc: '91',
+      phone,
+    };
+  }
+
+  /**
+   * Resolve the ResellerClub customer/contact this vendor's domains register
+   * under. Lazily creates a PER-VENDOR customer + contact from the vendor's own
+   * details on first use and stores the ids on the Vendor. If per-vendor creation
+   * fails (or registrant defaults aren't set), falls back to the SHARED default —
+   * logged loudly so the shared account isn't silently reused long-term.
+   */
+  private async ensureVendorResellerClubIdentity(vendorId: string): Promise<{ customerId: string | null; contactId: string | null }> {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId }, include: { cms: true } });
+    if (!vendor) return { customerId: null, contactId: null };
+
+    if (vendor.resellerClubCustomerId && vendor.resellerClubContactId) {
+      return { customerId: vendor.resellerClubCustomerId, contactId: vendor.resellerClubContactId };
+    }
+
+    const details = await this.buildRegistrantDetails(vendor);
+    if (details) {
+      try {
+        // Reuse a customer id from a prior partial attempt; only the contact is missing.
+        let customerId = vendor.resellerClubCustomerId;
+        if (!customerId) {
+          customerId = await this.resellerClub.signupCustomer(details);
+          await this.prisma.vendor.update({ where: { id: vendorId }, data: { resellerClubCustomerId: customerId } });
+        }
+        const contactId = await this.resellerClub.addContact(customerId, details);
+        await this.prisma.vendor.update({ where: { id: vendorId }, data: { resellerClubContactId: contactId } });
+        this.logger.log(`Per-vendor ResellerClub identity created for vendor ${vendorId} (customer ${customerId}, contact ${contactId})`);
+        return { customerId, contactId };
+      } catch (err) {
+        this.logger.warn(`Per-vendor ResellerClub identity FAILED for vendor ${vendorId}; falling back to SHARED default. Reason: ${err instanceof Error ? err.message : 'error'}`);
+      }
+    } else {
+      this.logger.warn(`Registrant defaults not set — using SHARED ResellerClub default for vendor ${vendorId}. Set default_reg_city/state/zipcode to enable per-vendor identity.`);
+    }
+
+    const [sharedCustomer, sharedContact] = await Promise.all([
+      this.settings.getResolvedValue('domain', 'resellerclub_customer_id'),
+      this.settings.getResolvedValue('domain', 'resellerclub_contact_id'),
+    ]);
+    return { customerId: sharedCustomer, contactId: sharedContact };
+  }
+
+  /**
    * Buy a domain, charged to the vendor's wallet (confirmed payment flow,
    * 27-Aug-2026). Money-safe by construction: the wallet is debited first, and
    * if the registrar call fails the debit is refunded before we surface the
@@ -117,15 +193,18 @@ export class DomainsService {
       throw new BadRequestException('That domain is no longer available.');
     }
 
-    // Resolve the pre-configured ResellerClub customer/contact/NS. Fail BEFORE
-    // charging if the registrar isn't fully set up (no half-finished purchases).
-    const [customerId, contactId, ns1, ns2] = await Promise.all([
-      this.settings.getResolvedValue('domain', 'resellerclub_customer_id'),
-      this.settings.getResolvedValue('domain', 'resellerclub_contact_id'),
+    // Resolve name servers (shared) + this vendor's ResellerClub customer/contact
+    // (per-vendor, created lazily here). Fail BEFORE charging if the registrar
+    // isn't fully set up (no half-finished purchases).
+    const [ns1, ns2] = await Promise.all([
       this.settings.getResolvedValue('domain', 'resellerclub_ns1'),
       this.settings.getResolvedValue('domain', 'resellerclub_ns2'),
     ]);
-    if (!customerId || !contactId || !ns1 || !ns2) {
+    if (!ns1 || !ns2) {
+      throw new ServiceUnavailableException('DOMAIN_REGISTRATION_NOT_CONFIGURED');
+    }
+    const { customerId, contactId } = await this.ensureVendorResellerClubIdentity(vendorId);
+    if (!customerId || !contactId) {
       throw new ServiceUnavailableException('DOMAIN_REGISTRATION_NOT_CONFIGURED');
     }
 

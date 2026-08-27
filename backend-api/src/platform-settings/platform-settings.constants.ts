@@ -139,6 +139,14 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'resellerclub_contact_id', label: 'ResellerClub Default Contact ID', envFallback: 'RESELLERCLUB_CONTACT_ID', secret: false },
       { key: 'resellerclub_ns1', label: 'Name server 1', envFallback: 'RESELLERCLUB_NS1', secret: false },
       { key: 'resellerclub_ns2', label: 'Name server 2', envFallback: 'RESELLERCLUB_NS2', secret: false },
+      // Default registrant address parts used to fill the structured fields the
+      // vendor profile doesn't capture (city/state/country/zip) when creating a
+      // per-vendor ResellerClub customer. The vendor's own name/company/email/
+      // phone/address still come from their profile.
+      { key: 'default_reg_city', label: 'Default Registrant City', envFallback: 'RESELLERCLUB_REG_CITY', secret: false },
+      { key: 'default_reg_state', label: 'Default Registrant State', envFallback: 'RESELLERCLUB_REG_STATE', secret: false },
+      { key: 'default_reg_country', label: 'Default Registrant Country (ISO-2, e.g. IN)', envFallback: 'RESELLERCLUB_REG_COUNTRY', secret: false },
+      { key: 'default_reg_zipcode', label: 'Default Registrant Zipcode', envFallback: 'RESELLERCLUB_REG_ZIPCODE', secret: false },
     ],
   },
   {

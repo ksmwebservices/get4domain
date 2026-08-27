@@ -22,6 +22,11 @@ model Vendor {
   // webhook to the correct tenant. Set by admin when provisioning the WA number.
   waPhoneNumberId String? @unique
   customDomain String?
+  // Per-vendor ResellerClub identity, created lazily on first domain registration
+  // from the vendor's own business details. Domains register under these instead
+  // of the shared default customer/contact once present.
+  resellerClubCustomerId String?
+  resellerClubContactId  String?
   role         Role     @default(VENDOR)
   status       VendorStatus @default(ACTIVE)
   // 3C: admin per-vendor override layered on the industry skin baseline (accent,

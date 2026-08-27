@@ -1,5 +1,20 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+
+/** Registrant/customer details assembled from the vendor's own profile. */
+export interface ResellerClubContactDetails {
+  name: string;
+  company: string;
+  email: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  country: string; // ISO 2-letter, e.g. IN
+  zipcode: string;
+  phoneCc: string; // e.g. 91
+  phone: string; // digits only
+}
 
 export interface AvailabilityResult {
   domain: string;
@@ -96,6 +111,85 @@ export class ResellerClubService {
         status,
       };
     });
+  }
+
+  /** Generate a ResellerClub-compliant customer password (8–15 chars, mixed). */
+  private static randomPassword(): string {
+    const rand = crypto.randomBytes(6).toString('hex'); // 12 hex chars
+    return `Aa1!${rand}`.slice(0, 15);
+  }
+
+  /**
+   * Create a ResellerClub Customer from the vendor's own business details.
+   * POST /customers/v2/signup.json — returns the numeric customer-id (body).
+   * The generated account password is not persisted (RC panel can reset it);
+   * the vendor never uses this sub-account directly.
+   */
+  async signupCustomer(d: ResellerClubContactDetails): Promise<string> {
+    const { authUserId, apiKey } = await this.credentials();
+    const params = new URLSearchParams();
+    params.set('auth-userid', authUserId);
+    params.set('api-key', apiKey);
+    params.set('username', d.email);
+    params.set('passwd', ResellerClubService.randomPassword());
+    params.set('name', d.name);
+    params.set('company', d.company);
+    params.set('address-line-1', d.addressLine1);
+    params.set('city', d.city);
+    params.set('state', d.state);
+    params.set('country', d.country);
+    params.set('zipcode', d.zipcode);
+    params.set('phone-cc', d.phoneCc);
+    params.set('phone', d.phone);
+    params.set('lang-pref', 'en');
+
+    const res = await fetch(`${this.apiBase}/customers/v2/signup.json?${params.toString()}`, { method: 'POST' });
+    const raw = (await res.json()) as unknown;
+    if (!res.ok) {
+      const msg = typeof raw === 'object' && raw && 'message' in raw ? String((raw as { message: unknown }).message) : `HTTP ${res.status}`;
+      throw new Error(`ResellerClub customer signup failed: ${msg}`);
+    }
+    // Success returns the bare customer-id (number or numeric string).
+    const customerId = String(raw).trim();
+    if (!/^\d+$/.test(customerId)) {
+      throw new Error(`ResellerClub customer signup returned no id: ${JSON.stringify(raw)}`);
+    }
+    return customerId;
+  }
+
+  /**
+   * Add a Contact under a customer. POST /contacts/add.json — returns the numeric
+   * contact-id. Used as reg/admin/tech/billing contact for that customer's domains.
+   */
+  async addContact(customerId: string, d: ResellerClubContactDetails): Promise<string> {
+    const { authUserId, apiKey } = await this.credentials();
+    const params = new URLSearchParams();
+    params.set('auth-userid', authUserId);
+    params.set('api-key', apiKey);
+    params.set('name', d.name);
+    params.set('company', d.company);
+    params.set('email', d.email);
+    params.set('address-line-1', d.addressLine1);
+    params.set('city', d.city);
+    params.set('state', d.state);
+    params.set('country', d.country);
+    params.set('zipcode', d.zipcode);
+    params.set('phone-cc', d.phoneCc);
+    params.set('phone', d.phone);
+    params.set('customer-id', customerId);
+    params.set('type', 'Contact');
+
+    const res = await fetch(`${this.apiBase}/contacts/add.json?${params.toString()}`, { method: 'POST' });
+    const raw = (await res.json()) as unknown;
+    if (!res.ok) {
+      const msg = typeof raw === 'object' && raw && 'message' in raw ? String((raw as { message: unknown }).message) : `HTTP ${res.status}`;
+      throw new Error(`ResellerClub contact add failed: ${msg}`);
+    }
+    const contactId = String(raw).trim();
+    if (!/^\d+$/.test(contactId)) {
+      throw new Error(`ResellerClub contact add returned no id: ${JSON.stringify(raw)}`);
+    }
+    return contactId;
   }
 
   /**
