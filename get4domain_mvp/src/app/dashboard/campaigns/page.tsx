@@ -1,441 +1,417 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  Plus, Loader2, Sparkles, ArrowRight, ArrowLeft, CheckCircle2, X, Wallet,
-  Send, Megaphone, Facebook, Instagram,
+  Plus, Search, Megaphone, Eye, MessageSquare, Calendar, Check, ArrowRight, ArrowLeft,
+  Target, Sparkles, Link2, Copy, TrendingUp, Clock, ExternalLink, Loader2,
 } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import { useAuth } from '@/lib/auth-context';
+import { Icon, Badge, Modal } from '@/components/vendor';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
-interface Campaign {
+// The self-service campaign screen (Bolt reference): a vendor builds their OWN
+// campaign page, gets a shareable /go/[slug] link, and tracks views/enquiries.
+// Wired to the real campaign-pages endpoints — no approval, no wallet request.
+
+const SITE_URL = 'https://get4domain.com';
+
+type Status = 'Live' | 'Draft';
+
+interface CampaignRow {
   id: string;
-  name: string;
-  status: string;
-  channels: string[];
-  walletCost: number;
+  slug: string;
+  title: string;
+  headline: string;
+  views: number;
+  leadCount: number;
+  active: boolean;
   createdAt: string;
+  phone: string;
+  whatsapp: string;
 }
 
-interface AdCampaign {
-  id: string;
-  name: string;
-  status: string;
-  description: string | null;
-  content: { objective?: string; budget?: number; durationDays?: number; audience?: string };
-  createdAt: string;
-}
+const THUMBS = [
+  'from-brand-600 to-brand-900',
+  'from-gold-500 to-ruby-600',
+  'from-ruby-600 to-brand-800',
+  'from-brand-500 to-success',
+  'from-gold-400 to-brand-700',
+  'from-success to-brand-700',
+];
+const thumbFor = (id: string) => THUMBS[[...id].reduce((s, c) => s + c.charCodeAt(0), 0) % THUMBS.length];
 
-// Costs are in paise. `comingSoon` channels depend on provider config not yet
-// live (WhatsApp BSP / SMS gateway / social posting) — shown but not selectable.
-const CHANNELS = [
-  { id: 'landing_page', label: 'Campaign landing page', cost: 2000, comingSoon: false },
-  { id: 'social_post', label: 'Social media post (we post on your page)', cost: 1000, comingSoon: true },
-  { id: 'whatsapp', label: 'WhatsApp to contacts (per message)', cost: 100, comingSoon: true },
-  { id: 'sms', label: 'SMS to contacts (per message)', cost: 50, comingSoon: true },
-  { id: 'email', label: 'Email to contacts (per email)', cost: 10, comingSoon: false },
+const statusVariant: Record<Status, 'success' | 'warning'> = { Live: 'success', Draft: 'warning' };
+const statusOf = (c: CampaignRow): Status => (c.active ? 'Live' : 'Draft');
+
+const goalOptions = [
+  'Book more appointments',
+  'Increase brand awareness',
+  'Generate new leads',
+  'Boost product sales',
+  'Launch a new service',
 ];
 
-const AI_CHANNELS = new Set(['social_post', 'landing_page']);
+const audienceChips = ['Existing customers', 'New leads', 'Local area', 'Festival shoppers', 'Premium segment'];
 
-const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-type GeneratedContent = { caption: string; hashtags?: string[]; imagePrompt?: string; imageUrl?: string | null };
+interface GenContent { headline: string; subheadline: string; benefits: string[]; aboutText?: string; ctaText?: string }
 
 export default function CampaignsPage() {
   const { user } = useAuth();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [rows, setRows] = useState<CampaignRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [step, setStep] = useState(1);
-  const [brief, setBrief] = useState({ whatToPromote: '', targetAudience: '', startDate: '', endDate: '' });
-  const [channels, setChannels] = useState<string[]>([]);
-  const [content, setContent] = useState<Record<string, GeneratedContent>>({});
-  const [generating, setGenerating] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [publishing, setPublishing] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'all' | Status>('all');
+  const [selected, setSelected] = useState<CampaignRow | null>(null);
+  const [creating, setCreating] = useState(false);
 
-  // Tabs + Ads state (Growth Hub)
-  const [tab, setTab] = useState<'campaigns' | 'ads'>('campaigns');
-  const [ads, setAds] = useState<AdCampaign[]>([]);
-  const [adForm, setAdForm] = useState({ objective: 'lead_generation', budget: 5000, durationDays: 7, audience: '', channel: 'meta_ads' as 'meta_ads' | 'google_ads' });
-  const [adCreative, setAdCreative] = useState('');
-  const [adBusy, setAdBusy] = useState(false);
-
-  function load() {
+  const load = useCallback(() => {
     setLoading(true);
-    api.getCampaigns()
-      .then((res) => setCampaigns(res.data ?? []))
+    api.getCampaignPages()
+      .then((res) => setRows((res.data ?? []) as CampaignRow[]))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load campaigns'))
       .finally(() => setLoading(false));
-    api.growthListAds().then((res) => setAds(res.data ?? [])).catch(() => setAds([]));
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  async function publish(platform: 'facebook' | 'instagram', text: string) {
-    setPublishing(platform);
-    setError('');
-    try {
-      const res = await api.growthPublish({ platform, content: text });
-      const url = res.data?.postUrl;
-      alert(res.data?.mock ? `Queued (mock) — ${platform} publishing will go live once Meta App Review is approved.\n${url ?? ''}` : `Published: ${url}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Publish failed');
-    } finally {
-      setPublishing('');
+  const filtered = rows.filter(
+    (c) => (filter === 'all' || statusOf(c) === filter) && c.title.toLowerCase().includes(search.toLowerCase()),
+  );
+  const totalViews = rows.reduce((s, c) => s + (c.views ?? 0), 0);
+  const totalEnquiries = rows.reduce((s, c) => s + (c.leadCount ?? 0), 0);
+  const liveCount = rows.filter((c) => c.active).length;
+
+  return (
+    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] space-y-5 bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-ink-50">Campaigns</h1>
+          <p className="mt-0.5 text-sm text-ink-500">Build a campaign page, share the link, and track results.</p>
+        </div>
+        <button onClick={() => setCreating(true)} className="btn-primary"><Plus className="h-4 w-4" />New Campaign</button>
+      </div>
+
+      {error && <div className="rounded-xl border border-ruby-800/50 bg-ruby-950/40 px-4 py-3 text-sm text-ruby-300">{error}</div>}
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card p-4">
+          <div className="mb-1 flex items-center gap-2 text-xs text-ink-500"><Eye className="h-3.5 w-3.5" />Total Views</div>
+          <div className="text-xl font-extrabold text-ink-50">{totalViews.toLocaleString('en-IN')}</div>
+        </div>
+        <div className="card p-4">
+          <div className="mb-1 flex items-center gap-2 text-xs text-ink-500"><MessageSquare className="h-3.5 w-3.5" />Enquiries</div>
+          <div className="text-xl font-extrabold text-ink-50">{totalEnquiries}</div>
+        </div>
+        <div className="card p-4">
+          <div className="mb-1 flex items-center gap-2 text-xs text-ink-500"><span className="h-2 w-2 rounded-full bg-success animate-pulse" />Live Now</div>
+          <div className="text-xl font-extrabold text-success">{liveCount}</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search campaigns…" className="input !pl-9" />
+        </div>
+        <div className="no-scrollbar flex items-center gap-1 overflow-x-auto rounded-xl border border-ink-700/40 bg-ink-850/60 p-1">
+          {(['all', 'Live', 'Draft'] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition ${filter === f ? 'bg-brand-600/20 text-brand-300' : 'text-ink-400 hover:text-ink-200'}`}>
+              {f === 'all' ? 'All' : f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="card overflow-hidden">
+        <div className="hidden grid-cols-[1fr_110px_130px_120px_40px] gap-4 border-b border-ink-700/40 px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-ink-600 lg:grid">
+          <span>Campaign</span><span>Status</span><span>Created</span><span>Results</span><span></span>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-ink-500" /></div>
+        ) : filtered.length === 0 ? (
+          <div className="px-5 py-16 text-center text-sm text-ink-500">
+            {rows.length === 0 ? 'No campaigns yet — create your first one.' : 'No campaigns match your search.'}
+          </div>
+        ) : (
+          <div className="divide-y divide-ink-700/30">
+            {filtered.map((c) => (
+              <button key={c.id} onClick={() => setSelected(c)}
+                className="grid w-full grid-cols-1 items-center gap-3 px-5 py-4 text-left transition hover:bg-ink-800/40 lg:grid-cols-[1fr_110px_130px_120px_40px] lg:gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${thumbFor(c.id)} shadow-v-card`}>
+                    <Megaphone className="h-5 w-5 text-white/90" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-ink-100">{c.title}</div>
+                    <div className="truncate text-xs text-ink-500">get4domain.com/go/{c.slug}</div>
+                  </div>
+                </div>
+                <div><Badge variant={statusVariant[statusOf(c)]} size="xs" dot={c.active}>{statusOf(c)}</Badge></div>
+                <div className="hidden items-center gap-1.5 text-xs text-ink-400 lg:flex"><Calendar className="h-3.5 w-3.5 text-ink-600" />{fmtDate(c.createdAt)}</div>
+                <div className="hidden items-center gap-3 text-xs lg:flex">
+                  {c.views > 0 || c.leadCount > 0 ? (
+                    <>
+                      <span className="flex items-center gap-1 text-ink-300"><Eye className="h-3.5 w-3.5 text-ink-600" />{c.views.toLocaleString('en-IN')}</span>
+                      <span className="flex items-center gap-1 text-ink-300"><MessageSquare className="h-3.5 w-3.5 text-ink-600" />{c.leadCount}</span>
+                    </>
+                  ) : <span className="text-ink-600">—</span>}
+                </div>
+                <ArrowRight className="hidden h-4 w-4 text-ink-600 lg:block" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.title} subtitle={selected ? `get4domain.com/go/${selected.slug}` : undefined} size="lg">
+        {selected && <CampaignDetail campaign={selected} />}
+      </Modal>
+
+      <CreateWizard open={creating} onClose={() => setCreating(false)} onCreated={load} industry={user?.industry ?? 'general'} businessName={user?.businessName ?? user?.name ?? ''} existing={rows[0] ?? null} />
+    </div>
+  );
+}
+
+function CampaignDetail({ campaign }: { campaign: CampaignRow }) {
+  const url = `${SITE_URL}/go/${campaign.slug}`;
+  const [copied, setCopied] = useState(false);
+  const [analytics, setAnalytics] = useState<{ views: number; leads: number; conversion: number } | null>(null);
+
+  useEffect(() => {
+    api.getCampaignPageAnalytics(campaign.id).then((r) => setAnalytics(r.data ?? null)).catch(() => setAnalytics(null));
+  }, [campaign.id]);
+
+  const views = analytics?.views ?? campaign.views;
+  const leads = analytics?.leads ?? campaign.leadCount;
+  const conv = analytics?.conversion ?? (views > 0 ? Number(((leads / views) * 100).toFixed(1)) : 0);
+
+  const copy = () => { navigator.clipboard?.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+
+  return (
+    <div className="space-y-5">
+      <div className={`relative h-40 overflow-hidden rounded-2xl bg-gradient-to-br ${thumbFor(campaign.id)}`}>
+        <div className="absolute inset-0 bg-grid-faint bg-[size:20px_20px] opacity-20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute bottom-4 left-4 flex items-center gap-3">
+          <Badge variant={statusVariant[statusOf(campaign)]} size="sm" dot={campaign.active}>{statusOf(campaign)}</Badge>
+          <span className="flex items-center gap-1.5 text-xs text-white/80"><Calendar className="h-3.5 w-3.5" />{fmtDate(campaign.createdAt)}</span>
+        </div>
+      </div>
+
+      {views > 0 || leads > 0 ? (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-4 text-center"><Eye className="mx-auto mb-2 h-5 w-5 text-brand-400" /><div className="text-xl font-extrabold text-ink-50">{views.toLocaleString('en-IN')}</div><div className="mt-1 text-[10px] uppercase tracking-wider text-ink-500">Page Views</div></div>
+          <div className="card p-4 text-center"><MessageSquare className="mx-auto mb-2 h-5 w-5 text-gold-400" /><div className="text-xl font-extrabold text-ink-50">{leads}</div><div className="mt-1 text-[10px] uppercase tracking-wider text-ink-500">Enquiries</div></div>
+          <div className="card p-4 text-center"><TrendingUp className="mx-auto mb-2 h-5 w-5 text-success" /><div className="text-xl font-extrabold text-ink-50">{conv}%</div><div className="mt-1 text-[10px] uppercase tracking-wider text-ink-500">Conv. Rate</div></div>
+        </div>
+      ) : (
+        <div className="card p-6 text-center"><Clock className="mx-auto mb-2 h-8 w-8 text-ink-600" /><p className="text-sm text-ink-400">No results yet — share your campaign page to start tracking views and enquiries.</p></div>
+      )}
+
+      <div className="card p-4">
+        <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-400"><Link2 className="h-3.5 w-3.5" />Shareable Campaign Page</div>
+        <div className="flex items-center gap-2 rounded-xl border border-ink-700/50 bg-ink-900/60 p-3">
+          <span className="flex-1 truncate text-xs text-ink-400">{url}</span>
+          <button onClick={copy} className="btn-ghost-soft !px-2 !py-1 text-xs">{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{copied ? 'Copied' : 'Copy'}</button>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Link href="/dashboard/landing-page" className="btn-ghost flex-1"><Sparkles className="h-4 w-4" />Edit content</Link>
+        <a href={url} target="_blank" rel="noreferrer" className="btn-primary flex-1"><ExternalLink className="h-4 w-4" />Open page</a>
+      </div>
+    </div>
+  );
+}
+
+function CreateWizard({ open, onClose, onCreated, industry, businessName, existing }: {
+  open: boolean; onClose: () => void; onCreated: () => void; industry: string; businessName: string; existing: CampaignRow | null;
+}) {
+  const [step, setStep] = useState(0);
+  const [goal, setGoal] = useState('');
+  const [audience, setAudience] = useState('');
+  const [offer, setOffer] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [gen, setGen] = useState<GenContent | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [reminderDate, setReminderDate] = useState('');
+  const [reminderNote, setReminderNote] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [err, setErr] = useState('');
+
+  // Prefill contact from an existing page when available.
+  useEffect(() => {
+    if (open) {
+      setPhone(existing?.phone ?? '');
+      setWhatsapp(existing?.whatsapp ?? '');
     }
-  }
+  }, [open, existing]);
 
-  async function generateAdCreative() {
-    setAdBusy(true);
+  const reset = () => {
+    setStep(0); setGoal(''); setAudience(''); setOffer(''); setGen(null);
+    setReminderDate(''); setReminderNote(''); setErr('');
+  };
+  const close = () => { reset(); onClose(); };
+
+  async function generate() {
+    if (!offer.trim() || !phone.trim() || !whatsapp.trim()) { setErr('Add what you’re promoting plus a phone and WhatsApp number.'); return; }
+    setGenerating(true); setErr('');
     try {
-      const res = await api.generateAiContent({
-        channel: 'ad_creative',
-        vendorIndustry: user?.industry ?? 'general',
-        offerDetails: `${adForm.objective} ad. Audience: ${adForm.audience}`,
-        tone: 'excited',
+      const res = await api.generateCampaignPage({
+        industry, businessName,
+        offerTitle: offer,
+        description: `Goal: ${goal || 'grow the business'}. Audience: ${audience || 'local customers'}.`,
+        phone, whatsapp,
       });
-      setAdCreative(res.data?.caption ?? res.data?.content ?? '');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ad creative generation failed');
-    } finally {
-      setAdBusy(false);
-    }
-  }
-
-  async function submitAd() {
-    if (!adForm.audience.trim()) return;
-    setAdBusy(true);
-    try {
-      await api.growthRequestAd(adForm);
-      setAdCreative('');
-      setAdForm({ objective: 'lead_generation', budget: 5000, durationDays: 7, audience: '', channel: 'meta_ads' });
-      const res = await api.growthListAds();
-      setAds(res.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not submit ad request');
-    } finally {
-      setAdBusy(false);
-    }
-  }
-
-  const pendingCount = campaigns.filter((c) => c.status === 'pending_approval' || c.status === 'approved').length;
-  const totalCost = channels.reduce((sum, c) => sum + (CHANNELS.find((ch) => ch.id === c)?.cost ?? 0), 0);
-
-  function resetWizard() {
-    setStep(1);
-    setBrief({ whatToPromote: '', targetAudience: '', startDate: '', endDate: '' });
-    setChannels([]);
-    setContent({});
-    setError('');
-  }
-
-  function toggleChannel(id: string) {
-    if (CHANNELS.find((c) => c.id === id)?.comingSoon) return; // not selectable until configured
-    setChannels((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
-  }
-
-  async function generateContent() {
-    setGenerating(true);
-    setError('');
-    const result: Record<string, GeneratedContent> = {};
-    try {
-      for (const channel of channels) {
-        if (AI_CHANNELS.has(channel)) {
-          const res = await api.generateAiContent({
-            channel,
-            vendorIndustry: user?.industry ?? 'general',
-            offerDetails: `${brief.whatToPromote}${brief.targetAudience ? ` — targeting ${brief.targetAudience}` : ''}`,
-            tone: 'friendly',
-          });
-          result[channel] = res.data;
-        } else {
-          result[channel] = {
-            caption: `${brief.whatToPromote}${brief.targetAudience ? ` — perfect for ${brief.targetAudience}` : ''}. Contact us to know more!`,
-          };
-        }
-      }
-      setContent(result);
-      setStep(3);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'AI content generation failed');
+      setGen(res.data as GenContent);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'AI generation failed');
     } finally {
       setGenerating(false);
     }
   }
 
-  async function submitCampaign() {
-    setSubmitting(true);
-    setError('');
+  async function create() {
+    setCreating(true); setErr('');
     try {
-      const created = await api.createCampaign({
-        name: brief.whatToPromote.slice(0, 60) || 'New Campaign',
-        description: brief.targetAudience,
-        channels,
-        content,
-        startDate: brief.startDate || undefined,
-        endDate: brief.endDate || undefined,
+      const headline = gen?.headline || offer;
+      const benefits = gen?.benefits?.length ? gen.benefits : [goal || 'Great value', 'Trusted local business'];
+      const res = await api.createCampaignPage({
+        title: offer.slice(0, 80) || 'New Campaign',
+        headline,
+        subheadline: gen?.subheadline || audience || undefined,
+        benefits,
+        aboutText: gen?.aboutText,
+        ctaText: gen?.ctaText || 'Enquire Now',
+        phone, whatsapp,
+        style: 'DARK',
       });
-      const campaignId = created.data.id as string;
-      await api.approveCampaign(campaignId);
-      setWizardOpen(false);
-      resetWizard();
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not submit campaign');
+      const slug = res.data?.slug as string | undefined;
+      // Personal share reminder (Bolt: a reminder, not an auto-post) — kept locally.
+      if (slug && reminderDate) {
+        try { localStorage.setItem(`g4d_campaign_reminder_${slug}`, JSON.stringify({ date: reminderDate, note: reminderNote })); } catch { /* ignore */ }
+      }
+      close();
+      onCreated();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not create campaign');
     } finally {
-      setSubmitting(false);
+      setCreating(false);
     }
   }
 
+  const steps = [
+    { icon: 'Target', title: 'Campaign Goal', desc: 'What do you want to achieve?' },
+    { icon: 'Users', title: 'Audience', desc: 'Who is this campaign for?' },
+    { icon: 'Sparkles', title: 'Content', desc: 'Generate your campaign page' },
+    { icon: 'Calendar', title: 'Schedule Reminder', desc: 'When do you plan to share it?' },
+  ];
+  const canNext = step === 0 ? !!goal : step === 2 ? !!gen || (!!offer && !!phone && !!whatsapp) : true;
+
   return (
-    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] space-y-6 bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Growth Hub</h2>
-          <p className="mt-1 text-sm text-slate-500">Campaigns, publishing and paid ads.</p>
-        </div>
-        {tab === 'campaigns' && (
-          <Button skin="dark" leftIcon={<Plus className="h-4 w-4" />} onClick={() => { resetWizard(); setWizardOpen(true); }}>Create Campaign</Button>
-        )}
-      </div>
-
-      <div className="flex w-fit rounded-xl border border-slate-200 bg-white p-1">
-        <button onClick={() => setTab('campaigns')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'campaigns' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><Megaphone className="h-4 w-4" />Campaigns</button>
-        <button onClick={() => setTab('ads')} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === 'ads' ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}><Sparkles className="h-4 w-4" />Ads</button>
-      </div>
-
-      {error && !wizardOpen && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
-
-      {tab === 'ads' && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Request a paid ad campaign</h3>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Objective</label>
-              <select value={adForm.objective} onChange={(e) => setAdForm({ ...adForm, objective: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
-                <option value="lead_generation">Lead Generation</option>
-                <option value="awareness">Brand Awareness</option>
-                <option value="traffic">Website Traffic</option>
-                <option value="engagement">Engagement</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">Budget (₹)</label>
-                <input type="number" value={adForm.budget} onChange={(e) => setAdForm({ ...adForm, budget: Number(e.target.value) })}
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-600">Duration (days)</label>
-                <input type="number" value={adForm.durationDays} onChange={(e) => setAdForm({ ...adForm, durationDays: Number(e.target.value) })}
-                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Channel</label>
-              <select value={adForm.channel} onChange={(e) => setAdForm({ ...adForm, channel: e.target.value as 'meta_ads' | 'google_ads' })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
-                <option value="meta_ads">Meta (Facebook/Instagram) Ads</option>
-                <option value="google_ads">Google Ads</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Audience description</label>
-              <textarea rows={2} value={adForm.audience} onChange={(e) => setAdForm({ ...adForm, audience: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
-            </div>
-            <div className="flex gap-2">
-              <Button skin="dark" variant="outline" loading={adBusy} leftIcon={<Sparkles className="h-4 w-4" />} onClick={generateAdCreative} disabled={!adForm.audience.trim()}>Generate creative</Button>
-              <Button skin="dark" fullWidth loading={adBusy} onClick={submitAd} disabled={!adForm.audience.trim()}>Submit for Review</Button>
-            </div>
-            {adCreative && <div className="rounded-xl bg-primary-50 p-3 text-sm text-slate-700">{adCreative}</div>}
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-base font-bold text-slate-900">Your ad campaigns</h3>
-            {ads.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">No ad campaigns yet.</div>
-            ) : ads.map((ad) => (
-              <div key={ad.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-900">{ad.name}</span>
-                  <span className="rounded-full bg-warning-50 px-2.5 py-1 text-xs font-semibold capitalize text-warning-700">{ad.status.replace('_', ' ')}</span>
-                </div>
-                <div className="mt-1 text-xs text-slate-500">₹{ad.content?.budget?.toLocaleString('en-IN')} · {ad.content?.durationDays} days · {ad.content?.objective?.replace('_', ' ')}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tab === 'campaigns' && (
-      <>
-      {pendingCount > 0 && (
-        <div className="rounded-2xl border border-warning-200 bg-warning-50 px-5 py-3.5 text-sm font-medium text-warning-800">
-          {pendingCount} campaign{pendingCount > 1 ? 's' : ''} pending our team&apos;s action
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
-      ) : campaigns.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">No campaigns yet — create your first one.</div>
-      ) : (
-        <div className="space-y-3">
-          {campaigns.map((c) => (
-            <div key={c.id} className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm font-bold text-slate-900 truncate">{c.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{c.channels.join(', ')} · {formatCurrency(c.walletCost)}</div>
-              </div>
-              <span className="flex-shrink-0 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 capitalize">{c.status.replace('_', ' ')}</span>
+    <Modal
+      open={open}
+      onClose={close}
+      title="Create Campaign"
+      subtitle={`Step ${step + 1} of 4`}
+      size="lg"
+      footer={
+        <>
+          {step > 0 && <button onClick={() => setStep(step - 1)} className="btn-ghost"><ArrowLeft className="h-4 w-4" />Back</button>}
+          {step < 3 ? (
+            <button onClick={() => setStep(step + 1)} disabled={!canNext} className="btn-primary">Continue<ArrowRight className="h-4 w-4" /></button>
+          ) : (
+            <button onClick={create} disabled={creating || !gen && !offer} className="btn-gold">{creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Create Campaign</button>
+          )}
+        </>
+      }
+    >
+      <div className="space-y-5">
+        <div className="flex items-center gap-2">
+          {steps.map((s, i) => (
+            <div key={i} className="flex flex-1 items-center gap-2">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${i <= step ? 'bg-brand-600 text-white' : 'bg-ink-800 text-ink-600'}`}>{i < step ? <Check className="h-4 w-4" /> : i + 1}</div>
+              {i < steps.length - 1 && <div className={`h-0.5 flex-1 rounded-full ${i < step ? 'bg-brand-600' : 'bg-ink-800'}`} />}
             </div>
           ))}
         </div>
-      )}
-      </>
-      )}
 
-      {/* Wizard */}
-      {wizardOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4">
-          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4].map((s) => (
-                  <span key={s} className={`h-1.5 w-8 rounded-full ${s <= step ? 'bg-primary-600' : 'bg-slate-200'}`} />
-                ))}
-              </div>
-              <button onClick={() => setWizardOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+        <div className="flex items-center gap-2">
+          <Icon name={steps[step].icon} className="h-5 w-5 text-brand-400" />
+          <div><h3 className="text-base font-bold text-ink-100">{steps[step].title}</h3><p className="text-xs text-ink-500">{steps[step].desc}</p></div>
+        </div>
+
+        {err && <div className="rounded-xl border border-ruby-800/50 bg-ruby-950/40 px-3 py-2 text-xs text-ruby-300">{err}</div>}
+
+        {step === 0 && (
+          <div className="space-y-2">
+            {goalOptions.map((g) => (
+              <button key={g} onClick={() => setGoal(g)}
+                className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${goal === g ? 'border-brand-500/60 bg-brand-500/10' : 'border-ink-700/40 bg-ink-900/40 hover:border-brand-500/40 hover:bg-brand-500/5'}`}>
+                <Target className="h-4 w-4 text-brand-400" /><span className="flex-1 text-sm text-ink-200">{g}</span>
+                {goal === g && <Check className="h-4 w-4 text-brand-400" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-3">
+            <textarea value={audience} onChange={(e) => setAudience(e.target.value)} rows={4} className="input resize-none" placeholder="e.g. Existing customers in Bangalore who haven't visited in 3+ months…" />
+            <div className="flex flex-wrap gap-2">
+              {audienceChips.map((t) => (
+                <button key={t} onClick={() => setAudience((a) => (a ? `${a}, ${t}` : t))} className="chip border border-ink-700/40 bg-ink-800/60 text-ink-300 transition hover:border-brand-500/40 hover:text-brand-300">{t}</button>
+              ))}
             </div>
+          </div>
+        )}
 
-            {error && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
-
-            {step === 1 && (
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">Step 1 — Campaign Brief</h3>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">What to promote?</label>
-                  <textarea rows={2} value={brief.whatToPromote} onChange={(e) => setBrief({ ...brief, whatToPromote: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">Target audience</label>
-                  <input value={brief.targetAudience} onChange={(e) => setBrief({ ...brief, targetAudience: e.target.value })}
-                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">Start date</label>
-                    <input type="date" value={brief.startDate} onChange={(e) => setBrief({ ...brief, startDate: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-600">End date</label>
-                    <input type="date" value={brief.endDate} onChange={(e) => setBrief({ ...brief, endDate: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-                  </div>
-                </div>
-                <Button skin="dark" fullWidth disabled={!brief.whatToPromote.trim()} rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(2)}>Next</Button>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">Step 2 — Select Channels</h3>
-                <div className="space-y-2">
-                  {CHANNELS.map((ch) => (
-                    <label key={ch.id} className={`flex items-center justify-between rounded-xl border p-3.5 transition-colors ${ch.comingSoon ? 'cursor-not-allowed border-slate-200 opacity-70' : channels.includes(ch.id) ? 'cursor-pointer border-primary-400 bg-primary-50' : 'cursor-pointer border-slate-200 hover:bg-slate-50'}`}>
-                      <div className="flex items-center gap-3">
-                        <input type="checkbox" disabled={ch.comingSoon} checked={channels.includes(ch.id)} onChange={() => toggleChannel(ch.id)} className="h-4 w-4 rounded text-primary-600 focus:ring-primary-400" />
-                        <span className="text-sm font-medium text-slate-800">{ch.label}</span>
-                        {ch.comingSoon && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Coming Soon</span>}
-                      </div>
-                      <span className="text-xs font-semibold text-slate-500">{formatCurrency(ch.cost)}</span>
-                    </label>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm">
-                  <span className="text-slate-500">Estimated cost</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(totalCost)}</span>
-                </div>
-                <div className="flex gap-3">
-                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(1)}>Back</Button>
-                  <Button skin="dark" fullWidth loading={generating} disabled={channels.length === 0} leftIcon={!generating && <Sparkles className="h-4 w-4" />} onClick={generateContent}>
-                    {generating ? 'AI is creating your campaign content…' : 'Generate Content with AI'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">Step 3 — Review Content</h3>
-                <div className="space-y-3">
-                  {channels.map((ch) => (
-                    <div key={ch} className="rounded-xl border border-slate-200 p-3.5">
-                      <div className="text-xs font-semibold text-primary-600 capitalize mb-1.5">{CHANNELS.find((c) => c.id === ch)?.label}</div>
-                      <textarea
-                        rows={2}
-                        value={content[ch]?.caption ?? ''}
-                        onChange={(e) => setContent({ ...content, [ch]: { ...content[ch], caption: e.target.value } })}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none"
-                      />
-                      {content[ch]?.hashtags && content[ch].hashtags!.length > 0 && (
-                        <div className="mt-1.5 text-xs text-slate-400">{content[ch].hashtags!.map((h) => `#${h}`).join(' ')}</div>
-                      )}
-                      {(ch === 'facebook' || ch === 'instagram') && (
-                        <button
-                          onClick={() => publish(ch, content[ch]?.caption ?? '')}
-                          disabled={publishing === ch}
-                          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 disabled:opacity-50"
-                        >
-                          {ch === 'facebook' ? <Facebook className="h-3.5 w-3.5" /> : <Instagram className="h-3.5 w-3.5" />}
-                          {publishing === ch ? 'Publishing…' : `Publish to ${ch === 'facebook' ? 'Facebook' : 'Instagram'}`}
-                          <Send className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-3">
-                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(2)}>Back</Button>
-                  <Button skin="dark" fullWidth rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(4)}>Next</Button>
-                </div>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="space-y-4">
-                <h3 className="text-base font-bold text-slate-900">Step 4 — Review & Submit</h3>
-                <div className="rounded-xl bg-slate-50 p-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-500">Promoting</span><span className="font-medium text-slate-900 text-right">{brief.whatToPromote}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Channels</span><span className="font-medium text-slate-900">{channels.length}</span></div>
-                  <div className="flex justify-between border-t border-slate-200 pt-2 font-bold"><span>Total Wallet Cost</span><span className="text-primary-700">{formatCurrency(totalCost)}</span></div>
-                </div>
-                <div className="flex items-start gap-2 rounded-xl bg-primary-50 p-3 text-xs text-primary-700">
-                  <Wallet className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  Submitting will deduct {formatCurrency(totalCost)} from your wallet and send this campaign to our team for execution.
-                </div>
-                <div className="flex gap-3">
-                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(3)}>Back</Button>
-                  <Button skin="dark" fullWidth loading={submitting} leftIcon={!submitting && <CheckCircle2 className="h-4 w-4" />} onClick={submitCampaign}>Submit for Approval</Button>
-                </div>
-                {error?.includes('INSUFFICIENT') && (
-                  <Link href="/dashboard/wallet" className="block text-center text-xs font-semibold text-primary-600 hover:underline">Top up your wallet →</Link>
-                )}
+        {step === 2 && (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-ink-400">What are you promoting?</label>
+              <input value={offer} onChange={(e) => setOffer(e.target.value)} className="input" placeholder="e.g. Diwali Smile Offer — 20% off cleaning" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="mb-1.5 block text-xs font-semibold text-ink-400">Phone</label><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" placeholder="Contact number" /></div>
+              <div><label className="mb-1.5 block text-xs font-semibold text-ink-400">WhatsApp</label><input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="input" placeholder="WhatsApp number" /></div>
+            </div>
+            <button onClick={generate} disabled={generating} className="btn-primary w-full">{generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{generating ? 'Generating your page…' : gen ? 'Regenerate content' : 'Generate with AI'}</button>
+            {gen && (
+              <div className="card space-y-2 p-4">
+                <div className="text-sm font-bold text-ink-100">{gen.headline}</div>
+                {gen.subheadline && <div className="text-xs text-ink-400">{gen.subheadline}</div>}
+                <ul className="space-y-1">
+                  {gen.benefits?.slice(0, 5).map((b, i) => <li key={i} className="flex items-start gap-1.5 text-xs text-ink-300"><Check className="mt-0.5 h-3 w-3 shrink-0 text-success" />{b}</li>)}
+                </ul>
               </div>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 rounded-xl border border-gold-500/20 bg-gold-500/5 p-3">
+              <Clock className="h-4 w-4 shrink-0 text-gold-400" />
+              <p className="text-xs text-ink-400">A personal reminder for when you plan to share your campaign — not an auto-post. You’ll share the link yourself wherever you like.</p>
+            </div>
+            <div><label className="mb-1.5 block text-xs font-semibold text-ink-400">Plan to share on</label><input type="date" value={reminderDate} onChange={(e) => setReminderDate(e.target.value)} className="input" /></div>
+            <div><label className="mb-1.5 block text-xs font-semibold text-ink-400">Note to self</label><input value={reminderNote} onChange={(e) => setReminderNote(e.target.value)} className="input" placeholder="e.g. Share on WhatsApp groups and Instagram story" /></div>
+            {!gen && <p className="text-xs text-ink-500">Tip: go back to Content and generate your page before creating.</p>}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
