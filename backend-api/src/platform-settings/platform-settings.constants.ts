@@ -130,7 +130,15 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     label: 'Domain (ResellerClub)',
     settings: [
       { key: 'resellerclub_api_key', label: 'ResellerClub API Key', envFallback: 'RESELLERCLUB_API_KEY', secret: true },
-      { key: 'resellerclub_reseller_id', label: 'ResellerClub Reseller ID', envFallback: 'RESELLERCLUB_RESELLER_ID', secret: false },
+      { key: 'resellerclub_reseller_id', label: 'ResellerClub Reseller ID (auth-userid)', envFallback: 'RESELLERCLUB_RESELLER_ID', secret: false },
+      // One-time setup in the ResellerClub panel: pre-create a customer + a
+      // registrant contact, then paste their IDs here. Registrations reuse these
+      // (the same contact id is used for reg/admin/tech/billing) so no per-vendor
+      // registrant PII pipeline is needed in code.
+      { key: 'resellerclub_customer_id', label: 'ResellerClub Default Customer ID', envFallback: 'RESELLERCLUB_CUSTOMER_ID', secret: false },
+      { key: 'resellerclub_contact_id', label: 'ResellerClub Default Contact ID', envFallback: 'RESELLERCLUB_CONTACT_ID', secret: false },
+      { key: 'resellerclub_ns1', label: 'Name server 1', envFallback: 'RESELLERCLUB_NS1', secret: false },
+      { key: 'resellerclub_ns2', label: 'Name server 2', envFallback: 'RESELLERCLUB_NS2', secret: false },
     ],
   },
   {

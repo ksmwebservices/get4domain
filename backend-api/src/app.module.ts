@@ -46,6 +46,7 @@ import { OtpModule } from './otp/otp.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { DomainsModule } from './domains/domains.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -67,6 +68,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     AiModule,
     LeadsModule,
     WalletModule,
+    DomainsModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

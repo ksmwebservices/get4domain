@@ -125,6 +125,18 @@ export const api = {
   getGstFilings: () => apiCall('/accounting/gst-filings'),
   upsertGstFiling: (data: any) => apiCall('/accounting/gst-filings', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Phase 2 — domain registration (ResellerClub), mapping + purchase via wallet.
+  domainConfig: () => apiCall('/domains/config'),
+  domainSearch: (query: string) => apiCall(`/domains/search?query=${encodeURIComponent(query)}`),
+  getMyDomains: () => apiCall('/domains/mine'),
+  domainRegister: (data: { domain: string; years?: number }) => apiCall('/domains/register', { method: 'POST', body: JSON.stringify(data) }),
+  domainConnect: (domain: string) => apiCall('/domains/connect', { method: 'POST', body: JSON.stringify({ domain }) }),
+  domainVerify: (domain: string) => apiCall('/domains/verify', { method: 'POST', body: JSON.stringify({ domain }) }),
+  // Admin-assist: complete domain steps on a vendor's behalf.
+  adminGetDomains: (vendorId: string) => apiCall(`/admin/domains?vendorId=${encodeURIComponent(vendorId)}`),
+  adminDomainRegister: (data: { vendorId: string; domain: string; years?: number }) => apiCall('/admin/domains/register', { method: 'POST', body: JSON.stringify(data) }),
+  adminDomainVerify: (data: { vendorId: string; domain: string }) => apiCall('/admin/domains/verify', { method: 'POST', body: JSON.stringify(data) }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

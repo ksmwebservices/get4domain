@@ -66,6 +66,7 @@ model Vendor {
   appointments     Appointment[]
   paymentRecords   PaymentRecord[]
   gstFilings       GstFiling[]
+  domains          DomainRegistration[]
 }
 
 model Subscription {
@@ -912,4 +913,33 @@ model GstFiling {
   @@unique([vendorId, period, formType])
   @@index([vendorId])
   @@map("g4d_gst_filings")
+}
+
+// Domain registrations + connected (externally-owned) domains, per vendor.
+// Registration is a real paid purchase charged to the vendor's wallet
+// (dispatch 26-Aug-2026, Phase 2). Mapping status tracks DNS propagation before
+// a domain is marked active.
+model DomainRegistration {
+  id               String    @id @default(cuid())
+  vendorId         String
+  vendor           Vendor    @relation(fields: [vendorId], references: [id])
+  domainName       String                              // full sld.tld
+  tld              String
+  // registered = bought through Get4Domain; connected = vendor-owned, mapped only
+  source           String    @default("registered")
+  registrar        String    @default("resellerclub")
+  registrarOrderId String?
+  // pending | registered | mapping_pending | active | failed | cancelled
+  status           String    @default("pending")
+  pricePaise       Int       @default(0)               // amount charged to wallet (0 for connected)
+  years            Int       @default(1)
+  mappingType      String?                             // A | CNAME
+  mappingVerifiedAt DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  @@unique([vendorId, domainName])
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_domain_registrations")
 }
