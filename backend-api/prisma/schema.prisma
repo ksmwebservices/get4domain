@@ -89,6 +89,9 @@ model Vendor {
   memberships       Membership[]
   rooms             Room[]
   roomBookings      RoomBooking[]
+  listings          Listing[]
+  deals             Deal[]
+  propertyVisits    PropertyVisit[]
 }
 
 model Subscription {
@@ -1273,4 +1276,65 @@ model RoomBooking {
   @@index([vendorId])
   @@index([vendorId, checkIn])
   @@map("g4d_room_bookings")
+}
+
+// ── Real Estate Operations (Phase 2) ─────────────────────────────────────────
+model Listing {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  title        String
+  propertyType String   @default("Apartment")  // Apartment | Villa | Plot | Commercial | Office
+  location     String?
+  price        Float    @default(0)
+  areaSqft     Float?
+  bhk          String?
+  status       String   @default("available")  // available | under_offer | sold | rented
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deals        Deal[]
+  visits       PropertyVisit[]
+  @@index([vendorId])
+  @@map("g4d_listings")
+}
+
+model Deal {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  contactId   String?
+  clientName  String
+  clientPhone String?
+  listingId   String?
+  listing     Listing? @relation(fields: [listingId], references: [id])
+  stage       String   @default("new")   // new | site_visit | negotiation | closed_won | closed_lost
+  value       Float    @default(0)
+  agent       String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, stage])
+  @@map("g4d_deals")
+}
+
+model PropertyVisit {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id])
+  contactId   String?
+  clientName  String
+  clientPhone String?
+  listingId   String?
+  listing     Listing? @relation(fields: [listingId], references: [id])
+  scheduledAt DateTime
+  agent       String?
+  status      String   @default("scheduled")  // scheduled | done | cancelled
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([vendorId])
+  @@index([vendorId, scheduledAt])
+  @@map("g4d_property_visits")
 }

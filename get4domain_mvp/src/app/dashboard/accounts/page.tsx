@@ -24,6 +24,7 @@ interface TravelSummary { tripCount: number; totalPackageCost: number; totalSell
 interface SalonSummary { todayCount: number; upcomingCount: number; completedRevenue: number; byStylist: { stylistId: string | null; name: string; count: number; revenue: number }[] }
 interface GymSummary { activeCount: number; expiringCount: number; expiredCount: number; monthlyRevenue: number; byPlan: { plan: string; count: number; revenue: number }[] }
 interface HotelSummary { totalRooms: number; occupied: number; occupancyPct: number; needsCleaning: number; inHouse: number; monthRevenue: number }
+interface RealEstateSummary { openPipelineValue: number; wonThisMonth: { count: number; value: number }; activeListings: number; upcomingVisits: number; byStage: { stage: string; count: number; value: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -55,6 +56,8 @@ export default function AccountsPage() {
   const [gym, setGym] = useState<GymSummary | null>(null);
   const isHotel = user?.industry === 'hotel';
   const [hotel, setHotel] = useState<HotelSummary | null>(null);
+  const isRealEstate = user?.industry === 'realestate';
+  const [re, setRe] = useState<RealEstateSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -115,6 +118,12 @@ export default function AccountsPage() {
     if (!isHotel) return;
     api.hotelSummary().then((r) => setHotel(r.data ?? null)).catch(() => setHotel(null));
   }, [isHotel]);
+
+  // Real Estate accounts depth: pipeline value + won.
+  useEffect(() => {
+    if (!isRealEstate) return;
+    api.realEstateSummary().then((r) => setRe(r.data ?? null)).catch(() => setRe(null));
+  }, [isRealEstate]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -248,6 +257,18 @@ export default function AccountsPage() {
             </div>
 
             {/* OVERVIEW */}
+            {tab === 'overview' && isRealEstate && re && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Deal pipeline &amp; sales</h3><Badge variant="info" size="xs">Real Estate</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{rupees(re.openPipelineValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Open pipeline</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
             {tab === 'overview' && isHotel && hotel && (
               <div className="card p-5">
                 <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Occupancy &amp; revenue</h3><Badge variant="info" size="xs">Hotel</Badge></div>

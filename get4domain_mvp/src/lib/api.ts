@@ -218,6 +218,21 @@ export const api = {
   updateRoomBooking: (id: string, data: any) => apiCall(`/hotel/bookings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteRoomBooking: (id: string) => apiCall(`/hotel/bookings/${id}`, { method: 'DELETE' }),
 
+  // Phase 2 — Real Estate operations
+  realEstateSummary: () => apiCall('/realestate/summary'),
+  getListings: () => apiCall('/realestate/listings'),
+  createListing: (data: any) => apiCall('/realestate/listings', { method: 'POST', body: JSON.stringify(data) }),
+  updateListing: (id: string, data: any) => apiCall(`/realestate/listings/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteListing: (id: string) => apiCall(`/realestate/listings/${id}`, { method: 'DELETE' }),
+  getDeals: () => apiCall('/realestate/deals'),
+  createDeal: (data: any) => apiCall('/realestate/deals', { method: 'POST', body: JSON.stringify(data) }),
+  updateDeal: (id: string, data: any) => apiCall(`/realestate/deals/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDeal: (id: string) => apiCall(`/realestate/deals/${id}`, { method: 'DELETE' }),
+  getVisits: () => apiCall('/realestate/visits'),
+  createVisit: (data: any) => apiCall('/realestate/visits', { method: 'POST', body: JSON.stringify(data) }),
+  updateVisit: (id: string, data: any) => apiCall(`/realestate/visits/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteVisit: (id: string) => apiCall(`/realestate/visits/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

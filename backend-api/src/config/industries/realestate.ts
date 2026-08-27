@@ -29,8 +29,9 @@ export const realestateConfig: IndustryConfig = {
   availableAddons: ['property_management', 'document_management'],
   websiteTemplate: 'realestate',
   dashboardTabs: [
-    { key: 'enquiries', label: 'Enquiries', icon: 'MessageSquare' },
-    { key: 'properties', label: 'Properties', icon: 'Building2' },
+    { key: 'enquiries', label: 'Pipeline', icon: 'MessageSquare' },
+    { key: 'properties', label: 'Listings', icon: 'Building2' },
+    { key: 'visits', label: 'Site Visits', icon: 'CalendarClock' },
     { key: 'clients', label: 'Clients', icon: 'Users' },
     { key: 'documents', label: 'Documents', icon: 'FileText' },
   ],

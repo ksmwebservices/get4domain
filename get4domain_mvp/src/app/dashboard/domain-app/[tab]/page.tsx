@@ -21,6 +21,9 @@ import MembershipsView from '@/domainapp/gym/MembershipsView';
 import RoomsView from '@/domainapp/hotel/RoomsView';
 import HousekeepingView from '@/domainapp/hotel/HousekeepingView';
 import ReservationsView from '@/domainapp/hotel/ReservationsView';
+import ListingsView from '@/domainapp/realestate/ListingsView';
+import DealsView from '@/domainapp/realestate/DealsView';
+import VisitsView from '@/domainapp/realestate/VisitsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -102,6 +105,13 @@ export default function DomainAppTabPage() {
     if (tabKey === 'rooms') return <RoomsView />;
     if (tabKey === 'reservations') return <ReservationsView />;
     if (tabKey === 'housekeeping') return <HousekeepingView />;
+  }
+
+  // Phase 2 — Real Estate: listings, deal pipeline, site-visit scheduling.
+  if (cfg.industry.key === 'realestate') {
+    if (tabKey === 'properties') return <ListingsView />;
+    if (tabKey === 'enquiries') return <DealsView />;
+    if (tabKey === 'visits') return <VisitsView />;
   }
 
   const view = resolveView(tabKey);
