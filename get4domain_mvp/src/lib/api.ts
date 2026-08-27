@@ -310,6 +310,13 @@ export const api = {
   updatePart: (id: string, data: any) => apiCall(`/automobile/parts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deletePart: (id: string) => apiCall(`/automobile/parts/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Logistics operations
+  logisticsSummary: () => apiCall('/logistics/summary'),
+  getShipments: () => apiCall('/logistics/shipments'),
+  createShipment: (data: any) => apiCall('/logistics/shipments', { method: 'POST', body: JSON.stringify(data) }),
+  updateShipment: (id: string, data: any) => apiCall(`/logistics/shipments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteShipment: (id: string) => apiCall(`/logistics/shipments/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

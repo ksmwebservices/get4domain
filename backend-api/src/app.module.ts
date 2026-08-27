@@ -60,6 +60,7 @@ import { ConstructionModule } from './construction/construction.module';
 import { EventsModule } from './events/events.module';
 import { FinanceModule } from './finance/finance.module';
 import { AutomobileModule } from './automobile/automobile.module';
+import { LogisticsModule } from './logistics/logistics.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -95,6 +96,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     EventsModule,
     FinanceModule,
     AutomobileModule,
+    LogisticsModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

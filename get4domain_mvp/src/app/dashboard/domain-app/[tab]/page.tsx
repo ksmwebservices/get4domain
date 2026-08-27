@@ -36,6 +36,7 @@ import CasesView from '@/domainapp/finance/CasesView';
 import FinanceDocumentsView from '@/domainapp/finance/DocumentsView';
 import JobsView from '@/domainapp/automobile/JobsView';
 import PartsInventoryView from '@/domainapp/automobile/PartsInventoryView';
+import ShipmentsView from '@/domainapp/logistics/ShipmentsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -160,6 +161,13 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'automobile') {
     if (tabKey === 'jobs') return <JobsView />;
     if (tabKey === 'inventory') return <PartsInventoryView />;
+  }
+
+  // Phase 3 — Logistics: shipment tracking; fleet/drivers reuse Travel's ops views.
+  if (cfg.industry.key === 'logistics') {
+    if (tabKey === 'shipments') return <ShipmentsView />;
+    if (tabKey === 'fleet') return <FleetView />;
+    if (tabKey === 'drivers') return <DriversView />;
   }
 
   const view = resolveView(tabKey);

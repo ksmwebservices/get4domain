@@ -108,6 +108,7 @@ model Vendor {
   serviceJobs          ServiceJob[]
   jobLines             JobLine[]
   partStock            PartStock[]
+  shipments            Shipment[]
 }
 
 model Subscription {
@@ -1707,4 +1708,32 @@ model PartStock {
 
   @@index([vendorId])
   @@map("g4d_part_stock")
+}
+
+// ── Phase 3 — Logistics & Transport: shipment tracking ──
+model Shipment {
+  id              String    @id @default(cuid())
+  vendorId        String
+  vendor          Vendor    @relation(fields: [vendorId], references: [id])
+  trackingNo      String
+  clientName      String
+  contactId       String?
+  origin          String
+  destination     String
+  mode            String    @default("Road") // Road | Rail | Air | Sea
+  weight          Float? // kg
+  status          String    @default("booked") // booked | picked_up | in_transit | delivered | cancelled
+  freightAmount   Float     @default(0)
+  pickupDate      DateTime?
+  eta             DateTime?
+  deliveredAt     DateTime?
+  assignedVehicle String?
+  assignedDriver  String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_shipments")
 }
