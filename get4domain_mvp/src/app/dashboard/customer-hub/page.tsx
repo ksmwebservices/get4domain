@@ -45,13 +45,13 @@ export default function CustomerHubPage() {
   };
 
   return (
-    <div>
+    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-slate-900">Customer Hub</h1>
         <p className="text-sm text-slate-500">Give your customers a self-service portal for records &amp; invoices.</p>
       </div>
 
-      <Card className="mb-5">
+      <Card skin="dark" className="mb-5">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm font-semibold text-slate-900">Customer Portal</div>
@@ -69,11 +69,11 @@ export default function CustomerHubPage() {
         {portalOn && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <code className="flex-1 truncate rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">{portalUrl}</code>
-            <Button variant="outline" size="sm" leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} onClick={copy}>
+            <Button skin="dark" variant="outline" size="sm" leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} onClick={copy}>
               {copied ? 'Copied' : 'Copy'}
             </Button>
             <a href={portalUrl} target="_blank" rel="noreferrer">
-              <Button variant="outline" size="sm" leftIcon={<ExternalLink className="h-4 w-4" />}>Open</Button>
+              <Button skin="dark" variant="outline" size="sm" leftIcon={<ExternalLink className="h-4 w-4" />}>Open</Button>
             </a>
           </div>
         )}
@@ -87,7 +87,7 @@ export default function CustomerHubPage() {
       ) : (
         <div className="space-y-2">
           {contacts.map((c) => (
-            <Card key={c.id} className="flex items-center justify-between" padded>
+            <Card skin="dark" key={c.id} className="flex items-center justify-between" padded>
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-primary-700"><UserCircle className="h-5 w-5" /></div>
                 <div>
@@ -98,7 +98,7 @@ export default function CustomerHubPage() {
               {c.portalAccess ? (
                 <span className="rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700">Invited</span>
               ) : (
-                <Button size="sm" variant="outline" loading={invitingId === c.id} leftIcon={<Send className="h-3.5 w-3.5" />} onClick={() => invite(c.id)}>Invite</Button>
+                <Button skin="dark" size="sm" variant="outline" loading={invitingId === c.id} leftIcon={<Send className="h-3.5 w-3.5" />} onClick={() => invite(c.id)}>Invite</Button>
               )}
             </Card>
           ))}

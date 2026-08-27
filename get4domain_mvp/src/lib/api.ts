@@ -118,6 +118,12 @@ export const api = {
   deleteExpense: (id: string) => apiCall(`/accounting/expenses/${id}`, { method: 'DELETE' }),
   expenseVoucher: (id: string) => apiCall(`/accounting/expenses/${id}/voucher`),
   accountingSummary: (q = '') => apiCall(`/accounting/summary${q}`),
+  // Phase 5 — payments ledger + GST filing tracker (Accounts Payments/GST tabs).
+  getPaymentRecords: (q = '') => apiCall(`/accounting/payments${q}`),
+  createPaymentRecord: (data: any) => apiCall('/accounting/payments', { method: 'POST', body: JSON.stringify(data) }),
+  deletePaymentRecord: (id: string) => apiCall(`/accounting/payments/${id}`, { method: 'DELETE' }),
+  getGstFilings: () => apiCall('/accounting/gst-filings'),
+  upsertGstFiling: (data: any) => apiCall('/accounting/gst-filings', { method: 'POST', body: JSON.stringify(data) }),
 
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
