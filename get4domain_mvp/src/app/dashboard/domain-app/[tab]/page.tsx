@@ -43,6 +43,8 @@ import ShootsView from '@/domainapp/photography/ShootsView';
 import DeliveryView from '@/domainapp/photography/DeliveryView';
 import ProduceOrdersView from '@/domainapp/agriculture/OrdersView';
 import ProduceInventoryView from '@/domainapp/agriculture/ProduceInventoryView';
+import CoachingBatchesView from '@/domainapp/coaching/BatchesView';
+import CoachingStudentsView from '@/domainapp/coaching/StudentsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -192,6 +194,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'agriculture') {
     if (tabKey === 'orders') return <ProduceOrdersView />;
     if (tabKey === 'inventory') return <ProduceInventoryView />;
+  }
+
+  // Phase 3 — Coaching: batch/session scheduling + student tracking.
+  if (cfg.industry.key === 'coaching') {
+    if (tabKey === 'batches') return <CoachingBatchesView />;
+    if (tabKey === 'students') return <CoachingStudentsView />;
   }
 
   const view = resolveView(tabKey);

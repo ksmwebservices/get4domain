@@ -115,6 +115,9 @@ model Vendor {
   shootDeliverables    ShootDeliverable[]
   produceOrders        ProduceOrder[]
   produceStock         ProduceStock[]
+  coachingBatches      CoachingBatch[]
+  coachingEnrollments  CoachingEnrollment[]
+  coachingSessions     CoachingSession[]
 }
 
 model Subscription {
@@ -1873,4 +1876,68 @@ model ProduceStock {
 
   @@index([vendorId])
   @@map("g4d_produce_stock")
+}
+
+// ── Phase 3 — Coaching Centre: batch/session scheduling + student tracking ──
+model CoachingBatch {
+  id          String               @id @default(cuid())
+  vendorId    String
+  vendor      Vendor               @relation(fields: [vendorId], references: [id])
+  name        String
+  subject     String?
+  faculty     String?
+  timing      String? // "Mon/Wed/Fri 6-8pm"
+  mode        String               @default("Classroom") // Classroom | Online | Hybrid
+  startDate   DateTime?
+  capacity    Int                  @default(30)
+  fee         Float                @default(0)
+  status      String               @default("upcoming") // upcoming | active | completed
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  enrollments CoachingEnrollment[]
+  sessions    CoachingSession[]
+
+  @@index([vendorId])
+  @@map("g4d_coaching_batches")
+}
+
+model CoachingEnrollment {
+  id              String         @id @default(cuid())
+  vendorId        String
+  vendor          Vendor         @relation(fields: [vendorId], references: [id])
+  studentName     String
+  contactId       String?
+  studentPhone    String?
+  guardianContact String?
+  batchId         String?
+  batch           CoachingBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  enrollDate      DateTime       @default(now())
+  feeAmount       Float          @default(0)
+  feePaid         Float          @default(0)
+  status          String         @default("enrolled") // enrolled | ongoing | completed | dropped
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_coaching_enrollments")
+}
+
+model CoachingSession {
+  id        String        @id @default(cuid())
+  vendorId  String
+  vendor    Vendor        @relation(fields: [vendorId], references: [id])
+  batchId   String
+  batch     CoachingBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  topic     String
+  date      DateTime?
+  startTime String?
+  status    String        @default("scheduled") // scheduled | held | cancelled
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([vendorId])
+  @@index([batchId])
+  @@map("g4d_coaching_sessions")
 }

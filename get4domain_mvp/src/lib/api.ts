@@ -351,6 +351,21 @@ export const api = {
   updateProduceStock: (id: string, data: any) => apiCall(`/agriculture/stock/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteProduceStock: (id: string) => apiCall(`/agriculture/stock/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Coaching operations
+  coachingSummary: () => apiCall('/coaching/summary'),
+  getCoachingBatches: () => apiCall('/coaching/batches'),
+  getCoachingBatch: (id: string) => apiCall(`/coaching/batches/${id}`),
+  createCoachingBatch: (data: any) => apiCall('/coaching/batches', { method: 'POST', body: JSON.stringify(data) }),
+  updateCoachingBatch: (id: string, data: any) => apiCall(`/coaching/batches/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCoachingBatch: (id: string) => apiCall(`/coaching/batches/${id}`, { method: 'DELETE' }),
+  addCoachingSession: (batchId: string, data: any) => apiCall(`/coaching/batches/${batchId}/sessions`, { method: 'POST', body: JSON.stringify(data) }),
+  updateCoachingSession: (id: string, data: any) => apiCall(`/coaching/sessions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCoachingSession: (id: string) => apiCall(`/coaching/sessions/${id}`, { method: 'DELETE' }),
+  getCoachingEnrollments: () => apiCall('/coaching/enrollments'),
+  createCoachingEnrollment: (data: any) => apiCall('/coaching/enrollments', { method: 'POST', body: JSON.stringify(data) }),
+  updateCoachingEnrollment: (id: string, data: any) => apiCall(`/coaching/enrollments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCoachingEnrollment: (id: string) => apiCall(`/coaching/enrollments/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),
