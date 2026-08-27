@@ -194,14 +194,14 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] space-y-6 bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Growth Hub</h2>
           <p className="mt-1 text-sm text-slate-500">Campaigns, publishing and paid ads.</p>
         </div>
         {tab === 'campaigns' && (
-          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={() => { resetWizard(); setWizardOpen(true); }}>Create Campaign</Button>
+          <Button skin="dark" leftIcon={<Plus className="h-4 w-4" />} onClick={() => { resetWizard(); setWizardOpen(true); }}>Create Campaign</Button>
         )}
       </div>
 
@@ -252,8 +252,8 @@ export default function CampaignsPage() {
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" loading={adBusy} leftIcon={<Sparkles className="h-4 w-4" />} onClick={generateAdCreative} disabled={!adForm.audience.trim()}>Generate creative</Button>
-              <Button fullWidth loading={adBusy} onClick={submitAd} disabled={!adForm.audience.trim()}>Submit for Review</Button>
+              <Button skin="dark" variant="outline" loading={adBusy} leftIcon={<Sparkles className="h-4 w-4" />} onClick={generateAdCreative} disabled={!adForm.audience.trim()}>Generate creative</Button>
+              <Button skin="dark" fullWidth loading={adBusy} onClick={submitAd} disabled={!adForm.audience.trim()}>Submit for Review</Button>
             </div>
             {adCreative && <div className="rounded-xl bg-primary-50 p-3 text-sm text-slate-700">{adCreative}</div>}
           </div>
@@ -343,7 +343,7 @@ export default function CampaignsPage() {
                       className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   </div>
                 </div>
-                <Button fullWidth disabled={!brief.whatToPromote.trim()} rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(2)}>Next</Button>
+                <Button skin="dark" fullWidth disabled={!brief.whatToPromote.trim()} rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(2)}>Next</Button>
               </div>
             )}
 
@@ -367,8 +367,8 @@ export default function CampaignsPage() {
                   <span className="font-bold text-slate-900">{formatCurrency(totalCost)}</span>
                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(1)}>Back</Button>
-                  <Button fullWidth loading={generating} disabled={channels.length === 0} leftIcon={!generating && <Sparkles className="h-4 w-4" />} onClick={generateContent}>
+                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(1)}>Back</Button>
+                  <Button skin="dark" fullWidth loading={generating} disabled={channels.length === 0} leftIcon={!generating && <Sparkles className="h-4 w-4" />} onClick={generateContent}>
                     {generating ? 'AI is creating your campaign content…' : 'Generate Content with AI'}
                   </Button>
                 </div>
@@ -406,8 +406,8 @@ export default function CampaignsPage() {
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(2)}>Back</Button>
-                  <Button fullWidth rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(4)}>Next</Button>
+                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(2)}>Back</Button>
+                  <Button skin="dark" fullWidth rightIcon={<ArrowRight className="h-4 w-4" />} onClick={() => setStep(4)}>Next</Button>
                 </div>
               </div>
             )}
@@ -425,8 +425,8 @@ export default function CampaignsPage() {
                   Submitting will deduct {formatCurrency(totalCost)} from your wallet and send this campaign to our team for execution.
                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(3)}>Back</Button>
-                  <Button fullWidth loading={submitting} leftIcon={!submitting && <CheckCircle2 className="h-4 w-4" />} onClick={submitCampaign}>Submit for Approval</Button>
+                  <Button skin="dark" variant="outline" leftIcon={<ArrowLeft className="h-4 w-4" />} onClick={() => setStep(3)}>Back</Button>
+                  <Button skin="dark" fullWidth loading={submitting} leftIcon={!submitting && <CheckCircle2 className="h-4 w-4" />} onClick={submitCampaign}>Submit for Approval</Button>
                 </div>
                 {error?.includes('INSUFFICIENT') && (
                   <Link href="/dashboard/wallet" className="block text-center text-xs font-semibold text-primary-600 hover:underline">Top up your wallet →</Link>

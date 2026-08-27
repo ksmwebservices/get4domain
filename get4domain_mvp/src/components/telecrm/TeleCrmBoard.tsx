@@ -111,9 +111,13 @@ interface TeleCrmBoardProps {
   contactFields?: TeleCrmContactField[];
   /** Singular label for a contact/lead in this industry (e.g. "Patient", "Passenger"). */
   contactNoun?: string;
+  /** Theme skin. Default 'light' keeps the admin CRM byte-identical; the vendor
+   * dashboard passes 'dark', which wraps the board in `.vendor-ui` so the scoped
+   * dark remap (globals.css) applies. */
+  skin?: 'light' | 'dark';
 }
 
-export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'Call your contacts, log outcomes, follow up.', contactFields = [], contactNoun = 'Contact' }: TeleCrmBoardProps) {
+export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'Call your contacts, log outcomes, follow up.', contactFields = [], contactNoun = 'Contact', skin = 'light' }: TeleCrmBoardProps) {
   const [leads, setLeads] = useState<TeleCrmLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -309,11 +313,11 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   ];
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+    return <div className={`flex items-center justify-center py-24 ${skin === 'dark' ? 'vendor-ui' : ''}`}><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
   }
 
   return (
-    <div>
+    <div className={skin === 'dark' ? 'vendor-ui' : undefined}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-900">{title}</h1>

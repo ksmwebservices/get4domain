@@ -167,3 +167,59 @@
 
 .vendor-ui .skeleton { @apply relative overflow-hidden bg-ink-800/60 rounded-md; }
 .vendor-ui .skeleton::after { content: ''; @apply absolute inset-0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); animation: shimmer 1.5s infinite; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VENDOR DASHBOARD — scoped dark remap (Phase 3).
+   Within `.vendor-ui`, the light neutral/tint utilities used by shared pages
+   (TeleCrmBoard, Campaigns, AI Studio) resolve to dark `ink`/brand equivalents.
+   `.vendor-ui .x` (specificity 0,2,0) wins over the base utility `.x` (0,1,0).
+   Admin/marketing never carry `.vendor-ui`, so their light output is unchanged.
+   ───────────────────────────────────────────────────────────────────────── */
+/* surfaces */
+.vendor-ui .bg-white { background-color: rgb(20 26 40 / 0.85) !important; }
+.vendor-ui .bg-slate-50 { background-color: rgb(14 19 30 / 0.6) !important; }
+.vendor-ui .bg-slate-100 { background-color: rgb(26 33 51 / 0.6) !important; }
+.vendor-ui .hover\:bg-slate-50:hover { background-color: rgb(26 33 51 / 0.5) !important; }
+.vendor-ui .hover\:bg-slate-100:hover { background-color: rgb(38 47 68 / 0.6) !important; }
+/* text */
+.vendor-ui .text-slate-900 { color: #f4f6fb !important; }
+.vendor-ui .text-slate-800 { color: #e8ecf5 !important; }
+.vendor-ui .text-slate-700 { color: #cdd5e6 !important; }
+.vendor-ui .text-slate-600 { color: #a3b0cc !important; }
+.vendor-ui .text-slate-500 { color: #6f7d9e !important; }
+.vendor-ui .text-slate-400 { color: #4d5a7a !important; }
+.vendor-ui .hover\:text-slate-600:hover { color: #a3b0cc !important; }
+.vendor-ui .hover\:text-slate-700:hover { color: #cdd5e6 !important; }
+.vendor-ui .hover\:text-slate-900:hover { color: #f4f6fb !important; }
+/* borders */
+.vendor-ui .border-slate-100 { border-color: rgb(38 47 68 / 0.4) !important; }
+.vendor-ui .border-slate-200 { border-color: rgb(38 47 68 / 0.6) !important; }
+.vendor-ui .border-slate-300 { border-color: rgb(38 47 68 / 0.9) !important; }
+.vendor-ui .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(38 47 68 / 0.4) !important; }
+/* primary tints → brand */
+.vendor-ui .bg-primary-50 { background-color: rgb(51 102 255 / 0.10) !important; }
+.vendor-ui .bg-primary-100 { background-color: rgb(51 102 255 / 0.15) !important; }
+.vendor-ui .text-primary-500,
+.vendor-ui .text-primary-600,
+.vendor-ui .text-primary-700 { color: #8eb6ff !important; }
+.vendor-ui .hover\:text-primary-700:hover { color: #bcd3ff !important; }
+.vendor-ui .hover\:border-primary-300:hover,
+.vendor-ui .hover\:border-primary-400:hover { border-color: rgb(51 102 255 / 0.5) !important; }
+/* status tints (kept semantic, dark-friendly) */
+.vendor-ui .bg-amber-50 { background-color: rgb(249 144 8 / 0.10) !important; }
+.vendor-ui .bg-amber-100 { background-color: rgb(249 144 8 / 0.15) !important; }
+.vendor-ui .text-amber-500 { color: #ffb420 !important; }
+.vendor-ui .text-amber-700, .vendor-ui .text-amber-800 { color: #ffcb4a !important; }
+.vendor-ui .border-amber-200 { border-color: rgb(249 144 8 / 0.3) !important; }
+.vendor-ui .bg-emerald-50 { background-color: rgb(22 199 132 / 0.10) !important; }
+.vendor-ui .text-emerald-500, .vendor-ui .text-emerald-700 { color: #16c784 !important; }
+.vendor-ui .bg-error-50 { background-color: rgb(230 72 77 / 0.10) !important; }
+.vendor-ui .text-error-600, .vendor-ui .text-error-700 { color: #f47478 !important; }
+.vendor-ui .border-error-200 { border-color: rgb(230 72 77 / 0.3) !important; }
+/* raw palettes used by TeleCrmBoard OUTCOME chips */
+.vendor-ui .bg-red-50 { background-color: rgb(230 72 77 / 0.10) !important; }
+.vendor-ui .text-red-700, .vendor-ui .text-red-600 { color: #f47478 !important; }
+.vendor-ui .bg-blue-50 { background-color: rgb(51 102 255 / 0.10) !important; }
+.vendor-ui .text-blue-700, .vendor-ui .text-blue-600 { color: #8eb6ff !important; }
+.vendor-ui .bg-amber-100 { background-color: rgb(249 144 8 / 0.15) !important; }
+.vendor-ui .text-amber-700 { color: #ffcb4a !important; }

@@ -31,5 +31,9 @@ export default function TeleCrmPage() {
   );
   const contactNoun = industry?.entities?.contact?.label ?? 'Contact';
 
-  return <TeleCrmBoard adapter={vendorAdapter} contactFields={contactFields} contactNoun={contactNoun} />;
+  return (
+    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
+      <TeleCrmBoard adapter={vendorAdapter} contactFields={contactFields} contactNoun={contactNoun} skin="dark" />
+    </div>
+  );
 }

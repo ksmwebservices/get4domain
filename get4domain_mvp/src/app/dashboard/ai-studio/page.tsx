@@ -457,7 +457,7 @@ export default function AiStudioPage() {
   };
 
   return (
-    <div>
+    <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -507,7 +507,7 @@ export default function AiStudioPage() {
             {CONTENT_TYPES.map((ct) => {
               const Ic = ct.icon;
               return (
-                <Card key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
+                <Card skin="dark" key={ct.key} hover className="cursor-pointer" onClick={() => openType(ct)}>
                   <div className="flex items-center justify-between">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{costLabel(ct.key)}</span>
@@ -517,7 +517,7 @@ export default function AiStudioPage() {
                 </Card>
               );
             })}
-            <Card hover className="cursor-pointer" onClick={openVideo}>
+            <Card skin="dark" hover className="cursor-pointer" onClick={openVideo}>
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{isInternalStaff ? 'Free' : 'wallet'}</span>
@@ -525,7 +525,7 @@ export default function AiStudioPage() {
               <h3 className="mt-3 font-semibold text-slate-900">Reel / Video</h3>
               <p className="mt-0.5 text-xs text-slate-400">{isInternalStaff ? 'Free' : 'per video'}</p>
             </Card>
-            <Card hover className="cursor-pointer" onClick={openReel}>
+            <Card skin="dark" hover className="cursor-pointer" onClick={openReel}>
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Video className="h-5 w-5" /></div>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{isInternalStaff ? 'Free' : 'wallet'}</span>
@@ -550,7 +550,7 @@ export default function AiStudioPage() {
                 const Ic = cat.icon;
                 const price = cat.kind === 'document' ? 'Free' : costLabel(cat.costKey);
                 return (
-                  <Card key={cat.key} hover className="cursor-pointer" onClick={() => setBrowseCat(cat)}>
+                  <Card skin="dark" key={cat.key} hover className="cursor-pointer" onClick={() => setBrowseCat(cat)}>
                     <div className="flex items-center justify-between">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><Ic className="h-5 w-5" /></div>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{price}</span>
@@ -574,7 +574,7 @@ export default function AiStudioPage() {
                 if (!dt) return null;
                 const Ic = DOC_ICON[dt.key] ?? FileText;
                 return (
-                  <Card key={dt.key} hover className="cursor-pointer" onClick={() => openDoc(dt)}>
+                  <Card skin="dark" key={dt.key} hover className="cursor-pointer" onClick={() => openDoc(dt)}>
                     <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-primary-50 text-primary-400"><Ic className="h-7 w-7" /></div>
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-slate-900">{dt.label}</h3>
@@ -585,7 +585,7 @@ export default function AiStudioPage() {
               })()}
               {/* Editable design templates for this category — open the in-app editor */}
               {editorTemplates.filter((t) => t.category === browseCat.key).map((t) => (
-                <Card key={t.id} hover className="cursor-pointer" onClick={() => openEditor(t)}>
+                <Card skin="dark" key={t.id} hover className="cursor-pointer" onClick={() => openEditor(t)}>
                   <div className="mb-2 flex h-28 w-full items-center justify-center rounded-lg bg-gradient-to-br from-primary-100 to-teal-50 text-primary-500"><Palette className="h-7 w-7" /></div>
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-900">{t.name}</h3>
@@ -606,14 +606,14 @@ export default function AiStudioPage() {
         ) : (
           <div className="space-y-3">
             {library.map((item) => (
-              <Card key={item.id}>
+              <Card skin="dark" key={item.id}>
                 <div className="mb-2 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Library className="h-4 w-4 text-primary-600" />{item.typeLabel}</span>
                   <span className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleDateString('en-IN')}</span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm text-slate-600">{item.content}</p>
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(item.content, item.typeLabel)}>Download</Button>
+                  <Button skin="dark" size="sm" variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(item.content, item.typeLabel)}>Download</Button>
                 </div>
               </Card>
             ))}
@@ -622,7 +622,7 @@ export default function AiStudioPage() {
       )}
 
       {/* Generation flow (AI Generate) */}
-      <Modal isOpen={active !== null} onClose={() => setActive(null)} title={active ? `Generate ${active.label}` : ''} maxWidth="max-w-2xl">
+      <Modal skin="dark" isOpen={active !== null} onClose={() => setActive(null)} title={active ? `Generate ${active.label}` : ''} maxWidth="max-w-2xl">
         {active && (
           <div className="space-y-4">
             {templates.length > 0 && (
@@ -639,11 +639,11 @@ export default function AiStudioPage() {
                 </div>
               </div>
             )}
-            <Input label="Purpose / Occasion" placeholder="e.g. Diwali offer, new service launch" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
-            <Select label="Tone" value={tone} onChange={(e) => setTone(e.target.value)}>
+            <Input skin="dark" label="Purpose / Occasion" placeholder="e.g. Diwali offer, new service launch" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
+            <Select skin="dark" label="Tone" value={tone} onChange={(e) => setTone(e.target.value)}>
               {TONES.map((t) => <option key={t} value={t}>{t}</option>)}
             </Select>
-            <Textarea label="Key details" placeholder="What should this content say?" value={details} onChange={(e) => setDetails(e.target.value)} />
+            <Textarea skin="dark" label="Key details" placeholder="What should this content say?" value={details} onChange={(e) => setDetails(e.target.value)} />
 
             {IMAGE_TYPES.has(active.key) && (
               <div className="rounded-xl border border-slate-200 p-3">
@@ -694,20 +694,20 @@ export default function AiStudioPage() {
                     <a href={resultImg} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary-600"><Download className="h-3 w-3" /> Open / download image</a>
                   </div>
                 )}
-                <Textarea value={result} onChange={(e) => setResult(e.target.value)} className="min-h-[160px]" />
+                <Textarea skin="dark" value={result} onChange={(e) => setResult(e.target.value)} className="min-h-[160px]" />
               </div>
             )}
 
             <div className="flex flex-wrap justify-end gap-2 pt-2">
               {result ? (
                 <>
-                  <Button variant="outline" leftIcon={<RefreshCw className="h-4 w-4" />} loading={generating} onClick={generate}>Regenerate</Button>
-                  <Button variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(result, active.label)}>Download</Button>
-                  <Button variant="outline" leftIcon={<Share2 className="h-4 w-4" />} onClick={shareResult}>Share</Button>
-                  <Button leftIcon={<Save className="h-4 w-4" />} onClick={saveToLibrary}>Save to Library</Button>
+                  <Button skin="dark" variant="outline" leftIcon={<RefreshCw className="h-4 w-4" />} loading={generating} onClick={generate}>Regenerate</Button>
+                  <Button skin="dark" variant="outline" leftIcon={<Download className="h-4 w-4" />} onClick={() => download(result, active.label)}>Download</Button>
+                  <Button skin="dark" variant="outline" leftIcon={<Share2 className="h-4 w-4" />} onClick={shareResult}>Share</Button>
+                  <Button skin="dark" leftIcon={<Save className="h-4 w-4" />} onClick={saveToLibrary}>Save to Library</Button>
                 </>
               ) : (
-                <Button leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>{isInternalStaff ? 'Generate' : `Generate (${costLabel(active.key)})`}</Button>
+                <Button skin="dark" leftIcon={<Sparkles className="h-4 w-4" />} loading={generating} onClick={generate}>{isInternalStaff ? 'Generate' : `Generate (${costLabel(active.key)})`}</Button>
               )}
             </div>
           </div>
@@ -715,15 +715,15 @@ export default function AiStudioPage() {
       </Modal>
 
       {/* Business-document generator (coded template → backend render → print-to-PDF) */}
-      <Modal isOpen={docSel !== null} onClose={() => setDocSel(null)} title={docSel?.label ?? ''} maxWidth="max-w-3xl">
+      <Modal skin="dark" isOpen={docSel !== null} onClose={() => setDocSel(null)} title={docSel?.label ?? ''} maxWidth="max-w-3xl">
         {docSel && (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               {docSel.fields.map((f) => (
-                <Input key={f.key} label={f.label + (f.required ? ' *' : '')} maxLength={f.maxLength}
+                <Input skin="dark" key={f.key} label={f.label + (f.required ? ' *' : '')} maxLength={f.maxLength}
                   value={docValues[f.key] ?? ''} onChange={(e) => setDocValues((v) => ({ ...v, [f.key]: e.target.value }))} />
               ))}
-              <Input label="Logo URL (optional)" placeholder="https://…/logo.png" value={docLogo} onChange={(e) => setDocLogo(e.target.value)} />
+              <Input skin="dark" label="Logo URL (optional)" placeholder="https://…/logo.png" value={docLogo} onChange={(e) => setDocLogo(e.target.value)} />
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-2 flex items-center justify-between">
@@ -733,14 +733,14 @@ export default function AiStudioPage() {
               <div className="overflow-x-auto rounded-lg bg-white p-4" dangerouslySetInnerHTML={{ __html: docPreview }} />
             </div>
             <div className="flex justify-end">
-              <Button leftIcon={<Download className="h-4 w-4" />} disabled={!docPreview} onClick={printDoc}>Download / Print as PDF</Button>
+              <Button skin="dark" leftIcon={<Download className="h-4 w-4" />} disabled={!docPreview} onClick={printDoc}>Download / Print as PDF</Button>
             </div>
           </div>
         )}
       </Modal>
 
       {/* In-app design editor (Fabric.js) — pickable template pre-filled with vendor data */}
-      <Modal isOpen={editorTpl !== null} onClose={() => setEditorTpl(null)} title={editorTpl?.name ?? ''} maxWidth="max-w-5xl">
+      <Modal skin="dark" isOpen={editorTpl !== null} onClose={() => setEditorTpl(null)} title={editorTpl?.name ?? ''} maxWidth="max-w-5xl">
         {editorTpl && (
           <FabricEditor
             mode="vendor"
@@ -755,7 +755,7 @@ export default function AiStudioPage() {
       </Modal>
 
       {/* Video / Reel generator */}
-      <Modal isOpen={videoOpen} onClose={closeVideo} title="Generate Reel / Video" maxWidth="max-w-2xl">
+      <Modal skin="dark" isOpen={videoOpen} onClose={closeVideo} title="Generate Reel / Video" maxWidth="max-w-2xl">
         <div className="space-y-4">
           {videoProvider === 'none' ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -769,9 +769,9 @@ export default function AiStudioPage() {
           )}
 
           {videoProvider === 'heygen' ? (
-            <Textarea label="Script (what the presenter says)" placeholder="Hi! This Diwali, visit Ravi Sweets for 20% off all boxes…" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
+            <Textarea skin="dark" label="Script (what the presenter says)" placeholder="Hi! This Diwali, visit Ravi Sweets for 20% off all boxes…" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
           ) : (
-            <Textarea label="Visual prompt" placeholder="Warm festive Diwali reel of a sweet shop, sparklers, golden light, slow pan" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
+            <Textarea skin="dark" label="Visual prompt" placeholder="Warm festive Diwali reel of a sweet shop, sparklers, golden light, slow pan" value={videoInput} onChange={(e) => setVideoInput(e.target.value)} className="min-h-[120px]" />
           )}
 
           <div className="flex items-center justify-between rounded-xl bg-primary-50 px-4 py-2.5">
@@ -798,8 +798,8 @@ export default function AiStudioPage() {
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={closeVideo}>Close</Button>
-            <Button leftIcon={<Video className="h-4 w-4" />} loading={videoBusy} disabled={!videoInput.trim() || videoBusy} onClick={generateVideo}>
+            <Button skin="dark" variant="outline" onClick={closeVideo}>Close</Button>
+            <Button skin="dark" leftIcon={<Video className="h-4 w-4" />} loading={videoBusy} disabled={!videoInput.trim() || videoBusy} onClick={generateVideo}>
               {videoBusy ? 'Generating…' : videoUrl ? 'Regenerate' : 'Generate video'}
             </Button>
           </div>
@@ -808,7 +808,7 @@ export default function AiStudioPage() {
       </Modal>
 
       {/* Photo Reel builder — your own photos + text + optional licensed music → MP4 */}
-      <Modal isOpen={reelOpen} onClose={() => setReelOpen(false)} title="Photo Reel" maxWidth="max-w-2xl">
+      <Modal skin="dark" isOpen={reelOpen} onClose={() => setReelOpen(false)} title="Photo Reel" maxWidth="max-w-2xl">
         <div className="space-y-4">
           <p className="text-sm text-slate-500">Add your own photos, a line of text and (optionally) a music track — we render a short reel you can post.</p>
 
@@ -829,9 +829,9 @@ export default function AiStudioPage() {
             </div>
           </div>
 
-          <Input label="Text overlay (optional)" placeholder="e.g. Diwali Special — 20% off" value={reelText} onChange={(e) => setReelText(e.target.value)} />
+          <Input skin="dark" label="Text overlay (optional)" placeholder="e.g. Diwali Special — 20% off" value={reelText} onChange={(e) => setReelText(e.target.value)} />
 
-          <Select label="Music" value={reelTrack} onChange={(e) => setReelTrack(e.target.value)}>
+          <Select skin="dark" label="Music" value={reelTrack} onChange={(e) => setReelTrack(e.target.value)}>
             <option value="">No music (silent reel)</option>
             {reelTracks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </Select>
@@ -849,8 +849,8 @@ export default function AiStudioPage() {
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setReelOpen(false)}>Close</Button>
-            <Button leftIcon={<Video className="h-4 w-4" />} loading={reelBusy} disabled={reelImages.length === 0 || reelBusy} onClick={createReel}>
+            <Button skin="dark" variant="outline" onClick={() => setReelOpen(false)}>Close</Button>
+            <Button skin="dark" leftIcon={<Video className="h-4 w-4" />} loading={reelBusy} disabled={reelImages.length === 0 || reelBusy} onClick={createReel}>
               {reelBusy ? 'Rendering…' : reelUrl ? 'Re-render' : 'Create reel'}
             </Button>
           </div>
