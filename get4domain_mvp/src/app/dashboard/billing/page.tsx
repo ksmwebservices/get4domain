@@ -239,6 +239,10 @@ export default function BillingPage() {
             <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" />Razorpay Secured</span>
             <span className="flex items-center gap-1"><Info className="h-3.5 w-3.5" />GST Invoice included</span>
           </div>
+
+          <p className="mt-4 rounded-xl bg-slate-50 px-3.5 py-2.5 text-center text-xs text-slate-500">
+            Plan billing: the ₹999/month plan is charged quarterly (₹2,997 + 18% GST every 3 months); the yearly plan is ₹9,999 + 18% GST once a year. The amount above is exactly what you&apos;ll be charged now.
+          </p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">

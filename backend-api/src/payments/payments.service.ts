@@ -17,6 +17,8 @@ import { PlatformSettingsService } from '../platform-settings/platform-settings.
 import { renderInvoiceHtml, InvoiceCompany } from '../invoices/templates/invoice.template';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { grantWalletCredit } from '../wallet/wallet-credit.util';
+import { planBonusForAmount, planTermMonthsForAmount } from './plan-pricing.constants';
 
 type PaidInvoice = Invoice & { vendor: Vendor; subscription: Subscription | null };
 
@@ -203,10 +205,29 @@ export class PaymentsService {
 
   private async finalizePayment(invoice: PaidInvoice): Promise<void> {
     if (invoice.subscriptionId) {
+      const startDate = invoice.subscription?.startDate ?? new Date();
+      // Term-aware end date: quarterly plans advance 3 months, yearly 12. Leave
+      // endDate untouched for unrecognised amounts (e.g. one-off invoices).
+      const termMonths = planTermMonthsForAmount(invoice.totalAmount);
+      const endDate =
+        termMonths !== null
+          ? (() => {
+              const d = new Date(startDate);
+              d.setMonth(d.getMonth() + termMonths);
+              return d;
+            })()
+          : (invoice.subscription?.endDate ?? undefined);
+
       await this.prisma.subscription.update({
         where: { id: invoice.subscriptionId },
-        data: { status: 'ACTIVE', startDate: invoice.subscription?.startDate ?? new Date() },
+        data: { status: 'ACTIVE', startDate, endDate },
       });
+
+      // Welcome wallet credit tied to the committed term (dispatch 26-Aug-2026,
+      // Phase 1 item 3): quarterly ₹100, yearly ₹400 — first plan payment only,
+      // reusing the shared credit path. Best-effort: a failure here must never
+      // undo or block the payment that already succeeded.
+      await this.grantPlanWelcomeBonus(invoice.vendorId, invoice.totalAmount);
     }
 
     await this.prisma.platformIncome.create({
@@ -239,6 +260,36 @@ export class PaymentsService {
         invoice.vendor.businessName,
         `₹${(invoice.totalAmount / 100).toFixed(2)}`,
       ]);
+    }
+  }
+
+  /**
+   * Grant the plan welcome wallet bonus once, on the vendor's FIRST plan payment.
+   * Idempotent: skips if the vendor already has a 'plan_bonus' credit, so renewals
+   * and repeat payments don't re-grant. Never throws — the payment is already done.
+   */
+  private async grantPlanWelcomeBonus(vendorId: string, paidPaise: number): Promise<void> {
+    try {
+      const bonus = planBonusForAmount(paidPaise);
+      if (bonus <= 0) return;
+
+      const already = await this.prisma.walletTransaction.findFirst({
+        where: { vendorId, service: 'plan_bonus' },
+        select: { id: true },
+      });
+      if (already) return;
+
+      await grantWalletCredit(
+        this.prisma,
+        vendorId,
+        bonus,
+        `Plan welcome credit — ₹${(bonus / 100).toFixed(0)} free wallet credit`,
+        'plan_bonus',
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Plan welcome bonus skipped for vendor ${vendorId}: ${err instanceof Error ? err.message : 'error'}`,
+      );
     }
   }
 }

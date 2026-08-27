@@ -2,13 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ArrowRight, Sparkles, Building2, Code2, Wallet, Clock } from 'lucide-react';
-
-// Single core SaaS plan (product direction: ₹999/mo or ₹9,999/yr, no tiers).
-const PLANS = {
-  monthly: { name: 'Monthly', price: '₹999', period: '/month', features: ['Full platform access', 'Webapp + Vendor + Client apps', 'WhatsApp API integration', 'AI Studio (wallet pay-per-use)', 'All industry templates', '24h support'], cta: 'Buy Now — ₹999/mo' },
-  yearly: { name: 'Yearly', price: '₹9,999', period: '/year', features: ['Everything in Monthly', 'Save ₹1,989 (17% off)', 'Priority support', 'Custom domain setup help', 'Extra AI Studio credit', 'Dedicated onboarding'], cta: 'Buy Now — ₹9,999/yr' },
-};
+import { Check, ArrowRight, Sparkles, Building2, Code2, Wallet, Clock, TrendingDown } from 'lucide-react';
+import { PLAN_TERMS, gstOn, totalWithGst, formatINR, USAGE_VS_MARKET } from '@/lib/pricing';
 
 // Real, defensible comparison — Get4Domain vs. commissioning custom development.
 const COMPARISON = [
@@ -25,8 +20,9 @@ const COMPARISON = [
 ];
 
 export default function HomePricing() {
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('yearly');
-  const tier = PLANS[billing];
+  const [billing, setBilling] = useState<'quarterly' | 'yearly'>('yearly');
+  const tier = PLAN_TERMS[billing];
+  const total = totalWithGst(tier.baseAmount);
 
   return (
     <section id="pricing" className="relative py-16 sm:py-20">
@@ -46,8 +42,8 @@ export default function HomePricing() {
         {/* billing toggle */}
         <div className="mb-8 flex justify-center">
           <div className="inline-flex items-center gap-1 rounded-full border border-white/5 bg-slate-800/60 p-1 backdrop-blur-xl">
-            <button onClick={() => setBilling('monthly')} className={`relative rounded-full px-5 py-2 text-sm font-medium transition-all ${billing === 'monthly' ? 'text-slate-900' : 'text-slate-300'}`}>
-              {billing === 'monthly' && <span className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-300 to-warning-300" />}
+            <button onClick={() => setBilling('quarterly')} className={`relative rounded-full px-5 py-2 text-sm font-medium transition-all ${billing === 'quarterly' ? 'text-slate-900' : 'text-slate-300'}`}>
+              {billing === 'quarterly' && <span className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-300 to-warning-300" />}
               <span className="relative">Monthly</span>
             </button>
             <button onClick={() => setBilling('yearly')} className={`relative rounded-full px-5 py-2 text-sm font-medium transition-all ${billing === 'yearly' ? 'text-slate-900' : 'text-slate-300'}`}>
@@ -65,11 +61,18 @@ export default function HomePricing() {
                 <Sparkles className="h-3 w-3" /> Best value
               </div>
             )}
-            <div className="mb-6 text-center">
-              <div className="mb-1 text-sm text-slate-400">{tier.name}</div>
+            <div className="mb-4 text-center">
+              <div className="mb-1 text-sm text-slate-400">{tier.label}</div>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-gradient-hero text-5xl font-bold">{tier.price}</span>
-                <span className="text-sm text-slate-400">{tier.period}</span>
+                <span className="text-gradient-hero text-5xl font-bold">{tier.headline}</span>
+                <span className="text-sm text-slate-400">{tier.headlinePeriod}</span>
+              </div>
+              {/* Mandatory billing + GST disclosure — never the headline alone. */}
+              <div className="mt-2 space-y-0.5">
+                <p className="text-xs font-medium text-warning-300">{tier.billingNote}</p>
+                <p className="text-[11px] text-slate-500">
+                  {formatINR(tier.baseAmount)} + {formatINR(gstOn(tier.baseAmount))} GST = <span className="font-semibold text-slate-300">{formatINR(total)}</span> {tier.cycleLabel}
+                </p>
               </div>
             </div>
             <div className="mb-6 space-y-2.5">
@@ -83,10 +86,11 @@ export default function HomePricing() {
             <Link href="/book-demo" className="group flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">
               {tier.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
+            <p className="mt-3 text-center text-[11px] text-slate-500">Prices exclusive of 18% GST. Cancel anytime — site stays live until the paid term ends.</p>
           </div>
         </div>
 
-        {/* comparison table */}
+        {/* comparison table — vs custom development */}
         <div className="mx-auto mt-16 max-w-3xl">
           <h3 className="mb-6 text-center text-xl font-semibold text-white">
             Why pay more? <span className="text-sm font-normal text-slate-400">Get4Domain vs. custom development</span>
@@ -105,15 +109,41 @@ export default function HomePricing() {
               </div>
             ))}
           </div>
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[{ icon: Clock, label: 'Live in 24 hours', desc: 'instant deploy + 24h setup' }, { icon: Wallet, label: '₹999/mo', desc: 'vs ₹5,000–15,000+' }, { icon: Building2, label: '20+ industries', desc: 'vs custom build each' }].map((s) => (
-              <div key={s.label} className="rounded-xl border border-white/5 bg-slate-800/60 p-4 text-center backdrop-blur-xl">
-                <s.icon className="mx-auto mb-2 h-5 w-5 text-primary-300" />
-                <div className="text-sm font-semibold text-slate-100">{s.label}</div>
-                <div className="text-xs text-slate-400">{s.desc}</div>
+        </div>
+
+        {/* item 4 — do-it-yourself / market rate vs pay-per-use */}
+        <div className="mx-auto mt-12 max-w-3xl">
+          <h3 className="mb-2 text-center text-xl font-semibold text-white">
+            <span className="inline-flex items-center gap-2"><TrendingDown className="h-5 w-5 text-success-300" /> Pay-per-use vs. doing it manually</span>
+          </h3>
+          <p className="mb-6 text-center text-sm text-slate-400">
+            The AI Studio &amp; Communication Hub replace freelancers, agencies and per-tool subscriptions — you pay only when you actually create or send, from your wallet.
+          </p>
+          <div className="overflow-hidden rounded-2xl border border-white/5 bg-slate-800/60 backdrop-blur-xl">
+            <div className="grid grid-cols-3 gap-2 border-b border-white/5 px-5 py-3 text-xs font-semibold text-slate-300">
+              <span>Task</span>
+              <span className="text-slate-400">Manual / typical market rate</span>
+              <span className="flex items-center gap-1 text-success-300"><Sparkles className="h-3 w-3" /> Get4Domain</span>
+            </div>
+            {USAGE_VS_MARKET.map((row) => (
+              <div key={row.task} className="grid grid-cols-3 gap-2 border-b border-white/5 px-5 py-2.5 text-xs transition-colors last:border-0 hover:bg-white/[0.02]">
+                <span className="text-slate-300">{row.task}</span>
+                <span className="text-slate-400">{row.market}</span>
+                <span className="font-semibold text-success-300">{row.ours}</span>
               </div>
             ))}
           </div>
+          <p className="mt-3 text-center text-[11px] text-slate-500">Market rates are typical Indian SMB pricing, for comparison. Get4Domain rates are wallet pay-per-use, admin-adjustable.</p>
+        </div>
+
+        <div className="mx-auto mt-12 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
+          {[{ icon: Clock, label: 'Live in 24 hours', desc: 'instant deploy + 24h setup' }, { icon: Wallet, label: '₹999/mo', desc: 'billed quarterly, +18% GST' }, { icon: Building2, label: '20+ industries', desc: 'vs custom build each' }].map((s) => (
+            <div key={s.label} className="rounded-xl border border-white/5 bg-slate-800/60 p-4 text-center backdrop-blur-xl">
+              <s.icon className="mx-auto mb-2 h-5 w-5 text-primary-300" />
+              <div className="text-sm font-semibold text-slate-100">{s.label}</div>
+              <div className="text-xs text-slate-400">{s.desc}</div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

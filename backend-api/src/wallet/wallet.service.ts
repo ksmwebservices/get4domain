@@ -7,8 +7,7 @@ import { decryptSecret } from '../platform-settings/crypto.util';
 import { TopupDto } from './dto/topup.dto';
 import { VerifyTopupDto } from './dto/verify-topup.dto';
 import { InvoicesService } from '../invoices/invoices.service';
-
-const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+import { grantWalletCredit, NINETY_DAYS_MS } from './wallet-credit.util';
 
 function bonusPercentFor(amountPaise: number): number {
   if (amountPaise >= 499900) return 30;
@@ -136,18 +135,7 @@ export class WalletService {
    * concern. No-op for amount <= 0.
    */
   async grantCredit(vendorId: string, amount: number, description: string, service = 'plan_credit'): Promise<void> {
-    if (amount <= 0) return;
-    const expiresAt = new Date(Date.now() + NINETY_DAYS_MS);
-    await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.upsert({
-        where: { vendorId },
-        create: { vendorId, balance: amount, totalCredited: amount },
-        update: { balance: { increment: amount }, totalCredited: { increment: amount } },
-      });
-      await tx.walletTransaction.create({
-        data: { vendorId, walletId: wallet.id, type: 'credit', amount, description, service, balanceAfter: wallet.balance, expiresAt },
-      });
-    });
+    return grantWalletCredit(this.prisma, vendorId, amount, description, service);
   }
 
   async deduct(vendorId: string, amount: number, description: string, service: string): Promise<Wallet> {

@@ -5,8 +5,8 @@ import Faq from '@/components/marketing/Faq';
 import HomePricing from '@/components/marketing/home/HomePricing';
 
 export const metadata: Metadata = {
-  title: 'Pricing — DomainApp ₹999/month, Everything Included',
-  description: 'Simple pricing. One plan — DomainApp ₹999/month or ₹9,999/year: industry website, Workplace, CRM, campaigns and AI Studio with ₹499 free credit. Pay-per-use from your wallet only when you use more.',
+  title: 'Pricing — DomainApp ₹999/month (billed quarterly), Everything Included',
+  description: 'Simple pricing. One plan — DomainApp ₹999/month billed quarterly (₹2,997 + 18% GST every 3 months) or ₹9,999/year + GST: industry website, Workplace, CRM, campaigns and AI Studio with ₹499 free credit. Pay-per-use from your wallet only when you use more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 
@@ -41,7 +41,8 @@ const FAQS = [
   { q: 'How does the wallet work?', a: 'Your plan includes ₹499 free credit. Use it for AI content, campaigns and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. A free subdomain is included with every plan. You can also buy a domain through our dashboard or connect an existing one — custom domain is a separate service.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your Workplace adapts to your industry.' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Monthly subscription — cancel anytime. Your website stays live until the current month ends.' },
+  { q: 'How am I billed — is it really monthly?', a: 'The ₹999/month plan is billed quarterly: ₹2,997 + 18% GST every 3 months. It works out to ₹999/month, charged once a quarter. The yearly plan is ₹9,999 + GST billed once a year and saves you ₹1,989 (17%).' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the term you have already paid for (the current quarter, or the current year on the yearly plan).' },
 ];
 
 export default function PricingPage() {
