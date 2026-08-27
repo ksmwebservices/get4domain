@@ -70,25 +70,40 @@ export class SmsService {
     }
   }
 
-  /** Generic transactional SMS. Uses the DLT route when a sender/template is set, else the quick route. */
-  async sendSms(to: string, message: string): Promise<ProviderResult> {
+  /**
+   * Generic transactional SMS. Uses the DLT route when a sender/template is set,
+   * else the quick route.
+   *
+   * `businessName` is the ONLY vendor-configurable part of SMS, and deliberately
+   * so: the DLT sender-ID and the approved template are registered once, by
+   * Get4Domain, with TRAI — a vendor cannot obtain their own without their own
+   * DLT registration. What a vendor CAN own is the business name inside the body,
+   * so the customer knows who is texting them.
+   *
+   * On the DLT route the name is passed as the leading template variable rather
+   * than glued onto the message, because `variables_values` is pipe-separated and
+   * a prepended string would silently shift every other variable. On the quick
+   * route (plain text, no template) it is simply prefixed.
+   */
+  async sendSms(to: string, message: string, businessName?: string | null): Promise<ProviderResult> {
     const numbers = this.normalize(to);
     const senderId = await this.settings.getResolvedValue('fast2sms', 'sender_id');
     const messageId = await this.settings.getResolvedValue('fast2sms', 'sms_message_id');
     const entityId = await this.settings.getResolvedValue('fast2sms', 'dlt_entity_id');
+    const brand = businessName?.trim().slice(0, 40) || null;
 
     if (senderId && messageId) {
       return this.call({
         route: 'dlt',
         sender_id: senderId,
         message: messageId,
-        variables_values: message,
+        variables_values: brand ? `${brand}|${message}` : message,
         numbers,
         ...(entityId ? { entity_id: entityId } : {}),
       });
     }
     // Quick transactional route (no DLT template) — fine for testing / fallback.
-    return this.call({ route: 'q', message, numbers });
+    return this.call({ route: 'q', message: brand ? `${brand}: ${message}` : message, numbers });
   }
 
   /**

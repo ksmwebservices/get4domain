@@ -31,7 +31,14 @@ export class WhatsappService {
     return digits.length > 10 ? digits.slice(-10) : digits;
   }
 
-  async sendMessage(to: string, message: string, templateName?: string): Promise<ProviderResult> {
+  /**
+   * Outbound TEMPLATE message.
+   *
+   * `templateName` and `phoneNumberId` let a vendor send from their OWN approved
+   * template and their OWN WhatsApp number; both fall back to the platform
+   * defaults when absent, so a vendor who has configured nothing is unaffected.
+   */
+  async sendMessage(to: string, message: string, templateName?: string, phoneNumberId?: string): Promise<ProviderResult> {
     const apiKey = await this.settings.getResolvedValue('fast2sms', 'api_key');
     const messageId = templateName ?? (await this.settings.getResolvedValue('fast2sms', 'wa_message_id'));
     const numbers = this.normalize(to);
@@ -47,6 +54,9 @@ export class WhatsappService {
         message_id: messageId,
         numbers,
         variables_values: message,
+        // Omitted entirely when the vendor has no verified number of their own —
+        // Fast2SMS then uses the account's default sending number.
+        ...(phoneNumberId ? { phone_number_id: phoneNumberId } : {}),
       }).toString();
       const res = await fetch(`${FAST2SMS_WA_ENDPOINT}?${qs}`, { method: 'GET' });
       const body = await res.text();

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, UserPlus, ToggleLeft, ToggleRight, Sparkles } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, type VendorCommsSettings } from '@/lib/api';
 
 interface Vendor { id: string; name: string; businessName: string; email: string; industry?: string; waPhoneNumberId?: string | null }
 interface Toggle { key: string; label: string; enabled: boolean; walletGated?: boolean }
@@ -22,9 +22,9 @@ export default function VendorAccessPage() {
   const [override, setOverride] = useState({ accentColor: '', accentColorDark: '', welcomeText: '', websiteTemplate: '' });
   const [savingOverride, setSavingOverride] = useState(false);
   const [overrideSaved, setOverrideSaved] = useState(false);
-  const [waNumberId, setWaNumberId] = useState('');
-  const [savingWa, setSavingWa] = useState(false);
-  const [waSaved, setWaSaved] = useState(false);
+  const [comms, setComms] = useState<VendorCommsSettings | null>(null);
+  const [savingComms, setSavingComms] = useState(false);
+  const [commsSaved, setCommsSaved] = useState(false);
   const [busyKey, setBusyKey] = useState('');
 
   const [creating, setCreating] = useState(false);
@@ -44,14 +44,16 @@ export default function VendorAccessPage() {
     setSelected(v);
     setModules([]); setAddons([]); setIndustryCfg(null);
     setOverride({ accentColor: '', accentColorDark: '', welcomeText: '', websiteTemplate: '' });
-    setWaNumberId(v.waPhoneNumberId ?? ''); setWaSaved(false);
+    setComms(null); setCommsSaved(false);
     try {
-      const [m, a, cfg, ov] = await Promise.all([
+      const [m, a, cfg, ov, cm] = await Promise.all([
         api.adminGetVendorModules(v.id),
         api.adminGetVendorAddons(v.id),
         api.getIndustryConfig(v.industry ?? 'general'),
         api.getVendorOverride(v.id).catch(() => ({ data: {} })),
+        api.adminGetVendorComms(v.id).catch(() => ({ data: null })),
       ]);
+      setComms(cm.data ?? null);
       setModules(m.data ?? []);
       setAddons(a.data ?? []);
       setIndustryCfg(cfg.data ?? null);
@@ -146,19 +148,39 @@ export default function VendorAccessPage() {
     } finally { setSavingOverride(false); }
   }
 
-  async function saveWaNumber() {
-    if (!selected) return;
-    setSavingWa(true); setWaSaved(false);
+  // Admin override for all three channels. Goes through the same VendorCommsService
+  // as the vendor's own page (claim check, verification reset), so admin and
+  // self-service can never drift apart -- plus `waStatus`, which only admin may set.
+  async function saveComms() {
+    if (!selected || !comms) return;
+    setSavingComms(true); setCommsSaved(false);
+    const blank = (v: string | null) => (v && v.trim() ? v.trim() : null);
     try {
-      // Empty clears it (unlink the WhatsApp number from this vendor).
-      const value = waNumberId.trim();
-      await api.updateVendor(selected.id, { waPhoneNumberId: value || null });
-      setSelected({ ...selected, waPhoneNumberId: value || null });
-      setVendors((vs) => vs.map((x) => (x.id === selected.id ? { ...x, waPhoneNumberId: value || null } : x)));
-      setWaSaved(true); setTimeout(() => setWaSaved(false), 2000);
+      const res = await api.adminUpdateVendorComms(selected.id, {
+        waEnabled: comms.waEnabled,
+        waPhoneNumberId: blank(comms.waPhoneNumberId),
+        waDisplayNumber: blank(comms.waDisplayNumber),
+        waTemplateId: blank(comms.waTemplateId),
+        waGreeting: blank(comms.waGreeting),
+        smsBusinessName: blank(comms.smsBusinessName),
+        emailFromName: blank(comms.emailFromName),
+        emailReplyTo: blank(comms.emailReplyTo),
+        waStatus: comms.waStatus,
+      });
+      const saved: VendorCommsSettings | null = res.data ?? null;
+      setComms(saved);
+      // Keep the cached vendor list in step -- waPhoneNumberId lives on Vendor.
+      const num = saved?.waPhoneNumberId ?? null;
+      setSelected({ ...selected, waPhoneNumberId: num });
+      setVendors((vs) => vs.map((x) => (x.id === selected.id ? { ...x, waPhoneNumberId: num } : x)));
+      setCommsSaved(true); setTimeout(() => setCommsSaved(false), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save WhatsApp number');
-    } finally { setSavingWa(false); }
+      setError(err instanceof Error ? err.message : 'Could not save communication settings');
+    } finally { setSavingComms(false); }
+  }
+
+  function setComm<K extends keyof VendorCommsSettings>(key: K, value: VendorCommsSettings[K]) {
+    setComms((c) => (c ? { ...c, [key]: value } : c));
   }
 
   if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-500" /></div>;
@@ -256,15 +278,56 @@ export default function VendorAccessPage() {
                 </div>
               </div>
 
-              {/* WhatsApp bot: Fast2SMS phone_number_id — routes inbound webhooks to this vendor. */}
+              {/* Communication override — the admin-assist half of the vendor's own
+                  Settings → Communication page. WhatsApp is fully per-vendor;
+                  SMS/email are shared infrastructure, so branding only. */}
               <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-                <h4 className="text-sm font-bold text-white">WhatsApp Bot</h4>
-                <p className="mt-1 text-xs text-slate-400">The vendor&apos;s Fast2SMS <code className="text-slate-300">phone_number_id</code>. Inbound WhatsApp webhooks are routed to this vendor by matching it — set it after provisioning their WhatsApp number.</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <input className={`${inputCls} sm:max-w-xs`} placeholder="e.g. 1122334455" value={waNumberId} onChange={(e) => setWaNumberId(e.target.value)} />
-                  <button onClick={saveWaNumber} disabled={savingWa} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingWa ? 'Saving…' : 'Save'}</button>
-                  {waSaved && <span className="text-xs font-medium text-success-400">Saved</span>}
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-bold text-white">Communication</h4>
+                  {comms && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${comms.waStatus === 'verified' ? 'bg-success-500/15 text-success-400' : comms.waStatus === 'pending' ? 'bg-amber-500/15 text-amber-400' : 'bg-slate-700 text-slate-400'}`}>
+                      WhatsApp: {comms.waStatus}
+                    </span>
+                  )}
                 </div>
+                {!comms ? (
+                  <p className="mt-2 text-xs text-slate-500">Loading this vendor&apos;s communication settings…</p>
+                ) : (
+                  <>
+                    <p className="mt-1 text-xs text-slate-400">Overrides what the vendor set themselves. WhatsApp is their own number; SMS and email run on shared platform infrastructure, so only the branding is per-vendor.</p>
+
+                    <div className="mt-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">WhatsApp</div>
+                    <label className="mt-2 flex items-center gap-2 text-xs text-slate-300">
+                      <input type="checkbox" checked={comms.waEnabled} onChange={(e) => setComm('waEnabled', e.target.checked)} className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-900" />
+                      Channel enabled
+                    </label>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <input className={inputCls} placeholder="phone_number_id e.g. 1122334455" value={comms.waPhoneNumberId ?? ''} onChange={(e) => setComm('waPhoneNumberId', e.target.value)} />
+                      <input className={inputCls} placeholder="Display number e.g. +91 98765 43210" value={comms.waDisplayNumber ?? ''} onChange={(e) => setComm('waDisplayNumber', e.target.value)} />
+                      <input className={inputCls} placeholder="Template id override (blank = platform)" value={comms.waTemplateId ?? ''} onChange={(e) => setComm('waTemplateId', e.target.value)} />
+                      <select className={inputCls} value={comms.waStatus} onChange={(e) => setComm('waStatus', e.target.value)}>
+                        <option value="unverified">unverified — not set up</option>
+                        <option value="pending">pending — awaiting our check</option>
+                        <option value="verified">verified — send from their number</option>
+                      </select>
+                      <input className={`${inputCls} sm:col-span-2`} placeholder="Bot greeting override" value={comms.waGreeting ?? ''} onChange={(e) => setComm('waGreeting', e.target.value)} />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">Outbound only uses the vendor&apos;s own number once you mark it <span className="text-slate-300">verified</span> — until then their messages go from the platform number.</p>
+
+                    <div className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-500">SMS &amp; Email branding</div>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <input className={inputCls} placeholder="SMS business name" value={comms.smsBusinessName ?? ''} onChange={(e) => setComm('smsBusinessName', e.target.value)} />
+                      <input className={inputCls} placeholder="Email from name" value={comms.emailFromName ?? ''} onChange={(e) => setComm('emailFromName', e.target.value)} />
+                      <input className={inputCls} type="email" placeholder="Email reply-to" value={comms.emailReplyTo ?? ''} onChange={(e) => setComm('emailReplyTo', e.target.value)} />
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-slate-500">Blank falls back to {comms.businessName}. The DLT sender ID and the sending domain stay platform-level.</p>
+
+                    <div className="mt-3 flex items-center gap-3">
+                      <button onClick={saveComms} disabled={savingComms} className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingComms ? 'Saving…' : 'Save communication settings'}</button>
+                      {commsSaved && <span className="text-xs font-medium text-success-400">Saved</span>}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

@@ -62,6 +62,7 @@ model Vendor {
   stationery       StationeryItem[]
   kbEntries        KnowledgeBaseEntry[]
   waConversations  WhatsappConversation[]
+  commsSettings    VendorCommsSettings?
 
   // Vendor-app Phase 4 — operations models (dedicated, vendorId-scoped).
   vendorTasks      VendorTask[]
@@ -1038,4 +1039,49 @@ model VisaApplication {
   @@index([vendorId])
   @@index([vendorId, status])
   @@map("g4d_visa_applications")
+}
+
+/// Per-vendor communication settings (Comms self-service, 27-Aug-2026).
+///
+/// The three channels are deliberately NOT symmetric:
+///  · WhatsApp is genuinely per-vendor — each vendor provisions their own number,
+///    so the routing id + template + greeting are all vendor-owned here.
+///  · SMS and Email are shared platform infrastructure (one DLT sender-ID, one
+///    verified Resend sending domain) for real compliance reasons. A vendor
+///    cannot get their own without a separate DLT/domain-verification process,
+///    so only BRANDING is settable: the business name that appears inside SMS
+///    bodies, and the email From display-name / Reply-To.
+///
+/// Admin can read and write any vendor's row through the admin-assist controller,
+/// mirroring the domain registration self-service + admin-assist split.
+model VendorCommsSettings {
+  id       String @id @default(cuid())
+  vendorId String @unique
+  vendor   Vendor @relation(fields: [vendorId], references: [id])
+
+  // ── WhatsApp — full self-service (the vendor's own number) ───────────────
+  waEnabled       Boolean   @default(true)
+  // Human-readable number shown in the UI, e.g. "+91 98765 43210". Display only —
+  // Vendor.waPhoneNumberId stays the unique routing key the webhook matches on.
+  waDisplayNumber String?
+  // The vendor's own approved Fast2SMS template id; falls back to the platform
+  // template (fast2sms/wa_message_id) when blank.
+  waTemplateId    String?
+  // Opening line the bot uses when it has nothing better to say.
+  waGreeting      String?
+  // unverified | pending | verified — admin confirms the number really belongs
+  // to this vendor before inbound routing is trusted.
+  waStatus        String    @default("unverified")
+  waVerifiedAt    DateTime?
+
+  // ── SMS / Email — branding only, never separate infrastructure ───────────
+  smsBusinessName String?
+  emailFromName   String?
+  emailReplyTo    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("g4d_vendor_comms_settings")
 }

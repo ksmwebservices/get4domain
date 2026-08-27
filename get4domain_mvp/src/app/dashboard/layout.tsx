@@ -97,6 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { label: 'AI Studio', href: '/dashboard/ai-studio', icon: 'Sparkles', walletGated: true },
           { label: 'Communication Hub', href: '/dashboard/communication', icon: 'MessagesSquare', moduleKey: 'communication_hub' },
           { label: 'WhatsApp Bot', href: '/dashboard/whatsapp-bot', icon: 'MessageCircle', moduleKey: 'communication_hub' },
+          { label: 'Comms Settings', href: '/dashboard/settings/communication', icon: 'Settings2', moduleKey: 'communication_hub' },
         ],
       },
       {

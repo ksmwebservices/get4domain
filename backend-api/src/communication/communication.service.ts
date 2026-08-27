@@ -4,6 +4,7 @@ import { EmailService } from '../email/email.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { SmsService } from '../sms/sms.service';
 import { WalletService } from '../wallet/wallet.service';
+import { VendorCommsService } from '../vendor-comms/vendor-comms.service';
 
 export type Channel = 'whatsapp' | 'email' | 'sms';
 
@@ -32,6 +33,7 @@ export class CommunicationService {
     private readonly whatsapp: WhatsappService,
     private readonly sms: SmsService,
     private readonly wallet: WalletService,
+    private readonly commsSettings: VendorCommsService,
   ) {}
 
   /**
@@ -55,15 +57,33 @@ export class CommunicationService {
       throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
     }
 
+    // The vendor's own communication identity, layered over the platform defaults.
+    // Resolved here (not inside the providers) so the shared Fast2SMS / Resend
+    // services stay tenant-agnostic — see VendorCommsService.resolveBranding.
+    const branding = await this.commsSettings.resolveBranding(vendorId);
+
     let result: SendResult;
     if (channel === 'email') {
-      await this.email.sendGeneric(to, subject ?? 'Message from your service provider', `<p>${message}</p>`);
+      await this.email.sendGeneric(
+        to,
+        subject ?? `Message from ${branding.emailFromName}`,
+        `<p>${message}</p>`,
+        { fromName: branding.emailFromName, replyTo: branding.emailReplyTo },
+      );
       result = { channel, status: 'sent', mock: false };
     } else if (channel === 'whatsapp') {
-      const r = await this.whatsapp.sendMessage(to, message);
+      // A vendor who has switched their WhatsApp channel off should not be billed
+      // for a send they did not intend — fail loudly instead of sending silently.
+      if (!branding.waEnabled) throw new BadRequestException('WHATSAPP_CHANNEL_DISABLED');
+      const r = await this.whatsapp.sendMessage(
+        to,
+        message,
+        branding.waTemplateId ?? undefined,
+        branding.waPhoneNumberId ?? undefined,
+      );
       result = { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
     } else {
-      const r = await this.sms.sendSms(to, message);
+      const r = await this.sms.sendSms(to, message, branding.smsBusinessName);
       result = { channel, status: r.status, mock: r.mock, providerMessageId: r.providerMessageId };
     }
 

@@ -47,6 +47,7 @@ import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { DomainsModule } from './domains/domains.module';
+import { VendorCommsModule } from './vendor-comms/vendor-comms.module';
 import { TravelModule } from './travel/travel.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
@@ -70,6 +71,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     LeadsModule,
     WalletModule,
     DomainsModule,
+    VendorCommsModule,
     TravelModule,
     NotificationsModule,
     CampaignPagesModule,

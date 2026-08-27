@@ -140,18 +140,43 @@ export class EmailService {
     });
   }
 
-  /** Generic email send used by the Communication Hub (real via Resend). */
-  async sendGeneric(to: string, subject: string, html: string): Promise<void> {
-    await this.send({ to, subject, html });
+  /**
+   * Generic email send used by the Communication Hub (real via Resend).
+   *
+   * `branding` lets a vendor put THEIR name on the message. Only the display
+   * name and Reply-To are vendor-settable: the sending ADDRESS must stay on the
+   * platform's Resend-verified domain, because a vendor cannot send from their
+   * own domain without completing their own DNS/domain verification. So the
+   * customer sees "MR Travels <onboarding@get4domain.com>" and replies land in
+   * the vendor's inbox, with no compliance shortcut taken.
+   */
+  async sendGeneric(
+    to: string,
+    subject: string,
+    html: string,
+    branding?: { fromName?: string | null; replyTo?: string | null },
+  ): Promise<void> {
+    await this.send({ to, subject, html, fromName: branding?.fromName, replyTo: branding?.replyTo });
   }
 
-  private async send(params: { to: string; subject: string; html: string }): Promise<void> {
+  /** "Name <address>" using the platform's verified address and the given display name. */
+  private fromWithName(fromName?: string | null): string {
+    const name = fromName?.trim();
+    if (!name) return this.fromAddress;
+    // Pull the bare address out of the configured "Get4Domain <addr>" form.
+    const address = this.fromAddress.match(/<([^>]+)>/)?.[1] ?? this.fromAddress;
+    // Strip characters that would break the display-name quoting.
+    return `${name.replace(/["<>\r\n]/g, '').slice(0, 60)} <${address}>`;
+  }
+
+  private async send(params: { to: string; subject: string; html: string; fromName?: string | null; replyTo?: string | null }): Promise<void> {
     try {
       await this.resend.emails.send({
-        from: this.fromAddress,
+        from: this.fromWithName(params.fromName),
         to: params.to,
         subject: params.subject,
         html: params.html,
+        ...(params.replyTo ? { replyTo: params.replyTo } : {}),
       });
     } catch (error) {
       this.logger.error(`Failed to send email to ${params.to}: ${params.subject}`, error instanceof Error ? error.stack : undefined);

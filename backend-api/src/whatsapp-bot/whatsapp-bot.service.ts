@@ -5,6 +5,7 @@ import { AiService } from '../ai/ai.service';
 import { WalletService } from '../wallet/wallet.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { VendorCommsService, CommsBranding } from '../vendor-comms/vendor-comms.service';
 import type { Contact, Vendor, WhatsappConversation } from '@prisma/client';
 
 const HANDOFF_RE = /\b(agent|human|representative|talk to (someone|a person)|speak to|call me|customer care)\b/i;
@@ -32,6 +33,7 @@ export class WhatsappBotService {
     private readonly wallet: WalletService,
     private readonly notifications: NotificationsService,
     private readonly kb: KnowledgeBaseService,
+    private readonly commsSettings: VendorCommsService,
   ) {}
 
   /** Entry point for a verified inbound webhook message. */
@@ -53,12 +55,18 @@ export class WhatsappBotService {
     // Already handed off to a human → stay silent (the inbound is still logged above).
     if (convo.state === 'agent') return { handled: true, reason: 'in agent mode' };
 
+    // The vendor switched their WhatsApp channel off in Settings → Communication.
+    // The message is still captured above so nothing is lost; the bot just doesn't
+    // answer, and no session is billed.
+    const comms = await this.commsSettings.resolveBranding(vendor.id);
+    if (!comms.waEnabled) return { handled: true, reason: 'channel disabled by vendor' };
+
     // AGENT handoff request at any point.
     if (HANDOFF_RE.test(text)) {
       await this.prisma.whatsappConversation.update({ where: { id: convo.id }, data: { state: 'agent' } });
       await this.ensureLead(vendor.id, convo, contact, text || 'Requested a human agent');
       await this.notifyVendor(vendor.id, contact, 'WhatsApp: customer asked for a human', `${contact.name || from} asked to talk to your team on WhatsApp.`);
-      await this.reply(vendor, convo, `Sure — someone from ${vendor.businessName} will follow up with you shortly. 🙏`);
+      await this.reply(vendor, convo, `Sure — someone from ${vendor.businessName} will follow up with you shortly. 🙏`, comms);
       return { handled: true, reason: 'handoff' };
     }
 
@@ -68,7 +76,7 @@ export class WhatsappBotService {
       await this.prisma.contact.update({ where: { id: contact.id }, data: { name } });
       await this.prisma.whatsappConversation.update({ where: { id: convo.id }, data: { state: 'active', nameCaptured: true } });
       await this.ensureLead(vendor.id, { ...convo, nameCaptured: true }, { ...contact, name }, 'Interested (captured via WhatsApp bot)');
-      await this.reply(vendor, convo, `Thanks ${name}! 🙌 Our team will reach out to you shortly. Meanwhile, feel free to ask anything.`);
+      await this.reply(vendor, convo, `Thanks ${name}! 🙌 Our team will reach out to you shortly. Meanwhile, feel free to ask anything.`, comms);
       return { handled: true, reason: 'name captured' };
     }
 
@@ -78,7 +86,7 @@ export class WhatsappBotService {
     if (kbHit) {
       answer = kbHit.answer;
     } else {
-      answer = await this.aiFallback(vendor, contact.id, text);
+      answer = await this.aiFallback(vendor, contact.id, text, comms.waGreeting);
     }
 
     // Interest + no name yet → ask for the name (phone already known from webhook).
@@ -91,7 +99,7 @@ export class WhatsappBotService {
       await this.ensureLead(vendor.id, convo, contact, text);
     }
 
-    await this.reply(vendor, convo, answer);
+    await this.reply(vendor, convo, answer, comms);
     if (askedName) {
       await this.prisma.whatsappConversation.update({ where: { id: convo.id }, data: { state: 'awaiting_name' } });
     }
@@ -135,8 +143,12 @@ export class WhatsappBotService {
   }
 
   /** Send a bot reply, persist it, and bill the session once per 24h conversation window. */
-  private async reply(vendor: Vendor, convo: WhatsappConversation, text: string): Promise<void> {
-    const res = await this.whatsapp.sendSessionMessage(convo.phone, text, convo.phoneNumberId ?? undefined);
+  private async reply(vendor: Vendor, convo: WhatsappConversation, text: string, branding: CommsBranding): Promise<void> {
+    // Reply from the number the customer actually messaged. Only when the webhook
+    // gave us none do we fall back to the vendor's own verified number, and then
+    // to the platform default (undefined).
+    const fromNumberId = convo.phoneNumberId ?? branding.waPhoneNumberId ?? undefined;
+    const res = await this.whatsapp.sendSessionMessage(convo.phone, text, fromNumberId);
     if (convo.contactId) await this.persistMessage(vendor.id, convo.contactId, 'out', text, res.providerMessageId, res.status);
 
     // Bill per CONVERSATION window, not per message — and only for a confirmed real
@@ -154,13 +166,14 @@ export class WhatsappBotService {
     }
   }
 
-  private async aiFallback(vendor: Vendor, contactId: string, message: string): Promise<string> {
+  private async aiFallback(vendor: Vendor, contactId: string, message: string, greeting?: string | null): Promise<string> {
     try {
       const [context, history] = await Promise.all([this.kb.buildContext(vendor.id), this.recentHistory(vendor.id, contactId)]);
       return await this.ai.whatsappBotReply({ businessName: vendor.businessName, context, history, message });
     } catch {
       // AI not configured (mock/dev) or unavailable → graceful escalation, no guess.
-      return `Thanks for your message! Our team at ${vendor.businessName} will get back to you shortly.`;
+      // The vendor's own greeting wins over the generic line when they've set one.
+      return greeting?.trim() || `Thanks for your message! Our team at ${vendor.businessName} will get back to you shortly.`;
     }
   }
 

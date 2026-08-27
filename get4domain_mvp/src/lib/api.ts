@@ -33,6 +33,25 @@ export async function apiCall(
   return data;
 }
 
+/** One vendor's communication identity (WhatsApp is fully theirs; SMS/email are branding only). */
+export interface VendorCommsSettings {
+  waEnabled: boolean;
+  waPhoneNumberId: string | null;
+  waDisplayNumber: string | null;
+  waTemplateId: string | null;
+  waGreeting: string | null;
+  waStatus: 'unverified' | 'pending' | 'verified' | string;
+  waVerifiedAt: string | null;
+  smsBusinessName: string | null;
+  emailFromName: string | null;
+  emailReplyTo: string | null;
+  /** The vendor's business name — used as the placeholder when no override is set. */
+  businessName: string;
+}
+
+/** PATCH payload: send only what changed. `null` clears an override. */
+export type VendorCommsPatch = Partial<Omit<VendorCommsSettings, 'businessName' | 'waVerifiedAt' | 'waStatus'>>;
+
 export const api = {
   // Auth
   login: (email: string, password: string) =>
@@ -475,6 +494,16 @@ export const api = {
     apiCall(`/platform-settings/${category}/${key}`, { method: 'PUT', body: JSON.stringify({ value }) }),
   testPlatformSetting: (category: string, key: string) =>
     apiCall(`/platform-settings/${category}/${key}/test`, { method: 'POST' }),
+
+  // Communication settings — vendor self-service (own WhatsApp number + SMS/email branding)
+  getMyCommsSettings: () => apiCall('/vendor-comms'),
+  updateMyCommsSettings: (data: VendorCommsPatch) =>
+    apiCall('/vendor-comms', { method: 'PATCH', body: JSON.stringify(data) }),
+
+  // Communication settings — admin override for any vendor (admin-assist)
+  adminGetVendorComms: (vendorId: string) => apiCall(`/admin/vendor-comms?vendorId=${vendorId}`),
+  adminUpdateVendorComms: (vendorId: string, data: VendorCommsPatch & { waStatus?: string }) =>
+    apiCall(`/admin/vendor-comms?vendorId=${vendorId}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Admin — per-vendor module/addon state (pass vendorId)
   adminGetVendorModules: (vendorId: string) => apiCall(`/modules/vendor?vendorId=${vendorId}`),
