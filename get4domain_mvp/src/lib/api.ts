@@ -256,6 +256,21 @@ export const api = {
   updateEngagementDocument: (id: string, data: any) => apiCall(`/professional/documents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEngagementDocument: (id: string) => apiCall(`/professional/documents/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Construction operations
+  constructionSummary: () => apiCall('/construction/summary'),
+  getProjects: () => apiCall('/construction/projects'),
+  getProject: (id: string) => apiCall(`/construction/projects/${id}`),
+  createProject: (data: any) => apiCall('/construction/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: string, data: any) => apiCall(`/construction/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProject: (id: string) => apiCall(`/construction/projects/${id}`, { method: 'DELETE' }),
+  addMilestone: (projectId: string, data: any) => apiCall(`/construction/projects/${projectId}/milestones`, { method: 'POST', body: JSON.stringify(data) }),
+  updateMilestone: (id: string, data: any) => apiCall(`/construction/milestones/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMilestone: (id: string) => apiCall(`/construction/milestones/${id}`, { method: 'DELETE' }),
+  getMaterials: () => apiCall('/construction/materials'),
+  createMaterial: (data: any) => apiCall('/construction/materials', { method: 'POST', body: JSON.stringify(data) }),
+  updateMaterial: (id: string, data: any) => apiCall(`/construction/materials/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteMaterial: (id: string) => apiCall(`/construction/materials/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

@@ -28,6 +28,8 @@ import BatchesView from '@/domainapp/education/BatchesView';
 import EnrollmentsView from '@/domainapp/education/EnrollmentsView';
 import EngagementsView from '@/domainapp/professional/EngagementsView';
 import DocumentsView from '@/domainapp/professional/DocumentsView';
+import ProjectsView from '@/domainapp/construction/ProjectsView';
+import MaterialsView from '@/domainapp/construction/MaterialsView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -128,6 +130,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'professional') {
     if (tabKey === 'engagements') return <EngagementsView />;
     if (tabKey === 'documents') return <DocumentsView />;
+  }
+
+  // Phase 3 — Construction: project + milestone tracking, materials.
+  if (cfg.industry.key === 'construction') {
+    if (tabKey === 'projects') return <ProjectsView />;
+    if (tabKey === 'materials') return <MaterialsView />;
   }
 
   const view = resolveView(tabKey);

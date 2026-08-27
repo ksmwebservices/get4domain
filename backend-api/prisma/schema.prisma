@@ -96,6 +96,11 @@ model Vendor {
   enrollments         StudentEnrollment[]
   engagements         Engagement[]
   engagementDocuments EngagementDocument[]
+
+  // Phase 3 — per-industry operations
+  constructionProjects ConstructionProject[]
+  projectMilestones    ProjectMilestone[]
+  projectMaterials     ProjectMaterial[]
 }
 
 model Subscription {
@@ -1485,4 +1490,67 @@ model EngagementDocument {
   @@index([vendorId])
   @@index([engagementId])
   @@map("g4d_engagement_docs")
+}
+
+// ── Phase 3 — Construction: project + milestone tracking, materials ──
+model ConstructionProject {
+  id          String             @id @default(cuid())
+  vendorId    String
+  vendor      Vendor             @relation(fields: [vendorId], references: [id])
+  name        String
+  clientName  String
+  contactId   String?
+  siteAddress String?
+  phase       String             @default("Foundation") // Foundation | Structure | Finishing | Handover
+  status      String             @default("planning") // planning | in_progress | on_hold | completed | cancelled
+  budget      Float              @default(0)
+  spent       Float              @default(0)
+  startDate   DateTime?
+  targetDate  DateTime?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  milestones  ProjectMilestone[]
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_construction_projects")
+}
+
+model ProjectMilestone {
+  id          String              @id @default(cuid())
+  vendorId    String
+  vendor      Vendor              @relation(fields: [vendorId], references: [id])
+  projectId   String
+  project     ConstructionProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  status      String              @default("pending") // pending | in_progress | done
+  amount      Float               @default(0) // payment tied to this milestone
+  dueDate     DateTime?
+  completedAt DateTime?
+  sortOrder   Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([vendorId])
+  @@index([projectId])
+  @@map("g4d_project_milestones")
+}
+
+model ProjectMaterial {
+  id        String   @id @default(cuid())
+  vendorId  String
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
+  projectId String?
+  name      String
+  unit      String?
+  quantity  Float    @default(0)
+  unitCost  Float    @default(0)
+  supplier  String?
+  status    String   @default("ordered") // ordered | received | used
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
+  @@map("g4d_project_materials")
 }

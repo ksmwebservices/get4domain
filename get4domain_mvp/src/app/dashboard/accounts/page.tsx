@@ -27,6 +27,7 @@ interface HotelSummary { totalRooms: number; occupied: number; occupancyPct: num
 interface RealEstateSummary { openPipelineValue: number; wonThisMonth: { count: number; value: number }; activeListings: number; upcomingVisits: number; byStage: { stage: string; count: number; value: number }[] }
 interface EducationSummary { activeStudents: number; feesCollected: number; feesPending: number; byBatch: { batchId: string; name: string; students: number; collected: number; pending: number }[] }
 interface ProfessionalSummary { activeEngagements: number; engagedValue: number; pendingDocs: number; byType: { type: string; count: number; value: number }[] }
+interface ConstructionSummary { activeProjects: number; contractValue: number; spent: number; openMilestones: number; byPhase: { phase: string; count: number; value: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -64,6 +65,8 @@ export default function AccountsPage() {
   const [edu, setEdu] = useState<EducationSummary | null>(null);
   const isProfessional = user?.industry === 'professional';
   const [pro, setPro] = useState<ProfessionalSummary | null>(null);
+  const isConstruction = user?.industry === 'construction';
+  const [cons, setCons] = useState<ConstructionSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -140,6 +143,11 @@ export default function AccountsPage() {
     if (!isProfessional) return;
     api.professionalSummary().then((r) => setPro(r.data ?? null)).catch(() => setPro(null));
   }, [isProfessional]);
+
+  useEffect(() => {
+    if (!isConstruction) return;
+    api.constructionSummary().then((r) => setCons(r.data ?? null)).catch(() => setCons(null));
+  }, [isConstruction]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -282,6 +290,25 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isConstruction && cons && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Projects &amp; milestones</h3><Badge variant="info" size="xs">Construction</Badge></div>
+                <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{cons.activeProjects}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active projects</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(cons.contractValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Contract value</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(cons.spent)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Spent</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{cons.openMilestones}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Open milestones</div></div>
+                </div>
+                {cons.byPhase.length === 0 ? <p className="text-xs text-ink-500">No active projects yet.</p> : (
+                  <div className="space-y-1.5">
+                    {cons.byPhase.map((p) => (
+                      <div key={p.phase} className="flex items-center justify-between text-sm"><span className="text-ink-300">{p.phase} <span className="text-ink-500">· {p.count}</span></span><span className="font-semibold text-ink-200">{rupees(p.value)}</span></div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
