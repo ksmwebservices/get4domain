@@ -313,6 +313,7 @@ export default function VendorAccessPage() {
                       <input className={`${inputCls} sm:col-span-2`} placeholder="Bot greeting override" value={comms.waGreeting ?? ''} onChange={(e) => setComm('waGreeting', e.target.value)} />
                     </div>
                     <p className="mt-1.5 text-[11px] text-slate-500">Outbound only uses the vendor&apos;s own number once you mark it <span className="text-slate-300">verified</span> — until then their messages go from the platform number.</p>
+                    <p className="mt-1 text-[11px] text-amber-500/80">Entering a number already held by another vendor reassigns it here and now: the previous holder is unlinked and drops back to <span className="font-medium">unverified</span>. Vendors can&apos;t do this themselves.</p>
 
                     <div className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-500">SMS &amp; Email branding</div>
                     <div className="mt-2 grid gap-2 sm:grid-cols-3">

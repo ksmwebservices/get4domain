@@ -103,11 +103,11 @@ export class VendorCommsService {
    * (WhatsappBotService.resolveVendor), so whoever holds it receives that
    * number's conversations. `null`/'' releases the vendor's own id.
    *
-   * Current policy — conservative: a vendor may claim any id nobody else holds,
-   * but the claim only reaches `pending`; outbound sending keeps using the
-   * platform number until an admin marks it `verified`. An id already held by
-   * another vendor is refused outright, for admin too — releasing it is a
-   * deliberate act on the holder's row, never a silent steal.
+   * Policy: a vendor may claim any id nobody else holds, but the claim only
+   * reaches `pending` — outbound sending keeps using the platform number until
+   * an admin marks it `verified`. An id already held by ANOTHER vendor is
+   * refused for a vendor, but an admin may force-reassign it in one step (the
+   * churn case: a number reprovisioned to a new vendor).
    */
   private async claimWhatsappNumber(vendorId: string, raw: string | null | undefined, isAdmin = false): Promise<void> {
     const value = (raw ?? '').trim() || null;
@@ -120,9 +120,35 @@ export class VendorCommsService {
       throw new BadRequestException('WhatsApp phone_number_id must be 6-20 digits');
     }
 
-    const holder = await this.prisma.vendor.findUnique({ where: { waPhoneNumberId: value }, select: { id: true } });
+    const holder = await this.prisma.vendor.findUnique({
+      where: { waPhoneNumberId: value },
+      select: { id: true, businessName: true },
+    });
+
     if (holder && holder.id !== vendorId) {
-      throw new ConflictException('That WhatsApp number is already linked to another account. Contact support.');
+      if (!isAdmin) {
+        throw new ConflictException('That WhatsApp number is already linked to another account. Contact support.');
+      }
+      // Admin force-reassign — the churn case, where a number is reprovisioned to
+      // a different vendor. Release and claim go in ONE transaction because
+      // waPhoneNumberId is unique: the release must land first, and if the claim
+      // then failed outside a transaction we'd have silently unlinked the old
+      // holder for nothing.
+      await this.prisma.$transaction([
+        this.prisma.vendor.update({ where: { id: holder.id }, data: { waPhoneNumberId: null } }),
+        // The old holder's `verified` flag now refers to a number they no longer
+        // hold, so clear it — otherwise their outbound would keep claiming a
+        // verified identity it lost. updateMany: they may have no settings row.
+        this.prisma.vendorCommsSettings.updateMany({
+          where: { vendorId: holder.id },
+          data: { waStatus: 'unverified', waVerifiedAt: null },
+        }),
+        this.prisma.vendor.update({ where: { id: vendorId }, data: { waPhoneNumberId: value } }),
+      ]);
+      this.logger.warn(
+        `WhatsApp number ${value} force-reassigned by admin from vendor ${holder.id} (${holder.businessName}) to vendor ${vendorId}`,
+      );
+      return;
     }
 
     await this.prisma.vendor.update({ where: { id: vendorId }, data: { waPhoneNumberId: value } });
