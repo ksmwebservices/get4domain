@@ -340,6 +340,17 @@ export const api = {
   updateDeliverable: (id: string, data: any) => apiCall(`/photography/deliverables/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteDeliverable: (id: string) => apiCall(`/photography/deliverables/${id}`, { method: 'DELETE' }),
 
+  // Phase 3 — Agriculture operations
+  agricultureSummary: () => apiCall('/agriculture/summary'),
+  getProduceOrders: () => apiCall('/agriculture/orders'),
+  createProduceOrder: (data: any) => apiCall('/agriculture/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updateProduceOrder: (id: string, data: any) => apiCall(`/agriculture/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProduceOrder: (id: string) => apiCall(`/agriculture/orders/${id}`, { method: 'DELETE' }),
+  getProduceStock: () => apiCall('/agriculture/stock'),
+  createProduceStock: (data: any) => apiCall('/agriculture/stock', { method: 'POST', body: JSON.stringify(data) }),
+  updateProduceStock: (id: string, data: any) => apiCall(`/agriculture/stock/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProduceStock: (id: string) => apiCall(`/agriculture/stock/${id}`, { method: 'DELETE' }),
+
   // AI template library (2.2)
   aiTemplates: (q = '') => apiCall(`/ai-templates${q}`),
   aiTemplatesAll: () => apiCall('/ai-templates/all'),

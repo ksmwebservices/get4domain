@@ -41,6 +41,8 @@ import TestOrdersView from '@/domainapp/diagnostics/TestOrdersView';
 import ReportsView from '@/domainapp/diagnostics/ReportsView';
 import ShootsView from '@/domainapp/photography/ShootsView';
 import DeliveryView from '@/domainapp/photography/DeliveryView';
+import ProduceOrdersView from '@/domainapp/agriculture/OrdersView';
+import ProduceInventoryView from '@/domainapp/agriculture/ProduceInventoryView';
 import Card from '@/components/ui/Card';
 import { Lock } from 'lucide-react';
 
@@ -184,6 +186,12 @@ export default function DomainAppTabPage() {
   if (cfg.industry.key === 'photography') {
     if (tabKey === 'bookings') return <ShootsView />;
     if (tabKey === 'gallery') return <DeliveryView />;
+  }
+
+  // Phase 3 — Agriculture: produce order + inventory tracking.
+  if (cfg.industry.key === 'agriculture') {
+    if (tabKey === 'orders') return <ProduceOrdersView />;
+    if (tabKey === 'inventory') return <ProduceInventoryView />;
   }
 
   const view = resolveView(tabKey);

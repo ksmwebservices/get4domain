@@ -63,6 +63,7 @@ import { AutomobileModule } from './automobile/automobile.module';
 import { LogisticsModule } from './logistics/logistics.module';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module';
 import { PhotographyModule } from './photography/photography.module';
+import { AgricultureModule } from './agriculture/agriculture.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -101,6 +102,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     LogisticsModule,
     DiagnosticsModule,
     PhotographyModule,
+    AgricultureModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

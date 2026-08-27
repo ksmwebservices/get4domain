@@ -34,6 +34,7 @@ interface AutomobileSummary { activeJobs: number; inService: number; ready: numb
 interface LogisticsSummary { activeShipments: number; inTransit: number; deliveredThisMonth: number; freightRevenue: number; byStatus: { status: string; count: number }[] }
 interface DiagnosticsSummary { todayBookings: number; samplesPending: number; processing: number; reportsReady: number; revenue: number; byStatus: { status: string; count: number }[] }
 interface PhotographySummary { upcomingShoots: number; bookedValue: number; advanceCollected: number; pendingDeliveries: number; byType: { type: string; count: number; value: number }[] }
+interface AgricultureSummary { openOrders: number; orderValue: number; pendingDispatch: number; stockValue: number; byStatus: { status: string; count: number }[] }
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -85,6 +86,8 @@ export default function AccountsPage() {
   const [diag, setDiag] = useState<DiagnosticsSummary | null>(null);
   const isPhotography = user?.industry === 'photography';
   const [photo, setPhoto] = useState<PhotographySummary | null>(null);
+  const isAgriculture = user?.industry === 'agriculture';
+  const [agri, setAgri] = useState<AgricultureSummary | null>(null);
   const [tab, setTab] = useState<Tab>('overview');
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
@@ -196,6 +199,11 @@ export default function AccountsPage() {
     if (!isPhotography) return;
     api.photographySummary().then((r) => setPhoto(r.data ?? null)).catch(() => setPhoto(null));
   }, [isPhotography]);
+
+  useEffect(() => {
+    if (!isAgriculture) return;
+    api.agricultureSummary().then((r) => setAgri(r.data ?? null)).catch(() => setAgri(null));
+  }, [isAgriculture]);
 
   async function uploadReceipt(file: File) {
     setUploading(true);
@@ -337,6 +345,18 @@ export default function AccountsPage() {
                   <div><div className="text-lg font-extrabold text-success">{rupees(re.wonThisMonth.value)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Won this month · {re.wonThisMonth.count}</div></div>
                   <div><div className="text-lg font-extrabold text-ink-50">{re.activeListings}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Active listings</div></div>
                   <div><div className="text-lg font-extrabold text-gold-300">{re.upcomingVisits}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Upcoming visits</div></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'overview' && isAgriculture && agri && (
+              <div className="card p-5">
+                <div className="mb-3 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" /><h3 className="text-sm font-bold text-ink-100">Orders &amp; stock</h3><Badge variant="info" size="xs">Agriculture</Badge></div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <div><div className="text-lg font-extrabold text-brand-300">{agri.openOrders}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Open orders</div></div>
+                  <div><div className="text-lg font-extrabold text-success">{rupees(agri.orderValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Order value</div></div>
+                  <div><div className="text-lg font-extrabold text-gold-300">{agri.pendingDispatch}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Pending dispatch</div></div>
+                  <div><div className="text-lg font-extrabold text-ink-50">{rupees(agri.stockValue)}</div><div className="text-[10px] uppercase tracking-wider text-ink-500">Stock value</div></div>
                 </div>
               </div>
             )}

@@ -113,6 +113,8 @@ model Vendor {
   testOrderItems       TestOrderItem[]
   photoShoots          PhotoShoot[]
   shootDeliverables    ShootDeliverable[]
+  produceOrders        ProduceOrder[]
+  produceStock         ProduceStock[]
 }
 
 model Subscription {
@@ -1827,4 +1829,48 @@ model ShootDeliverable {
   @@index([vendorId])
   @@index([shootId])
   @@map("g4d_shoot_deliverables")
+}
+
+// ── Phase 3 — Agriculture: produce order + inventory tracking ──
+model ProduceOrder {
+  id           String    @id @default(cuid())
+  vendorId     String
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
+  buyerName    String
+  contactId    String?
+  produceName  String
+  quantity     Float     @default(0)
+  unit         String    @default("kg") // kg | quintal | tonne | dozen | crate
+  grade        String    @default("A") // A | B | C
+  ratePerUnit  Float     @default(0)
+  totalAmount  Float     @default(0)
+  status       String    @default("pending") // pending | confirmed | dispatched | delivered | cancelled
+  harvestDate  DateTime?
+  dispatchDate DateTime?
+  deliveryDate DateTime?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@index([vendorId, status])
+  @@map("g4d_produce_orders")
+}
+
+model ProduceStock {
+  id                String    @id @default(cuid())
+  vendorId          String
+  vendor            Vendor    @relation(fields: [vendorId], references: [id])
+  produceName       String
+  grade             String    @default("A")
+  unit              String    @default("kg")
+  quantityAvailable Float     @default(0)
+  ratePerUnit       Float     @default(0)
+  harvestDate       DateTime?
+  status            String    @default("available") // available | reserved | sold
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([vendorId])
+  @@map("g4d_produce_stock")
 }
