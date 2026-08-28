@@ -156,8 +156,10 @@
 .vendor-ui .btn, .vendor-ui .btn-primary, .vendor-ui .btn-gold, .vendor-ui .btn-ghost, .vendor-ui .btn-ghost-soft { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap; }
 .vendor-ui .btn-primary { @apply bg-brand-600 hover:bg-brand-500 text-white px-4 py-2.5 shadow-glow-brand; }
 .vendor-ui .btn-gold { @apply bg-gold-500 hover:bg-gold-400 text-ink-950 px-4 py-2.5 shadow-glow-gold; }
-.vendor-ui .btn-ghost { @apply bg-ink-800/60 hover:bg-ink-700/60 text-ink-100 border border-ink-700/60 px-4 py-2.5; }
-.vendor-ui .btn-ghost-soft { @apply bg-transparent hover:bg-ink-800/60 text-ink-300 hover:text-ink-100 px-3 py-2; }
+/* Phase-2 contrast: the ghost/secondary button had a dark-grey fill that blended
+   into dark cards. Lighter fill + a clearly-visible border, and a brand-tinted hover. */
+.vendor-ui .btn-ghost { @apply bg-ink-700/70 hover:bg-brand-600/20 text-ink-100 hover:text-brand-100 border border-ink-500/70 hover:border-brand-500/60 px-4 py-2.5; }
+.vendor-ui .btn-ghost-soft { @apply bg-transparent hover:bg-ink-700/70 text-ink-200 hover:text-ink-50 px-3 py-2; }
 
 .vendor-ui .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium; }
 .vendor-ui .nav-item { @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150; }
@@ -193,12 +195,14 @@
 .vendor-ui .hover\:text-slate-900:hover { color: #f4f6fb !important; }
 /* borders */
 .vendor-ui .border-slate-100 { border-color: rgb(38 47 68 / 0.4) !important; }
-.vendor-ui .border-slate-200 { border-color: rgb(38 47 68 / 0.6) !important; }
+.vendor-ui .border-slate-200 { border-color: rgb(45 56 82 / 0.85) !important; }
 .vendor-ui .border-slate-300 { border-color: rgb(38 47 68 / 0.9) !important; }
 .vendor-ui .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(38 47 68 / 0.4) !important; }
 /* primary tints → brand */
-.vendor-ui .bg-primary-50 { background-color: rgb(51 102 255 / 0.10) !important; }
-.vendor-ui .bg-primary-100 { background-color: rgb(51 102 255 / 0.15) !important; }
+/* Phase-2 contrast: active tab/filter pills use bg-primary-50 — bumped from 0.10 so the
+   active state reads clearly as a blue accent on dark instead of a near-invisible tint. */
+.vendor-ui .bg-primary-50 { background-color: rgb(51 102 255 / 0.18) !important; }
+.vendor-ui .bg-primary-100 { background-color: rgb(51 102 255 / 0.24) !important; }
 .vendor-ui .text-primary-500,
 .vendor-ui .text-primary-600,
 .vendor-ui .text-primary-700 { color: #8eb6ff !important; }

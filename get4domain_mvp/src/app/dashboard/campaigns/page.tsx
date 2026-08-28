@@ -358,7 +358,7 @@ function CreateWizard({ open, onClose, onCreated, industry, businessName, existi
           <div className="space-y-2">
             {goalOptions.map((g) => (
               <button key={g} onClick={() => setGoal(g)}
-                className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${goal === g ? 'border-brand-500/60 bg-brand-500/10' : 'border-ink-700/40 bg-ink-900/40 hover:border-brand-500/40 hover:bg-brand-500/5'}`}>
+                className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${goal === g ? 'border-brand-500 bg-brand-500/20 ring-1 ring-brand-500/40' : 'border-ink-700/40 bg-ink-900/40 hover:border-brand-500/40 hover:bg-brand-500/5'}`}>
                 <Target className="h-4 w-4 text-brand-400" /><span className="flex-1 text-sm text-ink-200">{g}</span>
                 {goal === g && <Check className="h-4 w-4 text-brand-400" />}
               </button>

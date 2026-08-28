@@ -331,7 +331,7 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
       {/* View toggle — List is the default landing view; Pipeline (Kanban) is secondary */}
       <div className="mb-4 flex w-fit gap-1 rounded-xl border border-slate-200 bg-white p-1">
         {([['list', 'List', ListIcon], ['pipeline', 'Pipeline', LayoutGrid]] as const).map(([v, label, Ic]) => (
-          <button key={v} onClick={() => setView(v)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${view === v ? 'bg-primary-50 text-primary-700' : 'text-slate-500 hover:text-slate-700'}`}>
+          <button key={v} onClick={() => setView(v)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${view === v ? (skin === 'dark' ? 'bg-brand-600 text-white shadow-glow-brand' : 'bg-primary-50 text-primary-700') : 'text-slate-500 hover:text-slate-700'}`}>
             <Ic className="h-3.5 w-3.5" />{label}
           </button>
         ))}

@@ -485,7 +485,7 @@ export default function AiStudioPage() {
           const Ic = m.icon; const on = mode === m.key;
           return (
             <button key={m.key} onClick={() => { setMode(m.key); setBrowseCat(null); if (m.key === 'library') loadLibrary(); }}
-              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${on ? 'border-primary-400 bg-primary-50/60 ring-1 ring-primary-200' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+              className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${on ? 'border-primary-400 bg-primary-50 ring-1 ring-primary-500/50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
               <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${on ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-500'}`}><Ic className="h-5 w-5" /></span>
               <span className="min-w-0">
                 <span className={`block text-sm font-bold ${on ? 'text-primary-800' : 'text-slate-800'}`}>{m.label}</span>
