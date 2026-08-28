@@ -5,6 +5,10 @@ export type ViewKind = 'records' | 'contacts' | 'catalog' | 'billing' | 'addon';
 // Tabs that map to the shared Catalog entity across industries.
 const CATALOG_TABS = new Set([
   'menu', 'products', 'packages', 'services', 'tests', 'courses', 'plans', 'properties', 'produce',
+  // The `general` industry names its tab literally 'catalog'; without this it fell
+  // through to RecordsView, so the fallback industry every vendor with no industry
+  // set lands on showed Transactions under a "Catalog" heading.
+  'catalog',
 ]);
 
 // Tabs that map to the shared Contact entity.

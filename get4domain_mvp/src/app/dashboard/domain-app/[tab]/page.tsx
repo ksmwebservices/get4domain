@@ -93,29 +93,35 @@ export default function DomainAppTabPage() {
   const tab = cfg.industry.dashboardTabs.find((t) => t.key === tabKey);
   const icon = tab?.icon ?? cfg.industry.icon;
 
+  // Direct-URL addon guard — industry-agnostic, so it must sit ABOVE the
+  // per-industry dispatch below. It previously lived inside the travel branch,
+  // which meant every industry added afterwards (hotel rooms/housekeeping,
+  // restaurant tables, photography gallery, the inventory/documents/vendors
+  // tabs) was reachable by URL even while the sidebar showed it locked. Locked
+  // only when the addon is EXPLICITLY disabled for this vendor — undefined means
+  // "not restricted", matching the nav's isLocked().
+  const requiredAddon = TAB_ADDON_REQUIREMENT[tabKey];
+  if (requiredAddon && cfg.addons[requiredAddon] === false) {
+    return (
+      <Card className="mx-auto mt-10 max-w-lg text-center" padded>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
+          <Lock className="h-6 w-6 text-primary-600" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900">{tab?.label ?? tabKey} is not enabled</h2>
+        <p className="mt-2 text-sm text-slate-500">
+          This is an optional add-on for your workspace. Contact support to enable it.
+        </p>
+      </Card>
+    );
+  }
+
   // Phase 1 — Travel Operations: dedicated screens replace the generic shell.
-  // Fleet + Drivers keep the existing addon gating (fleet/driver flags); Trips +
-  // Visa are core. Bookings/Invoicing still use the shared views below.
+  // Fleet/Drivers/Contracts addon gating is handled by the shared guard above.
+  // Bookings/Invoicing still use the shared views below.
   if (cfg.industry.key === 'travel') {
-    if (tabKey === 'fleet' || tabKey === 'drivers' || tabKey === 'contracts') {
-      const addonKey = TAB_ADDON_REQUIREMENT[tabKey]; // fleet/contracts -> 'fleet', drivers -> 'driver'
-      // Locked only if the addon was explicitly disabled for this vendor (matches
-      // the nav's isLocked). Direct-URL guard — the nav already hides the tab.
-      if (addonKey && cfg.addons[addonKey] === false) {
-        return (
-          <Card className="mx-auto mt-10 max-w-lg text-center" padded>
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50">
-              <Lock className="h-6 w-6 text-primary-600" />
-            </div>
-            <h2 className="text-lg font-bold text-slate-900">{tab?.label ?? tabKey} is not enabled</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              This is an optional add-on for your workspace. Contact support to enable it.
-            </p>
-          </Card>
-        );
-      }
-      return tabKey === 'fleet' ? <FleetView /> : tabKey === 'drivers' ? <DriversView /> : <ContractsView />;
-    }
+    if (tabKey === 'fleet') return <FleetView />;
+    if (tabKey === 'drivers') return <DriversView />;
+    if (tabKey === 'contracts') return <ContractsView />;
     if (tabKey === 'trip-sheets') return <TripsView />;
     if (tabKey === 'visa') return <VisaView />;
   }
