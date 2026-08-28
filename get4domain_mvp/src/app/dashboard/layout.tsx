@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Menu, X, ChevronRight, Bell, HelpCircle } from 'lucide-react';
+import { LogOut, Menu, X, ChevronRight, Bell, HelpCircle, Settings } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig, TAB_ADDON_REQUIREMENT } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
@@ -50,6 +50,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sheet, setSheet] = useState<null | 'business' | 'campaign' | 'more'>(null);
   const [mounted, setMounted] = useState(false);
   const [upgrade, setUpgrade] = useState<{ feature: string; module: string; kind: 'wallet' | 'plan' } | null>(null);
+  // Vendor's own business logo (from their CMS) for the sidebar brand, and the
+  // header user menu (the avatar was previously an inert div).
+  const [vendorLogo, setVendorLogo] = useState<string | null>(null);
+  const [userMenu, setUserMenu] = useState(false);
 
   const cfg = useDashboardConfig(user?.industry);
 
@@ -58,8 +62,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!loading && user && (user.role === 'admin' || user.role === 'super_admin')) router.push('/admin');
   }, [user, loading, router]);
 
-  useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  useEffect(() => { setSidebarOpen(false); setUserMenu(false); }, [pathname]);
   useEffect(() => { setMounted(true); }, []);
+
+  // Load the vendor's own logo from their CMS (falls back to the business name).
+  useEffect(() => {
+    if (!user || user.role !== 'vendor') return;
+    api.getVendorCMS(user.id)
+      .then((r) => setVendorLogo((r?.data?.logo as string) || null))
+      .catch(() => setVendorLogo(null));
+  }, [user]);
 
   // Register push for the vendor (reuses existing VAPID/Web Push implementation).
   useEffect(() => {
@@ -203,8 +215,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white border-r border-slate-200 transition-transform duration-300 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-100 px-5">
-          <Link href="/" className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Get4Domain" className="h-[72px] w-auto object-contain" style={{ maxHeight: '72px', maxWidth: '240px' }} />
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5">
+            {vendorLogo ? (
+              <img src={vendorLogo} alt={user.businessName ?? 'Business'} className="h-10 w-auto max-w-[180px] object-contain" />
+            ) : (
+              <span className="truncate text-lg font-extrabold text-slate-900">{user.businessName ?? 'Dashboard'}</span>
+            )}
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 lg:hidden">
             <X className="h-5 w-5" />
@@ -286,6 +302,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
+
+        {/* Platform branding — moved to the footer so it doesn't compete with the
+            vendor's own logo/brand at the top of the sidebar. */}
+        <a href="https://get4domain.com" target="_blank" rel="noopener noreferrer"
+          className="flex flex-shrink-0 items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-3 text-[11px] font-medium text-slate-400 hover:text-slate-600">
+          Powered by
+          <img src="/logo.png" alt="Get4Domain" className="h-4 w-auto object-contain opacity-70" />
+        </a>
       </aside>
 
       {/* Main */}
@@ -297,7 +321,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="hidden lg:block">
             <h1 className="text-base font-semibold text-slate-900">{user.businessName ?? 'Vendor'} Dashboard</h1>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1">
             <Link href="/dashboard/support" title="Help & Support" aria-label="Help & Support" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100">
               <HelpCircle className="h-5 w-5" />
             </Link>
@@ -305,11 +329,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell className="h-5 w-5" />
               <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-error-500" />
             </Link>
-            <button onClick={logout} title="Sign Out" aria-label="Sign Out" className="rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-error-600">
-              <LogOut className="h-5 w-5" />
-            </button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700 select-none">
-              {user.initials}
+            {/* Avatar → user menu (was an inert div). Sign-out now lives here, so the
+                standalone logout icon is gone — a tighter, less-cluttered header. */}
+            <div className="relative ml-0.5">
+              <button
+                onClick={() => setUserMenu((v) => !v)}
+                aria-haspopup="menu" aria-expanded={userMenu} title={user.name}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700 transition hover:ring-2 hover:ring-primary-300"
+              >
+                {user.initials}
+              </button>
+              {userMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setUserMenu(false)} />
+                  <div className="absolute right-0 top-11 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                    <div className="px-2.5 py-2">
+                      <div className="truncate text-sm font-semibold text-slate-900">{user.name}</div>
+                      <div className="truncate text-xs text-slate-500">{user.businessName ?? user.email}</div>
+                    </div>
+                    <div className="my-1 border-t border-slate-100" />
+                    <Link href="/dashboard/settings" onClick={() => setUserMenu(false)} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                      <Settings className="h-4 w-4 text-slate-400" />Settings
+                    </Link>
+                    <button onClick={() => { setUserMenu(false); logout(); }} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-error-600 hover:bg-red-50">
+                      <LogOut className="h-4 w-4" />Sign out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
