@@ -11,7 +11,8 @@ const DEFAULTS: Record<string, string> = {
   social_post: '5', festival_poster: '8', blog_article: '15', reel_script: '10',
   video_generation: '50', document: '15', whatsapp_message: '1', whatsapp_session: '1', sms_message: '0.50',
   email_message: '0.10', social_post_publish: '10', extra_campaign_page: '20',
-  domainapp_monthly: '999', topup_999_credits: '1100', topup_2499_credits: '3000', topup_4999_credits: '6500',
+  domainapp_monthly: '999', domainapp_quarterly: '2997', domainapp_yearly: '9999',
+  topup_999_credits: '1100', topup_2499_credits: '3000', topup_4999_credits: '6500',
   trial_free_credit: '100', pro_free_credit: '499',
 };
 
@@ -19,7 +20,7 @@ const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Content Creation', keys: ['social_post', 'festival_poster', 'blog_article', 'reel_script', 'video_generation', 'document'] },
   { title: 'Messaging', keys: ['whatsapp_message', 'whatsapp_session', 'sms_message', 'email_message'] },
   { title: 'Campaign', keys: ['social_post_publish', 'extra_campaign_page'] },
-  { title: 'Subscription (₹/month)', keys: ['domainapp_monthly'] },
+  { title: 'Subscription — billed quarterly / yearly (₹)', keys: ['domainapp_monthly', 'domainapp_quarterly', 'domainapp_yearly'] },
   { title: 'Wallet Top-up Bonuses (credits given)', keys: ['topup_999_credits', 'topup_2499_credits', 'topup_4999_credits'] },
   { title: 'Plan Free Credit (per tier)', keys: ['trial_free_credit', 'pro_free_credit'] },
 ];

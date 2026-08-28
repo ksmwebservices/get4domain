@@ -71,6 +71,60 @@ export const PLAN_TERMS: Record<'quarterly' | 'yearly', PlanTerm> = {
 export const formatINR = (amount: number): string =>
   `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
+// ── Live pricing from the admin-managed source of truth (g4d_platform_settings,
+//    category 'pricing') via the public GET /pricing endpoint. The constants above
+//    are the fallback when the API is unreachable, so the page never renders blank.
+export interface LivePricing {
+  subscription: { monthly: number; quarterly: number; yearly: number };
+  topups: Record<string, number>;
+  freeCredit: { trial: number; pro: number };
+  usage: Record<string, number>;
+}
+
+const PRICING_API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+
+/** Fetch live pricing. Works in server components (ISR-cached) and the client.
+ *  Returns null on any failure so callers fall back to the PLAN_TERMS defaults. */
+export async function fetchLivePricing(): Promise<LivePricing | null> {
+  try {
+    const res = await fetch(`${PRICING_API_BASE}/pricing`, { next: { revalidate: 300 } } as RequestInit);
+    if (!res.ok) return null;
+    const body = (await res.json()) as { data?: LivePricing } & Partial<LivePricing>;
+    const live = (body.data ?? body) as LivePricing;
+    return live?.subscription ? live : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Overlay live subscription numbers onto the PLAN_TERMS shape the card renders. */
+export function applyLivePricing(live: LivePricing | null): Record<'quarterly' | 'yearly', PlanTerm> {
+  if (!live?.subscription) return PLAN_TERMS;
+  const { monthly, quarterly, yearly } = live.subscription;
+  const annualizedQuarterly = quarterly * 4;
+  const save = Math.max(0, annualizedQuarterly - yearly);
+  const savePct = annualizedQuarterly > 0 ? Math.round((save / annualizedQuarterly) * 100) : 0;
+  return {
+    quarterly: {
+      ...PLAN_TERMS.quarterly,
+      headline: formatINR(monthly),
+      baseAmount: quarterly,
+      billingNote: `Billed quarterly at ${formatINR(quarterly)} + 18% GST every 3 months`,
+      welcomeCredit: live.freeCredit?.trial ?? PLAN_TERMS.quarterly.welcomeCredit,
+      cta: `Buy Now — ${formatINR(monthly)}/mo`,
+    },
+    yearly: {
+      ...PLAN_TERMS.yearly,
+      headline: formatINR(yearly),
+      baseAmount: yearly,
+      billingNote: `Billed ${formatINR(yearly)} + 18% GST once a year`,
+      welcomeCredit: live.freeCredit?.pro ?? PLAN_TERMS.yearly.welcomeCredit,
+      features: PLAN_TERMS.yearly.features.map((f) => (/^Save /.test(f) ? `Save ${formatINR(save)} (${savePct}%) vs quarterly` : f)),
+      cta: `Buy Now — ${formatINR(yearly)}/yr`,
+    },
+  };
+}
+
 /** GST amount (₹) for a GST-exclusive base, rounded to the rupee. */
 export const gstOn = (base: number): number => Math.round(base * GST_RATE);
 

@@ -125,17 +125,51 @@ export class AiService {
     private readonly settings: PlatformSettingsService,
   ) {}
 
+  private readonly openaiTextModel = 'gpt-4o-mini';
+
   /** Claude key from Admin → Integrations (ai/anthropic_api_key), env fallback. */
   private claudeKey(): Promise<string | null> {
     return this.settings.getResolvedValue('ai', 'anthropic_api_key');
   }
 
-  private async callClaude(prompt: string, maxTokens: number): Promise<string> {
-    const apiKey = await this.claudeKey();
-    if (!apiKey) {
-      throw new ServiceUnavailableException('AI content generation is not configured');
-    }
+  /**
+   * Provider-agnostic text generation. Prefers OpenAI when an OpenAI key is
+   * configured (that's the key most deployments credit and expect to power
+   * generation), otherwise Claude/Anthropic. Previously ALL text went to Claude
+   * regardless of which provider the admin credited — so a live, credited OpenAI
+   * key did nothing for text (it was only ever used for DALL-E images), which is
+   * why generation didn't behave as the admin expected. Throws (never returns a
+   * canned/mock string) when neither provider is configured, so the caller shows
+   * a real error instead of unrelated filler — and the wallet is only debited
+   * AFTER a real provider call returns parseable content (see generateContent).
+   */
+  private async generateText(prompt: string, maxTokens: number): Promise<string> {
+    const openaiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
+    if (openaiKey) return this.callOpenAiText(openaiKey, prompt, maxTokens);
+    const claudeKey = await this.claudeKey();
+    if (claudeKey) return this.callClaudeText(claudeKey, prompt, maxTokens);
+    throw new ServiceUnavailableException('AI content generation is not configured');
+  }
 
+  private async callOpenAiText(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: this.openaiTextModel,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!response.ok) {
+      this.logger.error(`OpenAI text error ${response.status}: ${(await response.text()).slice(0, 400)}`);
+      throw new ServiceUnavailableException('AI content generation is temporarily unavailable');
+    }
+    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return data.choices?.[0]?.message?.content ?? '';
+  }
+
+  private async callClaudeText(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -149,14 +183,26 @@ export class AiService {
         messages: [{ role: 'user', content: prompt }],
       }),
     });
-
     if (!response.ok) {
-      this.logger.error(`Anthropic API error ${response.status}: ${await response.text()}`);
+      this.logger.error(`Anthropic API error ${response.status}: ${(await response.text()).slice(0, 400)}`);
       throw new ServiceUnavailableException('AI content generation is temporarily unavailable');
     }
-
     const data = (await response.json()) as AnthropicResponse;
     return data.content.find((block) => block.type === 'text')?.text ?? '';
+  }
+
+  /** Robustly pull a JSON object out of a model response (handles ```json fences
+   *  and any surrounding prose the model adds). Throws a clean error rather than a
+   *  raw SyntaxError so the wallet is never debited on an unparseable response. */
+  private parseJsonBlock<T>(text: string): T {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    try { return JSON.parse(cleaned) as T; } catch { /* try to extract a { … } block */ }
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]) as T; } catch { /* fall through */ }
+    }
+    this.logger.error(`AI returned non-JSON content: ${text.slice(0, 300)}`);
+    throw new ServiceUnavailableException('AI returned an unexpected format. Please try again.');
   }
 
   /**
@@ -178,7 +224,7 @@ ${params.history || '(this is the first message)'}
 Customer's latest message: ${params.message}
 
 Your reply:`;
-    const text = await this.callClaude(prompt, 300);
+    const text = await this.generateText(prompt, 300);
     return text.trim();
   }
 
@@ -272,11 +318,12 @@ Tone: ${dto.tone ?? 'friendly and professional'}
 Respond with ONLY a JSON object (no markdown fences) in this exact shape:
 {"caption": string, "hashtags": [5-8 relevant hashtags without #], "imagePrompt": string (a visual description for an image generator)}`;
 
-    const text = await this.callClaude(prompt, 500);
-    const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    const parsed = JSON.parse(jsonText) as { caption: string; hashtags: string[]; imagePrompt: string };
+    const text = await this.generateText(prompt, 500);
+    const parsed = this.parseJsonBlock<{ caption: string; hashtags: string[]; imagePrompt: string }>(text);
 
-    // Internal admin staff use AI Studio for free — no wallet deduction.
+    // Wallet is debited ONLY here — after a real provider call returned parseable
+    // content. If generation or parsing failed above, we already threw and never
+    // reached this line, so no credits are spent on a failed/fake response.
     if (!internal) {
       await this.walletService.deduct(vendorId, cost, `AI ${dto.channel} content generated`, `ai_content_${dto.channel}`);
     }
@@ -305,9 +352,8 @@ About: ${dto.description}
 Respond with ONLY a JSON object (no markdown fences, no commentary) in this exact shape:
 {"headline": string, "subheadline": string, "benefits": [5 short benefit strings], "aboutText": string (2-3 sentences), "ctaText": string (2-4 words)}`;
 
-    const text = await this.callClaude(prompt, 600);
-    const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    return JSON.parse(jsonText);
+    const text = await this.generateText(prompt, 600);
+    return this.parseJsonBlock(text);
   }
 
   async callSummary(
@@ -324,11 +370,10 @@ Notes: ${dto.textNotes}
 Respond with ONLY a JSON object (no markdown fences) in this exact shape:
 {"summary": string (1-2 sentences), "nextAction": string (recommended next step), "sentiment": "positive" | "neutral" | "negative"}`;
 
-    const text = await this.callClaude(prompt, 300);
-    const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-    const parsed = JSON.parse(jsonText) as { summary: string; nextAction: string; sentiment: string };
+    const text = await this.generateText(prompt, 300);
+    const parsed = this.parseJsonBlock<{ summary: string; nextAction: string; sentiment: string }>(text);
 
-    // Internal admin staff use AI Studio for free — no wallet deduction.
+    // Debit only after a real, parseable summary — never on a failed call.
     if (!internal) {
       await this.walletService.deduct(vendorId, CALL_SUMMARY_COST_PAISE, 'AI call summary generated', 'ai_call_summary');
     }
@@ -337,8 +382,9 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
   }
 
   async chat(dto: ChatDto): Promise<{ reply: string; suggestedActions: string[] }> {
-    const apiKey = await this.claudeKey();
-    if (!apiKey) {
+    const openaiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
+    const claudeKey = await this.claudeKey();
+    if (!openaiKey && !claudeKey) {
       throw new ServiceUnavailableException('AI assistant is not configured');
     }
 
@@ -348,38 +394,42 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
       if (dto.industry) systemPrompt += ` Their business industry: ${dto.industry}.`;
     }
 
-    const messages = [
-      ...(dto.conversationHistory ?? []).map((m) => ({ role: m.role, content: m.content })),
-      { role: 'user', content: dto.message },
-    ];
+    const history = (dto.conversationHistory ?? []).map((m) => ({ role: m.role, content: m.content }));
+    const fallback = 'Let me connect you with our team for that specific question.';
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 300,
-          system: systemPrompt,
-          messages,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        this.logger.error(`Anthropic API error ${response.status}: ${errorBody}`);
-        throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
+      let reply: string;
+      if (openaiKey) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+          body: JSON.stringify({
+            model: this.openaiTextModel,
+            max_tokens: 300,
+            messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: dto.message }],
+          }),
+        });
+        if (!response.ok) {
+          this.logger.error(`OpenAI chat error ${response.status}: ${(await response.text()).slice(0, 400)}`);
+          throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
+        }
+        const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        reply = data.choices?.[0]?.message?.content ?? fallback;
+      } else {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey as string, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: this.model, max_tokens: 300, system: systemPrompt, messages: [...history, { role: 'user', content: dto.message }] }),
+        });
+        if (!response.ok) {
+          this.logger.error(`Anthropic API error ${response.status}: ${(await response.text()).slice(0, 400)}`);
+          throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
+        }
+        const data = (await response.json()) as AnthropicResponse;
+        reply = data.content.find((block) => block.type === 'text')?.text ?? fallback;
       }
 
-      const data = (await response.json()) as AnthropicResponse;
-      const reply = data.content.find((block) => block.type === 'text')?.text ?? "Let me connect you with our team for that specific question.";
-
       const suggestedActions = /connect you with our team/i.test(reply) ? ['call', 'whatsapp'] : [];
-
       return { reply, suggestedActions };
     } catch (error) {
       if (error instanceof ServiceUnavailableException) throw error;

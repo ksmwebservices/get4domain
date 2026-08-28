@@ -44,7 +44,7 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     label: 'AI (Claude / OpenAI)',
     settings: [
       { key: 'anthropic_api_key', label: 'Claude / Anthropic API Key', envFallback: 'CLAUDE_API_KEY', secret: true },
-      { key: 'openai_api_key', label: 'OpenAI API Key (DALL-E fallback)', envFallback: 'OPENAI_API_KEY', secret: true },
+      { key: 'openai_api_key', label: 'OpenAI API Key (text generation + DALL-E images)', envFallback: 'OPENAI_API_KEY', secret: true },
       // 3E — Stability AI is the intended primary image generator (cheaper), DALL-E the
       // fallback. Real call wiring is Stop-4-gated (confirm funded credit first).
       { key: 'stability_api_key', label: 'Stability AI API Key (primary images)', envFallback: 'STABILITY_API_KEY', secret: true },
@@ -167,7 +167,9 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'email_message', label: 'Email per email (₹)', envFallback: 'PRICE_EMAIL', secret: false },
       { key: 'social_post_publish', label: 'Social post (we post) (₹)', envFallback: 'PRICE_SOCIAL_PUBLISH', secret: false },
       { key: 'extra_campaign_page', label: 'Extra campaign page (₹)', envFallback: 'PRICE_CAMPAIGN_PAGE', secret: false },
-      { key: 'domainapp_monthly', label: 'DomainApp monthly (₹)', envFallback: 'PRICE_DOMAINAPP_MONTHLY', secret: false },
+      { key: 'domainapp_monthly', label: 'DomainApp monthly rate (₹/mo)', envFallback: 'PRICE_DOMAINAPP_MONTHLY', secret: false },
+      { key: 'domainapp_quarterly', label: 'DomainApp quarterly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_QUARTERLY', secret: false },
+      { key: 'domainapp_yearly', label: 'DomainApp yearly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_YEARLY', secret: false },
       { key: 'topup_999_credits', label: '₹999 top-up → credits', envFallback: 'PRICE_TOPUP_999', secret: false },
       { key: 'topup_2499_credits', label: '₹2,499 top-up → credits', envFallback: 'PRICE_TOPUP_2499', secret: false },
       { key: 'topup_4999_credits', label: '₹4,999 top-up → credits', envFallback: 'PRICE_TOPUP_4999', secret: false },

@@ -622,14 +622,25 @@ export const api = {
     const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch(`${API_BASE}/uploads`, {
-      method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: fd,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Upload failed');
-    return data;
+    // Bound the request so a hung upload can't leave the UI stuck on "Uploading…" forever.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/uploads`, {
+        method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: fd,
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      throw new Error((e as Error)?.name === 'AbortError' ? 'Upload timed out — please try a smaller image or check your connection.' : 'Upload failed — could not reach the server.');
+    }
+    clearTimeout(timer);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data as { message?: string }).message || 'Upload failed');
+    return data as { data?: { url: string } };
   },
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)

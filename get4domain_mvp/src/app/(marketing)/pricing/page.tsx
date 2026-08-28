@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HomePricing from '@/components/marketing/home/HomePricing';
+import { fetchLivePricing } from '@/lib/pricing';
+
+// Revalidate every 5 min so admin Pricing Manager edits reflect without a redeploy.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Pricing — DomainApp ₹999/month (billed quarterly), Everything Included',
@@ -45,7 +49,29 @@ const FAQS = [
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the term you have already paid for (the current quarter, or the current year on the yearly plan).' },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Live pricing (admin source of truth) with the constants above as fallback.
+  const live = await fetchLivePricing();
+  const u = live?.usage ?? {};
+  const rupee = (n?: number): string => (n == null ? '' : `₹${n % 1 === 0 ? n : n.toFixed(2)}`);
+  const pct = (credits: number, pay: number): string => `${Math.max(0, Math.round((credits / pay - 1) * 100))}% bonus`;
+  const usageRows: [string, string][] = live
+    ? [
+        ['Social media post (AI)', rupee(u.social_post)], ['Festival poster (AI)', rupee(u.festival_poster)],
+        ['Blog article (AI)', rupee(u.blog_article)], ['Reel/Video script', rupee(u.reel_script)],
+        ['Video generation', rupee(u.video_generation)], ['Document (ID/letterhead)', rupee(u.document)],
+        ['We post on your page', rupee(u.social_post_publish)], ['WhatsApp message', rupee(u.whatsapp_message)],
+        ['SMS', rupee(u.sms_message)], ['Email', rupee(u.email_message)], ['Extra campaign page', rupee(u.extra_campaign_page)],
+      ]
+    : USAGE;
+  const topupRows = live
+    ? [
+        { pay: '₹499', credits: '₹499 credits', bonus: 'Minimum top-up' },
+        { pay: '₹999', credits: `₹${live.topups['999'].toLocaleString('en-IN')} credits`, bonus: pct(live.topups['999'], 999) },
+        { pay: '₹2,499', credits: `₹${live.topups['2499'].toLocaleString('en-IN')} credits`, bonus: pct(live.topups['2499'], 2499) },
+        { pay: '₹4,999', credits: `₹${live.topups['4999'].toLocaleString('en-IN')} credits`, bonus: pct(live.topups['4999'], 4999) },
+      ]
+    : TOPUPS;
   return (
     <>
       {/* HERO + PRICING BLOCK — dark, homepage visual family */}
@@ -101,7 +127,7 @@ export default function PricingPage() {
             <p className="mt-3 text-slate-600">Your plan includes ₹499 free AI Studio credit. Variable usage (AI, WhatsApp, SMS, email) is billed per use from your wallet.</p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TOPUPS.map((t) => (
+            {topupRows.map((t) => (
               <div key={t.pay} className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm">
                 <p className="text-xl font-bold text-slate-900">{t.pay}</p>
                 <p className="mt-1 text-sm text-slate-600">→ {t.credits}</p>
@@ -110,7 +136,7 @@ export default function PricingPage() {
             ))}
           </div>
           <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200">
-            {USAGE.map(([label, rate], i) => (
+            {usageRows.map(([label, rate], i) => (
               <div key={label} className={`flex items-center justify-between px-5 py-2.5 text-sm ${i % 2 ? 'bg-slate-50' : 'bg-white'}`}>
                 <span className="text-slate-600">{label}</span>
                 <span className="font-semibold text-slate-900">{rate}</span>

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Check, ArrowRight, Sparkles, Building2, Code2, Wallet, Clock, TrendingDown } from 'lucide-react';
-import { PLAN_TERMS, gstOn, totalWithGst, formatINR, USAGE_VS_MARKET } from '@/lib/pricing';
+import { PLAN_TERMS, gstOn, totalWithGst, formatINR, USAGE_VS_MARKET, fetchLivePricing, applyLivePricing } from '@/lib/pricing';
 
 // Real, defensible comparison — Get4Domain vs. commissioning custom development.
 const COMPARISON = [
@@ -21,7 +21,10 @@ const COMPARISON = [
 
 export default function HomePricing() {
   const [billing, setBilling] = useState<'quarterly' | 'yearly'>('yearly');
-  const tier = PLAN_TERMS[billing];
+  // Live pricing from the admin source of truth (falls back to PLAN_TERMS defaults).
+  const [terms, setTerms] = useState(PLAN_TERMS);
+  useEffect(() => { fetchLivePricing().then((live) => { if (live) setTerms(applyLivePricing(live)); }); }, []);
+  const tier = terms[billing];
   const total = totalWithGst(tier.baseAmount);
 
   return (
