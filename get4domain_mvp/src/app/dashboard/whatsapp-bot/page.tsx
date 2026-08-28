@@ -90,18 +90,18 @@ export default function WhatsappBotPage() {
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Topic (your reference)</label>
             <input value={form.question} onChange={(e) => setForm({ ...form, question: e.target.value })} placeholder="e.g. Pricing"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Trigger keywords (comma-separated)</label>
             <input value={form.keywords} onChange={(e) => setForm({ ...form, keywords: e.target.value })} placeholder="price, cost, charges, how much"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
         </div>
         <div className="mt-3">
           <label className="mb-1 block text-xs font-medium text-slate-600">Answer (sent to the customer as-is)</label>
           <textarea value={form.answer} onChange={(e) => setForm({ ...form, answer: e.target.value })} rows={2} placeholder="Our services start from ₹499. Would you like our team to contact you?"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
         </div>
         <button onClick={add} disabled={saving} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Q&amp;A
@@ -123,9 +123,9 @@ export default function WhatsappBotPage() {
             <div key={entry.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               {editingId === entry.id ? (
                 <div className="space-y-2">
-                  <input value={editForm.question} onChange={(e) => setEditForm({ ...editForm, question: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  <input value={editForm.keywords} onChange={(e) => setEditForm({ ...editForm, keywords: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  <textarea value={editForm.answer} onChange={(e) => setEditForm({ ...editForm, answer: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                  <input value={editForm.question} onChange={(e) => setEditForm({ ...editForm, question: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm" />
+                  <input value={editForm.keywords} onChange={(e) => setEditForm({ ...editForm, keywords: e.target.value })} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm" />
+                  <textarea value={editForm.answer} onChange={(e) => setEditForm({ ...editForm, answer: e.target.value })} rows={2} className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm" />
                   <div className="flex gap-2">
                     <button onClick={() => saveEdit(entry.id)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white"><Check className="h-3.5 w-3.5" /> Save</button>
                     <button onClick={() => setEditingId(null)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600"><X className="h-3.5 w-3.5" /> Cancel</button>

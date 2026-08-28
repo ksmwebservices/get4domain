@@ -97,7 +97,7 @@ export default function GymClassesView() {
             <Input label="Capacity" type="number" value={(form.capacity as number) ?? 20} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
           </div>
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={form.active as boolean} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="h-4 w-4 rounded text-primary-600" />Active on the schedule
+            <input type="checkbox" checked={form.active as boolean} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="h-4 w-4 rounded accent-brand-500" />Active on the schedule
           </label>
           <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button loading={saving} onClick={save}>{editing ? 'Save' : 'Add'}</Button></div>
         </div>

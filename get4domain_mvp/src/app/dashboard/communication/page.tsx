@@ -175,11 +175,11 @@ function InboxTab({ onConfigure }: { onConfigure: () => void }) {
                 <div className="border-t border-slate-100 p-3">
                   {channel === 'email' && (
                     <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject"
-                      className="mb-2 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                      className="mb-2 w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   )}
                   <div className="flex items-end gap-2">
                     <textarea rows={2} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Message via ${channel}…`}
-                      className="flex-1 resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                      className="flex-1 resize-none rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                     <Button skin="dark" loading={sending} onClick={send} leftIcon={<Send className="h-4 w-4" />}>Send</Button>
                   </div>
                 </div>
@@ -263,7 +263,7 @@ function SettingsTab() {
 
         <label className="mt-4 flex items-center gap-2.5 text-sm text-slate-700">
           <input type="checkbox" checked={settings.waEnabled} onChange={(e) => set('waEnabled', e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-400" />
+            className="h-4 w-4 rounded border-slate-300 accent-brand-500 focus:ring-primary-400" />
           WhatsApp channel is on
           <span className="text-xs text-slate-400">(turn off and the bot stops replying — incoming messages are still saved)</span>
         </label>

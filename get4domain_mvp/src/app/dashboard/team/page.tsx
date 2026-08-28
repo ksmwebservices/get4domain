@@ -158,18 +158,18 @@ export default function TeamPage() {
               <button type="button" onClick={() => setInviteOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
             </div>
             <input required placeholder="Name" value={inviteForm.name} onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <input type="email" placeholder="Email" value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <input placeholder="Phone (for WhatsApp invite)" value={inviteForm.phone} onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <select value={inviteForm.department} onChange={(e) => { const d = e.target.value; setInviteForm((p) => ({ ...p, department: d, role: p.role || d, modules: d && DEPARTMENTS[d] ? DEPARTMENTS[d] : p.modules })); }}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
               <option value="">Department (optional — sets default access)</option>
               {Object.keys(DEPARTMENTS).map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
             <input required list="role-suggestions" placeholder="Role (e.g. Sales Executive)" value={inviteForm.role} onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <datalist id="role-suggestions">
               <option value="Manager" /><option value="Sales Executive" /><option value="Support Executive" /><option value="Content Creator" />
             </datalist>
@@ -178,7 +178,7 @@ export default function TeamPage() {
               <div className="grid grid-cols-2 gap-1.5">
                 {MODULES.map((m) => (
                   <label key={m} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs">
-                    <input type="checkbox" checked={inviteForm.modules.includes(m)} onChange={() => toggleInviteModule(m)} className="h-3.5 w-3.5 rounded text-primary-600" />
+                    <input type="checkbox" checked={inviteForm.modules.includes(m)} onChange={() => toggleInviteModule(m)} className="h-3.5 w-3.5 rounded accent-brand-500" />
                     {m}
                   </label>
                 ))}
@@ -199,11 +199,11 @@ export default function TeamPage() {
               <button onClick={() => setEditMember(null)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
             </div>
             <input value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <div className="grid grid-cols-2 gap-1.5">
               {MODULES.map((m) => (
                 <label key={m} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs">
-                  <input type="checkbox" checked={editForm.modules.includes(m)} onChange={() => toggleEditModule(m)} className="h-3.5 w-3.5 rounded text-primary-600" />
+                  <input type="checkbox" checked={editForm.modules.includes(m)} onChange={() => toggleEditModule(m)} className="h-3.5 w-3.5 rounded accent-brand-500" />
                   {m}
                 </label>
               ))}

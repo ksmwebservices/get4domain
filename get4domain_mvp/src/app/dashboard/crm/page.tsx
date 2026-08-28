@@ -147,7 +147,7 @@ function CrmPageInner() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or phone…"
-            className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-3 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 py-2 pl-9 pr-3 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
           />
         </div>
       </div>
@@ -172,7 +172,7 @@ function CrmPageInner() {
                 <select
                   value={lead.status}
                   onChange={(e) => handleUpdateStatus(lead.id, e.target.value)}
-                  className="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-700 capitalize focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  className="rounded-lg border border-slate-200 bg-white text-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-700 capitalize focus:outline-none focus:ring-2 focus:ring-primary-100"
                 >
                   {['new', 'contacted', 'quoted', 'won', 'lost'].map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -194,11 +194,11 @@ function CrmPageInner() {
               <button type="button" onClick={() => setAddOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
             </div>
             <input required placeholder="Name" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <input required placeholder="Phone" value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <textarea rows={2} placeholder="Notes (optional)" value={addForm.message} onChange={(e) => setAddForm({ ...addForm, message: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
             <Button type="submit" fullWidth loading={saving}>Add Lead</Button>
           </form>
         </div>
@@ -213,7 +213,7 @@ function CrmPageInner() {
               <button onClick={() => setNoteFor(null)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
             </div>
             <textarea rows={4} value={noteText} onChange={(e) => setNoteText(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
             <Button fullWidth onClick={handleSaveNote}>Save Note</Button>
           </div>
         </div>

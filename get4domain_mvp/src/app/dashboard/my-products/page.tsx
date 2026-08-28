@@ -205,23 +205,23 @@ export default function MyProductsPage() {
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Name</label>
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={labels.placeholder}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Description</label>
             <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-600">Price (₹)</label>
               <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-slate-600">Category</label>
               <input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
           </div>
           {/* Rich per-category fields (real estate → area/config/type, restaurant → course/diet/serves, …) */}
@@ -232,13 +232,13 @@ export default function MyProductsPage() {
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">{f.label}</label>
                   {f.type === 'select' ? (
                     <select value={custom[f.key] ?? ''} onChange={(e) => setCustom({ ...custom, [f.key]: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                      className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
                       <option value="">—</option>
                       {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
                   ) : (
                     <input value={custom[f.key] ?? ''} placeholder={f.placeholder} onChange={(e) => setCustom({ ...custom, [f.key]: e.target.value })}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                      className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                   )}
                 </div>
               ))}
@@ -247,7 +247,7 @@ export default function MyProductsPage() {
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Highlights / tags <span className="text-slate-400">(comma separated)</span></label>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. Ready to Move, Popular"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Photo</label>
@@ -266,7 +266,7 @@ export default function MyProductsPage() {
                 </label>
                 {form.image && <button type="button" onClick={() => setForm({ ...form, image: '' })} className="ml-2 text-xs text-error-600 hover:underline">Remove</button>}
                 <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="…or paste an image URL"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                  className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
               </div>
             </div>
           </div>

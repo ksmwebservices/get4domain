@@ -39,7 +39,7 @@ export default function DomainManagementPage() {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<'idle' | 'checking' | 'active' | 'notfound'>('idle');
 
-  const inputClass = 'w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
+  const inputClass = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
 
   const loadMine = useCallback(() => {
     api.getMyDomains().then((res) => setMyDomains(res.data ?? [])).catch(() => setMyDomains([]));

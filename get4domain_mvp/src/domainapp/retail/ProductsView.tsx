@@ -95,7 +95,7 @@ export default function ProductsView() {
             <Input label="Stock qty" type="number" value={(form.stockQty as number) ?? 0} onChange={(e) => setForm({ ...form, stockQty: Number(e.target.value) })} />
             <Input label="Reorder ≤" type="number" value={(form.reorderLevel as number) ?? 5} onChange={(e) => setForm({ ...form, reorderLevel: Number(e.target.value) })} />
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={Boolean(form.active)} onChange={(e) => setForm({ ...form, active: e.target.checked })} />Active</label>
+          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" className="accent-brand-500" checked={Boolean(form.active)} onChange={(e) => setForm({ ...form, active: e.target.checked })} />Active</label>
           <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button loading={saving} onClick={save}>{editing ? 'Save' : 'Add'}</Button></div>
         </div>
       </Modal>

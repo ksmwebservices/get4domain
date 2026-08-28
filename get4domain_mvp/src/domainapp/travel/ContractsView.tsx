@@ -203,12 +203,12 @@ export default function ContractsView() {
                     <div className="flex-1">
                       <label className="mb-1 block text-[11px] font-medium text-slate-500">Route label</label>
                       <input value={a.routeLabel ?? ''} onChange={(e) => updateRoute(i, { routeLabel: e.target.value })} placeholder="Route 4 — North"
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                        className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                     </div>
                     <div className="flex-1">
                       <label className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500"><Car className="h-3 w-3" />Vehicle</label>
                       <select value={a.vehicleId ?? ''} onChange={(e) => updateRoute(i, { vehicleId: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                        className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
                         <option value="">—</option>
                         {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                       </select>
@@ -216,7 +216,7 @@ export default function ContractsView() {
                     <div className="flex-1">
                       <label className="mb-1 flex items-center gap-1 text-[11px] font-medium text-slate-500"><UserCog className="h-3 w-3" />Driver</label>
                       <select value={a.driverId ?? ''} onChange={(e) => updateRoute(i, { driverId: e.target.value })}
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+                        className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
                         <option value="">—</option>
                         {drivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>

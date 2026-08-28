@@ -212,9 +212,9 @@ export default function TripsView() {
                     <div className="mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700">{d.day}</div>
                     <div className="flex-1 space-y-1.5">
                       <input value={d.title} onChange={(e) => updateDay(i, { title: e.target.value })} placeholder="Day title (e.g. Arrival & houseboat)"
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                        className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-2.5 py-1.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                       <input value={d.detail ?? ''} onChange={(e) => updateDay(i, { detail: e.target.value })} placeholder="Details (optional)"
-                        className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-600 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                        className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-2.5 py-1.5 text-xs text-slate-600 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                     </div>
                     <button onClick={() => removeDay(i)} className="mt-1 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-error-600"><X className="h-4 w-4" /></button>
                   </div>

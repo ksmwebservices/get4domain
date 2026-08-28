@@ -26,7 +26,7 @@ const EMPTY: VendorCms = {
   seoTitle: '', seoDesc: '', seoKeywords: '', googleAnalyticsId: '',
 };
 
-const field = 'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
+const field = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
 
 export default function WebsiteManagerPage() {
   const { user } = useAuth();

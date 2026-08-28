@@ -119,7 +119,7 @@ export default function SupportPage() {
         <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-slate-900"><Sparkles className="h-4 w-4 text-primary-600" /> Ask our assistant</h3>
         <form onSubmit={askBot} className="space-y-3">
           <textarea rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g. How do I add a service? What does a WhatsApp message cost? How do I change my website banner?"
-            className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            className="w-full resize-none rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           {botError && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-2.5 text-sm text-error-700">{botError}</div>}
           <Button type="submit" loading={botLoading} leftIcon={<Sparkles className="h-4 w-4" />} disabled={!question.trim()}>Get an instant answer</Button>
         </form>
@@ -141,7 +141,7 @@ export default function SupportPage() {
               <div className="mt-4 border-t border-slate-100 pt-4">
                 <div className="text-sm font-medium text-slate-700">Not resolved? Have the team follow up.</div>
                 <textarea rows={2} value={escNote} onChange={(e) => setEscNote(e.target.value)} placeholder="Anything to add for the team (optional)"
-                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
                 {error && <div className="mt-2 rounded-xl border border-error-200 bg-error-50 px-3 py-2 text-sm text-error-700">{error}</div>}
                 <Button size="sm" className="mt-2" loading={escalating} onClick={escalate} rightIcon={<ArrowRight className="h-4 w-4" />}>No — get the team to call me back</Button>
               </div>
@@ -158,12 +158,12 @@ export default function SupportPage() {
           <h3 className="mb-5 text-base font-bold text-slate-900">Raise a Support Ticket</h3>
           {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
           <form onSubmit={submitTicket} className="space-y-4">
-            <select required value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
+            <select required value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100">
               <option value="">Select category</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input required type="text" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief description of your issue" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-            <textarea required rows={4} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Describe your issue in detail." className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            <input required type="text" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief description of your issue" className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            <textarea required rows={4} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Describe your issue in detail." className="w-full resize-none rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-3 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             <Button type="submit" size="lg" fullWidth loading={ticketLoading} rightIcon={<ArrowRight className="h-4 w-4" />}>Submit Ticket</Button>
           </form>
         </div>

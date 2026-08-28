@@ -161,33 +161,33 @@ export default function LandingPagePage() {
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">Business Name</label>
               <input value={createForm.businessName} onChange={(e) => setCreateForm({ ...createForm, businessName: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">Industry</label>
               <input value={createForm.industry} onChange={(e) => setCreateForm({ ...createForm, industry: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">Phone</label>
               <input value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">WhatsApp</label>
               <input value={createForm.whatsapp} onChange={(e) => setCreateForm({ ...createForm, whatsapp: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Offer / What to promote</label>
             <input value={createForm.offerTitle} onChange={(e) => setCreateForm({ ...createForm, offerTitle: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Description</label>
             <textarea rows={3} value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
           </div>
 
           {!generated ? (
@@ -270,22 +270,22 @@ export default function LandingPagePage() {
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Business Name</label>
             <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Phone</label>
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">WhatsApp</label>
             <input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold text-slate-600">Tagline</label>
             <input value={form.subheadline} onChange={(e) => setForm({ ...form, subheadline: e.target.value })}
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3.5 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
         </div>
         <div className="flex items-center gap-3">

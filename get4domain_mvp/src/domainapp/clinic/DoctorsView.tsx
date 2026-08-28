@@ -90,7 +90,7 @@ export default function DoctorsView() {
             <Input label="Consultation fee (₹)" type="number" value={(form.consultationFee as number) ?? 0} onChange={(e) => setForm({ ...form, consultationFee: Number(e.target.value) })} />
           </div>
           <Input label="Availability" value={(form.availability as string) ?? ''} onChange={(e) => setForm({ ...form, availability: e.target.value })} placeholder="Mon–Fri 10am–2pm" />
-          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" checked={Boolean(form.active)} onChange={(e) => setForm({ ...form, active: e.target.checked })} />Accepting appointments</label>
+          <label className="flex items-center gap-2 text-sm text-slate-600"><input type="checkbox" className="accent-brand-500" checked={Boolean(form.active)} onChange={(e) => setForm({ ...form, active: e.target.checked })} />Accepting appointments</label>
           <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button loading={saving} onClick={save}>{editing ? 'Save' : 'Add'}</Button></div>
         </div>
       </Modal>
