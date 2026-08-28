@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Phone, Loader2, X, ThumbsUp, ThumbsDown, PhoneCall, Trophy, PhoneOff,
   Mic, MessageCircle, CalendarClock, Building2, Tag,
-  Search, UserPlus, LayoutGrid, List as ListIcon, Upload, Inbox, PhoneIncoming, AlertTriangle, Users,
+  Search, UserPlus, LayoutGrid, List as ListIcon, Upload, Inbox, PhoneIncoming, AlertTriangle, Users, TrendingUp,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -126,6 +126,7 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   // Primary view is now the list/dialer (Kanban demoted to a secondary "Pipeline" tab).
   const [view, setView] = useState<'list' | 'pipeline'>('list');
   const [search, setSearch] = useState('');
+  const [stageFilter, setStageFilter] = useState<'all' | string>('all');
   const [recent, setRecent] = useState<TeleCrmRecentCall[]>([]);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -173,12 +174,25 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
   }, [adapter]);
   useEffect(() => { loadRecent(); }, [loadRecent]);
 
-  // Search across the contact list (name or number).
+  // Search across the contact list (name or number) + optional stage filter.
   const filteredLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return leads;
-    return leads.filter((l) => (l.name || '').toLowerCase().includes(q) || (l.phone || '').includes(q));
-  }, [leads, search]);
+    return leads.filter((l) => {
+      if (stageFilter !== 'all' && (l.status || 'new') !== stageFilter) return false;
+      if (!q) return true;
+      return (l.name || '').toLowerCase().includes(q) || (l.phone || '').includes(q);
+    });
+  }, [leads, search, stageFilter]);
+
+  // Per-stage counts + a simple pipeline summary (Bolt parity) from real leads.
+  const stageCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const l of leads) { const k = l.status || 'new'; m[k] = (m[k] ?? 0) + 1; }
+    return m;
+  }, [leads]);
+  const wonCount = stageCounts['won'] ?? 0;
+  const closed = wonCount + (stageCounts['lost'] ?? 0);
+  const winRate = closed > 0 ? Math.round((wonCount / closed) * 100) : 0;
 
   const buckets = useMemo(() => {
     const visible = leads.filter((l) => !skipped.has(l.id));
@@ -337,6 +351,20 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
         ))}
       </div>
 
+      {/* Stage filter chips (parity with the reference) */}
+      <div className="no-scrollbar mb-4 flex items-center gap-2 overflow-x-auto">
+        <button onClick={() => setStageFilter('all')}
+          className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${stageFilter === 'all' ? 'border-primary-300 bg-primary-50 text-primary-700' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700'}`}>
+          All ({leads.length})
+        </button>
+        {PIPELINE.map((s) => (
+          <button key={s.key} onClick={() => setStageFilter(s.key)}
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${stageFilter === s.key ? 'border-primary-300 bg-primary-50 text-primary-700' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700'}`}>
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />{s.label} ({stageCounts[s.key] ?? 0})
+          </button>
+        ))}
+      </div>
+
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
       {/* ── LIST VIEW (default) ─────────────────────────────────────────────── */}
@@ -406,6 +434,7 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
                   const last = lead.callLogs?.[0]?.createdAt ?? null;
                   return (
                     <div key={lead.id} className="flex items-center gap-3 p-3 hover:bg-slate-50">
+                      <Avatar name={lead.name} />
                       <button onClick={() => openDetail(lead)} className="min-w-0 flex-1 text-left">
                         <div className="flex items-center gap-2">
                           <span className="truncate text-sm font-semibold text-slate-900">{lead.name}</span>
@@ -420,6 +449,36 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
               </div>
             )}
           </section>
+
+          {/* Pipeline Summary (parity with the reference) */}
+          {leads.length > 0 && (
+            <section>
+              <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900"><LayoutGrid className="h-4 w-4 text-primary-500" />Pipeline Summary</h2>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="space-y-3">
+                  {PIPELINE.map((s) => {
+                    const count = stageCounts[s.key] ?? 0;
+                    const pct = leads.length ? (count / leads.length) * 100 : 0;
+                    return (
+                      <div key={s.key}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="text-slate-500">{s.label}</span>
+                          <span className="font-semibold text-slate-700">{count}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: s.color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                  <div><div className="text-lg font-extrabold text-slate-900">{leads.length}</div><div className="text-[10px] uppercase tracking-wider text-slate-400">Total contacts</div></div>
+                  <div><div className="flex items-center gap-1 text-lg font-extrabold text-success-600"><TrendingUp className="h-4 w-4" />{winRate}%</div><div className="text-[10px] uppercase tracking-wider text-slate-400">Win rate</div></div>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -676,6 +735,14 @@ export default function TeleCrmBoard({ adapter, title = 'TeleCRM', subtitle = 'C
       )}
     </div>
   );
+}
+
+const AVATAR_TONES = ['bg-primary-100 text-primary-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-700', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700'];
+function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' }) {
+  const initials = (name || '?').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const tone = AVATAR_TONES[[...(name || '')].reduce((s, c) => s + c.charCodeAt(0), 0) % AVATAR_TONES.length];
+  const dim = size === 'sm' ? 'h-7 w-7 text-[11px]' : 'h-9 w-9 text-xs';
+  return <span className={`flex ${dim} flex-shrink-0 items-center justify-center rounded-full font-bold ${tone}`}>{initials}</span>;
 }
 
 /** Professional empty state — branded icon tile + one line + optional action. */

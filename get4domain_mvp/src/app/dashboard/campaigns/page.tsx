@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Plus, Search, Megaphone, Eye, MessageSquare, Calendar, Check, ArrowRight, ArrowLeft,
-  Target, Sparkles, Link2, Copy, TrendingUp, Clock, ExternalLink, Loader2,
+  Target, Sparkles, Link2, Copy, TrendingUp, Clock, ExternalLink, Loader2, MoreVertical,
 } from 'lucide-react';
 import { Icon, Badge, Modal } from '@/components/vendor';
 import { api } from '@/lib/api';
@@ -166,7 +166,7 @@ export default function CampaignsPage() {
                     </>
                   ) : <span className="text-ink-600">—</span>}
                 </div>
-                <ArrowRight className="hidden h-4 w-4 text-ink-600 lg:block" />
+                <MoreVertical className="hidden h-4 w-4 text-ink-600 lg:block" />
               </button>
             ))}
           </div>
