@@ -170,6 +170,19 @@ const CUSTOMER_CATALOG_ICONS: Record<string, string> = {
 };
 
 /**
+ * Terminal record statuses — the point at which a record stops being something
+ * the customer is still waiting on. Everything NOT listed here counts as open,
+ * so an industry that gains a new status shows up in the portal by default
+ * rather than silently vanishing from the customer's "next up" card.
+ * Covers every terminal key across all 21 configs' recordStatuses.
+ */
+const CLOSED_RECORD_STATUSES = new Set([
+  'completed', 'cancelled', 'closed', 'closed_won', 'closed_lost', 'delivered',
+  'dropped', 'expired', 'filed', 'no_show', 'returned', 'checked_out', 'served',
+  'report_ready',
+]);
+
+/**
  * Per-industry icon overrides where the label-keyed maps above would land on a
  * semantically wrong icon — two industries can share a record/catalogue label
  * ("Projects" for construction and IT, "Services" for a salon and a garage)
@@ -194,6 +207,12 @@ export function deriveCustomerPortal(cfg: IndustryConfig): CustomerPortalConfig 
   const catalogLabel = cfg.entities.catalogItem.labelPlural;
   const invoicesLabel = CUSTOMER_INVOICE_LABELS[cfg.key] ?? 'Invoices';
   const showCatalog = !CUSTOMER_PORTAL_NO_CATALOG.has(cfg.key);
+  // Sent to the portal so it never hard-codes a status vocabulary of its own:
+  // "open" differs per industry (a gym membership is `active`, a shipment is
+  // `in_transit`, a restaurant order is `preparing`).
+  const openStatuses = cfg.recordStatuses
+    .map((s) => s.key)
+    .filter((k) => !CLOSED_RECORD_STATUSES.has(k));
 
   const tabs: CustomerTab[] = [
     { key: 'home', label: 'Home', icon: 'Home' },
@@ -220,5 +239,6 @@ export function deriveCustomerPortal(cfg: IndustryConfig): CustomerPortalConfig 
     catalogLabel,
     invoicesLabel,
     showCatalog,
+    openStatuses,
   };
 }

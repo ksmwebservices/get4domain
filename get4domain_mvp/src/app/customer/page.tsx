@@ -42,6 +42,7 @@ interface PortalShape {
   catalogLabel: string;
   invoicesLabel: string;
   showCatalog: boolean;
+  openStatuses: string[];
 }
 interface Profile {
   contact: { id: string; name: string; phone: string; email?: string };
@@ -59,9 +60,6 @@ interface ContactDetails {
 
 const rupees = (n: number) => `₹${(n ?? 0).toLocaleString('en-IN')}`;
 const shortDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
-/** Statuses that mean "still ahead of the customer" rather than closed out. */
-const OPEN_STATUSES = new Set(['draft', 'pending', 'confirmed', 'scheduled', 'in_progress', 'processing']);
 
 export default function CustomerPortal() {
   const [booting, setBooting] = useState(true);
@@ -147,7 +145,12 @@ export default function CustomerPortal() {
   const stats = useMemo(() => {
     const unpaid = invoices.filter((i) => i.status !== 'PAID');
     const outstanding = unpaid.reduce((sum, i) => sum + (i.total ?? 0), 0);
-    const open = records.filter((r) => OPEN_STATUSES.has((r.status ?? '').toLowerCase()));
+    // "Open" is per-industry and comes from the backend's portal shape — a gym
+    // membership is `active`, a shipment `in_transit`, a restaurant order
+    // `preparing`. Hard-coding one list here silently emptied this card for
+    // nine industries.
+    const openStatuses = new Set(profile?.portal.openStatuses ?? []);
+    const open = records.filter((r) => openStatuses.has((r.status ?? '').toLowerCase()));
     const now = Date.now();
     // "Next up" = the soonest still-open record dated today or later; falls back
     // to the most recent open one so the card is never empty when work exists.
@@ -156,7 +159,7 @@ export default function CustomerPortal() {
       .sort((a, b) => +new Date(a.date) - +new Date(b.date));
     const lifetime = records.reduce((sum, r) => sum + (r.amount ?? 0), 0);
     return { unpaidCount: unpaid.length, outstanding, openCount: open.length, next: upcoming[0] ?? open[0] ?? null, lifetime };
-  }, [records, invoices]);
+  }, [records, invoices, profile]);
 
   if (booting) {
     return (

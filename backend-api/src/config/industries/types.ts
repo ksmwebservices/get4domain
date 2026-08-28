@@ -84,4 +84,6 @@ export interface CustomerPortalConfig {
   catalogLabel: string;
   invoicesLabel: string;
   showCatalog: boolean;
+  /** This industry's own non-terminal record statuses. */
+  openStatuses: string[];
 }
