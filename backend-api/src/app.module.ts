@@ -69,6 +69,7 @@ import { TechnologyModule } from './technology/technology.module';
 import { ClinicModule } from './clinic/clinic.module';
 import { RestaurantModule } from './restaurant/restaurant.module';
 import { RetailModule } from './retail/retail.module';
+import { EngineModule } from './engine/engine.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
 
@@ -113,6 +114,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     ClinicModule,
     RestaurantModule,
     RetailModule,
+    EngineModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,
