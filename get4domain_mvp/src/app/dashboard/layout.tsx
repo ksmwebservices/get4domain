@@ -26,6 +26,7 @@ const TEAM_AREA_BY_HREF: Record<string, string> = {
   '/dashboard/accounts': 'accounts', '/dashboard/wallet': 'wallet', '/dashboard/invoices': 'wallet',
   '/dashboard/campaigns': 'campaigns', '/dashboard/telecrm': 'telecrm',
   '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
+  '/dashboard/website-engine': 'website',
   '/dashboard/reports': 'reports', '/dashboard/ai-studio': 'ai_studio',
 };
 
@@ -115,6 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title: 'Manage',
         items: [
           { label: 'Website Manager', href: '/dashboard/my-website', icon: 'Globe', moduleKey: 'website_manager' },
+          { label: 'Website Engine', href: '/dashboard/website-engine', icon: 'Sparkles', moduleKey: 'website_manager' },
           { label: 'Embed / Widget', href: '/dashboard/embed', icon: 'Code', moduleKey: 'website_manager' },
           { label: 'Domain', href: '/dashboard/domain-management', icon: 'Link' },
           { label: 'Customer Hub', href: '/dashboard/customer-hub', icon: 'UserCircle', moduleKey: 'customer_hub' },

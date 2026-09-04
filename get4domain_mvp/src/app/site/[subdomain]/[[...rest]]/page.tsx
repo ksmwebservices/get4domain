@@ -9,6 +9,9 @@ import DemoSiteNav from '@/components/DemoSiteNav';
 import DemoContactSection from '@/components/DemoContactSection';
 import DemoCatalogGrid from '@/components/DemoCatalogGrid';
 import ChatBot from '@/components/ChatBot';
+import { canonicalIndustryId } from '@/data/demo-site';
+import { getEngineIndustry } from '@/engine/registry';
+import type { EngineSiteData } from '@/engine/types';
 
 // Live vendor sites are per-vendor and change whenever the vendor edits — never static.
 export const dynamic = 'force-dynamic';
@@ -100,6 +103,16 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const { subdomain, rest = [] } = await params;
   const site = await fetchSite(subdomain);
   if (!site) notFound();
+
+  // Industry-switch: if this vendor's industry has a bespoke engine site (Real
+  // Estate today), render THAT — a genuinely different information architecture and
+  // conversion journey. Every other industry keeps the existing generic renderer
+  // untouched, so nothing regresses while industries are migrated one at a time.
+  const engineIndustry = getEngineIndustry(canonicalIndustryId(site.vendor.industry));
+  if (engineIndustry && (rest.length === 0 || rest[0] === 'home')) {
+    const EngineSite = engineIndustry.Site;
+    return <EngineSite site={site as unknown as EngineSiteData} subdomain={subdomain} />;
+  }
 
   const page = rest[0] ?? 'home';
   if (!['home', 'listings', 'contact'].includes(page)) notFound();

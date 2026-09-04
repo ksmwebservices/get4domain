@@ -760,4 +760,19 @@ export const api = {
   // Admin — per-vendor module/addon state (pass vendorId)
   adminGetVendorModules: (vendorId: string) => apiCall(`/modules/vendor?vendorId=${vendorId}`),
   adminGetVendorAddons: (vendorId: string) => apiCall(`/addons/vendor?vendorId=${vendorId}`),
+
+  // ── Industry Website Engine — Action Registry dispatch ──
+  // Public: an anonymous website visitor; vendorId is resolved server-side from the
+  // subdomain, and only actions flagged `public` (enquiry/booking/payment) are allowed.
+  engineListPublicActions: (subdomain: string) =>
+    apiCall(`/engine/public/${encodeURIComponent(subdomain)}/actions`),
+  engineDispatchPublic: (subdomain: string, intent: string, input: Record<string, unknown>) =>
+    apiCall(`/engine/public/${encodeURIComponent(subdomain)}/actions/${intent}`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  // Vendor-authenticated: any registered action (uses the caller's JWT).
+  engineListActions: () => apiCall('/engine/actions'),
+  engineDispatch: (intent: string, input: Record<string, unknown>) =>
+    apiCall(`/engine/actions/${intent}`, { method: 'POST', body: JSON.stringify(input) }),
 };

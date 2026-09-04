@@ -24,6 +24,13 @@ export interface ActionDescriptor {
   /** The existing backend route this intent delegates into. Provenance only. */
   delegatesTo: string;
   description: string;
+  /**
+   * Whether an ANONYMOUS public-website visitor may fire this action (vendorId is
+   * resolved from the site subdomain, not a JWT). Inbound lead-capture actions
+   * (enquiry, booking, appointment) are public; anything that moves the vendor's
+   * money or inventory (bill_order, create_sale) is NEVER public — vendor JWT only.
+   */
+  public?: boolean;
 }
 
 /**
