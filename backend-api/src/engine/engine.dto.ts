@@ -27,6 +27,18 @@ export { CreateSaleDto } from '../retail/dto/retail.dto';
 export { CreateDealDto, CreateVisitDto } from '../realestate/dto/realestate.dto';
 
 /**
+ * Input for the generic `engine.enquiry` action — the universal website lead-capture
+ * every industry's generated site can fire. Lands in the vendor's real CRM call list.
+ */
+export class EngineEnquiryInput {
+  @ApiProperty() @IsString() @MaxLength(120) name!: string;
+  @ApiProperty() @IsString() @MaxLength(20) phone!: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) message?: string;
+  @ApiPropertyOptional({ description: 'Industry key, recorded on the lead for context.' })
+  @IsOptional() @IsString() @MaxLength(60) industry?: string;
+}
+
+/**
  * Input for `realestate.payment_cta` — a public booking-token / site-visit-fee
  * payment. Persists an enquiry (Deal) AND creates a Razorpay ORDER (inert until
  * captured) so the flow connects through the real payments backend, never a

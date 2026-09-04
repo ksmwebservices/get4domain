@@ -5,6 +5,7 @@ import { RealEstateModule } from '../realestate/realestate.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { CmsModule } from '../cms/cms.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CrmModule } from '../crm/crm.module';
 import { ActionRegistry } from './action-registry';
 import { EngineService } from './engine.service';
 import { EngineController } from './engine.controller';
@@ -21,7 +22,7 @@ import { EngineController } from './engine.controller';
  *  - NotificationsModule — vendor lead-routing on public actions
  */
 @Module({
-  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule],
+  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule, CrmModule],
   providers: [ActionRegistry, EngineService],
   controllers: [EngineController],
   exports: [EngineService],

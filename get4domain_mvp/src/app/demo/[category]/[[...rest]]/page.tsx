@@ -106,7 +106,6 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
   // and industries not yet on the engine fall through to the classic demo renderer.
   const engineIndustry = getEngineIndustry(canonicalIndustryId(category));
   if (engineIndustry && !parsed.sectionSlug) {
-    const EngineSite = engineIndustry.Site;
     const demoSite: EngineSiteData = {
       vendor: { id: `__demo__${category}`, businessName: brand, industry: canonicalIndustryId(category), subdomain: null },
       cms: {
@@ -117,7 +116,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
       },
       products: [],
     };
-    return <EngineSite site={demoSite} mode={{ kind: 'demo', category }} />;
+    return <>{engineIndustry.render(demoSite, { kind: 'demo', category })}</>;
   }
 
   const catalogSection = sections.find((s) => s.type === 'catalog');

@@ -32,6 +32,5 @@ export default async function EnginePreviewPage({ params }: { params: Promise<{ 
   const { industry } = await params;
   const entry = getEngineIndustry(industry);
   if (!entry) notFound();
-  const EngineSite = entry.Site;
-  return <EngineSite site={DEMO_SITE(industry, entry.config.label)} mode={{ kind: 'preview' }} />;
+  return <>{entry.render(DEMO_SITE(industry, entry.config.label), { kind: 'preview' })}</>;
 }

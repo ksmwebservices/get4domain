@@ -11,7 +11,7 @@ import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { canonicalIndustryId } from '@/data/demo-site';
-import { realEstateWebsite } from '@/engine/industries/real-estate/config';
+import { isEngineKey, genericReadiness } from '@/engine/readiness';
 import type { EngineSiteData, ReadinessCheck } from '@/engine/types';
 
 interface CmsShape {
@@ -31,7 +31,7 @@ interface EngineAction { intent: string; industry: string; delegatesTo: string; 
 export default function WebsiteEnginePage() {
   const { user } = useAuth();
   const industry = canonicalIndustryId(user?.industry ?? '');
-  const onEngine = industry === 'realestate';
+  const onEngine = isEngineKey(industry);
 
   const [cms, setCms] = useState<CmsShape | null>(null);
   const [products, setProducts] = useState<ProductShape[]>([]);
@@ -48,9 +48,9 @@ export default function WebsiteEnginePage() {
     ]).then(([c, p, a]) => {
       setCms(c);
       setProducts(p);
-      setActions((a as EngineAction[]).filter((x) => x.industry === 'realestate'));
+      setActions((a as EngineAction[]).filter((x) => x.industry === 'engine' || x.industry === industry));
     }).finally(() => setLoading(false));
-  }, [user]);
+  }, [user, industry]);
   useEffect(() => { load(); }, [load]);
 
   const siteData: EngineSiteData | null = useMemo(() => {
@@ -63,7 +63,7 @@ export default function WebsiteEnginePage() {
   }, [user, cms, products, industry]);
 
   const checks: ReadinessCheck[] = useMemo(
-    () => (siteData && onEngine ? realEstateWebsite.readiness(siteData) : []),
+    () => (siteData && onEngine ? genericReadiness(siteData) : []),
     [siteData, onEngine],
   );
   const required = checks.filter((c) => c.weight === 'required');
@@ -72,7 +72,7 @@ export default function WebsiteEnginePage() {
   const revenueReady = required.every((c) => c.passed);
 
   const liveUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
-  const previewUrl = onEngine ? `/engine/preview/realestate` : '';
+  const previewUrl = onEngine ? `/engine/preview/${industry}` : '';
 
   if (loading) {
     return <div className="flex min-h-[60vh] items-center justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>;
@@ -84,9 +84,9 @@ export default function WebsiteEnginePage() {
         <h1 className="text-xl font-bold text-slate-900">Website Engine</h1>
         <Card padded className="text-sm text-slate-600">
           <Sparkles className="mb-2 h-5 w-5 text-brand-500" />
-          The premium industry website engine is live for <b>Real Estate</b> today and rolling out to every industry.
-          Your industry ({user?.industry || 'general'}) still uses the current website — manage it from{' '}
-          <Link href="/dashboard/my-website" className="font-semibold text-brand-500">Website Manager</Link>.
+          The premium industry website engine covers every main industry. Your industry
+          ({user?.industry || 'general'}) doesn&apos;t have a dedicated engine site yet — manage your current
+          website from <Link href="/dashboard/my-website" className="font-semibold text-brand-500">Website Manager</Link>.
         </Card>
       </div>
     );
@@ -96,8 +96,8 @@ export default function WebsiteEnginePage() {
     <div className="mx-auto max-w-5xl space-y-6 py-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Website Engine — Real Estate</h1>
-          <p className="mt-0.5 text-sm text-slate-500">A bespoke property website with real enquiry, site-visit and booking-token payment flows.</p>
+          <h1 className="text-xl font-bold text-slate-900">Website Engine</h1>
+          <p className="mt-0.5 text-sm text-slate-500">Your bespoke industry website with real enquiry and booking flows wired to your dashboard.</p>
         </div>
         <div className="flex gap-2">
           {previewUrl && (
@@ -165,7 +165,7 @@ export default function WebsiteEnginePage() {
           {actions.length === 0 && <p className="text-sm text-slate-400">No engine actions found.</p>}
           {actions.map((a) => (
             <div key={a.intent} className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
-              <span className="rounded-lg bg-brand-50 px-2 py-1 font-mono text-xs text-brand-600">{a.intent.replace('realestate.', '')}</span>
+              <span className="rounded-lg bg-brand-50 px-2 py-1 font-mono text-xs text-brand-600">{a.intent.replace(/^[^.]+\./, '')}</span>
               {a.public && <span className="inline-flex items-center gap-1 rounded bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold text-success-700"><ShieldCheck className="h-3 w-3" /> Public</span>}
               <span className="text-sm text-slate-600">{a.description}</span>
               <span className="ml-auto inline-flex items-center gap-1 font-mono text-[11px] text-slate-400">

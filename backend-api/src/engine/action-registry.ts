@@ -4,10 +4,11 @@ import { RetailService } from '../retail/retail.service';
 import { RealEstateService } from '../realestate/realestate.service';
 import { PaymentsService } from '../payments/payments.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CrmService } from '../crm/crm.service';
 import { ActionContext, ActionDefinition, ActionDescriptor } from './engine.types';
 import {
   BillOrderActionInput, CreateSaleDto,
-  CreateDealDto, CreateVisitDto, RealEstatePaymentInput,
+  CreateDealDto, CreateVisitDto, RealEstatePaymentInput, EngineEnquiryInput,
 } from './engine.dto';
 
 /** Composite result of a public payment-CTA action. */
@@ -43,7 +44,29 @@ export class ActionRegistry {
     private readonly realestate: RealEstateService,
     private readonly payments: PaymentsService,
     private readonly notifications: NotificationsService,
+    private readonly crm: CrmService,
   ) {
+    // ── engine.enquiry → CrmService.createLead (PUBLIC, universal website lead-capture) ──
+    // The generic conversion every engine industry site can fire. Lands in the vendor's
+    // real CRM call list — reuses the real backend, never a parallel lead store.
+    this.register<EngineEnquiryInput>({
+      intent: 'engine.enquiry',
+      industry: 'engine',
+      delegatesTo: 'POST /crm/leads (vendor CRM)',
+      description: 'Capture a website enquiry into the vendor’s CRM call list.',
+      inputType: EngineEnquiryInput,
+      public: true,
+      execute: async (ctx, input) => {
+        const lead = await this.crm.createLead(ctx.vendorId, {
+          name: input.name, phone: input.phone, message: input.message, source: 'website',
+          customFields: input.industry ? { industry: input.industry } : undefined,
+        });
+        await this.routeLead(ctx.vendorId, 'website_enquiry', 'New website enquiry',
+          `${input.name} enquired${input.phone ? ` (${input.phone})` : ''}.`, { leadId: lead.id });
+        return lead;
+      },
+    });
+
     // ── restaurant.bill_order → RestaurantService.billOrder (vendor-only) ──
     this.register<BillOrderActionInput>({
       intent: 'restaurant.bill_order',
