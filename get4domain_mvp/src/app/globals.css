@@ -20,6 +20,13 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold text-slate-900 tracking-tight;
   }
+
+  /* Industry Website Engine sites theme their own headings from --eng-fg (set on the
+     ThemeScope wrapper). The attribute selector out-specifies the bare h1..h6 rule
+     above, while staying in @layer base so any explicit text-* utility still wins. */
+  [data-engine-mode] :where(h1, h2, h3, h4, h5, h6) {
+    color: inherit;
+  }
 }
 
 @layer components {

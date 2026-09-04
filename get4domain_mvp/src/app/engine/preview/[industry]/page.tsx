@@ -33,5 +33,5 @@ export default async function EnginePreviewPage({ params }: { params: Promise<{ 
   const entry = getEngineIndustry(industry);
   if (!entry) notFound();
   const EngineSite = entry.Site;
-  return <EngineSite site={DEMO_SITE(industry, entry.config.label)} subdomain="__preview__" preview />;
+  return <EngineSite site={DEMO_SITE(industry, entry.config.label)} mode={{ kind: 'preview' }} />;
 }

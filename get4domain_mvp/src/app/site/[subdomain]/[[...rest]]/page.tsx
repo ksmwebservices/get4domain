@@ -111,7 +111,7 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const engineIndustry = getEngineIndustry(canonicalIndustryId(site.vendor.industry));
   if (engineIndustry && (rest.length === 0 || rest[0] === 'home')) {
     const EngineSite = engineIndustry.Site;
-    return <EngineSite site={site as unknown as EngineSiteData} subdomain={subdomain} />;
+    return <EngineSite site={site as unknown as EngineSiteData} mode={{ kind: 'live', subdomain }} />;
   }
 
   const page = rest[0] ?? 'home';

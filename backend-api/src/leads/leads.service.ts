@@ -3,6 +3,7 @@ import { Lead } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { VerifyDemoLeadDto } from './dto/verify-demo-lead.dto';
+import { DemoVisitResult } from './dto/demo-visit.dto';
 import { OtpService } from '../otp/otp.service';
 import { DemoService } from '../demo/demo.service';
 import { AuthService } from '../auth/auth.service';
@@ -78,6 +79,64 @@ export class LeadsService {
     }
 
     return { lead, sandbox };
+  }
+
+  private static readonly DEMO_VISIT_CAP = 3;
+
+  /**
+   * Record a demo view against the visitor's existing OTP-gate lead (by phone) and
+   * decide whether to show the demo. Additive tracking on the SAME lead — not a new
+   * system. Rules (dispatch 28-Aug-2026):
+   *  - First view locks the lead to that MAIN category.
+   *  - Sub-categories within the locked category are free; switching to a DIFFERENT
+   *    main category is blocked (→ warm sales page).
+   *  - Distinct (category | category/sub) views are capped at 3; the 4th → sales page.
+   *  - Re-viewing an already-seen demo never counts again and is always allowed.
+   */
+  async recordDemoVisit(phone: string, category: string, sub?: string): Promise<DemoVisitResult> {
+    const digits = phone.replace(/\D/g, '');
+    const last10 = digits.slice(-10);
+    const key = sub ? `${category}/${sub}` : category;
+
+    const lead = last10
+      ? await this.prisma.lead.findFirst({
+          where: { phone: { endsWith: last10 }, source: 'demo' },
+          orderBy: { createdAt: 'desc' },
+        })
+      : null;
+
+    // No gated lead yet (shouldn't happen — the OTP gate creates it first). Allow the
+    // view rather than blocking a prospect on a tracking miss; nothing to record.
+    if (!lead) return { allowed: true, reason: 'ungated', lockedCategory: null, count: 0 };
+
+    const locked = lead.demoCategory ?? null;
+    const seen = (lead.demoVisitKeys ?? '').split(',').map((k) => k.trim()).filter(Boolean);
+
+    // Different main category than the one they're scoped to → block (warm lead).
+    if (locked && locked !== category) {
+      return { allowed: false, reason: 'category_locked', lockedCategory: locked, count: lead.demoVisitCount };
+    }
+
+    // Re-view of a demo already seen → always allowed, no new count.
+    if (seen.includes(key)) {
+      return { allowed: true, reason: 'ok', lockedCategory: locked ?? category, count: lead.demoVisitCount };
+    }
+
+    // A new distinct view. If they've already used their 3, this 4th → sales page.
+    if (seen.length >= LeadsService.DEMO_VISIT_CAP) {
+      return { allowed: false, reason: 'cap_reached', lockedCategory: locked ?? category, count: lead.demoVisitCount };
+    }
+
+    const nextKeys = [...seen, key];
+    const updated = await this.prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        demoCategory: locked ?? category,
+        demoVisitKeys: nextKeys.join(','),
+        demoVisitCount: nextKeys.length,
+      },
+    });
+    return { allowed: true, reason: 'ok', lockedCategory: updated.demoCategory, count: updated.demoVisitCount };
   }
 
   create(dto: CreateLeadDto): Promise<Lead> {

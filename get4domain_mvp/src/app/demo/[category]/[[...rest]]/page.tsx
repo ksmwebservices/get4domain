@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowRight, Star, Users, MessageCircle } from 'lucide-react';
 import {
   getCategory, getSubcategory, getSubcategories, getSections, getSection, getDemoContent, CATEGORY_IDS,
+  canonicalIndustryId,
 } from '@/data/demo-site';
 import { resolveCatalog } from '@/data/demo-catalog';
 import DemoSiteNav from '@/components/DemoSiteNav';
@@ -11,6 +12,8 @@ import DemoContactSection from '@/components/DemoContactSection';
 import DemoCatalogGrid from '@/components/DemoCatalogGrid';
 import ChatBot from '@/components/ChatBot';
 import TourNav from '@/components/TourNav';
+import { getEngineIndustry } from '@/engine/registry';
+import type { EngineSiteData } from '@/engine/types';
 
 interface Params { category: string; rest?: string[] }
 const SAMPLE_NAMES = ['Ravi Kumar', 'Priya Sharma', 'Arjun Menon', 'Sneha Reddy', 'Imran Khan', 'Deepa Nair'];
@@ -96,6 +99,27 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
   const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
   const catalog = resolveCatalog(category, isSub ? parsed.subId : undefined);
   const coverImage = catalog?.coverImage ?? cat.coverImage;
+
+  // Engine industry-switch: at a category/sub HOME (no section slug), render the
+  // bespoke engine site with the demo copy as its content — the same lead-capturing
+  // experience prospects get, in demo mode (real demo-lead capture). Section pages
+  // and industries not yet on the engine fall through to the classic demo renderer.
+  const engineIndustry = getEngineIndustry(canonicalIndustryId(category));
+  if (engineIndustry && !parsed.sectionSlug) {
+    const EngineSite = engineIndustry.Site;
+    const demoSite: EngineSiteData = {
+      vendor: { id: `__demo__${category}`, businessName: brand, industry: canonicalIndustryId(category), subdomain: null },
+      cms: {
+        businessName: brand, tagline: content.heroHeadline || content.tagline, about: content.fullDesc,
+        logo: null, banner: coverImage, phone: null, whatsapp: null, email: null, address: null,
+        seoTitle: null, seoDesc: content.shortDesc, seoKeywords: (content.seoKeywords ?? []).join(', ') || null,
+        businessHours: null,
+      },
+      products: [],
+    };
+    return <EngineSite site={demoSite} mode={{ kind: 'demo', category }} />;
+  }
+
   const catalogSection = sections.find((s) => s.type === 'catalog');
   const waText = encodeURIComponent(`Hi ${brand}, I saw your ${cat.name.toLowerCase()} website and I'm interested. Could you share details?`);
 

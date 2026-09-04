@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { EngineSiteData, IndustryWebsite } from './types';
+import type { EngineMode, EngineSiteData, IndustryWebsite } from './types';
 import { realEstateWebsite } from './industries/real-estate/config';
 import RealEstateSite from './industries/real-estate/RealEstateSite';
 
@@ -14,7 +14,7 @@ import RealEstateSite from './industries/real-estate/RealEstateSite';
  */
 export interface EngineIndustryEntry {
   config: IndustryWebsite;
-  Site: ComponentType<{ site: EngineSiteData; subdomain: string; preview?: boolean }>;
+  Site: ComponentType<{ site: EngineSiteData; mode: EngineMode }>;
 }
 
 const REGISTRY: Record<string, EngineIndustryEntry> = {

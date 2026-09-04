@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CalendarCheck, MessageSquare, IndianRupee, Phone, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
+import type { EngineMode } from '@/engine/types';
 
 type Mode = 'visit' | 'enquiry' | 'token';
 
@@ -34,51 +35,91 @@ function loadRazorpay(): Promise<boolean> {
 const waHref = (num: string | undefined, text: string): string | null =>
   num ? `https://wa.me/${num.replace(/\D/g, '')}?text=${encodeURIComponent(text)}` : null;
 
+interface PaymentResult { dealId: string; order: { id: string; amount: number; currency: string } | null; keyId: string | null; paymentError?: string }
+
 /**
- * The revenue-ready conversion block. Three real actions, all dispatched into the
- * backend Action Registry's PUBLIC surface (vendorId resolved server-side from the
- * subdomain): site-visit booking, property enquiry, and a booking-token payment
- * (Razorpay). WhatsApp is the no-API fallback. In preview mode submissions are
- * simulated so the demo never writes real leads.
+ * The revenue-ready conversion block. Three real actions whose destination is set by
+ * `mode` — WITHOUT any change to the visual/section code:
+ *  - live:    dispatched into the backend Action Registry PUBLIC surface (vendorId
+ *             resolved server-side from the subdomain): site-visit, enquiry, Razorpay
+ *             booking-token.
+ *  - demo:    captures a REAL demo lead (api.demoEnquiry → TeleCRM) for all three tabs,
+ *             prefilled from the OTP-gate identity — full lead-capture, not a stub.
+ *  - preview: simulated locally (no writes) for the internal seed preview.
+ * WhatsApp is the no-API fallback in every mode.
  */
 export default function ReEnquiry({
-  subdomain, brand, projects, preview = false,
+  mode, brand, projects,
 }: {
-  subdomain: string;
+  mode: EngineMode;
   brand: { name: string; phone?: string; whatsapp?: string };
   projects: { id: string; name: string }[];
   preview?: boolean;
 }) {
-  const [mode, setMode] = useState<Mode>('visit');
+  const [tab, setTab] = useState<Mode>('visit');
   const [form, setForm] = useState({ name: '', phone: '', property: projects[0]?.name ?? '', date: '', message: '', amount: 25000 });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Prefill from the OTP-gate identity so a demo visitor isn't re-typing their details.
+  useEffect(() => {
+    if (mode.kind !== 'demo') return;
+    try {
+      const name = sessionStorage.getItem('g4d_demo_name') ?? '';
+      const phone = sessionStorage.getItem('g4d_demo_phone') ?? '';
+      if (name || phone) setForm((f) => ({ ...f, name: f.name || name, phone: f.phone || phone }));
+    } catch { /* ignore */ }
+  }, [mode.kind]);
+
   const set = (k: string, v: string | number) => setForm((f) => ({ ...f, [k]: v }));
+
+  /** Compose a human demo-lead message capturing which action + details the visitor chose. */
+  const demoMessage = (): string => {
+    const bits: string[] = [];
+    if (tab === 'visit') bits.push(`Site-visit request${form.date ? ` for ${new Date(form.date).toLocaleString('en-IN')}` : ''}`);
+    else if (tab === 'token') bits.push(`Booking-token interest (₹${Number(form.amount).toLocaleString('en-IN')})`);
+    else bits.push('Property enquiry');
+    if (form.property) bits.push(`Property: ${form.property}`);
+    if (form.message) bits.push(form.message);
+    return bits.join(' — ');
+  };
 
   async function submit() {
     setError(null);
     if (!form.name.trim() || !form.phone.trim()) { setError('Please add your name and phone number.'); return; }
-    if (mode === 'visit' && !form.date) { setError('Please pick a date and time for the visit.'); return; }
-    if (preview) { setDone(`Preview mode — this ${mode === 'token' ? 'payment' : 'enquiry'} was not sent. On a live site it reaches the developer instantly.`); return; }
+    if (tab === 'visit' && form.date === '' && mode.kind === 'live') { setError('Please pick a date and time for the visit.'); return; }
+
+    if (mode.kind === 'preview') {
+      setDone(`Preview mode — this ${tab === 'token' ? 'payment' : 'enquiry'} was not sent. On a live site it reaches the developer instantly.`);
+      return;
+    }
+
     setBusy(true);
     try {
-      if (mode === 'visit') {
-        await api.engineDispatchPublic(subdomain, 'realestate.site_visit', {
+      if (mode.kind === 'demo') {
+        // Every tab captures a real demo lead into TeleCRM — full lead-capture.
+        await api.demoEnquiry({ name: form.name, phone: form.phone, industry: mode.category, message: demoMessage() });
+        setDone('Thanks! Your interest is logged — on your own site this reaches you instantly by WhatsApp, SMS and email.');
+        return;
+      }
+
+      // mode.kind === 'live'
+      if (tab === 'visit') {
+        await api.engineDispatchPublic(mode.subdomain, 'realestate.site_visit', {
           clientName: form.name, clientPhone: form.phone,
           scheduledAt: new Date(form.date).toISOString(),
           notes: form.property ? `Interested in: ${form.property}` : undefined,
         });
         setDone('Your site visit is booked. The developer will confirm shortly.');
-      } else if (mode === 'enquiry') {
-        await api.engineDispatchPublic(subdomain, 'realestate.enquiry', {
+      } else if (tab === 'enquiry') {
+        await api.engineDispatchPublic(mode.subdomain, 'realestate.enquiry', {
           clientName: form.name, clientPhone: form.phone,
           notes: [form.property && `Property: ${form.property}`, form.message].filter(Boolean).join(' — ') || undefined,
         });
         setDone('Thank you — your enquiry has reached the developer. Expect a callback soon.');
       } else {
-        const res = await api.engineDispatchPublic(subdomain, 'realestate.payment_cta', {
+        const res = await api.engineDispatchPublic(mode.subdomain, 'realestate.payment_cta', {
           clientName: form.name, clientPhone: form.phone, propertyRef: form.property, amount: Number(form.amount),
         }) as { data?: PaymentResult } & PaymentResult;
         const r = (res.data ?? res) as PaymentResult;
@@ -104,8 +145,6 @@ export default function ReEnquiry({
       setBusy(false);
     }
   }
-
-  interface PaymentResult { dealId: string; order: { id: string; amount: number; currency: string } | null; keyId: string | null; paymentError?: string }
 
   const tabs: { id: Mode; label: string; icon: typeof CalendarCheck }[] = [
     { id: 'visit', label: 'Book a site visit', icon: CalendarCheck },
@@ -165,8 +204,8 @@ export default function ReEnquiry({
             <>
               <div className="mb-6 grid grid-cols-3 gap-1 border border-[var(--eng-border)] p-1" style={{ borderRadius: 'var(--eng-radius)' }}>
                 {tabs.map((t) => (
-                  <button key={t.id} onClick={() => setMode(t.id)}
-                    className={`flex flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors ${mode === t.id ? 'bg-[var(--eng-accent)] text-[var(--eng-accent-fg)]' : 'text-[var(--eng-muted)] hover:text-[var(--eng-fg)]'}`}
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    className={`flex flex-col items-center gap-1 px-2 py-2.5 text-[11px] font-medium transition-colors ${tab === t.id ? 'bg-[var(--eng-accent)] text-[var(--eng-accent-fg)]' : 'text-[var(--eng-muted)] hover:text-[var(--eng-fg)]'}`}
                     style={{ borderRadius: 'calc(var(--eng-radius) - 1px)' }}>
                     <t.icon className="h-4 w-4" /> {t.label}
                   </button>
@@ -184,13 +223,13 @@ export default function ReEnquiry({
                     </select>
                   </Field>
                 )}
-                {mode === 'visit' && (
+                {tab === 'visit' && (
                   <Field label="Preferred date & time"><input type="datetime-local" value={form.date} onChange={(e) => set('date', e.target.value)} className={inputCls} /></Field>
                 )}
-                {mode === 'enquiry' && (
+                {tab === 'enquiry' && (
                   <Field label="Message (optional)"><textarea value={form.message} onChange={(e) => set('message', e.target.value)} rows={3} className={inputCls} placeholder="Budget, configuration, timeline…" /></Field>
                 )}
-                {mode === 'token' && (
+                {tab === 'token' && (
                   <Field label="Booking token amount (₹)">
                     <input type="number" min={100} max={500000} value={form.amount} onChange={(e) => set('amount', Number(e.target.value))} className={inputCls} />
                     <p className="mt-1 text-[11px] text-[var(--eng-muted)]">Refundable. You&apos;ll pay securely via Razorpay; the developer confirms your unit.</p>
@@ -204,10 +243,12 @@ export default function ReEnquiry({
                 className="mt-6 flex w-full items-center justify-center gap-2 bg-[var(--eng-accent)] py-3.5 text-sm font-semibold text-[var(--eng-accent-fg)] transition-opacity hover:opacity-90 disabled:opacity-60"
                 style={{ borderRadius: 'var(--eng-radius)' }}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                {mode === 'visit' ? 'Book my site visit' : mode === 'enquiry' ? 'Send enquiry' : `Pay ₹${Number(form.amount).toLocaleString('en-IN')} token`}
+                {tab === 'visit' ? 'Book my site visit' : tab === 'enquiry' ? 'Send enquiry' : `Pay ₹${Number(form.amount).toLocaleString('en-IN')} token`}
               </button>
               <p className="mt-3 text-center text-[11px] text-[var(--eng-muted)]">
-                {preview ? 'Preview — submissions are disabled on the demo.' : 'Your details go straight to the developer. No spam.'}
+                {mode.kind === 'preview' ? 'Preview — submissions are disabled on the demo.'
+                  : mode.kind === 'demo' ? 'This is a live demo — your details are logged as a real enquiry.'
+                  : 'Your details go straight to the developer. No spam.'}
               </p>
             </>
           )}

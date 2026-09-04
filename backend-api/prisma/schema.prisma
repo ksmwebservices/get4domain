@@ -253,6 +253,14 @@ model Lead {
   assignedTo    String?
   followUpDate  DateTime?
   callLogs      LeadCallLog[]
+  // Demo-visit tracking (additive, on the same OTP-gate lead — dispatch 28-Aug-2026).
+  // demoCategory = the FIRST main category this phone viewed; the visitor is scoped
+  // to it (sub-categories within it are free). demoVisitKeys = comma-separated distinct
+  // "category" / "category/sub" keys already viewed; demoVisitCount = their count. After
+  // 3 distinct visits the 4th is redirected to a warm-lead sales page, not another demo.
+  demoCategory  String?
+  demoVisitKeys String?
+  demoVisitCount Int          @default(0)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

@@ -14,10 +14,11 @@ export default function ReHero({ model }: { model: ReSiteModel }) {
     <section id="top" className="relative min-h-[88vh] overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={hero.image} alt={brand.name} className="absolute inset-0 h-full w-full object-cover" />
-      {/* Legibility scrim: a flat darken + a bottom-weighted gradient so the serif
-          headline stays readable over any project photo the vendor uploads. */}
-      <div className="absolute inset-0 bg-[var(--eng-bg)]/45" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[var(--eng-bg)] via-[var(--eng-bg)]/85 to-[var(--eng-bg)]/45" />
+      {/* Legibility scrim: a strong flat darken + a bottom-weighted gradient so the
+          ivory serif headline stays readable over ANY photo — including bright daylight
+          exteriors a vendor or the demo content may use. */}
+      <div className="absolute inset-0 bg-[var(--eng-bg)]/65" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[var(--eng-bg)] via-[var(--eng-bg)]/80 to-[var(--eng-bg)]/55" />
 
       <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-center px-5 pb-16 pt-36">
         <p className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">

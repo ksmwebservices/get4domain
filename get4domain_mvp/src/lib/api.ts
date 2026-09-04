@@ -479,6 +479,9 @@ export const api = {
     apiCall('/leads/demo', { method: 'POST', body: JSON.stringify(data) }),
   // Book-Demo Phase 2 — industry demo website + enquiry (Fast2SMS WhatsApp)
   getDemoSite: (industry: string) => apiCall(`/demo/site/${encodeURIComponent(industry)}`),
+  // Demo-visit scope + 3-visit cap on the OTP-gate lead (additive tracking, by phone).
+  recordDemoVisit: (data: { phone: string; category: string; sub?: string }) =>
+    apiCall('/leads/demo/visit', { method: 'POST', body: JSON.stringify(data) }),
   demoEnquiry: (data: { name: string; phone: string; industry: string; message?: string }) =>
     apiCall('/demo/enquiry', { method: 'POST', body: JSON.stringify(data) }),
   // Phase 5/6 — sandbox go-live (Razorpay ₹999/month → convert to a real account)

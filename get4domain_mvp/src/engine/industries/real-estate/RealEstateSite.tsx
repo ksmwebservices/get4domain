@@ -1,5 +1,5 @@
-import ThemeScope from '../../theme/ThemeScope';
-import type { EngineSiteData } from '../../types';
+import EngineSiteFrame from '../../components/EngineSiteFrame';
+import type { EngineMode, EngineSiteData } from '../../types';
 import { realEstateTheme } from './theme';
 import { buildReModel } from './model';
 import ReNav from './sections/ReNav';
@@ -12,22 +12,27 @@ import {
 
 /**
  * The Real Estate reference website — the bespoke composition the engine dispatches
- * for `realestate` vendors. It merges real CMS/catalogue data with premium seed
- * content (model.ts), applies the architectural theme (ThemeScope), and lays out
- * the RE-native section order. This is NOT the generic DemoCatalogGrid template.
+ * for `realestate` vendors AND the demo route. It merges real CMS/catalogue data with
+ * premium seed content (model.ts), applies the architectural theme + base engine frame
+ * (mobile bottom-nav), and lays out the RE-native section order. NOT the generic
+ * DemoCatalogGrid template. Where it submits (live vendor / real demo lead / preview)
+ * is decided purely by `mode`, with no change to any section code.
  */
-export default function RealEstateSite({
-  site, subdomain, preview = false,
-}: {
-  site: EngineSiteData;
-  subdomain: string;
-  preview?: boolean;
-}) {
+export default function RealEstateSite({ site, mode }: { site: EngineSiteData; mode: EngineMode }) {
   const model = buildReModel(site);
   const projectOptions = model.projects.map((p) => ({ id: p.id, name: p.name }));
 
   return (
-    <ThemeScope tokens={realEstateTheme} className="min-h-screen">
+    <EngineSiteFrame
+      tokens={realEstateTheme}
+      bottomNav={{
+        primaryLabel: 'Book a visit',
+        primaryHref: '#enquiry',
+        phone: model.brand.phone,
+        whatsapp: model.brand.whatsapp,
+        whatsappText: `Hi ${model.brand.name}, I'm interested in your properties. Please share details.`,
+      }}
+    >
       <ReNav brand={model.brand.name} logo={model.brand.logo} phone={model.brand.phone} />
       <ReHero model={model} />
       <ReFeaturedProjects projects={model.projects} />
@@ -38,12 +43,11 @@ export default function RealEstateSite({
       <ReGallery images={model.gallery} brand={model.brand.name} />
       <ReConstruction model={model} />
       <ReEnquiry
-        subdomain={subdomain}
+        mode={mode}
         brand={{ name: model.brand.name, phone: model.brand.phone, whatsapp: model.brand.whatsapp }}
         projects={projectOptions}
-        preview={preview}
       />
       <ReFooter model={model} />
-    </ThemeScope>
+    </EngineSiteFrame>
   );
 }

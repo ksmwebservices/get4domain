@@ -31,6 +31,18 @@ export interface ThemeTokens {
   mode: 'light' | 'dark';
 }
 
+/**
+ * How an engine site is being rendered — this drives where its lead-capture actions
+ * submit, without changing any visual/section code:
+ *  - live:    a real vendor site; actions dispatch to the vendor-scoped Action Registry.
+ *  - demo:    the OTP-gated Visit-Demo flow; actions capture a REAL demo lead (TeleCRM).
+ *  - preview: the internal seed-content preview; actions are simulated (no writes).
+ */
+export type EngineMode =
+  | { kind: 'live'; subdomain: string }
+  | { kind: 'demo'; category: string }
+  | { kind: 'preview' };
+
 /** Raw site data as resolved from the backend (mirrors GET /cms/site/:subdomain). */
 export interface EngineSiteData {
   vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
