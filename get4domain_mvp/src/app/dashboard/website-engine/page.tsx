@@ -74,6 +74,37 @@ export default function WebsiteEnginePage() {
   const liveUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
   const previewUrl = onEngine ? `/engine/preview/${industry}` : '';
 
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState('');
+
+  // Launch the gated demo TOUR (as a customer sees it) for this vendor's industry:
+  // mint a pass for the signed-in caller, seat the tour context, then open /demo/<id>
+  // inside the Get4Domain shell (Website ↔ Dashboard ↔ Customer + Exit).
+  const startDemoTour = async () => {
+    if (!industry) return;
+    setLaunchError('');
+    setLaunching(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
+      const res = await fetch('/api/demo/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ category: industry }),
+      });
+      const j = (await res.json().catch(() => null)) as { ok?: boolean; redirect?: string; error?: string } | null;
+      if (!res.ok || !j?.ok) {
+        setLaunchError(j?.error ?? 'Could not start the demo. Please try again.');
+        setLaunching(false);
+        return;
+      }
+      localStorage.setItem('g4d_tour', JSON.stringify({ industry, customerToken: null }));
+      window.location.href = j.redirect ?? `/demo/${industry}`;
+    } catch {
+      setLaunchError('Could not start the demo. Please try again.');
+      setLaunching(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex min-h-[60vh] items-center justify-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
@@ -99,7 +130,8 @@ export default function WebsiteEnginePage() {
           <h1 className="text-xl font-bold text-slate-900">Website Engine</h1>
           <p className="mt-0.5 text-sm text-slate-500">Your bespoke industry website with real enquiry and booking flows wired to your dashboard.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={startDemoTour} loading={launching} leftIcon={<Rocket className="h-4 w-4" />}>Preview demo</Button>
           {previewUrl && (
             <a href={previewUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" leftIcon={<Sparkles className="h-4 w-4" />}>Preview design</Button>
@@ -107,11 +139,16 @@ export default function WebsiteEnginePage() {
           )}
           {liveUrl && (
             <a href={liveUrl} target="_blank" rel="noopener noreferrer">
-              <Button leftIcon={<ExternalLink className="h-4 w-4" />}>View my live site</Button>
+              <Button variant="outline" leftIcon={<ExternalLink className="h-4 w-4" />}>View my live site</Button>
             </a>
           )}
         </div>
       </div>
+      {launchError && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-700">
+          <AlertTriangle className="h-4 w-4 shrink-0" />{launchError}
+        </div>
+      )}
 
       {/* Revenue readiness */}
       <Card padded>
