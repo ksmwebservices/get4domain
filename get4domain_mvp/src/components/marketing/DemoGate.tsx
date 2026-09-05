@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X, ShieldCheck, ArrowRight, ArrowLeft, Smartphone, Play } from 'lucide-react';
 import { api } from '@/lib/api';
-import { getCategory, getSubcategories } from '@/data/demo-site';
+import { getCategory } from '@/data/demo-site';
 
 /**
  * Mandatory demo-gate. Intercepts every click on a "/demo/..." link inside the
@@ -24,36 +24,6 @@ const PHONE_KEY = 'g4d_demo_phone';
 const NAME_KEY = 'g4d_demo_name';
 
 type Step = 'details' | 'otp';
-
-/** Parse a /demo/<category>[/<sub|section>] href → { category, sub? } for visit tracking. */
-function parseDemoTarget(href: string): { category: string; sub?: string } {
-  const parts = href.split('?')[0].split('/').filter(Boolean); // ['demo','cat', maybe 'sub'|'section']
-  const category = parts[1] ?? '';
-  const seg3 = parts[2];
-  const sub = seg3 && getSubcategories(category).some((s) => s.id === seg3 && s.id !== 'general') ? seg3 : undefined;
-  return { category, sub };
-}
-
-/**
- * Enforce the scope + 3-visit cap on the OTP-gate lead, then navigate to the demo —
- * or redirect a capped/out-of-scope (but warm) visitor to the sales page. A tracking
- * error never blocks a prospect: we fall through to the demo.
- */
-async function gateNavigate(href: string, phone: string): Promise<void> {
-  const { category, sub } = parseDemoTarget(href);
-  if (!phone || !category) { window.location.href = href; return; }
-  try {
-    const res = await api.recordDemoVisit({ phone, category, sub });
-    const r = (res as { data?: DemoVisitResult } & DemoVisitResult).data ?? (res as DemoVisitResult);
-    if (r && r.allowed === false) {
-      window.location.href = `/talk-to-sales?reason=${r.reason}&cat=${encodeURIComponent(r.lockedCategory ?? category)}`;
-      return;
-    }
-  } catch { /* tracking hiccup — don't punish the visitor */ }
-  window.location.href = href;
-}
-
-interface DemoVisitResult { allowed: boolean; reason: string; lockedCategory: string | null; count: number }
 
 export default function DemoGateProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -86,13 +56,11 @@ export default function DemoGateProvider({ children }: { children: React.ReactNo
       e.preventDefault();
       e.stopPropagation();
       let verified = false;
-      let savedPhone = '';
-      try {
-        verified = sessionStorage.getItem(VERIFIED_KEY) === '1';
-        savedPhone = sessionStorage.getItem(PHONE_KEY) ?? '';
-      } catch { /* ignore */ }
-      // Already verified: enforce scope + cap server-side, then navigate (or divert to sales).
-      if (verified) { void gateNavigate(href, savedPhone); return; }
+      try { verified = sessionStorage.getItem(VERIFIED_KEY) === '1'; } catch { /* ignore */ }
+      // Already verified this session: navigate directly. The server middleware still
+      // gates the request against the signed pass cookie (re-verifying if it expired),
+      // so this is never a bypass.
+      if (verified) { window.location.href = href; return; }
       reset();
       setTarget(href);
       setCategory(href.split('/')[2] || '');
@@ -129,15 +97,22 @@ export default function DemoGateProvider({ children }: { children: React.ReactNo
   const verify = async () => {
     setError(''); setLoading(true);
     try {
-      await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
+      // Mint the server-side access pass (verifies OTP + applies cap/lock server-side).
+      const res = await fetch('/api/demo/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone: normalizedPhone, code, category, to: target }),
+      });
+      const j = await res.json();
+      if (!res.ok || !j.ok) {
+        if (j?.redirect) { window.location.href = j.redirect; return; } // capped / locked → sales
+        throw new Error(j?.error || 'Invalid or expired code. Please try again.');
+      }
       try {
         sessionStorage.setItem(VERIFIED_KEY, '1');
         sessionStorage.setItem(PHONE_KEY, normalizedPhone);
         sessionStorage.setItem(NAME_KEY, name);
       } catch { /* ignore */ }
-      // Record this first visit (locks the category) then navigate — or divert to sales
-      // if this phone was already scoped elsewhere / capped in a previous session.
-      await gateNavigate(target, normalizedPhone);
+      window.location.href = j.redirect || target;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
       setLoading(false);
