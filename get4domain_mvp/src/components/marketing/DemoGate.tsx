@@ -97,22 +97,26 @@ export default function DemoGateProvider({ children }: { children: React.ReactNo
   const verify = async () => {
     setError(''); setLoading(true);
     try {
-      // Mint the server-side access pass (verifies OTP + applies cap/lock server-side).
-      const res = await fetch('/api/demo/verify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone: normalizedPhone, code, category, to: target }),
-      });
-      const j = await res.json();
-      if (!res.ok || !j.ok) {
-        if (j?.redirect) { window.location.href = j.redirect; return; } // capped / locked → sales
-        throw new Error(j?.error || 'Invalid or expired code. Please try again.');
-      }
+      // 1. OTP verify + CRM lead capture CLIENT-SIDE — same origin as the OTP request,
+      //    so it reaches the same in-memory-OTP backend instance (regression fix).
+      await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
       try {
         sessionStorage.setItem(VERIFIED_KEY, '1');
         sessionStorage.setItem(PHONE_KEY, normalizedPhone);
         sessionStorage.setItem(NAME_KEY, name);
       } catch { /* ignore */ }
-      window.location.href = j.redirect || target;
+      // 2. Mint the server-side pass (DB-backed cap/lock + signed cookie). A hiccup here
+      //    is non-fatal — the middleware simply re-gates if the cookie didn't land.
+      let redirect = target;
+      try {
+        const res = await fetch('/api/demo/verify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: normalizedPhone, category, to: target }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (j?.redirect) redirect = j.redirect; // demo URL, or /talk-to-sales when capped/locked
+      } catch { /* pass-mint hiccup */ }
+      window.location.href = redirect;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
       setLoading(false);

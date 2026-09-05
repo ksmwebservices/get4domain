@@ -53,21 +53,25 @@ function VisitDemoInner() {
   const verify = async () => {
     setError(''); setLoading(true);
     try {
-      const res = await fetch('/api/demo/verify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone: normalizedPhone, code, category, sub, to }),
-      });
-      const j = await res.json();
-      if (!res.ok || !j.ok) {
-        if (j?.redirect) { window.location.href = j.redirect; return; }
-        throw new Error(j?.error || 'Invalid or expired code. Please try again.');
-      }
+      // 1. OTP verify + CRM lead capture CLIENT-SIDE — same origin as the OTP request,
+      //    so it reaches the same in-memory-OTP backend instance (regression fix).
+      await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
       try {
         sessionStorage.setItem('g4d_demo_verified', '1');
         sessionStorage.setItem('g4d_demo_phone', normalizedPhone);
         sessionStorage.setItem('g4d_demo_name', name);
       } catch { /* ignore */ }
-      window.location.href = j.redirect || to || '/';
+      // 2. Mint the server-side pass (DB-backed cap/lock + signed cookie); non-fatal.
+      let redirect = to || '/';
+      try {
+        const res = await fetch('/api/demo/verify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: normalizedPhone, category, sub, to }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (j?.redirect) redirect = j.redirect;
+      } catch { /* pass-mint hiccup */ }
+      window.location.href = redirect;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid or expired code. Please try again.');
       setLoading(false);
