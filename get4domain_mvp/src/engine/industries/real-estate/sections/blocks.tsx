@@ -33,7 +33,7 @@ export function ReFeaturedProjects({ projects }: { projects: ReProject[] }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.image} alt={p.name} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
                   : <div className="flex h-full w-full items-center justify-center bg-[var(--eng-surface)] text-[var(--eng-muted)]"><Building2 className="h-10 w-10" /></div>}
-                {p.status && <span className="absolute left-4 top-4 bg-[var(--eng-bg)]/85 px-3 py-1 text-[11px] uppercase tracking-wider text-[var(--eng-accent)]">{p.status}</span>}
+                {p.status && <span className="absolute left-4 top-4 eng-surface-85 px-3 py-1 text-[11px] uppercase tracking-wider text-[var(--eng-accent)]">{p.status}</span>}
               </figure>
               <div>
                 {p.location && <p className="flex items-center gap-1.5 text-sm text-[var(--eng-muted)]"><MapPin className="h-3.5 w-3.5" /> {p.location}</p>}

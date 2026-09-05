@@ -281,3 +281,16 @@
 .vendor-ui .bg-slate-50\/60 { background-color: rgb(26 33 51 / 0.5) !important; }
 .vendor-ui .ring-slate-100 { --tw-ring-color: rgb(38 47 68 / 0.5) !important; }
 .vendor-ui .ring-slate-200 { --tw-ring-color: rgb(38 47 68 / 0.7) !important; }
+
+/* ── Engine translucent surfaces ─────────────────────────────────────────────
+   Tailwind v3 cannot apply an opacity modifier to an arbitrary hex CSS var —
+   `bg-[var(--eng-bg)]/85` generates no rule, so glass navs and scrims rendered
+   see-through (nav links overlapping the hero, no legibility scrim). These do the
+   same job with color-mix, which works on the hex `--eng-*` vars. */
+.eng-surface-95 { background-color: color-mix(in srgb, var(--eng-bg) 95%, transparent); }
+.eng-surface-85 { background-color: color-mix(in srgb, var(--eng-bg) 85%, transparent); }
+.eng-surface-80 { background-color: color-mix(in srgb, var(--eng-bg) 80%, transparent); }
+.eng-surface-65 { background-color: color-mix(in srgb, var(--eng-bg) 65%, transparent); }
+.eng-surface-55 { background-color: color-mix(in srgb, var(--eng-bg) 55%, transparent); }
+.eng-accent-15  { background-color: color-mix(in srgb, var(--eng-accent) 15%, transparent); }
+.eng-muted-70   { color: color-mix(in srgb, var(--eng-muted) 70%, transparent); }

@@ -89,8 +89,12 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
   return (
     <section id="top" className="relative min-h-[88vh] overflow-hidden">
       <Img src={image} alt={headline} className="absolute inset-0 h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-[var(--eng-bg)]/65" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[var(--eng-bg)] via-[var(--eng-bg)]/80 to-[var(--eng-bg)]/55" />
+      {/* Legibility scrim. Uses color-mix inline styles (NOT Tailwind's [var()]/opacity,
+          which can't apply opacity to an arbitrary hex var): a LEFT-weighted horizontal
+          gradient so the left-aligned copy always sits on a dark ground while the photo
+          still reads on the right, plus a bottom fade into the section background. */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--eng-bg) 93%, transparent), color-mix(in srgb, var(--eng-bg) 72%, transparent) 42%, color-mix(in srgb, var(--eng-bg) 28%, transparent))' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--eng-bg), transparent 55%)' }} />
       <div className="relative mx-auto flex min-h-[88vh] max-w-6xl flex-col justify-center px-5 pb-16 pt-36">
         {eyebrow && <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">{eyebrow}</p>}
         <h1 className="max-w-3xl font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.06] drop-shadow-[0_2px_20px_rgba(0,0,0,0.5)] sm:text-5xl md:text-6xl">{headline}</h1>

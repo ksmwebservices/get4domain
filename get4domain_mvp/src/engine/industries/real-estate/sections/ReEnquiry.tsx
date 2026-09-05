@@ -193,7 +193,7 @@ export default function ReEnquiry({
         <div className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-6 md:p-8" style={{ borderRadius: 'var(--eng-radius)' }}>
           {done ? (
             <div className="flex min-h-[22rem] flex-col items-center justify-center text-center">
-              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--eng-accent)]/15">
+              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full eng-accent-15">
                 <Check className="h-7 w-7 text-[var(--eng-accent)]" />
               </span>
               <p className="max-w-xs text-[var(--eng-fg)]">{done}</p>
@@ -259,7 +259,7 @@ export default function ReEnquiry({
 }
 
 const inputCls =
-  'w-full border border-[var(--eng-border)] bg-transparent px-3.5 py-2.5 text-sm text-[var(--eng-fg)] outline-none placeholder:text-[var(--eng-muted)]/70 focus:border-[var(--eng-accent)]';
+  'w-full border border-[var(--eng-border)] bg-transparent px-3.5 py-2.5 text-sm text-[var(--eng-fg)] outline-none placeholder:eng-muted-70 focus:border-[var(--eng-accent)]';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

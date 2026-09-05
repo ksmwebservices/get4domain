@@ -19,7 +19,7 @@ export default function KitNav({ brand, links, phone, primaryLabel }: {
   }, []);
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-40 transition-colors duration-300 ${scrolled ? 'border-b border-[var(--eng-border)] bg-[var(--eng-bg)]/95 backdrop-blur' : 'bg-transparent'}`}>
+    <header className={`fixed inset-x-0 top-0 z-40 transition-colors duration-300 ${scrolled ? 'border-b border-[var(--eng-border)] eng-surface-95 backdrop-blur' : 'bg-transparent'}`}>
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <a href="#top" className="font-[family-name:var(--eng-fontDisplay)] text-lg tracking-wide text-[var(--eng-fg)]">{brand}</a>
         <nav className="hidden items-center gap-8 md:flex">

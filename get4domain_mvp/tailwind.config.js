@@ -4,6 +4,11 @@ module.exports = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/layouts/**/*.{js,ts,jsx,tsx,mdx}',
+    // The Industry Website Engine lives here and relies on arbitrary [var(--eng-*)]
+    // color utilities (themed backgrounds, accent buttons, hero scrims). Without this
+    // path Tailwind never generates those classes and every engine site renders with
+    // transparent backgrounds/buttons — i.e. unstyled.
+    './src/engine/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {

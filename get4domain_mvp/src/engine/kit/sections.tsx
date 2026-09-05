@@ -68,7 +68,7 @@ export function Showcase({ id, variant, eyebrow, title, sub, items }: {
                   <figure className="relative aspect-[4/3] overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}>
                     {p.image ? <Img src={p.image} alt={p.title} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
                       : <div className="flex h-full w-full items-center justify-center bg-[var(--eng-surface)]"><Star className="h-8 w-8 text-[var(--eng-muted)]" /></div>}
-                    {p.subtitle && <span className="absolute left-4 top-4 bg-[var(--eng-bg)]/85 px-3 py-1 text-[11px] uppercase tracking-wider text-[var(--eng-accent)]">{p.subtitle}</span>}
+                    {p.subtitle && <span className="absolute left-4 top-4 eng-surface-85 px-3 py-1 text-[11px] uppercase tracking-wider text-[var(--eng-accent)]">{p.subtitle}</span>}
                   </figure>
                   <div>
                     <h3 className="font-[family-name:var(--eng-fontDisplay)] text-2xl md:text-4xl">{p.title}</h3>
@@ -325,7 +325,7 @@ export function Faq({ id, eyebrow, title, items }: { id: string; eyebrow: string
 export function CtaBand({ id, title, sub, image }: { id: string; title: string; sub?: string; image?: string }) {
   return (
     <section id={id} className="relative overflow-hidden px-5 py-24">
-      {image && <><Img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-[var(--eng-bg)]/80" /></>}
+      {image && <><Img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 eng-surface-80" /></>}
       <div className="relative mx-auto max-w-3xl text-center">
         <h2 className="font-[family-name:var(--eng-fontDisplay)] text-3xl md:text-5xl">{title}</h2>
         {sub && <p className="mx-auto mt-4 max-w-xl text-[var(--eng-muted)]">{sub}</p>}

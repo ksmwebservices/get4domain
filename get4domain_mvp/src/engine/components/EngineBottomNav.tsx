@@ -49,7 +49,7 @@ export default function EngineBottomNav({ items }: BottomNavConfig) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 grid border-t border-[var(--eng-border)] bg-[var(--eng-bg)]/95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid border-t border-[var(--eng-border)] eng-surface-95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden"
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       aria-label="Site navigation"
     >
