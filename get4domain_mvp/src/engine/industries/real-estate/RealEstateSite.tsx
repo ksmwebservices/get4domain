@@ -25,13 +25,13 @@ export default function RealEstateSite({ site, mode }: { site: EngineSiteData; m
   return (
     <EngineSiteFrame
       tokens={realEstateTheme}
-      bottomNav={{
-        primaryLabel: 'Book a visit',
-        primaryHref: '#enquiry',
-        phone: model.brand.phone,
-        whatsapp: model.brand.whatsapp,
-        whatsappText: `Hi ${model.brand.name}, I'm interested in your properties. Please share details.`,
-      }}
+      bottomNav={[
+        { label: 'Home', icon: 'home', href: '#top' },
+        { label: 'Properties', icon: 'building', href: '#featured' },
+        { label: 'Visit', icon: 'visit', href: '#enquiry', emphasis: true },
+        { label: 'Amenities', icon: 'services', href: '#amenities' },
+        { label: 'More', icon: 'more', href: '#gallery' },
+      ]}
     >
       <ReNav brand={model.brand.name} logo={model.brand.logo} phone={model.brand.phone} />
       <ReHero model={model} />

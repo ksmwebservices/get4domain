@@ -1,11 +1,13 @@
 import type { EngineSiteData } from '../types';
 import type { KitBrand, KitItem } from './model';
 
-/** Build the brand block from a vendor's CMS (or the demo content injected as CMS). */
-export function brandFrom(site: EngineSiteData, defaults: { tagline: string; about: string }): KitBrand {
+/** Build the brand block from a vendor's CMS (or the demo content injected as CMS).
+ *  `defaults.name` is the reference demo business name (e.g. "CareWell Clinic") used
+ *  when no real vendor/demo name is supplied (preview + demo). */
+export function brandFrom(site: EngineSiteData, defaults: { name: string; tagline: string; about: string }): KitBrand {
   const cms = site.cms;
   return {
-    name: cms?.businessName || site.vendor.businessName || 'Your Business',
+    name: cms?.businessName || site.vendor.businessName || defaults.name,
     tagline: cms?.tagline || defaults.tagline,
     about: cms?.about || defaults.about,
     logo: cms?.logo || undefined,

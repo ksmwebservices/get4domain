@@ -41,8 +41,10 @@ export interface ReSiteModel {
 }
 
 const IMG = {
-  hero: 'https://images.pexels.com/photos/1642125/pexels-photo-1642125.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  p1: 'https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=1200',
+  // Clean, relevant property imagery (the earlier washed-out sky exterior on the
+  // project card is replaced with a crisp apartment/interior set).
+  hero: 'https://images.pexels.com/photos/1546168/pexels-photo-1546168.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  p1: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200',
   p2: 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200',
   p3: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg?auto=compress&cs=tinysrgb&w=1200',
   g1: 'https://images.pexels.com/photos/276724/pexels-photo-276724.jpeg?auto=compress&cs=tinysrgb&w=1000',
@@ -52,10 +54,11 @@ const IMG = {
   g5: 'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1000',
 };
 
+// Reference sample properties (§18): 2 BHK ₹68L, 3 BHK ₹92L, Residential Plot ₹42L.
 const SEED_PROJECTS: ReProject[] = [
-  { id: 'seed-1', name: 'The Meridian Residences', location: 'Whitefield, Bengaluru', priceLabel: '₹1.42 Cr onwards', config: '3 & 4 BHK', area: '1,860–2,540 sqft', status: 'Under construction', image: IMG.p1, tags: ['RERA', 'Possession 2027', 'Corner tower'], description: 'Limited-edition residences with double-height lobbies and landscaped sky decks.' },
-  { id: 'seed-2', name: 'Stonewater Villas', location: 'Sarjapur Road', priceLabel: '₹2.95 Cr onwards', config: '4 BHK Villas', area: '3,200–3,900 sqft', status: 'Ready to move', image: IMG.p2, tags: ['Gated', 'Private garden', 'Ready'], description: 'Forty independent villas around a central water court and clubhouse.' },
-  { id: 'seed-3', name: 'Aravalli Plots', location: 'Devanahalli', priceLabel: '₹78 L onwards', config: 'Plots 1,200–2,400 sqft', area: 'BMRDA approved', status: 'New launch', image: IMG.p3, tags: ['Clear title', 'Near airport', 'Financing'], description: 'Premium plotted development on the northern growth corridor.' },
+  { id: 'seed-1', name: '2 BHK Apartment', location: 'Whitefield, Bengaluru', priceLabel: '₹68 L', config: '2 BHK', area: '1,180 sqft', status: 'Ready to move', image: IMG.p1, tags: ['RERA', 'Ready', 'Corner unit'], description: 'Bright, efficient 2 BHK homes in a gated community with a clubhouse and pool.' },
+  { id: 'seed-2', name: '3 BHK Apartment', location: 'Sarjapur Road', priceLabel: '₹92 L', config: '3 BHK', area: '1,640 sqft', status: 'Under construction', image: IMG.p2, tags: ['RERA', 'Possession 2027', 'Balcony garden'], description: 'Spacious 3 BHK residences with double-height lobbies and landscaped sky decks.' },
+  { id: 'seed-3', name: 'Residential Plot', location: 'Devanahalli', priceLabel: '₹42 L', config: 'Plot 1,200 sqft', area: 'BMRDA approved', status: 'New launch', image: IMG.p3, tags: ['Clear title', 'Near airport', 'Financing'], description: 'Premium plotted development on the northern growth corridor.' },
 ];
 
 const priceStr = (p?: string | null): string | undefined => {
@@ -76,7 +79,7 @@ function cf(fields: Record<string, string> | null, ...keys: string[]): string | 
 }
 
 export function buildReModel(site: EngineSiteData): ReSiteModel {
-  const name = site.cms?.businessName || site.vendor.businessName || 'Premium Developers';
+  const name = site.cms?.businessName || site.vendor.businessName || 'PrimeNest Realty';
   const realProjects: ReProject[] = site.products.map((p) => {
     const f = p.customFields;
     const tags = (cf(f, 'tags') || '').split(',').map((t) => t.trim()).filter(Boolean);
@@ -112,7 +115,7 @@ export function buildReModel(site: EngineSiteData): ReSiteModel {
       rera: undefined,
     },
     hero: {
-      headline: site.cms?.tagline || 'Homes that hold their value — and their character.',
+      headline: site.cms?.tagline || 'Find the Right Property.',
       subline: `${name} — a portfolio of RERA-registered apartments, villas and plots across the city's most connected corridors.`,
       highlight: hasRealProjects ? `${projects.length} live ${projects.length === 1 ? 'project' : 'projects'} · RERA registered · Free site visits` : 'RERA registered · On-time delivery · Free site visits',
       image: site.cms?.banner || IMG.hero,

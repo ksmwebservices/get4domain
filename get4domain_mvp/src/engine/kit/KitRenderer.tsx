@@ -51,16 +51,7 @@ function KitFooter({ model }: { model: KitSiteModel }) {
 export default function KitRenderer({ model, mode }: { model: KitSiteModel; mode: EngineMode }) {
   const b = model.brand;
   return (
-    <EngineSiteFrame
-      tokens={model.theme}
-      bottomNav={{
-        primaryLabel: model.primaryCta.label,
-        primaryHref: '#enquiry',
-        phone: b.phone,
-        whatsapp: b.whatsapp,
-        whatsappText: `Hi ${b.name}, I'm interested. Please share details.`,
-      }}
-    >
+    <EngineSiteFrame tokens={model.theme} bottomNav={model.bottomNav}>
       <KitNav brand={b.name} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} />
       {model.sections.map((s, i) => {
         switch (s.type) {

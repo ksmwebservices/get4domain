@@ -40,8 +40,22 @@ export interface KitStep { title: string; desc?: string; state?: 'done' | 'activ
 export interface KitQuote { quote: string; author: string; note?: string }
 export interface KitFaqItem { q: string; a: string }
 
+/** A mobile bottom-nav item (Section 9 of the reference — industry-specific label sets). */
+export interface BottomNavItem {
+  label: string;
+  /** Icon name resolved by EngineBottomNav's compact icon map. */
+  icon: string;
+  /** In-page anchor ('#services') or '#top' for Home. */
+  href: string;
+  /** The primary action (e.g. Book / Order / Join) — visually emphasized. */
+  emphasis?: boolean;
+}
+
+/** A hero CTA (label + in-page anchor, or an external tel:/wa link). */
+export interface HeroCta { label: string; href: string }
+
 export type KitSection =
-  | { type: 'hero'; variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[] }
+  | { type: 'hero'; variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta }
   | { type: 'stats'; items: KitStat[] }
   | { type: 'showcase'; id: string; variant: 'rows' | 'cards' | 'menu' | 'tiles'; eyebrow: string; title: string; sub?: string; items: KitItem[] }
   | { type: 'featureIndex'; id: string; eyebrow: string; title: string; sub?: string; items: { label: string; blurb: string }[] }
@@ -73,9 +87,11 @@ export interface KitSiteModel {
   /** Options for the "choice" field (e.g. service/room/course) surfaced in the enquiry. */
   choices: string[];
   choiceLabel: string;
-  /** The nav links (anchors into sections). */
+  /** Desktop top-nav links (anchors into sections). */
   nav: { href: string; label: string }[];
-  /** Primary CTA label + anchor for nav + bottom-nav. */
+  /** Mobile bottom-nav — the reference's own industry-specific label set (4–5 items). */
+  bottomNav: BottomNavItem[];
+  /** Primary CTA (used by the desktop nav + metadata). */
   primaryCta: EngineActionSpec;
   sections: KitSection[];
 }

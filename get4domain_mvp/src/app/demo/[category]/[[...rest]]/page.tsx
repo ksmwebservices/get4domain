@@ -106,10 +106,14 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
   // and industries not yet on the engine fall through to the classic demo renderer.
   const engineIndustry = getEngineIndustry(canonicalIndustryId(category));
   if (engineIndustry && !parsed.sectionSlug) {
+    // The engine site uses the reference blueprint (business name, hero headline, CTAs,
+    // nav, sample data) from the industry builder; the demo route only varies the
+    // sub-category CONTENT — the about copy and the cover image — so a sub reads
+    // distinctly without forking the design.
     const demoSite: EngineSiteData = {
-      vendor: { id: `__demo__${category}`, businessName: brand, industry: canonicalIndustryId(category), subdomain: null },
+      vendor: { id: `__demo__${category}`, businessName: '', industry: canonicalIndustryId(category), subdomain: null },
       cms: {
-        businessName: brand, tagline: content.heroHeadline || content.tagline, about: content.fullDesc,
+        businessName: null, tagline: null, about: content.fullDesc,
         logo: null, banner: coverImage, phone: null, whatsapp: null, email: null, address: null,
         seoTitle: null, seoDesc: content.shortDesc, seoKeywords: (content.seoKeywords ?? []).join(', ') || null,
         businessHours: null,

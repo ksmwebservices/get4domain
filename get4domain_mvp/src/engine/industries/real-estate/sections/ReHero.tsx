@@ -32,12 +32,12 @@ export default function ReHero({ model }: { model: ReSiteModel }) {
         </p>
 
         <div className="mt-9 flex flex-wrap items-center gap-4">
-          <a href="#enquiry" className="group inline-flex items-center gap-2 bg-[var(--eng-accent)] px-7 py-4 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>
-            Book a free site visit
+          <a href="#featured" className="group inline-flex items-center gap-2 bg-[var(--eng-accent)] px-7 py-4 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>
+            View Properties
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </a>
-          <a href="#featured" className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-7 py-4 text-sm font-medium text-[var(--eng-fg)] hover:border-[var(--eng-accent)]" style={{ borderRadius: 'var(--eng-radius)' }}>
-            View projects
+          <a href="#enquiry" className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-7 py-4 text-sm font-medium text-[var(--eng-fg)] hover:border-[var(--eng-accent)]" style={{ borderRadius: 'var(--eng-radius)' }}>
+            Book Site Visit
           </a>
         </div>
 

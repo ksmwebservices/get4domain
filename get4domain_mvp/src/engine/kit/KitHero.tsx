@@ -1,19 +1,23 @@
 import { ArrowRight } from 'lucide-react';
-import type { KitStat } from './model';
+import type { HeroCta, KitStat } from './model';
 
 const Img = ({ src, alt, className }: { src: string; alt: string; className?: string }) =>
   // eslint-disable-next-line @next/next/no-img-element
   <img src={src} alt={alt} className={className} />;
 
-function Ctas() {
+function Ctas({ primary, secondary }: { primary?: HeroCta; secondary?: HeroCta }) {
+  const p = primary ?? { label: 'Get started', href: '#enquiry' };
   return (
     <div className="mt-8 flex flex-wrap items-center gap-4">
-      <a href="#enquiry" className="group inline-flex items-center gap-2 bg-[var(--eng-accent)] px-7 py-4 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>
-        Get started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+      <a href={p.href} className="group inline-flex items-center gap-2 bg-[var(--eng-accent)] px-7 py-4 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>
+        {p.label} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
       </a>
-      <a href="#showcase-primary" className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-7 py-4 text-sm font-medium text-[var(--eng-fg)] hover:border-[var(--eng-accent)]" style={{ borderRadius: 'var(--eng-radius)' }}>
-        Explore
-      </a>
+      {secondary && (
+        <a href={secondary.href} target={secondary.href.startsWith('http') ? '_blank' : undefined} rel={secondary.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+          className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-7 py-4 text-sm font-medium text-[var(--eng-fg)] hover:border-[var(--eng-accent)]" style={{ borderRadius: 'var(--eng-radius)' }}>
+          {secondary.label}
+        </a>
+      )}
     </div>
   );
 }
@@ -37,9 +41,10 @@ function Stats({ items }: { items: KitStat[] }) {
  *  - split:   content on a solid ground beside a tall image (editorial, clean).
  *  - panel:   a colour panel with the headline over a shorter image banner (bold).
  */
-export default function KitHero({ variant, eyebrow, headline, subline, highlight, image, stats }: {
-  variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[];
+export default function KitHero({ variant, eyebrow, headline, subline, highlight, image, stats, ctaPrimary, ctaSecondary }: {
+  variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta;
 }) {
+  const ctas = <Ctas primary={ctaPrimary} secondary={ctaSecondary} />;
   if (variant === 'split') {
     return (
       <section id="top" className="grid min-h-[86vh] items-stretch md:grid-cols-2">
@@ -47,7 +52,7 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
           {eyebrow && <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">{eyebrow}</p>}
           <h1 className="font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.06] md:text-6xl">{headline}</h1>
           <p className="mt-6 max-w-md text-[var(--eng-muted)] md:text-lg">{subline}</p>
-          <Ctas />
+          {ctas}
           {highlight && <p className="mt-6 text-xs uppercase tracking-widest text-[var(--eng-muted)]">{highlight}</p>}
           {stats && <Stats items={stats} />}
         </div>
@@ -67,8 +72,8 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
             <h1 className="max-w-3xl font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.05] md:text-6xl">{headline}</h1>
             <p className="mt-5 max-w-xl opacity-90 md:text-lg">{subline}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#enquiry" className="inline-flex items-center gap-2 bg-[var(--eng-bg)] px-6 py-3.5 text-sm font-semibold text-[var(--eng-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>Get started <ArrowRight className="h-4 w-4" /></a>
-              <a href="#showcase-primary" className="inline-flex items-center gap-2 border border-current px-6 py-3.5 text-sm font-medium" style={{ borderRadius: 'var(--eng-radius)' }}>Explore</a>
+              <a href={(ctaPrimary ?? { href: '#enquiry' }).href} className="inline-flex items-center gap-2 bg-[var(--eng-bg)] px-6 py-3.5 text-sm font-semibold text-[var(--eng-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>{(ctaPrimary ?? { label: 'Get started' }).label} <ArrowRight className="h-4 w-4" /></a>
+              {ctaSecondary && <a href={ctaSecondary.href} target={ctaSecondary.href.startsWith('http') ? '_blank' : undefined} rel={ctaSecondary.href.startsWith('http') ? 'noopener noreferrer' : undefined} className="inline-flex items-center gap-2 border border-current px-6 py-3.5 text-sm font-medium" style={{ borderRadius: 'var(--eng-radius)' }}>{ctaSecondary.label}</a>}
             </div>
           </div>
           <div className="relative -mt-6 aspect-[16/7] overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}>
@@ -90,7 +95,7 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
         {eyebrow && <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">{eyebrow}</p>}
         <h1 className="max-w-3xl font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.06] drop-shadow-[0_2px_20px_rgba(0,0,0,0.5)] sm:text-5xl md:text-6xl">{headline}</h1>
         <p className="mt-6 max-w-xl leading-relaxed text-[var(--eng-muted)] md:text-lg">{subline}</p>
-        <Ctas />
+        {ctas}
         {highlight && <p className="mt-6 text-xs uppercase tracking-widest text-[var(--eng-muted)]">{highlight}</p>}
         {stats && <Stats items={stats} />}
       </div>
