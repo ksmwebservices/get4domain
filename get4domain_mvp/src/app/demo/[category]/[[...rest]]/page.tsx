@@ -120,7 +120,17 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
       },
       products: [],
     };
-    return <>{engineIndustry.render(demoSite, { kind: 'demo', category })}</>;
+    // The engine renders the industry site as the "Website" pane, but it MUST stay
+    // inside the Get4Domain demo shell: TourNav lets the lead move between Website ↔
+    // Vendor Dashboard ↔ Customer app and exit back to Get4Domain, and ChatBot is the
+    // in-demo assistant — the same framing the non-engine demo pages carry below.
+    return (
+      <>
+        {engineIndustry.render(demoSite, { kind: 'demo', category })}
+        <ChatBot />
+        <TourNav />
+      </>
+    );
   }
 
   const catalogSection = sections.find((s) => s.type === 'catalog');
