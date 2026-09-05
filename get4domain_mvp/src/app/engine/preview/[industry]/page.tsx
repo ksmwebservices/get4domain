@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getEngineIndustry } from '@/engine/registry';
+import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
+import { SAMPLE_TEMPLATES } from '@/engine/kit/templates';
 import type { EngineSiteData } from '@/engine/types';
 
 /**
@@ -8,8 +9,11 @@ import type { EngineSiteData } from '@/engine/types';
  * content, with no live vendor required. This is how a prospective vendor (or the
  * team) sees exactly what the engine generates for an industry before signing up.
  * Submissions are simulated (preview=true) so no real leads are written.
+ *
+ * `?template=<id>` renders a data-driven template (Phase-1 seed library) instead of the
+ * built-in industry builder — proving a vendor can switch designs with no redeploy.
  */
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 const DEMO_SITE = (industry: string): EngineSiteData => ({
   // Empty vendor/CMS → the industry builder fills EVERYTHING from its reference blueprint,
@@ -30,8 +34,23 @@ export async function generateMetadata({ params }: { params: Promise<{ industry:
   };
 }
 
-export default async function EnginePreviewPage({ params }: { params: Promise<{ industry: string }> }) {
+export default async function EnginePreviewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ industry: string }>;
+  searchParams: Promise<{ template?: string }>;
+}) {
   const { industry } = await params;
+  const { template } = await searchParams;
+
+  // Data-driven template preview: render a seed-library template with preview content.
+  if (template) {
+    const tpl = SAMPLE_TEMPLATES[template];
+    if (!tpl) notFound();
+    return <>{renderKitTemplate(tpl, DEMO_SITE(tpl.industry ?? industry), { kind: 'preview' })}</>;
+  }
+
   const entry = getEngineIndustry(industry);
   if (!entry) notFound();
   return <>{entry.render(DEMO_SITE(industry), { kind: 'preview' })}</>;

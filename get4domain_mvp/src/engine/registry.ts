@@ -4,6 +4,7 @@ import type { KitSiteModel } from './kit/model';
 import { realEstateWebsite } from './industries/real-estate/config';
 import RealEstateSite from './industries/real-estate/RealEstateSite';
 import KitRenderer from './kit/KitRenderer';
+import { resolveTemplate, type WebsiteTemplate } from './kit/template';
 import { kitConfig } from './kit/config';
 import { buildClinic, buildSalon, buildGym, buildCoaching, buildEducation, buildProfessional, buildFinance, buildDiagnostics, buildPhotography } from './industries/kit/appointments';
 import { buildHotel, buildEvents, buildTravel } from './industries/kit/hospitality';
@@ -46,6 +47,21 @@ function withVendorBanner(model: KitSiteModel, site: EngineSiteData, mode: Engin
     ...model,
     sections: model.sections.map((s) => (s.type === 'hero' ? { ...s, image: banner } : s)),
   };
+}
+
+/**
+ * Render a data-driven website TEMPLATE (DB- or admin-authored) for a vendor. The
+ * template supplies the layout + theme; the vendor's content is overlaid by
+ * resolveTemplate. This is the no-redeploy path: a template selected by themeId renders
+ * live through the same KitRenderer the built-in industries use.
+ */
+export function renderKitTemplate(template: WebsiteTemplate, site: EngineSiteData, mode: EngineMode): ReactNode {
+  const banner = site.cms?.banner?.trim();
+  const model = resolveTemplate(template, site);
+  const withBanner = mode.kind === 'live' && banner
+    ? { ...model, sections: model.sections.map((s) => (s.type === 'hero' ? { ...s, image: banner } : s)) }
+    : model;
+  return createElement(KitRenderer, { model: withBanner, mode });
 }
 
 const REGISTRY: Record<string, EngineIndustryEntry> = {
