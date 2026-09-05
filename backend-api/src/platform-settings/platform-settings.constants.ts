@@ -51,6 +51,19 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
     ],
   },
   {
+    // Supabase Storage — durable home for AI-generated site imagery (DALL-E URLs
+    // expire in ~1h, so generated banners are downloaded and re-hosted here, and the
+    // permanent public URL is stored on the vendor CMS). The URL/bucket are public;
+    // only the service-role key is a secret.
+    key: 'storage',
+    label: 'Storage (Supabase)',
+    settings: [
+      { key: 'supabase_url', label: 'Supabase Project URL (https://<ref>.supabase.co)', envFallback: 'SUPABASE_URL', secret: false },
+      { key: 'supabase_service_key', label: 'Supabase Service Role Key', envFallback: 'SUPABASE_SERVICE_ROLE_KEY', secret: true },
+      { key: 'bucket', label: 'Public Storage Bucket', envFallback: 'SUPABASE_STORAGE_BUCKET', secret: false },
+    ],
+  },
+  {
     key: 'whatsapp',
     label: 'WhatsApp (BSP)',
     settings: [

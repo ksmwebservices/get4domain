@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AuthService } from '../auth/auth.service';
 import { WalletService } from '../wallet/wallet.service';
+import { AiService } from '../ai/ai.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 
@@ -18,6 +19,7 @@ export class VendorsService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly wallet: WalletService,
+    private readonly ai: AiService,
   ) {}
 
   findAll(): Promise<Vendor[]> {
@@ -69,7 +71,41 @@ export class VendorsService {
       this.logger.error(`Failed to send welcome email to ${vendor.email}`, error instanceof Error ? error.stack : undefined);
     }
 
+    // Auto-seed the live site with an AI-generated hero banner (fire-and-forget so it
+    // never slows or blocks account creation). It self-contains every failure and simply
+    // does nothing when image gen / Supabase Storage isn't configured — the site then
+    // falls back to the curated per-industry sample image as before.
+    void this.seedSiteHero(vendor);
+
     return vendor;
+  }
+
+  /**
+   * Best-effort: generate a durable hero banner for the new vendor's live site and store
+   * it on their CMS. Runs detached from the create request; any error is swallowed here so
+   * an image/storage failure can never affect vendor creation.
+   */
+  private async seedSiteHero(vendor: Vendor): Promise<void> {
+    try {
+      const hero = await this.ai.generateSiteHero(vendor.id, {
+        businessName: vendor.businessName,
+        industry: vendor.industry ?? 'business',
+      });
+      if (hero.status !== 'ok' || !hero.url) {
+        if (hero.status === 'failed') {
+          this.logger.warn(`Site hero not seeded for ${vendor.email}: ${hero.error ?? 'failed'}`);
+        }
+        return; // not_configured → silently skip (feature simply off until creds are set)
+      }
+      await this.prisma.vendorCMS.upsert({
+        where: { vendorId: vendor.id },
+        create: { vendorId: vendor.id, businessName: vendor.businessName, banner: hero.url },
+        update: { banner: hero.url },
+      });
+      this.logger.log(`Seeded AI site hero for ${vendor.email}`);
+    } catch (error) {
+      this.logger.warn(`Site hero seed failed for ${vendor.email}: ${error instanceof Error ? error.message : 'error'}`);
+    }
   }
 
   async update(id: string, dto: UpdateVendorDto): Promise<Vendor> {

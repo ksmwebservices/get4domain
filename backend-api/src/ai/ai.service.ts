@@ -5,6 +5,7 @@ import { AiGeneratePageDto } from './dto/generate-page.dto';
 import { CallSummaryDto } from './dto/call-summary.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { StorageService } from '../storage/storage.service';
 
 export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
   // AI Studio content-type keys (source of truth for the grid).
@@ -16,6 +17,8 @@ export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
   email: 600,
   whatsapp: 300,
   sms: 200,
+  // Auto-generated live-site hero banner (DALL-E, landscape) at vendor creation.
+  site_hero: 1200,
   // Legacy channel keys still used by Growth Hub publish flows.
   facebook: 500,
   instagram: 500,
@@ -38,6 +41,7 @@ const CONTENT_PRICING_KEY: Record<string, string> = {
   email: 'email_message',
   whatsapp: 'whatsapp_message',
   sms: 'sms_message',
+  site_hero: 'festival_poster',
   // Legacy
   facebook: 'social_post',
   instagram: 'social_post',
@@ -126,6 +130,7 @@ export class AiService {
   constructor(
     private readonly walletService: WalletService,
     private readonly settings: PlatformSettingsService,
+    private readonly storage: StorageService,
   ) {}
 
   private readonly openaiTextModel = 'gpt-4o-mini';
@@ -256,7 +261,10 @@ Your reply:`;
    * "no key configured" apart from a real OpenAI API failure (invalid/expired key,
    * quota, no image access, …) — never masks an API error as "not configured".
    */
-  private async generateImage(prompt: string): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string }> {
+  private async generateImage(
+    prompt: string,
+    size: '1024x1024' | '1792x1024' | '1024x1792' = '1024x1024',
+  ): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string }> {
     const apiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
     if (!apiKey) {
       this.logger.warn('OpenAI image key not resolved (ai/openai_api_key or OPENAI_API_KEY env)');
@@ -267,7 +275,7 @@ Your reply:`;
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024' }),
+        body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size }),
       });
 
       const body = await response.text();
@@ -288,6 +296,56 @@ Your reply:`;
       this.logger.error(`DALL-E image request failed: ${message}`);
       return { url: null, status: 'failed', error: message };
     }
+  }
+
+  /**
+   * Generate a durable, industry-appropriate HERO BANNER for a vendor's live site and
+   * persist it to Supabase Storage. DALL-E hands back a URL that expires in ~1h, so a
+   * temp URL can't back a live website — we re-host it and return a permanent public URL,
+   * or a discriminated non-ok status so callers (e.g. auto-seed at vendor creation) can
+   * degrade to the curated sample image instead of failing. Wallet is charged once, only
+   * after a real image was both generated AND persisted.
+   *
+   * The prompt is deliberately TEXT-FREE (no words, logos or UI baked into the pixels) so
+   * nothing renders garbled — headline/CTA text is overlaid by the site's hero component.
+   */
+  async generateSiteHero(
+    vendorId: string,
+    params: { businessName: string; industry: string; tagline?: string },
+    internal = false,
+  ): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string }> {
+    // No point calling a paid image API if the result can't be persisted durably.
+    if (!(await this.storage.isConfigured())) {
+      return { url: null, status: 'not_configured', error: 'storage not configured' };
+    }
+
+    const prompt = `A premium, photorealistic wide banner photograph for the website hero of a ${params.industry} business in India. Professional, bright, editorial commercial photography with natural depth of field and a welcoming atmosphere. Wide 16:9 composition with clean negative space on one side for an overlaid headline. Absolutely no text, no words, no letters, no logos, no watermarks and no user-interface elements.`;
+
+    const img = await this.generateImage(prompt, '1792x1024');
+    if (img.status !== 'ok' || !img.url) {
+      return { url: null, status: img.status, error: img.error };
+    }
+
+    const stored = await this.storage.uploadFromUrl(img.url, `vendors/${vendorId}/hero-${Date.now()}.png`);
+    if (stored.status !== 'ok' || !stored.url) {
+      return { url: null, status: 'failed', error: stored.error ?? 'persist failed' };
+    }
+
+    if (!internal) {
+      const cost = await this.walletService.getRate(
+        CONTENT_PRICING_KEY.site_hero ?? '',
+        CONTENT_CHANNEL_COST_PAISE.site_hero ?? 1200,
+      );
+      try {
+        await this.walletService.deduct(vendorId, cost, 'AI site hero banner generated', 'ai_site_hero');
+      } catch (error) {
+        // The banner is already persisted and free to keep — a debit failure (e.g. low
+        // balance) must not discard it or fail the caller. Log and move on.
+        this.logger.warn(`Site hero persisted but wallet debit failed for ${vendorId}: ${error instanceof Error ? error.message : 'error'}`);
+      }
+    }
+
+    return { url: stored.url, status: 'ok' };
   }
 
   /** Resolved per-use cost (paise) for each AI Studio content type — the single
