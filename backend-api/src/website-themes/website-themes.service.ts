@@ -24,16 +24,27 @@ export class WebsiteThemesService {
   }
 
   create(dto: CreateWebsiteThemeDto, createdBy?: string): Promise<WebsiteTheme> {
-    const { cssVars, ...rest } = dto;
-    return this.prisma.websiteTheme.create({ data: { ...rest, cssVars: cssVars as Prisma.InputJsonValue, createdBy } });
+    const { cssVars, layout, ...rest } = dto;
+    return this.prisma.websiteTheme.create({
+      data: {
+        ...rest,
+        cssVars: cssVars as Prisma.InputJsonValue,
+        ...(layout !== undefined ? { layout: layout as Prisma.InputJsonValue } : {}),
+        createdBy,
+      },
+    });
   }
 
   async update(id: string, dto: UpdateWebsiteThemeDto): Promise<WebsiteTheme> {
     if (!(await this.prisma.websiteTheme.findUnique({ where: { id } }))) throw new NotFoundException('Theme not found');
-    const { cssVars, ...rest } = dto;
+    const { cssVars, layout, ...rest } = dto;
     return this.prisma.websiteTheme.update({
       where: { id },
-      data: { ...rest, ...(cssVars !== undefined ? { cssVars: cssVars as Prisma.InputJsonValue } : {}) },
+      data: {
+        ...rest,
+        ...(cssVars !== undefined ? { cssVars: cssVars as Prisma.InputJsonValue } : {}),
+        ...(layout !== undefined ? { layout: layout as Prisma.InputJsonValue } : {}),
+      },
     });
   }
 

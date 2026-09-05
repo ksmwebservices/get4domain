@@ -18,6 +18,41 @@ export type WebsiteTemplate = Omit<KitSiteModel, 'brand'> & {
   brandDefaults: { name: string; tagline: string; about: string };
 };
 
+/** A WebsiteTheme DB row as returned by the site API (layout may be absent/invalid). */
+export interface ThemeRow {
+  id: string;
+  name: string;
+  industry?: string | null;
+  cssVars?: unknown;
+  layout?: unknown;
+}
+
+/**
+ * Build a renderable WebsiteTemplate from a DB theme row, or return null when the row
+ * carries no valid data-driven layout — in which case the caller falls back to the
+ * industry default. Guards the shape (sections array + theme) so a malformed uploaded
+ * template can never crash a live site.
+ */
+export function templateFromThemeRow(row: ThemeRow | null | undefined): WebsiteTemplate | null {
+  if (!row || !row.layout || typeof row.layout !== 'object') return null;
+  const l = row.layout as Partial<Omit<WebsiteTemplate, 'id' | 'name' | 'industry'>>;
+  if (!Array.isArray(l.sections) || l.sections.length === 0) return null;
+  if (!l.theme || typeof l.theme !== 'object') return null;
+  return {
+    id: row.id,
+    name: row.name,
+    industry: row.industry ?? null,
+    brandDefaults: l.brandDefaults ?? { name: '', tagline: '', about: '' },
+    theme: l.theme,
+    choices: l.choices ?? [],
+    choiceLabel: l.choiceLabel ?? 'Option',
+    nav: l.nav ?? [],
+    bottomNav: l.bottomNav ?? [],
+    primaryCta: l.primaryCta ?? { intent: 'engine.enquiry', label: 'Enquire', kind: 'enquiry' },
+    sections: l.sections,
+  };
+}
+
 /**
  * Fill a template with a vendor's real content (the shared-content model — the same
  * content flows into whichever template they pick):

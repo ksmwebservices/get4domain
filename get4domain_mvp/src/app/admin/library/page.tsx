@@ -33,7 +33,7 @@ type TypeFilter = 'all' | 'prompt' | 'template';
 interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; source: string; canvaTemplateId: string | null; active: boolean }
 interface DocBuiltin { key: string; label: string; description: string; fields: { key: string; label: string }[] }
 interface DesignBuiltin { id: string; name: string; category: string; width: number; height: number; fields: { key: string; label: string }[] }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview: string | null; isDefault: boolean; active: boolean }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; layout?: unknown; preview: string | null; isDefault: boolean; active: boolean }
 
 const CONTENT_TYPES = ['social_post', 'festival_poster', 'blog_post', 'ad_creative', 'email', 'whatsapp', 'sms', 'document'];
 const INDUSTRIES = ['', 'travel', 'restaurant', 'clinic', 'hotel', 'salon', 'gym', 'realestate', 'education', 'retail', 'construction', 'events', 'finance', 'automobile', 'logistics', 'diagnostics', 'photography', 'professional', 'agriculture', 'coaching', 'technology'];
@@ -70,7 +70,7 @@ export default function AdminLibraryPage() {
   const [savingTh, setSavingTh] = useState(false);
 
   const [tpl, setTpl] = useState({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
-  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false });
+  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '' });
 
   // Admin design-template authoring (Fabric editor). `starter` collects name/category
   // + size; `editor` (once opened) holds the size the blank canvas opens at.
@@ -124,8 +124,24 @@ export default function AdminLibraryPage() {
     if (!theme.name) return;
     setSavingTh(true); setError('');
     try {
-      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars: { '--primary': theme.primary, '--accent': theme.accent, '--radius': theme.radius } });
-      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false });
+      let layout: Record<string, unknown> | undefined;
+      let cssVars: Record<string, string> = { '--primary': theme.primary, '--accent': theme.accent, '--radius': theme.radius };
+      const raw = theme.code.trim();
+      if (raw) {
+        let parsed: unknown;
+        try { parsed = JSON.parse(raw); }
+        catch { setError('Template code is not valid JSON.'); setSavingTh(false); return; }
+        const obj = parsed as { sections?: unknown; theme?: { accent?: string; accent2?: string; radius?: string } } | null;
+        if (!obj || typeof obj !== 'object' || !Array.isArray(obj.sections) || obj.sections.length === 0 || !obj.theme || typeof obj.theme !== 'object') {
+          setError('Template code must be an object with a non-empty "sections" array and a "theme" object.');
+          setSavingTh(false); return;
+        }
+        layout = obj as Record<string, unknown>;
+        // Derive the swatches/radius shown in the picker from the pasted template.
+        cssVars = { '--primary': obj.theme.accent ?? theme.primary, '--accent': obj.theme.accent2 ?? theme.accent, '--radius': obj.theme.radius ?? theme.radius };
+      }
+      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars, layout });
+      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '' });
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingTh(false); }
   }
@@ -272,7 +288,17 @@ export default function AdminLibraryPage() {
               <input className={inputCls} placeholder="Preview thumbnail URL (optional)" value={theme.preview} onChange={(e) => setTheme({ ...theme, preview: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={theme.isDefault} onChange={(e) => setTheme({ ...theme, isDefault: e.target.checked })} /> Default for this industry</label>
             </div>
-            <p className="mt-2 text-xs text-slate-500">Add several themes per industry — each with its own preview thumbnail — so vendors pick from a set, not one fixed look. Templates can be sourced from Bolt-built designs (upload the preview here).</p>
+            <div className="mt-3">
+              <div className="mb-1 text-xs font-semibold text-slate-300">Template code (JSON) — optional</div>
+              <textarea
+                className={`${inputCls} h-40 font-mono text-xs`}
+                placeholder='Paste a full template design here, e.g. {"theme":{...},"sections":[{"type":"hero",...}],"nav":[...],"brandDefaults":{...}}. Leave blank for a colours-only theme.'
+                value={theme.code}
+                onChange={(e) => setTheme({ ...theme, code: e.target.value })}
+              />
+              <p className="mt-1 text-xs text-slate-500">Paste the data-driven template design (the engine WebsiteTemplate shape). When present it renders as a full custom layout live — no redeploy. Leave blank to save a colours-only re-skin using the pickers above.</p>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">Add several themes per industry — each with its own preview thumbnail — so vendors pick from a set, not one fixed look.</p>
             <button onClick={addTheme} disabled={savingTh || !theme.name} className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">{savingTh ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Add theme</button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -288,7 +314,7 @@ export default function AdminLibraryPage() {
                   <button onClick={() => delTheme(t.id)} className="ml-auto rounded-lg p-1.5 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
                 <div className="mt-2 text-sm font-bold text-white">{t.name} {t.isDefault && <span className="text-xs font-normal text-success-400">· default</span>}</div>
-                <div className="text-xs text-slate-500">{t.industry ?? 'any industry'}</div>
+                <div className="text-xs text-slate-500">{t.industry ?? 'any industry'} · {t.layout ? 'full design' : 'colours only'}</div>
               </div>
             ))}
           </div>

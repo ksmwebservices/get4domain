@@ -15,6 +15,11 @@ export class CreateWebsiteThemeDto {
   @IsObject()
   cssVars!: Record<string, string>;
 
+  @ApiProperty({ required: false, description: 'Full data-driven layout (engine template shape); null = colours-only theme.' })
+  @IsOptional()
+  @IsObject()
+  layout?: Record<string, unknown>;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

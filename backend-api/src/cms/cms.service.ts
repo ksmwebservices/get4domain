@@ -109,6 +109,7 @@ export class CmsService {
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
     cms: VendorCMS | null;
     products: VendorProduct[];
+    theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown } | null;
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -121,6 +122,11 @@ export class CmsService {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
+    // The vendor's selected template (with its data-driven layout), if any — so the
+    // public site can render a chosen design with no redeploy.
+    const themeRow = cms?.themeId
+      ? await this.prisma.websiteTheme.findUnique({ where: { id: cms.themeId } })
+      : null;
     return {
       vendor: {
         id: vendor.id,
@@ -130,6 +136,9 @@ export class CmsService {
       },
       cms,
       products,
+      theme: themeRow
+        ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout }
+        : null,
     };
   }
 

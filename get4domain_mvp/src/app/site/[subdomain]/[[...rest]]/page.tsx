@@ -10,7 +10,8 @@ import DemoContactSection from '@/components/DemoContactSection';
 import DemoCatalogGrid from '@/components/DemoCatalogGrid';
 import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
-import { getEngineIndustry } from '@/engine/registry';
+import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
+import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
 import type { EngineSiteData } from '@/engine/types';
 
 // Live vendor sites are per-vendor and change whenever the vendor edits — never static.
@@ -31,6 +32,7 @@ interface SiteData {
     seoKeywords: string | null;
   } | null;
   products: VendorProduct[];
+  theme?: ThemeRow | null;
 }
 
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
@@ -103,6 +105,13 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const { subdomain, rest = [] } = await params;
   const site = await fetchSite(subdomain);
   if (!site) notFound();
+
+  // Selected template wins: if the vendor picked a theme with a data-driven layout,
+  // render THAT design (any industry), filled with their content — the no-redeploy path.
+  const selectedTemplate = templateFromThemeRow(site.theme);
+  if (selectedTemplate && (rest.length === 0 || rest[0] === 'home')) {
+    return <>{renderKitTemplate(selectedTemplate, site as unknown as EngineSiteData, { kind: 'live', subdomain })}</>;
+  }
 
   // Industry-switch: if this vendor's industry has a bespoke engine site (Real
   // Estate today), render THAT — a genuinely different information architecture and

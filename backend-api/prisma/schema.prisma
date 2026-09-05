@@ -775,6 +775,11 @@ model WebsiteTheme {
   name      String
   industry  String? // null = works for any industry
   cssVars   Json // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
+  // Full data-driven template (engine WebsiteTemplate shape minus id/name/industry:
+  // { theme, brandDefaults, choices, choiceLabel, nav, bottomNav, primaryCta, sections }).
+  // When present, the vendor's live site renders THIS layout via the engine (no redeploy);
+  // null = a colours-only theme applied over the industry default layout.
+  layout    Json?
   preview   String? // preview image URL
   isDefault Boolean  @default(false)
   active    Boolean  @default(true)
