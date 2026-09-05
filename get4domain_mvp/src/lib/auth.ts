@@ -110,3 +110,55 @@ export async function loginWithCredentials(
     return { success: false, error: 'Connection error. Please try again.' };
   }
 }
+
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  businessName: string;
+  industry: string;
+  phone?: string;
+}
+
+/** Self-service signup → creates the vendor and logs in (same session handling as login). */
+export async function registerWithCredentials(
+  input: RegisterInput,
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  try {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+    const response = await fetch(`${apiBase}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+
+    const body = await response.json();
+    if (!response.ok) {
+      // Backend sends a string message or a class-validator array — surface the first line.
+      const msg = Array.isArray(body?.message) ? body.message[0] : body?.message;
+      return { success: false, error: msg || 'Could not create your account' };
+    }
+
+    const { accessToken, user: backendUser } = body.data;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('g4d_token', accessToken);
+    }
+
+    const user: AuthUser = {
+      id: backendUser.id,
+      name: backendUser.name,
+      email: backendUser.email,
+      role: mapRole(backendUser.role),
+      businessName: backendUser.businessName,
+      industry: backendUser.industry ?? undefined,
+      subdomain: backendUser.subdomain ?? undefined,
+      plan: 'DomainApp Startup',
+      initials: getInitials(backendUser.name),
+    };
+
+    setSession(user);
+    return { success: true, user };
+  } catch {
+    return { success: false, error: 'Connection error. Please try again.' };
+  }
+}

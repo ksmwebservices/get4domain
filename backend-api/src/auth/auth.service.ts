@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { VendorsService } from '../vendors/vendors.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
 
@@ -30,7 +32,52 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly vendorsService: VendorsService,
   ) {}
+
+  /**
+   * Public self-service signup: provisions a real vendor (trial credit + welcome email +
+   * best-effort AI hero seed, all via VendorsService.create), auto-derives a unique
+   * subdomain from the business name, and returns a login token so the client lands
+   * straight into the product — the same { accessToken, user } shape as login().
+   */
+  async register(dto: RegisterDto): Promise<LoginResult> {
+    const subdomain = await this.uniqueSubdomain(dto.businessName);
+    const vendor = await this.vendorsService.create({
+      name: dto.name,
+      email: dto.email,
+      password: dto.password,
+      businessName: dto.businessName,
+      industry: dto.industry,
+      phone: dto.phone,
+      subdomain,
+    });
+
+    const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
+    return {
+      accessToken,
+      user: {
+        id: vendor.id,
+        name: vendor.name,
+        email: vendor.email,
+        role: vendor.role,
+        businessName: vendor.businessName,
+        industry: vendor.industry,
+        subdomain: vendor.subdomain,
+      },
+    };
+  }
+
+  /** Slugify the business name into an available subdomain (append -2, -3 … if taken). */
+  private async uniqueSubdomain(businessName: string): Promise<string> {
+    const base =
+      businessName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'site';
+    let candidate = base;
+    for (let n = 2; await this.prisma.vendor.findUnique({ where: { subdomain: candidate } }); n++) {
+      candidate = `${base}-${n}`;
+    }
+    return candidate;
+  }
 
   async login(dto: LoginDto): Promise<LoginResult> {
     const vendor = await this.prisma.vendor.findUnique({ where: { email: dto.email } });

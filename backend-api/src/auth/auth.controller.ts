@@ -2,6 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService, LoginResult } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
@@ -15,6 +16,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with email and password, returns a JWT valid for 7 days' })
   login(@Body() dto: LoginDto): Promise<LoginResult> {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('register')
+  @ApiOperation({ summary: 'Self-service signup: creates a vendor and returns a JWT (auto-login)' })
+  register(@Body() dto: RegisterDto): Promise<LoginResult> {
+    return this.authService.register(dto);
   }
 
   @Post('refresh')

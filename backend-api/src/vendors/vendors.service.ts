@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Vendor } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { AuthService } from '../auth/auth.service';
 import { WalletService } from '../wallet/wallet.service';
 import { AiService } from '../ai/ai.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
@@ -42,7 +42,7 @@ export class VendorsService {
       throw new ConflictException('A vendor with this email already exists');
     }
 
-    const hashedPassword = await AuthService.hashPassword(dto.password);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const vendor = await this.prisma.vendor.create({
       data: {
