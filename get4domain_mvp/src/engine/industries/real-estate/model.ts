@@ -43,15 +43,15 @@ export interface ReSiteModel {
 const IMG = {
   // Clean, relevant property imagery (the earlier washed-out sky exterior on the
   // project card is replaced with a crisp apartment/interior set).
-  hero: 'https://images.pexels.com/photos/1546168/pexels-photo-1546168.jpeg?auto=compress&cs=tinysrgb&w=1600',
-  p1: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  p2: 'https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  p3: 'https://images.pexels.com/photos/2102587/pexels-photo-2102587.jpeg?auto=compress&cs=tinysrgb&w=1200',
-  g1: 'https://images.pexels.com/photos/276724/pexels-photo-276724.jpeg?auto=compress&cs=tinysrgb&w=1000',
-  g2: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=1000',
-  g3: 'https://images.pexels.com/photos/439391/pexels-photo-439391.jpeg?auto=compress&cs=tinysrgb&w=1000',
-  g4: 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg?auto=compress&cs=tinysrgb&w=1000',
-  g5: 'https://images.pexels.com/photos/1571453/pexels-photo-1571453.jpeg?auto=compress&cs=tinysrgb&w=1000',
+  hero: '/demo-library/pexels-1546168.jpg',
+  p1: '/demo-library/pexels-1571460.jpg',
+  p2: '/demo-library/pexels-1396122.jpg',
+  p3: '/demo-library/pexels-2102587.jpg',
+  g1: '/demo-library/pexels-276724.jpg',
+  g2: '/demo-library/pexels-1571460.jpg',
+  g3: '/demo-library/pexels-439391.jpg',
+  g4: '/demo-library/pexels-1643383.jpg',
+  g5: '/demo-library/pexels-1571453.jpg',
 };
 
 // Reference sample properties (§18): 2 BHK ₹68L, 3 BHK ₹92L, Residential Plot ₹42L.

@@ -104,7 +104,7 @@ export default function Hero() {
                 </div>
                 <div className="relative h-40 rounded-xl overflow-hidden">
                   <Image
-                    src="https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=800"
+                    src="/demo-library/pexels-3601425.jpg"
                     alt="MR Travels — DomainApp"
                     fill
                     className="object-cover"

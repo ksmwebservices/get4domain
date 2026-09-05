@@ -43,7 +43,9 @@ export interface CategoryCatalog {
 }
 
 /** Pexels CDN helper (all IDs verified to return a real image). */
-const px = (id: number) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800`;
+// Demo catalogue images are self-hosted under public/demo-library (downloaded once from
+// Pexels, keyed by photo id) so the demo no longer depends on an external image host.
+const px = (id: number) => `/demo-library/pexels-${id}.jpg`;
 
 // ── Category catalogs (all 20) ───────────────────────────────────────────────
 export const DEMO_CATALOG: Record<string, CategoryCatalog> = {

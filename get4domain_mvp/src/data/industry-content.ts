@@ -43,7 +43,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['restaurant website india', 'digital menu restaurant', 'online food ordering system', 'restaurant management software'],
     color: 'text-orange-600',
     bgColor: 'bg-orange-50',
-    coverImage: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-958545.jpg',
   },
   {
     id: 'travel',
@@ -62,7 +62,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['travel agency website india', 'tour package booking software', 'travel management system india', 'cab booking software'],
     color: 'text-sky-600',
     bgColor: 'bg-sky-50',
-    coverImage: 'https://images.pexels.com/photos/3601425/pexels-photo-3601425.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3601425.jpg',
   },
   {
     id: 'clinic',
@@ -81,7 +81,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['clinic website india', 'hospital website', 'doctor appointment booking online', 'medical website design india'],
     color: 'text-rose-600',
     bgColor: 'bg-rose-50',
-    coverImage: 'https://images.pexels.com/photos/263402/pexels-photo-263402.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-263402.jpg',
   },
   {
     id: 'education',
@@ -100,7 +100,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['school website india', 'college website design', 'online admission system india', 'educational institution website'],
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50',
-    coverImage: 'https://images.pexels.com/photos/207692/pexels-photo-207692.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-207692.jpg',
   },
   {
     id: 'realestate',
@@ -119,7 +119,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['real estate website india', 'property listing website', 'builder website india', 'flat sale website'],
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50',
-    coverImage: 'https://images.pexels.com/photos/323780/pexels-photo-323780.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-323780.jpg',
   },
   {
     id: 'retail',
@@ -138,7 +138,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['retail shop website india', 'product catalog website', 'supermarket website', 'shop online india'],
     color: 'text-pink-600',
     bgColor: 'bg-pink-50',
-    coverImage: 'https://images.pexels.com/photos/264636/pexels-photo-264636.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-264636.jpg',
   },
   {
     id: 'salon',
@@ -157,7 +157,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['salon website india', 'beauty parlour website', 'appointment booking salon', 'spa website india'],
     color: 'text-fuchsia-600',
     bgColor: 'bg-fuchsia-50',
-    coverImage: 'https://images.pexels.com/photos/3993449/pexels-photo-3993449.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3993449.jpg',
   },
   {
     id: 'gym',
@@ -176,7 +176,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['gym website india', 'fitness center website', 'yoga studio website', 'membership management gym'],
     color: 'text-lime-600',
     bgColor: 'bg-lime-50',
-    coverImage: 'https://images.pexels.com/photos/1954524/pexels-photo-1954524.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1954524.jpg',
   },
   {
     id: 'construction',
@@ -195,7 +195,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['construction company website india', 'builder website', 'interior designer website india', 'contractor website'],
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
-    coverImage: 'https://images.pexels.com/photos/159306/house-server-architecture-internet-159306.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-159306.jpg',
   },
   {
     id: 'professional',
@@ -214,7 +214,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['CA firm website india', 'chartered accountant website', 'tax consultant website', 'law firm website india'],
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
-    coverImage: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3184465.jpg',
   },
   {
     id: 'events',
@@ -233,7 +233,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['event management website india', 'wedding planner website', 'event company website', 'catering website india'],
     color: 'text-violet-600',
     bgColor: 'bg-violet-50',
-    coverImage: 'https://images.pexels.com/photos/169198/pexels-photo-169198.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-169198.jpg',
   },
   {
     id: 'finance',
@@ -252,7 +252,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['insurance agent website india', 'financial advisor website', 'loan DSA website', 'mutual fund website india'],
     color: 'text-teal-600',
     bgColor: 'bg-teal-50',
-    coverImage: 'https://images.pexels.com/photos/356056/pexels-photo-356056.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-356056.jpg',
   },
   {
     id: 'automobile',
@@ -271,7 +271,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['car showroom website india', 'automobile dealer website', 'used car website india', 'bike showroom website'],
     color: 'text-slate-600',
     bgColor: 'bg-slate-50',
-    coverImage: 'https://images.pexels.com/photos/3802510/pexels-photo-3802510.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3802510.jpg',
   },
   {
     id: 'logistics',
@@ -290,7 +290,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['transport company website india', 'logistics website', 'packers movers website', 'freight company website india'],
     color: 'text-yellow-600',
     bgColor: 'bg-yellow-50',
-    coverImage: 'https://images.pexels.com/photos/2199293/pexels-photo-2199293.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-2199293.jpg',
   },
   {
     id: 'hotel',
@@ -309,7 +309,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['hotel website india', 'resort website booking', 'direct hotel booking website', 'hospitality website design'],
     color: 'text-orange-700',
     bgColor: 'bg-orange-50',
-    coverImage: 'https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-338504.jpg',
   },
   {
     id: 'diagnostics',
@@ -328,7 +328,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['diagnostic lab website india', 'pathology lab website', 'home collection lab', 'health checkup website india'],
     color: 'text-cyan-600',
     bgColor: 'bg-cyan-50',
-    coverImage: 'https://images.pexels.com/photos/4226119/pexels-photo-4226119.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-4226119.jpg',
   },
   {
     id: 'photography',
@@ -347,7 +347,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['photographer website india', 'wedding photographer website', 'photography studio website', 'videographer website india'],
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
-    coverImage: 'https://images.pexels.com/photos/1264210/pexels-photo-1264210.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1264210.jpg',
   },
   {
     id: 'technology',
@@ -366,7 +366,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['IT company website india', 'software company website', 'web development agency website', 'digital agency website india'],
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
-    coverImage: 'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3183150.jpg',
   },
   {
     id: 'agriculture',
@@ -385,7 +385,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['farm website india', 'agriculture business website', 'organic farm website', 'direct farm sales india'],
     color: 'text-green-600',
     bgColor: 'bg-green-50',
-    coverImage: 'https://images.pexels.com/photos/1595104/pexels-photo-1595104.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1595104.jpg',
   },
   {
     id: 'coaching',
@@ -404,7 +404,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['coaching institute website india', 'tuition center website', 'JEE NEET coaching website', 'competitive exam coaching website'],
     color: 'text-rose-700',
     bgColor: 'bg-rose-50',
-    coverImage: 'https://images.pexels.com/photos/4145153/pexels-photo-4145153.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-4145153.jpg',
   },
   {
     id: 'petcare',
@@ -423,7 +423,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['veterinary clinic website', 'pet grooming website india', 'pet care website', 'vet appointment booking website'],
     color: 'text-amber-700',
     bgColor: 'bg-amber-50',
-    coverImage: 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1108099.jpg',
   },
   {
     id: 'movers',
@@ -442,7 +442,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['packers and movers website', 'movers website india', 'home shifting website', 'relocation company website'],
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
-    coverImage: 'https://images.pexels.com/photos/4569340/pexels-photo-4569340.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-4569340.jpg',
   },
   {
     id: 'astrology',
@@ -461,7 +461,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['astrologer website india', 'astrology consultation website', 'online astrology website', 'vastu consultant website'],
     color: 'text-purple-700',
     bgColor: 'bg-purple-50',
-    coverImage: 'https://images.pexels.com/photos/6541008/pexels-photo-6541008.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-6541008.jpg',
   },
   {
     id: 'pestcontrol',
@@ -480,7 +480,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['pest control website india', 'pest control service website', 'termite treatment website', 'pest control company website'],
     color: 'text-green-700',
     bgColor: 'bg-green-50',
-    coverImage: 'https://images.pexels.com/photos/5230983/pexels-photo-5230983.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-5230983.jpg',
   },
   {
     id: 'interior',
@@ -499,7 +499,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['interior designer website india', 'interior design website', 'modular kitchen website', 'home interior website'],
     color: 'text-teal-700',
     bgColor: 'bg-teal-50',
-    coverImage: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1571460.jpg',
   },
   {
     id: 'homeservices',
@@ -518,7 +518,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['home services website india', 'electrician plumber website', 'ac repair service website', 'home repair website'],
     color: 'text-indigo-700',
     bgColor: 'bg-indigo-50',
-    coverImage: 'https://images.pexels.com/photos/5691659/pexels-photo-5691659.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-5691659.jpg',
   },
   {
     id: 'rentalservices',
@@ -537,7 +537,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['rental services website india', 'furniture rental website', 'appliance rental website', 'equipment rental website'],
     color: 'text-cyan-700',
     bgColor: 'bg-cyan-50',
-    coverImage: 'https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-1866149.jpg',
   },
   {
     id: 'printing',
@@ -556,7 +556,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['bookstore website india', 'stationery shop website', 'printing press website', 'online printing website'],
     color: 'text-yellow-700',
     bgColor: 'bg-yellow-50',
-    coverImage: 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-159711.jpg',
   },
   {
     id: 'recruitment',
@@ -575,7 +575,7 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['recruitment agency website india', 'placement agency website', 'staffing agency website', 'job consultancy website'],
     color: 'text-sky-700',
     bgColor: 'bg-sky-50',
-    coverImage: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-3184291.jpg',
   },
   {
     id: 'government',
@@ -594,6 +594,6 @@ export const industryContent: IndustryContent[] = [
     seoKeywords: ['common service centre website', 'csc website india', 'aadhaar pan service website', 'government service centre website'],
     color: 'text-slate-700',
     bgColor: 'bg-slate-100',
-    coverImage: 'https://images.pexels.com/photos/4386321/pexels-photo-4386321.jpeg?auto=compress&cs=tinysrgb&w=800',
+    coverImage: '/demo-library/pexels-4386321.jpg',
   },
 ];
