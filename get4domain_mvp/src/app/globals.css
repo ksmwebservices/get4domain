@@ -27,6 +27,24 @@
   [data-engine-mode] :where(h1, h2, h3, h4, h5, h6) {
     color: inherit;
   }
+
+  /* Engine section reveal-on-scroll (Reveal.tsx). Only armed by JS after mount, so
+     without JS everything is visible; disabled entirely under reduced-motion. */
+  [data-engine-mode] .eng-reveal.eng-armed {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  [data-engine-mode] .eng-reveal.eng-armed.eng-in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-engine-mode] .eng-reveal.eng-armed {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
 }
 
 @layer components {

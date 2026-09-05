@@ -88,7 +88,7 @@ export function Showcase({ id, variant, eyebrow, title, sub, items }: {
           {variant === 'cards' && (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p) => (
-                <article key={p.title} className="group overflow-hidden border border-[var(--eng-border)] bg-[var(--eng-surface)]" style={{ borderRadius: 'var(--eng-radius)' }}>
+                <article key={p.title} className="group overflow-hidden border border-[var(--eng-border)] bg-[var(--eng-surface)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" style={{ borderRadius: 'var(--eng-radius)' }}>
                   {p.image && <figure className="aspect-[4/3] overflow-hidden"><Img src={p.image} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /></figure>}
                   <div className="p-5">
                     <div className="flex items-start justify-between gap-3">
@@ -263,7 +263,7 @@ export function People({ id, eyebrow, title, sub, items }: {
         <Heading eyebrow={eyebrow} title={title} sub={sub} />
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((m) => (
-            <div key={m.name} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-5 text-center" style={{ borderRadius: 'var(--eng-radius)' }}>
+            <div key={m.name} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ borderRadius: 'var(--eng-radius)' }}>
               <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-[var(--eng-border)]">
                 {m.image ? <Img src={m.image} alt={m.name} className="h-full w-full object-cover" />
                   : <div className="flex h-full w-full items-center justify-center bg-[var(--eng-surface)] text-[var(--eng-accent)]"><Users className="h-8 w-8" /></div>}

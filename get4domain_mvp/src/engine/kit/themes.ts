@@ -16,7 +16,7 @@ export const THEMES: Record<string, ThemeTokens> = {
   coaching:   { bg: '#FBF8F3', fg: '#1E1B2E', surface: '#FFFFFF', border: 'rgba(79,70,229,0.14)', muted: '#6B6780', accent: '#4F46E5', accentFg: '#FFFFFF', accent2: '#F59E0B', fontDisplay: SANS, fontBody: SANS, radius: '12px', mode: 'light' },
   education:  { bg: '#FFFFFF', fg: '#12213B', surface: '#F4F7FB', border: 'rgba(37,99,235,0.14)', muted: '#5A6B85', accent: '#2563EB', accentFg: '#FFFFFF', accent2: '#F59E0B', fontDisplay: SERIF, fontBody: SANS, radius: '10px', mode: 'light' },
   professional:{ bg: '#FAFAF9', fg: '#1C2536', surface: '#FFFFFF', border: 'rgba(28,37,54,0.12)', muted: '#5C6675', accent: '#1E3A5F', accentFg: '#FFFFFF', accent2: '#B08D57', fontDisplay: SERIF, fontBody: SANS, radius: '3px', mode: 'light' },
-  finance:    { bg: '#0B1220', fg: '#EAF0F7', surface: '#121C2E', border: 'rgba(201,162,75,0.20)', muted: '#8FA0B5', accent: '#C9A24B', accentFg: '#0B1220', accent2: '#3B82F6', fontDisplay: SERIF, fontBody: SANS, radius: '4px', mode: 'dark' },
+  finance:    { bg: '#0B1220', fg: '#EAF0F7', surface: '#121C2E', border: 'rgba(16,185,129,0.22)', muted: '#8FA0B5', accent: '#10B981', accentFg: '#04140D', accent2: '#3B82F6', fontDisplay: SERIF, fontBody: SANS, radius: '4px', mode: 'dark' },
   diagnostics:{ bg: '#F5FBFE', fg: '#0B2740', surface: '#FFFFFF', border: 'rgba(6,140,190,0.16)', muted: '#557089', accent: '#0891B2', accentFg: '#FFFFFF', accent2: '#22C55E', fontDisplay: SANS, fontBody: SANS, radius: '8px', mode: 'light' },
   photography:{ bg: '#0A0A0A', fg: '#F4F4F4', surface: '#141414', border: 'rgba(255,255,255,0.14)', muted: '#9A9A9A', accent: '#E4B34A', accentFg: '#0A0A0A', accent2: '#F4F4F4', fontDisplay: SANS, fontBody: SANS, radius: '0px', mode: 'dark' },
 

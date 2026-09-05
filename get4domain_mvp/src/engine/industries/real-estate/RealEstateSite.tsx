@@ -1,4 +1,5 @@
 import EngineSiteFrame from '../../components/EngineSiteFrame';
+import Reveal from '../../components/Reveal';
 import type { EngineMode, EngineSiteData } from '../../types';
 import { realEstateTheme } from './theme';
 import { buildReModel } from './model';
@@ -35,18 +36,20 @@ export default function RealEstateSite({ site, mode }: { site: EngineSiteData; m
     >
       <ReNav brand={model.brand.name} logo={model.brand.logo} phone={model.brand.phone} />
       <ReHero model={model} />
-      <ReFeaturedProjects projects={model.projects} />
-      <RePropertyTypes model={model} />
-      <ReLocation model={model} />
-      <ReAmenities model={model} />
-      <ReFloorPlans model={model} />
-      <ReGallery images={model.gallery} brand={model.brand.name} />
-      <ReConstruction model={model} />
-      <ReEnquiry
-        mode={mode}
-        brand={{ name: model.brand.name, phone: model.brand.phone, whatsapp: model.brand.whatsapp }}
-        projects={projectOptions}
-      />
+      <Reveal><ReFeaturedProjects projects={model.projects} /></Reveal>
+      <Reveal><RePropertyTypes model={model} /></Reveal>
+      <Reveal><ReLocation model={model} /></Reveal>
+      <Reveal><ReAmenities model={model} /></Reveal>
+      <Reveal><ReFloorPlans model={model} /></Reveal>
+      <Reveal><ReGallery images={model.gallery} brand={model.brand.name} /></Reveal>
+      <Reveal><ReConstruction model={model} /></Reveal>
+      <Reveal>
+        <ReEnquiry
+          mode={mode}
+          brand={{ name: model.brand.name, phone: model.brand.phone, whatsapp: model.brand.whatsapp }}
+          projects={projectOptions}
+        />
+      </Reveal>
       <ReFooter model={model} />
     </EngineSiteFrame>
   );

@@ -1,4 +1,5 @@
 import EngineSiteFrame from '../components/EngineSiteFrame';
+import Reveal from '../components/Reveal';
 import type { EngineMode } from '../types';
 import type { KitSiteModel } from './model';
 import KitNav from './KitNav';
@@ -54,28 +55,33 @@ export default function KitRenderer({ model, mode }: { model: KitSiteModel; mode
     <EngineSiteFrame tokens={model.theme} bottomNav={model.bottomNav}>
       <KitNav brand={b.name} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} />
       {model.sections.map((s, i) => {
-        switch (s.type) {
-          case 'hero': return <KitHero key={i} {...s} />;
-          case 'stats': return <StatsBand key={i} items={s.items} />;
-          case 'showcase': return <Showcase key={i} {...s} />;
-          case 'featureIndex': return <FeatureIndex key={i} {...s} />;
-          case 'iconGrid': return <IconGrid key={i} {...s} />;
-          case 'rows': return <Rows key={i} {...s} />;
-          case 'steps': return <Steps key={i} {...s} />;
-          case 'gallery': return <Gallery key={i} {...s} />;
-          case 'people': return <People key={i} {...s} />;
-          case 'testimonials': return <Testimonials key={i} {...s} />;
-          case 'faq': return <Faq key={i} {...s} />;
-          case 'cta': return <CtaBand key={i} {...s} />;
-          case 'enquiry':
-            return (
-              <KitEnquiry key={i} mode={mode}
-                brand={{ name: b.name, phone: b.phone, whatsapp: b.whatsapp }}
-                choices={model.choices} choiceLabel={model.choiceLabel}
-                eyebrow={s.eyebrow} title={s.title} sub={s.sub} points={s.points} tabs={s.tabs} />
-            );
-          default: return null;
-        }
+        const el = (() => {
+          switch (s.type) {
+            case 'hero': return <KitHero {...s} />;
+            case 'stats': return <StatsBand items={s.items} />;
+            case 'showcase': return <Showcase {...s} />;
+            case 'featureIndex': return <FeatureIndex {...s} />;
+            case 'iconGrid': return <IconGrid {...s} />;
+            case 'rows': return <Rows {...s} />;
+            case 'steps': return <Steps {...s} />;
+            case 'gallery': return <Gallery {...s} />;
+            case 'people': return <People {...s} />;
+            case 'testimonials': return <Testimonials {...s} />;
+            case 'faq': return <Faq {...s} />;
+            case 'cta': return <CtaBand {...s} />;
+            case 'enquiry':
+              return (
+                <KitEnquiry mode={mode}
+                  brand={{ name: b.name, phone: b.phone, whatsapp: b.whatsapp }}
+                  choices={model.choices} choiceLabel={model.choiceLabel}
+                  eyebrow={s.eyebrow} title={s.title} sub={s.sub} points={s.points} tabs={s.tabs} />
+              );
+            default: return null;
+          }
+        })();
+        if (!el) return null;
+        // The hero stays instant (above the fold); every other section reveals on scroll.
+        return s.type === 'hero' ? <div key={i}>{el}</div> : <Reveal key={i}>{el}</Reveal>;
       })}
       <KitFooter model={model} />
     </EngineSiteFrame>
