@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
+import { Mail, MapPin, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 // Managed Growth Services are an optional add-on — footer/dashboard-only, never
@@ -56,10 +56,6 @@ export default function Footer() {
               Build, manage and grow your complete online business identity.
             </p>
             <div className="mt-6 space-y-2.5">
-              <div className="flex items-center gap-2.5 text-sm">
-                <Phone className="h-4 w-4 text-blue-400" />
-                <a href="tel:+917550047567" className="hover:text-blue-400">+91 75500 47567</a>
-              </div>
               <div className="flex items-center gap-2.5 text-sm">
                 <Mail className="h-4 w-4 text-blue-400" />
                 <a href="mailto:support@get4domain.com" className="hover:text-blue-400">support@get4domain.com</a>

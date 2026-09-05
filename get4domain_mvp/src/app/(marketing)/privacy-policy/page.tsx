@@ -92,7 +92,7 @@ export default function PrivacyPolicyPage() {
           content: (
             <>
               <p>If you have questions about this Privacy Policy, please contact us:</p>
-              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com<br />Phone: +91 75500 47567</p>
+              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com</p>
             </>
           ),
         },

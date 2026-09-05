@@ -4,8 +4,8 @@ import Contact from '@/components/Contact';
 import CTABanner from '@/components/CTABanner';
 
 export const metadata: Metadata = {
-  title: 'Contact Get4Domain — Chennai, Tamil Nadu | +91 75500 47567',
-  description: 'Contact Get4Domain team. Phone: +91 75500 47567. Email: support@get4domain.com. Address: Tidel Park, Tharamani, Chennai.',
+  title: 'Contact Get4Domain — Chennai, Tamil Nadu',
+  description: 'Get in touch with Get4Domain. Chat with our assistant or request a callback and our team will call you. Email: support@get4domain.com. Address: Tidel Park, Tharamani, Chennai.',
 };
 
 export default function ContactPage() {

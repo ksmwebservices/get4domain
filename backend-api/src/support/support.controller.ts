@@ -4,8 +4,27 @@ import { SupportTicket } from '@prisma/client';
 import { SupportService } from './support.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ReplyTicketDto } from './dto/reply-ticket.dto';
+import { RequestCallbackDto } from './dto/request-callback.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+
+/**
+ * Public support entry point. Policy: nothing invites inbound contact to Get4Domain —
+ * a "Request a callback" queues an outbound call from our side instead of showing a number.
+ */
+@ApiTags('support')
+@Controller('support')
+export class SupportCallbackController {
+  constructor(private readonly supportService: SupportService) {}
+
+  @Public()
+  @Post('callback')
+  @ApiOperation({ summary: 'Request a callback — we call the person back; no inbound number is shown' })
+  callback(@Body() dto: RequestCallbackDto): Promise<{ queued: boolean }> {
+    return this.supportService.requestCallback(dto);
+  }
+}
 
 @ApiTags('support')
 @ApiBearerAuth()

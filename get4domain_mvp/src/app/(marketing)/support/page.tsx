@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Phone, Mail, MessageCircle, Headphones, Clock, ArrowRight, HelpCircle, MapPin } from 'lucide-react';
+import { Mail, MessageCircle, PhoneCall, Headphones, Clock, ArrowRight, HelpCircle, MapPin } from 'lucide-react';
 import PageHero from '@/components/PageHero';
 import FAQ from '@/components/FAQ';
 import CTABanner from '@/components/CTABanner';
@@ -13,11 +13,12 @@ export const metadata: Metadata = createPageMetadata({
   path: '/support',
 });
 
+// Policy (28-Aug-2026): no inbound number/WhatsApp. Support = assistant → callback → email.
 const supportOptions = [
-  { icon: Phone, title: 'Call Support', value: '+91 75500 47567', desc: 'Mon - Sat, 9 AM - 8 PM IST', action: 'Call Now' },
-  { icon: MessageCircle, title: 'WhatsApp', value: '+91 75500 47567', desc: 'Quick responses, 24/7', action: 'Chat Now' },
-  { icon: Mail, title: 'Email Support', value: 'support@get4domain.com', desc: 'Reply within 4 hours', action: 'Send Email' },
-  { icon: Headphones, title: 'Help Center', value: 'Browse Articles', desc: 'Self-service guides & docs', action: 'Browse' },
+  { icon: MessageCircle, title: 'Chat with us', value: 'Instant answers', desc: 'Open the assistant, bottom-right', action: 'Ask a question', href: undefined },
+  { icon: PhoneCall, title: 'Request a callback', value: 'We call you back', desc: 'Leave your number — no need to dial us', action: 'Request callback', href: '/contact' },
+  { icon: Mail, title: 'Email Support', value: 'support@get4domain.com', desc: 'Reply within 4 hours', action: 'Send Email', href: 'mailto:support@get4domain.com' },
+  { icon: Headphones, title: 'Help Center', value: 'Browse Articles', desc: 'Self-service guides & docs', action: 'Browse', href: undefined },
 ];
 
 export default function SupportPage() {
@@ -41,7 +42,9 @@ export default function SupportPage() {
                   <h3 className="mb-1 text-base font-bold text-slate-900">{option.title}</h3>
                   <p className="mb-1 text-sm font-medium text-primary-600">{option.value}</p>
                   <p className="mb-4 text-xs text-slate-500">{option.desc}</p>
-                  <Button size="sm" variant="outline" fullWidth>{option.action}</Button>
+                  {option.href
+                    ? <Link href={option.href}><Button size="sm" variant="outline" fullWidth>{option.action}</Button></Link>
+                    : <Button size="sm" variant="outline" fullWidth>{option.action}</Button>}
                 </div>
               );
             })}
@@ -57,7 +60,7 @@ export default function SupportPage() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100"><Clock className="h-6 w-6 text-primary-600" /></div>
             <h3 className="text-lg font-bold text-slate-900">Support Hours</h3>
             <p className="mt-2 text-sm text-slate-600">Monday to Saturday: 9:00 AM - 8:00 PM IST</p>
-            <p className="mt-1 text-sm text-slate-600">Sunday: Closed (WhatsApp support available)</p>
+            <p className="mt-1 text-sm text-slate-600">Callbacks are placed during support hours; the assistant is available anytime.</p>
             <p className="mt-4 flex items-center justify-center gap-1.5 text-sm text-slate-600">
               <MapPin className="h-4 w-4 text-primary-600" />
               Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113

@@ -1,20 +1,45 @@
 'use client';
 
-import { Phone, Mail, MessageCircle, Headphones, MapPin, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Mail, MessageCircle, Headphones, MapPin, Clock, PhoneCall, Check, Loader2 } from 'lucide-react';
 import { SectionHeading } from './ui/Accordion';
 import Button from './ui/Button';
+import { api } from '@/lib/api';
 
+// Policy (28-Aug-2026): Get4Domain publishes no inbound phone/WhatsApp. Support is the
+// in-app assistant + a callback (we call you) + email. No number to dial or message us.
 const contactCards = [
-  { icon: Phone, title: 'Call Us', label: 'Sales & Support', value: '+91 75500 47567', action: 'Call Now', color: 'bg-primary-50 text-primary-600' },
-  { icon: MessageCircle, title: 'WhatsApp', label: 'Quick Chat', value: '+91 75500 47567', action: 'Chat Now', color: 'bg-success-50 text-success-600' },
-  { icon: Mail, title: 'Email', label: 'Support', value: 'support@get4domain.com', action: 'Send Email', color: 'bg-secondary-50 text-secondary-600' },
+  { icon: MessageCircle, title: 'Chat with us', label: 'Instant answers', value: 'Open the assistant (bottom-right)', color: 'bg-primary-50 text-primary-600' },
+  { icon: PhoneCall, title: 'Request a callback', label: 'We call you', value: 'Leave your number below →', color: 'bg-success-50 text-success-600' },
+  { icon: Mail, title: 'Email', label: 'Support', value: 'support@get4domain.com', color: 'bg-secondary-50 text-secondary-600' },
 ];
 
 export default function Contact() {
+  const [form, setForm] = useState({ name: '', phone: '', message: '' });
+  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
+  const [error, setError] = useState('');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim() || form.phone.replace(/\D/g, '').length < 10) {
+      setError('Please add your name and a 10-digit phone number.');
+      return;
+    }
+    setError('');
+    setState('sending');
+    try {
+      await api.requestCallback({ name: form.name.trim(), phone: form.phone.trim(), context: 'marketing', message: form.message || undefined });
+      setState('done');
+    } catch {
+      setError('Could not send — please email support@get4domain.com.');
+      setState('idle');
+    }
+  }
+
   return (
     <section id="contact" className="section-py bg-slate-50">
       <div className="container-mx container-px">
-        <SectionHeading eyebrow="Contact Us" title="Get in Touch" description="Have questions? Our sales and support teams are ready to help you launch your business online." />
+        <SectionHeading eyebrow="Contact Us" title="Get in Touch" description="Chat with our assistant for instant answers, or leave your number and our team will call you back." />
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-4">
             {contactCards.map((card) => {
@@ -27,7 +52,6 @@ export default function Contact() {
                     <p className="text-sm font-bold text-slate-900">{card.title}</p>
                     <p className="text-sm text-slate-600 truncate">{card.value}</p>
                   </div>
-                  <Button size="sm" variant="outline">{card.action}</Button>
                 </div>
               );
             })}
@@ -56,15 +80,23 @@ export default function Contact() {
               </div>
             </div>
             <div className="card-base p-5">
-              <p className="mb-4 text-sm font-bold text-slate-900">Send a Quick Message</p>
-              <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="text" placeholder="Your Name" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-                  <input type="tel" placeholder="Phone Number" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              <p className="mb-1 text-sm font-bold text-slate-900">Request a callback</p>
+              <p className="mb-4 text-xs text-slate-500">Leave your number — our team calls you back. We never ask you to call us.</p>
+              {state === 'done' ? (
+                <div className="flex items-center gap-2 rounded-xl bg-success-50 px-4 py-3 text-sm font-medium text-success-700">
+                  <Check className="h-4 w-4" /> Thanks! We&apos;ll call you back shortly.
                 </div>
-                <textarea rows={3} placeholder="Your message..." className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
-                <Button type="submit" fullWidth leftIcon={<MessageCircle className="h-4 w-4" />}>Send Message</Button>
-              </form>
+              ) : (
+                <form className="space-y-3" onSubmit={submit}>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your Name" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                    <input type="tel" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone Number" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+                  </div>
+                  <textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="What can we help with? (optional)" className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 resize-none" />
+                  {error && <p className="text-xs text-error-600">{error}</p>}
+                  <Button type="submit" fullWidth loading={state === 'sending'} leftIcon={state === 'sending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <PhoneCall className="h-4 w-4" />}>Request a callback</Button>
+                </form>
+              )}
             </div>
           </div>
         </div>

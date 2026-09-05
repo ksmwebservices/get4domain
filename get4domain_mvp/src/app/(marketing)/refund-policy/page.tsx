@@ -85,7 +85,7 @@ export default function RefundPolicyPage() {
           content: (
             <>
               <p>For refund requests or questions about this policy, contact us:</p>
-              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com<br />Phone: +91 75500 47567</p>
+              <p>KSM Quantum Technologies<br />Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113<br />Email: support@get4domain.com</p>
               <p>Our support team is available Monday to Saturday, 9:00 AM - 8:00 PM IST.</p>
             </>
           ),

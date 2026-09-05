@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Target, MapPin, Phone, Mail, Calendar, UserRound } from 'lucide-react';
+import { Target, MapPin, Mail, Calendar, UserRound } from 'lucide-react';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import { createPageMetadata } from '@/lib/metadata';
@@ -15,7 +15,6 @@ const facts = [
   { icon: UserRound, label: 'Founder', value: 'K.S. Murugavel' },
   { icon: Calendar, label: 'Founded', value: '2015, in Chennai' },
   { icon: MapPin, label: 'Address', value: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113' },
-  { icon: Phone, label: 'Phone', value: '+91 75500 47567' },
   { icon: Mail, label: 'Email', value: 'support@get4domain.com' },
 ];
 

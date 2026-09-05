@@ -5,6 +5,7 @@ import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
+import { RequestCallbackDto } from './dto/request-callback.dto';
 
 @Injectable()
 export class SupportService {
@@ -40,6 +41,40 @@ export class SupportService {
     }
 
     return ticket;
+  }
+
+  /**
+   * Queue an outbound callback (support policy: WE call THEM — no inbound number is
+   * ever shown). Recorded on the existing leads pipeline so the admin/support team
+   * works it in TeleCRM; no new table. Works for anonymous visitors and vendors alike.
+   */
+  async requestCallback(dto: RequestCallbackDto): Promise<{ queued: boolean }> {
+    const lead = await this.prisma.lead.create({
+      data: {
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email ?? null,
+        business: dto.business || dto.name,
+        industry: 'support',
+        interest: 'Callback request',
+        source: 'support-callback',
+        status: 'pending',
+        message: [dto.context ? `From the ${dto.context} assistant` : null, dto.message].filter(Boolean).join(' — ') || null,
+      },
+    });
+
+    await this.emailService.sendAdminNotification(
+      'New callback request',
+      `${dto.name} (${dto.phone}${dto.email ? `, ${dto.email}` : ''}) requested a callback${dto.context ? ` from the ${dto.context} assistant` : ''}.${dto.message ? ` Message: ${dto.message}` : ''}`,
+    );
+    await this.notificationsService.notifyAdmin(
+      'callback_request',
+      'Callback requested',
+      `${dto.name} (${dto.phone}) asked us to call them back.`,
+      { priority: 'HIGH', actionRequired: true, actionType: 'view_lead', actionData: { leadId: lead.id } },
+    );
+
+    return { queued: true };
   }
 
   findAll(): Promise<SupportTicket[]> {

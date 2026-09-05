@@ -16,8 +16,9 @@ export const siteConfig = {
   ],
   authors: [{ name: 'Get4Domain' }],
   creator: 'Get4Domain',
+  // Policy (28-Aug-2026): Get4Domain publishes NO inbound support number/WhatsApp.
+  // Support is the in-app assistant → "Request a callback" (we call out) → email.
   contact: {
-    phone: '+91 75500 47567',
     email: 'support@get4domain.com',
     support: 'support@get4domain.com',
     address: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai - 600113',
@@ -28,7 +29,6 @@ export const siteConfig = {
     instagram: '#',
     linkedin: '#',
     youtube: '#',
-    whatsapp: 'https://wa.me/917550047567',
   },
 };
 

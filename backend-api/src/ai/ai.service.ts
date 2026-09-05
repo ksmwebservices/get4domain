@@ -71,8 +71,11 @@ To get started: book a free demo at get4domain.com/book-demo
 Our consultant calls within 24 hours.
 
 Company: KSM Quantum Technologies
-Contact: +917550047567
-Email: hello@get4domain.com
+Email: support@get4domain.com
+
+We do NOT publish a phone number to call. If someone wants to speak to a person,
+offer a callback — collect their name and phone and tell them our team will call
+them back. Never invite them to call or message us on a number.
 
 For demo booking: collect name, phone, business name, industry.
 Then say: "Great! I've noted your details. Our consultant will call
@@ -429,7 +432,8 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
         reply = data.content.find((block) => block.type === 'text')?.text ?? fallback;
       }
 
-      const suggestedActions = /connect you with our team/i.test(reply) ? ['call', 'whatsapp'] : [];
+      // Human escalation offers a callback (we call them) — never an inbound number.
+      const suggestedActions = /connect you with our team/i.test(reply) ? ['callback'] : [];
       return { reply, suggestedActions };
     } catch (error) {
       if (error instanceof ServiceUnavailableException) throw error;

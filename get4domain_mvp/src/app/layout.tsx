@@ -108,7 +108,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               },
               contactPoint: {
                 '@type': 'ContactPoint',
-                telephone: '+917550047567',
+                email: 'support@get4domain.com',
                 contactType: 'customer support',
                 availableLanguage: ['English', 'Tamil'],
                 hoursAvailable: 'Mo-Sa 09:00-20:00',
