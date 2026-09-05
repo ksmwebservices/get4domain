@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import { registerWithCredentials, getSession } from '@/lib/auth';
 import { useAuth } from '@/lib/auth-context';
 import { INDUSTRIES } from '@/data/industries-list';
+import { canonicalIndustryId } from '@/data/demo-site';
 
 const PASSWORD_RULES: { label: string; test: (p: string) => boolean }[] = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 },
@@ -33,6 +34,15 @@ export default function RegisterPage() {
     const session = getSession();
     if (session) router.push(session.role === 'vendor' ? '/dashboard' : '/admin');
   }, [router]);
+
+  // Pre-select the industry when arriving from a demo (/register?industry=retail), so a
+  // visitor who already chose an industry in the demo is never asked to pick it again.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('industry');
+    if (!q) return;
+    const canon = canonicalIndustryId(q);
+    if (INDUSTRIES.some((i) => i.id === canon)) setIndustry(canon);
+  }, []);
 
   const passwordOk = PASSWORD_RULES.every((r) => r.test(password));
   const canSubmit =

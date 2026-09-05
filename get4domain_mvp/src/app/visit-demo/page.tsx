@@ -5,7 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ShieldCheck, ArrowRight, ArrowLeft, Smartphone, Play, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
+import { setSession } from '@/lib/auth';
 import { getCategory, getSubcategories } from '@/data/demo-site';
+
+interface Sandbox { vendorId: string; token: string; industry: string; expiresAt: string | null; customerToken?: string | null }
 
 /**
  * The ONE entry point to any demo. Middleware redirects every un-verified /demo/* hit
@@ -55,14 +58,33 @@ function VisitDemoInner() {
     try {
       // 1. OTP verify + CRM lead capture CLIENT-SIDE — same origin as the OTP request,
       //    so it reaches the same in-memory-OTP backend instance (regression fix).
-      await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
+      const res0 = await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
+      const sandbox = (res0 as { data?: { sandbox?: Sandbox } })?.data?.sandbox ?? null;
       try {
         sessionStorage.setItem('g4d_demo_verified', '1');
         sessionStorage.setItem('g4d_demo_phone', normalizedPhone);
         sessionStorage.setItem('g4d_demo_name', name);
       } catch { /* ignore */ }
+      // 1b. Seat the sandbox session + tour context so the demo runs INSIDE the full
+      //     Get4Domain tour (Website ↔ Vendor Dashboard ↔ Customer app) — the same
+      //     experience book-demo gives. Without this the demo had no tour bar and the
+      //     dashboards couldn't open.
+      if (sandbox?.token) {
+        localStorage.setItem('g4d_token', sandbox.token);
+        localStorage.setItem('g4d_tour', JSON.stringify({ industry: sandbox.industry ?? category, customerToken: sandbox.customerToken ?? null }));
+        setSession({
+          id: sandbox.vendorId,
+          name: name || 'Demo User',
+          email: '',
+          role: 'vendor',
+          businessName: `${catName || 'Your'} Demo`,
+          industry: sandbox.industry ?? category,
+          plan: 'Demo Sandbox',
+          initials: (name || 'D').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
+        });
+      }
       // 2. Mint the server-side pass (DB-backed cap/lock + signed cookie); non-fatal.
-      let redirect = to || '/';
+      let redirect = to || (category ? `/demo/${category}` : '/');
       try {
         const res = await fetch('/api/demo/verify', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
