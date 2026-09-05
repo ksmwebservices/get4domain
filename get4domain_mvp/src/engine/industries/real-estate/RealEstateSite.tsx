@@ -28,8 +28,8 @@ export default function RealEstateSite({ site, mode }: { site: EngineSiteData; m
       bottomNav={[
         { label: 'Home', icon: 'home', href: '#top' },
         { label: 'Properties', icon: 'building', href: '#featured' },
+        { label: 'Enquiry', icon: 'enquiry', href: '#enquiry' },
         { label: 'Visit', icon: 'visit', href: '#enquiry', emphasis: true },
-        { label: 'Amenities', icon: 'services', href: '#amenities' },
         { label: 'More', icon: 'more', href: '#gallery' },
       ]}
     >

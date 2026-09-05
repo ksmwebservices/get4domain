@@ -11,9 +11,11 @@ import type { EngineSiteData } from '@/engine/types';
  */
 export const dynamic = 'force-static';
 
-const DEMO_SITE = (industry: string, label: string): EngineSiteData => ({
-  vendor: { id: '__preview__', businessName: `${label} — Demo`, industry, subdomain: '__preview__' },
-  cms: null, // null CMS → the industry model fills entirely from premium seed content
+const DEMO_SITE = (industry: string): EngineSiteData => ({
+  // Empty vendor/CMS → the industry builder fills EVERYTHING from its reference blueprint,
+  // incl. the reference demo business name (CareWell Clinic, PrimeNest Realty, …).
+  vendor: { id: '__preview__', businessName: '', industry, subdomain: '__preview__' },
+  cms: null,
   products: [],
 });
 
@@ -32,5 +34,5 @@ export default async function EnginePreviewPage({ params }: { params: Promise<{ 
   const { industry } = await params;
   const entry = getEngineIndustry(industry);
   if (!entry) notFound();
-  return <>{entry.render(DEMO_SITE(industry, entry.config.label), { kind: 'preview' })}</>;
+  return <>{entry.render(DEMO_SITE(industry), { kind: 'preview' })}</>;
 }
