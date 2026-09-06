@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, VendorCMS, VendorProduct } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePlatformCmsDto } from './dto/update-platform-cms.dto';
@@ -74,6 +74,16 @@ export class CmsService {
   }
 
   async updateVendorCMS(vendorId: string, dto: UpdateVendorCmsDto): Promise<VendorCMS> {
+    // A premium (priced) template can only be applied once the vendor has purchased it.
+    if (dto.themeId) {
+      const theme = await this.prisma.websiteTheme.findUnique({ where: { id: dto.themeId } });
+      if (theme && theme.price && theme.price > 0) {
+        const unlock = await this.prisma.vendorTemplateUnlock.findUnique({
+          where: { vendorId_themeId: { vendorId, themeId: dto.themeId } },
+        });
+        if (!unlock) throw new ForbiddenException('Unlock this premium template before applying it.');
+      }
+    }
     return this.prisma.vendorCMS.upsert({
       where: { vendorId },
       create: { vendorId, ...dto },

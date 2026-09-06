@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } fro
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { WebsiteTheme } from '@prisma/client';
 import { WebsiteThemesService } from './website-themes.service';
-import { CreateWebsiteThemeDto, UpdateWebsiteThemeDto } from './dto/website-theme.dto';
+import { CreateWebsiteThemeDto, UpdateWebsiteThemeDto, ConfirmUnlockDto } from './dto/website-theme.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -25,6 +25,25 @@ export class WebsiteThemesController {
   @ApiOperation({ summary: 'List all themes incl. inactive (admin)' })
   listAll(): Promise<WebsiteTheme[]> {
     return this.service.listAll();
+  }
+
+  // ── Vendor-facing: themes for my industry with unlock status + premium purchase ──
+  @Get('mine')
+  @ApiOperation({ summary: "Themes for the vendor's industry, each with an `unlocked` flag" })
+  mine(@CurrentUser() user: AuthenticatedUser, @Query('industry') industry?: string) {
+    return this.service.listForVendor(user.sub, industry);
+  }
+
+  @Post(':id/unlock/order')
+  @ApiOperation({ summary: 'Create a one-time Razorpay order to unlock a premium template' })
+  unlockOrder(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.service.createUnlockOrder(user.sub, id);
+  }
+
+  @Post(':id/unlock/confirm')
+  @ApiOperation({ summary: 'Verify payment and unlock a premium template for this vendor' })
+  unlockConfirm(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: ConfirmUnlockDto) {
+    return this.service.confirmUnlock(user.sub, id, dto);
   }
 
   @UseGuards(AdminGuard)

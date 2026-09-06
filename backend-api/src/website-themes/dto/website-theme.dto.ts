@@ -1,5 +1,5 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateWebsiteThemeDto {
   @ApiProperty({ example: 'Emerald Fresh' })
@@ -20,6 +20,12 @@ export class CreateWebsiteThemeDto {
   @IsObject()
   layout?: Record<string, unknown>;
 
+  @ApiProperty({ required: false, description: 'One-time unlock price in ₹ (rupees), ex-GST. 0/null = free/included.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  price?: number;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
@@ -36,4 +42,11 @@ export class UpdateWebsiteThemeDto extends PartialType(CreateWebsiteThemeDto) {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+}
+
+/** Confirm a premium-template unlock payment (platform Razorpay). */
+export class ConfirmUnlockDto {
+  @ApiProperty() @IsString() razorpayOrderId!: string;
+  @ApiProperty() @IsString() razorpayPaymentId!: string;
+  @ApiProperty() @IsString() razorpaySignature!: string;
 }

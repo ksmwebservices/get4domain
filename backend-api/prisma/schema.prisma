@@ -780,6 +780,9 @@ model WebsiteTheme {
   // When present, the vendor's live site renders THIS layout via the engine (no redeploy);
   // null = a colours-only theme applied over the industry default layout.
   layout    Json?
+  // Premium templates: one-time unlock price in ₹ (rupees), ex-GST (null/0 = free/included).
+  // Charged to Get4Domain's platform Razorpay (+18% GST); a paid unlock is a VendorTemplateUnlock.
+  price     Int?
   preview   String? // preview image URL
   isDefault Boolean  @default(false)
   active    Boolean  @default(true)
@@ -806,6 +809,21 @@ model VendorPaymentConfig {
   updatedAt         DateTime @updatedAt
 
   @@map("g4d_vendor_payment_config")
+}
+
+// A vendor's one-time purchase (unlock) of a premium WebsiteTheme. Applying a priced
+// template requires a row here; free templates need none.
+model VendorTemplateUnlock {
+  id          String   @id @default(cuid())
+  vendorId    String
+  themeId     String
+  amountPaise Int      @default(0)
+  paymentId   String?
+  createdAt   DateTime @default(now())
+
+  @@unique([vendorId, themeId])
+  @@index([vendorId])
+  @@map("g4d_vendor_template_unlock")
 }
 
 // ── Track B 2C: vendor expense entry (bookkeeping support). GST is EXCLUSIVE —

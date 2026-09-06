@@ -33,7 +33,7 @@ type TypeFilter = 'all' | 'prompt' | 'template';
 interface AiTemplate { id: string; name: string; contentType: string; industry: string | null; prompt: string; thumbnail: string | null; source: string; canvaTemplateId: string | null; active: boolean }
 interface DocBuiltin { key: string; label: string; description: string; fields: { key: string; label: string }[] }
 interface DesignBuiltin { id: string; name: string; category: string; width: number; height: number; fields: { key: string; label: string }[] }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; layout?: unknown; preview: string | null; isDefault: boolean; active: boolean }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; layout?: unknown; price?: number | null; preview: string | null; isDefault: boolean; active: boolean }
 
 const CONTENT_TYPES = ['social_post', 'festival_poster', 'blog_post', 'ad_creative', 'email', 'whatsapp', 'sms', 'document'];
 const INDUSTRIES = ['', 'travel', 'restaurant', 'clinic', 'hotel', 'salon', 'gym', 'realestate', 'education', 'retail', 'construction', 'events', 'finance', 'automobile', 'logistics', 'diagnostics', 'photography', 'professional', 'agriculture', 'coaching', 'technology'];
@@ -70,7 +70,7 @@ export default function AdminLibraryPage() {
   const [savingTh, setSavingTh] = useState(false);
 
   const [tpl, setTpl] = useState({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
-  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '' });
+  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
 
   // Admin design-template authoring (Fabric editor). `starter` collects name/category
   // + size; `editor` (once opened) holds the size the blank canvas opens at.
@@ -140,8 +140,9 @@ export default function AdminLibraryPage() {
         // Derive the swatches/radius shown in the picker from the pasted template.
         cssVars = { '--primary': obj.theme.accent ?? theme.primary, '--accent': obj.theme.accent2 ?? theme.accent, '--radius': obj.theme.radius ?? theme.radius };
       }
-      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars, layout });
-      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '' });
+      const price = theme.price.trim() ? Math.max(0, Math.round(Number(theme.price))) : undefined;
+      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars, layout, price });
+      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingTh(false); }
   }
@@ -286,6 +287,7 @@ export default function AdminLibraryPage() {
               <label className="flex items-center gap-2 text-sm text-slate-300">Accent <input type="color" value={theme.accent} onChange={(e) => setTheme({ ...theme, accent: e.target.value })} className="h-8 w-12 rounded border border-slate-700 bg-slate-900" /></label>
               <input className={inputCls} placeholder="Radius (e.g. 16px)" value={theme.radius} onChange={(e) => setTheme({ ...theme, radius: e.target.value })} />
               <input className={inputCls} placeholder="Preview thumbnail URL (optional)" value={theme.preview} onChange={(e) => setTheme({ ...theme, preview: e.target.value })} />
+              <input className={inputCls} type="number" min={0} placeholder="Unlock price ₹ (0 / blank = free)" value={theme.price} onChange={(e) => setTheme({ ...theme, price: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={theme.isDefault} onChange={(e) => setTheme({ ...theme, isDefault: e.target.checked })} /> Default for this industry</label>
             </div>
             <div className="mt-3">
@@ -314,7 +316,7 @@ export default function AdminLibraryPage() {
                   <button onClick={() => delTheme(t.id)} className="ml-auto rounded-lg p-1.5 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
                 <div className="mt-2 text-sm font-bold text-white">{t.name} {t.isDefault && <span className="text-xs font-normal text-success-400">· default</span>}</div>
-                <div className="text-xs text-slate-500">{t.industry ?? 'any industry'} · {t.layout ? 'full design' : 'colours only'}</div>
+                <div className="text-xs text-slate-500">{t.industry ?? 'any industry'} · {t.layout ? 'full design' : 'colours only'} · {t.price && t.price > 0 ? `₹${t.price} premium` : 'free'}</div>
               </div>
             ))}
           </div>

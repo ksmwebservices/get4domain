@@ -18,7 +18,7 @@ interface VendorCms {
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
 interface Product { id: string; name: string; description?: string; price?: string; category?: string }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean }
+interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean; price?: number | null; unlocked?: boolean }
 
 const EMPTY: VendorCms = {
   businessName: '', tagline: '', about: '', logo: '', banner: '', themeId: '', phone: '', whatsapp: '', email: '', address: '',
@@ -42,11 +42,48 @@ export default function WebsiteManagerPage() {
   const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
   const [themes, setThemes] = useState<WebsiteTheme[]>([]);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadThemes = useCallback(() => {
     const q = user?.industry ? `?industry=${encodeURIComponent(user.industry)}` : '';
-    api.websiteThemes(q).then((res) => setThemes(res.data ?? [])).catch(() => setThemes([]));
+    api.myWebsiteThemes(q).then((res) => setThemes(res.data ?? [])).catch(() => setThemes([]));
   }, [user?.industry]);
+  useEffect(() => { loadThemes(); }, [loadThemes]);
+
+  // Premium template one-time unlock — charged to Get4Domain's platform Razorpay (+GST).
+  const unlockTheme = async (t: WebsiteTheme) => {
+    setError(''); setUnlocking(t.id);
+    try {
+      const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      if (!key) throw new Error('Payments are not configured.');
+      const orderRes = await api.unlockThemeOrder(t.id);
+      const order = (orderRes.data ?? orderRes) as { orderId: string; amount: number; currency: string };
+      await new Promise<void>((resolve, reject) => {
+        if ((window as unknown as { Razorpay?: unknown }).Razorpay) return resolve();
+        const s = document.createElement('script');
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = () => resolve(); s.onerror = () => reject(new Error('Could not load Razorpay'));
+        document.body.appendChild(s);
+      });
+      const Rzp = (window as unknown as { Razorpay: new (o: Record<string, unknown>) => { open: () => void } }).Razorpay;
+      const rzp = new Rzp({
+        key, amount: order.amount, currency: order.currency, order_id: order.orderId,
+        name: 'Get4Domain', description: `Premium template — ${t.name}`,
+        handler: async (r: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          try {
+            await api.unlockThemeConfirm(t.id, { razorpayOrderId: r.razorpay_order_id, razorpayPaymentId: r.razorpay_payment_id, razorpaySignature: r.razorpay_signature });
+            loadThemes(); set('themeId', t.id);
+          } catch (e) { setError(e instanceof Error ? e.message : 'Unlock failed after payment — contact support.'); }
+          finally { setUnlocking(null); }
+        },
+        modal: { ondismiss: () => setUnlocking(null) },
+      });
+      rzp.open();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not start the unlock payment.');
+      setUnlocking(null);
+    }
+  };
 
   const subdomainUrl = user?.subdomain ? `https://${user.subdomain}.get4domain.com` : '';
   const previewUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
@@ -248,9 +285,10 @@ export default function WebsiteManagerPage() {
                     const selected = cms.themeId === t.id || (!cms.themeId && t.isDefault);
                     const primary = t.cssVars?.['--primary'] ?? '#2563eb';
                     const accent = t.cssVars?.['--accent'] ?? primary;
-                    return (
-                      <button key={t.id} type="button" onClick={() => set('themeId', t.id)}
-                        className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
+                    const premium = (t.price ?? 0) > 0;
+                    const locked = premium && !t.unlocked;
+                    const inner = (
+                      <>
                         {t.preview && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={t.preview} alt={`${t.name} preview`} className="mb-2 h-24 w-full rounded-lg object-cover ring-1 ring-slate-200" />
@@ -260,7 +298,27 @@ export default function WebsiteManagerPage() {
                           <span className="h-6 w-6 rounded-md" style={{ background: accent }} />
                           <span className="ml-auto text-xs font-semibold text-slate-500">{selected ? 'Selected' : t.isDefault ? 'Default' : ''}</span>
                         </div>
-                        <div className="mt-2 text-sm font-bold text-slate-900">{t.name}</div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <div className="text-sm font-bold text-slate-900">{t.name}</div>
+                          {premium && <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${t.unlocked ? 'bg-success-100 text-success-700' : 'bg-amber-100 text-amber-700'}`}>{t.unlocked ? 'Owned' : `₹${t.price}`}</span>}
+                        </div>
+                      </>
+                    );
+                    if (locked) {
+                      return (
+                        <div key={t.id} className="rounded-xl border-2 border-slate-200 p-3 text-left">
+                          {inner}
+                          <button type="button" onClick={() => unlockTheme(t)} disabled={unlocking === t.id}
+                            className="mt-2 w-full rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
+                            {unlocking === t.id ? 'Opening…' : `Unlock ₹${t.price} + GST`}
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button key={t.id} type="button" onClick={() => set('themeId', t.id)}
+                        className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
+                        {inner}
                       </button>
                     );
                   })}

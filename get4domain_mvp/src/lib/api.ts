@@ -440,6 +440,11 @@ export const api = {
   updateVendorPayment: (data: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean }) =>
     apiCall('/vendor-payments', { method: 'PUT', body: JSON.stringify(data) }),
   websiteThemes: (q = '') => apiCall(`/website-themes${q}`),
+  // Vendor-facing themes (with `unlocked` flag) + premium one-time unlock (platform Razorpay)
+  myWebsiteThemes: (q = '') => apiCall(`/website-themes/mine${q}`),
+  unlockThemeOrder: (id: string) => apiCall(`/website-themes/${id}/unlock/order`, { method: 'POST' }),
+  unlockThemeConfirm: (id: string, data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
+    apiCall(`/website-themes/${id}/unlock/confirm`, { method: 'POST', body: JSON.stringify(data) }),
   websiteThemesAll: () => apiCall('/website-themes/all'),
   createWebsiteTheme: (data: any) => apiCall('/website-themes', { method: 'POST', body: JSON.stringify(data) }),
   updateWebsiteTheme: (id: string, data: any) => apiCall(`/website-themes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
