@@ -5,6 +5,7 @@ import { Check, ArrowRight, CalendarCheck, Globe, Play } from 'lucide-react';
 import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
 import { INDUSTRIES } from '@/data/industries-list';
+import { getSubcategories } from '@/data/demo-site';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import Button from '@/components/ui/Button';
@@ -73,6 +74,34 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
         </div>
       </section>
 
+      {/* Category → Subcategory drill-down (§30-32 industry-category registry): each
+          specialisation has its own tailored demo/content, reached via the gated demo. */}
+      {(() => {
+        const subs = getSubcategories(id).filter((s) => s.id !== 'general');
+        if (subs.length === 0) return null;
+        return (
+          <section className="border-y border-slate-200 py-12 lg:py-16">
+            <div className="container-mx container-px">
+              <div className="mx-auto max-w-4xl">
+                <div className="mb-6">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-600">Explore by category</p>
+                  <h2 className="text-2xl font-bold text-slate-900">{content.name} — pick your specialisation</h2>
+                  <p className="mt-2 text-sm text-slate-500">Each category has its own tailored demo, content and workflow — not the same site recoloured.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {subs.map((s) => (
+                    <Link key={s.id} href={`/demo/${id}/${s.id}`} className="group flex items-center justify-between gap-3 border border-slate-200 bg-white p-4 transition hover:border-primary-300">
+                      <span className="text-sm font-semibold text-slate-800 group-hover:text-primary-600">{s.name}</span>
+                      <ArrowRight className="h-4 w-4 flex-shrink-0 text-slate-300 group-hover:text-primary-500" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Website preview — real Playwright demo screenshot (major-10) or sample mockup */}
       <section className="py-12 bg-slate-50">
         <div className="container-mx container-px">
@@ -105,7 +134,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
           ) : (
           <div className="relative mx-auto max-w-2xl">
             {/* Floating phone mockup (2.5) — animated, desktop only */}
-            <div className="animate-g4d-float-slow absolute -bottom-6 -right-4 z-10 hidden w-32 rounded-[1.75rem] border-4 border-slate-800 bg-slate-800 shadow-2xl lg:block">
+            <div className="absolute -bottom-6 -right-4 z-10 hidden w-32 rounded-[1.75rem] border-4 border-slate-800 bg-slate-800 shadow-2xl lg:block">
               <div className="overflow-hidden rounded-[1.4rem] bg-white">
                 <div className="relative h-28">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -119,7 +148,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
                 </div>
               </div>
             </div>
-            <div className="animate-g4d-float rounded-2xl border-2 border-primary-200 bg-white overflow-hidden shadow-premium">
+            <div className="rounded-2xl border-2 border-primary-200 bg-white overflow-hidden shadow-premium">
               <div className="bg-slate-100 px-4 py-2.5 flex items-center gap-2 border-b border-slate-200">
                 <div className="flex gap-1.5">
                   <div className="h-3 w-3 rounded-full bg-red-400" />

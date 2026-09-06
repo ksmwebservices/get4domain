@@ -17,14 +17,11 @@ export default function IndustriesPage() {
     <>
       {/* HERO + GRID — dark, homepage visual family */}
       <div className="relative overflow-hidden bg-slate-950 text-slate-100">
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-32 h-[34rem] w-[34rem] rounded-full bg-primary-600/15 blur-[120px]" />
-          <div className="absolute right-0 top-20 h-[26rem] w-[26rem] rounded-full bg-warning-500/10 blur-[110px]" />
-          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
-        </div>
+        {/* §40: subtle grid only — no floating blur blobs / glassmorphism. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
 
         <div className="relative mx-auto max-w-3xl px-4 pb-4 pt-16 text-center sm:px-6 md:pt-24">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">
+          <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800 px-3.5 py-1.5 text-xs font-medium text-primary-300">
             20+ industries
           </span>
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
@@ -38,7 +35,7 @@ export default function IndustriesPage() {
         <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 md:pb-24 lg:px-8">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {INDUSTRIES.map((ind) => (
-              <div key={ind.id} className="group flex flex-col rounded-2xl border border-white/5 bg-slate-800/60 p-6 backdrop-blur-xl transition-all hover:border-primary-400/20 hover:shadow-glow">
+              <div key={ind.id} className="group flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-6 transition-colors hover:border-primary-500/40">
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900/60 text-2xl">{ind.icon}</span>
                   <div className="min-w-0">
