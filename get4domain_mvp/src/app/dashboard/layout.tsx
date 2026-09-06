@@ -127,6 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         title: 'Account',
         items: [
           { label: 'Wallet & Billing', href: '/dashboard/wallet', icon: 'Wallet' },
+          { label: 'Payments', href: '/dashboard/payments', icon: 'CreditCard' },
           { label: 'Invoices', href: '/dashboard/invoices', icon: 'FileText' },
           { label: 'Accounts', href: '/dashboard/accounts', icon: 'Receipt' },
           { label: 'Stationery', href: '/dashboard/stationery', icon: 'Package' },

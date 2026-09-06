@@ -791,6 +791,23 @@ model WebsiteTheme {
   @@map("g4d_website_themes")
 }
 
+// Per-vendor payment credentials. Each vendor collects public-site payments DIRECTLY
+// into their OWN Razorpay account (Get4Domain never holds the funds), so the public
+// checkout creates the order with these keys. The secret is encrypted at rest
+// (platform-settings crypto.util) and never returned to the client.
+model VendorPaymentConfig {
+  id                String   @id @default(cuid())
+  vendorId          String   @unique
+  provider          String   @default("razorpay")
+  razorpayKeyId     String?
+  razorpayKeySecret String? // encrypted
+  enabled           Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("g4d_vendor_payment_config")
+}
+
 // ── Track B 2C: vendor expense entry (bookkeeping support). GST is EXCLUSIVE —
 // `amount` is the taxable base, gstAmount = amount*gstRate/100, total = amount+gst
 // (mirrors GenericInvoice + the invoice service). Rupee floats, vendorId-scoped. ──

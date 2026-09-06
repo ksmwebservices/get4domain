@@ -25,6 +25,7 @@ import { QuotesModule } from './quotes/quotes.module';
 import { IndustriesModule } from './industries/industries.module';
 import { AiTemplatesModule } from './ai-templates/ai-templates.module';
 import { WebsiteThemesModule } from './website-themes/website-themes.module';
+import { VendorPaymentsModule } from './vendor-payments/vendor-payments.module';
 import { BusinessDocumentsModule } from './business-documents/business-documents.module';
 import { DesignModule } from './design/design.module';
 import { ReelsModule } from './reels/reels.module';
@@ -115,6 +116,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     RestaurantModule,
     RetailModule,
     EngineModule,
+    VendorPaymentsModule,
     NotificationsModule,
     CampaignPagesModule,
     CampaignsModule,

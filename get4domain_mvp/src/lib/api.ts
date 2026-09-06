@@ -435,6 +435,10 @@ export const api = {
   updateAiTemplate: (id: string, data: any) => apiCall(`/ai-templates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAiTemplate: (id: string) => apiCall(`/ai-templates/${id}`, { method: 'DELETE' }),
   // Website theme system (2.3)
+  // Vendor's own Razorpay payment credentials (they collect public-site payments directly)
+  getVendorPayment: () => apiCall('/vendor-payments'),
+  updateVendorPayment: (data: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean }) =>
+    apiCall('/vendor-payments', { method: 'PUT', body: JSON.stringify(data) }),
   websiteThemes: (q = '') => apiCall(`/website-themes${q}`),
   websiteThemesAll: () => apiCall('/website-themes/all'),
   createWebsiteTheme: (data: any) => apiCall('/website-themes', { method: 'POST', body: JSON.stringify(data) }),
