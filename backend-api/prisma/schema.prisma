@@ -234,35 +234,35 @@ model PlatformCMS {
 }
 
 model Lead {
-  id            String        @id @default(cuid())
-  name          String
-  phone         String
-  email         String?
-  business      String
-  industry      String
-  interest      String
-  message       String?
-  status        String        @default("pending")
+  id             String        @id @default(cuid())
+  name           String
+  phone          String
+  email          String?
+  business       String
+  industry       String
+  interest       String
+  message        String?
+  status         String        @default("pending")
   // Lead origin: "demo" = Book-Demo funnel (Phase 1 OTP-verified), else campaign/etc.
-  source        String?
+  source         String?
   // Preferred demo slot chosen by the visitor in the Book-a-Demo wizard.
-  preferredDate DateTime?
-  preferredSlot String?
+  preferredDate  DateTime?
+  preferredSlot  String?
   // TeleCRM fields (admin marketing team works these enquiries).
-  notes         String?
-  assignedTo    String?
-  followUpDate  DateTime?
-  callLogs      LeadCallLog[]
+  notes          String?
+  assignedTo     String?
+  followUpDate   DateTime?
+  callLogs       LeadCallLog[]
   // Demo-visit tracking (additive, on the same OTP-gate lead — dispatch 28-Aug-2026).
   // demoCategory = the FIRST main category this phone viewed; the visitor is scoped
   // to it (sub-categories within it are free). demoVisitKeys = comma-separated distinct
   // "category" / "category/sub" keys already viewed; demoVisitCount = their count. After
   // 3 distinct visits the 4th is redirected to a warm-lead sales page, not another demo.
-  demoCategory  String?
-  demoVisitKeys String?
-  demoVisitCount Int          @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  demoCategory   String?
+  demoVisitKeys  String?
+  demoVisitCount Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@map("g4d_leads")
 }
@@ -2152,4 +2152,49 @@ model RetailProduct {
 
   @@index([vendorId])
   @@map("g4d_retail_products")
+}
+
+// ── OPERATION REGISTRY (PRD §10, §31-33) — platform reference table ───────────
+// First-class operational capabilities. Config-in-DB so the platform can evolve the
+// operation catalog without a redeploy; mirrors get4domain_mvp/src/config/operations.ts.
+// NOT vendor-scoped — a shared reference table seeded idempotently by `prisma/seed.ts`.
+model OperationType {
+  id           String   @id @default(cuid())
+  key          String   @unique // appointment | booking | site_visit | cart | order | ...
+  label        String
+  cta          String
+  groupKey     String // convert | transact | fulfil | relationship (UX ordering)
+  actionIntent String? // engine action intent when transactional (else null)
+  description  String
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("g4d_operation_types")
+}
+
+// ── INDUSTRY EXPERIENCE REGISTRY (PRD §8, §31-32) — platform reference table ──
+// Makes industry selection meaningful: drives vendor modules + mobile nav, client
+// modules, CRM pipeline, and primary/secondary operations. Mirrors
+// get4domain_mvp/src/config/industry-experience.ts. Array/object fields use Json to
+// match this schema's convention (see Vendor.configOverride etc.). Seeded idempotently.
+model IndustryExperience {
+  id                  String   @id @default(cuid())
+  industry            String   @unique // canonical engine id (clinic, salon, gym, ...)
+  label               String
+  groupKey            String // PRD §31 industry group
+  businessModel       String // product | service | property | appointment | booking | ...
+  primaryOperation    String // OperationType.key
+  secondaryOperations Json // string[] of OperationType.key
+  primaryCta          String
+  vendorModules       Json // string[]
+  vendorMobileNav     Json // string[] (≤5)
+  clientModules       Json // string[]
+  crmPipeline         Json // string[] pipeline stages
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("g4d_industry_experiences")
 }

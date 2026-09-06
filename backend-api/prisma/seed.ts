@@ -1,9 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { seedRegistry } from './seed-registry';
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  // Operation + Industry Experience registries (PRD §8, §10, §31-32) — idempotent,
+  // and independent of the admin account, so it always runs even when admin exists.
+  await seedRegistry(prisma);
+
   const email = process.env.ADMIN_EMAIL ?? 'admin@get4domain.com';
   const password = process.env.ADMIN_PASSWORD;
 
