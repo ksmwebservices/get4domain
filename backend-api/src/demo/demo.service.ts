@@ -36,15 +36,31 @@ export class DemoService {
     private readonly sms: SmsService,
   ) {}
 
-  /** Phase 5 — create a one-time Razorpay order for the ₹999/month go-live upgrade of a
-   *  sandbox. NOTE: this is a one-time charge (not a Razorpay auto-recurring subscription
-   *  object); monthly renewal is handled via invoice/payment-link. */
-  async createBuyOrder(vendorId: string): Promise<{ orderId: string; amount: number; currency: string }> {
+  /**
+   * Launch pricing. Two plans, both billed UPFRONT, prices are ex-GST and 18% GST is
+   * added on top (the total is what Razorpay charges AND what the GST invoice records —
+   * createPaidInvoice back-computes taxable = total/1.18, so the breakdown is exact):
+   *   - quarterly: ₹999/mo billed quarterly → ₹2,997 + 18% = ₹3,536.46 every 3 months
+   *   - annual:    ₹9,999/year one-time     → ₹9,999 + 18% = ₹11,798.82 every 12 months
+   * Base prices are admin-editable via the Pricing Manager (getRate keys).
+   */
+  private async planPricing(plan: 'quarterly' | 'annual'): Promise<{ base: number; total: number; months: number; label: string; planCode: string }> {
+    if (plan === 'annual') {
+      const base = await this.wallet.getRate('domainapp_annual', 999900); // ₹9,999 ex-GST
+      return { base, total: base + Math.round(base * 0.18), months: 12, label: 'DomainApp — Annual plan (₹9,999/year)', planCode: 'ANNUAL' };
+    }
+    const base = await this.wallet.getRate('domainapp_quarterly', 299700); // ₹2,997 ex-GST (₹999/mo × 3)
+    return { base, total: base + Math.round(base * 0.18), months: 3, label: 'DomainApp — Quarterly plan (₹999/mo, billed quarterly)', planCode: 'QUARTERLY' };
+  }
+
+  /** Phase 5 — create a one-time Razorpay order to go live on the chosen plan (quarterly
+   *  or annual), charged upfront including 18% GST. */
+  async createBuyOrder(vendorId: string, plan: 'quarterly' | 'annual' = 'quarterly'): Promise<{ orderId: string; amount: number; currency: string; plan: string }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor || !vendor.isSandbox) throw new BadRequestException('No active demo sandbox to upgrade');
-    const amount = await this.wallet.getRate('domainapp_monthly', 99900); // paise (₹999)
-    const order = await this.payments.createOrder({ amount, currency: 'INR', receipt: `golive_${vendorId}_${Date.now()}` });
-    return { orderId: order.id, amount: Number(order.amount), currency: order.currency };
+    const { total, planCode } = await this.planPricing(plan);
+    const order = await this.payments.createOrder({ amount: total, currency: 'INR', receipt: `golive_${plan}_${vendorId}_${Date.now()}` });
+    return { orderId: order.id, amount: Number(order.amount), currency: order.currency, plan: planCode };
   }
 
   /**
@@ -80,17 +96,21 @@ export class DemoService {
       },
     });
 
+    const plan: 'quarterly' | 'annual' = dto.plan === 'annual' ? 'annual' : 'quarterly';
+    const { base, total, months, label } = await this.planPricing(plan);
     const now = new Date();
-    const end = new Date(now); end.setMonth(end.getMonth() + 1);
-    const amount = await this.wallet.getRate('domainapp_monthly', 99900);
+    const end = new Date(now); end.setMonth(end.getMonth() + months);
+    // Subscription.plan is the STARTUP tier enum; the billing PERIOD (quarterly/annual)
+    // is captured by endDate (+3 / +12 months), the amount, and the invoice label.
     const sub = await this.prisma.subscription.create({
-      data: { vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount, status: 'ACTIVE', startDate: now, endDate: end },
+      data: { vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount: base, status: 'ACTIVE', startDate: now, endDate: end },
     });
 
-    // Phase 6 automation — all best-effort; conversion already succeeded.
+    // Phase 6 automation — all best-effort; conversion already succeeded. The invoice is
+    // charged the GST-inclusive total; createPaidInvoice back-computes taxable + 18% GST.
     try {
       await this.invoices.createPaidInvoice({
-        vendorId, paidPaise: amount, description: 'DomainApp Monthly Subscription (₹999/month)',
+        vendorId, paidPaise: total, description: label,
         paymentMode: 'Razorpay', source: 'subscription', paymentId: dto.razorpayPaymentId,
         subscriptionId: sub.id, nextRenewal: end,
       });

@@ -42,6 +42,12 @@ export default function GoLivePage() {
   const [paying, setPaying] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [plan, setPlan] = useState<'quarterly' | 'annual'>('quarterly');
+  const PLANS = {
+    quarterly: { name: 'Quarterly', total: '₹3,536.46', sub: '₹999/mo · billed every 3 months', note: 'incl. 18% GST' },
+    annual: { name: 'Annual', total: '₹11,798.82', sub: '₹9,999/year · billed once a year', note: 'incl. 18% GST · best value' },
+  } as const;
+  const sel = PLANS[plan];
 
   const valid = form.businessName.trim() && /.+@.+\..+/.test(form.email) && form.password.length >= 6;
 
@@ -52,19 +58,19 @@ export default function GoLivePage() {
       await loadRazorpay();
       const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
       if (!key) throw new Error('Payments are not configured yet — missing NEXT_PUBLIC_RAZORPAY_KEY_ID');
-      const orderRes = await api.demoBuyOrder();
+      const orderRes = await api.demoBuyOrder(plan);
       const order = orderRes.data;
       const Razorpay = getRazorpay();
       if (!Razorpay) throw new Error('Razorpay checkout unavailable');
       const rzp = new Razorpay({
         key, amount: order.amount, currency: order.currency, order_id: order.orderId,
-        name: 'Get4Domain', description: 'DomainApp — Monthly (₹999/month)',
+        name: 'Get4Domain', description: `DomainApp — ${sel.name} (${sel.total})`,
         prefill: { name: form.name, email: form.email, contact: form.phone },
         handler: async (r: RazorpayResponse) => {
           try {
             const res = await api.demoBuyConfirm({
               businessName: form.businessName, email: form.email, password: form.password,
-              name: form.name, phone: form.phone,
+              name: form.name, phone: form.phone, plan,
               razorpayOrderId: r.razorpay_order_id, razorpayPaymentId: r.razorpay_payment_id, razorpaySignature: r.razorpay_signature,
             });
             const token = res.data?.token as string | undefined;
@@ -108,7 +114,7 @@ export default function GoLivePage() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><Rocket className="h-6 w-6 text-primary-600" /> Go live</h1>
-        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — everything included for <strong>₹999/month</strong>.</p>
+        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — everything included, billed <strong>quarterly</strong> or <strong>annually</strong>.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">
@@ -126,13 +132,28 @@ export default function GoLivePage() {
           </div>
           {error && <div className="mt-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
           <Button className="mt-5" size="lg" fullWidth loading={paying} disabled={!valid || paying} onClick={goLive} leftIcon={<ShieldCheck className="h-5 w-5" />}>
-            Pay ₹999 &amp; Go Live
+            Pay {sel.total} &amp; Go Live
           </Button>
           <p className="mt-2 text-center text-xs text-slate-400">Secure payment via Razorpay. Your demo data carries over.</p>
         </div>
 
         <div className="md:col-span-2 rounded-2xl border border-primary-100 bg-primary-50/50 p-6">
-          <div className="text-3xl font-bold text-slate-900">₹999<span className="text-base font-medium text-slate-500">/month</span></div>
+          <div className="mb-4 space-y-2">
+            {(['quarterly', 'annual'] as const).map((p) => {
+              const on = plan === p;
+              return (
+                <button key={p} type="button" onClick={() => setPlan(p)}
+                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${on ? 'border-primary-500 bg-white ring-2 ring-primary-200' : 'border-slate-200 bg-white/60 hover:border-slate-300'}`}>
+                  <span>
+                    <span className="block text-sm font-bold text-slate-900">{PLANS[p].name} <span className="font-semibold text-slate-500">· {PLANS[p].total}</span></span>
+                    <span className="block text-xs text-slate-500">{PLANS[p].sub} · {PLANS[p].note}</span>
+                  </span>
+                  <span className={`ml-3 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border ${on ? 'border-primary-600 bg-primary-600' : 'border-slate-300'}`}>{on && <Check className="h-3 w-3 text-white" />}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-3xl font-bold text-slate-900">{sel.total}<span className="block text-xs font-medium text-slate-500">{sel.sub} · {sel.note}</span></div>
           <div className="mt-4 space-y-2.5">
             {INCLUDED.map((f) => (
               <div key={f} className="flex items-start gap-2 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-600" />{f}</div>

@@ -488,11 +488,11 @@ export const api = {
     apiCall('/leads/demo/visit', { method: 'POST', body: JSON.stringify(data) }),
   demoEnquiry: (data: { name: string; phone: string; industry: string; message?: string }) =>
     apiCall('/demo/enquiry', { method: 'POST', body: JSON.stringify(data) }),
-  // Phase 5/6 — sandbox go-live (Razorpay ₹999/month → convert to a real account)
-  demoBuyOrder: () => apiCall('/demo/buy/order', { method: 'POST' }),
+  // Phase 5/6 — sandbox go-live (Razorpay upfront on the chosen plan → convert to a real account)
+  demoBuyOrder: (plan: 'quarterly' | 'annual' = 'quarterly') => apiCall('/demo/buy/order', { method: 'POST', body: JSON.stringify({ plan }) }),
   demoBuyConfirm: (data: {
     businessName: string; email: string; password: string; name?: string; phone?: string;
-    razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string;
+    razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; plan?: 'quarterly' | 'annual';
   }) => apiCall('/demo/buy/confirm', { method: 'POST', body: JSON.stringify(data) }),
   getLeads: () => apiCall('/leads'),
   updateLeadStatus: (id: string, status: string) =>

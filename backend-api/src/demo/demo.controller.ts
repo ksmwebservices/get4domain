@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DemoService } from './demo.service';
-import { SeedVendorDto, DemoEnquiryDto, ConfirmBuyDto } from './dto/demo.dto';
+import { SeedVendorDto, DemoEnquiryDto, ConfirmBuyDto, BuyOrderDto } from './dto/demo.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -35,9 +35,9 @@ export class DemoController {
 
   @ApiBearerAuth()
   @Post('buy/order')
-  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live (₹999/month) for the caller’s sandbox' })
-  buyOrder(@CurrentUser() user: AuthenticatedUser) {
-    return this.demo.createBuyOrder(user.sub);
+  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live on the chosen plan (quarterly / annual) for the caller’s sandbox' })
+  buyOrder(@CurrentUser() user: AuthenticatedUser, @Body() dto: BuyOrderDto) {
+    return this.demo.createBuyOrder(user.sub, dto?.plan ?? 'quarterly');
   }
 
   @ApiBearerAuth()
