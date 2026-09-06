@@ -46,7 +46,10 @@ export class DemoService {
    */
   private async planPricing(plan: 'quarterly' | 'annual'): Promise<{ base: number; total: number; months: number; label: string; planCode: string }> {
     if (plan === 'annual') {
-      const base = await this.wallet.getRate('domainapp_annual', 999900); // ₹9,999 ex-GST
+      // Key MUST match the public pricing source (public-pricing.controller / Pricing
+      // Manager) so the go-live charge tracks admin edits and never diverges from the
+      // price shown on the /pricing page.
+      const base = await this.wallet.getRate('domainapp_yearly', 999900); // ₹9,999 ex-GST
       return { base, total: base + Math.round(base * 0.18), months: 12, label: 'DomainApp — Annual plan (₹9,999/year)', planCode: 'ANNUAL' };
     }
     const base = await this.wallet.getRate('domainapp_quarterly', 299700); // ₹2,997 ex-GST (₹999/mo × 3)
