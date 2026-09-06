@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig, TAB_ADDON_REQUIREMENT } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
+import { getIndustryExperience } from '@/config/industry-experience';
+import { OPERATIONS } from '@/config/operations';
 import Icon from '@/components/ui/Icon';
 import LockedBadge from '@/components/ui/LockedBadge';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -28,6 +30,15 @@ const TEAM_AREA_BY_HREF: Record<string, string> = {
   '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
   '/dashboard/website-engine': 'website',
   '/dashboard/reports': 'reports', '/dashboard/ai-studio': 'ai_studio',
+};
+
+// Lucide icon for each primary operation — powers the industry-aware mobile nav slot.
+const OPERATION_ICON: Record<string, string> = {
+  appointment: 'CalendarClock', booking: 'CalendarCheck', site_visit: 'MapPin',
+  cart: 'ShoppingCart', order: 'ShoppingBag', quote: 'FileText', enquiry: 'ClipboardList',
+  lead: 'Users', application: 'FileCheck', consultation: 'MessagesSquare',
+  membership: 'BadgeCheck', subscription: 'BadgeCheck', payment: 'CreditCard',
+  pos: 'Store', delivery: 'Truck', pickup: 'PackageCheck', service_request: 'Wrench',
 };
 
 interface NavItem {
@@ -127,6 +138,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {
         title: 'Account',
         items: [
+          // §5: Subscription + Profile are first-class (Subscription was previously
+          // only reachable from the Overview CTA; Profile only via the header menu).
+          { label: 'Subscription', href: '/dashboard/go-live', icon: 'Rocket' },
+          { label: 'Profile', href: '/dashboard/settings', icon: 'UserCircle' },
           { label: 'Wallet & Billing', href: '/dashboard/wallet', icon: 'Wallet' },
           { label: 'Payments', href: '/dashboard/payments', icon: 'CreditCard' },
           { label: 'Invoices', href: '/dashboard/invoices', icon: 'FileText' },
@@ -209,6 +224,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const isActive = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+
+  // Industry-aware mobile nav: the primary "operate" slot speaks the vendor's own
+  // business language (Appointments / Orders / Leads / Site Visits …) from the
+  // Industry Experience Registry, instead of a generic "Business" label.
+  const primaryOp = OPERATIONS[getIndustryExperience(user.industry).primaryOperation];
+  const opLabel = primaryOp?.label ?? 'Business';
+  const opIcon = OPERATION_ICON[primaryOp?.key ?? ''] ?? 'ClipboardList';
 
   return (
     <div className="vendor-ui min-h-screen bg-ink-950 flex">
@@ -373,7 +395,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Icon name="Home" className="h-5 w-5" />Home
         </Link>
         <button onClick={() => setSheet('business')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
-          <Icon name="ClipboardList" className="h-5 w-5" />Business
+          <Icon name={opIcon} className="h-5 w-5" />{opLabel}
         </button>
         <button onClick={() => setSheet('campaign')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
           <Icon name="Megaphone" className="h-5 w-5" />Campaign

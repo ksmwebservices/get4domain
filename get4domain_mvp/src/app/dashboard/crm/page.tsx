@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { getIndustryExperience } from '@/config/industry-experience';
 
 interface CrmLead {
   id: string;
@@ -19,7 +21,9 @@ interface CrmLead {
   createdAt: string;
 }
 
-const TABS = ['all', 'new', 'contacted', 'quoted', 'won', 'lost'];
+// Normalize any stage/status to a stable key so a lead's stored status matches a
+// pipeline stage regardless of casing/spacing ("Site Visit" ⇄ "site-visit").
+const toKey = (s: string): string => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 const timeAgo = (iso: string): string => {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -34,6 +38,17 @@ const timeAgo = (iso: string): string => {
 function CrmPageInner() {
   const searchParams = useSearchParams();
   const sourceFilter = searchParams.get('source') ?? undefined;
+  const { user } = useAuth();
+
+  // Per-industry CRM pipeline (PRD §27) from the Industry Experience Registry, e.g.
+  // real-estate → Lead → Qualified → Site Visit → Negotiation → Booking → Won.
+  const pipeline = getIndustryExperience(user?.industry).crmPipeline;
+  const stages = pipeline.map((label) => ({ key: toKey(label), label }));
+  // 'lost' is a universal terminal stage kept alongside every industry pipeline.
+  const stageOptions = [...stages, { key: 'lost', label: 'Lost' }];
+  const tabs = [{ key: 'all', label: 'All' }, ...stageOptions];
+  const labelForStatus = (status: string): string =>
+    stageOptions.find((s) => s.key === toKey(status))?.label ?? status;
 
   const [leads, setLeads] = useState<CrmLead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,9 +63,11 @@ function CrmPageInner() {
   const [noteFor, setNoteFor] = useState<CrmLead | null>(null);
   const [noteText, setNoteText] = useState('');
 
+  // Fetch every lead once (no server-side status filter) so pipeline-stage filtering
+  // is done client-side — robust to legacy statuses that predate the industry pipeline.
   function load() {
     setLoading(true);
-    api.getCrmLeads({ status: tab === 'all' ? undefined : tab, source: sourceFilter })
+    api.getCrmLeads({ source: sourceFilter })
       .then((res) => setLeads(res.data ?? []))
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load leads'))
       .finally(() => setLoading(false));
@@ -59,11 +76,12 @@ function CrmPageInner() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, sourceFilter]);
+  }, [sourceFilter]);
 
-  const filtered = leads.filter((l) =>
-    !search.trim() || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone.includes(search)
-  );
+  const filtered = leads.filter((l) => {
+    if (tab !== 'all' && toKey(l.status) !== tab) return false;
+    return !search.trim() || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone.includes(search);
+  });
 
   async function handleAddLead(e: React.FormEvent) {
     e.preventDefault();
@@ -130,14 +148,14 @@ function CrmPageInner() {
       {error && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-          {TABS.map((t) => (
+        <div className="flex flex-wrap gap-1 rounded-xl bg-slate-100 p-1">
+          {tabs.map((t) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors ${tab === t ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${tab === t.key ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
             >
-              {t}
+              {t.label}
             </button>
           ))}
         </div>
@@ -170,11 +188,15 @@ function CrmPageInner() {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <select
-                  value={lead.status}
+                  value={stageOptions.some((s) => s.key === toKey(lead.status)) ? toKey(lead.status) : `__legacy__${lead.status}`}
                   onChange={(e) => handleUpdateStatus(lead.id, e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white text-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-700 capitalize focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  className="rounded-lg border border-slate-200 bg-white text-slate-900 px-2 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-100"
                 >
-                  {['new', 'contacted', 'quoted', 'won', 'lost'].map((s) => <option key={s} value={s}>{s}</option>)}
+                  {/* Keep a legacy stored status visible until it's re-assigned to a pipeline stage. */}
+                  {!stageOptions.some((s) => s.key === toKey(lead.status)) && (
+                    <option value={`__legacy__${lead.status}`} disabled className="capitalize">{labelForStatus(lead.status)}</option>
+                  )}
+                  {stageOptions.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
                 <a href={`tel:${lead.phone}`} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Call"><Phone className="h-4 w-4" /></a>
                 <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="WhatsApp"><MessageCircle className="h-4 w-4" /></a>
