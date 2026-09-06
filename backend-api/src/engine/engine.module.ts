@@ -6,9 +6,11 @@ import { PaymentsModule } from '../payments/payments.module';
 import { CmsModule } from '../cms/cms.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CrmModule } from '../crm/crm.module';
+import { VendorPaymentsModule } from '../vendor-payments/vendor-payments.module';
 import { ActionRegistry } from './action-registry';
 import { EngineService } from './engine.service';
 import { EngineController } from './engine.controller';
+import { PublicCheckoutService } from './public-checkout.service';
 
 /**
  * Business Action Engine.
@@ -22,8 +24,8 @@ import { EngineController } from './engine.controller';
  *  - NotificationsModule — vendor lead-routing on public actions
  */
 @Module({
-  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule, CrmModule],
-  providers: [ActionRegistry, EngineService],
+  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule, CrmModule, VendorPaymentsModule],
+  providers: [ActionRegistry, EngineService, PublicCheckoutService],
   controllers: [EngineController],
   exports: [EngineService],
 })

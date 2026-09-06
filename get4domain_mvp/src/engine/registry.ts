@@ -30,7 +30,11 @@ export interface EngineIndustryEntry {
 type Builder = (site: EngineSiteData) => KitSiteModel;
 const kit = (config: IndustryWebsite, build: Builder): EngineIndustryEntry => ({
   config,
-  render: (site, mode) => createElement(KitRenderer, { model: withVendorBanner(build(site), site, mode), mode }),
+  render: (site, mode) => createElement(KitRenderer, {
+    model: withVendorBanner(build(site), site, mode),
+    mode,
+    shop: mode.kind === 'live' && !!site.paymentsEnabled,
+  }),
 });
 
 /**
@@ -61,7 +65,7 @@ export function renderKitTemplate(template: WebsiteTemplate, site: EngineSiteDat
   const withBanner = mode.kind === 'live' && banner
     ? { ...model, sections: model.sections.map((s) => (s.type === 'hero' ? { ...s, image: banner } : s)) }
     : model;
-  return createElement(KitRenderer, { model: withBanner, mode });
+  return createElement(KitRenderer, { model: withBanner, mode, shop: mode.kind === 'live' && !!site.paymentsEnabled });
 }
 
 const REGISTRY: Record<string, EngineIndustryEntry> = {

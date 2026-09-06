@@ -1,5 +1,6 @@
 import EngineSiteFrame from '../components/EngineSiteFrame';
 import Reveal from '../components/Reveal';
+import { CartProvider } from '../components/EngineCart';
 import type { EngineMode } from '../types';
 import type { KitSiteModel } from './model';
 import KitNav from './KitNav';
@@ -49,9 +50,11 @@ function KitFooter({ model }: { model: KitSiteModel }) {
  * Different industries pass different themes, hero/showcase variants, section orders
  * and copy — so the output reads bespoke, not templated.
  */
-export default function KitRenderer({ model, mode }: { model: KitSiteModel; mode: EngineMode }) {
+export default function KitRenderer({ model, mode, shop = false }: { model: KitSiteModel; mode: EngineMode; shop?: boolean }) {
   const b = model.brand;
+  const subdomain = mode.kind === 'live' ? mode.subdomain : '';
   return (
+    <CartProvider enabled={shop && !!subdomain} subdomain={subdomain} brandName={b.name}>
     <EngineSiteFrame tokens={model.theme} bottomNav={model.bottomNav}>
       <KitNav brand={b.name} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} />
       {model.sections.map((s, i) => {
@@ -85,5 +88,6 @@ export default function KitRenderer({ model, mode }: { model: KitSiteModel; mode
       })}
       <KitFooter model={model} />
     </EngineSiteFrame>
+    </CartProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { BillOrderDto } from '../restaurant/dto/restaurant.dto';
 
 /**
@@ -53,4 +54,34 @@ export class RealEstatePaymentInput {
   @ApiProperty({ example: 25000, description: 'Token amount in ₹ (rupees). Clamped to ₹100–₹5,00,000 server-side.' })
   @IsInt() @Min(100) @Max(500000) amount!: number;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+}
+
+/** One line in a public-site checkout cart. Prices are per-unit in ₹ (rupees). */
+export class CheckoutLine {
+  @ApiPropertyOptional({ description: 'CatalogItem id, when the line maps to a stocked product (enables stock decrement).' })
+  @IsOptional() @IsString() @MaxLength(60) catalogItemId?: string;
+  @ApiProperty() @IsString() @MaxLength(200) name!: string;
+  @ApiProperty() @IsInt() @Min(1) @Max(999) qty!: number;
+  @ApiProperty({ description: 'Per-unit price in ₹.' }) @IsNumber() @Min(0) price!: number;
+}
+
+/**
+ * Input for `engine.checkout.order` (PUBLIC): the cart + buyer. The amount is
+ * recomputed server-side from `items` — the client total is never trusted.
+ */
+export class CheckoutOrderInput {
+  @ApiProperty({ type: [CheckoutLine] })
+  @IsArray() @ArrayMaxSize(100) @ValidateNested({ each: true }) @Type(() => CheckoutLine)
+  items!: CheckoutLine[];
+  @ApiProperty() @IsString() @MaxLength(120) name!: string;
+  @ApiProperty() @IsString() @MaxLength(20) phone!: string;
+  @ApiPropertyOptional() @IsOptional() @IsEmail() email?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(1000) note?: string;
+}
+
+/** Input for `engine.checkout.confirm` (PUBLIC): the same cart + the Razorpay result. */
+export class CheckoutConfirmInput extends CheckoutOrderInput {
+  @ApiProperty() @IsString() @MaxLength(120) razorpayOrderId!: string;
+  @ApiProperty() @IsString() @MaxLength(120) razorpayPaymentId!: string;
+  @ApiProperty() @IsString() @MaxLength(256) razorpaySignature!: string;
 }

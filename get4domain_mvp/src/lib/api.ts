@@ -783,6 +783,7 @@ export const api = {
       body: JSON.stringify(input),
     }),
   // Vendor-authenticated: any registered action (uses the caller's JWT).
+  engineWebOrders: () => apiCall('/engine/orders'),
   engineListActions: () => apiCall('/engine/actions'),
   engineDispatch: (intent: string, input: Record<string, unknown>) =>
     apiCall(`/engine/actions/${intent}`, { method: 'POST', body: JSON.stringify(input) }),

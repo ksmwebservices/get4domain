@@ -9,7 +9,9 @@ import { ActionContext, ActionDefinition, ActionDescriptor } from './engine.type
 import {
   BillOrderActionInput, CreateSaleDto,
   CreateDealDto, CreateVisitDto, RealEstatePaymentInput, EngineEnquiryInput,
+  CheckoutOrderInput, CheckoutConfirmInput,
 } from './engine.dto';
+import { PublicCheckoutService } from './public-checkout.service';
 
 /** Composite result of a public payment-CTA action. */
 export interface PaymentCtaResult {
@@ -45,6 +47,7 @@ export class ActionRegistry {
     private readonly payments: PaymentsService,
     private readonly notifications: NotificationsService,
     private readonly crm: CrmService,
+    private readonly checkout: PublicCheckoutService,
   ) {
     // ── engine.enquiry → CrmService.createLead (PUBLIC, universal website lead-capture) ──
     // The generic conversion every engine industry site can fire. Lands in the vendor's
@@ -65,6 +68,30 @@ export class ActionRegistry {
           `${input.name} enquired${input.phone ? ` (${input.phone})` : ''}.`, { leadId: lead.id });
         return lead;
       },
+    });
+
+    // ── engine.checkout.order / .confirm → PublicCheckoutService (PUBLIC, universal) ──
+    // The universal public-site payment flow for ANY industry: create a Razorpay order
+    // with the VENDOR's own keys, then (after the browser pays) verify + record the sale
+    // and decrement stock. Money goes straight to the vendor; the total is recomputed
+    // server-side from the cart. Reuses the real PosSale/stock tables — no parallel system.
+    this.register<CheckoutOrderInput>({
+      intent: 'engine.checkout.order',
+      industry: 'engine',
+      delegatesTo: 'Razorpay orders.create (vendor keys)',
+      description: 'Create a Razorpay order for a public-site cart, charged to the vendor’s own Razorpay account.',
+      inputType: CheckoutOrderInput,
+      public: true,
+      execute: (ctx, input) => this.checkout.createOrder(ctx.vendorId, input),
+    });
+    this.register<CheckoutConfirmInput>({
+      intent: 'engine.checkout.confirm',
+      industry: 'engine',
+      delegatesTo: 'PosSale + CatalogItem.stock',
+      description: 'Verify a public-site payment and record the order as a sale, decrementing stock.',
+      inputType: CheckoutConfirmInput,
+      public: true,
+      execute: (ctx, input) => this.checkout.confirm(ctx.vendorId, input),
     });
 
     // ── restaurant.bill_order → RestaurantService.billOrder (vendor-only) ──

@@ -11,6 +11,14 @@ import {
 import type {
   KitFeature, KitItem, KitPerson, KitQuote, KitRow, KitStat, KitStep, KitFaqItem,
 } from './model';
+import { AddToCartButton } from '../components/EngineCart';
+
+/** Parse a display price ("₹1,200", "from ₹45,000/mo") into a number for the cart; 0 if none. */
+function priceNum(s?: string): number {
+  if (!s) return 0;
+  const n = parseFloat(s.replace(/,/g, '').replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
 
 const ICONS: Record<string, typeof Building2> = {
   Building2, Waves, Dumbbell, Trees, ShieldCheck, Zap, Baby, PlugZap, Drama, Laptop,
@@ -98,7 +106,10 @@ export function Showcase({ id, variant, eyebrow, title, sub, items }: {
                     {p.subtitle && <p className="mt-0.5 text-xs uppercase tracking-wide text-[var(--eng-accent)]">{p.subtitle}</p>}
                     {p.desc && <p className="mt-2 text-sm text-[var(--eng-muted)]">{p.desc}</p>}
                     {p.tags && <div className="mt-3 flex flex-wrap gap-1.5">{p.tags.map((t) => <span key={t} className="border border-[var(--eng-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--eng-muted)]">{t}</span>)}</div>}
-                    <a href="#enquiry" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--eng-accent)]">Enquire <ArrowUpRight className="h-3.5 w-3.5" /></a>
+                    <div className="mt-4 flex items-center gap-3">
+                      <a href="#enquiry" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--eng-accent)]">Enquire <ArrowUpRight className="h-3.5 w-3.5" /></a>
+                      <AddToCartButton name={p.title} price={priceNum(p.price)} />
+                    </div>
                   </div>
                 </article>
               ))}

@@ -119,6 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { label: 'Website Engine', href: '/dashboard/website-engine', icon: 'Sparkles', moduleKey: 'website_manager' },
           { label: 'Embed / Widget', href: '/dashboard/embed', icon: 'Code', moduleKey: 'website_manager' },
           { label: 'Domain', href: '/dashboard/domain-management', icon: 'Link' },
+          { label: 'Website Orders', href: '/dashboard/orders', icon: 'ShoppingBag', moduleKey: 'website_manager' },
           { label: 'Customer Hub', href: '/dashboard/customer-hub', icon: 'UserCircle', moduleKey: 'customer_hub' },
           { label: 'Analytics Hub', href: '/dashboard/reports', icon: 'BarChart3', moduleKey: 'analytics_hub' },
         ],

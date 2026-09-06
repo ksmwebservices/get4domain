@@ -110,6 +110,7 @@ export class CmsService {
     cms: VendorCMS | null;
     products: VendorProduct[];
     theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown } | null;
+    paymentsEnabled: boolean;
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -127,6 +128,9 @@ export class CmsService {
     const themeRow = cms?.themeId
       ? await this.prisma.websiteTheme.findUnique({ where: { id: cms.themeId } })
       : null;
+    // Whether the vendor has switched on their own Razorpay — gates the public shop/checkout.
+    const pay = await this.prisma.vendorPaymentConfig.findUnique({ where: { vendorId: vendor.id } });
+    const paymentsEnabled = Boolean(pay?.enabled && pay.razorpayKeyId && pay.razorpayKeySecret);
     return {
       vendor: {
         id: vendor.id,
@@ -139,6 +143,7 @@ export class CmsService {
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout }
         : null,
+      paymentsEnabled,
     };
   }
 

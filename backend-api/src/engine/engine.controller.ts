@@ -3,12 +3,23 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { EngineService } from './engine.service';
+import { PublicCheckoutService, WebOrder } from './public-checkout.service';
 import { ActionDescriptor } from './engine.types';
 
 @ApiTags('engine')
 @Controller('engine')
 export class EngineController {
-  constructor(private readonly engine: EngineService) {}
+  constructor(
+    private readonly engine: EngineService,
+    private readonly checkout: PublicCheckoutService,
+  ) {}
+
+  @ApiBearerAuth()
+  @Get('orders')
+  @ApiOperation({ summary: "The vendor's public web orders (paid on their website)" })
+  orders(@CurrentUser() u: AuthenticatedUser): Promise<WebOrder[]> {
+    return this.checkout.listWebOrders(u.sub);
+  }
 
   @ApiBearerAuth()
   @Get('actions')

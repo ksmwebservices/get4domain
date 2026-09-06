@@ -56,6 +56,8 @@ export interface EngineSiteData {
     id: string; name: string; description: string | null; price: string | null;
     image: string | null; category: string | null; customFields: Record<string, string> | null;
   }[];
+  /** Vendor has switched on their own Razorpay → the public shop/checkout is available. */
+  paymentsEnabled?: boolean;
 }
 
 /** A revenue/launch readiness check evaluated against resolved site data. */
