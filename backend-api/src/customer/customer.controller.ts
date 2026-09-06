@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { CustomerService } from './customer.service';
@@ -74,5 +74,16 @@ export class CustomerController {
   @ApiOperation({ summary: 'Vendor sends a portal invite to a contact (mock)' })
   invite(@CurrentUser() user: AuthenticatedUser, @Body() dto: InviteDto) {
     return this.service.invite(user.sub, dto.contactId);
+  }
+
+  @Public()
+  @Post('actions/:intent')
+  @ApiOperation({ summary: 'Phase C — signed-in customer initiates their industry primary operation (public engine actions only)' })
+  action(
+    @Param('intent') intent: string,
+    @Body() input: unknown,
+    @Headers('authorization') auth?: string,
+  ) {
+    return this.service.dispatchAction(auth, intent, input);
   }
 }

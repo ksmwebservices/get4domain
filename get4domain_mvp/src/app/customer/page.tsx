@@ -8,8 +8,14 @@ import {
   Mail, X, ExternalLink, IndianRupee, Code2, BadgeCheck, Cog, Stethoscope, type LucideIcon,
 } from 'lucide-react';
 import TourNav from '@/components/TourNav';
+import { getIndustryExperience } from '@/config/industry-experience';
+import { OPERATIONS } from '@/config/operations';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
+
+// Primary operations that are transactional (need catalog/payment) rather than a
+// simple in-app request. For these, the portal points the customer at the catalogue.
+const TRANSACTIONAL_OPS = new Set(['order', 'cart', 'payment', 'membership', 'subscription', 'pos']);
 const TOKEN_KEY = 'g4d_customer_token';
 
 async function portalFetch(path: string, options: RequestInit = {}) {
@@ -81,6 +87,14 @@ export default function CustomerPortal() {
   const [contactInfo, setContactInfo] = useState<ContactDetails | null>(null);
   const [contactOpen, setContactOpen] = useState(false);
 
+  // Phase C — in-app primary-operation request (Book Appointment / Book Site Visit /
+  // Request a Quote…). Posts to the engine Action Registry via /customer/actions.
+  const [actionOpen, setActionOpen] = useState(false);
+  const [actionNote, setActionNote] = useState('');
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionDone, setActionDone] = useState(false);
+  const [actionError, setActionError] = useState('');
+
   const loadProfile = useCallback(async () => {
     try {
       const me = await portalFetch('/customer/me');
@@ -139,6 +153,30 @@ export default function CustomerPortal() {
     localStorage.removeItem(TOKEN_KEY);
     setProfile(null); setStep('phone'); setPhone(''); setOtp('');
     setRecords([]); setInvoices([]); setCatalog([]); setContactInfo(null);
+  };
+
+  // Submit the industry primary operation as a real CRM enquiry linked to the vendor.
+  // Uses the universal, public `engine.enquiry` intent (lands in the vendor's call
+  // list); richer transactional flows (checkout, scheduled site-visit) are separate.
+  const submitAction = async (cta: string) => {
+    if (!profile) return;
+    setActionBusy(true); setActionError('');
+    try {
+      await portalFetch('/customer/actions/engine.enquiry', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: profile.contact.name,
+          phone: profile.contact.phone,
+          message: actionNote.trim() ? `${cta}: ${actionNote.trim()}` : cta,
+          industry: profile.industry.key,
+        }),
+      });
+      setActionDone(true);
+      setActionNote('');
+      portalFetch('/customer/records').then(setRecords).catch(() => {});
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not send your request');
+    } finally { setActionBusy(false); }
   };
 
   // ── Home screen figures, derived from data already loaded ──────────────────
@@ -207,6 +245,20 @@ export default function CustomerPortal() {
   const businessName = contactInfo?.businessName ?? profile.vendor.businessName ?? 'Your Provider';
   const hasContactChannel = Boolean(contactInfo?.phone || contactInfo?.whatsapp || contactInfo?.email || contactInfo?.address);
 
+  // Phase C — the customer's primary operation, worded for their industry.
+  const exp = getIndustryExperience(profile.industry.key);
+  const primaryOp = OPERATIONS[exp.primaryOperation];
+  const primaryCta = exp.primaryCta || primaryOp?.cta || 'Enquire Now';
+  const isTransactional = TRANSACTIONAL_OPS.has(exp.primaryOperation);
+  // Transactional industries with a catalogue send the customer to browse; everyone
+  // else gets an in-app request that lands in the vendor's CRM.
+  const primaryToCatalog = isTransactional && portal.showCatalog;
+  const openPrimaryAction = () => {
+    if (primaryToCatalog) { setTab('catalog'); return; }
+    setActionDone(false); setActionError(''); setActionNote(''); setActionOpen(true);
+  };
+  const primaryLabel = primaryToCatalog ? `Browse ${portal.catalogLabel}` : primaryCta;
+
   return (
     <div className="vendor-ui min-h-screen bg-ink-950 bg-radial-glow pb-20 text-ink-100">
       <header className="flex items-center justify-between border-b border-ink-700/50 bg-ink-900/70 px-5 py-4 backdrop-blur-xl">
@@ -228,6 +280,21 @@ export default function CustomerPortal() {
         {tab === 'home' && (
           <div className="space-y-4">
             <h1 className="text-xl font-bold text-ink-50">Welcome back 👋</h1>
+
+            {/* Phase C — the primary operation, in the customer's own words. */}
+            <button
+              onClick={openPrimaryAction}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-brand-500/40 bg-gradient-to-br from-brand-600/25 to-brand-600/10 p-4 text-left transition hover:border-brand-400/70"
+            >
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-brand-300">Get started</div>
+                <div className="mt-0.5 text-base font-bold text-ink-50">{primaryLabel}</div>
+                <div className="mt-0.5 truncate text-xs text-ink-300">with {businessName}</div>
+              </div>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-brand-200">
+                <ExternalLink className="h-5 w-5" />
+              </span>
+            </button>
 
             {/* Next up — the single most useful thing for a customer to see. */}
             {stats.next && (
@@ -303,7 +370,12 @@ export default function CustomerPortal() {
         {tab === 'catalog' && (
           <div className="space-y-2">
             <h1 className="mb-1 text-lg font-bold text-ink-50">{portal.catalogLabel}</h1>
-            <p className="mb-3 text-xs text-ink-400">Browse what {businessName} offers. To place a request, contact them directly.</p>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-ink-400">Browse what {businessName} offers.</p>
+              {!primaryToCatalog && (
+                <button onClick={openPrimaryAction} className="shrink-0 rounded-lg bg-brand-600/20 px-3 py-1.5 text-xs font-semibold text-brand-200 hover:bg-brand-600/30">{primaryCta}</button>
+              )}
+            </div>
             {catalog.length === 0 ? <p className="text-sm text-ink-500">Nothing listed yet.</p> : catalog.map((c) => (
               <div key={c.id} className="flex gap-3 rounded-2xl border border-ink-700/50 bg-ink-850/80 p-4">
                 {c.image && (
@@ -380,6 +452,47 @@ export default function CustomerPortal() {
               <button onClick={() => setContactOpen(false)} aria-label="Close" className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800/60 hover:text-ink-100"><X className="h-5 w-5" /></button>
             </div>
             <ContactPanel info={contactInfo} businessName={businessName} />
+          </div>
+        </div>
+      )}
+
+      {/* Phase C — primary-operation request modal. */}
+      {actionOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-5" onClick={() => setActionOpen(false)}>
+          <div className="w-full max-w-md rounded-t-3xl border border-ink-700/60 bg-ink-850 p-5 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-bold text-ink-50">{primaryCta}</h2>
+                <p className="text-xs text-ink-400">{businessName} will get back to you</p>
+              </div>
+              <button onClick={() => setActionOpen(false)} aria-label="Close" className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-800/60 hover:text-ink-100"><X className="h-5 w-5" /></button>
+            </div>
+
+            {actionDone ? (
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
+                <BadgeCheck className="mx-auto mb-2 h-8 w-8 text-emerald-400" />
+                <div className="text-sm font-semibold text-ink-50">Request sent</div>
+                <p className="mt-1 text-xs text-ink-300">{businessName} has your request and will contact you on {profile.contact.phone}.</p>
+                <button onClick={() => setActionOpen(false)} className="btn-primary mt-4 w-full">Done</button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-ink-700/50 bg-ink-900/60 px-3 py-2 text-xs text-ink-400">
+                  Sending as <span className="font-semibold text-ink-200">{profile.contact.name}</span> · {profile.contact.phone}
+                </div>
+                {actionError && <div className="rounded-xl border border-error-500/30 bg-error-500/10 px-3 py-2 text-sm text-error-400">{actionError}</div>}
+                <textarea
+                  value={actionNote}
+                  onChange={(e) => setActionNote(e.target.value)}
+                  rows={3}
+                  placeholder={`Anything ${businessName} should know? (optional)`}
+                  className="input w-full resize-none"
+                />
+                <button onClick={() => submitAction(primaryCta)} disabled={actionBusy} className="btn-primary w-full">
+                  {actionBusy ? 'Sending…' : primaryCta}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

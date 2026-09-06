@@ -4,11 +4,15 @@ import { CustomerService } from './customer.service';
 import { CustomerController } from './customer.controller';
 import { SmsModule } from '../sms/sms.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { EngineModule } from '../engine/engine.module';
 
 @Module({
   imports: [
     SmsModule,
     WhatsappModule,
+    // Phase C — reuse the Action Registry so a signed-in customer can initiate their
+    // industry's primary operation in-app (public actions only).
+    EngineModule,
     // 3A — stateless customer-portal sessions. Distinct secret from the vendor JWT so
     // a customer token can never be replayed against the vendor JwtAuthGuard.
     JwtModule.register({

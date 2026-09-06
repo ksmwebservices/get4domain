@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsService } from '../sms/sms.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { EngineService } from '../engine/engine.service';
 import { getIndustryConfig, deriveCustomerPortal } from '../config/industries';
 
 interface OtpEntry { otp: string; expires: number; contactId: string; vendorId: string }
@@ -27,7 +28,19 @@ export class CustomerService {
     private readonly jwt: JwtService,
     private readonly sms: SmsService,
     private readonly whatsapp: WhatsappService,
+    private readonly engine: EngineService,
   ) {}
+
+  /**
+   * Phase C — a signed-in customer initiates their industry's primary operation
+   * (Book Appointment / Book Site Visit / Request a Quote / Enquiry…) in-app. Tenant
+   * scope (vendorId) and identity (contactId) come from the session token, never the
+   * client; the engine enforces public-action-only. Returns the created lead/record.
+   */
+  async dispatchAction(authHeader: string | undefined, intent: string, input: unknown): Promise<unknown> {
+    const s = this.resolve(authHeader);
+    return this.engine.dispatchAsCustomer(s.vendorId, s.contactId, intent, input);
+  }
 
   private issueToken(contactId: string, vendorId: string): string {
     return this.jwt.sign({ sub: contactId, vendorId, kind: 'customer' });

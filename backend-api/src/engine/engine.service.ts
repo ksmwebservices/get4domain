@@ -62,6 +62,31 @@ export class EngineService {
   }
 
   /**
+   * Customer-portal dispatch (Phase C): a signed-in customer initiates their industry's
+   * primary operation from the client WebApp. vendorId is supplied by the customer's own
+   * session token (resolved in CustomerService, never trusted from the client), and only
+   * PUBLIC actions are allowed — a customer can trigger exactly what an anonymous site
+   * visitor could, no privileged intents. The contactId is carried for traceability.
+   */
+  async dispatchAsCustomer(
+    vendorId: string,
+    contactId: string,
+    intent: string,
+    rawInput: unknown,
+  ): Promise<unknown> {
+    const action = this.registry.get(intent);
+    if (!action) throw new NotFoundException(`Unknown engine action intent: ${intent}`);
+    if (!action.public) throw new ForbiddenException(`Action '${intent}' is not available from the customer portal`);
+
+    const ctx: ActionContext = {
+      vendorId,
+      user: { sub: contactId, email: '', role: 'CUSTOMER', kind: 'customer' },
+    };
+    const input = await this.validateInput(action.inputType, rawInput);
+    return action.execute(ctx, input);
+  }
+
+  /**
    * Validate raw input against the action's DTO class, mirroring the global
    * ValidationPipe config (whitelist + forbidNonWhitelisted). `plainToInstance`
    * applies the DTO's `@Type` decorators so nested arrays (e.g. sale lines) are
