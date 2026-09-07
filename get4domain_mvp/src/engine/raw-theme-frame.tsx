@@ -56,10 +56,10 @@ function rewriteLinks(html: string, base: string, slugs: Set<string>): string {
 }
 
 /** The in-iframe bridge: wire forms/booking to the engine, links to the top window. */
-function bridge(apiBase: string, subdomain: string): string {
+function bridge(apiBase: string, subdomain: string, base: string): string {
   return `
 <script>(function(){
-  var API=${JSON.stringify(apiBase)}, SUB=${JSON.stringify(subdomain)};
+  var API=${JSON.stringify(apiBase)}, SUB=${JSON.stringify(subdomain)}, BASE=${JSON.stringify(base)};
   function val(f,n){var e=f.querySelector('[name="'+n+'"]');return e?String(e.value||'').trim():'';}
   // Wire every form to the vendor's real CRM (engine.enquiry). Overrides any demo handler.
   document.addEventListener('submit',function(ev){
@@ -76,9 +76,9 @@ function bridge(apiBase: string, subdomain: string): string {
       .then(function(){ if(note)note.textContent='Thank you — your request has reached the clinic. We will call you back shortly.'; try{f.reset();}catch(e){} })
       .catch(function(){ if(note)note.textContent='Could not send — please call us directly.'; });
   },true);
-  // Intra-site links navigate the parent (already rewritten to /site/<sub>/...).
+  // Intra-site links (rewritten to BASE/<slug>) navigate the parent window.
   addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('a[href^="'+location.origin+'/site/"], a[href^="/site/"]').forEach(function(a){a.setAttribute('target','_top');});
+    document.querySelectorAll('a[href^="'+BASE+'"], a[href^="'+location.origin+BASE+'"]').forEach(function(a){a.setAttribute('target','_top');});
   });
 })();</script>`;
 }
@@ -86,9 +86,9 @@ function bridge(apiBase: string, subdomain: string): string {
 /** Assemble the full self-contained HTML document string for the iframe. */
 export function buildThemeSrcDoc(
   bundle: ThemeBundle, site: FrameSite,
-  opts: { subdomain: string; rest: string[]; apiBase: string },
+  opts: { subdomain: string; rest: string[]; apiBase: string; base?: string },
 ): string {
-  const base = `/site/${opts.subdomain}`;
+  const base = opts.base ?? `/site/${opts.subdomain}`;
   const slugs = new Set(bundle.pages.map((p, i) => (i === 0 ? 'home' : p.slug)));
   const requested = opts.rest[0] || 'home';
   const current = bundle.pages.find((p) => p.slug === requested)
@@ -104,7 +104,7 @@ ${fonts}
 </head><body>
 ${body}
 ${bundle.js ? `<script>${bundle.js}</script>` : ''}
-${bridge(opts.apiBase, site.vendor.subdomain ? opts.subdomain : '')}
+${bridge(opts.apiBase, site.vendor.subdomain ? opts.subdomain : '', base)}
 </body></html>`;
 }
 
