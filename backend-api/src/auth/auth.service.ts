@@ -204,6 +204,17 @@ export class AuthService {
     return { accessToken };
   }
 
+  /**
+   * The current principal's own vendor identity — used by the demo tour-pass route to
+   * scope a demo pass to the sandbox vendor's OWN industry (never a client-supplied one).
+   * Guarded by the JWT guard at the controller, so a forged/expired token can't reach here.
+   */
+  async me(vendorId: string): Promise<{ id: string; email: string; industry: string | null; isSandbox: boolean; role: string }> {
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
+    if (!vendor) throw new UnauthorizedException('Account not found');
+    return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role };
+  }
+
   private signToken(payload: {
     sub: string;
     email: string;

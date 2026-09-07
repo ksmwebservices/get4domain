@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService, LoginResult } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -29,5 +29,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Issue a new JWT for the currently authenticated user' })
   refresh(@CurrentUser() user: AuthenticatedUser): { accessToken: string } {
     return this.authService.refresh(user);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Current authenticated principal — id, email, industry and sandbox flag' })
+  me(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.me(user.sub);
   }
 }
