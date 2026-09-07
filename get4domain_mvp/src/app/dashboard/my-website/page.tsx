@@ -306,10 +306,17 @@ export default function WebsiteManagerPage() {
                         {t.description && <p className="mt-1 line-clamp-2 text-xs text-slate-500">{t.description}</p>}
                       </>
                     );
+                    const previewLink = (
+                      <a href={`/theme-preview/${t.id}`} target="_blank" rel="noopener noreferrer"
+                        className="mt-2 block w-full rounded-lg border border-slate-200 px-3 py-1.5 text-center text-xs font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
+                        Preview
+                      </a>
+                    );
                     if (locked) {
                       return (
                         <div key={t.id} className="rounded-xl border-2 border-slate-200 p-3 text-left">
                           {inner}
+                          {previewLink}
                           <button type="button" onClick={() => unlockTheme(t)} disabled={unlocking === t.id}
                             className="mt-2 w-full rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
                             {unlocking === t.id ? 'Opening…' : `Unlock ₹${t.price} + GST`}
@@ -318,10 +325,12 @@ export default function WebsiteManagerPage() {
                       );
                     }
                     return (
-                      <button key={t.id} type="button" onClick={() => set('themeId', t.id)}
-                        className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
-                        {inner}
-                      </button>
+                      <div key={t.id} className={`rounded-xl border-2 p-3 text-left transition-colors ${selected ? 'border-primary-500 bg-primary-50/40' : 'border-slate-200 hover:border-slate-300'}`}>
+                        <button type="button" onClick={() => set('themeId', t.id)} className="block w-full text-left">
+                          {inner}
+                        </button>
+                        {previewLink}
+                      </div>
                     );
                   })}
                 </div>
