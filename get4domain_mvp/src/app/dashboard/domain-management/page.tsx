@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Globe, Search, Link2, Copy, ExternalLink, CheckCircle2, Loader2, LifeBuoy, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { openMyWebsite } from '@/lib/view-website';
 import { api } from '@/lib/api';
 
 type Tab = 'my' | 'buy' | 'connect';
@@ -127,7 +128,7 @@ export default function DomainManagementPage() {
               <span className="flex items-center gap-1.5 rounded-full bg-success-50 px-2.5 py-1 text-xs font-semibold text-success-700"><span className="h-1.5 w-1.5 rounded-full bg-success-500" />Active</span>
             </div>
             <div className="mt-4 flex gap-2">
-              <a href={`https://${subdomain}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><ExternalLink className="h-4 w-4" />Visit Site</a>
+              <button onClick={() => openMyWebsite(user)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><ExternalLink className="h-4 w-4" />Visit Site</button>
               <button onClick={() => navigator.clipboard?.writeText(`https://${subdomain}`)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"><Copy className="h-4 w-4" />Copy URL</button>
             </div>
           </div>

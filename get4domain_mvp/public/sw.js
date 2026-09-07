@@ -1,5 +1,5 @@
 // Get4Domain service worker — Web Push (VAPID) + basic offline fallback.
-const CACHE = 'g4d-v1';
+const CACHE = 'g4d-v2';
 const OFFLINE_URL = '/offline';
 const PRECACHE = [OFFLINE_URL, '/icon-192.png'];
 

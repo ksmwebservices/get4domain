@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Loader2, ExternalLink, Upload, ImageIcon } from '
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/lib/auth-context';
+import { openMyWebsite } from '@/lib/view-website';
 import { api } from '@/lib/api';
 import { getListingFields } from '@/data/listing-fields';
 
@@ -58,7 +59,6 @@ export default function MyProductsPage() {
   const [saving, setSaving] = useState(false);
 
   const listingFields = getListingFields(user?.industry);
-  const siteUrl = user?.subdomain ? `/site/${user.subdomain}` : '';
 
   async function uploadImage(file: File) {
     setUploading(true);
@@ -155,11 +155,7 @@ export default function MyProductsPage() {
           <p className="mt-1 text-sm text-slate-500">Manage what appears on your website.</p>
         </div>
         <div className="flex items-center gap-2">
-          {siteUrl && (
-            <a href={siteUrl} target="_blank" rel="noreferrer">
-              <Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Preview my site</Button>
-            </a>
-          )}
+          <Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />} onClick={() => openMyWebsite(user)}>Preview my site</Button>
           <Button size="sm" leftIcon={<Plus className="h-3.5 w-3.5" />} onClick={openAdd}>Add {labels.singular}</Button>
         </div>
       </div>

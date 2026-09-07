@@ -5,6 +5,7 @@ import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, Plus, Trash2, L
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
+import { openMyWebsite } from '@/lib/view-website';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 
@@ -155,12 +156,12 @@ export default function WebsiteManagerPage() {
           <h1 className="text-xl font-bold text-slate-900">Website Manager</h1>
           <p className="text-sm text-slate-500">Edit your site content — templates are handled for you.</p>
         </div>
-        {previewUrl && (
-          <div className="flex items-center gap-2">
-            <a href={previewUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />}>Preview my site</Button></a>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" leftIcon={<ExternalLink className="h-3.5 w-3.5" />} onClick={() => openMyWebsite(user)}>Preview my site</Button>
+          {previewUrl && (
             <Button size="sm" variant="ghost" leftIcon={copied ? <CheckCircle2 className="h-3.5 w-3.5 text-success-600" /> : <Copy className="h-3.5 w-3.5" />} onClick={copyUrl}>{copied ? 'Copied' : 'Copy URL'}</Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}

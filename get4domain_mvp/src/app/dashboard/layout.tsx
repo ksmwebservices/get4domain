@@ -10,6 +10,7 @@ import { api } from '@/lib/api';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import { getIndustryExperience } from '@/config/industry-experience';
 import { OPERATIONS } from '@/config/operations';
+import { openMyWebsite } from '@/lib/view-website';
 import Icon from '@/components/ui/Icon';
 import LockedBadge from '@/components/ui/LockedBadge';
 import UpgradeModal from '@/components/UpgradeModal';
@@ -232,22 +233,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const opLabel = primaryOp?.label ?? 'Business';
   const opIcon = OPERATION_ICON[primaryOp?.key ?? ''] ?? 'ClipboardList';
 
-  // "View Website": a demo TOUR/sandbox session already passed OTP, so mint the demo
-  // pass silently and go straight to the site (fixes the re-OTP redirect loop). Real
-  // vendors and any failure fall back to the normal path — never worse than before.
-  const openWebsite = async () => {
-    const fallback = `/demo/${user.industry ?? 'general'}`;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
-    const isTour = typeof window !== 'undefined' && !!localStorage.getItem('g4d_tour');
-    if (!token || !isTour) { window.open(fallback, '_blank', 'noopener'); return; }
-    try {
-      const res = await fetch('/api/demo/tour-pass', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; redirect?: string };
-      if (res.ok && j?.redirect) { window.location.href = j.redirect; return; }
-    } catch { /* fall through to the OTP gate */ }
-    window.location.href = `/visit-demo?to=${encodeURIComponent(fallback)}`;
-  };
-
   return (
     <div className="vendor-ui min-h-screen bg-ink-950 flex">
       {sidebarOpen && (
@@ -288,9 +273,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
 
-        {/* View the public website. For a demo tour/sandbox session this bypasses the
-            OTP gate (already verified); real vendors open it in a new tab as before. */}
-        <button onClick={openWebsite}
+        {/* View the public website. Real vendors → their own live subdomain; demo/sandbox
+            sessions → the gated demo via the already-verified pass (no OTP loop). */}
+        <button onClick={() => openMyWebsite(user)}
           className="mx-3 mt-3 flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
           <Icon name="Globe" className="h-4 w-4" /> View Website
         </button>

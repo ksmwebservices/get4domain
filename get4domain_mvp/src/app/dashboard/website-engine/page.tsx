@@ -9,6 +9,7 @@ import {
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
+import { openMyWebsite } from '@/lib/view-website';
 import { api } from '@/lib/api';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { isEngineKey, genericReadiness } from '@/engine/readiness';
@@ -138,9 +139,7 @@ export default function WebsiteEnginePage() {
             </a>
           )}
           {liveUrl && (
-            <a href={liveUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" leftIcon={<ExternalLink className="h-4 w-4" />}>View my live site</Button>
-            </a>
+            <Button variant="outline" leftIcon={<ExternalLink className="h-4 w-4" />} onClick={() => openMyWebsite(user)}>View my live site</Button>
           )}
         </div>
       </div>
