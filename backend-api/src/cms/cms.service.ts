@@ -119,7 +119,7 @@ export class CmsService {
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
     cms: VendorCMS | null;
     products: VendorProduct[];
-    theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown; pages: unknown; css: string | null } | null;
+    theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown; pages: unknown; css: string | null; js: string | null; fonts: unknown } | null;
     paymentsEnabled: boolean;
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
@@ -151,7 +151,7 @@ export class CmsService {
       cms,
       products,
       theme: themeRow
-        ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css }
+        ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }
         : null,
       paymentsEnabled,
     };

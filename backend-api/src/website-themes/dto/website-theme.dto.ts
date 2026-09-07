@@ -35,6 +35,16 @@ export class CreateWebsiteThemeDto {
   @IsString()
   css?: string;
 
+  @ApiProperty({ required: false, description: 'Uploaded theme JavaScript (runs in the isolated render iframe).' })
+  @IsOptional()
+  @IsString()
+  js?: string;
+
+  @ApiProperty({ required: false, description: 'Font stylesheet hrefs to preserve (e.g. Google Fonts), as a string array.' })
+  @IsOptional()
+  @IsArray()
+  fonts?: string[];
+
   @ApiProperty({ required: false, description: 'One-time unlock price in ₹ (rupees), ex-GST. 0/null = free/included.' })
   @IsOptional()
   @IsInt()

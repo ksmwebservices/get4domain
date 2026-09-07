@@ -4,14 +4,17 @@ import { use, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { templateFromThemeRow } from '@/engine/kit/template';
 import { renderKitTemplate } from '@/engine/registry';
-import { renderRawHtmlSite, themePages } from '@/engine/raw-html-site';
+import { themePages } from '@/engine/raw-html-site';
+import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import { IMG } from '@/engine/kit/content';
 import type { EngineSiteData } from '@/engine/types';
 
 interface ThemeRowFull {
   id: string; name: string; industry: string | null;
-  cssVars?: unknown; layout?: unknown; pages?: unknown; css?: string | null; price?: number | null;
+  cssVars?: unknown; layout?: unknown; pages?: unknown; css?: string | null; js?: string | null; fonts?: unknown; price?: number | null;
 }
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 /**
  * Admin theme preview — renders a saved theme through the SAME renderers used for real
@@ -75,11 +78,18 @@ export default function ThemePreviewPage({ params }: { params: Promise<{ id: str
   const site = sampleSite(industry);
 
   // Priority mirrors the live site route: uploaded raw pages → section-kit layout → note.
-  if (themePages(theme).length > 0) {
+  const pages = themePages(theme);
+  if (pages.length > 0) {
+    const fonts = Array.isArray(theme.fonts) ? (theme.fonts as string[]) : [];
+    const srcDoc = buildThemeSrcDoc(
+      { pages, css: theme.css ?? '', js: theme.js ?? '', fonts },
+      { vendor: { businessName: site.vendor.businessName, subdomain: null }, cms: site.cms },
+      { subdomain: 'preview', rest: [], apiBase: API_BASE },
+    );
     return (
       <div>
         <PreviewBar name={theme.name} kind="Uploaded HTML" />
-        {renderRawHtmlSite(site, { subdomain: 'preview', rest: [] })}
+        <RawThemeFrame srcDoc={srcDoc} title={theme.name} />
       </div>
     );
   }

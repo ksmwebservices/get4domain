@@ -784,6 +784,10 @@ model WebsiteTheme {
   // (data-driven section-kit) or a colours-only re-skin of the industry default.
   pages       Json?
   css         String?
+  // Uploaded theme's JavaScript (runs in the isolated render iframe) + font stylesheet
+  // hrefs to preserve (e.g. Google Fonts). Both optional/additive.
+  js          String?
+  fonts       Json?
   // Full data-driven template (engine WebsiteTemplate shape minus id/name/industry:
   // { theme, brandDefaults, choices, choiceLabel, nav, bottomNav, primaryCta, sections }).
   // When present, the vendor's live site renders THIS layout via the engine (no redeploy);

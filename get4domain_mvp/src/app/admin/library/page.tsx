@@ -75,6 +75,8 @@ export default function AdminLibraryPage() {
   // Uploaded static-HTML theme pages (Bolt/designer). Each file → one page; first = home.
   const [themePages, setThemePages] = useState<{ slug: string; title: string; html: string }[]>([]);
   const [themeCss, setThemeCss] = useState('');
+  const [themeJs, setThemeJs] = useState('');
+  const [themeFonts, setThemeFonts] = useState<string[]>([]);
   // Static (raw HTML, verbatim) vs Catalog (convert HTML → section-kit JSON with a live
   // product loop + wired operations). Per-theme choice — both paths stay available.
   const [themeMode, setThemeMode] = useState<'static' | 'catalog'>('static');
@@ -160,7 +162,7 @@ export default function AdminLibraryPage() {
           cssVars: converted.cssVars, layout: converted.layout, price: priceC,
         });
         setTheme({ name: '', description: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
-        setThemePages([]); setThemeCss(''); setConverted(null); setCatalogSel(''); setThemeMode('static');
+        setThemePages([]); setThemeCss(''); setThemeJs(''); setThemeFonts([]); setConverted(null); setCatalogSel(''); setThemeMode('static');
         await load(); setSavingTh(false); return;
       }
       let layout: Record<string, unknown> | undefined;
@@ -189,25 +191,47 @@ export default function AdminLibraryPage() {
         cssVars, layout, price,
         pages: themePages.length ? themePages : undefined,
         css: themeCss.trim() ? themeCss : undefined,
+        js: themeJs.trim() ? themeJs : undefined,
+        fonts: themeFonts.length ? themeFonts : undefined,
       });
       setTheme({ name: '', description: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
-      setThemePages([]); setThemeCss('');
+      setThemePages([]); setThemeCss(''); setThemeJs(''); setThemeFonts([]);
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingTh(false); }
   }
 
-  // Read uploaded HTML files into theme pages (first file = home). Bolt/designer export.
+  // Read an uploaded theme FOLDER (Bolt/designer export): .html → pages (index = home),
+  // .css → shared css, .js → theme js, and Google-Font <link>s are preserved. Select all
+  // the theme's files at once (index.html, the service pages, css/styles.css, js/main.js).
   async function onThemeFiles(files: FileList | null): Promise<void> {
     if (!files || files.length === 0) return;
-    const pages = await Promise.all(Array.from(files).map(async (f, i) => {
-      const html = await f.text();
-      const base = f.name.replace(/\.html?$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-      const slug = i === 0 ? 'home' : (base || `page-${i}`);
-      const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
-      const title = titleMatch?.[1]?.trim() || base.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || (i === 0 ? 'Home' : `Page ${i}`);
-      return { slug, title, html };
+    const arr = Array.from(files);
+    const htmlFiles = arr.filter((f) => /\.html?$/i.test(f.name));
+    const cssFiles = arr.filter((f) => /\.css$/i.test(f.name));
+    const jsFiles = arr.filter((f) => /\.js$/i.test(f.name));
+    // Home page first (index.html), then the rest alphabetically.
+    htmlFiles.sort((a, b) => {
+      const ai = /(^|[\\/])index\.html?$/i.test(a.name) ? 0 : 1;
+      const bi = /(^|[\\/])index\.html?$/i.test(b.name) ? 0 : 1;
+      return ai - bi || a.name.localeCompare(b.name);
+    });
+    const fontsSet = new Set<string>();
+    const pages = await Promise.all(htmlFiles.map(async (f, i) => {
+      const text = await f.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      doc.querySelectorAll('link[href*="fonts.googleapis.com/css"], link[rel="stylesheet"][href*="fonts."]').forEach((l) => { const h = l.getAttribute('href'); if (h) fontsSet.add(h); });
+      const base = f.name.replace(/^.*[\\/]/, '').replace(/\.html?$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const isIndex = i === 0 && /(^|[\\/])index\.html?$/i.test(f.name);
+      const slug = isIndex || i === 0 ? 'home' : (base || `page-${i}`);
+      const title = doc.querySelector('title')?.textContent?.trim() || base.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || (i === 0 ? 'Home' : `Page ${i}`);
+      return { slug, title, html: doc.body ? doc.body.innerHTML : text };
     }));
+    const css = (await Promise.all(cssFiles.map((f) => f.text()))).join('\n');
+    const js = (await Promise.all(jsFiles.map((f) => f.text()))).join('\n');
     setThemePages(pages);
+    if (css) setThemeCss(css);
+    setThemeJs(js);
+    setThemeFonts([...fontsSet]);
   }
   async function delTemplate(id: string) { await api.deleteAiTemplate(id).catch(() => {}); await load(); }
   async function delTheme(id: string) { await api.deleteWebsiteTheme(id).catch(() => {}); await load(); }
@@ -359,8 +383,9 @@ export default function AdminLibraryPage() {
                 {{tokens}} (businessName, tagline, about, logo, phone, email, address…). */}
             <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
               <div className="mb-1 text-xs font-semibold text-slate-300">Upload HTML theme (static, multi-page) — optional</div>
-              <input type="file" accept=".html,.htm" multiple onChange={(e) => onThemeFiles(e.target.files)}
+              <input type="file" accept=".html,.htm,.css,.js" multiple onChange={(e) => onThemeFiles(e.target.files)}
                 className="block w-full text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-600 file:px-3 file:py-1.5 file:text-white hover:file:bg-primary-700" />
+              <p className="mt-1 text-[11px] text-slate-500">Select ALL the theme&apos;s files at once — every <code>.html</code> page (index.html = home), <code>css/styles.css</code>, and <code>js/main.js</code>. Google Fonts links are kept automatically.{themeJs ? ' · JS loaded' : ''}{themeFonts.length ? ` · ${themeFonts.length} font link(s)` : ''}</p>
               {themePages.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {themePages.map((p, i) => (

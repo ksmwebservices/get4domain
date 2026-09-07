@@ -12,7 +12,8 @@ import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
 import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
-import { renderRawHtmlSite, themePages } from '@/engine/raw-html-site';
+import { themePages } from '@/engine/raw-html-site';
+import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
 
 // Live vendor sites are per-vendor and change whenever the vendor edits — never static.
@@ -33,7 +34,7 @@ interface SiteData {
     seoKeywords: string | null;
   } | null;
   products: VendorProduct[];
-  theme?: (ThemeRow & { pages?: unknown; css?: string | null }) | null;
+  theme?: (ThemeRow & { pages?: unknown; css?: string | null; js?: string | null; fonts?: unknown }) | null;
   paymentsEnabled?: boolean;
 }
 
@@ -108,10 +109,18 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const site = await fetchSite(subdomain);
   if (!site) notFound();
 
-  // Uploaded static-HTML theme wins first (Theme Marketplace): render the raw multi-page
-  // design filled with the vendor's content. rest[0] selects the page (default = home).
-  if (themePages(site.theme).length > 0) {
-    return renderRawHtmlSite(site, { subdomain, rest });
+  // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
+  // design in an isolated iframe (pixel-identical, its own CSS/JS), with forms wired to
+  // the engine. rest[0] selects the page (default = home).
+  const pages = themePages(site.theme);
+  if (pages.length > 0) {
+    const fonts = Array.isArray(site.theme?.fonts) ? (site.theme?.fonts as string[]) : [];
+    const srcDoc = buildThemeSrcDoc(
+      { pages, css: site.theme?.css ?? '', js: site.theme?.js ?? '', fonts },
+      { vendor: { businessName: site.vendor.businessName, subdomain: site.vendor.subdomain }, cms: site.cms },
+      { subdomain, rest, apiBase: API_BASE },
+    );
+    return <RawThemeFrame srcDoc={srcDoc} title={site.cms?.businessName || site.vendor.businessName} />;
   }
 
   // Selected template: if the vendor picked a theme with a data-driven layout,
