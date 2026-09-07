@@ -317,6 +317,7 @@ export default function AdminLibraryPage() {
                 </div>
                 <div className="mt-2 text-sm font-bold text-white">{t.name} {t.isDefault && <span className="text-xs font-normal text-success-400">· default</span>}</div>
                 <div className="text-xs text-slate-500">{t.industry ?? 'any industry'} · {t.layout ? 'full design' : 'colours only'} · {t.price && t.price > 0 ? `₹${t.price} premium` : 'free'}</div>
+                {t.price && t.price > 0 ? <ThemeBuyers themeId={t.id} /> : null}
               </div>
             ))}
           </div>
@@ -341,6 +342,55 @@ export default function AdminLibraryPage() {
             />
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+interface Buyer { vendorId: string; businessName: string; email: string; amountPaise: number; createdAt: string }
+
+/** Lazy per-theme purchaser list — the admin audit trail for premium unlocks. */
+function ThemeBuyers({ themeId }: { themeId: string }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<Buyer[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const toggle = async (): Promise<void> => {
+    const next = !open;
+    setOpen(next);
+    if (next && rows === null) {
+      setLoading(true);
+      try {
+        const r = await api.websiteThemePurchasers(themeId);
+        setRows((r.data ?? []) as Buyer[]);
+      } catch {
+        setRows([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div className="mt-2 border-t border-slate-800 pt-2">
+      <button onClick={toggle} className="text-xs font-semibold text-primary-300 hover:text-primary-200">
+        {open ? 'Hide buyers' : 'View buyers'}{rows ? ` (${rows.length})` : ''}
+      </button>
+      {open && (
+        loading ? (
+          <div className="mt-1 text-xs text-slate-500">Loading…</div>
+        ) : rows && rows.length ? (
+          <ul className="mt-1 space-y-1">
+            {rows.map((b) => (
+              <li key={b.vendorId} className="flex items-center justify-between gap-2 text-xs text-slate-400">
+                <span className="truncate">{b.businessName} · {b.email}</span>
+                <span className="shrink-0 text-slate-500">₹{Math.round(b.amountPaise / 100)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-1 text-xs text-slate-500">No purchases yet.</div>
+        )
       )}
     </div>
   );

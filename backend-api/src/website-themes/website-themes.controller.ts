@@ -27,6 +27,13 @@ export class WebsiteThemesController {
     return this.service.listAll();
   }
 
+  @UseGuards(AdminGuard)
+  @Get(':id/unlocks')
+  @ApiOperation({ summary: 'List vendors who purchased (unlocked) this theme (admin)' })
+  purchasers(@Param('id') id: string) {
+    return this.service.purchasers(id);
+  }
+
   // ── Vendor-facing: themes for my industry with unlock status + premium purchase ──
   @Get('mine')
   @ApiOperation({ summary: "Themes for the vendor's industry, each with an `unlocked` flag" })

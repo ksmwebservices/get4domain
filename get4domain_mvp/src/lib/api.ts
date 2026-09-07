@@ -446,6 +446,7 @@ export const api = {
   unlockThemeConfirm: (id: string, data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
     apiCall(`/website-themes/${id}/unlock/confirm`, { method: 'POST', body: JSON.stringify(data) }),
   websiteThemesAll: () => apiCall('/website-themes/all'),
+  websiteThemePurchasers: (id: string) => apiCall(`/website-themes/${id}/unlocks`),
   createWebsiteTheme: (data: any) => apiCall('/website-themes', { method: 'POST', body: JSON.stringify(data) }),
   updateWebsiteTheme: (id: string, data: any) => apiCall(`/website-themes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteWebsiteTheme: (id: string) => apiCall(`/website-themes/${id}`, { method: 'DELETE' }),

@@ -78,6 +78,27 @@ export class WebsiteThemesService {
     return this.prisma.websiteTheme.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
+  /** Vendors who have unlocked (purchased) a given theme — audit trail for admin. */
+  async purchasers(themeId: string): Promise<Array<{
+    vendorId: string; businessName: string; email: string; amountPaise: number; paymentId: string | null; createdAt: Date;
+  }>> {
+    const rows = await this.prisma.vendorTemplateUnlock.findMany({ where: { themeId }, orderBy: { createdAt: 'desc' } });
+    if (rows.length === 0) return [];
+    const vendors = await this.prisma.vendor.findMany({
+      where: { id: { in: rows.map((r) => r.vendorId) } },
+      select: { id: true, businessName: true, email: true },
+    });
+    const byId = new Map(vendors.map((v) => [v.id, v]));
+    return rows.map((r) => ({
+      vendorId: r.vendorId,
+      businessName: byId.get(r.vendorId)?.businessName ?? '—',
+      email: byId.get(r.vendorId)?.email ?? '—',
+      amountPaise: r.amountPaise,
+      paymentId: r.paymentId,
+      createdAt: r.createdAt,
+    }));
+  }
+
   get(id: string): Promise<WebsiteTheme | null> {
     return this.prisma.websiteTheme.findUnique({ where: { id } });
   }
