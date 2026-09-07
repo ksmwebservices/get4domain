@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Plus, Trash2, Loader2, Sparkles, Palette, FileText, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
+import { htmlToSectionKit, type ConvertResult } from '@/engine/kit/html-to-sectionkit';
 
 // Fabric.js editor is browser-only — used here in admin (authoring) mode.
 const FabricEditor = dynamic(() => import('@/components/design/FabricEditor'), {
@@ -74,6 +75,12 @@ export default function AdminLibraryPage() {
   // Uploaded static-HTML theme pages (Bolt/designer). Each file → one page; first = home.
   const [themePages, setThemePages] = useState<{ slug: string; title: string; html: string }[]>([]);
   const [themeCss, setThemeCss] = useState('');
+  // Static (raw HTML, verbatim) vs Catalog (convert HTML → section-kit JSON with a live
+  // product loop + wired operations). Per-theme choice — both paths stay available.
+  const [themeMode, setThemeMode] = useState<'static' | 'catalog'>('static');
+  const [converted, setConverted] = useState<ConvertResult | null>(null);
+  const [catalogSel, setCatalogSel] = useState('');
+  const [converting, setConverting] = useState(false);
 
   // Admin design-template authoring (Fabric editor). `starter` collects name/category
   // + size; `editor` (once opened) holds the size the blank canvas opens at.
@@ -123,10 +130,39 @@ export default function AdminLibraryPage() {
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingT(false); }
   }
+  // Run the HTML→section-kit converter over the uploaded pages (browser-side, DOMParser).
+  function runConvert(sel?: string) {
+    if (!themePages.length) { setError('Upload the theme HTML file(s) first.'); return; }
+    setConverting(true); setError('');
+    try {
+      const res = htmlToSectionKit(themePages, {
+        industry: theme.industry || 'general',
+        pickers: { primary: theme.primary, accent: theme.accent, radius: theme.radius },
+        catalogSelector: (sel ?? catalogSel) || undefined,
+        sharedCss: themeCss,
+      });
+      setConverted(res);
+    } catch (e) { setError(e instanceof Error ? e.message : 'Conversion failed'); }
+    finally { setConverting(false); }
+  }
+
   async function addTheme() {
     if (!theme.name) return;
     setSavingTh(true); setError('');
     try {
+      // Catalog theme → save the CONVERTED section-kit layout (existing model; no `pages`).
+      if (themeMode === 'catalog') {
+        if (!converted) { setError('Click “Convert to catalog theme” first.'); setSavingTh(false); return; }
+        const priceC = theme.price.trim() ? Math.max(0, Math.round(Number(theme.price))) : undefined;
+        await api.createWebsiteTheme({
+          name: theme.name, description: theme.description || undefined, industry: theme.industry || undefined,
+          isDefault: theme.isDefault, preview: theme.preview || undefined,
+          cssVars: converted.cssVars, layout: converted.layout, price: priceC,
+        });
+        setTheme({ name: '', description: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
+        setThemePages([]); setThemeCss(''); setConverted(null); setCatalogSel(''); setThemeMode('static');
+        await load(); setSavingTh(false); return;
+      }
       let layout: Record<string, unknown> | undefined;
       let cssVars: Record<string, string> = { '--primary': theme.primary, '--accent': theme.accent, '--radius': theme.radius };
       const raw = theme.code.trim();
@@ -335,6 +371,41 @@ export default function AdminLibraryPage() {
               )}
               <textarea className={`${inputCls} mt-2 h-24 font-mono text-xs`} placeholder="Optional shared CSS applied across all pages (leave blank if the HTML has its own <style>)."
                 value={themeCss} onChange={(e) => setThemeCss(e.target.value)} />
+
+              {/* Static vs Catalog — the converter path for catalog-needing themes. */}
+              <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-800 pt-3">
+                <span className="text-xs font-semibold text-slate-300">This theme is:</span>
+                {(['static', 'catalog'] as const).map((m) => (
+                  <label key={m} className="flex items-center gap-1.5 text-xs text-slate-300">
+                    <input type="radio" name="themeMode" checked={themeMode === m} onChange={() => { setThemeMode(m); setConverted(null); }} />
+                    {m === 'static' ? 'Static (raw HTML, verbatim)' : 'Catalog (convert → live products + cart/booking)'}
+                  </label>
+                ))}
+                {themeMode === 'catalog' && (
+                  <button type="button" onClick={() => runConvert()} disabled={converting || !themePages.length}
+                    className="ml-auto rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
+                    {converting ? 'Converting…' : 'Convert to catalog theme'}
+                  </button>
+                )}
+              </div>
+
+              {themeMode === 'catalog' && converted && (
+                <div className="mt-2 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-xs">
+                  <div className="mb-1 font-semibold text-success-400">Converted → section-kit ({converted.layout.sections.length} sections)</div>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="text-slate-400">Catalog grid:</span>
+                    <select className={`${inputCls} w-auto py-1`} value={catalogSel} onChange={(e) => { setCatalogSel(e.target.value); runConvert(e.target.value); }}>
+                      <option value="">Auto-detected</option>
+                      {converted.detected.map((d) => <option key={d.selector} value={d.selector}>{d.role} · {d.title || d.selector}</option>)}
+                    </select>
+                    <span className="text-slate-500">(pick the product/menu grid if auto-detect is wrong)</span>
+                  </div>
+                  <ul className="space-y-0.5 text-slate-400">
+                    {converted.layout.sections.map((s, i) => <li key={i}>· {s.type}{'id' in s && s.id ? ` (${s.id})` : ''}</li>)}
+                  </ul>
+                  {converted.notes.map((n, i) => <p key={i} className="mt-1 text-[11px] text-amber-300/80">⚠ {n}</p>)}
+                </div>
+              )}
               <p className="mt-1 text-xs text-slate-500">Bolt/designer static HTML. Use {'{{businessName}}'}, {'{{tagline}}'}, {'{{about}}'}, {'{{logo}}'}, {'{{phone}}'}, {'{{email}}'}, {'{{address}}'}, {'{{whatsappLink}}'} placeholders so each vendor&apos;s content fills the design. Next.js source is not supported — export to static HTML.</p>
             </div>
 
