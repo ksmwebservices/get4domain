@@ -12,6 +12,7 @@ import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
 import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
+import { renderRawHtmlSite, themePages } from '@/engine/raw-html-site';
 import type { EngineSiteData } from '@/engine/types';
 
 // Live vendor sites are per-vendor and change whenever the vendor edits — never static.
@@ -32,7 +33,8 @@ interface SiteData {
     seoKeywords: string | null;
   } | null;
   products: VendorProduct[];
-  theme?: ThemeRow | null;
+  theme?: (ThemeRow & { pages?: unknown; css?: string | null }) | null;
+  paymentsEnabled?: boolean;
 }
 
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
@@ -106,7 +108,13 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const site = await fetchSite(subdomain);
   if (!site) notFound();
 
-  // Selected template wins: if the vendor picked a theme with a data-driven layout,
+  // Uploaded static-HTML theme wins first (Theme Marketplace): render the raw multi-page
+  // design filled with the vendor's content. rest[0] selects the page (default = home).
+  if (themePages(site.theme).length > 0) {
+    return renderRawHtmlSite(site, { subdomain, rest });
+  }
+
+  // Selected template: if the vendor picked a theme with a data-driven layout,
   // render THAT design (any industry), filled with their content — the no-redeploy path.
   const selectedTemplate = templateFromThemeRow(site.theme);
   if (selectedTemplate && (rest.length === 0 || rest[0] === 'home')) {

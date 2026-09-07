@@ -104,12 +104,13 @@ export class WebsiteThemesService {
   }
 
   create(dto: CreateWebsiteThemeDto, createdBy?: string): Promise<WebsiteTheme> {
-    const { cssVars, layout, ...rest } = dto;
+    const { cssVars, layout, pages, ...rest } = dto;
     return this.prisma.websiteTheme.create({
       data: {
         ...rest,
         cssVars: cssVars as Prisma.InputJsonValue,
         ...(layout !== undefined ? { layout: layout as Prisma.InputJsonValue } : {}),
+        ...(pages !== undefined ? { pages: pages as unknown as Prisma.InputJsonValue } : {}),
         createdBy,
       },
     });
@@ -117,13 +118,14 @@ export class WebsiteThemesService {
 
   async update(id: string, dto: UpdateWebsiteThemeDto): Promise<WebsiteTheme> {
     if (!(await this.prisma.websiteTheme.findUnique({ where: { id } }))) throw new NotFoundException('Theme not found');
-    const { cssVars, layout, ...rest } = dto;
+    const { cssVars, layout, pages, ...rest } = dto;
     return this.prisma.websiteTheme.update({
       where: { id },
       data: {
         ...rest,
         ...(cssVars !== undefined ? { cssVars: cssVars as Prisma.InputJsonValue } : {}),
         ...(layout !== undefined ? { layout: layout as Prisma.InputJsonValue } : {}),
+        ...(pages !== undefined ? { pages: pages as unknown as Prisma.InputJsonValue } : {}),
       },
     });
   }

@@ -771,24 +771,33 @@ model AiTemplate {
 // CSS-variable-driven variations, so a theme swap is a variable swap not a fork.
 // Admin-created; a vendor selects one (VendorCMS.themeId). Platform-level. ─────
 model WebsiteTheme {
-  id        String   @id @default(cuid())
-  name      String
-  industry  String? // null = works for any industry
-  cssVars   Json // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
+  id          String   @id @default(cuid())
+  name        String
+  // Short marketplace description shown on the vendor theme card.
+  description String?
+  industry    String? // null = works for any industry
+  cssVars     Json // { "--primary": "#...", "--accent": "#...", "--radius": "..." }
+  // Uploaded static-HTML theme (from Bolt / a designer). Multi-page: an array of
+  // { slug, title, html } — home is the first entry (or slug "home"). Content is injected
+  // at render via {{tokens}} bound to VendorCMS. `css` is optional shared CSS for all pages.
+  // When `pages` is present the live site renders this raw HTML; else it uses `layout`
+  // (data-driven section-kit) or a colours-only re-skin of the industry default.
+  pages       Json?
+  css         String?
   // Full data-driven template (engine WebsiteTemplate shape minus id/name/industry:
   // { theme, brandDefaults, choices, choiceLabel, nav, bottomNav, primaryCta, sections }).
   // When present, the vendor's live site renders THIS layout via the engine (no redeploy);
   // null = a colours-only theme applied over the industry default layout.
-  layout    Json?
+  layout      Json?
   // Premium templates: one-time unlock price in ₹ (rupees), ex-GST (null/0 = free/included).
   // Charged to Get4Domain's platform Razorpay (+18% GST); a paid unlock is a VendorTemplateUnlock.
-  price     Int?
-  preview   String? // preview image URL
-  isDefault Boolean  @default(false)
-  active    Boolean  @default(true)
-  createdBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  price       Int?
+  preview     String? // preview image URL
+  isDefault   Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([industry])
   @@map("g4d_website_themes")

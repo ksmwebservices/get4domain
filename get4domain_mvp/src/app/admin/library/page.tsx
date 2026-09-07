@@ -70,7 +70,10 @@ export default function AdminLibraryPage() {
   const [savingTh, setSavingTh] = useState(false);
 
   const [tpl, setTpl] = useState({ name: '', contentType: CONTENT_TYPES[0], industry: '', prompt: '', thumbnail: '' });
-  const [theme, setTheme] = useState({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
+  const [theme, setTheme] = useState({ name: '', description: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
+  // Uploaded static-HTML theme pages (Bolt/designer). Each file → one page; first = home.
+  const [themePages, setThemePages] = useState<{ slug: string; title: string; html: string }[]>([]);
+  const [themeCss, setThemeCss] = useState('');
 
   // Admin design-template authoring (Fabric editor). `starter` collects name/category
   // + size; `editor` (once opened) holds the size the blank canvas opens at.
@@ -141,10 +144,34 @@ export default function AdminLibraryPage() {
         cssVars = { '--primary': obj.theme.accent ?? theme.primary, '--accent': obj.theme.accent2 ?? theme.accent, '--radius': obj.theme.radius ?? theme.radius };
       }
       const price = theme.price.trim() ? Math.max(0, Math.round(Number(theme.price))) : undefined;
-      await api.createWebsiteTheme({ name: theme.name, industry: theme.industry || undefined, isDefault: theme.isDefault, preview: theme.preview || undefined, cssVars, layout, price });
-      setTheme({ name: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
+      await api.createWebsiteTheme({
+        name: theme.name,
+        description: theme.description || undefined,
+        industry: theme.industry || undefined,
+        isDefault: theme.isDefault,
+        preview: theme.preview || undefined,
+        cssVars, layout, price,
+        pages: themePages.length ? themePages : undefined,
+        css: themeCss.trim() ? themeCss : undefined,
+      });
+      setTheme({ name: '', description: '', industry: '', primary: '#2563eb', accent: '#3b82f6', radius: '16px', preview: '', isDefault: false, code: '', price: '' });
+      setThemePages([]); setThemeCss('');
       await load();
     } catch (e) { setError(e instanceof Error ? e.message : 'Failed'); } finally { setSavingTh(false); }
+  }
+
+  // Read uploaded HTML files into theme pages (first file = home). Bolt/designer export.
+  async function onThemeFiles(files: FileList | null): Promise<void> {
+    if (!files || files.length === 0) return;
+    const pages = await Promise.all(Array.from(files).map(async (f, i) => {
+      const html = await f.text();
+      const base = f.name.replace(/\.html?$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const slug = i === 0 ? 'home' : (base || `page-${i}`);
+      const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
+      const title = titleMatch?.[1]?.trim() || base.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || (i === 0 ? 'Home' : `Page ${i}`);
+      return { slug, title, html };
+    }));
+    setThemePages(pages);
   }
   async function delTemplate(id: string) { await api.deleteAiTemplate(id).catch(() => {}); await load(); }
   async function delTheme(id: string) { await api.deleteWebsiteTheme(id).catch(() => {}); await load(); }
@@ -283,6 +310,7 @@ export default function AdminLibraryPage() {
             <div className="grid gap-2 sm:grid-cols-2">
               <input className={inputCls} placeholder="Name" value={theme.name} onChange={(e) => setTheme({ ...theme, name: e.target.value })} />
               <select className={inputCls} value={theme.industry} onChange={(e) => setTheme({ ...theme, industry: e.target.value })}>{INDUSTRIES.map((i) => <option key={i} value={i}>{i || 'Any industry'}</option>)}</select>
+              <input className={`${inputCls} sm:col-span-2`} placeholder="Short description (shown on the vendor theme card)" value={theme.description} onChange={(e) => setTheme({ ...theme, description: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-300">Primary <input type="color" value={theme.primary} onChange={(e) => setTheme({ ...theme, primary: e.target.value })} className="h-8 w-12 rounded border border-slate-700 bg-slate-900" /></label>
               <label className="flex items-center gap-2 text-sm text-slate-300">Accent <input type="color" value={theme.accent} onChange={(e) => setTheme({ ...theme, accent: e.target.value })} className="h-8 w-12 rounded border border-slate-700 bg-slate-900" /></label>
               <input className={inputCls} placeholder="Radius (e.g. 16px)" value={theme.radius} onChange={(e) => setTheme({ ...theme, radius: e.target.value })} />
@@ -290,6 +318,26 @@ export default function AdminLibraryPage() {
               <input className={inputCls} type="number" min={0} placeholder="Unlock price ₹ (0 / blank = free)" value={theme.price} onChange={(e) => setTheme({ ...theme, price: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" checked={theme.isDefault} onChange={(e) => setTheme({ ...theme, isDefault: e.target.checked })} /> Default for this industry</label>
             </div>
+            {/* Upload a static-HTML theme (Bolt / designer export). Multi-page: select
+                several .html files — the first is the home page. Content is injected via
+                {{tokens}} (businessName, tagline, about, logo, phone, email, address…). */}
+            <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+              <div className="mb-1 text-xs font-semibold text-slate-300">Upload HTML theme (static, multi-page) — optional</div>
+              <input type="file" accept=".html,.htm" multiple onChange={(e) => onThemeFiles(e.target.files)}
+                className="block w-full text-xs text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-600 file:px-3 file:py-1.5 file:text-white hover:file:bg-primary-700" />
+              {themePages.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {themePages.map((p, i) => (
+                    <span key={p.slug} className="rounded bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300">{i === 0 ? 'home' : p.slug} · {p.title}</span>
+                  ))}
+                  <button type="button" onClick={() => setThemePages([])} className="text-[11px] text-error-400 hover:underline">clear</button>
+                </div>
+              )}
+              <textarea className={`${inputCls} mt-2 h-24 font-mono text-xs`} placeholder="Optional shared CSS applied across all pages (leave blank if the HTML has its own <style>)."
+                value={themeCss} onChange={(e) => setThemeCss(e.target.value)} />
+              <p className="mt-1 text-xs text-slate-500">Bolt/designer static HTML. Use {'{{businessName}}'}, {'{{tagline}}'}, {'{{about}}'}, {'{{logo}}'}, {'{{phone}}'}, {'{{email}}'}, {'{{address}}'}, {'{{whatsappLink}}'} placeholders so each vendor&apos;s content fills the design. Next.js source is not supported — export to static HTML.</p>
+            </div>
+
             <div className="mt-3">
               <div className="mb-1 text-xs font-semibold text-slate-300">Template code (JSON) — optional</div>
               <textarea

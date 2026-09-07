@@ -19,7 +19,7 @@ interface VendorCms {
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
 interface Product { id: string; name: string; description?: string; price?: string; category?: string }
-interface WebsiteTheme { id: string; name: string; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean; price?: number | null; unlocked?: boolean }
+interface WebsiteTheme { id: string; name: string; description?: string | null; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean; price?: number | null; unlocked?: boolean }
 
 const EMPTY: VendorCms = {
   businessName: '', tagline: '', about: '', logo: '', banner: '', themeId: '', phone: '', whatsapp: '', email: '', address: '',
@@ -303,6 +303,7 @@ export default function WebsiteManagerPage() {
                           <div className="text-sm font-bold text-slate-900">{t.name}</div>
                           {premium && <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${t.unlocked ? 'bg-success-100 text-success-700' : 'bg-amber-100 text-amber-700'}`}>{t.unlocked ? 'Owned' : `₹${t.price}`}</span>}
                         </div>
+                        {t.description && <p className="mt-1 line-clamp-2 text-xs text-slate-500">{t.description}</p>}
                       </>
                     );
                     if (locked) {

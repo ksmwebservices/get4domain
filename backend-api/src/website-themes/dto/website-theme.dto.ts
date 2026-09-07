@@ -1,10 +1,15 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateWebsiteThemeDto {
   @ApiProperty({ example: 'Emerald Fresh' })
   @IsString()
   name!: string;
+
+  @ApiProperty({ required: false, description: 'Short marketplace description shown on the vendor theme card.' })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ApiProperty({ required: false, example: 'salon', description: 'null/omitted = any industry' })
   @IsOptional()
@@ -19,6 +24,16 @@ export class CreateWebsiteThemeDto {
   @IsOptional()
   @IsObject()
   layout?: Record<string, unknown>;
+
+  @ApiProperty({ required: false, description: 'Uploaded multi-page static HTML: [{ slug, title, html }] (home = first / slug "home").' })
+  @IsOptional()
+  @IsArray()
+  pages?: Array<{ slug: string; title: string; html: string }>;
+
+  @ApiProperty({ required: false, description: 'Optional shared CSS applied across all pages of an uploaded HTML theme.' })
+  @IsOptional()
+  @IsString()
+  css?: string;
 
   @ApiProperty({ required: false, description: 'One-time unlock price in ₹ (rupees), ex-GST. 0/null = free/included.' })
   @IsOptional()
