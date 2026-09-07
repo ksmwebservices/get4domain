@@ -434,7 +434,10 @@ export default function AdminLibraryPage() {
                   <span className="h-6 w-6 rounded-md" style={{ background: t.cssVars?.['--accent'] ?? '#3b82f6' }} />
                   <button onClick={() => delTheme(t.id)} className="ml-auto rounded-lg p-1.5 text-slate-500 hover:bg-error-500/10 hover:text-error-400"><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <div className="mt-2 text-sm font-bold text-white">{t.name} {t.isDefault && <span className="text-xs font-normal text-success-400">· default</span>}</div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="text-sm font-bold text-white">{t.name} {t.isDefault && <span className="text-xs font-normal text-success-400">· default</span>}</div>
+                  <a href={`/theme-preview/${t.id}`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-primary-300 hover:bg-slate-700">Preview</a>
+                </div>
                 <div className="text-xs text-slate-500">{t.industry ?? 'any industry'} · {t.layout ? 'full design' : 'colours only'} · {t.price && t.price > 0 ? `₹${t.price} premium` : 'free'}</div>
                 {t.price && t.price > 0 ? <ThemeBuyers themeId={t.id} /> : null}
               </div>

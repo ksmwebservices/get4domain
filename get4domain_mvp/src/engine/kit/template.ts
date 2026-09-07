@@ -62,6 +62,7 @@ export function templateFromThemeRow(row: ThemeRow | null | undefined): WebsiteT
  * everything else renders as the template was authored.
  */
 export function resolveTemplate(t: WebsiteTemplate, site: EngineSiteData): KitSiteModel {
+  const brand = brandFrom(site, t.brandDefaults);
   let showcaseFilled = false;
   const sections: KitSection[] = t.sections.map((s) => {
     if (s.type === 'showcase' && !showcaseFilled && site.products.length) {
@@ -71,13 +72,34 @@ export function resolveTemplate(t: WebsiteTemplate, site: EngineSiteData): KitSi
     return s;
   });
   return {
-    brand: brandFrom(site, t.brandDefaults),
+    brand,
     theme: t.theme,
     choices: t.choices,
     choiceLabel: t.choiceLabel,
     nav: t.nav,
     bottomNav: t.bottomNav,
     primaryCta: t.primaryCta,
-    sections,
+    // Substitute {{tokens}} in section text with the vendor's brand. Converted themes
+    // (from uploaded HTML) may carry {{businessName}}/{{tagline}}/{{about}} in headings;
+    // section-kit renders text verbatim, so fill them here to match the raw-HTML path.
+    sections: fillTokens(sections, brand),
   };
+}
+
+/** Replace {{businessName}}/{{tagline}}/{{about}}/{{phone}}/{{email}}/{{address}} in
+ *  every string within the sections tree with the vendor's brand values. Unknown tokens
+ *  are left as-is. Non-token text is untouched. */
+function fillTokens(sections: KitSection[], brand: KitSiteModel['brand']): KitSection[] {
+  const map: Record<string, string | undefined> = {
+    businessName: brand.name, tagline: brand.tagline, about: brand.about,
+    phone: brand.phone, email: brand.email, address: brand.address, whatsapp: brand.whatsapp,
+  };
+  const fill = (s: string): string => s.replace(/\{\{\s*(\w+)\s*\}\}/g, (full, k: string) =>
+    (k in map && map[k] != null ? String(map[k]) : full));
+  const walk = (v: unknown): unknown =>
+    typeof v === 'string' ? fill(v)
+      : Array.isArray(v) ? v.map(walk)
+        : (v && typeof v === 'object') ? Object.fromEntries(Object.entries(v).map(([k, val]) => [k, walk(val)]))
+          : v;
+  return sections.map((s) => walk(s) as KitSection);
 }
