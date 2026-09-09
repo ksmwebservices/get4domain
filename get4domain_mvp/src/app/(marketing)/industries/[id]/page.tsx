@@ -22,10 +22,16 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const { id } = await props.params;
   const content = industryContent.find((i) => i.id === id);
   if (!content) return {};
+  const url = `https://get4domain.com/industries/${id}`;
+  // Title template ("%s | Get4Domain") already appends the brand — don't repeat it here
+  // (was producing "… | Get4Domain | Get4Domain").
+  const title = `${content.name} Business Website & Software`;
   return {
-    title: `${content.name} Business Website & Software | Get4Domain`,
+    title,
     description: content.fullDesc,
     keywords: content.seoKeywords,
+    alternates: { canonical: url },
+    openGraph: { title: `${title} | Get4Domain`, description: content.fullDesc, url, type: 'website' },
   };
 }
 
@@ -38,8 +44,34 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
   const workspace = INDUSTRIES.find((i) => i.id === id);
   const realShot = REAL_SHOTS.has(id) ? `/hero-shots/${id}-home.webp` : null;
 
+  const pageUrl = `https://get4domain.com/industries/${id}`;
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: `${content.name} Website & Business Software`,
+      serviceType: `${content.name} website and management platform`,
+      description: content.fullDesc,
+      areaServed: { '@type': 'Country', name: 'India' },
+      provider: { '@type': 'Organization', name: 'Get4Domain', url: 'https://get4domain.com' },
+      offers: { '@type': 'Offer', price: '999', priceCurrency: 'INR', url: pageUrl },
+      url: pageUrl,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://get4domain.com' },
+        { '@type': 'ListItem', position: 2, name: 'Industries', item: 'https://get4domain.com/industries' },
+        { '@type': 'ListItem', position: 3, name: content.name, item: pageUrl },
+      ],
+    },
+  ];
+
   return (
     <>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <PageHero
         eyebrow={content.name}
         title={content.tagline}

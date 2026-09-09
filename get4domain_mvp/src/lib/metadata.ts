@@ -18,7 +18,9 @@ export function createPageMetadata({
   const fullTitle = `${title} | ${siteConfig.name}`;
 
   return {
-    title: fullTitle,
+    // `absolute` bypasses the root layout's "%s | Get4Domain" template so the brand
+    // isn't appended twice (was producing "… | Get4Domain | Get4Domain").
+    title: { absolute: fullTitle },
     description,
     keywords: keywords ?? siteConfig.keywords,
     alternates: {

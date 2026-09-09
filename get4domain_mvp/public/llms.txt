@@ -1,0 +1,32 @@
+# Get4Domain
+
+> Get4Domain is India's all-in-one online identity and business platform for small and medium businesses (SMBs). One plan — "DomainApp" at ₹999/month — gives a business an industry-specific website plus a complete business workspace: CRM, GST invoicing, appointments/bookings/orders, campaigns, WhatsApp, and an AI content studio. Built by KSM Quantum Technologies, Chennai, India.
+
+## What Get4Domain does
+- Gives an SMB a professional, industry-specific website (each industry gets tailored pages, records and workflows — a clinic gets appointments and patients; a restaurant gets menu and orders; real estate gets properties and site visits).
+- Provides a full business workspace/dashboard: CRM leads, customers, GST-compliant invoicing, accounts and reports, staff/team access.
+- Includes marketing tools: campaigns, WhatsApp business messaging, and an AI Studio for content and images.
+- Offers a customer portal so a business's own customers can book, order, and pay.
+- Serves 20 industries: clinic/healthcare, salon, gym/fitness, coaching, education, professional services, finance, diagnostics, photography, hotel, events, travel, restaurant, retail, agriculture, automobile, construction, technology, logistics, and real estate.
+
+## Pricing
+- DomainApp: ₹999/month, billed quarterly upfront (₹2,997 + 18% GST = ₹3,536.46), or ₹9,999/year upfront (+18% GST = ₹11,798.82). Everything is included in the one plan — website, workspace, CRM, campaigns and AI Studio.
+- Free demo available; a consultant sets up and customizes the site within 24 hours.
+
+## Who it's for
+Indian small and medium businesses that want a professional website and the software to run day-to-day operations, without hiring developers or stitching together multiple tools.
+
+## Key pages
+- Home: https://get4domain.com/
+- Pricing: https://get4domain.com/pricing
+- Industries (all 20): https://get4domain.com/industries
+- Features: https://get4domain.com/features
+- How it works: https://get4domain.com/how-it-works
+- Book a free demo: https://get4domain.com/book-demo
+- About: https://get4domain.com/about
+- Contact: https://get4domain.com/contact
+
+## Contact
+- Email: support@get4domain.com
+- Location: Tidel Park, Tharamani, Chennai, Tamil Nadu 600113, India
+- Operated by: KSM Quantum Technologies

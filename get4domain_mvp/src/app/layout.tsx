@@ -45,7 +45,9 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
-  alternates: { canonical: 'https://get4domain.com' },
+  // NOTE: no site-wide canonical here — a canonical in the root layout is inherited by
+  // EVERY page and made all of them look like duplicates of the homepage (Google then
+  // refused to index them). Each page sets its OWN self-referencing canonical instead.
   robots: {
     index: true,
     follow: true,
@@ -72,9 +74,9 @@ export const metadata: Metadata = {
     description: "India's complete digital business platform for SMBs.",
     images: ['/og-image.png'],
   },
-  verification: {
-    google: 'ADD_YOUR_GOOGLE_SEARCH_CONSOLE_CODE_HERE',
-  },
+  // Search Console is already verified (the sitemap discovered 715 URLs). The old
+  // placeholder here emitted a broken google-site-verification meta — removed. To add a
+  // NEW verification token later, set NEXT_PUBLIC_GSC_VERIFICATION and restore this block.
 };
 
 export const viewport: Viewport = {
@@ -138,6 +140,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 name: 'KSM Quantum Technologies',
                 url: 'https://get4domain.com',
                 logo: 'https://get4domain.com/logo.png',
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Get4Domain',
+              url: 'https://get4domain.com',
+              inLanguage: 'en-IN',
+              publisher: { '@type': 'Organization', name: 'Get4Domain' },
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: { '@type': 'EntryPoint', urlTemplate: 'https://get4domain.com/industries?q={search_term_string}' },
+                'query-input': 'required name=search_term_string',
               },
             }),
           }}

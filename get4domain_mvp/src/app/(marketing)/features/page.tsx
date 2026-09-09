@@ -7,7 +7,7 @@ import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 
 export const metadata: Metadata = {
-  title: 'Features — Everything in DomainApp ₹999/month | Get4Domain',
+  title: 'Features — Everything in DomainApp ₹999/month',
   description: 'Every DomainApp feature in detail: industry website, Workplace, CRM & TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA — with what is included vs. pay-per-use.',
   alternates: { canonical: 'https://get4domain.com/features' },
 };
