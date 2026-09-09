@@ -2,7 +2,16 @@ import type { Metadata } from 'next';
 import { Target, MapPin, Mail, Calendar, UserRound } from 'lucide-react';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
+import Faq from '@/components/marketing/Faq';
 import { createPageMetadata } from '@/lib/metadata';
+
+// Page-specific FAQ (company/trust questions — distinct from home, pricing & features).
+const ABOUT_FAQ = [
+  { q: 'Who builds and operates Get4Domain?', a: 'Get4Domain is built and operated by KSM Quantum Technologies, based in Chennai, India. It is a managed SaaS platform — we host, deploy and maintain everything, so you do not manage servers, code or updates.' },
+  { q: 'Where is Get4Domain based?', a: 'Chennai, Tamil Nadu, India (Tidel Park, Tharamani). Our support team assists in English and Tamil, Monday to Saturday, 9am–8pm.' },
+  { q: 'Is Get4Domain only for Indian businesses?', a: 'It is purpose-built for Indian SMBs — GST-compliant invoicing, INR pricing and WhatsApp-first communication — so it fits Indian businesses best.' },
+  { q: 'Is it a website builder or a done-for-you service?', a: 'Done-for-you. Our team deploys your site on a ready-made industry template and customizes the content and theme within 24 hours — you get a ready-to-use website and Workplace, not a drag-and-drop builder.' },
+];
 
 export const metadata: Metadata = createPageMetadata({
   title: 'About Us',
@@ -60,6 +69,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      <Faq items={ABOUT_FAQ} subtitle="About the company behind Get4Domain." />
 
       <CTABanner />
     </>

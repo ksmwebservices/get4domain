@@ -5,6 +5,15 @@ import PlatformSection from '@/components/marketing/home/PlatformSection';
 import DashboardPreview from '@/components/marketing/home/DashboardPreview';
 import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
+import Faq from '@/components/marketing/Faq';
+
+// Page-specific FAQ (feature/pricing-mechanics questions — distinct from home & pricing).
+const FEATURES_FAQ = [
+  { q: 'What is actually included in the ₹999/month plan?', a: 'Everything on this page is included: your industry website, the Workplace, CRM + TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA. There are no per-module add-on fees — the software is all included in the one plan.' },
+  { q: 'Which features are included vs. pay-per-use?', a: 'All software modules are included. Only consumption items — AI content/image generations, campaign sends and WhatsApp/SMS/email messages — draw from your wallet. You start with ₹499 of free credit and top up (from ₹499) only when you need more.' },
+  { q: 'Can I use just the Workplace/CRM without the website?', a: 'Yes. If you already have a website, use Get4Domain only for the Workplace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with GST-statement prep — without deploying a new site.' },
+  { q: 'Do the features adapt to my industry?', a: 'Yes. Records, contacts, forms and workflows relabel to your industry — a clinic gets appointments and patients, a restaurant gets menu and orders, real estate gets properties and site visits — across all 20 supported industries.' },
+];
 
 export const metadata: Metadata = {
   title: 'Features — Everything in DomainApp ₹999/month',
@@ -121,6 +130,8 @@ export default function FeaturesPage() {
           </div>
         </div>
       </section>
+
+      <Faq items={FEATURES_FAQ} subtitle="How the DomainApp plan and its features work." />
     </div>
   );
 }

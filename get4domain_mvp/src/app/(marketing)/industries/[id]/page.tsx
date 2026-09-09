@@ -14,6 +14,31 @@ import Button from '@/components/ui/Button';
 // homepage showcase — do not recapture). Others fall back to the sample mockup.
 const REAL_SHOTS = new Set(['clinic', 'salon', 'gym', 'restaurant', 'retail', 'professional', 'travel', 'realestate', 'education', 'hotel']);
 
+// Curated related industries (2-3 each) for internal linking — keeps crawlers moving
+// between the industry landing pages and surfaces adjacent categories to visitors.
+const RELATED: Record<string, string[]> = {
+  clinic: ['diagnostics', 'salon', 'gym'],
+  diagnostics: ['clinic', 'gym', 'salon'],
+  salon: ['gym', 'clinic', 'photography'],
+  gym: ['salon', 'clinic', 'coaching'],
+  restaurant: ['hotel', 'retail', 'events'],
+  hotel: ['travel', 'restaurant', 'events'],
+  travel: ['hotel', 'events', 'photography'],
+  events: ['photography', 'hotel', 'travel'],
+  photography: ['events', 'salon', 'travel'],
+  retail: ['restaurant', 'agriculture', 'automobile'],
+  agriculture: ['retail', 'logistics', 'construction'],
+  realestate: ['construction', 'finance', 'professional'],
+  construction: ['realestate', 'professional', 'automobile'],
+  education: ['coaching', 'professional', 'technology'],
+  coaching: ['education', 'gym', 'professional'],
+  professional: ['finance', 'technology', 'education'],
+  finance: ['professional', 'realestate', 'technology'],
+  technology: ['professional', 'finance', 'education'],
+  automobile: ['retail', 'construction', 'logistics'],
+  logistics: ['automobile', 'retail', 'agriculture'],
+};
+
 export async function generateStaticParams() {
   return industryContent.map((ind) => ({ id: ind.id }));
 }
@@ -43,6 +68,11 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
 
   const workspace = INDUSTRIES.find((i) => i.id === id);
   const realShot = REAL_SHOTS.has(id) ? `/hero-shots/${id}-home.webp` : null;
+
+  // Related industry landing pages (internal linking + adjacent-category discovery).
+  const related = (RELATED[id] ?? [])
+    .map((rid) => industryContent.find((i) => i.id === rid))
+    .filter((i): i is NonNullable<typeof i> => Boolean(i));
 
   const pageUrl = `https://get4domain.com/industries/${id}`;
   const jsonLd = [
@@ -170,7 +200,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
               <div className="overflow-hidden rounded-[1.4rem] bg-white">
                 <div className="relative h-28">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={content.coverImage} alt="" className="h-full w-full object-cover" />
+                  <img src={content.coverImage} alt={`${content.name} website shown on a mobile phone`} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
                   <span className="absolute bottom-1.5 left-1.5 rounded-full bg-primary-600 px-2 py-0.5 text-[9px] font-bold text-white">Book Now</span>
                 </div>
@@ -192,7 +222,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
                 </div>
               </div>
               <div className="relative h-48 overflow-hidden">
-                <img src={content.coverImage} alt={content.name} className="h-full w-full object-cover" />
+                <img src={content.coverImage} alt={`${content.name} business website preview built with Get4Domain`} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-5">
                   <h3 className="text-lg font-bold text-white leading-tight">{content.sampleContent.heroHeadline}</h3>
@@ -285,6 +315,29 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
           </div>
         </div>
       </section>
+
+      {related.length > 0 && (
+        <section className="border-t border-slate-100 py-12 lg:py-16">
+          <div className="container-mx container-px">
+            <div className="mx-auto max-w-4xl">
+              <h2 className="text-xl font-bold text-slate-900">Related industries</h2>
+              <p className="mt-1 text-sm text-slate-500">Get4Domain also builds websites &amp; business software for these industries.</p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {related.map((r) => (
+                  <Link key={r.id} href={`/industries/${r.id}`}
+                    className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-primary-300">
+                    <span className="text-sm font-bold text-slate-900 group-hover:text-primary-700">{r.name}</span>
+                    <span className="mt-1 flex-1 text-xs text-slate-500 line-clamp-2">{r.shortDesc ?? r.tagline}</span>
+                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-600">
+                      Explore {r.name} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <CTABanner />
     </>
