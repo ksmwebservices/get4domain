@@ -1,0 +1,32 @@
+# KSM Quantum Technologies
+
+> KSM Quantum Technologies is a Chennai, India based technology company, established in 2014, that builds and operates its own software products, AI-powered platforms and digital business solutions. Founded and led by K. S. Murugavel (Founder & CEO). Tagline: "Building Software. Empowering Businesses."
+
+## What the company does
+Designs, engineers and runs its own software products end to end (not an outsourcing/agency shop): business platforms, AI systems, cloud infrastructure, web and mobile applications, and automation.
+
+## Products (built and operated by KSM Quantum Technologies)
+- Get4Domain — Business Technology Platform — https://get4domain.com — an all-in-one website + business software platform (CRM, invoicing, bookings, campaigns, AI studio) for 20 industries.
+- SignBot — AI Trading Technology Platform — https://signbot.in — AI-driven trading technology that turns market signals into structured decisions.
+- NextBOS — Next-Generation Business Operating System — https://nextbos.ai — unifies operations, data and workflows into one intelligent control layer.
+- HiDude — AI-Powered Digital Assistant — https://hidude.ai — conversational AI assistant for people and teams.
+
+## Capabilities
+Software engineering, applied artificial intelligence, cloud & infrastructure, web platforms, mobile experiences, and workflow automation.
+
+## Facts
+- Founded: 2014
+- Headquarters: Tidel Park, Tharamani, Chennai, Tamil Nadu 600113, India
+- Founder & CEO: K. S. Murugavel
+- Model: builds and operates its own SaaS products (managed, always-on)
+
+## Key pages
+- Home: https://ksmquantumtechnologies.get4domain.com/
+- About: https://ksmquantumtechnologies.get4domain.com/about
+- Products: https://ksmquantumtechnologies.get4domain.com/products
+- Technology: https://ksmquantumtechnologies.get4domain.com/technology
+- Contact: https://ksmquantumtechnologies.get4domain.com/contact
+
+## Contact
+- Email: support@get4domain.com
+- Location: Chennai, Tamil Nadu, India

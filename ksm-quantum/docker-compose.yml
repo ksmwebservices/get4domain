@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ksm_quantum
+    restart: unless-stopped
+    ports:
+      - "3012:3012"
+    environment:
+      - NODE_ENV=production
+      - PORT=3012
+    networks:
+      - ksm_quantum_net
+
+networks:
+  ksm_quantum_net:
+    driver: bridge

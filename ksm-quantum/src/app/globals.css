@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #07070c;
+  --fg: #f4f5fa;
+  --muted: #9aa2b4;
+  --border: rgba(255, 255, 255, 0.09);
+  --surface: rgba(255, 255, 255, 0.024);
+  --accent: #6d6cff;
+  --accent-cyan: #22d3ee;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Respect users who prefer no motion. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ── Signature background: a fine engineering grid + one slow gradient sweep.
+   Deliberately NOT blur-blobs / glassmorphism. Fixed, GPU-cheap, sits behind all. ── */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 40%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 40%, transparent 100%);
+}
+.bg-sweep {
+  position: fixed;
+  inset: -40vmax;
+  z-index: -3;
+  background:
+    radial-gradient(40vmax 40vmax at 20% 10%, rgba(109, 108, 255, 0.16), transparent 60%),
+    radial-gradient(38vmax 38vmax at 85% 20%, rgba(34, 211, 238, 0.10), transparent 62%);
+  animation: sweep 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes sweep {
+  from { transform: translate3d(-3%, -2%, 0) rotate(0deg); }
+  to   { transform: translate3d(4%, 3%, 0) rotate(8deg); }
+}
+
+/* ── Scroll reveal (driven by a tiny IntersectionObserver hook) ── */
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* ── Typographic + component helpers ── */
+.eyebrow {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+}
+.text-gradient {
+  background: linear-gradient(100deg, #ffffff 0%, #c9cbff 45%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hairline { border: 1px solid var(--border); }
+.card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  border-radius: 18px;
+  transition: border-color 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+}
+.card:hover {
+  border-color: rgba(138, 137, 255, 0.45);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px -30px rgba(109, 108, 255, 0.5);
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: linear-gradient(100deg, var(--accent), #4f8dff);
+  color: #fff; font-weight: 600; border-radius: 12px;
+  padding: 0.8rem 1.4rem; font-size: 0.95rem;
+  box-shadow: 0 10px 30px -12px rgba(109, 108, 255, 0.7);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 16px 40px -14px rgba(109, 108, 255, 0.8); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  border: 1px solid var(--border); color: var(--fg); font-weight: 500;
+  border-radius: 12px; padding: 0.8rem 1.4rem; font-size: 0.95rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.btn-ghost:hover { border-color: rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.04); }
+
+.container-x { max-width: 1200px; margin-inline: auto; padding-inline: 1.25rem; }
+@media (min-width: 768px) { .container-x { padding-inline: 2rem; } }
