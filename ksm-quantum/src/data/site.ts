@@ -9,13 +9,17 @@ export const SITE = {
   address: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai, Tamil Nadu 600113, India',
 };
 
-// Shared social-share image (the brand banner). Next replaces (does not deep-merge)
-// openGraph when a page overrides it, so every page that sets its own openGraph must
-// include this explicitly or it loses og:image.
+// Shared social-share image for link previews (WhatsApp, Facebook, LinkedIn, X).
+// This is the brand banner centred on the site's dark background at the standard
+// 1200×630 (1.91:1) ratio — the size these platforms need to render a LARGE preview
+// card. `type` emits og:image:type, which WhatsApp in particular needs to embed.
+// Next replaces (does not deep-merge) openGraph when a page overrides it, so every
+// page that sets its own openGraph must include this explicitly or it loses og:image.
 export const OG_IMAGE = {
-  url: '/brand/ksm-hero-banner.jpg',
+  url: '/brand/ksm-og.jpg',
   width: 1200,
-  height: 447,
+  height: 630,
+  type: 'image/jpeg',
   alt: 'KSM Quantum Technologies — AI-powered solutions and its products Get4Domain, SignBot, NextBOS and HiDude',
 };
 

@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'KSM Quantum Technologies',
     description: 'Building software products, AI platforms and digital business solutions since 2014. Chennai, India.',
-    images: ['/brand/ksm-hero-banner.jpg'],
+    images: [OG_IMAGE.url],
   },
 };
 
