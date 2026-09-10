@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Mail, FlaskConical } from 'lucide-react';
 import Reveal from '@/components/Reveal';
-import { PRODUCTS, SITE } from '@/data/site';
+import { PRODUCTS, SITE, OG_IMAGE } from '@/data/site';
 
 // Coming Soon pages exist only for not-yet-launched products (NextBOS, HiDude).
 export function generateStaticParams() {
@@ -22,7 +22,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     title: `${p.name} — ${p.category} (Coming Soon)`,
     description,
     alternates: { canonical: url },
-    openGraph: { title: `${p.name} — Coming Soon`, description, url, type: 'website' },
+    openGraph: { title: `${p.name} — Coming Soon`, description, url, type: 'website', images: [OG_IMAGE] },
   };
 }
 

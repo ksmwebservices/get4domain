@@ -3,14 +3,14 @@ import Link from 'next/link';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import Reveal from '@/components/Reveal';
 import ProductCard from '@/components/ProductCard';
-import { PRODUCTS, SITE } from '@/data/site';
+import { PRODUCTS, SITE, OG_IMAGE } from '@/data/site';
 
 export const metadata: Metadata = {
   title: 'Products — Get4Domain, SignBot, NextBOS, HiDude',
   description:
     'The software products KSM Quantum Technologies builds and operates: Get4Domain (business technology platform), SignBot (AI trading platform), NextBOS (business operating system) and HiDude (AI digital assistant).',
   alternates: { canonical: `${SITE.url}/products` },
-  openGraph: { title: 'Products by KSM Quantum Technologies', description: 'Get4Domain, SignBot, NextBOS and HiDude — built and operated in-house.', url: `${SITE.url}/products`, type: 'website' },
+  openGraph: { title: 'Products by KSM Quantum Technologies', description: 'Get4Domain, SignBot, NextBOS and HiDude — built and operated in-house.', url: `${SITE.url}/products`, type: 'website', images: [OG_IMAGE] },
 };
 
 export default function ProductsPage() {

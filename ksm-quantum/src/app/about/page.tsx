@@ -3,14 +3,14 @@ import Link from 'next/link';
 import { ArrowRight, Target, Compass, Building2 } from 'lucide-react';
 import Reveal from '@/components/Reveal';
 import Faq from '@/components/Faq';
-import { SITE } from '@/data/site';
+import { SITE, OG_IMAGE } from '@/data/site';
 
 export const metadata: Metadata = {
   title: 'About — Our Story, Founder & Vision',
   description:
     'KSM Quantum Technologies is a Chennai technology company founded in 2014 by K. S. Murugavel. We build and operate our own software products, AI platforms and digital business solutions.',
   alternates: { canonical: `${SITE.url}/about` },
-  openGraph: { title: 'About KSM Quantum Technologies', description: 'Founded in 2014 in Chennai. We build and operate our own software products and AI platforms.', url: `${SITE.url}/about`, type: 'website' },
+  openGraph: { title: 'About KSM Quantum Technologies', description: 'Founded in 2014 in Chennai. We build and operate our own software products and AI platforms.', url: `${SITE.url}/about`, type: 'website', images: [OG_IMAGE] },
 };
 
 const ABOUT_FAQ = [

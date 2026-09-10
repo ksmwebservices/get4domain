@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
-import { SITE } from '@/data/site';
+import { SITE, OG_IMAGE } from '@/data/site';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import './globals.css';
@@ -32,11 +32,13 @@ export const metadata: Metadata = {
     type: 'website', locale: 'en_IN', url: SITE.url, siteName: SITE.name,
     title: 'KSM Quantum Technologies — Building Software, Empowering Businesses',
     description: 'A Chennai technology company building software products, AI platforms and digital business solutions since 2014.',
+    images: [OG_IMAGE],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'KSM Quantum Technologies',
     description: 'Building software products, AI platforms and digital business solutions since 2014. Chennai, India.',
+    images: ['/brand/ksm-hero-banner.jpg'],
   },
 };
 

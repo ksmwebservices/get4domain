@@ -9,6 +9,16 @@ export const SITE = {
   address: 'Tidel Park, 1st Floor D Block, Tharamani, Chennai, Tamil Nadu 600113, India',
 };
 
+// Shared social-share image (the brand banner). Next replaces (does not deep-merge)
+// openGraph when a page overrides it, so every page that sets its own openGraph must
+// include this explicitly or it loses og:image.
+export const OG_IMAGE = {
+  url: '/brand/ksm-hero-banner.jpg',
+  width: 1200,
+  height: 447,
+  alt: 'KSM Quantum Technologies — AI-powered solutions and its products Get4Domain, SignBot, NextBOS and HiDude',
+};
+
 export const NAV = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },

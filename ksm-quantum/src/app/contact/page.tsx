@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { Mail, MapPin, Building2, ArrowUpRight } from 'lucide-react';
 import Reveal from '@/components/Reveal';
-import { SITE, PRODUCTS } from '@/data/site';
+import { SITE, PRODUCTS, OG_IMAGE } from '@/data/site';
 
 export const metadata: Metadata = {
   title: 'Contact — KSM Quantum Technologies, Chennai',
   description:
     'Get in touch with KSM Quantum Technologies in Chennai, India. Email support@get4domain.com or reach us at Tidel Park, Tharamani, Chennai.',
   alternates: { canonical: `${SITE.url}/contact` },
-  openGraph: { title: 'Contact KSM Quantum Technologies', description: 'Chennai, India · support@get4domain.com', url: `${SITE.url}/contact`, type: 'website' },
+  openGraph: { title: 'Contact KSM Quantum Technologies', description: 'Chennai, India · support@get4domain.com', url: `${SITE.url}/contact`, type: 'website', images: [OG_IMAGE] },
 };
 
 export default function ContactPage() {

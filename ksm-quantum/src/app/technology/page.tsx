@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Code2, BrainCircuit, Cloud, Globe, Smartphone, Workflow } from 'lucide-react';
 import Reveal from '@/components/Reveal';
-import { CAPABILITIES, SITE } from '@/data/site';
+import { CAPABILITIES, SITE, OG_IMAGE } from '@/data/site';
 
 const ICONS = { Code2, BrainCircuit, Cloud, Globe, Smartphone, Workflow } as const;
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     'How KSM Quantum Technologies builds: software engineering, applied artificial intelligence, cloud & infrastructure, web platforms, mobile experiences and workflow automation.',
   alternates: { canonical: `${SITE.url}/technology` },
-  openGraph: { title: 'Technology at KSM Quantum Technologies', description: 'Software engineering, AI, cloud, web, mobile and automation.', url: `${SITE.url}/technology`, type: 'website' },
+  openGraph: { title: 'Technology at KSM Quantum Technologies', description: 'Software engineering, AI, cloud, web, mobile and automation.', url: `${SITE.url}/technology`, type: 'website', images: [OG_IMAGE] },
 };
 
 const STACK = ['TypeScript', 'Next.js', 'NestJS', 'React', 'Node.js', 'PostgreSQL', 'Prisma', 'Docker', 'Nginx', 'Cloud', 'Applied AI', 'PWA'];

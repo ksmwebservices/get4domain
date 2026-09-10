@@ -8,9 +8,9 @@ import { PRODUCTS, CAPABILITIES, STATS, SITE } from '@/data/site';
 
 export const metadata: Metadata = {
   // Self-referencing canonical (root layout deliberately sets none — avoids the
-  // global-canonical bug that de-indexed get4domain.com's inner pages).
+  // global-canonical bug that de-indexed get4domain.com's inner pages). No openGraph
+  // override here so the page inherits the layout's full OG (url = homepage + banner image).
   alternates: { canonical: SITE.url },
-  openGraph: { url: SITE.url },
 };
 
 const ICONS = { Code2, BrainCircuit, Cloud, Globe, Smartphone, Workflow } as const;
@@ -46,6 +46,21 @@ export default function HomePage() {
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link href="/products" className="btn-primary">Explore our products <ArrowRight className="h-4 w-4" /></Link>
               <Link href="/contact" className="btn-ghost">Get in touch</Link>
+            </div>
+          </Reveal>
+
+          {/* Brand banner — framed inside the hero (below the CTAs). */}
+          <Reveal delay={300}>
+            <div className="mt-12 overflow-hidden rounded-2xl border border-[var(--border)] shadow-[0_30px_80px_-40px_rgba(109,108,255,0.5)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/ksm-hero-banner.jpg"
+                alt="KSM Quantum Technologies — AI-powered solutions and its four products: Get4Domain, SignBot, NextBOS and HiDude"
+                width={1200}
+                height={447}
+                className="w-full"
+                loading="eager"
+              />
             </div>
           </Reveal>
 

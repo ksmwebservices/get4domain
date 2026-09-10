@@ -29,8 +29,10 @@ export default function Nav() {
       }`}
     >
       <nav className="container-x flex h-16 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-cyan)] text-sm font-black text-white">K</span>
+        <Link href="/" className="group flex items-center gap-2.5" aria-label="KSM Quantum Technologies — home">
+          {/* Real brand mark on a white tile (the icon is designed navy-on-white). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/ksm-icon.png" alt="KSM Quantum Technologies logo" width={32} height={32} className="h-8 w-8 rounded-lg bg-white p-0.5 ring-1 ring-white/10" />
           <span className="font-display text-[15px] font-bold tracking-tight">
             KSM<span className="text-[var(--muted)]"> Quantum</span>
           </span>

@@ -7,7 +7,8 @@ export default function Footer() {
       <div className="container-x grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent-cyan)] text-sm font-black text-white">K</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/ksm-icon.png" alt="KSM Quantum Technologies logo" width={32} height={32} className="h-8 w-8 rounded-lg bg-white p-0.5 ring-1 ring-white/10" />
             <span className="font-display text-[15px] font-bold tracking-tight">KSM Quantum Technologies</span>
           </div>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-[var(--muted)]">{SITE.tagline}</p>
