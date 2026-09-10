@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { ArrowUpRight } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import Reveal from '@/components/Reveal';
 import ProductCard from '@/components/ProductCard';
 import { PRODUCTS, SITE } from '@/data/site';
@@ -57,9 +58,15 @@ export default function ProductsPage() {
                   <div className="mt-1 text-[13px] text-[var(--muted)]">{p.category}</div>
                 </div>
                 <p className="text-[15px] leading-relaxed text-[var(--muted)]">{p.blurb}</p>
-                <a href={p.href} target="_blank" rel="noopener noreferrer" className="btn-ghost justify-center whitespace-nowrap md:justify-start">
-                  Visit {p.domain} <ArrowUpRight className="h-4 w-4" />
-                </a>
+                {p.comingSoon ? (
+                  <Link href={`/products/${p.slug}`} className="btn-ghost justify-center whitespace-nowrap md:justify-start">
+                    Learn more <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <a href={p.href} target="_blank" rel="noopener noreferrer" className="btn-ghost justify-center whitespace-nowrap md:justify-start">
+                    Visit {p.domain} <ArrowUpRight className="h-4 w-4" />
+                  </a>
+                )}
               </div>
             </Reveal>
           ))}

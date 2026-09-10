@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITE } from '@/data/site';
+import { SITE, PRODUCTS } from '@/data/site';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -9,6 +9,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/products', priority: 0.9, changeFrequency: 'monthly' },
     { path: '/technology', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/contact', priority: 0.7, changeFrequency: 'monthly' },
+    // In-site Coming Soon pages for not-yet-launched products (NextBOS, HiDude).
+    ...PRODUCTS.filter((p) => p.comingSoon).map((p) => ({
+      path: `/products/${p.slug}`, priority: 0.6, changeFrequency: 'monthly' as const,
+    })),
   ];
   return routes.map((r) => ({
     url: `${SITE.url}${r.path === '/' ? '' : r.path}`,
