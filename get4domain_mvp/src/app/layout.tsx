@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/lib/auth-context';
+import { siteConfig } from '@/constants/site';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -66,13 +67,13 @@ export const metadata: Metadata = {
     siteName: 'Get4Domain',
     title: 'Get4Domain — Your Online Identity Partner',
     description: "India's complete online identity platform for SMBs. Website + Business Operations + Marketing. Starting ₹999.",
-    images: [{ url: '/og-image.png', width: 1536, height: 1024, alt: 'Get4Domain' }],
+    images: [siteConfig.ogImage],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Get4Domain — Your Online Identity Partner',
     description: "India's complete digital business platform for SMBs.",
-    images: ['/og-image.png'],
+    images: [siteConfig.ogImage.url],
   },
   // Search Console is already verified (the sitemap discovered 715 URLs). The old
   // placeholder here emitted a broken google-site-verification meta — removed. To add a

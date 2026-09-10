@@ -6,6 +6,7 @@ import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
 import { INDUSTRIES } from '@/data/industries-list';
 import { getSubcategories } from '@/data/demo-site';
+import { siteConfig } from '@/constants/site';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import Button from '@/components/ui/Button';
@@ -56,7 +57,7 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
     description: content.fullDesc,
     keywords: content.seoKeywords,
     alternates: { canonical: url },
-    openGraph: { title: `${title} | Get4Domain`, description: content.fullDesc, url, type: 'website' },
+    openGraph: { title: `${title} | Get4Domain`, description: content.fullDesc, url, type: 'website', images: [siteConfig.ogImage] },
   };
 }
 

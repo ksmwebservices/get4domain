@@ -33,11 +33,15 @@ export function createPageMetadata({
       siteName: siteConfig.name,
       type: 'website',
       locale: 'en_IN',
+      // Next REPLACES (does not deep-merge) openGraph per page, so the shared image
+      // MUST be set here or every page using this helper loses its link-preview image.
+      images: [siteConfig.ogImage],
     },
     twitter: {
       card: 'summary_large_image',
       title: fullTitle,
       description,
+      images: [siteConfig.ogImage.url],
     },
     robots: {
       index: true,
