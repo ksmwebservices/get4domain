@@ -2,7 +2,7 @@ export const SITE = {
   name: 'KSM Quantum Technologies',
   short: 'KSM Quantum',
   tagline: 'Building Software. Empowering Businesses.',
-  url: 'https://ksmquantumtechnologies.get4domain.com',
+  url: 'https://ksmquantum.get4domain.com',
   founded: '2014',
   city: 'Chennai, India',
   email: 'support@get4domain.com',

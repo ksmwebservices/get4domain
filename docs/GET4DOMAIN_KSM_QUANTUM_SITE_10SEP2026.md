@@ -1,7 +1,7 @@
 # KSM Quantum Technologies — corporate site (new app) — 10 Sep 2026
 
 ## ⚠ Domain assumption to confirm
-Built for **`ksmquantumtechnologies.get4domain.com`** (`.com`, to match every other domain
+Built for **`ksmquantum.get4domain.com`** (`.com`, to match every other domain
 in this project). KSM's brief said `.in` — assumed a typo. **If `.in` is actually intended**,
 change it in ONE place and rebuild: `SITE.url` in `ksm-quantum/src/data/site.ts` (drives metadata,
 canonicals, sitemap, OG). Also update the `host` line in `ksm-quantum/src/app/robots.ts` and the
@@ -61,12 +61,12 @@ cd /srv/get4domain-site/ksm-quantum && docker compose build frontend && docker c
 ```
 Then wire the subdomain (VM/registrar level — KSM, not automated here):
 ```bash
-# 3a. DNS: add an A record  ksmquantumtechnologies.get4domain.com → <VM public IP>
+# 3a. DNS: add an A record  ksmquantum.get4domain.com → <VM public IP>
 #     (or confirm the wildcard *.get4domain.com already resolves)
 
 # 3b. nginx server block (e.g. /etc/nginx/sites-available/ksmquantum):
 server {
-  server_name ksmquantumtechnologies.get4domain.com;
+  server_name ksmquantum.get4domain.com;
   location / {
     proxy_pass http://127.0.0.1:3014;
     proxy_set_header Host $host;
@@ -77,7 +77,7 @@ server {
 # ln -s .../sites-available/ksmquantum /etc/nginx/sites-enabled/ && nginx -t && systemctl reload nginx
 
 # 3c. TLS cert for the new host:
-certbot --nginx -d ksmquantumtechnologies.get4domain.com
+certbot --nginx -d ksmquantum.get4domain.com
 ```
 - **Cloudflare note (GEO):** if this subdomain is proxied through the same Cloudflare zone that has
   the "managed robots.txt / block AI bots" setting, it will inject the same AI-bot block over our

@@ -21,11 +21,11 @@ Software engineering, applied artificial intelligence, cloud & infrastructure, w
 - Model: builds and operates its own SaaS products (managed, always-on)
 
 ## Key pages
-- Home: https://ksmquantumtechnologies.get4domain.com/
-- About: https://ksmquantumtechnologies.get4domain.com/about
-- Products: https://ksmquantumtechnologies.get4domain.com/products
-- Technology: https://ksmquantumtechnologies.get4domain.com/technology
-- Contact: https://ksmquantumtechnologies.get4domain.com/contact
+- Home: https://ksmquantum.get4domain.com/
+- About: https://ksmquantum.get4domain.com/about
+- Products: https://ksmquantum.get4domain.com/products
+- Technology: https://ksmquantum.get4domain.com/technology
+- Contact: https://ksmquantum.get4domain.com/contact
 
 ## Contact
 - Email: support@get4domain.com

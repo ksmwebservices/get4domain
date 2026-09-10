@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: '*', allow: '/' },
     ],
     sitemap: `${SITE.url}/sitemap.xml`,
-    host: 'ksmquantumtechnologies.get4domain.com',
+    host: 'ksmquantum.get4domain.com',
   };
 }
