@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Mail, MapPin, Building2, ArrowUpRight } from 'lucide-react';
 import Reveal from '@/components/Reveal';
+import ContactForm from '@/components/ContactForm';
 import { SITE, PRODUCTS, OG_IMAGE } from '@/data/site';
 
 export const metadata: Metadata = {
@@ -58,33 +59,9 @@ export default function ContactPage() {
           </Reveal>
         </div>
 
-        {/* Contact form — posts via the visitor's own mail client (no backend needed) */}
+        {/* Contact form — opens the visitor's mail client pre-filled (no backend needed) */}
         <Reveal>
-          <form
-            action={`mailto:${SITE.email}`}
-            method="post"
-            encType="text/plain"
-            className="card mt-4 grid gap-4 p-7 md:p-9"
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm">
-                <span className="mb-1.5 block text-[var(--muted)]">Your name</span>
-                <input name="name" required className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[var(--accent)]/60" placeholder="Jane Doe" />
-              </label>
-              <label className="text-sm">
-                <span className="mb-1.5 block text-[var(--muted)]">Email</span>
-                <input name="email" type="email" required className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[var(--accent)]/60" placeholder="you@company.com" />
-              </label>
-            </div>
-            <label className="text-sm">
-              <span className="mb-1.5 block text-[var(--muted)]">How can we help?</span>
-              <textarea name="message" rows={4} required className="w-full resize-none rounded-xl border border-[var(--border)] bg-[var(--bg)] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[var(--accent)]/60" placeholder="Tell us about your business or project…" />
-            </label>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-[var(--muted)]">Opens your email app addressed to {SITE.email}.</p>
-              <button type="submit" className="btn-primary">Send message</button>
-            </div>
-          </form>
+          <ContactForm />
         </Reveal>
 
         {/* Product links */}

@@ -28,12 +28,12 @@ export default function Nav() {
         scrolled ? 'border-b border-[var(--border)] bg-[rgba(7,7,12,0.72)] backdrop-blur-xl' : 'border-b border-transparent'
       }`}
     >
-      <nav className="container-x flex h-16 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-2.5" aria-label="KSM Quantum Technologies — home">
+      <nav className="container-x flex h-16 items-center justify-between md:h-20">
+        <Link href="/" className="group flex items-center gap-3" aria-label="KSM Quantum Technologies — home">
           {/* Real brand mark on a white tile (the icon is designed navy-on-white). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/ksm-icon.png" alt="KSM Quantum Technologies logo" width={32} height={32} className="h-8 w-8 rounded-lg bg-white p-0.5 ring-1 ring-white/10" />
-          <span className="font-display text-[15px] font-bold tracking-tight">
+          <img src="/brand/ksm-icon.png" alt="KSM Quantum Technologies logo" width={44} height={44} className="h-9 w-9 rounded-xl bg-white p-1 ring-1 ring-white/10 md:h-11 md:w-11" />
+          <span className="font-display text-lg font-bold tracking-tight md:text-xl">
             KSM<span className="text-[var(--muted)]"> Quantum</span>
           </span>
         </Link>
@@ -43,7 +43,7 @@ export default function Nav() {
             <Link
               key={n.href}
               href={n.href}
-              className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 text-[15px] font-medium transition-colors ${
                 isActive(n.href) ? 'text-white' : 'text-[var(--muted)] hover:text-white'
               }`}
             >
@@ -53,7 +53,7 @@ export default function Nav() {
         </div>
 
         <div className="hidden md:block">
-          <Link href="/contact" className="btn-primary !py-2 !text-sm">Get in touch</Link>
+          <Link href="/contact" className="btn-primary !py-2.5 !text-[15px]">Get in touch</Link>
         </div>
 
         <button

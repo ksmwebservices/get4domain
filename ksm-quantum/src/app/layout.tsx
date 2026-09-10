@@ -93,7 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="bg-sweep" aria-hidden />
         <div className="bg-grid" aria-hidden />
         <Nav />
-        <main className="pt-16">{children}</main>
+        <main className="pt-16 md:pt-20">{children}</main>
         <Footer />
       </body>
     </html>

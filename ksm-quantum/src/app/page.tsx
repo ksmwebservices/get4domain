@@ -27,31 +27,10 @@ export default function HomePage() {
     <>
       {/* ── HERO ── */}
       <section className="relative">
-        <div className="container-x pb-16 pt-20 md:pb-24 md:pt-28">
+        <div className="container-x pb-16 pt-12 md:pb-24 md:pt-20">
+          {/* Brand banner — the lead visual, above the eyebrow/headline. */}
           <Reveal>
-            <div className="eyebrow">Established {SITE.founded} · {SITE.city}</div>
-          </Reveal>
-          <Reveal delay={80}>
-            <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl">
-              Technology that builds <span className="text-gradient">what&apos;s next.</span>
-            </h1>
-          </Reveal>
-          <Reveal delay={160}>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--muted)] md:text-xl">
-              {SITE.name} builds software products, AI-powered platforms and digital business
-              solutions that help organizations operate, innovate and grow.
-            </p>
-          </Reveal>
-          <Reveal delay={240}>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Link href="/products" className="btn-primary">Explore our products <ArrowRight className="h-4 w-4" /></Link>
-              <Link href="/contact" className="btn-ghost">Get in touch</Link>
-            </div>
-          </Reveal>
-
-          {/* Brand banner — framed inside the hero (below the CTAs). */}
-          <Reveal delay={300}>
-            <div className="mt-12 overflow-hidden rounded-2xl border border-[var(--border)] shadow-[0_30px_80px_-40px_rgba(109,108,255,0.5)]">
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] shadow-[0_30px_80px_-40px_rgba(109,108,255,0.5)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/ksm-hero-banner.jpg"
@@ -64,8 +43,29 @@ export default function HomePage() {
             </div>
           </Reveal>
 
+          <Reveal delay={120}>
+            <div className="eyebrow mt-12 md:mt-16">Established {SITE.founded} · {SITE.city}</div>
+          </Reveal>
+          <Reveal delay={180}>
+            <h1 className="mt-5 max-w-4xl font-display text-[2.6rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl">
+              Technology that builds <span className="text-gradient">what&apos;s next.</span>
+            </h1>
+          </Reveal>
+          <Reveal delay={240}>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--muted)] md:text-xl">
+              {SITE.name} builds software products, AI-powered platforms and digital business
+              solutions that help organizations operate, innovate and grow.
+            </p>
+          </Reveal>
+          <Reveal delay={300}>
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Link href="/products" className="btn-primary">Explore our products <ArrowRight className="h-4 w-4" /></Link>
+              <Link href="/contact" className="btn-ghost">Get in touch</Link>
+            </div>
+          </Reveal>
+
           {/* Stats — hairline row */}
-          <Reveal delay={320}>
+          <Reveal delay={360}>
             <div className="mt-16 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--border)] md:grid-cols-4">
               {STATS.map((s) => (
                 <div key={s.label} className="bg-[var(--bg)] px-5 py-6">
