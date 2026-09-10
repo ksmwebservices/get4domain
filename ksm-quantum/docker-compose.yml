@@ -6,10 +6,10 @@ services:
     container_name: ksm_quantum
     restart: unless-stopped
     ports:
-      - "3012:3012"
+      - "3014:3014"
     environment:
       - NODE_ENV=production
-      - PORT=3012
+      - PORT=3014
     networks:
       - ksm_quantum_net
 

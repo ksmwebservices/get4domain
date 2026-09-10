@@ -10,9 +10,11 @@ absolute URLs in `ksm-quantum/public/llms.txt`.
 ## STEP 0 — infra pattern (followed, not reinvented)
 Every sibling app is a self-contained dir with a Next **standalone** `Dockerfile` + its own
 `docker-compose.yml` (service `frontend`, unique `container_name`, own port + bridge network,
-`restart: unless-stopped`). Ports in use: get4domain_frontend **3006**, allwin_tours **3010**,
-backend elsewhere. New app uses **3012** (`container_name: ksm_quantum`, net `ksm_quantum_net`) —
-same pattern, no new convention.
+`restart: unless-stopped`). Ports in use on the VM: **3000/3001** mrtravels, **3006** get4domain,
+**3008** backend-api, **3010** allwintours, **3011** vallavan-backend, **3012** hidude-backend.
+New app uses **3014** (`container_name: ksm_quantum`, net `ksm_quantum_net`) — same pattern, no new
+convention. (Originally scoped to 3012, but that port is legitimately owned by hidude-backend on the
+VM, so ksm-quantum was moved to the confirmed-free 3014.)
 
 **DNS/SSL:** nginx/DNS are VM-level (not in this repo). Per
 `docs/GET4DOMAIN_SUBDOMAIN_INFRA_REQUIREMENT.md`, a wildcard `*.get4domain.com` cert/DNS is **NOT
@@ -55,7 +57,7 @@ cd /srv/get4domain-site && git pull origin get4domain-site
 
 # 2. Build & run the container (same pattern as the other apps)
 cd /srv/get4domain-site/ksm-quantum && docker compose build frontend && docker compose up -d frontend
-# → serves on 127.0.0.1:3012
+# → serves on 127.0.0.1:3014
 ```
 Then wire the subdomain (VM/registrar level — KSM, not automated here):
 ```bash
@@ -66,7 +68,7 @@ Then wire the subdomain (VM/registrar level — KSM, not automated here):
 server {
   server_name ksmquantumtechnologies.get4domain.com;
   location / {
-    proxy_pass http://127.0.0.1:3012;
+    proxy_pass http://127.0.0.1:3014;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
