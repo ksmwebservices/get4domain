@@ -731,6 +731,17 @@ const DEMO_SUBCATALOG: Record<string, Record<string, Partial<CategoryCatalog>>> 
         { name: 'Gold Coins (8g)', price: 'Market rate', desc: '24K hallmarked coins for gifting and investment.', fields: [{ label: 'Purity', value: '24K' }] },
       ],
     },
+    footwear: {
+      flow: 'enquire-order', ctaLabel: 'Order Now', catalogNoun: 'range', coverImage: px(322207),
+      items: [
+        { name: 'Classic Court Sneakers', price: '₹3,499', desc: 'Everyday low-tops in leather and canvas.', tags: ['Bestseller'], fields: [{ label: 'Category', value: 'Sneakers' }, { label: 'Sizes', value: 'UK 6–11' }] },
+        { name: "Men's Running Shoes", price: '₹4,299', desc: 'Lightweight cushioning built for daily runs.', tags: ['New'], fields: [{ label: 'Category', value: 'Running' }, { label: 'Sizes', value: 'UK 6–11' }] },
+        { name: 'Formal Oxford Shoes', price: '₹3,999', desc: 'Genuine leather, hand-stitched sole.', fields: [{ label: 'Category', value: 'Formal' }, { label: 'Sizes', value: 'UK 6–10' }] },
+        { name: 'Sports Sandals', price: '₹1,299', desc: 'Quick-dry straps with an outdoor grip sole.', fields: [{ label: 'Category', value: 'Sandals' }, { label: 'Sizes', value: 'UK 6–11' }] },
+        { name: "Women's Casual Sneakers", price: '₹3,299', desc: 'Breathable knit upper, all-day comfort.', tags: ['Bestseller'], fields: [{ label: 'Category', value: "Women's" }, { label: 'Sizes', value: 'UK 3–8' }] },
+        { name: 'Track Jacket & Pants Set', price: '₹2,499', desc: 'Moisture-wicking sportswear set.', fields: [{ label: 'Category', value: 'Apparel' }, { label: 'Sizes', value: 'S–XXL' }] },
+      ],
+    },
   },
   travel: {
     'holiday-packages': {

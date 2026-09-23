@@ -49,6 +49,12 @@ const DEMO_SIZE_SETS: Record<string, string[]> = {
   Menswear: ['M', 'L', 'XL', 'XXL'],
   Western: ['XS', 'S', 'M', 'L'],
   Kidswear: ['2-4y', '4-6y', '6-8y', '8-10y'],
+  // Footwear — UK shoe sizes, not clothing sizes.
+  Sneakers: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'],
+  Running: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'],
+  Formal: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'],
+  Sandals: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11'],
+  "Women's": ['UK 3', 'UK 4', 'UK 5', 'UK 6', 'UK 7', 'UK 8'],
 };
 
 /** Reads the "Category"/"Sizes"/"Warranty" style fields the demo catalogue attaches
@@ -62,15 +68,22 @@ function fieldsToMap(item: DemoListing): Record<string, string> {
 function demoProductsFor(subId: string | undefined, seedName: string): RetailProduct[] {
   const catalog = resolveCatalog('retail', subId);
   const items = catalog?.items ?? [];
-  const isFashion = subId === 'fashion';
+  // Fashion + footwear are the two sub-verticals with real size/colour options in the
+  // reference's own product data — enrich only these so the demo shows the full
+  // selector UX where it's genuinely applicable (a bag of rice has no "size").
+  const hasVariants = subId === 'fashion' || subId === 'footwear';
+  // Footwear has exactly ONE verified on-topic stock photo (the sub's own cover —
+  // an actual pair of boots); cycling the generic retail pool for it would show MORE
+  // mismatched (clothing/electronics) photos, not fewer, so it stays cover-first. Every
+  // other sub cycles the pool first for grid variety, with the cover as a 2nd shot.
+  const preferCover = subId === 'footwear';
   return items.map((item, i) => {
     const { price, label } = parsePrice(item.price);
     const fields = fieldsToMap(item);
     const category = fields.Category;
-    // Cycle the curated retail photo pool for grid variety; the sub's own cover image
-    // (already wired as the hero banner) leads as the primary shot for every item —
-    // honest, since these are stock photos, not per-product vendor uploads (Step 3).
-    const gallery = [item.image ?? catalog?.coverImage ?? IMG.retail[i % IMG.retail.length], IMG.retail[(i + 1) % IMG.retail.length]];
+    const gallery = preferCover
+      ? [item.image ?? catalog?.coverImage ?? IMG.retail[i % IMG.retail.length], IMG.retail[(i + 1) % IMG.retail.length]]
+      : [item.image ?? IMG.retail[i % IMG.retail.length], catalog?.coverImage ?? IMG.retail[(i + 1) % IMG.retail.length]];
     return {
       id: `demo-${subId ?? 'retail'}-${i}`,
       isRealProduct: false,
@@ -81,8 +94,8 @@ function demoProductsFor(subId: string | undefined, seedName: string): RetailPro
       priceLabel: label,
       image: gallery[0],
       gallery,
-      colors: isFashion ? DEMO_COLOR_SETS[i % DEMO_COLOR_SETS.length] : undefined,
-      sizes: isFashion ? (category && DEMO_SIZE_SETS[category] ? DEMO_SIZE_SETS[category] : ['S', 'M', 'L', 'XL']) : undefined,
+      colors: hasVariants ? DEMO_COLOR_SETS[i % DEMO_COLOR_SETS.length] : undefined,
+      sizes: hasVariants ? (category && DEMO_SIZE_SETS[category] ? DEMO_SIZE_SETS[category] : ['S', 'M', 'L', 'XL']) : undefined,
       badge: item.tags?.[0],
       inStock: fields.Availability !== 'Out of Stock',
     };

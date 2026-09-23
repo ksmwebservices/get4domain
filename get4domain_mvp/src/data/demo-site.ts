@@ -411,6 +411,19 @@ const SUBCATEGORIES: Record<string, Subcategory[]> = {
         seoKeywords: ['jewellery showroom website', 'gold shop website india', 'jewellery shop website', 'diamond jewellery website'],
       },
     },
+    {
+      id: 'footwear', name: 'Footwear & Sportswear',
+      keywords: ['footwear', 'shoes', 'shoe shop', 'sneakers', 'sneaker store', 'sports shoes', 'athletic shoes', 'shoe store', 'running shoes', 'sportswear'],
+      content: {
+        tagline: 'Every Step, Sorted',
+        shortDesc: 'Footwear and sportswear store website with a size- and colour-aware product catalogue and online ordering.',
+        fullDesc: 'A website built for footwear and sportswear stores. Shoppers browse your range — sneakers, running shoes, formal shoes and sandals — pick a size and colour, and order online or reserve for an in-store fitting. Built for a store whose range and fit is the whole pitch.',
+        heroHeadline: 'Sneakers, Running Shoes & Everyday Fits',
+        heroSubline: 'Every size, every colourway — new drops every month',
+        highlight: 'All sizes in stock · Easy exchanges · Authentic brands · Try before you buy',
+        seoKeywords: ['shoe store website', 'sneaker store website india', 'footwear shop website', 'sportswear store website'],
+      },
+    },
   ],
   travel: [
     { id: 'general', name: 'Travel Agency' },
