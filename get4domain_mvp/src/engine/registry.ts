@@ -3,12 +3,14 @@ import type { EngineMode, EngineSiteData, IndustryWebsite } from './types';
 import type { KitSiteModel } from './kit/model';
 import { realEstateWebsite } from './industries/real-estate/config';
 import RealEstateSite from './industries/real-estate/RealEstateSite';
+import { retailWebsite } from './industries/retail/config';
+import RetailSite from './industries/retail/RetailSite';
 import KitRenderer from './kit/KitRenderer';
 import { resolveTemplate, type WebsiteTemplate } from './kit/template';
 import { kitConfig } from './kit/config';
 import { buildClinic, buildSalon, buildGym, buildCoaching, buildEducation, buildProfessional, buildFinance, buildDiagnostics, buildPhotography } from './industries/kit/appointments';
 import { buildHotel, buildEvents, buildTravel } from './industries/kit/hospitality';
-import { buildRestaurant, buildRetail, buildAgriculture, buildAutomobile } from './industries/kit/commerce';
+import { buildRestaurant, buildAgriculture, buildAutomobile } from './industries/kit/commerce';
 import { buildConstruction, buildTechnology, buildLogistics } from './industries/kit/projects';
 
 /**
@@ -71,6 +73,8 @@ export function renderKitTemplate(template: WebsiteTemplate, site: EngineSiteDat
 const REGISTRY: Record<string, EngineIndustryEntry> = {
   // Reference industry — fully bespoke, hand-built.
   realestate: { config: realEstateWebsite, render: (site, mode) => createElement(RealEstateSite, { site, mode }) },
+  // Bespoke — real product grid, PDP, cart + Razorpay checkout (not the generic kit).
+  retail: { config: retailWebsite, render: (site, mode) => createElement(RetailSite, { site, mode }) },
 
   // Appointment / practitioner
   clinic: kit(kitConfig('clinic', 'Clinic & Healthcare', { intent: 'engine.enquiry', label: 'Book appointment', kind: 'booking' }), buildClinic),
@@ -90,7 +94,6 @@ const REGISTRY: Record<string, EngineIndustryEntry> = {
 
   // Commerce / catalogue
   restaurant: kit(kitConfig('restaurant', 'Restaurant & Cafe', { intent: 'engine.enquiry', label: 'Reserve a table', kind: 'booking' }), buildRestaurant),
-  retail: kit(kitConfig('retail', 'Retail & Shopping', { intent: 'engine.enquiry', label: 'Enquire / Order', kind: 'enquiry' }), buildRetail),
   agriculture: kit(kitConfig('agriculture', 'Agriculture', { intent: 'engine.enquiry', label: 'Enquire / Order', kind: 'enquiry' }), buildAgriculture),
   automobile: kit(kitConfig('automobile', 'Automobile Services', { intent: 'engine.enquiry', label: 'Book a service', kind: 'booking' }), buildAutomobile),
 

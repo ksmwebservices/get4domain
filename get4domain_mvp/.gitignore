@@ -26,3 +26,8 @@ dist-ssr
 # Environment - NEVER commit these
 .env.local
 .env.production
+
+# Reference/upload material to port FROM — a standalone app with its own deps/tsconfig,
+# never meant to build inside this repo (excluded from tsconfig.json too).
+/reference/
+tsconfig.tsbuildinfo

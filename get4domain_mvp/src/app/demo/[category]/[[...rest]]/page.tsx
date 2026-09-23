@@ -126,7 +126,7 @@ export default async function DemoPage({ params }: { params: Promise<Params> }) 
     // in-demo assistant — the same framing the non-engine demo pages carry below.
     return (
       <>
-        {engineIndustry.render(demoSite, { kind: 'demo', category })}
+        {engineIndustry.render(demoSite, { kind: 'demo', category, subId: parsed.subId })}
         <ChatBot />
         <TourNav />
       </>

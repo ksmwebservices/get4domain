@@ -48,45 +48,6 @@ export function buildRestaurant(site: EngineSiteData): KitSiteModel {
   };
 }
 
-/* ── RETAIL — SmartMart Supermarket (§20 grocery default; subs vary via content) ── */
-export function buildRetail(site: EngineSiteData): KitSiteModel {
-  const b = brandFrom(site, { name: 'SmartMart Supermarket', tagline: 'Everything You Need. Shop Online.', about: 'A modern store with a curated range, honest prices and quick delivery — shop in-store or online, your way.' });
-  const products = itemsFrom(site, [
-    { title: 'Fresh & Grocery', subtitle: 'Daily', desc: 'Fruit, veg and everyday staples.', image: IMG.retail[0] },
-    { title: 'Household', subtitle: 'Best sellers', desc: 'Cleaning, kitchen and home care.', image: IMG.retail[1] },
-    { title: 'Personal Care', desc: 'Beauty, health and wellness.', image: IMG.retail[2] },
-    { title: 'Offers', subtitle: 'Up to 40% off', desc: 'This week\'s biggest savings.', image: IMG.retail[3] },
-  ]);
-  return {
-    brand: b, theme: THEMES.retail, choices: ['Groceries', 'Household', 'Personal care', 'Bulk order'], choiceLabel: 'Interested in',
-    nav: nav(['#shop', 'Products'], ['#offers', 'Offers'], ['#why', 'Why us'], ['#visit', 'Visit']),
-    bottomNav: [bn('Home', 'home', '#top'), bn('Products', 'products', '#shop'), bn('Cart', 'cart', '#enquiry', true), bn('Offers', 'offers', '#offers'), bn('More', 'more', '#why')],
-    primaryCta: { intent: 'engine.enquiry', label: 'Shop Now', kind: 'enquiry' },
-    sections: [
-      { type: 'hero', variant: 'panel', eyebrow: 'Shop in-store or online', headline: b.tagline, subline: b.about, image: IMG.retail[0],
-        ctaPrimary: { label: 'Shop Now', href: '#shop' }, ctaSecondary: { label: 'WhatsApp Us', href: '#enquiry' } },
-      { type: 'showcase', id: 'shop', variant: 'cards', eyebrow: 'Shop', title: 'Browse the store', items: products },
-      { type: 'featureIndex', id: 'offers', eyebrow: 'This week', title: 'Deals worth grabbing', items: [
-        { label: 'Free delivery', blurb: 'On orders above ₹499.' }, { label: 'Bank offers', blurb: '10% off on select cards.' },
-        { label: 'Combo packs', blurb: 'Bundle and save more.' }, { label: 'Loyalty points', blurb: 'Earn on every purchase.' },
-      ] },
-      { type: 'iconGrid', id: 'why', eyebrow: 'Why shop with us', title: 'Made for easy shopping', items: [
-        { label: 'Genuine products', icon: 'ShieldCheck' }, { label: 'Fast delivery', icon: 'Truck' }, { label: 'Easy returns', icon: 'Package' },
-        { label: 'Secure payments', icon: 'Percent' }, { label: 'In-store pickup', icon: 'Home' }, { label: 'Friendly support', icon: 'Phone' },
-      ] },
-      { type: 'testimonials', id: 'reviews', eyebrow: 'Shoppers', title: 'What shoppers say', items: [
-        { quote: 'Ordered in the morning, delivered by evening. Genuine products too.', author: 'Anita' },
-        { quote: 'The offers are unreal. Grabbed three things at a big discount.', author: 'Vivek' },
-        { quote: 'Loyalty points actually add up. Been a regular for a year.', author: 'Sana' },
-      ] },
-      { type: 'rows', id: 'visit', eyebrow: 'Visit', title: 'Find the store', note: 'Open all week; delivery across the city.', items: [
-        { label: 'Store hours', value: '10 – 9pm' }, { label: 'Delivery', value: 'Same day' }, { label: 'Returns', value: '7 days' }, { label: 'Parking', value: 'Available' },
-      ] },
-      { type: 'enquiry', id: 'enquiry', eyebrow: 'Order', title: 'Order or enquire', sub: 'Tell us what you\'re after — we\'ll confirm stock, price and delivery.', points: ['Genuine products', 'Same-day delivery', 'Easy returns'], tabs: [orderTab('Place an order', 'Send order'), enquire('Check a product')] },
-    ],
-  };
-}
-
 /* ── AGRICULTURE — GreenHarvest Farms (§26 style) ── */
 export function buildAgriculture(site: EngineSiteData): KitSiteModel {
   const b = brandFrom(site, { name: 'GreenHarvest Farms', tagline: 'From Our Fields to Your Table.', about: 'Farm-fresh produce and dependable agri-supply — grown responsibly, priced fairly and delivered in bulk or by the basket.' });

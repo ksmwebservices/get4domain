@@ -40,7 +40,7 @@ export interface ThemeTokens {
  */
 export type EngineMode =
   | { kind: 'live'; subdomain: string }
-  | { kind: 'demo'; category: string }
+  | { kind: 'demo'; category: string; subId?: string }
   | { kind: 'preview' };
 
 /** Raw site data as resolved from the backend (mirrors GET /cms/site/:subdomain). */
