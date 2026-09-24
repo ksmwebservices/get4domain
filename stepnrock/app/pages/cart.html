@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cart — Step N Rock</title>
+  <meta name="description" content="Your shopping cart at Step N Rock." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#0e0f13" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Step N Rock" />
+  <meta name="mobile-web-app-capable" content="yes" />
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header">
+  <div class="container nav">
+    <a href="index.html" class="brand">
+      <span class="brand__mark">S<span>R</span></span>
+      Step N Rock
+    </a>
+    <nav class="nav__links" id="navLinks" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="shop.html">Shop</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="nav__right">
+      <a href="cart.html" class="cart-link" aria-label="Cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-badge">0</span>
+      </a>
+      <button class="nav__toggle" aria-label="Menu" aria-controls="navLinks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ PAGE HERO ============ -->
+  <section class="page-hero" style="padding:48px 0 40px">
+    <div class="container page-hero__inner">
+      <div class="breadcrumb"><a href="index.html">Home</a> / Cart</div>
+      <h1>Your cart</h1>
+      <p>Review your items and proceed to checkout when you're ready.</p>
+    </div>
+  </section>
+
+  <!-- ============ CART ============ -->
+  <section class="section" style="padding-top:40px">
+    <div class="container">
+      <!-- Populated cart -->
+      <div id="cartPopulated" class="cart-layout">
+        <div class="cart-items" id="cartItems"></div>
+
+        <aside class="cart-summary">
+          <h3>Order summary</h3>
+          <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">₹0</span></div>
+          <div class="summary-row"><span>Shipping</span><span class="muted">Free</span></div>
+          <div class="summary-row"><span>Estimated tax</span><span class="muted">Calculated at checkout</span></div>
+          <div class="summary-row total"><span>Total</span><span id="sumTotal">₹0</span></div>
+          <button class="btn btn--primary btn--block btn--lg" id="checkoutBtn" style="margin-top:18px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Proceed to checkout
+          </button>
+          <div class="summary-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Secure payment via Razorpay
+          </div>
+          <div class="pay-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M12 4v16M7 9h2M7 13h2"/></svg>
+            UPI · Cards · Net banking · Wallets
+          </div>
+          <a href="shop.html" class="btn btn--ghost btn--block" style="margin-top:14px">Continue shopping</a>
+        </aside>
+      </div>
+
+      <!-- Empty cart -->
+      <div id="cartEmpty" class="empty-state hidden">
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <h2>Your cart is empty</h2>
+        <p>Looks like you haven't added anything yet. Explore the collection and find your next favourite pair.</p>
+        <a href="shop.html" class="btn btn--primary btn--lg">Start shopping</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="index.html" class="brand">
+          <span class="brand__mark">S<span>R</span></span>
+          Step N Rock
+        </a>
+        <p>Footwear & apparel for the city that never stops. First Floor, Rahaat Plaza, Vadapalani, Chennai.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+          <a href="#" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>
+          <a href="#" aria-label="Twitter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Shop</h4>
+        <a href="shop.html">All products</a>
+        <a href="shop.html">Sneakers</a>
+        <a href="shop.html">Formal Shoes</a>
+        <a href="shop.html">Sandals</a>
+        <a href="shop.html">Apparel</a>
+      </div>
+      <div class="footer-col">
+        <h4>Store</h4>
+        <a href="about.html">Our story</a>
+        <a href="contact.html">Contact</a>
+        <a href="cart.html">Your cart</a>
+        <a href="contact.html">Exchange policy</a>
+      </div>
+      <div class="footer-col">
+        <h4>Visit us</h4>
+        <a href="contact.html">Rahaat Plaza, 1st Floor</a>
+        <a href="contact.html">Vadapalani, Chennai</a>
+        <a href="tel:+919360011107">+91 93600 11107</a>
+        <a href="contact.html">Open 10:30 AM – 9 PM</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Step N Rock. Vadapalani, Chennai.</span>
+      <span>Footwear · Apparel · Accessories</span>
+    </div>
+  </div>
+</footer>
+
+<!-- PWA: Pull-to-refresh hint -->
+<div class="ptr-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refreshing…</div>
+
+<!-- PWA: Install banner -->
+<div class="install-banner">
+  <div class="install-banner__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></div>
+  <div class="install-banner__text"><strong>Add to Home Screen</strong><span>Shop faster — install the Step N Rock app</span></div>
+  <div class="install-banner__actions">
+    <button class="install-banner__btn install-banner__btn--no">Later</button>
+    <button class="install-banner__btn install-banner__btn--yes">Install</button>
+  </div>
+</div>
+
+<!-- PWA: Bottom tab bar -->
+<nav class="tabbar" aria-label="Bottom navigation">
+  <a href="index.html" class="tabbar__item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a>
+  <a href="shop.html" class="tabbar__item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Shop</a>
+  <a href="about.html" class="tabbar__item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>About</a>
+  <a href="contact.html" class="tabbar__item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Contact</a>
+  <a href="cart.html" class="tabbar__item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="tabbar__badge">0</span>Cart</a>
+</nav>
+
+<script src="cart.js"></script>
+<script>
+/* ============================================================
+   Cart page rendering + Razorpay checkout redirect
+   ============================================================ */
+
+/* ---- CONFIG: Razorpay ----
+   Replace KEY_ID with your live/test Razorpay key.
+   For a pure redirect flow (no backend), Razorpay's hosted
+   checkout can be opened via the checkout.js script. The
+   handler below opens the Razorpay modal; on success it
+   shows a confirmation. For a server-verified flow, point
+   `order_id` to an order created from your backend. */
+var RAZORPAY_KEY = "rzp_test_XXXXXXXXXXXX"; /* <-- your key */
+
+var itemsEl = document.getElementById("cartItems");
+var populatedEl = document.getElementById("cartPopulated");
+var emptyEl = document.getElementById("cartEmpty");
+var subEl = document.getElementById("sumSubtotal");
+var totalEl = document.getElementById("sumTotal");
+var checkoutBtn = document.getElementById("checkoutBtn");
+
+function inr(n) { return "₹" + n.toLocaleString("en-IN"); }
+
+function render() {
+  var items = SNRCart.get();
+  if (!items.length) {
+    populatedEl.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+  populatedEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+
+  itemsEl.innerHTML = items.map(function (it) {
+    return '<div class="cart-item" data-id="' + it.id + '">' +
+      '<div class="cart-item__img"><img src="' + it.image + '" alt="' + it.name + '" /></div>' +
+      '<div class="cart-item__info">' +
+        '<div class="cart-item__cat">' + it.category + "</div>" +
+        '<div class="cart-item__name">' + it.name + "</div>" +
+        '<div class="cart-item__price">' + inr(it.price) + "</div>" +
+        '<div class="cart-item__controls">' +
+          '<div class="qty">' +
+            '<button class="qty-minus" data-id="' + it.id + '" ' + (it.qty <= 1 ? "disabled" : "") + '>−</button>' +
+            '<span class="val">' + it.qty + "</span>" +
+            '<button class="qty-plus" data-id="' + it.id + '">+</button>' +
+          "</div>" +
+          '<button class="cart-item__remove" data-id="' + it.id + '">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+            "Remove</button>" +
+          "</div>" +
+        "</div>" +
+      '<div class="cart-item__right">' +
+        '<div class="cart-item__line-total">' + inr(it.price * it.qty) + "</div>" +
+      "</div>" +
+    "</div>";
+  }).join("");
+
+  var sub = SNRCart.subtotal();
+  subEl.textContent = inr(sub);
+  totalEl.textContent = inr(sub);
+}
+
+/* ---- qty + remove handlers ---- */
+itemsEl.addEventListener("click", function (e) {
+  var minus = e.target.closest(".qty-minus");
+  var plus = e.target.closest(".qty-plus");
+  var rm = e.target.closest(".cart-item__remove");
+  if (minus) {
+    var id = minus.dataset.id;
+    var it = SNRCart.get().find(function (i) { return i.id === id; });
+    if (it) SNRCart.setQty(id, it.qty - 1);
+    render();
+  } else if (plus) {
+    var id2 = plus.dataset.id;
+    var it2 = SNRCart.get().find(function (i) { return i.id === id2; });
+    if (it2) SNRCart.setQty(id2, it2.qty + 1);
+    render();
+  } else if (rm) {
+    SNRCart.remove(rm.dataset.id);
+    render();
+    SNRCart.toast("Item removed");
+  }
+});
+
+/* ---- Razorpay checkout ---- */
+checkoutBtn.addEventListener("click", function () {
+  var items = SNRCart.get();
+  if (!items.length) return;
+  var amount = SNRCart.subtotal() * 100; /* paise */
+
+  /* If the Razorpay checkout script isn't loaded (e.g. key not set),
+     fall back to a redirect to Razorpay's payment page. */
+  if (typeof Razorpay === "undefined" || RAZORPAY_KEY.indexOf("XXXX") !== -1) {
+    alert("Razorpay is not configured yet.\n\nTo enable payments:\n1. Sign up at razorpay.com\n2. Replace RAZORPAY_KEY in cart.html with your key\n3. Load the checkout.js script (already included below)\n\nYour cart total is " + inr(SNRCart.subtotal()) + ".");
+    return;
+  }
+
+  var options = {
+    key: RAZORPAY_KEY,
+    amount: amount,
+    currency: "INR",
+    name: "Step N Rock",
+    description: "Order of " + items.length + " item(s)",
+    image: "https://images.pexels.com/photos/27008322/pexels-photo-27008322.jpeg?auto=compress&cs=tinysrgb&w=200",
+    handler: function (response) {
+      /* On success — clear cart and show confirmation */
+      localStorage.setItem("snr_cart", JSON.stringify([]));
+      SNRCart.toast("Payment successful! Order " + response.razorpay_payment_id);
+      setTimeout(function () {
+        document.getElementById("cartPopulated").classList.add("hidden");
+        document.getElementById("cartEmpty").classList.remove("hidden");
+        var es = document.getElementById("cartEmpty");
+        es.querySelector("h2").textContent = "Order placed!";
+        es.querySelector("p").textContent = "Payment ID: " + response.razorpay_payment_id + ". We'll call you shortly to confirm pickup or delivery.";
+        es.querySelector("a").textContent = "Back to shop";
+      }, 800);
+    },
+    prefill: { contact: "", name: "" },
+    notes: { store: "Step N Rock, Vadapalani", items: items.length },
+    theme: { color: "#ff5722" }
+  };
+  var rzp = new Razorpay(options);
+  rzp.on("payment.failed", function (resp) {
+    alert("Payment failed. " + (resp.error && resp.error.description ? resp.error.description : "Please try again."));
+  });
+  rzp.open();
+});
+
+/* ---- init ---- */
+render();
+document.addEventListener("cart:changed", render);
+</script>
+<!-- Razorpay checkout script — loads the global `Razorpay` constructor.
+     Uncomment after setting your key above. -->
+<!-- <script src="https://checkout.razorpay.com/v1/checkout.js"></script> -->
+</body>
+</html>

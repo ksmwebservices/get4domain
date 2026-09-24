@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+    container_name: stepnrock
+    restart: unless-stopped
+    ports:
+      - "3015:3015"
+    environment:
+      - NODE_ENV=production
+      - PORT=3015
+      - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+    networks:
+      - stepnrock_net
+
+networks:
+  stepnrock_net:
+    driver: bridge
