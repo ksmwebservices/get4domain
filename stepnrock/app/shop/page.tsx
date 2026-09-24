@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useMemo } from 'react';
 import { ProductCard } from '@/components/product/ProductCard';
-import { categories, categoryMatchesSlug } from '@/lib/products';
-import { useProducts } from '@/lib/use-products';
+import { categoryMatchesSlug } from '@/lib/products';
+import { useProducts, useCategories } from '@/lib/use-products';
 import { SlidersHorizontal, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -24,6 +24,7 @@ export default function ShopPage() {
 
 function ShopPageContent() {
   const { products } = useProducts();
+  const { categories } = useCategories();
   const searchParams = useSearchParams();
   const initialFilter = searchParams.get('filter');
   const [selectedCats, setSelectedCats] = useState<string[]>([]);

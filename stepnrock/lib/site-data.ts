@@ -20,6 +20,32 @@ export interface LiveSiteData {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 export const STEPNROCK_SUBDOMAIN = 'stepnrock';
 
+/** A real vendor category row (GET /cms/vendor/:vendorId/categories) — the same
+ *  choke point `CmsService.findOrCreateCategory` writes through on every product
+ *  add/edit, so this list always reflects exactly what the vendor's products use. */
+export interface LiveCategory {
+  id: string;
+  name: string;
+  nameNormalized: string;
+}
+
+/** Fetches a vendor's real categories. Never throws — a network hiccup returns
+ *  null so callers can fall back to the static showcase category list, same
+ *  graceful-degradation convention as fetchSiteData(). */
+export async function fetchVendorCategories(vendorId: string): Promise<LiveCategory[] | null> {
+  try {
+    const res = await fetch(`${API_BASE}/cms/vendor/${vendorId}/categories`, {
+      next: typeof window === 'undefined' ? { revalidate: 60 } : undefined,
+      cache: typeof window === 'undefined' ? undefined : 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return (json?.data ?? json) as LiveCategory[];
+  } catch {
+    return null;
+  }
+}
+
 /** Fetches the real Step N Rock vendor/site record. Works from both a server
  *  component (revalidated periodically) and the browser (no-store). Never throws —
  *  a network/vendor-not-yet-created hiccup returns null so callers fall back
