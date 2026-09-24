@@ -63,8 +63,13 @@ const FIELDS: Record<string, ListingField[]> = {
     { key: 'duration', label: 'Duration', placeholder: 'e.g. 4 hrs' },
     { key: 'warranty', label: 'Warranty', placeholder: 'e.g. 1,000 km' },
   ],
+  // Bug fix (dispatch 24-Sep-2026): this used to also list a 'category' key here,
+  // producing a SECOND, unreconciled free-text "Category" input in the same Add/Edit
+  // Product modal — the my-products page already has its own top-level `category`
+  // field bound to VendorProduct.category (now the real, backend-deduped taxonomy;
+  // see CmsService.findOrCreateCategory). Only Availability belongs in this
+  // "rich per-category extra fields" list.
   retail: [
-    { key: 'category', label: 'Category', placeholder: 'e.g. Apparel' },
     { key: 'stock', label: 'Availability', type: 'select', options: ['In Stock', 'Made to Order', 'Out of Stock'] },
   ],
   photography: [

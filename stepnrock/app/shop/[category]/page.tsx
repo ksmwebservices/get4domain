@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { ProductCard } from '@/components/product/ProductCard';
 import { useProducts } from '@/lib/use-products';
+import { categoryMatchesSlug } from '@/lib/products';
 import { SlidersHorizontal, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -32,7 +33,7 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState('featured');
 
   const filtered = useMemo(() => {
-    let result = products.filter((p) => p.category === category);
+    let result = products.filter((p) => categoryMatchesSlug(p.category, category));
     switch (sortBy) {
       case 'price-asc': result = [...result].sort((a, b) => a.price - b.price); break;
       case 'price-desc': result = [...result].sort((a, b) => b.price - a.price); break;

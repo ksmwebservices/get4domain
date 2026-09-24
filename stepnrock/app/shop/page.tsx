@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useMemo } from 'react';
 import { ProductCard } from '@/components/product/ProductCard';
-import { categories } from '@/lib/products';
+import { categories, categoryMatchesSlug } from '@/lib/products';
 import { useProducts } from '@/lib/use-products';
 import { SlidersHorizontal, X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ function ShopPageContent() {
     let result = products;
 
     if (selectedCats.length > 0) {
-      result = result.filter((p) => selectedCats.includes(p.category));
+      result = result.filter((p) => selectedCats.some((slug) => categoryMatchesSlug(p.category, slug)));
     }
     result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
     if (showNewOnly) result = result.filter((p) => p.isNew);

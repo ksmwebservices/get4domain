@@ -12,7 +12,7 @@ export interface LiveSiteData {
   } | null;
   products: {
     id: string; name: string; description: string | null; price: string | null;
-    image: string | null; category: string | null; customFields: Record<string, string> | null;
+    image: string | null; category: string | null; customFields: Record<string, unknown> | null;
   }[];
   paymentsEnabled?: boolean;
 }
@@ -46,34 +46,47 @@ function parsePrice(raw: string | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Adapts a real vendor CatalogItem (flat: id/name/description/price/image/category/
- *  customFields, no variants, single image — today's Website Manager upload is
- *  single-image-per-product) into the uploaded design's own `Product` shape, so every
- *  existing component (ProductCard, PDP, shop filters) keeps working completely
- *  untouched. Missing fields get the SAME kind of safe single-option defaults used
- *  elsewhere in this codebase (never an empty colors/sizes array — components index
- *  colors[0]/sizes[...] directly with no guard). */
+/** Adapts a real vendor product (flat columns: id/name/description/price/image/
+ *  category, plus a free-form `customFields` JSON bag) into the uploaded design's own
+ *  `Product` shape, so every existing component (ProductCard, PDP, shop filters) keeps
+ *  working completely untouched.
+ *
+ *  Two tiers of fidelity, both safe:
+ *   - Step N Rock's own seeded catalogue (24-Sep-2026) stores the FULL original
+ *     showcase richness in customFields (gallery/colors/sizes/rating/reviews/
+ *     features/originalPrice/isNew/isBestSeller/stockQty) — read back here so the
+ *     site renders with zero visual regression versus the old hardcoded fallback.
+ *   - Any OTHER real vendor product (today's Website Manager upload is genuinely
+ *     single-image, no variants) falls back to the same safe single-option defaults
+ *     as before: components index colors[0]/sizes[...] directly with no guard, so
+ *     these must never be empty arrays. */
 export function adaptLiveProduct(p: LiveSiteData['products'][number]): Product {
+  const cf = p.customFields ?? {};
   const image = p.image || 'https://images.pexels.com/photos/1461048/pexels-photo-1461048.jpeg?auto=compress&cs=tinysrgb&h=650&w=940';
-  const stockField = p.customFields?.stock;
+  const asStringArray = (v: unknown): string[] | undefined => (Array.isArray(v) && v.length && v.every((x) => typeof x === 'string') ? (v as string[]) : undefined);
+  const asColors = (v: unknown): { name: string; hex: string }[] | undefined =>
+    Array.isArray(v) && v.length && v.every((x) => x && typeof x === 'object' && 'name' in x && 'hex' in x) ? (v as { name: string; hex: string }[]) : undefined;
+  const gallery = asStringArray(cf.gallery);
+  const stockQty = typeof cf.stockQty === 'number' ? cf.stockQty : undefined;
   return {
     id: p.id,
     slug: p.id,
     name: p.name,
-    brand: 'Step N Rock',
-    category: p.category || 'apparel',
+    brand: typeof cf.brand === 'string' ? cf.brand : 'Step N Rock',
+    category: p.category || 'Apparel',
     price: parsePrice(p.price),
+    originalPrice: typeof cf.originalPrice === 'number' ? cf.originalPrice : undefined,
     image,
-    gallery: [image],
-    colors: [{ name: 'Default', hex: '#1a1a1a' }],
-    sizes: ['Standard'],
-    rating: 0,
-    reviews: 0,
+    gallery: gallery && gallery.length ? gallery : [image],
+    colors: asColors(cf.colors) ?? [{ name: 'Default', hex: '#1a1a1a' }],
+    sizes: asStringArray(cf.sizes) ?? ['Standard'],
+    rating: typeof cf.rating === 'number' ? cf.rating : 0,
+    reviews: typeof cf.reviews === 'number' ? cf.reviews : 0,
     description: p.description || '',
-    features: [],
-    isNew: p.customFields?.tags?.toLowerCase().includes('new') ?? false,
-    isBestSeller: p.customFields?.tags?.toLowerCase().includes('bestseller') ?? false,
-    stock: stockField === 'Out of Stock' ? 0 : 10,
+    features: asStringArray(cf.features) ?? [],
+    isNew: cf.isNew === true,
+    isBestSeller: cf.isBestSeller === true,
+    stock: stockQty ?? (cf.stock === 'Out of Stock' ? 0 : 10),
   };
 }
 

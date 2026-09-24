@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, VendorCMS, VendorProduct } from '@prisma/client';
+import { Category, Prisma, VendorCMS, VendorProduct } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePlatformCmsDto } from './dto/update-platform-cms.dto';
 import { UpdateVendorCmsDto } from './dto/update-vendor-cms.dto';
@@ -95,10 +95,49 @@ export class CmsService {
     return this.prisma.vendorProduct.findMany({ where: { vendorId }, orderBy: { createdAt: 'desc' } });
   }
 
-  addProduct(vendorId: string, dto: CreateProductDto): Promise<VendorProduct> {
-    const { customFields, ...rest } = dto;
+  /** A vendor's own category list (e.g. for a future picker/autocomplete in the
+   *  product form — today's `my-products` still free-types a name, which is exactly
+   *  what this resolves against so a repeat name reuses the same row). */
+  getVendorCategories(vendorId: string): Promise<Category[]> {
+    return this.prisma.category.findMany({ where: { vendorId }, orderBy: { name: 'asc' } });
+  }
+
+  /**
+   * The ONE place a Category row is ever created (dispatch 24-Sep-2026). Case-
+   * insensitive find-or-create, scoped per vendor: typing "Sneakers" and later
+   * "sneakers" resolves to the SAME row — the second attempt reuses the FIRST one's
+   * canonical casing rather than creating a silently-disconnected duplicate. The
+   * category's industry is always the vendor's own (read server-side, never trusted
+   * from the client). Returns null for an empty/whitespace name (no category set).
+   */
+  private async findOrCreateCategory(vendorId: string, name: string | undefined | null): Promise<Category | null> {
+    const trimmed = name?.trim();
+    if (!trimmed) return null;
+    const nameNormalized = trimmed.toLowerCase();
+    const existing = await this.prisma.category.findUnique({
+      where: { vendorId_nameNormalized: { vendorId, nameNormalized } },
+    });
+    if (existing) return existing;
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } });
+    return this.prisma.category.create({
+      data: { vendorId, industry: vendor?.industry ?? 'general', name: trimmed, nameNormalized },
+    });
+  }
+
+  async addProduct(vendorId: string, dto: CreateProductDto): Promise<VendorProduct> {
+    const { customFields, category, ...rest } = dto;
+    const categoryRow = await this.findOrCreateCategory(vendorId, category);
     return this.prisma.vendorProduct.create({
-      data: { vendorId, ...rest, ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}) },
+      data: {
+        vendorId,
+        ...rest,
+        // Store the CANONICAL name (categoryRow's, not necessarily what was typed —
+        // e.g. reusing "Sneakers" for a second "sneakers" entry) so the free-text
+        // column and the real relation never drift apart.
+        category: categoryRow?.name ?? category,
+        categoryId: categoryRow?.id,
+        ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}),
+      },
     });
   }
 
@@ -107,10 +146,16 @@ export class CmsService {
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-    const { customFields, ...rest } = dto;
+    const { customFields, category, ...rest } = dto;
+    // Only re-resolve the category when the caller actually sent one — `category` is
+    // optional on UpdateProductDto (e.g. a `{ active: false }` hide-toggle call must
+    // not silently null out or re-touch the product's existing category).
+    const categoryPatch = category !== undefined
+      ? await this.findOrCreateCategory(product.vendorId, category).then((row) => ({ category: row?.name ?? category, categoryId: row?.id ?? null }))
+      : {};
     return this.prisma.vendorProduct.update({
       where: { id: productId },
-      data: { ...rest, ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}) },
+      data: { ...rest, ...categoryPatch, ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}) },
     });
   }
 

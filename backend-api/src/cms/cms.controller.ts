@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { VendorCMS, VendorProduct } from '@prisma/client';
+import { Category, VendorCMS, VendorProduct } from '@prisma/client';
 import { CmsService } from './cms.service';
 import { UpdatePlatformCmsDto } from './dto/update-platform-cms.dto';
 import { UpdateVendorCmsDto } from './dto/update-vendor-cms.dto';
@@ -69,6 +69,13 @@ export class CmsController {
   @ApiOperation({ summary: "List a vendor's products/services (public)" })
   getVendorProducts(@Param('vendorId') vendorId: string): Promise<VendorProduct[]> {
     return this.cmsService.getVendorProducts(vendorId);
+  }
+
+  @Public()
+  @Get('vendor/:vendorId/categories')
+  @ApiOperation({ summary: "List a vendor's real product categories (public) — the taxonomy addProduct/updateProduct resolve against, so a repeat name reuses the same row instead of creating a duplicate" })
+  getVendorCategories(@Param('vendorId') vendorId: string): Promise<Category[]> {
+    return this.cmsService.getVendorCategories(vendorId);
   }
 
   @ApiBearerAuth()

@@ -44,6 +44,7 @@ model Vendor {
   tickets       SupportTicket[]
   cms           VendorCMS?
   products      VendorProduct[]
+  categories    Category[]
 
   wallet        Wallet?
   walletTxns    WalletTransaction[]
@@ -209,21 +210,56 @@ model VendorCMS {
 }
 
 model VendorProduct {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   vendorId     String
-  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
   name         String
   description  String?
   price        String?
   image        String?
+  // `category` (free text) stays as the denormalized display name, kept in sync by
+  // CmsService.findOrCreateCategory — every existing reader of this string column
+  // (the public /cms/site/:subdomain response, every vendor site's own product
+  // rendering) keeps working unchanged. `categoryId` is the real relational link,
+  // added dispatch 24-Sep-2026 to fix a real gap: a same-named category typed twice
+  // used to create two disconnected free-text values with nothing tying them
+  // together. Nullable so pre-existing rows without a resolvable category don't break.
   category     String?
+  categoryId   String?
+  categoryRef  Category? @relation(fields: [categoryId], references: [id])
   // Rich per-category listing fields (area/config/type for real estate, course/diet
   // for restaurant, duration/department for healthcare, …). Shape driven by
   // listing-fields.ts on the frontend. Additive/nullable — no data migration needed.
   customFields Json?
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([categoryId])
+}
+
+/// A vendor's own product category — dispatch 24-Sep-2026, fixes a real gap:
+/// VendorProduct.category was (and remains, for backward compat) a bare free-text
+/// column with no dedicated taxonomy, so a vendor dashboard entering a same-named
+/// category twice silently created two disconnected values. Scoped per-vendor (not
+/// global) since different vendors' "Sneakers" are unrelated categories; uniqueness is
+/// case-insensitive via `nameNormalized` (Postgres @unique is case-sensitive) so
+/// "Sneakers" and "sneakers" resolve to the SAME row — see CmsService.
+/// findOrCreateCategory, the single place a category name ever gets created.
+model Category {
+  id             String          @id @default(cuid())
+  vendorId       String
+  vendor         Vendor          @relation(fields: [vendorId], references: [id])
+  industry       String
+  name           String
+  nameNormalized String
+  products       VendorProduct[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([vendorId, nameNormalized])
+  @@index([vendorId])
+  @@map("g4d_categories")
 }
 
 model PlatformCMS {

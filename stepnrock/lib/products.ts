@@ -32,6 +32,20 @@ export const categories = [
   { slug: 'apparel', name: 'Apparel', icon: 'Shirt' },
 ] as const;
 
+/** The showcase fallback data stores `category` as a lowercase slug ('sneakers');
+ *  real vendor products (Website Manager -> My Products, backed by the real
+ *  Category taxonomy added 24-Sep-2026) store the proper display name a vendor
+ *  actually typed ('Sneakers'). Category-filter UI (the /shop chips, /shop/[category])
+ *  only knows the slug from the URL/chip — this reconciles both without needing to
+ *  touch the fallback data or force real vendor categories into slug form (which
+ *  would look wrong in the dashboard). */
+export function categoryMatchesSlug(category: string, slug: string): boolean {
+  const c = category.toLowerCase();
+  if (c === slug.toLowerCase()) return true;
+  const displayName = categories.find((x) => x.slug === slug)?.name;
+  return displayName ? c === displayName.toLowerCase() : false;
+}
+
 export const products: Product[] = [
   {
     id: '1',
