@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Menu, X, Footprints } from 'lucide-react';
+import { ShoppingCart, Search, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useCart } from '@/lib/cart-context';
@@ -54,8 +54,8 @@ export function Header() {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72">
                   <div className="flex items-center gap-2 mb-6">
-                    <Footprints className="h-7 w-7 text-primary" />
-                    <span className="font-display text-xl font-bold tracking-tight">Step N Rock</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.jpeg" alt="Step N Rock" className="h-14 w-auto" />
                   </div>
                   <nav className="flex flex-col gap-1">
                     {navLinks.map((link) => (
@@ -76,10 +76,12 @@ export function Header() {
               </Sheet>
 
               <Link href="/" className="flex items-center gap-2 group">
-                <Footprints className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
-                <span className="font-display text-xl font-bold tracking-tight hidden sm:block">
-                  Step <span className="text-primary">N</span> Rock
-                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/logo.jpeg"
+                  alt="Step N Rock"
+                  className="h-14 w-auto transition-transform group-hover:scale-105"
+                />
               </Link>
             </div>
 
