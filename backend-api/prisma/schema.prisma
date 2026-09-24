@@ -2211,3 +2211,18 @@ model IndustryExperience {
 
   @@map("g4d_industry_experiences")
 }
+
+/// One SMS OTP per mobile number per IST calendar day (demo-gate cost control,
+/// dispatch 24-Sep-2026). One row per phone, upserted on every successful OTP
+/// verification (real code or same-day auto-pass) — `verifiedAt` is checked against
+/// "today in Asia/Kolkata" at request time, not stored as a separate day string, so
+/// there is one source of truth. Deliberately its own tiny table, not new columns on
+/// Lead: a Lead row doesn't exist yet at OTP-request time for a brand-new number, and
+/// this must stay fully decoupled from the existing category-visit cap on Lead.
+model OtpDailyVerification {
+  phone      String   @id // 10-digit, same normalization as OtpService.key()
+  verifiedAt DateTime
+  updatedAt  DateTime @updatedAt
+
+  @@map("g4d_otp_daily_verifications")
+}

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { SmsService } from '../sms/sms.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface OtpEntry {
   code: string;
@@ -12,28 +13,69 @@ const TTL_MS = 5 * 60 * 1000; // code valid 5 minutes
 const RESEND_COOLDOWN_MS = 30 * 1000; // min gap between sends to one number
 const MAX_ATTEMPTS = 5;
 
+/** 'YYYY-MM-DD' for a Date, in Asia/Kolkata (IST, UTC+5:30, no DST) — the calendar-day
+ *  key for "one OTP per number per day". No date library needed: Intl with the en-CA
+ *  locale formats as YYYY-MM-DD directly. */
+function istDateKey(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+}
+
 /**
  * Phone OTP via Fast2SMS (SmsService).
  *
- * Store is IN-MEMORY (Map) — fine for a single backend instance; codes are
- * short-lived. NOTE: does not survive a restart and is not shared across
- * instances. Swap for Redis / a g4d_ table when scaling horizontally.
+ * The CODE store is IN-MEMORY (Map) — fine for a single backend instance; codes are
+ * short-lived. NOTE: does not survive a restart and is not shared across instances.
+ * Swap for Redis / a g4d_ table when scaling horizontally.
+ *
+ * The "verified today" record (OtpDailyVerification), by contrast, IS DB-backed
+ * (dispatch 24-Sep-2026) — an in-memory-only day cap would reset on every deploy/
+ * restart and undermine the entire point (cutting Fast2SMS send cost, ~₹5/SMS).
  */
 @Injectable()
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
   private readonly store = new Map<string, OtpEntry>();
 
-  constructor(private readonly sms: SmsService) {}
+  constructor(
+    private readonly sms: SmsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   private key(phone: string): string {
     return phone.replace(/\D/g, '').slice(-10);
   }
 
-  /** Generate + send a 6-digit code. Returns whether it went out for real or mock. */
-  async request(phone: string): Promise<{ sent: boolean; mock: boolean; error?: string; expiresInSec: number; devCode?: string }> {
+  /** Has this number completed OTP verification already today (IST)? Checked fresh
+   *  against the DB every call — never trusted from anything the client sends. */
+  async wasVerifiedToday(phone: string): Promise<boolean> {
+    const key = this.key(phone);
+    const rec = await this.prisma.otpDailyVerification.findUnique({ where: { phone: key } });
+    return !!rec && istDateKey(rec.verifiedAt) === istDateKey(new Date());
+  }
+
+  private async markVerifiedToday(phone: string): Promise<void> {
+    const key = this.key(phone);
+    await this.prisma.otpDailyVerification.upsert({
+      where: { phone: key },
+      create: { phone: key, verifiedAt: new Date() },
+      update: { verifiedAt: new Date() },
+    });
+  }
+
+  /**
+   * Generate + send a 6-digit code — UNLESS this number already verified earlier
+   * today, in which case no SMS goes out at all (`skipOtp: true`); the caller
+   * (/leads/demo) accepts this same number without a code, re-checking
+   * `wasVerifiedToday` itself server-side rather than trusting this response.
+   */
+  async request(phone: string): Promise<{ sent: boolean; mock: boolean; error?: string; expiresInSec: number; devCode?: string; skipOtp?: boolean }> {
     const key = this.key(phone);
     if (key.length !== 10) throw new BadRequestException('A valid 10-digit mobile number is required');
+
+    if (await this.wasVerifiedToday(key)) {
+      this.logger.log(`[SKIP] ${key} already verified today (IST) — no OTP sent`);
+      return { sent: false, mock: false, expiresInSec: 0, skipOtp: true };
+    }
 
     const existing = this.store.get(key);
     const now = Date.now();
@@ -54,8 +96,8 @@ export class OtpService {
     return { sent: res.status === 'sent', mock: res.mock, error: res.error, expiresInSec: Math.floor(TTL_MS / 1000), devCode };
   }
 
-  /** Verify a code. Consumes it on success. */
-  verify(phone: string, code: string): boolean {
+  /** Verify a code. Consumes it on success and stamps the number as verified-today. */
+  async verify(phone: string, code: string): Promise<boolean> {
     const key = this.key(phone);
     const entry = this.store.get(key);
     if (!entry) return false;
@@ -72,6 +114,7 @@ export class OtpService {
       return false;
     }
     this.store.delete(key);
+    await this.markVerifiedToday(key);
     return true;
   }
 }

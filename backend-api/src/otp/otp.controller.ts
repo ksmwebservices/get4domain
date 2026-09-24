@@ -19,7 +19,7 @@ export class OtpController {
   @Public()
   @Post('verify')
   @ApiOperation({ summary: 'Verify a one-time password' })
-  verify(@Body() dto: VerifyOtpDto): { verified: boolean } {
-    return { verified: this.otp.verify(dto.phone, dto.code) };
+  async verify(@Body() dto: VerifyOtpDto): Promise<{ verified: boolean }> {
+    return { verified: await this.otp.verify(dto.phone, dto.code) };
   }
 }

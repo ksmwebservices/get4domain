@@ -485,7 +485,10 @@ export const api = {
   // Book-Demo Phase 1 — OTP request + verify (creates a "verified" demo lead)
   requestOtp: (phone: string) =>
     apiCall('/otp/request', { method: 'POST', body: JSON.stringify({ phone }) }),
-  verifyDemoLead: (data: { name: string; phone: string; industry: string; code: string }) =>
+  // `code` omitted when the backend already reported this number verified earlier
+  // today (OTP cost control, dispatch 24-Sep-2026) — the server re-checks that
+  // same-day status itself; JSON.stringify drops an `undefined` key entirely.
+  verifyDemoLead: (data: { name: string; phone: string; industry: string; code?: string }) =>
     apiCall('/leads/demo', { method: 'POST', body: JSON.stringify(data) }),
   // Book-Demo Phase 2 — industry demo website + enquiry (Fast2SMS WhatsApp)
   getDemoSite: (industry: string) => apiCall(`/demo/site/${encodeURIComponent(industry)}`),

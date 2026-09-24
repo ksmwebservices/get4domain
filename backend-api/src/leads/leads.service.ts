@@ -34,10 +34,20 @@ export class LeadsService {
    * Book-Demo Phase 1: verify the mobile OTP, then create or update a "demo"
    * lead as VERIFIED. This is the retention safety net — admin can follow up with
    * anyone who verifies but doesn't finish the funnel (TeleCRM works g4d_leads).
+   *
+   * `code` is OPTIONAL (dispatch 24-Sep-2026, SMS cost control): when omitted, this
+   * number must already have a same-day-verified record — checked HERE, server-side,
+   * against the DB every call. The client cannot skip verification by simply not
+   * sending a code; `wasVerifiedToday` only returns true for a number that a real
+   * `otp.verify()` success already stamped earlier today (IST).
    */
   async verifyDemoLead(dto: VerifyDemoLeadDto): Promise<{ lead: Lead; sandbox: SandboxSession | null }> {
-    if (!this.otp.verify(dto.phone, dto.code)) {
-      throw new BadRequestException('Invalid or expired verification code');
+    if (dto.code) {
+      if (!(await this.otp.verify(dto.phone, dto.code))) {
+        throw new BadRequestException('Invalid or expired verification code');
+      }
+    } else if (!(await this.otp.wasVerifiedToday(dto.phone))) {
+      throw new BadRequestException('Verification code required');
     }
     const digits = dto.phone.replace(/\D/g, '');
     const existing = await this.prisma.lead.findFirst({

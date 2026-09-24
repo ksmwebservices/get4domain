@@ -45,20 +45,30 @@ function VisitDemoInner() {
     setError(''); setLoading(true); setDevCode(null);
     try {
       const res = await api.requestOtp(normalizedPhone);
-      const dc = (res as { data?: { devCode?: string } })?.data?.devCode;
-      if (dc) setDevCode(dc);
+      const data = (res as { data?: { devCode?: string; skipOtp?: boolean } })?.data;
+      if (data?.skipOtp) {
+        // This number already completed OTP verification earlier today (IST) — no
+        // SMS was sent, and no code screen is needed. Complete verification silently.
+        await completeVerification(undefined);
+        return;
+      }
+      if (data?.devCode) setDevCode(data.devCode);
       setStep('otp');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not send the code — please try again.');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const verify = async () => {
+  const completeVerification = async (otpCode: string | undefined) => {
     setError(''); setLoading(true);
     try {
       // 1. OTP verify + CRM lead capture CLIENT-SIDE — same origin as the OTP request,
       //    so it reaches the same in-memory-OTP backend instance (regression fix).
-      const res0 = await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code });
+      //    `otpCode` is omitted on the same-day-auto-verified path (see sendOtp above);
+      //    the backend re-checks that same-day status itself before accepting it.
+      const res0 = await api.verifyDemoLead({ name, phone: normalizedPhone, industry: category, code: otpCode });
       const sandbox = (res0 as { data?: { sandbox?: Sandbox } })?.data?.sandbox ?? null;
       try {
         sessionStorage.setItem('g4d_demo_verified', '1');
@@ -99,6 +109,8 @@ function VisitDemoInner() {
       setLoading(false);
     }
   };
+
+  const verify = () => completeVerification(code);
 
   const inputCls = 'w-full rounded-xl border border-white/10 bg-slate-800/60 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-primary-400/60 focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 

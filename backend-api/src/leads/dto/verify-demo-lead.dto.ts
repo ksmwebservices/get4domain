@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsString, Length, Matches } from 'class-validator';
+import { IsOptional, IsString, Length, Matches } from 'class-validator';
 
 /** Strip +91 / 0 / spaces / dashes / brackets to a clean 10-digit Indian mobile. */
 const toTenDigits = ({ value }: { value: unknown }): unknown => {
@@ -25,8 +25,12 @@ export class VerifyDemoLeadDto {
   @IsString()
   industry!: string;
 
-  @ApiProperty({ example: '123456' })
+  @ApiProperty({
+    example: '123456', required: false,
+    description: 'Omit when this number already completed OTP verification earlier today (IST) — the server re-checks that same-day status itself rather than trusting the omission.',
+  })
+  @IsOptional()
   @IsString()
   @Length(4, 8)
-  code!: string;
+  code?: string;
 }
