@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, Plus, Trash2, LayoutTemplate, Upload, Image as ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, LayoutTemplate, Upload, Image as ImageIcon } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -9,7 +10,7 @@ import { openMyWebsite } from '@/lib/view-website';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 
-type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'services' | 'template';
+type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'template';
 
 interface VendorCms {
   businessName: string | null; tagline: string | null; about: string | null;
@@ -18,7 +19,6 @@ interface VendorCms {
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
-interface Product { id: string; name: string; description?: string; price?: string; category?: string }
 interface WebsiteTheme { id: string; name: string; description?: string | null; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean; price?: number | null; unlocked?: boolean }
 
 const EMPTY: VendorCms = {
@@ -34,13 +34,11 @@ export default function WebsiteManagerPage() {
   const cfg = useDashboardConfig(user?.industry);
   const [tab, setTab] = useState<Tab>('basic');
   const [cms, setCms] = useState<VendorCms>(EMPTY);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({});
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
   const [themes, setThemes] = useState<WebsiteTheme[]>([]);
   const [unlocking, setUnlocking] = useState<string | null>(null);
@@ -106,7 +104,6 @@ export default function WebsiteManagerPage() {
     api.getVendorCMS(user.id).then((res) => {
       if (res.data) setCms({ ...EMPTY, ...res.data, businessName: res.data.businessName ?? user.businessName ?? '' });
     }).catch(() => {}).finally(() => setLoading(false));
-    api.getVendorProducts(user.id).then((res) => setProducts(res.data ?? [])).catch(() => setProducts([]));
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -125,17 +122,6 @@ export default function WebsiteManagerPage() {
     } finally { setSaving(false); }
   };
 
-  const addProduct = async () => {
-    if (!user || !newProduct.name) return;
-    const res = await api.addProduct(user.id, newProduct);
-    setProducts((p) => [...p, res.data]);
-    setNewProduct({});
-  };
-  const deleteProduct = async (id: string) => {
-    await api.deleteProduct(id);
-    setProducts((p) => p.filter((x) => x.id !== id));
-  };
-
   const copyUrl = () => { navigator.clipboard.writeText(subdomainUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
@@ -144,7 +130,6 @@ export default function WebsiteManagerPage() {
     { key: 'basic', label: 'Basic Info' },
     { key: 'branding', label: 'Logo & Banner' },
     { key: 'about', label: 'About & Social' },
-    { key: 'services', label: cfg.industry?.entities.catalogItem.labelPlural ?? 'Services' },
     { key: 'seo', label: 'SEO' },
     { key: 'template', label: 'Template' },
   ];
@@ -165,6 +150,13 @@ export default function WebsiteManagerPage() {
       </div>
 
       {error && <div className="mb-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
+
+      <Link href="/dashboard/my-products" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-primary-100 bg-primary-50/60 px-4 py-3 text-sm hover:border-primary-200">
+        <span className="text-slate-600">
+          Manage your <span className="font-semibold text-slate-900">{cfg.industry?.entities.catalogItem.labelPlural ?? 'Products'}</span> — name, price, photos, gallery and variants — from <span className="font-semibold text-primary-700">My Products</span>.
+        </span>
+        <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 text-primary-500" />
+      </Link>
 
       <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
         {tabs.map((t) => (
@@ -246,26 +238,6 @@ export default function WebsiteManagerPage() {
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Meta Description</label><textarea rows={2} className={field} value={cms.seoDesc ?? ''} onChange={(e) => set('seoDesc', e.target.value)} /></div>
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Keywords (comma separated)</label><input className={field} value={cms.seoKeywords ?? ''} onChange={(e) => set('seoKeywords', e.target.value)} /></div>
             <div><label className="mb-1.5 block text-xs font-medium text-slate-600">Google Analytics ID</label><input className={field} placeholder="G-XXXXXXX" value={cms.googleAnalyticsId ?? ''} onChange={(e) => set('googleAnalyticsId', e.target.value)} /></div>
-          </div>
-        )}
-
-        {tab === 'services' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              {products.length === 0 ? <p className="text-sm text-slate-400">No items yet.</p> : products.map((p) => (
-                <div key={p.id} className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
-                  <div><div className="text-sm font-semibold text-slate-900">{p.name}</div>{p.price && <div className="text-xs text-slate-500">₹{p.price}</div>}</div>
-                  <button onClick={() => deleteProduct(p.id)} className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-error-600"><Trash2 className="h-4 w-4" /></button>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-xl bg-slate-50 p-3">
-              <div className="grid gap-2 sm:grid-cols-3">
-                <input className={field} placeholder="Name" value={newProduct.name ?? ''} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
-                <input className={field} placeholder="Price" value={newProduct.price ?? ''} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
-                <Button leftIcon={<Plus className="h-4 w-4" />} onClick={addProduct} disabled={!newProduct.name}>Add</Button>
-              </div>
-            </div>
           </div>
         )}
 

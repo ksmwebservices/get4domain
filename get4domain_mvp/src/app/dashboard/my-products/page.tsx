@@ -39,14 +39,23 @@ interface Product {
   image: string | null;
   category: string | null;
   active: boolean;
-  customFields?: Record<string, string> | null;
+  customFields?: Record<string, unknown> | null;
 }
 
 const emptyForm = { name: '', description: '', price: '', image: '', category: '' };
 
+// Multi-image gallery + size/color variants — same simple comma-separated-input
+// pattern as the existing Highlights/tags field. Stored in VendorProduct.customFields
+// (Json, already flexible — no backend/schema change needed), the same field the
+// stepnrock live site's adaptLiveProduct() already reads (gallery/colors/sizes).
+// Variants are retail-only: they're meaningful for apparel/footwear, not every
+// industry's listing (a course or a property doesn't have a "size").
+const VARIANT_INDUSTRIES = ['retail'];
+
 export default function MyProductsPage() {
   const { user } = useAuth();
   const labels = getProductLabel(user?.industry);
+  const showVariants = VARIANT_INDUSTRIES.includes(user?.industry ?? '');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,7 +64,11 @@ export default function MyProductsPage() {
   const [form, setForm] = useState(emptyForm);
   const [custom, setCustom] = useState<Record<string, string>>({});
   const [tags, setTags] = useState('');
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [sizes, setSizes] = useState('');
+  const [colors, setColors] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const listingFields = getListingFields(user?.industry);
@@ -70,6 +83,22 @@ export default function MyProductsPage() {
     } finally {
       setUploading(false);
     }
+  }
+
+  async function uploadGalleryImage(file: File) {
+    setUploadingGallery(true);
+    try {
+      const r = await api.uploadImage(file);
+      if (r.data?.url) setGallery((g) => [...g, r.data!.url]);
+    } catch {
+      /* optional */
+    } finally {
+      setUploadingGallery(false);
+    }
+  }
+
+  function removeGalleryImage(url: string) {
+    setGallery((g) => g.filter((u) => u !== url));
   }
 
   async function loadProducts() {
@@ -91,6 +120,9 @@ export default function MyProductsPage() {
     setForm(emptyForm);
     setCustom({});
     setTags('');
+    setGallery([]);
+    setSizes('');
+    setColors('');
     setModalOpen(true);
   }
 
@@ -99,8 +131,14 @@ export default function MyProductsPage() {
     setForm({ name: p.name, description: p.description ?? '', price: p.price ?? '', image: p.image ?? '', category: p.category ?? '' });
     const cf = { ...(p.customFields ?? {}) };
     setTags(typeof cf.tags === 'string' ? cf.tags : '');
+    setGallery(Array.isArray(cf.gallery) ? (cf.gallery as unknown as string[]) : []);
+    setSizes(Array.isArray(cf.sizes) ? (cf.sizes as unknown as string[]).join(', ') : '');
+    setColors(Array.isArray(cf.colors) ? (cf.colors as unknown as string[]).join(', ') : '');
     delete cf.tags;
-    setCustom(cf);
+    delete cf.gallery;
+    delete cf.sizes;
+    delete cf.colors;
+    setCustom(cf as Record<string, string>);
     setModalOpen(true);
   }
 
@@ -109,10 +147,14 @@ export default function MyProductsPage() {
     if (!user) return;
     setSaving(true);
     setError('');
-    // Only keep filled custom fields; attach tags (comma list) if present.
-    const customFields: Record<string, string> = {};
+    // Only keep filled custom fields; attach tags (comma list), gallery (image URL
+    // list) and size/color variants (comma list → array) if present.
+    const customFields: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(custom)) if (v?.trim()) customFields[k] = v.trim();
     if (tags.trim()) customFields.tags = tags.trim();
+    if (gallery.length > 0) customFields.gallery = gallery;
+    if (sizes.trim()) customFields.sizes = sizes.split(',').map((s) => s.trim()).filter(Boolean);
+    if (colors.trim()) customFields.colors = colors.split(',').map((c) => c.trim()).filter(Boolean);
     const payload = { ...form, customFields };
     try {
       if (editingId) {
@@ -240,13 +282,27 @@ export default function MyProductsPage() {
               ))}
             </div>
           )}
+          {showVariants && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">Sizes <span className="text-slate-400">(comma separated)</span></label>
+                <input value={sizes} onChange={(e) => setSizes(e.target.value)} placeholder="e.g. S, M, L, XL"
+                  className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">Colors <span className="text-slate-400">(comma separated)</span></label>
+                <input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="e.g. Black, Red, Navy Blue"
+                  className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+              </div>
+            </div>
+          )}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Highlights / tags <span className="text-slate-400">(comma separated)</span></label>
             <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="e.g. Ready to Move, Popular"
               className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Photo</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600">Photo <span className="text-slate-400">(main image)</span></label>
             <div className="flex items-center gap-3">
               {form.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -264,6 +320,25 @@ export default function MyProductsPage() {
                 <input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="…or paste an image URL"
                   className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-xs focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
               </div>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-600">Gallery <span className="text-slate-400">(extra photos)</span></label>
+            <div className="flex flex-wrap gap-2">
+              {gallery.map((url) => (
+                <div key={url} className="group relative h-16 w-16 flex-shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                  <button type="button" onClick={() => removeGalleryImage(url)} aria-label="Remove"
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-error-600 text-[10px] font-bold text-white opacity-0 shadow group-hover:opacity-100">
+                    ×
+                  </button>
+                </div>
+              ))}
+              <label className="flex h-16 w-16 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-300 text-slate-400 hover:border-primary-300 hover:text-primary-500">
+                {uploadingGallery ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadGalleryImage(f); }} />
+              </label>
             </div>
           </div>
           <Button type="submit" fullWidth loading={saving}>{editingId ? 'Save Changes' : `Add ${labels.singular}`}</Button>
