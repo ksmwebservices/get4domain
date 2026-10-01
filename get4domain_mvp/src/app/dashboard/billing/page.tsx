@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Shield, CheckCircle2, Clock, ArrowRight,
-  Loader2, Info
+  Loader2, Info, Palette
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
@@ -20,6 +20,24 @@ interface Invoice {
   dueDate: string | null;
   status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 }
+
+interface SubscriptionView {
+  id: string;
+  amount: number;
+  status: string;
+  endDate: string | null;
+  themeChangesUsed: number;
+  themeChangesLimit: number | null;
+  themeChangesResetAt: string | null;
+}
+
+// Mirrors backend-api/src/payments/plan-pricing.constants.ts tier amounts —
+// used only to label which tier the active subscription's amount matches.
+const TIER_LABEL = (amountPaise: number): string => {
+  if (amountPaise === 1198800) return 'Workspace';
+  if (amountPaise === 2398800) return 'BOS';
+  return 'DomainApp';
+};
 
 interface RazorpayCheckoutResponse {
   razorpay_order_id: string;
@@ -70,6 +88,7 @@ function loadRazorpayScript(): Promise<void> {
 export default function BillingPage() {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [subscription, setSubscription] = useState<SubscriptionView | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -78,8 +97,10 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (!user) return;
-    api.getVendorInvoices(user.id)
-      .then((res) => setInvoices(res.data ?? []))
+    Promise.all([
+      api.getVendorInvoices(user.id).then((res) => setInvoices(res.data ?? [])),
+      api.getMySubscription(user.id).then((res) => setSubscription(res.data ?? null)).catch(() => setSubscription(null)),
+    ])
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load invoices'))
       .finally(() => setLoading(false));
   }, [user]);
@@ -188,14 +209,39 @@ export default function BillingPage() {
 
       {activeInvoice && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h3 className="text-base font-bold text-slate-900 mb-4">Active Subscriptions</h3>
+          <h3 className="text-base font-bold text-slate-900 mb-4">Active Subscription</h3>
           <div className="flex items-center justify-between rounded-xl bg-success-50 border border-success-100 p-4">
             <div>
-              <div className="text-sm font-bold text-slate-900">{user?.plan ?? 'Current Plan'}</div>
-              <div className="text-xs text-slate-500 mt-0.5">Active</div>
+              <div className="text-sm font-bold text-slate-900">
+                {subscription ? `DomainApp ${TIER_LABEL(subscription.amount)}` : (user?.plan ?? 'Current Plan')}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                {subscription?.endDate ? `Renews ${formatDate(subscription.endDate)}` : 'Active'}
+              </div>
             </div>
             <span className="text-xs text-success-700 font-semibold">Paid ✓</span>
           </div>
+
+          {subscription && subscription.themeChangesLimit != null && (
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center gap-2.5">
+                <Palette className="h-4 w-4 text-primary-600" />
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Theme changes</div>
+                  <div className="text-xs text-slate-500">Resets {formatDate(subscription.themeChangesResetAt)} with your renewal</div>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-slate-900">
+                {Math.max(0, subscription.themeChangesLimit - subscription.themeChangesUsed)} / {subscription.themeChangesLimit} left
+              </span>
+            </div>
+          )}
+
+          {subscription && TIER_LABEL(subscription.amount) === 'Workspace' && (
+            <Link href="/dashboard/support" className="mt-4 flex items-center justify-between rounded-xl border border-primary-200 bg-primary-50/60 p-4 text-sm font-semibold text-primary-700 hover:bg-primary-50">
+              Want to upgrade to BOS — full accounting &amp; task management? Talk to our team <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       )}
 
@@ -241,7 +287,7 @@ export default function BillingPage() {
           </div>
 
           <p className="mt-4 rounded-xl bg-slate-50 px-3.5 py-2.5 text-center text-xs text-slate-500">
-            Plan billing: the ₹999/month plan is charged quarterly (₹2,997 + 18% GST every 3 months); the yearly plan is ₹9,999 + 18% GST once a year. The amount above is exactly what you&apos;ll be charged now.
+            Plan billing: Workspace is ₹11,988 + 18% GST once a year (₹999/month equivalent); BOS is ₹23,988 + 18% GST once a year (₹1,999/month equivalent). The amount above is exactly what you&apos;ll be charged now.
           </p>
         </div>
       ) : (

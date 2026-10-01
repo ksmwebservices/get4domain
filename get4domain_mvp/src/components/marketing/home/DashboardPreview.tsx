@@ -69,8 +69,8 @@ function DashboardWindow() {
           <div className="mt-auto hidden px-2 lg:block">
             <div className="rounded-lg border border-warning-400/20 bg-gradient-to-br from-warning-400/10 to-primary-500/10 p-3">
               <div className="mb-0.5 text-[10px] font-semibold text-warning-300">Upgrade</div>
-              <div className="mb-2 text-[9px] text-slate-400">Save 17% yearly</div>
-              <div className="rounded bg-warning-400 px-2 py-1 text-center text-[9px] font-semibold text-slate-900">₹9,999/yr</div>
+              <div className="mb-2 text-[9px] text-slate-400">Full back office</div>
+              <div className="rounded bg-warning-400 px-2 py-1 text-center text-[9px] font-semibold text-slate-900">BOS ₹1,999/mo</div>
             </div>
           </div>
         </div>

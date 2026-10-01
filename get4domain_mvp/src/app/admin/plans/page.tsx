@@ -1,8 +1,9 @@
 import { Globe, Check } from 'lucide-react';
 
-// Single product, single price (locked Aug 2026): DomainApp ₹999/month, everything included.
+// Two annual-only tiers (dispatch 01-Oct-2026): Workspace ₹999/mo, BOS ₹1,999/mo.
 const plans = [
-  { product: 'DomainApp', name: 'DomainApp', monthly: 999, features: 20, active: 1 },
+  { product: 'DomainApp', name: 'Workspace', monthly: 999, yearly: 11988, features: 20, themeChanges: 2 },
+  { product: 'DomainApp', name: 'BOS', monthly: 1999, yearly: 23988, features: 26, themeChanges: 4 },
 ];
 
 export default function AdminPlansPage() {
@@ -10,7 +11,7 @@ export default function AdminPlansPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white">Plans &amp; Pricing</h2>
-        <p className="mt-1 text-sm text-slate-400">One product, one price — DomainApp ₹999/month, everything included. Usage is wallet-billed (top up from ₹499).</p>
+        <p className="mt-1 text-sm text-slate-400">Two annual-only tiers — Workspace ₹999/mo and BOS ₹1,999/mo, both billed once a year + 18% GST. Usage is wallet-billed (top up from ₹499).</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {plans.map((plan) => (
@@ -22,23 +23,23 @@ export default function AdminPlansPage() {
             <div className="text-lg font-bold text-white">{plan.name}</div>
             <div className="mt-3 space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Monthly</span>
-                <span className="text-white font-semibold">₹{plan.monthly.toLocaleString('en-IN')}<span className="text-slate-500 font-normal">/month</span></span>
+                <span className="text-slate-500">Billed annually</span>
+                <span className="text-white font-semibold">₹{plan.yearly.toLocaleString('en-IN')}<span className="text-slate-500 font-normal">/year (≈₹{plan.monthly}/mo)</span></span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-500">Features</span>
                 <span className="text-white font-semibold flex items-center gap-1"><Check className="h-3.5 w-3.5 text-success-400" />{plan.features} included</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500">Active Subscribers</span>
-                <span className={`font-bold ${plan.active > 0 ? 'text-success-400' : 'text-slate-600'}`}>{plan.active}</span>
+                <span className="text-slate-500">Theme changes</span>
+                <span className="text-white font-semibold">{plan.themeChanges}/year</span>
               </div>
             </div>
           </div>
         ))}
       </div>
       <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 text-sm text-slate-400">
-        The plan price is the <code className="text-primary-400">domainapp_monthly</code> rate in the Pricing Manager (Admin → Pricing). Wallet usage rates are managed there too.
+        Plan prices are the <code className="text-primary-400">domainapp_workspace_yearly</code> / <code className="text-primary-400">domainapp_bos_yearly</code> rates in the Pricing Manager (Admin → Pricing). Wallet usage rates are managed there too.
       </div>
     </div>
   );

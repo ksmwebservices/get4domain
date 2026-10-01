@@ -180,16 +180,21 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'email_message', label: 'Email per email (₹)', envFallback: 'PRICE_EMAIL', secret: false },
       { key: 'social_post_publish', label: 'Social post (we post) (₹)', envFallback: 'PRICE_SOCIAL_PUBLISH', secret: false },
       { key: 'extra_campaign_page', label: 'Extra campaign page (₹)', envFallback: 'PRICE_CAMPAIGN_PAGE', secret: false },
-      { key: 'domainapp_monthly', label: 'DomainApp monthly rate (₹/mo)', envFallback: 'PRICE_DOMAINAPP_MONTHLY', secret: false },
-      { key: 'domainapp_quarterly', label: 'DomainApp quarterly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_QUARTERLY', secret: false },
-      { key: 'domainapp_yearly', label: 'DomainApp yearly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_YEARLY', secret: false },
+      // DomainApp is annual-only (dispatch 01-Oct-2026) — two tiers, Workspace
+      // and BOS. Quarterly/single-yearly keys retired for new purchases (kept
+      // out of this list; legacy subscribers' existing terms are unaffected).
+      { key: 'domainapp_workspace_yearly', label: 'DomainApp Workspace — yearly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_WORKSPACE_YEARLY', secret: false },
+      { key: 'domainapp_bos_yearly', label: 'DomainApp BOS — yearly bill (₹, excl. GST)', envFallback: 'PRICE_DOMAINAPP_BOS_YEARLY', secret: false },
       { key: 'topup_999_credits', label: '₹999 top-up → credits', envFallback: 'PRICE_TOPUP_999', secret: false },
       { key: 'topup_2499_credits', label: '₹2,499 top-up → credits', envFallback: 'PRICE_TOPUP_2499', secret: false },
       { key: 'topup_4999_credits', label: '₹4,999 top-up → credits', envFallback: 'PRICE_TOPUP_4999', secret: false },
-      // Plan-tier free wallet credit (admin-editable). Trial gets its own free
-      // amount; Pro includes the ₹499 AI Studio credit from the pricing model.
-      { key: 'trial_free_credit', label: 'Trial plan — free credit (₹)', envFallback: 'PRICE_TRIAL_FREE_CREDIT', secret: false },
-      { key: 'pro_free_credit', label: 'Pro plan — free credit (₹)', envFallback: 'PRICE_PRO_FREE_CREDIT', secret: false },
+      // One-time AI Studio wallet credit granted on each tier's first annual
+      // payment (admin-editable).
+      { key: 'workspace_ai_credit', label: 'Workspace plan — AI Studio credit (₹)', envFallback: 'PRICE_WORKSPACE_AI_CREDIT', secret: false },
+      { key: 'bos_ai_credit', label: 'BOS plan — AI Studio credit (₹)', envFallback: 'PRICE_BOS_AI_CREDIT', secret: false },
+      // Free sandbox/demo trial credit — unrelated to DomainApp Workspace/BOS,
+      // granted on demo-sandbox creation (vendors.service.ts).
+      { key: 'trial_free_credit', label: 'Trial sandbox — free credit (₹)', envFallback: 'PRICE_TRIAL_FREE_CREDIT', secret: false },
     ],
   },
 ];

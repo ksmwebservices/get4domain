@@ -9,19 +9,33 @@ import { fetchLivePricing } from '@/lib/pricing';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Pricing — DomainApp ₹999/month (billed quarterly), Everything Included',
-  description: 'Simple pricing. One plan — DomainApp ₹999/month billed quarterly (₹2,997 + 18% GST every 3 months) or ₹9,999/year + GST: industry website, Workplace, CRM, campaigns and AI Studio with ₹499 free credit. Pay-per-use from your wallet only when you use more.',
+  title: 'Pricing — DomainApp Workspace ₹999/mo or BOS ₹1,999/mo, billed annually',
+  description: 'Simple annual pricing. Workspace ₹11,988/year + GST or BOS ₹23,988/year + GST: industry website, CRM, accounting, campaigns and AI Studio with a one-time AI Studio credit. Pay-per-use from your wallet only when you use more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 
-// What the single ₹999 plan includes (product direction: "Workplace", not "Mini BOS").
-const INCLUDED = [
+// What each annual plan includes. BOS = Workspace + the items below; HRM and
+// Office management are flagged "coming soon" — they are not built yet
+// (confirmed by the 01-Oct-2026 engineering audit), so BOS never claims them
+// as live.
+const WORKSPACE_INCLUDED = [
   { group: 'WEBSITE', items: ['Professional industry website', 'Free subdomain (vendorname.get4domain.com)', 'Free hosting + SSL', 'Mobile responsive, SEO optimized', 'Basic CMS for content updates'] },
-  { group: 'WORKPLACE', items: ['Contacts management (industry-labeled)', 'Products/Services catalog', 'Bookings/Orders/Appointments', 'GST invoicing', 'Accounts — expenses, P&L & GST statement', 'Office/stationery tracker'] },
-  { group: 'CRM & TELECRM', items: ['Lead pipeline (Kanban)', 'TeleCRM with call queue', 'Follow-up reminders'] },
-  { group: 'GROWTH HUB & CAMPAIGNS', items: ['1 campaign landing page (free)', 'Campaign management', 'Shareable campaign link'] },
-  { group: 'AI STUDIO', items: ['₹499 free credit included', 'Text, images, posters, reels, documents'] },
+  { group: 'WORKPLACE', items: ['Contacts management (industry-labeled)', 'Products/Services catalog', 'Bookings/Orders/Appointments', 'GST invoicing', 'Basic expense management', 'Staff dashboard management'] },
+  { group: 'CRM & TELECRM', items: ['Lead pipeline (Kanban)', 'TeleCRM with call queue', 'Follow-up reminders', 'Website auto-bot reply'] },
+  { group: 'GROWTH HUB', items: ['3 free SEO keywords', 'SEO/GEO/AEO + blog + social + GMB + directory + 20 backlinks bundle', '2 theme changes/year'] },
+  { group: 'AI STUDIO', items: ['₹499 one-time credit included', 'Text, images, posters, reels, documents'] },
   { group: 'TEAM & SUPPORT', items: ['Team access with roles', 'Instant AI support assistant (human callback if needed)'] },
+];
+const BOS_EXTRA = [
+  'Everything in Workspace',
+  'WhatsApp bot reply too',
+  'Task management & assigning',
+  'Full GST + P&L accounting',
+  'HRM — coming soon',
+  'Office management — coming soon',
+  '₹1,299 one-time AI Studio credit',
+  '6 free SEO keywords',
+  '4 theme changes/year',
 ];
 
 // Wallet pay-per-use — real starting rates (admin-adjustable).
@@ -40,13 +54,14 @@ const USAGE: [string, string][] = [
 ];
 
 const FAQS = [
-  { q: 'What happens after I pay ₹999?', a: 'Your site deploys instantly on a ready-made industry template and we complete content & theme customization within 24 hours. We set up your Workplace dashboard and give you ₹499 AI Studio credit to start creating content immediately.' },
+  { q: 'What happens after I pay?', a: 'Your site deploys instantly on a ready-made industry template and we complete content & theme customization within 24 hours. We set up your Workplace dashboard and give you a one-time AI Studio credit (₹499 Workspace, ₹1,299 BOS) to start creating content immediately.' },
   { q: 'What is the Workplace?', a: 'The Workplace is your central business workspace — contacts, catalog, bookings/orders, invoicing, CRM, campaigns, AI tools and analytics, tailored to your industry, without the complexity of heavy ERP software.' },
-  { q: 'How does the wallet work?', a: 'Your plan includes ₹499 free credit. Use it for AI content, campaigns and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
+  { q: 'How does the wallet work?', a: 'Your plan includes a one-time AI Studio credit. Use it for AI content, campaigns and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. A free subdomain is included with every plan. You can also buy a domain through our dashboard or connect an existing one — custom domain is a separate service.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your Workplace adapts to your industry.' },
-  { q: 'How am I billed — is it really monthly?', a: 'The ₹999/month plan is billed quarterly: ₹2,997 + 18% GST every 3 months. It works out to ₹999/month, charged once a quarter. The yearly plan is ₹9,999 + GST billed once a year and saves you ₹1,989 (17%).' },
-  { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the term you have already paid for (the current quarter, or the current year on the yearly plan).' },
+  { q: 'How am I billed?', a: 'Both plans are billed annually, upfront: Workspace ₹11,988 + 18% GST once a year (₹999/month equivalent), BOS ₹23,988 + 18% GST once a year (₹1,999/month equivalent). There is no quarterly or monthly billing option.' },
+  { q: 'Is HRM / Office management included in BOS?', a: 'They are on the BOS roadmap and shown as "coming soon" — not yet available. Everything else listed under BOS is live today.' },
+  { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the year you have already paid for.' },
 ];
 
 export default async function PricingPage() {
@@ -85,13 +100,13 @@ export default async function PricingPage() {
             Simple pricing
           </span>
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-            One plan. <span className="text-gradient-hero">No surprises.</span>
+            Two plans. <span className="text-gradient-hero">No surprises.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-slate-400">
-            Everything the platform does for one flat price. Pay more only when you actually use variable services — from your wallet.
+            Workspace or BOS, billed annually. Pay more only when you actually use variable services — from your wallet.
           </p>
         </div>
-        {/* Reuses the homepage pricing block: monthly/yearly toggle, plan card, comparison table, Buy Now CTA. */}
+        {/* Reuses the homepage pricing block: Workspace/BOS toggle, plan card, comparison table, Buy Now CTA. */}
         <div className="relative">
           <HomePricing />
         </div>
@@ -101,11 +116,11 @@ export default async function PricingPage() {
       <section className="border-t border-slate-200 bg-white py-16 md:py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Everything in your ₹999 plan</h2>
-            <p className="mt-3 text-slate-600">One subscription unlocks the whole platform — website, Workplace, CRM, campaigns and AI Studio.</p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Everything in Workspace</h2>
+            <p className="mt-3 text-slate-600">Every Workspace subscription unlocks the whole platform — website, Workplace, CRM, campaigns and AI Studio.</p>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {INCLUDED.map((section) => (
+            {WORKSPACE_INCLUDED.map((section) => (
               <div key={section.group} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-wider text-primary-600">{section.group}</p>
                 <ul className="mt-3 space-y-2">
@@ -116,6 +131,23 @@ export default async function PricingPage() {
               </div>
             ))}
           </div>
+
+          <div className="mx-auto mt-16 max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">BOS adds the full back office</h2>
+            <p className="mt-3 text-slate-600">BOS includes everything in Workspace, plus:</p>
+          </div>
+          <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <ul className="grid gap-2.5 sm:grid-cols-2">
+              {BOS_EXTRA.map((item) => {
+                const comingSoon = item.includes('coming soon');
+                return (
+                  <li key={item} className={`flex items-start gap-2.5 text-sm ${comingSoon ? 'text-slate-400' : 'text-slate-700'}`}>
+                    <Check className={`mt-0.5 h-4 w-4 flex-shrink-0 ${comingSoon ? 'text-slate-300' : 'text-success-500'}`} />{item}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -124,7 +156,7 @@ export default async function PricingPage() {
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Pay only for what you use</h2>
-            <p className="mt-3 text-slate-600">Your plan includes ₹499 free AI Studio credit. Variable usage (AI, WhatsApp, SMS, email) is billed per use from your wallet.</p>
+            <p className="mt-3 text-slate-600">Your plan includes a one-time AI Studio credit (₹499 Workspace, ₹1,299 BOS). Variable usage (AI, WhatsApp, SMS, email) is billed per use from your wallet.</p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {topupRows.map((t) => (

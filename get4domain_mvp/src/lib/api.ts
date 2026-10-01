@@ -502,11 +502,12 @@ export const api = {
   demoEnquiry: (data: { name: string; phone: string; industry: string; message?: string }) =>
     apiCall('/demo/enquiry', { method: 'POST', body: JSON.stringify(data) }),
   // Phase 5/6 — sandbox go-live (Razorpay upfront on the chosen plan → convert to a real account)
-  demoBuyOrder: (plan: 'quarterly' | 'annual' = 'quarterly') => apiCall('/demo/buy/order', { method: 'POST', body: JSON.stringify({ plan }) }),
+  demoBuyOrder: (plan: 'workspace' | 'bos' = 'workspace') => apiCall('/demo/buy/order', { method: 'POST', body: JSON.stringify({ plan }) }),
   demoBuyConfirm: (data: {
     businessName: string; email: string; password: string; name?: string; phone?: string;
-    razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; plan?: 'quarterly' | 'annual';
+    razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; plan?: 'workspace' | 'bos';
   }) => apiCall('/demo/buy/confirm', { method: 'POST', body: JSON.stringify(data) }),
+  getMySubscription: (vendorId: string) => apiCall(`/subscriptions/vendor/${vendorId}`),
   getLeads: () => apiCall('/leads'),
   updateLeadStatus: (id: string, status: string) =>
     apiCall(`/leads/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),

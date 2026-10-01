@@ -11,18 +11,18 @@ const DEFAULTS: Record<string, string> = {
   social_post: '5', festival_poster: '8', blog_article: '15', reel_script: '10',
   video_generation: '50', document: '15', whatsapp_message: '1', whatsapp_session: '1', sms_message: '0.50',
   email_message: '0.10', social_post_publish: '10', extra_campaign_page: '20',
-  domainapp_monthly: '999', domainapp_quarterly: '2997', domainapp_yearly: '9999',
+  domainapp_workspace_yearly: '11988', domainapp_bos_yearly: '23988',
   topup_999_credits: '1100', topup_2499_credits: '3000', topup_4999_credits: '6500',
-  trial_free_credit: '100', pro_free_credit: '499',
+  trial_free_credit: '100', workspace_ai_credit: '499', bos_ai_credit: '1299',
 };
 
 const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Content Creation', keys: ['social_post', 'festival_poster', 'blog_article', 'reel_script', 'video_generation', 'document'] },
   { title: 'Messaging', keys: ['whatsapp_message', 'whatsapp_session', 'sms_message', 'email_message'] },
   { title: 'Campaign', keys: ['social_post_publish', 'extra_campaign_page'] },
-  { title: 'Subscription — billed quarterly / yearly (₹)', keys: ['domainapp_monthly', 'domainapp_quarterly', 'domainapp_yearly'] },
+  { title: 'DomainApp Subscription — billed annually (₹, excl. GST)', keys: ['domainapp_workspace_yearly', 'domainapp_bos_yearly'] },
   { title: 'Wallet Top-up Bonuses (credits given)', keys: ['topup_999_credits', 'topup_2499_credits', 'topup_4999_credits'] },
-  { title: 'Plan Free Credit (per tier)', keys: ['trial_free_credit', 'pro_free_credit'] },
+  { title: 'Plan Free Credit (one-time, per tier)', keys: ['trial_free_credit', 'workspace_ai_credit', 'bos_ai_credit'] },
 ];
 
 export default function AdminPricingPage() {
@@ -97,7 +97,7 @@ export default function AdminPricingPage() {
         </div>
       ))}
 
-      <p className="text-xs text-slate-600">Note: rates persist in g4d_platform_settings. Wiring wallet deduction to read these live (vs. hardcoded defaults) is a backend follow-up.</p>
+      <p className="text-xs text-slate-600">Note: rates persist in g4d_platform_settings. The public /pricing page and go-live checkout read the DomainApp subscription rates live from here. The AI Studio credit and theme-change-limit amounts granted on signup are hardcoded constants (backend-api/src/payments/plan-pricing.constants.ts) — editing them here updates the displayed rate card only; wiring the actual grant to read these live is a backend follow-up.</p>
     </div>
   );
 }

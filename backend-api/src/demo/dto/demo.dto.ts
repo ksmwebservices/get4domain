@@ -2,14 +2,14 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
-/** The two launch plans, billed upfront. */
-export type LaunchPlan = 'quarterly' | 'annual';
+/** The two launch plans, billed upfront, annual-only (dispatch 01-Oct-2026). */
+export type LaunchPlan = 'workspace' | 'bos';
 
 /** Body for POST demo/buy/order — which plan to create the Razorpay order for. */
 export class BuyOrderDto {
-  @ApiProperty({ required: false, enum: ['quarterly', 'annual'], default: 'quarterly' })
+  @ApiProperty({ required: false, enum: ['workspace', 'bos'], default: 'workspace' })
   @IsOptional()
-  @IsIn(['quarterly', 'annual'])
+  @IsIn(['workspace', 'bos'])
   plan?: LaunchPlan;
 }
 
@@ -67,9 +67,9 @@ export class ConfirmBuyDto {
   @IsString()
   razorpaySignature!: string;
 
-  @ApiProperty({ required: false, enum: ['quarterly', 'annual'], default: 'quarterly', description: 'The plan paid for — must match the buy/order plan.' })
+  @ApiProperty({ required: false, enum: ['workspace', 'bos'], default: 'workspace', description: 'The plan paid for — must match the buy/order plan.' })
   @IsOptional()
-  @IsIn(['quarterly', 'annual'])
+  @IsIn(['workspace', 'bos'])
   plan?: LaunchPlan;
 }
 

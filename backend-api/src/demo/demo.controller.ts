@@ -35,9 +35,9 @@ export class DemoController {
 
   @ApiBearerAuth()
   @Post('buy/order')
-  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live on the chosen plan (quarterly / annual) for the caller’s sandbox' })
+  @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live on the chosen plan (Workspace / BOS) for the caller’s sandbox' })
   buyOrder(@CurrentUser() user: AuthenticatedUser, @Body() dto: BuyOrderDto) {
-    return this.demo.createBuyOrder(user.sub, dto?.plan ?? 'quarterly');
+    return this.demo.createBuyOrder(user.sub, dto?.plan ?? 'workspace');
   }
 
   @ApiBearerAuth()

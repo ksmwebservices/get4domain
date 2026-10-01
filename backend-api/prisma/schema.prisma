@@ -141,6 +141,14 @@ model Subscription {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  // Theme-change entitlement (dispatch 01-Oct-2026): Workspace = 2/year, BOS =
+  // 4/year. themeChangesResetAt tracks the next reset (set to endDate at
+  // creation/renewal); updateVendorCMS auto-resets the counter once that date
+  // has passed rather than requiring a cron job.
+  themeChangesUsed    Int       @default(0)
+  themeChangesLimit   Int?
+  themeChangesResetAt DateTime?
+
   invoices Invoice[]
 }
 

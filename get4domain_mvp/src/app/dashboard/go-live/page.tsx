@@ -28,10 +28,18 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
-const INCLUDED = [
-  'Your industry website + customer portal', 'Bookings, contacts, catalog & GST invoicing',
-  'TeleCRM, Campaigns & AI Studio', 'WhatsApp / SMS / Email (wallet)', '₹499 Pro AI Studio credit included',
-];
+const PLAN_INCLUDED: Record<'workspace' | 'bos', string[]> = {
+  workspace: [
+    'Your industry website + customer portal', 'Bookings, contacts, catalog & GST invoicing',
+    'TeleCRM, Campaigns & AI Studio', 'WhatsApp / SMS / Email (wallet)', '₹499 AI Studio credit included',
+    '3 free SEO keywords', '2 theme changes/year',
+  ],
+  bos: [
+    'Everything in Workspace', 'WhatsApp bot reply too', 'Task management & assigning',
+    'Full GST + P&L accounting', '₹1,299 AI Studio credit included',
+    '6 free SEO keywords', '4 theme changes/year',
+  ],
+};
 
 export default function GoLivePage() {
   const { user, refresh } = useAuth();
@@ -42,12 +50,13 @@ export default function GoLivePage() {
   const [paying, setPaying] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const [plan, setPlan] = useState<'quarterly' | 'annual'>('quarterly');
+  const [plan, setPlan] = useState<'workspace' | 'bos'>('workspace');
   const PLANS = {
-    quarterly: { name: 'Quarterly', total: '₹3,536.46', sub: '₹999/mo · billed every 3 months', note: 'incl. 18% GST' },
-    annual: { name: 'Annual', total: '₹11,798.82', sub: '₹9,999/year · billed once a year', note: 'incl. 18% GST · best value' },
+    workspace: { name: 'Workspace', total: '₹14,145.84', sub: '₹999/mo · billed annually', note: 'incl. 18% GST' },
+    bos: { name: 'BOS', total: '₹28,305.84', sub: '₹1,999/mo · billed annually', note: 'incl. 18% GST · full suite' },
   } as const;
   const sel = PLANS[plan];
+  const INCLUDED = PLAN_INCLUDED[plan];
 
   const valid = form.businessName.trim() && /.+@.+\..+/.test(form.email) && form.password.length >= 6;
 
@@ -79,7 +88,7 @@ export default function GoLivePage() {
               setSession({
                 id: res.data?.vendorId ?? user?.id ?? '', name: form.name || 'Owner', email: form.email,
                 role: 'vendor', businessName: form.businessName, industry: user?.industry,
-                plan: 'DomainApp Monthly', initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
+                plan: `DomainApp ${sel.name}`, initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
               });
               refresh();
             }
@@ -104,7 +113,7 @@ export default function GoLivePage() {
       <div className="mx-auto max-w-md py-16 text-center">
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-success-100"><Check className="h-10 w-10 text-success-600" /></div>
         <h1 className="text-2xl font-bold text-slate-900">You&apos;re live! 🎉</h1>
-        <p className="mt-3 text-slate-600">Your account is now a full DomainApp subscription. Your GST invoice has been emailed, and your ₹499 AI Studio credit is added.</p>
+        <p className="mt-3 text-slate-600">Your account is now a full DomainApp subscription. Your GST invoice has been emailed, and your AI Studio credit is added.</p>
         <a href="/dashboard"><Button className="mt-6" leftIcon={<Rocket className="h-4 w-4" />}>Go to my dashboard</Button></a>
       </div>
     );
@@ -114,7 +123,7 @@ export default function GoLivePage() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><Rocket className="h-6 w-6 text-primary-600" /> Go live</h1>
-        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — everything included, billed <strong>quarterly</strong> or <strong>annually</strong>.</p>
+        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — choose <strong>Workspace</strong> or <strong>BOS</strong>, billed annually.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">
@@ -139,7 +148,7 @@ export default function GoLivePage() {
 
         <div className="md:col-span-2 rounded-2xl border border-primary-100 bg-primary-50/50 p-6">
           <div className="mb-4 space-y-2">
-            {(['quarterly', 'annual'] as const).map((p) => {
+            {(['workspace', 'bos'] as const).map((p) => {
               const on = plan === p;
               return (
                 <button key={p} type="button" onClick={() => setPlan(p)}

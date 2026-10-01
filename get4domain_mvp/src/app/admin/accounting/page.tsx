@@ -84,7 +84,10 @@ export default function AccountingPage() {
   const sumTotal = (list: Invoice[]) => list.reduce((s, i) => s + i.totalAmount, 0) / 100;
   const sumGst = (list: Invoice[]) => list.reduce((s, i) => s + i.gstAmount, 0) / 100;
   const domainAppRevenue = allPaid.filter((i) => /domainapp/i.test(i.description)).reduce((s, i) => s + i.totalAmount, 0) / 100;
-  const domainCampaignRevenue = allPaid.filter((i) => /domaincampaign/i.test(i.description)).reduce((s, i) => s + i.totalAmount, 0) / 100;
+  // Everything else paid (Managed Services proposals, DomainCampaign once it has
+  // real invoices, one-off invoices, etc.) — generic rather than matching a
+  // specific product name by regex, which drifts out of date as products launch.
+  const otherRevenue = sumTotal(allPaid) - domainAppRevenue;
 
   const thisMonthExpenses = expenses.filter((e) => {
     const d = new Date(e.date);
@@ -120,7 +123,7 @@ export default function AccountingPage() {
           { label: 'This Month', value: formatCurrency(sumTotal(thisMonth)) },
           { label: 'Last Month', value: formatCurrency(sumTotal(lastMonth)) },
           { label: 'DomainApp Revenue', value: formatCurrency(domainAppRevenue) },
-          { label: 'DomainCampaign Revenue', value: formatCurrency(domainCampaignRevenue) },
+          { label: 'Other Revenue', value: formatCurrency(otherRevenue) },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
             <div className="text-xl font-bold text-white">{s.value}</div>
@@ -197,7 +200,7 @@ export default function AccountingPage() {
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Income</div>
             <div className="space-y-1.5 text-sm">
               <div className="flex justify-between"><span className="text-slate-400">DomainApp</span><span className="text-white">{formatCurrency(domainAppRevenue)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-400">DomainCampaign</span><span className="text-white">{formatCurrency(domainCampaignRevenue)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-400">Other</span><span className="text-white">{formatCurrency(otherRevenue)}</span></div>
               <div className="flex justify-between font-bold border-t border-slate-800 pt-1.5"><span className="text-white">Total</span><span className="text-success-400">{formatCurrency(totalIncome)}</span></div>
             </div>
           </div>

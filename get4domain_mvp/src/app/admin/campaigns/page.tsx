@@ -13,12 +13,6 @@ interface Vendor {
   industry: string | null;
 }
 
-interface Invoice {
-  vendorId: string;
-  description: string;
-  status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-}
-
 interface PostLogEntry {
   vendorId: string;
   note: string;
@@ -27,7 +21,6 @@ interface PostLogEntry {
 
 export default function CampaignsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [ideasVendor, setIdeasVendor] = useState<Vendor | null>(null);
   const [ideas, setIdeas] = useState<string[]>([]);
@@ -36,18 +29,19 @@ export default function CampaignsPage() {
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    Promise.all([api.getVendors(), api.getInvoices()])
-      .then(([vendorsRes, invoicesRes]) => {
-        setVendors(vendorsRes.data ?? []);
-        setInvoices(invoicesRes.data ?? []);
-      })
+    api.getVendors()
+      .then((res) => setVendors(res.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  const campaignVendors = vendors.filter((v) =>
-    invoices.some((i) => i.vendorId === v.id && i.status === 'PAID' && /domaincampaign/i.test(i.description)),
-  );
+  // Content-ideas + post-log execution tool for any vendor. (dispatch 01-Oct-2026:
+  // the old "DomainCampaign vendors" filter matched on a free-text invoice
+  // description regex that never matched a real invoice — DomainCampaign billing
+  // didn't exist yet — and would have risked silently mismatching real
+  // DomainCampaign invoices once that product launches. Removed in favor of
+  // showing every vendor; DomainCampaign's own admin billing tool is separate.)
+  const campaignVendors = vendors;
 
   async function generateIdeas(vendor: Vendor) {
     setIdeasVendor(vendor);
@@ -83,12 +77,12 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-white">Campaign Management</h2>
-        <p className="mt-1 text-sm text-slate-400">{campaignVendors.length} vendor{campaignVendors.length !== 1 ? 's' : ''} on DomainCampaign.</p>
+        <p className="mt-1 text-sm text-slate-400">Generate content ideas and log posting activity for any vendor — {campaignVendors.length} vendor{campaignVendors.length !== 1 ? 's' : ''} total.</p>
       </div>
 
       {campaignVendors.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/50 p-8 text-center">
-          <p className="text-slate-500 text-sm">No vendors on DomainCampaign yet.</p>
+          <p className="text-slate-500 text-sm">No vendors yet.</p>
         </div>
       ) : (
         <div className="space-y-4">

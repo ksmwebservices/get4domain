@@ -122,9 +122,9 @@ export default function HomeHero() {
               <div className="flex max-w-full items-center gap-2 rounded-xl border border-warning-400/30 bg-warning-400/10 px-3 py-2 text-sm">
                 <span className="font-bold text-warning-200">₹999/mo</span>
                 <span className="text-xs text-slate-400">or</span>
-                <span className="font-bold text-warning-200">₹9,999/yr</span>
+                <span className="font-bold text-warning-200">₹1,999/mo</span>
                 <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-success-500/15 px-1.5 py-0.5 text-[9px] font-medium text-success-300">
-                  <Check className="h-2 w-2" /> Save 17%
+                  <Check className="h-2 w-2" /> Billed annually
                 </span>
               </div>
             </div>

@@ -1,16 +1,15 @@
 // Single source of truth for plan pricing across the marketing pricing card,
 // the /pricing page and the dashboard checkout disclosure.
 //
-// Billing structure (dispatch 26-Aug-2026, Phase 1): the former "monthly" plan
-// is now billed QUARTERLY (quarterly fully replaces standalone single-month —
-// confirmed with KSM 27-Aug-2026). It is always shown as "₹999/month, billed
-// quarterly" — never the bare ₹999 alone. Prices are GST-EXCLUSIVE; 18% GST is
-// added on top at checkout, matching the platform's GST-exclusive convention.
+// Billing structure (dispatch 01-Oct-2026): DomainApp is now two ANNUAL-ONLY
+// tiers — Workspace and BOS. Quarterly billing is retired for new purchases.
+// Prices are GST-EXCLUSIVE; 18% GST is added on top at checkout, matching the
+// platform's GST-exclusive convention.
 
 export const GST_RATE = 0.18;
 
 export interface PlanTerm {
-  key: 'quarterly' | 'yearly';
+  key: 'workspace' | 'bos';
   label: string;
   /** Headline shown big on the card. */
   headline: string;
@@ -22,49 +21,60 @@ export interface PlanTerm {
   billingNote: string;
   /** Free wallet credit granted on the first successful payment, in ₹. */
   welcomeCredit: number;
+  freeSeoKeywords: number;
+  themeChangesPerYear: number;
   features: string[];
   cta: string;
 }
 
-export const PLAN_TERMS: Record<'quarterly' | 'yearly', PlanTerm> = {
-  quarterly: {
-    key: 'quarterly',
-    label: 'Monthly',
+export const PLAN_TERMS: Record<'workspace' | 'bos', PlanTerm> = {
+  workspace: {
+    key: 'workspace',
+    label: 'Workspace',
     headline: '₹999',
     headlinePeriod: '/month',
-    baseAmount: 2997,
-    cycleLabel: 'every 3 months',
-    billingNote: 'Billed quarterly at ₹2,997 + 18% GST every 3 months',
-    welcomeCredit: 100,
+    baseAmount: 11988,
+    cycleLabel: 'per year',
+    billingNote: 'Billed ₹11,988 + 18% GST once a year',
+    welcomeCredit: 499,
+    freeSeoKeywords: 3,
+    themeChangesPerYear: 2,
     features: [
-      'Full platform access',
-      'Webapp + Vendor + Client apps',
-      'WhatsApp API integration',
-      'AI Studio (wallet pay-per-use)',
-      'All industry templates',
-      '₹100 free wallet credit',
-      '24h support',
+      'Lead capture, TeleCRM & CRM',
+      'Website auto-bot reply',
+      'Basic expense management',
+      'Invoice generation',
+      'Staff dashboard management',
+      'Pay-per-use wallet (AI Studio, content, domains, WhatsApp/SMS/email)',
+      '₹499 one-time AI Studio credit',
+      '3 free SEO keywords + SEO/GEO/AEO bundle',
+      '2 theme changes/year',
     ],
     cta: 'Buy Now — ₹999/mo',
   },
-  yearly: {
-    key: 'yearly',
-    label: 'Yearly',
-    headline: '₹9,999',
-    headlinePeriod: '/year',
-    baseAmount: 9999,
+  bos: {
+    key: 'bos',
+    label: 'BOS',
+    headline: '₹1,999',
+    headlinePeriod: '/month',
+    baseAmount: 23988,
     cycleLabel: 'per year',
-    billingNote: 'Billed ₹9,999 + 18% GST once a year',
-    welcomeCredit: 400,
+    billingNote: 'Billed ₹23,988 + 18% GST once a year',
+    welcomeCredit: 1299,
+    freeSeoKeywords: 6,
+    themeChangesPerYear: 4,
     features: [
-      'Everything in Monthly',
-      'Save ₹1,989 (17%) vs quarterly',
-      'Priority support',
-      'Custom domain setup help',
-      '₹400 free wallet credit',
-      'Dedicated onboarding',
+      'Everything in Workspace',
+      'WhatsApp bot reply too',
+      'Task management & assigning',
+      'Full GST + P&L accounting',
+      'HRM — coming soon',
+      'Office management — coming soon',
+      '₹1,299 one-time AI Studio credit',
+      '6 free SEO keywords + SEO/GEO/AEO bundle',
+      '4 theme changes/year',
     ],
-    cta: 'Buy Now — ₹9,999/yr',
+    cta: 'Buy Now — ₹1,999/mo',
   },
 };
 
@@ -75,9 +85,9 @@ export const formatINR = (amount: number): string =>
 //    category 'pricing') via the public GET /pricing endpoint. The constants above
 //    are the fallback when the API is unreachable, so the page never renders blank.
 export interface LivePricing {
-  subscription: { monthly: number; quarterly: number; yearly: number };
+  subscription: { workspaceYearly: number; bosYearly: number };
   topups: Record<string, number>;
-  freeCredit: { trial: number; pro: number };
+  freeCredit: { trial: number; workspace: number; bos: number };
   usage: Record<string, number>;
 }
 
@@ -98,29 +108,27 @@ export async function fetchLivePricing(): Promise<LivePricing | null> {
 }
 
 /** Overlay live subscription numbers onto the PLAN_TERMS shape the card renders. */
-export function applyLivePricing(live: LivePricing | null): Record<'quarterly' | 'yearly', PlanTerm> {
+export function applyLivePricing(live: LivePricing | null): Record<'workspace' | 'bos', PlanTerm> {
   if (!live?.subscription) return PLAN_TERMS;
-  const { monthly, quarterly, yearly } = live.subscription;
-  const annualizedQuarterly = quarterly * 4;
-  const save = Math.max(0, annualizedQuarterly - yearly);
-  const savePct = annualizedQuarterly > 0 ? Math.round((save / annualizedQuarterly) * 100) : 0;
+  const { workspaceYearly, bosYearly } = live.subscription;
+  const workspaceMonthly = Math.round(workspaceYearly / 12);
+  const bosMonthly = Math.round(bosYearly / 12);
   return {
-    quarterly: {
-      ...PLAN_TERMS.quarterly,
-      headline: formatINR(monthly),
-      baseAmount: quarterly,
-      billingNote: `Billed quarterly at ${formatINR(quarterly)} + 18% GST every 3 months`,
-      welcomeCredit: live.freeCredit?.trial ?? PLAN_TERMS.quarterly.welcomeCredit,
-      cta: `Buy Now — ${formatINR(monthly)}/mo`,
+    workspace: {
+      ...PLAN_TERMS.workspace,
+      headline: formatINR(workspaceMonthly),
+      baseAmount: workspaceYearly,
+      billingNote: `Billed ${formatINR(workspaceYearly)} + 18% GST once a year`,
+      welcomeCredit: live.freeCredit?.workspace ?? PLAN_TERMS.workspace.welcomeCredit,
+      cta: `Buy Now — ${formatINR(workspaceMonthly)}/mo`,
     },
-    yearly: {
-      ...PLAN_TERMS.yearly,
-      headline: formatINR(yearly),
-      baseAmount: yearly,
-      billingNote: `Billed ${formatINR(yearly)} + 18% GST once a year`,
-      welcomeCredit: live.freeCredit?.pro ?? PLAN_TERMS.yearly.welcomeCredit,
-      features: PLAN_TERMS.yearly.features.map((f) => (/^Save /.test(f) ? `Save ${formatINR(save)} (${savePct}%) vs quarterly` : f)),
-      cta: `Buy Now — ${formatINR(yearly)}/yr`,
+    bos: {
+      ...PLAN_TERMS.bos,
+      headline: formatINR(bosMonthly),
+      baseAmount: bosYearly,
+      billingNote: `Billed ${formatINR(bosYearly)} + 18% GST once a year`,
+      welcomeCredit: live.freeCredit?.bos ?? PLAN_TERMS.bos.welcomeCredit,
+      cta: `Buy Now — ${formatINR(bosMonthly)}/mo`,
     },
   };
 }

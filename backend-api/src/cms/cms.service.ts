@@ -84,6 +84,42 @@ export class CmsService {
         if (!unlock) throw new ForbiddenException('Unlock this premium template before applying it.');
       }
     }
+
+    // Theme-change entitlement (dispatch 01-Oct-2026): only a GENUINE theme
+    // switch counts (dto.themeId set AND different from the currently-applied
+    // theme) — re-saving the same theme's CMS content never consumes the
+    // allowance. Only enforced for vendors with a tracked limit (Workspace/BOS
+    // subscriptions created after the theme-change migration); vendors with no
+    // limit set (themeChangesLimit null — legacy tiers, or pre-migration data)
+    // are left unrestricted.
+    if (dto.themeId) {
+      const existing = await this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { themeId: true } });
+      const isGenuineChange = existing?.themeId !== dto.themeId;
+      if (isGenuineChange) {
+        const sub = await this.prisma.subscription.findFirst({
+          where: { vendorId, product: 'DOMAIN_APP', status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (sub && sub.themeChangesLimit != null) {
+          const now = new Date();
+          const pastReset = sub.themeChangesResetAt != null && now >= sub.themeChangesResetAt;
+          const used = pastReset ? 0 : sub.themeChangesUsed;
+          if (used >= sub.themeChangesLimit) {
+            const resetLabel = sub.endDate ? sub.endDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'your next renewal';
+            throw new ForbiddenException(
+              `You've used all ${sub.themeChangesLimit} theme changes included in your plan this year. More become available on ${resetLabel}.`,
+            );
+          }
+          await this.prisma.subscription.update({
+            where: { id: sub.id },
+            data: pastReset
+              ? { themeChangesUsed: 1, themeChangesResetAt: sub.endDate ?? undefined }
+              : { themeChangesUsed: { increment: 1 } },
+          });
+        }
+      }
+    }
+
     // dto.portfolio is a class-validator-typed array (PortfolioImageDto[]); Prisma's
     // Json input type wants a plain InputJsonValue - structurally identical at
     // runtime, just not assignable without this cast.

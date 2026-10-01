@@ -18,7 +18,7 @@ import { renderInvoiceHtml, InvoiceCompany } from '../invoices/templates/invoice
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { grantWalletCredit } from '../wallet/wallet-credit.util';
-import { planBonusForAmount, planTermMonthsForAmount } from './plan-pricing.constants';
+import { planBonusForAmount, planTermMonthsForAmount, aiStudioBonusForAmount } from './plan-pricing.constants';
 
 type PaidInvoice = Invoice & { vendor: Vendor; subscription: Subscription | null };
 
@@ -225,9 +225,16 @@ export class PaymentsService {
 
       // Welcome wallet credit tied to the committed term (dispatch 26-Aug-2026,
       // Phase 1 item 3): quarterly ₹100, yearly ₹400 — first plan payment only,
-      // reusing the shared credit path. Best-effort: a failure here must never
-      // undo or block the payment that already succeeded.
+      // reusing the shared credit path. Legacy tiers only (see plan-pricing
+      // .constants.ts) — a no-op for Workspace/BOS amounts. Best-effort: a
+      // failure here must never undo or block the payment that already succeeded.
       await this.grantPlanWelcomeBonus(invoice.vendorId, invoice.totalAmount);
+      // One-time AI Studio credit for Workspace/BOS, first annual payment only
+      // (dispatch 01-Oct-2026). Normally granted directly by the go-live flow
+      // (demo.service.ts convertSandbox); this is a safety net for any first
+      // payment that instead completes through this webhook path, with the
+      // same idempotency guarantee.
+      await this.grantAiStudioBonus(invoice.vendorId, invoice.totalAmount);
     }
 
     await this.prisma.platformIncome.create({
@@ -289,6 +296,36 @@ export class PaymentsService {
     } catch (err) {
       this.logger.warn(
         `Plan welcome bonus skipped for vendor ${vendorId}: ${err instanceof Error ? err.message : 'error'}`,
+      );
+    }
+  }
+
+  /**
+   * Grant the one-time Workspace/BOS AI Studio wallet credit, once, on the
+   * vendor's FIRST annual payment. Idempotent via the 'ai_studio_bonus'
+   * service tag — renewals and repeat payments don't re-grant. Never throws.
+   */
+  private async grantAiStudioBonus(vendorId: string, paidPaise: number): Promise<void> {
+    try {
+      const bonus = aiStudioBonusForAmount(paidPaise);
+      if (bonus <= 0) return;
+
+      const already = await this.prisma.walletTransaction.findFirst({
+        where: { vendorId, service: 'ai_studio_bonus' },
+        select: { id: true },
+      });
+      if (already) return;
+
+      await grantWalletCredit(
+        this.prisma,
+        vendorId,
+        bonus,
+        `AI Studio plan credit — ₹${(bonus / 100).toFixed(0)} free wallet credit`,
+        'ai_studio_bonus',
+      );
+    } catch (err) {
+      this.logger.warn(
+        `AI Studio bonus skipped for vendor ${vendorId}: ${err instanceof Error ? err.message : 'error'}`,
       );
     }
   }

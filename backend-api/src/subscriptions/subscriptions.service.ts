@@ -14,6 +14,16 @@ export class SubscriptionsService {
     });
   }
 
+  /** The vendor's current (most recent) DomainApp subscription, or null if
+   *  they've never gone live. Used by the dashboard Billing screen to show
+   *  the active tier and theme-change allowance. */
+  findCurrentForVendor(vendorId: string): Promise<Subscription | null> {
+    return this.prisma.subscription.findFirst({
+      where: { vendorId, product: 'DOMAIN_APP' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   create(dto: CreateSubscriptionDto): Promise<Subscription> {
     return this.prisma.subscription.create({
       data: {

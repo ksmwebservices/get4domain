@@ -5,10 +5,12 @@ import { PlatformSettingsService } from './platform-settings.service';
 
 // Non-secret pricing defaults — the single fallback set shared by this public
 // endpoint and the admin Pricing Manager, so an unset value never renders blank.
+// DomainApp is annual-only (dispatch 01-Oct-2026): Workspace ₹11,988/yr, BOS
+// ₹23,988/yr — both ex-GST.
 const PRICING_DEFAULTS: Record<string, number> = {
-  domainapp_monthly: 999, domainapp_quarterly: 2997, domainapp_yearly: 9999,
+  domainapp_workspace_yearly: 11988, domainapp_bos_yearly: 23988,
   topup_999_credits: 1100, topup_2499_credits: 3000, topup_4999_credits: 6500,
-  trial_free_credit: 100, pro_free_credit: 499,
+  trial_free_credit: 100, workspace_ai_credit: 499, bos_ai_credit: 1299,
   social_post: 5, festival_poster: 8, blog_article: 15, reel_script: 10,
   video_generation: 50, document: 15, whatsapp_message: 1, whatsapp_session: 1,
   sms_message: 0.5, email_message: 0.1, social_post_publish: 10, extra_campaign_page: 20,
@@ -37,10 +39,10 @@ export class PublicPricingController {
       return Number.isFinite(parsed) ? parsed : PRICING_DEFAULTS[key];
     };
 
-    const [monthly, quarterly, yearly, t999, t2499, t4999, trialCredit, proCredit] = await Promise.all([
-      num('domainapp_monthly'), num('domainapp_quarterly'), num('domainapp_yearly'),
+    const [workspaceYearly, bosYearly, t999, t2499, t4999, trialCredit, workspaceAiCredit, bosAiCredit] = await Promise.all([
+      num('domainapp_workspace_yearly'), num('domainapp_bos_yearly'),
       num('topup_999_credits'), num('topup_2499_credits'), num('topup_4999_credits'),
-      num('trial_free_credit'), num('pro_free_credit'),
+      num('trial_free_credit'), num('workspace_ai_credit'), num('bos_ai_credit'),
     ]);
 
     const usageKeys = ['social_post', 'festival_poster', 'blog_article', 'reel_script', 'video_generation', 'document', 'whatsapp_message', 'sms_message', 'email_message', 'social_post_publish', 'extra_campaign_page'];
@@ -48,9 +50,9 @@ export class PublicPricingController {
     await Promise.all(usageKeys.map(async (k) => { usage[k] = await num(k); }));
 
     return {
-      subscription: { monthly, quarterly, yearly },
+      subscription: { workspaceYearly, bosYearly },
       topups: { '999': t999, '2499': t2499, '4999': t4999 },
-      freeCredit: { trial: trialCredit, pro: proCredit },
+      freeCredit: { trial: trialCredit, workspace: workspaceAiCredit, bos: bosAiCredit },
       usage,
     };
   }

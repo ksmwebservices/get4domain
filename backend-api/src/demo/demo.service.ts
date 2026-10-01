@@ -11,6 +11,7 @@ import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { ConfirmBuyDto } from './dto/demo.dto';
 import { getIndustryConfig } from '../config/industries';
+import { aiStudioBonusForAmount, themeChangeLimitForAmount } from '../payments/plan-pricing.constants';
 import { DEMO_CONTENT, buildFallback, NAME_POOL, DemoContent, getSectionMeta } from './demo-content';
 
 type SiteSection =
@@ -37,28 +38,30 @@ export class DemoService {
   ) {}
 
   /**
-   * Launch pricing. Two plans, both billed UPFRONT, prices are ex-GST and 18% GST is
-   * added on top (the total is what Razorpay charges AND what the GST invoice records —
-   * createPaidInvoice back-computes taxable = total/1.18, so the breakdown is exact):
-   *   - quarterly: ₹999/mo billed quarterly → ₹2,997 + 18% = ₹3,536.46 every 3 months
-   *   - annual:    ₹9,999/year one-time     → ₹9,999 + 18% = ₹11,798.82 every 12 months
-   * Base prices are admin-editable via the Pricing Manager (getRate keys).
+   * Launch pricing (dispatch 01-Oct-2026). Two ANNUAL-ONLY plans, billed UPFRONT,
+   * prices are ex-GST and 18% GST is added on top (the total is what Razorpay
+   * charges AND what the GST invoice records — createPaidInvoice back-computes
+   * taxable = total/1.18, so the breakdown is exact):
+   *   - workspace: ₹999/mo  → ₹11,988/year + 18% GST = ₹14,145.84
+   *   - bos:       ₹1,999/mo → ₹23,988/year + 18% GST = ₹28,305.84
+   * Quarterly billing is retired for new DomainApp purchases. Base prices are
+   * admin-editable via the Pricing Manager (getRate keys).
    */
-  private async planPricing(plan: 'quarterly' | 'annual'): Promise<{ base: number; total: number; months: number; label: string; planCode: string }> {
-    if (plan === 'annual') {
+  private async planPricing(plan: 'workspace' | 'bos'): Promise<{ base: number; total: number; months: number; label: string; planCode: string }> {
+    if (plan === 'bos') {
       // Key MUST match the public pricing source (public-pricing.controller / Pricing
       // Manager) so the go-live charge tracks admin edits and never diverges from the
       // price shown on the /pricing page.
-      const base = await this.wallet.getRate('domainapp_yearly', 999900); // ₹9,999 ex-GST
-      return { base, total: base + Math.round(base * 0.18), months: 12, label: 'DomainApp — Annual plan (₹9,999/year)', planCode: 'ANNUAL' };
+      const base = await this.wallet.getRate('domainapp_bos_yearly', 2398800); // ₹23,988 ex-GST
+      return { base, total: base + Math.round(base * 0.18), months: 12, label: 'DomainApp — BOS plan (₹1,999/mo, billed annually)', planCode: 'BOS' };
     }
-    const base = await this.wallet.getRate('domainapp_quarterly', 299700); // ₹2,997 ex-GST (₹999/mo × 3)
-    return { base, total: base + Math.round(base * 0.18), months: 3, label: 'DomainApp — Quarterly plan (₹999/mo, billed quarterly)', planCode: 'QUARTERLY' };
+    const base = await this.wallet.getRate('domainapp_workspace_yearly', 1198800); // ₹11,988 ex-GST
+    return { base, total: base + Math.round(base * 0.18), months: 12, label: 'DomainApp — Workspace plan (₹999/mo, billed annually)', planCode: 'WORKSPACE' };
   }
 
-  /** Phase 5 — create a one-time Razorpay order to go live on the chosen plan (quarterly
-   *  or annual), charged upfront including 18% GST. */
-  async createBuyOrder(vendorId: string, plan: 'quarterly' | 'annual' = 'quarterly'): Promise<{ orderId: string; amount: number; currency: string; plan: string }> {
+  /** Phase 5 — create a one-time Razorpay order to go live on the chosen annual plan
+   *  (Workspace or BOS), charged upfront including 18% GST. */
+  async createBuyOrder(vendorId: string, plan: 'workspace' | 'bos' = 'workspace'): Promise<{ orderId: string; amount: number; currency: string; plan: string }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor || !vendor.isSandbox) throw new BadRequestException('No active demo sandbox to upgrade');
     const { total, planCode } = await this.planPricing(plan);
@@ -99,14 +102,18 @@ export class DemoService {
       },
     });
 
-    const plan: 'quarterly' | 'annual' = dto.plan === 'annual' ? 'annual' : 'quarterly';
+    const plan: 'workspace' | 'bos' = dto.plan === 'bos' ? 'bos' : 'workspace';
     const { base, total, months, label } = await this.planPricing(plan);
     const now = new Date();
     const end = new Date(now); end.setMonth(end.getMonth() + months);
-    // Subscription.plan is the STARTUP tier enum; the billing PERIOD (quarterly/annual)
-    // is captured by endDate (+3 / +12 months), the amount, and the invoice label.
+    // Subscription.plan is the STARTUP tier enum; the billing TIER (Workspace/BOS)
+    // is captured by the amount (see plan-pricing.constants.ts) and the invoice
+    // label. Theme-change allowance resets at `end` (next renewal).
     const sub = await this.prisma.subscription.create({
-      data: { vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount: base, status: 'ACTIVE', startDate: now, endDate: end },
+      data: {
+        vendorId, product: 'DOMAIN_APP', plan: 'STARTUP', amount: base, status: 'ACTIVE', startDate: now, endDate: end,
+        themeChangesUsed: 0, themeChangesLimit: themeChangeLimitForAmount(base), themeChangesResetAt: end,
+      },
     });
 
     // Phase 6 automation — all best-effort; conversion already succeeded. The invoice is
@@ -119,8 +126,13 @@ export class DemoService {
       });
     } catch (e) { this.logger.error(`Signup invoice failed for ${vendorId}: ${e instanceof Error ? e.message : 'unknown'}`); }
     try {
-      const proCredit = await this.wallet.getRate('pro_free_credit', 49900); // ₹499 (forward-only; already-granted credit unchanged)
-      await this.wallet.grantCredit(vendorId, proCredit, 'Pro plan AI Studio credit', 'pro_credit');
+      // One-time AI Studio credit on the first annual payment (dispatch
+      // 01-Oct-2026), tagged distinctly from the legacy 'pro_credit'/'plan_bonus'
+      // so transaction history shows exactly which bonus mechanism fired.
+      const aiCredit = aiStudioBonusForAmount(base);
+      if (aiCredit > 0) {
+        await this.wallet.grantCredit(vendorId, aiCredit, `${plan === 'bos' ? 'BOS' : 'Workspace'} plan AI Studio credit`, 'ai_studio_bonus');
+      }
     } catch { /* best-effort */ }
     try { await this.email.sendWelcomeEmail(converted, dto.password); } catch { /* best-effort */ }
     try { await this.sms.sendSms(converted.phone ?? dto.phone ?? '', 'Your Get4Domain account is live! Log in at get4domain.com/login'); } catch { /* best-effort */ }
