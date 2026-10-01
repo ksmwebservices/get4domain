@@ -1,0 +1,22 @@
+# Deebi Wedding Stories
+
+Deebi Wedding Stories is a wedding photography and cinematography studio owned by Boopathi Raja R.
+
+Location: Surya Nagar, Madurai, Tamil Nadu, India.
+Email: click@deebi.com
+WhatsApp and phone: +91 95666 21288
+
+Deebi Wedding Stories provides wedding photography in Madurai and across Tamil Nadu, including candid photography, traditional South Indian wedding photography, pre-wedding shoots, engagement and reception photography, Haldi and Mehendi coverage, and cinematic wedding films.
+
+The studio serves couples who want natural emotions, cultural rituals, family relationships, elegant portraits, and professionally edited photographs or films preserved as a visual story.
+
+Service pages:
+- /services/wedding-photography
+- /services/candid-photography
+- /services/traditional-photography
+- /services/pre-wedding-photography
+- /services/engagement-photography
+- /services/haldi-mehendi-photography
+- /services/cinematic-wedding-films
+
+To check availability, use the booking form on the website or contact Deebi Wedding Stories on WhatsApp.

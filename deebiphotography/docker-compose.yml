@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+    container_name: deebiphotography
+    restart: unless-stopped
+    ports:
+      - "3016:3016"
+    environment:
+      - NODE_ENV=production
+      - PORT=3016
+      - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+    networks:
+      - deebiphotography_net
+
+networks:
+  deebiphotography_net:
+    driver: bridge

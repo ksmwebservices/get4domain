@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { --background: 24 10% 7%; --foreground: 36 30% 92%; --card: 24 10% 9%; --card-foreground: 36 30% 92%; --popover: 24 10% 7%; --popover-foreground: 36 30% 92%; --primary: 38 70% 55%; --primary-foreground: 24 10% 7%; --secondary: 24 10% 12%; --secondary-foreground: 36 30% 92%; --muted: 24 10% 14%; --muted-foreground: 36 15% 65%; --accent: 38 60% 45%; --accent-foreground: 36 30% 92%; --destructive: 0 72% 51%; --destructive-foreground: 36 30% 98%; --border: 24 10% 18%; --input: 24 10% 18%; --ring: 38 70% 55%; --radius: 0.25rem; --ink: 24 10% 7%; --ink-light: 24 10% 11%; --gold: 38 74% 56%; --gold-dark: 36 55% 40%; --gold-light: 43 82% 72%; --cream: 36 30% 92%; --warm: 36 20% 85%; --warm-dark: 36 15% 55%; }
+  * { @apply border-border; }
+  body { font-family: var(--font-inter), sans-serif; background-color: hsl(var(--ink)); color: hsl(var(--warm)); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { font-family: var(--font-playfair), Georgia, serif; }
+}
+
+@layer utilities {
+  .font-cinzel { font-family: var(--font-cinzel), serif; }
+  .font-playfair { font-family: var(--font-playfair), Georgia, serif; }
+  .text-gold { color: hsl(var(--gold)); }
+  .text-gold-light { color: hsl(var(--gold-light)); }
+  .text-cream { color: hsl(var(--cream)); }
+  .text-warm-dark { color: hsl(var(--warm-dark)); }
+  .bg-ink { background-color: hsl(var(--ink)); }
+  .bg-ink-light { background-color: hsl(var(--ink-light)); }
+  .bg-gold { background-color: hsl(var(--gold)); }
+  .border-gold { border-color: hsl(var(--gold)); }
+  .border-gold-dark { border-color: hsl(var(--gold-dark)); }
+  .gold-gradient-text { background: linear-gradient(135deg, hsl(43 82% 72%), hsl(38 74% 56%), hsl(36 55% 40%)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .gold-line { background: linear-gradient(90deg, transparent, hsl(var(--gold)), transparent); }
+  .hero-overlay { background: linear-gradient(180deg, hsl(24 10% 7% / 0.3) 0%, hsl(24 10% 7% / 0.6) 50%, hsl(24 10% 7% / 0.95) 100%); }
+  .booking-input { width: 100%; background: hsl(var(--ink)); border: 1px solid hsl(24 10% 22%); color: hsl(var(--cream)); padding: 0.75rem 1rem; font-size: 0.875rem; border-radius: 0.125rem; outline: none; transition: border-color 180ms ease; }
+  .booking-input::placeholder { color: hsl(var(--warm-dark)); }
+  .booking-input:focus { border-color: hsl(var(--gold) / 0.65); }
+}
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kenBurns { 0% { transform: scale(1) translateY(0); } 100% { transform: scale(1.12) translateY(-12px); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.animate-fade-up { animation: fadeUp 0.8s ease-out forwards; }
+.animate-fade-in { animation: fadeIn 1.2s ease-out forwards; }
+.animate-ken-burns { animation: kenBurns 20s ease-out forwards; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body { padding-bottom: env(safe-area-inset-bottom); }
+@media (min-width: 768px) { body { padding-bottom: 0; } }
