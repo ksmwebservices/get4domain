@@ -205,6 +205,12 @@ model VendorCMS {
   youtube           String?
   googleMaps        String?
   googleAnalyticsId String?
+  // Lightweight categorized photo gallery (e.g. Ceremony/Portraits/Details/
+  // Celebration for a photography vendor) - deliberately reuses VendorCMS rather
+  // than a parallel product/model: [{id,src,alt,title,category,order}]. Additive/
+  // nullable; a vendor's public site falls back to its own static showcase images
+  // until this is populated via the dashboard.
+  portfolio         Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

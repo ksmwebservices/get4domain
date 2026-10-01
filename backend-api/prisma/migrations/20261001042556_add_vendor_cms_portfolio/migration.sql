@@ -1,0 +1,1 @@
+ALTER TABLE "VendorCMS" ADD COLUMN "portfolio" JSONB;

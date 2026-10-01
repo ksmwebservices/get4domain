@@ -84,10 +84,14 @@ export class CmsService {
         if (!unlock) throw new ForbiddenException('Unlock this premium template before applying it.');
       }
     }
+    // dto.portfolio is a class-validator-typed array (PortfolioImageDto[]); Prisma's
+    // Json input type wants a plain InputJsonValue - structurally identical at
+    // runtime, just not assignable without this cast.
+    const data = { ...dto, portfolio: dto.portfolio as unknown as Prisma.InputJsonValue | undefined };
     return this.prisma.vendorCMS.upsert({
       where: { vendorId },
-      create: { vendorId, ...dto },
-      update: dto,
+      create: { vendorId, ...data },
+      update: data,
     });
   }
 

@@ -63,6 +63,10 @@ export default function MyProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [custom, setCustom] = useState<Record<string, string>>({});
+  // customFields keys this form doesn't know how to edit (e.g. a richer field
+  // seeded directly via the API, outside this industry's listingFields) - kept
+  // as-is and written back unchanged on save, instead of being silently dropped.
+  const [preservedFields, setPreservedFields] = useState<Record<string, unknown>>({});
   const [tags, setTags] = useState('');
   const [gallery, setGallery] = useState<string[]>([]);
   const [sizes, setSizes] = useState('');
@@ -119,6 +123,7 @@ export default function MyProductsPage() {
     setEditingId(null);
     setForm(emptyForm);
     setCustom({});
+    setPreservedFields({});
     setTags('');
     setGallery([]);
     setSizes('');
@@ -138,7 +143,20 @@ export default function MyProductsPage() {
     delete cf.gallery;
     delete cf.sizes;
     delete cf.colors;
-    setCustom(cf as Record<string, string>);
+    // Only keys this industry's listingFields actually render as editable inputs
+    // go into `custom` (and only if they're genuinely strings). Everything else
+    // (e.g. richer fields seeded directly via the API - slug/title/eyebrow/
+    // answer/keywords/features/deliverables/video for a photography package) is
+    // kept untouched in preservedFields so an unrelated edit here never wipes it.
+    const listingKeys = new Set(listingFields.map((f) => f.key));
+    const editable: Record<string, string> = {};
+    const preserved: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(cf)) {
+      if (listingKeys.has(k) && typeof v === 'string') editable[k] = v;
+      else preserved[k] = v;
+    }
+    setCustom(editable);
+    setPreservedFields(preserved);
     setModalOpen(true);
   }
 
@@ -147,10 +165,11 @@ export default function MyProductsPage() {
     if (!user) return;
     setSaving(true);
     setError('');
-    // Only keep filled custom fields; attach tags (comma list), gallery (image URL
-    // list) and size/color variants (comma list → array) if present.
-    const customFields: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(custom)) if (v?.trim()) customFields[k] = v.trim();
+    // Start from whatever this form doesn't edit (untouched), then layer in the
+    // editable fields; attach tags (comma list), gallery (image URL list) and
+    // size/color variants (comma list → array) if present.
+    const customFields: Record<string, unknown> = { ...preservedFields };
+    for (const [k, v] of Object.entries(custom)) if (typeof v === 'string' && v.trim()) customFields[k] = v.trim();
     if (tags.trim()) customFields.tags = tags.trim();
     if (gallery.length > 0) customFields.gallery = gallery;
     if (sizes.trim()) customFields.sizes = sizes.split(',').map((s) => s.trim()).filter(Boolean);

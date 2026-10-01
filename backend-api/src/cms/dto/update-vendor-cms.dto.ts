@@ -1,5 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+
+// Categorized portfolio gallery item (e.g. a photography vendor's Ceremony/
+// Portraits/Details/Celebration gallery). Stored as VendorCMS.portfolio (Json).
+export class PortfolioImageDto {
+  @ApiProperty() @IsString() @MaxLength(2000) id!: string;
+  @ApiProperty() @IsString() @MaxLength(2000) src!: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(200) alt?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(200) title?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(60) category?: string;
+}
 
 export class UpdateVendorCmsDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() businessName?: string;
@@ -22,4 +33,8 @@ export class UpdateVendorCmsDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() youtube?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() googleMaps?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() googleAnalyticsId?: string;
+
+  @ApiProperty({ required: false, type: [PortfolioImageDto], description: 'Categorized portfolio gallery (replaces the whole list)' })
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @ValidateNested({ each: true }) @Type(() => PortfolioImageDto)
+  portfolio?: PortfolioImageDto[];
 }

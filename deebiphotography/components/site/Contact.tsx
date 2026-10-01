@@ -11,6 +11,7 @@ const ADDRESS = 'Surya Nagar, Madurai';
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', date: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [leadSaved, setLeadSaved] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,23 +20,22 @@ export default function Contact() {
     const whatsappText = `Hello Deebi Wedding Stories!%0A%0AName: ${form.name}%0APhone: ${form.phone}%0AEmail: ${form.email}%0AWedding Date: ${form.date}%0AMessage: ${form.message}`;
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappText}`;
 
-    // Real CRM lead capture (engine.enquiry) - fire alongside the WhatsApp flow,
-    // never blocking or replacing it; the WhatsApp message is still what the
-    // couple sees and sends.
-    submitEnquiry({
+    // Real CRM lead capture (engine.enquiry) - awaited so the on-screen
+    // confirmation reflects what actually happened, alongside the WhatsApp
+    // flow (never blocking or replacing it; the WhatsApp message is still
+    // what the couple sees and sends).
+    const saved = await submitEnquiry({
       name: form.name,
       phone: form.phone,
       message: `Email: ${form.email || 'Not provided'}\nWedding date: ${form.date || 'Not provided'}\nMessage: ${form.message || 'Not provided'}`,
     });
-
+    setLeadSaved(saved);
+    setStatus('success');
+    window.open(whatsappUrl, '_blank');
     setTimeout(() => {
-      setStatus('success');
-      window.open(whatsappUrl, '_blank');
-      setTimeout(() => {
-        setStatus('idle');
-        setForm({ name: '', email: '', phone: '', date: '', message: '' });
-      }, 3000);
-    }, 1000);
+      setStatus('idle');
+      setForm({ name: '', email: '', phone: '', date: '', message: '' });
+    }, 6000);
   };
 
   const contactItems = [
@@ -122,6 +122,21 @@ export default function Contact() {
 
           <div className="lg:col-span-3">
             <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 border border-white/10 rounded-sm bg-ink-light/50">
+              {status === 'success' && (
+                <div className="flex items-start gap-3 p-4 border border-gold/40 bg-gold/10 rounded-sm">
+                  <CheckCircle2 className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-cream text-sm font-medium">
+                      {leadSaved ? 'Your enquiry has been received' : 'WhatsApp is ready'}
+                    </p>
+                    <p className="text-warm/60 text-xs mt-1">
+                      {leadSaved
+                        ? 'Deebi Wedding Stories has your details and will contact you shortly. We also opened WhatsApp so you can message us directly for the fastest response.'
+                        : 'Your message is prepared in WhatsApp — send it to reach us directly.'}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-warm-dark text-xs tracking-[0.15em] uppercase mb-2">
@@ -197,7 +212,7 @@ export default function Contact() {
               >
                 {status === 'idle' && (<><Send className="w-4 h-4" /> Send Enquiry</>)}
                 {status === 'submitting' && (<><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>)}
-                {status === 'success' && (<><CheckCircle2 className="w-4 h-4" /> Opening WhatsApp...</>)}
+                {status === 'success' && (<><CheckCircle2 className="w-4 h-4" /> {leadSaved ? 'Enquiry Received' : 'Opening WhatsApp...'}</>)}
               </button>
 
               <p className="text-center text-warm-dark text-xs">

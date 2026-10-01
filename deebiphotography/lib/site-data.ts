@@ -6,6 +6,7 @@ export interface LiveSiteData {
     businessName: string | null; tagline: string | null; about: string | null;
     logo: string | null; banner: string | null; phone: string | null; whatsapp: string | null;
     email: string | null; address: string | null;
+    portfolio?: { id: string; src: string; alt?: string; title?: string; category?: string }[] | null;
   } | null;
   products: {
     id: string; name: string; description: string | null; price: string | null;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, LayoutTemplate, Upload, Image as ImageIcon } from 'lucide-react';
+import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, LayoutTemplate, Upload, Image as ImageIcon, GripVertical, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
@@ -10,7 +10,7 @@ import { openMyWebsite } from '@/lib/view-website';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
 
-type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'template';
+type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'template' | 'portfolio';
 
 interface VendorCms {
   businessName: string | null; tagline: string | null; about: string | null;
@@ -19,6 +19,7 @@ interface VendorCms {
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   seoTitle: string | null; seoDesc: string | null; seoKeywords: string | null; googleAnalyticsId: string | null;
 }
+interface PortfolioImage { id: string; src: string; alt?: string; title?: string; category?: string }
 interface WebsiteTheme { id: string; name: string; description?: string | null; industry: string | null; cssVars: Record<string, string>; preview?: string | null; isDefault: boolean; price?: number | null; unlocked?: boolean }
 
 const EMPTY: VendorCms = {
@@ -42,6 +43,9 @@ export default function WebsiteManagerPage() {
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
   const [themes, setThemes] = useState<WebsiteTheme[]>([]);
   const [unlocking, setUnlocking] = useState<string | null>(null);
+  const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
+  const [portfolioSaving, setPortfolioSaving] = useState(false);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
 
   const loadThemes = useCallback(() => {
     const q = user?.industry ? `?industry=${encodeURIComponent(user.industry)}` : '';
@@ -102,13 +106,67 @@ export default function WebsiteManagerPage() {
   const load = useCallback(() => {
     if (!user) return;
     api.getVendorCMS(user.id).then((res) => {
-      if (res.data) setCms({ ...EMPTY, ...res.data, businessName: res.data.businessName ?? user.businessName ?? '' });
+      if (res.data) {
+        setCms({ ...EMPTY, ...res.data, businessName: res.data.businessName ?? user.businessName ?? '' });
+        setPortfolio(Array.isArray(res.data.portfolio) ? res.data.portfolio : []);
+      }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
 
   const set = (k: keyof VendorCms, v: string) => setCms((p) => ({ ...p, [k]: v }));
+
+  // Portfolio: each mutation saves immediately (same pattern as My Products'
+  // gallery) rather than waiting on the shared "Save Changes" button below —
+  // losing an upload because you forgot to click Save is worse than an extra
+  // network call per action.
+  const savePortfolio = async (next: PortfolioImage[]) => {
+    if (!user) return;
+    setPortfolio(next);
+    setPortfolioSaving(true);
+    try {
+      await api.updateVendorCMS(user.id, { portfolio: next });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save portfolio');
+    } finally {
+      setPortfolioSaving(false);
+    }
+  };
+
+  const uploadPortfolioImage = async (file: File) => {
+    setUploadingPortfolio(true);
+    try {
+      const r = await api.uploadImage(file);
+      if (r.data?.url) {
+        await savePortfolio([...portfolio, { id: `${Date.now()}`, src: r.data.url, title: '', category: '' }]);
+      }
+    } catch {
+      /* optional */
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  };
+
+  // Title/category typing updates local state immediately (so the input feels
+  // responsive) but only persists on blur - saving on every keystroke would fire
+  // an API call per character.
+  const updatePortfolioItemLocal = (id: string, patch: Partial<PortfolioImage>) => {
+    setPortfolio((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  };
+  const flushPortfolio = () => savePortfolio(portfolio);
+
+  const removePortfolioItem = (id: string) => {
+    savePortfolio(portfolio.filter((p) => p.id !== id));
+  };
+
+  const movePortfolioItem = (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= portfolio.length) return;
+    const next = [...portfolio];
+    [next[index], next[target]] = [next[target], next[index]];
+    savePortfolio(next);
+  };
 
   const save = async () => {
     if (!user) return;
@@ -130,6 +188,7 @@ export default function WebsiteManagerPage() {
     { key: 'basic', label: 'Basic Info' },
     { key: 'branding', label: 'Logo & Banner' },
     { key: 'about', label: 'About & Social' },
+    { key: 'portfolio', label: 'Portfolio' },
     { key: 'seo', label: 'SEO' },
     { key: 'template', label: 'Template' },
   ];
@@ -228,6 +287,64 @@ export default function WebsiteManagerPage() {
               <div><label className="mb-1.5 block text-xs font-medium text-slate-600">LinkedIn</label><input className={field} value={cms.linkedin ?? ''} onChange={(e) => set('linkedin', e.target.value)} /></div>
               <div><label className="mb-1.5 block text-xs font-medium text-slate-600">YouTube</label><input className={field} value={cms.youtube ?? ''} onChange={(e) => set('youtube', e.target.value)} /></div>
               <div className="sm:col-span-2"><label className="mb-1.5 block text-xs font-medium text-slate-600">Google Maps link</label><input className={field} value={cms.googleMaps ?? ''} onChange={(e) => set('googleMaps', e.target.value)} /></div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'portfolio' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-500">
+                A categorized photo gallery for your site (e.g. Ceremony, Portraits, Details, Celebration for a
+                photography site — type whatever categories fit your business; they show as filter chips on your
+                live site). Each change saves instantly. {portfolioSaving && <span className="text-primary-600">Saving…</span>}
+              </p>
+            </div>
+            {portfolio.length === 0 && (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                No portfolio photos yet — your site shows its original sample gallery until you add some.
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {portfolio.map((p, i) => (
+                <div key={p.id} className="flex gap-3 rounded-xl border border-slate-200 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.src} alt={p.alt ?? ''} className="h-20 w-20 flex-shrink-0 rounded-lg object-cover" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <input value={p.title ?? ''} onChange={(e) => updatePortfolioItemLocal(p.id, { title: e.target.value })} onBlur={flushPortfolio} placeholder="Title"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 focus:border-primary-400 focus:outline-none" />
+                    <input value={p.category ?? ''} onChange={(e) => updatePortfolioItemLocal(p.id, { category: e.target.value })} onBlur={flushPortfolio} placeholder="Category (e.g. Ceremony)"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-900 focus:border-primary-400 focus:outline-none" />
+                    <div className="flex items-center gap-1 pt-0.5">
+                      <GripVertical className="h-3.5 w-3.5 text-slate-300" />
+                      <button type="button" onClick={() => movePortfolioItem(i, -1)} disabled={i === 0} className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ChevronUp className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => movePortfolioItem(i, 1)} disabled={i === portfolio.length - 1} className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-30"><ChevronDown className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => removePortfolioItem(p.id)} className="ml-auto rounded p-1 text-slate-400 hover:bg-error-50 hover:text-error-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:border-primary-300 hover:text-primary-700">
+                {uploadingPortfolio ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Add Photo
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPortfolioImage(f); }} />
+              </label>
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = e.currentTarget.elements.namedItem('portfolioUrl') as HTMLInputElement;
+                  const url = input.value.trim();
+                  if (!url) return;
+                  savePortfolio([...portfolio, { id: `${Date.now()}`, src: url, title: '', category: '' }]);
+                  input.value = '';
+                }}
+              >
+                <input name="portfolioUrl" placeholder="…or paste an image URL" className="w-56 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-primary-400 focus:outline-none" />
+                <Button type="submit" size="sm" variant="outline">Add</Button>
+              </form>
             </div>
           </div>
         )}

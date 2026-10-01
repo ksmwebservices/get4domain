@@ -13,15 +13,17 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [service, setService] = useState('Wedding Photography');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [leadSaved, setLeadSaved] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', date: '', city: '', notes: '' });
 
   const openBooking = (selectedService?: string) => {
     setService(selectedService || 'Wedding Photography');
     setStatus('idle');
+    setLeadSaved(false);
     setOpen(true);
   };
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setStatus('sending');
     const message = [
@@ -35,19 +37,18 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
       `Notes: ${form.notes || 'Not provided'}`,
     ].join('\n');
 
-    // Real CRM lead capture (engine.enquiry) - fire alongside the WhatsApp flow,
-    // never blocking or replacing it; the WhatsApp message is still what the
-    // couple sees and sends.
-    submitEnquiry({
+    // Real CRM lead capture (engine.enquiry) - awaited so the on-screen
+    // confirmation reflects what actually happened, alongside the WhatsApp
+    // flow (never blocking or replacing it; the WhatsApp message is still
+    // what the couple sees and sends).
+    const saved = await submitEnquiry({
       name: form.name,
       phone: form.phone,
       message: `Service: ${service}\nWedding date: ${form.date || 'Not provided'}\nCity / venue: ${form.city || 'Not provided'}\nNotes: ${form.notes || 'Not provided'}`,
     });
-
-    window.setTimeout(() => {
-      setStatus('sent');
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
-    }, 500);
+    setLeadSaved(saved);
+    setStatus('sent');
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -70,8 +71,17 @@ export function BookingProvider({ children }: { children: React.ReactNode }) {
               {status === 'sent' ? (
                 <div className="py-10 text-center">
                   <CheckCircle2 className="w-12 h-12 text-gold mx-auto mb-4" />
-                  <h3 className="font-playfair text-2xl text-cream">WhatsApp is ready</h3>
-                  <p className="text-warm/60 mt-2">Your booking details are prepared. We will reply with availability and package options.</p>
+                  {leadSaved ? (
+                    <>
+                      <h3 className="font-playfair text-2xl text-cream">Your booking request has been received</h3>
+                      <p className="text-warm/60 mt-2">Deebi Wedding Stories has your details and will contact you shortly. We also opened WhatsApp so you can send us a message directly for the fastest response.</p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="font-playfair text-2xl text-cream">WhatsApp is ready</h3>
+                      <p className="text-warm/60 mt-2">Your booking details are prepared. We will reply with availability and package options.</p>
+                    </>
+                  )}
                   <button onClick={() => setOpen(false)} className="mt-6 px-6 py-3 bg-gold text-ink text-sm rounded-sm">Close</button>
                 </div>
               ) : (
