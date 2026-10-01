@@ -40,7 +40,7 @@ export default function About() {
           <div className="relative">
             <div className="relative aspect-[4/5] rounded-sm overflow-hidden">
               <img
-                src="https://images.pexels.com/photos/19613670/pexels-photo-19613670.jpeg?auto=compress&cs=tinysrgb&w=900"
+                src="/images/founder.jpg.png"
                 alt="Boopathi Raja R — Founder of Deebi Wedding Stories"
                 className="w-full h-full object-cover"
               />
