@@ -22,6 +22,7 @@ import { TeamModule } from './team/team.module';
 import { AdminTeamModule } from './admin-team/admin-team.module';
 import { AdminCrmModule } from './admin-crm/admin-crm.module';
 import { QuotesModule } from './quotes/quotes.module';
+import { ManagedServicesModule } from './managed-services/managed-services.module';
 import { IndustriesModule } from './industries/industries.module';
 import { AiTemplatesModule } from './ai-templates/ai-templates.module';
 import { WebsiteThemesModule } from './website-themes/website-themes.module';
@@ -125,6 +126,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     AdminTeamModule,
     AdminCrmModule,
     QuotesModule,
+    ManagedServicesModule,
     IndustriesModule,
     AiTemplatesModule,
     WebsiteThemesModule,

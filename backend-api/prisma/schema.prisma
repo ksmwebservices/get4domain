@@ -683,20 +683,48 @@ enum Role {
 model Quote {
   id            String   @id @default(cuid())
   vendorId      String? // set when quoting an existing vendor
+  // Soft ref to a Lead (g4d_leads) this quote was built against — e.g. a Managed
+  // Services enquiry. Nullable/no relation: the existing single-item Send-Quote
+  // flow never sets this, only the newer multi-item proposal flow does.
+  leadId        String?
   prospectName  String
   prospectPhone String?
   prospectEmail String?
   quoteType     String // domainapp_plan | domaincampaign_wallet | custom
   itemLabel     String // human label of what is being quoted
-  amount        Int // in paise
+  amount        Int // in paise — total across all items when `items` is set
   notes         String?
   channel       String // email | whatsapp | sms
-  status        String   @default("sent") // sent | viewed | accepted
+  status        String   @default("sent") // draft | sent | viewed | accepted | declined
   sentBy        String? // admin email/id that sent it
+  // Multi-line proposal items (ProposalLineItem[] below) — set by the Managed
+  // Services quoting tool. Null for the original single-item quote flow, which
+  // keeps using itemLabel/amount directly.
+  items         Json?
+  // Random token for the optional public share link (GET /quotes/public/:token).
+  shareToken    String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@map("g4d_quotes")
+}
+
+// Editable rate card for the Managed Services quoting tool — KSM's team edits
+// these defaults; a specific quote's line items (Quote.items Json) are a frozen
+// copy at quote-creation time, so changing a rate here never alters an already
+// -sent quote.
+model ManagedServiceCatalogItem {
+  id          String   @id @default(cuid())
+  label       String // e.g. "Custom Web Application"
+  description String?
+  defaultRate Int // in paise — admin-editable placeholder, not real pricing until KSM sets it
+  unit        String? // free text, e.g. "one-time", "per month", "per project"
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("g4d_managed_service_catalog_items")
 }
 
 // Get4Domain's OWN internal staff roles (distinct from vendor Role above).

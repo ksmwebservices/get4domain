@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
   BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal,
-  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle, IndianRupee,
+  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle, IndianRupee, Briefcase,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import type { AdminRole } from '@/lib/auth';
@@ -34,6 +34,7 @@ const navItems: AdminNavItem[] = [
   { icon: Sparkles,          label: 'AI Studio',     href: '/admin/ai-studio',    roles: SUPER_MKT },
   { icon: Sparkles,          label: 'Content Library', href: '/admin/library',    roles: SUPER_MKT },
   { icon: FileSignature,     label: 'Send Quote',    href: '/admin/send-quote',   roles: SUPER_MKT },
+  { icon: Briefcase,         label: 'Managed Services', href: '/admin/managed-services', roles: SUPER_MKT },
   { icon: CalendarCheck,     label: 'Demo Bookings', href: '/admin/leads',        roles: SUPER },
   { icon: Users,             label: 'Vendors',       href: '/admin/customers',    roles: SUPER },
   { icon: FileText,          label: 'Invoices',      href: '/admin/invoices',     roles: SUPER_OPS },

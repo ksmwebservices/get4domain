@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
-import { QuotesController } from './quotes.controller';
+import { QuotesController, PublicQuotesController } from './quotes.controller';
 import { CommunicationModule } from '../communication/communication.module';
 
 @Module({
   imports: [CommunicationModule],
   providers: [QuotesService],
-  controllers: [QuotesController],
+  controllers: [QuotesController, PublicQuotesController],
   exports: [QuotesService],
 })
 export class QuotesModule {}

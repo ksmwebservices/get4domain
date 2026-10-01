@@ -615,8 +615,32 @@ export const api = {
     subject?: string;
   }) => apiCall('/admin/quotes', { method: 'POST', body: JSON.stringify(data) }),
   getQuotes: () => apiCall('/admin/quotes'),
-  updateQuoteStatus: (id: string, status: 'sent' | 'viewed' | 'accepted') =>
+  getQuote: (id: string) => apiCall(`/admin/quotes/${id}`),
+  updateQuoteStatus: (id: string, status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined') =>
     apiCall(`/admin/quotes/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
+  // Managed Services — public marketing enquiry + admin quoting/proposal tool
+  managedServicesEnquiry: (data: { name: string; phone: string; email?: string; business: string; interests: string[]; message?: string }) =>
+    apiCall('/managed-services/enquiry', { method: 'POST', body: JSON.stringify(data) }),
+  getManagedServicesLeads: () => apiCall('/admin/managed-services/leads'),
+  getManagedServicesCatalog: (all = false) => apiCall(`/admin/managed-services/catalog${all ? '?all=1' : ''}`),
+  createCatalogItem: (data: { label: string; description?: string; defaultRate: number; unit?: string; sortOrder?: number }) =>
+    apiCall('/admin/managed-services/catalog', { method: 'POST', body: JSON.stringify(data) }),
+  updateCatalogItem: (id: string, data: { label?: string; description?: string; defaultRate?: number; unit?: string; active?: boolean; sortOrder?: number }) =>
+    apiCall(`/admin/managed-services/catalog/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  createProposal: (data: {
+    leadId?: string;
+    prospectName: string;
+    prospectPhone?: string;
+    prospectEmail?: string;
+    items: { label: string; description?: string; qty: number; unit?: string; rate: number; notes?: string }[];
+    notes?: string;
+  }) => apiCall('/admin/quotes/proposals', { method: 'POST', body: JSON.stringify(data) }),
+  getQuotePdf: (id: string) => apiCall(`/admin/quotes/${id}/pdf`),
+  shareQuote: (id: string) => apiCall(`/admin/quotes/${id}/share`, { method: 'POST' }),
+  getPublicProposal: (token: string) => apiCall(`/quotes/public/${token}`),
+  respondPublicProposal: (token: string, status: 'accepted' | 'declined') =>
+    apiCall(`/quotes/public/${token}/respond`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
   // Admin Team (internal Get4Domain staff — Super Admin manages)
   adminTeamMe: () => apiCall('/admin-team/me'),
