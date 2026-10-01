@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Check, CreditCard, MessageCircle, Search, Share2, MapPin, Wrench, PenTool, Palette, Image as ImageIcon, Loader2, Send
+  Check, CreditCard, MessageCircle, Search, Share2, MapPin, Wrench, PenTool, Palette, Image as ImageIcon, Loader2, Send, Target
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -42,6 +42,37 @@ export default function MyServicesPage() {
   const [requesting, setRequesting] = useState(false);
   const [requestedIds, setRequestedIds] = useState<string[]>([]);
   const [error, setError] = useState('');
+
+  const [dcOpen, setDcOpen] = useState(false);
+  const [dcPhone, setDcPhone] = useState('');
+  const [dcMessage, setDcMessage] = useState('');
+  const [dcSending, setDcSending] = useState(false);
+  const [dcSent, setDcSent] = useState(false);
+  const [dcError, setDcError] = useState('');
+
+  async function submitDomainCampaign() {
+    if (!user) return;
+    if (dcPhone.replace(/\D/g, '').length < 10) {
+      setDcError('Enter a 10-digit phone number so our team can reach you.');
+      return;
+    }
+    setDcSending(true);
+    setDcError('');
+    try {
+      await api.addDomainCampaignFromDashboard({
+        name: user.name,
+        phone: dcPhone.trim(),
+        email: user.email,
+        business: user.businessName ?? user.name,
+        message: dcMessage.trim() || undefined,
+      });
+      setDcSent(true);
+    } catch (err) {
+      setDcError(err instanceof Error ? err.message : 'Could not send — please try again.');
+    } finally {
+      setDcSending(false);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -97,6 +128,22 @@ export default function MyServicesPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* DomainCampaign — separate managed service, percentage-of-spend pricing */}
+      <div className="rounded-2xl border-2 border-warning-300 bg-warning-50/40 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-warning-100">
+              <Target className="h-5 w-5 text-warning-700" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-900">DomainCampaign — Managed Ads &amp; Growth</div>
+              <p className="mt-0.5 max-w-md text-xs text-slate-600">We run your Meta &amp; Google ads, content and organic growth. 10% of your monthly ad spend, ₹9,999/month minimum.</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={() => setDcOpen(true)}>Add DomainCampaign</Button>
+        </div>
       </div>
 
       {/* Plan — single product, ₹999/month */}
@@ -171,6 +218,38 @@ export default function MyServicesPage() {
             </div>
             <p className="text-xs text-slate-500">We'll review your request and send a Razorpay payment link to activate — usually within a few hours.</p>
             <Button fullWidth loading={requesting} onClick={confirmRequest} leftIcon={<Send className="h-4 w-4" />}>
+              Send Request
+            </Button>
+          </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={dcOpen} onClose={() => { setDcOpen(false); setDcSent(false); setDcError(''); }} title="Add DomainCampaign" maxWidth="max-w-md">
+        {dcSent ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-success-100"><Check className="h-6 w-6 text-success-600" /></span>
+            <p className="text-base font-semibold text-slate-900">Thanks — we&apos;ve got it.</p>
+            <p className="max-w-sm text-sm text-slate-500">Our team will reach out to understand your current ad spend and get you set up.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {dcError && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{dcError}</div>}
+            <div className="rounded-xl bg-slate-50 p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-slate-500">Business</span><span className="font-medium text-slate-900">{user?.businessName ?? user?.name}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Email</span><span className="text-slate-900">{user?.email}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Pricing</span><span className="text-slate-900">10% of ad spend, ₹9,999/mo min.</span></div>
+            </div>
+            <input
+              type="tel" inputMode="tel" placeholder="Your phone number" value={dcPhone}
+              onChange={(e) => setDcPhone(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            />
+            <textarea
+              rows={3} placeholder="Roughly how much do you spend on ads today? (optional)" value={dcMessage}
+              onChange={(e) => setDcMessage(e.target.value)}
+              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            />
+            <Button fullWidth loading={dcSending} onClick={submitDomainCampaign} leftIcon={<Send className="h-4 w-4" />}>
               Send Request
             </Button>
           </div>

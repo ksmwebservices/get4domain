@@ -643,6 +643,22 @@ export const api = {
   respondPublicProposal: (token: string, status: 'accepted' | 'declined') =>
     apiCall(`/quotes/public/${token}/respond`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
+  // DomainCampaign — public marketing enquiry, dashboard CTA, and admin spend/billing tool
+  domainCampaignEnquiry: (data: { name: string; phone: string; email?: string; business: string; message?: string }) =>
+    apiCall('/domain-campaign/enquiry', { method: 'POST', body: JSON.stringify(data) }),
+  addDomainCampaignFromDashboard: (data: { name: string; phone: string; email?: string; business: string; message?: string }) =>
+    apiCall('/domain-campaign/clients/me', { method: 'POST', body: JSON.stringify(data) }),
+  getDomainCampaignLeads: () => apiCall('/admin/domain-campaign/leads'),
+  getDomainCampaignClients: () => apiCall('/admin/domain-campaign/clients'),
+  addDomainCampaignClient: (vendorId: string) =>
+    apiCall('/admin/domain-campaign/clients', { method: 'POST', body: JSON.stringify({ vendorId }) }),
+  getDomainCampaignRecords: () => apiCall('/admin/domain-campaign/records'),
+  getDomainCampaignBillingHistory: (vendorId: string) => apiCall(`/admin/domain-campaign/records/vendor/${vendorId}`),
+  recordDomainCampaignSpend: (data: { vendorId: string; month: string; adSpendPaise: number; notes?: string }) =>
+    apiCall('/admin/domain-campaign/records', { method: 'POST', body: JSON.stringify(data) }),
+  generateDomainCampaignInvoice: (recordId: string) =>
+    apiCall(`/admin/domain-campaign/records/${recordId}/invoice`, { method: 'POST' }),
+
   // Admin Team (internal Get4Domain staff — Super Admin manages)
   adminTeamMe: () => apiCall('/admin-team/me'),
   inviteAdminMember: (data: { name: string; email: string; phone?: string; role: 'SUPER_ADMIN' | 'MARKETING' | 'OPERATIONS' }) =>

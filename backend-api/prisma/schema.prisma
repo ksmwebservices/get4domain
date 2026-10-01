@@ -126,6 +126,7 @@ model Vendor {
   restaurantOrders     RestaurantOrder[]
   restaurantOrderItems RestaurantOrderItem[]
   retailProducts       RetailProduct[]
+  domainCampaignRecords DomainCampaignRecord[]
 }
 
 model Subscription {
@@ -733,6 +734,28 @@ model ManagedServiceCatalogItem {
   updatedAt   DateTime @updatedAt
 
   @@map("g4d_managed_service_catalog_items")
+}
+
+// DomainCampaign (dispatch 01-Oct-2026): one row per vendor per billing month,
+// the manually-recorded ad spend that drives that month's fee. Client status
+// itself is a Subscription row with product: DOMAIN_CAMPAIGN (that enum value
+// already existed, unused, before this model) — this table only holds the
+// month-by-month spend/fee history, since the fee varies monthly and a single
+// Subscription.amount can't represent that.
+model DomainCampaignRecord {
+  id           String   @id @default(cuid())
+  vendorId     String
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+  month        String // "2026-10" (YYYY-MM)
+  adSpendPaise Int // manually recorded — no live Meta/Google Ads API tracking yet
+  feePaise     Int // MAX(10% of adSpendPaise, 999900) at the time this was recorded
+  invoiceId    String? // set once a monthly invoice has been generated for this record
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([vendorId, month])
+  @@map("g4d_domain_campaign_records")
 }
 
 // Get4Domain's OWN internal staff roles (distinct from vendor Role above).

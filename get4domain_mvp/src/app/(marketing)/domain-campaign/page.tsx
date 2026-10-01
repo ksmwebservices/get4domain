@@ -1,102 +1,119 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Target, PenTool, BarChart3, Search, Users2, Share2, Check } from 'lucide-react';
+import Faq from '@/components/marketing/Faq';
+import DomainCampaignForm from '@/components/marketing/DomainCampaignForm';
 
 export const metadata: Metadata = {
-  title: 'Campaign Features | DomainApp',
-  description: 'Campaigns are included in your DomainApp plan (₹999/month) — landing pages, social media, WhatsApp/SMS/email messaging and AI content. No separate subscription.',
+  title: 'DomainCampaign — Managed Paid Ads & Growth',
+  description: 'We run your Meta & Google ads, content and organic growth. 10% of your monthly ad spend, ₹9,999/month minimum.',
   alternates: { canonical: 'https://get4domain.com/domain-campaign' },
 };
 
-const STEPS = [
-  { n: 1, title: 'You describe what to promote', desc: 'Tell us the offer, product or announcement.' },
-  { n: 2, title: 'Our AI creates the content', desc: 'Posts, captions, posters and reels, on brand.' },
-  { n: 3, title: 'You approve with one click', desc: 'Nothing goes out without your approval.' },
-  { n: 4, title: 'We post on your social pages', desc: 'Published directly to your Facebook & Instagram.' },
-  { n: 5, title: 'Leads flow into your CRM', desc: 'Every enquiry lands in TeleCRM, ready to call.' },
+const CAPABILITIES: { icon: typeof Target; name: string; blurb: string }[] = [
+  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta (Facebook & Instagram) and Google Ads — planned, launched and optimized by our team every month.' },
+  { icon: PenTool, name: 'Content Management', blurb: 'Posts, creative and campaign assets produced and scheduled for you.' },
+  { icon: BarChart3, name: 'Analytics & Reporting', blurb: 'A monthly statement showing exactly what was spent and what you were billed — no black box.' },
+  { icon: Search, name: 'SEO / GEO / AEO', blurb: 'Organic search, local/geo visibility and answer-engine optimization, worked on continuously.' },
+  { icon: Users2, name: 'Group & Community Posting', blurb: 'Your offers shared into relevant local groups and communities.' },
+  { icon: Share2, name: 'Link Sharing', blurb: 'Your site and campaign links placed and shared where your customers already are.' },
 ];
 
-const CAPABILITIES = [
-  'Campaign landing pages with lead capture',
-  'Social media posting (we post on your page)',
-  'WhatsApp, SMS & email campaigns',
-  'AI content — posts, posters, reels',
-  'Lead pipeline + TeleCRM follow-up',
-  'Campaign analytics (reach, clicks, leads)',
+const FAQ = [
+  { q: 'How is pricing calculated?', a: 'You pay 10% of your actual monthly ad spend, with a ₹9,999/month minimum. Example: ₹20,000 ad spend → 10% is ₹2,000, below the minimum, so you pay ₹9,999. ₹2,00,000 ad spend → 10% is ₹20,000, above the minimum, so you pay ₹20,000. Plus 18% GST either way.' },
+  { q: 'Why is ad spend recorded manually, not tracked automatically?', a: 'Live Meta/Google Ads API reporting is on our roadmap (it requires platform app review). Until then, your account manager records your actual monthly spend directly from the ad accounts, and your monthly statement shows that figure alongside the fee calculation — fully transparent either way.' },
+  { q: 'Is this the same as the campaign tools in my DomainApp plan?', a: 'No. DomainApp includes basic campaign tools (landing pages, AI content, messaging) as part of your subscription. DomainCampaign is a separate, managed service — our team actually plans, runs and optimizes paid ads and organic growth on your behalf, billed against your ad spend.' },
+  { q: 'Do I need to already be a Get4Domain customer?', a: 'No — DomainCampaign is available whether or not you use DomainApp, though if you do, we can pre-fill your details from your dashboard.' },
+  { q: 'Who actually spends the ad budget?', a: 'You fund and own your Meta/Google ad accounts directly — we plan, execute and optimize campaigns within the budget you set. Our fee is for that management work, calculated from what you actually spent.' },
 ];
 
-const RATES: [string, string][] = [
-  ['Social media post (AI)', '₹5'], ['We post on your page', '₹10'], ['Extra campaign page', '₹20'],
-  ['WhatsApp message', '₹1'], ['SMS', '₹0.50'], ['Email', '₹0.10'],
-];
-
-export default function CampaignFeaturesPage() {
+export default function DomainCampaignPage() {
   return (
-    <>
-      <section className="relative overflow-hidden bg-slate-950 text-slate-100">
-        <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-32 h-[34rem] w-[34rem] rounded-full bg-primary-600/15 blur-[120px]" />
-          <div className="absolute right-0 top-16 h-[26rem] w-[26rem] rounded-full bg-warning-500/10 blur-[110px]" />
+    <div className="relative overflow-hidden bg-slate-950 text-slate-100">
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[60rem]">
+        <div className="absolute -left-20 -top-32 h-[36rem] w-[36rem] rounded-full bg-primary-600/15 blur-[130px]" />
+        <div className="absolute right-0 top-16 h-[28rem] w-[28rem] rounded-full bg-warning-500/10 blur-[110px]" />
+        <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+      </div>
+
+      {/* HERO */}
+      <section className="relative mx-auto max-w-3xl px-4 pb-6 pt-16 text-center sm:px-6 md:pt-24">
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">
+          DomainCampaign
+        </span>
+        <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+          We run your <span className="text-gradient-hero">paid ads &amp; growth.</span>
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-lg text-slate-400">
+          Managed Meta &amp; Google ads, content, analytics and organic SEO/GEO/AEO growth — planned, run and optimized by our team every month.
+        </p>
+
+        <div className="mx-auto mt-7 flex max-w-sm flex-col items-center gap-1 rounded-2xl border border-warning-400/30 bg-warning-400/10 px-6 py-4">
+          <span className="text-3xl font-bold text-warning-200">10% of your ad spend</span>
+          <span className="text-sm text-slate-300">₹9,999/month minimum · + 18% GST</span>
         </div>
-        <div className="relative mx-auto max-w-3xl px-4 pb-10 pt-20 text-center sm:px-6 md:pt-28 lg:px-8">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">📣 Included in DomainApp</span>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight text-white md:text-5xl">Campaigns, <span className="text-gradient-hero">Built In</span></h1>
-          <p className="mt-5 text-lg text-slate-400">
-            Campaigns aren&apos;t a separate product — they&apos;re part of your DomainApp plan. Create landing pages, post to social, message customers and generate leads, all from one dashboard.
-          </p>
-          <p className="mt-3 text-sm font-semibold text-slate-200">Included in your DomainApp plan — no extra subscription.</p>
-          <div className="mt-8">
-            <Link href="/book-demo" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">Get Started — ₹999/month <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
-          </div>
+
+        <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <a href="#get-started" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
+            Get Started <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </a>
+          <a href="#get-started" className="inline-flex w-full items-center justify-center rounded-xl border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800 sm:w-auto">
+            Talk to us
+          </a>
         </div>
       </section>
 
-      <section className="py-16 md:py-24">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">How campaigns work</h2>
-          <ol className="mt-12 space-y-4">
-            {STEPS.map((s) => (
-              <li key={s.n} className="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">{s.n}</span>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">{s.title}</h3>
-                  <p className="mt-0.5 text-sm text-slate-600">{s.desc}</p>
+      {/* CAPABILITIES */}
+      <section className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {CAPABILITIES.map((c) => {
+            const Icon = c.icon;
+            return (
+              <div key={c.name} className="flex flex-col rounded-2xl border border-white/5 bg-slate-800/60 p-6 backdrop-blur-xl transition-all hover:border-primary-400/20 hover:shadow-glow">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600">
+                  <Icon className="h-5 w-5 text-white" />
                 </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section className="bg-slate-50 py-16">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-bold text-slate-900">What&apos;s included</h2>
-          <ul className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2">
-            {CAPABILITIES.map((c) => (
-              <li key={c} className="flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />{c}</li>
-            ))}
-          </ul>
-          <p className="mt-8 text-center text-sm text-slate-600">Campaign &amp; messaging usage is billed from your wallet (₹499 free credit included):</p>
-          <div className="mx-auto mt-4 max-w-md overflow-hidden rounded-2xl border border-slate-200">
-            {RATES.map(([label, rate], i) => (
-              <div key={label} className={`flex items-center justify-between px-5 py-2.5 text-sm ${i % 2 ? 'bg-white' : 'bg-slate-50'}`}>
-                <span className="text-slate-600">{label}</span><span className="font-semibold text-slate-900">{rate}</span>
+                <h2 className="mt-4 text-base font-bold text-white">{c.name}</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{c.blurb}</p>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      </section>
+
+      {/* PRICING EXPLAINER */}
+      <section className="relative border-t border-white/5 bg-slate-900/60 py-16">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Pricing, worked out in the open.</h2>
+          <p className="mt-3 text-slate-400">10% of what you actually spend on ads that month, with a ₹9,999 floor so small budgets are still properly managed. No separate retainer, no surprise line items.</p>
+          <div className="mx-auto mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/5 bg-slate-800/60 p-6 text-left backdrop-blur-xl">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Example — smaller budget</p>
+              <p className="mt-2 text-sm text-slate-300">Monthly ad spend: <span className="font-semibold text-white">₹20,000</span></p>
+              <p className="mt-1 text-sm text-slate-300">10% would be ₹2,000 — below the minimum</p>
+              <p className="mt-3 flex items-center gap-2 text-lg font-bold text-warning-300"><Check className="h-4 w-4" />You pay ₹9,999 + GST</p>
+            </div>
+            <div className="rounded-2xl border border-white/5 bg-slate-800/60 p-6 text-left backdrop-blur-xl">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Example — larger budget</p>
+              <p className="mt-2 text-sm text-slate-300">Monthly ad spend: <span className="font-semibold text-white">₹2,00,000</span></p>
+              <p className="mt-1 text-sm text-slate-300">10% is ₹20,000 — above the minimum</p>
+              <p className="mt-3 flex items-center gap-2 text-lg font-bold text-warning-300"><Check className="h-4 w-4" />You pay ₹20,000 + GST</p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-slate-900">
-        <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-white md:text-3xl">One plan. Website, workspace, campaigns &amp; AI.</h2>
-          <p className="mt-3 text-slate-300">Everything included at ₹999/month.</p>
-          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/domain-app" className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 font-medium text-slate-900 hover:bg-slate-100">Explore DomainApp <ArrowRight className="h-4 w-4" /></Link>
-            <Link href="/book-demo" className="inline-flex items-center justify-center rounded-lg border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800">Book a Free Demo</Link>
+      {/* FORM */}
+      <section id="get-started" className="relative border-t border-white/5 py-16">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Let&apos;s get your growth running.</h2>
+            <p className="mt-3 text-slate-400">Tell us about your business — our team will follow up to get you set up.</p>
           </div>
+          <DomainCampaignForm />
         </div>
       </section>
-    </>
+
+      <Faq items={FAQ} subtitle="DomainCampaign, explained." />
+    </div>
   );
 }

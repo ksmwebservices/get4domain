@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Briefcase, Loader2, Plus, Trash2, FileText, Link2, Printer, CheckCircle2, X, Settings2, Users } from 'lucide-react';
+import { Briefcase, Loader2, Plus, Trash2, FileText, Link2, Printer, CheckCircle2, X, Settings2, Users, Target, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Lead {
   id: string; name: string; phone: string; email: string | null; business: string;
-  interest: string; message: string | null; status: string; createdAt: string;
+  interest: string; message: string | null; status: string; createdAt: string; notes?: string | null;
 }
 interface CatalogItem {
   id: string; label: string; description: string | null; defaultRate: number; unit: string | null; active: boolean;
@@ -30,7 +30,7 @@ const inr = (paise: number) => `₹${(paise / 100).toLocaleString('en-IN')}`;
 const inputClass = 'w-full rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-600/30';
 
 export default function ManagedServicesAdminPage() {
-  const [tab, setTab] = useState<'leads' | 'proposals' | 'catalog'>('leads');
+  const [tab, setTab] = useState<'leads' | 'proposals' | 'catalog' | 'domaincampaign'>('leads');
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(true);
@@ -99,6 +99,7 @@ export default function ManagedServicesAdminPage() {
           { key: 'leads' as const, label: 'Leads', icon: Users },
           { key: 'proposals' as const, label: 'Proposals', icon: FileText },
           { key: 'catalog' as const, label: 'Catalog', icon: Settings2 },
+          { key: 'domaincampaign' as const, label: 'DomainCampaign', icon: Target },
         ].map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium ${tab === t.key ? 'bg-primary-600 text-white' : 'text-slate-400'}`}>
             <t.icon className="h-3.5 w-3.5" />{t.label}
@@ -173,6 +174,8 @@ export default function ManagedServicesAdminPage() {
       )}
 
       {tab === 'catalog' && <CatalogEditor catalog={catalog} loading={loadingCatalog} reload={loadCatalog} />}
+
+      {tab === 'domaincampaign' && <DomainCampaignPanel />}
 
       {builderOpen && (
         <ProposalBuilder
@@ -270,6 +273,232 @@ function CatalogEditor({ catalog, loading, reload }: { catalog: CatalogItem[]; l
           <Plus className="h-3.5 w-3.5" />Add catalog item
         </button>
       )}
+    </div>
+  );
+}
+
+// ── DomainCampaign — leads, clients, and the monthly ad-spend/fee billing tool.
+const DC_MIN_FEE_PAISE = 999900; // ₹9,999 — mirrors backend-api's DOMAIN_CAMPAIGN_MIN_FEE_PAISE
+const dcCalculateFee = (adSpendPaise: number) => Math.max(Math.round(adSpendPaise * 0.1), DC_MIN_FEE_PAISE);
+
+interface DcVendor { id: string; name: string; businessName: string; industry: string | null }
+interface DcClient { id: string; vendorId: string; status: string; createdAt: string; vendor: { businessName: string; name: string; email: string } }
+interface DcRecord {
+  id: string; vendorId: string; month: string; adSpendPaise: number; feePaise: number; invoiceId: string | null; notes: string | null; createdAt: string;
+}
+
+function DomainCampaignPanel() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [clients, setClients] = useState<DcClient[]>([]);
+  const [vendors, setVendors] = useState<DcVendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addingVendorId, setAddingVendorId] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [history, setHistory] = useState<Record<string, DcRecord[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<string | null>(null);
+  const [recordForm, setRecordForm] = useState<{ month: string; adSpend: string }>({ month: '', adSpend: '' });
+  const [savingRecord, setSavingRecord] = useState(false);
+  const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  function loadAll() {
+    setLoading(true);
+    Promise.all([
+      api.getDomainCampaignLeads().then((r) => setLeads(r.data ?? [])),
+      api.getDomainCampaignClients().then((r) => setClients(r.data ?? [])),
+      api.getVendors().then((r) => setVendors(r.data ?? [])),
+    ]).catch(() => {}).finally(() => setLoading(false));
+  }
+  useEffect(() => { loadAll(); }, []);
+
+  const clientVendorIds = new Set(clients.map((c) => c.vendorId));
+  const nonClientVendors = vendors.filter((v) => !clientVendorIds.has(v.id));
+
+  async function addClient() {
+    if (!addingVendorId) return;
+    setAdding(true);
+    setError('');
+    try {
+      await api.addDomainCampaignClient(addingVendorId);
+      setAddingVendorId('');
+      loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add client');
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function toggleExpand(vendorId: string) {
+    if (expanded === vendorId) { setExpanded(null); return; }
+    setExpanded(vendorId);
+    setRecordForm({ month: new Date().toISOString().slice(0, 7), adSpend: '' });
+    if (!history[vendorId]) {
+      setHistoryLoading(vendorId);
+      try {
+        const res = await api.getDomainCampaignBillingHistory(vendorId);
+        setHistory((prev) => ({ ...prev, [vendorId]: res.data ?? [] }));
+      } catch { /* noop */ } finally { setHistoryLoading(null); }
+    }
+  }
+
+  async function saveRecord(vendorId: string) {
+    const adSpendPaise = Math.round(parseFloat(recordForm.adSpend || '0') * 100);
+    if (!recordForm.month || !adSpendPaise) { setError('Enter a month and ad spend amount.'); return; }
+    setSavingRecord(true);
+    setError('');
+    try {
+      await api.recordDomainCampaignSpend({ vendorId, month: recordForm.month, adSpendPaise });
+      const res = await api.getDomainCampaignBillingHistory(vendorId);
+      setHistory((prev) => ({ ...prev, [vendorId]: res.data ?? [] }));
+      setRecordForm({ month: new Date().toISOString().slice(0, 7), adSpend: '' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save record');
+    } finally {
+      setSavingRecord(false);
+    }
+  }
+
+  async function generateInvoice(recordId: string, vendorId: string) {
+    setGeneratingId(recordId);
+    setError('');
+    try {
+      await api.generateDomainCampaignInvoice(recordId);
+      const res = await api.getDomainCampaignBillingHistory(vendorId);
+      setHistory((prev) => ({ ...prev, [vendorId]: res.data ?? [] }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not generate invoice');
+    } finally {
+      setGeneratingId(null);
+    }
+  }
+
+  const previewAdSpend = Math.round(parseFloat(recordForm.adSpend || '0') * 100);
+  const previewFee = previewAdSpend > 0 ? dcCalculateFee(previewAdSpend) : null;
+  const previewFloorApplied = previewFee === DC_MIN_FEE_PAISE && previewAdSpend * 0.1 < DC_MIN_FEE_PAISE;
+
+  if (loading) return <div className="flex items-center justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-slate-500" /></div>;
+
+  return (
+    <div className="space-y-6">
+      {error && <div className="rounded-xl border border-error-500/40 bg-error-500/10 px-4 py-2.5 text-sm text-error-300">{error}</div>}
+
+      {/* Leads */}
+      <div>
+        <h3 className="mb-2 text-sm font-bold text-white">Enquiries</h3>
+        {leads.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No DomainCampaign enquiries yet.</div>
+        ) : (
+          <div className="space-y-2">
+            {leads.map((lead) => (
+              <div key={lead.id} className="rounded-xl border border-slate-800 bg-slate-900 p-3.5 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="font-semibold text-white">{lead.name}</span>
+                    <span className="text-xs text-slate-500"> · {lead.business} · {lead.phone}{lead.email ? ` · ${lead.email}` : ''}</span>
+                  </div>
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">{new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                </div>
+                {lead.message && <p className="mt-1 text-xs text-slate-500">{lead.message}</p>}
+                {lead.notes && <p className="mt-1 text-xs text-primary-300">{lead.notes}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add client */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+        <h3 className="mb-3 text-sm font-bold text-white">Onboard a client</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={addingVendorId} onChange={(e) => setAddingVendorId(e.target.value)} className="flex-1 min-w-[200px] rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-primary-500 focus:outline-none">
+            <option value="">Select a vendor…</option>
+            {nonClientVendors.map((v) => <option key={v.id} value={v.id}>{v.businessName} ({v.name})</option>)}
+          </select>
+          <button onClick={addClient} disabled={!addingVendorId || adding} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60">
+            {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}Add as DomainCampaign client
+          </button>
+        </div>
+      </div>
+
+      {/* Clients */}
+      <div>
+        <h3 className="mb-2 text-sm font-bold text-white">Clients — record spend &amp; bill</h3>
+        {clients.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No DomainCampaign clients yet.</div>
+        ) : (
+          <div className="space-y-2">
+            {clients.map((c) => {
+              const isOpen = expanded === c.vendorId;
+              const rows = history[c.vendorId] ?? [];
+              return (
+                <div key={c.id} className="rounded-xl border border-slate-800 bg-slate-900">
+                  <button onClick={() => toggleExpand(c.vendorId)} className="flex w-full items-center justify-between gap-3 p-3.5 text-left">
+                    <div>
+                      <div className="text-sm font-semibold text-white">{c.vendor.businessName}</div>
+                      <div className="text-xs text-slate-500">{c.vendor.name} · {c.vendor.email}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-success-500/15 px-2 py-0.5 text-[11px] font-semibold text-success-300">{c.status}</span>
+                      {isOpen ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="border-t border-slate-800 p-3.5">
+                      {/* Record spend */}
+                      <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <input type="month" value={recordForm.month} onChange={(e) => setRecordForm((f) => ({ ...f, month: e.target.value }))} className={inputClass} />
+                        <input type="number" min="0" placeholder="Ad spend this month (₹)" value={recordForm.adSpend} onChange={(e) => setRecordForm((f) => ({ ...f, adSpend: e.target.value }))} className={inputClass} />
+                        <button onClick={() => saveRecord(c.vendorId)} disabled={savingRecord} className="rounded-lg bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60">
+                          {savingRecord ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save spend'}
+                        </button>
+                      </div>
+                      {previewFee !== null && (
+                        <p className="mt-1.5 text-xs text-slate-400">
+                          Fee: <span className="font-semibold text-warning-300">{inr(previewFee)}</span>
+                          {previewFloorApplied ? ' (₹9,999 minimum applied — 10% of spend was lower)' : ' (10% of ad spend)'} + 18% GST
+                        </p>
+                      )}
+
+                      {/* Billing history */}
+                      <div className="mt-4 space-y-1.5">
+                        {historyLoading === c.vendorId ? (
+                          <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-slate-500" /></div>
+                        ) : rows.length === 0 ? (
+                          <p className="text-xs text-slate-500">No spend recorded yet.</p>
+                        ) : (
+                          rows.map((r) => {
+                            const floorApplied = r.feePaise === DC_MIN_FEE_PAISE && Math.round(r.adSpendPaise * 0.1) < DC_MIN_FEE_PAISE;
+                            return (
+                              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-800/60 px-3 py-2 text-xs">
+                                <div>
+                                  <span className="font-semibold text-white">{r.month}</span>
+                                  <span className="text-slate-400"> · spend {inr(r.adSpendPaise)} · fee {inr(r.feePaise)}{floorApplied ? ' (floor)' : ' (10%)'}</span>
+                                </div>
+                                {r.invoiceId ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-success-500/15 px-2 py-0.5 text-[11px] font-semibold text-success-300"><Receipt className="h-3 w-3" />Invoiced</span>
+                                ) : (
+                                  <button onClick={() => generateInvoice(r.id, c.vendorId)} disabled={generatingId === r.id}
+                                    className="inline-flex items-center gap-1 rounded-full border border-slate-700 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-60">
+                                    {generatingId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Receipt className="h-3 w-3" />}Generate Invoice
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
