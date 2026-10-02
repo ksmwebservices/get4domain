@@ -7,6 +7,7 @@ Produced by the PRD §94 audit (audit-and-documentation only; PRD §99). Authori
 | Document | PRD § | Contents |
 |---|---|---|
 | [AUDIT_REPORT.md](AUDIT_REPORT.md) | 94 | Verdict, scorecard, critical findings S1–S15, conflicts, 26 required items |
+| [SECURITY_PATCH_2026-10-02.md](SECURITY_PATCH_2026-10-02.md) | 86 | Fixes for audit findings S1–S6: what changed, migration, deploy checklist, residual risks |
 | [STATUS.md](STATUS.md) | 93 | Current reality: git, migrations, shipped surface, open defects, decisions |
 | [FEATURE_MATRIX.md](FEATURE_MATRIX.md) | 92.1 | Master Feature Matrix (BOS, Growth/Social, Client WebApp) + 362-row tally |
 | [UI_ACTION_MATRIX.md](UI_ACTION_MATRIX.md) | 92.2 | Dashboard/UI Action Matrix (84 + 52 rows), page data-source classification, orphan UI |

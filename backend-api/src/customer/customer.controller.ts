@@ -4,6 +4,8 @@ import { IsString } from 'class-validator';
 import { CustomerService } from './customer.service';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 class RequestOtpDto {
   @IsString() phone!: string;
@@ -22,6 +24,7 @@ export class CustomerController {
   constructor(private readonly service: CustomerService) {}
 
   @Public()
+  @Throttle(RATE.otpRequest)
   @Post('request-otp')
   @ApiOperation({ summary: 'Request a login OTP (mock: returned as devOtp outside production)' })
   requestOtp(@Body() dto: RequestOtpDto) {
@@ -29,6 +32,7 @@ export class CustomerController {
   }
 
   @Public()
+  @Throttle(RATE.otpVerify)
   @Post('verify')
   @ApiOperation({ summary: 'Verify OTP and start a customer portal session' })
   verify(@Body() dto: VerifyOtpDto) {

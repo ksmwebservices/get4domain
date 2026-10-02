@@ -5,6 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -12,6 +14,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle(RATE.login)
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password, returns a JWT valid for 7 days' })
   login(@Body() dto: LoginDto): Promise<LoginResult> {
@@ -19,12 +22,14 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle(RATE.register)
   @Post('register')
   @ApiOperation({ summary: 'Self-service signup: creates a vendor and returns a JWT (auto-login)' })
   register(@Body() dto: RegisterDto): Promise<LoginResult> {
     return this.authService.register(dto);
   }
 
+  @Throttle(RATE.refresh)
   @Post('refresh')
   @ApiOperation({ summary: 'Issue a new JWT for the currently authenticated user' })
   refresh(@CurrentUser() user: AuthenticatedUser): { accessToken: string } {

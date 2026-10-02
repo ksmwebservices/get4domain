@@ -94,8 +94,9 @@ export const api = {
     apiCall(`/subscriptions/${id}/activate`, { method: 'PUT' }),
 
   // Payments
-  createOrder: (data: { amount: number; currency?: string; receipt: string }) =>
-    apiCall('/payments/create-order', { method: 'POST', body: JSON.stringify(data) }),
+  // The server derives the amount from the invoice (never sent by the client).
+  createInvoiceOrder: (invoiceId: string) =>
+    apiCall('/payments/create-order', { method: 'POST', body: JSON.stringify({ invoiceId }) }),
   verifyPayment: (data: {
     invoiceId: string;
     razorpayOrderId: string;

@@ -92,6 +92,9 @@ export const SETTING_CATEGORIES: CategoryDefinition[] = [
       { key: 'dlt_entity_id', label: 'DLT Entity ID', envFallback: 'FAST2SMS_ENTITY_ID', secret: false },
       { key: 'sms_message_id', label: 'DLT SMS Template/Message ID', envFallback: 'FAST2SMS_SMS_MESSAGE_ID', secret: false },
       { key: 'wa_message_id', label: 'WhatsApp Template/Message ID', envFallback: 'FAST2SMS_WA_MESSAGE_ID', secret: false },
+      // Shared secret Fast2SMS must send in the `webhook_secret_key` header of every inbound WhatsApp
+      // webhook call. Without it the inbound webhook is DISABLED (fails closed).
+      { key: 'webhook_secret_key', label: 'WhatsApp inbound webhook secret (sent as header webhook_secret_key)', envFallback: 'FAST2SMS_WEBHOOK_SECRET', secret: true },
     ],
   },
   {

@@ -39,7 +39,10 @@ export class WebsiteThemesService {
     if (existing) throw new BadRequestException('You already own this template.');
     const base = theme.price * 100; // paise, ex-GST
     const total = base + Math.round(base * 0.18);
-    const order = await this.payments.createOrder({ amount: total, currency: 'INR', receipt: `tpl_${vendorId}_${Date.now()}`.slice(0, 40) });
+    const order = await this.payments.createOrder({
+      amount: total, currency: 'INR', receipt: `tpl_${Date.now()}`,
+      notes: { purpose: 'tpl_unlock', vendorId, themeId },
+    });
     return { orderId: order.id, amount: Number(order.amount), currency: order.currency };
   }
 
@@ -47,11 +50,17 @@ export class WebsiteThemesService {
   async confirmUnlock(vendorId: string, themeId: string, dto: ConfirmUnlockDto): Promise<{ ok: true }> {
     const theme = await this.get(themeId);
     if (!theme) throw new NotFoundException('Template not found');
-    if (!this.payments.verifySignature(dto.razorpayOrderId, dto.razorpayPaymentId, dto.razorpaySignature)) {
-      throw new BadRequestException('Payment verification failed');
-    }
     const base = (theme.price ?? 0) * 100;
     const total = base + Math.round(base * 0.18);
+    // Same payment for the same unlock confirmed twice is a no-op (no second invoice).
+    const already = await this.prisma.vendorTemplateUnlock.findUnique({ where: { vendorId_themeId: { vendorId, themeId } } });
+    if (already?.paymentId === dto.razorpayPaymentId) return { ok: true };
+    // Razorpay-side confirmation: captured, exact price, and created for THIS vendor + theme.
+    await this.payments.assertCaptured({
+      orderId: dto.razorpayOrderId, paymentId: dto.razorpayPaymentId, signature: dto.razorpaySignature,
+      expectedAmountPaise: total,
+      expectedNotes: { purpose: 'tpl_unlock', vendorId, themeId },
+    });
     await this.prisma.vendorTemplateUnlock.upsert({
       where: { vendorId_themeId: { vendorId, themeId } },
       create: { vendorId, themeId, amountPaise: total, paymentId: dto.razorpayPaymentId },

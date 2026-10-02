@@ -24,6 +24,7 @@ import { AdminCrmModule } from './admin-crm/admin-crm.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { ManagedServicesModule } from './managed-services/managed-services.module';
 import { DomainCampaignModule } from './domain-campaign/domain-campaign.module';
+import { throttlerGuardProvider, throttlerImport } from './common/throttling';
 import { IndustriesModule } from './industries/industries.module';
 import { AiTemplatesModule } from './ai-templates/ai-templates.module';
 import { WebsiteThemesModule } from './website-themes/website-themes.module';
@@ -154,8 +155,11 @@ import { ModuleGuard } from './common/guards/module.guard';
     VideoModule,
     DemoModule,
     UploadsModule,
+    throttlerImport,
   ],
   providers: [
+    // Rate limiting FIRST so unauthenticated floods are rejected (429) before any other work.
+    throttlerGuardProvider,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

@@ -65,7 +65,12 @@ export class DemoService {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor || !vendor.isSandbox) throw new BadRequestException('No active demo sandbox to upgrade');
     const { total, planCode } = await this.planPricing(plan);
-    const order = await this.payments.createOrder({ amount: total, currency: 'INR', receipt: `golive_${plan}_${vendorId}_${Date.now()}` });
+    // Server-derived amount; notes bind the payment to THIS sandbox vendor and plan so it cannot be
+    // replayed for another account or a cheaper/different purchase (verified in convertSandbox).
+    const order = await this.payments.createOrder({
+      amount: total, currency: 'INR', receipt: `golive_${Date.now()}`,
+      notes: { purpose: 'golive', vendorId, plan },
+    });
     return { orderId: order.id, amount: Number(order.amount), currency: order.currency, plan: planCode };
   }
 
@@ -81,9 +86,16 @@ export class DemoService {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor || !vendor.isSandbox) throw new BadRequestException('This demo session is no longer available');
 
-    if (!this.payments.verifySignature(dto.razorpayOrderId, dto.razorpayPaymentId, dto.razorpaySignature)) {
-      throw new BadRequestException('Payment verification failed'); // sandbox left untouched
-    }
+    // Confirm with Razorpay itself that a CAPTURED payment of exactly this plan's price exists for
+    // THIS vendor and plan (a ₹1 order or another vendor's payment cannot convert a sandbox).
+    // Throws BEFORE any conversion, so a failed check leaves the sandbox untouched.
+    const wantedPlan: 'workspace' | 'bos' = dto.plan === 'bos' ? 'bos' : 'workspace';
+    const wantedPricing = await this.planPricing(wantedPlan);
+    await this.payments.assertCaptured({
+      orderId: dto.razorpayOrderId, paymentId: dto.razorpayPaymentId, signature: dto.razorpaySignature,
+      expectedAmountPaise: wantedPricing.total,
+      expectedNotes: { purpose: 'golive', vendorId, plan: wantedPlan },
+    });
 
     const clash = await this.prisma.vendor.findFirst({ where: { email: dto.email, id: { not: vendorId } } });
     if (clash) throw new BadRequestException('That email is already registered — please use another or log in.');

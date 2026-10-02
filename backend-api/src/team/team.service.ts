@@ -9,6 +9,14 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
 
+/** A team member as returned to clients — never the password hash or invite token. */
+export type SafeTeamMember = Omit<TeamMember, 'password' | 'inviteToken'>;
+
+function toSafe(member: TeamMember): SafeTeamMember {
+  const { password: _password, inviteToken: _inviteToken, ...safe } = member;
+  return safe;
+}
+
 @Injectable()
 export class TeamService {
   constructor(
@@ -17,7 +25,7 @@ export class TeamService {
     private readonly whatsappService: WhatsAppService,
   ) {}
 
-  async invite(vendorId: string, dto: InviteMemberDto): Promise<TeamMember> {
+  async invite(vendorId: string, dto: InviteMemberDto): Promise<SafeTeamMember> {
     const inviteToken = crypto.randomBytes(24).toString('hex');
     const member = await this.prisma.teamMember.create({
       data: {
@@ -39,28 +47,30 @@ export class TeamService {
       await this.whatsappService.sendTemplate(dto.phone, 'team_invite', [dto.name, vendor.businessName]);
     }
 
-    return member;
+    return toSafe(member);
   }
 
-  findMembers(vendorId: string): Promise<TeamMember[]> {
-    return this.prisma.teamMember.findMany({ where: { vendorId, status: { not: 'removed' } }, orderBy: { createdAt: 'desc' } });
+  async findMembers(vendorId: string): Promise<SafeTeamMember[]> {
+    const members = await this.prisma.teamMember.findMany({ where: { vendorId, status: { not: 'removed' } }, orderBy: { createdAt: 'desc' } });
+    return members.map(toSafe);
   }
 
-  async findOne(id: string, vendorId: string): Promise<TeamMember> {
+  /** Internal ownership lookup — returns the full row (with credentials); never return it to a client. */
+  private async findOne(id: string, vendorId: string): Promise<TeamMember> {
     const member = await this.prisma.teamMember.findUnique({ where: { id } });
     if (!member) throw new NotFoundException('Team member not found');
     if (member.vendorId !== vendorId) throw new ForbiddenException('You do not manage this team member');
     return member;
   }
 
-  async update(id: string, vendorId: string, dto: UpdateMemberDto): Promise<TeamMember> {
+  async update(id: string, vendorId: string, dto: UpdateMemberDto): Promise<SafeTeamMember> {
     await this.findOne(id, vendorId);
-    return this.prisma.teamMember.update({ where: { id }, data: { role: dto.role, modules: dto.modules } });
+    return toSafe(await this.prisma.teamMember.update({ where: { id }, data: { role: dto.role, modules: dto.modules } }));
   }
 
-  async remove(id: string, vendorId: string): Promise<TeamMember> {
+  async remove(id: string, vendorId: string): Promise<SafeTeamMember> {
     await this.findOne(id, vendorId);
-    return this.prisma.teamMember.update({ where: { id }, data: { status: 'removed' } });
+    return toSafe(await this.prisma.teamMember.update({ where: { id }, data: { status: 'removed' } }));
   }
 
   async acceptInvite(dto: AcceptInviteDto): Promise<{ success: true }> {

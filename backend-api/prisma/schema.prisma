@@ -360,7 +360,7 @@ model WalletTransaction {
   service      String
   balanceAfter Int
   expiresAt    DateTime?
-  razorpayId   String?
+  razorpayId   String?   @unique
   createdAt    DateTime  @default(now())
 
   @@map("g4d_wallet_transactions")
@@ -1105,6 +1105,10 @@ model PosSale {
   paymentMethod String   @default("cash") // cash | upi | card | bank
   status        String   @default("completed") // completed | refunded
   tableName     String?
+  // Public web checkout: the Razorpay order/payment this sale was recorded for. The unique
+  // payment id makes confirm idempotent (a captured request replayed cannot mint a second sale).
+  razorpayOrderId   String?
+  razorpayPaymentId String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

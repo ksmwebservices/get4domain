@@ -5,6 +5,8 @@ import { Public } from '../common/decorators/public.decorator';
 import { EngineService } from './engine.service';
 import { PublicCheckoutService, WebOrder } from './public-checkout.service';
 import { ActionDescriptor } from './engine.types';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('engine')
 @Controller('engine')
@@ -51,6 +53,7 @@ export class EngineController {
   }
 
   @Public()
+  @Throttle(RATE.publicAction)
   @Post('public/:subdomain/actions/:intent')
   @ApiOperation({ summary: 'Dispatch a public action (enquiry/booking/payment) from a generated website' })
   dispatchPublic(

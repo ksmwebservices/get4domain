@@ -5,6 +5,8 @@ import { SeedVendorDto, DemoEnquiryDto, ConfirmBuyDto, BuyOrderDto } from './dto
 import { Public } from '../common/decorators/public.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('demo')
 @Controller('demo')
@@ -34,6 +36,7 @@ export class DemoController {
   }
 
   @ApiBearerAuth()
+  @Throttle(RATE.payment)
   @Post('buy/order')
   @ApiOperation({ summary: 'Phase 5 — create a Razorpay order to go live on the chosen plan (Workspace / BOS) for the caller’s sandbox' })
   buyOrder(@CurrentUser() user: AuthenticatedUser, @Body() dto: BuyOrderDto) {
@@ -41,6 +44,7 @@ export class DemoController {
   }
 
   @ApiBearerAuth()
+  @Throttle(RATE.payment)
   @Post('buy/confirm')
   @ApiOperation({ summary: 'Phase 5 & 6 — verify payment, convert the sandbox to a live account, return a real token' })
   buyConfirm(@CurrentUser() user: AuthenticatedUser, @Body() dto: ConfirmBuyDto) {

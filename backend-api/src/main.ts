@@ -12,6 +12,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
+  // Behind nginx the socket address is the proxy's. Trust exactly N proxy hops so `req.ip` (the rate-limit
+  // key) is the real client address and cannot be forged through X-Forwarded-For. Override with TRUST_PROXY_HOPS.
+  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
   // Local VM disk storage for uploaded images, served at /uploads/*.
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });

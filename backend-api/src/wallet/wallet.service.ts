@@ -8,6 +8,7 @@ import { TopupDto } from './dto/topup.dto';
 import { VerifyTopupDto } from './dto/verify-topup.dto';
 import { InvoicesService } from '../invoices/invoices.service';
 import { grantWalletCredit, NINETY_DAYS_MS } from './wallet-credit.util';
+import { assertCapturedPayment, lockPayment } from '../payments/payment-verification';
 
 function bonusPercentFor(amountPaise: number): number {
   if (amountPaise >= 499900) return 30;
@@ -82,23 +83,34 @@ export class WalletService {
     return { orderId: order.id, amount: dto.amount, currency: 'INR', credits };
   }
 
+  /**
+   * Credit a top-up ONLY when Razorpay confirms a captured payment on an order our server created
+   * for THIS vendor (notes.purpose/vendorId). The credited amount comes from the order itself, never
+   * the client. Idempotent: the same payment id can credit once — a replayed {order,payment,signature}
+   * returns the wallet unchanged (serialised by a per-payment advisory lock; the unique index on
+   * razorpayId is the final backstop once its migration is applied).
+   */
   async verifyTopup(vendorId: string, dto: VerifyTopupDto): Promise<Wallet> {
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)
-      .update(`${dto.razorpayOrderId}|${dto.razorpayPaymentId}`)
-      .digest('hex');
-
-    if (expectedSignature !== dto.razorpaySignature) {
-      throw new BadRequestException('Payment signature verification failed');
-    }
-
-    const order = await this.razorpay.orders.fetch(dto.razorpayOrderId);
-    const paidAmount = Number(order.amount);
+    const confirmed = await assertCapturedPayment(this.razorpay, {
+      secret: process.env.RAZORPAY_KEY_SECRET,
+      orderId: dto.razorpayOrderId,
+      paymentId: dto.razorpayPaymentId,
+      signature: dto.razorpaySignature,
+      expectedNotes: { purpose: 'wallet_topup', vendorId },
+    });
+    const paidAmount = confirmed.amountPaise;
     const bonusPercent = bonusPercentFor(paidAmount);
     const credits = Math.round(paidAmount + (paidAmount * bonusPercent) / 100);
     const expiresAt = new Date(Date.now() + NINETY_DAYS_MS);
 
-    const wallet = await this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await lockPayment(tx, dto.razorpayPaymentId);
+      const already = await tx.walletTransaction.findFirst({ where: { razorpayId: dto.razorpayPaymentId }, select: { id: true } });
+      if (already) {
+        const current = await tx.wallet.findUnique({ where: { vendorId } });
+        return { wallet: current, credited: false };
+      }
+
       const w = await tx.wallet.upsert({
         where: { vendorId },
         create: { vendorId, balance: credits, totalCredited: credits },
@@ -119,14 +131,17 @@ export class WalletService {
         },
       });
 
-      return w;
+      return { wallet: w, credited: true };
     });
+
+    if (!outcome.wallet) throw new BadRequestException('Wallet not found');
+    if (!outcome.credited) return outcome.wallet; // replay — no second credit, no second invoice
 
     // Auto-generate a GST invoice for the top-up and email it. Best-effort —
     // never blocks/undoes the credit (the method itself swallows failures).
     await this.invoices.createPaidTopupInvoice(vendorId, paidAmount, credits, dto.razorpayPaymentId);
 
-    return wallet;
+    return outcome.wallet;
   }
 
   /**

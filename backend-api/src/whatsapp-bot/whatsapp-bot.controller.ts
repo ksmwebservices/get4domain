@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, UnauthorizedException, Logger, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import * as crypto from 'crypto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { KnowledgeBaseService } from './knowledge-base.service';
@@ -7,6 +8,8 @@ import { WhatsappBotService } from './whatsapp-bot.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { CreateKbEntryDto, UpdateKbEntryDto } from './dto/kb-entry.dto';
 import { InboundWebhookDto } from './dto/inbound-webhook.dto';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('whatsapp-bot')
 @Controller('whatsapp-bot')
@@ -52,6 +55,7 @@ export class WhatsappBotController {
   // ── Section B: public inbound webhook (Fast2SMS incoming_message) ────────────
 
   @Public()
+  @Throttle(RATE.whatsappWebhook)
   @Post('webhook')
   @HttpCode(200)
   // Relax the global forbidNonWhitelisted pipe here: an external provider payload
@@ -59,15 +63,19 @@ export class WhatsappBotController {
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }))
   @ApiOperation({ summary: 'Fast2SMS WhatsApp inbound webhook (verifies webhook_secret_key header)' })
   async webhook(@Body() dto: InboundWebhookDto, @Headers('webhook_secret_key') secretHeader?: string) {
-    // Security: when a webhook secret is configured (Admin → Integrations), the
-    // header MUST match. Constant-time compare to avoid timing leaks. If no secret
-    // is configured yet (mock/dev, pre-go-live) the endpoint stays open for testing.
+    // Security (fail CLOSED): this endpoint makes the platform message arbitrary numbers, spend AI
+    // credits and debit vendor wallets, so it must never run unauthenticated. The shared secret
+    // (Admin → Integrations → Fast2SMS → "WhatsApp webhook secret", or FAST2SMS_WEBHOOK_SECRET) must
+    // be configured AND match the `webhook_secret_key` header (constant-time compare). If no secret is
+    // configured the request is rejected — an unconfigured webhook is disabled, not open.
     const expected = await this.whatsapp.getWebhookSecret();
-    if (expected) {
-      if (!secretHeader || !this.safeEqual(secretHeader, expected)) {
-        this.logger.warn('Rejected WhatsApp webhook: missing/invalid webhook_secret_key');
-        throw new UnauthorizedException('Invalid webhook signature');
-      }
+    if (!expected) {
+      this.logger.error('Rejected WhatsApp webhook: no webhook secret is configured (webhook disabled until one is set)');
+      throw new UnauthorizedException('Webhook not configured');
+    }
+    if (!secretHeader || !this.safeEqual(secretHeader, expected)) {
+      this.logger.warn('Rejected WhatsApp webhook: missing/invalid webhook_secret_key');
+      throw new UnauthorizedException('Invalid webhook signature');
     }
 
     // Only act on inbound text messages; ack everything else so the provider stops retrying.
@@ -84,9 +92,8 @@ export class WhatsappBotController {
   }
 
   private safeEqual(a: string, b: string): boolean {
-    if (a.length !== b.length) return false;
-    let diff = 0;
-    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-    return diff === 0;
+    const x = Buffer.from(a);
+    const y = Buffer.from(b);
+    return x.length === y.length && crypto.timingSafeEqual(x, y);
   }
 }

@@ -7,6 +7,8 @@ import { VerifyTopupDto } from './dto/verify-topup.dto';
 import { DeductDto } from './dto/deduct.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('wallet')
 @ApiBearerAuth()
@@ -31,12 +33,14 @@ export class WalletController {
     return this.walletService.getTransactions(user.sub, page ? Number(page) : 1, limit ? Number(limit) : 20);
   }
 
+  @Throttle(RATE.payment)
   @Post('topup')
   @ApiOperation({ summary: 'Create a Razorpay order to top up the wallet' })
   topup(@CurrentUser() user: AuthenticatedUser, @Body() dto: TopupDto) {
     return this.walletService.topup(user.sub, dto);
   }
 
+  @Throttle(RATE.payment)
   @Post('topup/verify')
   @ApiOperation({ summary: 'Verify a wallet top-up payment and credit the wallet with bonus' })
   verifyTopup(@CurrentUser() user: AuthenticatedUser, @Body() dto: VerifyTopupDto) {

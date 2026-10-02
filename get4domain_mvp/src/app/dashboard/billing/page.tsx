@@ -116,11 +116,7 @@ export default function BillingPage() {
     try {
       await loadRazorpayScript();
 
-      const orderRes = await api.createOrder({
-        amount: pendingInvoice.totalAmount,
-        currency: 'INR',
-        receipt: pendingInvoice.invoiceNumber,
-      });
+      const orderRes = await api.createInvoiceOrder(pendingInvoice.id);
       const order = orderRes.data;
 
       const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;

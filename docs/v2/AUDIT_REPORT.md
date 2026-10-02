@@ -42,7 +42,7 @@ Separately, of **84 sampled clickable UI actions**, 46 work, 16 are partial, 6 a
 
 ## ⚠ Critical findings that need action independent of the V2 plan
 
-These are defects in the live system, not missing V2 features. They are ranked by harm. ✔ = I re-read the code myself; others are from the evidence files (static).
+**Update 2026-10-02: S1–S6 are fixed in code (not yet deployed) — see [SECURITY_PATCH_2026-10-02.md](SECURITY_PATCH_2026-10-02.md).** These are defects in the live system, not missing V2 features. They are ranked by harm. ✔ = I re-read the code myself; others are from the evidence files (static).
 
 | # | Severity | Finding | Evidence |
 |---|---|---|---|

@@ -6,6 +6,8 @@ import { CreateWebsiteThemeDto, UpdateWebsiteThemeDto, ConfirmUnlockDto } from '
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
+import { RATE } from '../common/throttling';
 
 @ApiTags('website-themes')
 @ApiBearerAuth()
@@ -41,12 +43,14 @@ export class WebsiteThemesController {
     return this.service.listForVendor(user.sub, industry);
   }
 
+  @Throttle(RATE.payment)
   @Post(':id/unlock/order')
   @ApiOperation({ summary: 'Create a one-time Razorpay order to unlock a premium template' })
   unlockOrder(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.service.createUnlockOrder(user.sub, id);
   }
 
+  @Throttle(RATE.payment)
   @Post(':id/unlock/confirm')
   @ApiOperation({ summary: 'Verify payment and unlock a premium template for this vendor' })
   unlockConfirm(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string, @Body() dto: ConfirmUnlockDto) {

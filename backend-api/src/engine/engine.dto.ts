@@ -56,18 +56,26 @@ export class RealEstatePaymentInput {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(2000) notes?: string;
 }
 
-/** One line in a public-site checkout cart. Prices are per-unit in ₹ (rupees). */
+/**
+ * One line in a public-site checkout cart. The server resolves the line to one of THIS vendor's
+ * active products (by `productId`/`catalogItemId`, else by product name) and prices it from the
+ * database. `price` is accepted only so older site builds keep working — it is IGNORED.
+ */
 export class CheckoutLine {
-  @ApiPropertyOptional({ description: 'CatalogItem id, when the line maps to a stocked product (enables stock decrement).' })
+  @ApiPropertyOptional({ description: 'VendorProduct id (website listing) the line is for — preferred.' })
+  @IsOptional() @IsString() @MaxLength(60) productId?: string;
+  @ApiPropertyOptional({ description: 'CatalogItem id (also a valid product reference; enables stock decrement).' })
   @IsOptional() @IsString() @MaxLength(60) catalogItemId?: string;
-  @ApiProperty() @IsString() @MaxLength(200) name!: string;
+  @ApiProperty({ description: 'Display name (may include a variant suffix such as " — 9 / Black").' })
+  @IsString() @MaxLength(200) name!: string;
   @ApiProperty() @IsInt() @Min(1) @Max(999) qty!: number;
-  @ApiProperty({ description: 'Per-unit price in ₹.' }) @IsNumber() @Min(0) price!: number;
+  @ApiPropertyOptional({ description: 'IGNORED — prices always come from the database.' })
+  @IsOptional() @IsNumber() @Min(0) price?: number;
 }
 
 /**
- * Input for `engine.checkout.order` (PUBLIC): the cart + buyer. The amount is
- * recomputed server-side from `items` — the client total is never trusted.
+ * Input for `engine.checkout.order` (PUBLIC): the cart + buyer. Every line is
+ * priced server-side from the vendor's catalogue — no client amount or price is ever trusted.
  */
 export class CheckoutOrderInput {
   @ApiProperty({ type: [CheckoutLine] })

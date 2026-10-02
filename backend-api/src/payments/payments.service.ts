@@ -4,6 +4,7 @@ import {
   HttpException,
   Injectable,
   Logger,
+  NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
@@ -17,6 +18,8 @@ import { PlatformSettingsService } from '../platform-settings/platform-settings.
 import { renderInvoiceHtml, InvoiceCompany } from '../invoices/templates/invoice.template';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { assertCapturedPayment, CapturedPayment } from './payment-verification';
+import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { grantWalletCredit } from '../wallet/wallet-credit.util';
 import { planBonusForAmount, planTermMonthsForAmount, aiStudioBonusForAmount } from './plan-pricing.constants';
 
@@ -58,47 +61,87 @@ export class PaymentsService {
     };
   }
 
+  /**
+   * Low-level Razorpay order creation. INTERNAL: every caller must pass a server-derived
+   * amount (invoice total, plan price, theme price). It is deliberately NOT exposed over HTTP
+   * with a client-supplied amount — see createInvoiceOrder().
+   */
   async createOrder(dto: CreateOrderDto) {
     return this.razorpay.orders.create({
       amount: dto.amount,
       currency: dto.currency ?? 'INR',
-      receipt: dto.receipt,
+      receipt: dto.receipt.slice(0, 40),
+      ...(dto.notes ? { notes: dto.notes } : {}),
     });
   }
 
-  /** Pure Razorpay checkout signature check (order|payment HMAC). Reusable by
-   *  flows that aren't tied to a pre-existing invoice (e.g. the buy-now conversion). */
-  verifySignature(orderId: string, paymentId: string, signature: string): boolean {
-    const expected = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)
-      .update(`${orderId}|${paymentId}`)
-      .digest('hex');
-    return expected === signature;
+  /**
+   * Create the Razorpay order for paying ONE of the caller's own invoices. The amount is the
+   * invoice's stored total (server-side) and the order is stamped with {purpose, invoiceId,
+   * vendorId} so verifyPayment can prove a payment belongs to exactly this invoice.
+   */
+  async createInvoiceOrder(user: AuthenticatedUser, invoiceId: string) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice || invoice.vendorId !== user.sub) throw new NotFoundException('Invoice not found');
+    if (invoice.status === 'PAID') throw new BadRequestException('This invoice is already paid');
+    if (invoice.status === 'CANCELLED') throw new BadRequestException('This invoice has been cancelled');
+    return this.createOrder({
+      amount: invoice.totalAmount,
+      currency: 'INR',
+      receipt: invoice.invoiceNumber,
+      notes: { purpose: 'invoice', invoiceId: invoice.id, vendorId: invoice.vendorId },
+    });
   }
 
-  async verifyPayment(dto: VerifyPaymentDto): Promise<{ verified: boolean }> {
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET as string)
-      .update(`${dto.razorpayOrderId}|${dto.razorpayPaymentId}`)
-      .digest('hex');
+  /**
+   * Confirm a platform-account payment against Razorpay (amount, purpose notes, captured,
+   * same order). Used by go-live conversion and premium-theme unlock as well as invoices.
+   */
+  assertCaptured(check: { orderId: string; paymentId: string; signature: string; expectedAmountPaise?: number; expectedNotes: Record<string, string> }): Promise<CapturedPayment> {
+    return assertCapturedPayment(this.razorpay, { secret: process.env.RAZORPAY_KEY_SECRET, ...check });
+  }
 
-    if (expectedSignature !== dto.razorpaySignature) {
-      throw new BadRequestException('Payment signature verification failed');
+  /**
+   * Mark an invoice paid ONLY when Razorpay itself confirms a captured payment for this exact
+   * invoice, vendor and amount. The invoice must belong to the caller; a paid invoice is
+   * idempotent for the same payment id and rejected otherwise; the status flip is an atomic
+   * claim so two concurrent verifications cannot both finalise (double income/bonus/email).
+   */
+  async verifyPayment(user: AuthenticatedUser, dto: VerifyPaymentDto): Promise<{ verified: boolean }> {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id: dto.invoiceId } });
+    if (!invoice || invoice.vendorId !== user.sub) throw new NotFoundException('Invoice not found');
+
+    if (invoice.status === 'PAID') {
+      if (invoice.razorpayPaymentId === dto.razorpayPaymentId) return { verified: true };
+      throw new BadRequestException('This invoice is already paid');
     }
+    if (invoice.status === 'CANCELLED') throw new BadRequestException('This invoice has been cancelled');
 
-    const invoice = await this.prisma.invoice.update({
-      where: { id: dto.invoiceId },
-      data: {
-        status: 'PAID',
-        paidAt: new Date(),
-        razorpayOrderId: dto.razorpayOrderId,
-        razorpayPaymentId: dto.razorpayPaymentId,
-      },
+    await this.assertCaptured({
+      orderId: dto.razorpayOrderId,
+      paymentId: dto.razorpayPaymentId,
+      signature: dto.razorpaySignature,
+      expectedAmountPaise: invoice.totalAmount,
+      expectedNotes: { purpose: 'invoice', invoiceId: invoice.id, vendorId: invoice.vendorId },
+    });
+
+    const usedElsewhere = await this.prisma.invoice.findFirst({
+      where: { razorpayPaymentId: dto.razorpayPaymentId, id: { not: invoice.id } },
+      select: { id: true },
+    });
+    if (usedElsewhere) throw new BadRequestException('This payment has already been applied');
+
+    const claimed = await this.prisma.invoice.updateMany({
+      where: { id: invoice.id, status: { notIn: ['PAID', 'CANCELLED'] } },
+      data: { status: 'PAID', paidAt: new Date(), razorpayOrderId: dto.razorpayOrderId, razorpayPaymentId: dto.razorpayPaymentId },
+    });
+    if (claimed.count === 0) return { verified: true }; // a concurrent verification already finalised it
+
+    const paid = await this.prisma.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
       include: { vendor: true, subscription: true },
     });
-
-    await this.finalizePayment(invoice);
-
+    await this.finalizePayment(paid);
     return { verified: true };
   }
 
@@ -170,8 +213,10 @@ export class PaymentsService {
       return false;
     }
 
-    const expectedSignature = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
-    return expectedSignature === signature;
+    if (!signature) return false;
+    const expected = Buffer.from(crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex'));
+    const received = Buffer.from(signature);
+    return expected.length === received.length && crypto.timingSafeEqual(expected, received);
   }
 
   async handleWebhookEvent(event: {

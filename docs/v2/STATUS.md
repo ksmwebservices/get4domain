@@ -5,6 +5,9 @@
 ## Headline
 V2 execution has **not started** (PRD §99: audit baseline first). The existing application is **not** 100% functional against the PRD — see the verdict and the critical-findings table in [AUDIT_REPORT.md](AUDIT_REPORT.md). **Security items S1–S6 are live in production today** and are recommended before any V2 feature work.
 
+## Security patch (2026-10-02) — S1–S6 fixed in code, **not yet deployed**
+Fixes for the critical findings S1–S6 are written and verified (135 assertions; before/after exploit proofs) — see [SECURITY_PATCH_2026-10-02.md](SECURITY_PATCH_2026-10-02.md). **Awaiting KSM:** apply migration `20261002130000_payment_idempotency` (`cd backend-api && npx prisma migrate deploy`) *before* deploying; deploy backend + frontend together; set the WhatsApp webhook secret (the bot is intentionally offline until then). S7–S15 remain open.
+
 ## Source control
 | Item | State |
 |---|---|
