@@ -654,7 +654,7 @@ export const api = {
     apiCall('/admin/domain-campaign/clients', { method: 'POST', body: JSON.stringify({ vendorId }) }),
   getDomainCampaignRecords: () => apiCall('/admin/domain-campaign/records'),
   getDomainCampaignBillingHistory: (vendorId: string) => apiCall(`/admin/domain-campaign/records/vendor/${vendorId}`),
-  recordDomainCampaignSpend: (data: { vendorId: string; month: string; adSpendPaise: number; notes?: string }) =>
+  recordDomainCampaignSpend: (data: { vendorId: string; month: string; adSpendPaise: number; isCustomFee?: boolean; customFeePaise?: number; notes?: string }) =>
     apiCall('/admin/domain-campaign/records', { method: 'POST', body: JSON.stringify(data) }),
   generateDomainCampaignInvoice: (recordId: string) =>
     apiCall(`/admin/domain-campaign/records/${recordId}/invoice`, { method: 'POST' }),

@@ -748,7 +748,8 @@ model DomainCampaignRecord {
   vendor       Vendor   @relation(fields: [vendorId], references: [id])
   month        String // "2026-10" (YYYY-MM)
   adSpendPaise Int // manually recorded — no live Meta/Google Ads API tracking yet
-  feePaise     Int // MAX(10% of adSpendPaise, 999900) at the time this was recorded
+  feePaise     Int // bracket fee for adSpendPaise (PRD §88), or the admin-entered custom fee when isCustomFee
+  isCustomFee  Boolean  @default(false) // Enterprise/multi-brand: admin-entered fee overrides the bracket
   invoiceId    String? // set once a monthly invoice has been generated for this record
   notes        String?
   createdAt    DateTime @default(now())

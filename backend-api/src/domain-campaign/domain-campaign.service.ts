@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { Invoice, Lead, Subscription } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,10 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import { CreateDomainCampaignEnquiryDto } from './dto/create-enquiry.dto';
 import { RecordDomainCampaignSpendDto } from './dto/record-spend.dto';
-
-/** Minimum monthly fee — floor that wins whenever 10% of spend is below it. */
-export const DOMAIN_CAMPAIGN_MIN_FEE_PAISE = 999900; // ₹9,999
-export const DOMAIN_CAMPAIGN_FEE_RATE = 0.1;
+import { DC_BRACKET_1_FEE_PAISE, DC_BRACKET_LABEL, dcBracketFee, dcBracketFor, dcResolveFee } from './domain-campaign-fee';
 
 export interface DomainCampaignRecordRow {
   id: string;
@@ -18,6 +15,7 @@ export interface DomainCampaignRecordRow {
   month: string;
   adSpendPaise: number;
   feePaise: number;
+  isCustomFee: boolean;
   invoiceId: string | null;
   notes: string | null;
   createdAt: Date;
@@ -33,9 +31,9 @@ export class DomainCampaignService {
     private readonly invoicesService: InvoicesService,
   ) {}
 
-  /** MAX(10% of ad spend, ₹9,999) — the one place this calculation happens. */
+  /** PRD §88 bracket fee for a month's ad spend (see domain-campaign-fee.ts). */
   calculateFee(adSpendPaise: number): number {
-    return Math.max(Math.round(adSpendPaise * DOMAIN_CAMPAIGN_FEE_RATE), DOMAIN_CAMPAIGN_MIN_FEE_PAISE);
+    return dcBracketFee(adSpendPaise);
   }
 
   /**
@@ -85,14 +83,14 @@ export class DomainCampaignService {
    * Client status is a Subscription row with product: DOMAIN_CAMPAIGN (that
    * enum value existed, unused, before this dispatch) — idempotent, returns
    * the existing row if the vendor is already a client. `amount` is a
-   * nominal placeholder (the ₹9,999 floor); the real monthly fee lives on
-   * DomainCampaignRecord, since it varies by ad spend.
+   * nominal placeholder (the entry-bracket fee); the real monthly fee lives on
+   * DomainCampaignRecord, since it varies by ad spend bracket.
    */
   async addClient(vendorId: string): Promise<Subscription> {
     const existing = await this.prisma.subscription.findFirst({ where: { vendorId, product: 'DOMAIN_CAMPAIGN' } });
     if (existing) return existing;
     return this.prisma.subscription.create({
-      data: { vendorId, product: 'DOMAIN_CAMPAIGN', plan: 'STARTUP', amount: DOMAIN_CAMPAIGN_MIN_FEE_PAISE, status: 'ACTIVE', startDate: new Date() },
+      data: { vendorId, product: 'DOMAIN_CAMPAIGN', plan: 'STARTUP', amount: DC_BRACKET_1_FEE_PAISE, status: 'ACTIVE', startDate: new Date() },
     });
   }
 
@@ -104,22 +102,29 @@ export class DomainCampaignService {
     });
   }
 
-  // ── DomainCampaignRecord — raw SQL (table exists in the migration file but
-  // is not yet applied to the live DB; `prisma generate` is also blocked this
-  // session, so the Prisma Client has no typed accessor for this model yet).
-  // Once KSM runs `npx prisma migrate deploy` + `npx prisma generate`, this
-  // can be switched to `this.prisma.domainCampaignRecord.*` — the SQL below
-  // matches the schema.prisma model exactly, so no behavior changes either way.
+  // ── DomainCampaignRecord — parameterized raw SQL: the Prisma Client has no
+  // typed accessor for this model yet (client not regenerated for it). The SQL
+  // matches schema.prisma exactly, so it can be swapped for
+  // `this.prisma.domainCampaignRecord.*` after `npx prisma generate` with no
+  // behavior change. DEPLOY ORDER: the isCustomFee column (migration
+  // 20261002120000_domain_campaign_custom_fee) must be applied BEFORE this code
+  // is deployed, otherwise recordSpend fails with "column does not exist".
 
   async recordSpend(dto: RecordDomainCampaignSpendDto): Promise<DomainCampaignRecordRow> {
-    const feePaise = this.calculateFee(dto.adSpendPaise);
+    const isCustomFee = dto.isCustomFee === true;
+    let feePaise: number;
+    try {
+      feePaise = dcResolveFee(dto.adSpendPaise, isCustomFee, dto.customFeePaise);
+    } catch (err) {
+      throw new BadRequestException(err instanceof Error ? err.message : 'Invalid fee');
+    }
     const id = crypto.randomUUID();
     const rows = await this.prisma.$queryRawUnsafe<DomainCampaignRecordRow[]>(
-      `INSERT INTO "g4d_domain_campaign_records" ("id","vendorId","month","adSpendPaise","feePaise","notes","createdAt","updatedAt")
-       VALUES ($1,$2,$3,$4,$5,$6,now(),now())
-       ON CONFLICT ("vendorId","month") DO UPDATE SET "adSpendPaise"=EXCLUDED."adSpendPaise", "feePaise"=EXCLUDED."feePaise", "notes"=EXCLUDED."notes", "updatedAt"=now()
+      `INSERT INTO "g4d_domain_campaign_records" ("id","vendorId","month","adSpendPaise","feePaise","isCustomFee","notes","createdAt","updatedAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,now(),now())
+       ON CONFLICT ("vendorId","month") DO UPDATE SET "adSpendPaise"=EXCLUDED."adSpendPaise", "feePaise"=EXCLUDED."feePaise", "isCustomFee"=EXCLUDED."isCustomFee", "notes"=EXCLUDED."notes", "updatedAt"=now()
        RETURNING *;`,
-      id, dto.vendorId, dto.month, dto.adSpendPaise, feePaise, dto.notes ?? null,
+      id, dto.vendorId, dto.month, dto.adSpendPaise, feePaise, isCustomFee, dto.notes ?? null,
     );
     return rows[0];
   }
@@ -151,18 +156,17 @@ export class DomainCampaignService {
    * platform's existing generic invoice-generation path (InvoicesService.
    * createInvoice — same one every other admin-raised invoice uses) rather
    * than building a parallel system. The description spells out the
-   * calculation transparently (spend, rate, whether the floor applied).
+   * calculation transparently (spend, which bracket applied, or custom fee).
    */
   async generateInvoice(recordId: string): Promise<Invoice> {
     const record = await this.getRecord(recordId);
     const sub = await this.prisma.subscription.findFirst({ where: { vendorId: record.vendorId, product: 'DOMAIN_CAMPAIGN' } });
 
     const spendRupees = (record.adSpendPaise / 100).toLocaleString('en-IN');
-    const pctFeePaise = Math.round(record.adSpendPaise * DOMAIN_CAMPAIGN_FEE_RATE);
-    const floorApplied = pctFeePaise < DOMAIN_CAMPAIGN_MIN_FEE_PAISE;
-    const calcNote = floorApplied
-      ? `10% of ₹${spendRupees} = ₹${(pctFeePaise / 100).toLocaleString('en-IN')}, below the ₹9,999 minimum — ₹9,999 minimum fee applied`
-      : `10% of ₹${spendRupees} ad spend`;
+    const feeRupees = (record.feePaise / 100).toLocaleString('en-IN');
+    const calcNote = record.isCustomFee
+      ? `ad spend ₹${spendRupees}; custom Enterprise/multi-brand fee ₹${feeRupees}`
+      : `ad spend ₹${spendRupees} — ${DC_BRACKET_LABEL[dcBracketFor(record.adSpendPaise)]} bracket, ₹${feeRupees} management fee`;
     const description = `DomainCampaign — ${record.month} management fee (${calcNote})`;
 
     const invoice = await this.invoicesService.createInvoice({

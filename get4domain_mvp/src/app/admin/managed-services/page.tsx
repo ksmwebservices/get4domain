@@ -278,14 +278,20 @@ function CatalogEditor({ catalog, loading, reload }: { catalog: CatalogItem[]; l
 }
 
 // ── DomainCampaign — leads, clients, and the monthly ad-spend/fee billing tool.
-const DC_MIN_FEE_PAISE = 999900; // ₹9,999 — mirrors backend-api's DOMAIN_CAMPAIGN_MIN_FEE_PAISE
-const dcCalculateFee = (adSpendPaise: number) => Math.max(Math.round(adSpendPaise * 0.1), DC_MIN_FEE_PAISE);
+// Mirrors backend-api/src/domain-campaign/domain-campaign-fee.ts (PRD §88 brackets, paise, ex-GST).
+const dcBracket = (adSpendPaise: number): { fee: number; label: string } => {
+  if (adSpendPaise <= 2_000_000) return { fee: 200_000, label: 'up to ₹20,000 ad spend' };
+  if (adSpendPaise <= 10_000_000) return { fee: 500_000, label: '₹20,001–₹1,00,000 ad spend' };
+  return { fee: 1_000_000, label: 'above ₹1,00,000 ad spend' };
+};
 
 interface DcVendor { id: string; name: string; businessName: string; industry: string | null }
 interface DcClient { id: string; vendorId: string; status: string; createdAt: string; vendor: { businessName: string; name: string; email: string } }
 interface DcRecord {
-  id: string; vendorId: string; month: string; adSpendPaise: number; feePaise: number; invoiceId: string | null; notes: string | null; createdAt: string;
+  id: string; vendorId: string; month: string; adSpendPaise: number; feePaise: number; isCustomFee: boolean; invoiceId: string | null; notes: string | null; createdAt: string;
 }
+interface DcRecordForm { month: string; adSpend: string; isCustom: boolean; customFee: string }
+const emptyRecordForm = (): DcRecordForm => ({ month: new Date().toISOString().slice(0, 7), adSpend: '', isCustom: false, customFee: '' });
 
 function DomainCampaignPanel() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -298,7 +304,7 @@ function DomainCampaignPanel() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [history, setHistory] = useState<Record<string, DcRecord[]>>({});
   const [historyLoading, setHistoryLoading] = useState<string | null>(null);
-  const [recordForm, setRecordForm] = useState<{ month: string; adSpend: string }>({ month: '', adSpend: '' });
+  const [recordForm, setRecordForm] = useState<DcRecordForm>(emptyRecordForm());
   const [savingRecord, setSavingRecord] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -334,26 +340,44 @@ function DomainCampaignPanel() {
   async function toggleExpand(vendorId: string) {
     if (expanded === vendorId) { setExpanded(null); return; }
     setExpanded(vendorId);
-    setRecordForm({ month: new Date().toISOString().slice(0, 7), adSpend: '' });
-    if (!history[vendorId]) {
+    // Enterprise/custom is a per-client status in practice: start the form from the
+    // client's most recent record so the toggle (and fee) carry over month to month.
+    const seed = (rows: DcRecord[]): DcRecordForm => {
+      const latest = rows[0];
+      return latest?.isCustomFee
+        ? { ...emptyRecordForm(), isCustom: true, customFee: String(latest.feePaise / 100) }
+        : emptyRecordForm();
+    };
+    if (history[vendorId]) {
+      setRecordForm(seed(history[vendorId]));
+    } else {
+      setRecordForm(emptyRecordForm());
       setHistoryLoading(vendorId);
       try {
         const res = await api.getDomainCampaignBillingHistory(vendorId);
-        setHistory((prev) => ({ ...prev, [vendorId]: res.data ?? [] }));
+        const rows: DcRecord[] = res.data ?? [];
+        setHistory((prev) => ({ ...prev, [vendorId]: rows }));
+        setRecordForm(seed(rows));
       } catch { /* noop */ } finally { setHistoryLoading(null); }
     }
   }
 
   async function saveRecord(vendorId: string) {
     const adSpendPaise = Math.round(parseFloat(recordForm.adSpend || '0') * 100);
+    const customFeePaise = Math.round(parseFloat(recordForm.customFee || '0') * 100);
     if (!recordForm.month || !adSpendPaise) { setError('Enter a month and ad spend amount.'); return; }
+    if (recordForm.isCustom && !customFeePaise) { setError('Enter the custom management fee for this Enterprise/custom client.'); return; }
     setSavingRecord(true);
     setError('');
     try {
-      await api.recordDomainCampaignSpend({ vendorId, month: recordForm.month, adSpendPaise });
+      await api.recordDomainCampaignSpend({
+        vendorId, month: recordForm.month, adSpendPaise,
+        ...(recordForm.isCustom ? { isCustomFee: true, customFeePaise } : {}),
+      });
       const res = await api.getDomainCampaignBillingHistory(vendorId);
-      setHistory((prev) => ({ ...prev, [vendorId]: res.data ?? [] }));
-      setRecordForm({ month: new Date().toISOString().slice(0, 7), adSpend: '' });
+      const rows: DcRecord[] = res.data ?? [];
+      setHistory((prev) => ({ ...prev, [vendorId]: rows }));
+      setRecordForm({ ...emptyRecordForm(), isCustom: recordForm.isCustom, customFee: recordForm.isCustom ? recordForm.customFee : '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save record');
     } finally {
@@ -376,8 +400,10 @@ function DomainCampaignPanel() {
   }
 
   const previewAdSpend = Math.round(parseFloat(recordForm.adSpend || '0') * 100);
-  const previewFee = previewAdSpend > 0 ? dcCalculateFee(previewAdSpend) : null;
-  const previewFloorApplied = previewFee === DC_MIN_FEE_PAISE && previewAdSpend * 0.1 < DC_MIN_FEE_PAISE;
+  const previewCustomPaise = Math.round(parseFloat(recordForm.customFee || '0') * 100);
+  const preview = recordForm.isCustom
+    ? (previewCustomPaise > 0 ? { fee: previewCustomPaise, label: 'custom Enterprise/multi-brand fee' } : null)
+    : (previewAdSpend > 0 ? dcBracket(previewAdSpend) : null);
 
   if (loading) return <div className="flex items-center justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-slate-500" /></div>;
 
@@ -456,10 +482,18 @@ function DomainCampaignPanel() {
                           {savingRecord ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Save spend'}
                         </button>
                       </div>
-                      {previewFee !== null && (
+                      <label className="mt-2.5 flex flex-wrap items-center gap-2.5 text-xs text-slate-300">
+                        <input type="checkbox" checked={recordForm.isCustom} onChange={(e) => setRecordForm((f) => ({ ...f, isCustom: e.target.checked }))} className="h-3.5 w-3.5 accent-primary-500" />
+                        Mark as Enterprise / Custom
+                        <span className="text-slate-500">— bill a manually entered fee instead of the spend bracket</span>
+                      </label>
+                      {recordForm.isCustom && (
+                        <input type="number" min="1" placeholder="Custom management fee per month (₹, excl. GST)" value={recordForm.customFee}
+                          onChange={(e) => setRecordForm((f) => ({ ...f, customFee: e.target.value }))} className={`${inputClass} mt-2 sm:max-w-sm`} />
+                      )}
+                      {preview !== null && (
                         <p className="mt-1.5 text-xs text-slate-400">
-                          Fee: <span className="font-semibold text-warning-300">{inr(previewFee)}</span>
-                          {previewFloorApplied ? ' (₹9,999 minimum applied — 10% of spend was lower)' : ' (10% of ad spend)'} + 18% GST
+                          Fee: <span className="font-semibold text-warning-300">{inr(preview.fee)}</span> ({preview.label}) + 18% GST
                         </p>
                       )}
 
@@ -471,12 +505,11 @@ function DomainCampaignPanel() {
                           <p className="text-xs text-slate-500">No spend recorded yet.</p>
                         ) : (
                           rows.map((r) => {
-                            const floorApplied = r.feePaise === DC_MIN_FEE_PAISE && Math.round(r.adSpendPaise * 0.1) < DC_MIN_FEE_PAISE;
                             return (
                               <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-800/60 px-3 py-2 text-xs">
                                 <div>
                                   <span className="font-semibold text-white">{r.month}</span>
-                                  <span className="text-slate-400"> · spend {inr(r.adSpendPaise)} · fee {inr(r.feePaise)}{floorApplied ? ' (floor)' : ' (10%)'}</span>
+                                  <span className="text-slate-400"> · spend {inr(r.adSpendPaise)} · fee {inr(r.feePaise)} ({r.isCustomFee ? 'custom' : dcBracket(r.adSpendPaise).label})</span>
                                 </div>
                                 {r.invoiceId ? (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-success-500/15 px-2 py-0.5 text-[11px] font-semibold text-success-300"><Receipt className="h-3 w-3" />Invoiced</span>

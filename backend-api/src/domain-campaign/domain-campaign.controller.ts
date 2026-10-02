@@ -61,7 +61,7 @@ export class AdminDomainCampaignController {
   }
 
   @Post('records')
-  @ApiOperation({ summary: 'Record (or update) a client\'s monthly ad spend — fee is auto-calculated: MAX(10% of spend, ₹9,999) (admin only)' })
+  @ApiOperation({ summary: 'Record (or update) a client\'s monthly ad spend — fee follows the PRD §88 spend brackets, or the custom amount for Enterprise clients (admin only)' })
   recordSpend(@Body() dto: RecordDomainCampaignSpendDto): Promise<DomainCampaignRecordRow> {
     return this.service.recordSpend(dto);
   }
