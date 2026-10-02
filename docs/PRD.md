@@ -1,3 +1,8 @@
+> **⚠ SUPERSEDED — HISTORICAL DOCUMENT (as of 2026-10-02).**
+> This July-2026 PRD is superseded by [`docs/reference/GET4DOMAIN_V2_PRD.md`](reference/GET4DOMAIN_V2_PRD.md), the authoritative master PRD for Get4Domain V2. Retained unchanged below for historical reference only.
+
+---
+
 # GET4DOMAIN — PRODUCT REQUIREMENTS DOCUMENT
 # Version 2.0 | July 2026
 # KSM Quantum Technologies

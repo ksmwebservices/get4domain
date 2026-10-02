@@ -1,3 +1,9 @@
+> **⚠ SUPERSEDED — HISTORICAL DOCUMENT (as of 2026-10-02).**
+> This document is superseded by [`docs/reference/GET4DOMAIN_V2_PRD.md`](GET4DOMAIN_V2_PRD.md), the authoritative master PRD for Get4Domain V2.
+> It is retained unchanged below for historical reference only. Do not use it as a source of requirements; where it conflicts with the V2 PRD, the V2 PRD wins.
+
+---
+
 # GET4DOMAIN
 # INDUSTRY-AWARE BUSINESS WEBAPP PLATFORM
 # MASTER PRODUCT REQUIREMENTS DOCUMENT
