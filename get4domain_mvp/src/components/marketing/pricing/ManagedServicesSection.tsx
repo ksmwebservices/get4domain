@@ -15,7 +15,7 @@ const BUILD: { icon: LucideIcon; name: string; blurb: string }[] = [
 ];
 
 const GROW: { icon: LucideIcon; name: string; blurb: string }[] = [
-  { icon: Target, name: 'Managed paid ads', blurb: 'Meta and Google Ads planned, run and optimized by our team on an ongoing basis.' },
+  { icon: Target, name: 'Managed paid ads', blurb: 'Meta and Google Ads set up, run and optimized by our team on an ongoing basis.' },
   { icon: Share2, name: 'Social media management', blurb: 'Day-to-day management of your social presence — planning, posting and community response.' },
   { icon: Film, name: 'Content creation', blurb: 'Posts, reels and creative assets produced on a monthly retainer, built around your brand.' },
   { icon: Users2, name: 'Influencer collaboration', blurb: 'Sourcing, negotiating and managing influencer partnerships for your brand.' },

@@ -20,7 +20,7 @@ const SERVICES: { icon: LucideIcon; name: string; blurb: string }[] = [
   { icon: Code2, name: 'Custom Web Application', blurb: 'Bespoke web platforms built to your exact requirements — beyond what a template site can do.' },
   { icon: Smartphone, name: 'Mobile Application', blurb: 'Native or cross-platform iOS/Android apps for your business or your customers.' },
   { icon: Database, name: 'Full SME Software', blurb: 'Complete bespoke CRM, ERP or business operating system builds, tailored to how you actually work.' },
-  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta and Google Ads, planned, run and optimized by our team on an ongoing basis.' },
+  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta and Google Ads, set up, run and optimized by our team on an ongoing basis.' },
   { icon: Share2, name: 'Social Media Management', blurb: 'Day-to-day management of your social presence — planning, posting, and community response.' },
   { icon: Film, name: 'Content Creation', blurb: 'Posts, reels and creative assets produced on a monthly retainer, built around your brand.' },
   { icon: Users2, name: 'Influencer Collaboration', blurb: 'Sourcing, negotiating and managing influencer partnerships for your brand.' },

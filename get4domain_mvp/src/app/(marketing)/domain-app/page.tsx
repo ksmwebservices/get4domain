@@ -14,21 +14,26 @@ const FEATURES = [
   { icon: '📦', title: 'Catalog & Products', desc: 'Your packages, menu, services or rooms — a catalog that fits your business.' },
   { icon: '🗂️', title: 'Records & Transactions', desc: 'Bookings, orders, appointments, enrolments — your core workflow, tracked.' },
   { icon: '🧾', title: 'GST Invoicing & Payments', desc: 'GST-compliant invoices, payment links and collection built in.' },
-  { icon: '📊', title: 'Accounts & Reports', desc: 'Income, expenses, P&L and GST summaries — know your numbers.' },
-  { icon: '🧑‍💼', title: 'HR & Payroll', desc: 'Employees, attendance, leave and salary — coming soon with BOS.' },
+  { icon: '📊', title: 'Accounting & GST', desc: 'Income, expenses, P&L and GSTR filing tracking — know your numbers at return time.' },
+  { icon: '🧑‍💼', title: 'HRM & Payroll', desc: 'Staff records, attendance, leave and payroll — your team, managed from the same dashboard.' },
+  { icon: '📦', title: 'Inventory Management', desc: 'Stock levels, reorder alerts and stock that moves with every sale and order.' },
+  { icon: '💬', title: 'Communication Hub', desc: 'WhatsApp, SMS and email conversations and campaigns from one inbox, plus a website auto-bot.' },
+  { icon: '🤖', title: 'AI Studio', desc: 'Content, images and blog articles written and designed for your business in seconds.' },
+  { icon: '🔎', title: 'SEO, GEO & AEO', desc: 'Keyword and meta optimization, Google Business Profile, Analytics, Search Console and backlinks.' },
+  { icon: '📱', title: 'PWA Apps', desc: 'Installable vendor and customer apps that work like native mobile apps on any phone.' },
   { icon: '🎨', title: 'Design Studio', desc: 'Letterheads, ID cards, quotes and posters, on brand.' },
   { icon: '🌐', title: 'Website & CMS', desc: 'A professional industry website you can edit anytime.' },
 ];
 
 const INDUSTRIES = ['🚗 Travel', '🍽️ Restaurant', '🏥 Clinic', '🏨 Hotel', '💇 Salon', '🏋️ Gym', '🏠 Real Estate', '🎓 Education', '🛒 Retail', '🏗️ Construction', '📸 Photography', '🚚 Logistics'];
 
-const ADDONS = ['Fleet Management', 'Driver Management', 'Table Management', 'Appointment Scheduling', 'Inventory Management', 'Room Management', 'Batch Management', 'Project Management'];
+const ADDONS = ['Fleet Management', 'Driver Management', 'Table Management', 'Appointment Scheduling', 'Room Management', 'Batch Management', 'Project Management'];
 
 const FAQS = [
-  { q: 'What does DomainApp actually do?', a: 'DomainApp is a business workspace: it manages your contacts, catalog, records (bookings/orders/appointments), GST invoicing and basic accounts, plus a professional website — all adapted to your industry. Optional addons extend it with fleet, inventory and more; HR is coming soon with BOS.' },
+  { q: 'What does DomainApp actually do?', a: 'DomainApp is a business workspace: it manages your contacts, catalog, records (bookings/orders/appointments), GST invoicing, accounting, HRM and inventory, plus a professional website — all adapted to your industry. Optional addons extend it with fleet, drivers, tables and more; BOS adds HRM and inventory management.' },
   { q: 'Is it different for my industry?', a: 'Yes. The workspace is configured per industry — a travel agency sees Bookings, Fleet and Drivers; a restaurant sees Orders, Tables and Menu; a clinic sees Appointments, Patients and Doctors. Same reliable engine underneath, tailored on top.' },
   { q: 'Do I get a real website?', a: 'Yes — a professional website built with your business name, services and photos, with an easy CMS so you can update content yourself. Not a generic drag-and-drop template.' },
-  { q: 'What are addons?', a: 'Addons are optional modules you enable on top of core DomainApp — like Fleet, Driver, Table Management or Inventory. They add extra tools without duplicating your core data, and are billed separately per your needs.' },
+  { q: 'What are addons?', a: 'Addons are optional modules you enable on top of core DomainApp — like Fleet, Driver or Table Management. They add extra tools without duplicating your core data, and are billed separately per your needs.' },
 ];
 
 export default function DomainAppPage() {

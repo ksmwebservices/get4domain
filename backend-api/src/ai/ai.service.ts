@@ -58,14 +58,18 @@ We offer three things (full comparison at get4domain.com/pricing):
 1. DomainApp — industry website + business workspace, two ANNUAL plans
    (prices exclude 18% GST; there is no monthly or quarterly billing):
    - Workspace: ₹999/month equivalent, billed ₹11,988 once a year.
-     Website, CRM + TeleCRM, GST invoicing, basic expense management,
-     website auto-bot reply, SEO/GEO/AEO bundle, 3 free SEO keywords,
-     2 theme changes/year, ₹499 one-time AI Studio credit.
+     Industry website, hosting + SSL, lead capture, CRM + TeleCRM, website
+     auto-bot reply, Communication Hub (WhatsApp, SMS, email), GST invoicing
+     and expense tracking, team access, AI Studio (content, images, blog
+     writing) with a ₹499 one-time credit, SEO/GEO/AEO with 3 keywords
+     (keyword + meta tag/description optimization), Google Business Profile,
+     Analytics and Search Console, backlinks, social media management and
+     posting, PWA mobile apps, 2 theme/website customizations a year.
    - BOS: ₹1,999/month equivalent, billed ₹23,988 once a year.
-     Everything in Workspace plus WhatsApp bot reply, task management,
-     full GST + P&L accounting, 6 free SEO keywords, 4 theme changes/year,
-     ₹1,299 one-time AI Studio credit. HRM and Office management are
-     "coming soon" - never say they are available.
+     Everything in Workspace plus WhatsApp bot reply, accounting and GST
+     (P&L, GSTR filing), HRM (staff, attendance, payroll), inventory
+     management, task management, 6 SEO keywords, 4 theme customizations a
+     year and a ₹1,299 one-time AI Studio credit.
    A wallet (pay-as-you-go top-up) covers usage-based extras such as AI
    generation, WhatsApp/SMS/email credits. Custom domain is optional.
 

@@ -1,38 +1,33 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Play, Globe, LayoutGrid, Phone, Bot, MessageCircle, Megaphone, Wallet, BarChart3, UserRound, Check, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Play, Wallet, Check, type LucideIcon } from 'lucide-react';
 import PlatformSection from '@/components/marketing/home/PlatformSection';
 import DashboardPreview from '@/components/marketing/home/DashboardPreview';
 import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 import Faq from '@/components/marketing/Faq';
+import { CAPABILITIES } from '@/data/platform-features';
+import { CAPABILITY_ICONS } from '@/components/marketing/capability-icons';
 
 // Page-specific FAQ (feature/pricing-mechanics questions — distinct from home & pricing).
 const FEATURES_FAQ = [
-  { q: 'What is actually included in the plans?', a: 'Everything on this page is included in Workspace (₹999/month) — BOS (₹1,999/month) adds WhatsApp bot reply, task management and full GST + P&L accounting (HRM and Office management are coming soon). Included: your industry website, the Workplace, CRM + TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA. There are no per-module add-on fees — the software is all included in your plan.' },
+  { q: 'What is actually included in the plans?', a: 'Workspace (₹999/month) includes your industry website, CRM and TeleCRM, the Communication Hub, GST invoicing and expense tracking, AI Studio, SEO/GEO/AEO, Google Business Profile, Analytics and Search Console, backlinks, social media management and the PWA apps. BOS (₹1,999/month) adds WhatsApp bot reply, full accounting with P&L and GSTR filing, HRM, inventory management and task management. Both are billed annually + 18% GST.' },
   { q: 'Which features are included vs. pay-per-use?', a: 'All software modules are included. Only consumption items — AI content/image generations, campaign sends and WhatsApp/SMS/email messages — draw from your wallet. You start with ₹499 of free credit and top up (from ₹499) only when you need more.' },
   { q: 'Can I use just the Workplace/CRM without the website?', a: 'Yes. If you already have a website, use Get4Domain only for the Workplace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with GST-statement prep — without deploying a new site.' },
   { q: 'Do the features adapt to my industry?', a: 'Yes. Records, contacts, forms and workflows relabel to your industry — a clinic gets appointments and patients, a restaurant gets menu and orders, real estate gets properties and site visits — across all 20 supported industries.' },
 ];
 
 export const metadata: Metadata = {
-  title: 'Features — Everything in DomainApp from ₹999/month',
-  description: 'Every DomainApp feature in detail: industry website, Workplace, CRM & TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA — with what is included vs. pay-per-use.',
+  title: 'Features — CRM, Accounting, HRM, Inventory, AI, SEO & More from ₹999/month',
+  description: 'Every DomainApp feature in detail: CRM & TeleCRM, Communication Hub, accounting & GST, HRM, inventory, AI Studio, SEO/GEO/AEO, Google Business Profile, backlinks, social media management, PWA apps and website customization.',
   alternates: { canonical: 'https://get4domain.com/features' },
 };
 
 type Tag = 'Included' | 'Pay-per-use' | 'Included + pay-per-use';
 
 const GROUPS: { icon: LucideIcon; name: string; tag: Tag; blurb: string; bullets: string[] }[] = [
-  { icon: Globe, name: 'Industry Website', tag: 'Included', blurb: 'A lead-generation website on your Get4Domain subdomain, deployed instantly on a ready-made template and customized within 24 hours.', bullets: ['Subdomain + hosting + SSL', 'SEO-optimized pages', 'Enquiry & lead forms', 'WhatsApp & call CTAs', 'Easy CMS for updates'] },
-  { icon: LayoutGrid, name: 'Workplace', tag: 'Included', blurb: 'Your central business workspace — contacts, catalog, bookings/orders and invoicing, tailored to your industry.', bullets: ['Contacts (industry-labeled)', 'Products/Services catalog', 'Bookings / Orders / Appointments', 'GST invoicing', 'Accounts — expenses, P&L & GST'] },
-  { icon: Phone, name: 'CRM + TeleCRM', tag: 'Included', blurb: 'Move every lead through a clear pipeline with calling, follow-ups and full customer history.', bullets: ['Lead pipeline (Kanban)', 'Follow-up reminders', 'Call queue & call records', 'Lead assignment', 'Customer history'] },
-  { icon: Bot, name: 'AI Studio', tag: 'Pay-per-use', blurb: 'Create posters, reels, captions and documents with AI. ₹499 free credit included; further usage is paid from your wallet.', bullets: ['Reel maker', 'Poster designer', 'Content & captions', '₹499 free credit included', 'No unlimited claims — pay per use'] },
-  { icon: MessageCircle, name: 'Communication Hub', tag: 'Included + pay-per-use', blurb: 'WhatsApp Business API (no monthly platform fee), transactional & promotional SMS, and email — from one unified inbox.', bullets: ['WhatsApp API — no monthly fee', 'Transactional SMS', 'Promotional SMS', 'Email', 'Unified inbox (variable usage from wallet)'] },
-  { icon: Megaphone, name: 'Growth Hub & Campaigns', tag: 'Included + pay-per-use', blurb: 'Build a campaign, generate a shareable landing page and track results. Tools are included; paid distribution is pay-per-use.', bullets: ['Campaign builder', 'Shareable campaign link', 'Audience segments', 'Scheduling', 'Result tracking'] },
-  { icon: Wallet, name: 'Wallet & Billing', tag: 'Pay-per-use', blurb: 'A prepaid wallet powers all variable usage with fully transparent, per-service pricing — you always see what consumed it.', bullets: ['Add money & top-ups', 'Usage & transaction history', 'Per-service & per-campaign cost', 'Low-balance warnings'] },
-  { icon: BarChart3, name: 'Analytics', tag: 'Included', blurb: 'Connect the whole journey — website visitors to leads to customers to campaign results — in one view.', bullets: ['Website visitors', 'Enquiries & lead sources', 'Contacted / qualified leads', 'Conversion', 'Revenue where available'] },
-  { icon: UserRound, name: 'Client App (PWA)', tag: 'Included', blurb: 'Your customers get their own installable app to book, pay, track orders and chat with you — from any phone.', bullets: ['Book & pay online', 'Order/booking tracking', 'WhatsApp chat', 'Push notifications', 'Installable PWA'] },
+  ...CAPABILITIES.map((c) => ({ icon: CAPABILITY_ICONS[c.icon], name: c.title, tag: c.billing as Tag, blurb: c.description, bullets: c.details })),
+  { icon: Wallet, name: 'Wallet & billing', tag: 'Pay-per-use' as Tag, blurb: 'A prepaid wallet powers all variable usage with fully transparent, per-service pricing — you always see what consumed it.', bullets: ['Add money & top-ups', 'Usage & transaction history', 'Bonus credits on larger top-ups', 'Per-service rates published on the pricing page'] },
 ];
 
 const TAG_STYLE: Record<Tag, string> = {

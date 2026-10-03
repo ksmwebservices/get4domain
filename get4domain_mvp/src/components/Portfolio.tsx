@@ -25,7 +25,7 @@ export default function Portfolio({ limit }: PortfolioProps) {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50">
               <Rocket className="h-6 w-6 text-primary-600" />
             </div>
-            <p className="text-slate-600 text-sm">Portfolio coming soon — we're building more client websites.</p>
+            <p className="text-slate-600 text-sm">Explore our live industry demos while our client showcase grows.</p>
             <Link href="/book-demo" className="mt-5 inline-block">
               <Button size="sm" variant="outline">Be Our Next Success Story</Button>
             </Link>

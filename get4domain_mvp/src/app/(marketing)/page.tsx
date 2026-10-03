@@ -9,6 +9,7 @@ import DashboardPreview from '@/components/marketing/home/DashboardPreview';
 import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 import HomePricing from '@/components/marketing/home/HomePricing';
+import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
 
 export const metadata: Metadata = {
   title: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
@@ -66,6 +67,7 @@ export default function HomePage() {
           <DashboardPreview />
           <CommunicationHub />
           <AIStudio />
+          <WhyGet4Domain tone="dark" />
           <HomePricing />
         </div>
       </div>

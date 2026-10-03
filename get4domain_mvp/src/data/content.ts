@@ -379,7 +379,7 @@ export interface PortfolioItem {
   city: string;
 }
 
-// No client websites launched yet — Portfolio component shows a "coming soon" state when this is empty.
+// Client websites are listed here as they launch; the Portfolio component shows a demo-focused empty state when this is empty.
 export const portfolioItems: PortfolioItem[] = [];
 
 export interface Testimonial {
@@ -473,7 +473,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq2',
     question: 'What is the difference between DomainApp Workspace and BOS?',
-    answer: 'Workspace (₹999/month, billed annually) gives you your industry website, CRM and TeleCRM, GST invoicing, basic expense management, a website auto-bot reply and the SEO/GEO/AEO growth bundle. BOS (₹1,999/month, billed annually) adds WhatsApp bot reply, task management, full GST and P&L accounting, a larger AI Studio credit and more theme changes — with HRM and Office management coming soon. Prices exclude 18% GST.',
+    answer: 'Workspace (₹999/month, billed annually) gives you your industry website, CRM and TeleCRM, the Communication Hub, GST invoicing and expense tracking, AI Studio, SEO/GEO/AEO, Google Business Profile, Analytics and Search Console, backlinks, social media management and the PWA apps. BOS (₹1,999/month, billed annually) adds WhatsApp bot reply, full accounting with P&L and GSTR filing, HRM, inventory management, task management, more SEO keywords and theme customizations, and a larger AI Studio credit. Prices exclude 18% GST.',
     category: 'products',
   },
   {

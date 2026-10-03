@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { ArrowRight, Layers, Megaphone, Code2 } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import PlanComparison from '@/components/marketing/pricing/PlanComparison';
+import ProductComparison from '@/components/marketing/pricing/ProductComparison';
+import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
 import CampaignPricing from '@/components/marketing/pricing/CampaignPricing';
 import ManagedServicesSection from '@/components/marketing/pricing/ManagedServicesSection';
 import { fetchLivePricing, applyLivePricing } from '@/lib/pricing';
@@ -38,7 +40,7 @@ const FAQS = [
   { q: 'Can I use my own domain?', a: 'Yes. A free subdomain is included with every plan. You can also buy a domain through our dashboard or connect an existing one — custom domain is a separate service.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your Workplace adapts to your industry.' },
   { q: 'How am I billed?', a: 'Both DomainApp plans are billed annually, upfront: Workspace ₹11,988 + 18% GST once a year (₹999/month equivalent), BOS ₹23,988 + 18% GST once a year (₹1,999/month equivalent). There is no quarterly or monthly billing option. DomainCampaign is billed monthly; Managed Services are billed per the proposal you approve.' },
-  { q: 'Is HRM / Office management included in BOS?', a: 'They are on the BOS roadmap and shown as "coming soon" — not yet available. Everything else listed under BOS is live today.' },
+  { q: 'What does BOS add over Workspace?', a: 'BOS includes everything in Workspace plus WhatsApp bot reply, full accounting with P&L and GSTR filing, HRM (staff, attendance and payroll), inventory management, task management and assigning, 6 SEO keywords, 4 theme customizations a year and a ₹1,299 one-time AI Studio credit.' },
   { q: 'What is the difference between DomainApp, DomainCampaign and Managed Services?', a: 'DomainApp is the subscription: your industry website plus the software to run your business. DomainCampaign is a managed service where our team runs your Meta & Google ads and organic growth for a flat monthly fee set by your ad budget. Managed Services is custom work — bespoke web/mobile apps, CRM/ERP, and managed marketing or production — scoped and quoted per project. You can use any of them on their own or together.' },
   { q: 'How much does DomainCampaign cost?', a: 'A flat management fee set by your monthly ad budget: up to ₹20,000 → ₹2,000/month; ₹20,001 to ₹1,00,000 → ₹5,000/month; above ₹1,00,000 → ₹10,000/month, plus 18% GST. Enterprise and multi-brand clients get a custom quote. Your ad spend is paid directly to Meta/Google and is separate.' },
   { q: 'How do I get a Managed Services quote?', a: 'Use "Get a Custom Quote" on this page. Tell us what you need, our team follows up to scope it, and you receive an itemized proposal. There is no fixed price list because every engagement is different.' },
@@ -72,7 +74,7 @@ export default async function PricingPage() {
 
   // The three products, as jump tiles in the hero so none of them is below the fold.
   const tiles = [
-    { href: '#domainapp', icon: Layers, name: 'DomainApp', price: `${terms.workspace.headline} – ${terms.bos.headline}`, unit: '/month, billed annually', blurb: 'Industry website + the software to run your business. Workspace or BOS.', cta: 'Compare plans', accent: false },
+    { href: '#compare', icon: Layers, name: 'DomainApp', price: `${terms.workspace.headline} – ${terms.bos.headline}`, unit: '/month, billed annually', blurb: 'Industry website + the software to run your business. Workspace or BOS.', cta: 'Compare plans', accent: false },
     { href: '#domain-campaign', icon: Megaphone, name: 'DomainCampaign', price: 'From ₹2,000', unit: '/month, by ad budget', blurb: 'Our team runs your Meta & Google ads and organic growth.', cta: 'See fees & scope', accent: false },
     { href: '#managed-services', icon: Code2, name: 'Managed Services', price: 'Custom quote', unit: 'scoped per project', blurb: 'Bespoke web/mobile apps, CRM/ERP and managed marketing, built for you.', cta: 'Get a custom quote', accent: true },
   ];
@@ -121,7 +123,10 @@ export default async function PricingPage() {
         </div>
       </div>
 
-      {/* 1 · DOMAINAPP — Workspace vs BOS */}
+      {/* COMPARE — one table: Workspace | BOS | DomainCampaign | Managed Services */}
+      <ProductComparison workspace={terms.workspace} bos={terms.bos} />
+
+      {/* 1 · DOMAINAPP — plan cards */}
       <PlanComparison workspace={terms.workspace} bos={terms.bos} />
 
       {/* 2 · DOMAINCAMPAIGN — fee table + scope */}
@@ -129,6 +134,9 @@ export default async function PricingPage() {
 
       {/* 3 · MANAGED SERVICES — custom-quoted, loudest block on the page */}
       <ManagedServicesSection />
+
+      {/* WHY GET4DOMAIN — differentiation + cost comparison */}
+      <WhyGet4Domain tone="light" />
 
       {/* PAY AS YOU USE — wallet (applies to DomainApp) */}
       <section className="bg-slate-50 py-16 md:py-20">

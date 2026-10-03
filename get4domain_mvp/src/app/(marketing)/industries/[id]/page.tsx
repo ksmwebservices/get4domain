@@ -9,6 +9,7 @@ import { getSubcategories } from '@/data/demo-site';
 import { siteConfig } from '@/constants/site';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
+import CapabilityStrip from '@/components/marketing/CapabilityStrip';
 import Button from '@/components/ui/Button';
 
 // Major-10 categories with real Playwright demo-site screenshots (reused from the
@@ -339,6 +340,8 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
           </div>
         </section>
       )}
+
+      <CapabilityStrip industry={content.name} />
 
       <CTABanner />
     </>

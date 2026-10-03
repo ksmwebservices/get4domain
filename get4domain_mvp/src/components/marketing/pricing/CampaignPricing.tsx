@@ -15,7 +15,7 @@ const BRACKETS = [
 const SCOPE: { icon: LucideIcon; name: string; points: string[] }[] = [
   {
     icon: Target, name: 'Ads management',
-    points: ['Meta (Facebook & Instagram) and Google Ads', 'Planned, launched and optimized by our team every month', 'You own and fund the ad accounts — spend goes straight to the platforms'],
+    points: ['Meta (Facebook & Instagram) and Google Ads', 'Set up, launched and optimized by our team every month', 'You own and fund the ad accounts — spend goes straight to the platforms'],
   },
   {
     icon: PenTool, name: 'Content',

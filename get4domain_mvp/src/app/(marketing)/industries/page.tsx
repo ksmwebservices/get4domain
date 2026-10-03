@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
 import { INDUSTRIES } from '@/data/industries-list';
+import CapabilityStrip from '@/components/marketing/CapabilityStrip';
 
 export const metadata: Metadata = {
   title: '20+ Industry Solutions — Restaurant, Travel, Clinic & More',
@@ -59,6 +60,8 @@ export default function IndustriesPage() {
           </div>
         </div>
       </div>
+
+      <CapabilityStrip />
 
       {/* DON'T SEE YOUR INDUSTRY — light close */}
       <section className="bg-slate-50 py-16 md:py-20">

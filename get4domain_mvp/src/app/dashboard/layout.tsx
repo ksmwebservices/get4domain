@@ -148,6 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { label: 'Payments', href: '/dashboard/payments', icon: 'CreditCard' },
           { label: 'Invoices', href: '/dashboard/invoices', icon: 'FileText' },
           { label: 'Accounts', href: '/dashboard/accounts', icon: 'Receipt' },
+          { label: 'HRM', href: '/dashboard/hrm', icon: 'UserCog' },
           { label: 'Stationery', href: '/dashboard/stationery', icon: 'Package' },
           { label: 'Team', href: '/dashboard/team', icon: 'UserPlus' },
           { label: 'Support', href: '/dashboard/support', icon: 'HelpCircle' },
