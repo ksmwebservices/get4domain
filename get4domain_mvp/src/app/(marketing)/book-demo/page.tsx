@@ -177,7 +177,7 @@ export default function BookDemoPage() {
             <p className="mt-4 text-xs text-slate-400">
               {sandbox
                 ? 'One tour, everything included — switch between your website, dashboard and customer portal from the floating menu. Sandbox expires in 48 hours.'
-                : 'The guided interactive demo is rolling out shortly. You’re on the list.'}
+                : 'Book your free demo and our team will walk you through a guided tour of your website, dashboard and customer portal.'}
             </p>
           </div>
         </div>

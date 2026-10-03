@@ -42,9 +42,9 @@ export default function HowItWorksPage() {
               { title: 'No Technical Knowledge', desc: 'You don\'t need to know coding or design. We handle everything for you.' },
               { title: 'Launch in 24 Hours', desc: 'From payment to live website, we deploy your business online within 24 hours.' },
               { title: 'Professional Design', desc: 'Industry-specific templates designed by professionals, customized with your brand.' },
-              { title: 'All-Inclusive Package', desc: 'Domain, hosting, SSL, SEO, analytics — everything included in one price.' },
+              { title: 'Everything in your plan', desc: 'Website, hosting, SSL, SEO basics and your business workspace — included in your annual DomainApp plan.' },
               { title: '30 Days Support', desc: 'Dedicated support for 30 days after launch to ensure everything runs smoothly.' },
-              { title: 'Affordable Pricing', desc: 'Just ₹4,999 one-time. No recurring fees, no hidden costs, no surprises.' },
+              { title: 'Clear Pricing', desc: 'Workspace from ₹999/month or BOS from ₹1,999/month, billed annually + GST. No hidden costs — see the full comparison on our pricing page.' },
             ].map((item) => (
               <div key={item.title} className="card-base card-hover p-6">
                 <h3 className="mb-2 text-base font-bold text-slate-900">{item.title}</h3>

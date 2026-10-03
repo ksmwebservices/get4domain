@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const CAPABILITIES: { icon: typeof Target; name: string; blurb: string }[] = [
-  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta (Facebook & Instagram) and Google Ads — planned, launched and optimized by our team every month.' },
+  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta (Facebook & Instagram) and Google Ads — set up, launched and optimized by our team every month.' },
   { icon: PenTool, name: 'Content Management', blurb: 'Posts, creative and campaign assets produced and scheduled for you.' },
   { icon: BarChart3, name: 'Analytics & Reporting', blurb: 'A monthly statement showing exactly what was spent and what you were billed — no black box.' },
   { icon: Search, name: 'SEO / GEO / AEO', blurb: 'Organic search, local/geo visibility and answer-engine optimization, worked on continuously.' },
@@ -26,7 +26,7 @@ const BRACKET_EXAMPLES = [
 
 const FAQ = [
   { q: 'How is pricing calculated?', a: 'Our management fee is a flat monthly amount set by your monthly ad budget: up to ₹20,000 → ₹2,000/month; ₹20,001 to ₹1,00,000 → ₹5,000/month; above ₹1,00,000 → ₹10,000/month. Enterprise and multi-brand clients are quoted a custom fee. Plus 18% GST. Your ad spend itself is paid directly to Meta/Google and is separate from our fee.' },
-  { q: 'Why is ad spend recorded manually, not tracked automatically?', a: 'Live Meta/Google Ads API reporting is on our roadmap (it requires platform app review). Until then, your account manager records your actual monthly spend directly from the ad accounts, and your monthly statement shows that figure alongside the fee calculation — fully transparent either way.' },
+  { q: 'How is my ad spend recorded?', a: 'Your account manager records your actual monthly spend directly from your Meta and Google ad accounts, and your monthly statement shows that figure alongside the fee calculation — so every number is checked against the source and fully transparent.' },
   { q: 'Is this the same as the campaign tools in my DomainApp plan?', a: 'No. DomainApp includes basic campaign tools (landing pages, AI content, messaging) as part of your subscription. DomainCampaign is a separate, managed service — our team actually plans, runs and optimizes paid ads and organic growth on your behalf, billed against your ad spend.' },
   { q: 'Do I need to already be a Get4Domain customer?', a: 'No — DomainCampaign is available whether or not you use DomainApp, though if you do, we can pre-fill your details from your dashboard.' },
   { q: 'Who actually spends the ad budget?', a: 'You fund and own your Meta/Google ad accounts directly — we plan, execute and optimize campaigns within the budget you set. Our fee is for that management work, calculated from what you actually spent.' },
@@ -50,7 +50,7 @@ export default function DomainCampaignPage() {
           We run your <span className="text-gradient-hero">paid ads &amp; growth.</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-slate-400">
-          Managed Meta &amp; Google ads, content, analytics and organic SEO/GEO/AEO growth — planned, run and optimized by our team every month.
+          Managed Meta &amp; Google ads, content, analytics and organic SEO/GEO/AEO growth — set up, run and optimized by our team every month.
         </p>
 
         <div className="mx-auto mt-7 flex max-w-sm flex-col items-center gap-1 rounded-2xl border border-warning-400/30 bg-warning-400/10 px-6 py-4">

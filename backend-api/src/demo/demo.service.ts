@@ -346,6 +346,9 @@ export class DemoService {
         this.prisma.genericInvoice.deleteMany({ where: { vendorId: v.id } }),
         this.prisma.record.deleteMany({ where: { vendorId: v.id } }),
         this.prisma.catalogItem.deleteMany({ where: { vendorId: v.id } }),
+        // Universal Catalogue: sandbox catalogue rows copied into VendorProduct by the data
+        // migration (--scope=all) would otherwise block vendor.delete via the vendorId FK.
+        this.prisma.vendorProduct.deleteMany({ where: { vendorId: v.id } }),
         this.prisma.contact.deleteMany({ where: { vendorId: v.id } }),
         this.prisma.vendor.delete({ where: { id: v.id } }),
       ]);

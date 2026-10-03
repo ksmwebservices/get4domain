@@ -22,7 +22,7 @@ export default function CTABanner() {
           </div>
 
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Everything your business needs, <span className="text-gradient-hero">for ₹999/month.</span>
+            Everything your business needs, <span className="text-gradient-hero">from ₹999/month.</span>
           </h2>
           <p className="mx-auto mb-8 max-w-xl text-slate-400">
             Instant deploy, live in 24 hours. No setup fees, no contracts, no per-feature pricing.
@@ -30,7 +30,7 @@ export default function CTABanner() {
 
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/book-demo" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
-              Buy Now — ₹999/mo
+              Buy Now — from ₹999/mo
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link href="/demo/clinic" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80 sm:w-auto">

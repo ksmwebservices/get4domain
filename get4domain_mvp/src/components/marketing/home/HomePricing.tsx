@@ -2,22 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Check, ArrowRight, Sparkles, Building2, Code2, Wallet, Clock, TrendingDown } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Building2, Wallet, Clock, TrendingDown } from 'lucide-react';
 import { PLAN_TERMS, gstOn, totalWithGst, formatINR, USAGE_VS_MARKET, fetchLivePricing, applyLivePricing } from '@/lib/pricing';
-
-// Real, defensible comparison — Get4Domain vs. commissioning custom development.
-const COMPARISON = [
-  { feature: 'Instant deploy on a ready-made site', us: true, them: 'Built from scratch' },
-  { feature: 'Webapp + vendor + client apps', us: true, them: '₹2–5L+ custom dev' },
-  { feature: 'WhatsApp API integration', us: true, them: '₹500–2,000/mo extra' },
-  { feature: 'AI content studio', us: true, them: '₹999+/mo separate' },
-  { feature: 'POS & booking system', us: true, them: '₹1,000+/mo separate' },
-  { feature: 'SMS & email campaigns', us: true, them: '₹500+/mo separate' },
-  { feature: 'GST invoicing', us: true, them: '₹500+/mo separate' },
-  { feature: 'PWA — install on any phone', us: true, them: 'Rare / costly' },
-  { feature: 'Live + customized', us: 'In 24 hours', them: '2–6 months' },
-  { feature: 'Monthly cost', us: 'From ₹999', them: '₹5,000–15,000+' },
-];
 
 export default function HomePricing() {
   const [billing, setBilling] = useState<'workspace' | 'bos'>('workspace');
@@ -90,27 +76,6 @@ export default function HomePricing() {
               {tier.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <p className="mt-3 text-center text-[11px] text-slate-500">Prices exclusive of 18% GST. Cancel anytime — site stays live until the paid term ends.</p>
-          </div>
-        </div>
-
-        {/* comparison table — vs custom development */}
-        <div className="mx-auto mt-16 max-w-3xl">
-          <h3 className="mb-6 text-center text-xl font-semibold text-white">
-            Why pay more? <span className="text-sm font-normal text-slate-400">Get4Domain vs. custom development</span>
-          </h3>
-          <div className="overflow-hidden rounded-2xl border border-white/5 bg-slate-800/60 backdrop-blur-xl">
-            <div className="grid grid-cols-3 gap-2 border-b border-white/5 px-5 py-3 text-xs font-semibold text-slate-300">
-              <span>Feature</span>
-              <span className="flex items-center gap-1 text-primary-300"><Sparkles className="h-3 w-3" /> Get4Domain</span>
-              <span className="flex items-center gap-1 text-slate-400"><Code2 className="h-3 w-3" /> Custom dev</span>
-            </div>
-            {COMPARISON.map((row, i) => (
-              <div key={i} className="grid grid-cols-3 gap-2 border-b border-white/5 px-5 py-2.5 text-xs transition-colors last:border-0 hover:bg-white/[0.02]">
-                <span className="text-slate-300">{row.feature}</span>
-                <span className="flex items-center gap-1 text-primary-300">{row.us === true ? <Check className="h-3.5 w-3.5" /> : row.us}</span>
-                <span className="text-slate-400">{row.them}</span>
-              </div>
-            ))}
           </div>
         </div>
 

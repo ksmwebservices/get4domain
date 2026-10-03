@@ -154,7 +154,7 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-base font-bold text-ink-50">You&apos;re exploring a demo sandbox</div>
-                  <div className="mt-0.5 text-sm text-ink-300">Loved it? Go live with your real account — everything included for ₹999/month. Your demo data carries over.</div>
+                  <div className="mt-0.5 text-sm text-ink-300">Loved it? Go live with your real account — plans from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually. Your demo data carries over.</div>
                 </div>
                 <span className="btn-gold shrink-0">Go live <ArrowUpRight className="h-4 w-4" /></span>
               </div>

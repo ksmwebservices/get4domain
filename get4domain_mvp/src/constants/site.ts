@@ -13,7 +13,7 @@ export const siteConfig = {
     width: 1200,
     height: 630,
     type: 'image/jpeg',
-    alt: 'Get4Domain — Turn your website into a WebApp. A professional industry website plus the full web-app behind it: leads, CRM, bookings, invoices, WhatsApp & AI content. ₹999/mo.',
+    alt: 'Get4Domain — Turn your website into a WebApp. A professional industry website plus the full web-app behind it: leads, CRM, bookings, invoices, WhatsApp & AI content. From ₹999/mo.',
   },
   keywords: [
     'business website platform',
