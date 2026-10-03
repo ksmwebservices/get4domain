@@ -9,14 +9,14 @@ import Faq from '@/components/marketing/Faq';
 
 // Page-specific FAQ (feature/pricing-mechanics questions — distinct from home & pricing).
 const FEATURES_FAQ = [
-  { q: 'What is actually included in the ₹999/month plan?', a: 'Everything on this page is included: your industry website, the Workplace, CRM + TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA. There are no per-module add-on fees — the software is all included in the one plan.' },
+  { q: 'What is actually included in the plans?', a: 'Everything on this page is included in Workspace (₹999/month) — BOS (₹1,999/month) adds WhatsApp bot reply, task management and full GST + P&L accounting (HRM and Office management are coming soon). Included: your industry website, the Workplace, CRM + TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA. There are no per-module add-on fees — the software is all included in your plan.' },
   { q: 'Which features are included vs. pay-per-use?', a: 'All software modules are included. Only consumption items — AI content/image generations, campaign sends and WhatsApp/SMS/email messages — draw from your wallet. You start with ₹499 of free credit and top up (from ₹499) only when you need more.' },
   { q: 'Can I use just the Workplace/CRM without the website?', a: 'Yes. If you already have a website, use Get4Domain only for the Workplace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with GST-statement prep — without deploying a new site.' },
   { q: 'Do the features adapt to my industry?', a: 'Yes. Records, contacts, forms and workflows relabel to your industry — a clinic gets appointments and patients, a restaurant gets menu and orders, real estate gets properties and site visits — across all 20 supported industries.' },
 ];
 
 export const metadata: Metadata = {
-  title: 'Features — Everything in DomainApp ₹999/month',
+  title: 'Features — Everything in DomainApp from ₹999/month',
   description: 'Every DomainApp feature in detail: industry website, Workplace, CRM & TeleCRM, AI Studio, Communication Hub, Growth Hub & campaigns, wallet, analytics and the client PWA — with what is included vs. pay-per-use.',
   alternates: { canonical: 'https://get4domain.com/features' },
 };
@@ -59,11 +59,11 @@ export default function FeaturesPage() {
           Everything DomainApp does, <span className="text-gradient-hero">in one platform.</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-slate-400">
-          One ₹999/month subscription unlocks the whole platform. Here&apos;s every capability in detail — and exactly what&apos;s included vs. paid per use from your wallet.
+          One subscription (from ₹999/month, billed annually) unlocks the whole platform. Here&apos;s every capability in detail — and exactly what&apos;s included vs. paid per use from your wallet.
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link href="/book-demo" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
-            Buy Now — ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            Buy Now — from ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link href="/demo/clinic" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80 sm:w-auto">
             <Play className="h-4 w-4 text-primary-300" /> Visit Demo
@@ -98,7 +98,7 @@ export default function FeaturesPage() {
           })}
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-slate-500">
-          <span className="font-semibold text-success-300">Included</span> = in your ₹999 subscription ·{' '}
+          <span className="font-semibold text-success-300">Included</span> = in your subscription ·{' '}
           <span className="font-semibold text-warning-300">Pay-per-use</span> = billed from your wallet only when you use it. Custom domain is a separate, optional service.
         </p>
       </section>
@@ -118,11 +118,11 @@ export default function FeaturesPage() {
       {/* CTA */}
       <section className="relative border-t border-white/5 py-16 text-center">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">One plan, every feature above.</h2>
-          <p className="mx-auto mt-3 max-w-lg text-slate-400">₹999/month or ₹9,999/year. Instant deploy, live in 24 hours.</p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">Every feature above, from ₹999/month.</h2>
+          <p className="mx-auto mt-3 max-w-lg text-slate-400">Workspace ₹999/month or BOS ₹1,999/month, billed annually + GST. Instant deploy, live in 24 hours.</p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/book-demo" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
-              Buy Now — ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              Buy Now — from ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link href="/pricing" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80 sm:w-auto">
               See full pricing

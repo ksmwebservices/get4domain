@@ -27,7 +27,7 @@ export default function FeatureGrid() {
             One platform. <span className="text-gradient-hero">Every tool you need.</span>
           </h2>
           <p className="mx-auto mt-3 max-w-2xl text-slate-400">
-            From communication to operations to marketing — Get4Domain replaces a stack of separate apps with one unified platform for ₹999/month.
+            From communication to operations to marketing — Get4Domain replaces a stack of separate apps with one unified platform from ₹999/month, billed annually.
           </p>
         </div>
 
