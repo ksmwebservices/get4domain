@@ -16,7 +16,7 @@ const COMPARISON = [
   { feature: 'GST invoicing', us: true, them: '₹500+/mo separate' },
   { feature: 'PWA — install on any phone', us: true, them: 'Rare / costly' },
   { feature: 'Live + customized', us: 'In 24 hours', them: '2–6 months' },
-  { feature: 'Monthly cost', us: '₹999', them: '₹5,000–15,000+' },
+  { feature: 'Monthly cost', us: 'From ₹999', them: '₹5,000–15,000+' },
 ];
 
 export default function HomePricing() {

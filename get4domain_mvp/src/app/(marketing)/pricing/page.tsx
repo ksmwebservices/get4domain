@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Check, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight, Megaphone, Code2 } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HomePricing from '@/components/marketing/home/HomePricing';
 import { fetchLivePricing } from '@/lib/pricing';
@@ -38,6 +38,15 @@ const BOS_EXTRA = [
   '4 theme changes/year',
 ];
 
+// DomainCampaign / Managed Services — summaries only; the full pages are the source of truth.
+const CAMPAIGN_BRACKETS = [
+  { range: 'Ad budget up to ₹20,000', fee: '₹2,000' },
+  { range: '₹20,001 – ₹1,00,000', fee: '₹5,000' },
+  { range: 'Above ₹1,00,000', fee: '₹10,000' },
+];
+const CAMPAIGN_INCLUDES = ['Managed Meta & Google ads', 'Content & creative management', 'SEO / GEO / AEO growth', 'Monthly spend & fee statement'];
+const MANAGED_INCLUDES = ['Custom web & mobile applications', 'Bespoke CRM / ERP / business software', 'Managed paid ads', 'Content, social media & influencer work'];
+
 // Wallet pay-per-use — real starting rates (admin-adjustable).
 const TOPUPS = [
   { pay: '₹499', credits: '₹499 credits', bonus: 'Minimum top-up' },
@@ -61,6 +70,7 @@ const FAQS = [
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your Workplace adapts to your industry.' },
   { q: 'How am I billed?', a: 'Both plans are billed annually, upfront: Workspace ₹11,988 + 18% GST once a year (₹999/month equivalent), BOS ₹23,988 + 18% GST once a year (₹1,999/month equivalent). There is no quarterly or monthly billing option.' },
   { q: 'Is HRM / Office management included in BOS?', a: 'They are on the BOS roadmap and shown as "coming soon" — not yet available. Everything else listed under BOS is live today.' },
+  { q: 'Do you also run ads or build custom software?', a: 'Yes, as separate optional services. DomainCampaign is managed Meta & Google ads and growth from ₹2,000/month (by ad budget). Managed Services covers custom web/mobile apps, bespoke CRM/ERP and managed marketing, quoted per project. See the "Want us to do it for you?" section above.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the year you have already paid for.' },
 ];
 
@@ -176,6 +186,59 @@ export default async function PricingPage() {
             ))}
           </div>
           <p className="mt-3 text-center text-xs text-slate-400">Starting rates, admin-adjustable. You always see what consumed your wallet.</p>
+        </div>
+      </section>
+
+      {/* MORE WAYS TO GROW — DomainCampaign + Managed Services summaries (light) */}
+      <section id="more-services" className="border-t border-slate-200 bg-white py-16 md:py-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Want us to do it for you?</h2>
+            <p className="mt-3 text-slate-600">Beyond the DomainApp subscription, our team can run your growth or build custom software — separate, optional services.</p>
+          </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
+            <div id="domain-campaign" className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50"><Megaphone className="h-5 w-5 text-primary-600" /></span>
+                <p className="text-xs font-bold uppercase tracking-wider text-primary-600">DomainCampaign</p>
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">Managed paid ads &amp; growth</h3>
+              <p className="mt-2 text-sm text-slate-600">We plan, run and optimize your Meta &amp; Google ads and organic growth every month. A flat management fee set by your monthly ad budget — your ad spend goes straight to the platforms.</p>
+              <ul className="mt-4 space-y-2">
+                {CAMPAIGN_INCLUDES.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-500" />{item}</li>
+                ))}
+              </ul>
+              <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+                {CAMPAIGN_BRACKETS.map((b, i) => (
+                  <div key={b.range} className={`flex items-center justify-between px-4 py-2.5 text-sm ${i % 2 ? 'bg-slate-50' : 'bg-white'}`}>
+                    <span className="text-slate-600">{b.range}</span>
+                    <span className="font-semibold text-slate-900">{b.fee}/month</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-400">Management fee + 18% GST. Enterprise or multi-brand: custom quote.</p>
+              <div className="mt-auto pt-6"><Link href="/domain-campaign" className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 hover:bg-slate-100">Learn more <ArrowRight className="h-4 w-4" /></Link></div>
+            </div>
+
+            <div id="managed-services" className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50"><Code2 className="h-5 w-5 text-primary-600" /></span>
+                <p className="text-xs font-bold uppercase tracking-wider text-primary-600">Managed Services</p>
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">Custom software &amp; marketing, built for you</h3>
+              <p className="mt-2 text-sm text-slate-600">For work beyond any subscription tier: bespoke applications and ongoing managed marketing, delivered end to end by our team and scoped to your project.</p>
+              <ul className="mt-4 space-y-2">
+                {MANAGED_INCLUDES.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700"><Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success-500" />{item}</li>
+                ))}
+              </ul>
+              <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <span className="font-semibold">Custom-quoted per project</span> — no fixed price list, because the work itself isn&apos;t fixed.
+              </div>
+              <div className="mt-auto pt-6"><Link href="/managed-services#quote" className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 hover:bg-slate-100">Get a custom quote <ArrowRight className="h-4 w-4" /></Link></div>
+            </div>
+          </div>
         </div>
       </section>
 

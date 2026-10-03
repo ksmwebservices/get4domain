@@ -1,10 +1,9 @@
 import { Mail, MapPin, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-// Managed Growth Services are an optional add-on — footer/dashboard-only, never
-// hero/pricing-prominent (PRODUCT_DIRECTION_FINAL §18–19, §28). Requested for
-// scope review via the demo form.
-const MANAGED_HREF = '/book-demo?service=managed-growth';
+// DomainCampaign and Managed Services are optional add-on services. They are
+// summarised on /pricing and have their own pages, linked from here too.
+const MANAGED_HREF = '/managed-services';
 const MANAGED_SERVICES = ['SEO', 'Google Business Profile', 'Social Media', 'Content', 'Campaigns', 'Paid Ads', 'GEO', 'AEO'];
 
 const footerSections = [
@@ -14,6 +13,7 @@ const footerSections = [
       { label: 'DomainApp', href: '/domain-app' },
       { label: 'Industries', href: '/industries' },
       { label: 'Pricing', href: '/pricing' },
+      { label: 'DomainCampaign', href: '/domain-campaign' },
       { label: 'AI Studio', href: '/pricing' },
     ],
   },

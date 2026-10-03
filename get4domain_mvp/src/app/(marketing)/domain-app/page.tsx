@@ -5,7 +5,7 @@ import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
   title: 'DomainApp — Industry Website + Business Workspace + AI Studio',
-  description: 'DomainApp is everything in one plan at ₹999/month — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹499 free credit.',
+  description: 'DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹499 free credit.',
   alternates: { canonical: 'https://get4domain.com/domain-app' },
 };
 
@@ -15,7 +15,7 @@ const FEATURES = [
   { icon: '🗂️', title: 'Records & Transactions', desc: 'Bookings, orders, appointments, enrolments — your core workflow, tracked.' },
   { icon: '🧾', title: 'GST Invoicing & Payments', desc: 'GST-compliant invoices, payment links and collection built in.' },
   { icon: '📊', title: 'Accounts & Reports', desc: 'Income, expenses, P&L and GST summaries — know your numbers.' },
-  { icon: '🧑‍💼', title: 'HR & Payroll', desc: 'Employees, attendance, leave and salary — an optional addon.' },
+  { icon: '🧑‍💼', title: 'HR & Payroll', desc: 'Employees, attendance, leave and salary — coming soon with BOS.' },
   { icon: '🎨', title: 'Design Studio', desc: 'Letterheads, ID cards, quotes and posters, on brand.' },
   { icon: '🌐', title: 'Website & CMS', desc: 'A professional industry website you can edit anytime.' },
 ];
@@ -25,7 +25,7 @@ const INDUSTRIES = ['🚗 Travel', '🍽️ Restaurant', '🏥 Clinic', '🏨 Ho
 const ADDONS = ['Fleet Management', 'Driver Management', 'Table Management', 'Appointment Scheduling', 'Inventory Management', 'Room Management', 'Batch Management', 'Project Management'];
 
 const FAQS = [
-  { q: 'What does DomainApp actually do?', a: 'DomainApp is a business workspace: it manages your contacts, catalog, records (bookings/orders/appointments), GST invoicing and basic accounts, plus a professional website — all adapted to your industry. Optional addons extend it with HR, fleet, inventory and more.' },
+  { q: 'What does DomainApp actually do?', a: 'DomainApp is a business workspace: it manages your contacts, catalog, records (bookings/orders/appointments), GST invoicing and basic accounts, plus a professional website — all adapted to your industry. Optional addons extend it with fleet, inventory and more; HR is coming soon with BOS.' },
   { q: 'Is it different for my industry?', a: 'Yes. The workspace is configured per industry — a travel agency sees Bookings, Fleet and Drivers; a restaurant sees Orders, Tables and Menu; a clinic sees Appointments, Patients and Doctors. Same reliable engine underneath, tailored on top.' },
   { q: 'Do I get a real website?', a: 'Yes — a professional website built with your business name, services and photos, with an easy CMS so you can update content yourself. Not a generic drag-and-drop template.' },
   { q: 'What are addons?', a: 'Addons are optional modules you enable on top of core DomainApp — like Fleet, Driver, Table Management or Inventory. They add extra tools without duplicating your core data, and are billed separately per your needs.' },
@@ -44,7 +44,7 @@ export default function DomainAppPage() {
           <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">DomainApp — <span className="text-gradient-hero">Your Business Workspace</span></h1>
           <p className="mt-5 text-lg text-slate-400">Website, operations, CRM, invoicing — everything to run your business digitally, adapted to your industry.</p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Link href="/book-demo?product=app" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">Buy Now — ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
+            <Link href="/book-demo?product=app" className="group inline-flex items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber">Buy Now — from ₹999/mo <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></Link>
             <Link href="/pricing" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80">See Pricing</Link>
           </div>
         </div>
@@ -85,10 +85,10 @@ export default function DomainAppPage() {
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-md rounded-2xl border-2 border-blue-500 bg-white p-8 text-center shadow-md">
-            <span className="inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">All-in-One</span>
+            <span className="inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">Workspace</span>
             <h3 className="mt-3 text-xl font-bold text-slate-900">DomainApp</h3>
             <p className="mt-2 text-4xl font-bold text-slate-900">₹999<span className="text-base font-normal text-slate-400">/month</span></p>
-            <p className="mt-1 text-sm text-slate-500">Everything included · Cancel anytime</p>
+            <p className="mt-1 text-sm text-slate-500">Billed ₹11,988 + GST yearly · BOS from ₹1,999/month · Cancel anytime</p>
             <p className="mt-3 text-sm text-slate-600">Industry website + Workplace + CRM/TeleCRM + Campaigns + AI Studio (₹499 free credit)</p>
           </div>
 

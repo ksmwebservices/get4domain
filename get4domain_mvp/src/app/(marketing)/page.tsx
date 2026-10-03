@@ -11,9 +11,9 @@ import AIStudio from '@/components/marketing/home/AIStudio';
 import HomePricing from '@/components/marketing/home/HomePricing';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Identity Partner | ₹999/month',
+  title: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
   description:
-    "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
+    "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus managed ads and custom software.",
   alternates: { canonical: 'https://get4domain.com' },
 };
 
@@ -41,9 +41,10 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
-  { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, HR), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
+  { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, expenses, accounting), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
   { q: 'Do I need technical knowledge to use it?', a: 'No. Your site deploys instantly on a ready-made industry template, and we customize the content and theme within 24 hours. You simply log in to a Workplace tailored to your industry and start working — no coding or design skills needed.' },
-  { q: 'How much does it cost?', a: 'One simple plan: DomainApp is ₹999/month and includes everything — your industry website, business workspace, CRM, campaigns and AI Studio with ₹499 of free AI credit. Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging.' },
+  { q: 'How much does it cost?', a: 'DomainApp has two annual plans: Workspace at ₹999/month (₹11,988 + GST billed once a year) and BOS at ₹1,999/month (₹23,988 + GST billed once a year). Both include your industry website, CRM, campaigns and a one-time AI Studio credit (₹499 Workspace, ₹1,299 BOS). Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging. See the pricing page for the full feature list.' },
+  { q: 'Can you run my ads or build custom software for me?', a: 'Yes — as separate, optional services. DomainCampaign is managed Meta & Google ads and growth, from ₹2,000/month based on your ad budget. Managed Services covers custom web and mobile apps, bespoke CRM/ERP and managed marketing, quoted per project. Both are detailed on the pricing page.' },
   { q: 'I already have a website — is this still useful?', a: 'Yes. Use Get4Domain just for the workspace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with expense tracking and GST-statement prep — without needing a new website.' },
 ];
 
@@ -150,12 +151,12 @@ export default function HomePage() {
               Your business deserves <span className="text-gradient-hero">better software</span>
             </h2>
             <p className="mx-auto mb-8 max-w-xl text-slate-400">
-              Join 50+ businesses running on Get4Domain. Instant deploy, live in 24 hours. No setup fees, no contracts, no per-feature pricing.
+              Join 50+ businesses running on Get4Domain. Instant deploy, live in 24 hours. No setup fees, cancel anytime, no per-feature pricing.
             </p>
 
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/book-demo" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
-                Buy Now — ₹999/mo
+                Buy Now — from ₹999/mo
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
               <Link href="/demo/clinic" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-slate-800/60 px-6 py-3 font-medium text-slate-100 backdrop-blur-xl transition-all hover:bg-slate-800/80 sm:w-auto">
