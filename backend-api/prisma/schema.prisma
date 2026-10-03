@@ -247,10 +247,46 @@ model VendorProduct {
   // listing-fields.ts on the frontend. Additive/nullable — no data migration needed.
   customFields Json?
   active       Boolean   @default(true)
+
+  // ── UNIVERSAL CATALOGUE (dispatch 03-Oct-2026) — ADDITIVE ONLY ──────────────────────
+  // VendorProduct is evolving into the single catalogue table for every industry
+  // (CatalogItem + RetailProduct are folded in by scripts/catalogue-migration/, both old
+  // tables stay untouched). Every column below is nullable or defaulted, so every existing
+  // reader/writer keeps working unchanged. See docs/v2/UNIVERSAL_CATALOGUE_MODEL.md.
+  /// Discriminator = Vendor.industry at write time (engine id: retail, clinic, realestate…).
+  /// Industry-specific attributes (sizes/colors, specialization, sqft/bedrooms, duration/
+  /// inclusions…) stay in `customFields`; this says which shape that JSON follows.
+  industryType String?
+  /// Typed numeric price. `price` (String) stays as the DISPLAY value ("On Request", "from ₹500").
+  priceAmount  Float?
+  /// Selling unit: kg, session, night, month…
+  unit         String?
+  /// Promoted from RetailProduct — applies to any physical or inventory-tracked item.
+  sku          String?
+  /// null = stock not tracked (CatalogItem.stock semantics); a number = tracked.
+  stockQty     Int?
+  reorderLevel Int?
+  /// active | inactive | draft | archived | out_of_stock. `active` (Boolean) remains what
+  /// live readers filter on until the separate cutover dispatch; migrated rows carry
+  /// active=false + their real state here, so copying never surfaces anything new.
+  status       String    @default("active")
+  /// Primary Operation Registry action for THIS item (appointment, booking, cart, enquiry…).
+  /// null = inherit IndustryExperience.primaryOperation for the vendor's industry.
+  operationKey String?
+  operation    OperationType? @relation(fields: [operationKey], references: [key], onDelete: SetNull)
+  /// Provenance of rows copied in by the data migration: 'catalog_item' | 'retail_product'.
+  /// (id is preserved from the source row, so Record.catalogItemId / PosSale lines stay valid.)
+  sourceModel  String?
+  sourceId     String?
+
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   @@index([categoryId])
+  @@index([vendorId, status])
+  @@index([vendorId, industryType])
+  @@index([vendorId, sku])
+  @@unique([sourceModel, sourceId])
 }
 
 /// A vendor's own product category — dispatch 24-Sep-2026, fixes a real gap:
@@ -2289,6 +2325,8 @@ model OperationType {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // Universal Catalogue back-relation (VendorProduct.operationKey) — no column on this table.
+  catalogItems VendorProduct[]
 
   @@map("g4d_operation_types")
 }

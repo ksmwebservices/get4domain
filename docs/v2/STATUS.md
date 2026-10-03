@@ -23,6 +23,7 @@ Fixes for the critical findings S1–S6 are written and verified (135 assertions
 | `20261001100000_add_subscription_theme_change_tracking` | applied (theme-change limits are now enforced for Workspace/BOS subscriptions created after it) |
 | `20261001110000_add_domain_campaign_records` | applied (`g4d_domain_campaign_records` exists) |
 | `20261002120000_domain_campaign_custom_fee` | **NOT applied** — adds `isCustomFee`. **Apply before deploying the new DomainCampaign code**: `cd backend-api && npx prisma migrate deploy` (otherwise recording a spend fails "column does not exist"). |
+| `20261003100000_universal_catalogue_columns` | **NOT applied** — additive columns/indexes/FK on `VendorProduct` (Universal Catalogue). Apply with the others via `cd backend-api && npx prisma migrate deploy`, then follow the data-migration order in [UNIVERSAL_CATALOGUE_MODEL.md](UNIVERSAL_CATALOGUE_MODEL.md) §4. Apply **before** deploying the new backend. |
 | Drift | `20260719093736_add_leads` is applied in the DB but has no local folder; 28 core tables were created by `prisma db push`, not by migrations (see [MIGRATION_PLAN.md](MIGRATION_PLAN.md)) |
 
 ## Product surface — what's shipped
@@ -31,6 +32,7 @@ Fixes for the critical findings S1–S6 are written and verified (135 assertions
 | DomainApp plans | **Workspace** ₹999/mo (₹11,988/yr + GST) and **BOS** ₹1,999/mo (₹23,988/yr + GST); annual-only; quarterly retired for new purchases. One-time AI Studio credit (₹499 / ₹1,299) tagged `ai_studio_bonus`. Theme-change allowance 2 / 4 per year. HRM and Office Management shown as "coming soon" (not built). **Razorpay Plans still to be created by KSM**: "DomainApp Workspace — Annual" ₹14,145.84 and "DomainApp BOS — Annual" ₹28,305.84 (GST-inclusive). |
 | Domain Campaign | Public page, two lead-capture entry points, admin tab (Managed Services page) with client onboarding, manual spend, billing history, one-click invoice. **Fee = PRD §88 brackets**: spend ≤ ₹20,000 → ₹2,000; ₹20,001–₹1,00,000 → ₹5,000; above → ₹10,000 (+ GST); **Enterprise/Custom = admin-entered fee per client-month (interpretation — needs KSM confirmation)**. Old 10%/₹9,999 logic removed everywhere. |
 | Managed Services | Public page + lead capture + admin proposal/quote tool with shareable accept/decline link. |
+| Universal Catalogue | **Designed + migration written, not applied, no live code cut over.** `VendorProduct` evolves into the one catalogue table; `CatalogItem` (117 rows, all demo) and `RetailProduct` (0 rows) untouched. See [UNIVERSAL_CATALOGUE_MODEL.md](UNIVERSAL_CATALOGUE_MODEL.md). Cutover/retirement = separate dispatch. |
 | Standalone vendor sites | stepnrock and deebiphotography live on the shared backend; ksm-quantum built, deploy/DNS pending; allwin-tours separate. |
 
 ## Known open defects (tracked, not fixed in this audit)
