@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const MANAGED_SERVICES_FAQ = [
-  { q: 'How is this different from the ₹999/month DomainApp plan?', a: 'DomainApp is a subscription product — an industry website and business workspace on our shared platform. Managed Services is custom work beyond what any subscription tier covers: a bespoke mobile app, a full CRM/ERP build, or an ongoing managed marketing engagement. It\'s scoped, built and priced per client, not a fixed monthly plan.' },
+  { q: 'How is this different from a DomainApp plan (Workspace from ₹999/month, BOS from ₹1,999/month)?', a: 'DomainApp is a subscription product — an industry website and business workspace on our shared platform. Managed Services is custom work beyond what any subscription tier covers: a bespoke mobile app, a full CRM/ERP build, or an ongoing managed marketing engagement. It\'s scoped, built and priced per client, not a fixed monthly plan.' },
   { q: 'Do I need to already be a Get4Domain / DomainApp customer?', a: 'No. Managed Services is a separate engagement — you can work with us on a custom build or managed marketing program whether or not you use DomainApp.' },
   { q: 'How is pricing worked out?', a: 'Every engagement is scoped individually. Tell us what you need below, and our team will come back with an itemized, custom quote — no fixed price list, because the work itself isn\'t fixed.' },
   { q: 'What happens after I submit the form?', a: 'Our team reviews your requirements and follows up directly to understand scope in more detail, then sends a formal proposal with itemized pricing for your review.' },

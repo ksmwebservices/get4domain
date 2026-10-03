@@ -6,10 +6,10 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://get4domain.com'),
   title: {
-    default: 'Get4Domain — Your Online Identity Partner | ₹999/month',
+    default: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
     template: '%s | Get4Domain',
   },
-  description: "Get4Domain is India's complete online identity platform. One plan — DomainApp ₹999/month: industry website, business workspace, CRM, campaigns and AI Studio, everything included.",
+  description: "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus DomainCampaign managed ads from ₹2,000/month and custom-quoted Managed Services.",
   keywords: [
     'business website India',
     'online identity platform India',
@@ -130,12 +130,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               name: 'Get4Domain',
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
-              offers: {
-                '@type': 'Offer',
-                name: 'DomainApp — monthly, everything included',
-                price: '999',
-                priceCurrency: 'INR',
-              },
+              offers: [
+                {
+                  '@type': 'Offer',
+                  name: 'DomainApp Workspace — billed annually (₹999/month equivalent), excl. 18% GST',
+                  price: '11988',
+                  priceCurrency: 'INR',
+                  url: 'https://get4domain.com/pricing#domainapp',
+                },
+                {
+                  '@type': 'Offer',
+                  name: 'DomainApp BOS — billed annually (₹1,999/month equivalent), excl. 18% GST',
+                  price: '23988',
+                  priceCurrency: 'INR',
+                  url: 'https://get4domain.com/pricing#domainapp',
+                },
+              ],
               provider: {
                 '@type': 'Organization',
                 name: 'KSM Quantum Technologies',

@@ -10,6 +10,7 @@ import { INDUSTRIES } from '@/data/industries-list';
 const centerLinks = [
   { label: 'Features', href: '/features' },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Managed Services', href: '/managed-services' },
   { label: 'Contact', href: '/contact' },
 ];
 

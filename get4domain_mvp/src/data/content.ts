@@ -467,13 +467,13 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq1',
     question: 'How long does it take to launch my business online?',
-    answer: 'Once you book a demo and share your requirements, our team designs, develops and deploys your professional business website typically within a few business days. Complex projects take longer — we give you a clear timeline upfront.',
+    answer: 'Once you pay, your site deploys instantly on a ready-made industry template and we complete your content and theme customization within 24 hours. Custom web or mobile builds under Managed Services take longer — we give you a clear timeline in your proposal.',
     category: 'general',
   },
   {
     id: 'faq2',
-    question: 'What is the difference between DomainApp Startup and Enterprise?',
-    answer: 'DomainApp Startup is perfect for businesses that need a professional website with basic CRM, lead forms and WhatsApp integration. Enterprise includes the full Business OS — CRM, HR, payroll, accounting, invoicing, inventory, reporting and much more.',
+    question: 'What is the difference between DomainApp Workspace and BOS?',
+    answer: 'Workspace (₹999/month, billed annually) gives you your industry website, CRM and TeleCRM, GST invoicing, basic expense management, a website auto-bot reply and the SEO/GEO/AEO growth bundle. BOS (₹1,999/month, billed annually) adds WhatsApp bot reply, task management, full GST and P&L accounting, a larger AI Studio credit and more theme changes — with HRM and Office management coming soon. Prices exclude 18% GST.',
     category: 'products',
   },
   {
@@ -485,7 +485,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq4',
     question: 'What is DomainCampaign?',
-    answer: 'DomainCampaign is a fully managed digital marketing platform. Our team runs your social media, creates content, manages SEO, posts on Google Business Profile and sends monthly reports — you just watch your leads grow.',
+    answer: 'DomainCampaign is our managed paid-ads and growth service. Our team runs your Meta and Google ads, produces content, works on SEO/GEO/AEO and sends a monthly spend and fee statement. The fee is a flat monthly amount set by your ad budget — from ₹2,000/month (plus 18% GST), with ad spend paid directly to the platforms. See the pricing page for the full fee table.',
     category: 'products',
   },
   {
@@ -497,7 +497,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq6',
     question: 'Can I upgrade my plan later?',
-    answer: 'Yes. You can upgrade from Startup to Enterprise at any time by paying the difference. You can also add DomainCampaign to your existing DomainApp subscription.',
+    answer: 'Yes. Ask us and we will move you from Workspace to BOS. You can also add DomainCampaign to your existing DomainApp subscription, and request custom builds or managed marketing through Managed Services.',
     category: 'products',
   },
   {

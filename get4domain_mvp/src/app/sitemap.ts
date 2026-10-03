@@ -6,6 +6,7 @@ const BASE = 'https://get4domain.com';
 const pages = [
   { path: '/',                 priority: 1.0,  changeFreq: 'weekly' as const },
   { path: '/domain-campaign',  priority: 0.95, changeFreq: 'monthly' as const },
+  { path: '/managed-services', priority: 0.9,  changeFreq: 'monthly' as const },
   { path: '/domain-app',       priority: 0.95, changeFreq: 'monthly' as const },
   { path: '/pricing',          priority: 0.9,  changeFreq: 'monthly' as const },
   { path: '/industries',       priority: 0.9,  changeFreq: 'monthly' as const },

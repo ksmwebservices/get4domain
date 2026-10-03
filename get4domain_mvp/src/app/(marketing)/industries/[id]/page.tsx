@@ -120,7 +120,7 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
             <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-primary-100 bg-primary-50 p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary-600">Your {content.name} Workspace</p>
-                <span className="rounded-full bg-primary-600 px-3 py-1 text-xs font-bold text-white">From ₹999/month — everything included</span>
+                <span className="rounded-full bg-primary-600 px-3 py-1 text-xs font-bold text-white">From ₹999/month — website, CRM &amp; AI Studio</span>
               </div>
               <p className="mt-2 text-sm text-slate-600">
                 Configured for how you actually work — your records become{' '}
