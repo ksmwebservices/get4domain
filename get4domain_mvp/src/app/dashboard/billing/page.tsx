@@ -9,6 +9,7 @@ import {
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import PlanOverview, { type PlanTier } from './PlanOverview';
 
 interface Invoice {
   id: string;
@@ -107,6 +108,11 @@ export default function BillingPage() {
 
   const pendingInvoice = invoices.find((i) => i.status === 'PENDING') ?? null;
   const activeInvoice = invoices.find((i) => i.status === 'PAID') ?? null;
+  // Which feature set to show: the paid tier from the subscription amount, else the plan on the session.
+  const tierFromAmount = subscription ? TIER_LABEL(subscription.amount) : null;
+  const planTier: PlanTier | null = tierFromAmount === 'BOS' || tierFromAmount === 'Workspace'
+    ? tierFromAmount
+    : activeInvoice ? (/bos/i.test(user?.plan ?? '') ? 'BOS' : 'Workspace') : null;
 
   async function handlePay() {
     if (!pendingInvoice || !user) return;
@@ -193,7 +199,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-4xl space-y-6">
       <div>
         <h2 className="text-xl font-bold text-slate-900">Billing & Payments</h2>
         <p className="mt-1 text-sm text-slate-500">Manage subscriptions and make payments securely via Razorpay.</p>
@@ -232,14 +238,10 @@ export default function BillingPage() {
               </span>
             </div>
           )}
-
-          {subscription && TIER_LABEL(subscription.amount) === 'Workspace' && (
-            <Link href="/dashboard/support" className="mt-4 flex items-center justify-between rounded-xl border border-primary-200 bg-primary-50/60 p-4 text-sm font-semibold text-primary-700 hover:bg-primary-50">
-              Want to upgrade to BOS — full accounting &amp; task management? Talk to our team <ArrowRight className="h-4 w-4" />
-            </Link>
-          )}
         </div>
       )}
+
+      {planTier && <PlanOverview tier={planTier} />}
 
       {pendingInvoice ? (
         <div className="rounded-2xl border-2 border-warning-300 bg-white p-6 shadow-sm">

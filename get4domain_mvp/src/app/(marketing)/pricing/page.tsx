@@ -4,6 +4,7 @@ import { Check, ArrowRight, Megaphone, Code2 } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HomePricing from '@/components/marketing/home/HomePricing';
 import { fetchLivePricing } from '@/lib/pricing';
+import { WORKSPACE_INCLUDED, BOS_EXTRA, CAMPAIGN_BRACKETS, CAMPAIGN_INCLUDES, MANAGED_INCLUDES, isComingSoon } from '@/lib/plan-features';
 
 // Revalidate every 5 min so admin Pricing Manager edits reflect without a redeploy.
 export const revalidate = 300;
@@ -13,39 +14,6 @@ export const metadata: Metadata = {
   description: 'Simple annual pricing. Workspace ₹11,988/year + GST or BOS ₹23,988/year + GST: industry website, CRM, accounting, campaigns and AI Studio with a one-time AI Studio credit. Pay-per-use from your wallet only when you use more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
-
-// What each annual plan includes. BOS = Workspace + the items below; HRM and
-// Office management are flagged "coming soon" — they are not built yet
-// (confirmed by the 01-Oct-2026 engineering audit), so BOS never claims them
-// as live.
-const WORKSPACE_INCLUDED = [
-  { group: 'WEBSITE', items: ['Professional industry website', 'Free subdomain (vendorname.get4domain.com)', 'Free hosting + SSL', 'Mobile responsive, SEO optimized', 'Basic CMS for content updates'] },
-  { group: 'WORKPLACE', items: ['Contacts management (industry-labeled)', 'Products/Services catalog', 'Bookings/Orders/Appointments', 'GST invoicing', 'Basic expense management', 'Staff dashboard management'] },
-  { group: 'CRM & TELECRM', items: ['Lead pipeline (Kanban)', 'TeleCRM with call queue', 'Follow-up reminders', 'Website auto-bot reply'] },
-  { group: 'GROWTH HUB', items: ['3 free SEO keywords', 'SEO/GEO/AEO + blog + social + GMB + directory + 20 backlinks bundle', '2 theme changes/year'] },
-  { group: 'AI STUDIO', items: ['₹499 one-time credit included', 'Text, images, posters, reels, documents'] },
-  { group: 'TEAM & SUPPORT', items: ['Team access with roles', 'Instant AI support assistant (human callback if needed)'] },
-];
-const BOS_EXTRA = [
-  'Everything in Workspace',
-  'WhatsApp bot reply too',
-  'Task management & assigning',
-  'Full GST + P&L accounting',
-  'HRM — coming soon',
-  'Office management — coming soon',
-  '₹1,299 one-time AI Studio credit',
-  '6 free SEO keywords',
-  '4 theme changes/year',
-];
-
-// DomainCampaign / Managed Services — summaries only; the full pages are the source of truth.
-const CAMPAIGN_BRACKETS = [
-  { range: 'Ad budget up to ₹20,000', fee: '₹2,000' },
-  { range: '₹20,001 – ₹1,00,000', fee: '₹5,000' },
-  { range: 'Above ₹1,00,000', fee: '₹10,000' },
-];
-const CAMPAIGN_INCLUDES = ['Managed Meta & Google ads', 'Content & creative management', 'SEO / GEO / AEO growth', 'Monthly spend & fee statement'];
-const MANAGED_INCLUDES = ['Custom web & mobile applications', 'Bespoke CRM / ERP / business software', 'Managed paid ads', 'Content, social media & influencer work'];
 
 // Wallet pay-per-use — real starting rates (admin-adjustable).
 const TOPUPS = [
@@ -149,7 +117,7 @@ export default async function PricingPage() {
           <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <ul className="grid gap-2.5 sm:grid-cols-2">
               {BOS_EXTRA.map((item) => {
-                const comingSoon = item.includes('coming soon');
+                const comingSoon = isComingSoon(item);
                 return (
                   <li key={item} className={`flex items-start gap-2.5 text-sm ${comingSoon ? 'text-slate-400' : 'text-slate-700'}`}>
                     <Check className={`mt-0.5 h-4 w-4 flex-shrink-0 ${comingSoon ? 'text-slate-300' : 'text-success-500'}`} />{item}

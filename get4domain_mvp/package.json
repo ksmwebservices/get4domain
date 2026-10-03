@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "audit:vendor-dark": "node scripts/audit-vendor-dark.mjs"
   },
   "dependencies": {
     "fabric": "^6.9.1",

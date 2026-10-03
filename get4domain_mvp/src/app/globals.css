@@ -187,7 +187,7 @@
 .vendor-ui .card { @apply bg-ink-850/80 border border-ink-700/50 rounded-2xl backdrop-blur-sm shadow-v-card; }
 .vendor-ui .card-hover { @apply transition-all duration-200 hover:shadow-v-card-hover hover:border-ink-600/70 hover:-translate-y-0.5; }
 
-.vendor-ui .input { @apply w-full bg-ink-900/60 border border-ink-700/60 rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder:text-ink-500 outline-none transition focus:border-brand-500/70 focus:ring-2 focus:ring-brand-500/20; }
+.vendor-ui .input { @apply w-full bg-ink-900/60 border border-ink-700/60 rounded-xl px-3.5 py-2.5 text-sm text-ink-100 placeholder:text-[#8592b0] outline-none transition focus:border-brand-500/70 focus:ring-2 focus:ring-brand-500/20; }
 
 .vendor-ui .btn, .vendor-ui .btn-primary, .vendor-ui .btn-gold, .vendor-ui .btn-ghost, .vendor-ui .btn-ghost-soft { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold text-sm transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap; }
 .vendor-ui .btn-primary { @apply bg-brand-600 hover:bg-brand-500 text-white px-4 py-2.5 shadow-glow-brand; }
@@ -224,8 +224,10 @@
 .vendor-ui .text-slate-800 { color: #e8ecf5 !important; }
 .vendor-ui .text-slate-700 { color: #cdd5e6 !important; }
 .vendor-ui .text-slate-600 { color: #a3b0cc !important; }
-.vendor-ui .text-slate-500 { color: #6f7d9e !important; }
-.vendor-ui .text-slate-400 { color: #4d5a7a !important; }
+/* Contrast (WCAG AA >= 4.5:1 on ink-900..850 surfaces): slate-400 was #4d5a7a (2.6:1) and
+   slate-500 #6f7d9e (4.4:1) — the "dark text on dark navy" reports. */
+.vendor-ui .text-slate-500 { color: #93a0bd !important; }
+.vendor-ui .text-slate-400 { color: #8592b0 !important; }
 .vendor-ui .hover\:text-slate-600:hover { color: #a3b0cc !important; }
 .vendor-ui .hover\:text-slate-700:hover { color: #cdd5e6 !important; }
 .vendor-ui .hover\:text-slate-900:hover { color: #f4f6fb !important; }
@@ -263,6 +265,109 @@
 .vendor-ui .text-blue-700, .vendor-ui .text-blue-600 { color: #8eb6ff !important; }
 .vendor-ui .bg-amber-100 { background-color: rgb(249 144 8 / 0.15) !important; }
 .vendor-ui .text-amber-700 { color: #ffcb4a !important; }
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VENDOR DASHBOARD — dark remap, round 2: hover / focus / opacity / scale gaps.
+   ROOT CAUSE of the "unreadable on hover" bug: the remap above is an allow-list of
+   bare utilities. Tailwind emits `hover:bg-primary-50`, `bg-primary-50/60`,
+   `hover:bg-red-50`, `hover:bg-white`, `text-warning-700`… as *different* class names,
+   so they were never remapped: the light-mode surface leaked through while the text
+   WAS remapped to its light dark-theme colour (light text on a near-white hover fill),
+   and dark-theme text kept dark-theme-incompatible hover colours. Every hover/focus/
+   opacity/scale variant used under the dashboard is mapped here. Guard:
+   scripts/audit-vendor-dark.mjs fails when a new light token is used but not mapped.
+   ───────────────────────────────────────────────────────────────────────── */
+/* hover surfaces */
+.vendor-ui .hover\:bg-white:hover { background-color: rgb(38 47 68 / 0.6) !important; }
+.vendor-ui .hover\:bg-primary-50:hover { background-color: rgb(51 102 255 / 0.18) !important; }
+.vendor-ui .hover\:bg-error-50:hover,
+.vendor-ui .hover\:bg-red-50:hover { background-color: rgb(230 72 77 / 0.14) !important; }
+.vendor-ui .hover\:bg-white\/20:hover { background-color: rgb(255 255 255 / 0.2) !important; }
+.vendor-ui .group:hover .group-hover\:bg-secondary-100 { background-color: rgb(249 144 8 / 0.22) !important; }
+/* hover text */
+.vendor-ui .hover\:text-slate-800:hover { color: #e8ecf5 !important; }
+.vendor-ui .hover\:text-primary-500:hover,
+.vendor-ui .hover\:text-primary-600:hover,
+.vendor-ui .group:hover .group-hover\:text-primary-600 { color: #bcd3ff !important; }
+.vendor-ui .hover\:text-error-600:hover { color: #ff9a9d !important; }
+.vendor-ui .hover\:text-success-600:hover { color: #34d399 !important; }
+/* hover/focus borders + rings */
+.vendor-ui .hover\:border-primary-200:hover,
+.vendor-ui .hover\:border-primary-300:hover { border-color: rgb(51 102 255 / 0.5) !important; }
+.vendor-ui .hover\:border-slate-300:hover { border-color: rgb(89 141 255 / 0.4) !important; }
+.vendor-ui .hover\:ring-primary-300:hover { --tw-ring-color: rgb(89 141 255 / 0.55) !important; }
+.vendor-ui .focus\:border-primary-400:focus { border-color: rgb(89 141 255 / 0.8) !important; }
+.vendor-ui .focus\:ring-primary-100:focus { --tw-ring-color: rgb(51 102 255 / 0.28) !important; }
+.vendor-ui .focus\:ring-primary-400:focus,
+.vendor-ui .focus-visible\:ring-primary-400:focus-visible { --tw-ring-color: rgb(89 141 255 / 0.7) !important; }
+/* opacity-modified + scale tints → dark equivalents */
+.vendor-ui .bg-primary-50\/30,
+.vendor-ui .bg-primary-50\/40,
+.vendor-ui .bg-primary-50\/50,
+.vendor-ui .bg-primary-50\/60 { background-color: rgb(51 102 255 / 0.12) !important; }
+.vendor-ui .bg-warning-50,
+.vendor-ui .bg-warning-50\/40 { background-color: rgb(249 144 8 / 0.10) !important; }
+.vendor-ui .bg-warning-100 { background-color: rgb(249 144 8 / 0.18) !important; }
+.vendor-ui .bg-secondary-50 { background-color: rgb(249 144 8 / 0.10) !important; }
+.vendor-ui .bg-emerald-100 { background-color: rgb(22 199 132 / 0.16) !important; }
+.vendor-ui .bg-violet-100 { background-color: rgb(139 92 246 / 0.18) !important; }
+.vendor-ui .bg-rose-100 { background-color: rgb(244 63 94 / 0.16) !important; }
+.vendor-ui .bg-white\/95,
+.vendor-ui .bg-white\/90 { background-color: rgb(20 26 40 / 0.96) !important; }
+.vendor-ui .bg-white\/60 { background-color: rgb(20 26 40 / 0.6) !important; }
+.vendor-ui .bg-slate-200,
+.vendor-ui .bg-slate-300 { background-color: rgb(77 90 122 / 0.8) !important; }
+.vendor-ui .disabled\:bg-slate-50:disabled { background-color: rgb(14 19 30 / 0.6) !important; }
+.vendor-ui .border-slate-50 { border-color: rgb(38 47 68 / 0.3) !important; }
+.vendor-ui .border-slate-200\/80 { border-color: rgb(45 56 82 / 0.85) !important; }
+.vendor-ui .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: rgb(45 56 82 / 0.85) !important; }
+.vendor-ui .border-primary-100,
+.vendor-ui .border-primary-200,
+.vendor-ui .border-primary-300,
+.vendor-ui .border-primary-400 { border-color: rgb(51 102 255 / 0.4) !important; }
+.vendor-ui .border-secondary-200 { border-color: rgb(249 144 8 / 0.3) !important; }
+.vendor-ui .border-warning-200,
+.vendor-ui .border-warning-300 { border-color: rgb(249 144 8 / 0.4) !important; }
+.vendor-ui .border-emerald-300,
+.vendor-ui .border-success\/25,
+.vendor-ui .border-success\/30 { border-color: rgb(22 199 132 / 0.4) !important; }
+.vendor-ui .border-red-300,
+.vendor-ui .border-error-300 { border-color: rgb(230 72 77 / 0.45) !important; }
+.vendor-ui .border-amber-300 { border-color: rgb(249 144 8 / 0.4) !important; }
+.vendor-ui .border-blue-300 { border-color: rgb(89 141 255 / 0.4) !important; }
+.vendor-ui .ring-primary-200 { --tw-ring-color: rgb(89 141 255 / 0.4) !important; }
+/* tinted text (dark-on-tint pairs from light mode → light-on-tint) */
+.vendor-ui .text-warning-600,
+.vendor-ui .text-warning-700,
+.vendor-ui .text-warning-800,
+.vendor-ui .text-amber-600,
+.vendor-ui .text-secondary-600,
+.vendor-ui .text-secondary-700 { color: #ffcb4a !important; }
+.vendor-ui .text-emerald-600 { color: #16c784 !important; }
+.vendor-ui .text-error-500 { color: #f47478 !important; }
+.vendor-ui .text-violet-700 { color: #c4b5fd !important; }
+.vendor-ui .text-rose-700 { color: #fda4af !important; }
+.vendor-ui .placeholder\:text-slate-400::placeholder,
+.vendor-ui .disabled\:text-slate-400:disabled { color: #8592b0 !important; }
+
+/* Native dark pages use the ink scale directly for text: ink-500 (#4d5a7a) is 2.6–2.9:1 on
+   the navy surfaces and ink-600 is 1.8:1, ink-400 only 4.4:1. Lift the text steps to >= 4.5:1
+   (the ink scale itself is untouched, so borders/surfaces that use these steps don't move). */
+.vendor-ui .text-ink-400,
+.vendor-ui .group:hover .group-hover\:text-ink-400 { color: #93a0bd !important; }
+.vendor-ui .text-ink-500,
+.vendor-ui .disabled\:text-ink-500:disabled { color: #8592b0 !important; }
+.vendor-ui .text-ink-600 { color: #7a88a8 !important; }
+
+/* Native scrollbars: the global track/thumb are light-theme colours, which showed as a
+   white strip beside the dark sidebar and page. */
+.vendor-ui ::-webkit-scrollbar-track { background: #0e131e; }
+.vendor-ui ::-webkit-scrollbar-thumb { background: #36415c; }
+.vendor-ui ::-webkit-scrollbar-thumb:hover { background: #4d5a7a; }
+.vendor-ui * { scrollbar-color: #36415c #0e131e; }
+/* Focus ring readable on navy (the global #2563eb ring is ~3:1 on ink-900). */
+.vendor-ui :focus-visible { outline-color: #8eb6ff; }
 
 /* Phase-1 dark rollout: close override gaps for utilities used by the Operations
    pages (success/gold scales) and the shared empty-state callout (opacity-modified
