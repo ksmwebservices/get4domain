@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "verify:commercial": "node scripts/commercial-verify/run-all.js",
+    "verify:migrations": "node scripts/verify-migrations.js",
     "build": "prisma generate && nest build",
     "start": "node dist/src/main",
     "start:dev": "nest start --watch",

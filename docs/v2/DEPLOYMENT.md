@@ -79,6 +79,11 @@ cd /srv/get4domain-site && git pull origin get4domain-site
 # 2. Apply the migrations. ORDER MATTERS: schema first, then the new backend. Additive only.
 #    Applies 20261002120000, 20261002130000 (if not yet applied), 20261007120000_commercial_engine, 20261007130000_plan_change_price.
 cd backend-api
+#    2a. The failed first attempt left an UNFINISHED row for 20261007120000_commercial_engine in _prisma_migrations
+#        (verified read-only on 2026-10-07: no object from that migration exists, 0 steps ran). Prisma refuses every
+#        new migration (P3009) until it is marked rolled back. Run this ONCE, before deploy:
+npx prisma migrate resolve --rolled-back 20261007120000_commercial_engine
+#    2b. Apply. The fixed file is applied from scratch.
 npx prisma migrate deploy
 
 # 3. Rebuild + restart the API. Creates the two named volumes on first run (empty, owned by the app user).
@@ -93,6 +98,9 @@ docker compose build --no-cache && docker compose up -d --force-recreate
 cd ../stepnrock
 docker compose build --no-cache && docker compose up -d --force-recreate
 ```
+
+> **Migration SQL hygiene.** `20261007120000_commercial_engine/migration.sql` originally ended with a pasted Prisma "Update available" box, which Postgres rejected (P3018). It is removed; `npm run verify:migrations` now guards every migration file. When you generate SQL: `export PRISMA_HIDE_UPDATE_MESSAGE=true`, redirect straight into the file (stdout only) and run `npm run verify:migrations` before committing — see [MIGRATION_PLAN.md](MIGRATION_PLAN.md) Step 4.
+> Rehearsed on real Postgres (PGlite, PG 18) on top of the pre-commercial schema DDL: both migrations apply cleanly, and the original file reproduces the exact syntax error. Not rehearsed on Supabase PG 15 itself; the SQL uses nothing newer than PG 12.
 
 ### 3b.3 AFTER the first deploy — restore the uploads into the new volume (one time)
 

@@ -296,13 +296,3 @@ ALTER TABLE "g4d_billing_deals" ADD CONSTRAINT "g4d_billing_deals_vendorId_fkey"
 ALTER TABLE "g4d_promo_redemptions" ADD CONSTRAINT "g4d_promo_redemptions_promoCodeId_fkey" FOREIGN KEY ("promoCodeId") REFERENCES "g4d_promo_codes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 -- AddForeignKey
 ALTER TABLE "g4d_plan_change_requests" ADD CONSTRAINT "g4d_plan_change_requests_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-┌─────────────────────────────────────────────────────────┐
-│  Update available 6.19.3 -> 8.0.0-rc.21                 │
-│                                                         │
-│  This is a major update - please follow the guide at    │
-│  https://pris.ly/d/major-version-upgrade                │
-│                                                         │
-│  Run the following to update                            │
-│    npm i --save-dev prisma@latest                       │
-│    npm i @prisma/client@latest                          │
-└─────────────────────────────────────────────────────────┘
