@@ -17,6 +17,9 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
+# Private payment-proof screenshots (Commercial Engine). A named volume is mounted here (docker-compose.yml);
+# creating + chowning the directory first makes the volume inherit the non-root user's ownership.
+RUN mkdir -p /app/private-uploads && chown -R nestjs:nodejs /app/private-uploads
 USER nestjs
 EXPOSE 3008
 ENV PORT=3008

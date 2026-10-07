@@ -1,0 +1,141 @@
+# Commercial Engine v1 — custom deals, invoices, pay links, UPI QR, promos
+
+> Dispatch 07-Oct-2026 (KSM). Supersedes the earlier "custom billing terms" dispatch. Money is **paise (Int)** everywhere. Every payable amount is derived on the server from the invoice. This document has two parts: **A. Audit map** (what existed before this dispatch) and **B. Design, flows and policies** (what this dispatch adds).
+
+---
+
+## A. AUDIT MAP (read-only, before any change)
+
+### A1. Subscriptions & entitlements today
+- `Subscription` (`product` DOMAIN_APP/DOMAIN_CAMPAIGN/BOTH, `plan` enum **STARTUP/ENTERPRISE/STARTER/BUSINESS**, `status`, start/end, `amount`, and the theme-change counter `themeChangesUsed/Limit/ResetAt`). **There is no persisted "Workspace vs BOS" field.** The tier is *inferred from the charged amount* by `payments/plan-pricing.constants.ts` (`planTierForAmount`, `aiStudioBonusForAmount`, `themeChangeLimitForAmount`, `planTermMonthsForAmount`; ±1% match to ₹11,988/₹23,988 ex- or inc-GST) and by the dashboard Billing page (`TIER_LABEL(amount)`).
+  - **Consequence:** any discounted or custom-cycle deal (e.g. a ₹5,994 half-year) matches *no* tier → no AI credit, no theme limit, wrong label. The new engine therefore stores `planKey` on `BillingTerm` and derives entitlements from `planKey` only (`commercial/entitlements.ts`).
+- Entitlement consumers found: theme-change limit (`cms.service.ts updateVendorCMS`, reads `Subscription`, auto-resets once `themeChangesResetAt` passes — and resets to `endDate`, i.e. per *cycle*, which would be wrong for a half-year term); AI Studio credit (`wallet.grantCredit(... 'ai_studio_bonus')`, idempotent by service tag). **Free SEO keywords (3/6) are marketing copy only — nothing counts or caps them.** Module/addon gating is separate (`VendorModule`/`VendorAddon`, `RequireModule`).
+
+### A2. Invoices, payments, receipts, PDF
+- `Invoice` (table `Invoice`): `invoiceNumber INV-YYYY-NNNN`, `vendorId`, optional `subscriptionId`, `amount` (taxable), `gstAmount`, `totalAmount` — **all paise**, `status` PENDING/PAID/OVERDUE/CANCELLED, `razorpayOrderId/PaymentId`, `paidAt`, `dueDate`. GST is hard-wired exclusive 18% in `InvoicesService.createInvoice`; `createPaidInvoice` back-computes taxable = total/1.18.
+- PDF: `invoices/templates/invoice.template.ts renderInvoiceHtml(invoice, vendor, {company, paymentMode, nextRenewal, lineItems})` → printable **HTML** (client prints to PDF); company details come from Admin → Integrations (`company/*` settings).
+- Receipts/confirmation: `EmailService.sendInvoiceEmail`, `sendPaymentConfirmation`; admin notification via `NotificationsService.notifyAdmin`; `PlatformIncome` row per payment.
+- Patched Razorpay path (security patch 02-Oct): `PaymentsService.createInvoiceOrder` (server amount, notes `{purpose:'invoice', invoiceId, vendorId}`) → `verifyPayment` → `assertCaptured` (`payments/payment-verification.ts`: order amount, notes, captured, same order; advisory lock helper `lockPayment`) → atomic `updateMany` claim → `finalizePayment`. The claim uses `status notIn ['PAID','CANCELLED']` — new statuses (VOID/EXPIRED/DRAFT) must be added there.
+- Legacy admin routes: `POST /invoices/:id/mark-paid` (admin; no entitlement side effects), `send-payment-link` (Razorpay payment link).
+
+### A3. Demo vs live vendors, subdomains
+- **Demo/sandbox** = a `Vendor` with `isSandbox=true`, `expiresAt` = +48 h, throwaway email/password, seeded content (`DemoService.provisionSandbox`). Public site (`CmsService.getSiteBySubdomain`) **404s for sandbox vendors**. Expired sandboxes are deleted by `cleanupExpiredSandboxes` (rows with `expiresAt < now`; `expiresAt = null` is never cleaned).
+- **Go-live** (`DemoService.convertSandbox`): after a captured Razorpay payment, flips `isSandbox=false`, clears expiry, sets real profile/password, creates `Subscription` (plan=STARTUP, amount, +12 months, theme limit from amount), a paid GST invoice, the AI Studio credit (once), welcome email/SMS.
+- **Admin-created vendors** (`VendorsService.create`, e.g. **stepnrock**): a real live vendor row (`isSandbox=false`, `status ACTIVE`), subdomain set, **no subscription/invoice created**. Subdomain vendors are served live as soon as the row exists.
+- There is no separate "demo site" entity for prospects; the commercial engine models a prospect's pre-sale site as a vendor row with `isSandbox=true, expiresAt=null` (never auto-deleted), flipped live on activation payment.
+
+### A4. Managed Services quote tool & leads
+- `Quote` (`g4d_quotes`, free-form prospect fields, `items` Json, `status` draft/sent/viewed/accepted/declined, public `shareToken`), `ManagedServiceCatalogItem` rate card, `Lead` (`g4d_leads`). Quotes are *proposals*, not payable documents — nothing links a quote to an invoice. The new `BillingDeal` is the payable counterpart; it is a separate table (the name `Deal` is taken by the real-estate `Deal` model).
+
+### A5. Messaging senders
+- Email: `EmailService.sendGeneric / sendInvoiceEmail / sendPaymentConfirmation` (Resend). WhatsApp: `WhatsappService.sendMessage` (Fast2SMS provider) and the template sender `notifications/whatsapp.service sendTemplate`. SMS: `SmsService.sendSms`. All best-effort (never throw into the money path).
+
+### A6. Auth / admin
+- `AdminGuard` = `role ADMIN|SUPER_ADMIN` (bootstrap admin Vendor, or `admin_member` principal with `adminRole` SUPER_ADMIN/MARKETING/OPERATIONS). S7 (sub-roles unenforced on most admin endpoints) is open → new admin endpoints use a stricter `CommercialAdminGuard` (explicit role check, rejects vendor/team/sandbox principals; money-moving actions additionally exclude MARKETING).
+- Global response redaction (`TransformInterceptor` → `redactSecrets`) strips named secret keys; new secrets (`payTokenHash`, `proofPath`) are added to it.
+- Throttling: `common/throttling.ts` `RATE.*` + `@Throttle`. Cron: `@nestjs/schedule` (`travel/contracts.service` is the only existing `@Cron`); advisory-lock helper in `payment-verification.ts` (`pg_advisory_xact_lock`).
+- Storage: `/uploads` is **public static** (local VM disk) and Supabase storage is a public bucket → neither is suitable for payment proofs; the engine stores proofs on private disk and streams them only to admins.
+
+### A7. Admin & vendor UI today
+- Admin: `/admin/invoices` (create/send/mark paid), `/admin/renewals`, `/admin/customers` (list with activate/suspend; **no vendor detail page**), `/admin/send-quote`, `/admin/managed-services`, `/admin/pricing`, `/admin/api-settings`. Vendor: `/dashboard/billing` (Razorpay pay, plan overview — tier inferred from amount).
+
+### A8. Stepnrock — current state (live DB, read-only, 2026-10-07)
+Vendor `cmuezz0j…` "Step N Rock", `owner.stepnrock@get4domain.com`, subdomain `stepnrock`, industry retail, **ACTIVE, isSandbox=false**, created 2026-09-24 by admin. **0 subscriptions, 0 invoices**, wallet balance ₹0 with no transactions (no AI Studio credit), 14 products, 0 contacts, 0 expenses, 0 team members, 1 addon, 6 modules. No billing record of any kind. (The full feature audit is in section B10.)
+
+---
+
+## B. DESIGN, FLOWS AND POLICIES (what this dispatch adds)
+
+### B1. Data model — migration `20261007120000_commercial_engine` (additive; NOT applied)
+Exact DDL from `prisma migrate diff`: 12 enums, 8 tables, 27 nullable/defaulted `Invoice` columns, 6 new `InvoiceStatus` values, a handful of FKs/indexes. No drop / retype / rewrite. Existing invoices keep `kind = NULL` and their exact behaviour.
+
+| Table / change | Purpose |
+|---|---|
+| `Invoice` (extended) | `kind` ACTIVATION·RENEWAL·PLAN_CHANGE·ADDON·MANAGED_SERVICE, `dealId`, `termId`, `payTokenHash` (unique), `tokenExpiresAt`, `allowedChannels[]`, `gstMode`, `listAmountPaise`, `discountPaise/Reason`, `adminDiscount`, `allowPromoStacking`, `promoCodeId`, `allowPromoEntry`, `lineItems` Json, `planKey/billingCycle/cycleMonths`, `periodStart/End`, `paidPaise`, `overpaymentPaise`, `paidVia`, `sentAt`, `voidedAt/Reason`, `effectsAppliedAt`. Statuses added: DRAFT, SENT, PAYMENT_SUBMITTED, PARTIALLY_PAID, VOID, EXPIRED (legacy PENDING = "sent", CANCELLED = "void"). `amount/gstAmount/totalAmount` keep their meaning (taxable / GST / payable, paise). |
+| `g4d_payee_settings` | single row: UPI VPA, payee name, optional static QR URL, bank details, instructions |
+| `g4d_billing_terms` | `planKey`, cycle, `cycleMonths`, list/discount/net, `gstMode`, period, `graceDays`, status DEMO·ACTIVE·ACTIVE_PAYMENT_DUE·LAPSED·CANCELLED, source STANDARD·ADMIN_DEAL, `isCurrent` (history is kept, never edited in place), scheduled-next plan/cycle, reminders sent, links to subscription/invoices |
+| `g4d_billing_deals` | named **BillingDeal** because `Deal` is the real-estate model: vendor *or* prospect (+demo subdomain), server-built lines, discount + reason, GST mode, channels, expiry, flags |
+| `g4d_manual_payment_submissions` | UTR (**globally unique**), claimed amount (a claim, never credited), confirmed amount, paid date, private screenshot reference, status SUBMITTED·CONFIRMED·REJECTED, reviewer, reason |
+| `g4d_promo_codes` / `g4d_promo_redemptions` | rules; a redemption row exists **only** for PAID invoices (`invoiceId` unique = one promo per invoice) |
+| `g4d_plan_change_requests` | request → approve/reject → applied; proration credit; new invoice |
+| `g4d_commercial_audit_log` | append-only: discounts, overrides, confirmations, voids, link re-issues, payee changes, lapses |
+
+### B2. Money rules
+- Integer **paise** everywhere. A payer-facing request body has **no amount field anywhere**; the API's global `forbidNonWhitelisted` pipe rejects one (tested). Razorpay orders are created for the invoice's server-side *balance due* and stamped `{purpose, invoiceId, vendorId, amountPaise}`; verification asks Razorpay itself (captured, same order, same amount, same notes) — the patched path from 02-Oct, now invoice-balance aware.
+- **GST is always computed on the net after discount.** EXCLUSIVE: GST = 18% of net, added on top. INCLUSIVE: the net *is* the total; taxable = total ÷ 1.18. NONE: no GST. (`commercial/pricing-math.ts`, paisa-exact.)
+- **List price** for a deal = platform annual price ÷ 12 × months (Pricing-Manager keys `domainapp_workspace_yearly` / `domainapp_bos_yearly`, constants as fallback — the same source the public site and go-live use). Public pricing stays annual-only; deals are admin-only. Add-on/custom lines carry admin-entered amounts (admin-only tool).
+- **Discount:** percent, flat or promo; a reason is mandatory; **> 20 % of the subtotal requires typing `CONFIRM`**; all audit-logged (reason, amount, whether "big").
+- **Part / over payment:** `paidPaise` accumulates. `< total` → PARTIALLY_PAID (the UPI QR and the pay page then ask for the remaining balance only); `= total` → PAID; `> total` → PAID with `overpaymentPaise` recorded and the payer told it will be adjusted on the next invoice. **No automatic cash refunds, ever.**
+- A ₹0 invoice (100 % discount) settles itself and activates the plan.
+
+### B3. State machines
+```
+Invoice:  DRAFT → SENT → (PAYMENT_SUBMITTED ⇄ SENT) → PARTIALLY_PAID → PAID          PAID is terminal
+                       ↘ OVERDUE (still payable)      ↘ VOID / EXPIRED (terminal)
+Term:     DEMO ──activation paid──▶ ACTIVE ──periodEnd+grace unpaid──▶ LAPSED ──payment──▶ ACTIVE (new term row)
+          any ──"activate now, pay in N days"──▶ ACTIVE_PAYMENT_DUE ──paid──▶ ACTIVE
+          ACTIVE_PAYMENT_DUE ──paymentDueAt+grace unpaid──▶ LAPSED ──paying the SAME invoice──▶ ACTIVE
+          admin cancel ──▶ CANCELLED (terminal; never auto-reactivated)
+Submission: SUBMITTED → CONFIRMED | REJECTED          Plan change: REQUESTED → APPROVED → APPLIED | REJECTED
+```
+
+### B4. Flows
+1. **Deal → invoice** (Admin → Commerce → Deal builder): pick a vendor or a new prospect (+demo subdomain) → plan/cycle/custom months → add-ons → discount → GST/grace/channels/expiry → live totals (the server prices it with the same code that issues the invoice) → *Save draft* · *Create invoice + link* · *Activate now, payment due in N days*. A prospect becomes a hidden pre-sale vendor (`isSandbox`, no expiry, so the demo cleaner never deletes it); the public site 404s for sandbox vendors until the activation invoice is paid.
+2. **Pay link** `/pay/<token>`: 256-bit CSPRNG token, **only its SHA-256 stored**, expiring, per-IP throttled; never returned by any list/detail API (explicit `select`, plus global response redaction of `payTokenHash`). "Copy link"/"Resend" *rotates* the token (the old link dies) — a stored token would be a leak risk.
+3. **Razorpay:** order from balance due → checkout → server verifies with Razorpay → atomic, advisory-locked `applyPayment` (idempotent per payment id).
+4. **UPI QR:** server builds `upi://pay?pa&pn&am=<exact>&cu=INR&tn=<invoice no>` + PNG QR; UPI ID copy, static-QR fallback, bank details. **"I have paid"**: UTR (12–22 alphanumerics, globally unique), amount, date, optional screenshot (JPG/PNG/WebP by **magic bytes**, ≤ 3 MB, stored on **private disk**, never under `/uploads`, streamed only to platform admins). Invoice → PAYMENT_SUBMITTED. A duplicate UTR is rejected (409) **and flagged** to the admin (queue badge + audit entry + notification).
+5. **Payments to confirm** (nav badge): admin enters the amount **actually received**; the UI previews the outcome (exact → PAID, less → PART PAID with balance, more → PAID + overpayment). Idempotent (second confirm = no-op), concurrency-safe (atomic claim), reversible on failure. Reject needs a reason and notifies the payer.
+6. **Activation on PAID** (idempotent via `effectsAppliedAt`): term ACTIVE (`periodStart` now → +`cycleMonths`; or the already-running "payment due" term), demo → live, legacy `Subscription` row with theme limit (reset date = **12 months** after activation — the allowance is *per year* even on a 6-month term; the CMS reset now moves one year at a time), one-time AI Studio credit **exactly once per vendor** (service tag `ai_studio_bonus`, serialised per vendor), a first password emailed to a new prospect.
+7. **Renewal** (daily 06:00 IST cron, `pg_try_advisory_xact_lock`): at **T-15** create the RENEWAL invoice and send the link; reminders **T-15, T-7, T-1, overdue** (once each; a late-starting job sends only the most urgent). Renewing a *negotiated* term keeps its net price; a scheduled plan/cycle change prices at **list**. Payment **extends from the previous `periodEnd`** (no lost days; if paid so late that the contiguous period is already over, it starts today). Each renewal is a *new term row* (history). The AI credit is **not** re-granted.
+8. **Lapse** at `periodEnd + graceDays` (or `paymentDueAt + graceDays`): blocks **publishing** (CMS), **outbound messaging** and **AI Studio / wallet spend** (campaign approvals too) — enforced in `WalletService.deduct`, `CommunicationService.send`, `CmsService.updateVendorCMS` through an `@Global` `BillingGateService`. **Nothing is deleted; login, data and read access stay.** A payment lifts it instantly. A vendor with no billing term is never gated.
+9. **Plan changes:** vendor request (`/billing/plan-change-requests`); admin approves *at renewal* (default; stored on the term, picked up by the T-15 job) or *now* (**upgrades only**): PLAN_CHANGE invoice = new plan at list − **credit for unused days = netAmount ÷ term days × unused days** (never above the new price). **Downgrades only at renewal** (forced on request, re-checked on approval).
+10. **Promos** (server-side only): validity window, plan/cycle/kind restriction, minimum term, global and per-vendor limits (counted from **PAID** redemptions), one per invoice, no stacking on an admin discount unless the invoice allows it, attempt throttling (6 bad tries / 10 min per invoice and per IP → 429, even for a valid code). Type/value are immutable after creation (an applied-but-unpaid invoice must keep its discount).
+
+### B5. Entitlements (`commercial/entitlements.ts`)
+`entitlementsFor(planKey)` takes **one argument — the plan key** (tested: `function.length === 1`). Workspace: ₹499 credit, 3 SEO keywords, 2 theme changes/yr. BOS: ₹1,299, 6, 4, plus WhatsApp bot, full accounting, HRM, inventory, tasks. A BOS deal for ₹0.01 gets BOS entitlements (tested). **Legacy amount-based inference (`planTierForAmount`) is unchanged for pre-existing vendors**; the dashboard now prefers `term.planKey` over the amount when a term exists.
+Policy choices: the one-time AI credit is **once per vendor, tied to the first plan** (an upgrade does not add the BOS difference); "Activate now" grants the credit immediately (all features on).
+
+### B6. Security model
+- Public `/public/pay/*` — `@Public`, per-route `@Throttle` (view 30/min, order/verify 10, proof 5, promo 6), shape-checked token, hashed lookup, expiry → 410, no PII beyond business name and amounts, `noindex`, no-referrer.
+- `/admin/commerce/*` — `CommercialAdminGuard` at class level (platform admin only; rejects vendors, **vendor team members and demo-sandbox principals**), plus `MoneyAdminGuard` on every money-moving route (**excludes MARKETING staff**). Independent of S7 (still open platform-wide).
+- `/billing/*` — owner (or a team member with the `wallet` area); sandbox rejected; invoices resolved by the caller's *own* vendorId.
+- Legacy bypasses closed: `POST /payments/create-order|verify`, admin "mark paid" and the Razorpay payment-link route refuse commercial invoices (`kind != null`); the old claim now also excludes VOID/EXPIRED/DRAFT.
+- Screenshots: private disk (`private-uploads/`, git-ignored, **named Docker volume** so deploys keep them), path-traversal-safe reads, `screenshotUrl`/`submittedByIpHash` redacted from every response; a storage failure never blocks a payer (the UTR is kept, the picture dropped).
+
+### B7. Admin / vendor UI map
+Admin → **Commerce** (nav, live badge) → Deal builder · Invoices (filters, copy link, resend, void, PDF, detail) · Payments to confirm · Promo codes · Plan changes · Payee & QR (also linked from Settings; server-rendered QR preview). Admin → Vendors → **Billing & terms** (new vendor detail page: current term, edit/override with mandatory reason, schedule change, history, invoices, audit). Vendor dashboard → Billing: plan/term card, status banner (payment due / lapsed / renewing), invoices table with **Pay** (the same `PayPanel` as `/pay/[token]`; UPI QR only if the admin enabled it for that invoice; proof form; promo field when allowed), "Request plan/billing change"; for `ADMIN_DEAL` terms the self-serve upgrade is replaced by **Contact us** and list-price billing text is hidden. `npm run audit:vendor-dark` passes. Screenshots: `docs/v2/evidence/commercial-engine/`.
+
+### B8. Tests (`npm run verify:commercial`, run after `npx nest build`) — 284 assertions
+`verify-pure.js` (104): GST per mode on net-after-discount, discount/CONFIRM rules, cycles, month clamping, renewal extension, proration (e.g. day 100/365 of ₹12,000 = ₹8,712.33), entitlement independence, promo rules, term timing (T-15/T-7/T-1/overdue/lapse to the second), UPI link/QR, UTR, magic-byte file sniffing. `verify-flows.js` (180) runs the **real compiled services** against an in-memory Prisma (unique constraints; advisory locks that really serialise): server-only amounts (a client `amount` is rejected by the validation pipe on every DTO), token guess/shape/expiry/rotation/void/throttle metadata, Razorpay (wrong amount, foreign invoice, authorised-not-captured, gateway down, replay), UPI + proof validation + private storage + duplicate-UTR flag, exact/partial/over/idempotent/concurrent confirmation, reject, admin-only authz (vendor/team/sandbox/marketing), promos end to end, ₹0 and ₹0.01 deals, prospect go-live, the full renewal timeline, lapse (deletes nothing; payment lifts it), plan changes with proration, legacy-bypass refusal, SEO allowance. The earlier `scripts/security-verify` suites (which boot the real app) still pass.
+**Limits:** DB constraints/locks are emulated, not exercised on Postgres; Razorpay is a fake gateway; throttling is asserted by metadata (the global guard itself is covered by the earlier suite); the frontend is type-checked, built, dark-audited and screenshotted but has no browser E2E; the `INSERT/UPDATE` SQL of the migration itself was generated by Prisma and has never run against a database.
+
+### B9. Open decisions / known limits (KSM)
+1. **Activate-now grants the ₹499 credit before payment.** To grant it on payment instead, change one call in `DealsService.activateNow`.
+2. Renewal of a negotiated deal repeats the negotiated net; a vendor-requested change prices at list — confirm this is the default you want.
+3. Reminders link to the dashboard Billing page (not a pay link) so earlier links are never invalidated; only the T-15 message carries a fresh pay link.
+4. Staff with the `MARKETING` role can preview deals/save drafts via the API, but the Commerce nav is Super-Admin/Operations only.
+5. `/uploads` (public vendor images) still has no persistent volume (pre-existing hazard, DEPLOYMENT.md §2) — only `private-uploads` was fixed here.
+6. Free SEO keywords are now *capped* in the CMS (3/6) only for vendors with a billing term; legacy vendors stay unrestricted.
+7. `dashboard/my-services` and the old single-plan "request" card still exist (flagged earlier).
+
+### B10. Stepnrock — feature audit against the Workspace promise (live data + code, 2026-10-07)
+Before this dispatch stepnrock had **no subscription, no invoice, a ₹0 wallet with no credit, and no commercial record**.
+
+| Workspace feature | State found | Fixed? |
+|---|---|---|
+| Lead capture → CRM | Backend `engine.enquiry` → `CampaignLead` + notification works, **but the stepnrock site's contact form only wrote to browser state — no enquiry ever reached the CRM** | **Fixed** (site form now posts to `engine.enquiry`; the stepnrock site must be redeployed) |
+| TeleCRM | module `telecrm` enabled (plus communication_hub, growth_hub, analytics_hub, customer_hub, website_manager) | OK |
+| Website bot reply | the site has its own client-side scripted bot (not the platform KB bot); the platform widget key exists but is not embedded | **Not fixed** — decision needed (embed the platform widget vs keep the scripted bot) |
+| Basic expense management | Accounts page + `accounting` module (expenses, payments ledger, P&L, GST tracker) available; no data yet | OK |
+| Invoicing | GST invoicing available; 0 invoices yet | OK |
+| Staff dashboard | team module available | OK |
+| Wallet | exists, ₹0, no transactions | OK |
+| ₹499 AI Studio credit, once | **not granted** | **Fixed by the activation script** (tag-checked, exactly once) |
+| 3 free SEO keywords | marketing copy only — nothing counted or capped | **Fixed** (CMS enforces 3/6 for vendors on a billing term; stepnrock has no keywords set) |
+| SEO/GEO/AEO bundle | team-delivered service; no system artifact | n/a (manual) |
+| 2 theme changes + counter + reset date | **no `Subscription` row existed, so theme changes were unlimited and untracked** | **Fixed by the activation script** (limit 2, reset +12 months); CMS reset made yearly |
+| engine.enquiry flow | works end to end | Fixed on the site side |
+
+### B11. Operations
+Deploy and stepnrock commands: see [DEPLOYMENT.md §3b](DEPLOYMENT.md). Billing policy summary for staff: [BILLING.md](BILLING.md).
+

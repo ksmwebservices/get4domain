@@ -1,13 +1,27 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Optional, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Category, Prisma, VendorCMS, VendorProduct } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePlatformCmsDto } from './dto/update-platform-cms.dto';
 import { UpdateVendorCmsDto } from './dto/update-vendor-cms.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/create-product.dto';
+import { BillingGateService } from '../commercial/billing-gate.service';
+import { countSeoKeywords, entitlementsFor, PlanKey } from '../commercial/entitlements';
+import { addMonths } from '../commercial/pricing-math';
+
+/** Theme-change allowance is PER YEAR: the next reset is one year after the previous one (not the end of a shorter billing cycle). */
+export function nextYearlyReset(previous: Date, now: Date): Date {
+  let next = addMonths(previous, 12);
+  while (next.getTime() <= now.getTime()) next = addMonths(next, 12);
+  return next;
+}
 
 @Injectable()
 export class CmsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    // Commercial Engine v1 (both optional so existing manual constructions keep working).
+    @Optional() private readonly gate?: BillingGateService,
+  ) {}
 
   async getPlatformCms(): Promise<Record<string, string>> {
     const rows = await this.prisma.platformCMS.findMany();
@@ -73,7 +87,21 @@ export class CmsService {
     return this.prisma.vendorCMS.findUnique({ where: { vendorId } });
   }
 
+  /** Free SEO keywords per plan. Only vendors on a commercial billing term are capped; everyone else is untouched. */
+  private async assertSeoKeywordAllowance(vendorId: string, raw: string | undefined | null): Promise<void> {
+    const term = await this.prisma.billingTerm.findFirst({ where: { vendorId, isCurrent: true }, select: { planKey: true, status: true } });
+    if (!term || term.status === 'CANCELLED') return;
+    const limit = entitlementsFor(term.planKey as PlanKey).seoKeywords;
+    if (countSeoKeywords(raw) > limit) {
+      throw new BadRequestException(`Your plan includes ${limit} SEO keywords. Remove some, or ask us about adding more.`);
+    }
+  }
+
   async updateVendorCMS(vendorId: string, dto: UpdateVendorCmsDto): Promise<VendorCMS> {
+    // A lapsed vendor keeps read access but cannot publish site changes until they pay.
+    await this.gate?.assertNotLapsed(vendorId, 'publish');
+    // Free SEO keywords come from the plan (planKey) — only enforced for vendors on a commercial billing term.
+    if (dto.seoKeywords !== undefined) await this.assertSeoKeywordAllowance(vendorId, dto.seoKeywords);
     // A premium (priced) template can only be applied once the vendor has purchased it.
     if (dto.themeId) {
       const theme = await this.prisma.websiteTheme.findUnique({ where: { id: dto.themeId } });
@@ -105,7 +133,7 @@ export class CmsService {
           const pastReset = sub.themeChangesResetAt != null && now >= sub.themeChangesResetAt;
           const used = pastReset ? 0 : sub.themeChangesUsed;
           if (used >= sub.themeChangesLimit) {
-            const resetLabel = sub.endDate ? sub.endDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'your next renewal';
+            const resetLabel = (sub.themeChangesResetAt ?? sub.endDate) ? (sub.themeChangesResetAt ?? sub.endDate)!.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'your next renewal';
             throw new ForbiddenException(
               `You've used all ${sub.themeChangesLimit} theme changes included in your plan this year. More become available on ${resetLabel}.`,
             );
@@ -113,7 +141,7 @@ export class CmsService {
           await this.prisma.subscription.update({
             where: { id: sub.id },
             data: pastReset
-              ? { themeChangesUsed: 1, themeChangesResetAt: sub.endDate ?? undefined }
+              ? { themeChangesUsed: 1, themeChangesResetAt: nextYearlyReset(sub.themeChangesResetAt as Date, now) }
               : { themeChangesUsed: { increment: 1 } },
           });
         }

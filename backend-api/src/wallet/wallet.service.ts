@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BillingGateService, GatedAction } from '../commercial/billing-gate.service';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { Wallet, WalletTransaction } from '@prisma/client';
@@ -25,6 +26,8 @@ export class WalletService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly invoices: InvoicesService,
+    // Commercial Engine v1: a LAPSED vendor cannot spend wallet credit (AI Studio, messaging, campaigns).
+    @Optional() private readonly gate?: BillingGateService,
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID as string,
@@ -154,6 +157,8 @@ export class WalletService {
   }
 
   async deduct(vendorId: string, amount: number, description: string, service: string): Promise<Wallet> {
+    const action = WalletService.gatedActionFor(service);
+    if (action) await this.gate?.assertNotLapsed(vendorId, action);
     return this.prisma.$transaction(async (tx) => {
       const wallet = await tx.wallet.findUnique({ where: { vendorId } });
       if (!wallet || wallet.balance < amount) {
@@ -179,6 +184,14 @@ export class WalletService {
 
       return updated;
     });
+  }
+
+  /** Which lapse-gate action a wallet debit belongs to (domain purchases are not gated). */
+  static gatedActionFor(service: string): GatedAction | null {
+    if (service.startsWith('domain')) return null;
+    if (service.startsWith('comm_') || service.startsWith('whatsapp') || service.startsWith('lead_wa')) return 'message';
+    if (service.startsWith('campaign')) return 'publish';
+    return 'ai_spend';
   }
 
   async hasSufficientBalance(vendorId: string, amount: number): Promise<boolean> {

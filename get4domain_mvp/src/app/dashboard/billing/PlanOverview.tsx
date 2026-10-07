@@ -33,7 +33,7 @@ function List({ items }: { items: string[] }) {
  *  done-for-you services. Everything is derived from the same data the marketing /pricing page
  *  renders (src/data/platform-features.ts + PLAN_TERMS in src/lib/pricing.ts), so the two
  *  cannot disagree about what a tier includes. */
-export default function PlanOverview({ tier }: { tier: PlanTier }) {
+export default function PlanOverview({ tier, adminDeal = false }: { tier: PlanTier; adminDeal?: boolean }) {
   const isBos = tier === 'BOS';
   const [terms, setTerms] = useState(PLAN_TERMS);
   useEffect(() => { fetchLivePricing().then((live) => setTerms(applyLivePricing(live))); }, []);
@@ -62,7 +62,9 @@ export default function PlanOverview({ tier }: { tier: PlanTier }) {
           <h3 className="text-base font-bold text-slate-900">What&apos;s in your {tier} plan</h3>
           <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700">DomainApp {tier}</span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">{plan.billingNote} · {formatINR(plan.baseAmount)} + {formatINR(gstOn(plan.baseAmount))} GST = {formatINR(totalWithGst(plan.baseAmount))} per year</p>
+        {!adminDeal && (
+          <p className="mt-1 text-xs text-slate-500">{plan.billingNote} · {formatINR(plan.baseAmount)} + {formatINR(gstOn(plan.baseAmount))} GST = {formatINR(totalWithGst(plan.baseAmount))} per year</p>
+        )}
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <div key={g.title} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -81,7 +83,19 @@ export default function PlanOverview({ tier }: { tier: PlanTier }) {
       </div>
 
       {/* UPGRADE PATH — Workspace only: exactly the rows that differ */}
-      {!isBos && (
+      {!isBos && adminDeal && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Want more than Workspace?</h3>
+              <p className="mt-1 text-sm text-slate-500">Your plan is on special terms, so changes are arranged with our team.</p>
+            </div>
+            <Link href="/dashboard/support"><Button size="lg" rightIcon={<ArrowRight className="h-4 w-4" />}>Contact us</Button></Link>
+          </div>
+        </div>
+      )}
+
+      {!isBos && !adminDeal && (
         <div className="rounded-2xl border-2 border-primary-200 bg-white p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

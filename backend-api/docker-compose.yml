@@ -10,8 +10,13 @@ services:
       - "3008:3008"
     env_file:
       - .env.local
+    volumes:
+      # Payment-proof screenshots are financial evidence: keep them across `--force-recreate` deploys.
+      - private_uploads:/app/private-uploads
     networks:
       - get4domain_backend_net
+volumes:
+  private_uploads:
 networks:
   get4domain_backend_net:
     driver: bridge

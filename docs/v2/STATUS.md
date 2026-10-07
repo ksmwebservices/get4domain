@@ -8,6 +8,9 @@ V2 execution has **not started** (PRD §99: audit baseline first). The existing 
 ## Security patch (2026-10-02) — S1–S6 fixed in code, **not yet deployed**
 Fixes for the critical findings S1–S6 are written and verified (135 assertions; before/after exploit proofs) — see [SECURITY_PATCH_2026-10-02.md](SECURITY_PATCH_2026-10-02.md). **Awaiting KSM:** apply migration `20261002130000_payment_idempotency` (`cd backend-api && npx prisma migrate deploy`) *before* deploying; deploy backend + frontend together; set the WhatsApp webhook secret (the bot is intentionally offline until then). S7–S15 remain open.
 
+## Commercial Engine v1 (07-Oct-2026) — built, tested, **not yet deployed**
+Custom deals, invoices, pay links, UPI QR, promo codes, renewals and the stepnrock go-live are implemented and pushed. See [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md) (audit map, design, policies, stepnrock feature table), [BILLING.md](BILLING.md) (staff policy) and [DEPLOYMENT.md §3b](DEPLOYMENT.md) (exact VM commands). **Awaiting KSM:** apply migration `20261007120000_commercial_engine` (and the two earlier pending ones), redeploy API + web + stepnrock site, enter the **Payee & QR** (UPI ID), then run `scripts/activate-stepnrock.js` (dry run → `--apply`). Verification: `npm run verify:commercial` = 284 assertions; earlier security suites unchanged; both apps build; `audit:vendor-dark` clean. Not verified: the migration SQL has never run on Postgres, Razorpay was a fake gateway, no browser E2E.
+
 ## Source control
 | Item | State |
 |---|---|
@@ -23,6 +26,8 @@ Fixes for the critical findings S1–S6 are written and verified (135 assertions
 | `20261001100000_add_subscription_theme_change_tracking` | applied (theme-change limits are now enforced for Workspace/BOS subscriptions created after it) |
 | `20261001110000_add_domain_campaign_records` | applied (`g4d_domain_campaign_records` exists) |
 | `20261002120000_domain_campaign_custom_fee` | **NOT applied** — adds `isCustomFee`. **Apply before deploying the new DomainCampaign code**: `cd backend-api && npx prisma migrate deploy` (otherwise recording a spend fails "column does not exist"). |
+| `20261002130000_payment_idempotency` | **NOT applied** — PosSale razorpay columns + unique indexes (security patch). Apply before deploying that code. |
+| `20261007120000_commercial_engine` | **NOT applied** — Commercial Engine v1 (8 new tables, `Invoice` extension, 6 `InvoiceStatus` values). Additive. Apply **before** deploying the new backend. |
 | `20261003100000_universal_catalogue_columns` | **NOT applied** — additive columns/indexes/FK on `VendorProduct` (Universal Catalogue). Apply with the others via `cd backend-api && npx prisma migrate deploy`, then follow the data-migration order in [UNIVERSAL_CATALOGUE_MODEL.md](UNIVERSAL_CATALOGUE_MODEL.md) §4. Apply **before** deploying the new backend. |
 | Drift | `20260719093736_add_leads` is applied in the DB but has no local folder; 28 core tables were created by `prisma db push`, not by migrations (see [MIGRATION_PLAN.md](MIGRATION_PLAN.md)) |
 

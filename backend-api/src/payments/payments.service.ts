@@ -83,8 +83,9 @@ export class PaymentsService {
   async createInvoiceOrder(user: AuthenticatedUser, invoiceId: string) {
     const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
     if (!invoice || invoice.vendorId !== user.sub) throw new NotFoundException('Invoice not found');
+    if (invoice.kind != null) throw new BadRequestException('Use the billing page to pay this invoice');
     if (invoice.status === 'PAID') throw new BadRequestException('This invoice is already paid');
-    if (invoice.status === 'CANCELLED') throw new BadRequestException('This invoice has been cancelled');
+    if (['CANCELLED', 'VOID', 'EXPIRED', 'DRAFT'].includes(invoice.status)) throw new BadRequestException('This invoice has been cancelled');
     return this.createOrder({
       amount: invoice.totalAmount,
       currency: 'INR',
@@ -115,7 +116,8 @@ export class PaymentsService {
       if (invoice.razorpayPaymentId === dto.razorpayPaymentId) return { verified: true };
       throw new BadRequestException('This invoice is already paid');
     }
-    if (invoice.status === 'CANCELLED') throw new BadRequestException('This invoice has been cancelled');
+    if (invoice.kind != null) throw new BadRequestException('Use the billing page to pay this invoice');
+    if (['CANCELLED', 'VOID', 'EXPIRED', 'DRAFT'].includes(invoice.status)) throw new BadRequestException('This invoice has been cancelled');
 
     await this.assertCaptured({
       orderId: dto.razorpayOrderId,
@@ -132,7 +134,7 @@ export class PaymentsService {
     if (usedElsewhere) throw new BadRequestException('This payment has already been applied');
 
     const claimed = await this.prisma.invoice.updateMany({
-      where: { id: invoice.id, status: { notIn: ['PAID', 'CANCELLED'] } },
+      where: { id: invoice.id, status: { notIn: ['PAID', 'CANCELLED', 'VOID', 'EXPIRED', 'DRAFT'] } },
       data: { status: 'PAID', paidAt: new Date(), razorpayOrderId: dto.razorpayOrderId, razorpayPaymentId: dto.razorpayPaymentId },
     });
     if (claimed.count === 0) return { verified: true }; // a concurrent verification already finalised it

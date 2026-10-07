@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Invoice } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -188,6 +188,7 @@ export class InvoicesService {
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
+    if (invoice.kind != null) throw new BadRequestException('Commercial invoices use their own pay link (Admin → Commerce → Invoices)');
     return this.paymentsService.generatePaymentLink(invoice.id, invoice.totalAmount, invoice.vendor.email);
   }
 
@@ -196,6 +197,8 @@ export class InvoicesService {
     if (!invoice) {
       throw new NotFoundException('Invoice not found');
     }
+    // Commercial invoices carry term/entitlement side effects — they are confirmed only through Payments to confirm.
+    if (invoice.kind != null) throw new BadRequestException('Confirm this payment from Admin → Commerce → Payments to confirm');
 
     const updated = await this.prisma.invoice.update({
       where: { id },

@@ -163,6 +163,9 @@ export default function AdminCustomersPage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Link href={`/admin/customers/${c.id}`}>
+                    <Button size="sm" variant="outline">Billing &amp; terms</Button>
+                  </Link>
                   {site && (
                     <a href={site} target="_blank" rel="noopener noreferrer">
                       <Button size="sm" leftIcon={<Globe className="h-3.5 w-3.5" />} className="bg-primary-600 hover:bg-primary-700 text-white">

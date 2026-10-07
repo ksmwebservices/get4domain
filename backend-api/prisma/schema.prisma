@@ -127,6 +127,11 @@ model Vendor {
   restaurantOrderItems RestaurantOrderItem[]
   retailProducts       RetailProduct[]
   domainCampaignRecords DomainCampaignRecord[]
+
+  // Commercial Engine v1
+  billingTerms       BillingTerm[]
+  billingDeals       BillingDeal[]
+  planChangeRequests PlanChangeRequest[]
 }
 
 model Subscription {
@@ -172,6 +177,43 @@ model Invoice {
   dueDate           DateTime?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
+
+  // ── COMMERCIAL ENGINE v1 (07-Oct-2026) — ADDITIVE ──────────────────────────────────────
+  // All nullable/defaulted: legacy invoices (kind = null) keep their exact behaviour. amount /
+  // gstAmount / totalAmount keep their meaning (taxable / GST / payable, paise); the fields
+  // below describe how they were derived and how the invoice is paid. See docs/v2/COMMERCIAL_ENGINE.md.
+  kind               InvoiceKind?
+  dealId             String?
+  deal               BillingDeal?    @relation(fields: [dealId], references: [id])
+  termId             String? // BillingTerm this invoice activates / renews (soft ref)
+  /// SHA-256 of the pay-link token. The token itself is never stored and never returned by any list API.
+  payTokenHash       String?         @unique
+  tokenExpiresAt     DateTime?
+  allowedChannels    PayChannel[]    @default([])
+  gstMode            GstMode         @default(EXCLUSIVE)
+  listAmountPaise    Int? // subtotal before discount
+  discountPaise      Int             @default(0)
+  discountReason     String?
+  adminDiscount      Boolean         @default(false) // an ad-hoc admin discount is baked in (blocks promo stacking)
+  allowPromoStacking Boolean         @default(false)
+  promoCodeId        String?
+  allowPromoEntry    Boolean         @default(false)
+  lineItems          Json? // [{ kind: PLAN|ADDON|CUSTOM|CREDIT, label, amountPaise, qty }]
+  planKey            BillingPlanKey?
+  billingCycle       BillingCycle?
+  cycleMonths        Int?
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  paidPaise          Int             @default(0) // cumulative amount received (manual partials)
+  overpaymentPaise   Int             @default(0)
+  paidVia            PayChannel?
+  sentAt             DateTime?
+  voidedAt           DateTime?
+  voidReason         String?
+  effectsAppliedAt   DateTime? // idempotency marker for activation / renewal side effects
+
+  @@index([vendorId, status])
+  @@index([kind, status])
 }
 
 model SupportTicket {
@@ -853,6 +895,14 @@ enum InvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+  // Commercial Engine v1 (07-Oct-2026) — additive. PENDING stays "sent / awaiting payment" for
+  // legacy invoices; CANCELLED stays the legacy "void".
+  DRAFT
+  SENT
+  PAYMENT_SUBMITTED
+  PARTIALLY_PAID
+  VOID
+  EXPIRED
 }
 
 enum TicketStatus {
@@ -2369,4 +2419,286 @@ model OtpDailyVerification {
   updatedAt  DateTime @updatedAt
 
   @@map("g4d_otp_daily_verifications")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+// COMMERCIAL ENGINE v1 (dispatch 07-Oct-2026) — custom deals, pay links, UPI QR, promos.
+// ADDITIVE ONLY. Money is paise (Int). Entitlements derive from `planKey`, never from price.
+// Note: the model is called BillingDeal because `Deal` is already the real-estate model.
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+enum BillingPlanKey {
+  WORKSPACE
+  BOS
+}
+
+enum BillingCycle {
+  MONTHLY
+  HALF_YEARLY
+  ANNUAL
+  CUSTOM_MONTHS
+}
+
+enum GstMode {
+  EXCLUSIVE
+  INCLUSIVE
+  NONE
+}
+
+enum BillingTermStatus {
+  DEMO
+  ACTIVE
+  ACTIVE_PAYMENT_DUE
+  LAPSED
+  CANCELLED
+}
+
+enum TermSource {
+  STANDARD
+  ADMIN_DEAL
+}
+
+enum DealStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  EXPIRED
+}
+
+enum InvoiceKind {
+  ACTIVATION
+  RENEWAL
+  PLAN_CHANGE
+  ADDON
+  MANAGED_SERVICE
+}
+
+enum PayChannel {
+  RAZORPAY
+  UPI_QR
+  OFFLINE
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  CONFIRMED
+  REJECTED
+}
+
+enum PromoType {
+  PERCENT
+  FLAT
+}
+
+enum PlanChangeEffective {
+  AT_RENEWAL
+  NOW
+}
+
+enum PlanChangeStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  APPLIED
+}
+
+/// Single-row payee configuration (UPI VPA, optional static QR, bank details, instructions).
+model PayeeSettings {
+  id                String   @id @default(cuid())
+  key               String   @unique @default("default")
+  upiId             String?
+  payeeName         String?
+  qrImageUrl        String?
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  bankBranch        String?
+  instructions      String?
+  updatedBy         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("g4d_payee_settings")
+}
+
+/// A vendor's commercial term. History is kept (isCurrent marks the live one).
+model BillingTerm {
+  id                       String            @id @default(cuid())
+  vendorId                 String
+  vendor                   Vendor            @relation(fields: [vendorId], references: [id])
+  planKey                  BillingPlanKey
+  billingCycle             BillingCycle
+  cycleMonths              Int
+  listAmountPaise          Int
+  discountPaise            Int               @default(0)
+  netAmountPaise           Int
+  gstMode                  GstMode           @default(EXCLUSIVE)
+  gstNote                  String?
+  periodStart              DateTime?
+  periodEnd                DateTime?
+  graceDays                Int               @default(7)
+  status                   BillingTermStatus @default(DEMO)
+  source                   TermSource        @default(STANDARD)
+  isCurrent                Boolean           @default(true)
+  allowedChannels          PayChannel[]      @default([])
+  scheduledNextPlan        BillingPlanKey?
+  scheduledNextCycle       BillingCycle?
+  scheduledNextCycleMonths Int?
+  subscriptionId           String? // legacy Subscription row that carries the theme-change counter
+  activationInvoiceId      String?
+  renewalInvoiceId         String? // the renewal invoice created by the T-15 job (idempotency)
+  paymentDueAt             DateTime? // ACTIVE_PAYMENT_DUE: when payment is expected
+  activatedAt              DateTime?
+  lapsedAt                 DateTime?
+  reminders                Json? // { T15, T7, T1, OVERDUE: ISO timestamps } — which reminders were sent
+  createdBy                String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+
+  @@index([vendorId, isCurrent])
+  @@index([status, periodEnd])
+  @@map("g4d_billing_terms")
+}
+
+/// An admin-built commercial offer for an existing vendor or a prospect (with a demo subdomain).
+model BillingDeal {
+  id               String          @id @default(cuid())
+  vendorId         String?
+  vendor           Vendor?         @relation(fields: [vendorId], references: [id])
+  prospectName     String?
+  prospectPhone    String?
+  prospectEmail    String?
+  prospectBusiness String?
+  demoSubdomain    String?
+  status           DealStatus      @default(DRAFT)
+  planKey          BillingPlanKey?
+  billingCycle     BillingCycle?
+  cycleMonths      Int?
+  lineItems        Json // [{ kind, label, amountPaise, qty }] — server-built, not client totals
+  listAmountPaise  Int             @default(0)
+  discountPaise    Int             @default(0)
+  discountReason   String?
+  promoCodeId      String?
+  gstMode          GstMode         @default(EXCLUSIVE)
+  graceDays        Int             @default(7)
+  allowedChannels  PayChannel[]    @default([])
+  linkExpiryDays   Int             @default(14)
+  allowPromoEntry  Boolean         @default(false)
+  activateNow      Boolean         @default(false)
+  paymentDueDays   Int?
+  notes            String?
+  createdBy        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  invoices Invoice[]
+
+  @@index([vendorId])
+  @@index([status])
+  @@map("g4d_billing_deals")
+}
+
+/// A payer's "I have paid" claim for UPI / bank transfer. Proof files live on PRIVATE disk.
+model ManualPaymentSubmission {
+  id                   String           @id @default(cuid())
+  invoiceId            String
+  utr                  String           @unique // normalised upper-case; a duplicate is rejected and flagged
+  claimedAmountPaise   Int // what the payer says they sent — a claim, never used to credit
+  confirmedAmountPaise Int? // what admin actually received
+  paidAt               DateTime
+  screenshotUrl        String? // private reference (never a public URL, never in any list API)
+  screenshotMime       String?
+  payerNote            String?
+  status               SubmissionStatus @default(SUBMITTED)
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  reason               String?
+  submittedByIpHash    String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([invoiceId])
+  @@index([status])
+  @@map("g4d_manual_payment_submissions")
+}
+
+model PromoCode {
+  id              String           @id @default(cuid())
+  code            String           @unique // stored upper-case; lookups are case-insensitive
+  description     String?
+  type            PromoType
+  value           Int // PERCENT: whole percent (1-100); FLAT: paise
+  appliesToPlans  BillingPlanKey[] @default([])
+  appliesToCycles BillingCycle[]   @default([])
+  appliesToKinds  InvoiceKind[]    @default([])
+  minCycleMonths  Int?
+  validFrom       DateTime?
+  validTo         DateTime?
+  maxRedemptions  Int?
+  perVendorLimit  Int              @default(1)
+  active          Boolean          @default(true)
+  createdBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  redemptions PromoRedemption[]
+
+  @@map("g4d_promo_codes")
+}
+
+/// Recorded ONLY when the invoice reaches PAID.
+model PromoRedemption {
+  id            String    @id @default(cuid())
+  promoCodeId   String
+  promoCode     PromoCode @relation(fields: [promoCodeId], references: [id])
+  vendorId      String
+  invoiceId     String    @unique // one promo per invoice
+  discountPaise Int
+  redeemedAt    DateTime  @default(now())
+
+  @@index([promoCodeId])
+  @@index([vendorId])
+  @@map("g4d_promo_redemptions")
+}
+
+model PlanChangeRequest {
+  id                   String              @id @default(cuid())
+  vendorId             String
+  vendor               Vendor              @relation(fields: [vendorId], references: [id])
+  fromTermId           String?
+  toPlanKey            BillingPlanKey
+  toCycle              BillingCycle
+  toCycleMonths        Int
+  effective            PlanChangeEffective @default(AT_RENEWAL)
+  status               PlanChangeStatus    @default(REQUESTED)
+  prorationCreditPaise Int                 @default(0)
+  vendorNote           String?
+  adminNote            String?
+  newInvoiceId         String?
+  requestedAt          DateTime            @default(now())
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  appliedAt            DateTime?
+  updatedAt            DateTime            @updatedAt
+
+  @@index([vendorId])
+  @@index([status])
+  @@map("g4d_plan_change_requests")
+}
+
+/// Append-only audit trail for money-affecting admin actions (discounts, overrides, confirmations).
+model CommercialAuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  actorRole  String?
+  action     String
+  entityType String
+  entityId   String
+  detail     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("g4d_commercial_audit_log")
 }

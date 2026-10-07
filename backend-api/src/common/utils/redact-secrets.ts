@@ -18,6 +18,11 @@ export const SENSITIVE_KEYS: ReadonlySet<string> = new Set([
   'refreshToken',
   'razorpayKeySecret',
   'keySecret',
+  // Commercial Engine v1: the pay-link token hash and the private proof-file reference never leave the API.
+  'payTokenHash',
+  'payToken',
+  'screenshotUrl',
+  'submittedByIpHash',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

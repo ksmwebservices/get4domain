@@ -24,6 +24,7 @@ import { AdminCrmModule } from './admin-crm/admin-crm.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { ManagedServicesModule } from './managed-services/managed-services.module';
 import { DomainCampaignModule } from './domain-campaign/domain-campaign.module';
+import { CommercialModule } from './commercial/commercial.module';
 import { throttlerGuardProvider, throttlerImport } from './common/throttling';
 import { IndustriesModule } from './industries/industries.module';
 import { AiTemplatesModule } from './ai-templates/ai-templates.module';
@@ -130,6 +131,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     QuotesModule,
     ManagedServicesModule,
     DomainCampaignModule,
+    CommercialModule,
     IndustriesModule,
     AiTemplatesModule,
     WebsiteThemesModule,

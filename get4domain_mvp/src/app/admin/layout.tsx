@@ -7,11 +7,12 @@ import {
   LayoutDashboard, Users, FileText, Bell,
   Settings, LogOut, Menu, X, MessageSquare, RefreshCw,
   BarChart3, Globe, Megaphone, CalendarCheck, SlidersHorizontal,
-  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle, IndianRupee, Briefcase,
+  Phone, Sparkles, FileSignature, ShieldCheck, Lock, HelpCircle, IndianRupee, Briefcase, Wallet,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import type { AdminRole } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { commerceApi } from '@/lib/commerce';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import AdminAccessModal from '@/components/AdminAccessModal';
 import BottomSheet from '@/components/ui/BottomSheet';
@@ -38,6 +39,7 @@ const navItems: AdminNavItem[] = [
   { icon: CalendarCheck,     label: 'Demo Bookings', href: '/admin/leads',        roles: SUPER },
   { icon: Users,             label: 'Vendors',       href: '/admin/customers',    roles: SUPER },
   { icon: FileText,          label: 'Invoices',      href: '/admin/invoices',     roles: SUPER_OPS },
+  { icon: Wallet,            label: 'Commerce',      href: '/admin/commerce',     roles: SUPER_OPS },
   { icon: RefreshCw,         label: 'Renewals',      href: '/admin/renewals',     roles: SUPER_OPS },
   { icon: Globe,             label: 'Domains',       href: '/admin/domains',      roles: SUPER_OPS },
   { icon: BarChart3,         label: 'Accounting',    href: '/admin/accounting',   roles: SUPER },
@@ -58,6 +60,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  // Commerce nav badge: payments waiting for confirmation + plan-change requests.
+  const [commerceBadge, setCommerceBadge] = useState(0);
   const [accessDenied, setAccessDenied] = useState<string | null>(null);
   const [sheet, setSheet] = useState<null | 'work' | 'more'>(null);
 
@@ -142,6 +146,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         });
       }
     });
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || user.role === 'vendor') return;
+    let alive = true;
+    const load = () => commerceApi.summary().then((r) => { if (alive) setCommerceBadge((r.data?.paymentsToConfirm ?? 0) + (r.data?.planChangeRequests ?? 0)); }).catch(() => undefined);
+    load();
+    const t = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(t); };
   }, [user]);
 
   useEffect(() => {
@@ -239,6 +252,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-primary-400' : 'text-slate-500'}`} />
                 <span className="flex-1">{item.label}</span>
+                {item.href === '/admin/commerce' && commerceBadge > 0 && (
+                  <span className="rounded-full bg-warning-500 px-1.5 py-0.5 text-[10px] font-bold text-slate-900" aria-label={`${commerceBadge} items need attention`}>{commerceBadge}</span>
+                )}
               </Link>
             );
           })}

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BillingGateService } from '../commercial/billing-gate.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -34,6 +35,7 @@ export class CommunicationService {
     private readonly sms: SmsService,
     private readonly wallet: WalletService,
     private readonly commsSettings: VendorCommsService,
+    @Optional() private readonly gate?: BillingGateService,
   ) {}
 
   /**
@@ -49,6 +51,7 @@ export class CommunicationService {
     subject?: string,
     contactId?: string,
   ): Promise<SendResult> {
+    await this.gate?.assertNotLapsed(vendorId, 'message');
     const rate = CHANNEL_RATE[channel];
     const cost = await this.wallet.getRate(rate.key, rate.fallbackPaise);
 

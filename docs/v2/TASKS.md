@@ -53,3 +53,25 @@
 
 ## Test tasks (run alongside every release)
 See [TEST_PLAN.md](TEST_PLAN.md). Every task above ships with unit + integration tests; permission and failure-path tests are mandatory for money, tenancy and communication code.
+
+
+## Commercial Engine v1 (dispatch 07-Oct-2026)
+Design, flows and policies: [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md). Staff policy: [BILLING.md](BILLING.md). Code + tests are **COMPLETE and pushed**; the rows marked **KSM** need action on the VM ([DEPLOYMENT.md §3b](DEPLOYMENT.md)).
+
+| ID | Task | State |
+|---|---|---|
+| C-001 | Audit of subscriptions/entitlements/invoices/payments/demo-vs-live/quotes/senders; write the map | **COMPLETE** (COMMERCIAL_ENGINE.md §A) |
+| C-002 | Additive migration `20261007120000_commercial_engine` (PayeeSettings, BillingTerm, BillingDeal, ManualPaymentSubmission, PromoCode/Redemption, PlanChangeRequest, audit log, Invoice extension) | **COMPLETE** — written; **KSM: apply** |
+| C-003 | Pricing math (GST modes on net-after-discount), entitlements from `planKey` only, term/renewal rules, promo rules, UPI/QR, tokens | **COMPLETE** (104 assertions) |
+| C-004 | Deal builder, invoice issue, "activate now", prospect pre-sale vendor, ₹0 settle | **COMPLETE** |
+| C-005 | Public `/pay/[token]` (Razorpay, UPI QR + proof, promo), hashed expiring throttled tokens | **COMPLETE** |
+| C-006 | Admin: Payee & QR, invoices (copy/resend/void/PDF), Payments to confirm (+badge), promos, plan changes, vendor Billing-terms page | **COMPLETE** |
+| C-007 | Activation / renewal (extend from periodEnd) / lapse (blocks publish·messaging·AI, deletes nothing) / daily advisory-locked job | **COMPLETE** |
+| C-008 | Vendor Billing page (term, banner, invoices + Pay, plan-change request, hide self-serve upgrade for deals); `audit:vendor-dark` clean | **COMPLETE** |
+| C-009 | Stepnrock: `scripts/activate-stepnrock.js` (dry-run default) + feature audit + fixes (CRM enquiry, SEO cap, theme counter) | **COMPLETE** — **KSM: run dry-run, then `--apply`; redeploy the stepnrock site** |
+| C-010 | Tests: 284 assertions + earlier security suites | **COMPLETE** |
+| C-011 | **KSM:** set Payee & QR (UPI ID) before sharing any pay link | OPEN |
+| C-012 | Decide: platform widget vs scripted bot on stepnrock's site (website bot reply) | OPEN |
+| C-013 | Decide: grant the ₹499 credit on *activate-now* (current) or only on payment | OPEN |
+| C-014 | Persistent volume for public `/uploads` (pre-existing hazard; only `private-uploads` fixed) | OPEN (= T-012) |
+| C-015 | Browser E2E for the pay page + a Postgres-backed integration run of the migration SQL | OPEN |

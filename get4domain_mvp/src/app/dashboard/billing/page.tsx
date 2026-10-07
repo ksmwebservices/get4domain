@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Shield, CheckCircle2, Clock, ArrowRight,
@@ -9,7 +9,9 @@ import {
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { billingApi, type VendorBilling } from '@/lib/commerce';
 import PlanOverview, { type PlanTier } from './PlanOverview';
+import CommercialBilling from './CommercialBilling';
 
 interface Invoice {
   id: string;
@@ -95,24 +97,32 @@ export default function BillingPage() {
   const [paid, setPaid] = useState(false);
   const [paidInvoice, setPaidInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState('');
+  // Commercial Engine v1: present when the vendor has a billing term (admin deal, activation, renewal…).
+  const [commercial, setCommercial] = useState<VendorBilling | null>(null);
 
-  useEffect(() => {
+  const loadAll = useCallback(() => {
     if (!user) return;
     Promise.all([
       api.getVendorInvoices(user.id).then((res) => setInvoices(res.data ?? [])),
       api.getMySubscription(user.id).then((res) => setSubscription(res.data ?? null)).catch(() => setSubscription(null)),
+      billingApi.me().then((res) => setCommercial(res.data ?? null)).catch(() => setCommercial(null)),
     ])
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load invoices'))
       .finally(() => setLoading(false));
   }, [user]);
 
+  useEffect(() => { loadAll(); }, [loadAll]);
+
   const pendingInvoice = invoices.find((i) => i.status === 'PENDING') ?? null;
   const activeInvoice = invoices.find((i) => i.status === 'PAID') ?? null;
   // Which feature set to show: the paid tier from the subscription amount, else the plan on the session.
+  const term = commercial?.term ?? null;
   const tierFromAmount = subscription ? TIER_LABEL(subscription.amount) : null;
-  const planTier: PlanTier | null = tierFromAmount === 'BOS' || tierFromAmount === 'Workspace'
-    ? tierFromAmount
-    : activeInvoice ? (/bos/i.test(user?.plan ?? '') ? 'BOS' : 'Workspace') : null;
+  const planTier: PlanTier | null = term
+    ? (term.planKey === 'BOS' ? 'BOS' : 'Workspace') // a billing term is authoritative; never infer the plan from the price paid
+    : tierFromAmount === 'BOS' || tierFromAmount === 'Workspace'
+      ? tierFromAmount
+      : activeInvoice ? (/bos/i.test(user?.plan ?? '') ? 'BOS' : 'Workspace') : null;
 
   async function handlePay() {
     if (!pendingInvoice || !user) return;
@@ -209,7 +219,9 @@ export default function BillingPage() {
         <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>
       )}
 
-      {activeInvoice && (
+      {term && commercial && <CommercialBilling data={commercial} onChanged={loadAll} />}
+
+      {!term && activeInvoice && (
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
           <h3 className="text-base font-bold text-slate-900 mb-4">Active Subscription</h3>
           <div className="flex items-center justify-between rounded-xl bg-success-50 border border-success-100 p-4">
@@ -224,7 +236,7 @@ export default function BillingPage() {
             <span className="text-xs text-success-700 font-semibold">Paid ✓</span>
           </div>
 
-          {subscription && subscription.themeChangesLimit != null && (
+          {subscription && subscription.themeChangesLimit != null && !term && (
             <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2.5">
                 <Palette className="h-4 w-4 text-primary-600" />
@@ -241,9 +253,22 @@ export default function BillingPage() {
         </div>
       )}
 
-      {planTier && <PlanOverview tier={planTier} />}
+      {term && subscription && subscription.themeChangesLimit != null && (
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex items-center gap-2.5">
+            <Palette className="h-4 w-4 text-primary-600" />
+            <div>
+              <div className="text-sm font-semibold text-slate-900">Theme changes</div>
+              <div className="text-xs text-slate-500">Resets {formatDate(subscription.themeChangesResetAt)}</div>
+            </div>
+          </div>
+          <span className="text-sm font-bold text-slate-900">{Math.max(0, subscription.themeChangesLimit - subscription.themeChangesUsed)} / {subscription.themeChangesLimit} left</span>
+        </div>
+      )}
 
-      {pendingInvoice ? (
+      {planTier && <PlanOverview tier={planTier} adminDeal={Boolean(term?.adminDeal)} />}
+
+      {term ? null : pendingInvoice ? (
         <div className="rounded-2xl border-2 border-warning-300 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-5">
             <Clock className="h-5 w-5 text-warning-600" />
