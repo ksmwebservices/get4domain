@@ -707,6 +707,120 @@ const rows = (w, name) => w.t[name] ?? [];
     }
   }
 
+  section('RAW SQL: void-returning functions (live incident 2026-10-07: "Failed to deserialize column of type \'void\'")');
+  {
+    const RAWF = require('./raw-fake');
+    const { advisoryXactLock } = dist('common/db-lock');
+    const { lockPayment } = dist('payments/payment-verification');
+    const noVoid = async (label, fn) => {
+      try { await fn(); ok(label, true); } catch (e) { ok(label, false, String(e.message).includes("'void'") ? 'THREW the Prisma void-deserialisation error' : e.message); }
+    };
+
+    // 1. The fake now behaves like real Prisma (this is what was missing).
+    const probe = createMemPrisma({});
+    await rejects('FAKE: $queryRawUnsafe(SELECT pg_advisory_xact_lock(...)) throws the real Prisma void error', probe.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', 'k'), { includes: "Failed to deserialize column of type 'void'" });
+    await rejects('FAKE: $queryRaw`SELECT pg_advisory_lock(..)` throws too', probe.$queryRaw`SELECT pg_advisory_lock(${1})`, { includes: "'void'" });
+    await rejects('FAKE: pg_notify and pg_sleep throw too', Promise.all([probe.$queryRawUnsafe(`SELECT pg_notify('c','x')`)]).then(() => probe.$queryRawUnsafe('SELECT pg_sleep(0)')), { includes: "'void'" });
+    ok('FAKE: pg_try_advisory_xact_lock (boolean) is still allowed through $queryRawUnsafe', (await probe.$queryRawUnsafe('SELECT pg_try_advisory_xact_lock(hashtext($1)) AS ok', 'k'))[0].ok === true);
+    ok('FAKE: the helper path ($executeRaw) is accepted', (await probe.$transaction(async (tx) => { await advisoryXactLock(tx, 'k2'); return true; })) === true);
+    ok('the detector regex does not confuse try_ variants or ordinary SQL', !RAWF.VOID_FN.test('SELECT pg_try_advisory_xact_lock(1)') && !RAWF.VOID_FN.test('SELECT count(*) FROM "Invoice"') && RAWF.VOID_FN.test('select PG_ADVISORY_XACT_LOCK (1)'));
+
+    // 2. The helper really serialises: a second transaction on the same key waits for the first to finish.
+    {
+      const p = createMemPrisma({});
+      const order = [];
+      let releaseA;
+      const aHolds = new Promise((r) => { releaseA = r; });
+      let aHasLock;
+      const aLocked = new Promise((r) => { aHasLock = r; });
+      const A = p.$transaction(async (tx) => { await advisoryXactLock(tx, 'same'); order.push('A got lock'); aHasLock(); await aHolds; order.push('A done'); });
+      await aLocked;
+      const B = p.$transaction(async (tx) => { await advisoryXactLock(tx, 'same'); order.push('B got lock'); });
+      const C = p.$transaction(async (tx) => { await advisoryXactLock(tx, 'different'); order.push('C got lock (other key)'); });
+      await C; await new Promise((r) => setTimeout(r, 25));
+      ok('different keys do not block each other; same key waits while A holds it', order.join('|') === 'A got lock|C got lock (other key)', order.join('|'));
+      releaseA(); await Promise.all([A, B]);
+      ok('after A commits, B proceeds (transaction-scoped release)', order.join('|') === 'A got lock|C got lock (other key)|A done|B got lock', order.join('|'));
+    }
+
+    // 3. Every code path that takes a lock now runs under the strict fake (each THROWS on the pre-fix code).
+    const w = world();
+    let created;
+    await noVoid('DEAL-CREATE: createInvoice + activate-now (the exact Deal-builder click that failed live)', async () => { created = await w.deals.createInvoice(stepSpec(), ADMIN, { activateNow: true }); });
+    ok('DEAL-CREATE: left a deal, one ACTIVATION invoice and an ACTIVE_PAYMENT_DUE term', rows(w, 'billingDeal').length === 1 && rows(w, 'invoice').length === 1 && rows(w, 'billingTerm')[0]?.status === 'ACTIVE_PAYMENT_DUE');
+    await noVoid('DEAL-CREATE again for the same invoice is idempotent (second activate-now takes the lock and returns the same term)', async () => { const t2 = await w.deals.activateNow(created.invoice.id, 7, 7, ADMIN); ok('same term id', t2.termId === rows(w, 'billingTerm')[0].id); });
+    {
+      const w2 = world();
+      const made = await Promise.all([1, 2, 3].map(() => w2.deals.createInvoice(stepSpec(), ADMIN, {})));
+      const nums = made.map((m) => m.invoice.invoiceNumber);
+      ok('INVOICE-NUMBER: three concurrent deal creations get three distinct sequential numbers', new Set(nums).size === 3 && nums.every((n) => /^INV-\d{4}-\d{4}$/.test(n)), nums.join());
+    }
+    const inv = rows(w, 'invoice')[0];
+    const tokenFor = async () => tokenOf((await w.invAdmin.reissueLink(inv.id, ADMIN, { expiryDays: 30 })).payLink);
+    await noVoid('PAY: UPI proof submission + admin confirmation (settlement lock, effects lock)', async () => {
+      const view = await w.pay.loadByToken(await tokenFor());
+      await w.pay.submitProof(view, { utr: '412345678901', claimedAmountRupees: inv.totalAmount / 100, paidAt: new Date().toISOString(), ip: '9.9.9.9' });
+      await w.manual.confirm(rows(w, 'manualPaymentSubmission')[0].id, inv.totalAmount, ADMIN);
+    });
+    ok('PAY: the invoice settled to PAID through the lock-taking path', rows(w, 'invoice')[0].status === 'PAID' && rows(w, 'invoice')[0].paidPaise === inv.totalAmount);
+    await noVoid('SETTLEMENT: applyPayment on a fresh invoice (invoice lock → effects lock → AI-credit lock)', async () => {
+      const w3 = world();
+      await w3.deals.createInvoice(stepSpec({ billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE' }), ADMIN, {});
+      const i3 = rows(w3, 'invoice')[0];
+      await w3.settlement.applyPayment(i3.id, { amountPaise: i3.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-01-01T00:00:00Z') });
+      await w3.settlement.settleFree(i3.id, ADMIN).catch(() => undefined); // already paid → no-op or 400, never a void error
+      ok('SETTLEMENT: PAID with an active term and the one-time credit', rows(w3, 'invoice')[0].status === 'PAID' && rows(w3, 'billingTerm').some((t) => t.isCurrent) && rows(w3, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1);
+      await noVoid('TERMS: admin override takes the per-vendor term lock', () => w3.terms.override('v_step', { reason: 'test', graceDays: 10 }, ADMIN));
+      await noVoid('RENEWAL: the daily job (boolean try-lock stays a typed query) + the T-15 invoice', () => w3.renewal.runOnce(d('2026-12-17T00:00:00Z')));
+      ok('RENEWAL: the T-15 invoice was created', rows(w3, 'invoice').some((x) => x.kind === 'RENEWAL'));
+      const req = await w3.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'NOW' });
+      await noVoid('PLAN CHANGE (now): approval issues the invoice under the same locks', () => w3.planChanges.approve(req.id, { effective: 'NOW' }, ADMIN, d('2026-04-01T00:00:00Z')));
+    });
+    await noVoid('WALLET / PUBLIC CHECKOUT: lockPayment(tx, paymentId) (pre-existing live payment paths)', () => probe.$transaction(async (tx) => { await lockPayment(tx, 'pay_123'); }));
+  }
+
+  section('STEPNROCK LEFTOVER: a half-finished deal (invoice, no term) is resumed — never double-billed');
+  {
+    const { decideStepnrock } = require('../activate-stepnrock-lib');
+    const inv = (o = {}) => ({ status: 'SENT', totalAmount: 599400, planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', paidPaise: 0, ...o });
+    const act = (s) => decideStepnrock(s).action;
+    ok('no invoice and no term → CREATE', act({ currentTerm: null, invoice: null, submissionCount: 0 }) === 'CREATE');
+    ok('unpaid matching invoice, no term (the 2026-10-07 leftover) → RESUME, not CREATE', act({ currentTerm: null, invoice: inv(), submissionCount: 0 }) === 'RESUME');
+    ok('a PARTIALLY_PAID / PAYMENT_SUBMITTED matching invoice → RESUME as well (never a second invoice)', act({ currentTerm: null, invoice: inv({ status: 'PARTIALLY_PAID', paidPaise: 100000 }), submissionCount: 1 }) === 'RESUME' && act({ currentTerm: null, invoice: inv({ status: 'PAYMENT_SUBMITTED' }), submissionCount: 1 }) === 'RESUME');
+    ok('a term already exists → REFUSE', act({ currentTerm: { status: 'ACTIVE_PAYMENT_DUE' }, invoice: inv(), submissionCount: 0 }) === 'REFUSE_HAS_TERM');
+    ok('a PAID/VOID last invoice and no term → CREATE', act({ currentTerm: null, invoice: inv({ status: 'VOID' }), submissionCount: 0 }) === 'CREATE' && act({ currentTerm: { status: 'CANCELLED' }, invoice: inv({ status: 'PAID' }), submissionCount: 0 }) === 'CREATE');
+    ok('unpaid invoice with the WRONG amount / plan / cycle / GST, no payments → VOID_AND_REPLACE', ['totalAmount', 'planKey', 'billingCycle', 'gstMode'].every((k) => act({ currentTerm: null, invoice: inv({ [k]: k === 'totalAmount' ? 707292 : k === 'planKey' ? 'BOS' : k === 'billingCycle' ? 'ANNUAL' : 'EXCLUSIVE' }), submissionCount: 0 }) === 'VOID_AND_REPLACE'));
+    ok('a mismatching invoice that already has money or proofs → REFUSE (never void evidence)', act({ currentTerm: null, invoice: inv({ totalAmount: 1, paidPaise: 1 }), submissionCount: 0 }) === 'REFUSE_HAS_PAYMENTS' && act({ currentTerm: null, invoice: inv({ totalAmount: 1 }), submissionCount: 2 }) === 'REFUSE_HAS_PAYMENTS');
+
+    // The real services on the exact leftover shape: deal + SENT activation invoice, NO term (created with activateNow = false).
+    const w = world();
+    await w.deals.createInvoice(stepSpec(), ADMIN, {});
+    const leftover = rows(w, 'invoice')[0];
+    ok('leftover shape: one deal, one unpaid ACTIVATION invoice, no term, no wallet credit', rows(w, 'billingDeal').length === 1 && leftover.status === 'SENT' && leftover.kind === 'ACTIVATION' && rows(w, 'billingTerm').length === 0 && rows(w, 'walletTransaction').length === 0);
+    const oldToken = leftover.payTokenHash;
+    const decision = decideStepnrock({ currentTerm: null, invoice: { ...leftover }, submissionCount: 0 });
+    ok('the script would RESUME on it', decision.action === 'RESUME');
+    // What the script does on RESUME: activateNow on the existing invoice + a fresh link.
+    await w.deals.activateNow(leftover.id, 7, 7, ADMIN);
+    const fresh = await w.invAdmin.reissueLink(leftover.id, ADMIN, { expiryDays: 30 });
+    ok('RESUME: still exactly ONE invoice and ONE deal (no double-billing), now with an ACTIVE_PAYMENT_DUE term attached', rows(w, 'invoice').length === 1 && rows(w, 'billingDeal').length === 1 && rows(w, 'billingTerm').length === 1 && rows(w, 'billingTerm')[0].status === 'ACTIVE_PAYMENT_DUE' && rows(w, 'invoice')[0].termId === rows(w, 'billingTerm')[0].id);
+    ok('RESUME: the one-time ₹499 AI credit was granted exactly once and the theme allowance is 2', rows(w, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1 && rows(w, 'subscription')[0].themeChangesLimit === 2);
+    ok('RESUME: the invoice amount is untouched (₹5,994, GST none) and the old link is dead, the new one resolves', rows(w, 'invoice')[0].totalAmount === 599400 && rows(w, 'invoice')[0].payTokenHash !== oldToken && Boolean(await w.pay.loadByToken(tokenOf(fresh.payLink))));
+    await w.deals.activateNow(leftover.id, 7, 7, ADMIN);
+    ok('running activation a SECOND time is a no-op (same term, one credit)', rows(w, 'billingTerm').length === 1 && rows(w, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1);
+    ok('after activation the script REFUSES to run again', decideStepnrock({ currentTerm: rows(w, 'billingTerm')[0], invoice: { ...rows(w, 'invoice')[0] }, submissionCount: 0 }).action === 'REFUSE_HAS_TERM');
+
+    // VOID_AND_REPLACE on a wrong leftover with no payments: exactly one live invoice remains, at the agreed amount.
+    const w2 = world();
+    await w2.deals.createInvoice(stepSpec({ billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE' }), ADMIN, {});
+    const wrong = rows(w2, 'invoice')[0];
+    ok('wrong leftover (₹14,146.84 annual + GST) → VOID_AND_REPLACE', decideStepnrock({ currentTerm: null, invoice: { ...wrong }, submissionCount: 0 }).action === 'VOID_AND_REPLACE', String(wrong.totalAmount));
+    await w2.invAdmin.void(wrong.id, 'Replaced by scripts/activate-stepnrock.js', ADMIN);
+    await w2.deals.createInvoice(stepSpec(), ADMIN, { activateNow: true });
+    const live = rows(w2, 'invoice').filter((i) => i.status !== 'VOID');
+    ok('after void-and-replace: exactly ONE non-void invoice, ₹5,994, with the term attached', live.length === 1 && live[0].totalAmount === 599400 && rows(w2, 'billingTerm').length === 1 && rows(w2, 'invoice').some((i) => i.id === wrong.id && i.status === 'VOID'));
+  }
+
   section('LEGACY paths cannot bypass the commercial engine');
   {
     const w = world();

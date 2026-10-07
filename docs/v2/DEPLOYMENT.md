@@ -153,7 +153,8 @@ node scripts/activate-stepnrock.js
 #    grants the one-time ₹499 AI Studio credit and the 2-theme-change allowance, prints the pay link ONCE.
 STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION node scripts/activate-stepnrock.js --apply
 #    different payment window:    ... --apply --due-days=14
-#    lost the link?               ... --apply --reissue-link     (the old link stops working)
+#    lost the link later?         Admin → Commerce → Invoices → Copy link   (the old link stops working)
+#    a leftover unpaid invoice with no term (failed click) is RESUMED automatically — see §3b.7
 ```
 The script refuses to run twice (it will not create a second activation invoice or term) and sends **no** messages — you share the printed link yourself.
 
@@ -165,7 +166,38 @@ The script refuses to run twice (it will not create a second activation invoice 
 5. **Public pay link** — open stepnrock's pay link on a phone: amount ₹5,994, UPI QR visible, "I have paid" form works; `https://get4domain.com/pay/not-a-real-token` → "This payment link is not valid".
 6. Submit a test UTR → it appears under **Payments to confirm** with a badge.
 7. A MARKETING staff login shows **no Commerce** in the menu, and `/admin/commerce` shows "Your staff role does not include billing and payments".
-8. `cd backend-api && npm run verify:commercial` (needs `npx nest build`) — expect 116 + 221 + 14 passed.
+8. `cd backend-api && npm run verify:commercial` (needs `npx nest build`) — expect: raw-SQL guard, migration hygiene, 116 pure + 259 flows + 14 admin-nav passed.
+9. `node scripts/verify-db-lock.js` — expect ALL OK (§3b.7). Click through Deal builder → Create invoice + link → Activate now with a throw-away prospect to confirm no 'void' error.
+
+### 3b.7 Hotfix 2026-10-08 — Prisma "Failed to deserialize column of type 'void'" (advisory locks)
+
+**What broke.** Admin → Commerce → Deal builder failed with `Invalid prisma.$queryRawUnsafe() invocation: Raw query failed … Failed to deserialize column of type 'void'`. Cause: `SELECT pg_advisory_xact_lock(…)` through `$queryRaw*` — the function returns `void`, which Prisma cannot read. The same call also sat in the **live wallet top-up / go-live / theme-unlock verification and the public checkout** (`lockPayment`, since the 2026-10-02 security patch), so those paths would have failed the same way once a customer paid. **Fixed:** every lock now goes through `advisoryXactLock()` (`src/common/db-lock.ts`, `$executeRaw`, bound parameter, same transaction-level semantics). The renewal job's `pg_try_advisory_xact_lock` returns a boolean and stays a typed query. `npm run verify:raw-sql` fails the build if a `$queryRaw*` call selects `pg_advisory_lock`, `pg_advisory_xact_lock`, `pg_advisory_unlock_all`, `pg_notify` or `pg_sleep`.
+
+**Leftover from the failed click (read-only check, 2026-10-07 19:15 UTC):** stepnrock has one billing deal (SENT) and one unpaid ACTIVATION invoice `INV-2026-0005` (₹5,994, GST none, no payments, no proofs), **no billing term**, no wallet/AI credit, no subscription. Nothing was voided or deleted. `scripts/activate-stepnrock.js` now **resumes** on that invoice (activates it, grants the one-time credit and theme allowance, prints a fresh link) instead of creating a second invoice; a leftover that does not match the agreed deal and has no payments is voided and replaced; one with payments is refused. The dry run reports its decision.
+
+**VM sequence for this hotfix (in this order):**
+```bash
+# 1. Code
+cd /srv/get4domain-site && git pull origin get4domain-site
+
+# 2. Rebuild + restart the API container only (no migration in this hotfix)
+cd backend-api
+docker compose build --no-cache && docker compose up -d --force-recreate
+
+# 3. On the HOST (the scripts below run outside the container, against dist/)
+npm ci
+npx prisma generate
+npx nest build
+
+# 4. Real-database check of the lock helper (touches no table; takes only transaction-level locks)
+node scripts/verify-db-lock.js            # expect: ALL OK — advisory locks work against this database.
+
+# 5. Stepnrock: dry run first (read-only) — expect "decision: RESUME" for INV-2026-0005
+node scripts/activate-stepnrock.js
+# then, only if the dry run says RESUME (or CREATE) and shows ₹5,994.00:
+STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION node scripts/activate-stepnrock.js --apply
+```
+`verify-db-lock.js` expectations: a note that the OLD form fails with the `'void'` error; `OK` for the helper; the second transaction on the same key waits for the first to commit; a different key does not wait; the lock is free again after commit. Re-run it any time after a Prisma or Postgres/pooler change (it works through the Supabase pooler in transaction mode — verified against the live pooler on 2026-10-08).
 
 ### Rollback
 Code: redeploy the previous image. Database: both migrations are additive; the new tables/columns can stay unused. Do **not** delete `get4domain_private_uploads` (payment evidence) or `get4domain_public_uploads` (vendor images).

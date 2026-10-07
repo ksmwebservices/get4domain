@@ -78,3 +78,5 @@ Design, flows and policies: [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md). Staff 
 | C-016 | MARKETING staff: no commerce UI, 403 on every commerce endpoint; nav as testable data | **COMPLETE** (follow-up A; test enumerates all routes + nav leak scan) |
 | C-017 | Plan-change approval: editable net price (default list, reason, >20% CONFIRM, range check, audit log); renewal bills it; credit-leak fix | **COMPLETE** (follow-up A; migration `20261007130000_plan_change_price` **KSM: apply**) |
 | C-018 | Reel rendering in the container: runner image does not copy `remotion/` (found while auditing uploads; not changed) | OPEN — check on the VM whether reels work |
+| C-019 | Hotfix: void-returning advisory locks via `$queryRaw*` (Deal builder + live wallet/checkout locks) → `advisoryXactLock()`; raw-SQL guard; strict Prisma fake; `verify-db-lock.js` | **COMPLETE in code**; **KSM: deploy + run `verify-db-lock.js` (DEPLOYMENT.md §3b.7)** |
+| C-020 | Stepnrock: resume the leftover unpaid invoice `INV-2026-0005` (no second invoice) | **KSM: dry run → `--apply`** |

@@ -14,6 +14,7 @@ import { evaluatePromo, normalizePromoCode } from './promo-rules';
 import { BillingCycle, GstMode, addMonths, cycleMonths, rupees } from './pricing-math';
 import { PlanKey } from './entitlements';
 import { payUrl } from './pay-token';
+import { advisoryXactLock } from '../common/db-lock';
 
 export interface ProspectInput { name?: string; phone?: string; email?: string; business?: string; demoSubdomain?: string }
 
@@ -205,7 +206,7 @@ export class DealsService {
    */
   async activateNow(invoiceId: string, dueDays: number, graceDays: number, actor: Actor, now = new Date()): Promise<{ termId: string; credentials?: { email: string; password: string } }> {
     const out = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `activate:${invoiceId}`);
+      await advisoryXactLock(tx, `activate:${invoiceId}`);
       const inv = await tx.invoice.findUnique({ where: { id: invoiceId } });
       if (!inv) throw new NotFoundException('Invoice not found');
       if (!inv.planKey || !inv.billingCycle) throw new BadRequestException('This invoice has no plan to activate');

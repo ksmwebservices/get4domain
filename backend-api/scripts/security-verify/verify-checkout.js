@@ -1,5 +1,6 @@
 // FIX 3: public checkout — server-side pricing, cart-bound orders, replay protection.
 const { dist, ok, rejects, section, finish, hmac, makeRazorpay, recorder } = require('./harness');
+const RAW = require('../commercial-verify/raw-fake');
 const { PublicCheckoutService } = dist('engine/public-checkout.service');
 const { parseListedPrice, baseProductName } = dist('engine/checkout-pricing');
 
@@ -25,7 +26,9 @@ function build() {
         findMany: async () => sales,
       };
       if (prop === '$transaction') return async (fn) => fn(prisma);
-      if (prop === '$queryRawUnsafe') return async () => [];
+      // Like real Prisma: a void SELECT (pg_advisory_xact_lock) through $queryRaw* throws; locks go through $executeRaw.
+      if (prop === '$queryRawUnsafe') return async (sql) => { RAW.assertQueryRawOk('$queryRawUnsafe', sql); return []; };
+      if (prop === '$executeRaw') return async () => 1;
       if (prop === 'then') return undefined;
       return recorder(String(prop));
     },

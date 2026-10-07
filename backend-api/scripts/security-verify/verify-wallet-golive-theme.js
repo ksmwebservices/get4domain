@@ -1,5 +1,6 @@
 // FIX 1 (same root cause): wallet top-up, go-live conversion and theme unlock must confirm payments with Razorpay.
 const { dist, ok, rejects, section, finish, hmac, makeRazorpay, recorder } = require('./harness');
+const RAW = require('../commercial-verify/raw-fake');
 const { PaymentsService } = dist('payments/payments.service');
 const { WalletService } = dist('wallet/wallet.service');
 const { DemoService } = dist('demo/demo.service');
@@ -28,7 +29,9 @@ const payments = (rz) => { const p = new PaymentsService(recorder('prisma'), rec
           create: async ({ data }) => { txns.push(data); return data; },
         };
         if (prop === '$transaction') return async (fn) => fn(tx);
-        if (prop === '$queryRawUnsafe') return async () => [];
+        // Like real Prisma: a void SELECT (pg_advisory_xact_lock) through $queryRaw* throws; locks go through $executeRaw.
+        if (prop === '$queryRawUnsafe') return async (sql) => { RAW.assertQueryRawOk('$queryRawUnsafe', sql); return []; };
+        if (prop === '$executeRaw') return async () => 1;
         if (prop === 'then') return undefined;
         return recorder(String(prop));
       },

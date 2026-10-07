@@ -10,6 +10,7 @@ import { PlanKey, entitlementsFor } from './entitlements';
 import { isDowngrade } from './term-rules';
 import { planLabel } from './quote-builder';
 import { payUrl } from './pay-token';
+import { advisoryXactLock } from '../common/db-lock';
 
 /** Fields of a term that are safe to show to the vendor. */
 export function vendorTermView(t: BillingTerm | null) {
@@ -75,7 +76,7 @@ export class TermsService {
 
     const net = o.netAmountPaise ?? cur.netAmountPaise;
     const next = await this.prisma.$transaction(async (tx) => {
-      await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `term:${vendorId}`);
+      await advisoryXactLock(tx, `term:${vendorId}`);
       await tx.billingTerm.update({ where: { id: cur.id }, data: { isCurrent: false } });
       const created = await tx.billingTerm.create({
         data: {

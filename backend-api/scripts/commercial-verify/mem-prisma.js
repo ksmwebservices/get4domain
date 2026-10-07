@@ -3,6 +3,7 @@
 // increment/decrement, interactive transactions, and per-key advisory locks that really serialise callers.
 const path = require('path');
 const crypto = require('crypto');
+const RAW = require('./raw-fake');
 const { Prisma } = require(path.join(__dirname, '..', '..', 'node_modules', '@prisma', 'client'));
 
 const UNIQUE = {
@@ -193,11 +194,34 @@ function createMemPrisma(seed = {}) {
             finally { for (const r of txCtx.release.reverse()) r(); }
           };
         }
+        // Raw SQL behaves like real Prisma: a SELECT of a void function (pg_advisory_xact_lock …) THROWS through $queryRaw*;
+        // locks must be taken with $executeRaw (no result set). pg_try_advisory_xact_lock returns a boolean and is fine.
         if (prop === '$queryRawUnsafe') {
           return async (sql, key) => {
-            if (/pg_advisory_xact_lock/.test(sql) && !/try/.test(sql)) { await acquire(ctx, String(key), false); return [{}]; }
-            if (/pg_try_advisory_xact_lock/.test(sql)) return [{ ok: await acquire(ctx, String(key), true) }];
+            RAW.assertQueryRawOk('$queryRawUnsafe', sql);
+            if (RAW.TRY_LOCK_FN.test(sql)) return [{ ok: await acquire(ctx, String(key), true) }];
             return [];
+          };
+        }
+        if (prop === '$queryRaw') {
+          return async (strings, ...values) => {
+            const sql = RAW.templateSql(strings);
+            RAW.assertQueryRawOk('$queryRaw', sql);
+            if (RAW.TRY_LOCK_FN.test(sql)) return [{ ok: await acquire(ctx, String(values[0]), true) }];
+            return [];
+          };
+        }
+        if (prop === '$executeRaw') {
+          return async (strings, ...values) => {
+            const sql = RAW.templateSql(strings);
+            if (RAW.LOCK_FN.test(sql)) { await acquire(ctx, String(values[0]), false); return 1; }
+            return 0;
+          };
+        }
+        if (prop === '$executeRawUnsafe') {
+          return async (sql, key) => {
+            if (RAW.LOCK_FN.test(sql)) { await acquire(ctx, String(key), false); return 1; }
+            return 0;
           };
         }
         if (prop === '$tables') return tables;

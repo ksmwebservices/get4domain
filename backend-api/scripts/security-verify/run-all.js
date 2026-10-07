@@ -45,6 +45,7 @@ async function runLive(mode, extra) {
 }
 
 (async () => {
+  run('GUARD — no void-returning SQL function selected through $queryRaw*', '../verify-raw-sql.js');
   run('FIX 1/2 — payments: forged/mismatched/replayed verification, server-side amounts', 'verify-payments.js');
   run(`FIX 1 — BEFORE patch (${BASELINE}): the exploit works`, 'verify-baseline-exploit.js', { BASELINE_REV: BASELINE });
   run('FIX 1 — wallet top-up, go-live, theme unlock', 'verify-wallet-golive-theme.js');

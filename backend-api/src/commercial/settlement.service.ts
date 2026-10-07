@@ -11,6 +11,7 @@ import { BillingCycle, addMonths, cycleMonths, rupees, renewalPeriod } from './p
 import { PlanKey, entitlementsFor } from './entitlements';
 import { activationPeriod } from './term-rules';
 import * as crypto from 'crypto';
+import { advisoryXactLock } from '../common/db-lock';
 
 type Db = Prisma.TransactionClient | PrismaService;
 
@@ -53,7 +54,7 @@ export class SettlementService {
   ) {}
 
   private async lock(tx: Db, key: string): Promise<void> {
-    await (tx as Prisma.TransactionClient).$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', key);
+    await advisoryXactLock(tx as Prisma.TransactionClient, key);
   }
 
   // ── Recording a payment ────────────────────────────────────────────────────────────────────────

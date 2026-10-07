@@ -6,21 +6,24 @@
  *   node scripts/activate-stepnrock.js                  # DRY RUN (default): read-only, writes NOTHING
  *   STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION \
  *     node scripts/activate-stepnrock.js --apply        # creates the deal, invoice, term; prints the pay link
- *   node scripts/activate-stepnrock.js --apply --reissue-link   # same + fresh link for an already-prepared invoice
+ *   (Lost the link after activation? Admin → Commerce → Invoices → Copy link. A leftover unpaid invoice with no term gets a fresh link automatically.)
  *
  * The deal (KSM's terms): WORKSPACE · HALF_YEARLY · net ₹5,994.00 (599400 paise) · GST mode NONE · grace 7 days
  * · source ADMIN_DEAL · channels RAZORPAY + UPI_QR · "activate now, payment due in N days" (default 7).
  *
  * Prerequisites: `npx nest build` (this script runs the compiled services) and migration
- * 20261007120000_commercial_engine applied. Safe to re-run: it never creates a second activation invoice.
+ * 20261007120000_commercial_engine applied. Safe to re-run: it never creates a second activation invoice. A leftover
+ * UNPAID activation invoice with no billing term (e.g. from a failed Deal-builder click) is RESUMED: no new invoice, the
+ * term/credit/theme allowance are created on it and a fresh link is printed. A leftover that does not match the agreed
+ * deal is voided and replaced (only if it has no payments); otherwise the script refuses.
  * Messages are NOT sent (stubs) — the pay link is printed for KSM to share.
  */
 const path = require('path');
 const dist = (p) => require(path.join(__dirname, '..', 'dist', 'src', p));
+const { decideStepnrock } = require('./activate-stepnrock-lib');
 
 const argv = process.argv.slice(2);
 const APPLY = argv.includes('--apply');
-const REISSUE = argv.includes('--reissue-link');
 const dueArg = argv.find((a) => a.startsWith('--due-days='));
 const DUE_DAYS = dueArg ? Number(dueArg.split('=')[1]) : 7;
 const CONFIRM = 'I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION';
@@ -63,16 +66,19 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
 
     // 2. Existing commercial state
     head('Current commercial state');
-    let existingInvoice = null; let currentTerm = null;
+    let existingInvoice = null; let currentTerm = null; let submissionCount = 0;
     if (schemaReady) {
       currentTerm = (await q(`SELECT id, status, "planKey", "billingCycle", "periodEnd", source FROM g4d_billing_terms WHERE "vendorId"='${vendor.id}' AND "isCurrent"=true`))[0] ?? null;
-      existingInvoice = (await q(`SELECT id, "invoiceNumber", status, "totalAmount" FROM "Invoice" WHERE "vendorId"='${vendor.id}' AND kind='ACTIVATION' ORDER BY "createdAt" DESC LIMIT 1`))[0] ?? null;
+      existingInvoice = (await q(`SELECT id, "invoiceNumber", status, "totalAmount", "planKey", "billingCycle", "gstMode", "paidPaise" FROM "Invoice" WHERE "vendorId"='${vendor.id}' AND kind='ACTIVATION' ORDER BY "createdAt" DESC LIMIT 1`))[0] ?? null;
+      if (existingInvoice) submissionCount = (await q(`SELECT count(*)::int n FROM g4d_manual_payment_submissions WHERE "invoiceId"='${existingInvoice.id}'`))[0].n;
     }
     const legacySubs = (await q(`SELECT count(*)::int n FROM "Subscription" WHERE "vendorId"='${vendor.id}'`))[0].n;
     const legacyInv = (await q(`SELECT count(*)::int n FROM "Invoice" WHERE "vendorId"='${vendor.id}'`))[0].n;
     line(`legacy subscriptions: ${legacySubs} · invoices (all kinds): ${legacyInv}`);
     line(currentTerm ? `billing term: ${currentTerm.status} ${currentTerm.planKey}/${currentTerm.billingCycle} ending ${currentTerm.periodEnd?.toISOString?.().slice(0, 10)}` : 'billing term: none');
-    line(existingInvoice ? `activation invoice: ${existingInvoice.invoiceNumber} ${existingInvoice.status} ${rupees(existingInvoice.totalAmount)}` : 'activation invoice: none');
+    line(existingInvoice ? `activation invoice: ${existingInvoice.invoiceNumber} ${existingInvoice.status} ${rupees(existingInvoice.totalAmount)} (${existingInvoice.planKey}/${existingInvoice.billingCycle}, GST ${existingInvoice.gstMode}, paid ${rupees(existingInvoice.paidPaise ?? 0)}, ${submissionCount} proof(s))` : 'activation invoice: none');
+    const decision = decideStepnrock({ currentTerm, invoice: existingInvoice, submissionCount });
+    line(`decision: ${decision.action} — ${decision.reason}`);
 
     // 3. Payee / gateway readiness (warnings only)
     head('Readiness');
@@ -99,9 +105,19 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
 
     // 5. What apply would do / refuse
     head('What --apply does');
-    if (currentTerm && currentTerm.status !== 'CANCELLED') line(`REFUSES: stepnrock already has a billing term (${currentTerm.status}). Use Admin → Vendor → Billing terms to change it.`);
-    else if (existingInvoice && !['PAID', 'VOID', 'CANCELLED', 'EXPIRED'].includes(existingInvoice.status)) line(`REUSES ${existingInvoice.invoiceNumber} (unpaid) — creates nothing new${REISSUE ? '; --reissue-link will print a fresh pay link (the old link stops working)' : '; add --reissue-link to print a fresh pay link'}.`);
-    else {
+    if (decision.action === 'REFUSE_HAS_TERM') line(`REFUSES: ${decision.reason}. Use Admin → Vendor → Billing terms to change it.`);
+    else if (decision.action === 'REFUSE_HAS_PAYMENTS') line(`REFUSES: ${decision.reason}.`);
+    else if (decision.action === 'RESUME') {
+      line(`RESUMES on ${existingInvoice.invoiceNumber} (unpaid, ${rupees(existingInvoice.totalAmount)}) — creates NO new invoice and NO new deal:`);
+      line('1. term → ACTIVE_PAYMENT_DUE (all Workspace features on immediately)');
+      line('2. legacy Subscription row with theme limit 2 and reset date +12 months');
+      line(`3. one-time ${rupees(49900)} AI Studio credit, exactly once (skipped if any 'ai_studio_bonus' already exists)`);
+      line('4. issues a FRESH pay link and prints it (the link from the interrupted attempt was never shown; the old one stops working)');
+    } else if (decision.action === 'VOID_AND_REPLACE') {
+      line(`VOIDS ${existingInvoice.invoiceNumber} (it does not match the agreed deal; no payments) and creates the correct invoice + activation:`);
+      line('1. void the old invoice with an audit reason, then create a BillingDeal (SENT) and a new ACTIVATION invoice + link');
+      line('2. term, theme allowance, one-time AI credit as in a normal run');
+    } else {
       line('1. creates a BillingDeal (SENT) and the ACTIVATION invoice with a 256-bit pay link (link printed ONCE, only its hash is stored)');
       line('2. term → ACTIVE_PAYMENT_DUE (all Workspace features on immediately)');
       line('3. legacy Subscription row with theme limit 2 and reset date +12 months');
@@ -114,7 +130,7 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     // ── APPLY ───────────────────────────────────────────────────────────────
     if (!schemaReady) { console.error('\nABORT: the commercial engine migration is not applied.'); process.exitCode = 2; return; }
     if (process.env.STEPNROCK_ACTIVATE_CONFIRM !== CONFIRM) { console.error(`\nABORT: set STEPNROCK_ACTIVATE_CONFIRM=${CONFIRM} to confirm.`); process.exitCode = 2; return; }
-    if (currentTerm && currentTerm.status !== 'CANCELLED') { console.error('\nABORT: stepnrock already has a billing term.'); process.exitCode = 1; return; }
+    if (decision.action === 'REFUSE_HAS_TERM' || decision.action === 'REFUSE_HAS_PAYMENTS') { console.error(`\nABORT: ${decision.reason}.`); process.exitCode = 1; return; }
 
     const F = dist('commercial/foundation.services');
     const { BillingGateService } = dist('commercial/billing-gate.service');
@@ -134,14 +150,22 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
 
     head('APPLY');
     let payLink = null; let invoiceId = null;
-    if (existingInvoice && !['PAID', 'VOID', 'CANCELLED', 'EXPIRED'].includes(existingInvoice.status)) {
-      invoiceId = existingInvoice.id;
-      line(`Reusing existing invoice ${existingInvoice.invoiceNumber}.`);
-      if (REISSUE) payLink = (await invAdmin.reissueLink(invoiceId, actor, { expiryDays: DEAL.linkExpiryDays })).payLink;
-    } else {
+    const create = async () => {
       const r = await deals.createInvoice({ ...DEAL, vendorId: vendor.id }, actor, { activateNow: true });
       invoiceId = r.invoice.id; payLink = r.payLink;
       line(`Created invoice ${r.invoice.invoiceNumber} for ${rupees(r.invoice.totalAmount)} (deal ${r.dealId}).`);
+    };
+    if (decision.action === 'RESUME') {
+      invoiceId = existingInvoice.id;
+      line(`Resuming on existing invoice ${existingInvoice.invoiceNumber} — no new invoice is created.`);
+      await deals.activateNow(invoiceId, DUE_DAYS, DEAL.graceDays, actor); // idempotent: reuses a term if one is already attached
+      payLink = (await invAdmin.reissueLink(invoiceId, actor, { expiryDays: DEAL.linkExpiryDays })).payLink;
+    } else if (decision.action === 'VOID_AND_REPLACE') {
+      line(`Voiding ${existingInvoice.invoiceNumber}: ${decision.reason}.`);
+      await invAdmin.void(existingInvoice.id, 'Replaced by scripts/activate-stepnrock.js: did not match the agreed 5,994 half-yearly Workspace deal', actor);
+      await create();
+    } else {
+      await create();
     }
 
     // Verification read-back
@@ -156,8 +180,8 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     if (credit.length !== 1) line('WARNING: expected exactly one ai_studio_bonus credit.');
 
     head('PAY LINK');
-    if (payLink) { line(payLink); line('(Shown once. Only its hash is stored. Lost it? re-run with --apply --reissue-link — the old link stops working.)'); }
-    else line('(No new link printed. Re-run with --apply --reissue-link, or use Admin → Commerce → Invoices → Copy link.)');
+    if (payLink) { line(payLink); line('(Shown once. Only its hash is stored. Lost it? Admin → Commerce → Invoices → Copy link — the old link stops working.)'); }
+    else line('(No new link printed. Use Admin → Commerce → Invoices → Copy link.)');
     line(`Invoice id: ${invoiceId}`);
   } finally {
     await prisma.$disconnect();

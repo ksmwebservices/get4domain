@@ -1,5 +1,6 @@
 import { BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { advisoryXactLock, LockDb } from '../common/db-lock';
 
 /**
  * Server-side payment confirmation (security patch 2026-10-02).
@@ -117,9 +118,6 @@ export async function assertCapturedPayment(client: RazorpayFetchClient, check: 
 }
 
 /** Serialise concurrent confirmations of the same payment (call inside a Prisma transaction). */
-export async function lockPayment(
-  tx: { $queryRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown> },
-  paymentId: string,
-): Promise<void> {
-  await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `payment:${paymentId}`);
+export async function lockPayment(tx: LockDb, paymentId: string): Promise<void> {
+  await advisoryXactLock(tx, `payment:${paymentId}`);
 }

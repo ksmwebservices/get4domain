@@ -4,6 +4,7 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 
 const suites = [
+  ['raw-SQL guard (no void-function SELECT through $queryRaw*)', '../verify-raw-sql.js'],
   ['migration SQL hygiene (no CLI banners or junk in migration.sql)', '../verify-migrations.js'],
   ['pure logic (money math, rules, tokens, UPI)', 'verify-pure.js'],
   ['end-to-end flows (deals, pay, confirm, promos, renewal, lapse, plan change, authz)', 'verify-flows.js'],
