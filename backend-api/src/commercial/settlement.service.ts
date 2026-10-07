@@ -186,15 +186,19 @@ export class SettlementService {
     const months = inv.cycleMonths ?? cur?.cycleMonths ?? cycleMonths(cycle);
     const { start, end } = fromNow ? activationPeriod(now, months) : renewalPeriod(cur?.periodEnd ?? null, now, months);
     if (cur) await tx.billingTerm.update({ where: { id: cur.id }, data: { isCurrent: false } });
-    const net = (inv.listAmountPaise ?? inv.totalAmount) - inv.discountPaise;
+    // The term's price is the PLAN price only. A one-time proration CREDIT line on a plan-change invoice must not leak
+    // into it, or every later renewal would be under-billed by that credit.
+    const lines = Array.isArray(inv.lineItems) ? (inv.lineItems as Array<{ kind?: string; amountPaise?: number; qty?: number }>) : [];
+    const planList = lines.length ? lines.filter((l) => l.kind !== 'CREDIT').reduce((a, l) => a + Math.round(l.amountPaise ?? 0) * (l.qty ?? 1), 0) : (inv.listAmountPaise ?? inv.totalAmount);
+    const net = planList - inv.discountPaise;
     const term = await tx.billingTerm.create({
       data: {
         vendorId: inv.vendorId, planKey, billingCycle: cycle, cycleMonths: months,
-        listAmountPaise: inv.listAmountPaise ?? inv.totalAmount, discountPaise: inv.discountPaise, netAmountPaise: net,
+        listAmountPaise: planList, discountPaise: inv.discountPaise, netAmountPaise: net,
         gstMode: inv.gstMode, periodStart: start, periodEnd: end, graceDays: cur?.graceDays ?? 7,
         status: 'ACTIVE', source: cur?.source ?? 'STANDARD', isCurrent: true, allowedChannels: cur?.allowedChannels?.length ? cur.allowedChannels : inv.allowedChannels,
         activationInvoiceId: cur?.activationInvoiceId ?? undefined, activatedAt: cur?.activatedAt ?? now,
-        scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null,
+        scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null, scheduledNextNetPaise: null, scheduledNextDiscountReason: null,
         subscriptionId: cur?.subscriptionId ?? undefined, createdBy: 'payment',
       },
     });

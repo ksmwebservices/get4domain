@@ -208,7 +208,7 @@ export const commerceApi = {
   clearScheduled: (vendorId: string) => apiCall(`/admin/commerce/vendors/${vendorId}/billing/schedule-next`, { method: 'DELETE' }),
 
   planChanges: (status?: string) => apiCall(`/admin/commerce/plan-changes${status ? `?status=${status}` : ''}`),
-  approvePlanChange: (id: string, b: { effective?: 'AT_RENEWAL' | 'NOW'; adminNote?: string }) => apiCall(`/admin/commerce/plan-changes/${id}/approve`, { method: 'POST', body: j(b) }),
+  approvePlanChange: (id: string, b: { effective?: 'AT_RENEWAL' | 'NOW'; adminNote?: string; netPaise?: number; discountReason?: string; confirm?: string }) => apiCall(`/admin/commerce/plan-changes/${id}/approve`, { method: 'POST', body: j(b) }),
   rejectPlanChange: (id: string, reason: string) => apiCall(`/admin/commerce/plan-changes/${id}/reject`, { method: 'POST', body: j({ reason }) }),
   runRenewal: () => apiCall('/admin/commerce/renewal/run', { method: 'POST', body: '{}' }),
 };

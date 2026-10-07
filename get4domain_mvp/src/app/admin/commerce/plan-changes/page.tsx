@@ -11,6 +11,8 @@ import { ErrorBox, Field, Pill, cardCls, inputCls, msg, selectCls } from '@/comp
 interface Req {
   id: string; vendorId: string; toPlanKey: PlanKey; toCycle: Cycle; toCycleMonths: number; effective: 'AT_RENEWAL' | 'NOW'; status: string;
   vendorNote: string | null; adminNote: string | null; requestedAt: string; prorationCreditPaise: number;
+  listPaise: number | null; approvedNetPaise: number | null; discountReason: string | null;
+  quote?: { listPaise: number; creditIfNowPaise: number };
   vendor: { id: string; businessName: string; name: string } | null;
   current: { planKey: PlanKey; billingCycle: Cycle; periodEnd: string | null; netAmountPaise: number; source: string } | null;
 }
@@ -23,6 +25,10 @@ export default function PlanChangesPage() {
   const [note, setNote] = useState('');
   const [approve, setApprove] = useState<Req | null>(null);
   const [effective, setEffective] = useState<'AT_RENEWAL' | 'NOW'>('AT_RENEWAL');
+  // Approved net price (rupees, as typed). Empty/equal to list = bill the list price.
+  const [price, setPrice] = useState('');
+  const [priceReason, setPriceReason] = useState('');
+  const [confirmText, setConfirmText] = useState('');
   const [reject, setReject] = useState<Req | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,13 +41,26 @@ export default function PlanChangesPage() {
 
   const isDowngrade = (r: Req) => r.current?.planKey === 'BOS' && r.toPlanKey === 'WORKSPACE';
 
+  // Price maths for the approve dialog. This is a PREVIEW only — the server recomputes and range-checks everything.
+  const listPaise = approve?.quote?.listPaise ?? 0;
+  const typedPaise = price.trim() === '' ? listPaise : Math.round(parseFloat(price) * 100);
+  const priceValid = Number.isFinite(typedPaise) && typedPaise >= 0 && typedPaise <= listPaise;
+  const discountPaise = priceValid ? listPaise - typedPaise : 0;
+  const overridden = priceValid && discountPaise > 0;
+  const bigDiscount = overridden && listPaise > 0 && discountPaise / listPaise > 0.2;
+  const creditPaise = effective === 'NOW' && priceValid ? Math.min(approve?.quote?.creditIfNowPaise ?? 0, typedPaise) : 0;
+  const priceBlocked = !priceValid || (overridden && priceReason.trim().length < 3) || (bigDiscount && confirmText !== 'CONFIRM');
+
   async function doApprove() {
     if (!approve) return;
     setBusy(true); setError('');
     try {
-      const r = await commerceApi.approvePlanChange(approve.id, { effective, adminNote: note.trim() || undefined });
+      const r = await commerceApi.approvePlanChange(approve.id, {
+        effective, adminNote: note.trim() || undefined,
+        ...(overridden ? { netPaise: typedPaise, discountReason: priceReason.trim(), ...(bigDiscount ? { confirm: confirmText } : {}) } : {}),
+      });
       const d = r.data as { note?: string; effective?: string };
-      setNote(''); setApprove(null); await load();
+      setNote(''); setPrice(''); setPriceReason(''); setConfirmText(''); setApprove(null); await load();
       if (d.note) alert(d.note);
     } catch (e) { setError(msg(e)); } finally { setBusy(false); }
   }
@@ -69,10 +88,11 @@ export default function PlanChangesPage() {
                 {r.vendorNote && <div className="mt-1 text-xs italic text-slate-400">“{r.vendorNote}”</div>}
                 {r.adminNote && <div className="mt-1 text-xs text-slate-400">Admin note: {r.adminNote}</div>}
                 {r.prorationCreditPaise > 0 && <div className="mt-1 text-xs text-success-400">Proration credit applied: {rupees(r.prorationCreditPaise)}</div>}
+                {r.approvedNetPaise != null && <div className="mt-1 text-xs text-slate-400">Approved price {rupees(r.approvedNetPaise)} (list {rupees(r.listPaise ?? 0)}){r.discountReason ? ` · ${r.discountReason}` : ''}</div>}
               </div>
               <div className="text-xs text-slate-500">{fmtDate(r.requestedAt)}</div>
             </div>
-            {r.status === 'REQUESTED' && <div className="mt-3 flex gap-2"><Button size="sm" onClick={() => { setApprove(r); setEffective(isDowngrade(r) ? 'AT_RENEWAL' : r.effective); setNote(''); }}>Approve…</Button><Button size="sm" variant="outline" onClick={() => { setReject(r); setReason(''); }}>Reject…</Button></div>}
+            {r.status === 'REQUESTED' && <div className="mt-3 flex gap-2"><Button size="sm" onClick={() => { setApprove(r); setEffective(isDowngrade(r) ? 'AT_RENEWAL' : r.effective); setNote(''); setPrice(''); setPriceReason(''); setConfirmText(''); }}>Approve…</Button><Button size="sm" variant="outline" onClick={() => { setReject(r); setReason(''); }}>Reject…</Button></div>}
           </div>))}</div>
       )}
 
@@ -81,13 +101,27 @@ export default function PlanChangesPage() {
           <div className="space-y-4">
             <Field label="When should it take effect?">
               <select className={selectCls} value={effective} onChange={(e) => setEffective(e.target.value as 'AT_RENEWAL' | 'NOW')}>
-                <option value="AT_RENEWAL">At renewal (scheduled; priced at list)</option>
+                <option value="AT_RENEWAL">At renewal (scheduled; the renewal bills the approved price)</option>
                 <option value="NOW" disabled={isDowngrade(approve)}>Now, with a proration credit{isDowngrade(approve) ? ' (not allowed for downgrades)' : ''}</option>
               </select>
             </Field>
-            <p className="rounded-xl bg-slate-800 px-3.5 py-2.5 text-xs text-slate-300">{effective === 'NOW' ? 'A PLAN_CHANGE invoice is created now: new plan at list price minus the credit for unused days of the current term. The pay link is sent to the vendor.' : 'Nothing is charged now. The next renewal invoice (created 15 days before the term ends) uses the new plan and cycle.'}</p>
+            <div className="space-y-3 rounded-xl border border-slate-700 p-3.5">
+              <Field label="Net price for this plan (₹, before GST)" hint={`List price: ${rupees(listPaise)}. Leave as-is to bill list; lower it to give a negotiated price. The renewal after this change bills the same price.`}>
+                <input className={inputCls} inputMode="decimal" value={price} placeholder={String(listPaise / 100)} onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} />
+              </Field>
+              {!priceValid && <p className="text-xs text-error-400">Enter an amount from ₹0 up to the list price {rupees(listPaise)}.</p>}
+              {overridden && (
+                <>
+                  <Field label="Reason for the price *"><input className={inputCls} value={priceReason} onChange={(e) => setPriceReason(e.target.value)} maxLength={300} placeholder="e.g. loyal customer, annual prepay" /></Field>
+                  {bigDiscount && <Field label="That is more than 20% off — type CONFIRM"><input className={inputCls} value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="CONFIRM" /></Field>}
+                  <p className="text-xs text-slate-400">Discount {rupees(discountPaise)} ({Math.round((discountPaise / Math.max(1, listPaise)) * 100)}% off list). This override is recorded in the audit log.</p>
+                </>
+              )}
+              {effective === 'NOW' && <p className="text-xs text-slate-300">Credit for unused days: {rupees(creditPaise)} → invoice before GST: <strong className="text-white">{rupees(Math.max(0, (priceValid ? typedPaise : listPaise) - creditPaise))}</strong></p>}
+            </div>
+            <p className="rounded-xl bg-slate-800 px-3.5 py-2.5 text-xs text-slate-300">{effective === 'NOW' ? 'A PLAN_CHANGE invoice is created now: the approved price minus the credit for unused days of the current term. The pay link is sent to the vendor.' : 'Nothing is charged now. The next renewal invoice (created 15 days before the term ends) uses the new plan and cycle.'}</p>
             <Field label="Note to the vendor (optional)"><input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} /></Field>
-            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setApprove(null)}>Cancel</Button><Button size="sm" loading={busy} onClick={doApprove}>Approve</Button></div>
+            <div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => setApprove(null)}>Cancel</Button><Button size="sm" loading={busy} disabled={priceBlocked} onClick={doApprove}>Approve</Button></div>
           </div>
         )}
       </Modal>

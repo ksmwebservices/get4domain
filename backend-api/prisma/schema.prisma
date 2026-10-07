@@ -2545,6 +2545,8 @@ model BillingTerm {
   scheduledNextPlan        BillingPlanKey?
   scheduledNextCycle       BillingCycle?
   scheduledNextCycleMonths Int?
+  scheduledNextNetPaise    Int? // price KSM approved for the scheduled change (null = list price); the renewal invoice bills exactly this
+  scheduledNextDiscountReason String? // why the approved price differs from list
   subscriptionId           String? // legacy Subscription row that carries the theme-change counter
   activationInvoiceId      String?
   renewalInvoiceId         String? // the renewal invoice created by the T-15 job (idempotency)
@@ -2673,6 +2675,9 @@ model PlanChangeRequest {
   effective            PlanChangeEffective @default(AT_RENEWAL)
   status               PlanChangeStatus    @default(REQUESTED)
   prorationCreditPaise Int                 @default(0)
+  listPaise            Int? // list price of the target plan/cycle at approval
+  approvedNetPaise     Int? // net price (before GST) the admin approved; equals listPaise unless overridden
+  discountReason       String? // mandatory when approvedNetPaise < listPaise
   vendorNote           String?
   adminNote            String?
   newInvoiceId         String?

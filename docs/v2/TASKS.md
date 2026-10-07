@@ -73,5 +73,8 @@ Design, flows and policies: [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md). Staff 
 | C-011 | **KSM:** set Payee & QR (UPI ID) before sharing any pay link | OPEN |
 | C-012 | Decide: platform widget vs scripted bot on stepnrock's site (website bot reply) | OPEN |
 | C-013 | Decide: grant the ₹499 credit on *activate-now* (current) or only on payment | OPEN |
-| C-014 | Persistent volume for public `/uploads` (pre-existing hazard; only `private-uploads` fixed) | OPEN (= T-012) |
+| C-014 | Persistent volume for public `/uploads` | **COMPLETE in code** (follow-up A: named volume + chown); **KSM: one-time backup/restore, DEPLOYMENT.md §3b.1/§3b.3**. Object storage/quotas/SVG rules stay under T-012 |
 | C-015 | Browser E2E for the pay page + a Postgres-backed integration run of the migration SQL | OPEN |
+| C-016 | MARKETING staff: no commerce UI, 403 on every commerce endpoint; nav as testable data | **COMPLETE** (follow-up A; test enumerates all routes + nav leak scan) |
+| C-017 | Plan-change approval: editable net price (default list, reason, >20% CONFIRM, range check, audit log); renewal bills it; credit-leak fix | **COMPLETE** (follow-up A; migration `20261007130000_plan_change_price` **KSM: apply**) |
+| C-018 | Reel rendering in the container: runner image does not copy `remotion/` (found while auditing uploads; not changed) | OPEN — check on the VM whether reels work |

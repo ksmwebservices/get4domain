@@ -76,6 +76,25 @@ export function isBigDiscount(subtotalPaise: number, discountPaise: number): boo
   return subtotalPaise > 0 && discountPaise / subtotalPaise > BIG_DISCOUNT_RATIO;
 }
 
+export interface ApprovedNet { listPaise: number; netPaise: number; discountPaise: number; overridden: boolean; needsConfirm: boolean }
+
+/**
+ * The net price (before GST) KSM approves for a plan change. Default = the list price of the target plan/cycle.
+ * An override must be a whole number of paise within [0, list] (this is a discount, never a mark-up), needs a reason,
+ * and a discount above 20% of list needs the admin to have typed CONFIRM. Pure — the caller audit-logs it.
+ */
+export function resolveApprovedNet(listPaise: number, requestedNetPaise: number | null | undefined, reason?: string | null, confirm?: string | null): ApprovedNet {
+  if (!Number.isInteger(listPaise) || listPaise < 0) throw new RangeError('List price must be a non-negative whole number of paise');
+  if (requestedNetPaise == null || requestedNetPaise === listPaise) return { listPaise, netPaise: listPaise, discountPaise: 0, overridden: false, needsConfirm: false };
+  if (!Number.isInteger(requestedNetPaise) || requestedNetPaise < 0) throw new RangeError('The approved price must be a whole number of paise, 0 or more');
+  if (requestedNetPaise > listPaise) throw new RangeError('The approved price cannot be higher than the list price for that plan');
+  if ((reason ?? '').trim().length < 3) throw new RangeError('A reason is required when the approved price differs from the list price');
+  const discountPaise = listPaise - requestedNetPaise;
+  const needsConfirm = isBigDiscount(listPaise, discountPaise);
+  if (needsConfirm && confirm !== 'CONFIRM') throw new RangeError('Discounts above 20% need you to type CONFIRM');
+  return { listPaise, netPaise: requestedNetPaise, discountPaise, overridden: true, needsConfirm };
+}
+
 export function cycleMonths(cycle: BillingCycle, customMonths?: number | null): number {
   switch (cycle) {
     case 'MONTHLY': return 1;

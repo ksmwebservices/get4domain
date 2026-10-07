@@ -236,6 +236,13 @@ export class DealsService {
     return out;
   }
 
+  /** A ₹0 invoice (e.g. the proration credit covers the whole price) has nothing to pay: settle it so its effects apply. */
+  async settleIfFree(invoice: { id: string; totalAmount: number }, actor: Actor | string, now = new Date()): Promise<boolean> {
+    if (invoice.totalAmount !== 0) return false;
+    await this.settlement.settleFree(invoice.id, actor, now);
+    return true;
+  }
+
   async sendLink(invoiceId: string, payLink: string): Promise<{ email: boolean; whatsapp: boolean }> {
     const inv = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
     if (!inv) throw new NotFoundException('Invoice not found');

@@ -11,12 +11,18 @@ services:
     env_file:
       - .env.local
     volumes:
+      # Public uploads (vendor images, rendered reels, served at /uploads/*): keep them across `--force-recreate`.
+      - public_uploads:/app/uploads
       # Payment-proof screenshots are financial evidence: keep them across `--force-recreate` deploys.
       - private_uploads:/app/private-uploads
     networks:
       - get4domain_backend_net
+# Explicit volume names so the VM migration commands do not depend on the compose project (directory) name.
 volumes:
+  public_uploads:
+    name: get4domain_public_uploads
   private_uploads:
+    name: get4domain_private_uploads
 networks:
   get4domain_backend_net:
     driver: bridge

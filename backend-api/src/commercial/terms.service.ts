@@ -5,7 +5,7 @@ import { Actor, CommercialAuditService, CommercialMessenger } from './foundation
 import { SettlementService } from './settlement.service';
 import { InvoiceBuilderService, ChannelT, SAFE_INVOICE_SELECT } from './invoice-builder.service';
 import { DealsService } from './deals.service';
-import { BillingCycle, GstMode, Line, computeTotals, cycleMonths, planListPaise, prorationCreditPaise, rupees } from './pricing-math';
+import { BillingCycle, GstMode, Line, computeTotals, cycleMonths, planListPaise, prorationCreditPaise, resolveApprovedNet, rupees } from './pricing-math';
 import { PlanKey, entitlementsFor } from './entitlements';
 import { isDowngrade } from './term-rules';
 import { planLabel } from './quote-builder';
@@ -87,6 +87,7 @@ export class TermsService {
           allowedChannels: o.allowedChannels?.length ? o.allowedChannels : cur.allowedChannels,
           paymentDueAt: o.paymentDueAt === undefined ? cur.paymentDueAt : (o.paymentDueAt ? new Date(o.paymentDueAt) : null),
           scheduledNextPlan: cur.scheduledNextPlan, scheduledNextCycle: cur.scheduledNextCycle, scheduledNextCycleMonths: cur.scheduledNextCycleMonths,
+          scheduledNextNetPaise: cur.scheduledNextNetPaise, scheduledNextDiscountReason: cur.scheduledNextDiscountReason,
           subscriptionId: cur.subscriptionId, activationInvoiceId: cur.activationInvoiceId, renewalInvoiceId: cur.renewalInvoiceId,
           activatedAt: cur.activatedAt, lapsedAt: o.status === undefined ? cur.lapsedAt : o.status === 'LAPSED' ? now : null, createdBy: actor.email,
         },
@@ -105,20 +106,20 @@ export class TermsService {
   }
 
   /** "Switch to X at the next renewal" — recorded on the current term, picked up by the T-15 renewal job. */
-  async scheduleNext(vendorId: string, plan: PlanKey, cycle: BillingCycle, customMonths: number | undefined, actor: Actor): Promise<BillingTerm> {
+  async scheduleNext(vendorId: string, plan: PlanKey, cycle: BillingCycle, customMonths: number | undefined, actor: Actor, price?: { netPaise: number; reason: string | null }): Promise<BillingTerm> {
     const cur = await this.currentFor(vendorId);
     if (!cur) throw new NotFoundException('No billing term');
     let months: number;
     try { months = cycleMonths(cycle, customMonths); } catch (e) { throw new BadRequestException((e as Error).message); }
-    const t = await this.prisma.billingTerm.update({ where: { id: cur.id }, data: { scheduledNextPlan: plan, scheduledNextCycle: cycle, scheduledNextCycleMonths: months } });
-    await this.audit.log(actor, 'term.schedule_next', 'BillingTerm', cur.id, { plan, cycle, months });
+    const t = await this.prisma.billingTerm.update({ where: { id: cur.id }, data: { scheduledNextPlan: plan, scheduledNextCycle: cycle, scheduledNextCycleMonths: months, scheduledNextNetPaise: price?.netPaise ?? null, scheduledNextDiscountReason: price?.reason ?? null } });
+    await this.audit.log(actor, 'term.schedule_next', 'BillingTerm', cur.id, { plan, cycle, months, netPaise: price?.netPaise ?? null });
     return t;
   }
 
   async clearScheduled(vendorId: string, actor: Actor): Promise<BillingTerm> {
     const cur = await this.currentFor(vendorId);
     if (!cur) throw new NotFoundException('No billing term');
-    const t = await this.prisma.billingTerm.update({ where: { id: cur.id }, data: { scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null } });
+    const t = await this.prisma.billingTerm.update({ where: { id: cur.id }, data: { scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null, scheduledNextNetPaise: null, scheduledNextDiscountReason: null } });
     await this.audit.log(actor, 'term.clear_scheduled', 'BillingTerm', cur.id, {});
     return t;
   }
@@ -165,16 +166,20 @@ export class PlanChangeService {
   async queue(status?: string) {
     const rows = await this.prisma.planChangeRequest.findMany({ where: status ? { status: status as never } : {}, orderBy: { requestedAt: 'desc' }, take: 200 });
     const out = [];
+    const rates = await this.deals.annualRates();
     for (const r of rows) {
       const vendor = await this.prisma.vendor.findUnique({ where: { id: r.vendorId }, select: { id: true, businessName: true, name: true } });
       const cur = r.fromTermId ? await this.prisma.billingTerm.findUnique({ where: { id: r.fromTermId } }) : null;
-      out.push({ ...r, vendor, current: cur ? { planKey: cur.planKey, billingCycle: cur.billingCycle, periodEnd: cur.periodEnd, netAmountPaise: cur.netAmountPaise, source: cur.source } : null });
+      // What KSM would approve by default (list price of the target plan/cycle) and the credit an immediate change would earn.
+      const listPaise = planListPaise(rates[r.toPlanKey as PlanKey], r.toCycleMonths);
+      const creditIfNowPaise = cur && r.status === 'REQUESTED' ? Math.min(prorationCreditPaise(cur, new Date()), listPaise) : 0;
+      out.push({ ...r, vendor, quote: { listPaise, creditIfNowPaise }, current: cur ? { planKey: cur.planKey, billingCycle: cur.billingCycle, periodEnd: cur.periodEnd, netAmountPaise: cur.netAmountPaise, source: cur.source } : null });
     }
     return out;
   }
 
   /** Approve: at renewal by default; NOW only for upgrades, issuing a PLAN_CHANGE invoice with a proration CREDIT line. */
-  async approve(id: string, o: { effective?: 'AT_RENEWAL' | 'NOW'; adminNote?: string }, actor: Actor, now = new Date()) {
+  async approve(id: string, o: { effective?: 'AT_RENEWAL' | 'NOW'; adminNote?: string; netPaise?: number; discountReason?: string; confirm?: string }, actor: Actor, now = new Date()) {
     const r = await this.prisma.planChangeRequest.findUnique({ where: { id } });
     if (!r) throw new NotFoundException('Request not found');
     if (r.status !== 'REQUESTED') throw new ConflictException('This request was already reviewed');
@@ -182,30 +187,42 @@ export class PlanChangeService {
     if (!cur) throw new BadRequestException('Vendor has no billing term');
     const effective = o.effective ?? r.effective;
     if (effective === 'NOW' && isDowngrade(cur.planKey, r.toPlanKey)) throw new BadRequestException('A downgrade can only take effect at renewal');
-    const claim = await this.prisma.planChangeRequest.updateMany({ where: { id, status: 'REQUESTED' }, data: { status: 'APPROVED', effective, reviewedBy: actor.email, reviewedAt: now, adminNote: o.adminNote?.slice(0, 300) } });
+    // The price is decided from the server's own list price — the only client-side input is an optional, range-checked override.
+    const rates = await this.deals.annualRates();
+    const listPaise = planListPaise(rates[r.toPlanKey as PlanKey], r.toCycleMonths);
+    let price;
+    try { price = resolveApprovedNet(listPaise, o.netPaise, o.discountReason, o.confirm); } catch (e) { throw new BadRequestException((e as Error).message); }
+    const reason = price.overridden ? (o.discountReason ?? '').trim().slice(0, 300) : null;
+
+    const claim = await this.prisma.planChangeRequest.updateMany({ where: { id, status: 'REQUESTED' }, data: { status: 'APPROVED', effective, reviewedBy: actor.email, reviewedAt: now, adminNote: o.adminNote?.slice(0, 300), listPaise: price.listPaise, approvedNetPaise: price.netPaise, discountReason: reason } });
     if (claim.count === 0) throw new ConflictException('This request was just reviewed by someone else');
+    const priceAudit = { listPaise: price.listPaise, approvedNetPaise: price.netPaise, discountPaise: price.discountPaise, overridden: price.overridden, discountReason: reason };
 
     if (effective === 'AT_RENEWAL') {
-      await this.terms.scheduleNext(r.vendorId, r.toPlanKey as PlanKey, r.toCycle as BillingCycle, r.toCycleMonths, actor);
-      await this.audit.log(actor, 'planchange.approve', 'PlanChangeRequest', id, { effective });
-      return { approved: true, effective, invoiceId: null as string | null };
+      await this.terms.scheduleNext(r.vendorId, r.toPlanKey as PlanKey, r.toCycle as BillingCycle, r.toCycleMonths, actor, price.overridden ? { netPaise: price.netPaise, reason } : undefined);
+      await this.audit.log(actor, 'planchange.approve', 'PlanChangeRequest', id, { effective, ...priceAudit });
+      if (price.overridden) await this.audit.log(actor, 'planchange.price_override', 'Vendor', r.vendorId, { requestId: id, ...priceAudit });
+      return { approved: true, effective, invoiceId: null as string | null, ...priceAudit };
     }
 
-    // NOW: charge the new plan at list price, credit the unused part of the current term. No cash refunds ever.
-    const rates = await this.deals.annualRates();
-    const planLine: Line = { kind: 'PLAN', label: planLabel(r.toPlanKey as PlanKey, r.toCycleMonths), amountPaise: planListPaise(rates[r.toPlanKey as PlanKey], r.toCycleMonths), qty: 1 };
-    const credit = Math.min(prorationCreditPaise(cur, now), planLine.amountPaise);
+    // NOW: charge the new plan at the approved price, credit the unused part of the current term. No cash refunds ever.
+    const planLine: Line = { kind: 'PLAN', label: planLabel(r.toPlanKey as PlanKey, r.toCycleMonths), amountPaise: price.listPaise, qty: 1 };
+    // The credit can never push the invoice below zero: it is capped at the price actually being charged.
+    const credit = Math.min(prorationCreditPaise(cur, now), price.netPaise);
     const lines: Line[] = credit > 0 ? [planLine, { kind: 'CREDIT', label: 'Credit for unused days on your current plan', amountPaise: -credit, qty: 1 }] : [planLine];
-    const totals = computeTotals(lines, 0, cur.gstMode as GstMode);
+    const totals = computeTotals(lines, price.discountPaise, cur.gstMode as GstMode);
     const { invoice, token } = await this.builder.create({
       vendorId: r.vendorId, kind: 'PLAN_CHANGE', description: `Plan change to ${planLine.label}`, lines, totals, gstMode: cur.gstMode as GstMode, status: 'SENT',
       planKey: r.toPlanKey as PlanKey, billingCycle: r.toCycle as BillingCycle, cycleMonths: r.toCycleMonths,
+      discountReason: reason, adminDiscount: price.overridden,
       allowedChannels: cur.allowedChannels.length ? (cur.allowedChannels as ChannelT[]) : ['RAZORPAY'], linkExpiryDays: 14, dueInDays: 14,
     });
     await this.prisma.planChangeRequest.update({ where: { id }, data: { prorationCreditPaise: credit, newInvoiceId: invoice.id } });
-    await this.audit.log(actor, 'planchange.approve', 'PlanChangeRequest', id, { effective, creditPaise: credit, invoiceId: invoice.id, totalPaise: invoice.totalAmount });
-    await this.deals.sendLink(invoice.id, payUrl(token));
-    return { approved: true, effective, invoiceId: invoice.id, prorationCreditPaise: credit, totalPaise: invoice.totalAmount, note: `Credit of ${rupees(credit)} applied. Pay link sent.` };
+    await this.audit.log(actor, 'planchange.approve', 'PlanChangeRequest', id, { effective, creditPaise: credit, invoiceId: invoice.id, totalPaise: invoice.totalAmount, ...priceAudit });
+    if (price.overridden) await this.audit.log(actor, 'planchange.price_override', 'Vendor', r.vendorId, { requestId: id, invoiceId: invoice.id, ...priceAudit });
+    const settledFree = await this.deals.settleIfFree(invoice, actor, now);
+    if (!settledFree) await this.deals.sendLink(invoice.id, payUrl(token));
+    return { approved: true, effective, invoiceId: invoice.id, settledFree, prorationCreditPaise: credit, totalPaise: invoice.totalAmount, ...priceAudit, note: `Credit of ${rupees(credit)} applied. Pay link sent.` };
   }
 
   async reject(id: string, reason: string, actor: Actor) {

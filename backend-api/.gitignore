@@ -1,6 +1,7 @@
 node_modules
 dist
 private-uploads
+/uploads
 .env
 .env.local
 .env.production

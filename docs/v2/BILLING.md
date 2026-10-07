@@ -11,6 +11,8 @@
 
 A vendor's **plan** (Workspace or BOS) is what decides their features — *never* the price they paid. A BOS vendor on a ₹1 deal still gets everything BOS includes.
 
+> **Who can open Commerce:** Super Admin and Operations. Marketing staff do not see it and the server refuses them (403) on every Commerce endpoint.
+
 ## 2. Creating a deal (Admin → Commerce → Deal builder)
 1. Choose an existing vendor, or a **new prospect** (name, business, email, optional demo subdomain). A prospect's demo site stays hidden from the public until their activation invoice is paid.
 2. Choose plan + cycle (+ add-ons / custom lines).
@@ -31,13 +33,14 @@ A vendor's **plan** (Workspace or BOS) is what decides their features — *never
 ## 4. Renewals, reminders, lapse
 - **15 days before** the term ends an invoice is created and sent. Reminders go at **15, 7 and 1 day before**, and when overdue.
 - Paying **early never loses days** — the new term starts when the old one ends.
-- A negotiated deal renews at its negotiated price. A plan/cycle change a customer has been approved for renews at list price.
+- A negotiated deal renews at its negotiated price. A plan/cycle change a customer has been approved for renews at **the price KSM approved** (see §5): list price unless you lowered it.
 - If the term ends and the **grace days** pass unpaid, the account is **lapsed**: no publishing, no outbound messages, no AI Studio spending. **Nothing is deleted** — the customer can still log in and see everything, and paying lifts the lapse immediately.
 
 ## 5. Changing a plan
 - The customer sends a request from their Billing page; it appears in **Plan changes**.
 - **Downgrades** only ever take effect at renewal.
-- **Upgrades** can start now: the new plan is charged at list price, minus a credit for the **unused days** of the current term (unused days × the daily net rate). The credit only reduces the new invoice; it is never paid out in cash.
+- When you approve, the **net price** box starts at the plan's list price. You may lower it (never raise it) — a reason is required, and over 20% off you must type CONFIRM. The override is logged. The next renewal bills that same price. If the credit is bigger than the price, the invoice is ₹0 and the change goes live straight away.
+- **Upgrades** can start now: the new plan is charged at the approved price (list unless changed), minus a credit for the **unused days** of the current term (unused days × the daily net rate). The credit only reduces the new invoice; it is never paid out in cash.
 - While a customer is on a negotiated deal they do not see a self-serve upgrade button — they see **Contact us**.
 
 ## 6. Promo codes

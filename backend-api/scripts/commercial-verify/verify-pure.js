@@ -195,5 +195,26 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
     ok('max proof size is 3 MB', U.MAX_PROOF_BYTES === 3 * 1024 * 1024);
   }
 
+  section('resolveApprovedNet — the editable plan-change price');
+  {
+    const L = 2398800;
+    let r = M.resolveApprovedNet(L);
+    ok('no price given → list price, not overridden', r.netPaise === L && r.discountPaise === 0 && r.overridden === false);
+    r = M.resolveApprovedNet(L, L, 'whatever');
+    ok('price equal to list is not an override (a stray reason is ignored)', r.overridden === false && r.netPaise === L);
+    r = M.resolveApprovedNet(L, 2000000, 'loyal');
+    ok('₹20,000 vs ₹23,988: discount ₹3,988, overridden, ≤20% so no CONFIRM', r.netPaise === 2000000 && r.discountPaise === 398800 && r.overridden && !r.needsConfirm);
+    r = M.resolveApprovedNet(L, 0, 'free year', 'CONFIRM');
+    ok('₹0 is allowed with a reason and CONFIRM', r.netPaise === 0 && r.discountPaise === L);
+    throwsSync('a price above list is refused', () => M.resolveApprovedNet(L, L + 1, 'reason'), 'higher');
+    throwsSync('a negative price is refused', () => M.resolveApprovedNet(L, -1, 'reason'));
+    throwsSync('a fractional price is refused', () => M.resolveApprovedNet(L, 100.5, 'reason'));
+    throwsSync('NaN is refused', () => M.resolveApprovedNet(L, NaN, 'reason'));
+    throwsSync('missing reason is refused', () => M.resolveApprovedNet(L, 2000000), 'reason');
+    throwsSync('a 2-character reason is refused', () => M.resolveApprovedNet(L, 2000000, 'ok'), 'reason');
+    throwsSync('more than 20% off without CONFIRM is refused', () => M.resolveApprovedNet(L, 1000000, 'big deal'), 'CONFIRM');
+    ok('exactly 20% off needs no CONFIRM; one paisa more does', M.resolveApprovedNet(1000000, 800000, 'exactly twenty').needsConfirm === false && M.resolveApprovedNet(1000000, 799999, 'a paisa over', 'CONFIRM').needsConfirm === true);
+  }
+
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });

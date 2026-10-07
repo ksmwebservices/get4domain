@@ -17,9 +17,11 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
-# Private payment-proof screenshots (Commercial Engine). A named volume is mounted here (docker-compose.yml);
-# creating + chowning the directory first makes the volume inherit the non-root user's ownership.
-RUN mkdir -p /app/private-uploads && chown -R nestjs:nodejs /app/private-uploads
+# Persistent upload directories. Named volumes are mounted on both (docker-compose.yml); creating + chowning the
+# directories first makes a NEW volume inherit the non-root user's ownership (an existing volume keeps its own).
+#   /app/uploads          public images + rendered reels, served at /uploads/*  (UploadsController, ReelsService)
+#   /app/private-uploads  payment-proof screenshots, admin-only streaming        (Commercial Engine)
+RUN mkdir -p /app/uploads /app/private-uploads && chown -R nestjs:nodejs /app/uploads /app/private-uploads
 USER nestjs
 EXPOSE 3008
 ENV PORT=3008

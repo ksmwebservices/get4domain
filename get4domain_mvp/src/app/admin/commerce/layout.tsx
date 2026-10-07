@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { commerceApi } from '@/lib/commerce';
+import { useAuth } from '@/lib/auth-context';
+import { canSeeCommerce } from '@/lib/admin-nav';
+import type { AdminRole } from '@/lib/auth';
 
 const TABS = [
   { href: '/admin/commerce/deals', label: 'Deal builder' },
@@ -16,14 +19,28 @@ const TABS = [
 
 export default function CommerceLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, loading } = useAuth();
+  const adminRole: AdminRole = user?.adminRole ?? 'SUPER_ADMIN';
+  const allowed = canSeeCommerce(adminRole);
   const [counts, setCounts] = useState({ payments: 0, plans: 0 });
   useEffect(() => {
+    if (!allowed) return; // never call the commerce API for a role the server would refuse
     let alive = true;
     const load = () => commerceApi.summary().then((r) => { if (alive) setCounts({ payments: r.data?.paymentsToConfirm ?? 0, plans: r.data?.planChangeRequests ?? 0 }); }).catch(() => undefined);
     load();
     const t = setInterval(load, 45000);
     return () => { alive = false; clearInterval(t); };
-  }, [pathname]);
+  }, [pathname, allowed]);
+
+  // Opening a /admin/commerce URL directly as MARKETING staff shows nothing from this area.
+  if (!loading && user && !allowed) {
+    return (
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-sm text-slate-300" role="alert">
+        Your staff role does not include billing and payments. Ask a Super Admin if you need access.
+      </div>
+    );
+  }
+  if (loading || !user) return null;
 
   return (
     <div className="space-y-6">

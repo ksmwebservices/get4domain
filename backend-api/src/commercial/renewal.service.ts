@@ -122,12 +122,24 @@ export class RenewalService {
 
     let lines: Line[];
     let discount = 0;
+    let discountReasonText: string | null = null;
     if (changed) {
       const rates = await this.deals.annualRates();
-      lines = [{ kind: 'PLAN', label: planLabel(planKey, months), amountPaise: planListPaise(rates[planKey], months), qty: 1 }];
+      const listNow = planListPaise(rates[planKey], months);
+      const approved = term.scheduledNextNetPaise;
+      if (approved != null) {
+        // KSM approved a specific price for this change: the renewal bills exactly that net, even if list prices moved since.
+        const planAmount = Math.max(listNow, approved);
+        lines = [{ kind: 'PLAN', label: planLabel(planKey, months), amountPaise: planAmount, qty: 1 }];
+        discount = planAmount - approved;
+        discountReasonText = term.scheduledNextDiscountReason ?? 'Approved plan-change price';
+      } else {
+        lines = [{ kind: 'PLAN', label: planLabel(planKey, months), amountPaise: listNow, qty: 1 }];
+      }
     } else {
       lines = [{ kind: 'PLAN', label: `${planLabel(planKey, months)} (renewal)`, amountPaise: term.listAmountPaise, qty: 1 }];
       discount = Math.min(term.discountPaise, term.listAmountPaise);
+      if (discount > 0) discountReasonText = 'Negotiated renewal terms';
     }
     const totals = computeTotals(lines, discount, term.gstMode as GstMode);
     const { start, end } = renewalPeriod(term.periodEnd, now, months);
@@ -135,7 +147,7 @@ export class RenewalService {
     const { invoice, token } = await this.builder.create({
       vendorId: term.vendorId, kind: 'RENEWAL', description: `Renewal — ${lines[0].label}`, lines, totals, gstMode: term.gstMode as GstMode, status: 'SENT',
       termId: term.id, planKey, billingCycle: cycle, cycleMonths: months, periodStart: start, periodEnd: end,
-      discountReason: discount > 0 ? 'Negotiated renewal terms' : null, adminDiscount: discount > 0, allowedChannels: channels, linkExpiryDays: 45, now,
+      discountReason: discount > 0 ? discountReasonText : null, adminDiscount: discount > 0, allowedChannels: channels, linkExpiryDays: 45, now,
       dueInDays: term.periodEnd ? Math.max(1, Math.round((term.periodEnd.getTime() - now.getTime()) / 86_400_000)) : 15,
     });
     await this.audit.log('system', 'renewal.invoice_created', 'Invoice', invoice.id, { termId: term.id, changed, totalPaise: invoice.totalAmount });

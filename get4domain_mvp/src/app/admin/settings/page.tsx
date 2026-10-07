@@ -4,9 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Save, CheckCircle2, QrCode, ArrowRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useAuth } from '@/lib/auth-context';
+import { canSeeCommerce } from '@/lib/admin-nav';
 
 export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
+  const showCommerce = canSeeCommerce(user?.adminRole ?? 'SUPER_ADMIN');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,14 +25,16 @@ export default function AdminSettingsPage() {
         <p className="mt-1 text-sm text-slate-400">Platform configuration and contact details.</p>
       </div>
 
-      {/* Commercial Engine v1: where payers are told to send money (UPI ID, QR, bank details). */}
-      <Link href="/admin/commerce/payee" className="flex items-center justify-between gap-3 rounded-2xl border border-primary-500/30 bg-primary-500/10 p-4 hover:bg-primary-500/15">
-        <span className="flex items-center gap-3">
-          <QrCode className="h-5 w-5 text-primary-300" />
-          <span><span className="block text-sm font-bold text-white">Payee &amp; QR</span><span className="block text-xs text-slate-400">UPI ID, payee name, static QR, bank details and payment instructions shown on pay links.</span></span>
-        </span>
-        <ArrowRight className="h-4 w-4 text-primary-300" />
-      </Link>
+      {/* Commercial Engine v1: where payers are told to send money (UPI ID, QR, bank details). Hidden from MARKETING staff. */}
+      {showCommerce && (
+        <Link href="/admin/commerce/payee" className="flex items-center justify-between gap-3 rounded-2xl border border-primary-500/30 bg-primary-500/10 p-4 hover:bg-primary-500/15">
+          <span className="flex items-center gap-3">
+            <QrCode className="h-5 w-5 text-primary-300" />
+            <span><span className="block text-sm font-bold text-white">Payee &amp; QR</span><span className="block text-xs text-slate-400">UPI ID, payee name, static QR, bank details and payment instructions shown on pay links.</span></span>
+          </span>
+          <ArrowRight className="h-4 w-4 text-primary-300" />
+        </Link>
+      )}
 
       <form onSubmit={handleSave} className="space-y-5">
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 space-y-4">

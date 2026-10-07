@@ -146,6 +146,12 @@ export class PlanChangeRequestDto {
 export class PlanChangeApproveDto {
   @IsOptional() @IsIn(['AT_RENEWAL', 'NOW']) effective?: 'AT_RENEWAL' | 'NOW';
   @IsOptional() @IsString() @MaxLength(300) adminNote?: string;
+  /** Approved net price in paise (before GST). Omit to bill the list price. Range-checked on the server: 0 ≤ price ≤ list. */
+  @IsOptional() @IsInt() @Min(0) @Max(100_000_000) netPaise?: number;
+  /** Required when netPaise is below list. */
+  @IsOptional() @IsString() @MaxLength(300) discountReason?: string;
+  /** Must be exactly "CONFIRM" when the discount exceeds 20% of list. */
+  @IsOptional() @IsString() @MaxLength(20) confirm?: string;
 }
 
 /** Razorpay checkout result. There is deliberately NO amount field anywhere in the payment DTOs. */

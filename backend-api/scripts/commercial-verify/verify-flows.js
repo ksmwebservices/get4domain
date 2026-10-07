@@ -320,7 +320,17 @@ const rows = (w, name) => w.t[name] ?? [];
     ok('a vendor TEAM MEMBER is rejected', !pass(g, { sub: 'v', role: 'VENDOR', kind: 'team_member', modules: ['wallet'] }));
     ok('a demo SANDBOX principal is rejected', !pass(g, { sub: 'v', role: 'ADMIN', kind: 'sandbox' }));
     ok('no user at all is rejected', !pass(g, undefined));
-    ok('MARKETING staff may build deals but NOT move money (MoneyAdminGuard)', pass(g, { sub: 'm', role: 'ADMIN', adminRole: 'MARKETING', kind: 'admin_member' }) && !pass(mg, { sub: 'm', role: 'ADMIN', adminRole: 'MARKETING', kind: 'admin_member' }));
+    const MKT = { sub: 'm', role: 'ADMIN', adminRole: 'MARKETING', kind: 'admin_member' };
+    ok('MARKETING staff are refused by CommercialAdminGuard AND MoneyAdminGuard (403, not just hidden)', !pass(g, MKT) && !pass(mg, MKT) && !pass(g, { ...MKT, role: 'SUPER_ADMIN' }));
+    // Every route of the admin-commerce controller, discovered from the Nest route metadata, run through its REAL guard stack.
+    const proto = C.AdminCommerceController.prototype;
+    const routeNames = Object.getOwnPropertyNames(proto).filter((n) => n !== 'constructor' && typeof proto[n] === 'function' && Reflect.getMetadata('path', proto[n]) !== undefined && Reflect.getMetadata('method', proto[n]) !== undefined);
+    const stackFor = (n) => [...(Reflect.getMetadata('__guards__', C.AdminCommerceController) ?? []), ...(Reflect.getMetadata('__guards__', proto[n]) ?? [])].map((G) => new G());
+    const statusOf = (n, user) => { try { stackFor(n).forEach((gd) => gd.canActivate(ctxFor(user))); return 200; } catch (e) { return typeof e.getStatus === 'function' ? e.getStatus() : 500; } };
+    ok(`found the admin-commerce routes by metadata (${routeNames.length}, not a vacuous check)`, routeNames.length >= 25, String(routeNames.length));
+    ok('MARKETING gets 403 on EVERY admin-commerce route (reads included)', routeNames.every((n) => statusOf(n, MKT) === 403), routeNames.filter((n) => statusOf(n, MKT) !== 403).join());
+    ok('SUPER_ADMIN and OPERATIONS still pass every route (the guard is not over-broad)', routeNames.every((n) => statusOf(n, { sub: 'a', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' }) === 200 && statusOf(n, { sub: 'o', role: 'ADMIN', adminRole: 'OPERATIONS', kind: 'admin_member' }) === 200));
+    ok('a vendor and a vendor team member get 403 on every admin-commerce route', routeNames.every((n) => statusOf(n, { sub: 'v', role: 'VENDOR' }) === 403 && statusOf(n, { sub: 'v', role: 'VENDOR', kind: 'team_member', modules: ['wallet'] }) === 403));
     ok('OPERATIONS staff and SUPER_ADMIN pass the money guard', pass(mg, { sub: 'm', role: 'ADMIN', adminRole: 'OPERATIONS', kind: 'admin_member' }) && pass(mg, { sub: 'a', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' }));
     const classGuards = Reflect.getMetadata('__guards__', C.AdminCommerceController) ?? [];
     ok('EVERY admin-commerce route sits behind CommercialAdminGuard (class level)', classGuards.includes(F.CommercialAdminGuard));
@@ -566,6 +576,135 @@ const rows = (w, name) => w.t[name] ?? [];
     const res = await w.planChanges.approve(req.id, { effective: 'NOW' }, ADMIN, d('2026-10-08T00:00:00Z'));
     const inv = rows(w, 'invoice').find((i) => i.kind === 'PLAN_CHANGE');
     ok('the credit can never exceed the new plan price (no negative invoice)', inv.totalAmount >= 0 && res.prorationCreditPaise <= 2398800);
+  }
+
+  section('PLAN-CHANGE PRICE: default = list; editable net price with reason; renewal bills that price');
+  {
+    const LIST_WS = 1198800, LIST_BOS = 2398800;
+    const setup = async (over = {}) => {
+      const w = world();
+      await w.deals.createInvoice(stepSpec({ planKey: 'WORKSPACE', billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE', ...over }), ADMIN, {});
+      const a = rows(w, 'invoice')[0];
+      await w.settlement.applyPayment(a.id, { amountPaise: a.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-01-01T00:00:00Z') });
+      return w;
+    };
+    const cur = (w) => rows(w, 'billingTerm').find((t) => t.isCurrent);
+    const audits = (w, action) => rows(w, 'commercialAuditLog').filter((x) => x.action === action);
+
+    // — default: no override → list price, no override audit —
+    {
+      const w = await setup();
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'AT_RENEWAL' });
+      const q = (await w.planChanges.queue('REQUESTED'))[0];
+      ok('the admin queue quotes the server-side LIST price (BOS annual ₹23,988) and the credit an immediate change would earn today', q.quote.listPaise === LIST_BOS && q.quote.creditIfNowPaise === Math.min(M.prorationCreditPaise(cur(w), new Date()), LIST_BOS), JSON.stringify(q.quote));
+      const res = await w.planChanges.approve(req.id, { effective: 'AT_RENEWAL' }, ADMIN, d('2026-06-01T00:00:00Z'));
+      const row = rows(w, 'planChangeRequest')[0];
+      ok('DEFAULT: approved net = list, no discount, no reason stored', res.approvedNetPaise === LIST_BOS && row.listPaise === LIST_BOS && row.approvedNetPaise === LIST_BOS && row.discountReason === null && res.overridden === false);
+      ok('DEFAULT: nothing is stored on the term and no override audit row is written', cur(w).scheduledNextNetPaise === null && audits(w, 'planchange.price_override').length === 0);
+      await w.renewal.runOnce(d('2026-12-17T00:00:00Z'));
+      const ren = rows(w, 'invoice').find((i) => i.kind === 'RENEWAL');
+      ok('DEFAULT: the renewal after the change bills the BOS list price (₹23,988 + 18% GST)', ren.planKey === 'BOS' && ren.amount === LIST_BOS && ren.discountPaise === 0 && ren.totalAmount === LIST_BOS + Math.round(LIST_BOS * 0.18), JSON.stringify({ a: ren.amount, d: ren.discountPaise }));
+    }
+
+    // — override at renewal: validation, audit, renewal amount, and it sticks for later renewals —
+    {
+      const w = await setup();
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'AT_RENEWAL' });
+      const tryApprove = (b) => w.planChanges.approve(req.id, { effective: 'AT_RENEWAL', ...b }, ADMIN, d('2026-06-01T00:00:00Z'));
+      await rejects('a lower price without a reason is refused', tryApprove({ netPaise: 2000000 }), { status: 400, includes: 'reason' });
+      await rejects('a price above the list price is refused (this is a discount, not a mark-up)', tryApprove({ netPaise: LIST_BOS + 1, discountReason: 'x y z' }), { status: 400, includes: 'higher than the list' });
+      await rejects('a negative price is refused', tryApprove({ netPaise: -5, discountReason: 'loyal' }), { status: 400 });
+      await rejects('a fractional paise price is refused', tryApprove({ netPaise: 1000.5, discountReason: 'loyal' }), { status: 400 });
+      await rejects('a non-numeric price is refused', tryApprove({ netPaise: 'free', discountReason: 'loyal' }), { status: 400 });
+      await rejects('more than 20% off needs CONFIRM', tryApprove({ netPaise: 1800000, discountReason: 'loyal customer' }), { status: 400, includes: 'CONFIRM' });
+      await rejects('a wrong confirmation word is not accepted', tryApprove({ netPaise: 1800000, discountReason: 'loyal customer', confirm: 'yes' }), { status: 400, includes: 'CONFIRM' });
+      ok('every refused attempt left the request untouched (still REQUESTED, nothing scheduled, no audit row)', rows(w, 'planChangeRequest')[0].status === 'REQUESTED' && cur(w).scheduledNextPlan === null && audits(w, 'planchange.price_override').length === 0);
+
+      const res = await tryApprove({ netPaise: 1800000, discountReason: 'loyal customer', confirm: 'CONFIRM' });
+      const row = rows(w, 'planChangeRequest')[0];
+      ok('OVERRIDE approved: list, net and reason are stored on the request', res.approvedNetPaise === 1800000 && row.listPaise === LIST_BOS && row.approvedNetPaise === 1800000 && row.discountReason === 'loyal customer' && row.status === 'APPROVED');
+      const au = audits(w, 'planchange.price_override');
+      ok('the override is audit-logged with who, list, net and reason', au.length === 1 && au[0].actor === ADMIN.email && au[0].detail.listPaise === LIST_BOS && au[0].detail.approvedNetPaise === 1800000 && au[0].detail.discountReason === 'loyal customer', JSON.stringify(au[0]));
+      ok('the approved net is carried on the term for the renewal job', cur(w).scheduledNextNetPaise === 1800000 && cur(w).scheduledNextDiscountReason === 'loyal customer');
+
+      await w.renewal.runOnce(d('2026-12-17T00:00:00Z'));
+      const ren = rows(w, 'invoice').find((i) => i.kind === 'RENEWAL');
+      ok('RENEWAL INVOICE bills the approved price: taxable ₹18,000, GST 18% on that, total ₹21,240', ren.planKey === 'BOS' && ren.amount === 1800000 && ren.gstAmount === 324000 && ren.totalAmount === 2124000, JSON.stringify({ a: ren.amount, g: ren.gstAmount, t: ren.totalAmount }));
+      ok('the renewal invoice shows list, discount and the reason', ren.listAmountPaise === LIST_BOS && ren.discountPaise === LIST_BOS - 1800000 && ren.discountReason === 'loyal customer' && ren.lineItems.length === 1);
+      await w.settlement.applyPayment(ren.id, { amountPaise: ren.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-12-20T00:00:00Z') });
+      const nt = cur(w);
+      ok('after paying: BOS term whose price IS the approved net (list kept, discount recorded), schedule cleared', nt.planKey === 'BOS' && nt.netAmountPaise === 1800000 && nt.listAmountPaise === LIST_BOS && nt.discountPaise === LIST_BOS - 1800000 && nt.scheduledNextNetPaise === null && rows(w, 'planChangeRequest')[0].status === 'APPLIED');
+      await w.renewal.runOnce(d('2027-12-17T00:00:00Z'));
+      const ren2 = rows(w, 'invoice').filter((i) => i.kind === 'RENEWAL')[1];
+      ok('the NEXT renewal (a year later) still bills the approved ₹18,000 — the price sticks', Boolean(ren2) && ren2.amount === 1800000 && ren2.totalAmount === 2124000, JSON.stringify(ren2 && { a: ren2.amount }));
+    }
+
+    // — override NOW: proration credit + approved price; renewal afterwards bills the price, not price-minus-credit —
+    {
+      const w = await setup();
+      const term = cur(w);
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'NOW' });
+      const now = d('2026-04-11T00:00:00Z');
+      const credit = M.prorationCreditPaise(term, now);
+      ok('queue quotes the credit an immediate change would earn (unused days × daily net)', (await w.planChanges.queue('REQUESTED'))[0].quote.listPaise === LIST_BOS && credit === Math.round((LIST_WS * 265) / 365), String(credit));
+      const res = await w.planChanges.approve(req.id, { effective: 'NOW', netPaise: 2000000, discountReason: 'founding customer' }, ADMIN, now);
+      const inv = rows(w, 'invoice').find((i) => i.kind === 'PLAN_CHANGE');
+      const taxable = 2000000 - credit;
+      ok('NOW + override: invoice taxable = approved net − proration credit', inv.amount === taxable && res.prorationCreditPaise === credit && res.approvedNetPaise === 2000000, JSON.stringify({ a: inv.amount, taxable, credit }));
+      ok('GST is on that net-after-credit amount only', inv.gstAmount === Math.round(taxable * 0.18) && inv.totalAmount === taxable + Math.round(taxable * 0.18));
+      ok('the invoice shows PLAN at list, the CREDIT line, and the discount with its reason', inv.lineItems.some((l) => l.kind === 'PLAN' && l.amountPaise === LIST_BOS) && inv.lineItems.some((l) => l.kind === 'CREDIT' && l.amountPaise === -credit) && inv.discountPaise === LIST_BOS - 2000000 && inv.discountReason === 'founding customer');
+      ok('the override is audit-logged against the vendor with the new invoice id', audits(w, 'planchange.price_override').length === 1 && audits(w, 'planchange.price_override')[0].detail.invoiceId === inv.id);
+      await w.settlement.applyPayment(inv.id, { amountPaise: inv.totalAmount, via: 'OFFLINE', actor: ADMIN, now });
+      const nt = cur(w);
+      ok('after paying: the term price is the approved ₹20,000 — the ONE-TIME credit did not leak into it', nt.planKey === 'BOS' && nt.netAmountPaise === 2000000 && nt.listAmountPaise === LIST_BOS && nt.discountPaise === LIST_BOS - 2000000, JSON.stringify({ n: nt.netAmountPaise, l: nt.listAmountPaise }));
+      await w.renewal.runOnce(d('2027-03-27T00:00:00Z'));
+      const ren = rows(w, 'invoice').find((i) => i.kind === 'RENEWAL');
+      ok('RENEWAL after the change bills the approved price (₹20,000 + GST), not price minus the old credit', Boolean(ren) && ren.amount === 2000000 && ren.totalAmount === 2360000, JSON.stringify(ren && { a: ren.amount }));
+    }
+
+    // — default NOW (no override): same leak regression, plus plain list pricing —
+    {
+      const w = await setup();
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'NOW' });
+      const now = d('2026-04-11T00:00:00Z');
+      const credit = M.prorationCreditPaise(cur(w), now);
+      const res = await w.planChanges.approve(req.id, { effective: 'NOW' }, ADMIN, now);
+      const inv = rows(w, 'invoice').find((i) => i.kind === 'PLAN_CHANGE');
+      ok('NOW default: invoice = list − credit; no discount, no override audit', inv.amount === LIST_BOS - credit && inv.discountPaise === 0 && res.overridden === false && audits(w, 'planchange.price_override').length === 0);
+      await w.settlement.applyPayment(inv.id, { amountPaise: inv.totalAmount, via: 'OFFLINE', actor: ADMIN, now });
+      ok('NOW default: the term price is the full list price (the credit is not baked in)', cur(w).netAmountPaise === LIST_BOS && cur(w).listAmountPaise === LIST_BOS && cur(w).discountPaise === 0);
+      await w.renewal.runOnce(d('2027-03-27T00:00:00Z'));
+      const ren = rows(w, 'invoice').find((i) => i.kind === 'RENEWAL');
+      ok('NOW default: the renewal bills the full BOS list price', Boolean(ren) && ren.amount === LIST_BOS, JSON.stringify(ren && { a: ren.amount }));
+    }
+
+    // — credit larger than the approved price: invoice is ₹0 and settles itself —
+    {
+      const w = await setup();
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'NOW' });
+      const now = d('2026-01-02T00:00:00Z'); // almost the whole Workspace term unused (credit ≈ ₹11,955)
+      ok('precondition: the credit exceeds the approved price', M.prorationCreditPaise(cur(w), now) > 500000);
+      const res = await w.planChanges.approve(req.id, { effective: 'NOW', netPaise: 500000, discountReason: 'migration offer', confirm: 'CONFIRM' }, ADMIN, now);
+      const inv = rows(w, 'invoice').find((i) => i.kind === 'PLAN_CHANGE');
+      ok('the credit is capped at the price actually charged: invoice total is exactly ₹0, never negative', inv.totalAmount === 0 && inv.amount === 0 && res.prorationCreditPaise === 500000, JSON.stringify({ t: inv.totalAmount, c: res.prorationCreditPaise }));
+      ok('a ₹0 plan-change invoice settles itself and the new plan goes live at the approved ₹5,000', res.settledFree === true && inv.status === 'PAID' && cur(w).planKey === 'BOS' && cur(w).netAmountPaise === 500000, JSON.stringify({ s: inv.status, n: cur(w).netAmountPaise }));
+      ok('entitlements follow the plan, not the price (BOS allowance on a ₹5,000 term)', rows(w, 'subscription')[0].themeChangesLimit === 4);
+    }
+
+    // — authorisation + server-only price —
+    {
+      const w = await setup();
+      const req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'AT_RENEWAL' });
+      const ac = new C.AdminCommerceController(w.payee, w.deals, w.invAdmin, w.manual, w.promos, w.terms, w.planChanges, w.renewal, w.prisma, w.audit);
+      const guards = Reflect.getMetadata('__guards__', C.AdminCommerceController.prototype.approve) ?? [];
+      ok('plan-change approval (with the price override) sits behind MoneyAdminGuard', guards.includes(F.MoneyAdminGuard));
+      const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true });
+      const bad = async (body) => { try { await pipe.transform(body, { type: 'body', metatype: DTO.PlanChangeApproveDto }); return false; } catch { return true; } };
+      ok('the approve DTO rejects a negative, fractional, string and absurdly large price', (await bad({ netPaise: -1 })) && (await bad({ netPaise: 1.5 })) && (await bad({ netPaise: '1000' })) && (await bad({ netPaise: 1e12 })));
+      ok('the approve DTO rejects unknown fields (no hidden amount/total/gst inputs)', (await bad({ totalAmount: 1 })) && (await bad({ amount: 1 })) && (await bad({ gstAmount: 1 })));
+      ok('the approve DTO accepts the legitimate shape', !(await bad({ effective: 'AT_RENEWAL', netPaise: 1800000, discountReason: 'loyal', confirm: 'CONFIRM' })));
+      void ac; void req;
+    }
   }
 
   section('LEGACY paths cannot bypass the commercial engine');

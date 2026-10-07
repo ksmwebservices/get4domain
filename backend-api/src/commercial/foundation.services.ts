@@ -24,8 +24,9 @@ export function actorOf(user: AuthenticatedUser): Actor {
  * (role ADMIN/SUPER_ADMIN) or an invited internal staff member (`kind === 'admin_member'`); rejects
  * vendors, vendor team members and demo-sandbox principals outright.
  *
- * Money-moving actions (confirm/reject a payment, void an invoice, override a term) additionally
- * exclude the MARKETING staff role — see `MoneyAdminGuard`.
+ * The MARKETING staff role is excluded from EVERY commerce endpoint, reads included (KSM, 2026-10-07: commerce
+ * holds payee bank details, payment proofs and negotiated prices). The nav hides the section too, but this
+ * guard is the real control. `MoneyAdminGuard` is kept on the money-moving routes as a second, explicit line.
  */
 @Injectable()
 export class CommercialAdminGuard implements CanActivate {
@@ -35,6 +36,7 @@ export class CommercialAdminGuard implements CanActivate {
     const isStaffRole = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     const isBadKind = user.kind === 'team_member' || user.kind === 'sandbox';
     if (!isStaffRole || isBadKind) throw new ForbiddenException('Admin access required');
+    if (user.adminRole === 'MARKETING') throw new ForbiddenException('Your staff role cannot access commerce');
     return true;
   }
 }
@@ -44,6 +46,7 @@ export class MoneyAdminGuard extends CommercialAdminGuard {
   canActivate(context: ExecutionContext): boolean {
     super.canActivate(context);
     const user = context.switchToHttp().getRequest<{ user: AuthenticatedUser }>().user;
+    // Redundant with the base guard on purpose: money routes must stay closed to MARKETING even if the base rule is relaxed.
     if (user.adminRole === 'MARKETING') throw new ForbiddenException('Your staff role cannot perform payment or billing-term actions');
     return true;
   }

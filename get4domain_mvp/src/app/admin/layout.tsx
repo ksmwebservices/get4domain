@@ -13,14 +13,20 @@ import { useAuth } from '@/lib/auth-context';
 import type { AdminRole } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { commerceApi } from '@/lib/commerce';
+import { ADMIN_NAV, COMMERCE_PREFIX, canSeeCommerce } from '@/lib/admin-nav';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import AdminAccessModal from '@/components/AdminAccessModal';
 import BottomSheet from '@/components/ui/BottomSheet';
 
-// Role visibility groups (locked-tab pattern, same as vendor Stage 2).
-const SUPER: AdminRole[] = ['SUPER_ADMIN'];
-const SUPER_MKT: AdminRole[] = ['SUPER_ADMIN', 'MARKETING'];
-const SUPER_OPS: AdminRole[] = ['SUPER_ADMIN', 'OPERATIONS'];
+// Nav data (labels, hrefs, role visibility) lives in lib/admin-nav.ts so it can be tested; icons are attached here.
+const NAV_ICONS: Record<string, typeof LayoutDashboard> = {
+  '/admin': LayoutDashboard, '/admin/telecrm': Phone, '/admin/ai-studio': Sparkles, '/admin/library': Sparkles,
+  '/admin/send-quote': FileSignature, '/admin/managed-services': Briefcase, '/admin/leads': CalendarCheck,
+  '/admin/customers': Users, '/admin/invoices': FileText, [COMMERCE_PREFIX]: Wallet, '/admin/renewals': RefreshCw,
+  '/admin/domains': Globe, '/admin/accounting': BarChart3, '/admin/utilization': BarChart3, '/admin/campaigns': Megaphone,
+  '/admin/support': MessageSquare, '/admin/cms': Globe, '/admin/vendor-access': SlidersHorizontal,
+  '/admin/pricing': IndianRupee, '/admin/api-settings': Settings, '/admin/team': ShieldCheck,
+};
 
 interface AdminNavItem {
   icon: typeof LayoutDashboard;
@@ -29,29 +35,7 @@ interface AdminNavItem {
   roles: AdminRole[];
 }
 
-const navItems: AdminNavItem[] = [
-  { icon: LayoutDashboard,   label: 'Overview',      href: '/admin',              roles: SUPER },
-  { icon: Phone,             label: 'TeleCRM',       href: '/admin/telecrm',      roles: SUPER_MKT },
-  { icon: Sparkles,          label: 'AI Studio',     href: '/admin/ai-studio',    roles: SUPER_MKT },
-  { icon: Sparkles,          label: 'Content Library', href: '/admin/library',    roles: SUPER_MKT },
-  { icon: FileSignature,     label: 'Send Quote',    href: '/admin/send-quote',   roles: SUPER_MKT },
-  { icon: Briefcase,         label: 'Managed Services', href: '/admin/managed-services', roles: SUPER_MKT },
-  { icon: CalendarCheck,     label: 'Demo Bookings', href: '/admin/leads',        roles: SUPER },
-  { icon: Users,             label: 'Vendors',       href: '/admin/customers',    roles: SUPER },
-  { icon: FileText,          label: 'Invoices',      href: '/admin/invoices',     roles: SUPER_OPS },
-  { icon: Wallet,            label: 'Commerce',      href: '/admin/commerce',     roles: SUPER_OPS },
-  { icon: RefreshCw,         label: 'Renewals',      href: '/admin/renewals',     roles: SUPER_OPS },
-  { icon: Globe,             label: 'Domains',       href: '/admin/domains',      roles: SUPER_OPS },
-  { icon: BarChart3,         label: 'Accounting',    href: '/admin/accounting',   roles: SUPER },
-  { icon: BarChart3,         label: 'Utilization',   href: '/admin/utilization',  roles: SUPER },
-  { icon: Megaphone,         label: 'Campaigns',     href: '/admin/campaigns',    roles: SUPER },
-  { icon: MessageSquare,     label: 'Support',       href: '/admin/support',      roles: SUPER_OPS },
-  { icon: Globe,             label: 'Website CMS',   href: '/admin/cms',          roles: SUPER_OPS },
-  { icon: SlidersHorizontal, label: 'Vendor Access', href: '/admin/vendor-access', roles: SUPER },
-  { icon: IndianRupee,       label: 'Pricing Manager', href: '/admin/pricing',    roles: SUPER },
-  { icon: Settings,          label: 'Integrations',  href: '/admin/api-settings', roles: SUPER },
-  { icon: ShieldCheck,       label: 'Team',          href: '/admin/team',         roles: SUPER },
-];
+const navItems: AdminNavItem[] = ADMIN_NAV.map((e) => ({ ...e, icon: NAV_ICONS[e.href] ?? Settings }));
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
@@ -149,13 +133,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [user]);
 
   useEffect(() => {
-    if (!user || user.role === 'vendor') return;
+    // MARKETING staff may not use commerce: do not even call its API (it would answer 403).
+    if (!user || user.role === 'vendor' || !canSeeCommerce(adminRole)) return;
     let alive = true;
     const load = () => commerceApi.summary().then((r) => { if (alive) setCommerceBadge((r.data?.paymentsToConfirm ?? 0) + (r.data?.planChangeRequests ?? 0)); }).catch(() => undefined);
     load();
     const t = setInterval(load, 60000);
     return () => { alive = false; clearInterval(t); };
-  }, [user]);
+  }, [user, adminRole]);
 
   useEffect(() => {
     const check = async () => {
@@ -252,7 +237,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-primary-400' : 'text-slate-500'}`} />
                 <span className="flex-1">{item.label}</span>
-                {item.href === '/admin/commerce' && commerceBadge > 0 && (
+                {item.href === COMMERCE_PREFIX && commerceBadge > 0 && (
                   <span className="rounded-full bg-warning-500 px-1.5 py-0.5 text-[10px] font-bold text-slate-900" aria-label={`${commerceBadge} items need attention`}>{commerceBadge}</span>
                 )}
               </Link>
