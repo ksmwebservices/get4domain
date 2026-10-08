@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { EngineService } from './engine.service';
 import { PublicCheckoutService, WebOrder } from './public-checkout.service';
 import { ActionDescriptor } from './engine.types';
@@ -17,6 +18,7 @@ export class EngineController {
   ) {}
 
   @ApiBearerAuth()
+  @RequireModule('website') // team members need the products/website area, like My Products and Stock
   @Get('orders')
   @ApiOperation({ summary: "The vendor's public web orders (paid on their website)" })
   orders(@CurrentUser() u: AuthenticatedUser): Promise<WebOrder[]> {
@@ -24,6 +26,7 @@ export class EngineController {
   }
 
   @ApiBearerAuth()
+  @RequireModule('website') // team members need the products/website area, like My Products and Stock
   @Post('orders/:id/paid')
   @ApiOperation({ summary: 'Mark an order request as paid (the customer paid the shop directly)' })
   markPaid(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string): Promise<WebOrder> {
@@ -31,6 +34,7 @@ export class EngineController {
   }
 
   @ApiBearerAuth()
+  @RequireModule('website') // team members need the products/website area, like My Products and Stock
   @Post('orders/:id/cancel')
   @ApiOperation({ summary: 'Cancel an order and put its stock back (one transaction)' })
   cancel(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string): Promise<WebOrder> {

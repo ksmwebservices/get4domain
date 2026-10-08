@@ -74,5 +74,21 @@ const seed = () => ({
     for (let i = 0; i < 130; i += 1) prisma.$tables.notification.push({ id: `bulk${i}`, recipientId: 'v_step', recipientType: 'VENDOR', type: 'x', title: 't', message: 'm', read: true, createdAt: new Date(Date.now() - i * 1000) });
     ok('the list is capped at 100', (await svc.findForRecipient('v_step')).length === 100);
   }
+  section('team members: orders and stock need the products (website) area');
+  {
+    const { Reflector } = require('@nestjs/core');
+    const { ModuleGuard } = dist('common/guards/module.guard');
+    const { EngineController } = dist('engine/engine.controller');
+    const { StockController } = dist('stock/stock.controller');
+    const guard = new ModuleGuard(new Reflector());
+    const ctx = (cls, method, user) => ({ getHandler: () => cls.prototype[method], getClass: () => cls, switchToHttp: () => ({ getRequest: () => ({ user }) }) });
+    const allowed = (cls, method, user) => { try { return guard.canActivate(ctx(cls, method, user)); } catch { return false; } };
+    const owner = { kind: 'vendor', sub: 'v1' };
+    const withArea = { kind: 'team_member', sub: 'v1', modules: ['website'] };
+    const without = { kind: 'team_member', sub: 'v1', modules: ['telecrm'] };
+    for (const [cls, name, m] of [[EngineController, 'orders list', 'orders'], [EngineController, 'mark paid', 'markPaid'], [EngineController, 'cancel order', 'cancel'], [StockController, 'adjust stock', 'adjust'], [StockController, 'stock history', 'history'], [StockController, 'low stock', 'low']]) {
+      ok(`${name}: owner allowed, staff with the products area allowed, staff WITHOUT it refused (403)`, allowed(cls, m, owner) && allowed(cls, m, withArea) && !allowed(cls, m, without));
+    }
+  }
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });
