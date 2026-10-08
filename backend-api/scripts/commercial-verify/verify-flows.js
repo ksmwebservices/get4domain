@@ -92,7 +92,7 @@ const rows = (w, name) => w.t[name] ?? [];
     const sub = rows(w, 'subscription')[0];
     ok('entitlements: theme limit 2/yr, counter 0, reset date one YEAR out (not 6 months)', sub.themeChangesLimit === 2 && sub.themeChangesUsed === 0 && M.addMonths(term.periodStart, 12).getTime() === sub.themeChangesResetAt.getTime());
     const credits = rows(w, 'walletTransaction').filter((x) => x.service === 'ai_studio_bonus');
-    ok('₹499 AI Studio credit granted exactly once, at activation', credits.length === 1 && credits[0].amount === 49900 && rows(w, 'wallet')[0].balance === 49900);
+    ok('₹250 AI Studio credit (Workspace half-yearly, prorated from ₹499) granted exactly once, at activation', credits.length === 1 && credits[0].amount === 25000 && rows(w, 'wallet')[0].balance === 25000);
     ok('stepnrock stays a live vendor', rows(w, 'vendor')[0].isSandbox === false);
     ok('audit trail records the invoice and the activation', rows(w, 'commercialAuditLog').some((a) => a.action === 'deal.invoice_created') && rows(w, 'commercialAuditLog').some((a) => a.action === 'term.activate_now'));
   }
@@ -804,7 +804,7 @@ const rows = (w, name) => w.t[name] ?? [];
     await w.deals.activateNow(leftover.id, 7, 7, ADMIN);
     const fresh = await w.invAdmin.reissueLink(leftover.id, ADMIN, { expiryDays: 30 });
     ok('RESUME: still exactly ONE invoice and ONE deal (no double-billing), now with an ACTIVE_PAYMENT_DUE term attached', rows(w, 'invoice').length === 1 && rows(w, 'billingDeal').length === 1 && rows(w, 'billingTerm').length === 1 && rows(w, 'billingTerm')[0].status === 'ACTIVE_PAYMENT_DUE' && rows(w, 'invoice')[0].termId === rows(w, 'billingTerm')[0].id);
-    ok('RESUME: the one-time ₹499 AI credit was granted exactly once and the theme allowance is 2', rows(w, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1 && rows(w, 'subscription')[0].themeChangesLimit === 2);
+    ok('RESUME: the one-time ₹250 AI credit (half-yearly) was granted exactly once and the theme allowance is 2', rows(w, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1 && rows(w, 'subscription')[0].themeChangesLimit === 2);
     ok('RESUME: the invoice amount is untouched (₹5,994, GST none) and the old link is dead, the new one resolves', rows(w, 'invoice')[0].totalAmount === 599400 && rows(w, 'invoice')[0].payTokenHash !== oldToken && Boolean(await w.pay.loadByToken(tokenOf(fresh.payLink))));
     await w.deals.activateNow(leftover.id, 7, 7, ADMIN);
     ok('running activation a SECOND time is a no-op (same term, one credit)', rows(w, 'billingTerm').length === 1 && rows(w, 'walletTransaction').filter((t) => t.service === 'ai_studio_bonus').length === 1);
@@ -819,6 +819,118 @@ const rows = (w, name) => w.t[name] ?? [];
     await w2.deals.createInvoice(stepSpec(), ADMIN, { activateNow: true });
     const live = rows(w2, 'invoice').filter((i) => i.status !== 'VOID');
     ok('after void-and-replace: exactly ONE non-void invoice, ₹5,994, with the term attached', live.length === 1 && live[0].totalAmount === 599400 && rows(w2, 'billingTerm').length === 1 && rows(w2, 'invoice').some((i) => i.id === wrong.id && i.status === 'VOID'));
+  }
+
+  section('AI STUDIO CREDIT prorated by term: grant = max(0, target − already granted); never claws back; existing wallets untouched');
+  {
+    const AIB = (w, vendor = 'v_step') => rows(w, 'walletTransaction').filter((t) => t.vendorId === vendor && t.service === 'ai_studio_bonus');
+    const sum = (list) => list.reduce((a, t) => a + t.amount, 0);
+    const walletOf = (w, vendor = 'v_step') => rows(w, 'wallet').find((x) => x.vendorId === vendor);
+    const bystander = { wallet: [{ id: 'w_other', vendorId: 'v_other', balance: 12345, totalCredited: 20000, totalDebited: 7655 }], walletTransaction: [{ id: 'wt_old', vendorId: 'v_other', walletId: 'w_other', type: 'credit', amount: 20000, service: 'topup', description: 'old top-up', balanceAfter: 20000 }] };
+    const snap = (w) => JSON.stringify({ wallet: rows(w, 'wallet').find((x) => x.vendorId === 'v_other'), tx: rows(w, 'walletTransaction').filter((t) => t.vendorId === 'v_other') });
+
+    // 1. The stepnrock deal: Workspace half-yearly → ₹250, stored on deal and term, granted once at "activate now".
+    const w = world(bystander);
+    const before = snap(w);
+    const pre = await w.deals.preview(stepSpec());
+    ok('DEAL BUILDER preview returns the computed credit (₹250 half-yearly) — the UI prefills from the server, nothing is re-implemented client-side', pre.aiCredit.paise === 25000 && pre.aiCredit.computedPaise === 25000 && pre.aiCredit.overridden === false);
+    ok('…and it follows plan/cycle/months: BOS monthly ₹108, Workspace custom 3 months ₹125, Workspace annual ₹499', (await w.deals.preview(stepSpec({ planKey: 'BOS', billingCycle: 'MONTHLY' }))).aiCredit.paise === 10800 && (await w.deals.preview(stepSpec({ billingCycle: 'CUSTOM_MONTHS', customMonths: 3 }))).aiCredit.paise === 12500 && (await w.deals.preview(stepSpec({ billingCycle: 'ANNUAL' }))).aiCredit.paise === 49900);
+    const made = await w.deals.createInvoice(stepSpec(), ADMIN, { activateNow: true });
+    ok('ACTIVATE NOW: exactly one ai_studio_bonus credit of ₹250 (25000 paise), wallet balance ₹250', AIB(w).length === 1 && AIB(w)[0].amount === 25000 && walletOf(w).balance === 25000);
+    ok('the amount is stored on the deal AND on the term', rows(w, 'billingDeal')[0].aiCreditPaise === 25000 && rows(w, 'billingTerm')[0].aiCreditPaise === 25000);
+    ok('the wallet transaction names the plan and the term', /Workspace/.test(AIB(w)[0].description) && /6-month/.test(AIB(w)[0].description), AIB(w)[0].description);
+    ok('the credit is not a charge: invoice total is still ₹5,994 and no line mentions it', rows(w, 'invoice')[0].totalAmount === 599400 && !JSON.stringify(rows(w, 'invoice')[0].lineItems).toLowerCase().includes('credit'));
+    const termId = rows(w, 'billingTerm')[0].id;
+    const again = await Promise.all([w.deals.activateNow(made.invoice.id, 7, 7, ADMIN), w.deals.activateNow(made.invoice.id, 7, 7, ADMIN)]);
+    ok('DOUBLE-CLICK / retry of activate-now: same term, still ONE credit', again.every((x) => x.termId === termId) && AIB(w).length === 1 && walletOf(w).balance === 25000);
+    const g1 = await w.prisma.$transaction((tx) => w.settlement.grantAiCredit(tx, 'v_step', 'WORKSPACE', termId));
+    const g2 = await w.prisma.$transaction((tx) => w.settlement.grantAiCredit(tx, 'v_step', 'WORKSPACE', termId));
+    ok('calling the grant again (retry / double-settle) returns 0 and changes nothing', g1 === 0 && g2 === 0 && AIB(w).length === 1);
+    const inv0 = rows(w, 'invoice')[0];
+    await w.settlement.applyPayment(inv0.id, { amountPaise: inv0.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-10-09T00:00:00Z') });
+    ok('PAYING the activation invoice later grants nothing more (still ₹250 once)', AIB(w).length === 1 && sum(AIB(w)) === 25000 && rows(w, 'billingTerm').find((t) => t.isCurrent).aiCreditPaise === 25000);
+    await w.settlement.applyPayment(inv0.id, { amountPaise: inv0.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-10-09T00:00:00Z') }).catch(() => undefined);
+    ok('DOUBLE-SETTLE of the same invoice: nothing is granted twice', AIB(w).length === 1 && sum(AIB(w)) === 25000);
+
+    // 2. Half-yearly → annual (same plan, longer term) grants only the difference; then Workspace → BOS grants the difference again.
+    let req = await w.planChanges.request('v_step', { toPlanKey: 'WORKSPACE', toCycle: 'ANNUAL', effective: 'NOW' });
+    let res = await w.planChanges.approve(req.id, { effective: 'NOW' }, ADMIN, d('2026-11-01T00:00:00Z'));
+    let pc = rows(w, 'invoice').find((i) => i.id === res.invoiceId);
+    await w.settlement.applyPayment(pc.id, { amountPaise: pc.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-11-01T00:00:00Z') });
+    ok('UPGRADE half-yearly → annual: grants ONLY the difference (₹249), total ₹499', AIB(w).length === 2 && AIB(w)[1].amount === 24900 && sum(AIB(w)) === 49900 && rows(w, 'billingTerm').find((t) => t.isCurrent).aiCreditPaise === 49900, AIB(w).map((t) => t.amount).join());
+    req = await w.planChanges.request('v_step', { toPlanKey: 'BOS', toCycle: 'ANNUAL', effective: 'NOW' });
+    res = await w.planChanges.approve(req.id, { effective: 'NOW' }, ADMIN, d('2027-01-01T00:00:00Z'));
+    pc = rows(w, 'invoice').find((i) => i.id === res.invoiceId);
+    await w.settlement.applyPayment(pc.id, { amountPaise: pc.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2027-01-01T00:00:00Z') });
+    ok('UPGRADE Workspace → BOS annual: grants the difference up to ₹1,299 (₹800 more)', sum(AIB(w)) === 129900 && AIB(w).length === 3 && AIB(w)[2].amount === 80000, AIB(w).map((t) => t.amount).join());
+
+    // 3. Renewal of the same plan/length grants nothing; a downgrade grants nothing and never claws back.
+    const balanceBefore = walletOf(w).balance;
+    await w.renewal.runOnce(d('2027-12-17T00:00:00Z'));
+    const ren = rows(w, 'invoice').find((i) => i.kind === 'RENEWAL');
+    await w.settlement.applyPayment(ren.id, { amountPaise: ren.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2027-12-20T00:00:00Z') });
+    ok('RENEWAL (same plan and length) grants nothing; the new term carries the same credit', AIB(w).length === 3 && walletOf(w).balance === balanceBefore && rows(w, 'billingTerm').find((t) => t.isCurrent).aiCreditPaise === 129900);
+    const dreq = await w.planChanges.request('v_step', { toPlanKey: 'WORKSPACE', toCycle: 'ANNUAL' });
+    await w.planChanges.approve(dreq.id, { effective: 'AT_RENEWAL' }, ADMIN, d('2028-01-02T00:00:00Z'));
+    await w.renewal.runOnce(d('2028-12-17T00:00:00Z'));
+    const ren2 = rows(w, 'invoice').filter((i) => i.kind === 'RENEWAL')[1];
+    await w.settlement.applyPayment(ren2.id, { amountPaise: ren2.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2028-12-20T00:00:00Z') });
+    ok('DOWNGRADE BOS → Workspace at renewal: grants nothing and NEVER claws back (balance unchanged, term now targets ₹499)', rows(w, 'billingTerm').find((t) => t.isCurrent).planKey === 'WORKSPACE' && AIB(w).length === 3 && walletOf(w).balance === balanceBefore && rows(w, 'billingTerm').find((t) => t.isCurrent).aiCreditPaise === 49900);
+
+    // 4. Admin override on the term: a higher figure grants the difference once; a lower figure grants nothing.
+    const t0 = rows(w, 'billingTerm').find((t) => t.isCurrent);
+    await w.terms.override('v_step', { reason: 'goodwill', aiCreditPaise: 200000 }, ADMIN);
+    ok('TERM OVERRIDE to ₹2,000 grants the difference over what was granted (₹2,000 − ₹1,299 = ₹701)', AIB(w).length === 4 && AIB(w)[3].amount === 200000 - 129900 && sum(AIB(w)) === 200000, AIB(w).map((t) => t.amount).join());
+    await w.terms.override('v_step', { reason: 'repeat', aiCreditPaise: 200000 }, ADMIN);
+    await w.terms.override('v_step', { reason: 'lower', aiCreditPaise: 50000 }, ADMIN);
+    ok('re-applying the same figure, or a lower one, grants nothing (no claw-back)', AIB(w).length === 4 && sum(AIB(w)) === 200000 && rows(w, 'billingTerm').find((t) => t.isCurrent).aiCreditPaise === 50000);
+    await w.terms.override('v_step', { reason: 'grace only', graceDays: 12 }, ADMIN);
+    ok('an override that does not touch the credit (grace days only) grants nothing', AIB(w).length === 4);
+    await rejects('an override above ₹5,000 is refused', w.terms.override('v_step', { reason: 'too much', aiCreditPaise: 500001 }, ADMIN), { status: 400 });
+    ok('the term override is audit-logged with before/after/computed', rows(w, 'commercialAuditLog').some((a) => a.action === 'term.ai_credit' && a.detail.afterPaise === 200000 && a.detail.beforePaise === 49900 && a.detail.computedPaise === 49900));
+    ok('EXISTING WALLETS UNTOUCHED: another vendor\'s wallet and transactions are byte-identical after all of the above', snap(w) === before);
+    ok('the vendor view says what is included (Rs X) for the CURRENT term', (() => { const T = dist('commercial/terms.service'); const v = T.vendorTermView(rows(w, 'billingTerm').find((t) => t.isCurrent)); return v.aiCreditIncludedPaise === 50000; })());
+    const av = await w.terms.adminView('v_step');
+    ok('the admin term view shows target, computed and granted', av.aiCredit.targetPaise === 50000 && av.aiCredit.computedPaise === 49900 && av.aiCredit.grantedPaise === 200000, JSON.stringify(av.aiCredit));
+
+    // 5. Paid activation (no activate-now), annual, and the audit of a deal-level override.
+    {
+      const w2 = world(bystander);
+      await w2.deals.createInvoice(stepSpec({ billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE' }), ADMIN, {});
+      const i2 = rows(w2, 'invoice')[0];
+      ok('before payment nothing is granted', AIB(w2).length === 0);
+      await w2.settlement.applyPayment(i2.id, { amountPaise: i2.totalAmount, via: 'OFFLINE', actor: ADMIN, now: d('2026-10-09T00:00:00Z') });
+      ok('PAID ACTIVATION, annual Workspace: ₹499 once; nothing audit-logged because it equals the computed value', AIB(w2).length === 1 && AIB(w2)[0].amount === 49900 && rows(w2, 'commercialAuditLog').filter((a) => a.action === 'deal.ai_credit_override').length === 0);
+    }
+    {
+      const w3 = world(bystander);
+      const m3 = await w3.deals.createInvoice(stepSpec({ aiCreditPaise: 0 }), ADMIN, { activateNow: true });
+      ok('DEAL OVERRIDE ₹0: no wallet credit at all, term and deal store 0', AIB(w3).length === 0 && rows(w3, 'billingTerm')[0].aiCreditPaise === 0 && rows(w3, 'billingDeal')[0].aiCreditPaise === 0);
+      const au = rows(w3, 'commercialAuditLog').filter((a) => a.action === 'deal.ai_credit_override');
+      ok('…and the override is audit-logged (computed ₹250 vs entered ₹0, by whom)', au.length === 1 && au[0].detail.computedPaise === 25000 && au[0].detail.enteredPaise === 0 && au[0].actor === ADMIN.email);
+      const w4 = world(bystander);
+      await w4.deals.createInvoice(stepSpec({ aiCreditPaise: 100000 }), ADMIN, { activateNow: true });
+      ok('DEAL OVERRIDE custom ₹1,000: exactly that is granted, once', AIB(w4).length === 1 && AIB(w4)[0].amount === 100000 && rows(w4, 'billingTerm')[0].aiCreditPaise === 100000);
+      await rejects('a deal override above ₹5,000 is refused before anything is created', world().deals.createInvoice(stepSpec({ aiCreditPaise: 500001 }), ADMIN, { activateNow: true }), { status: 400 });
+      const w5 = world(bystander);
+      await w5.deals.saveDraft(stepSpec({ aiCreditPaise: 77700 }), ADMIN);
+      ok('a saved draft stores the figure on the deal and logs the override', rows(w5, 'billingDeal')[0].aiCreditPaise === 77700 && rows(w5, 'commercialAuditLog').some((a) => a.action === 'deal.ai_credit_override'));
+      void m3;
+    }
+    // 6. A vendor who already received the old flat ₹499 (legacy flow) gets nothing more on a half-yearly term.
+    {
+      const w6 = world({ wallet: [{ id: 'w_step', vendorId: 'v_step', balance: 49900, totalCredited: 49900, totalDebited: 0 }], walletTransaction: [{ id: 'wt_legacy', vendorId: 'v_step', walletId: 'w_step', type: 'credit', amount: 49900, service: 'ai_studio_bonus', description: 'legacy', balanceAfter: 49900 }] });
+      await w6.deals.createInvoice(stepSpec(), ADMIN, { activateNow: true });
+      ok('LEGACY ₹499 already granted: half-yearly activation adds nothing (granted ≥ target), wallet untouched', AIB(w6).length === 1 && walletOf(w6).balance === 49900);
+    }
+    // 7. The stepnrock-leftover path (RESUME) back-fills the figure on the existing deal.
+    {
+      const w7 = world();
+      await w7.deals.createInvoice(stepSpec(), ADMIN, {});
+      rows(w7, 'billingDeal')[0].aiCreditPaise = null; // a deal created before this feature
+      await w7.deals.activateNow(rows(w7, 'invoice')[0].id, 7, 7, ADMIN);
+      ok('RESUME of a pre-feature leftover: ₹250 granted once, stored on the term AND back-filled on the deal', AIB(w7).length === 1 && AIB(w7)[0].amount === 25000 && rows(w7, 'billingTerm')[0].aiCreditPaise === 25000 && rows(w7, 'billingDeal')[0].aiCreditPaise === 25000);
+    }
   }
 
   section('LEGACY paths cannot bypass the commercial engine');

@@ -4,6 +4,7 @@ import {
   computeTotals, cycleMonths, discountFromPercent, isBigDiscount, planListPaise, subtotalOf,
 } from './pricing-math';
 import { PlanKey } from './entitlements';
+import { ResolvedAiCredit, resolveAiCredit } from './ai-credit';
 
 /**
  * Turns an admin's deal spec into server-authoritative lines + totals. The PLAN line is priced here from
@@ -29,6 +30,8 @@ export interface QuoteSpec {
   addons?: AddonLineInput[];
   discount?: DiscountInput;
   gstMode: GstMode;
+  /** Admin override of the AI Studio credit in paise (₹0…₹5,000). Omit to use the prorated amount. */
+  aiCreditPaise?: number | null;
 }
 
 export interface AnnualRates { WORKSPACE: number; BOS: number }
@@ -41,6 +44,8 @@ export interface BuiltQuote {
   bigDiscount: boolean;
   /** Set when mode === 'PROMO' — the caller resolves the code and calls `withPromoDiscount`. */
   wantsPromo: boolean;
+  /** The AI Studio credit this deal's term carries (null when the deal has no plan). NOT a charge. */
+  aiCredit: ResolvedAiCredit | null;
 }
 
 export function planLabel(planKey: PlanKey, months: number): string {
@@ -51,6 +56,7 @@ export function planLabel(planKey: PlanKey, months: number): string {
 export function buildQuote(spec: QuoteSpec, rates: AnnualRates, promoDiscountPaise = 0): BuiltQuote {
   const lines: Line[] = [];
   let months: number | null = null;
+  let aiCredit: ResolvedAiCredit | null = null;
 
   if (spec.planKey) {
     if (!spec.billingCycle) throw new BadRequestException('Choose a billing cycle for the plan');
@@ -58,6 +64,7 @@ export function buildQuote(spec: QuoteSpec, rates: AnnualRates, promoDiscountPai
     const annual = rates[spec.planKey];
     if (!Number.isInteger(annual) || annual <= 0) throw new BadRequestException('Plan price is not configured');
     lines.push({ kind: 'PLAN', label: planLabel(spec.planKey, months), amountPaise: planListPaise(annual, months), qty: 1 });
+    try { aiCredit = resolveAiCredit(spec.planKey, months, spec.aiCreditPaise); } catch (e) { throw new BadRequestException((e as Error).message); }
   }
 
   for (const a of spec.addons ?? []) {
@@ -98,7 +105,7 @@ export function buildQuote(spec: QuoteSpec, rates: AnnualRates, promoDiscountPai
 
   let totals: Totals;
   try { totals = computeTotals(lines, discountPaise, spec.gstMode); } catch (e) { throw new BadRequestException((e as Error).message); }
-  return { lines, months, totals, discountReason: reason, bigDiscount, wantsPromo: d.mode === 'PROMO' };
+  return { lines, months, totals, discountReason: reason, bigDiscount, wantsPromo: d.mode === 'PROMO', aiCredit };
 }
 
 export const CUSTOM_MONTHS_HINT = `1–${MAX_CUSTOM_MONTHS} months`;

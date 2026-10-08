@@ -15,7 +15,7 @@ import { ErrorBox, Field, PayLinkBox, Pill, cardCls, inputCls, msg, selectCls } 
 
 interface VendorOpt { id: string; businessName: string; name: string; subdomain: string | null }
 interface AddonRow { id: number; kind: 'ADDON' | 'CUSTOM'; label: string; rupees: string; qty: string }
-interface Preview { lines: PricedLine[]; totals: Totals; bigDiscount: boolean; months: number | null; discountReason: string | null; promo: { code: string } | null }
+interface Preview { lines: PricedLine[]; totals: Totals; bigDiscount: boolean; months: number | null; discountReason: string | null; promo: { code: string } | null; aiCredit: { computedPaise: number; paise: number; overridden: boolean; annualPaise: number } | null }
 interface DealRow { id: string; status: string; planKey: PlanKey | null; billingCycle: Cycle | null; listAmountPaise: number; discountPaise: number; prospectBusiness: string | null; vendorId: string | null; createdAt: string; gstMode: GstMode; notes: string | null }
 
 const CHANNELS: { key: Channel; label: string }[] = [
@@ -51,6 +51,9 @@ function DealBuilder() {
   const [dueDays, setDueDays] = useState('7');
   const [notes, setNotes] = useState('');
   const [sendNow, setSendNow] = useState(false);
+  // AI Studio credit (₹): shows the server's prorated amount until KSM types one; typing marks it as an override.
+  const [aiCredit, setAiCredit] = useState('');
+  const [aiCreditEdited, setAiCreditEdited] = useState(false);
 
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState('');
@@ -63,6 +66,12 @@ function DealBuilder() {
     api.getVendors().then((r) => setVendors((r.data ?? []) as VendorOpt[])).catch(() => undefined);
     void loadDeals();
   }, [loadDeals]);
+
+  // Changing the plan, billing cycle or number of months re-prefills the credit from the server's rule.
+  useEffect(() => { setAiCreditEdited(false); setAiCredit(''); }, [planKey, cycle, customMonths]);
+
+  const aiCreditPaise = aiCreditEdited && aiCredit.trim() !== '' ? Math.round(Number(aiCredit) * 100) : undefined;
+  const aiCreditInvalid = aiCreditPaise !== undefined && (!Number.isFinite(aiCreditPaise) || aiCreditPaise < 0 || aiCreditPaise > 500000);
 
   const spec = useMemo<DealSpec>(() => {
     const s: DealSpec = {
@@ -78,8 +87,9 @@ function DealBuilder() {
     if (discMode === 'PERCENT' || discMode === 'FLAT') s.discount = { mode: discMode, value: discMode === 'FLAT' ? Math.round(Number(discValue) * 100) : Number(discValue), reason: discReason, confirm: confirmText || undefined };
     else if (discMode === 'PROMO') { s.discount = { mode: 'PROMO' }; s.promoCode = promoCode; }
     if (dueDays !== '') s.paymentDueDays = Number(dueDays);
+    if (planKey && aiCreditPaise !== undefined && !aiCreditInvalid) s.aiCreditPaise = aiCreditPaise;
     return s;
-  }, [target, vendorId, prospect, planKey, cycle, customMonths, kind, addons, discMode, discValue, discReason, confirmText, promoCode, gstMode, graceDays, channels, expiry, allowPromo, allowStack, dueDays, notes]);
+  }, [target, vendorId, prospect, planKey, cycle, customMonths, kind, addons, discMode, discValue, discReason, confirmText, promoCode, gstMode, graceDays, channels, expiry, allowPromo, allowStack, dueDays, notes, aiCreditPaise, aiCreditInvalid]);
 
   // Live totals: the SERVER prices it (same code path that issues the invoice), debounced.
   const seq = useRef(0);
@@ -96,7 +106,7 @@ function DealBuilder() {
 
   const bigNeedsConfirm = preview?.bigDiscount && (discMode === 'PERCENT' || discMode === 'FLAT');
   const targetOk = target === 'existing' ? Boolean(vendorId) : Boolean(prospect.name.trim() && prospect.business.trim() && prospect.email.trim());
-  const canIssue = targetOk && Boolean(preview) && channels.length > 0 && (!bigNeedsConfirm || confirmText === 'CONFIRM');
+  const canIssue = targetOk && Boolean(preview) && channels.length > 0 && !aiCreditInvalid && (!bigNeedsConfirm || confirmText === 'CONFIRM');
 
   async function submit(mode: 'draft' | 'invoice' | 'activate') {
     setError(''); setBusy(mode);
@@ -236,6 +246,19 @@ function DealBuilder() {
                 ))}
               </div>
             </div>
+            {planKey && (
+              <div className="mt-4 rounded-xl border border-slate-700 p-3.5">
+                <Field label="AI Studio credit (₹)" hint={preview?.aiCredit ? `Prorated for this term: ${rupees(preview.aiCredit.computedPaise)}${preview.months ? ` (${preview.months}-month term of the annual ${rupees(preview.aiCredit.annualPaise)} credit)` : ''}. Edit to override (₹0–₹5,000). It is a one-time wallet credit for the vendor, not a charge, and does not appear on the invoice.` : 'Choose the plan and cycle to see the prorated credit.'}>
+                  <div className="flex items-center gap-2">
+                    <input className={inputCls} inputMode="decimal" value={aiCreditEdited ? aiCredit : preview?.aiCredit ? String(preview.aiCredit.computedPaise / 100) : ''} placeholder="—"
+                      onChange={(e) => { setAiCreditEdited(true); setAiCredit(e.target.value.replace(/[^0-9.]/g, '')); }} />
+                    {aiCreditEdited && <button type="button" className="whitespace-nowrap text-xs font-semibold text-primary-300 hover:underline" onClick={() => { setAiCreditEdited(false); setAiCredit(''); }}>Reset to prorated</button>}
+                  </div>
+                </Field>
+                {aiCreditInvalid && <p role="alert" className="mt-1 text-xs text-error-400">Enter an amount from ₹0 to ₹5,000.</p>}
+                {preview?.aiCredit?.overridden && !aiCreditInvalid && <p className="mt-1 text-xs text-warning-300">Different from the prorated {rupees(preview.aiCredit.computedPaise)} — this override is recorded in the audit log.</p>}
+              </div>
+            )}
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" className="accent-primary-500" checked={allowPromo} onChange={(e) => setAllowPromo(e.target.checked)} />Let the payer enter a promo code</label>
               <label className={`flex items-center gap-2 text-sm ${allowPromo ? 'text-slate-300' : 'text-slate-600'}`}><input type="checkbox" disabled={!allowPromo} className="accent-primary-500" checked={allowStack} onChange={(e) => setAllowStack(e.target.checked)} />Allow it to stack on my discount</label>
@@ -259,6 +282,7 @@ function DealBuilder() {
                 <div className="flex justify-between"><span className="text-slate-400">GST</span><span className="text-white">{gstMode === 'NONE' ? 'None' : rupees(preview.totals.gstPaise)}</span></div>
                 <div className="flex justify-between border-t border-slate-800 pt-2"><span className="font-bold text-white">Total payable</span><span className="text-xl font-bold text-white">{rupees(preview.totals.totalPaise)}</span></div>
                 {preview.months && <p className="text-[11px] text-slate-500">{preview.months}-month term.</p>}
+                {preview.aiCredit && <p className="text-[11px] text-slate-500">Includes a one-time {rupees(preview.aiCredit.paise)} AI Studio wallet credit (not charged).</p>}
               </div>
             )}
           </div>

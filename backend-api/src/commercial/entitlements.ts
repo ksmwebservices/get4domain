@@ -1,5 +1,5 @@
+import { AI_CREDIT_ANNUAL_PAISE } from './ai-credit';
 import {
-  WORKSPACE_AI_CREDIT_PAISE, BOS_AI_CREDIT_PAISE,
   WORKSPACE_FREE_SEO_KEYWORDS, BOS_FREE_SEO_KEYWORDS,
   WORKSPACE_THEME_CHANGE_LIMIT, BOS_THEME_CHANGE_LIMIT,
 } from '../payments/plan-pricing.constants';
@@ -11,8 +11,11 @@ import {
 export type PlanKey = 'WORKSPACE' | 'BOS';
 
 export interface Entitlements {
-  /** One-time AI Studio wallet credit, granted exactly once per vendor. */
-  aiCreditPaise: number;
+  /**
+   * ANNUAL list amount of the one-time AI Studio credit (what the public pages advertise). The credit a vendor
+   * actually gets is prorated by billing term — see `aiStudioCreditPaise()` in ai-credit.ts.
+   */
+  aiCreditAnnualPaise: number;
   /** Free SEO keywords included. */
   seoKeywords: number;
   /** Theme/website customisations per 12 months. */
@@ -26,11 +29,11 @@ export interface Entitlements {
 
 export const ENTITLEMENTS: Record<PlanKey, Entitlements> = {
   WORKSPACE: {
-    aiCreditPaise: WORKSPACE_AI_CREDIT_PAISE, seoKeywords: WORKSPACE_FREE_SEO_KEYWORDS, themeChangesPerYear: WORKSPACE_THEME_CHANGE_LIMIT,
+    aiCreditAnnualPaise: AI_CREDIT_ANNUAL_PAISE.WORKSPACE, seoKeywords: WORKSPACE_FREE_SEO_KEYWORDS, themeChangesPerYear: WORKSPACE_THEME_CHANGE_LIMIT,
     whatsappBotReply: false, fullAccounting: false, hrm: false, inventory: false, taskManagement: false,
   },
   BOS: {
-    aiCreditPaise: BOS_AI_CREDIT_PAISE, seoKeywords: BOS_FREE_SEO_KEYWORDS, themeChangesPerYear: BOS_THEME_CHANGE_LIMIT,
+    aiCreditAnnualPaise: AI_CREDIT_ANNUAL_PAISE.BOS, seoKeywords: BOS_FREE_SEO_KEYWORDS, themeChangesPerYear: BOS_THEME_CHANGE_LIMIT,
     whatsappBotReply: true, fullAccounting: true, hrm: true, inventory: true, taskManagement: true,
   },
 };

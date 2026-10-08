@@ -21,6 +21,7 @@
 const path = require('path');
 const dist = (p) => require(path.join(__dirname, '..', 'dist', 'src', p));
 const { decideStepnrock } = require('./activate-stepnrock-lib');
+const { aiStudioCreditPaise, AI_CREDIT_ANNUAL_PAISE } = dist('commercial/ai-credit');
 
 const argv = process.argv.slice(2);
 const APPLY = argv.includes('--apply');
@@ -37,10 +38,24 @@ const EXPECTED_NET_PAISE = 599400;
 const line = (s = '') => console.log(s);
 const head = (s) => { line(); line(`── ${s} ${'─'.repeat(Math.max(0, 70 - s.length))}`); };
 const rupees = (p) => `₹${(p / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const rs = (p) => `Rs ${(p / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : async () => ({ status: 'mock', mock: true })) });
 
+// If DATABASE_URL was not exported (e.g. `set -a; . ./.env; set +a` was skipped), read it from backend-api/.env, then .env.local.
+if (!process.env.DATABASE_URL) {
+  const fs = require('fs');
+  for (const name of ['.env', '.env.local']) {
+    const file = path.join(__dirname, '..', name);
+    if (!fs.existsSync(file)) continue;
+    for (const l of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+      const m = l.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+}
+
 (async () => {
-  if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is not set (source backend-api/.env first).'); process.exit(2); }
+  if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is not set (export it from backend-api/.env first).'); process.exit(2); }
   const host = (() => { try { return new URL(process.env.DATABASE_URL).host; } catch { return 'unknown'; } })();
   line(`Stepnrock activation — ${APPLY ? 'APPLY' : 'DRY RUN (read-only)'} — database host: ${host}`);
 
@@ -54,8 +69,9 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     const needTables = ['g4d_billing_terms', 'g4d_billing_deals', 'g4d_payee_settings'];
     const haveTables = (await q(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name = ANY(ARRAY['${needTables.join("','")}'])`)).map((r) => r.table_name);
     const haveCols = (await q(`SELECT column_name FROM information_schema.columns WHERE table_name='Invoice' AND column_name IN ('kind','payTokenHash','paidPaise')`)).map((r) => r.column_name);
-    const schemaReady = needTables.every((t) => haveTables.includes(t)) && haveCols.length === 3;
-    line(schemaReady ? 'Commercial Engine schema is APPLIED.' : `Commercial Engine schema is NOT applied (missing tables: ${needTables.filter((t) => !haveTables.includes(t)).join(', ') || 'none'}; Invoice columns found: ${haveCols.join(',') || 'none'}).`);
+    const haveAiCol = (await q(`SELECT 1 FROM information_schema.columns WHERE table_name='g4d_billing_terms' AND column_name='aiCreditPaise'`)).length === 1;
+    const schemaReady = needTables.every((t) => haveTables.includes(t)) && haveCols.length === 3 && haveAiCol;
+    line(schemaReady ? 'Commercial Engine schema is APPLIED.' : `Commercial Engine schema is NOT applied (missing tables: ${needTables.filter((t) => !haveTables.includes(t)).join(', ') || 'none'}; Invoice columns found: ${haveCols.join(',') || 'none'}; aiCreditPaise column (migration 20261008100000_ai_credit_per_term): ${haveAiCol ? 'present' : 'MISSING'}).`);
 
     // 1. Vendor (read-only)
     head('Vendor');
@@ -74,11 +90,13 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     }
     const legacySubs = (await q(`SELECT count(*)::int n FROM "Subscription" WHERE "vendorId"='${vendor.id}'`))[0].n;
     const legacyInv = (await q(`SELECT count(*)::int n FROM "Invoice" WHERE "vendorId"='${vendor.id}'`))[0].n;
+    const priorCredit = (await q(`SELECT amount FROM g4d_wallet_transactions WHERE "vendorId"='${vendor.id}' AND service='ai_studio_bonus'`));
     line(`legacy subscriptions: ${legacySubs} · invoices (all kinds): ${legacyInv}`);
+    line(`AI Studio credit already granted (ai_studio_bonus): ${priorCredit.length ? priorCredit.map((c) => rs(c.amount)).join(' + ') : 'none'}`);
     line(currentTerm ? `billing term: ${currentTerm.status} ${currentTerm.planKey}/${currentTerm.billingCycle} ending ${currentTerm.periodEnd?.toISOString?.().slice(0, 10)}` : 'billing term: none');
     line(existingInvoice ? `activation invoice: ${existingInvoice.invoiceNumber} ${existingInvoice.status} ${rupees(existingInvoice.totalAmount)} (${existingInvoice.planKey}/${existingInvoice.billingCycle}, GST ${existingInvoice.gstMode}, paid ${rupees(existingInvoice.paidPaise ?? 0)}, ${submissionCount} proof(s))` : 'activation invoice: none');
     const decision = decideStepnrock({ currentTerm, invoice: existingInvoice, submissionCount });
-    line(`decision: ${decision.action} — ${decision.reason}`);
+    line(schemaReady ? `decision: ${decision.action} — ${decision.reason}` : 'decision: not evaluated — the schema is not fully applied yet, so existing invoices/terms were not read');
 
     // 3. Payee / gateway readiness (warnings only)
     head('Readiness');
@@ -102,16 +120,21 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     line(`term ...... ACTIVE_PAYMENT_DUE now → ${DUE_DAYS} day(s) to pay; ${quote.months}-month period; source ADMIN_DEAL`);
     if (quote.totals.totalPaise !== EXPECTED_NET_PAISE) { console.error(`ABORT: computed total ${quote.totals.totalPaise} ≠ agreed ${EXPECTED_NET_PAISE}. The Pricing Manager workspace rate may have been changed.`); process.exitCode = 1; return; }
     line('✓ total matches the agreed ₹5,994.00');
+    const aiCreditPaise = aiStudioCreditPaise(DEAL.planKey, quote.months);
+    const annualCredit = AI_CREDIT_ANNUAL_PAISE[DEAL.planKey];
+    line(`AI credit ${rs(aiCreditPaise)} (half-yearly Workspace, prorated from ${rs(annualCredit).replace('.00', '')})`);
+    line('           stored on the deal and the term; granted once at activation (nothing more when the invoice is paid or on renewal)');
 
     // 5. What apply would do / refuse
     head('What --apply does');
-    if (decision.action === 'REFUSE_HAS_TERM') line(`REFUSES: ${decision.reason}. Use Admin → Vendor → Billing terms to change it.`);
+    if (!schemaReady) line('NOTHING yet: apply the pending migrations first (npx prisma migrate deploy), then re-run this dry run.');
+    else if (decision.action === 'REFUSE_HAS_TERM') line(`REFUSES: ${decision.reason}. Use Admin → Vendor → Billing terms to change it.`);
     else if (decision.action === 'REFUSE_HAS_PAYMENTS') line(`REFUSES: ${decision.reason}.`);
     else if (decision.action === 'RESUME') {
       line(`RESUMES on ${existingInvoice.invoiceNumber} (unpaid, ${rupees(existingInvoice.totalAmount)}) — creates NO new invoice and NO new deal:`);
       line('1. term → ACTIVE_PAYMENT_DUE (all Workspace features on immediately)');
       line('2. legacy Subscription row with theme limit 2 and reset date +12 months');
-      line(`3. one-time ${rupees(49900)} AI Studio credit, exactly once (skipped if any 'ai_studio_bonus' already exists)`);
+      line(`3. one-time ${rs(aiCreditPaise)} AI Studio credit (prorated), only the part not already granted`);
       line('4. issues a FRESH pay link and prints it (the link from the interrupted attempt was never shown; the old one stops working)');
     } else if (decision.action === 'VOID_AND_REPLACE') {
       line(`VOIDS ${existingInvoice.invoiceNumber} (it does not match the agreed deal; no payments) and creates the correct invoice + activation:`);
@@ -121,11 +144,11 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
       line('1. creates a BillingDeal (SENT) and the ACTIVATION invoice with a 256-bit pay link (link printed ONCE, only its hash is stored)');
       line('2. term → ACTIVE_PAYMENT_DUE (all Workspace features on immediately)');
       line('3. legacy Subscription row with theme limit 2 and reset date +12 months');
-      line(`4. one-time ${rupees(49900)} AI Studio credit, exactly once (skipped if any 'ai_studio_bonus' already exists)`);
+      line(`4. one-time ${rs(aiCreditPaise)} AI Studio credit (prorated), only the part not already granted`);
       line('5. audit-log entries; NO message is sent');
     }
 
-    if (!APPLY) { head('DRY RUN COMPLETE'); line('Nothing was written.'); if (!schemaReady) line('Apply migration 20261007120000_commercial_engine first, then re-run.'); return; }
+    if (!APPLY) { head('DRY RUN COMPLETE'); line('Nothing was written.'); if (!schemaReady) line('Apply the pending migrations (npx prisma migrate deploy) first, then re-run.'); return; }
 
     // ── APPLY ───────────────────────────────────────────────────────────────
     if (!schemaReady) { console.error('\nABORT: the commercial engine migration is not applied.'); process.exitCode = 2; return; }
@@ -173,11 +196,12 @@ const noop = new Proxy({}, { get: (_t, prop) => (prop === 'then' ? undefined : a
     const term = (await q(`SELECT status, "planKey", "billingCycle", "cycleMonths", "periodStart", "periodEnd", "paymentDueAt", "graceDays", source FROM g4d_billing_terms WHERE "vendorId"='${vendor.id}' AND "isCurrent"=true`))[0];
     const sub = (await q(`SELECT "themeChangesUsed", "themeChangesLimit", "themeChangesResetAt" FROM "Subscription" WHERE "vendorId"='${vendor.id}' ORDER BY "createdAt" DESC LIMIT 1`))[0];
     const credit = (await q(`SELECT amount FROM g4d_wallet_transactions WHERE "vendorId"='${vendor.id}' AND service='ai_studio_bonus'`));
+    const termCredit = (await q(`SELECT "aiCreditPaise" FROM g4d_billing_terms WHERE "vendorId"='${vendor.id}' AND "isCurrent"=true`))[0]?.aiCreditPaise;
     const wal = (await q(`SELECT balance FROM g4d_wallets WHERE "vendorId"='${vendor.id}'`))[0];
     line(`term: ${term.status} ${term.planKey}/${term.billingCycle} (${term.cycleMonths} mo) ${term.periodStart.toISOString().slice(0, 10)} → ${term.periodEnd.toISOString().slice(0, 10)} · payment due ${term.paymentDueAt?.toISOString().slice(0, 10)} · grace ${term.graceDays}d · ${term.source}`);
     line(`theme changes: ${sub.themeChangesUsed}/${sub.themeChangesLimit} used · resets ${sub.themeChangesResetAt.toISOString().slice(0, 10)}`);
-    line(`AI Studio credit rows: ${credit.length} (${credit.map((c) => rupees(c.amount)).join(', ')}) · wallet balance ${rupees(wal.balance)}`);
-    if (credit.length !== 1) line('WARNING: expected exactly one ai_studio_bonus credit.');
+    line(`AI Studio credit rows: ${credit.length} (${credit.map((c) => rs(c.amount)).join(', ')}) · term credit ${termCredit == null ? 'n/a' : rs(termCredit)} · wallet balance ${rupees(wal.balance)}`);
+    if (credit.reduce((a, c) => a + c.amount, 0) !== aiCreditPaise) line(`WARNING: expected ai_studio_bonus credits to total ${rs(aiCreditPaise)}.`);
 
     head('PAY LINK');
     if (payLink) { line(payLink); line('(Shown once. Only its hash is stored. Lost it? Admin → Commerce → Invoices → Copy link — the old link stops working.)'); }

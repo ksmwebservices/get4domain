@@ -97,7 +97,7 @@ export class DealsService {
   async preview(spec: DealSpec) {
     this.validateSpec({ ...spec, allowedChannels: spec.allowedChannels?.length ? spec.allowedChannels : ['OFFLINE'] });
     const q = await this.quote(spec, spec.vendorId);
-    return { lines: q.lines, months: q.months, totals: q.totals, discountReason: q.discountReason, bigDiscount: q.bigDiscount, promo: q.promo ?? null };
+    return { lines: q.lines, months: q.months, totals: q.totals, discountReason: q.discountReason, bigDiscount: q.bigDiscount, promo: q.promo ?? null, aiCredit: q.aiCredit };
   }
 
   // ── Vendor / prospect ──────────────────────────────────────────────────────────────────────────
@@ -146,6 +146,7 @@ export class DealsService {
       promoCodeId: extra.promoId ?? undefined, gstMode: spec.gstMode, graceDays: extra.graceDays, allowedChannels: extra.channels,
       linkExpiryDays: extra.linkExpiryDays, allowPromoEntry: Boolean(spec.allowPromoEntry), paymentDueDays: spec.paymentDueDays ?? undefined,
       notes: spec.notes?.slice(0, 1000), createdBy: actor.email,
+      aiCreditPaise: q.aiCredit?.paise ?? undefined,
     };
   }
 
@@ -157,6 +158,7 @@ export class DealsService {
       ? await this.prisma.billingDeal.update({ where: { id: dealId }, data: { ...data, status: 'DRAFT' } })
       : await this.prisma.billingDeal.create({ data: { ...data, status: 'DRAFT' } });
     if (q.bigDiscount || q.totals.discountPaise > 0) await this.audit.log(actor, 'deal.discount', 'BillingDeal', deal.id, { discountPaise: q.totals.discountPaise, reason: q.discountReason, big: q.bigDiscount });
+    if (q.aiCredit?.overridden) await this.audit.log(actor, 'deal.ai_credit_override', 'BillingDeal', deal.id, { computedPaise: q.aiCredit.computedPaise, enteredPaise: q.aiCredit.paise });
     return deal;
   }
 
@@ -181,6 +183,7 @@ export class DealsService {
       promoCodeId: q.promo?.id ?? null, allowPromoEntry: Boolean(spec.allowPromoEntry), allowedChannels: v.channels, linkExpiryDays: v.linkExpiryDays,
       dueInDays: opts.activateNow ? spec.paymentDueDays ?? 7 : v.linkExpiryDays,
     });
+    if (q.aiCredit?.overridden) await this.audit.log(actor, 'deal.ai_credit_override', 'BillingDeal', deal.id, { computedPaise: q.aiCredit.computedPaise, enteredPaise: q.aiCredit.paise, invoiceId: invoice.id });
     await this.audit.log(actor, 'deal.invoice_created', 'Invoice', invoice.id, {
       dealId: deal.id, kind, totalPaise: invoice.totalAmount, discountPaise: q.totals.discountPaise, discountReason: q.discountReason, big: q.bigDiscount, gstMode: spec.gstMode, channels: v.channels,
     });
@@ -202,7 +205,7 @@ export class DealsService {
 
   /**
    * "Activate now, payment due in N days": all features on immediately (ACTIVE_PAYMENT_DUE) while the invoice
-   * stays payable. The one-time AI Studio credit is granted now (idempotent — paying later never re-grants).
+   * stays payable. The AI Studio credit for the term (prorated, see ai-credit.ts) is granted now; paying later grants nothing more.
    */
   async activateNow(invoiceId: string, dueDays: number, graceDays: number, actor: Actor, now = new Date()): Promise<{ termId: string; credentials?: { email: string; password: string } }> {
     const out = await this.prisma.$transaction(async (tx) => {
@@ -226,6 +229,7 @@ export class DealsService {
           periodStart: now, periodEnd: addMonths(now, months), graceDays, status: 'ACTIVE_PAYMENT_DUE', source: inv.dealId ? 'ADMIN_DEAL' : 'STANDARD',
           isCurrent: true, allowedChannels: inv.allowedChannels, paymentDueAt: new Date(now.getTime() + dueDays * 86_400_000),
           activationInvoiceId: inv.id, activatedAt: now, createdBy: actor.email,
+          aiCreditPaise: await this.settlement.termAiCredit(tx, inv, inv.planKey as PlanKey, months),
         },
       });
       await tx.invoice.update({ where: { id: inv.id }, data: { termId: term.id } });

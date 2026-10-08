@@ -80,3 +80,4 @@ Design, flows and policies: [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md). Staff 
 | C-018 | Reel rendering in the container: runner image does not copy `remotion/` (found while auditing uploads; not changed) | OPEN — check on the VM whether reels work |
 | C-019 | Hotfix: void-returning advisory locks via `$queryRaw*` (Deal builder + live wallet/checkout locks) → `advisoryXactLock()`; raw-SQL guard; strict Prisma fake; `verify-db-lock.js` | **COMPLETE in code**; **KSM: deploy + run `verify-db-lock.js` (DEPLOYMENT.md §3b.7)** |
 | C-020 | Stepnrock: resume the leftover unpaid invoice `INV-2026-0005` (no second invoice) | **KSM: dry run → `--apply`** |
+| C-021 | AI Studio credit prorated by billing term (rule, per-deal override, grant-the-difference logic, vendor/admin display, stepnrock ₹250) | **COMPLETE in code**; **KSM: migrate deploy `20261008100000`, rebuild API + web, stepnrock dry run → `--apply` (DEPLOYMENT.md §3b.8)** |

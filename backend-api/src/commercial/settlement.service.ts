@@ -12,6 +12,7 @@ import { PlanKey, entitlementsFor } from './entitlements';
 import { activationPeriod } from './term-rules';
 import * as crypto from 'crypto';
 import { advisoryXactLock } from '../common/db-lock';
+import { aiStudioCreditPaise } from './ai-credit';
 
 type Db = Prisma.TransactionClient | PrismaService;
 
@@ -171,8 +172,10 @@ export class SettlementService {
           gstMode: inv.gstMode, periodStart: start, periodEnd: end, graceDays: deal?.graceDays ?? 7,
           status: 'ACTIVE', source: inv.dealId ? 'ADMIN_DEAL' : 'STANDARD', isCurrent: true, allowedChannels: inv.allowedChannels,
           activationInvoiceId: inv.id, activatedAt: now, createdBy: 'payment',
+          aiCreditPaise: deal?.aiCreditPaise ?? aiStudioCreditPaise(planKey, months),
         },
       });
+      if (deal && deal.aiCreditPaise == null) await tx.billingDeal.update({ where: { id: deal.id }, data: { aiCreditPaise: term.aiCreditPaise } });
     }
     await this.grantEntitlements(tx, inv.vendorId, planKey, term.id, term.periodStart ?? now, term.periodEnd ?? addMonths(now, months), term.netAmountPaise);
     return this.goLive(tx, inv.vendorId, now);
@@ -200,6 +203,9 @@ export class SettlementService {
         status: 'ACTIVE', source: cur?.source ?? 'STANDARD', isCurrent: true, allowedChannels: cur?.allowedChannels?.length ? cur.allowedChannels : inv.allowedChannels,
         activationInvoiceId: cur?.activationInvoiceId ?? undefined, activatedAt: cur?.activatedAt ?? now,
         scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null, scheduledNextNetPaise: null, scheduledNextDiscountReason: null,
+        // Same plan + length: carry the term's credit forward (so a renewal grants nothing). A different plan or length
+        // targets the prorated credit for the new shape; only the difference over what was already granted is credited.
+        aiCreditPaise: cur && cur.planKey === planKey && cur.cycleMonths === months && cur.aiCreditPaise != null ? cur.aiCreditPaise : aiStudioCreditPaise(planKey, months),
         subscriptionId: cur?.subscriptionId ?? undefined, createdBy: 'payment',
       },
     });
@@ -228,26 +234,51 @@ export class SettlementService {
     }
     await tx.billingTerm.update({ where: { id: termId }, data: { subscriptionId: sub.id } });
 
-    // One-time AI Studio credit — serialised per vendor and keyed by the service tag, so a retry, a renewal,
-    // a plan change or a later payment can never grant it twice.
-    if (ent.aiCreditPaise > 0) {
-      await this.lock(tx, `ai-credit:${vendorId}`);
-      const already = await tx.walletTransaction.findFirst({ where: { vendorId, service: 'ai_studio_bonus' }, select: { id: true } });
-      if (!already) {
-        const wallet = await tx.wallet.upsert({
-          where: { vendorId },
-          create: { vendorId, balance: ent.aiCreditPaise, totalCredited: ent.aiCreditPaise },
-          update: { balance: { increment: ent.aiCreditPaise }, totalCredited: { increment: ent.aiCreditPaise } },
-        });
-        await tx.walletTransaction.create({
-          data: {
-            vendorId, walletId: wallet.id, type: 'credit', amount: ent.aiCreditPaise, service: 'ai_studio_bonus',
-            description: `${planKey === 'BOS' ? 'BOS' : 'Workspace'} plan AI Studio credit — ${rupees(ent.aiCreditPaise)} free wallet credit`,
-            balanceAfter: wallet.balance, expiresAt: new Date(Date.now() + 90 * 86_400_000),
-          },
-        });
-      }
-    }
+    await this.grantAiCredit(tx, vendorId, planKey, termId);
+  }
+
+  /** The AI Studio credit a new term for `inv` carries: the deal's stored amount (computed or admin override), else prorated. */
+  async termAiCredit(tx: Prisma.TransactionClient, inv: Invoice, planKey: PlanKey, months: number): Promise<number> {
+    const deal = inv.dealId ? await tx.billingDeal.findUnique({ where: { id: inv.dealId } }) : null;
+    if (deal && deal.aiCreditPaise != null) return deal.aiCreditPaise;
+    const computed = aiStudioCreditPaise(planKey, months);
+    if (deal) await tx.billingDeal.update({ where: { id: deal.id }, data: { aiCreditPaise: computed } });
+    return computed;
+  }
+
+  /**
+   * One-time AI Studio credit, prorated by billing term (KSM, 2026-10-08).
+   *   target  = the term's aiCreditPaise (null → prorated for plan + months)
+   *   granted = everything this vendor has already received under the 'ai_studio_bonus' tag (any earlier term, plan or flow)
+   *   credit  = max(0, target − granted)  — serialised per vendor, so a retry, a double settlement or a renewal grants 0.
+   * Never claws back: a downgrade or a smaller target just grants nothing. Plan/cycle upgrades grant the difference only.
+   */
+  async grantAiCredit(tx: Prisma.TransactionClient, vendorId: string, planKey: PlanKey, termId: string): Promise<number> {
+    const term = await tx.billingTerm.findUnique({ where: { id: termId } });
+    if (!term) return 0;
+    const target = term.aiCreditPaise ?? aiStudioCreditPaise(planKey, term.cycleMonths);
+    if (target <= 0) return 0;
+    await this.lock(tx, `ai-credit:${vendorId}`);
+    const earlier = await tx.walletTransaction.findMany({ where: { vendorId, service: 'ai_studio_bonus' }, select: { amount: true } });
+    const granted = earlier.reduce((sum, r) => sum + Math.max(0, r.amount), 0);
+    const grant = Math.max(0, target - granted);
+    if (grant === 0) return 0;
+    const wallet = await tx.wallet.upsert({
+      where: { vendorId },
+      create: { vendorId, balance: grant, totalCredited: grant },
+      update: { balance: { increment: grant }, totalCredited: { increment: grant } },
+    });
+    const planName = planKey === 'BOS' ? 'BOS' : 'Workspace';
+    await tx.walletTransaction.create({
+      data: {
+        vendorId, walletId: wallet.id, type: 'credit', amount: grant, service: 'ai_studio_bonus',
+        description: granted > 0
+          ? `${planName} plan AI Studio credit — ${rupees(grant)} added (${term.cycleMonths}-month term, credit now ${rupees(target)} in total)`
+          : `${planName} plan AI Studio credit — ${rupees(grant)} free wallet credit (${term.cycleMonths}-month term)`,
+        balanceAfter: wallet.balance, expiresAt: new Date(Date.now() + 90 * 86_400_000),
+      },
+    });
+    return grant;
   }
 
   /** Demo/prospect → live. A deal-created prospect vendor (isSandbox with no expiry) also gets a first password. */

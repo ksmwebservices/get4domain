@@ -150,7 +150,7 @@ npx nest build                                      # the script runs the compil
 node scripts/activate-stepnrock.js
 
 # b) APPLY — creates the deal + activation invoice, activates now with 7 days to pay,
-#    grants the one-time ₹499 AI Studio credit and the 2-theme-change allowance, prints the pay link ONCE.
+#    grants the prorated one-time AI Studio credit (Rs 250 for this half-yearly deal) and the 2-theme-change allowance, prints the pay link ONCE.
 STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION node scripts/activate-stepnrock.js --apply
 #    different payment window:    ... --apply --due-days=14
 #    lost the link later?         Admin → Commerce → Invoices → Copy link   (the old link stops working)
@@ -198,6 +198,39 @@ node scripts/activate-stepnrock.js
 STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION node scripts/activate-stepnrock.js --apply
 ```
 `verify-db-lock.js` expectations: a note that the OLD form fails with the `'void'` error; `OK` for the helper; the second transaction on the same key waits for the first to commit; a different key does not wait; the lock is free again after commit. Re-run it any time after a Prisma or Postgres/pooler change (it works through the Supabase pooler in transaction mode — verified against the live pooler on 2026-10-08).
+
+### 3b.8 AI Studio credit prorated by term (2026-10-08) — VM sequence
+
+Adds migration `20261008100000_ai_credit_per_term` (two nullable columns, additive). **Apply it before the new backend runs** — the generated client selects the new columns.
+
+```bash
+# 1. Code
+cd /srv/get4domain-site && git pull origin get4domain-site
+
+# 2. Migration (the two earlier commerce migrations are already applied; this is the only new one)
+cd backend-api
+npx prisma migrate deploy
+
+# 3. Rebuild + restart the API container, then the web app (admin Deal builder + vendor Billing changed)
+docker compose build --no-cache && docker compose up -d --force-recreate
+cd ../get4domain_mvp
+docker compose build --no-cache && docker compose up -d --force-recreate
+
+# 4. On the HOST (scripts run against dist/)
+cd ../backend-api
+npm ci
+npx prisma generate
+npx nest build
+set -a; . ./.env; set +a          # the script also falls back to .env, then .env.local, if DATABASE_URL is not exported
+
+# 5. Stepnrock dry run (read-only). Expect: "decision: RESUME" and the line
+#    "AI credit Rs 250.00 (half-yearly Workspace, prorated from Rs 499)"
+node scripts/activate-stepnrock.js
+
+# 6. Apply (only if the dry run is as expected)
+STEPNROCK_ACTIVATE_CONFIRM=I_HAVE_APPLIED_THE_COMMERCIAL_ENGINE_MIGRATION node scripts/activate-stepnrock.js --apply
+```
+After step 6 the read-back should show `AI Studio credit rows: 1 (Rs 250.00) · term credit Rs 250.00`. Nothing here touches any other vendor's wallet. Spot check afterwards: Admin → Commerce → Deal builder → choose Workspace + Half-yearly → the field shows ₹250; change to Annual → ₹499; the stepnrock vendor's Billing page shows "AI Studio credit included: ₹250".
 
 ### Rollback
 Code: redeploy the previous image. Database: both migrations are additive; the new tables/columns can stay unused. Do **not** delete `get4domain_private_uploads` (payment evidence) or `get4domain_public_uploads` (vendor images).

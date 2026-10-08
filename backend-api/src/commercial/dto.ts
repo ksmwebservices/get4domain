@@ -50,6 +50,8 @@ export class DealSpecDto {
   @IsOptional() @IsBoolean() allowPromoEntry?: boolean;
   @IsOptional() @IsBoolean() allowPromoStacking?: boolean;
   @IsOptional() @IsInt() @Min(0) @Max(90) paymentDueDays?: number;
+  /** AI Studio credit override in paise, ₹0…₹5,000 (omit = prorated by term). */
+  @IsOptional() @IsInt() @Min(0) @Max(500000) aiCreditPaise?: number;
   @IsOptional() @IsString() @MaxLength(1000) notes?: string;
 }
 
@@ -120,6 +122,8 @@ export class TermOverrideDto {
   @IsOptional() @IsIn(CYCLES as unknown as string[]) billingCycle?: (typeof CYCLES)[number];
   @IsOptional() @IsInt() @Min(1) @Max(60) customMonths?: number;
   @IsOptional() @IsInt() @Min(0) netAmountPaise?: number;
+  /** AI Studio credit for the new term in paise, ₹0…₹5,000; any increase over what was already granted is credited. */
+  @IsOptional() @IsInt() @Min(0) @Max(500000) aiCreditPaise?: number;
   @IsOptional() @IsIn(GST as unknown as string[]) gstMode?: (typeof GST)[number];
   @IsOptional() @IsString() @MaxLength(200) gstNote?: string;
   @IsOptional() @IsInt() @Min(0) @Max(90) graceDays?: number;

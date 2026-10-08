@@ -14,7 +14,7 @@ import {
 import { ErrorBox, Field, Pill, cardCls, inputCls, msg, selectCls } from '@/components/admin/commerce-ui';
 
 interface VendorInfo { id: string; name: string; email: string; businessName: string; phone: string | null; industry: string | null; subdomain: string | null; status: string; isSandbox: boolean; createdAt: string }
-interface BillingView { current: TermRow | null; history: TermRow[]; invoices: InvoiceRow[]; audit: { id: string; actor: string; actorRole: string | null; action: string; createdAt: string; detail: Record<string, unknown> | null }[]; entitlements: Entitlements | null }
+interface BillingView { current: TermRow | null; history: TermRow[]; invoices: InvoiceRow[]; audit: { id: string; actor: string; actorRole: string | null; action: string; createdAt: string; detail: Record<string, unknown> | null }[]; entitlements: Entitlements | null; aiCredit: { targetPaise: number; computedPaise: number; grantedPaise: number } | null }
 const CHANNELS: Channel[] = ['RAZORPAY', 'UPI_QR', 'OFFLINE'];
 const STATUS_OPTS = ['ACTIVE', 'ACTIVE_PAYMENT_DUE', 'LAPSED', 'CANCELLED'] as const;
 
@@ -43,8 +43,10 @@ export default function VendorDetailPage() {
   function openEdit() {
     const c = billing?.current;
     setO({ reason: '', planKey: '', billingCycle: '', customMonths: '', netRupees: c ? String(c.netAmountPaise / 100) : '', gstMode: '', graceDays: c ? String(c.graceDays) : '', periodEnd: c?.periodEnd ? c.periodEnd.slice(0, 10) : '', paymentDueAt: c?.paymentDueAt ? c.paymentDueAt.slice(0, 10) : '', status: '', channels: c?.allowedChannels ?? [] });
+    setAiOverride('');
     setEdit(true);
   }
+  const [aiOverride, setAiOverride] = useState('');
   async function saveOverride() {
     setBusy(true); setError('');
     try {
@@ -59,6 +61,7 @@ export default function VendorDetailPage() {
       if (o.periodEnd && c && o.periodEnd !== c.periodEnd?.slice(0, 10)) body.periodEnd = new Date(`${o.periodEnd}T23:59:59`).toISOString();
       if (o.paymentDueAt && c && o.paymentDueAt !== c.paymentDueAt?.slice(0, 10)) body.paymentDueAt = new Date(`${o.paymentDueAt}T23:59:59`).toISOString();
       if (o.status) body.status = o.status;
+      if (aiOverride.trim() !== '') body.aiCreditPaise = Math.round(Number(aiOverride) * 100);
       if (o.channels.length) body.allowedChannels = o.channels;
       await commerceApi.overrideTerm(id, body);
       setEdit(false); await load();
@@ -118,7 +121,7 @@ export default function VendorDetailPage() {
                 {([['Period', `${fmtDate(cur.periodStart)} → ${fmtDate(cur.periodEnd)}`], ['Grace after due', `${cur.graceDays} days`], ['Channels', cur.allowedChannels.join(' + ') || '—'], ['Payment due', cur.status === 'ACTIVE_PAYMENT_DUE' ? fmtDate(cur.paymentDueAt) : '—']] as const).map(([k, v]) => <div key={k} className="rounded-xl bg-slate-800 p-3"><div className="text-xs text-slate-500">{k}</div><div className="mt-0.5 font-medium text-white">{v}</div></div>)}
               </div>
               {cur.scheduledNextPlan && <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary-500/30 bg-primary-500/10 px-3.5 py-2.5 text-sm text-primary-200"><span>At renewal this vendor moves to <strong>{PLAN_LABEL[cur.scheduledNextPlan]} · {cur.scheduledNextCycle ? CYCLE_LABEL[cur.scheduledNextCycle] : ''}</strong> (priced at list).</span><button type="button" className="text-xs font-semibold underline" onClick={clearSchedule}>Remove</button></div>}
-              {billing?.entitlements && <p className="mt-3 text-xs text-slate-500">Entitlements (from the plan, not the price): {rupees(billing.entitlements.aiCreditPaise)} one-time AI credit · {billing.entitlements.seoKeywords} SEO keywords · {billing.entitlements.themeChangesPerYear} theme changes/yr{billing.entitlements.hrm ? ' · HRM, accounting, inventory, tasks, WhatsApp bot' : ''}.</p>}
+              {billing?.entitlements && <p className="mt-3 text-xs text-slate-500">Entitlements (from the plan, not the price): {billing.aiCredit ? `AI Studio credit ${rupees(billing.aiCredit.targetPaise)} for this term (prorated default ${rupees(billing.aiCredit.computedPaise)}; ${rupees(billing.aiCredit.grantedPaise)} granted so far)` : `${rupees(billing.entitlements.aiCreditAnnualPaise)} annual AI credit`} · {billing.entitlements.seoKeywords} SEO keywords · {billing.entitlements.themeChangesPerYear} theme changes/yr{billing.entitlements.hrm ? ' · HRM, accounting, inventory, tasks, WhatsApp bot' : ''}.</p>}
             </section>
           )}
 
@@ -156,6 +159,7 @@ export default function VendorDetailPage() {
             {o.billingCycle === 'CUSTOM_MONTHS' && <Field label="Months"><input className={inputCls} inputMode="numeric" value={o.customMonths} onChange={(e) => setO({ ...o, customMonths: e.target.value.replace(/\D/g, '') })} /></Field>}
             <Field label="Net amount per term (₹)" hint="Used for renewals and proration."><input className={inputCls} inputMode="decimal" value={o.netRupees} onChange={(e) => setO({ ...o, netRupees: e.target.value.replace(/[^0-9.]/g, '') })} /></Field>
             <Field label="GST mode"><select className={selectCls} value={o.gstMode} onChange={(e) => setO({ ...o, gstMode: e.target.value as GstMode | '' })}><option value="">Keep current</option>{(Object.keys(GST_LABEL) as GstMode[]).map((g) => <option key={g} value={g}>{GST_LABEL[g]}</option>)}</select></Field>
+            <Field label="AI Studio credit for this term (₹)" hint={`Leave empty to keep. ₹0–₹5,000. Raising it credits only the difference over what was already granted; lowering never claws back.${billing?.aiCredit ? ` Now ${rupees(billing.aiCredit.targetPaise)}.` : ''}`}><input className={inputCls} inputMode="decimal" value={aiOverride} onChange={(e) => setAiOverride(e.target.value.replace(/[^0-9.]/g, ''))} /></Field>
             <Field label="Grace days"><input className={inputCls} inputMode="numeric" value={o.graceDays} onChange={(e) => setO({ ...o, graceDays: e.target.value.replace(/\D/g, '') })} /></Field>
             <Field label="Term ends"><input type="date" className={inputCls} value={o.periodEnd} onChange={(e) => setO({ ...o, periodEnd: e.target.value })} /></Field>
             <Field label="Payment due (if awaiting)"><input type="date" className={inputCls} value={o.paymentDueAt} onChange={(e) => setO({ ...o, paymentDueAt: e.target.value })} /></Field>

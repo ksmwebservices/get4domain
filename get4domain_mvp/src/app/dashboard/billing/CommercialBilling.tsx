@@ -104,6 +104,7 @@ export default function CommercialBilling({ data, onChanged }: { data: VendorBil
           <div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">Valid till</div><div className="mt-0.5 text-base font-bold text-slate-900">{fmtDate(term.periodEnd)}</div><div className="text-[11px] text-slate-500">{daysToEnd !== null && daysToEnd > 0 ? `${daysToEnd} days left` : 'Renewal due'}</div></div>
           <div className="rounded-xl bg-slate-50 p-3"><div className="text-xs text-slate-500">Started</div><div className="mt-0.5 text-base font-bold text-slate-900">{fmtDate(term.periodStart)}</div></div>
         </div>
+        <p className="mt-3 text-sm text-slate-500">AI Studio credit included: <strong className="text-slate-700">{rupees(term.aiCreditIncludedPaise)}</strong></p>
         {term.scheduledNextPlan && <p className="mt-3 rounded-xl bg-primary-50 px-3.5 py-2.5 text-xs text-slate-700">Scheduled: at renewal you move to <strong>{PLAN_LABEL[term.scheduledNextPlan]}{term.scheduledNextCycle ? ` · ${CYCLE_LABEL[term.scheduledNextCycle]}` : ''}</strong>.</p>}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {term.adminDeal ? <span className="text-xs text-slate-500">Your plan is on special terms. To change it, <Link href="/dashboard/support" className="font-semibold text-primary-600 hover:underline">contact us</Link> or send a request below.</span> : null}

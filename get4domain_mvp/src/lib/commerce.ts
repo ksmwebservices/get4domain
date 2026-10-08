@@ -43,6 +43,8 @@ export interface DealSpec {
   allowPromoEntry?: boolean;
   allowPromoStacking?: boolean;
   paymentDueDays?: number;
+  /** AI Studio credit override in paise (₹0–₹5,000). Omit to use the server's prorated amount. */
+  aiCreditPaise?: number;
   notes?: string;
 }
 
@@ -60,9 +62,12 @@ export interface TermRow {
   gstMode: GstMode; gstNote: string | null; periodStart: string | null; periodEnd: string | null; graceDays: number;
   status: 'DEMO' | 'ACTIVE' | 'ACTIVE_PAYMENT_DUE' | 'LAPSED' | 'CANCELLED'; source: 'STANDARD' | 'ADMIN_DEAL'; isCurrent: boolean;
   allowedChannels: Channel[]; scheduledNextPlan: PlanKey | null; scheduledNextCycle: Cycle | null; paymentDueAt: string | null; createdAt: string; createdBy: string | null;
+  /** One-time AI Studio credit this term entitles the vendor to (null = prorated default). */
+  aiCreditPaise: number | null;
 }
 
-export interface Entitlements { aiCreditPaise: number; seoKeywords: number; themeChangesPerYear: number; whatsappBotReply: boolean; fullAccounting: boolean; hrm: boolean; inventory: boolean; taskManagement: boolean }
+/** `aiCreditAnnualPaise` is the ANNUAL list credit; what a vendor gets is prorated by term (see the term's aiCreditPaise). */
+export interface Entitlements { aiCreditAnnualPaise: number; seoKeywords: number; themeChangesPerYear: number; whatsappBotReply: boolean; fullAccounting: boolean; hrm: boolean; inventory: boolean; taskManagement: boolean }
 
 export interface PayView {
   invoice: {
@@ -148,7 +153,7 @@ export function vendorPayApi(invoiceId: string): PayApi {
 }
 
 export interface VendorBilling {
-  term: (Pick<TermRow, 'id' | 'planKey' | 'billingCycle' | 'cycleMonths' | 'status' | 'source' | 'netAmountPaise' | 'gstMode' | 'periodStart' | 'periodEnd' | 'graceDays' | 'paymentDueAt' | 'scheduledNextPlan' | 'scheduledNextCycle'> & { adminDeal: boolean; entitlements: Entitlements }) | null;
+  term: (Pick<TermRow, 'id' | 'planKey' | 'billingCycle' | 'cycleMonths' | 'status' | 'source' | 'netAmountPaise' | 'gstMode' | 'periodStart' | 'periodEnd' | 'graceDays' | 'paymentDueAt' | 'scheduledNextPlan' | 'scheduledNextCycle'> & { adminDeal: boolean; entitlements: Entitlements; aiCreditIncludedPaise: number }) | null;
   invoices: InvoiceRow[];
   planChangeRequests: { id: string; toPlanKey: PlanKey; toCycle: Cycle; toCycleMonths: number; effective: string; status: string; vendorNote: string | null; adminNote: string | null; requestedAt: string }[];
 }

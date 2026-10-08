@@ -11,6 +11,7 @@ import { isDowngrade } from './term-rules';
 import { planLabel } from './quote-builder';
 import { payUrl } from './pay-token';
 import { advisoryXactLock } from '../common/db-lock';
+import { aiStudioCreditPaise, resolveAiCredit } from './ai-credit';
 
 /** Fields of a term that are safe to show to the vendor. */
 export function vendorTermView(t: BillingTerm | null) {
@@ -20,6 +21,8 @@ export function vendorTermView(t: BillingTerm | null) {
     netAmountPaise: t.netAmountPaise, gstMode: t.gstMode, periodStart: t.periodStart, periodEnd: t.periodEnd, graceDays: t.graceDays,
     paymentDueAt: t.paymentDueAt, scheduledNextPlan: t.scheduledNextPlan, scheduledNextCycle: t.scheduledNextCycle,
     adminDeal: t.source === 'ADMIN_DEAL', entitlements: entitlementsFor(t.planKey as PlanKey),
+    // "AI Studio credit included" for THIS term (prorated by length, or the admin's figure). Never an invoice line.
+    aiCreditIncludedPaise: t.aiCreditPaise ?? aiStudioCreditPaise(t.planKey as PlanKey, t.cycleMonths),
   };
 }
 
@@ -32,6 +35,7 @@ export interface TermOverride {
   gstMode?: GstMode;
   gstNote?: string | null;
   graceDays?: number;
+  aiCreditPaise?: number;
   periodEnd?: string;
   paymentDueAt?: string | null;
   allowedChannels?: ChannelT[];
@@ -57,7 +61,13 @@ export class TermsService {
       this.prisma.invoice.findMany({ where: { vendorId, kind: { not: null } }, orderBy: { createdAt: 'desc' }, take: 50, select: SAFE_INVOICE_SELECT }),
       this.audit.list('Vendor', vendorId),
     ]);
-    return { current, history, invoices, audit, entitlements: current ? entitlementsFor(current.planKey as PlanKey) : null };
+    let aiCredit: { targetPaise: number; computedPaise: number; grantedPaise: number } | null = null;
+    if (current) {
+      const computedPaise = aiStudioCreditPaise(current.planKey as PlanKey, current.cycleMonths);
+      const granted = await this.prisma.walletTransaction.findMany({ where: { vendorId, service: 'ai_studio_bonus' }, select: { amount: true } });
+      aiCredit = { targetPaise: current.aiCreditPaise ?? computedPaise, computedPaise, grantedPaise: granted.reduce((a, r) => a + Math.max(0, r.amount), 0) };
+    }
+    return { current, history, invoices, audit, aiCredit, entitlements: current ? entitlementsFor(current.planKey as PlanKey) : null };
   }
 
   /** Admin override. Never edits history in place: the current row is retired and a new one created, so every change is traceable. */
@@ -70,6 +80,13 @@ export class TermsService {
     const cycle = (o.billingCycle ?? cur.billingCycle) as BillingCycle;
     let months = cur.cycleMonths;
     try { if (o.billingCycle || o.customMonths) months = cycleMonths(cycle, o.customMonths ?? (cycle === 'CUSTOM_MONTHS' ? cur.cycleMonths : undefined)); } catch (e) { throw new BadRequestException((e as Error).message); }
+    const newPlan = (o.planKey ?? cur.planKey) as PlanKey;
+    // AI Studio credit for the new term: the admin's figure; else the prorated amount if the plan or length changed; else unchanged.
+    let aiCredit: number | null = cur.aiCreditPaise;
+    try {
+      if (o.aiCreditPaise != null) aiCredit = resolveAiCredit(newPlan, months, o.aiCreditPaise).paise;
+      else if (newPlan !== cur.planKey || months !== cur.cycleMonths) aiCredit = aiStudioCreditPaise(newPlan, months);
+    } catch (e) { throw new BadRequestException((e as Error).message); }
     const periodEnd = o.periodEnd ? new Date(o.periodEnd) : cur.periodEnd;
     if (o.periodEnd && Number.isNaN((periodEnd as Date).getTime())) throw new BadRequestException('Invalid period end date');
     if (o.status === 'ACTIVE_PAYMENT_DUE' && !(o.paymentDueAt ?? cur.paymentDueAt)) throw new BadRequestException('Set a payment due date for ACTIVE_PAYMENT_DUE');
@@ -89,6 +106,7 @@ export class TermsService {
           paymentDueAt: o.paymentDueAt === undefined ? cur.paymentDueAt : (o.paymentDueAt ? new Date(o.paymentDueAt) : null),
           scheduledNextPlan: cur.scheduledNextPlan, scheduledNextCycle: cur.scheduledNextCycle, scheduledNextCycleMonths: cur.scheduledNextCycleMonths,
           scheduledNextNetPaise: cur.scheduledNextNetPaise, scheduledNextDiscountReason: cur.scheduledNextDiscountReason,
+          aiCreditPaise: aiCredit,
           subscriptionId: cur.subscriptionId, activationInvoiceId: cur.activationInvoiceId, renewalInvoiceId: cur.renewalInvoiceId,
           activatedAt: cur.activatedAt, lapsedAt: o.status === undefined ? cur.lapsedAt : o.status === 'LAPSED' ? now : null, createdBy: actor.email,
         },
@@ -99,6 +117,11 @@ export class TermsService {
         await tx.billingTerm.update({ where: { id: created.id }, data: { subscriptionId: cur.subscriptionId } });
         if (created.periodEnd) await tx.subscription.update({ where: { id: cur.subscriptionId }, data: { endDate: created.periodEnd } }).catch(() => undefined);
       }
+      // A longer term or a higher admin figure grants only the difference; a grace-days/status-only override grants nothing.
+      if (!(o.planKey && o.planKey !== cur.planKey) && (aiCredit !== cur.aiCreditPaise || months !== cur.cycleMonths)) {
+        await this.settlement.grantAiCredit(tx, vendorId, newPlan, created.id);
+      }
+      if (aiCredit !== cur.aiCreditPaise) await this.audit.log(actor, 'term.ai_credit', 'BillingTerm', created.id, { vendorId, beforePaise: cur.aiCreditPaise, afterPaise: aiCredit, computedPaise: aiStudioCreditPaise(newPlan, months), reason: o.reason.trim() }, tx);
       await this.audit.log(actor, 'term.override', 'BillingTerm', created.id, { vendorId, reason: o.reason.trim(), before: pickTerm(cur), after: pickTerm(created) }, tx);
       await this.audit.log(actor, 'term.override', 'Vendor', vendorId, { termId: created.id, reason: o.reason.trim() }, tx);
       return created;
@@ -127,7 +150,7 @@ export class TermsService {
 }
 
 function pickTerm(t: BillingTerm) {
-  return { planKey: t.planKey, cycle: t.billingCycle, months: t.cycleMonths, net: t.netAmountPaise, gstMode: t.gstMode, grace: t.graceDays, status: t.status, periodEnd: t.periodEnd, paymentDueAt: t.paymentDueAt };
+  return { planKey: t.planKey, cycle: t.billingCycle, months: t.cycleMonths, net: t.netAmountPaise, aiCredit: t.aiCreditPaise, gstMode: t.gstMode, grace: t.graceDays, status: t.status, periodEnd: t.periodEnd, paymentDueAt: t.paymentDueAt };
 }
 
 // ── Plan-change requests ──────────────────────────────────────────────────────────────────────────

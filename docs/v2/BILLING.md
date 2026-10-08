@@ -49,10 +49,13 @@ Admin → Commerce → Promo codes. Rules are checked on the server every time: 
 ## 7. One-time credits and allowances (from the plan)
 | | Workspace | BOS |
 |---|---|---|
-| AI Studio credit (once per customer, ever) | ₹499 | ₹1,299 |
+| AI Studio credit — annual list amount | ₹499 | ₹1,299 |
+| …what a term actually includes (prorated by length, nearest whole rupee, halves up, never above the annual amount) | 12 mo ₹499 · 6 mo ₹250 · 3 mo ₹125 · 1 mo ₹42 | 12 mo ₹1,299 · 6 mo ₹650 · 3 mo ₹325 · 1 mo ₹108 |
 | Free SEO keywords | 3 | 6 |
 | Theme changes per year | 2 | 4 |
 
 ## 8. Where the money settings live
 - **Payee & QR** (Admin → Commerce → Payee & QR, also under Settings): UPI ID, payee name, optional printed QR, bank details, instructions. Without a UPI ID the "UPI QR" option shows as not set up.
 - **Annual list prices:** Admin → Pricing Manager (`domainapp_workspace_yearly`, `domainapp_bos_yearly`); the code falls back to ₹11,988 / ₹23,988.
+
+**How the AI Studio credit is granted.** It is a one-time wallet credit, shown to the customer as "AI Studio credit included" on their Billing page — never as a charge on an invoice. You can change the figure per deal (₹0–₹5,000) in the Deal builder, or on a term via Edit / override; changes are logged. The wallet receives `target − what the customer has already been given`: a first activation gets the full amount for the term, a renewal of the same plan gets nothing more, moving from half-yearly to annual (or Workspace to BOS) gets only the difference, and a downgrade or a lower figure never takes anything back.

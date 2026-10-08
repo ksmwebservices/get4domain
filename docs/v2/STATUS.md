@@ -14,6 +14,9 @@ Custom deals, invoices, pay links, UPI QR, promo codes, renewals and the stepnro
 ## Hotfix 2026-10-08 — Prisma "void" advisory-lock error (fixed in code, not yet deployed)
 Deal builder → Create invoice + link / Activate now failed on a live click (`Failed to deserialize column of type 'void'`). All advisory locks now use `advisoryXactLock()` (`$executeRaw`); the same bug sat in the live wallet/public-checkout payment locks (`lockPayment`). Guards: `verify:raw-sql`, a strict in-memory Prisma fake, `scripts/verify-db-lock.js` (verified against the live pooler). Stepnrock was left with one unpaid activation invoice (`INV-2026-0005`, ₹5,994) and no term; `activate-stepnrock.js` now resumes on it. Details and the VM sequence: [DEPLOYMENT.md §3b.7](DEPLOYMENT.md). Migrations `20261007120000` and `20261007130000` are now **applied** on the live database (verified read-only 2026-10-08).
 
+## AI Studio credit prorated by term (2026-10-08) — built, tested, not yet deployed
+KSM's decision: the one-time AI Studio credit is proportional to the billing term (Workspace half-yearly ₹250, 3 months ₹125, monthly ₹42; BOS half-yearly ₹650; annual unchanged ₹499 / ₹1,299), overridable per deal (₹0–₹5,000). One function (`aiStudioCreditPaise`), nullable `aiCreditPaise` on deals and terms (migration `20261008100000_ai_credit_per_term`, **NOT applied**), grant = max(0, target − already granted), never a clawback, shown to the vendor as "included" and never as a charge. Public pages unchanged (annual-only). Stepnrock: ₹250, nothing granted yet. Details: [COMMERCIAL_ENGINE.md B10c](COMMERCIAL_ENGINE.md), VM sequence: [DEPLOYMENT.md §3b.8](DEPLOYMENT.md). Verification: `verify:commercial` = 142 pure + 290 flows + 14 admin-nav + migration hygiene + raw-SQL guard; security suites unchanged; both apps build.
+
 ## Source control
 | Item | State |
 |---|---|

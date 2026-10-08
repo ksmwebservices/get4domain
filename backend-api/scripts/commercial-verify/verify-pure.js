@@ -103,8 +103,8 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
   {
     ok('entitlementsFor takes exactly one argument (the planKey)', E.entitlementsFor.length === 1);
     const w = E.entitlementsFor('WORKSPACE'); const b = E.entitlementsFor('BOS');
-    ok('Workspace: ₹499 credit, 3 keywords, 2 theme changes, no BOS modules', w.aiCreditPaise === 49900 && w.seoKeywords === 3 && w.themeChangesPerYear === 2 && !w.hrm && !w.fullAccounting && !w.inventory && !w.whatsappBotReply);
-    ok('BOS: ₹1,299 credit, 6 keywords, 4 theme changes, full back office', b.aiCreditPaise === 129900 && b.seoKeywords === 6 && b.themeChangesPerYear === 4 && b.hrm && b.fullAccounting && b.inventory && b.taskManagement && b.whatsappBotReply);
+    ok('Workspace: ₹499 annual credit, 3 keywords, 2 theme changes, no BOS modules', w.aiCreditAnnualPaise === 49900 && w.seoKeywords === 3 && w.themeChangesPerYear === 2 && !w.hrm && !w.fullAccounting && !w.inventory && !w.whatsappBotReply);
+    ok('BOS: ₹1,299 annual credit, 6 keywords, 4 theme changes, full back office', b.aiCreditAnnualPaise === 129900 && b.seoKeywords === 6 && b.themeChangesPerYear === 4 && b.hrm && b.fullAccounting && b.inventory && b.taskManagement && b.whatsappBotReply);
     ok('a plan is the same plan at ₹1 or ₹1,00,000 (nothing in the entitlement depends on an amount)', JSON.stringify(E.entitlementsFor('BOS')) === JSON.stringify(b));
     throwsSync('unknown plan key throws', () => E.entitlementsFor('PLATINUM'));
     ok('SEO keyword counting: dedupes, trims, splits , ; newline', E.countSeoKeywords(' Shoes, shoes ; running\nsneakers,, ') === 3);
@@ -214,6 +214,51 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
     throwsSync('a 2-character reason is refused', () => M.resolveApprovedNet(L, 2000000, 'ok'), 'reason');
     throwsSync('more than 20% off without CONFIRM is refused', () => M.resolveApprovedNet(L, 1000000, 'big deal'), 'CONFIRM');
     ok('exactly 20% off needs no CONFIRM; one paisa more does', M.resolveApprovedNet(1000000, 800000, 'exactly twenty').needsConfirm === false && M.resolveApprovedNet(1000000, 799999, 'a paisa over', 'CONFIRM').needsConfirm === true);
+  }
+
+  section('AI STUDIO CREDIT — prorated by billing term (KSM 2026-10-08): the rule, rounding, cap, override');
+  {
+    const AI = require('../../dist/src/commercial/ai-credit');
+    const c = AI.aiStudioCreditPaise;
+    ok('annual list amounts are held in one place: Workspace ₹499, BOS ₹1,299', AI.AI_CREDIT_ANNUAL_PAISE.WORKSPACE === 49900 && AI.AI_CREDIT_ANNUAL_PAISE.BOS === 129900);
+    ok('Workspace table: 12 mo ₹499 · 6 mo ₹250 · 3 mo ₹125 · 1 mo ₹42', c('WORKSPACE', 12) === 49900 && c('WORKSPACE', 6) === 25000 && c('WORKSPACE', 3) === 12500 && c('WORKSPACE', 1) === 4200, [12, 6, 3, 1].map((m) => c('WORKSPACE', m)).join());
+    ok('BOS table: 12 mo ₹1,299 · 6 mo ₹650 · 3 mo ₹325 · 1 mo ₹108', c('BOS', 12) === 129900 && c('BOS', 6) === 65000 && c('BOS', 3) === 32500 && c('BOS', 1) === 10800, [12, 6, 3, 1].map((m) => c('BOS', m)).join());
+    ok('ROUNDING: ₹499 × 6/12 = ₹249.50 exactly → rounds HALF UP to ₹250 (24950 → 25000)', 49900 * 6 / 12 === 24950 && c('WORKSPACE', 6) === 25000);
+    ok('ROUNDING: ₹499 × 3/12 = ₹124.75 → ₹125 (12475 → 12500)', 49900 * 3 / 12 === 12475 && c('WORKSPACE', 3) === 12500);
+    ok('ROUNDING: ₹499 × 1/12 = ₹41.58 → ₹42; ₹499 × 9/12 = ₹374.25 → ₹374; ₹1,299 × 1/12 = ₹108.25 → ₹108', c('WORKSPACE', 1) === 4200 && c('WORKSPACE', 9) === 37400 && c('BOS', 1) === 10800);
+    ok('CAP: a 24- or 60-month term never exceeds the annual amount', c('WORKSPACE', 24) === 49900 && c('WORKSPACE', 60) === 49900 && c('BOS', 24) === 129900);
+    let prev = -1; let mono = true; let whole = true; let capped = true;
+    for (let m = 1; m <= 60; m += 1) { for (const p of ['WORKSPACE', 'BOS']) { const v = c(p, m); if (p === 'WORKSPACE') { if (v < prev) mono = false; prev = v; } if (v % 100 !== 0) whole = false; if (v > AI.AI_CREDIT_ANNUAL_PAISE[p]) capped = false; } }
+    ok('for months 1…60: never decreases with term length, always whole rupees, never above annual', mono && whole && capped);
+    throwsSync('0 months is refused', () => c('WORKSPACE', 0), 'months');
+    throwsSync('a fractional or NaN term is refused', () => c('WORKSPACE', 1.5), 'months');
+    throwsSync('NaN months is refused', () => c('BOS', NaN), 'months');
+    throwsSync('an unknown plan is refused', () => c('GOLD', 12), 'Unknown plan');
+
+    let r = AI.resolveAiCredit('WORKSPACE', 6);
+    ok('resolve: no override → the computed ₹250, not overridden', r.paise === 25000 && r.computedPaise === 25000 && r.overridden === false);
+    r = AI.resolveAiCredit('WORKSPACE', 6, 0);
+    ok('override ₹0 is allowed (no credit) and counts as an override', r.paise === 0 && r.overridden === true && r.computedPaise === 25000);
+    r = AI.resolveAiCredit('WORKSPACE', 6, 100000);
+    ok('override ₹1,000 (custom) is accepted and flagged', r.paise === 100000 && r.overridden === true);
+    r = AI.resolveAiCredit('BOS', 12, 500000);
+    ok('override at the ₹5,000 ceiling is accepted', r.paise === 500000);
+    ok('entering exactly the computed value is NOT an override (nothing to audit)', AI.resolveAiCredit('WORKSPACE', 6, 25000).overridden === false);
+    throwsSync('override above ₹5,000 is refused', () => AI.resolveAiCredit('WORKSPACE', 6, 500001), '₹5,000');
+    throwsSync('negative override is refused', () => AI.resolveAiCredit('WORKSPACE', 6, -1), '₹5,000');
+    throwsSync('fractional paise override is refused', () => AI.resolveAiCredit('WORKSPACE', 6, 100.5), '₹5,000');
+
+    // The credit is independent of price: it comes from plan + term length only, never from the discount or GST mode.
+    const rates = { WORKSPACE: 1198800, BOS: 2398800 };
+    const base = { planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE' };
+    const full = Q.buildQuote(base, rates);
+    const cheap = Q.buildQuote({ ...base, gstMode: 'EXCLUSIVE', discount: { mode: 'PERCENT', value: 90, reason: 'founding deal', confirm: 'CONFIRM' } }, rates);
+    ok('quote carries the credit (₹250 for half-yearly) and it is NOT part of the totals', full.aiCredit.paise === 25000 && full.totals.totalPaise === 599400);
+    ok('a 90% discount and a different GST mode do not change the credit (entitlements never come from price)', cheap.aiCredit.paise === 25000 && cheap.totals.netPaise < full.totals.netPaise);
+    ok('the credit follows plan/cycle/custom months: BOS half-yearly ₹650, Workspace monthly ₹42, Workspace custom 3 months ₹125', Q.buildQuote({ planKey: 'BOS', billingCycle: 'HALF_YEARLY', gstMode: 'NONE' }, rates).aiCredit.paise === 65000 && Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'MONTHLY', gstMode: 'NONE' }, rates).aiCredit.paise === 4200 && Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'CUSTOM_MONTHS', customMonths: 3, gstMode: 'NONE' }, rates).aiCredit.paise === 12500);
+    ok('a quote with an admin figure uses it; an add-on-only quote has no credit', Q.buildQuote({ ...base, aiCreditPaise: 0 }, rates).aiCredit.paise === 0 && Q.buildQuote({ gstMode: 'NONE', addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 100000 }] }, rates).aiCredit === null);
+    throwsSync('a quote with an out-of-range figure is refused (400)', () => Q.buildQuote({ ...base, aiCreditPaise: 600000 }, rates), '₹5,000');
+    ok('entitlements expose the ANNUAL list credit only', E.entitlementsFor('WORKSPACE').aiCreditAnnualPaise === 49900 && E.entitlementsFor('BOS').aiCreditAnnualPaise === 129900 && !('aiCreditPaise' in E.entitlementsFor('BOS')));
   }
 
   finish();

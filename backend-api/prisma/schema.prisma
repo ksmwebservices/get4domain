@@ -2547,6 +2547,7 @@ model BillingTerm {
   scheduledNextCycleMonths Int?
   scheduledNextNetPaise    Int? // price KSM approved for the scheduled change (null = list price); the renewal invoice bills exactly this
   scheduledNextDiscountReason String? // why the approved price differs from list
+  aiCreditPaise            Int? // one-time AI Studio credit this term entitles the vendor to (prorated by term; null = compute from plan+months)
   subscriptionId           String? // legacy Subscription row that carries the theme-change counter
   activationInvoiceId      String?
   renewalInvoiceId         String? // the renewal invoice created by the T-15 job (idempotency)
@@ -2589,6 +2590,7 @@ model BillingDeal {
   allowPromoEntry  Boolean         @default(false)
   activateNow      Boolean         @default(false)
   paymentDueDays   Int?
+  aiCreditPaise     Int? // AI Studio credit for this deal's term (computed from plan+months, or the admin's override); stored so the term gets a concrete number
   notes            String?
   createdBy        String?
   createdAt        DateTime        @default(now())
