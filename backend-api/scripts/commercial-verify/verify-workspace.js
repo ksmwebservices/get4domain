@@ -9,8 +9,8 @@ const { NotificationsService } = dist('notifications/notifications.service');
 
 const seed = () => ({
   vendor: [
-    { id: 'v_step', name: 'Suresh', email: 's@x.in', businessName: 'Step N Rock', subdomain: 'stepnrock' },
-    { id: 'v_other', name: 'Other', email: 'o@x.in', businessName: 'Other Co', subdomain: 'otherco' },
+    { id: 'v_step', name: 'Suresh', email: 's@x.in', businessName: 'Step N Rock', subdomain: 'stepnrock', createdAt: new Date('2026-05-01T00:00:00Z') },
+    { id: 'v_other', name: 'Other', email: 'o@x.in', businessName: 'Other Co', subdomain: 'otherco', createdAt: new Date('2026-05-01T00:00:00Z') },
   ],
   vendorAddon: [{ id: 'a1', vendorId: 'v_other', addonKey: 'fleet', enabled: true }],
   vendorModule: [{ id: 'm1', vendorId: 'v_other', moduleKey: 'growth_hub', enabled: true }, { id: 'm2', vendorId: 'v_step', moduleKey: 'growth_hub', enabled: true }],

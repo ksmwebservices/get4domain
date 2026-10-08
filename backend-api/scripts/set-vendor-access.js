@@ -9,6 +9,8 @@
  * Changes ONLY the vendor with subdomain "stepnrock" (there is deliberately no option to name another vendor):
  *   addon workspace_menu ON · module website_manager ON · module telecrm ON · checkout mode ORDER_REQUEST
  * Payment keys, the Razorpay switch, every other module/addon and every other vendor are left untouched. Idempotent.
+ * Dashboard v2 switch (Release 1A), one vendor at a time, dry run by default (see set-vendor-access-navv2.js):
+ *   node scripts/set-vendor-access.js --nav-v2 on|off --vendor <subdomain> [--apply]
  * Run `set -a; . ./.env; set +a` first (or the script reads DATABASE_URL from backend-api/.env). Needs `npx nest build`.
  */
 const path = require('path');
@@ -32,6 +34,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 (async () => {
+  if (process.argv.slice(2).includes('--nav-v2')) return require('./set-vendor-access-navv2').navV2Mode(process.argv.slice(2));
   if (process.argv.slice(2).some((a) => a.startsWith('--vendor') || a.startsWith('--subdomain'))) { console.error('This script only ever changes the "stepnrock" vendor; it takes no vendor argument.'); process.exit(2); }
   if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is not set (export it from backend-api/.env first).'); process.exit(2); }
   const host = (() => { try { return new URL(process.env.DATABASE_URL).host; } catch { return 'unknown'; } })();

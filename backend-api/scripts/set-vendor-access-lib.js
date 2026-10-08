@@ -58,4 +58,29 @@ async function readCurrent(prisma, vendorId) {
   return { addons, modules, paymentConfig };
 }
 
-module.exports = { planAccess, applyAccess, readCurrent, ONLY_SUBDOMAIN, TARGET, CONFIRM };
+// ── Dashboard v2 switch (Release 1A): `--nav-v2 on|off --vendor <subdomain>`. Touches ONLY the nav_v2 add-on of the ONE named vendor. ──
+/** @param {{ row: {enabled:boolean}|null, defaultOn: boolean }} cur  defaultOn = what the vendor gets without a row (ON for vendors created on/after NAV_V2_DEFAULT_FROM) */
+function planNavV2(cur, want) {
+  const effective = cur.row ? cur.row.enabled : cur.defaultOn;
+  const change = { kind: 'addon', key: 'nav_v2', from: cur.row ? cur.row.enabled : `not set (default ${cur.defaultOn ? 'on' : 'off'})`, to: want, needed: effective !== want };
+  return { changes: [change], pending: change.needed ? [change] : [] };
+}
+
+async function readNavV2(prisma, vendorId, defaultFromIso) {
+  const [row, vendor] = await Promise.all([
+    prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId, addonKey: 'nav_v2' } } }),
+    prisma.vendor.findUnique({ where: { id: vendorId }, select: { createdAt: true } }),
+  ]);
+  return { row, defaultOn: Boolean(vendor && vendor.createdAt.getTime() >= new Date(defaultFromIso).getTime()) };
+}
+
+async function applyNavV2(prisma, vendorId, plan, actor = 'script:set-vendor-access') {
+  await prisma.$transaction(async (tx) => {
+    for (const c of plan.pending) {
+      await tx.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId, addonKey: 'nav_v2' } }, create: { vendorId, addonKey: 'nav_v2', enabled: c.to }, update: { enabled: c.to } });
+    }
+    await tx.commercialAuditLog.create({ data: { actor, actorRole: 'system', action: 'vendor.nav_v2_set', entityType: 'Vendor', entityId: vendorId, detail: { changes: plan.pending.map((c) => ({ addon: c.key, from: c.from, to: c.to })) } } });
+  });
+}
+
+module.exports = { planAccess, applyAccess, readCurrent, planNavV2, readNavV2, applyNavV2, ONLY_SUBDOMAIN, TARGET, CONFIRM };

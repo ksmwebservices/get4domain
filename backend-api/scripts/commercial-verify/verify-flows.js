@@ -96,6 +96,8 @@ const rows = (w, name) => w.t[name] ?? [];
     const credits = rows(w, 'walletTransaction').filter((x) => x.service === 'ai_studio_bonus');
     ok('₹250 AI Studio credit (Workspace half-yearly, prorated from ₹499) granted exactly once, at activation', credits.length === 1 && credits[0].amount === 25000 && rows(w, 'wallet')[0].balance === 25000);
     ok('stepnrock stays a live vendor', rows(w, 'vendor')[0].isSandbox === false);
+    const mods = rows(w, 'vendorModule').filter((m) => m.vendorId === 'v_step' && m.enabled).map((m) => m.moduleKey);
+    ok('[feat:account.billing.provisioning] activation provisions the Essentials modules (telecrm, website_manager, ...) and only for this vendor', ['telecrm', 'website_manager'].every((k) => mods.includes(k)) && rows(w, 'vendorModule').every((m) => m.vendorId === 'v_step') && rows(w, 'commercialAuditLog').some((a) => a.action === 'vendor.modules_provisioned' && a.entityId === 'v_step'));
     ok('audit trail records the invoice and the activation', rows(w, 'commercialAuditLog').some((a) => a.action === 'deal.invoice_created') && rows(w, 'commercialAuditLog').some((a) => a.action === 'term.activate_now'));
   }
 

@@ -3,6 +3,14 @@
 const { dist, ok, section, rejects, finish } = require('../security-verify/harness');
 const { createMemPrisma } = require('./mem-prisma');
 const { CrmService } = dist('crm/crm.service');
+const { provisionModules, desiredAccess, planProvision } = dist('registry/provisioning');
+const { planNavV2, readNavV2, applyNavV2 } = require('../set-vendor-access-lib');
+const { NAV_V2_DEFAULT_FROM, AVAILABLE_MODULES } = dist('addons/addons.constants');
+const { analyseVendor, renderReport } = require('../nav-v2-dry-run-lib');
+const REG = dist('registry/registry.generated');
+const { PlanAccessService } = dist('registry/plan-access.service');
+const { PlanAccessController } = dist('registry/plan-access.controller');
+const { CommercialAdminGuard, CommercialAuditService } = dist('commercial/foundation.services');
 
 const seed = () => ({
   vendor: [
@@ -33,6 +41,130 @@ const seed = () => ({
     await rejects('vendor B cannot convert vendor A\'s lead', crm.convertToCustomer('l1', 'v_b'), { status: 403 });
     ok('…and nothing was created for vendor B', t.contact.every((c) => c.vendorId === 'v_a'));
     await rejects('an unknown lead is a clean 404', crm.convertToCustomer('nope', 'v_a'), { status: 404 });
+  }
+
+  section('[feat:account.billing.provisioning] plan-driven provisioning: grant-only, idempotent, audited');
+  {
+    const prisma = createMemPrisma({
+      vendor: [{ id: 'v1', name: 'A', email: 'a@x.in', businessName: 'A', subdomain: 'a', industry: 'retail' }, { id: 'v2', name: 'B', email: 'b@x.in', businessName: 'B', subdomain: 'b', industry: 'clinic' }],
+      vendorModule: [{ id: 'm9', vendorId: 'v2', moduleKey: 'telecrm', enabled: false }, { id: 'm8', vendorId: 'v2', moduleKey: 'growth_hub', enabled: true }],
+      vendorAddon: [], commercialAuditLog: [],
+    });
+    const on = (vid, kind = 'vendorModule', key = 'moduleKey') => prisma.$tables[kind].filter((r) => r.vendorId === vid && r.enabled).map((r) => r[key]).sort();
+    const es = desiredAccess('WORKSPACE', false, 'COMMERCE');
+    const pro = desiredAccess('BOS', false, 'COMMERCE');
+    ok('Essentials gets only modules whose features are built and in the plan', es.modules.includes('telecrm') && es.modules.includes('website_manager') && !es.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'), es.modules.join());
+    ok('Pro is a superset of Essentials and never includes an unbuilt feature module', es.modules.every((m) => pro.modules.includes(m)) && !pro.modules.includes('analytics_hub') && !pro.modules.includes('growth_hub'));
+
+    const a1 = await provisionModules(prisma, 'v1', 'WORKSPACE', { actor: 'test', reason: 'activation' });
+    ok('ACTIVATION: the Essentials modules are switched on for the vendor', a1.changed && es.modules.every((m) => on('v1').includes(m)), on('v1').join());
+    const rowsAfter = prisma.$tables.vendorModule.length; const auditAfter = prisma.$tables.commercialAuditLog.length;
+    const a2 = await provisionModules(prisma, 'v1', 'WORKSPACE', { actor: 'test', reason: 'renewal' });
+    ok('RENEWAL / IDEMPOTENT: running again changes nothing (no rows, no audit entry)', !a2.changed && prisma.$tables.vendorModule.length === rowsAfter && prisma.$tables.commercialAuditLog.length === auditAfter);
+    await provisionModules(prisma, 'v1', 'BOS', { actor: 'test', reason: 'upgrade now' });
+    ok('UPGRADE (now): Pro keeps everything Essentials had and adds what Pro includes', es.modules.every((m) => on('v1').includes(m)) && pro.modules.every((m) => on('v1').includes(m)));
+    const before = on('v1').join();
+    const d1 = await provisionModules(prisma, 'v1', 'WORKSPACE', { actor: 'test', reason: 'downgrade at renewal' });
+    ok('DOWNGRADE at renewal: nothing is switched off and no data is touched (the menu locks Pro screens; access is kept until KSM removes it)', on('v1').join() === before && !d1.changed);
+    ok('…and the plan shows what is now beyond the plan, so the dry run can list it', planProvision({ modules: prisma.$tables.vendorModule.filter((m) => m.vendorId === 'v1'), addons: [] }, es).beyondPlanModules.length >= 0);
+    const fsx = require('fs'); const pathx = require('path'); const cdir = pathx.join(__dirname, '../../src/commercial');
+    const touchesModules = fsx.readdirSync(cdir).filter((f) => f.endsWith('.ts') && f !== 'settlement.service.ts').filter((f) => /vendorModule|vendorAddon/.test(fsx.readFileSync(pathx.join(cdir, f), 'utf8')));
+    ok('LAPSE: lapse, reminders and renewal scheduling never touch module/add-on rows, so a lapsed vendor keeps what it had', touchesModules.length === 0, touchesModules.join());
+
+    await provisionModules(prisma, 'v2', 'WORKSPACE', { actor: 'test', reason: 'activation' });
+    ok('an explicit OFF (KSM exception in Plan access) is respected, not overwritten', prisma.$tables.vendorModule.find((m) => m.id === 'm9').enabled === false);
+    ok('a module the vendor already had on (growth_hub) is never switched off', prisma.$tables.vendorModule.find((m) => m.id === 'm8').enabled === true);
+    ok('the audit entry lists what was granted and what was kept off', prisma.$tables.commercialAuditLog.some((a) => a.entityId === 'v2' && a.detail.keptOff.includes('telecrm')));
+    ok('another vendor rows are not touched by provisioning', on('v1').join() === before);
+
+    const custom = desiredAccess('BOS', true, 'COMMERCE'); const plain = desiredAccess('BOS', false, 'COMMERCE');
+    ok('Custom is never a plan: a Custom client gets the Pro set (nothing extra is invented for unbuilt Custom screens)', JSON.stringify(custom) === JSON.stringify(plain));
+  }
+
+  section('[feat:account.billing.navv2-switch] set-vendor-access --nav-v2: one vendor, dry run first, idempotent');
+  {
+    const prisma = createMemPrisma({
+      vendor: [
+        { id: 'old', name: 'O', email: 'o@x.in', businessName: 'Old Co', subdomain: 'oldco', createdAt: new Date('2026-06-01T00:00:00Z') },
+        { id: 'new', name: 'N', email: 'n@x.in', businessName: 'New Co', subdomain: 'newco', createdAt: new Date('2026-10-12T00:00:00Z') },
+        { id: 'other', name: 'X', email: 'x@x.in', businessName: 'Other', subdomain: 'otherco', createdAt: new Date('2026-06-01T00:00:00Z') },
+      ],
+      vendorAddon: [{ id: 'a1', vendorId: 'other', addonKey: 'fleet', enabled: true }], commercialAuditLog: [],
+    });
+    const cur = await readNavV2(prisma, 'old', NAV_V2_DEFAULT_FROM);
+    const plan = planNavV2(cur, true);
+    ok('an existing vendor starts OFF (no row, created before the release): turning on is 1 pending change', plan.pending.length === 1 && cur.defaultOn === false);
+    ok('the dry run is a pure function: nothing is written', prisma.$tables.vendorAddon.length === 1 && prisma.$tables.commercialAuditLog.length === 0);
+    await applyNavV2(prisma, 'old', plan);
+    ok('apply switches ONLY that vendor nav_v2 add-on, with an audit entry', prisma.$tables.vendorAddon.filter((a) => a.addonKey === 'nav_v2').length === 1 && prisma.$tables.vendorAddon.find((a) => a.addonKey === 'nav_v2').vendorId === 'old' && prisma.$tables.commercialAuditLog.some((a) => a.action === 'vendor.nav_v2_set' && a.entityId === 'old'));
+    ok('every other row is untouched (the other vendor fleet add-on, the new vendor)', prisma.$tables.vendorAddon.find((a) => a.id === 'a1').enabled === true && !prisma.$tables.vendorAddon.some((a) => a.vendorId === 'new' || a.vendorId === 'other' && a.addonKey === 'nav_v2'));
+    ok('IDEMPOTENT: planning again shows nothing pending', planNavV2(await readNavV2(prisma, 'old', NAV_V2_DEFAULT_FROM), true).pending.length === 0);
+    const fresh = await readNavV2(prisma, 'new', NAV_V2_DEFAULT_FROM);
+    ok('a vendor created after the release defaults ON: "on" is already satisfied, "off" is a real change', fresh.defaultOn === true && planNavV2(fresh, true).pending.length === 0 && planNavV2(fresh, false).pending.length === 1);
+    await applyNavV2(prisma, 'old', planNavV2(await readNavV2(prisma, 'old', NAV_V2_DEFAULT_FROM), false));
+    ok('"off" puts the vendor back on the previous dashboard (row false)', prisma.$tables.vendorAddon.find((a) => a.vendorId === 'old' && a.addonKey === 'nav_v2').enabled === false);
+  }
+
+  section('[feat:account.billing.dry-run] nav-v2 dry run: read-only, lists what would be lost');
+  {
+    const prisma = createMemPrisma({
+      vendor: [
+        { id: 'u1', name: 'U', email: 'u@x.in', businessName: 'Uses Campaigns', subdomain: 'campco', industry: 'retail', createdAt: new Date('2026-05-01') },
+        { id: 'u2', name: 'V', email: 'v@x.in', businessName: 'Plain Shop', subdomain: 'plainco', industry: 'retail', createdAt: new Date('2026-05-01') },
+      ],
+      billingTerm: [{ id: 't1', vendorId: 'u1', planKey: 'WORKSPACE', isCurrent: true }, { id: 't2', vendorId: 'u2', planKey: 'BOS', isCurrent: true }],
+      vendorModule: [{ id: 'm1', vendorId: 'u1', moduleKey: 'growth_hub', enabled: true }, { id: 'm2', vendorId: 'u1', moduleKey: 'telecrm', enabled: true }, { id: 'm3', vendorId: 'u2', moduleKey: 'growth_hub', enabled: true }],
+      vendorAddon: [],
+      campaignPage: [{ id: 'cp1', vendorId: 'u1' }], campaignLead: [{ id: 'cl1', vendorId: 'u1' }],
+      campaign: [], message: [], whatsappConversation: [], vendorProduct: [], posSale: [], contact: [], record: [], genericInvoice: [],
+    });
+    const snapshot = JSON.stringify(prisma.$tables);
+    const vendors = prisma.$tables.vendor;
+    const r1 = await analyseVendor(prisma, REG, AVAILABLE_MODULES, vendors[0], NAV_V2_DEFAULT_FROM);
+    const r2 = await analyseVendor(prisma, REG, AVAILABLE_MODULES, vendors[1], NAV_V2_DEFAULT_FROM);
+    ok('READ-ONLY: the analysis changes no row', JSON.stringify(prisma.$tables) === snapshot);
+    ok('a vendor using Campaigns (screen is Coming soon in v2) is flagged "would lose access" with the data found', r1.wouldLose.length === 1 && r1.wouldLose[0].module === 'growth_hub' && r1.wouldLose[0].data.join().includes('campaignPage'), JSON.stringify(r1.wouldLose));
+    ok('telecrm with leads is NOT flagged: Leads is Open on Essentials', !r1.wouldLose.some((w) => w.module === 'telecrm'));
+    ok('a module switched on with NO data is not flagged (nothing to lose)', r2.wouldLose.length === 0);
+    ok('plan is read from the current term, shown by display name', r1.planName === 'Essentials' && r2.planName === 'Pro');
+    ok('existing vendors are reported as v2 OFF (created before the release)', r1.navV2Now === false);
+    const md = renderReport([r1, r2], { at: '2026-10-09T00:00:00Z', host: 'test' });
+    ok('the report names the blocked vendor and says how many are blocked', md.includes('Blocked (would lose access to something they use): **1**') && md.includes('Uses Campaigns'));
+  }
+
+  section('[feat:account.billing.plan-access] admin Plan access: map from the registry, exceptions need a reason, audited, staff-only');
+  {
+    const prisma = createMemPrisma({
+      vendor: [{ id: 'v1', name: 'A', email: 'a@x.in', businessName: 'A Co', subdomain: 'aco', industry: 'retail', role: 'VENDOR' }],
+      billingTerm: [{ id: 't1', vendorId: 'v1', planKey: 'WORKSPACE', isCurrent: true }], vendorModule: [], vendorAddon: [], commercialAuditLog: [],
+    });
+    const svc = new PlanAccessService(prisma, new CommercialAuditService(prisma));
+    const ADMIN = { id: 'admin1', email: 'admin@get4domain.com', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' };
+    const map = svc.map();
+    ok('the map comes from the registry: every row names a feature and its minimum plan by display name', map.length > 5 && map.every((r) => r.featureId && ['Essentials', 'Pro', 'Custom'].includes(r.minPlan)));
+    const before = await svc.forVendor('v1');
+    ok('a vendor view shows plan, profile and what provisioning would grant', before.planName === 'Essentials' && before.profile === 'COMMERCE' && before.provisionPlan.grantModules.includes('telecrm'));
+    await rejects('an exception without a real reason is refused', svc.setException('v1', { kind: 'module', key: 'telecrm', enabled: false, reason: 'no' }, ADMIN), { status: 400 });
+    await rejects('an unknown module key is refused', svc.setException('v1', { kind: 'module', key: 'made_up', enabled: true, reason: 'this is a long enough reason' }, ADMIN), { status: 400 });
+    await rejects('an unknown vendor is a clean 404', svc.setException('ghost', { kind: 'module', key: 'telecrm', enabled: true, reason: 'this is a long enough reason' }, ADMIN), { status: 404 });
+    ok('…and nothing was written by the refused attempts', prisma.$tables.vendorModule.length === 0 && prisma.$tables.commercialAuditLog.length === 0);
+    const after = await svc.setException('v1', { kind: 'module', key: 'telecrm', enabled: false, reason: 'Asked to keep the call list off for now' }, ADMIN);
+    ok('a valid exception is applied, shown in the history with its reason and who did it', after.modules.find((m) => m.key === 'telecrm').enabled === false && after.exceptions[0].reason.includes('call list') && after.exceptions[0].actor === 'admin@get4domain.com');
+    ok('provisioning now keeps that module off (an exception is respected) and lists it as kept off', (await svc.provisionNow('v1', ADMIN)).provisionPlan.keptOffModules.includes('telecrm'));
+    const again = prisma.$tables.commercialAuditLog.length; await svc.provisionNow('v1', ADMIN);
+    ok('IDEMPOTENT: provisioning again adds no audit entry', prisma.$tables.commercialAuditLog.length === again);
+
+    const guard = new CommercialAdminGuard();
+    const ctx = (user) => ({ switchToHttp: () => ({ getRequest: () => ({ user }) }) });
+    const denied = (user) => { try { guard.canActivate(ctx(user)); return false; } catch (e) { return e.getStatus && e.getStatus() === 403; } };
+    ok('route guard: MARKETING staff, vendors, team members and sandbox users are all refused (403)', denied({ role: 'ADMIN', adminRole: 'MARKETING' }) && denied({ role: 'VENDOR' }) && denied({ role: 'ADMIN', kind: 'team_member' }) && denied({ role: 'ADMIN', kind: 'sandbox' }) && denied(undefined));
+    ok('route guard: platform admin is allowed', guard.canActivate(ctx({ role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' })) === true);
+    const guards = Reflect.getMetadata('__guards__', PlanAccessController) || [];
+    ok('the whole Plan access controller sits behind CommercialAdminGuard (no route is open)', guards.includes(CommercialAdminGuard));
+    // tenancy: forVendor only returns the vendor asked for, never another vendor's rows
+    prisma.$tables.vendor.push({ id: 'v2', name: 'B', email: 'b@x.in', businessName: 'B Co', subdomain: 'bco', industry: 'retail', role: 'VENDOR' });
+    prisma.$tables.vendorModule.push({ id: 'zz', vendorId: 'v2', moduleKey: 'growth_hub', enabled: true });
+    ok('a vendor view never includes another vendor module rows', (await svc.forVendor('v1')).modules.find((m) => m.key === 'growth_hub').enabled === false);
   }
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -154,7 +154,7 @@ const failsWith = async (p) => { try { await p; return null; } catch (e) { retur
     ok('the trail shows the invoice creation and the term activation', actions.includes('deal.invoice_created') && actions.includes('term.activate_now'), actions.join());
     ok('the trail is NOT empty any more', view.audit.length >= 2);
     ok('it never includes another vendor\'s entries', view.audit.every((x) => !(x.entityType === 'Invoice' && x.entityId !== a.invoice.id) && !(x.entityType === 'BillingTerm' && x.entityId !== rows(w, 'billingTerm').find((t) => t.vendorId === 'v_step').id)));
-    ok('the old behaviour (entityType Vendor only) would have returned nothing — the reason for the bug', (await w.audit.list('Vendor', 'v_step')).length === 0);
+    ok('the old behaviour (entityType Vendor only) would have returned nothing — the reason for the bug', (await w.audit.list('Vendor', 'v_step')).filter((x) => x.action !== 'vendor.modules_provisioned').length === 0);
     await w.terms.override('v_step', { planKey: 'WORKSPACE', billingCycle: 'ANNUAL', reason: 'agreed upgrade' }, ADMIN).catch(() => undefined);
     const after = (await w.terms.adminView('v_step')).audit.map((x) => x.action);
     ok('a later term override shows up too', after.includes('term.override') || after.length > actions.length, after.join());

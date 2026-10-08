@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Invoice, Prisma, Vendor } from '@prisma/client';
+import { provisionModules } from '../registry/provisioning';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
@@ -233,6 +234,9 @@ export class SettlementService {
       });
     }
     await tx.billingTerm.update({ where: { id: termId }, data: { subscriptionId: sub.id } });
+
+    // Dashboard v2: the modules the plan includes are switched on (grant-only, idempotent, audited). Runs at activation, renewal, plan change and admin activation.
+    await provisionModules(tx, vendorId, planKey, { actor: 'settlement', reason: 'term started or renewed' });
 
     await this.grantAiCredit(tx, vendorId, planKey, termId);
   }

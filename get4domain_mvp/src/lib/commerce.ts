@@ -217,3 +217,23 @@ export const commerceApi = {
   rejectPlanChange: (id: string, reason: string) => apiCall(`/admin/commerce/plan-changes/${id}/reject`, { method: 'POST', body: j({ reason }) }),
   runRenewal: () => apiCall('/admin/commerce/renewal/run', { method: 'POST', body: '{}' }),
 };
+
+// ── Plan access (Release 1A): module-to-plan map from the feature registry, per-vendor exceptions ────────────────────────
+export interface PlanAccessRow { moduleKey: string | null; addonKey: string | null; featureId: string; label: string; department: string; minPlan: string; status: string }
+export interface PlanAccessProvision { grantModules: string[]; grantAddons: string[]; keptOffModules: string[]; keptOffAddons: string[]; beyondPlanModules: string[]; beyondPlanAddons: string[] }
+export interface PlanAccessVendor {
+  vendor: { id: string; businessName: string; subdomain: string | null; industry: string | null };
+  plan: PlanKey | null; planName: string; profile: string; custom: boolean;
+  modules: { key: string; label: string; enabled: boolean; fromRow: boolean }[];
+  addons: { key: string; label: string; enabled: boolean }[];
+  provisionPlan: PlanAccessProvision | null;
+  exceptions: { id: string; at: string; actor: string; kind: string; key: string; enabled: boolean; reason: string }[];
+}
+export const planAccessApi = {
+  map: (): Promise<{ data: PlanAccessRow[] }> => apiCall('/admin/plan-access/map'),
+  vendors: (q = ''): Promise<{ data: { id: string; businessName: string; subdomain: string | null; plan: string; navV2: boolean }[] }> => apiCall(`/admin/plan-access/vendors${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  vendor: (id: string): Promise<{ data: PlanAccessVendor }> => apiCall(`/admin/plan-access/vendors/${id}`),
+  setException: (id: string, b: { kind: 'module' | 'addon'; key: string; enabled: boolean; reason: string }): Promise<{ data: PlanAccessVendor }> =>
+    apiCall(`/admin/plan-access/vendors/${id}/exception`, { method: 'POST', body: JSON.stringify(b) }),
+  provision: (id: string): Promise<{ data: PlanAccessVendor }> => apiCall(`/admin/plan-access/vendors/${id}/provision`, { method: 'POST' }),
+};
