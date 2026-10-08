@@ -12,6 +12,7 @@ const suites = [
   ['Deal-builder guard, vendor audit trail, stepnrock term-fix plan', 'verify-term-guard.js'],
   ['image upload (formats, content check, size, served URL, headers, unwritable volume)', 'verify-uploads.js'],
   ['custom-domain CORS (open default, strict + CORS_EXTRA_ORIGINS)', 'verify-cors.js'],
+  ['AI Studio: wallet first, provider fallback, classified errors, saved images, ai-health', 'verify-ai.js'],
   ['workspace access script + notification isolation', 'verify-workspace.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];

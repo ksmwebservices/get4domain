@@ -6,6 +6,8 @@ import { CallSummaryDto } from './dto/call-summary.dto';
 import { WalletService } from '../wallet/wallet.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { StorageService } from '../storage/storage.service';
+import { AiErrorKind, AiProviderError, AiProviderName, VENDOR_MESSAGE, classifyProviderError, pickError, toVendorException } from './ai-errors';
+import { persistGeneratedImage } from './ai-image-store';
 
 export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
   // AI Studio content-type keys (source of truth for the grid).
@@ -30,6 +32,8 @@ export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
 // Channels that also produce a generated image (DALL-E), same as Poster.
 const IMAGE_CHANNELS = new Set(['social_post', 'festival_poster', 'ad_creative', 'facebook', 'instagram', 'poster']);
 const CALL_SUMMARY_COST_PAISE = 300;
+const TEXT_TIMEOUT_MS = 45_000;
+const IMAGE_TIMEOUT_MS = 90_000;
 
 // Maps AI content channels to admin-managed pricing keys (g4d_platform_settings).
 const CONTENT_PRICING_KEY: Record<string, string> = {
@@ -162,61 +166,74 @@ export class AiService {
     return this.settings.getResolvedValue('ai', 'anthropic_api_key');
   }
 
-  /**
-   * Provider-agnostic text generation. Prefers OpenAI when an OpenAI key is
-   * configured (that's the key most deployments credit and expect to power
-   * generation), otherwise Claude/Anthropic. Previously ALL text went to Claude
-   * regardless of which provider the admin credited — so a live, credited OpenAI
-   * key did nothing for text (it was only ever used for DALL-E images), which is
-   * why generation didn't behave as the admin expected. Throws (never returns a
-   * canned/mock string) when neither provider is configured, so the caller shows
-   * a real error instead of unrelated filler — and the wallet is only debited
-   * AFTER a real provider call returns parseable content (see generateContent).
-   */
-  private async generateText(prompt: string, maxTokens: number): Promise<string> {
-    const openaiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
-    if (openaiKey) return this.callOpenAiText(openaiKey, prompt, maxTokens);
-    const claudeKey = await this.claudeKey();
-    if (claudeKey) return this.callClaudeText(claudeKey, prompt, maxTokens);
-    throw new ServiceUnavailableException('AI content generation is not configured');
+  /** Providers that have a key configured, in preference order: OpenAI first (the key most deployments credit), then Anthropic. */
+  private async configuredProviders(): Promise<Array<{ name: AiProviderName; key: string }>> {
+    const [openai, claude] = await Promise.all([this.settings.getResolvedValue('ai', 'openai_api_key'), this.claudeKey()]);
+    const out: Array<{ name: AiProviderName; key: string }> = [];
+    if (openai) out.push({ name: 'openai', key: openai });
+    if (claude) out.push({ name: 'anthropic', key: claude });
+    return out;
   }
 
-  private async callOpenAiText(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  /**
+   * Provider-agnostic text generation with FALLBACK. Tries each configured provider in order (OpenAI, then Claude); when one is missing a key
+   * or its call fails (bad key, no credit, rate limit, timeout, outage) the next one is tried, so one dead account does not stop AI Studio.
+   * A content-policy refusal is NOT retried elsewhere. If every provider fails the vendor gets ONE specific, classified message
+   * (see ai-errors.ts) — never a canned/mock string, and never a charge: callers debit only after this returns real content.
+   */
+  private async generateText(prompt: string, maxTokens: number, opts: { system?: string; history?: Array<{ role: string; content: string }> } = {}): Promise<string> {
+    const providers = await this.configuredProviders();
+    if (providers.length === 0) throw new ServiceUnavailableException('AI content generation is not configured');
+    const errors: AiProviderError[] = [];
+    for (const p of providers) {
+      try {
+        return p.name === 'openai' ? await this.callOpenAiText(p.key, prompt, maxTokens, opts) : await this.callClaudeText(p.key, prompt, maxTokens, opts);
+      } catch (e) {
+        const err = e instanceof AiProviderError ? e : new AiProviderError(p.name, 'UNAVAILABLE', null, e instanceof Error ? e.message : 'unknown error');
+        this.logger.error(`AI text via ${p.name} failed: ${err.kind}${err.status ? ` HTTP ${err.status}` : ''} — ${err.detail.slice(0, 300)}`);
+        errors.push(err);
+        if (err.kind === 'CONTENT_BLOCKED') break; // the request itself was refused; another provider will not make it acceptable
+      }
+    }
+    throw toVendorException(pickError(errors).kind);
+  }
+
+  private async callProvider(provider: AiProviderName, url: string, init: RequestInit): Promise<Response> {
+    let response: Response;
+    try {
+      response = await fetch(url, { ...init, signal: AbortSignal.timeout(TEXT_TIMEOUT_MS) });
+    } catch (e) {
+      throw new AiProviderError(provider, classifyProviderError(null, '', e), null, e instanceof Error ? e.message : String(e));
+    }
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new AiProviderError(provider, classifyProviderError(response.status, body), response.status, body);
+    }
+    return response;
+  }
+
+  private async callOpenAiText(apiKey: string, prompt: string, maxTokens: number, opts: { system?: string; history?: Array<{ role: string; content: string }> } = {}): Promise<string> {
+    const messages = [...(opts.system ? [{ role: 'system', content: opts.system }] : []), ...(opts.history ?? []), { role: 'user', content: prompt }];
+    const response = await this.callProvider('openai', 'https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: this.openaiTextModel,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
+      body: JSON.stringify({ model: this.openaiTextModel, max_tokens: maxTokens, messages }),
     });
-    if (!response.ok) {
-      this.logger.error(`OpenAI text error ${response.status}: ${(await response.text()).slice(0, 400)}`);
-      throw new ServiceUnavailableException('AI content generation is temporarily unavailable');
-    }
     const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
     return data.choices?.[0]?.message?.content ?? '';
   }
 
-  private async callClaudeText(apiKey: string, prompt: string, maxTokens: number): Promise<string> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+  private async callClaudeText(apiKey: string, prompt: string, maxTokens: number, opts: { system?: string; history?: Array<{ role: string; content: string }> } = {}): Promise<string> {
+    const response = await this.callProvider('anthropic', 'https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: this.model,
         max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
+        ...(opts.system ? { system: opts.system } : {}),
+        messages: [...(opts.history ?? []), { role: 'user', content: prompt }],
       }),
     });
-    if (!response.ok) {
-      this.logger.error(`Anthropic API error ${response.status}: ${(await response.text()).slice(0, 400)}`);
-      throw new ServiceUnavailableException('AI content generation is temporarily unavailable');
-    }
     const data = (await response.json()) as AnthropicResponse;
     return data.content.find((block) => block.type === 'text')?.text ?? '';
   }
@@ -271,11 +288,12 @@ Your reply:`;
       throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
     }
     const img = await this.generateImage(prompt);
-    // Charge only when an image was actually produced.
+    // Charge only when an image was actually produced; keep a permanent copy (the provider's link expires in about an hour).
     if (img.url && !internal) {
       await this.walletService.deduct(vendorId, cost, 'AI document design image', 'ai_doc_design');
     }
-    return { imageUrl: img.url, status: img.status, error: img.error };
+    const imageUrl = img.url ? (await persistGeneratedImage(img.url)) ?? img.url : null;
+    return { imageUrl, status: img.status, error: img.error };
   }
 
   /**
@@ -286,7 +304,7 @@ Your reply:`;
   private async generateImage(
     prompt: string,
     size: '1024x1024' | '1792x1024' | '1024x1792' = '1024x1024',
-  ): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string }> {
+  ): Promise<{ url: string | null; status: 'ok' | 'not_configured' | 'failed'; error?: string; kind?: AiErrorKind }> {
     const apiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
     if (!apiKey) {
       this.logger.warn('OpenAI image key not resolved (ai/openai_api_key or OPENAI_API_KEY env)');
@@ -298,25 +316,23 @@ Your reply:`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size }),
+        signal: AbortSignal.timeout(IMAGE_TIMEOUT_MS),
       });
 
       const body = await response.text();
       if (!response.ok) {
-        let message = `OpenAI HTTP ${response.status}`;
-        try {
-          const parsed = JSON.parse(body) as { error?: { message?: string } };
-          if (parsed?.error?.message) message = parsed.error.message;
-        } catch { /* non-JSON body */ }
-        this.logger.error(`DALL-E error ${response.status}: ${body.slice(0, 400)}`);
-        return { url: null, status: 'failed', error: message };
+        // The raw provider message stays in the server log; the vendor gets the classified, actionable one.
+        const kind = classifyProviderError(response.status, body);
+        this.logger.error(`DALL-E error ${response.status} (${kind}): ${body.slice(0, 400)}`);
+        return { url: null, status: 'failed', error: VENDOR_MESSAGE[kind], kind };
       }
 
       const data = JSON.parse(body) as { data: Array<{ url: string }> };
       return { url: data.data[0]?.url ?? null, status: 'ok' };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'network error';
-      this.logger.error(`DALL-E image request failed: ${message}`);
-      return { url: null, status: 'failed', error: message };
+      const kind = classifyProviderError(null, '', error);
+      this.logger.error(`DALL-E image request failed (${kind}): ${error instanceof Error ? error.message : 'network error'}`);
+      return { url: null, status: 'failed', error: VENDOR_MESSAGE[kind], kind };
     }
   }
 
@@ -394,6 +410,11 @@ Your reply:`;
       CONTENT_CHANNEL_COST_PAISE[dto.channel] ?? 500,
     );
 
+    // Wallet first: no provider money is spent for a vendor who cannot pay. (Debit still happens only after real content comes back.)
+    if (!internal && !(await this.walletService.hasSufficientBalance(vendorId, cost))) {
+      throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    }
+
     const prompt = `Write a ${dto.channel} marketing post for an Indian small business in the ${dto.vendorIndustry} industry.
 Offer/details: ${dto.offerDetails}
 Tone: ${dto.tone ?? 'friendly and professional'}
@@ -415,7 +436,9 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
     // post. Skipped entirely when the vendor supplied their own image (skipImage).
     const img = !dto.skipImage && IMAGE_CHANNELS.has(dto.channel) ? await this.generateImage(parsed.imagePrompt) : null;
 
-    return { ...parsed, imageUrl: img?.url ?? null };
+    // Keep a permanent copy of the picture in our uploads (the provider's link expires); fall back to the temporary link only if saving fails.
+    const imageUrl = img?.url ? (await persistGeneratedImage(img.url)) ?? img.url : null;
+    return { ...parsed, imageUrl };
   }
 
   async generatePage(dto: AiGeneratePageDto): Promise<{
@@ -444,6 +467,10 @@ Respond with ONLY a JSON object (no markdown fences, no commentary) in this exac
     dto: CallSummaryDto,
     internal = false,
   ): Promise<{ summary: string; nextAction: string; sentiment: string }> {
+    if (!internal && !(await this.walletService.hasSufficientBalance(vendorId, CALL_SUMMARY_COST_PAISE))) {
+      throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    }
+
     const prompt = `Summarize this sales call note for a CRM.
 
 Lead: ${dto.leadName}
@@ -465,9 +492,7 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
   }
 
   async chat(dto: ChatDto): Promise<{ reply: string; suggestedActions: string[] }> {
-    const openaiKey = await this.settings.getResolvedValue('ai', 'openai_api_key');
-    const claudeKey = await this.claudeKey();
-    if (!openaiKey && !claudeKey) {
+    if ((await this.configuredProviders()).length === 0) {
       throw new ServiceUnavailableException('AI assistant is not configured');
     }
 
@@ -480,45 +505,12 @@ Respond with ONLY a JSON object (no markdown fences) in this exact shape:
     const history = (dto.conversationHistory ?? []).map((m) => ({ role: m.role, content: m.content }));
     const fallback = 'Let me connect you with our team for that specific question.';
 
-    try {
-      let reply: string;
-      if (openaiKey) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
-          body: JSON.stringify({
-            model: this.openaiTextModel,
-            max_tokens: 300,
-            messages: [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: dto.message }],
-          }),
-        });
-        if (!response.ok) {
-          this.logger.error(`OpenAI chat error ${response.status}: ${(await response.text()).slice(0, 400)}`);
-          throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
-        }
-        const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-        reply = data.choices?.[0]?.message?.content ?? fallback;
-      } else {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': claudeKey as string, 'anthropic-version': '2023-06-01' },
-          body: JSON.stringify({ model: this.model, max_tokens: 300, system: systemPrompt, messages: [...history, { role: 'user', content: dto.message }] }),
-        });
-        if (!response.ok) {
-          this.logger.error(`Anthropic API error ${response.status}: ${(await response.text()).slice(0, 400)}`);
-          throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
-        }
-        const data = (await response.json()) as AnthropicResponse;
-        reply = data.content.find((block) => block.type === 'text')?.text ?? fallback;
-      }
+    // Same provider fallback + classified errors as the rest of AI Studio.
+    const text = await this.generateText(dto.message, 300, { system: systemPrompt, history });
+    const reply = text.trim() ? text : fallback;
 
-      // Human escalation offers a callback (we call them) — never an inbound number.
-      const suggestedActions = /connect you with our team/i.test(reply) ? ['callback'] : [];
-      return { reply, suggestedActions };
-    } catch (error) {
-      if (error instanceof ServiceUnavailableException) throw error;
-      this.logger.error('AI chat request failed', error instanceof Error ? error.stack : undefined);
-      throw new ServiceUnavailableException('AI assistant is temporarily unavailable');
-    }
+    // Human escalation offers a callback (we call them) — never an inbound number.
+    const suggestedActions = /connect you with our team/i.test(reply) ? ['callback'] : [];
+    return { reply, suggestedActions };
   }
 }

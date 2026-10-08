@@ -287,7 +287,10 @@ export default function AiStudioPage() {
       refreshBalance();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'generation failed';
-      if (/not configured|api key|gateway|unauthor/i.test(msg)) setGenError('AI Studio needs to be configured by your administrator. Please contact support.');
+      const code = (e as { data?: { code?: string } | null }).data?.code;
+      // The server already classified it (bad setup, out of credit, busy, blocked, timeout) and wrote the exact words — show them as they are.
+      if (typeof code === 'string' && code.startsWith('AI_')) setGenError(msg);
+      else if (/not configured|api key|gateway|unauthor/i.test(msg)) setGenError('AI Studio needs to be configured by your administrator. Please contact support.');
       else if (/wallet|insufficient|balance/i.test(msg)) setGenError('Your wallet balance is too low for this generation. Top up to continue.');
       else setGenError(`Could not generate right now: ${msg}. Please try again.`);
     } finally { setGenerating(false); }
