@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, Mail, Phone, Building2, Globe, LifeBuoy } from 'lucide-react';
+import { User, Mail, Building2, Globe, LifeBuoy } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 /**
@@ -13,7 +13,6 @@ export default function SettingsPage() {
   const rows: { icon: typeof User; label: string; value: string | undefined | null }[] = [
     { icon: User, label: 'Full name', value: user?.name },
     { icon: Mail, label: 'Email address', value: user?.email },
-    { icon: Phone, label: 'Mobile number', value: (user as { phone?: string } | null)?.phone },
     { icon: Building2, label: 'Business name', value: user?.businessName },
     { icon: Globe, label: 'Industry', value: user?.industry },
   ];
@@ -44,7 +43,7 @@ export default function SettingsPage() {
         <LifeBuoy className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-600" />
         <p>
           To change your name, email, phone or password, raise a request in{' '}
-          <Link href="/dashboard/support" className="font-semibold text-primary-700 underline">Support</Link>. We confirm it with you and update it the same day.
+          <Link href="/dashboard/support" className="font-semibold text-primary-700 underline">Support</Link>. We confirm it with you before we change it.
         </p>
       </div>
     </div>

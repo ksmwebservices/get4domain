@@ -254,8 +254,8 @@ export default function ProductPage() {
             <div className="grid grid-cols-3 gap-3 pt-4 border-t">
               {[
                 { icon: Truck, title: 'Delivery', desc: 'Confirmed by the shop' },
-                { icon: RotateCcw, title: '30-Day Returns', desc: 'Easy returns' },
-                { icon: ShieldCheck, title: '2-Year Warranty', desc: 'Quality guarantee' },
+                { icon: ShieldCheck, title: 'Pay the shop', desc: 'After it confirms your order' },
+                { icon: RotateCcw, title: 'Returns', desc: 'Ask the shop before you buy' },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="text-center">
                   <Icon className="h-5 w-5 mx-auto text-primary mb-1" />

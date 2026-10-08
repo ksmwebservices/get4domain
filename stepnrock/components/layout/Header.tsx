@@ -7,22 +7,24 @@ import { ShoppingCart, Search, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useCart } from '@/lib/cart-context';
+import { useCategories } from '@/lib/use-products';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { cn } from '@/lib/utils';
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/shop', label: 'Shop' },
-  { href: '/shop/sneakers', label: 'Sneakers' },
-  { href: '/shop/running', label: 'Running' },
-  { href: '/shop/formal', label: 'Formal' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
-];
+// The first three of the shop's own categories (in the order the owner chose) sit in the menu; the rest are on the Shop page.
+const MENU_CATEGORIES = 3;
 
 export function Header() {
   const pathname = usePathname();
   const { count, openCart } = useCart();
+  const { categories } = useCategories();
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/shop', label: 'Shop' },
+    ...categories.slice(0, MENU_CATEGORIES).map((c) => ({ href: `/shop/${encodeURIComponent(c.slug)}`, label: c.name })),
+    { href: '/about', label: 'About' },
+    { href: '/contact', label: 'Contact' },
+  ];
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 

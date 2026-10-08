@@ -79,7 +79,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { icon: Truck, title: 'Delivery', desc: 'Charges confirmed by the shop' },
-              { icon: RotateCcw, title: '30-Day Returns', desc: 'No questions asked' },
+              { icon: RotateCcw, title: 'Returns', desc: 'Ask the shop before you buy' },
               { icon: ShieldCheck, title: 'Pay the shop directly', desc: 'No card details on this site' },
               { icon: Zap, title: 'Fast Delivery', desc: '3-5 business days' },
             ].map(({ icon: Icon, title, desc }) => (

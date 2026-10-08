@@ -82,6 +82,9 @@ try {
   ok('the fake STEP10 coupon and client-side shipping fee are gone (the server never applied them)', !/STEP10/.test(cart) && !/SHIPPING_COST/.test(cart));
   ok('the scripted demo chat widget (false address / PayPal / newsletter answers) is not mounted', !/<ChatWidget/.test(read('app/layout.tsx')));
   ok('the home page carries no invented stats or testimonials', !/50K+|Happy Customers|Verified Buyer|Countries Served/.test(read('app/page.tsx')));
+  const navSrc = read('components/layout/Header.tsx') + read('components/layout/Footer.tsx');
+  ok('header and footer category links come from the shop\'s own categories (no fixed Sneakers / Running / Formal / Sandals / Women / Apparel links)', !/\/shop\/(sneakers|running|formal|sandals|women|apparel)['"]/.test(navSrc) && /useCategories/.test(read('components/layout/Header.tsx')) && /useCategories/.test(read('components/layout/Footer.tsx')));
+  ok('no invented shop policy on the product page (30-day returns, 2-year warranty)', !/30-Day Returns|2-Year Warranty/.test(read('app/product/[slug]/page.tsx')) && !/30-Day Returns|2-Year Warranty/.test(read('app/page.tsx')));
   ok('a synchronous double-tap guard exists on submit', /submitting\.current/.test(cart));
   ok('the price slider no longer caps at a hard-coded 200 / dollars', !/max=\{200\}/.test(read('app/shop/page.tsx')) && !/\$\{priceRange/.test(read('app/shop/page.tsx')));
   ok('category pages are not limited to six hard-coded slugs', !/validSlugs/.test(read('app/shop/[category]/page.tsx')));

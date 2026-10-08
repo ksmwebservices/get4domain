@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { Footprints, Instagram, Twitter, Facebook, Youtube, Mail, Phone, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useCategories } from '@/lib/use-products';
 
 export function Footer() {
+  const { categories } = useCategories();
   return (
     <footer className="bg-foreground text-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
@@ -40,12 +42,10 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider">Shop</h4>
             <ul className="space-y-2.5 text-sm text-background/70">
-              <li><Link href="/shop/sneakers" className="hover:text-primary transition-colors">Sneakers</Link></li>
-              <li><Link href="/shop/running" className="hover:text-primary transition-colors">Running Shoes</Link></li>
-              <li><Link href="/shop/formal" className="hover:text-primary transition-colors">Formal Shoes</Link></li>
-              <li><Link href="/shop/sandals" className="hover:text-primary transition-colors">Sandals</Link></li>
-              <li><Link href="/shop/women" className="hover:text-primary transition-colors">Women&apos;s</Link></li>
-              <li><Link href="/shop/apparel" className="hover:text-primary transition-colors">Apparel</Link></li>
+              {categories.slice(0, 6).map((c) => (
+                <li key={c.slug}><Link href={`/shop/${encodeURIComponent(c.slug)}`} className="hover:text-primary transition-colors">{c.name}</Link></li>
+              ))}
+              <li><Link href="/shop" className="hover:text-primary transition-colors">All products</Link></li>
             </ul>
           </div>
 

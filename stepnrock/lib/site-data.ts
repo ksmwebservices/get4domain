@@ -59,7 +59,16 @@ export async function fetchVendorCategories(vendorId: string): Promise<LiveCateg
 
 /** Fetches the real Step N Rock vendor/site record. Works from both a server component (revalidated every
  *  LIVE_REFRESH_SECONDS) and the browser (no-store). Never throws — null means "could not reach the shop's data". */
-export async function fetchSiteData(): Promise<LiveSiteData | null> {
+// In the browser, several components (header, footer, page) ask at once: share the request that is already in flight (never a stale answer).
+let inFlight: Promise<LiveSiteData | null> | null = null;
+
+export function fetchSiteData(): Promise<LiveSiteData | null> {
+  if (typeof window === 'undefined') return fetchSiteDataOnce();
+  if (!inFlight) inFlight = fetchSiteDataOnce().finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function fetchSiteDataOnce(): Promise<LiveSiteData | null> {
   try {
     const res = await fetch(`${API_BASE}/cms/site/${STEPNROCK_SUBDOMAIN}`, cacheOptions());
     if (!res.ok) return null;
