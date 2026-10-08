@@ -13,6 +13,7 @@ import WhatBosAdds from '@/components/dashboard/WhatBosAdds';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/vendor/Badge';
 import { Icon } from '@/components/vendor/Icon';
+import TodayPanel from '@/dashboard-v2/TodayPanel';
 import { EmptyState } from '@/components/vendor/EmptyState';
 
 interface CrmLead { id: string; name: string; phone: string; source: string | null; status: string; createdAt: string; followUpDate: string | null }
@@ -149,6 +150,9 @@ export default function DashboardHome() {
             </div>
             <Link href="/dashboard/ai-studio" className="btn-gold self-start sm:self-auto"><Sparkles className="h-4 w-4" /> Create with AI</Link>
           </div>
+
+          {/* Dashboard v2 only: what needs attention + go-live checklist (renders nothing for the old dashboard) */}
+          <TodayPanel />
 
           {/* Sandbox → go-live banner */}
           {isSandbox && (

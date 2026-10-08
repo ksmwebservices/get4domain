@@ -19,6 +19,7 @@ import InstallPrompt from '@/components/InstallPrompt';
 import TourNav from '@/components/TourNav';
 import DashboardSplash from '@/components/DashboardSplash';
 import { WORKSPACE_SECTIONS, isWorkspaceMenu } from '@/lib/workspace-menu';
+import DashboardV2Shell from '@/dashboard-v2/Shell';
 
 // Maps a nav item → the team-access area that gates it for a vendor team member
 // (mirrors the backend's team-access areas). Base items have no mapping → visible.
@@ -57,7 +58,8 @@ interface NavSection {
   items: NavItem[];
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+/** The dashboard as it is today. Vendors without the nav_v2 switch keep seeing exactly this. */
+function LegacyDashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -467,4 +469,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <DashboardSplash />
     </div>
   );
+}
+
+/**
+ * Dashboard v2 switch (docs/v2/DASHBOARD_V2.md). A vendor with the per-vendor `nav_v2` addon ON gets the ten-department shell; everyone else gets the
+ * dashboard they have today, unchanged. The decision needs the vendor's switches, which the legacy layout already waits for (cached per session).
+ */
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const cfg = useDashboardConfig(user?.industry);
+  const v2 = !loading && !cfg.loading && user?.role === 'vendor' && cfg.addons.nav_v2 === true;
+  useEffect(() => {
+    // A stale "v2" cookie from another account must not redirect an old-dashboard vendor's addresses (the middleware reads it).
+    if (!loading && !cfg.loading && !v2) { try { document.cookie = 'g4d_nav_v2=; path=/; max-age=0; SameSite=Lax'; } catch { /* ignore */ } }
+  }, [loading, cfg.loading, v2]);
+  if (v2) return <DashboardV2Shell>{children}</DashboardV2Shell>;
+  return <LegacyDashboardLayout>{children}</LegacyDashboardLayout>;
 }

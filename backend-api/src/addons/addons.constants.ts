@@ -30,7 +30,14 @@ export const AVAILABLE_MODULES: ModuleDefinition[] = [
   { key: 'wallet_billing', label: 'Wallet & Billing', description: 'Payments, subscriptions, usage', walletGated: false, defaultEnabled: true },
 ];
 
+/** Vendors created on/after this instant get Dashboard v2 by default (KSM, Release 1A). Everyone created earlier keeps the old dashboard until KSM switches them. */
+export const NAV_V2_DEFAULT_FROM = '2026-10-09T00:00:00.000Z';
+
 export const AVAILABLE_ADDONS: AddonDefinition[] = [
+  // Dashboard v2 (docs/v2/DASHBOARD_V2.md): a per-vendor switch, not a feature. Default: ON for vendors created on/after NAV_V2_DEFAULT_FROM, OFF for everyone else.
+  { key: 'nav_v2', label: 'Dashboard v2 (ten departments)', description: 'Show the new department-wise dashboard', category: 'plan', defaultEnabled: false },
+  // Marks a BOS Custom client (never a subscription plan): shows the BOS Custom department.
+  { key: 'bos_custom', label: 'BOS Custom client', description: 'Custom engagement client', category: 'plan', defaultEnabled: false },
   // Dashboard menu mode, not a feature: ON shows the vendor only the Workspace-plan menu (get4domain_mvp/src/lib/workspace-menu.ts). Default off = unchanged menu.
   { key: 'workspace_menu', label: 'Workspace menu (trimmed)', description: 'Show only the Workspace-plan tabs; hide BOS-only and duplicate catalogue tabs', category: 'plan', defaultEnabled: false },
   { key: 'fleet', label: 'Fleet Management', description: 'Vehicles, maintenance, assignment', category: 'operations', defaultEnabled: false },

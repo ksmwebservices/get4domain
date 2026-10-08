@@ -39,6 +39,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { WidgetModule } from './widget/widget.module';
 import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
+import { RegistryModule } from './registry/registry.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WhatsappBotModule } from './whatsapp-bot/whatsapp-bot.module';
@@ -144,6 +145,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     WidgetModule,
     DomainAppModule,
     AddonsModule,
+    RegistryModule,
     PlatformSettingsModule,
     WhatsappModule,
     WhatsappBotModule,

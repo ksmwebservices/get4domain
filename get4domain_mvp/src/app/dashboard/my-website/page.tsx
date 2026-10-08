@@ -1,5 +1,6 @@
 'use client';
 
+import { useWebsiteSection, WEBSITE_SECTION_TABS } from '@/dashboard-v2/section-context';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, LayoutTemplate, Upload, Image as ImageIcon, GripVertical, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
@@ -33,7 +34,9 @@ const field = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900
 export default function WebsiteManagerPage() {
   const { user } = useAuth();
   const cfg = useDashboardConfig(user?.industry);
-  const [tab, setTab] = useState<Tab>('basic');
+  // Dashboard v2 offers this screen as three menu items; `section` limits the tabs (null = every tab, the old behaviour).
+  const section = useWebsiteSection();
+  const [tab, setTab] = useState<Tab>(section ? (WEBSITE_SECTION_TABS[section][0] as Tab) : 'basic');
   const [cms, setCms] = useState<VendorCms>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -184,14 +187,14 @@ export default function WebsiteManagerPage() {
 
   if (loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
 
-  const tabs: { key: Tab; label: string }[] = [
+  const tabs: { key: Tab; label: string }[] = ([
     { key: 'basic', label: 'Basic Info' },
     { key: 'branding', label: 'Logo & Banner' },
     { key: 'about', label: 'About & Social' },
     { key: 'portfolio', label: 'Portfolio' },
     { key: 'seo', label: 'SEO' },
     { key: 'template', label: 'Template' },
-  ];
+  ] as { key: Tab; label: string }[]).filter((t) => !section || WEBSITE_SECTION_TABS[section].includes(t.key));
 
   return (
     <div className="max-w-3xl">
