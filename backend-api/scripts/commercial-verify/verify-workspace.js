@@ -64,7 +64,7 @@ const seed = () => ({
     });
     const svc = new NotificationsService(prisma, recorder('push'));
     const mine = await svc.findForRecipient('v_step');
-    ok('the list contains only this vendor\'s notifications (no other vendor, no admin rows)', mine.length === 1 && mine[0].id === 'n1');
+    ok('[feat:notifications.own-only] the list contains only this vendor\'s notifications (no other vendor, no admin rows)', mine.length === 1 && mine[0].id === 'n1');
     const cross = await svc.markRead('n2', 'v_step');
     ok('one vendor CANNOT mark another vendor\'s notification read (0 rows changed, still unread)', cross.count === 0 && prisma.$tables.notification.find((n) => n.id === 'n2').read === false);
     const own = await svc.markRead('n1', 'v_step');
@@ -87,7 +87,7 @@ const seed = () => ({
     const withArea = { kind: 'team_member', sub: 'v1', modules: ['website'] };
     const without = { kind: 'team_member', sub: 'v1', modules: ['telecrm'] };
     for (const [cls, name, m] of [[EngineController, 'orders list', 'orders'], [EngineController, 'mark paid', 'markPaid'], [EngineController, 'cancel order', 'cancel'], [StockController, 'adjust stock', 'adjust'], [StockController, 'stock history', 'history'], [StockController, 'low stock', 'low']]) {
-      ok(`${name}: owner allowed, staff with the products area allowed, staff WITHOUT it refused (403)`, allowed(cls, m, owner) && allowed(cls, m, withArea) && !allowed(cls, m, without));
+      ok(`[feat:team.area-access] ${name}: owner allowed, staff with the products area allowed, staff WITHOUT it refused (403)`, allowed(cls, m, owner) && allowed(cls, m, withArea) && !allowed(cls, m, without));
     }
   }
   finish();

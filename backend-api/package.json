@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "registry:build": "node ../registry/build.mjs",
+    "registry:check": "node ../registry/check.mjs",
     "verify:commercial": "node scripts/commercial-verify/run-all.js",
     "verify:migrations": "node scripts/verify-migrations.js",
     "verify:raw-sql": "node scripts/verify-raw-sql.js",

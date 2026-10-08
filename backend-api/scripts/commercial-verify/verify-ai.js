@@ -62,7 +62,7 @@ const body = (e) => (e && e.getResponse ? e.getResponse() : {});
   {
     const w = world({ balance: 100, routes: { 'api.openai.com': openaiOk(POST) } });
     const e = await failsWith(w.svc.generateContent('v1', dto));
-    ok('too little balance → INSUFFICIENT_WALLET_BALANCE (400)', e && e.getStatus() === 400 && /INSUFFICIENT_WALLET_BALANCE/.test(e.message));
+    ok('[feat:ai.studio.safe-generation] too little balance → INSUFFICIENT_WALLET_BALANCE (400)', e && e.getStatus() === 400 && /INSUFFICIENT_WALLET_BALANCE/.test(e.message));
     ok('…and the provider was NEVER called (no cost incurred for a vendor who cannot pay)', w.calls.length === 0 && w.debits.length === 0);
     const cs = await failsWith(w.svc.callSummary('v1', { leadName: 'Ravi', textNotes: 'asked price', callDuration: 30 }));
     ok('call summary: same — refused before any provider call', cs && cs.getStatus() === 400 && w.calls.length === 0);

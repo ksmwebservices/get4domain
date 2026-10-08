@@ -65,7 +65,7 @@ const newProduct = (w, o = {}) => w.cms.addProduct('v1', { name: 'Aero Sneaker',
   {
     const w = world();
     const p = await newProduct(w);
-    ok('create with track stock + opening quantity: stored, ONE opening movement with the right balance', p.trackStock === true && p.stockQty === 3 && p.reorderLevel === 1 && moves(w, p.id).length === 1 && moves(w, p.id)[0].reason === 'OPENING' && moves(w, p.id)[0].balanceAfter === 3 && moves(w, p.id)[0].delta === 3);
+    ok('[feat:commerce.catalogue] create with track stock + opening quantity: stored, ONE opening movement with the right balance', p.trackStock === true && p.stockQty === 3 && p.reorderLevel === 1 && moves(w, p.id).length === 1 && moves(w, p.id)[0].reason === 'OPENING' && moves(w, p.id)[0].balanceAfter === 3 && moves(w, p.id)[0].delta === 3);
     const plain = await w.cms.addProduct('v1', { name: 'Plain', price: '500' });
     ok('an untracked product writes no movement and keeps trackStock=false', plain.trackStock === false && moves(w, plain.id).length === 0 && plain.status === 'AVAILABLE');
     await rejects('a quantity without "track stock" is refused', w.cms.addProduct('v1', { name: 'Bad', price: '1', stockQty: 5 }), { status: 400 });
@@ -153,7 +153,7 @@ const newProduct = (w, o = {}) => w.cms.addProduct('v1', { name: 'Aero Sneaker',
     const p = await newProduct(w, { stockQty: 3, reorderLevel: 1 });
     const o = await w.checkout.placeOrderRequest('v1', buyer('cart-key-0001', [{ productId: p.id, name: 'Aero Sneaker — 9 / Black', qty: 2 }]));
     const sale = rows(w, 'posSale').find((s) => s.id === o.orderId);
-    ok('an order request is saved as PENDING_PAYMENT with the customer, a normalised phone and the delivery address', o.ok && sale.status === 'PENDING_PAYMENT' && sale.customerName === 'Ravi' && sale.customerPhone === '9876543210' && sale.deliveryAddress === addr && sale.paymentMethod === 'order_request' && o.amount === 2000);
+    ok('[feat:commerce.orders.request] an order request is saved as PENDING_PAYMENT with the customer, a normalised phone and the delivery address', o.ok && sale.status === 'PENDING_PAYMENT' && sale.customerName === 'Ravi' && sale.customerPhone === '9876543210' && sale.deliveryAddress === addr && sale.paymentMethod === 'order_request' && o.amount === 2000);
     ok('stock was reserved atomically with the order: 3 → 1, with an ORDER movement (refId = the order, balanceAfter 1)', prod(w, p.id).stockQty === 1 && moves(w, p.id).some((m) => m.reason === 'ONLINE_ORDER' && m.refType === 'ORDER' && m.refId === o.orderId && m.delta === -2 && m.balanceAfter === 1));
     ok('the server price was used (₹1,000 × 2), never the client\'s', sale.total === 2000);
     ok('the vendor was notified (NEW_ORDER) and a CRM lead was created', w.notes.some((n) => n[1] === 'NEW_ORDER') && w.leads.length === 1);

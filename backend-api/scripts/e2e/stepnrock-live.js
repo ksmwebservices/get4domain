@@ -166,7 +166,7 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(BE, 'node_
       await sleep(1500);
     }
     const f = (v) => (v === null ? 'never' : `${v.toFixed(1)}s`);
-    ok(`product rename visible on the home page in ≤ ${MAX_SECONDS}s`, seen.rename !== null && seen.rename <= MAX_SECONDS, f(seen.rename));
+    ok(`[feat:site.live-edit] product rename visible on the home page in ≤ ${MAX_SECONDS}s`, seen.rename !== null && seen.rename <= MAX_SECONDS, f(seen.rename));
     ok(`price change visible in ≤ ${MAX_SECONDS}s`, seen.price !== null && seen.price <= MAX_SECONDS, f(seen.price));
     ok(`hiding a product removes it in ≤ ${MAX_SECONDS}s`, seen.hide !== null && seen.hide <= MAX_SECONDS, f(seen.hide));
     ok(`a stock-out shows "Out of stock" in ≤ ${MAX_SECONDS}s`, seen.out !== null && seen.out <= MAX_SECONDS, f(seen.out));

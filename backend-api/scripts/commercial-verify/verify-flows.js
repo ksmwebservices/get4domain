@@ -172,7 +172,7 @@ const rows = (w, name) => w.t[name] ?? [];
     const good = w.rz.pay(order.orderId);
     const res = await w.pay.razorpayVerify(ctx, good);
     ok('captured payment → invoice PAID', res.verified && rows(w, 'invoice')[0].status === 'PAID' && rows(w, 'invoice')[0].paidPaise === 599400 && rows(w, 'invoice')[0].paidVia === 'RAZORPAY');
-    ok('paying the activation settles "payment due": term ACTIVE, due date cleared, effects applied once', rows(w, 'billingTerm')[0].status === 'ACTIVE' && rows(w, 'billingTerm')[0].paymentDueAt === null && rows(w, 'invoice')[0].effectsAppliedAt instanceof Date);
+    ok('[feat:commercial.vendor-billing] paying the activation settles "payment due": term ACTIVE, due date cleared, effects applied once', rows(w, 'billingTerm')[0].status === 'ACTIVE' && rows(w, 'billingTerm')[0].paymentDueAt === null && rows(w, 'invoice')[0].effectsAppliedAt instanceof Date);
     const again = await w.pay.razorpayVerify(await w.pay.loadByToken(tokenOf(r.payLink)), good);
     ok('REPLAY of the same payment is idempotent (no second income / credit / term)', again.verified && rows(w, 'platformIncome').length === 1 && rows(w, 'walletTransaction').filter((x) => x.service === 'ai_studio_bonus').length === 1 && rows(w, 'billingTerm').length === 1, `income=${rows(w, 'platformIncome').length}`);
     await rejects('a PAID invoice cannot get a second order', w.pay.razorpayOrder(await w.pay.loadByToken(tokenOf(r.payLink))), { status: 400 });

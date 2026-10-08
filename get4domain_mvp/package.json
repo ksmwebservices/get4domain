@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "registry:build": "node ../registry/build.mjs",
+    "registry:check": "node ../registry/check.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

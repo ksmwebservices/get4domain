@@ -125,7 +125,7 @@ function prismaSql(args) {
     const a = await mk('Two-of-three', 3);
     const r1 = await settle([order('race-a-1', a.id, 2), order('race-a-2', a.id, 2)]);
     const la = await ledger(a.id);
-    ok('TWO simultaneous orders of 2 against stock 3: exactly ONE succeeds', r1.ok.length === 1 && r1.bad.length === 1, `${r1.ok.length} ok / ${r1.bad.length} refused`);
+    ok('[feat:commerce.stock.atomic] TWO simultaneous orders of 2 against stock 3: exactly ONE succeeds', r1.ok.length === 1 && r1.bad.length === 1, `${r1.ok.length} ok / ${r1.bad.length} refused`);
     ok('…stock is exactly 1 (never −1) and the ledger agrees (opening +3, order −2)', la.stock === 1 && la.sum === 1 && la.n === 2, JSON.stringify(la));
 
     // 2. many small orders racing for a few units

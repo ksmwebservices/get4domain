@@ -49,7 +49,7 @@ const payments = (rz) => { const p = new PaymentsService(recorder('prisma'), rec
     ok('nothing credited by rejected attempts', wallets.size === 0 && txns.length === 0);
 
     const w1 = await svc.verifyTopup('vendorA', pay);
-    ok('genuine top-up credits the PAID amount + 10% bonus (₹999 → 109,890 paise)', w1.balance === 109890, `balance=${w1.balance}`);
+    ok('[feat:wallet.topup] genuine top-up credits the PAID amount + 10% bonus (₹999 → 109,890 paise)', w1.balance === 109890, `balance=${w1.balance}`);
     const w2 = await svc.verifyTopup('vendorA', pay);
     const w3 = await svc.verifyTopup('vendorA', pay);
     ok('REPLAY ×2 of the same payment does NOT credit again', w2.balance === 109890 && w3.balance === 109890 && txns.length === 1, `balance=${w3.balance} txns=${txns.length}`);
@@ -124,7 +124,7 @@ const payments = (rz) => { const p = new PaymentsService(recorder('prisma'), rec
     ok('nothing unlocked by rejected attempts', unlocks.size === 0 && invoiceCalls.length === 0);
     const p = rz.pay(gold.orderId);
     await svc.confirmUnlock('vA', 't1', p);
-    ok('genuine payment unlocks the theme + issues one invoice', unlocks.has('vA:t1') && invoiceCalls.length === 1);
+    ok('[feat:themes.unlock] genuine payment unlocks the theme + issues one invoice', unlocks.has('vA:t1') && invoiceCalls.length === 1);
     await svc.confirmUnlock('vA', 't1', p);
     ok('REPLAY of the same payment is a no-op (no second invoice)', invoiceCalls.length === 1);
   }
