@@ -24,6 +24,20 @@ export class EngineController {
   }
 
   @ApiBearerAuth()
+  @Post('orders/:id/paid')
+  @ApiOperation({ summary: 'Mark an order request as paid (the customer paid the shop directly)' })
+  markPaid(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string): Promise<WebOrder> {
+    return this.checkout.markOrderPaid(u.sub, id);
+  }
+
+  @ApiBearerAuth()
+  @Post('orders/:id/cancel')
+  @ApiOperation({ summary: 'Cancel an order and put its stock back (one transaction)' })
+  cancel(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string): Promise<WebOrder> {
+    return this.checkout.cancelOrder(u.sub, id, u.memberId ?? u.email ?? u.sub);
+  }
+
+  @ApiBearerAuth()
   @Get('actions')
   @ApiOperation({ summary: 'List registered engine actions and the real endpoints they delegate to' })
   listActions(): ActionDescriptor[] {

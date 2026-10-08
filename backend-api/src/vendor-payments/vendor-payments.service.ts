@@ -8,6 +8,8 @@ export interface VendorPaymentPublic {
   enabled: boolean;
   /** True when a secret is stored — the secret itself is never returned. */
   hasSecret: boolean;
+  /** 'ONLINE' | 'ORDER_REQUEST' | null (legacy: online if the keys are saved and enabled). */
+  checkoutMode: string | null;
 }
 
 /**
@@ -26,11 +28,13 @@ export class VendorPaymentsService {
       razorpayKeyId: row?.razorpayKeyId ?? null,
       enabled: row?.enabled ?? false,
       hasSecret: Boolean(row?.razorpayKeySecret),
+      checkoutMode: row?.checkoutMode ?? null,
     };
   }
 
   async upsert(vendorId: string, dto: UpdateVendorPaymentDto): Promise<VendorPaymentPublic> {
-    const data: { razorpayKeyId?: string | null; razorpayKeySecret?: string; enabled?: boolean } = {};
+    const data: { razorpayKeyId?: string | null; razorpayKeySecret?: string; enabled?: boolean; checkoutMode?: string } = {};
+    if (dto.checkoutMode !== undefined) data.checkoutMode = dto.checkoutMode;
     if (dto.razorpayKeyId !== undefined) data.razorpayKeyId = dto.razorpayKeyId.trim() || null;
     // Only (re)encrypt when a new secret is actually supplied — an empty/omitted secret
     // keeps whatever is already stored.

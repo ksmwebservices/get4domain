@@ -30,6 +30,8 @@ export interface PricedLine {
   qty: number;
   /** Authoritative per-unit price in paise. */
   unitPaise: number;
+  /** True when the line is a stock-tracked VendorProduct — stock is reserved for it and restored on cancel. */
+  tracked?: boolean;
 }
 
 export function cartTotalPaise(lines: PricedLine[]): number {

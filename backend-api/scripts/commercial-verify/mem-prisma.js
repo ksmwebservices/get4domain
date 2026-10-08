@@ -15,6 +15,10 @@ const UNIQUE = {
   vendor: [['id'], ['email'], ['subdomain']],
   wallet: [['id'], ['vendorId']],
   billingTerm: [['id']],
+  stockMovement: [['id'], ['idempotencyKey']],
+  posSale: [['id'], ['vendorId', 'idempotencyKey'], ['razorpayPaymentId']],
+  category: [['id'], ['vendorId', 'nameNormalized']],
+  vendorPaymentConfig: [['id'], ['vendorId']],
 };
 
 const DEFAULTS = {
@@ -27,6 +31,9 @@ const DEFAULTS = {
   billingDeal: () => ({ status: 'DRAFT', activateNow: false }),
   vendor: () => ({ isSandbox: false, expiresAt: null, status: 'ACTIVE', role: 'VENDOR', phone: null }),
   wallet: () => ({ balance: 0, totalCredited: 0, totalDebited: 0 }),
+  vendorProduct: () => ({ active: true, status: 'active', trackStock: false, stockQty: null, reorderLevel: null, customFields: null, categoryId: null, sku: null, unit: null, priceAmount: null, image: null, description: null }),
+  category: () => ({ sortOrder: 0, hidden: false }),
+  posSale: () => ({ status: 'completed', taxAmount: 0, type: 'retail', idempotencyKey: null, razorpayPaymentId: null, customerName: null, customerPhone: null, customerEmail: null, deliveryAddress: null, orderNote: null, orderSource: null, paidAt: null, cancelledAt: null }),
 };
 
 const isOpObj = (v) => v && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v) && Object.keys(v).some((k) => ['in', 'notIn', 'not', 'lt', 'lte', 'gt', 'gte', 'contains', 'startsWith', 'equals'].includes(k));
@@ -65,6 +72,11 @@ function matches(row, where) {
     if (k === 'OR') { if (!cond.some((w) => matches(row, w))) return false; continue; }
     if (k === 'AND') { if (!cond.every((w) => matches(row, w))) return false; continue; }
     if (k === 'NOT') { if (matches(row, cond)) return false; continue; }
+    if (!(k in row) && cond && typeof cond === 'object' && !(cond instanceof Date) && !isOpObj(cond)) {
+      // Prisma compound-unique selector: { a_b: { a, b } } means a AND b
+      if (!Object.entries(cond).every(([ck, cv]) => matchValue(row[ck], cv))) return false;
+      continue;
+    }
     if (!matchValue(row[k], cond)) return false;
   }
   return true;
@@ -101,7 +113,7 @@ function sorter(orderBy) {
   };
 }
 
-function createMemPrisma(seed = {}) {
+function createMemPrisma(seed = {}, opts = {}) {
   const tables = {};
   const locks = new Map(); // advisory lock key -> promise chain
   const tbl = (name) => (tables[name] ??= []);
@@ -190,7 +202,11 @@ function createMemPrisma(seed = {}) {
           return async (fn) => {
             if (typeof fn !== 'function') return Promise.all(fn);
             const txCtx = { keys: [], release: [] };
+            // opts.rollback: restore every table if the transaction throws (all-or-nothing). Only meaningful for SEQUENTIAL
+            // tests — truly concurrent transactions are proven on real Postgres (verify-stock-pg.js), not on this fake.
+            const snap = opts.rollback ? structuredClone(tables) : null;
             try { return await fn(build(txCtx)); }
+            catch (e) { if (snap) { for (const k of Object.keys(tables)) delete tables[k]; Object.assign(tables, snap); } throw e; }
             finally { for (const r of txCtx.release.reverse()) r(); }
           };
         }

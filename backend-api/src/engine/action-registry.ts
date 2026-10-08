@@ -9,7 +9,7 @@ import { ActionContext, ActionDefinition, ActionDescriptor } from './engine.type
 import {
   BillOrderActionInput, CreateSaleDto,
   CreateDealDto, CreateVisitDto, RealEstatePaymentInput, EngineEnquiryInput,
-  CheckoutOrderInput, CheckoutConfirmInput,
+  CheckoutOrderInput, CheckoutConfirmInput, OrderRequestInput,
 } from './engine.dto';
 import { PublicCheckoutService } from './public-checkout.service';
 
@@ -92,6 +92,19 @@ export class ActionRegistry {
       inputType: CheckoutConfirmInput,
       public: true,
       execute: (ctx, input) => this.checkout.confirm(ctx.vendorId, input),
+    });
+
+    // ── engine.checkout.request → PublicCheckoutService.placeOrderRequest (PUBLIC) ──
+    // ORDER_REQUEST checkout: no online payment. The order is saved PENDING_PAYMENT with the delivery address and stock is
+    // reserved atomically; the shop confirms and collects payment itself.
+    this.register<OrderRequestInput>({
+      intent: 'engine.checkout.request',
+      industry: 'engine',
+      delegatesTo: 'PosSale (PENDING_PAYMENT) + StockService.reserve',
+      description: 'Send an order request from the public site (no online payment); stock is reserved until the shop confirms or cancels.',
+      inputType: OrderRequestInput,
+      public: true,
+      execute: (ctx, input) => this.checkout.placeOrderRequest(ctx.vendorId, input),
     });
 
     // ── restaurant.bill_order → RestaurantService.billOrder (vendor-only) ──

@@ -307,6 +307,8 @@ model VendorProduct {
   sku          String?
   /// null = stock not tracked (CatalogItem.stock semantics); a number = tracked.
   stockQty     Int?
+  /// Handover 2026-10-08: true = stockQty is authoritative (orders reserve it, adjustments move it). false = stock not tracked.
+  trackStock   Boolean   @default(false)
   reorderLevel Int?
   /// active | inactive | draft | archived | out_of_stock. `active` (Boolean) remains what
   /// live readers filter on until the separate cutover dispatch; migrated rows carry
@@ -329,6 +331,7 @@ model VendorProduct {
   @@index([vendorId, industryType])
   @@index([vendorId, sku])
   @@unique([sourceModel, sourceId])
+  stockMovements StockMovement[]
 }
 
 /// A vendor's own product category — dispatch 24-Sep-2026, fixes a real gap:
@@ -346,6 +349,9 @@ model Category {
   industry       String
   name           String
   nameNormalized String
+  /// Handover 2026-10-08: dashboard ordering and visibility of the storefront filter list.
+  sortOrder      Int             @default(0)
+  hidden         Boolean         @default(false)
   products       VendorProduct[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -1006,6 +1012,8 @@ model VendorPaymentConfig {
   razorpayKeyId     String?
   razorpayKeySecret String? // encrypted
   enabled           Boolean  @default(false)
+  /// 'ONLINE' (vendor's own Razorpay) or 'ORDER_REQUEST' (order saved PENDING_PAYMENT, vendor confirms). null = legacy behaviour.
+  checkoutMode      String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1195,11 +1203,23 @@ model PosSale {
   // payment id makes confirm idempotent (a captured request replayed cannot mint a second sale).
   razorpayOrderId   String?
   razorpayPaymentId String?  @unique
+  // Handover 2026-10-08 — storefront order requests (no online payment): who ordered, where to deliver, and an
+  // idempotency key so a double submit creates one order. status adds PENDING_PAYMENT and CANCELLED.
+  customerName    String?
+  customerPhone   String?
+  customerEmail   String?
+  deliveryAddress String?
+  orderNote       String?
+  orderSource     String?
+  idempotencyKey  String?
+  paidAt          DateTime?
+  cancelledAt     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([vendorId])
   @@index([vendorId, createdAt])
+  @@unique([vendorId, idempotencyKey])
   @@map("g4d_pos_sales")
 }
 
@@ -2708,4 +2728,36 @@ model CommercialAuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("g4d_commercial_audit_log")
+}
+
+enum StockMovementReason {
+  ONLINE_ORDER
+  SHOP_SALE
+  ADJUSTMENT
+  RETURN
+  CANCEL
+  OPENING
+  DAMAGE
+  RECOUNT
+}
+
+/// Append-only ledger of every stock change on a VendorProduct. Written in the SAME transaction as the stock update.
+model StockMovement {
+  id             String              @id @default(cuid())
+  vendorId       String
+  productId      String
+  product        VendorProduct       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  delta          Int
+  reason         StockMovementReason
+  refType        String?
+  refId          String?
+  note           String?
+  balanceAfter   Int
+  createdBy      String?
+  idempotencyKey String              @unique
+  createdAt      DateTime            @default(now())
+
+  @@index([vendorId, productId, createdAt])
+  @@index([refType, refId])
+  @@map("g4d_stock_movements")
 }

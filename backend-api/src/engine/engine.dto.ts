@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsEmail, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BillOrderDto } from '../restaurant/dto/restaurant.dto';
 
@@ -92,4 +92,13 @@ export class CheckoutConfirmInput extends CheckoutOrderInput {
   @ApiProperty() @IsString() @MaxLength(120) razorpayOrderId!: string;
   @ApiProperty() @IsString() @MaxLength(120) razorpayPaymentId!: string;
   @ApiProperty() @IsString() @MaxLength(256) razorpaySignature!: string;
+}
+
+/**
+ * Input for `engine.checkout.request` (PUBLIC): an ORDER REQUEST — no online payment. The shop confirms and collects
+ * payment itself. Carries a delivery address and a client-generated idempotency key (a double submit makes one order).
+ */
+export class OrderRequestInput extends CheckoutOrderInput {
+  @ApiProperty({ description: 'Delivery address (house/street, area, city, PIN).' }) @IsString() @MinLength(10) @MaxLength(500) address!: string;
+  @ApiProperty({ description: 'Random per-cart key (8–64 chars). Sending the same key again returns the same order.' }) @IsString() @MinLength(8) @MaxLength(64) idempotencyKey!: string;
 }
