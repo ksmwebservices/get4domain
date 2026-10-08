@@ -1,0 +1,848 @@
+[
+ {
+  "route": "/dashboard/accounts",
+  "page": "app/dashboard/accounts/page.tsx",
+  "pageLines": 877,
+  "totalLines": 877,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/accounts/page.tsx"
+  ],
+  "endpoints": [
+   "accountingSummary → POST /accounting/summary:id",
+   "getExpenses → POST /accounting/expenses:id",
+   "getPaymentRecords → POST /accounting/payments:id",
+   "getGstFilings → POST /accounting/gst-filings",
+   "accountingTravelSummary → POST /accounting/travel-summary",
+   "salonSummary → POST /salon/summary",
+   "gymSummary → POST /gym/summary",
+   "hotelSummary → POST /hotel/summary",
+   "realEstateSummary → POST /realestate/summary",
+   "educationSummary → POST /education/summary",
+   "professionalSummary → POST /professional/summary",
+   "constructionSummary → POST /construction/summary",
+   "eventsSummary → POST /events/summary",
+   "financeSummary → POST /finance/summary",
+   "automobileSummary → POST /automobile/summary",
+   "logisticsSummary → POST /logistics/summary",
+   "diagnosticsSummary → POST /diagnostics/summary",
+   "photographySummary → POST /photography/summary",
+   "agricultureSummary → POST /agriculture/summary",
+   "coachingSummary → POST /coaching/summary",
+   "technologySummary → POST /technology/summary",
+   "clinicSummary → POST /clinic/summary",
+   "restaurantSummary → POST /restaurant/summary",
+   "retailSummary → POST /retail/summary",
+   "uploadImage → (unmapped)",
+   "createExpense → POST /accounting/expenses",
+   "deleteExpense → DELETE /accounting/expenses/:id",
+   "expenseVoucher → GET /accounting/expenses/:id/voucher",
+   "createPaymentRecord → POST /accounting/payments",
+   "deletePaymentRecord → DELETE /accounting/payments/:id",
+   "upsertGstFiling → POST /accounting/gst-filings"
+  ]
+ },
+ {
+  "route": "/dashboard/ai-studio",
+  "page": "app/dashboard/ai-studio/page.tsx",
+  "pageLines": 669,
+  "totalLines": 669,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/ai-studio/page.tsx"
+  ],
+  "endpoints": [
+   "aiCosts → GET /ai/costs",
+   "designTemplates → GET /design/templates",
+   "aiTemplates → GET /ai-templates:id",
+   "businessDocTemplates → POST /business-documents/templates",
+   "renderBusinessDocument → POST /business-documents/render",
+   "reelTracks → POST /reels/tracks",
+   "uploadImage → (unmapped)",
+   "renderReel → POST /reels/render",
+   "getVideoProvider → POST /video/provider",
+   "generateVideo → POST /video/generate",
+   "getVideoStatus → GET /video/status",
+   "getWalletBalance → GET /wallet/balance",
+   "generateAiContent → POST /ai/generate-content"
+  ]
+ },
+ {
+  "route": "/dashboard/billing",
+  "page": "app/dashboard/billing/page.tsx",
+  "pageLines": 330,
+  "totalLines": 1204,
+  "last": "2026-10-07",
+  "files": [
+   "app/dashboard/billing/page.tsx",
+   "lib/commerce.ts",
+   "app/dashboard/billing/PlanOverview.tsx",
+   "lib/pricing.ts",
+   "data/platform-features.ts",
+   "app/dashboard/billing/CommercialBilling.tsx"
+  ],
+  "endpoints": [
+   "getVendorInvoices → POST /invoices/vendor/:id",
+   "getMySubscription → PUT /subscriptions/vendor/:id",
+   "createInvoiceOrder → POST /payments/create-order",
+   "verifyPayment → POST /payments/verify",
+   "billingApi.me",
+   "apiCall :id/pay",
+   "apiCall :id/razorpay/order",
+   "apiCall :id/razorpay/verify",
+   "apiCall :id/upi",
+   "apiCall :id/promo",
+   "apiCall /billing/me",
+   "apiCall /billing/invoices/:id/pdf",
+   "apiCall /billing/plan-change-requests",
+   "apiCall /admin/commerce/summary",
+   "apiCall /admin/commerce/payee",
+   "apiCall /admin/commerce/payee/preview",
+   "apiCall /admin/commerce/deals/preview",
+   "apiCall /admin/commerce/deals/draft",
+   "apiCall /admin/commerce/deals${vendorId ",
+   "apiCall /admin/commerce/deals/invoice",
+   "apiCall /admin/commerce/invoices${qs ",
+   "apiCall /admin/commerce/invoices/:id",
+   "apiCall /admin/commerce/invoices/:id/link",
+   "apiCall /admin/commerce/invoices/:id/void",
+   "apiCall /admin/commerce/invoices/:id/pdf",
+   "apiCall /admin/commerce/payments",
+   "apiCall /admin/commerce/payments/:id/confirm",
+   "apiCall /admin/commerce/payments/:id/reject",
+   "apiCall /admin/commerce/promos",
+   "apiCall /admin/commerce/promos/:id",
+   "apiCall /admin/commerce/vendors/:id/billing",
+   "apiCall /admin/commerce/vendors/:id/billing/override",
+   "apiCall /admin/commerce/vendors/:id/billing/schedule-next",
+   "apiCall /admin/commerce/plan-changes${status ",
+   "apiCall /admin/commerce/plan-changes/:id/approve",
+   "apiCall /admin/commerce/plan-changes/:id/reject",
+   "apiCall /admin/commerce/renewal/run",
+   "fetch /admin/commerce/payments/:id/proof",
+   "billingApi.invoicePdf",
+   "billingApi.requestChange"
+  ]
+ },
+ {
+  "route": "/dashboard/campaigns",
+  "page": "app/dashboard/campaigns/page.tsx",
+  "pageLines": 418,
+  "totalLines": 418,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/campaigns/page.tsx"
+  ],
+  "endpoints": [
+   "getCampaignPages → PUT /campaign-pages",
+   "getCampaignPageAnalytics → GET /campaign-pages/:id/analytics",
+   "generateCampaignPage → POST /campaign-pages/generate",
+   "createCampaignPage → POST /campaign-pages"
+  ]
+ },
+ {
+  "route": "/dashboard/communication",
+  "page": "app/dashboard/communication/page.tsx",
+  "pageLines": 345,
+  "totalLines": 345,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/communication/page.tsx"
+  ],
+  "endpoints": [
+   "commThreads → POST /communication/threads",
+   "commHistory → GET /communication/history",
+   "commSend → POST /communication/send",
+   "getMyCommsSettings → PATCH /vendor-comms",
+   "updateMyCommsSettings → PATCH /vendor-comms"
+  ]
+ },
+ {
+  "route": "/dashboard/crm",
+  "page": "app/dashboard/crm/page.tsx",
+  "pageLines": 254,
+  "totalLines": 514,
+  "last": "2026-09-07",
+  "files": [
+   "app/dashboard/crm/page.tsx",
+   "config/industry-experience.ts",
+   "config/operations.ts"
+  ],
+  "endpoints": [
+   "getCrmLeads → POST /crm/leads${params ",
+   "createCrmLead → POST /crm/leads",
+   "updateCrmLead → PUT /crm/leads/:id"
+  ]
+ },
+ {
+  "route": "/dashboard/customer-hub",
+  "page": "app/dashboard/customer-hub/page.tsx",
+  "pageLines": 110,
+  "totalLines": 138,
+  "last": "2026-08-27",
+  "files": [
+   "app/dashboard/customer-hub/page.tsx",
+   "domainapp/shared/EmptyState.tsx"
+  ],
+  "endpoints": [
+   "daGetContacts → POST /domainapp/contacts:id",
+   "customerInvite → POST /customer/invite"
+  ]
+ },
+ {
+  "route": "/dashboard/domain-app/[tab]",
+  "page": "app/dashboard/domain-app/[tab]/page.tsx",
+  "pageLines": 264,
+  "totalLines": 7686,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/domain-app/[tab]/page.tsx",
+   "lib/dashboard-config.ts",
+   "domainapp/tab-registry.ts",
+   "domainapp/shared/RecordsView.tsx",
+   "domainapp/shared/EmptyState.tsx",
+   "domainapp/shared/CustomFields.tsx",
+   "domainapp/shared/ContactsView.tsx",
+   "domainapp/shared/CatalogView.tsx",
+   "domainapp/shared/InvoicingView.tsx",
+   "domainapp/shared/ComingSoon.tsx",
+   "domainapp/travel/FleetView.tsx",
+   "domainapp/travel/DriversView.tsx",
+   "domainapp/travel/TripsView.tsx",
+   "domainapp/travel/VisaView.tsx",
+   "domainapp/travel/ContractsView.tsx",
+   "domainapp/salon/StylistsView.tsx",
+   "domainapp/salon/SalonScheduleView.tsx",
+   "domainapp/gym/GymClassesView.tsx",
+   "domainapp/gym/MembershipsView.tsx",
+   "domainapp/hotel/RoomsView.tsx",
+   "domainapp/hotel/HousekeepingView.tsx",
+   "domainapp/hotel/ReservationsView.tsx",
+   "domainapp/realestate/ListingsView.tsx",
+   "domainapp/realestate/DealsView.tsx",
+   "domainapp/realestate/VisitsView.tsx",
+   "domainapp/education/BatchesView.tsx",
+   "domainapp/education/EnrollmentsView.tsx",
+   "domainapp/professional/EngagementsView.tsx",
+   "domainapp/professional/DocumentsView.tsx",
+   "domainapp/construction/ProjectsView.tsx",
+   "domainapp/construction/MaterialsView.tsx",
+   "domainapp/events/BookingsView.tsx",
+   "domainapp/events/VendorsView.tsx",
+   "domainapp/finance/CasesView.tsx",
+   "domainapp/finance/DocumentsView.tsx",
+   "domainapp/automobile/JobsView.tsx",
+   "domainapp/automobile/PartsInventoryView.tsx",
+   "domainapp/logistics/ShipmentsView.tsx",
+   "domainapp/diagnostics/TestOrdersView.tsx",
+   "domainapp/diagnostics/ReportsView.tsx",
+   "domainapp/photography/ShootsView.tsx",
+   "domainapp/photography/DeliveryView.tsx",
+   "domainapp/agriculture/OrdersView.tsx",
+   "domainapp/agriculture/ProduceInventoryView.tsx",
+   "domainapp/coaching/BatchesView.tsx",
+   "domainapp/coaching/StudentsView.tsx",
+   "domainapp/technology/ProjectsView.tsx",
+   "domainapp/technology/TasksView.tsx",
+   "domainapp/clinic/AppointmentsView.tsx",
+   "domainapp/clinic/DoctorsView.tsx",
+   "domainapp/clinic/PrescriptionsView.tsx",
+   "domainapp/restaurant/OrdersView.tsx",
+   "domainapp/restaurant/TablesView.tsx",
+   "domainapp/restaurant/KitchenView.tsx",
+   "domainapp/retail/PosView.tsx",
+   "domainapp/retail/ProductsView.tsx",
+   "domainapp/retail/InventoryView.tsx"
+  ],
+  "endpoints": [
+   "getMyIndustryConfig → PUT /industries/me",
+   "getIndustryConfig → GET /industries/:id",
+   "getVendorModules → GET /modules/vendor",
+   "getVendorAddons → GET /addons/vendor",
+   "daGetSummary → GET /domainapp/summary",
+   "daGetRecords → POST /domainapp/records:id",
+   "daGetContacts → POST /domainapp/contacts:id",
+   "daGetCatalog → POST /domainapp/catalog:id",
+   "daUpdateRecord → PUT /domainapp/records/:id",
+   "daCreateRecord → POST /domainapp/records",
+   "daUpdateRecordStatus → PUT /domainapp/records/:id/status",
+   "daCreateInvoice → POST /domainapp/invoices",
+   "daUpdateContact → PUT /domainapp/contacts/:id",
+   "daCreateContact → POST /domainapp/contacts",
+   "uploadImage → (unmapped)",
+   "daUpdateCatalogItem → PUT /domainapp/catalog/:id",
+   "daCreateCatalogItem → POST /domainapp/catalog",
+   "daGetInvoices → POST /domainapp/invoices:id",
+   "daSendInvoiceLink → POST /domainapp/invoices/:id/send-link",
+   "daMarkInvoicePaid → PUT /domainapp/invoices/:id/mark-paid",
+   "getVehicles → POST /travel/vehicles",
+   "updateVehicle → PATCH /travel/vehicles/:id",
+   "createVehicle → POST /travel/vehicles",
+   "deleteVehicle → DELETE /travel/vehicles/:id",
+   "getDrivers → POST /travel/drivers",
+   "updateDriver → PATCH /travel/drivers/:id",
+   "createDriver → POST /travel/drivers",
+   "deleteDriver → DELETE /travel/drivers/:id",
+   "getTrips → POST /travel/trips",
+   "updateTrip → PATCH /travel/trips/:id",
+   "createTrip → POST /travel/trips",
+   "deleteTrip → DELETE /travel/trips/:id",
+   "getVisas → POST /travel/visa",
+   "updateVisa → PATCH /travel/visa/:id",
+   "createVisa → POST /travel/visa",
+   "deleteVisa → DELETE /travel/visa/:id",
+   "getContracts → POST /travel/contracts",
+   "updateContract → PATCH /travel/contracts/:id",
+   "createContract → POST /travel/contracts",
+   "deleteContract → DELETE /travel/contracts/:id",
+   "generateContractInvoices → POST /travel/contracts/generate-invoices",
+   "getStylists → POST /salon/stylists",
+   "getChairs → POST /salon/chairs",
+   "updateStylist → PATCH /salon/stylists/:id",
+   "createStylist → POST /salon/stylists",
+   "updateChair → PATCH /salon/chairs/:id",
+   "createChair → POST /salon/chairs",
+   "deleteStylist → DELETE /salon/stylists/:id",
+   "deleteChair → DELETE /salon/chairs/:id",
+   "getSalonAppointments → POST /salon/appointments",
+   "updateSalonAppointment → PATCH /salon/appointments/:id",
+   "createSalonAppointment → POST /salon/appointments",
+   "deleteSalonAppointment → DELETE /salon/appointments/:id",
+   "getGymClasses → POST /gym/classes",
+   "updateGymClass → PATCH /gym/classes/:id",
+   "createGymClass → POST /gym/classes",
+   "deleteGymClass → DELETE /gym/classes/:id",
+   "getMemberships → POST /gym/memberships",
+   "updateMembership → PATCH /gym/memberships/:id",
+   "createMembership → POST /gym/memberships",
+   "deleteMembership → DELETE /gym/memberships/:id",
+   "getRooms → POST /hotel/rooms",
+   "updateRoom → PATCH /hotel/rooms/:id",
+   "createRoom → POST /hotel/rooms",
+   "deleteRoom → DELETE /hotel/rooms/:id",
+   "getRoomBookings → POST /hotel/bookings",
+   "updateRoomBooking → PATCH /hotel/bookings/:id",
+   "createRoomBooking → POST /hotel/bookings",
+   "deleteRoomBooking → DELETE /hotel/bookings/:id",
+   "getListings → POST /realestate/listings",
+   "updateListing → PATCH /realestate/listings/:id",
+   "createListing → POST /realestate/listings",
+   "deleteListing → DELETE /realestate/listings/:id",
+   "getDeals → POST /realestate/deals",
+   "updateDeal → PATCH /realestate/deals/:id",
+   "createDeal → POST /realestate/deals",
+   "deleteDeal → DELETE /realestate/deals/:id",
+   "getVisits → POST /realestate/visits",
+   "updateVisit → PATCH /realestate/visits/:id",
+   "createVisit → POST /realestate/visits",
+   "deleteVisit → DELETE /realestate/visits/:id",
+   "getBatches → POST /education/batches",
+   "updateBatch → PATCH /education/batches/:id",
+   "createBatch → POST /education/batches",
+   "deleteBatch → DELETE /education/batches/:id",
+   "getEnrollments → POST /education/enrollments",
+   "updateEnrollment → PATCH /education/enrollments/:id",
+   "createEnrollment → POST /education/enrollments",
+   "deleteEnrollment → DELETE /education/enrollments/:id",
+   "getEngagements → POST /professional/engagements",
+   "updateEngagement → PATCH /professional/engagements/:id",
+   "createEngagement → POST /professional/engagements",
+   "deleteEngagement → DELETE /professional/engagements/:id",
+   "getEngagement → POST /professional/engagements/:id",
+   "updateEngagementDocument → PATCH /professional/documents/:id",
+   "addEngagementDocument → POST /professional/engagements/:id/documents",
+   "deleteEngagementDocument → DELETE /professional/documents/:id",
+   "getEngagementDocuments → POST /professional/documents",
+   "getProjects → POST /construction/projects",
+   "updateProject → PATCH /construction/projects/:id",
+   "createProject → POST /construction/projects",
+   "deleteProject → DELETE /construction/projects/:id",
+   "getProject → POST /construction/projects/:id",
+   "updateMilestone → PATCH /construction/milestones/:id",
+   "addMilestone → POST /construction/projects/:id/milestones",
+   "deleteMilestone → DELETE /construction/milestones/:id",
+   "getMaterials → POST /construction/materials",
+   "updateMaterial → PATCH /construction/materials/:id",
+   "createMaterial → POST /construction/materials",
+   "deleteMaterial → DELETE /construction/materials/:id",
+   "getBookings → POST /events/bookings",
+   "updateBooking → PATCH /events/bookings/:id",
+   "createBooking → POST /events/bookings",
+   "deleteBooking → DELETE /events/bookings/:id",
+   "getBooking → POST /events/bookings/:id",
+   "updateEventVendor → PATCH /events/vendors/:id",
+   "addEventVendor → POST /events/bookings/:id/vendors",
+   "deleteEventVendor → DELETE /events/vendors/:id",
+   "getEventVendors → PATCH /events/vendors",
+   "getCases → POST /finance/cases",
+   "updateCase → PATCH /finance/cases/:id",
+   "createCase → POST /finance/cases",
+   "deleteCase → DELETE /finance/cases/:id",
+   "getCase → POST /finance/cases/:id",
+   "updateCaseDocument → PATCH /finance/documents/:id",
+   "addCaseDocument → POST /finance/cases/:id/documents",
+   "deleteCaseDocument → DELETE /finance/documents/:id",
+   "getCaseDocuments → POST /finance/documents",
+   "getJobs → POST /automobile/jobs",
+   "updateJob → PATCH /automobile/jobs/:id",
+   "createJob → POST /automobile/jobs",
+   "deleteJob → DELETE /automobile/jobs/:id",
+   "getJob → POST /automobile/jobs/:id",
+   "addJobLine → POST /automobile/jobs/:id/lines",
+   "deleteJobLine → DELETE /automobile/lines/:id",
+   "getParts → POST /automobile/parts",
+   "updatePart → PATCH /automobile/parts/:id",
+   "createPart → POST /automobile/parts",
+   "deletePart → DELETE /automobile/parts/:id",
+   "getShipments → POST /logistics/shipments",
+   "updateShipment → PATCH /logistics/shipments/:id",
+   "createShipment → POST /logistics/shipments",
+   "deleteShipment → DELETE /logistics/shipments/:id",
+   "getTestOrders → POST /diagnostics/orders",
+   "updateTestOrder → PATCH /diagnostics/orders/:id",
+   "createTestOrder → POST /diagnostics/orders",
+   "deleteTestOrder → DELETE /diagnostics/orders/:id",
+   "getTestOrder → POST /diagnostics/orders/:id",
+   "addTestOrderItem → POST /diagnostics/orders/:id/items",
+   "deleteTestOrderItem → DELETE /diagnostics/items/:id",
+   "getShoots → POST /photography/shoots",
+   "updateShoot → PATCH /photography/shoots/:id",
+   "createShoot → POST /photography/shoots",
+   "deleteShoot → DELETE /photography/shoots/:id",
+   "getShoot → POST /photography/shoots/:id",
+   "updateDeliverable → PATCH /photography/deliverables/:id",
+   "addDeliverable → POST /photography/shoots/:id/deliverables",
+   "deleteDeliverable → DELETE /photography/deliverables/:id",
+   "getDeliverables → PATCH /photography/deliverables",
+   "getProduceOrders → POST /agriculture/orders",
+   "updateProduceOrder → PATCH /agriculture/orders/:id",
+   "createProduceOrder → POST /agriculture/orders",
+   "deleteProduceOrder → DELETE /agriculture/orders/:id",
+   "getProduceStock → POST /agriculture/stock",
+   "updateProduceStock → PATCH /agriculture/stock/:id",
+   "createProduceStock → POST /agriculture/stock",
+   "deleteProduceStock → DELETE /agriculture/stock/:id",
+   "getCoachingBatches → POST /coaching/batches",
+   "updateCoachingBatch → PATCH /coaching/batches/:id",
+   "createCoachingBatch → POST /coaching/batches",
+   "deleteCoachingBatch → DELETE /coaching/batches/:id",
+   "getCoachingBatch → POST /coaching/batches/:id",
+   "updateCoachingSession → PATCH /coaching/sessions/:id",
+   "addCoachingSession → POST /coaching/batches/:id/sessions",
+   "deleteCoachingSession → DELETE /coaching/sessions/:id",
+   "getCoachingEnrollments → POST /coaching/enrollments",
+   "updateCoachingEnrollment → PATCH /coaching/enrollments/:id",
+   "createCoachingEnrollment → POST /coaching/enrollments",
+   "deleteCoachingEnrollment → DELETE /coaching/enrollments/:id",
+   "getTechProjects → POST /technology/projects",
+   "updateTechProject → PATCH /technology/projects/:id",
+   "createTechProject → POST /technology/projects",
+   "deleteTechProject → DELETE /technology/projects/:id",
+   "getTechTasks → POST /technology/tasks",
+   "createTechTask → POST /technology/tasks",
+   "updateTechTask → PATCH /technology/tasks/:id",
+   "deleteTechTask → DELETE /technology/tasks/:id",
+   "getClinicAppointments → POST /clinic/appointments",
+   "getDoctors → POST /clinic/doctors",
+   "updateClinicAppointment → PATCH /clinic/appointments/:id",
+   "createClinicAppointment → POST /clinic/appointments",
+   "deleteClinicAppointment → DELETE /clinic/appointments/:id",
+   "updateDoctor → PATCH /clinic/doctors/:id",
+   "createDoctor → POST /clinic/doctors",
+   "deleteDoctor → DELETE /clinic/doctors/:id",
+   "getRestaurantOrders → POST /restaurant/orders",
+   "getRestaurantTables → POST /restaurant/tables",
+   "createRestaurantOrder → POST /restaurant/orders",
+   "deleteRestaurantOrder → DELETE /restaurant/orders/:id",
+   "getRestaurantOrder → POST /restaurant/orders/:id",
+   "updateRestaurantOrder → PATCH /restaurant/orders/:id",
+   "billRestaurantOrder → POST /restaurant/orders/:id/bill",
+   "deleteRestaurantItem → DELETE /restaurant/items/:id",
+   "updateRestaurantTable → PATCH /restaurant/tables/:id",
+   "createRestaurantTable → POST /restaurant/tables",
+   "deleteRestaurantTable → DELETE /restaurant/tables/:id",
+   "getRestaurantKitchen → GET /restaurant/kitchen",
+   "updateRestaurantItem → PATCH /restaurant/items/:id",
+   "getRetailProducts → POST /retail/products",
+   "getRetailSales → POST /retail/sales",
+   "createRetailSale → POST /retail/sales",
+   "refundRetailSale → POST /retail/sales/:id/refund",
+   "updateRetailProduct → PATCH /retail/products/:id",
+   "createRetailProduct → POST /retail/products",
+   "deleteRetailProduct → DELETE /retail/products/:id",
+   "restockRetailProduct → POST /retail/products/:id/restock"
+  ]
+ },
+ {
+  "route": "/dashboard/domain-app",
+  "page": "app/dashboard/domain-app/page.tsx",
+  "pageLines": 94,
+  "totalLines": 94,
+  "last": "2026-07-18",
+  "files": [
+   "app/dashboard/domain-app/page.tsx"
+  ],
+  "endpoints": []
+ },
+ {
+  "route": "/dashboard/domain-management",
+  "page": "app/dashboard/domain-management/page.tsx",
+  "pageLines": 244,
+  "totalLines": 296,
+  "last": "2026-09-07",
+  "files": [
+   "app/dashboard/domain-management/page.tsx",
+   "lib/view-website.ts"
+  ],
+  "endpoints": [
+   "getMyDomains → POST /domains/mine",
+   "domainConfig → POST /domains/config",
+   "domainSearch → POST /domains/search",
+   "domainRegister → POST /domains/register",
+   "domainConnect → POST /domains/connect",
+   "domainVerify → POST /domains/verify"
+  ]
+ },
+ {
+  "route": "/dashboard/embed",
+  "page": "app/dashboard/embed/page.tsx",
+  "pageLines": 61,
+  "totalLines": 61,
+  "last": "2026-08-17",
+  "files": [
+   "app/dashboard/embed/page.tsx"
+  ],
+  "endpoints": [
+   "getWidgetKey → PUT /widget/my-key"
+  ]
+ },
+ {
+  "route": "/dashboard/go-live",
+  "page": "app/dashboard/go-live/page.tsx",
+  "pageLines": 176,
+  "totalLines": 176,
+  "last": "2026-10-01",
+  "files": [
+   "app/dashboard/go-live/page.tsx"
+  ],
+  "endpoints": [
+   "demoBuyOrder → POST /demo/buy/order",
+   "demoBuyConfirm → POST /demo/buy/confirm"
+  ]
+ },
+ {
+  "route": "/dashboard/hrm",
+  "page": "app/dashboard/hrm/page.tsx",
+  "pageLines": 31,
+  "totalLines": 31,
+  "last": "2026-10-03",
+  "files": [
+   "app/dashboard/hrm/page.tsx"
+  ],
+  "endpoints": []
+ },
+ {
+  "route": "/dashboard/invoices",
+  "page": "app/dashboard/invoices/page.tsx",
+  "pageLines": 162,
+  "totalLines": 162,
+  "last": "2026-08-11",
+  "files": [
+   "app/dashboard/invoices/page.tsx"
+  ],
+  "endpoints": [
+   "getVendorInvoices → POST /invoices/vendor/:id",
+   "getInvoicePdf → POST /invoices/:id/pdf",
+   "emailInvoice → POST /invoices/:id/email"
+  ]
+ },
+ {
+  "route": "/dashboard/landing-page",
+  "page": "app/dashboard/landing-page/page.tsx",
+  "pageLines": 303,
+  "totalLines": 303,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/landing-page/page.tsx"
+  ],
+  "endpoints": [
+   "getCampaignPages → PUT /campaign-pages",
+   "getCampaignPageAnalytics → GET /campaign-pages/:id/analytics",
+   "generateCampaignPage → POST /campaign-pages/generate",
+   "createCampaignPage → POST /campaign-pages",
+   "updateCampaignPage → PUT /campaign-pages/:id"
+  ]
+ },
+ {
+  "route": "/dashboard/my-products",
+  "page": "app/dashboard/my-products/page.tsx",
+  "pageLines": 369,
+  "totalLines": 535,
+  "last": "2026-10-01",
+  "files": [
+   "app/dashboard/my-products/page.tsx",
+   "lib/view-website.ts",
+   "data/listing-fields.ts"
+  ],
+  "endpoints": [
+   "uploadImage → (unmapped)",
+   "getVendorProducts → POST /cms/vendor/:id/products",
+   "updateProduct → PUT /cms/products/:id",
+   "addProduct → POST /cms/vendor/:id/products",
+   "deleteProduct → DELETE /cms/products/:id"
+  ]
+ },
+ {
+  "route": "/dashboard/my-services",
+  "page": "app/dashboard/my-services/page.tsx",
+  "pageLines": 261,
+  "totalLines": 261,
+  "last": "2026-10-02",
+  "files": [
+   "app/dashboard/my-services/page.tsx"
+  ],
+  "endpoints": [
+   "addDomainCampaignFromDashboard → POST /domain-campaign/clients/me",
+   "getVendorInvoices → POST /invoices/vendor/:id",
+   "createTicket → POST /support/tickets"
+  ]
+ },
+ {
+  "route": "/dashboard/my-website",
+  "page": "app/dashboard/my-website/page.tsx",
+  "pageLines": 453,
+  "totalLines": 670,
+  "last": "2026-10-01",
+  "files": [
+   "app/dashboard/my-website/page.tsx",
+   "lib/view-website.ts",
+   "lib/dashboard-config.ts"
+  ],
+  "endpoints": [
+   "myWebsiteThemes → POST /website-themes/mine:id",
+   "unlockThemeOrder → POST /website-themes/:id/unlock/order",
+   "unlockThemeConfirm → POST /website-themes/:id/unlock/confirm",
+   "uploadImage → (unmapped)",
+   "getVendorCMS → PUT /cms/vendor/:id",
+   "updateVendorCMS → PUT /cms/vendor/:id",
+   "getMyIndustryConfig → PUT /industries/me",
+   "getIndustryConfig → GET /industries/:id",
+   "getVendorModules → GET /modules/vendor",
+   "getVendorAddons → GET /addons/vendor"
+  ]
+ },
+ {
+  "route": "/dashboard/notifications",
+  "page": "app/dashboard/notifications/page.tsx",
+  "pageLines": 48,
+  "totalLines": 48,
+  "last": "2026-07-18",
+  "files": [
+   "app/dashboard/notifications/page.tsx"
+  ],
+  "endpoints": []
+ },
+ {
+  "route": "/dashboard/orders",
+  "page": "app/dashboard/orders/page.tsx",
+  "pageLines": 80,
+  "totalLines": 80,
+  "last": "2026-09-06",
+  "files": [
+   "app/dashboard/orders/page.tsx"
+  ],
+  "endpoints": [
+   "engineWebOrders → POST /engine/orders"
+  ]
+ },
+ {
+  "route": "/dashboard",
+  "page": "app/dashboard/page.tsx",
+  "pageLines": 302,
+  "totalLines": 467,
+  "last": "2026-10-03",
+  "files": [
+   "app/dashboard/page.tsx",
+   "lib/dashboard-config.ts"
+  ],
+  "endpoints": [
+   "getCrmLeads → POST /crm/leads${params ",
+   "getTelecrmFollowups → GET /crm/telecrm/followups",
+   "getWalletBalance → GET /wallet/balance",
+   "daGetInvoices → POST /domainapp/invoices:id",
+   "getUsage → GET /analytics/usage:id",
+   "getRecentCalls → POST /crm/telecrm/recent-calls",
+   "getNotifications → PUT /notifications",
+   "getMyIndustryConfig → PUT /industries/me",
+   "getIndustryConfig → GET /industries/:id",
+   "getVendorModules → GET /modules/vendor",
+   "getVendorAddons → GET /addons/vendor"
+  ]
+ },
+ {
+  "route": "/dashboard/payments",
+  "page": "app/dashboard/payments/page.tsx",
+  "pageLines": 109,
+  "totalLines": 109,
+  "last": "2026-09-06",
+  "files": [
+   "app/dashboard/payments/page.tsx"
+  ],
+  "endpoints": [
+   "getVendorPayment → PUT /vendor-payments",
+   "updateVendorPayment → PUT /vendor-payments"
+  ]
+ },
+ {
+  "route": "/dashboard/reports",
+  "page": "app/dashboard/reports/page.tsx",
+  "pageLines": 184,
+  "totalLines": 184,
+  "last": "2026-08-17",
+  "files": [
+   "app/dashboard/reports/page.tsx"
+  ],
+  "endpoints": [
+   "getCrmLeads → POST /crm/leads${params ",
+   "getCampaigns → POST /campaigns",
+   "daGetInvoices → POST /domainapp/invoices:id",
+   "getWalletTransactions → POST /wallet/transactions",
+   "daGetSummary → GET /domainapp/summary",
+   "getUsage → GET /analytics/usage:id"
+  ]
+ },
+ {
+  "route": "/dashboard/settings",
+  "page": "app/dashboard/settings/page.tsx",
+  "pageLines": 83,
+  "totalLines": 83,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/settings/page.tsx"
+  ],
+  "endpoints": []
+ },
+ {
+  "route": "/dashboard/stationery",
+  "page": "app/dashboard/stationery/page.tsx",
+  "pageLines": 84,
+  "totalLines": 84,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/stationery/page.tsx"
+  ],
+  "endpoints": [
+   "getStationery → POST /stationery",
+   "createStationery → POST /stationery",
+   "updateStationery → PUT /stationery/:id",
+   "deleteStationery → DELETE /stationery/:id"
+  ]
+ },
+ {
+  "route": "/dashboard/support",
+  "page": "app/dashboard/support/page.tsx",
+  "pageLines": 174,
+  "totalLines": 174,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/support/page.tsx"
+  ],
+  "endpoints": [
+   "chat → POST /ai/chat",
+   "createTicket → POST /support/tickets"
+  ]
+ },
+ {
+  "route": "/dashboard/team",
+  "page": "app/dashboard/team/page.tsx",
+  "pageLines": 218,
+  "totalLines": 218,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/team/page.tsx"
+  ],
+  "endpoints": [
+   "getTeamMembers → PUT /team/members",
+   "inviteTeamMember → POST /team/invite",
+   "updateTeamMember → PUT /team/members/:id",
+   "removeTeamMember → DELETE /team/members/:id"
+  ]
+ },
+ {
+  "route": "/dashboard/telecrm",
+  "page": "app/dashboard/telecrm/page.tsx",
+  "pageLines": 40,
+  "totalLines": 964,
+  "last": "2026-08-27",
+  "files": [
+   "app/dashboard/telecrm/page.tsx",
+   "lib/dashboard-config.ts",
+   "components/telecrm/TeleCrmBoard.tsx"
+  ],
+  "endpoints": [
+   "getCrmLeads → POST /crm/leads${params ",
+   "getCrmLead → PUT /crm/leads/:id",
+   "updateCrmLead → PUT /crm/leads/:id",
+   "logCrmCall → POST /crm/leads/:id/call",
+   "createCrmLead → POST /crm/leads",
+   "importCrmLeads → POST /crm/leads/import",
+   "getRecentCalls → POST /crm/telecrm/recent-calls",
+   "getMyIndustryConfig → PUT /industries/me",
+   "getIndustryConfig → GET /industries/:id",
+   "getVendorModules → GET /modules/vendor",
+   "getVendorAddons → GET /addons/vendor"
+  ]
+ },
+ {
+  "route": "/dashboard/wallet",
+  "page": "app/dashboard/wallet/page.tsx",
+  "pageLines": 236,
+  "totalLines": 236,
+  "last": "2026-08-15",
+  "files": [
+   "app/dashboard/wallet/page.tsx"
+  ],
+  "endpoints": [
+   "getWalletBalance → GET /wallet/balance",
+   "getWalletTransactions → POST /wallet/transactions",
+   "createWalletTopup → POST /wallet/topup",
+   "verifyWalletTopup → POST /wallet/topup/verify"
+  ]
+ },
+ {
+  "route": "/dashboard/website-engine",
+  "page": "app/dashboard/website-engine/page.tsx",
+  "pageLines": 217,
+  "totalLines": 2221,
+  "last": "2026-09-07",
+  "files": [
+   "app/dashboard/website-engine/page.tsx",
+   "lib/view-website.ts",
+   "data/demo-site.ts",
+   "data/industry-content.ts",
+   "engine/readiness.ts",
+   "engine/types.ts"
+  ],
+  "endpoints": [
+   "getVendorCMS → PUT /cms/vendor/:id",
+   "getVendorProducts → POST /cms/vendor/:id/products",
+   "engineListActions → POST /engine/actions"
+  ]
+ },
+ {
+  "route": "/dashboard/whatsapp-bot",
+  "page": "app/dashboard/whatsapp-bot/page.tsx",
+  "pageLines": 158,
+  "totalLines": 158,
+  "last": "2026-08-28",
+  "files": [
+   "app/dashboard/whatsapp-bot/page.tsx"
+  ],
+  "endpoints": [
+   "getKbEntries → POST /whatsapp-bot/kb",
+   "createKbEntry → POST /whatsapp-bot/kb",
+   "updateKbEntry → PATCH /whatsapp-bot/kb/:id",
+   "deleteKbEntry → DELETE /whatsapp-bot/kb/:id"
+  ]
+ }
+]

@@ -1,0 +1,43 @@
+== 1. SANDBOX VENDOR via the existing demo mechanism (DemoService.provisionSandbox) — isolated DB, not production
+      vendor cmuz1kmn60000httgcobjozdc industry=retail isSandbox=true expiresAt=2026-10-10T04:33
+      seeded rows for a new retail demo vendor: {"vendorProduct":0,"catalogItem":3,"retailProduct":0,"record":6,"contact":5,"wallet":1}
+      seeded CatalogItems that track stock: 0 of 3
+
+== 2. PRODUCT CRUD through the Website-Manager path (My Products → CmsService → VendorProduct)
+PASS  POST product with a top-level stockQty is REJECTED by the global ValidationPipe (forbidNonWhitelisted)  → Bad Request Exception
+PASS  …same for sku / status / reorderLevel / variants: the DTO only knows name, description, price, image, category, customFields  → Bad Request Exception
+PASS  product created with a category; a second entry typed "shoes" reuses the SAME category row (no duplicates)  → categoryId=cmuz1kmph0012httg6hpmqly6
+PASS  the real columns stockQty / sku / status stay EMPTY/default for a dashboard-created product  → stockQty=null status=active
+PASS  stock lives only inside the customFields JSON blob when someone puts it there
+PASS  EDIT reflected in the public storefront API (GET /cms/site/:subdomain) immediately
+PASS  public API exposes active products only; includes stockQty/status/sku columns as stored  → id,vendorId,name,description,price,image,category,categoryId,customFields,active,industryType,priceAmount,unit,sku,stockQty,reorderLevel,status,operationKey,sourceModel,sourceId,createdAt,updatedAt
+PASS  "hide" (active=false) removes it from the storefront — the only off-switch the dashboard has
+PASS  there is NO out-of-stock state in the storefront API: a hidden product vanishes, it is never shown as "Out of stock"  → status column is never written by any backend code
+      paymentsEnabled flag on the public site payload = false
+
+== 3. PUBLIC CHECKOUT on a VendorProduct (what stepnrock sells) — Razorpay stubbed
+PASS  order created at the SERVER price (₹2,199 × 2 = ₹4,398) and confirmed  → amount=439800
+PASS  STOCK AFTER SALE: VendorProduct stock is NOT reduced (customFields.stockQty stays 5, column stays null)  → cf.stockQty=5 col=null
+PASS  OVERSELL: 50 pairs of a product with stock 5 are accepted (no stock check on VendorProduct at all)  → amount=10995000
+PASS  the order appears in the vendor dashboard list (Website Orders ← PosSale type "web")  → orders=1
+PASS  sale lines carry catalogItemId=null for a VendorProduct purchase (nothing to decrement, nothing to restore)
+
+== 4. CATALOGUE-ITEM stock (CatalogItem.stock — the only checkout path that touches stock)
+PASS  DomainApp catalogue API cannot set stock: POST {stock:3} is rejected by the DTO whitelist  → Bad Request Exception
+PASS  …and CatalogService.create ignores a stock value even if called directly  → stock=null
+      two concurrent confirms of 2 caps each against stock 3 → outcomes: fulfilled | fulfilled; final stock = -1
+FAIL  ATOMICITY: stock can never go negative  → final stock=-1
+PASS  CAPTURED PAYMENT but item sold out before confirm: the customer paid, yet the order is rejected and no sale is recorded  → THROWS 400 ""Tracked Cap" is out of stock."
+      → nothing in the codebase refunds that captured payment automatically (see PUBLIC_CHECKOUT_REFUND grep result in the report)
+      notifications created for this vendor after all sales/stock changes: -1 (no low-stock alert code exists)
+
+== 5. RETAIL POS path (RetailProduct — Retail ▸ Products / Inventory / POS tabs)
+      two concurrent POS sales of 2 mugs against stock 3 → fulfilled | fulfilled; final stock = -1
+FAIL  POS: stock can never go negative under concurrent sales  → final stock=-1
+PASS  POS refund restores stock  → stock -1 → 1
+      retail summary (counts low-stock products, no alert is sent): {"todaySales":1,"todayRevenue":500,"totalProducts":1,"lowStockProducts":1,"stockValue":250}
+
+== 6. WHICH TABLE EACH SCREEN READS/WRITES (observed in this run)
+        2 rows  VendorProduct (My Products / Website Manager / public site / checkout price)
+        5 rows  CatalogItem (Industry ▸ Catalog tabs / checkout stock)
+        1 rows  RetailProduct (Retail ▸ Products, Inventory, POS)

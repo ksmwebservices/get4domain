@@ -1,0 +1,11 @@
+Provider keys visible to this isolated app: CLAUDE_API_KEY=set, OPENAI_API_KEY=unset (cleared), DB settings=none (isolated DB)
+sandbox vendor wallet before: 10000 paise (trial credit)
+
+-- A. ONE real text generation (social_post, skipImage) through AiService.generateContent
+FAIL  text generation threw: 503 AI content generation is temporarily unavailable
+
+-- B. Ordering with an EMPTY wallet (provider stubbed so no second paid call is made)
+PASS  EMPTY WALLET: the provider is called FIRST (cost incurred), then the debit fails — there is no balance pre-check in generateContent  → providerCalls=1, error="INSUFFICIENT_WALLET_BALANCE"
+
+-- C. Provider fallback behaviour (code-level, stubbed settings)
+PASS  IF an OpenAI key is configured but invalid/uncredited, text generation FAILS and does NOT fall back to the working Claude key  → urls=https://api.openai.com/v1/chat/completions; error="503 AI content generation is temporarily unavailable"

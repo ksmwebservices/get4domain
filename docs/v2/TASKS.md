@@ -81,3 +81,40 @@ Design, flows and policies: [COMMERCIAL_ENGINE.md](COMMERCIAL_ENGINE.md). Staff 
 | C-019 | Hotfix: void-returning advisory locks via `$queryRaw*` (Deal builder + live wallet/checkout locks) → `advisoryXactLock()`; raw-SQL guard; strict Prisma fake; `verify-db-lock.js` | **COMPLETE in code**; **KSM: deploy + run `verify-db-lock.js` (DEPLOYMENT.md §3b.7)** |
 | C-020 | Stepnrock: resume the leftover unpaid invoice `INV-2026-0005` (no second invoice) | **KSM: dry run → `--apply`** |
 | C-021 | AI Studio credit prorated by billing term (rule, per-deal override, grant-the-difference logic, vendor/admin display, stepnrock ₹250) | **COMPLETE in code**; **KSM: migrate deploy `20261008100000`, rebuild API + web, stepnrock dry run → `--apply` (DEPLOYMENT.md §3b.8)** |
+
+## Vendor dashboard audit backlog (2026-10-08) — see VENDOR_DASHBOARD_AUDIT.md §7
+Sizes S ≤ 1 day · M 2–5 days · L 1–3 weeks. **KSM** = needs KSM's accounts, keys or a decision.
+
+| ID | Task | Size | Phase | Needs KSM | State |
+|---|---|---|---|---|---|
+| V-001 | Put Billing in the menu + payment-due banner on Overview (stepnrock due 2026-10-10) | S | 0 | — | OPEN |
+| V-002 | Replace fake Notifications and fake Settings/Profile with real ones | S | 0 | — | OPEN |
+| V-003 | Reword/remove the 32 claims (23 REWORD + 9 REMOVE) per CLAIMS_VS_REALITY.md | S | 0 | wording decision | OPEN |
+| V-004 | Pull the AI error line from the VM log (`docker logs get4domain_backend … grep "OpenAI text error\|Anthropic API error\|DALL-E error"`) | S | 0 | KSM runs it; keys/credit | OPEN |
+| V-010 | One product store: finish the Universal Catalogue cutover (My Products gains price/SKU/stock/status/variants; POS, Inventory, Catalog tabs and checkout read `VendorProduct`) | L | 1 | approve prod data migration | OPEN |
+| V-011 | Atomic stock service (guarded UPDATE, reserve at order, `CHECK stock >= 0`) | M | 1 | — | OPEN |
+| V-012 | Out-of-stock end to end (status, public `inStock`, storefront badge) | S | 1 | — | OPEN |
+| V-013 | Cancel/failure restores stock; auto-refund if a captured payment cannot become an order | M | 1 | — | OPEN |
+| V-014 | Checkout address + order status workflow + order detail page | M | 1 | — | OPEN |
+| V-015 | Low-stock alert (notification + Overview widget) | S | 1 | — | OPEN |
+| V-016 | Vendor Razorpay onboarding (test-mode check; cart enabled only when verified) | M | 1 | vendors' keys | OPEN |
+| V-017 | Customer-invoice pay links on the vendor's keys + webhook marks paid; sequence numbering | M | 1 | confirm money flow | OPEN |
+| V-020 | Feature registry + generators + CI guard (FEATURE_REGISTRY_DESIGN.md) | M | 2 | — | OPEN |
+| V-021 | New navigation behind `nav_v2`, then flip (DASHBOARD_IA_PROPOSAL.md) | M | 2 | — | OPEN |
+| V-022 | Plan → modules/addons provisioning at activation/renewal/override; upgrade cards | M | 2 | Workspace/BOS module map | OPEN |
+| V-023 | Remove duplicates/orphans; replace `ComingSoon` with availability/upgrade cards | S | 2 | — | OPEN |
+| V-030 | Website hub (Content · Pages · Design · Domain · Search & AI visibility) | L | 3 | — | OPEN |
+| V-031 | Site-data contract for standalone apps (shared kit so stepnrock/deebi/allwin read CMS text, contact, SEO) | M | 3 | — | OPEN |
+| V-032 | SEO/GEO/AEO: per-page meta, JSON-LD, sitemap/robots/llms.txt per vendor, GA injection, score | M | 3 | — | OPEN |
+| V-033 | Add-a-page (section builder) for platform-rendered sites | L | 3 | — | OPEN |
+| V-034 | Domain: vhost/SSL automation; finish ResellerClub configuration | M | 3 | ResellerClub customer/contact/NS ids | OPEN |
+| V-040 | AI: surface real errors, OpenAI→Claude fallback, balance pre-check | S | 4 | valid funded keys | OPEN |
+| V-041 | AI: persist generated images; server-side library | M | 4 | storage config | OPEN |
+| V-042 | AI: reels rendering in the container; video provider | M | 4 | video provider key | OPEN |
+| V-050 | Social OAuth + real publish + scheduler | L | 5 | developer apps / review | OPEN |
+| V-051 | WhatsApp BSP per vendor; website bot embed for standalone sites | M | 5 | BSP account | OPEN |
+| V-052 | Google Business / Analytics / Search Console connectors (or reword as a service) | M | 5 | Google OAuth app | OPEN |
+| V-060 | HRM (staff, attendance, payroll) | L | 6 | — | OPEN |
+| V-061 | Task board UI + API on `VendorTask` | M | 6 | — | OPEN |
+| V-062 | Accounting depth: GSTR export, stock ledger | M | 6 | — | OPEN |
+| V-070 | Fix and schedule sandbox cleanup (delete wallet rows; daily cron); clear the 39 expired demos | S | any | — | OPEN |

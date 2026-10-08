@@ -1,0 +1,24 @@
+isolated sandbox vendor cmuz1rudk0000ht3gvbwd11hs (retail)
+
+-- J1/J2. Website content: homepage text, SEO fields, a "page"
+PASS  J1 homepage text + SEO fields persist and the public site API returns them
+      J6 keyword cap: 8 keywords saved by a vendor with NO billing term → accepted (cap applies only to vendors with a billing term)
+PASS  J6 there are NO GEO or AEO fields, no schema/JSON-LD, no robots/sitemap per vendor in the CMS model  → VendorCMS columns: id,vendorId,businessName,tagline,about,logo,banner,favicon,themeId,seoTitle,seoDesc,seoKeywords,phone,email,address,businessHours,whatsapp,facebook,instagram,linkedin,youtube,googleMaps,googleAnalyticsId,portfolio,createdAt,updatedAt
+PASS  J2 there is no "add a page" capability: pages exist only inside a theme definition (WebsiteTheme.pages), not per vendor
+
+-- J8. Lead capture → CRM and TeleCRM
+PASS  J8 the lead appears in CRM (findLeads) and in the TeleCRM call queue — CRM and TeleCRM are ONE table (CampaignLead)  → crm=1 telecrm=1
+PASS  "Customer Hub" / the industry Customers tab read a DIFFERENT table (Contact): a captured web lead does NOT create a customer record  → contacts named like the lead after capture = 0
+
+-- J10. Record an expense
+PASS  J10 expense persists and shows in the list and the P&L summary  → summary={"from":null,"to":null,"revenueNet":999,"outputGst":179.82,"revenueGross":1178.82,"expensesNet":1180,"inputGst":212.4,"expensesGross":1392.4,"expensesOnline":0,
+
+-- J9. Send an invoice to a customer (vendor → their customer)
+PASS  J9 customer invoice persists (GenericInvoice) with GST and appears in the industry Billing/Invoicing tab list  → total=4720; list keys=items,total,page,limit
+      J9 "send" = create a Razorpay payment link with the PLATFORM's Razorpay keys (not the vendor's) → undefined
+
+-- J11. Add a staff member with a role
+PASS  J11 staff invite persists with role/department/modules and lists back (invite email/WhatsApp stubbed)  → status=invited
+
+-- J12. Theme change counter
+      themes in the isolated schema: 0 (themes are data rows seeded in production, not by migrations)
