@@ -56,6 +56,12 @@ export class CrmController {
     return this.crmService.update(id, user.sub, dto);
   }
 
+  @Post('leads/:id/convert')
+  @ApiOperation({ summary: 'Turn a lead into a customer in one step (idempotent per phone number)' })
+  convert(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.crmService.convertToCustomer(id, user.sub);
+  }
+
   @Post('leads/:id/call')
   @ApiOperation({ summary: 'Log a call against a lead' })
   logCall(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Body() dto: LogCallDto) {

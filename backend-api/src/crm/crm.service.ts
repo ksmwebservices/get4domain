@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CallLog, CampaignLead, Prisma } from '@prisma/client';
+import { CallLog, CampaignLead, Contact, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCrmLeadDto } from './dto/create-crm-lead.dto';
 import { UpdateCrmLeadDto } from './dto/update-crm-lead.dto';
@@ -93,6 +93,24 @@ export class CrmService {
         assignedTo: dto.assignedTo,
         followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : undefined,
       },
+    });
+  }
+
+  /**
+   * One click from a captured lead to a customer: creates the Contact (type "customer") from the lead, marks the lead won and remembers the
+   * contact on the lead. Idempotent: the same phone is never turned into two customers for one vendor (the existing one is returned).
+   */
+  async convertToCustomer(id: string, vendorId: string): Promise<{ contact: Contact; created: boolean }> {
+    const lead = await this.findOne(id, vendorId);
+    return this.prisma.$transaction(async (tx) => {
+      const phone = lead.phone.trim();
+      const existing = await tx.contact.findFirst({ where: { vendorId, phone } });
+      const contact = existing ?? await tx.contact.create({
+        data: { vendorId, name: lead.name, phone, type: 'customer', notes: lead.message ?? undefined, customFields: { fromLeadId: lead.id, leadSource: lead.source ?? null } as Prisma.InputJsonValue },
+      });
+      const prior = (lead.customFields && typeof lead.customFields === 'object' && !Array.isArray(lead.customFields) ? lead.customFields : {}) as Record<string, unknown>;
+      await tx.campaignLead.update({ where: { id: lead.id }, data: { status: 'won', customFields: { ...prior, contactId: contact.id } as Prisma.InputJsonValue } });
+      return { contact, created: !existing };
     });
   }
 

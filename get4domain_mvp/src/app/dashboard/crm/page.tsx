@@ -4,10 +4,12 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Search, Plus, Phone, MessageCircle, StickyNote, Download, Loader2, X,
+  UserCheck,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
+import { useV2 } from '@/dashboard-v2/context';
 import { getIndustryExperience } from '@/config/industry-experience';
 
 interface CrmLead {
@@ -55,6 +57,8 @@ function CrmPageInner() {
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const v2 = useV2();
 
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ name: '', phone: '', message: '' });
@@ -108,6 +112,18 @@ function CrmPageInner() {
     }
   }
 
+  /** Dashboard v2 only: turn a captured lead into a customer in one click (idempotent per phone number on the server). */
+  async function handleMakeCustomer(lead: CrmLead) {
+    setError(''); setNotice('');
+    try {
+      const r = await api.convertCrmLead(lead.id);
+      setLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, status: 'won' } : l)));
+      setNotice(r?.data?.created === false ? `${lead.name} was already a customer.` : `${lead.name} is now a customer.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not make this lead a customer');
+    }
+  }
+
   async function handleSaveNote() {
     if (!noteFor) return;
     try {
@@ -145,6 +161,7 @@ function CrmPageInner() {
         </div>
       </div>
 
+      {notice && <div role="status" className="rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">{notice}</div>}
       {error && <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -201,6 +218,7 @@ function CrmPageInner() {
                 <a href={`tel:${lead.phone}`} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Call"><Phone className="h-4 w-4" /></a>
                 <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="WhatsApp"><MessageCircle className="h-4 w-4" /></a>
                 <button onClick={() => { setNoteFor(lead); setNoteText(lead.notes ?? ''); }} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Add note"><StickyNote className="h-4 w-4" /></button>
+                {v2 && <button onClick={() => handleMakeCustomer(lead)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Make customer" title="Make customer"><UserCheck className="h-4 w-4" /></button>}
               </div>
             </div>
           ))}

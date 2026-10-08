@@ -597,6 +597,7 @@ export const api = {
   getCrmLead: (id: string) => apiCall(`/crm/leads/${id}`),
   updateCrmLead: (id: string, data: { status?: string; notes?: string; assignedTo?: string; followUpDate?: string }) =>
     apiCall(`/crm/leads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  convertCrmLead: (id: string) => apiCall(`/crm/leads/${id}/convert`, { method: 'POST' }),
   logCrmCall: (id: string, data: { duration?: number; outcome?: string; notes?: string; aiSummary?: string; followUpAt?: string }) =>
     apiCall(`/crm/leads/${id}/call`, { method: 'POST', body: JSON.stringify(data) }),
   getTelecrmQueue: () => apiCall('/crm/telecrm/queue'),
