@@ -160,7 +160,7 @@ export default function MyServicesPage() {
                   <span className="text-sm font-bold text-slate-900">Everything included</span>
                   <span className="text-lg font-bold text-primary-600">{formatCurrency(amount)}<span className="text-xs font-normal text-slate-400">/month</span></span>
                 </div>
-                <p className="text-xs text-slate-500 mb-4">Industry website + Mini BOS + CRM/TeleCRM + Campaigns + AI Studio</p>
+                <p className="text-xs text-slate-500 mb-4">Industry website, customers, leads and AI Studio</p>
                 <Button
                   size="sm"
                   fullWidth

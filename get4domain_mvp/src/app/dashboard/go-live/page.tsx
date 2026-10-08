@@ -1,5 +1,6 @@
 'use client';
 
+import { planDisplayName } from '@/lib/nav.generated';
 import { useState } from 'react';
 import { Rocket, Check, ShieldCheck, Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -31,12 +32,12 @@ function loadRazorpay(): Promise<void> {
 const PLAN_INCLUDED: Record<'workspace' | 'bos', string[]> = {
   workspace: [
     'Your industry website + customer portal', 'Bookings, contacts, catalog & GST invoicing',
-    'TeleCRM, Campaigns & AI Studio', 'WhatsApp / SMS / Email (wallet)', '₹499 AI Studio credit included',
+    'Leads, call list & AI Studio', 'SMS & email from your wallet; WhatsApp once your number is connected', '₹499 AI Studio credit included',
     '3 free SEO keywords', '2 theme changes/year',
   ],
   bos: [
-    'Everything in Workspace', 'WhatsApp bot reply too', 'Task management & assigning',
-    'Full GST + P&L accounting', '₹1,299 AI Studio credit included',
+    'Everything in Essentials', 'Expenses, P&L and GST tracking',
+    '₹1,299 AI Studio credit included',
     '6 free SEO keywords', '4 theme changes/year',
   ],
 };
@@ -52,8 +53,8 @@ export default function GoLivePage() {
   const [error, setError] = useState('');
   const [plan, setPlan] = useState<'workspace' | 'bos'>('workspace');
   const PLANS = {
-    workspace: { name: 'Workspace', total: '₹14,145.84', sub: '₹999/mo · billed annually', note: 'incl. 18% GST' },
-    bos: { name: 'BOS', total: '₹28,305.84', sub: '₹1,999/mo · billed annually', note: 'incl. 18% GST · full suite' },
+    workspace: { name: planDisplayName('WORKSPACE'), total: '₹14,145.84', sub: '₹999/mo · billed annually', note: 'incl. 18% GST' },
+    bos: { name: planDisplayName('BOS'), total: '₹28,305.84', sub: '₹1,999/mo · billed annually', note: 'incl. 18% GST' },
   } as const;
   const sel = PLANS[plan];
   const INCLUDED = PLAN_INCLUDED[plan];
@@ -73,7 +74,7 @@ export default function GoLivePage() {
       if (!Razorpay) throw new Error('Razorpay checkout unavailable');
       const rzp = new Razorpay({
         key, amount: order.amount, currency: order.currency, order_id: order.orderId,
-        name: 'Get4Domain', description: `DomainApp — ${sel.name} (${sel.total})`,
+        name: 'Get4Domain', description: `${sel.name} plan (${sel.total})`,
         prefill: { name: form.name, email: form.email, contact: form.phone },
         handler: async (r: RazorpayResponse) => {
           try {
@@ -88,7 +89,7 @@ export default function GoLivePage() {
               setSession({
                 id: res.data?.vendorId ?? user?.id ?? '', name: form.name || 'Owner', email: form.email,
                 role: 'vendor', businessName: form.businessName, industry: user?.industry,
-                plan: `DomainApp ${sel.name}`, initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
+                plan: `${sel.name}`, initials: (form.name || 'O').split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),
               });
               refresh();
             }
@@ -113,7 +114,7 @@ export default function GoLivePage() {
       <div className="mx-auto max-w-md py-16 text-center">
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-success-100"><Check className="h-10 w-10 text-success-600" /></div>
         <h1 className="text-2xl font-bold text-slate-900">You&apos;re live! 🎉</h1>
-        <p className="mt-3 text-slate-600">Your account is now a full DomainApp subscription. Your GST invoice has been emailed, and your AI Studio credit is added.</p>
+        <p className="mt-3 text-slate-600">Your account is now a paid subscription. Your GST invoice has been emailed, and your AI Studio credit is added.</p>
         <a href="/dashboard"><Button className="mt-6" leftIcon={<Rocket className="h-4 w-4" />}>Go to my dashboard</Button></a>
       </div>
     );
@@ -123,7 +124,7 @@ export default function GoLivePage() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900"><Rocket className="h-6 w-6 text-primary-600" /> Go live</h1>
-        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — choose <strong>Workspace</strong> or <strong>BOS</strong>, billed annually.</p>
+        <p className="mt-1 text-sm text-slate-500">Turn your demo into a real account — choose <strong>{planDisplayName('WORKSPACE')}</strong> or <strong>{planDisplayName('BOS')}</strong>, billed annually.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-5">

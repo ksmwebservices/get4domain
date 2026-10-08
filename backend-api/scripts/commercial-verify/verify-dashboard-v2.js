@@ -166,5 +166,28 @@ const seed = () => ({
     prisma.$tables.vendorModule.push({ id: 'zz', vendorId: 'v2', moduleKey: 'growth_hub', enabled: true });
     ok('a vendor view never includes another vendor module rows', (await svc.forVendor('v1')).modules.find((m) => m.key === 'growth_hub').enabled === false);
   }
+
+  section('[feat:account.billing.honest-copy] new dashboard text: plan names, banned words, bot navigation from the registry');
+  {
+    const fsx = require('fs'); const pathx = require('path');
+    const root = pathx.join(__dirname, '..', '..', '..');
+    const v2dir = pathx.join(root, 'get4domain_mvp', 'src', 'dashboard-v2');
+    const BANNED = /Workspace|Mini BOS|DomainApp|DomainCampaign|\bApps\b/;
+    const offenders = [];
+    for (const f of fsx.readdirSync(v2dir)) {
+      fsx.readFileSync(pathx.join(v2dir, f), 'utf8').split('\n').forEach((line, i) => {
+        if (/^\s*(\/\/|\*|\/\*)/.test(line) || /DomainAppTab|import /.test(line)) return;
+        if (BANNED.test(line)) offenders.push(f + ':' + (i + 1));
+      });
+    }
+    ok('Dashboard v2 screens never say Workspace, Mini BOS, DomainApp, DomainCampaign or Apps in visible text', offenders.length === 0, offenders.join());
+    const labels = REG.FEATURES.map((f) => f.label).concat(REG.DEPARTMENTS.map((d) => d.label));
+    ok('no menu label or department name uses the banned words', labels.every((l) => !BANNED.test(l)));
+    ok('plan display names are Essentials / Pro / Custom, internal keys unchanged', REG.planDisplayName('WORKSPACE') === 'Essentials' && REG.planDisplayName('BOS') === 'Pro' && REG.planDisplayName('CUSTOM') === 'Custom');
+    const ai = fsx.readFileSync(pathx.join(__dirname, '..', '..', 'src', 'ai', 'ai.service.ts'), 'utf8');
+    const ids = [...ai.matchAll(/navLine\('([a-z-]+\.[a-z-]+)'\)/g)].map((m) => m[1]);
+    ok('the dashboard assistant names screens only through the registry, and every id it uses exists', ids.length >= 4 && ids.every((id) => REG.FEATURES.some((f) => f.id === id)), ids.join());
+    ok('the assistant no longer sends vendors to menu names that do not exist (My Campaign, Billing & Payments, My Plans & Services)', !/My Campaign|Billing & Payments|My Plans & Services/.test(ai));
+  }
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });

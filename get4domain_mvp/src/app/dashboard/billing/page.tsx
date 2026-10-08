@@ -1,5 +1,6 @@
 'use client';
 
+import { planDisplayName } from '@/lib/nav.generated';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -41,6 +42,8 @@ const TIER_LABEL = (amountPaise: number): string => {
   if (amountPaise === 2398800) return 'BOS';
   return 'DomainApp';
 };
+/** What the vendor reads: Essentials / Pro (internal keys stay WORKSPACE / BOS). */
+const tierName = (tier: string): string => (tier === 'Workspace' ? planDisplayName('WORKSPACE') : tier === 'BOS' ? planDisplayName('BOS') : 'Your plan');
 
 interface RazorpayCheckoutResponse {
   razorpay_order_id: string;
@@ -227,7 +230,7 @@ export default function BillingPage() {
           <div className="flex items-center justify-between rounded-xl bg-success-50 border border-success-100 p-4">
             <div>
               <div className="text-sm font-bold text-slate-900">
-                {subscription ? `DomainApp ${TIER_LABEL(subscription.amount)}` : (user?.plan ?? 'Current Plan')}
+                {subscription ? `${tierName(TIER_LABEL(subscription.amount))} plan` : (user?.plan ?? 'Current plan')}
               </div>
               <div className="text-xs text-slate-500 mt-0.5">
                 {subscription?.endDate ? `Renews ${formatDate(subscription.endDate)}` : 'Active'}
@@ -310,7 +313,7 @@ export default function BillingPage() {
           </div>
 
           <p className="mt-4 rounded-xl bg-slate-50 px-3.5 py-2.5 text-center text-xs text-slate-500">
-            Plan billing: Workspace is ₹11,988 + 18% GST once a year (₹999/month equivalent); BOS is ₹23,988 + 18% GST once a year (₹1,999/month equivalent). The amount above is exactly what you&apos;ll be charged now.
+            Plan billing: Essentials is ₹11,988 + 18% GST once a year (₹999/month equivalent); Pro is ₹23,988 + 18% GST once a year (₹1,999/month equivalent). The amount above is exactly what you&apos;ll be charged now.
           </p>
         </div>
       ) : (

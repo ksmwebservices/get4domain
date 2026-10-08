@@ -18,7 +18,7 @@ export default function CommunicationHubPage() {
     <div className="vendor-ui -m-5 min-h-[calc(100vh-4rem)] bg-ink-950 bg-radial-glow p-5 text-ink-100 lg:-m-8 lg:p-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-slate-900">Communication Hub</h1>
-        <p className="text-sm text-slate-500">One place for your WhatsApp, Email &amp; SMS — messages and settings.</p>
+        <p className="text-sm text-slate-500">Your messages and settings in one place. E-mail works now; WhatsApp and SMS start once you connect your number or sender.</p>
       </div>
 
       <div className="mb-5 flex w-fit rounded-xl border border-slate-200 bg-white p-1">

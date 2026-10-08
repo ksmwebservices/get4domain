@@ -8,6 +8,7 @@ import { PlatformSettingsService } from '../platform-settings/platform-settings.
 import { StorageService } from '../storage/storage.service';
 import { AiErrorKind, AiProviderError, AiProviderName, VENDOR_MESSAGE, classifyProviderError, pickError, toVendorException } from './ai-errors';
 import { persistGeneratedImage } from './ai-image-store';
+import { DEPARTMENTS, FEATURES } from '../registry/registry.generated';
 
 export const CONTENT_CHANNEL_COST_PAISE: Record<string, number> = {
   // AI Studio content-type keys (source of truth for the grid).
@@ -116,6 +117,13 @@ Keep responses concise - max 3-4 sentences.
 If asked something you don't know, say:
 "Let me connect you with our team for that specific question."`;
 
+/** "Department > Screen" for a registry feature, so the assistant never invents a menu name. */
+const navLine = (featureId: string): string => {
+  const f = FEATURES.find((x) => x.id === featureId);
+  const dept = f ? DEPARTMENTS.find((d) => d.id === f.department)?.label : undefined;
+  return f && dept ? `${dept} > ${f.label}` : 'the dashboard menu';
+};
+
 const DASHBOARD_PROMPT = `You are the Get4Domain support assistant for logged-in vendors.
 You help vendors manage their Get4Domain subscription.
 
@@ -130,13 +138,14 @@ You can help with:
 - How to upgrade plan
 - How to map custom domain
 
-Dashboard navigation:
-- Pay invoices: go to Billing & Payments
-- Update website: go to My Website
-- Add products: go to My Products
-- Campaign status: go to My Campaign
-- Raise ticket: go to Support
-- Upgrade plan: go to My Plans & Services
+Dashboard navigation (menu names come from the feature registry, so they match the menu):
+- Pay invoices or upgrade plan: ${navLine('account.billing')}
+- Update website text: ${navLine('website.content')}
+- Change the website design: ${navLine('website.design')}
+- Add products: ${navLine('commerce.products')}
+- Raise a ticket: ${navLine('account.help')}
+- Campaigns and landing pages are not available yet; do not promise them.
+- If the vendor still sees the previous menu, the same things are under Subscription, My Website, My Products and Support.
 
 If you cannot resolve the issue, say:
 "Let me connect you with our team for that specific question."

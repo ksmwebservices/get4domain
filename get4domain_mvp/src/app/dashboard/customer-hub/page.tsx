@@ -83,7 +83,7 @@ export default function CustomerHubPage() {
       {loading ? (
         <div className="p-8 text-center text-sm text-slate-400">Loading…</div>
       ) : contacts.length === 0 ? (
-        <EmptyState icon="Users" title="No contacts yet" subtitle="Add contacts in your DomainApp workspace first." />
+        <EmptyState icon="Users" title="No contacts yet" subtitle="Add customers first, under Sales and CRM." />
       ) : (
         <div className="space-y-2">
           {contacts.map((c) => (

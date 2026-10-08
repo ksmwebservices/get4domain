@@ -3,6 +3,7 @@
  * No call here ever sends a payment amount: the server derives every amount from the invoice.
  */
 import { apiCall } from './api';
+import { planDisplayName } from './nav.generated';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
@@ -20,7 +21,7 @@ export const fmtDate = (d: string | Date | null | undefined): string =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 export const CYCLE_LABEL: Record<Cycle, string> = { MONTHLY: 'Monthly', HALF_YEARLY: 'Half-yearly', ANNUAL: 'Annual', CUSTOM_MONTHS: 'Custom months' };
-export const PLAN_LABEL: Record<PlanKey, string> = { WORKSPACE: 'Workspace', BOS: 'BOS' };
+export const PLAN_LABEL: Record<PlanKey, string> = { WORKSPACE: planDisplayName('WORKSPACE'), BOS: planDisplayName('BOS') };
 export const GST_LABEL: Record<GstMode, string> = { EXCLUSIVE: 'GST on top (18%)', INCLUSIVE: 'GST included in price', NONE: 'No GST' };
 
 export interface PricedLine { kind: 'PLAN' | 'ADDON' | 'CUSTOM' | 'CREDIT'; label: string; amountPaise: number; qty?: number }
