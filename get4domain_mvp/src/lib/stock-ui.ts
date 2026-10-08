@@ -7,7 +7,7 @@ export type StockReason = 'SHOP_SALE' | 'DAMAGE' | 'RETURN' | 'RECOUNT' | 'OPENI
 export const REASONS_BY_MODE: Record<AdjustMode, StockReason[]> = {
   add: ['RETURN', 'OPENING', 'ADJUSTMENT'],
   remove: ['SHOP_SALE', 'DAMAGE', 'ADJUSTMENT'],
-  set: ['RECOUNT', 'OPENING'],
+  set: ['RECOUNT', 'OPENING', 'ADJUSTMENT'],
 };
 
 export const REASON_LABEL: Record<StockReason, string> = {
@@ -35,7 +35,9 @@ export interface StockShape { active: boolean; status?: string | null; trackStoc
 
 /** The state the vendor sees on a product card — same buckets the shopper gets (backend availabilityOf). */
 export function stockState(p: StockShape): Availability {
-  const status = !p.active || p.status === 'HIDDEN' || p.status === 'inactive' || p.status === 'draft' || p.status === 'archived' ? 'HIDDEN' : p.status === 'OUT_OF_STOCK' || p.status === 'out_of_stock' ? 'OUT_OF_STOCK' : 'AVAILABLE';
+  // Same precedence as the server (backend normaliseStatus): an explicit status wins, then the legacy active flag.
+  const raw = (p.status ?? '').trim().toUpperCase();
+  const status = raw === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : ['HIDDEN', 'INACTIVE', 'ARCHIVED', 'DRAFT'].includes(raw) || !p.active ? 'HIDDEN' : 'AVAILABLE';
   if (status === 'HIDDEN') return 'hidden';
   if (status === 'OUT_OF_STOCK') return 'out';
   if (!p.trackStock) return 'in';
