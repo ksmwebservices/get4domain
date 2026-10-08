@@ -68,11 +68,14 @@ export class NotificationsService {
     return this.prisma.notification.findMany({
       where: { recipientId },
       orderBy: [{ read: 'asc' }, { createdAt: 'desc' }],
+      take: 100,
     });
   }
 
-  async markRead(id: string): Promise<Notification> {
-    return this.prisma.notification.update({ where: { id }, data: { read: true } });
+  /** Marks ONE notification read — only if it belongs to `recipientId` (a vendor can never touch another vendor's notification). */
+  async markRead(id: string, recipientId: string): Promise<{ count: number }> {
+    const r = await this.prisma.notification.updateMany({ where: { id, recipientId }, data: { read: true } });
+    return { count: r.count };
   }
 
   async markAllRead(recipientId: string): Promise<{ count: number }> {

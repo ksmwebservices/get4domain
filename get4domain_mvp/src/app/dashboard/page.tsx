@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig } from '@/lib/dashboard-config';
+import { isWorkspaceMenu } from '@/lib/workspace-menu';
+import WhatBosAdds from '@/components/dashboard/WhatBosAdds';
 import { api } from '@/lib/api';
 import { Badge } from '@/components/vendor/Badge';
 import { Icon } from '@/components/vendor/Icon';
@@ -294,6 +296,7 @@ export default function DashboardHome() {
               </div>
             )}
           </div>
+          {isWorkspaceMenu(cfg.addons) && <WhatBosAdds />}
         </div>
       )}
     </div>

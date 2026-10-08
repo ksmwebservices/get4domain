@@ -21,8 +21,9 @@ export class NotificationsController {
 
   @Put(':id/read')
   @ApiOperation({ summary: 'Mark a single notification as read' })
-  markRead(@Param('id') id: string) {
-    return this.notificationsService.markRead(id);
+  markRead(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    return this.notificationsService.markRead(id, isAdmin ? ADMIN_RECIPIENT_ID : user.sub);
   }
 
   @Put('read-all')

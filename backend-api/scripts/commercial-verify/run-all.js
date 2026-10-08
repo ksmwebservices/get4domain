@@ -12,11 +12,14 @@ const suites = [
   ['Deal-builder guard, vendor audit trail, stepnrock term-fix plan', 'verify-term-guard.js'],
   ['image upload (formats, content check, size, served URL, headers, unwritable volume)', 'verify-uploads.js'],
   ['custom-domain CORS (open default, strict + CORS_EXTRA_ORIGINS)', 'verify-cors.js'],
+  ['workspace access script + notification isolation', 'verify-workspace.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
 // The admin nav lives in the Next.js app; run its check from here too when the monorepo sibling is present.
 const navScript = path.join(__dirname, '..', '..', '..', 'get4domain_mvp', 'scripts', 'verify-admin-nav.mjs');
 if (require('fs').existsSync(navScript)) suites.push(['admin nav config (MARKETING never sees Commerce)', navScript, path.dirname(path.dirname(navScript))]);
+const wsScript = path.join(__dirname, '..', '..', '..', 'get4domain_mvp', 'scripts', 'verify-workspace-menu.mjs');
+if (require('fs').existsSync(wsScript)) suites.push(['Workspace menu (no BOS / duplicate tabs), real notifications + settings', wsScript, path.dirname(path.dirname(wsScript))]);
 let failed = 0;
 const summary = [];
 for (const [label, file, cwd] of suites) {

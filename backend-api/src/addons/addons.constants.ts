@@ -31,6 +31,8 @@ export const AVAILABLE_MODULES: ModuleDefinition[] = [
 ];
 
 export const AVAILABLE_ADDONS: AddonDefinition[] = [
+  // Dashboard menu mode, not a feature: ON shows the vendor only the Workspace-plan menu (get4domain_mvp/src/lib/workspace-menu.ts). Default off = unchanged menu.
+  { key: 'workspace_menu', label: 'Workspace menu (trimmed)', description: 'Show only the Workspace-plan tabs; hide BOS-only and duplicate catalogue tabs', category: 'plan', defaultEnabled: false },
   { key: 'fleet', label: 'Fleet Management', description: 'Vehicles, maintenance, assignment', category: 'operations', defaultEnabled: false },
   { key: 'driver', label: 'Driver Management', description: 'Drivers, duty, trip sheets', category: 'operations', defaultEnabled: false },
   { key: 'driver_outsourcing', label: 'Driver Outsourcing', description: 'External driver sourcing', category: 'operations', defaultEnabled: false },

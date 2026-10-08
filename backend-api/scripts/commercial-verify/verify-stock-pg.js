@@ -52,7 +52,7 @@ function prismaSql(args) {
     // Baseline = the schema BEFORE this change: the commit that added the migration folder (its parent), or HEAD if uncommitted.
     let ref = 'HEAD';
     try {
-      const added = execFileSync('git', ['log', '--diff-filter=A', '--format=%H', '-1', '--', 'backend-api/prisma/migrations/20261008120000_stepnrock_handover'], { cwd: root }).toString().trim();
+      const added = execFileSync('git', ['log', '--diff-filter=A', '--format=%H', '-1', '--', 'prisma/migrations/20261008120000_stepnrock_handover'], { cwd: root }).toString().trim();
       if (added) ref = `${added}^`;
     } catch { /* uncommitted: HEAD */ }
     const oldSchema = path.join(tmp, 'old.prisma');

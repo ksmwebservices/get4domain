@@ -18,6 +18,7 @@ import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
 import TourNav from '@/components/TourNav';
 import DashboardSplash from '@/components/DashboardSplash';
+import { WORKSPACE_SECTIONS, isWorkspaceMenu } from '@/lib/workspace-menu';
 
 // Maps a nav item → the team-access area that gates it for a vendor team member
 // (mirrors the backend's team-access areas). Base items have no mapping → visible.
@@ -31,6 +32,7 @@ const TEAM_AREA_BY_HREF: Record<string, string> = {
   '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
   '/dashboard/my-products': 'website', '/dashboard/website-engine': 'website',
   '/dashboard/reports': 'reports', '/dashboard/ai-studio': 'ai_studio',
+  '/dashboard/stock': 'website',
 };
 
 // Lucide icon for each primary operation — powers the industry-aware mobile nav slot.
@@ -69,6 +71,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userMenu, setUserMenu] = useState(false);
 
   const cfg = useDashboardConfig(user?.industry);
+  // Opt-in Workspace menu (per-vendor addon switch `workspace_menu`, default off): the sidebar is built from a fixed Workspace list.
+  const workspace = isWorkspaceMenu(cfg.addons);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -76,6 +81,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user, loading, router]);
 
   useEffect(() => { setSidebarOpen(false); setUserMenu(false); }, [pathname]);
+
+  // Real unread count for the bell (was a permanent red dot). Refreshed on every page change.
+  useEffect(() => {
+    if (!user || user.role !== 'vendor') return;
+    api.getNotifications()
+      .then((r) => setUnread(((r?.data ?? r ?? []) as { read: boolean }[]).filter((n) => !n.read).length))
+      .catch(() => setUnread(0));
+  }, [user, pathname]);
   useEffect(() => { setMounted(true); }, []);
 
   // Load the vendor's own logo from their CMS (falls back to the business name).
@@ -100,6 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user]);
 
   const sections = useMemo<NavSection[]>(() => {
+    if (workspace) return WORKSPACE_SECTIONS as NavSection[];
     const industryTabs: NavItem[] = (cfg.industry?.dashboardTabs ?? []).map((tab) => ({
       label: tab.label,
       href: `/dashboard/domain-app/${tab.key}`,
@@ -156,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ],
       },
     ];
-  }, [cfg.industry]);
+  }, [cfg.industry, workspace]);
 
   // A gated item is only locked once config has loaded (avoid a locked flash).
   const isLocked = (item: NavItem): boolean => {
@@ -172,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // enforcement (backend ModuleGuard) is the real boundary — this just hides the nav.
   const hiddenForTeam = (item: NavItem): boolean => {
     if (user?.kind !== 'team_member') return false;
-    if (item.href === '/dashboard/team') return true; // team management is owner-only
+    if (item.href === '/dashboard/team' || item.href === '/dashboard/billing') return true; // team management and plan & billing are owner-only
     const area =
       (item.moduleKey && TEAM_AREA_BY_MODULE[item.moduleKey]) || TEAM_AREA_BY_HREF[item.href];
     if (!area) return false;
@@ -190,8 +204,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   // Sheet contents for the fixed mobile bottom nav.
-  const businessItems = visibleItems(sections[1]?.items ?? []);
-  const campaignItems = visibleItems((sections.find((s) => s.title === 'Grow')?.items ?? []).filter((i) => i.label !== 'AI Studio'));
+  const businessItems = visibleItems(workspace ? (sections.find((s) => s.title === 'Sell')?.items ?? []) : (sections[1]?.items ?? []));
+  const campaignItems = visibleItems(workspace ? (sections.find((s) => s.title === 'Customers')?.items ?? []) : (sections.find((s) => s.title === 'Grow')?.items ?? []).filter((i) => i.label !== 'AI Studio'));
 
   // Renders a nav item respecting the locked/upgrade pattern; closes the sheet on tap.
   const renderSheetItem = (item: NavItem) => {
@@ -291,7 +305,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             maxHeight: 'calc(100vh - 120px)',
           }}
         >
-          {sections.map((section, si) => {
+          {cfg.loading ? (
+            <div className="space-y-2 px-3" aria-busy="true" aria-label="Loading menu">
+              {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-9 animate-pulse rounded-xl bg-slate-100" />)}
+            </div>
+          ) : sections.map((section, si) => {
             const items = visibleItems(section.items);
             return items.length === 0 ? null : (
               <div key={section.title ?? si}>
@@ -357,7 +375,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
             <Link href="/dashboard/notifications" aria-label="Notifications" className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-error-500" />
+              {unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-error-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
             </Link>
             {/* Avatar → user menu (was an inert div). Sign-out now lives here, so the
                 standalone logout icon is gone — a tighter, less-cluttered header. */}
@@ -402,7 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Icon name={opIcon} className="h-5 w-5" />{opLabel}
         </button>
         <button onClick={() => setSheet('campaign')} className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium text-slate-500">
-          <Icon name="Megaphone" className="h-5 w-5" />Campaign
+          <Icon name={workspace ? 'Users' : 'Megaphone'} className="h-5 w-5" />{workspace ? 'Customers' : 'Campaign'}
         </button>
         <Link href="/dashboard/ai-studio" className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium ${isActive('/dashboard/ai-studio') ? 'text-primary-600' : 'text-slate-500'}`}>
           <Icon name="Sparkles" className="h-5 w-5" />AI
@@ -416,7 +434,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <BottomSheet isOpen={sheet === 'business'} onClose={() => setSheet(null)} title={cfg.industry?.label ?? 'Business'}>
         <div className="space-y-0.5">{businessItems.length ? businessItems.map(renderSheetItem) : <p className="px-3 py-4 text-sm text-slate-400">No business tabs available.</p>}</div>
       </BottomSheet>
-      <BottomSheet isOpen={sheet === 'campaign'} onClose={() => setSheet(null)} title="Campaign">
+      <BottomSheet isOpen={sheet === 'campaign'} onClose={() => setSheet(null)} title={workspace ? 'Customers' : 'Campaign'}>
         <div className="space-y-0.5">{campaignItems.map(renderSheetItem)}</div>
       </BottomSheet>
       <BottomSheet isOpen={sheet === 'more'} onClose={() => setSheet(null)} title="Menu">
