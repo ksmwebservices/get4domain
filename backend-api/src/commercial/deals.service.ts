@@ -16,6 +16,8 @@ import { PlanKey } from './entitlements';
 import { payUrl } from './pay-token';
 import { advisoryXactLock } from '../common/db-lock';
 import { OPEN_INVOICE_STATUSES, findActivationConflict, validOverrideReason } from './activation-guard';
+import { ArrangementsService } from './arrangements.service';
+import { shadowGst } from './arrangement-rules';
 
 export interface ProspectInput { name?: string; phone?: string; email?: string; business?: string; demoSubdomain?: string }
 
@@ -47,6 +49,7 @@ export class DealsService {
     private readonly audit: CommercialAuditService,
     private readonly messenger: CommercialMessenger,
     private readonly email: EmailService,
+    private readonly arrangements: ArrangementsService,
   ) {}
 
   /** Annual list prices — the platform's single pricing source (admin Pricing Manager keys, constants as fallback). */
@@ -95,8 +98,25 @@ export class DealsService {
     return { ...built, promo: { id: promo.id, code: promo.code } };
   }
 
+  /** The vendor a spec points at, if one already exists. Reads only: a prospect is never created just to be refused. */
+  private async existingVendorId(spec: DealSpec): Promise<string | null> {
+    if (spec.vendorId) return spec.vendorId;
+    const p = spec.prospect;
+    const sub = p?.demoSubdomain?.trim().toLowerCase();
+    if (sub) { const v = await this.prisma.vendor.findUnique({ where: { subdomain: sub }, select: { id: true } }); if (v) return v.id; }
+    const email = (p?.email ?? '').trim().toLowerCase();
+    if (email) { const v = await this.prisma.vendor.findUnique({ where: { email }, select: { id: true } }); if (v) return v.id; }
+    return null;
+  }
+
+  /** Standard rule: annual, Razorpay only, GST on top. A half-year term, no GST or a manual channel needs an active special arrangement (server-enforced). */
+  private async enforceArrangement(spec: DealSpec, channels: ChannelT[], now = new Date()): Promise<void> {
+    await this.arrangements.assertAllowed({ planKey: spec.planKey ?? null, billingCycle: spec.billingCycle ?? null, gstMode: spec.gstMode, channels }, await this.existingVendorId(spec), now);
+  }
+
   async preview(spec: DealSpec) {
-    this.validateSpec({ ...spec, allowedChannels: spec.allowedChannels?.length ? spec.allowedChannels : ['OFFLINE'] });
+    const pv = this.validateSpec({ ...spec, allowedChannels: spec.allowedChannels?.length ? spec.allowedChannels : ['RAZORPAY'] });
+    await this.enforceArrangement(spec, pv.channels);
     const q = await this.quote(spec, spec.vendorId);
     return { lines: q.lines, months: q.months, totals: q.totals, discountReason: q.discountReason, bigDiscount: q.bigDiscount, promo: q.promo ?? null, aiCredit: q.aiCredit };
   }
@@ -153,6 +173,7 @@ export class DealsService {
 
   async saveDraft(spec: DealSpec, actor: Actor, dealId?: string): Promise<BillingDeal> {
     const v = this.validateSpec(spec);
+    await this.enforceArrangement(spec, v.channels);
     const q = await this.quote(spec, spec.vendorId);
     const data = this.dealData(spec, q, spec.vendorId ?? null, { ...v, promoId: q.promo?.id }, actor);
     const deal = dealId
@@ -166,8 +187,11 @@ export class DealsService {
   /** Create the deal's invoice + pay link. The clear link is returned once and never stored. */
   async createInvoice(spec: DealSpec, actor: Actor, opts: { dealId?: string; activateNow?: boolean; sendNow?: boolean; overrideReason?: string } = {}): Promise<{ invoice: Invoice; payLink: string; dealId: string; vendorId: string }> {
     const v = this.validateSpec(spec);
+    await this.enforceArrangement(spec, v.channels); // before resolveVendor: a refused deal must not create a prospect vendor
     const { vendorId } = await this.resolveVendor(spec, actor);
     const q = await this.quote(spec, vendorId);
+    const arrangement = spec.gstMode === 'NONE' ? await this.arrangements.activeFor(vendorId) : null;
+    const shadow = spec.gstMode === 'NONE' ? shadowGst(q.totals.netPaise, arrangement?.validUntil ?? null) : null;
     const kind: InvoiceKindT = spec.kind ?? (spec.planKey ? 'ACTIVATION' : 'ADDON');
     if (kind === 'ACTIVATION' && !spec.planKey) throw new BadRequestException('An activation invoice needs a plan');
     // A vendor with an open activation invoice / unpaid term must not get a second one (live incident: stepnrock got INV-0005 and INV-0006).
@@ -185,6 +209,7 @@ export class DealsService {
       discountReason: q.discountReason, adminDiscount: spec.discount?.mode === 'PERCENT' || spec.discount?.mode === 'FLAT', allowPromoStacking: Boolean(spec.allowPromoStacking),
       promoCodeId: q.promo?.id ?? null, allowPromoEntry: Boolean(spec.allowPromoEntry), allowedChannels: v.channels, linkExpiryDays: v.linkExpiryDays,
       dueInDays: opts.activateNow ? spec.paymentDueDays ?? 7 : v.linkExpiryDays,
+      gstForgonePaise: shadow?.gstForgonePaise ?? null, gstNote: shadow?.gstNote ?? null,
     });
     if (q.aiCredit?.overridden) await this.audit.log(actor, 'deal.ai_credit_override', 'BillingDeal', deal.id, { computedPaise: q.aiCredit.computedPaise, enteredPaise: q.aiCredit.paise, invoiceId: invoice.id });
     await this.audit.log(actor, 'deal.invoice_created', 'Invoice', invoice.id, {

@@ -110,8 +110,18 @@ export function cycleMonths(cycle: BillingCycle, customMonths?: number | null): 
   }
 }
 
-/** List price for a term: the annual price pro-rated by months (annual / 12 × months). Public pricing stays annual-only. */
+/**
+ * Suggested list price for a 6-month term as a share of the annual list (KSM, Release 1A). One place, so Release 1B can move it to admin settings.
+ * It is only the DEFAULT list: the price actually charged is the net KSM approves in the deal builder, at or below list, with a reason.
+ */
+export const HALF_YEAR_LIST_PERCENT = 55;
+
+/**
+ * List price for a term: the annual price pro-rated by months (annual / 12 × months), except a 6-month term which lists at HALF_YEAR_LIST_PERCENT of
+ * the annual price. Public pricing stays annual-only.
+ */
 export function planListPaise(annualPaise: number, months: number): number {
+  if (months === 6) return Math.round((annualPaise * HALF_YEAR_LIST_PERCENT) / 100);
   return Math.round((annualPaise * months) / 12);
 }
 

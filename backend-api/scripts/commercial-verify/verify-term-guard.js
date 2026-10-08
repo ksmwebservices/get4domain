@@ -31,6 +31,7 @@ function world() {
       { id: 'v_other', name: 'Other', email: 'other@x.in', businessName: 'Other Co', phone: '9000000000', subdomain: 'otherco', isSandbox: false, status: 'ACTIVE' },
     ],
     wallet: [{ id: 'w1', vendorId: 'v_step', balance: 0, totalCredited: 0, totalDebited: 0 }],
+    specialArrangement: [{ id: 'arr_step', vendorId: 'v_step', active: true, allowHalfYear: true, gstMode: 'NONE', allowedChannels: ['UPI_QR'], validUntil: new Date('2027-03-31T00:00:00Z'), reason: 'test fixture', createdBy: 'test', history: [], createdAt: new Date('2026-10-01T00:00:00Z') }, { id: 'arr_other', vendorId: 'v_other', active: true, allowHalfYear: true, gstMode: 'NONE', allowedChannels: ['UPI_QR', 'OFFLINE'], validUntil: new Date('2027-03-31T00:00:00Z'), reason: 'test fixture', createdBy: 'test', history: [], createdAt: new Date('2026-10-01T00:00:00Z') }],
   });
   const email = recorder('email');
   const legacy = { resolveCompany: async () => ({ name: 'KSM' }) };
@@ -40,12 +41,18 @@ function world() {
   const messenger = new F.CommercialMessenger(email, recorder('wa', { sendMessage: async () => ({ status: 'mock', mock: true }) }), recorder('notif'));
   const builder = new InvoiceBuilderService(prisma);
   const settlement = new SettlementService(prisma, audit, messenger, legacy, email);
-  const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, email);
+  const arrangements = new (dist('commercial/arrangements.service').ArrangementsService)(prisma, audit, messenger);
+  const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, email, arrangements);
   const terms = new TermsService(prisma, audit, settlement);
   const invAdmin = new InvoiceAdminService(prisma, builder, deals, legacy, audit);
   return { prisma, deals, terms, invAdmin, audit, t: prisma.$tables };
 }
-const spec = (over = {}) => ({ vendorId: 'v_step', planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', graceDays: 7, allowedChannels: ['RAZORPAY', 'UPI_QR'], ...over });
+const spec = (over = {}) => {
+  const o = { vendorId: 'v_step', planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', graceDays: 7, allowedChannels: ['RAZORPAY', 'UPI_QR'], ...over };
+  // The 6-month LIST is 55% of annual (₹6,593.40); KSM approves the ₹5,994.00 net with a reason, exactly as the live deal did.
+  if (o.billingCycle === 'HALF_YEARLY' && o.planKey && !over.discount) o.discount = { mode: 'FLAT', value: 59940, reason: 'Approved launch net 5,994.00 (list is 55% of annual)' };
+  return o;
+};
 const rows = (w, n) => w.t[n] ?? [];
 const failsWith = async (p) => { try { await p; return null; } catch (e) { return e; } };
 

@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 import {
-  commerceApi, rupees, fmtDate, CYCLE_LABEL, GST_LABEL, PLAN_LABEL,
+  commerceApi, arrangementsApi, type ArrangementSummary, rupees, fmtDate, CYCLE_LABEL, GST_LABEL, PLAN_LABEL,
   type Channel, type Cycle, type DealSpec, type GstMode, type InvoiceRow, type PlanKey, type PricedLine, type Totals,
 } from '@/lib/commerce';
 import { ErrorBox, Field, PayLinkBox, Pill, cardCls, inputCls, msg, selectCls } from '@/components/admin/commerce-ui';
@@ -44,7 +44,9 @@ function DealBuilder() {
   const [promoCode, setPromoCode] = useState('');
   const [gstMode, setGstMode] = useState<GstMode>('EXCLUSIVE');
   const [graceDays, setGraceDays] = useState('7');
-  const [channels, setChannels] = useState<Channel[]>(['RAZORPAY', 'UPI_QR']);
+  const [channels, setChannels] = useState<Channel[]>(['RAZORPAY']);
+  // Standard rule: annual, Razorpay only, GST on top. A half-year term, no GST or a manual channel exists only while a special arrangement is in force.
+  const [arrangement, setArrangement] = useState<ArrangementSummary | null>(null);
   const [expiry, setExpiry] = useState('14');
   const [allowPromo, setAllowPromo] = useState(false);
   const [allowStack, setAllowStack] = useState(false);
@@ -128,6 +130,27 @@ function DealBuilder() {
     finally { setBusy(''); }
   }
 
+  useEffect(() => {
+    if (target !== 'existing' || !vendorId) { setArrangement(null); return; }
+    let alive = true;
+    arrangementsApi.forVendor(vendorId).then((r) => {
+      if (!alive) return;
+      const a = r.data?.active ?? null;
+      setArrangement(a);
+      // Defaults from the arrangement, pre-filled once per client; KSM can still change them within what it allows.
+      if (a) {
+        setGstMode(a.gstMode === 'NONE' ? 'NONE' : 'EXCLUSIVE');
+        setChannels(['RAZORPAY', ...(a.allowedChannels as Channel[])]);
+        if (a.allowHalfYear) setCycle('HALF_YEARLY');
+      } else {
+        setGstMode((g) => (g === 'NONE' ? 'EXCLUSIVE' : g));
+        setChannels((c) => c.filter((x) => x === 'RAZORPAY'));
+        setCycle((c) => (c === 'HALF_YEARLY' ? 'ANNUAL' : c));
+      }
+    }).catch(() => { if (alive) setArrangement(null); });
+    return () => { alive = false; };
+  }, [target, vendorId]);
+
   const toggleChannel = (c: Channel) => setChannels((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
 
   return (
@@ -160,11 +183,21 @@ function DealBuilder() {
             )}
           </section>
 
+          {arrangement && (
+            <div role="status" className="rounded-2xl border border-primary-500/30 bg-primary-500/10 p-4 text-sm text-primary-100">
+              <strong>Special arrangement in force until {fmtDate(arrangement.validUntil)}.</strong> Half-year {arrangement.allowHalfYear ? 'allowed' : 'not allowed'} · GST {arrangement.gstMode === 'NONE' ? 'not charged' : '18% on top'} · extra channels: {arrangement.allowedChannels.length ? arrangement.allowedChannels.join(', ') : 'none'}. Defaults below are pre-filled from it.
+              <span className="mt-1 block text-xs text-primary-200/80">{arrangement.reason}</span>
+            </div>
+          )}
+          {target === 'existing' && vendorId && !arrangement && (
+            <p className="text-xs text-slate-500">Standard terms for this client: annual, Razorpay only, GST 18% on top. Half-year, no GST or manual QR needs a special arrangement (Admin &gt; Pricing &gt; Special arrangements).</p>
+          )}
+
           {/* WHAT */}
           <section className={cardCls}>
             <h3 className="mb-3 text-sm font-bold text-white">2 · What are they buying?</h3>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="DomainApp plan" hint="List price comes from the platform price list (annual ÷ 12 × months).">
+              <Field label="DomainApp plan" hint="List price comes from the platform price list (annual ÷ 12 × months; a half-year term lists at 55% of annual).">
                 <select className={selectCls} value={planKey} onChange={(e) => setPlanKey(e.target.value as PlanKey | '')}>
                   <option value="">No plan (add-ons only)</option>
                   <option value="WORKSPACE">{PLAN_LABEL.WORKSPACE}</option>
@@ -175,7 +208,7 @@ function DealBuilder() {
                 <>
                   <Field label="Billing cycle">
                     <select className={selectCls} value={cycle} onChange={(e) => setCycle(e.target.value as Cycle)}>
-                      {(Object.keys(CYCLE_LABEL) as Cycle[]).map((c) => <option key={c} value={c}>{CYCLE_LABEL[c]}</option>)}
+                      {(Object.keys(CYCLE_LABEL) as Cycle[]).map((c) => <option key={c} value={c} disabled={c === 'HALF_YEARLY' && !arrangement?.allowHalfYear}>{CYCLE_LABEL[c]}{c === 'HALF_YEARLY' && !arrangement?.allowHalfYear ? ' (needs a special arrangement)' : ''}</option>)}
                     </select>
                   </Field>
                   {cycle === 'CUSTOM_MONTHS' && <Field label="Months (1–60)"><input type="number" min={1} max={60} className={inputCls} value={customMonths} onChange={(e) => setCustomMonths(e.target.value)} /></Field>}
@@ -238,7 +271,7 @@ function DealBuilder() {
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="GST">
                 <select className={selectCls} value={gstMode} onChange={(e) => setGstMode(e.target.value as GstMode)}>
-                  {(Object.keys(GST_LABEL) as GstMode[]).map((g) => <option key={g} value={g}>{GST_LABEL[g]}</option>)}
+                  {(Object.keys(GST_LABEL) as GstMode[]).map((g) => <option key={g} value={g} disabled={g === 'NONE' && arrangement?.gstMode !== 'NONE'}>{GST_LABEL[g]}{g === 'NONE' && arrangement?.gstMode !== 'NONE' ? ' (needs a special arrangement)' : ''}</option>)}
                 </select>
               </Field>
               <Field label="Grace days after due"><input type="number" min={0} max={90} className={inputCls} value={graceDays} onChange={(e) => setGraceDays(e.target.value)} /></Field>
@@ -249,7 +282,7 @@ function DealBuilder() {
               <div className="flex flex-wrap gap-2">
                 {CHANNELS.map((c) => (
                   <label key={c.key} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${channels.includes(c.key) ? 'border-primary-500/50 bg-primary-500/10 text-primary-200' : 'border-slate-700 text-slate-400'}`}>
-                    <input type="checkbox" className="accent-primary-500" checked={channels.includes(c.key)} onChange={() => toggleChannel(c.key)} />{c.label}
+                    <input type="checkbox" className="accent-primary-500" checked={channels.includes(c.key)} disabled={c.key !== 'RAZORPAY' && !arrangement?.allowedChannels.includes(c.key)} onChange={() => toggleChannel(c.key)} />{c.label}{c.key !== 'RAZORPAY' && !arrangement?.allowedChannels.includes(c.key) ? ' (needs a special arrangement)' : ''}
                   </label>
                 ))}
               </div>

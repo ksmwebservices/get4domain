@@ -130,6 +130,7 @@ model Vendor {
 
   // Commercial Engine v1
   billingTerms       BillingTerm[]
+  specialArrangements SpecialArrangement[]
   billingDeals       BillingDeal[]
   planChangeRequests PlanChangeRequest[]
 }
@@ -211,6 +212,9 @@ model Invoice {
   voidedAt           DateTime?
   voidReason         String?
   effectsAppliedAt   DateTime? // idempotency marker for activation / renewal side effects
+  /// Special arrangement (Release 1A): the GST this invoice WOULD have carried when it was issued with gstMode NONE, and the printed note. Null on every other invoice.
+  gstForgonePaise    Int?
+  gstNote            String?
 
   @@index([vendorId, status])
   @@index([kind, status])
@@ -2760,4 +2764,32 @@ model StockMovement {
   @@index([vendorId, productId, createdAt])
   @@index([refType, refId])
   @@map("g4d_stock_movements")
+}
+
+/// Release 1A: an admin-controlled exception to the standard commercial rule (annual, Razorpay only, GST 18% on top).
+/// Only an ACTIVE row whose validUntil has not passed lets a deal/invoice use a half-year term, GST not charged, or a manual (UPI QR / offline) channel.
+/// ADDITIVE: new table; existing rows and behaviour are untouched. `history` is an append-only JSON list of every change (also written to the commercial audit log).
+model SpecialArrangement {
+  id                String       @id @default(cuid())
+  vendorId          String
+  vendor            Vendor       @relation(fields: [vendorId], references: [id])
+  allowHalfYear     Boolean      @default(false)
+  gstMode           GstMode      @default(EXCLUSIVE)
+  allowedChannels   PayChannel[] @default([])
+  validUntil        DateTime
+  reason            String
+  createdBy         String
+  active            Boolean      @default(true)
+  endedAt           DateTime?
+  endedBy           String?
+  endReason         String?
+  history           Json         @default("[]")
+  expiryWarnedAt    DateTime? // the 15-days-before notice went out (idempotency)
+  expiredNotifiedAt DateTime? // the expired notice went out (idempotency)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([vendorId, active])
+  @@index([validUntil])
+  @@map("g4d_special_arrangements")
 }

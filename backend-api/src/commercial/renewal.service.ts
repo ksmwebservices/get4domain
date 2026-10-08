@@ -10,6 +10,8 @@ import { PlanKey } from './entitlements';
 import { ReminderKey, TermSnapshot, decideRenewalStep, anchorDate } from './term-rules';
 import { planLabel } from './quote-builder';
 import { payUrl } from './pay-token';
+import { ArrangementsService } from './arrangements.service';
+import { renewalBilling, shadowGst } from './arrangement-rules';
 
 export interface RenewalRunSummary { ran: boolean; examined: number; invoicesCreated: number; reminders: number; lapsed: number; overdueMarked: number }
 
@@ -30,6 +32,7 @@ export class RenewalService {
     private readonly deals: DealsService,
     private readonly messenger: CommercialMessenger,
     private readonly audit: CommercialAuditService,
+    private readonly arrangements: ArrangementsService,
   ) {}
 
   /** 06:00 IST daily. The advisory lock makes a second API instance (or a manual run) a harmless no-op. */
@@ -53,6 +56,8 @@ export class RenewalService {
         catch (e) { this.logger.error(`Renewal step failed for term ${term.id}: ${e instanceof Error ? e.message : 'error'}`); }
       }
       summary.overdueMarked = await this.markOverdueInvoices(now);
+      // Special arrangements: the 15-days-before and the ended notices to KSM (idempotent).
+      try { await this.arrangements.runNotices(now); } catch (e) { this.logger.error('Arrangement notices failed: ' + (e instanceof Error ? e.message : 'error')); }
     }, { timeout: 300_000, maxWait: 10_000 });
     return summary;
   }
@@ -117,13 +122,23 @@ export class RenewalService {
 
     const changed = Boolean(term.scheduledNextPlan || term.scheduledNextCycle);
     const planKey = (term.scheduledNextPlan ?? term.planKey) as PlanKey;
-    const cycle = (term.scheduledNextCycle ?? term.billingCycle) as BillingCycle;
-    const months = term.scheduledNextCycleMonths ?? term.cycleMonths ?? cycleMonths(cycle);
+    const wantedCycle = (term.scheduledNextCycle ?? term.billingCycle) as BillingCycle;
+    const wantedMonths = term.scheduledNextCycleMonths ?? term.cycleMonths ?? cycleMonths(wantedCycle);
+    // Standard rule: annual, Razorpay only, GST on top. Anything else survives into this invoice only while an arrangement allows it.
+    const arrangement = await this.arrangements.activeFor(term.vendorId, now);
+    const rb = renewalBilling({ billingCycle: wantedCycle, cycleMonths: wantedMonths, gstMode: term.gstMode as GstMode, allowedChannels: term.allowedChannels as ChannelT[], planKey: term.planKey }, arrangement, now);
+    const cycle = rb.billingCycle as BillingCycle;
+    const months = rb.months;
+    const cycleReverted = cycle !== wantedCycle;
 
     let lines: Line[];
     let discount = 0;
     let discountReasonText: string | null = null;
-    if (changed) {
+    if (cycleReverted) {
+      // Half-year ended with no arrangement to continue it: the renewal is the ANNUAL plan at list price (no half-year negotiated net carries over).
+      const rates = await this.deals.annualRates();
+      lines = [{ kind: 'PLAN', label: planLabel(planKey, months) + ' (renewal)', amountPaise: planListPaise(rates[planKey], months), qty: 1 }];
+    } else if (changed) {
       const rates = await this.deals.annualRates();
       const listNow = planListPaise(rates[planKey], months);
       const approved = term.scheduledNextNetPaise;
@@ -141,16 +156,22 @@ export class RenewalService {
       discount = Math.min(term.discountPaise, term.listAmountPaise);
       if (discount > 0) discountReasonText = 'Negotiated renewal terms';
     }
-    const totals = computeTotals(lines, discount, term.gstMode as GstMode);
+    const totals = computeTotals(lines, discount, rb.gstMode);
     const { start, end } = renewalPeriod(term.periodEnd, now, months);
-    const channels = (term.allowedChannels.length ? term.allowedChannels : ['RAZORPAY']) as ChannelT[];
+    const channels = rb.channels;
+    const shadow = rb.gstMode === 'NONE' ? shadowGst(totals.netPaise, rb.arrangement?.validUntil ?? null) : null;
     const { invoice, token } = await this.builder.create({
-      vendorId: term.vendorId, kind: 'RENEWAL', description: `Renewal — ${lines[0].label}`, lines, totals, gstMode: term.gstMode as GstMode, status: 'SENT',
+      vendorId: term.vendorId, kind: 'RENEWAL', description: `Renewal — ${lines[0].label}`, lines, totals, gstMode: rb.gstMode, status: 'SENT',
       termId: term.id, planKey, billingCycle: cycle, cycleMonths: months, periodStart: start, periodEnd: end,
       discountReason: discount > 0 ? discountReasonText : null, adminDiscount: discount > 0, allowedChannels: channels, linkExpiryDays: 45, now,
       dueInDays: term.periodEnd ? Math.max(1, Math.round((term.periodEnd.getTime() - now.getTime()) / 86_400_000)) : 15,
+      gstForgonePaise: shadow?.gstForgonePaise ?? null, gstNote: shadow?.gstNote ?? null,
     });
-    await this.audit.log('system', 'renewal.invoice_created', 'Invoice', invoice.id, { termId: term.id, changed, totalPaise: invoice.totalAmount });
+    await this.audit.log('system', 'renewal.invoice_created', 'Invoice', invoice.id, { termId: term.id, changed, totalPaise: invoice.totalAmount, cycle, gstMode: rb.gstMode, channels });
+    if (rb.reverted.length) {
+      await this.audit.log('system', 'renewal.reverted_to_standard', 'Invoice', invoice.id, { termId: term.id, vendorId: term.vendorId, reverted: rb.reverted });
+      await this.messenger.admin('Renewal invoice reverted to standard terms', 'A renewal invoice was issued on standard terms (' + rb.reverted.join('; ') + ') because no special arrangement is in force. Invoice ' + invoice.invoiceNumber + '.', { invoiceId: invoice.id, vendorId: term.vendorId });
+    }
     return { invoiceId: invoice.id, number: invoice.invoiceNumber, totalPaise: invoice.totalAmount, payLink: payUrl(token) };
   }
 

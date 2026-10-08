@@ -12,6 +12,8 @@ import { planLabel } from './quote-builder';
 import { payUrl } from './pay-token';
 import { advisoryXactLock } from '../common/db-lock';
 import { aiStudioCreditPaise, resolveAiCredit } from './ai-credit';
+import { ArrangementsService } from './arrangements.service';
+import { renewalBilling, shadowGst } from './arrangement-rules';
 
 /** Fields of a term that are safe to show to the vendor. */
 export function vendorTermView(t: BillingTerm | null) {
@@ -164,6 +166,7 @@ export class PlanChangeService {
     private readonly deals: DealsService,
     private readonly builder: InvoiceBuilderService,
     private readonly terms: TermsService,
+    private readonly arrangements: ArrangementsService,
   ) {}
 
   async request(vendorId: string, r: { toPlanKey: PlanKey; toCycle: BillingCycle; customMonths?: number; effective?: 'AT_RENEWAL' | 'NOW'; note?: string }) {
@@ -172,6 +175,8 @@ export class PlanChangeService {
     let months: number;
     try { months = cycleMonths(r.toCycle, r.customMonths); } catch (e) { throw new BadRequestException((e as Error).message); }
     if (r.toPlanKey === cur.planKey && months === cur.cycleMonths) throw new BadRequestException('That is already your current plan and billing cycle');
+    // A half-year term is arranged with our team; nobody can request it through the dashboard unless KSM has allowed it for them.
+    if (r.toCycle === 'HALF_YEARLY') await this.arrangements.assertAllowed({ planKey: r.toPlanKey, billingCycle: r.toCycle, gstMode: 'EXCLUSIVE', channels: ['RAZORPAY'] }, vendorId);
     const open = await this.prisma.planChangeRequest.findFirst({ where: { vendorId, status: 'REQUESTED' } });
     if (open) throw new ConflictException('You already have a change request waiting for approval');
     // A downgrade can only start at renewal — enforced here and again on approval.
@@ -210,6 +215,7 @@ export class PlanChangeService {
     const cur = await this.terms.currentFor(r.vendorId);
     if (!cur) throw new BadRequestException('Vendor has no billing term');
     const effective = o.effective ?? r.effective;
+    if (r.toCycle === 'HALF_YEARLY') await this.arrangements.assertAllowed({ planKey: r.toPlanKey, billingCycle: r.toCycle, gstMode: 'EXCLUSIVE', channels: ['RAZORPAY'] }, r.vendorId, now);
     if (effective === 'NOW' && isDowngrade(cur.planKey, r.toPlanKey)) throw new BadRequestException('A downgrade can only take effect at renewal');
     // The price is decided from the server's own list price — the only client-side input is an optional, range-checked override.
     const rates = await this.deals.annualRates();
@@ -234,12 +240,17 @@ export class PlanChangeService {
     // The credit can never push the invoice below zero: it is capped at the price actually being charged.
     const credit = Math.min(prorationCreditPaise(cur, now), price.netPaise);
     const lines: Line[] = credit > 0 ? [planLine, { kind: 'CREDIT', label: 'Credit for unused days on your current plan', amountPaise: -credit, qty: 1 }] : [planLine];
-    const totals = computeTotals(lines, price.discountPaise, cur.gstMode as GstMode);
+    // GST treatment and payment channels follow the standard rule unless an arrangement is in force.
+    const arrangement = await this.arrangements.activeFor(r.vendorId, now);
+    const rb = renewalBilling({ billingCycle: r.toCycle as BillingCycle, cycleMonths: r.toCycleMonths, gstMode: cur.gstMode as GstMode, allowedChannels: cur.allowedChannels as ChannelT[], planKey: r.toPlanKey }, arrangement, now);
+    const totals = computeTotals(lines, price.discountPaise, rb.gstMode);
+    const shadow = rb.gstMode === 'NONE' ? shadowGst(totals.netPaise, rb.arrangement?.validUntil ?? null) : null;
     const { invoice, token } = await this.builder.create({
-      vendorId: r.vendorId, kind: 'PLAN_CHANGE', description: `Plan change to ${planLine.label}`, lines, totals, gstMode: cur.gstMode as GstMode, status: 'SENT',
+      vendorId: r.vendorId, kind: 'PLAN_CHANGE', description: `Plan change to ${planLine.label}`, lines, totals, gstMode: rb.gstMode, status: 'SENT',
+      gstForgonePaise: shadow?.gstForgonePaise ?? null, gstNote: shadow?.gstNote ?? null,
       planKey: r.toPlanKey as PlanKey, billingCycle: r.toCycle as BillingCycle, cycleMonths: r.toCycleMonths,
       discountReason: reason, adminDiscount: price.overridden,
-      allowedChannels: cur.allowedChannels.length ? (cur.allowedChannels as ChannelT[]) : ['RAZORPAY'], linkExpiryDays: 14, dueInDays: 14,
+      allowedChannels: rb.channels, linkExpiryDays: 14, dueInDays: 14,
     });
     await this.prisma.planChangeRequest.update({ where: { id }, data: { prorationCreditPaise: credit, newInvoiceId: invoice.id } });
     await this.audit.log(actor, 'planchange.approve', 'PlanChangeRequest', id, { effective, creditPaise: credit, invoiceId: invoice.id, totalPaise: invoice.totalAmount, ...priceAudit });

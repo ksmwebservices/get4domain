@@ -57,7 +57,9 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
     ok('discount over 20% with CONFIRM is accepted and flagged big', big.bigDiscount === true && big.totals.discountPaise === 299700, JSON.stringify(big.totals));
     throwsSync('"confirm" must be typed exactly', () => Q.buildQuote({ ...base, discount: { mode: 'PERCENT', value: 25, reason: 'x y z', confirm: 'confirm' } }, rates), 'CONFIRM');
     const q = Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE' }, rates);
-    ok('stepnrock deal: Workspace half-yearly lists at ₹5,994 (annual ÷ 12 × 6) and totals ₹5,994', q.lines[0].amountPaise === 599400 && q.totals.totalPaise === 599400 && q.months === 6, JSON.stringify(q.totals));
+    ok('Release 1A: Workspace half-yearly LISTS at 55% of annual (₹6,593.40); KSM approves the net below it with a reason', q.lines[0].amountPaise === 659340 && q.totals.totalPaise === 659340 && q.months === 6 && M.HALF_YEAR_LIST_PERCENT === 55, JSON.stringify(q.totals));
+    const approved = Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', discount: { mode: 'FLAT', value: 59940, reason: 'approved launch net' } }, rates);
+    ok('the live stepnrock deal is still reproducible: list 6,593.40 less the approved 599.40 = ₹5,994.00 net', approved.totals.netPaise === 599400 && approved.totals.totalPaise === 599400);
     throwsSync('add-on with a zero/negative amount is rejected', () => Q.buildQuote({ gstMode: 'NONE', addons: [{ kind: 'CUSTOM', label: 'x', amountPaise: 0 }] }, rates));
     throwsSync('a quote with no lines is rejected', () => Q.buildQuote({ gstMode: 'NONE' }, rates), 'plan or at least one');
     throwsSync('plan without a billing cycle is rejected', () => Q.buildQuote({ planKey: 'BOS', gstMode: 'NONE' }, rates), 'billing cycle');
@@ -68,7 +70,7 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
     ok('MONTHLY=1, HALF_YEARLY=6, ANNUAL=12', M.cycleMonths('MONTHLY') === 1 && M.cycleMonths('HALF_YEARLY') === 6 && M.cycleMonths('ANNUAL') === 12);
     ok('CUSTOM_MONTHS accepts 1..60', M.cycleMonths('CUSTOM_MONTHS', 7) === 7 && M.cycleMonths('CUSTOM_MONTHS', 60) === 60);
     for (const bad of [0, 61, 2.5, null, undefined]) throwsSync(`CUSTOM_MONTHS rejects ${bad}`, () => M.cycleMonths('CUSTOM_MONTHS', bad));
-    ok('list price = annual ÷ 12 × months', M.planListPaise(1198800, 6) === 599400 && M.planListPaise(1198800, 1) === 99900 && M.planListPaise(2398800, 3) === 599700 && M.planListPaise(1198800, 12) === 1198800);
+    ok('list price = annual ÷ 12 × months, except 6 months = 55% of annual', M.planListPaise(1198800, 6) === 659340 && M.planListPaise(1198800, 1) === 99900 && M.planListPaise(2398800, 3) === 599700 && M.planListPaise(1198800, 12) === 1198800);
     ok('31 Jan + 1 month clamps to 28 Feb (no overflow into March)', M.addMonths(d('2026-01-31T00:00:00Z'), 1).toISOString().startsWith('2026-02-28'));
     ok('31 Jan + 1 month in a leap year → 29 Feb', M.addMonths(d('2028-01-31T00:00:00Z'), 1).toISOString().startsWith('2028-02-29'));
     ok('15 Dec + 2 months crosses the year', M.addMonths(d('2026-12-15T00:00:00Z'), 2).toISOString().startsWith('2027-02-15'));
@@ -253,7 +255,7 @@ const L = (amountPaise, label = 'x', kind = 'PLAN', qty = 1) => ({ kind, label, 
     const base = { planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE' };
     const full = Q.buildQuote(base, rates);
     const cheap = Q.buildQuote({ ...base, gstMode: 'EXCLUSIVE', discount: { mode: 'PERCENT', value: 90, reason: 'founding deal', confirm: 'CONFIRM' } }, rates);
-    ok('quote carries the credit (₹250 for half-yearly) and it is NOT part of the totals', full.aiCredit.paise === 25000 && full.totals.totalPaise === 599400);
+    ok('quote carries the credit (₹250 for half-yearly) and it is NOT part of the totals', full.aiCredit.paise === 25000 && full.totals.totalPaise === 659340);
     ok('a 90% discount and a different GST mode do not change the credit (entitlements never come from price)', cheap.aiCredit.paise === 25000 && cheap.totals.netPaise < full.totals.netPaise);
     ok('the credit follows plan/cycle/custom months: BOS half-yearly ₹650, Workspace monthly ₹42, Workspace custom 3 months ₹125', Q.buildQuote({ planKey: 'BOS', billingCycle: 'HALF_YEARLY', gstMode: 'NONE' }, rates).aiCredit.paise === 65000 && Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'MONTHLY', gstMode: 'NONE' }, rates).aiCredit.paise === 4200 && Q.buildQuote({ planKey: 'WORKSPACE', billingCycle: 'CUSTOM_MONTHS', customMonths: 3, gstMode: 'NONE' }, rates).aiCredit.paise === 12500);
     ok('a quote with an admin figure uses it; an add-on-only quote has no credit', Q.buildQuote({ ...base, aiCreditPaise: 0 }, rates).aiCredit.paise === 0 && Q.buildQuote({ gstMode: 'NONE', addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 100000 }] }, rates).aiCredit === null);

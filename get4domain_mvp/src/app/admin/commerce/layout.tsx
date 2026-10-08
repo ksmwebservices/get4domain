@@ -15,6 +15,7 @@ const TABS = [
   { href: '/admin/commerce/promos', label: 'Promo codes' },
   { href: '/admin/commerce/plan-changes', label: 'Plan changes', badge: 'plans' as const },
   { href: '/admin/commerce/plan-access', label: 'Plan access' },
+  { href: '/admin/pricing/special-arrangements', label: 'Special arrangements' },
   { href: '/admin/commerce/payee', label: 'Payee & QR' },
 ];
 

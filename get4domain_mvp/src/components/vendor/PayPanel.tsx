@@ -203,6 +203,9 @@ export default function PayPanel({ api, payerName, payerEmail, onPaid }: { api: 
             <span className="text-slate-500">{inv.gstMode === 'NONE' ? 'GST' : inv.gstMode === 'INCLUSIVE' ? 'GST (included, 18%)' : 'GST (18%)'}</span>
             <span className="text-slate-900">{inv.gstMode === 'NONE' ? 'Not charged' : rupees(inv.gstPaise)}</span>
           </div>
+          {inv.gstMode === 'NONE' && inv.gstNote && (
+            <p className="text-xs text-slate-500">{inv.gstNote}{inv.gstForgonePaise ? ` (GST that would have applied: ${rupees(inv.gstForgonePaise)})` : ''}</p>
+          )}
           <div className="flex justify-between gap-3 border-t border-slate-200 pt-2.5">
             <span className="text-sm font-bold text-slate-900">Total</span>
             <span className="text-xl font-bold text-slate-900">{rupees(inv.totalPaise)}</span>

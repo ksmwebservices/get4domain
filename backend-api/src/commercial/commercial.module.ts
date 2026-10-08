@@ -17,17 +17,19 @@ import { ManualPaymentsService } from './manual-payments.service';
 import { TermsService, PlanChangeService } from './terms.service';
 import { InvoiceAdminService, PromosService } from './promos-and-invoices.service';
 import { RenewalService } from './renewal.service';
+import { ArrangementsService } from './arrangements.service';
 import { AdminCommerceController, PublicPayController, VendorBillingController } from './commercial.controllers';
+import { AdminArrangementsController } from './arrangements.controller';
 
 /** Commercial Engine v1 — see docs/v2/COMMERCIAL_ENGINE.md. */
 @Module({
   imports: [PaymentsModule, InvoicesModule, WalletModule, EmailModule, NotificationsModule, WhatsappModule, AuthModule, BillingGateModule],
-  controllers: [AdminCommerceController, PublicPayController, VendorBillingController],
+  controllers: [AdminCommerceController, PublicPayController, VendorBillingController, AdminArrangementsController],
   providers: [
     CommercialAdminGuard, MoneyAdminGuard, CommercialAuditService, CommercialMessenger, PayeeService,
     InvoiceBuilderService, SettlementService, DealsService, PayService, ManualPaymentsService,
-    TermsService, PlanChangeService, InvoiceAdminService, PromosService, RenewalService,
+    TermsService, PlanChangeService, InvoiceAdminService, PromosService, RenewalService, ArrangementsService,
   ],
-  exports: [SettlementService, DealsService, TermsService, RenewalService, InvoiceBuilderService, CommercialAuditService],
+  exports: [SettlementService, DealsService, TermsService, RenewalService, InvoiceBuilderService, CommercialAuditService, ArrangementsService],
 })
 export class CommercialModule {}

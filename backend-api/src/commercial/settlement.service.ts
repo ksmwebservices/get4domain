@@ -201,7 +201,7 @@ export class SettlementService {
         vendorId: inv.vendorId, planKey, billingCycle: cycle, cycleMonths: months,
         listAmountPaise: planList, discountPaise: inv.discountPaise, netAmountPaise: net,
         gstMode: inv.gstMode, periodStart: start, periodEnd: end, graceDays: cur?.graceDays ?? 7,
-        status: 'ACTIVE', source: cur?.source ?? 'STANDARD', isCurrent: true, allowedChannels: cur?.allowedChannels?.length ? cur.allowedChannels : inv.allowedChannels,
+        status: 'ACTIVE', source: cur?.source ?? 'STANDARD', isCurrent: true, allowedChannels: inv.allowedChannels?.length ? inv.allowedChannels : (cur?.allowedChannels ?? []),
         activationInvoiceId: cur?.activationInvoiceId ?? undefined, activatedAt: cur?.activatedAt ?? now,
         scheduledNextPlan: null, scheduledNextCycle: null, scheduledNextCycleMonths: null, scheduledNextNetPaise: null, scheduledNextDiscountReason: null,
         // Same plan + length: carry the term's credit forward (so a renewal grants nothing). A different plan or length

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { IndianRupee, Loader2, Check } from 'lucide-react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 
 interface SettingView { key: string; label: string; maskedValue?: string; value?: string }
@@ -71,6 +72,7 @@ export default function AdminPricingPage() {
       <div>
         <h1 className="flex items-center gap-2 text-xl font-bold text-white"><IndianRupee className="h-5 w-5 text-primary-400" />Pricing Manager</h1>
         <p className="mt-1 text-sm text-slate-400">Set wallet rates and subscription pricing. Stored in platform settings (category: pricing).</p>
+        <Link href="/admin/pricing/special-arrangements" className="mt-2 inline-block text-sm font-semibold text-primary-300 hover:underline">Special arrangements (half-year, manual QR, GST not charged) →</Link>
       </div>
 
       {error && <div className="rounded-xl border border-error-500/40 bg-error-500/10 px-4 py-3 text-sm text-error-300">{error}</div>}

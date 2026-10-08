@@ -74,7 +74,7 @@ export interface PayView {
   invoice: {
     id?: string; number: string; kind: InvoiceKind; description: string; status: string;
     lines: PricedLine[]; subtotalPaise: number; discountPaise: number; discountReason: string | null; promoCode: string | null;
-    gstMode: GstMode; taxablePaise: number; gstPaise: number; totalPaise: number; paidPaise: number; balanceDuePaise: number; overpaymentPaise: number;
+    gstMode: GstMode; gstNote?: string | null; gstForgonePaise?: number | null; taxablePaise: number; gstPaise: number; totalPaise: number; paidPaise: number; balanceDuePaise: number; overpaymentPaise: number;
     planKey: PlanKey | null; billingCycle: Cycle | null; periodStart: string | null; periodEnd: string | null; dueDate: string | null; paidAt: string | null; expiresAt: string | null;
   };
   business: { name: string };
@@ -237,4 +237,25 @@ export const planAccessApi = {
   setException: (id: string, b: { kind: 'module' | 'addon'; key: string; enabled: boolean; reason: string }): Promise<{ data: PlanAccessVendor }> =>
     apiCall(`/admin/plan-access/vendors/${id}/exception`, { method: 'POST', body: JSON.stringify(b) }),
   provision: (id: string): Promise<{ data: PlanAccessVendor }> => apiCall(`/admin/plan-access/vendors/${id}/provision`, { method: 'POST' }),
+};
+
+// ── Special arrangements (Release 1A) ───────────────────────────────────────────────────────────────────────────────────
+export interface ArrangementRow {
+  id: string; vendorId: string; allowHalfYear: boolean; gstMode: 'EXCLUSIVE' | 'NONE'; allowedChannels: string[]; validUntil: string; reason: string;
+  createdBy: string; createdAt: string; active: boolean; endedAt: string | null; endedBy: string | null; endReason: string | null;
+  history: { at: string; by: string; action: string; reason?: string }[];
+  vendor: { id: string; businessName: string; subdomain: string | null } | null;
+  plan: { planKey: string; cycleMonths: number; gstMode: string } | null;
+  state: 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'ENDED';
+}
+export interface ArrangementSummary { active: boolean; allowHalfYear: boolean; gstMode: string; allowedChannels: string[]; validUntil: string | null; reason: string | null }
+export interface GstReport { rows: { month: string; vendorId: string; businessName: string; invoices: number; gstForgonePaise: number; paidGstForgonePaise: number }[]; totalPaise: number; paidTotalPaise: number }
+export interface ArrangementInputBody { vendorId?: string; allowHalfYear: boolean; gstMode: 'EXCLUSIVE' | 'NONE'; allowedChannels: string[]; validUntil: string; reason: string }
+export const arrangementsApi = {
+  list: (filter: 'all' | 'active' | 'expiring' | 'expired' = 'all'): Promise<{ data: ArrangementRow[] }> => apiCall(`/admin/special-arrangements?filter=${filter}`),
+  forVendor: (vendorId: string): Promise<{ data: { active: ArrangementSummary | null } }> => apiCall(`/admin/special-arrangements/vendor/${vendorId}`),
+  create: (b: ArrangementInputBody & { vendorId: string }) => apiCall('/admin/special-arrangements', { method: 'POST', body: JSON.stringify(b) }),
+  update: (id: string, b: Omit<ArrangementInputBody, 'vendorId'>) => apiCall(`/admin/special-arrangements/${id}`, { method: 'PUT', body: JSON.stringify(b) }),
+  end: (id: string, reason: string) => apiCall(`/admin/special-arrangements/${id}/end`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  gstReport: (): Promise<{ data: GstReport }> => apiCall('/admin/special-arrangements/gst-report'),
 };

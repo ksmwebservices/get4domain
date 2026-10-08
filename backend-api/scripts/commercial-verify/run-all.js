@@ -15,7 +15,9 @@ const suites = [
   ['categories, Adjust-stock screen rules vs server, every stock write has a movement', 'verify-categories-stock-ui.js'],
   ['AI Studio: wallet first, provider fallback, classified errors, saved images, ai-health', 'verify-ai.js'],
   ['workspace access script + notification isolation', 'verify-workspace.js'],
-  ['Dashboard v2: lead to customer, (later phases append: provisioning, special arrangements)', 'verify-dashboard-v2.js'],
+  ['Dashboard v2: lead to customer, provisioning, Plan access, honest copy, reels/video Coming soon', 'verify-dashboard-v2.js'],
+  ['Special arrangements: rules, enforcement, renewal reversion, notices, GST report, permissions', 'verify-arrangements.js'],
+  ['Special arrangements on REAL Postgres (PGlite): migration rehearsal + drift + service', 'verify-arrangements-pg.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
 // The admin nav lives in the Next.js app; run its check from here too when the monorepo sibling is present.

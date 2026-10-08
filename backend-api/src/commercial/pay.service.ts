@@ -109,7 +109,7 @@ export class PayService {
         number: inv.invoiceNumber, kind: inv.kind, description: inv.description, status: inv.status,
         lines: ((inv.lineItems as unknown as Line[] | null) ?? []).map((l) => ({ kind: l.kind, label: l.label, amountPaise: l.amountPaise, qty: l.qty ?? 1 })),
         subtotalPaise: inv.listAmountPaise ?? inv.amount + inv.discountPaise, discountPaise: inv.discountPaise, discountReason: inv.discountReason,
-        promoCode: promo?.code ?? null, gstMode: inv.gstMode, taxablePaise: inv.amount, gstPaise: inv.gstAmount, totalPaise: inv.totalAmount,
+        promoCode: promo?.code ?? null, gstMode: inv.gstMode, gstNote: inv.gstNote ?? null, gstForgonePaise: inv.gstForgonePaise ?? null, taxablePaise: inv.amount, gstPaise: inv.gstAmount, totalPaise: inv.totalAmount,
         paidPaise: inv.paidPaise, balanceDuePaise: balanceDue(inv), overpaymentPaise: inv.overpaymentPaise,
         planKey: inv.planKey, billingCycle: inv.billingCycle, periodStart: inv.periodStart, periodEnd: inv.periodEnd,
         dueDate: inv.dueDate, paidAt: inv.paidAt, expiresAt: inv.tokenExpiresAt,

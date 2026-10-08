@@ -33,6 +33,7 @@ const DEFAULTS = {
   wallet: () => ({ balance: 0, totalCredited: 0, totalDebited: 0 }),
   vendorProduct: () => ({ active: true, status: 'active', trackStock: false, stockQty: null, reorderLevel: null, customFields: null, categoryId: null, sku: null, unit: null, priceAmount: null, image: null, description: null }),
   category: () => ({ sortOrder: 0, hidden: false }),
+  specialArrangement: () => ({ active: true, allowHalfYear: false, gstMode: 'EXCLUSIVE', allowedChannels: [], history: [], endedAt: null, endedBy: null, endReason: null, expiryWarnedAt: null, expiredNotifiedAt: null }),
   posSale: () => ({ status: 'completed', taxAmount: 0, type: 'retail', idempotencyKey: null, razorpayPaymentId: null, customerName: null, customerPhone: null, customerEmail: null, deliveryAddress: null, orderNote: null, orderSource: null, paidAt: null, cancelledAt: null }),
 };
 

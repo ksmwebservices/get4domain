@@ -32,6 +32,9 @@ export interface CreateInvoiceParams {
   linkExpiryDays: number;
   dueInDays?: number | null;
   gstNumber?: string | null;
+  /** Special arrangement, gstMode NONE: the GST the invoice would have carried and the line printed on it. */
+  gstForgonePaise?: number | null;
+  gstNote?: string | null;
   /** The caller's clock (the renewal job runs on its own `now`); defaults to the real time. */
   now?: Date;
 }
@@ -43,6 +46,7 @@ export const SAFE_INVOICE_SELECT = {
   lineItems: true, planKey: true, billingCycle: true, cycleMonths: true, periodStart: true, periodEnd: true,
   paidPaise: true, overpaymentPaise: true, paidVia: true, allowedChannels: true, allowPromoEntry: true, promoCodeId: true,
   dueDate: true, sentAt: true, paidAt: true, voidedAt: true, voidReason: true, tokenExpiresAt: true, dealId: true, termId: true,
+  gstForgonePaise: true, gstNote: true,
   createdAt: true, updatedAt: true,
 } as const;
 
@@ -72,6 +76,7 @@ export class InvoiceBuilderService {
             invoiceNumber, vendorId: p.vendorId, kind: p.kind, description: p.description,
             amount: p.totals.taxablePaise, gstAmount: p.totals.gstPaise, totalAmount: p.totals.totalPaise,
             gstNumber: p.gstNumber ?? undefined,
+            gstForgonePaise: p.gstForgonePaise ?? undefined, gstNote: p.gstNote ?? undefined,
             status: p.status,
             dealId: p.dealId ?? undefined, termId: p.termId ?? undefined,
             payTokenHash: hashPayToken(token), tokenExpiresAt: new Date(now.getTime() + p.linkExpiryDays * 86_400_000),

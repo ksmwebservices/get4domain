@@ -167,7 +167,9 @@ if (!process.env.DATABASE_URL) {
     const builder = new InvoiceBuilderService(prisma);
     const wallet = new WalletService(prisma, { resolveCompany: async () => ({}) }, new BillingGateService(prisma));
     const settlement = new SettlementService(prisma, audit, messenger, { resolveCompany: async () => ({}) }, noop);
-    const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, noop);
+    const { ArrangementsService } = dist('commercial/arrangements.service');
+    const arrangements = new ArrangementsService(prisma, audit, messenger);
+    const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, noop, arrangements);
     const invAdmin = new InvoiceAdminService(prisma, builder, deals, { resolveCompany: async () => ({}) }, audit);
     const actor = { id: 'script', email: 'ksm+activate-stepnrock@get4domain.com', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' };
 

@@ -24,6 +24,7 @@ const { ManualPaymentsService } = dist('commercial/manual-payments.service');
 const { TermsService, PlanChangeService } = dist('commercial/terms.service');
 const { InvoiceAdminService, PromosService } = dist('commercial/promos-and-invoices.service');
 const { RenewalService } = dist('commercial/renewal.service');
+const { ArrangementsService } = dist('commercial/arrangements.service');
 const C = dist('commercial/commercial.controllers');
 const DTO = dist('commercial/dto');
 const { redactSecrets } = dist('common/utils/redact-secrets');
@@ -42,6 +43,7 @@ function world(extraSeed = {}) {
       { id: 'v_step', name: 'Suresh', email: 'owner.stepnrock@get4domain.com', businessName: 'Step N Rock', phone: '9360011107', subdomain: 'stepnrock', isSandbox: false, expiresAt: null, status: 'ACTIVE' },
       { id: 'v_other', name: 'Other', email: 'other@x.in', businessName: 'Other Co', phone: '9000000000', subdomain: 'otherco', isSandbox: false, expiresAt: null, status: 'ACTIVE' },
     ],
+    specialArrangement: [{ id: 'arr_step', vendorId: 'v_step', active: true, allowHalfYear: true, gstMode: 'NONE', allowedChannels: ['UPI_QR'], validUntil: new Date('2027-03-31T00:00:00Z'), reason: 'test fixture: the stepnrock arrangement', createdBy: 'test', history: [], createdAt: new Date('2026-10-01T00:00:00Z') }, { id: 'arr_other', vendorId: 'v_other', active: true, allowHalfYear: true, gstMode: 'NONE', allowedChannels: ['UPI_QR', 'OFFLINE'], validUntil: new Date('2027-03-31T00:00:00Z'), reason: 'test fixture: deliberate other-vendor arrangement', createdBy: 'test', history: [], createdAt: new Date('2026-10-01T00:00:00Z') }],
     wallet: [{ id: 'w_step', vendorId: 'v_step', balance: 0, totalCredited: 0, totalDebited: 0 }],
     vendorProduct: [{ id: 'p1', vendorId: 'v_step', name: 'Shoe' }, { id: 'p2', vendorId: 'v_step', name: 'Sandal' }],
     contact: [{ id: 'c1', vendorId: 'v_step', name: 'Cust' }],
@@ -60,20 +62,26 @@ function world(extraSeed = {}) {
   const messenger = new F.CommercialMessenger(email, whatsapp, notifications);
   const builder = new InvoiceBuilderService(prisma);
   const settlement = new SettlementService(prisma, audit, messenger, legacyInvoices, email);
-  const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, email);
+  const arrangements = new ArrangementsService(prisma, audit, messenger);
+  const deals = new DealsService(prisma, wallet, builder, settlement, audit, messenger, email, arrangements);
   const payee = new F.PayeeService(prisma, audit);
   const pay = new PayService(prisma, payments, builder, settlement, payee, audit, messenger);
   const manual = new ManualPaymentsService(prisma, settlement, audit, messenger);
   const terms = new TermsService(prisma, audit, settlement);
-  const planChanges = new PlanChangeService(prisma, audit, messenger, deals, builder, terms);
-  const renewal = new RenewalService(prisma, builder, deals, messenger, audit);
+  const planChanges = new PlanChangeService(prisma, audit, messenger, deals, builder, terms, arrangements);
+  const renewal = new RenewalService(prisma, builder, deals, messenger, audit, arrangements);
   const invAdmin = new InvoiceAdminService(prisma, builder, deals, legacyInvoices, audit);
   const promos = new PromosService(prisma, audit);
   const t = prisma.$tables;
-  return { prisma, rz, email, whatsapp, payments, wallet, gate, audit, messenger, builder, settlement, deals, payee, pay, manual, terms, planChanges, renewal, invAdmin, promos, t, legacyInvoices };
+  return { prisma, rz, email, whatsapp, payments, wallet, gate, audit, messenger, arrangements, builder, settlement, deals, payee, pay, manual, terms, planChanges, renewal, invAdmin, promos, t, legacyInvoices };
 }
 
-const stepSpec = (over = {}) => ({ vendorId: 'v_step', planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', graceDays: 7, allowedChannels: ['RAZORPAY', 'UPI_QR'], ...over });
+const stepSpec = (over = {}) => {
+  const o = { vendorId: 'v_step', planKey: 'WORKSPACE', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', graceDays: 7, allowedChannels: ['RAZORPAY', 'UPI_QR'], ...over };
+  // The 6-month LIST is 55% of annual (₹6,593.40); KSM approves the ₹5,994.00 net with a reason, exactly as the live deal did.
+  if (o.billingCycle === 'HALF_YEARLY' && o.planKey && !over.discount) o.discount = { mode: 'FLAT', value: 59940, reason: 'Approved launch net 5,994.00 (list is 55% of annual)' };
+  return o;
+};
 const rows = (w, name) => w.t[name] ?? [];
 
 (async () => {
@@ -357,47 +365,51 @@ const rows = (w, name) => w.t[name] ?? [];
   section('PROMO CODES through the real pay flow (server-side recompute)');
   {
     const w = world();
+    const LIST6 = M.planListPaise(1198800, 6); // 659340: 55% of the annual list
+    const sp = (o = {}) => stepSpec({ discount: { mode: 'NONE' }, ...o });
+    const WITH_GST = (n) => n + Math.round(n * 0.18);
     await w.promos.create({ code: 'diwali10', type: 'PERCENT', value: 10, minCycleMonths: 6, appliesToPlans: ['WORKSPACE'] }, ADMIN);
     await w.promos.create({ code: 'bosonly', type: 'PERCENT', value: 50, appliesToPlans: ['BOS'] }, ADMIN);
     await w.promos.create({ code: 'once', type: 'FLAT', value: 50000, maxRedemptions: 1 }, ADMIN);
-    const r = await w.deals.createInvoice(stepSpec({ gstMode: 'EXCLUSIVE', allowPromoEntry: true }), ADMIN, {});
+    const r = await w.deals.createInvoice(sp({ gstMode: 'EXCLUSIVE', allowPromoEntry: true }), ADMIN, {});
     let ctx = await w.pay.loadByToken(tokenOf(r.payLink));
-    ok('before: ₹5,994 + 18% GST = ₹7,072.92', ctx.invoice.totalAmount === 707292);
+    ok('before: list ₹6,593.40 + 18% GST', ctx.invoice.totalAmount === WITH_GST(LIST6));
     await rejects('unknown code', w.pay.applyPromo(ctx, 'NOPE123', '1.1.1.1'), { status: 400 });
     await rejects('a plan-restricted code is rejected on the wrong plan', w.pay.applyPromo(ctx, 'BOSONLY', '1.1.1.1'), { status: 400 });
     const a = await w.pay.applyPromo(ctx, ' Diwali10 ', '1.1.1.1');
     ctx = await w.pay.loadByToken(tokenOf(r.payLink));
-    const net = 599400 - 59940;
-    ok('case-insensitive code applies; GST recomputed on the discounted net (₹5,394.60 + GST)', a.applied && ctx.invoice.discountPaise === 59940 && ctx.invoice.amount === net && ctx.invoice.gstAmount === Math.round(net * 0.18) && ctx.invoice.totalAmount === net + Math.round(net * 0.18), JSON.stringify({ d: ctx.invoice.discountPaise, t: ctx.invoice.totalAmount }));
+    const off = Math.round(LIST6 * 0.1);
+    const net = LIST6 - off;
+    ok('case-insensitive code applies; GST recomputed on the discounted net (₹5,394.60 + GST)', a.applied && ctx.invoice.discountPaise === off && ctx.invoice.amount === net && ctx.invoice.gstAmount === Math.round(net * 0.18) && ctx.invoice.totalAmount === net + Math.round(net * 0.18), JSON.stringify({ d: ctx.invoice.discountPaise, t: ctx.invoice.totalAmount }));
     ok('NO redemption is recorded while the invoice is unpaid', rows(w, 'promoRedemption').length === 0);
     await rejects('a second promo on the same invoice is rejected', w.pay.applyPromo(ctx, 'ONCE', '1.1.1.1'), { status: 400 });
     await w.pay.removePromo(ctx);
     ctx = await w.pay.loadByToken(tokenOf(r.payLink));
-    ok('removing the promo restores the original total', ctx.invoice.totalAmount === 707292 && ctx.invoice.discountPaise === 0 && ctx.invoice.promoCodeId === null);
+    ok('removing the promo restores the original total', ctx.invoice.totalAmount === WITH_GST(LIST6) && ctx.invoice.discountPaise === 0 && ctx.invoice.promoCodeId === null);
     await w.pay.applyPromo(ctx, 'DIWALI10', '1.1.1.1');
     ctx = await w.pay.loadByToken(tokenOf(r.payLink));
     await w.settlement.applyPayment(ctx.invoice.id, { amountPaise: ctx.invoice.totalAmount, via: 'OFFLINE', actor: ADMIN });
-    ok('redemption is recorded ONLY when the invoice reaches PAID', rows(w, 'promoRedemption').length === 1 && rows(w, 'promoRedemption')[0].discountPaise === 59940 && rows(w, 'promoRedemption')[0].invoiceId === ctx.invoice.id);
+    ok('redemption is recorded ONLY when the invoice reaches PAID', rows(w, 'promoRedemption').length === 1 && rows(w, 'promoRedemption')[0].discountPaise === off && rows(w, 'promoRedemption')[0].invoiceId === ctx.invoice.id);
     await rejects('a PAID invoice cannot take a promo', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r.payLink)), 'ONCE', '1.1.1.1'), { status: 400 });
     // per-vendor limit: a second invoice for the same vendor
-    const r2 = await w.deals.createInvoice(stepSpec({ gstMode: 'EXCLUSIVE', allowPromoEntry: true, kind: 'ADDON', planKey: undefined, billingCycle: undefined, addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 500000 }] }), ADMIN, {});
+    const r2 = await w.deals.createInvoice(sp({ gstMode: 'EXCLUSIVE', allowPromoEntry: true, kind: 'ADDON', planKey: undefined, billingCycle: undefined, addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 500000 }] }), ADMIN, {});
     await rejects('per-vendor limit: the same vendor cannot reuse a once-per-vendor code', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r2.payLink)), 'DIWALI10', '2.2.2.2'), { status: 400 });
     await w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r2.payLink)), 'ONCE', '2.2.2.2');
     await w.settlement.applyPayment(rows(w, 'invoice')[1].id, { amountPaise: rows(w, 'invoice')[1].totalAmount, via: 'OFFLINE', actor: ADMIN });
-    const r3 = await w.deals.createInvoice({ ...stepSpec({ gstMode: 'EXCLUSIVE', allowPromoEntry: true, kind: 'ADDON', planKey: undefined, billingCycle: undefined, addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 500000 }] }), vendorId: 'v_other' }, ADMIN, {});
+    const r3 = await w.deals.createInvoice({ ...sp({ gstMode: 'EXCLUSIVE', allowPromoEntry: true, kind: 'ADDON', planKey: undefined, billingCycle: undefined, addons: [{ kind: 'CUSTOM', label: 'Setup', amountPaise: 500000 }] }), vendorId: 'v_other' }, ADMIN, {});
     await rejects('global redemption cap: a 1-use code is exhausted after one PAID redemption', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r3.payLink)), 'ONCE', '3.3.3.3'), { status: 400 });
     // not allowed on this invoice
-    const r4 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: false }), ADMIN, {});
+    const r4 = await w.deals.createInvoice(sp({ allowPromoEntry: false }), ADMIN, {});
     await rejects('promo entry is refused when the invoice does not allow it', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r4.payLink)), 'DIWALI10', '4.4.4.4'), { status: 403 });
     // stacking
     await w.promos.create({ code: 'stack10', type: 'PERCENT', value: 10, perVendorLimit: 5 }, ADMIN);
-    const r5 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
+    const r5 = await w.deals.createInvoice(sp({ allowPromoEntry: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
     await rejects('NO stacking on an admin discount by default', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r5.payLink)), 'STACK10', '5.5.5.5'), { status: 400 });
-    const r6 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, allowPromoStacking: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
+    const r6 = await w.deals.createInvoice(sp({ allowPromoEntry: true, allowPromoStacking: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
     const stacked = await w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r6.payLink)), 'STACK10', '6.6.6.6');
-    ok('stacking works when the admin allowed it (5% + 10% off the subtotal)', stacked.applied && (await w.pay.loadByToken(tokenOf(r6.payLink))).invoice.discountPaise === 29970 + 59940);
+    ok('stacking works when the admin allowed it (5% + 10% off the subtotal)', stacked.applied && (await w.pay.loadByToken(tokenOf(r6.payLink))).invoice.discountPaise === Math.round(LIST6 * 0.05) + Math.round(LIST6 * 0.1));
     // throttled attempts
-    const r7 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true }), ADMIN, { overrideReason: OVERRIDE });
+    const r7 = await w.deals.createInvoice(sp({ allowPromoEntry: true }), ADMIN, { overrideReason: OVERRIDE });
     const c7 = await w.pay.loadByToken(tokenOf(r7.payLink));
     for (let i = 0; i < 6; i += 1) { try { await w.pay.applyPromo(c7, `BADCODE${i}`, '7.7.7.7'); } catch { /* expected */ } }
     await rejects('brute-forcing codes is throttled (429) after repeated failures — even a VALID code is refused while throttled', w.pay.applyPromo(c7, 'STACK10', '7.7.7.7'), { status: 429 });
@@ -431,7 +443,7 @@ const rows = (w, name) => w.t[name] ?? [];
     const w = world();
     const r = await w.deals.createInvoice({
       prospect: { name: 'Anita Rao', phone: '9811111111', email: 'anita@acme.in', business: 'Acme Tours', demoSubdomain: 'acme-demo' },
-      planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE', allowedChannels: ['RAZORPAY', 'UPI_QR'],
+      planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE', allowedChannels: ['RAZORPAY'],
     }, ADMIN, {});
     const v = rows(w, 'vendor').find((x) => x.subdomain === 'acme-demo');
     ok('a pre-sale vendor row is created: hidden (isSandbox) and never auto-deleted (no expiry)', v && v.isSandbox === true && v.expiresAt === null && v.businessName === 'Acme Tours');
@@ -440,8 +452,11 @@ const rows = (w, name) => w.t[name] ?? [];
     const after = rows(w, 'vendor').find((x) => x.subdomain === 'acme-demo');
     ok('on payment the demo site flips LIVE (isSandbox=false, ACTIVE)', after.isSandbox === false && after.status === 'ACTIVE');
     ok('…and the owner receives a first password (hash changed, welcome email sent)', after.password !== before && w.email.calls.some((c) => c.fn === 'sendWelcomeEmail'));
-    await rejects('an invalid demo subdomain is refused', w.deals.createInvoice({ prospect: { name: 'X', email: 'x@y.in', business: 'Y', demoSubdomain: 'ADMIN' }, planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'NONE', allowedChannels: ['OFFLINE'] }, ADMIN, {}), { status: 400 });
-    await rejects('a prospect without an email is refused', w.deals.createInvoice({ prospect: { name: 'X', business: 'Y' }, planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'NONE', allowedChannels: ['OFFLINE'] }, ADMIN, {}), { status: 400 });
+    await rejects('an invalid demo subdomain is refused', w.deals.createInvoice({ prospect: { name: 'X', email: 'x@y.in', business: 'Y', demoSubdomain: 'ADMIN' }, planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE', allowedChannels: ['RAZORPAY'] }, ADMIN, {}), { status: 400 });
+    const vendorsBefore = rows(w, 'vendor').length;
+    await rejects('[feat:account.billing.arrangements] a NEW prospect cannot get a half-year, no-GST or manual-QR deal (no client, so no arrangement) and no vendor is created for the refused deal', w.deals.createInvoice({ prospect: { name: 'Z', email: 'z@acme.in', business: 'Zed', demoSubdomain: 'zed-demo' }, planKey: 'BOS', billingCycle: 'HALF_YEARLY', gstMode: 'NONE', allowedChannels: ['RAZORPAY', 'UPI_QR'] }, ADMIN, {}), { status: 400 });
+    ok('…the refused prospect deal created no vendor row', rows(w, 'vendor').length === vendorsBefore);
+    await rejects('a prospect without an email is refused', w.deals.createInvoice({ prospect: { name: 'X', business: 'Y' }, planKey: 'BOS', billingCycle: 'ANNUAL', gstMode: 'EXCLUSIVE', allowedChannels: ['RAZORPAY'] }, ADMIN, {}), { status: 400 });
   }
 
   section('RENEWAL ENGINE: T-15 invoice, reminders, extend-from-periodEnd, no lost days');
