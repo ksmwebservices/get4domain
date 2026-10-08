@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { api } from '@/lib/api';
 
-interface PaymentCfg { razorpayKeyId: string | null; enabled: boolean; hasSecret: boolean }
+type Mode = 'ORDER_REQUEST' | 'ONLINE';
+interface PaymentCfg { razorpayKeyId: string | null; enabled: boolean; hasSecret: boolean; checkoutMode?: Mode | null }
 
 /**
  * Vendor connects their OWN Razorpay account. Public-site payments (product orders,
@@ -19,6 +20,7 @@ export default function PaymentsSettingsPage() {
   const [keyId, setKeyId] = useState('');
   const [secret, setSecret] = useState('');
   const [enabled, setEnabled] = useState(false);
+  const [mode, setMode] = useState<Mode | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -31,6 +33,7 @@ export default function PaymentsSettingsPage() {
         setCfg(c);
         setKeyId(c.razorpayKeyId ?? '');
         setEnabled(c.enabled);
+        setMode(c.checkoutMode ?? (c.enabled ? 'ONLINE' : null));
       })
       .catch(() => setError('Could not load your payment settings.'))
       .finally(() => setLoading(false));
@@ -39,9 +42,10 @@ export default function PaymentsSettingsPage() {
   const save = async () => {
     setError(''); setSaved(false); setSaving(true);
     try {
-      const payload: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean } = {
+      const payload: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean; checkoutMode?: Mode } = {
         razorpayKeyId: keyId.trim(),
         enabled,
+        ...(mode ? { checkoutMode: mode } : {}),
       };
       if (secret.trim()) payload.razorpayKeySecret = secret.trim();
       const r = await api.updateVendorPayment(payload);
@@ -68,6 +72,26 @@ export default function PaymentsSettingsPage() {
         <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900"><CreditCard className="h-6 w-6 text-primary-600" /> Payments</h1>
         <p className="mt-1 text-sm text-slate-500">Connect your own Razorpay account. Payments customers make on your website go <strong>directly to you</strong> — Get4Domain never holds your money.</p>
       </div>
+
+      {/* How do customers order? */}
+      <Card padded>
+        <h2 className="text-sm font-bold text-slate-900">How should customers order on your website?</h2>
+        <div role="radiogroup" aria-label="Checkout mode" className="mt-3 grid gap-3 sm:grid-cols-2">
+          {([
+            ['ORDER_REQUEST', 'Order request (no online payment)', 'The customer sends their name, phone and delivery address. You get the order in Orders, call them, collect payment yourself and mark it paid. Stock is held for them meanwhile.'],
+            ['ONLINE', 'Online payment (Razorpay)', 'The customer pays on the website straight into your own Razorpay account. Needs your Razorpay keys below.'],
+          ] as [Mode, string, string][]).map(([m, title, text]) => (
+            <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}
+              className={`rounded-xl border p-3.5 text-left transition-colors ${mode === m ? 'border-primary-400 bg-primary-50 ring-2 ring-primary-200' : 'border-slate-200 hover:border-slate-300'}`}>
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><span className={`flex h-4 w-4 items-center justify-center rounded-full border ${mode === m ? 'border-primary-600 bg-primary-600' : 'border-slate-300'}`}>{mode === m && <Check className="h-3 w-3 text-white" />}</span>{title}</div>
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{text}</p>
+            </button>
+          ))}
+        </div>
+        {!mode && <p className="mt-3 text-xs text-amber-700">Not chosen yet — until you pick one, customers see “order by phone”.</p>}
+        {mode === 'ONLINE' && !((cfg?.hasSecret || secret.trim()) && keyId.trim() && enabled) && <p className="mt-3 text-xs text-amber-700">Online payment also needs your Razorpay keys and the switch below turned on; until then customers see “order by phone”.</p>}
+        <div className="mt-4"><Button onClick={save} loading={saving} disabled={saving} leftIcon={<Check className="h-4 w-4" />}>Save</Button></div>
+      </Card>
 
       <Card padded>
         <div className="flex items-center justify-between">

@@ -27,7 +27,11 @@ export async function apiCall(
         window.location.href = '/login';
       }
     }
-    throw new Error(data.message || 'API error');
+    // keep the status and any structured `data` (e.g. the open invoice that blocked a deal) on the error for screens that want it
+    const err = new Error(data.message || 'API error') as Error & { status?: number; data?: unknown };
+    err.status = response.status;
+    err.data = data.data ?? null;
+    throw err;
   }
 
   return data;
@@ -438,7 +442,7 @@ export const api = {
   // Website theme system (2.3)
   // Vendor's own Razorpay payment credentials (they collect public-site payments directly)
   getVendorPayment: () => apiCall('/vendor-payments'),
-  updateVendorPayment: (data: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean }) =>
+  updateVendorPayment: (data: { razorpayKeyId?: string; razorpayKeySecret?: string; enabled?: boolean; checkoutMode?: 'ONLINE' | 'ORDER_REQUEST' }) =>
     apiCall('/vendor-payments', { method: 'PUT', body: JSON.stringify(data) }),
   websiteThemes: (q = '') => apiCall(`/website-themes${q}`),
   // Vendor-facing themes (with `unlocked` flag) + premium one-time unlock (platform Razorpay)
@@ -453,6 +457,22 @@ export const api = {
   deleteWebsiteTheme: (id: string) => apiCall(`/website-themes/${id}`, { method: 'DELETE' }),
   getVendorProducts: (vendorId: string) =>
     apiCall(`/cms/vendor/${vendorId}/products`),
+  // The vendor's OWN product list: includes hidden items and the stock fields (the public one above deliberately does not).
+  getVendorProductsManage: (vendorId: string) =>
+    apiCall(`/cms/vendor/${vendorId}/products/manage`),
+  // Stock (single location): every change is a movement in the ledger
+  adjustStock: (productId: string, data: { mode: 'add' | 'remove' | 'set'; quantity: number; reason: string; note?: string; idempotencyKey?: string }) =>
+    apiCall(`/stock/products/${productId}/adjust`, { method: 'POST', body: JSON.stringify(data) }),
+  stockHistory: (productId: string) => apiCall(`/stock/products/${productId}/history`),
+  lowStock: () => apiCall('/stock/low'),
+  // Categories (create / rename / hide / reorder / delete)
+  getCategoriesManage: (vendorId: string) => apiCall(`/cms/vendor/${vendorId}/categories/manage`),
+  createCategory: (vendorId: string, name: string) => apiCall(`/cms/vendor/${vendorId}/categories`, { method: 'POST', body: JSON.stringify({ name }) }),
+  updateCategory: (vendorId: string, id: string, data: { name?: string; hidden?: boolean }) =>
+    apiCall(`/cms/vendor/${vendorId}/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  reorderCategories: (vendorId: string, ids: string[]) => apiCall(`/cms/vendor/${vendorId}/categories/order`, { method: 'PUT', body: JSON.stringify({ ids }) }),
+  deleteCategory: (vendorId: string, id: string, moveTo?: string) =>
+    apiCall(`/cms/vendor/${vendorId}/categories/${id}${moveTo ? `?moveTo=${encodeURIComponent(moveTo)}` : ''}`, { method: 'DELETE' }),
   addProduct: (vendorId: string, data: any) =>
     apiCall(`/cms/vendor/${vendorId}/products`, { method: 'POST', body: JSON.stringify(data) }),
   updateProduct: (id: string, data: any) =>
@@ -835,6 +855,8 @@ export const api = {
     }),
   // Vendor-authenticated: any registered action (uses the caller's JWT).
   engineWebOrders: () => apiCall('/engine/orders'),
+  markOrderPaid: (id: string) => apiCall(`/engine/orders/${id}/paid`, { method: 'POST' }),
+  cancelOrder: (id: string) => apiCall(`/engine/orders/${id}/cancel`, { method: 'POST' }),
   engineListActions: () => apiCall('/engine/actions'),
   engineDispatch: (intent: string, input: Record<string, unknown>) =>
     apiCall(`/engine/actions/${intent}`, { method: 'POST', body: JSON.stringify(input) }),
