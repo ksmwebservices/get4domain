@@ -11,6 +11,8 @@ const REG = dist('registry/registry.generated');
 const { VideoService } = dist('video/video.service');
 const { ReelsService } = dist('reels/reels.service');
 const COMING = dist('common/coming-soon');
+const { DashboardContextService } = dist('registry/dashboard-context.service');
+const { AddonsService } = dist('addons/addons.service');
 const { PlanAccessService } = dist('registry/plan-access.service');
 const { PlanAccessController } = dist('registry/plan-access.controller');
 const { CommercialAdminGuard, CommercialAuditService } = dist('commercial/foundation.services');
@@ -219,6 +221,54 @@ const seed = () => ({
     ok('public pricing page no longer lists Video generation (the admin setting is untouched)', !/Video generation/.test(pricing) && /video_generation/.test(rd('app/admin/pricing/page.tsx')));
     ok('marketing no longer promises reel/video making (platform features, hero showcase, home AI Studio, comparison table)', !/Images, posters & reels/.test(rd('data/platform-features.ts')) && !/AI reel ready/.test(rd('data/hero-showcase.ts')) && !/Create promotional reels/.test(rd('components/marketing/home/AIStudio.tsx')) && !rd('lib/pricing.ts').includes('Reel / short video'));
     ok('the managed-services human "reels" line is unchanged', /Posts, reels and creative assets produced on a monthly retainer/.test(rd('app/(marketing)/managed-services/page.tsx')));
+  }
+
+  section('[feat:home.today.tenancy] Dashboard v2 routes: vendor A can never read vendor B');
+  {
+    const now = new Date('2026-10-20T00:00:00Z');
+    const prisma = createMemPrisma({
+      vendor: [
+        { id: 'A', name: 'A', email: 'a@x.in', businessName: 'A Shop', subdomain: 'a', industry: 'retail', createdAt: new Date('2026-10-10') },
+        { id: 'B', name: 'B', email: 'b@x.in', businessName: 'B Clinic', subdomain: 'b', industry: 'clinic', createdAt: new Date('2026-05-01'), customDomain: 'b-clinic.in' },
+      ],
+      billingTerm: [{ id: 't1', vendorId: 'A', planKey: 'WORKSPACE', isCurrent: true, status: 'ACTIVE_PAYMENT_DUE' }, { id: 't2', vendorId: 'B', planKey: 'BOS', isCurrent: true, status: 'ACTIVE' }],
+      invoice: [{ id: 'i1', vendorId: 'B', kind: 'RENEWAL', status: 'SENT', invoiceNumber: 'INV-B-1', totalAmount: 99999, dueDate: new Date('2026-10-30') }],
+      vendorProduct: [{ id: 'p1', vendorId: 'A', active: true }, { id: 'p2', vendorId: 'B', active: true }, { id: 'p3', vendorId: 'B', active: true }],
+      campaignLead: [{ id: 'l1', vendorId: 'B', createdAt: new Date('2026-10-18') }],
+      posSale: [{ id: 's1', vendorId: 'B', type: 'web', status: 'PENDING_PAYMENT' }],
+      vendorAddon: [{ id: 'x1', vendorId: 'B', addonKey: 'nav_v2', enabled: true }],
+      vendorPaymentConfig: [], vendorCMS: [],
+    });
+    const svc = new DashboardContextService(prisma, new AddonsService(prisma));
+    const a = await svc.build({ sub: 'A', role: 'VENDOR', email: 'a@x.in' }, now);
+    ok('vendor A sees only its own business, plan and numbers', a.businessName === 'A Shop' && a.plan === 'WORKSPACE' && a.planDisplay === 'Essentials' && a.signals.productsAdded === 1 && a.signals.firstLead === false && a.signals.pendingOrders === 0);
+    ok('vendor A sees NONE of vendor B invoices, leads, orders or domain', a.paymentDue === null && a.signals.newLeads7d === 0 && a.signals.domainConnected === false);
+    ok('a vendor created after the release gets Dashboard v2 by default; an older vendor with an explicit row keeps it', a.navV2 === true);
+    const b = await svc.build({ sub: 'B', role: 'VENDOR', email: 'b@x.in' }, now);
+    ok('vendor B sees its own data (2 products, 1 new lead, 1 web order, the unpaid invoice)', b.signals.productsAdded === 2 && b.signals.newLeads7d === 1 && b.signals.pendingOrders === 1 && b.paymentDue && b.paymentDue.invoiceNumber === 'INV-B-1' && b.signals.domainConnected === true && b.planDisplay === 'Pro');
+    const tm = await svc.build({ sub: 'B', role: 'VENDOR', kind: 'team_member', modules: ['crm'], email: 't@b.in' }, now);
+    ok('a team member never sees the plan invoice or amounts due (owner only)', tm.paymentDue === null && tm.principal === 'team_member' && JSON.stringify(tm.memberAreas) === '["crm"]');
+    let denied = 0;
+    for (const u of [{ sub: 'adm', role: 'ADMIN', email: 'x' }, { sub: 'adm', role: 'SUPER_ADMIN', email: 'x' }, { sub: 'am', role: 'VENDOR', kind: 'admin_member', email: 'x' }]) {
+      try { await svc.build(u, now); } catch (e) { if (e.getStatus && e.getStatus() === 403) denied += 1; }
+    }
+    ok('staff accounts are refused (403): the vendor context is for vendor accounts only', denied === 3);
+    let missing = false; try { await svc.build({ sub: 'ghost', role: 'VENDOR', email: 'g' }, now); } catch (e) { missing = e.getStatus && e.getStatus() === 403; }
+    ok('an unknown account id is refused, never an empty context', missing);
+  }
+
+  section('[feat:account.billing.dry-run] a Step N Rock style shop loses nothing');
+  {
+    const prisma = createMemPrisma({
+      vendor: [{ id: 'S', name: 'S', email: 's@x.in', businessName: 'Step N Rock', subdomain: 'stepnrock', industry: 'retail', createdAt: new Date('2026-09-01') }],
+      billingTerm: [{ id: 't', vendorId: 'S', planKey: 'WORKSPACE', isCurrent: true }],
+      vendorModule: [{ id: 'm1', vendorId: 'S', moduleKey: 'website_manager', enabled: true }, { id: 'm2', vendorId: 'S', moduleKey: 'telecrm', enabled: true }],
+      vendorAddon: [{ id: 'a1', vendorId: 'S', addonKey: 'workspace_menu', enabled: true }],
+      vendorProduct: [{ id: 'p1', vendorId: 'S' }, { id: 'p2', vendorId: 'S' }], posSale: [{ id: 'o1', vendorId: 'S' }], campaignLead: [{ id: 'l1', vendorId: 'S' }],
+      campaignPage: [], campaign: [], message: [], whatsappConversation: [], contact: [], record: [], genericInvoice: [],
+    });
+    const r = await analyseVendor(prisma, REG, AVAILABLE_MODULES, prisma.$tables.vendor[0], NAV_V2_DEFAULT_FROM);
+    ok('products, orders and leads are all still Open in Dashboard v2 on Essentials: the would-lose-access list is EMPTY', r.wouldLose.length === 0 && r.planName === 'Essentials' && r.counts.open > 5, JSON.stringify(r.wouldLose));
   }
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });

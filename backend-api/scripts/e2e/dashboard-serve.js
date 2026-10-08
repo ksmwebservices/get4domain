@@ -64,6 +64,8 @@ async function load(mod) {
   const email = 'suresh@local.test';
   const vendor = await prisma.vendor.create({ data: { name: 'Suresh', email, password: await AuthService.hashPassword(password), businessName: 'Step N Rock', industry: 'retail', subdomain: 'stepnrock', phone: '9360011107' } });
   await applyAccess(prisma, vendor.id, planAccess(await readCurrent(prisma, vendor.id)));
+  // Pinned OFF so this vendor shows the PREVIOUS dashboard regardless of today's date (vendors created from 2026-10-09 default ON).
+  await prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId: vendor.id, addonKey: 'nav_v2' } }, create: { vendorId: vendor.id, addonKey: 'nav_v2', enabled: false }, update: { enabled: false } });
   const mk = (name, price, category, extra = {}) => cms.addProduct(vendor.id, { name, price, category, image: 'https://images.pexels.com/photos/1461048/pexels-photo-1461048.jpeg?auto=compress&cs=tinysrgb&h=300&w=300', ...extra }, 'owner');
   const aero = await mk('Aero Flight Sneakers', '1299', 'Sneakers', { trackStock: true, stockQty: 6, reorderLevel: 3, customFields: { sizes: ['8', '9'], colors: ['Black', 'Red'] } });
   await mk('Velocity Runner', '1899', 'Running', { trackStock: true, stockQty: 2, reorderLevel: 3 });
@@ -73,7 +75,25 @@ async function load(mod) {
   await checkout.placeOrderRequest(vendor.id, { items: [{ productId: aero.id, name: 'Aero Flight Sneakers — 9 / Black', qty: 2 }], name: 'Ravi Kumar', phone: '98765 43210', address: '12 Main Street, Vadapalani, Chennai 600026', idempotencyKey: 'seed-order-0001', note: 'Call after 6 pm' });
   await notifications.notifyVendor(vendor.id, 'website_enquiry', 'New website enquiry', 'Priya enquired (9000011111).', { priority: 'ACTION', actionType: 'view_lead' });
 
-  fs.writeFileSync(path.join(os.tmpdir(), 'g4d-dashboard-login.json'), JSON.stringify({ email, password, vendorId: vendor.id }));
+  // Release 1A: Dashboard v2 vendors on each plan and profile (all local, throwaway credentials). Stepnrock above stays on the OLD dashboard (flag off).
+  const { provisionModules } = dist('registry/provisioning');
+  const extra = [];
+  const addV2Vendor = async (key, businessName, industry, planKey, subdomain) => {
+    const pw = `Local-${crypto.randomBytes(9).toString('base64url')}`;
+    const v = await prisma.vendor.create({ data: { name: businessName, email: `${key}@local.test`, password: await AuthService.hashPassword(pw), businessName, industry, subdomain, phone: '9000000000' } });
+    const now = new Date();
+    await prisma.billingTerm.create({ data: { vendorId: v.id, planKey, billingCycle: 'ANNUAL', cycleMonths: 12, listAmountPaise: 1198800, netAmountPaise: 1198800, gstMode: 'EXCLUSIVE', periodStart: now, periodEnd: new Date(now.getTime() + 365 * 86400000), status: 'ACTIVE', isCurrent: true, activatedAt: now, createdBy: 'harness' } });
+    await prisma.$transaction(async (tx) => { await provisionModules(tx, v.id, planKey, { actor: 'harness', reason: 'local harness' }); });
+    await prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId: v.id, addonKey: 'nav_v2' } }, create: { vendorId: v.id, addonKey: 'nav_v2', enabled: true }, update: { enabled: true } });
+    extra.push({ key, email: `${key}@local.test`, password: pw, vendorId: v.id, plan: planKey, industry });
+    return v;
+  };
+  const ess = await addV2Vendor('essentials', 'Essentials Shop', 'retail', 'WORKSPACE', 'essentials');
+  await cms.addProduct(ess.id, { name: 'Cotton Kurta', price: '799', category: 'Kurtas', trackStock: true, stockQty: 1, reorderLevel: 3 }, 'owner');
+  await prisma.campaignLead.create({ data: { vendorId: ess.id, name: 'Meena Rao', phone: '9876500011', message: 'Do you have size M?', source: 'website', status: 'new' } });
+  await addV2Vendor('pro', 'Pro Studio', 'professional', 'BOS', 'prostudio');
+  await addV2Vendor('clinic', 'Care Clinic', 'clinic', 'WORKSPACE', 'careclinic');
+  fs.writeFileSync(path.join(os.tmpdir(), 'g4d-dashboard-login.json'), JSON.stringify({ email, password, vendorId: vendor.id, others: extra }));
   console.log('READY  API http://127.0.0.1:3099 · seeded Step N Rock · login in', path.join(os.tmpdir(), 'g4d-dashboard-login.json'));
   process.on('SIGTERM', async () => { await app.close(); process.exit(0); });
   setInterval(() => {}, 1 << 30);

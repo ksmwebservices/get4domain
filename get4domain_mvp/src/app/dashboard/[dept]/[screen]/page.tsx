@@ -8,6 +8,8 @@ import HubPage from '@/dashboard-v2/HubPage';
 import { ComingSoonCard, UpgradeCard } from '@/dashboard-v2/UpgradeCard';
 import { OLD_ADDRESS } from '@/dashboard-v2/screens';
 import { labelFor } from '@/lib/nav.generated';
+import { useAuth } from '@/lib/auth-context';
+import { useDashboardConfig } from '@/lib/dashboard-config';
 
 /** The old address of a feature, for a vendor who is NOT on Dashboard v2 but opened a v2 link (shared URL, stale cookie). */
 function oldAddress(f: Feature): string {
@@ -23,9 +25,14 @@ export default function V2ScreenPage() {
   const params = useParams<{ dept: string; screen: string }>();
   const router = useRouter();
   const v2 = useV2();
+  const { user, loading: authLoading } = useAuth();
+  const cfg = useDashboardConfig(user?.industry);
   const feature = FEATURES.find((f) => f.route === `/dashboard/${params.dept}/${params.screen}`);
 
-  useEffect(() => { if (!v2 && feature) router.replace(oldAddress(feature)); }, [v2, feature, router]);
+  // Only a vendor we KNOW is not on Dashboard v2 is sent to the old address. While the account and its add-ons are still loading, wait: the shell
+  // appears a moment later and this page must not bounce a v2 vendor away (found on the production-build walkthrough, 2026-10-09).
+  const knownNotV2 = !authLoading && !cfg.loading && cfg.addons.nav_v2 !== true;
+  useEffect(() => { if (!v2 && knownNotV2 && feature) router.replace(oldAddress(feature)); }, [v2, knownNotV2, feature, router]);
 
   if (!feature) notFound();
   if (!v2 || v2.loading || !v2.ctx) return <div className="py-16 text-center text-sm text-slate-400">Loading…</div>;

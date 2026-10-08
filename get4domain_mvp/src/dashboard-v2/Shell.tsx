@@ -6,13 +6,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Bell, ChevronDown, ChevronRight, HelpCircle, LogOut, Lock, Menu, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { useDashboardConfig } from '@/lib/dashboard-config';
+import { resolveView } from '@/domainapp/tab-registry';
 import { openMyWebsite } from '@/lib/view-website';
 import Icon from '@/components/ui/Icon';
 import Modal from '@/components/ui/Modal';
 import BottomSheet from '@/components/ui/BottomSheet';
 import InstallPrompt from '@/components/InstallPrompt';
 import DashboardSplash from '@/components/DashboardSplash';
-import { DEPARTMENTS, FEATURES, PRIMARY_WORK_LABEL, labelFor, planDisplayName, resolveLegacyRoute, type Feature, type FeatureState } from '@/lib/nav.generated';
+import { DEPARTMENTS, FEATURES, PRIMARY_WORK_LABEL, labelFor, planDisplayName, resolveLegacyRoute, tabOwner, type Feature, type FeatureState } from '@/lib/nav.generated';
 import { V2Provider, stateFor, useV2 } from '@/dashboard-v2/context';
 import { UpgradeCard } from '@/dashboard-v2/UpgradeCard';
 import PaymentDueBanner from '@/dashboard-v2/PaymentDueBanner';
@@ -27,6 +29,10 @@ const setCookie = (on: boolean): void => {
 /** The Dashboard v2 sidebar items for this vendor, grouped by department (HIDDEN items and empty departments dropped). */
 export function useMenu(): { id: string; label: string; icon: string; items: Item[] }[] {
   const v2 = useV2();
+  const { user } = useAuth();
+  const cfg = useDashboardConfig(user?.industry);
+  // "Industry workspace" is only offered when this business's industry really has operation tabs for it (retail has none: no empty screen in the menu).
+  const hasOperationTabs = !cfg.loading && (cfg.industry?.dashboardTabs ?? []).some((t) => tabOwner(t.key) === 'workspace' && resolveView(t.key) !== 'addon');
   return useMemo(() => {
     if (!v2?.ctx) return [];
     const profile = v2.ctx.profile;
@@ -34,10 +40,11 @@ export function useMenu(): { id: string; label: string; icon: string; items: Ite
       id: d.id, label: d.label, icon: d.icon,
       items: FEATURES.filter((f) => f.department === d.id).flatMap((f): Item[] => {
         const state = stateFor(f, v2);
+        if (f.id === 'commerce.workspace' && !hasOperationTabs) return [];
         return state === 'HIDDEN' ? [] : [{ feature: f, label: labelFor(f, profile), state }];
       }),
     })).filter((d) => d.items.length > 0);
-  }, [v2]);
+  }, [v2, hasOperationTabs]);
 }
 
 const isActive = (pathname: string, route: string): boolean => (route === '/dashboard' ? pathname === '/dashboard' : pathname === route || pathname.startsWith(`${route}/`));

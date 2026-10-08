@@ -586,7 +586,8 @@ export const api = {
 
   // CRM
   getCrmLeads: (filters?: { status?: string; source?: string; from?: string; to?: string }) => {
-    const params = new URLSearchParams(filters as Record<string, string>).toString();
+    // Undefined filters must be left out: URLSearchParams would send the text "undefined" and the server would filter on it (the board then listed no leads).
+    const params = new URLSearchParams(Object.entries(filters ?? {}).filter(([, v]) => v !== undefined && v !== '') as [string, string][]).toString();
     return apiCall(`/crm/leads${params ? `?${params}` : ''}`);
   },
   importCrmLeads: (contacts: Array<{ name: string; phone: string; customFields?: Record<string, unknown> }>) =>

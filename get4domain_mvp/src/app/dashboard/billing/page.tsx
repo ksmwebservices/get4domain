@@ -214,7 +214,7 @@ export default function BillingPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-900">Billing & Payments</h2>
+        <h2 className="text-xl font-bold text-slate-900">Plan and billing</h2>
         <p className="mt-1 text-sm text-slate-500">Manage subscriptions and make payments securely via Razorpay.</p>
       </div>
 
