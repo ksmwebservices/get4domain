@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { VideoService, VideoProvider } from './video.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { REEL_VIDEO_COMING_SOON } from '../common/coming-soon';
 
 /** Internal Get4Domain staff generate video for free (no wallet), like AI Studio. */
 function isInternalStaff(user: AuthenticatedUser): boolean {
@@ -17,9 +18,9 @@ export class VideoController {
 
   @Get('provider')
   @ApiOperation({ summary: 'Active video provider (runway | heygen | none) + per-video cost' })
-  async provider(): Promise<{ provider: VideoProvider; cost: number }> {
+  async provider(): Promise<{ provider: VideoProvider; cost: number; comingSoon: boolean }> {
     const [provider, cost] = await Promise.all([this.video.activeProvider(), this.video.cost()]);
-    return { provider, cost };
+    return { provider, cost, comingSoon: REEL_VIDEO_COMING_SOON };
   }
 
   @Post('generate')

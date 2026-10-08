@@ -78,7 +78,7 @@ export const SHOWCASE: ShowcaseCategory[] = [
         { primary: 'Karan Shah', secondary: '02:00 PM · Beard + Cut', status: 'Waiting', tone: 'gold' },
         { primary: 'Meera Iyer', secondary: '04:00 PM · Nail Art', status: 'Confirmed', tone: 'green' },
       ],
-      highlight: { kind: 'ai', title: 'AI reel ready', subtitle: 'Monsoon hair-care tips · 12s reel' },
+      highlight: { kind: 'ai', title: 'AI post ready', subtitle: 'Monsoon hair-care tips · caption + poster' },
     },
     client: {
       brand: 'Glamour Studio', greeting: 'Hi Sneha', title: 'Your Bookings',

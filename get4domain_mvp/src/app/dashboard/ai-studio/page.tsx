@@ -438,8 +438,8 @@ export default function AiStudioPage() {
             <div className="card p-4">
               <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink-600">More formats</div>
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={openVideo} className="flex items-center gap-2 rounded-xl border border-ink-700/40 bg-ink-900/40 p-2.5 text-left text-ink-300 hover:border-ink-600"><Video className="h-4 w-4 shrink-0 text-gold-400" /><span className="text-xs font-semibold">Reel / Video</span></button>
-                <button onClick={openReel} className="flex items-center gap-2 rounded-xl border border-ink-700/40 bg-ink-900/40 p-2.5 text-left text-ink-300 hover:border-ink-600"><Video className="h-4 w-4 shrink-0 text-brand-300" /><span className="text-xs font-semibold">Photo Reel</span></button>
+                <button type="button" disabled aria-disabled="true" title="Coming soon" className="flex cursor-not-allowed items-center gap-2 rounded-xl border border-ink-700/40 bg-ink-900/40 p-2.5 text-left text-ink-500 opacity-70"><Video className="h-4 w-4 shrink-0 text-ink-500" /><span className="text-xs font-semibold">Reel / Video</span><span className="ml-auto rounded-full bg-ink-700/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-ink-300">Coming soon</span></button>
+                <button type="button" disabled aria-disabled="true" title="Coming soon" className="flex cursor-not-allowed items-center gap-2 rounded-xl border border-ink-700/40 bg-ink-900/40 p-2.5 text-left text-ink-500 opacity-70"><Video className="h-4 w-4 shrink-0 text-ink-500" /><span className="text-xs font-semibold">Photo Reel</span><span className="ml-auto rounded-full bg-ink-700/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-ink-300">Coming soon</span></button>
               </div>
             </div>
           </div>

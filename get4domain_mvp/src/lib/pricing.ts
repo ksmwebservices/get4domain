@@ -155,7 +155,6 @@ export const USAGE_VS_MARKET: UsageComparison[] = [
   { task: 'Festival / marketing poster', market: 'Designer ₹300–1,500 each', ours: '₹8 (AI Studio)' },
   { task: 'SEO blog article (~800 words)', market: 'Freelancer ₹500–2,000 each', ours: '₹15 (AI Studio)' },
   { task: 'Social media post + creative', market: 'Agency ₹200–500 each', ours: '₹5 (AI Studio)' },
-  { task: 'Reel / short video', market: 'Editor ₹1,000–5,000 each', ours: '₹50–100 (AI Studio)' },
   { task: 'Bulk WhatsApp marketing', market: '₹0.80–1.50/msg + monthly tool fee', ours: '₹1/msg, no monthly fee' },
   { task: '"We post for you" — social media mgmt', market: 'Agency ₹5,000–15,000/month retainer', ours: '₹10/post, pay only when posted' },
 ];

@@ -8,6 +8,9 @@ const { planNavV2, readNavV2, applyNavV2 } = require('../set-vendor-access-lib')
 const { NAV_V2_DEFAULT_FROM, AVAILABLE_MODULES } = dist('addons/addons.constants');
 const { analyseVendor, renderReport } = require('../nav-v2-dry-run-lib');
 const REG = dist('registry/registry.generated');
+const { VideoService } = dist('video/video.service');
+const { ReelsService } = dist('reels/reels.service');
+const COMING = dist('common/coming-soon');
 const { PlanAccessService } = dist('registry/plan-access.service');
 const { PlanAccessController } = dist('registry/plan-access.controller');
 const { CommercialAdminGuard, CommercialAuditService } = dist('commercial/foundation.services');
@@ -188,6 +191,34 @@ const seed = () => ({
     const ids = [...ai.matchAll(/navLine\('([a-z-]+\.[a-z-]+)'\)/g)].map((m) => m[1]);
     ok('the dashboard assistant names screens only through the registry, and every id it uses exists', ids.length >= 4 && ids.every((id) => REG.FEATURES.some((f) => f.id === id)), ids.join());
     ok('the assistant no longer sends vendors to menu names that do not exist (My Campaign, Billing & Payments, My Plans & Services)', !/My Campaign|Billing & Payments|My Plans & Services/.test(ai));
+  }
+
+  section('[feat:marketing.ai-studio.reel-video-soon] reels and video: Coming soon and NEVER a wallet debit');
+  {
+    const calls = [];
+    const wallet = new Proxy({}, { get: (_t, name) => async (...args) => { calls.push(String(name)); return name === 'hasSufficientBalance' ? true : name === 'getRate' ? 5000 : undefined; } });
+    const settings = { getResolvedValue: async () => 'a-configured-provider-key' };   // worst case: a provider key IS configured
+    const video = new VideoService(settings, wallet);
+    const reels = new ReelsService(wallet);
+    ok('the one switch is ON', COMING.REEL_VIDEO_COMING_SOON === true && /coming soon/i.test(COMING.REEL_VIDEO_COMING_SOON_MESSAGE));
+    const v = await video.generate('vendor1', { prompt: 'a reel about shoes' }, false);
+    ok('video generate answers coming_soon with a message and no job id', v.status === 'coming_soon' && v.jobId === '' && /coming soon/i.test(v.message));
+    const r = await reels.render('vendor1', { images: ['https://x/y.jpg'] }, false);
+    ok('reel render answers coming_soon with a message', r.status === 'coming_soon' && /coming soon/i.test(r.message));
+    const st = await video.status('none', 'mock_123');
+    ok('video status never hands out the demo clip as a vendor video', st.status === 'coming_soon' && st.url === null);
+    ok('NO WALLET CALL AT ALL: no balance check, no rate lookup, no deduct (even with a provider key configured)', calls.length === 0, calls.join());
+    const vi = await video.generate('vendor1', { prompt: 'x' }, true);
+    ok('internal staff get the same answer (nothing is generated or charged for anyone)', vi.status === 'coming_soon' && calls.length === 0);
+
+    const rootx = require('path').join(__dirname, '..', '..', '..', 'get4domain_mvp', 'src');
+    const rd = (f) => require('fs').readFileSync(require('path').join(rootx, f), 'utf8');
+    const ai = rd('app/dashboard/ai-studio/page.tsx');
+    ok('AI Studio: Reel / Video and Photo Reel buttons are disabled and tagged Coming soon', (ai.match(/disabled aria-disabled="true" title="Coming soon"/g) || []).length === 2 && !ai.includes('onClick={openVideo}') && !ai.includes('onClick={openReel}'));
+    const pricing = rd('app/(marketing)/pricing/page.tsx');
+    ok('public pricing page no longer lists Video generation (the admin setting is untouched)', !/Video generation/.test(pricing) && /video_generation/.test(rd('app/admin/pricing/page.tsx')));
+    ok('marketing no longer promises reel/video making (platform features, hero showcase, home AI Studio, comparison table)', !/Images, posters & reels/.test(rd('data/platform-features.ts')) && !/AI reel ready/.test(rd('data/hero-showcase.ts')) && !/Create promotional reels/.test(rd('components/marketing/home/AIStudio.tsx')) && !rd('lib/pricing.ts').includes('Reel / short video'));
+    ok('the managed-services human "reels" line is unchanged', /Posts, reels and creative assets produced on a monthly retainer/.test(rd('app/(marketing)/managed-services/page.tsx')));
   }
   finish();
 })().catch((e) => { console.error(e); process.exit(1); });

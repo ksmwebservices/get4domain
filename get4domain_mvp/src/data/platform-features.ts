@@ -39,7 +39,7 @@ export const CAPABILITIES: Capability[] = [
     details: ['Stock levels & reorder alerts', 'Products & services catalog', 'POS and online-order stock updates', 'Stock value at a glance'] },
   { id: 'ai', icon: 'Bot', title: 'AI Studio', billing: 'Included + pay-per-use',
     description: 'Create marketing content, images and blog articles in seconds — written and designed for your business and industry.',
-    details: ['Content & captions', 'Images, posters & reels', 'Blog writing', 'One-time AI Studio credit with every plan'] },
+    details: ['Content & captions', 'Images & posters', 'Blog writing', 'One-time AI Studio credit with every plan'] },
   { id: 'seo', icon: 'Search', title: 'SEO, GEO & AEO', billing: 'Included',
     description: 'Get found on Google, in local search and in AI answers — keyword and meta tag/description optimization for the keywords you choose.',
     details: ['Keyword optimization', 'Meta title & description optimization', 'Local (GEO) visibility', 'Answer-engine (AEO) optimization'] },

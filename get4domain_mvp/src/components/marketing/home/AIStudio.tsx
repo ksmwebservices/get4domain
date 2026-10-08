@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Film, Image as ImageIcon, PenTool, Sparkles, Wand2, Play, type LucideIcon } from 'lucide-react';
+import { Bot, Film, Image as ImageIcon, PenTool, Sparkles, Wand2, type LucideIcon } from 'lucide-react';
 
 interface Tool { id: string; name: string; icon: LucideIcon; desc: string; }
 
 const TOOLS: Tool[] = [
-  { id: 'reels', name: 'Reel Maker', icon: Film, desc: 'Create promotional reels in seconds' },
+  { id: 'reels', name: 'Reel Scripts', icon: Film, desc: 'Write the script for a short promo video' },
   { id: 'poster', name: 'Poster Designer', icon: ImageIcon, desc: 'Design posters & flyers with AI' },
   { id: 'content', name: 'Content Writer', icon: PenTool, desc: 'Generate captions, descriptions, ads' },
 ];
@@ -50,7 +50,7 @@ export default function AIStudio() {
               Marketing content <span className="text-gradient-hero">powered by AI</span>
             </h2>
             <p className="mb-6 leading-relaxed text-slate-400">
-              Create promotional reels, design posters, and generate marketing copy — without a designer or agency. Describe what you want and let AI do the rest. AI usage is pay-per-use from your wallet.
+              Write reel scripts, design posters, and generate marketing copy — without a designer or agency. Describe what you want and let AI do the rest. AI usage is pay-per-use from your wallet.
             </p>
 
             <div className="mb-2 space-y-2.5">
@@ -96,15 +96,14 @@ function PromptBar({ placeholder, chips }: { placeholder: string; chips: string[
 function ReelsMock() {
   return (
     <div className="animate-fade-in space-y-2">
-      <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-warning-400 to-secondary-500">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white/30 backdrop-blur"><Play className="ml-0.5 h-5 w-5 fill-white text-white" /></div>
-        <div className="absolute bottom-2 left-2 right-2">
-          <div className="text-[10px] font-bold text-white">Monsoon Health Tips</div>
-          <div className="text-[8px] text-white/80">00:30 · AI generated</div>
-        </div>
+      <div className="rounded-xl bg-white p-3 text-[10px] leading-relaxed text-slate-600 shadow-sm">
+        <div className="mb-1 text-[10px] font-bold text-slate-800">Monsoon Health Tips · 30-second script</div>
+        <div><b>Hook:</b> Rainy season, tired of colds?</div>
+        <div><b>Tip 1:</b> Warm water, every morning.</div>
+        <div><b>Tip 2:</b> Keep your feet dry.</div>
+        <div><b>Call to action:</b> Book a check-up today.</div>
       </div>
-      <PromptBar placeholder="Describe your reel..." chips={['Health tips', 'Offer promo', 'Testimonial']} />
+      <PromptBar placeholder="Describe your reel idea..." chips={['Health tips', 'Offer promo', 'Testimonial']} />
     </div>
   );
 }

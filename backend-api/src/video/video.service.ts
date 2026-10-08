@@ -2,16 +2,17 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GenerateVideoDto } from './dto/generate-video.dto';
+import { REEL_VIDEO_COMING_SOON, REEL_VIDEO_COMING_SOON_MESSAGE } from '../common/coming-soon';
 
 export type VideoProvider = 'runway' | 'heygen' | 'kling' | 'none';
-export type VideoStatus = 'processing' | 'done' | 'failed';
+export type VideoStatus = 'processing' | 'done' | 'failed' | 'coming_soon';
 
 const VIDEO_COST_FALLBACK_PAISE = 5000; // ₹50 default; admin Pricing Manager overrides
 // Public sample clip shown in MOCK mode (no provider key configured) so the full
 // generate → poll → preview UX is demonstrable before Runway/HeyGen go live.
 const MOCK_VIDEO_URL = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4';
 
-interface SubmitResult { jobId: string; provider: VideoProvider; status: VideoStatus; mock: boolean }
+interface SubmitResult { jobId: string; provider: VideoProvider; status: VideoStatus; mock: boolean; message?: string }
 
 /**
  * Video/Reel generation — provider-abstracted, admin-selectable (mock-first).
@@ -48,6 +49,8 @@ export class VideoService {
   }
 
   async generate(vendorId: string, dto: GenerateVideoDto, internal = false): Promise<SubmitResult> {
+    // Coming soon: answer before anything else, so the wallet, the provider and the settings are never touched.
+    if (REEL_VIDEO_COMING_SOON) return { jobId: '', provider: 'none', status: 'coming_soon', mock: false, message: REEL_VIDEO_COMING_SOON_MESSAGE };
     const provider = await this.activeProvider();
 
     if (provider === 'none') {
@@ -77,6 +80,7 @@ export class VideoService {
   }
 
   async status(provider: VideoProvider, jobId: string): Promise<{ status: VideoStatus; url: string | null }> {
+    if (REEL_VIDEO_COMING_SOON) return { status: 'coming_soon', url: null }; // never hand out the demo clip as if it were the vendor's video
     if (provider === 'none' || jobId.startsWith('mock_')) {
       return { status: 'done', url: MOCK_VIDEO_URL };
     }

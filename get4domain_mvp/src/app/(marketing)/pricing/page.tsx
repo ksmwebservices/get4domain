@@ -28,7 +28,7 @@ const TOPUPS = [
 
 const USAGE: [string, string][] = [
   ['Social media post (AI)', '₹5'], ['Festival poster (AI)', '₹8'], ['Blog article (AI)', '₹15'],
-  ['Reel/Video script', '₹10'], ['Video generation', '₹50-100'], ['Document (ID/letterhead)', '₹10-20'],
+  ['Reel script', '₹10'], ['Document (ID/letterhead)', '₹10-20'],
   ['We post on your page', '₹10'], ['WhatsApp message', '₹1'], ['SMS', '₹0.50'],
   ['Email', '₹0.10'], ['Extra campaign page', '₹20'],
 ];
@@ -57,8 +57,8 @@ export default async function PricingPage() {
   const usageRows: [string, string][] = live
     ? [
         ['Social media post (AI)', rupee(u.social_post)], ['Festival poster (AI)', rupee(u.festival_poster)],
-        ['Blog article (AI)', rupee(u.blog_article)], ['Reel/Video script', rupee(u.reel_script)],
-        ['Video generation', rupee(u.video_generation)], ['Document (ID/letterhead)', rupee(u.document)],
+        ['Blog article (AI)', rupee(u.blog_article)], ['Reel script', rupee(u.reel_script)],
+        ['Document (ID/letterhead)', rupee(u.document)],
         ['We post on your page', rupee(u.social_post_publish)], ['WhatsApp message', rupee(u.whatsapp_message)],
         ['SMS', rupee(u.sms_message)], ['Email', rupee(u.email_message)], ['Extra campaign page', rupee(u.extra_campaign_page)],
       ]

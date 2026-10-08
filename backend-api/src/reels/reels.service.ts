@@ -7,12 +7,13 @@ import { randomBytes } from 'node:crypto';
 import { WalletService } from '../wallet/wallet.service';
 import { RenderReelDto } from './dto/render-reel.dto';
 import { MUSIC_TRACKS, MusicTrack } from './reels.tracks';
+import { REEL_VIDEO_COMING_SOON, REEL_VIDEO_COMING_SOON_MESSAGE } from '../common/coming-soon';
 
 const REEL_COST_FALLBACK_PAISE = 5000; // ₹50, same ballpark as video_generation
 const REMOTION_DIR = join(process.cwd(), 'remotion');
 
 export interface ReelRenderResult {
-  status: 'done' | 'not_configured' | 'failed';
+  status: 'done' | 'not_configured' | 'failed' | 'coming_soon';
   url?: string;
   message?: string;
 }
@@ -39,6 +40,8 @@ export class ReelsService {
    * it never enters the NestJS build; needs headless Chrome + FFmpeg on the VM.
    */
   async render(vendorId: string, dto: RenderReelDto, internal = false): Promise<ReelRenderResult> {
+    // Coming soon: answer before the wallet or the renderer is touched.
+    if (REEL_VIDEO_COMING_SOON) return { status: 'coming_soon', message: REEL_VIDEO_COMING_SOON_MESSAGE };
     const track = dto.trackId ? MUSIC_TRACKS.find((t) => t.id === dto.trackId) : undefined;
     if (dto.trackId && !track) throw new BadRequestException('Unknown music track');
 
