@@ -59,6 +59,8 @@ export class CreateDealInvoiceDto extends DealSpecDto {
   @IsOptional() @IsString() dealId?: string;
   @IsOptional() @IsBoolean() activateNow?: boolean;
   @IsOptional() @IsBoolean() sendNow?: boolean;
+  /** Only to proceed past the "vendor already has an open activation invoice / unpaid term" guard: a typed reason (min 10 chars), audit-logged. */
+  @IsOptional() @IsString() @MinLength(10) @MaxLength(300) overrideReason?: string;
 }
 
 export class SaveDraftDto extends DealSpecDto {

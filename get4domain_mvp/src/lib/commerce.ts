@@ -179,7 +179,7 @@ export const commerceApi = {
     apiCall('/admin/commerce/deals/preview', { method: 'POST', body: j(spec) }),
   saveDraft: (spec: DealSpec & { dealId?: string }) => apiCall('/admin/commerce/deals/draft', { method: 'POST', body: j(spec) }),
   listDeals: (vendorId?: string) => apiCall(`/admin/commerce/deals${vendorId ? `?vendorId=${encodeURIComponent(vendorId)}` : ''}`),
-  createInvoice: (spec: DealSpec & { dealId?: string; activateNow?: boolean; sendNow?: boolean }): Promise<{ data: { invoice: InvoiceRow; payLink: string; dealId: string; vendorId: string } }> =>
+  createInvoice: (spec: DealSpec & { dealId?: string; activateNow?: boolean; sendNow?: boolean; overrideReason?: string }): Promise<{ data: { invoice: InvoiceRow; payLink: string; dealId: string; vendorId: string } }> =>
     apiCall('/admin/commerce/deals/invoice', { method: 'POST', body: j(spec) }),
 
   listInvoices: (f: { status?: string; kind?: string; vendorId?: string; q?: string } = {}): Promise<{ data: InvoiceRow[] }> => {

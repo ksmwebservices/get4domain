@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { BillingDeal, Invoice, Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,6 +15,7 @@ import { BillingCycle, GstMode, addMonths, cycleMonths, rupees } from './pricing
 import { PlanKey } from './entitlements';
 import { payUrl } from './pay-token';
 import { advisoryXactLock } from '../common/db-lock';
+import { OPEN_INVOICE_STATUSES, findActivationConflict, validOverrideReason } from './activation-guard';
 
 export interface ProspectInput { name?: string; phone?: string; email?: string; business?: string; demoSubdomain?: string }
 
@@ -163,12 +164,14 @@ export class DealsService {
   }
 
   /** Create the deal's invoice + pay link. The clear link is returned once and never stored. */
-  async createInvoice(spec: DealSpec, actor: Actor, opts: { dealId?: string; activateNow?: boolean; sendNow?: boolean } = {}): Promise<{ invoice: Invoice; payLink: string; dealId: string; vendorId: string }> {
+  async createInvoice(spec: DealSpec, actor: Actor, opts: { dealId?: string; activateNow?: boolean; sendNow?: boolean; overrideReason?: string } = {}): Promise<{ invoice: Invoice; payLink: string; dealId: string; vendorId: string }> {
     const v = this.validateSpec(spec);
     const { vendorId } = await this.resolveVendor(spec, actor);
     const q = await this.quote(spec, vendorId);
     const kind: InvoiceKindT = spec.kind ?? (spec.planKey ? 'ACTIVATION' : 'ADDON');
     if (kind === 'ACTIVATION' && !spec.planKey) throw new BadRequestException('An activation invoice needs a plan');
+    // A vendor with an open activation invoice / unpaid term must not get a second one (live incident: stepnrock got INV-0005 and INV-0006).
+    if (kind === 'ACTIVATION') await this.guardActivation(vendorId, actor, opts.overrideReason);
 
     const dealData = this.dealData(spec, q, vendorId, { ...v, promoId: q.promo?.id }, actor);
     const deal = opts.dealId
@@ -190,7 +193,7 @@ export class DealsService {
 
     if (opts.activateNow) {
       if (!spec.planKey) throw new BadRequestException('Activate-now needs a plan');
-      const act = await this.activateNow(invoice.id, spec.paymentDueDays ?? 7, v.graceDays, actor);
+      const act = await this.activateNow(invoice.id, spec.paymentDueDays ?? 7, v.graceDays, actor, new Date(), true);
       if (act.credentials) {
         // A pre-sale prospect just went live: give them their first login.
         const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
@@ -204,10 +207,26 @@ export class DealsService {
   }
 
   /**
+   * Refuse a second activation for a vendor that already has an open activation invoice or a term waiting for its payment.
+   * Returns true when it was overridden with a typed reason (which is audit-logged on the vendor).
+   */
+  private async guardActivation(vendorId: string, actor: Actor, overrideReason?: string): Promise<boolean> {
+    const [open, term] = await Promise.all([
+      this.prisma.invoice.findMany({ where: { vendorId, kind: 'ACTIVATION', status: { in: [...OPEN_INVOICE_STATUSES] } }, orderBy: { createdAt: 'desc' }, select: { id: true, invoiceNumber: true, status: true, totalAmount: true } }),
+      this.prisma.billingTerm.findFirst({ where: { vendorId, isCurrent: true }, select: { id: true, status: true, activationInvoiceId: true } }),
+    ]);
+    const conflict = findActivationConflict(open, term);
+    if (!conflict) return false;
+    if (!validOverrideReason(overrideReason)) throw new ConflictException({ message: conflict.message, code: conflict.code, details: conflict.details });
+    await this.audit.log(actor, 'deal.guard_override', 'Vendor', vendorId, { reason: (overrideReason as string).trim(), code: conflict.code, ...conflict.details });
+    return true;
+  }
+
+  /**
    * "Activate now, payment due in N days": all features on immediately (ACTIVE_PAYMENT_DUE) while the invoice
    * stays payable. The AI Studio credit for the term (prorated, see ai-credit.ts) is granted now; paying later grants nothing more.
    */
-  async activateNow(invoiceId: string, dueDays: number, graceDays: number, actor: Actor, now = new Date()): Promise<{ termId: string; credentials?: { email: string; password: string } }> {
+  async activateNow(invoiceId: string, dueDays: number, graceDays: number, actor: Actor, now = new Date(), allowSecondTerm = false): Promise<{ termId: string; credentials?: { email: string; password: string } }> {
     const out = await this.prisma.$transaction(async (tx) => {
       await advisoryXactLock(tx, `activate:${invoiceId}`);
       const inv = await tx.invoice.findUnique({ where: { id: invoiceId } });
@@ -219,6 +238,10 @@ export class DealsService {
 
       const months = inv.cycleMonths ?? cycleMonths(inv.billingCycle as BillingCycle);
       const cur = await tx.billingTerm.findFirst({ where: { vendorId: inv.vendorId, isCurrent: true } });
+      // Defence in depth (createInvoice already checked): never silently retire a term that is still waiting for ITS payment.
+      if (cur && cur.status === 'ACTIVE_PAYMENT_DUE' && cur.activationInvoiceId !== inv.id && !allowSecondTerm) {
+        throw new ConflictException({ message: 'This vendor already has an active billing term that is still waiting for its payment; settle or change it first.', code: 'UNPAID_TERM', details: { termId: cur.id, termStatus: cur.status, invoiceId: cur.activationInvoiceId ?? undefined } });
+      }
       if (cur) await tx.billingTerm.update({ where: { id: cur.id }, data: { isCurrent: false } });
       const list = inv.listAmountPaise ?? inv.totalAmount;
       const term = await tx.billingTerm.create({

@@ -59,7 +59,7 @@ export class TermsService {
       this.currentFor(vendorId),
       this.prisma.billingTerm.findMany({ where: { vendorId }, orderBy: { createdAt: 'desc' }, take: 50 }),
       this.prisma.invoice.findMany({ where: { vendorId, kind: { not: null } }, orderBy: { createdAt: 'desc' }, take: 50, select: SAFE_INVOICE_SELECT }),
-      this.audit.list('Vendor', vendorId),
+      this.audit.listForVendor(vendorId),
     ]);
     let aiCredit: { targetPaise: number; computedPaise: number; grantedPaise: number } | null = null;
     if (current) {

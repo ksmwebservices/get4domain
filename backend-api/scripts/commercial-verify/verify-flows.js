@@ -32,6 +32,8 @@ const M = dist('commercial/pricing-math');
 
 const ADMIN = { id: 'admin1', email: 'admin@get4domain.com', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' };
 const tokenOf = (link) => link.split('/pay/')[1];
+// Some setups deliberately create a second activation invoice for the same vendor; the Deal-builder guard needs a typed reason for that.
+const OVERRIDE = 'verify suite: deliberate second activation invoice for channel/limit testing';
 const d = (iso) => new Date(iso);
 
 function world(extraSeed = {}) {
@@ -189,7 +191,7 @@ const rows = (w, name) => w.t[name] ?? [];
     w.rz.down = true;
     await rejects('gateway down fails closed (503), never "assume paid"', w.pay.razorpayVerify(ctx, w.rz.pay(ord.orderId)), {});
     w.rz.down = false;
-    const uOnly = await w.deals.createInvoice(stepSpec({ allowedChannels: ['UPI_QR'] }), ADMIN, {});
+    const uOnly = await w.deals.createInvoice(stepSpec({ allowedChannels: ['UPI_QR'] }), ADMIN, { overrideReason: OVERRIDE });
     await rejects('Razorpay disabled for an invoice → 403', w.pay.razorpayOrder(await w.pay.loadByToken(tokenOf(uOnly.payLink))), { status: 403 });
     const vctx = w.pay.loadForVendor(rows(w, 'invoice')[0].id, 'v_other');
     await rejects("another vendor cannot open this invoice from the dashboard route", vctx, { status: 404 });
@@ -387,13 +389,13 @@ const rows = (w, name) => w.t[name] ?? [];
     await rejects('promo entry is refused when the invoice does not allow it', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r4.payLink)), 'DIWALI10', '4.4.4.4'), { status: 403 });
     // stacking
     await w.promos.create({ code: 'stack10', type: 'PERCENT', value: 10, perVendorLimit: 5 }, ADMIN);
-    const r5 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, {});
+    const r5 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
     await rejects('NO stacking on an admin discount by default', w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r5.payLink)), 'STACK10', '5.5.5.5'), { status: 400 });
-    const r6 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, allowPromoStacking: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, {});
+    const r6 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true, allowPromoStacking: true, discount: { mode: 'PERCENT', value: 5, reason: 'repeat client' } }), ADMIN, { overrideReason: OVERRIDE });
     const stacked = await w.pay.applyPromo(await w.pay.loadByToken(tokenOf(r6.payLink)), 'STACK10', '6.6.6.6');
     ok('stacking works when the admin allowed it (5% + 10% off the subtotal)', stacked.applied && (await w.pay.loadByToken(tokenOf(r6.payLink))).invoice.discountPaise === 29970 + 59940);
     // throttled attempts
-    const r7 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true }), ADMIN, {});
+    const r7 = await w.deals.createInvoice(stepSpec({ allowPromoEntry: true }), ADMIN, { overrideReason: OVERRIDE });
     const c7 = await w.pay.loadByToken(tokenOf(r7.payLink));
     for (let i = 0; i < 6; i += 1) { try { await w.pay.applyPromo(c7, `BADCODE${i}`, '7.7.7.7'); } catch { /* expected */ } }
     await rejects('brute-forcing codes is throttled (429) after repeated failures — even a VALID code is refused while throttled', w.pay.applyPromo(c7, 'STACK10', '7.7.7.7'), { status: 429 });

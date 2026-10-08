@@ -42,11 +42,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       );
     }
 
+    // An exception may carry structured `details` (e.g. the open invoice that blocked a deal) so a screen can offer a link / override.
+    const details =
+      exceptionResponse && typeof exceptionResponse === 'object' && 'details' in exceptionResponse
+        ? (exceptionResponse as { details: unknown }).details
+        : null;
+
     response.status(statusCode).json({
       success: false,
       statusCode,
       message,
-      data: null,
+      data: details,
       timestamp: new Date().toISOString(),
     });
   }

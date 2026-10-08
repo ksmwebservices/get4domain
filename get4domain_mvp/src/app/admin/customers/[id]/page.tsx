@@ -14,7 +14,7 @@ import {
 import { ErrorBox, Field, Pill, cardCls, inputCls, msg, selectCls } from '@/components/admin/commerce-ui';
 
 interface VendorInfo { id: string; name: string; email: string; businessName: string; phone: string | null; industry: string | null; subdomain: string | null; status: string; isSandbox: boolean; createdAt: string }
-interface BillingView { current: TermRow | null; history: TermRow[]; invoices: InvoiceRow[]; audit: { id: string; actor: string; actorRole: string | null; action: string; createdAt: string; detail: Record<string, unknown> | null }[]; entitlements: Entitlements | null; aiCredit: { targetPaise: number; computedPaise: number; grantedPaise: number } | null }
+interface BillingView { current: TermRow | null; history: TermRow[]; invoices: InvoiceRow[]; audit: { id: string; actor: string; actorRole: string | null; action: string; entityType?: string; createdAt: string; detail: Record<string, unknown> | null }[]; entitlements: Entitlements | null; aiCredit: { targetPaise: number; computedPaise: number; grantedPaise: number } | null }
 const CHANNELS: Channel[] = ['RAZORPAY', 'UPI_QR', 'OFFLINE'];
 const STATUS_OPTS = ['ACTIVE', 'ACTIVE_PAYMENT_DUE', 'LAPSED', 'CANCELLED'] as const;
 
@@ -144,7 +144,7 @@ export default function VendorDetailPage() {
 
           <section className={cardCls}>
             <h3 className="mb-3 text-sm font-bold text-white">Audit trail</h3>
-            {(billing?.audit ?? []).length === 0 ? <p className="text-sm text-slate-500">Nothing recorded yet.</p> : billing!.audit.map((a) => <div key={a.id} className="border-t border-slate-800 py-2 text-xs text-slate-400"><span className="font-semibold text-slate-200">{a.action}</span> · {a.actor}{a.actorRole ? ` (${a.actorRole})` : ''} · {fmtDate(a.createdAt)}{a.detail && 'reason' in a.detail ? ` — “${String(a.detail.reason)}”` : ''}</div>)}
+            {(billing?.audit ?? []).length === 0 ? <p className="text-sm text-slate-500">Nothing recorded yet.</p> : billing!.audit.map((a) => <div key={a.id} className="border-t border-slate-800 py-2 text-xs text-slate-400"><span className="font-semibold text-slate-200">{a.action}</span>{a.entityType && a.entityType !== 'Vendor' ? <span className="text-slate-500"> on {a.entityType.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}</span> : null} · {a.actor}{a.actorRole ? ` (${a.actorRole})` : ''} · {fmtDate(a.createdAt)}{a.detail && 'reason' in a.detail ? ` — “${String(a.detail.reason)}”` : ''}</div>)}
           </section>
         </div>
       )}

@@ -59,6 +59,9 @@ function DealBuilder() {
   const [previewError, setPreviewError] = useState('');
   const [busy, setBusy] = useState<'' | 'draft' | 'invoice' | 'activate'>('');
   const [error, setError] = useState('');
+  // set when the server refuses a second activation: what blocked it, so we can link to it and offer a typed-reason override
+  const [blocker, setBlocker] = useState<null | { invoiceNumber?: string; invoiceStatus?: string; termId?: string }>(null);
+  const [overrideReason, setOverrideReason] = useState('');
   const [result, setResult] = useState<{ invoice: InvoiceRow; payLink: string; activated: boolean } | null>(null);
 
   const loadDeals = useCallback(() => commerceApi.listDeals().then((r) => setDeals(r.data ?? [])).catch(() => undefined), []);
@@ -108,15 +111,20 @@ function DealBuilder() {
   const targetOk = target === 'existing' ? Boolean(vendorId) : Boolean(prospect.name.trim() && prospect.business.trim() && prospect.email.trim());
   const canIssue = targetOk && Boolean(preview) && channels.length > 0 && !aiCreditInvalid && (!bigNeedsConfirm || confirmText === 'CONFIRM');
 
-  async function submit(mode: 'draft' | 'invoice' | 'activate') {
-    setError(''); setBusy(mode);
+  async function submit(mode: 'draft' | 'invoice' | 'activate', override?: string) {
+    setError(''); setBlocker(null); setBusy(mode);
     try {
       if (mode === 'draft') { await commerceApi.saveDraft(spec); await loadDeals(); setError(''); setResult(null); alert('Draft saved.'); return; }
       if (mode === 'activate' && !window.confirm(`Activate now?\n\nAll plan features switch on immediately and payment is due in ${dueDays} day(s). If it is not paid by then (+${graceDays} grace days) the account lapses.`)) return;
-      const r = await commerceApi.createInvoice({ ...spec, activateNow: mode === 'activate', sendNow });
+      const r = await commerceApi.createInvoice({ ...spec, activateNow: mode === 'activate', sendNow, ...(override ? { overrideReason: override } : {}) });
       setResult({ ...r.data, activated: mode === 'activate' });
+      setOverrideReason('');
       await loadDeals();
-    } catch (e) { setError(msg(e)); }
+    } catch (e) {
+      setError(msg(e));
+      const d = (e as { status?: number; data?: { invoiceNumber?: string; invoiceStatus?: string; termId?: string } | null }).data;
+      if ((e as { status?: number }).status === 409 && d && (d.invoiceNumber || d.termId)) setBlocker(d);
+    }
     finally { setBusy(''); }
   }
 
@@ -288,6 +296,17 @@ function DealBuilder() {
           </div>
 
           <ErrorBox message={error} />
+          {blocker && (
+            <div className="space-y-3 rounded-xl border border-warning-500/40 bg-warning-500/10 p-4 text-sm text-slate-200">
+              <p>
+                {blocker.invoiceNumber ? <>Open invoice <strong>{blocker.invoiceNumber}</strong>{blocker.invoiceStatus ? ` (${blocker.invoiceStatus.toLowerCase()})` : ''} is still waiting for payment. </> : <>The current billing term is still waiting for its payment. </>}
+                <Link href="/admin/commerce/invoices" className="font-semibold text-primary-300 underline">Open Invoices →</Link>
+              </p>
+              <p className="text-xs text-slate-400">Normally you should pay or void that first. If you really need another one, type why (it is saved in the vendor&apos;s audit trail).</p>
+              <input className={inputCls} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} maxLength={300} placeholder="Reason, at least 10 characters" aria-label="Reason for creating another activation" />
+              <Button fullWidth variant="outline" disabled={overrideReason.trim().length < 10 || busy !== ''} onClick={() => submit(busy === 'activate' ? 'activate' : 'invoice', overrideReason.trim())}>Create anyway (logged)</Button>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" className="accent-primary-500" checked={sendNow} onChange={(e) => setSendNow(e.target.checked)} />Send the link by WhatsApp + email now</label>
           <div className="space-y-2">
             <Button fullWidth variant="outline" loading={busy === 'draft'} disabled={!preview || busy !== ''} onClick={() => submit('draft')} leftIcon={<Save className="h-4 w-4" />}>Save draft</Button>

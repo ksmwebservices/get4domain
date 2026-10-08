@@ -68,6 +68,37 @@ export class CommercialAuditService {
   list(entityType: string, entityId: string) {
     return this.prisma.commercialAuditLog.findMany({ where: { entityType, entityId }, orderBy: { createdAt: 'desc' }, take: 100 });
   }
+
+  /**
+   * Everything recorded about ONE vendor's billing: entries filed under the vendor itself AND under its deals, invoices, terms,
+   * plan-change requests and payment submissions (those actions are logged on their own entity, so reading only entityType='Vendor'
+   * left the vendor's Audit trail empty — "Nothing recorded yet" — even after a deal, an invoice and an activation).
+   */
+  async listForVendor(vendorId: string) {
+    const [deals, invoices, terms, changes] = await Promise.all([
+      this.prisma.billingDeal.findMany({ where: { vendorId }, select: { id: true } }),
+      this.prisma.invoice.findMany({ where: { vendorId }, select: { id: true } }),
+      this.prisma.billingTerm.findMany({ where: { vendorId }, select: { id: true } }),
+      this.prisma.planChangeRequest.findMany({ where: { vendorId }, select: { id: true } }),
+    ]);
+    const invoiceIds = invoices.map((r) => r.id);
+    const subs = invoiceIds.length ? await this.prisma.manualPaymentSubmission.findMany({ where: { invoiceId: { in: invoiceIds } }, select: { id: true } }) : [];
+    const ids = (rows: { id: string }[]) => rows.map((r) => r.id);
+    return this.prisma.commercialAuditLog.findMany({
+      where: {
+        OR: [
+          { entityType: 'Vendor', entityId: vendorId },
+          { entityType: 'BillingDeal', entityId: { in: ids(deals) } },
+          { entityType: 'Invoice', entityId: { in: invoiceIds } },
+          { entityType: 'BillingTerm', entityId: { in: ids(terms) } },
+          { entityType: 'PlanChangeRequest', entityId: { in: ids(changes) } },
+          { entityType: 'ManualPaymentSubmission', entityId: { in: ids(subs) } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+  }
 }
 
 // ── Messenger ───────────────────────────────────────────────────────────────────────────────────

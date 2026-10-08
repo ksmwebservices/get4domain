@@ -101,8 +101,8 @@ export class AdminCommerceController {
   @Post('deals/invoice')
   @ApiOperation({ summary: 'Create the deal invoice + pay link; optionally activate now with payment due in N days (platform admin)' })
   async createInvoice(@Body() dto: CreateDealInvoiceDto, @CurrentUser() u: AuthenticatedUser) {
-    const { dealId, activateNow, sendNow, ...spec } = dto;
-    const r = await this.deals.createInvoice(spec as DealSpec, actorOf(u), { dealId, activateNow, sendNow });
+    const { dealId, activateNow, sendNow, overrideReason, ...spec } = dto;
+    const r = await this.deals.createInvoice(spec as DealSpec, actorOf(u), { dealId, activateNow, sendNow, overrideReason });
     return { invoice: safeInvoice(r.invoice), payLink: r.payLink, dealId: r.dealId, vendorId: r.vendorId };
   }
 
