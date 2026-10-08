@@ -265,3 +265,16 @@ Columns: Area | Feature | Existing route/code | Status | Backend | DB | Permissi
 Counts: WORKING 16, PARTIAL 14, UI-ONLY 1, BROKEN 2, MISSING 15, BLOCKED-EXTERNAL 2.
 
 ---------------------------------------------------------------------
+
+## Update 2026-10-09 (Release 1A)
+
+The dashboard's feature list now lives in `registry/features.ts` (55 features, each with a status and evidence); this table is the 2026-10-02 baseline and is not regenerated. Where they differ, the registry wins. Changes of status since the baseline:
+
+| Feature | Was | Now |
+|---|---|---|
+| AI Studio reels and video | mock / not renderable | Coming soon; endpoints answer "coming soon" and never debit the wallet |
+| CRM board lead list | listed nothing (`source=undefined`) | working (fixed 2026-10-09) |
+| Lead to customer | missing | one click, one customer per phone per vendor |
+| Plan names in the dashboard | Workspace / BOS | Essentials / Pro (internal keys unchanged) |
+| Half-year plan, manual QR payment, GST not charged | open to any deal | only through an active special arrangement |
+| Reports, Campaigns, Quotes, Collect payments, HR, Connections | shown as stubs | Coming soon in the menu (UNTESTED / NOT_BUILT) |

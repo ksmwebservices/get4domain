@@ -250,3 +250,30 @@ Authoritative names-only inventory: [INTEGRATIONS.md §D](INTEGRATIONS.md). Requ
 
 ## 6. Production-readiness checklist (PRD §63AF #30)
 All items currently **NOT MET** — see [CHECKLIST.md](CHECKLIST.md) §B/§G and [AUDIT_REPORT.md](AUDIT_REPORT.md) critical findings.
+
+## 7. Release 1A — migrations and VM steps (2026-10-09)
+
+**Migration (additive only, NOT applied anywhere yet):** `20261009100000_special_arrangements` — one new table `g4d_special_arrangements` and two nullable columns on `Invoice` (`gstForgonePaise`, `gstNote`). It was rehearsed on a throwaway Postgres (PGlite) on top of a database that already held a vendor and an invoice, and a drift check proved it produces exactly what `schema.prisma` describes. Existing rows are untouched. Rollback: the table and columns can stay unused; the drop statements are in the migration file's header.
+
+**Supabase RLS:** the script `backend-api/prisma/sql/enable_rls_public.sql` enables row level security on every public table that lacks it, so it needs **no edit** for the new table, but it **must be re-run after `migrate deploy`** or `g4d_special_arrangements` is left open to the public API.
+
+Run only on the VM terminal:
+
+```
+ssh ksmwebtechservices@34.14.130.68
+cd /srv/get4domain-site && git pull origin get4domain-site
+cd backend-api && npx prisma migrate deploy && npx prisma generate
+# then run backend-api/prisma/sql/enable_rls_public.sql in the Supabase SQL editor (or psql as postgres), unchanged
+docker compose build --no-cache && docker compose up -d --force-recreate
+docker compose logs --tail=50 backend    # look for "Nest application successfully started"
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+cd ../backend-api && node scripts/nav-v2-dry-run.js          # read-only; the "would lose access" list must be empty
+node scripts/set-vendor-access.js --nav-v2 on --vendor <your-test-subdomain>            # dry run first
+SET_VENDOR_ACCESS_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/set-vendor-access.js --nav-v2 on --vendor <your-test-subdomain> --apply
+```
+
+Rebuild **both** containers: a backend-only or frontend-only rebuild does not deploy the other side.
+
+Before switching Step N Rock or anyone else: read the dry-run report in `docs/v2/evidence/`. A vendor listed under "would lose access" uses a module (for example Campaigns) whose v2 screen is still Coming soon; leave that vendor on the old dashboard.
+
+**Heads-up for Step N Rock:** its current term is half-year, GST not charged. After this release a half-year term, no GST or a UPI QR channel exists only through a special arrangement. If you want its next renewal to stay half-year / no GST / QR, create its arrangement (Admin > Pricing > Special arrangements) **before** the renewal invoice is built (about 15 days before the term ends). Without one, the renewal invoice is the annual plan, Razorpay only, GST 18% on top, and you get an admin notification saying so. Nothing was changed for Step N Rock by this release.

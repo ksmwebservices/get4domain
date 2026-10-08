@@ -59,3 +59,21 @@ Admin → Commerce → Promo codes. Rules are checked on the server every time: 
 - **Annual list prices:** Admin → Pricing Manager (`domainapp_workspace_yearly`, `domainapp_bos_yearly`); the code falls back to ₹11,988 / ₹23,988.
 
 **How the AI Studio credit is granted.** It is a one-time wallet credit, shown to the customer as "AI Studio credit included" on their Billing page — never as a charge on an invoice. You can change the figure per deal (₹0–₹5,000) in the Deal builder, or on a term via Edit / override; changes are logged. The wallet receives `target − what the customer has already been given`: a first activation gets the full amount for the term, a renewal of the same plan gets nothing more, moving from half-yearly to annual (or Workspace to BOS) gets only the difference, and a downgrade or a lower figure never takes anything back.
+
+## 9. Special arrangements (Release 1A policy)
+
+**Standard for every client:** annual plan, paid through Razorpay, GST 18% added on top.
+
+**Exceptions exist only through an active special arrangement set by KSM** (Admin > Pricing > Special arrangements). Each arrangement has a reason, an end date and a history, and every change goes to the commercial audit log. The server refuses a deal, draft, preview or plan-change request that needs an exception the client does not have.
+
+| Exception | Rule |
+|---|---|
+| Half-year plan | Essentials and Pro only, never Custom (Custom is not a term). The list price for six months is 55% of the annual list (`HALF_YEAR_LIST_PERCENT`, one constant). The price charged is the net KSM approves in the deal builder, at or below list, with a reason; above 20% off needs CONFIRM as before. At the half-year end the renewal is the annual plan unless the arrangement is still in force |
+| Manual UPI QR / offline payment | Only for a client with an arrangement that lists the channel. Activation or renewal happens only after KSM confirms the amount actually received. Duplicate UTRs are still flagged |
+| GST not charged | Needs a reason and an end date at most 6 months away (`MAX_GST_NONE_MONTHS`). The invoice still stores the GST it would have carried and prints "GST not charged — special arrangement until <date>". The "GST not collected" report (per month and client, with CSV) is for the CA |
+
+**When an arrangement ends:** the next renewal invoice goes back to annual, Razorpay only, GST 18% on top (no half-year negotiated price carries over), and KSM gets an admin notification. KSM also gets one notice 15 days before the end date and one when it ends, from the daily 06:00 IST job, never repeated.
+
+**Not covered:** an arrangement belongs to an existing client. A brand-new prospect has no arrangement, so a first deal for them is on standard terms; create the arrangement, then re-issue if special terms are agreed.
+
+Paid-plan invoices and the plan the vendor sees: only **Plan and billing** (Your Get4Domain account) takes payment from a vendor.

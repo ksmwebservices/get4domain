@@ -135,3 +135,13 @@ Evidence: `TeamMember` model (schema.prisma:459-476): `role String` (free text),
 | Attendance | No model. Gym tab `attendance` resolves to `ComingSoon` stub (`tab-registry.ts:5-13`: `attendance` is in `TAB_ADDON_REQUIREMENT` -> `resolveView` returns 'addon') | UI-ONLY (stub) |
 | Leave, payroll, payslip, shifts | None in schema or src | MISSING |
 
+## Release 1A additions (2026-10-09)
+
+| Route | Who | MARKETING staff | Tests |
+|---|---|---|---|
+| `GET /dashboard/context` | The signed-in **vendor** (owner, team member or sandbox), own account only | n/a (staff accounts get 403) | `verify-dashboard-v2.js` tenancy section: vendor A never sees vendor B's invoice, leads, orders or domain; team members never get the plan invoice |
+| `POST /crm/leads/:id/convert` | Vendor with the telecrm module, own leads only | n/a | cross-vendor convert is 403, nothing created |
+| `/admin/plan-access/*` | Platform admin (SUPER_ADMIN, ADMIN with a non-marketing role) | **403** | controller sits behind `CommercialAdminGuard`; vendors, team members, sandbox users and MARKETING refused |
+| `/admin/special-arrangements/*` | Platform admin; create / edit / end also behind `MoneyAdminGuard` | **403** | `verify-arrangements.js` permissions section |
+
+Dashboard v2 team-member menu = the plan's access intersected with the member's areas; owner-only screens (Team and roles, Plan and billing, Business profile, Connections, Website disclosures, Stationery) are never shown to a team member. The server (module guard) remains the real boundary; the menu is a convenience.

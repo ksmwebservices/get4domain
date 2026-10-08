@@ -1,5 +1,19 @@
 # STATUS — Get4Domain V2 (current reality)
 
+## Release 1A — Dashboard v2 and special arrangements (2026-10-09)
+
+Built on branch `get4domain-site`, nothing deployed. Details: [DASHBOARD_V2.md](DASHBOARD_V2.md).
+
+- **Registry** (`registry/`): one source for every dashboard feature, generated files for both apps, a guard that fails the build on unregistered routes, duplicate purposes and claims without evidence. Menu snapshot covers plan x profile x switch.
+- **Dashboard v2**: ten departments, Open / Locked / Coming soon states, phone tabs, payment-due banner, Home "needs attention" and go-live checklist. Behind the per-vendor `nav_v2` switch; flag off = the old dashboard. Verified by hand on a production build ([WALKTHROUGH.md](evidence/dashboard-v2/WALKTHROUGH.md)).
+- **Plan-driven access**: `provisionModules` (grant-only, idempotent, audited), `nav-v2-dry-run.js` (read-only), `set-vendor-access.js --nav-v2`, admin Plan access.
+- **Honest copy**: Essentials / Pro names, unbuilt claims removed from dashboard text, reels and video Coming soon (no wallet debit, proven by test).
+- **Special arrangements**: half-year plan, manual QR payment, GST not charged, only by admin arrangement, enforced on the server, expiring, audited; renewal reverts to annual / Razorpay / GST on top; "GST not collected" report.
+- **Found and fixed on the way**: the CRM board listed no leads (`source=undefined`), also in the old dashboard.
+- **Needs KSM**: apply migration `20261009100000_special_arrangements` on the VM, re-run the RLS script, deploy both containers, then the switch steps in [DEPLOYMENT.md](DEPLOYMENT.md) section 7.
+
+> The sections below are the 2026-10-02 audit baseline and have not been rewritten; where they disagree with Release 1A above, Release 1A is current.
+
 > Reflects reality, not intent. Product requirements live in [`../reference/GET4DOMAIN_V2_PRD.md`](../reference/GET4DOMAIN_V2_PRD.md); evidence in [AUDIT_REPORT.md](AUDIT_REPORT.md). **Last updated: 2026-10-02.** Update this file after every completed dispatch.
 
 ## Headline

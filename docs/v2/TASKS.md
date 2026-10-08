@@ -118,3 +118,18 @@ Sizes S ≤ 1 day · M 2–5 days · L 1–3 weeks. **KSM** = needs KSM's accoun
 | V-061 | Task board UI + API on `VendorTask` | M | 6 | — | OPEN |
 | V-062 | Accounting depth: GSTR export, stock ledger | M | 6 | — | OPEN |
 | V-070 | Fix and schedule sandbox cleanup (delete wallet rows; daily cron); clear the 39 expired demos | S | any | — | OPEN |
+
+## Release 1A (2026-10-09) — status
+
+| ID | Task | Status |
+|---|---|---|
+| R1A-1 | Feature registry, generator, CI guard | DONE (registry/, `npm run registry:check`) |
+| R1A-2 | Dashboard v2 shell behind `nav_v2` | DONE, production-build walkthrough in evidence/dashboard-v2 |
+| R1A-3 | Merge screens into ten departments | DONE as mounts (steps 1-8); the three product stores stay separate tabs (deferred) |
+| R1A-4 | Plan-driven provisioning, dry run, switch script, Plan access | DONE; run the dry run on the VM before switching anyone |
+| R1A-5 | Dashboard honesty fixes | DONE (dashboard text only; marketing-page claims are Release 1B) |
+| R1A-6 | Reels and video Coming soon | DONE, no-debit test |
+| R1A-7 | Special arrangements | DONE; migration written and rehearsed on PGlite, NOT applied |
+| R1A-8 | Verification | DONE: suites green, registry guard green, browser walk with screenshots |
+| R1A-9 | Docs and push | DONE |
+| R1B-next | Move half-year percent and plan display names to admin settings; unify the three product stores; Reports, Campaigns, Quotes, Collect payments; marketing-page claim fixes; stepnrock arrangement from the admin page | NOT STARTED |

@@ -126,3 +126,13 @@ Small, reversible steps — each ships alone and keeps old URLs working (full pl
 4. Introduce the new groups behind a per-vendor flag `nav_v2`; ship to KSM's QA tenant (`ksm-webtech-services`), then stepnrock.
 5. Move screens group by group (Money → Website → Grow → Sell → Operate/Settings) turning old routes into redirects.
 6. Flip the flag for everyone; switch the guard to *fail* mode; delete dead routes.
+
+## Superseded by Release 1A (2026-10-09)
+
+The ten-department structure, the Open / Locked / Coming soon / Hidden rule, the plan names (Essentials / Pro; Custom is a client marker, not a plan) and the profile labels in this proposal were built as written in [DASHBOARD_V2.md](DASHBOARD_V2.md). Points that changed on the way:
+
+- A feature that is not built or not tested is **Coming soon even for a higher plan**; the earlier idea of a Locked upgrade teaser for unbuilt features is dropped.
+- "Workspace" and "BOS" are no longer shown to vendors; the old per-vendor `workspace_menu` switch is superseded by `nav_v2` for vendors on v2.
+- The registry is implemented as `registry/features.ts` with generated files and a guard, not as a hand-kept document.
+- The three product stores are not unified in 1A; they appear as tabs under Commerce > Products.
+- Industry workspace is shown only where the industry has operation tabs.
