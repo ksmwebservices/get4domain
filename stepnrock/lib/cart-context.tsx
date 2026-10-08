@@ -3,7 +3,11 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 export type CartItem = {
-  id: string;
+  id: string; // line id: productId-size-colour
+  /** The VendorProduct id the server prices and reserves by. Older saved carts lack it; callers fall back to `slug` (which is the id). */
+  productId?: string;
+  /** Per-order purchase cap from the API at the time it was added (≤ 10). Re-checked against fresh data at checkout. */
+  maxQty?: number;
   slug: string;
   name: string;
   price: number;
@@ -54,15 +58,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [items, hydrated]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
-    const lineId = `${item.id}-${item.size}-${item.color}`;
+    const lineId = `${item.productId ?? item.id}-${item.size}-${item.color}`;
+    const cap = Math.max(1, item.maxQty ?? 10);
     setItems((prev) => {
       const existing = prev.find((p) => p.id === lineId);
       if (existing) {
         return prev.map((p) =>
-          p.id === lineId ? { ...p, quantity: p.quantity + quantity } : p
+          p.id === lineId ? { ...p, maxQty: item.maxQty ?? p.maxQty, quantity: Math.min(cap, p.quantity + quantity) } : p
         );
       }
-      return [...prev, { ...item, id: lineId, quantity }];
+      return [...prev, { ...item, id: lineId, quantity: Math.min(cap, quantity) }];
     });
     setIsOpen(true);
   }, []);
@@ -76,7 +81,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems((prev) => prev.filter((p) => p.id !== id));
       return;
     }
-    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, quantity } : p)));
+    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, quantity: Math.min(Math.max(1, p.maxQty ?? 10), quantity) } : p)));
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);

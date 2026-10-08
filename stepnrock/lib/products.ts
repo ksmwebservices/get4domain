@@ -20,7 +20,10 @@ export type Product = {
   features: string[];
   isNew?: boolean;
   isBestSeller?: boolean;
-  stock: number;
+  /** Derived by the API from tracked stock + status. Never a number of units — only the shopper-safe bucket. */
+  availability: 'in' | 'low' | 'out';
+  /** Largest quantity one order may ask for (≤ 10, never above what is left). */
+  maxQty: number;
 };
 
 export const categories = [
@@ -72,7 +75,8 @@ export const products: Product[] = [
     description: 'The Aero Flight Sneakers combine breathable mesh uppers with responsive cushioning for all-day comfort. Perfect for street style and light workouts.',
     features: ['Breathable mesh upper', 'Responsive foam midsole', 'Rubber outsole for grip', 'Lightweight 240g per shoe'],
     isBestSeller: true,
-    stock: 24,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '2',
@@ -98,7 +102,8 @@ export const products: Product[] = [
     description: 'Engineered for speed. The Velocity Pro features a carbon-fiber plate and ultralight foam for explosive energy return on every stride.',
     features: ['Carbon-fiber propulsion plate', 'Ultralight PEBA foam', 'Race-ready fit', 'Breath knit upper'],
     isNew: true,
-    stock: 15,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '3',
@@ -123,7 +128,8 @@ export const products: Product[] = [
     description: 'Timeless Oxford silhouette handcrafted from full-grain leather. Goodyear welted construction for durability and resoleability.',
     features: ['Full-grain leather upper', 'Goodyear welt construction', 'Leather lining & insole', 'Durable rubber sole'],
     isBestSeller: true,
-    stock: 18,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '4',
@@ -150,7 +156,8 @@ export const products: Product[] = [
     description: 'Lightweight and breezy, these sandals are your perfect summer companion. Contoured footbed for all-day comfort.',
     features: ['Contoured EVA footbed', 'Quick-dry straps', 'Non-slip outsole', 'Vegan materials'],
     isNew: true,
-    stock: 32,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '5',
@@ -176,7 +183,8 @@ export const products: Product[] = [
     reviews: 127,
     description: 'Premium fleece-lined hoodie with a modern streetwear fit. Built for comfort and style on every occasion.',
     features: ['350gsm fleece cotton', 'Kangaroo pocket', 'Adjustable drawstring hood', 'Ribbed cuffs & hem'],
-    stock: 40,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '6',
@@ -201,7 +209,8 @@ export const products: Product[] = [
     description: 'Bold high-top sneakers with premium canvas upper and vulcanized rubber sole. A streetwear icon.',
     features: ['Premium canvas upper', 'Vulcanized rubber sole', 'Padded ankle collar', 'Cushioned insole'],
     isBestSeller: true,
-    stock: 21,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '7',
@@ -226,7 +235,8 @@ export const products: Product[] = [
     reviews: 175,
     description: 'Daily trainer with plush cushioning and durable outsole. Perfect for easy miles and everyday wear.',
     features: ['Plush EVA midsole', 'Durable carbon rubber outsole', 'Engineered mesh upper', 'Reflective details'],
-    stock: 28,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '8',
@@ -251,7 +261,8 @@ export const products: Product[] = [
     reviews: 94,
     description: 'Sophisticated tan leather shoes with a modern silhouette. Versatile enough for office to evening.',
     features: ['Genuine leather upper', 'Cushioned footbed', 'Flexible construction', 'Classic blucher style'],
-    stock: 12,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '9',
@@ -277,7 +288,8 @@ export const products: Product[] = [
     description: 'Elegant block-heel sandals with premium leather upper. Designed for comfort without compromising style.',
     features: ['Premium leather upper', 'Comfort block heel', 'Adjustable ankle strap', 'Cushioned footbed'],
     isNew: true,
-    stock: 19,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '10',
@@ -302,7 +314,8 @@ export const products: Product[] = [
     reviews: 67,
     description: 'Classic flip flops with soft footbed and durable outsole. Your go-to for beach days and casual outings.',
     features: ['Soft EVA footbed', 'Durable rubber outsole', 'Quick-dry straps', 'Lightweight design'],
-    stock: 50,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '11',
@@ -328,7 +341,8 @@ export const products: Product[] = [
     description: 'Sleek lifestyle sneakers with a modern aesthetic. Premium materials and superior comfort for everyday wear.',
     features: ['Premium suede & mesh upper', 'OrthoLite insole', 'EVA midsole', 'Grippy rubber outsole'],
     isBestSeller: true,
-    stock: 16,
+    availability: 'in',
+    maxQty: 10,
   },
   {
     id: '12',
@@ -353,7 +367,8 @@ export const products: Product[] = [
     reviews: 78,
     description: 'Chic block heel sandals with timeless appeal. The versatile design transitions seamlessly from day to night.',
     features: ['Leather upper', '3cm block heel', 'Open-toe design', 'Buckle ankle strap'],
-    stock: 23,
+    availability: 'in',
+    maxQty: 10,
   },
 ];
 

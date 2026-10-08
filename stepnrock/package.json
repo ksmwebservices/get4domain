@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3015",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/verify-storefront.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

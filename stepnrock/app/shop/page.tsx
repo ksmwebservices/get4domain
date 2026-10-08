@@ -23,12 +23,20 @@ export default function ShopPage() {
 }
 
 function ShopPageContent() {
-  const { products } = useProducts();
+  const { products, loading, failed, reload } = useProducts();
   const { categories } = useCategories();
   const searchParams = useSearchParams();
   const initialFilter = searchParams.get('filter');
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  // The slider's top end follows the real catalogue (rupees), not a fixed 200: a ₹650 shoe must never be filtered out by default.
+  const priceMax = useMemo(() => {
+    const top = Math.max(0, ...products.map((p) => p.price));
+    const step = top > 5000 ? 500 : top > 1000 ? 100 : 10;
+    return { top: Math.max(step, Math.ceil(top / step) * step), step };
+  }, [products]);
+  const [priceChoice, setPriceChoice] = useState<[number, number] | null>(null); // null = "whole range"
+  const priceRange: [number, number] = priceChoice ?? [0, priceMax.top];
+  const setPriceRange = (v: [number, number] | null) => setPriceChoice(v);
   const [sortBy, setSortBy] = useState('featured');
   const [showNewOnly, setShowNewOnly] = useState(initialFilter === 'new');
   const [showBestOnly, setShowBestOnly] = useState(initialFilter === 'bestseller');
@@ -39,7 +47,7 @@ function ShopPageContent() {
     if (selectedCats.length > 0) {
       result = result.filter((p) => selectedCats.some((slug) => categoryMatchesSlug(p.category, slug)));
     }
-    result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    if (priceChoice) result = result.filter((p) => p.price >= priceChoice[0] && p.price <= priceChoice[1]);
     if (showNewOnly) result = result.filter((p) => p.isNew);
     if (showBestOnly) result = result.filter((p) => p.isBestSeller);
 
@@ -50,7 +58,7 @@ function ShopPageContent() {
       case 'newest': result = [...result].sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0)); break;
     }
     return result;
-  }, [products, selectedCats, priceRange, sortBy, showNewOnly, showBestOnly]);
+  }, [products, selectedCats, priceChoice, sortBy, showNewOnly, showBestOnly]);
 
   const toggleCat = (slug: string) => {
     setSelectedCats((prev) =>
@@ -87,13 +95,13 @@ function ShopPageContent() {
             value={priceRange}
             onValueChange={(v) => setPriceRange([v[0], v[1]] as [number, number])}
             min={0}
-            max={200}
-            step={10}
+            max={priceMax.top}
+            step={priceMax.step}
             className="mb-3"
           />
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>₹{priceRange[0]}</span>
+            <span>₹{priceRange[1]}</span>
           </div>
         </div>
       </div>
@@ -133,7 +141,7 @@ function ShopPageContent() {
         className="w-full"
         onClick={() => {
           setSelectedCats([]);
-          setPriceRange([0, 200]);
+          setPriceRange(null);
           setShowNewOnly(false);
           setShowBestOnly(false);
         }}
@@ -197,14 +205,30 @@ function ShopPageContent() {
           </div>
 
           {/* Grid */}
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6" aria-busy="true">
+              {Array.from({ length: 8 }).map((_, i) => (<div key={i} className="aspect-square rounded-xl animate-shimmer" />))}
+            </div>
+          ) : failed ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <X className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium">We couldn&apos;t load the products</p>
+              <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+              <Button variant="outline" onClick={reload}>Try again</Button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+              <p className="text-lg font-medium">New products are coming soon</p>
+              <p className="text-sm text-muted-foreground">Please check back shortly.</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <X className="h-12 w-12 text-muted-foreground" />
               <p className="text-lg font-medium">No products found</p>
               <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
               <Button variant="outline" onClick={() => {
                 setSelectedCats([]);
-                setPriceRange([0, 200]);
+                setPriceRange(null);
                 setShowNewOnly(false);
                 setShowBestOnly(false);
               }}>Clear Filters</Button>

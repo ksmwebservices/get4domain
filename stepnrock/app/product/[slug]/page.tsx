@@ -15,7 +15,7 @@ import { Toaster } from '@/components/ui/sonner';
 
 export default function ProductPage() {
   const params = useParams<{ slug: string }>();
-  const { products, loading } = useProducts();
+  const { products, loading, failed, reload } = useProducts();
   const product = products.find((p) => p.slug === params.slug);
 
   const { addToCart } = useCart();
@@ -39,7 +39,8 @@ export default function ProductPage() {
     // vendor product id genuinely isn't in it yet) — render nothing rather than
     // flashing a 404 before the real fetch resolves. Once loading settles with no
     // match, it's a real not-found.
-    if (loading) return null;
+    if (loading) return <div className="max-w-7xl mx-auto px-4 py-10" aria-busy="true"><div className="grid md:grid-cols-2 gap-8"><div className="aspect-square rounded-2xl animate-shimmer" /><div className="space-y-4"><div className="h-8 w-2/3 rounded animate-shimmer" /><div className="h-6 w-1/3 rounded animate-shimmer" /><div className="h-24 rounded animate-shimmer" /></div></div></div>;
+    if (failed) return <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4"><p className="text-lg font-medium">We couldn&apos;t load this product</p><p className="text-sm text-muted-foreground">Check your connection and try again.</p><Button variant="outline" onClick={reload}>Try again</Button></div>;
     notFound();
   }
 
@@ -56,8 +57,11 @@ export default function ProductPage() {
       toast.error('Please select a size first');
       return;
     }
+    if (product.availability === 'out') { toast.error('Sorry, this item is out of stock'); return; }
     addToCart({
       id: product.id,
+      productId: product.id,
+      maxQty: product.maxQty,
       slug: product.slug,
       name: product.name,
       price: product.price,
@@ -78,7 +82,7 @@ export default function ProductPage() {
           <ChevronRight className="h-3 w-3 shrink-0" />
           <Link href="/shop" className="hover:text-primary whitespace-nowrap">Shop</Link>
           <ChevronRight className="h-3 w-3 shrink-0" />
-          <Link href={`/shop/${product.category}`} className="hover:text-primary whitespace-nowrap capitalize">{product.category}</Link>
+          <Link href={`/shop/${encodeURIComponent(product.category.trim().toLowerCase())}`} className="hover:text-primary whitespace-nowrap capitalize">{product.category}</Link>
           <ChevronRight className="h-3 w-3 shrink-0" />
           <span className="text-foreground font-medium whitespace-nowrap">{product.name}</span>
         </nav>
@@ -208,14 +212,15 @@ export default function ProductPage() {
                 </button>
                 <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={() => setQuantity(Math.min(product.maxQty, quantity + 1))}
+                  disabled={product.availability === 'out' || quantity >= product.maxQty}
                   className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
               </div>
-              <Button onClick={handleAddToCart} size="lg" className="flex-1 h-12 text-base">
-                <ShoppingBag className="h-5 w-5 mr-2" /> Add to Cart
+              <Button onClick={handleAddToCart} disabled={product.availability === 'out'} size="lg" className="flex-1 h-12 text-base">
+                <ShoppingBag className="h-5 w-5 mr-2" /> {product.availability === 'out' ? 'Out of stock' : 'Add to Cart'}
               </Button>
               <Button
                 variant="outline"
@@ -227,23 +232,28 @@ export default function ProductPage() {
               </Button>
             </div>
 
-            {/* Stock */}
+            {/* Availability — a bucket from the API, never a made-up unit count */}
             <div className="flex items-center gap-2 text-sm">
-              {product.stock > 0 ? (
+              {product.availability === 'out' ? (
+                <span className="text-destructive font-medium">Out of stock</span>
+              ) : product.availability === 'low' ? (
                 <>
-                  <Check className="h-4 w-4 text-emerald-500" />
-                  <span className="text-emerald-600 font-medium">In Stock</span>
-                  <span className="text-muted-foreground">— {product.stock} left</span>
+                  <Check className="h-4 w-4 text-amber-500" />
+                  <span className="text-amber-600 font-medium">In stock</span>
+                  <span className="text-muted-foreground">— only a few left</span>
                 </>
               ) : (
-                <span className="text-destructive font-medium">Out of Stock</span>
+                <>
+                  <Check className="h-4 w-4 text-emerald-500" />
+                  <span className="text-emerald-600 font-medium">In stock</span>
+                </>
               )}
             </div>
 
             {/* Trust */}
             <div className="grid grid-cols-3 gap-3 pt-4 border-t">
               {[
-                { icon: Truck, title: 'Free Shipping', desc: 'Over $75' },
+                { icon: Truck, title: 'Delivery', desc: 'Confirmed by the shop' },
                 { icon: RotateCcw, title: '30-Day Returns', desc: 'Easy returns' },
                 { icon: ShieldCheck, title: '2-Year Warranty', desc: 'Quality guarantee' },
               ].map(({ icon: Icon, title, desc }) => (

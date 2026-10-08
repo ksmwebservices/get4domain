@@ -2,17 +2,18 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Footprints, Clock, Star, MessageCircle, ShoppingBag, MapPin, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { absUrl } from '@/lib/site-url';
 
 export const metadata: Metadata = {
   title: 'About — Step N Rock · Vadapalani, Chennai',
   description:
     'The story of Step N Rock — a family-run footwear and apparel store on the first floor of Rahaat Plaza, Vadapalani, Chennai. Serving the neighbourhood since 2011 with honest prices and real service.',
   keywords: ['Step N Rock', 'about', 'Vadapalani', 'Chennai', 'Rahaat Plaza', 'footwear store Chennai', 'shoe shop Chennai'],
-  alternates: { canonical: 'https://stepnrock.com/about' },
+  alternates: { canonical: absUrl('/about') },
   openGraph: {
     title: 'About — Step N Rock · Vadapalani, Chennai',
     description: 'A family-run footwear and apparel store in Vadapalani, Chennai since 2011.',
-    url: 'https://stepnrock.com/about',
+    url: absUrl('/about'),
   },
 };
 

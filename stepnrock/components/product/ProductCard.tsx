@@ -15,8 +15,11 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (product.availability === 'out') return;
     addToCart({
       id: product.id,
+      productId: product.id,
+      maxQty: product.maxQty,
       slug: product.slug,
       name: product.name,
       price: product.price,
@@ -63,6 +66,12 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
+        {product.availability === 'out' && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+            <span className="rounded-full bg-foreground px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-background">Out of stock</span>
+          </div>
+        )}
+
         {/* Wishlist */}
         <button
           onClick={(e) => { e.preventDefault(); setLiked(!liked); }}
@@ -74,8 +83,8 @@ export function ProductCard({ product }: { product: Product }) {
 
         {/* Quick Add */}
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <Button onClick={handleQuickAdd} className="w-full" size="sm">
-            <ShoppingBag className="h-4 w-4 mr-1" /> Quick Add
+          <Button onClick={handleQuickAdd} disabled={product.availability === 'out'} className="w-full" size="sm">
+            <ShoppingBag className="h-4 w-4 mr-1" /> {product.availability === 'out' ? 'Out of stock' : 'Quick Add'}
           </Button>
         </div>
       </div>
@@ -91,6 +100,7 @@ export function ProductCard({ product }: { product: Product }) {
         </h3>
         <div className="flex items-center gap-2">
           <span className="font-semibold text-sm">{formatPrice(product.price)}</span>
+          {product.availability === 'low' && <span className="text-[11px] font-medium text-amber-600">Few left</span>}
           {product.originalPrice && (
             <span className="text-xs text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
           )}

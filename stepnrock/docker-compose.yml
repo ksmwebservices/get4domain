@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+        # The public origin used for canonical / Open Graph / sitemap URLs. Put the shop's own domain here once it points at this server.
+        - SITE_URL=${SITE_URL:-https://stepnrock.get4domain.com}
     container_name: stepnrock
     restart: unless-stopped
     ports:
@@ -13,6 +15,7 @@ services:
       - NODE_ENV=production
       - PORT=3015
       - NEXT_PUBLIC_API_URL=https://gapi.get4domain.com
+      - SITE_URL=${SITE_URL:-https://stepnrock.get4domain.com}
     networks:
       - stepnrock_net
 

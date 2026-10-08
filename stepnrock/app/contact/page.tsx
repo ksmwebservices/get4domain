@@ -3,17 +3,18 @@ import Link from 'next/link';
 import { MapPin, Phone, Clock, MessageCircle, Send, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ContactForm } from '@/components/contact/ContactForm';
+import { absUrl } from '@/lib/site-url';
 
 export const metadata: Metadata = {
   title: 'Contact — Step N Rock · Vadapalani, Chennai',
   description:
     'Contact Step N Rock — Rahaat Plaza, First Floor, Vadapalani, Chennai. Call or WhatsApp +91 93600 11107. Open Mon–Sun 10:30 AM to 9:00 PM. Send us an enquiry and we usually reply within the hour.',
   keywords: ['Step N Rock contact', 'Vadapalani shoe store', 'Chennai footwear contact', 'Rahaat Plaza', 'WhatsApp shoe shop Chennai'],
-  alternates: { canonical: 'https://stepnrock.com/contact' },
+  alternates: { canonical: absUrl('/contact') },
   openGraph: {
     title: 'Contact — Step N Rock · Vadapalani, Chennai',
     description: 'Rahaat Plaza, First Floor, Vadapalani, Chennai. Call or WhatsApp +91 93600 11107.',
-    url: 'https://stepnrock.com/contact',
+    url: absUrl('/contact'),
   },
 };
 

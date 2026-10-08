@@ -1,29 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Product } from './products';
-import { products as fallbackProducts, categories as fallbackCategories } from './products';
 import { fetchSiteData, fetchVendorCategories, resolveProducts } from './site-data';
 
-/** Live product catalogue for client-component pages (shop, shop/[category],
- *  product/[slug]) — starts with the uploaded showcase data (so first paint is never
- *  empty) and swaps in the real vendor catalogue once fetched, if any products exist
- *  yet. `loading` lets a page defer a not-found check until the real fetch settles. */
-export function useProducts(): { products: Product[]; loading: boolean } {
-  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+/** Live product catalogue for client-component pages (shop, shop/[category], product/[slug]).
+ *  It starts EMPTY and `loading`, and shows exactly what the shop's API returns — no made-up showcase products
+ *  flash first. `failed` is true when the shop's data could not be reached (show a retry, not an empty shop).
+ *  `reload()` re-fetches (used by the cart to re-check availability). */
+export function useProducts(): { products: Product[]; loading: boolean; failed: boolean; reload: () => void } {
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     fetchSiteData().then((site) => {
       if (cancelled) return;
+      setFailed(site === null);
       setProducts(resolveProducts(site));
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [tick]);
 
-  return { products, loading };
+  const reload = useCallback(() => { setLoading(true); setTick((t) => t + 1); }, []);
+  return { products, loading, failed, reload };
 }
 
 export interface CategoryChip {
@@ -31,16 +34,11 @@ export interface CategoryChip {
   name: string;
 }
 
-/** Live category filter chips (shop page sidebar/mobile sheet) — starts with the
- *  static showcase category list (so first paint is never empty) and swaps in the
- *  vendor's real categories once fetched, so a genuinely new category (added via
- *  any product's category field) shows up as a filter chip automatically, with no
- *  code change. Falls back to the static list if the site or categories fetch
- *  fails, or if the vendor has no categories yet. */
+/** Live category filter chips — the vendor's real categories, in the order they chose, hidden ones removed. If the categories
+ *  call fails we fall back to the distinct categories of the products, so a chip can never point at a category that has no products
+ *  because it was invented client-side. Starts empty (no static showcase chips). */
 export function useCategories(): { categories: CategoryChip[]; loading: boolean } {
-  const [categories, setCategories] = useState<CategoryChip[]>(
-    fallbackCategories.map((c) => ({ slug: c.slug, name: c.name }))
-  );
+  const [categories, setCategories] = useState<CategoryChip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,14 +46,17 @@ export function useCategories(): { categories: CategoryChip[]; loading: boolean 
     fetchSiteData().then(async (site) => {
       if (cancelled) return;
       const vendorId = site?.vendor?.id;
-      if (!vendorId) {
-        setLoading(false);
-        return;
-      }
-      const real = await fetchVendorCategories(vendorId);
+      const real = vendorId ? await fetchVendorCategories(vendorId) : null;
       if (cancelled) return;
       if (real && real.length > 0) {
         setCategories(real.map((c) => ({ slug: c.nameNormalized, name: c.name })));
+      } else if (site) {
+        const seen = new Map<string, string>();
+        for (const p of site.products) {
+          const name = (p.category ?? '').trim();
+          if (name) seen.set(name.toLowerCase(), name);
+        }
+        setCategories(Array.from(seen.entries()).map(([slug, name]) => ({ slug, name })));
       }
       setLoading(false);
     });

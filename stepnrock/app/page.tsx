@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Zap, Truck, ShieldCheck, RotateCcw, ArrowRight, Star, Sparkles, Footprints, Briefcase, Sun, Shirt } from 'lucide-react';
+import { Zap, Truck, ShieldCheck, RotateCcw, ArrowRight, Sparkles, Footprints, Briefcase, Sun, Shirt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/product/ProductCard';
-import { categories } from '@/lib/products';
-import { fetchSiteData, resolveProducts } from '@/lib/site-data';
+import { fetchSiteData, fetchVendorCategories, resolveProducts } from '@/lib/site-data';
+
+// Page-level ISR: regenerated at most every 30 s whatever the fetches did (a failed build-time fetch must not freeze this page).
+export const revalidate = 30;
 
 const categoryIcons: Record<string, React.ElementType> = {
   sneakers: Footprints,
@@ -21,8 +23,17 @@ const sneakerDisplay = 'https://images.pexels.com/photos/38487263/pexels-photo-3
 export default async function HomePage() {
   const site = await fetchSiteData();
   const products = resolveProducts(site);
-  const featured = products.filter((p) => p.isBestSeller || p.isNew);
+  // Dashboard products carry no New / Best-seller flags, so "featured" is the flagged ones if any, else simply the latest products.
+  const flagged = products.filter((p) => p.isBestSeller || p.isNew);
+  const featured = flagged.length > 0 ? flagged : products;
   const bestSellers = products.filter((p) => p.isBestSeller).slice(0, 4);
+  // Categories are the vendor's real ones (in the order they chose, hidden ones removed); if that call fails, the distinct categories of the products.
+  const real = site?.vendor?.id ? await fetchVendorCategories(site.vendor.id) : null;
+  const categories: { slug: string; name: string }[] = real && real.length > 0
+    ? real.map((c) => ({ slug: c.nameNormalized, name: c.name }))
+    : Array.from(new Map(products.map((p) => [p.category.trim().toLowerCase(), p.category] as const)).entries()).map(([slug, name]) => ({ slug, name }));
+  // A sale banner only when a product really is discounted — never a made-up percentage.
+  const maxDiscount = products.reduce((m, p) => (p.originalPrice && p.originalPrice > p.price ? Math.max(m, Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)) : m), 0);
 
   return (
     <>
@@ -58,24 +69,6 @@ export default async function HomePage() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-6 mt-10 animate-reveal" style={{ animationDelay: '0.4s' }}>
-              <div>
-                <p className="text-2xl font-bold text-background">50K+</p>
-                <p className="text-xs text-background/60">Happy Customers</p>
-              </div>
-              <div className="h-10 w-px bg-background/20" />
-              <div>
-                <p className="text-2xl font-bold text-background">12K+</p>
-                <p className="text-xs text-background/60">Products Sold</p>
-              </div>
-              <div className="h-10 w-px bg-background/20" />
-              <div>
-                <p className="flex items-center gap-1 text-2xl font-bold text-background">
-                  4.8 <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                </p>
-                <p className="text-xs text-background/60">Avg Rating</p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -85,9 +78,9 @@ export default async function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: Truck, title: 'Free Shipping', desc: 'On orders over $75' },
+              { icon: Truck, title: 'Delivery', desc: 'Charges confirmed by the shop' },
               { icon: RotateCcw, title: '30-Day Returns', desc: 'No questions asked' },
-              { icon: ShieldCheck, title: 'Secure Payment', desc: '256-bit SSL encryption' },
+              { icon: ShieldCheck, title: 'Pay the shop directly', desc: 'No card details on this site' },
               { icon: Zap, title: 'Fast Delivery', desc: '3-5 business days' },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="flex items-center gap-3">
@@ -105,6 +98,7 @@ export default async function HomePage() {
       </section>
 
       {/* Categories */}
+      {categories.length > 0 && (
       <section className="py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
@@ -131,6 +125,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Featured / New Arrivals */}
       <section className="py-16 md:py-20 bg-secondary/30">
@@ -145,11 +140,17 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {featured.slice(0, 8).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {site === null ? (
+            <p className="rounded-2xl border border-border p-8 text-center text-muted-foreground">We couldn&apos;t load the products just now. Please refresh in a moment.</p>
+          ) : featured.length === 0 ? (
+            <p className="rounded-2xl border border-border p-8 text-center text-muted-foreground">New products are coming soon.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {featured.slice(0, 8).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-8 sm:hidden">
             <Button asChild variant="outline">
@@ -159,7 +160,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Promo Banner */}
+      {/* Promo Banner — only when something is genuinely discounted */}
+      {maxDiscount > 0 && (
       <section className="relative py-20 md:py-28 overflow-hidden">
         <div className="absolute inset-0">
           <img src={sneakerDisplay} alt="Sneaker collection display" className="w-full h-full object-cover" />
@@ -167,21 +169,23 @@ export default async function HomePage() {
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="inline-block px-4 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider mb-4">
-            Limited Time Offer
+            On offer now
           </span>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-background mb-4 text-balance">
-            Up to 40% Off <br className="md:hidden" /> Best Sellers
+            Save up to {maxDiscount}% <br className="md:hidden" /> on selected styles
           </h2>
           <p className="text-background/80 mb-8 max-w-xl mx-auto">
             Grab your favorites before they&apos;re gone. Selected styles at unbeatable prices.
           </p>
           <Button asChild size="lg" className="h-12 text-base">
-            <Link href="/shop?filter=bestseller">Shop the Sale <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            <Link href="/shop">Shop the Sale <ArrowRight className="h-4 w-4 ml-1" /></Link>
           </Button>
         </div>
       </section>
+      )}
 
-      {/* Best Sellers */}
+      {/* Best Sellers — only when the shop has flagged some */}
+      {bestSellers.length > 0 && (
       <section className="py-16 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-10">
@@ -201,6 +205,7 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Store / About Teaser */}
       <section className="py-16 md:py-20 bg-secondary/30">
@@ -212,67 +217,15 @@ export default async function HomePage() {
             <div className="space-y-5">
               <span className="text-primary text-sm font-semibold uppercase tracking-wider">Our Story</span>
               <h2 className="font-display text-3xl md:text-4xl font-bold text-balance">
-                Crafting Footwear Since 2015
+                A neighbourhood store since 2011
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                Step N Rock started with a simple mission: make great shoes accessible to everyone. Today, we&apos;re proud to serve over 50,000 customers worldwide with carefully curated footwear and apparel that blends style, comfort, and durability.
+                Step N Rock is a family-run footwear and apparel store on the first floor of Rahaat Plaza, Vadapalani, Chennai — serving the neighbourhood with honest prices and real service.
               </p>
-              <div className="grid grid-cols-3 gap-4 pt-4">
-                <div>
-                  <p className="text-2xl font-bold text-primary">10+</p>
-                  <p className="text-xs text-muted-foreground">Years of Experience</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">500+</p>
-                  <p className="text-xs text-muted-foreground">Products Available</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">30+</p>
-                  <p className="text-xs text-muted-foreground">Countries Served</p>
-                </div>
-              </div>
               <Button asChild>
                 <Link href="/about">Learn More About Us <ArrowRight className="h-4 w-4 ml-1" /></Link>
               </Button>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-3">What Our Customers Say</h2>
-            <p className="text-muted-foreground">Real reviews from real Step N Rock customers</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { name: 'Sarah J.', role: 'Verified Buyer', text: 'The Aero Flight Sneakers are incredibly comfortable. I wear them everywhere — from gym to grocery runs. Best purchase this year!', rating: 5 },
-              { name: 'Mike R.', role: 'Verified Buyer', text: 'Oxford Classic Leather shoes are top quality. The leather is premium and they look even better in person. Highly recommend!', rating: 5 },
-              { name: 'Emily K.', role: 'Verified Buyer', text: 'Love the Rose Petal Heels! Stylish, comfortable, and the block heel makes them easy to walk in all day. Fast shipping too.', rating: 4 },
-            ].map((review, i) => (
-              <div key={i} className="p-6 rounded-2xl border border-border hover:shadow-lg transition-shadow">
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, idx) => (
-                    <Star
-                      key={idx}
-                      className={idx < review.rating ? 'h-4 w-4 fill-amber-500 text-amber-500' : 'h-4 w-4 text-muted-foreground/30'}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-foreground/80 mb-4 leading-relaxed">&ldquo;{review.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-primary font-semibold text-sm">
-                    {review.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{review.name}</p>
-                    <p className="text-xs text-muted-foreground">{review.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>

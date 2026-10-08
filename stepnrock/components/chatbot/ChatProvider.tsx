@@ -64,7 +64,7 @@ function autoReply(userText: string): { text: string; action?: { label: string; 
 
   if (text.includes('shipping') || text.includes('delivery') || text.includes('returns') || text.includes('refund')) {
     return {
-      text: 'We offer FREE shipping on all orders over $75. Standard delivery takes 3-5 business days. Returns are free within 30 days — no questions asked!',
+      text: 'Delivery charges and timing are confirmed by the shop when it contacts you about your order. For returns or exchanges, please call or WhatsApp the shop.',
     };
   }
 
