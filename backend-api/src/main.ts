@@ -2,9 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { AppModule } from './app.module';
+import { uploadsDir, uploadsStaticOptions } from './uploads/uploads.util';
+import { buildCorsOptions } from './common/cors';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -17,17 +18,15 @@ async function bootstrap(): Promise<void> {
   app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
 
   // Local VM disk storage for uploaded images, served at /uploads/*.
-  const uploadsDir = join(process.cwd(), 'uploads');
-  if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-  app.useStaticAssets(uploadsDir, { prefix: '/uploads/' });
+  const publicUploads = uploadsDir();
+  if (!existsSync(publicUploads)) mkdirSync(publicUploads, { recursive: true });
+  app.useStaticAssets(publicUploads, uploadsStaticOptions);
 
-  // Reflect the request origin (any) so the embeddable widget (3B) works from arbitrary
+  // Default: reflect the request origin (any) so the embeddable widget (3B) works from arbitrary
   // vendor domains. Safe: the API is Bearer-token authed (no cookie auth), so a random
   // origin cannot access authed data — CORS is not the auth boundary here.
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  // CORS_MODE=strict + CORS_EXTRA_ORIGINS=<comma list> restricts it to the platform and the listed custom domains (common/cors.ts).
+  app.enableCors(buildCorsOptions());
 
   app.useGlobalPipes(
     new ValidationPipe({
