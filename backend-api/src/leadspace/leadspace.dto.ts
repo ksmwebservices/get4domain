@@ -173,3 +173,44 @@ export class SavePackDto {
 export class ReconcileDto {
   @IsString() @MaxLength(80) razorpayPaymentId!: string;
 }
+
+export class PromotionPlanDto {
+  @IsOptional() @IsBoolean() on?: boolean;
+  @IsOptional() @IsArray() @ArrayMaxSize(6) @IsString({ each: true }) channels?: string[];
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(7) perWeek?: number;
+  @IsOptional() @IsString() @MaxLength(240) offer?: string;
+}
+
+export class CalendarDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(7) @Max(31) days?: number;
+  @IsOptional() @IsBoolean() replace?: boolean;
+}
+
+export class ChangeRequestDto {
+  @IsString() @MinLength(5) @MaxLength(400) text!: string;
+}
+
+export class ApproveJobsDto {
+  @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) ids!: string[];
+}
+
+export class RejectJobDto {
+  @IsString() @MinLength(3) @MaxLength(300) note!: string;
+}
+
+export class EditJobDto {
+  @IsString() @MinLength(5) @MaxLength(1800) caption!: string;
+}
+
+export class SwitchDto {
+  @IsBoolean() on!: boolean;
+}
+
+export class AdSpendDto {
+  @IsString() @MaxLength(10) date!: string;
+  @IsString() @MaxLength(40) channel!: string;
+  @IsOptional() @IsString() @MaxLength(60) category?: string;
+  @IsOptional() @IsString() @MaxLength(60) city?: string;
+  @Type(() => Number) @IsInt() @Min(1) @Max(1_000_000_000) amountPaise!: number;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
+}
