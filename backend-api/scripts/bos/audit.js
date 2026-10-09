@@ -132,7 +132,7 @@ const short = (v, n = 160) => { const s = typeof v === 'string' ? v : JSON.strin
     row('sales.quotes', 'sales', 'vendor-side quotes: /quotes is the platform admin quote tool (to prospects), not a vendor sales quote', 'NOT BUILT', 'the existing Quote model is Get4Domain\'s own quote to vendors/prospects (admin/quotes)', 'M');
     row('sales.portal', 'sales', 'vendor side: portal invite (customer side needs a phone OTP, not exercised)', cnt.data?.id ? 'PARTIAL' : 'BROKEN', 'portal address and invites are on the vendor side; the customer OTP login and portal pages were not exercised in this audit (customer phone OTP needs SMS)', 'S');
     await probe('marketing.ai-studio', 'marketing', 'GET', '/ai-templates', undefined, 'AI templates list');
-    await probe('marketing.campaigns', 'marketing', 'GET', '/campaigns', undefined, 'campaigns list');
+    await probe('marketing.leadspace', 'marketing', 'GET', '/leadspace/summary', undefined, 'leadspace home');
     row('marketing.social', 'marketing', 'registry', 'NOT BUILT', 'mock publish removed from menu', 'L');
     row('marketing.reviews-offers', 'marketing', 'registry', 'NOT BUILT', '-', 'M');
     row('website.content', 'website', 'GET site + PUT vendor CMS (round trip, Bug B1)', put.status < 300 ? 'WORKS' : 'BROKEN', `PUT ${put.status}: ${short(put.body, 200)}`, 'S');

@@ -45,8 +45,7 @@ const ReceiptsPage = lazy(() => import('@/dashboard-v2/PlanReceipts'));
 const WalletPage = lazy(() => import('@/app/dashboard/wallet/page'));
 const SupportPage = lazy(() => import('@/app/dashboard/support/page'));
 const StationeryPage = lazy(() => import('@/app/dashboard/stationery/page'));
-const CampaignsPage = lazy(() => import('@/app/dashboard/campaigns/page'));
-const LandingPage = lazy(() => import('@/app/dashboard/landing-page/page'));
+const LeadSpaceScreen = lazy(() => import('@/leadspace/Embedded'));
 const ReportsPage = lazy(() => import('@/app/dashboard/reports/page'));
 const BotPage = lazy(() => import('@/app/dashboard/whatsapp-bot/page'));
 const BusinessProfile = lazy(() => import('@/dashboard-v2/BusinessProfile'));
@@ -55,7 +54,7 @@ export const SCREENS: Record<string, Screen> = {
   'sales.leads': { kind: 'tabs', tabs: [{ key: 'board', label: 'Board', Component: CrmBoard }, { key: 'queue', label: 'Call queue', Component: TeleCrm }] },
   'sales.customers': { kind: 'industry', owner: 'customers' },
   'sales.portal': { kind: 'page', Component: CustomerHub },
-  'marketing.campaigns': { kind: 'tabs', tabs: [{ key: 'campaigns', label: 'Campaigns', Component: CampaignsPage }, { key: 'landing', label: 'Landing pages', Component: LandingPage }] },
+  'marketing.leadspace': { kind: 'page', Component: LeadSpaceScreen },
   'home.reports': { kind: 'page', Component: ReportsPage },
   'communication.whatsapp-bot': { kind: 'page', Component: BotPage },
   'marketing.ai-studio': { kind: 'page', Component: AiStudio },
@@ -93,5 +92,5 @@ export const SCREENS: Record<string, Screen> = {
 /** The old address to send a flag-OFF vendor to when they open a v2 address (e.g. from a shared link or a stale cookie). */
 export const OLD_ADDRESS: Record<string, string> = {
   'website.design': '/dashboard/my-website', 'website.search': '/dashboard/my-website',
-  'commerce.workspace': '/dashboard', 'sales.customers': '/dashboard', 'sales.quotes': '/dashboard/invoices?tab=quotes',
+  'commerce.workspace': '/dashboard', 'sales.customers': '/dashboard', 'sales.quotes': '/dashboard/invoices?tab=quotes', 'marketing.leadspace': '/dashboard/leadspace',
 };

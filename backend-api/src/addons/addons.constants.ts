@@ -40,6 +40,9 @@ export const AVAILABLE_ADDONS: AddonDefinition[] = [
   { key: 'bos_custom', label: 'BOS Custom client', description: 'Custom engagement client', category: 'plan', defaultEnabled: false },
   // Dashboard menu mode, not a feature: ON shows the vendor only the Workspace-plan menu (get4domain_mvp/src/lib/workspace-menu.ts). Default off = unchanged menu.
   { key: 'workspace_menu', label: 'Workspace menu (trimmed)', description: 'Show only the Workspace-plan tabs; hide BOS-only and duplicate catalogue tabs', category: 'plan', defaultEnabled: false },
+  // LeadSpace (Dispatch B): `leadspace` is the feature (granted by the registry to every plan); `leadspace_only` is a dashboard MODE like nav_v2: it shows the five-tab LeadSpace app instead of the full dashboard and is switched off when the vendor buys a plan.
+  { key: 'leadspace', label: 'LeadSpace', description: 'A free landing page, verified leads and a prepaid wallet', category: 'marketing', defaultEnabled: false },
+  { key: 'leadspace_only', label: 'LeadSpace-only account', description: 'Show the five-tab LeadSpace app instead of the full dashboard', category: 'plan', defaultEnabled: false },
   { key: 'fleet', label: 'Fleet Management', description: 'Vehicles, maintenance, assignment', category: 'operations', defaultEnabled: false },
   { key: 'driver', label: 'Driver Management', description: 'Drivers, duty, trip sheets', category: 'operations', defaultEnabled: false },
   { key: 'driver_outsourcing', label: 'Driver Outsourcing', description: 'External driver sourcing', category: 'operations', defaultEnabled: false },

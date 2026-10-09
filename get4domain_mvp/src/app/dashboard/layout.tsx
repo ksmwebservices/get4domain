@@ -20,6 +20,7 @@ import TourNav from '@/components/TourNav';
 import DashboardSplash from '@/components/DashboardSplash';
 import { WORKSPACE_SECTIONS, isWorkspaceMenu } from '@/lib/workspace-menu';
 import DashboardV2Shell from '@/dashboard-v2/Shell';
+import LeadSpaceShell from '@/leadspace/LeadSpaceShell';
 
 // Maps a nav item → the team-access area that gates it for a vendor team member
 // (mirrors the backend's team-access areas). Base items have no mapping → visible.
@@ -29,7 +30,7 @@ const TEAM_AREA_BY_MODULE: Record<string, string> = {
 };
 const TEAM_AREA_BY_HREF: Record<string, string> = {
   '/dashboard/accounts': 'accounts', '/dashboard/wallet': 'wallet', '/dashboard/invoices': 'accounts',
-  '/dashboard/campaigns': 'campaigns', '/dashboard/telecrm': 'telecrm',
+  '/dashboard/campaigns': 'campaigns', '/dashboard/leadspace': 'campaigns', '/dashboard/telecrm': 'telecrm',
   '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
   '/dashboard/my-products': 'website', '/dashboard/website-engine': 'website',
   '/dashboard/reports': 'reports', '/dashboard/ai-studio': 'ai_studio',
@@ -139,7 +140,7 @@ function LegacyDashboardLayout({ children }: { children: React.ReactNode }) {
       {
         title: 'Grow',
         items: [
-          { label: 'Growth Hub', href: '/dashboard/campaigns', icon: 'Megaphone', moduleKey: 'growth_hub' },
+          { label: 'LeadSpace', href: '/dashboard/leadspace', icon: 'Megaphone', moduleKey: 'growth_hub' },
           { label: 'TeleCRM', href: '/dashboard/telecrm', icon: 'Phone', moduleKey: 'telecrm' },
           { label: 'AI Studio', href: '/dashboard/ai-studio', icon: 'Sparkles', walletGated: true },
           { label: 'Communication Hub', href: '/dashboard/communication', icon: 'MessagesSquare', moduleKey: 'communication_hub' },
@@ -485,10 +486,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, loading } = useAuth();
   const cfg = useDashboardConfig(user?.industry);
   const v2 = !loading && !cfg.loading && user?.role === 'vendor' && cfg.addons.nav_v2 === true;
+  // A LeadSpace-only account (free base tier) gets the five-tab LeadSpace app instead of either dashboard. Buying a plan switches this off on the server.
+  const leadspaceOnly = !loading && !cfg.loading && user?.role === 'vendor' && cfg.addons.leadspace_only === true;
   useEffect(() => {
     // A stale "v2" cookie from another account must not redirect an old-dashboard vendor's addresses (the middleware reads it).
     if (!loading && !cfg.loading && !v2) { try { document.cookie = 'g4d_nav_v2=; path=/; max-age=0; SameSite=Lax'; } catch { /* ignore */ } }
   }, [loading, cfg.loading, v2]);
+  if (leadspaceOnly) return <LeadSpaceShell>{children}</LeadSpaceShell>;
   if (v2) return <DashboardV2Shell>{children}</DashboardV2Shell>;
   return <LegacyDashboardLayout>{children}</LegacyDashboardLayout>;
 }

@@ -46,7 +46,7 @@ ok('the ten departments exist, in KSM\'s order', JSON.stringify(reg.DEPARTMENTS.
 ok('a Custom client sees all ten; an Essentials vendor sees nine (no BOS Custom)', menuPro.length === 10 && reg.buildMenu(F, V()).length === 9);
 ok('every contract row exists with the right plan and starting state', (() => {
   const want = { 'home.today': ['WORKSPACE', true], 'home.reports': ['BOS', true], 'sales.leads': ['WORKSPACE', true], 'sales.customers': ['WORKSPACE', true], 'sales.quotes': ['WORKSPACE', true], 'sales.portal': ['WORKSPACE', true],
-    'marketing.ai-studio': ['WORKSPACE', true], 'marketing.campaigns': ['BOS', true], 'marketing.social': ['BOS', false], 'marketing.reviews-offers': ['BOS', false],
+    'marketing.ai-studio': ['WORKSPACE', true], 'marketing.leadspace': ['LEADSPACE', true], 'marketing.social': ['BOS', false], 'marketing.reviews-offers': ['BOS', false],
     'website.content': ['WORKSPACE', true], 'website.new-pages': ['BOS', false], 'website.design': ['WORKSPACE', true], 'website.domain': ['WORKSPACE', true], 'website.search': ['WORKSPACE', true], 'website.search-pro': ['BOS', false], 'website.widget': ['WORKSPACE', true], 'website.readiness': ['WORKSPACE', true],
     'commerce.products': ['WORKSPACE', true], 'commerce.stock': ['WORKSPACE', true], 'commerce.orders': ['WORKSPACE', true], 'commerce.workspace': ['WORKSPACE', true], 'commerce.workspace-full': ['BOS', false], 'commerce.inventory': ['BOS', true], 'commerce.pos': ['WORKSPACE', true], 'commerce.tasks': ['BOS', false], 'commerce.documents': ['BOS', false],
     'finance.invoices': ['WORKSPACE', true], 'finance.collect-payments': ['WORKSPACE', true], 'finance.recurring': ['BOS', true], 'finance.expenses': ['WORKSPACE', true], 'finance.ca-accounts': ['BOS', true],
@@ -56,6 +56,16 @@ ok('every contract row exists with the right plan and starting state', (() => {
 })(), 'a contract row differs');
 ok('the WhatsApp bot row is Open only because a test now verifies its answers (bot.kb); live replies are stated as a limit', get('communication.whatsapp-bot').status === 'LIMITED' && get('communication.whatsapp-bot').testId === 'bot.kb' && /number connected/.test(get('communication.whatsapp-bot').limits));
 ok('reels and video: no registry feature offers them', F.every((f) => !/reel|video/i.test(f.label)));
+
+section('LeadSpace: the free base tier, and Campaigns replaced by it');
+ok('Campaigns no longer exists as a feature: LeadSpace replaced it', !F.some((f) => f.id === 'marketing.campaigns') && Boolean(get('marketing.leadspace')));
+ok('LeadSpace is open on every plan, including the free LeadSpace-only tier', ['LEADSPACE', 'WORKSPACE', 'BOS'].every((plan) => reg.featureState(get('marketing.leadspace'), V({ plan })) === 'OPEN'));
+ok('a vendor with no term (demo) still sees LeadSpace open (entry plan or higher)', reg.featureState(get('marketing.leadspace'), V({ plan: null })) === 'OPEN');
+ok('LeadSpace sits under Marketing and Growth with the five tabs', get('marketing.leadspace').department === 'marketing' && JSON.stringify(get('marketing.leadspace').tabs.map((t) => t.key)) === JSON.stringify(['home', 'leads', 'page', 'promote', 'wallet']));
+ok('the old Campaigns and Landing pages addresses redirect into LeadSpace tabs (kept 180+ days)', reg.resolveLegacyRoute(F, '/dashboard/campaigns') === '/dashboard/marketing/leadspace?tab=promote' && reg.resolveLegacyRoute(F, '/dashboard/landing-page') === '/dashboard/marketing/leadspace?tab=page' && reg.resolveLegacyRoute(F, '/dashboard/campaigns', '?x=1') === '/dashboard/marketing/leadspace?tab=promote&x=1');
+ok('a LeadSpace-only account sees every Essentials feature Locked, never open (no invoices, stock, accounts or TeleCRM)', ['finance.invoices', 'commerce.stock', 'finance.expenses', 'sales.leads'].every((id) => reg.featureState(get(id), V({ plan: 'LEADSPACE' })) === 'LOCKED'));
+ok('the display name of the free tier is LeadSpace', reg.planDisplayName('LEADSPACE') === 'LeadSpace');
+ok('LeadSpace needs no plan limits: billing keys stay WORKSPACE and BOS', !Object.keys(reg.CAPABILITIES ?? {}).includes('LEADSPACE') && (reg.CAPABILITIES ?? []).every?.((c) => !c.limits || Object.keys(Object.values(c.limits)[0] ?? {}).every((k) => k !== 'LEADSPACE')));
 
 section('legacy routes');
 const nonTab = (r) => !r.includes('[');

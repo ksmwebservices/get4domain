@@ -3,7 +3,9 @@
 
 /** Internal plan keys. Display names (Essentials / Pro) come from planDisplayName() only. `CUSTOM` is NOT a subscription plan: it marks the "BOS Custom" department. */
 export type PlanKey = 'WORKSPACE' | 'BOS';
-export type MinPlan = PlanKey | 'CUSTOM';
+/** What a vendor can be on: a paid plan, or LEADSPACE, the free base tier (a LeadSpace page and wallet, nothing else). Billing and limits only ever use PlanKey. */
+export type VendorPlan = PlanKey | 'LEADSPACE';
+export type MinPlan = VendorPlan | 'CUSTOM';
 
 /** Business-model profiles (docs/v2/DASHBOARD_IA_PROPOSAL.md §2): A…E. */
 export type Profile = 'COMMERCE' | 'APPOINTMENTS' | 'PACKAGES' | 'SERVICES' | 'LISTINGS';

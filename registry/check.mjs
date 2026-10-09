@@ -35,7 +35,7 @@ const backendConst = read('backend-api/src/addons/addons.constants.ts');
 const moduleKeys = new Set([...backendConst.matchAll(/key: '([a-z_]+)', label: '[^']*', description: '[^']*', walletGated/g)].map((m) => m[1]));
 const addonKeys = new Set([...backendConst.matchAll(/key: '([a-z_]+)', label: '[^']*', description: '[^']*', category/g)].map((m) => m[1]));
 for (const f of F) {
-  if (!['WORKSPACE', 'BOS', 'CUSTOM'].includes(f.minPlan)) bad('R7', `${f.id}: unknown minPlan ${f.minPlan}`);
+  if (!['LEADSPACE', 'WORKSPACE', 'BOS', 'CUSTOM'].includes(f.minPlan)) bad('R7', `${f.id}: unknown minPlan ${f.minPlan}`);
   if (f.moduleKey && !moduleKeys.has(f.moduleKey)) bad('R7', `${f.id}: moduleKey "${f.moduleKey}" is not a platform module`);
   if (f.addonKey && !addonKeys.has(f.addonKey)) bad('R7', `${f.id}: addonKey "${f.addonKey}" is not a platform addon`);
   if (f.upgrade && !(f.upgrade.headline && f.upgrade.body)) bad('R7', `${f.id}: upgrade copy needs headline and body`);

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { summarise } from './goals';
 import { EVENT_LABEL, EventType, maskPhone, normalizePhone } from './leadspace.types';
 import { LeadPurseService } from './purse.service';
+import { LeadspaceSettingsService } from './settings.service';
 
 export interface LeadRow {
   id: string; type: string; typeLabel: string; status: string; held: boolean;
@@ -29,7 +30,7 @@ export function present(e: LeadEvent): LeadRow {
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService, private readonly purse: LeadPurseService) {}
+  constructor(private readonly prisma: PrismaService, private readonly purse: LeadPurseService, private readonly settings: LeadspaceSettingsService) {}
 
   async list(vendorId: string, q: { status?: string; type?: string; search?: string; from?: string; to?: string; take?: number; skip?: number }): Promise<{ total: number; rows: LeadRow[] }> {
     const where: Prisma.LeadEventWhereInput = { vendorId };
@@ -52,15 +53,18 @@ export class LeadsService {
     const week = new Date(day.getTime() - 6 * 86_400_000);
     const month = new Date(day.getTime() - 29 * 86_400_000);
     const count = (where: Prisma.LeadEventWhereInput) => this.prisma.leadEvent.count({ where: { vendorId, ...where } });
-    const [today, last7, last30, held, won, contacted, delivered, spent, views, balancePaise, profile] = await Promise.all([
+    const [today, last7, last30, held, won, contacted, delivered, spent, views, balancePaise, profile, cfg, todayBookings, todayOrders] = await Promise.all([
       count({ createdAt: { gte: day } }), count({ createdAt: { gte: week } }), count({ createdAt: { gte: month } }), count({ status: 'HELD' }),
       count({ status: 'WON' }), count({ status: { in: ['CONTACTED', 'WON', 'LOST'] } }), count({ status: { not: 'HELD' } }),
       this.prisma.leadEvent.aggregate({ where: { vendorId, createdAt: { gte: month } }, _sum: { priceChargedPaise: true } }),
       this.prisma.leadspaceProfile.findUnique({ where: { vendorId }, select: { views: true } }),
       this.purse.balance(vendorId),
       this.prisma.leadspaceProfile.findUnique({ where: { vendorId }, select: { status: true, verificationStatus: true, lowBalanceMode: true, slug: true } }),
+      this.settings.get(),
+      count({ createdAt: { gte: day }, type: { in: ['BOOKING', 'APPOINTMENT', 'SITE_VISIT'] }, status: { not: 'HELD' } }),
+      count({ createdAt: { gte: day }, type: 'CART_ORDER', status: { not: 'HELD' } }),
     ]);
-    return { today, last7, last30, held, won, contacted, delivered, spentLast30Paise: spent._sum.priceChargedPaise ?? 0, pageViews: views?.views ?? 0, balancePaise, page: profile };
+    return { today, last7, last30, held, won, contacted, delivered, spentLast30Paise: spent._sum.priceChargedPaise ?? 0, pageViews: views?.views ?? 0, balancePaise, page: profile, todayBookings, todayOrders, upgradeThreshold: cfg.upgradeLeadThreshold, upgradeSuggested: last30 >= cfg.upgradeLeadThreshold };
   }
 
   async setStatus(vendorId: string, id: string, status: string, note?: string): Promise<LeadRow> {

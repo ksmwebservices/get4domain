@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: a3cf41554b70d4b2
+// registry-hash: 535d3b203808bdc8
 // Legacy dashboard address -> Dashboard v2 address. Applied ONLY for vendors with nav_v2 on (cookie g4d_nav_v2=1).
 /* eslint-disable */
 
@@ -9,8 +9,9 @@ export const LEGACY_MAP: Record<string, string> = {
   "/dashboard/telecrm": "/dashboard/sales/leads?tab=queue",
   "/dashboard/customer-hub": "/dashboard/sales/portal",
   "/dashboard/ai-studio": "/dashboard/marketing/ai-studio",
-  "/dashboard/campaigns": "/dashboard/marketing/campaigns?tab=campaigns",
-  "/dashboard/landing-page": "/dashboard/marketing/campaigns?tab=landing",
+  "/dashboard/leadspace": "/dashboard/marketing/leadspace",
+  "/dashboard/campaigns": "/dashboard/marketing/leadspace?tab=promote",
+  "/dashboard/landing-page": "/dashboard/marketing/leadspace?tab=page",
   "/dashboard/my-website": "/dashboard/website/content",
   "/dashboard/domain-management": "/dashboard/website/domain",
   "/dashboard/embed": "/dashboard/website/widget",

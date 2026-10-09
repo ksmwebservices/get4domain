@@ -1,10 +1,10 @@
 // Pure logic shared by the dashboard, the API and the tests. No imports except types — the generator embeds this file verbatim
 // into the generated files of both packages, so there is exactly ONE implementation.
-import type { DeptId, Feature, FeatureState, MinPlan, PlanKey, Profile } from './types';
+import type { DeptId, Feature, FeatureState, MinPlan, PlanKey, Profile, VendorPlan } from './types';
 
 export interface VendorFacts {
-  /** The vendor's billing-term plan; null (demo / no term yet) is treated as the entry plan. */
-  plan: PlanKey | null;
+  /** The vendor's billing-term plan; null (demo / no term yet) is treated as the entry plan. LEADSPACE = a LeadSpace-only account (free base tier). */
+  plan: VendorPlan | null;
   /** A "BOS Custom" client (never a plan): gets the Pro feature set plus the Custom department. */
   custom: boolean;
   profile: Profile;
@@ -17,10 +17,11 @@ export function planDisplayName(planKey: string | null | undefined): string {
   if (planKey === 'WORKSPACE') return 'Essentials';
   if (planKey === 'BOS') return 'Pro';
   if (planKey === 'CUSTOM') return 'Custom';
+  if (planKey === 'LEADSPACE') return 'LeadSpace';
   return planKey ? String(planKey) : 'Essentials';
 }
 
-const RANK: Record<MinPlan, number> = { WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
+const RANK: Record<MinPlan, number> = { LEADSPACE: 0, WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
 
 /** The 20 industries (+ the general fallback) → business-model profile. */
 export const INDUSTRY_PROFILE: Record<string, Profile> = {

@@ -3,15 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AddonsService } from '../addons/addons.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { OPEN_INVOICE_STATUSES } from '../commercial/activation-guard';
-import { PlanKey, Profile, planDisplayName, profileOfIndustry } from './registry.generated';
+import { PlanKey, Profile, VendorPlan, planDisplayName, profileOfIndustry } from './registry.generated';
 
 export interface DashboardContext {
   vendorId: string;
   businessName: string;
   industry: string;
   profile: Profile;
-  /** The billing-term plan key (WORKSPACE / BOS); null = no term yet (demo). Display names come from planDisplay. */
-  plan: PlanKey | null;
+  /** The billing-term plan key (WORKSPACE / BOS); LEADSPACE = a LeadSpace-only account; null = no term yet (demo). Display names come from planDisplay. */
+  plan: VendorPlan | null;
   planDisplay: string;
   custom: boolean;
   navV2: boolean;
@@ -68,7 +68,7 @@ export class DashboardContextService {
       this.prisma.campaign.count({ where: { vendorId } }),
     ]);
 
-    const plan = (term?.planKey as PlanKey | undefined) ?? null;
+    const plan: VendorPlan | null = (term?.planKey as PlanKey | undefined) ?? (on('leadspace_only') ? 'LEADSPACE' : null);
     const ownerOnlyBilling = principal !== 'team_member';
     return {
       vendorId,

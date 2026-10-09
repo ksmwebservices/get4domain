@@ -31,6 +31,7 @@ export const WORKSPACE_SECTIONS: WorkspaceNavSection[] = [
     items: [
       { label: 'Leads & CRM', href: '/dashboard/crm', icon: 'Users' },
       { label: 'TeleCRM', href: '/dashboard/telecrm', icon: 'Phone', moduleKey: 'telecrm' },
+      { label: 'LeadSpace', href: '/dashboard/leadspace', icon: 'Megaphone', moduleKey: 'growth_hub' },
     ],
   },
   {

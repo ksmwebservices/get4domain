@@ -38,6 +38,8 @@ export interface LsSettings {
   customCreditPercent: number;
   /** whether a custom amount already includes GST */
   customGstMode: 'INCLUSIVE' | 'EXCLUSIVE';
+  /** a vendor with at least this many leads in 30 days is shown the offer to move up to a plan with customers and invoices */
+  upgradeLeadThreshold: number;
 }
 
 export const LS_DEFAULTS: LsSettings = {
@@ -64,6 +66,7 @@ export const LS_DEFAULTS: LsSettings = {
   refillCustomMaxPaise: 5_000_000,
   customCreditPercent: 100,
   customGstMode: 'INCLUSIVE',
+  upgradeLeadThreshold: 10,
 };
 
 @Injectable()

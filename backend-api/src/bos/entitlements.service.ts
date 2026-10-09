@@ -19,7 +19,7 @@ export const REQUIRE_CAPABILITY_KEY = 'requireCapability';
 /** Declares the capability a route needs; enforced by EntitlementGuard (403 PLAN_REQUIRED with the plan that includes it). */
 export const RequireCapability = (id: string) => SetMetadata(REQUIRE_CAPABILITY_KEY, id);
 
-const RANK: Record<MinPlan, number> = { WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
+const RANK: Record<MinPlan, number> = { LEADSPACE: 0, WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
 
 export interface CapabilityAccess { id: string; label: string; allowed: boolean; requiredPlan: string; reason: 'PLAN' | 'EXCEPTION_ON' | 'EXCEPTION_OFF' | 'CUSTOM'; limits: Record<string, number | null> }
 export interface Entitlements { plan: PlanKey; planName: string; custom: boolean; lapsed: boolean; capabilities: Record<string, CapabilityAccess> }

@@ -44,7 +44,7 @@ console.log('\nTHE LAYOUT USES IT (and leaves other vendors alone)');
 const layout = read('app/dashboard/layout.tsx');
 ok('Workspace mode returns the fixed list — it does not filter the standard one', /if \(workspace\) return WORKSPACE_SECTIONS/.test(layout));
 ok('the switch is read from the vendor\'s own addon states', /isWorkspaceMenu\(cfg\.addons\)/.test(layout));
-ok('the standard menu is still all there for everyone else', ['Growth Hub', 'WhatsApp Bot', 'HRM', 'Accounts', 'Customer Hub', 'Analytics Hub', 'Stationery'].every((l) => layout.includes(`label: '${l}'`)));
+ok('the standard menu is still all there for everyone else', ['LeadSpace', 'WhatsApp Bot', 'HRM', 'Accounts', 'Customer Hub', 'Analytics Hub', 'Stationery'].every((l) => layout.includes(`label: '${l}'`)));
 ok('plan & billing is owner-only for team members', /item\.href === '\/dashboard\/billing'/.test(layout));
 ok('while the vendor\'s switches load, a skeleton shows — the full menu never flashes first', /cfg\.loading \?/.test(layout) && /aria-label="Loading menu"/.test(layout));
 ok('the bell shows a real unread count, not a permanent dot', /unread > 0/.test(layout) && !/absolute top-1\.5 right-1\.5 h-2 w-2 rounded-full bg-error-500/.test(layout));

@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: a3cf41554b70d4b2
+// registry-hash: 535d3b203808bdc8
 // Navigation data + pure state logic for the dashboard.
 /* eslint-disable */
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
@@ -7,7 +7,9 @@
 
 /** Internal plan keys. Display names (Essentials / Pro) come from planDisplayName() only. `CUSTOM` is NOT a subscription plan: it marks the "BOS Custom" department. */
 export type PlanKey = 'WORKSPACE' | 'BOS';
-export type MinPlan = PlanKey | 'CUSTOM';
+/** What a vendor can be on: a paid plan, or LEADSPACE, the free base tier (a LeadSpace page and wallet, nothing else). Billing and limits only ever use PlanKey. */
+export type VendorPlan = PlanKey | 'LEADSPACE';
+export type MinPlan = VendorPlan | 'CUSTOM';
 
 /** Business-model profiles (docs/v2/DASHBOARD_IA_PROPOSAL.md §2): A…E. */
 export type Profile = 'COMMERCE' | 'APPOINTMENTS' | 'PACKAGES' | 'SERVICES' | 'LISTINGS';
@@ -88,8 +90,8 @@ export interface Feature {
 // into the generated files of both packages, so there is exactly ONE implementation.
 
 export interface VendorFacts {
-  /** The vendor's billing-term plan; null (demo / no term yet) is treated as the entry plan. */
-  plan: PlanKey | null;
+  /** The vendor's billing-term plan; null (demo / no term yet) is treated as the entry plan. LEADSPACE = a LeadSpace-only account (free base tier). */
+  plan: VendorPlan | null;
   /** A "BOS Custom" client (never a plan): gets the Pro feature set plus the Custom department. */
   custom: boolean;
   profile: Profile;
@@ -102,10 +104,11 @@ export function planDisplayName(planKey: string | null | undefined): string {
   if (planKey === 'WORKSPACE') return 'Essentials';
   if (planKey === 'BOS') return 'Pro';
   if (planKey === 'CUSTOM') return 'Custom';
+  if (planKey === 'LEADSPACE') return 'LeadSpace';
   return planKey ? String(planKey) : 'Essentials';
 }
 
-const RANK: Record<MinPlan, number> = { WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
+const RANK: Record<MinPlan, number> = { LEADSPACE: 0, WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
 
 /** The 20 industries (+ the general fallback) → business-model profile. */
 export const INDUSTRY_PROFILE: Record<string, Profile> = {
@@ -275,7 +278,7 @@ export function checklistDone(id: ChecklistId, s: GoLiveSignals): boolean {
   }
 }
 
-export const REGISTRY_HASH = 'a3cf41554b70d4b2';
+export const REGISTRY_HASH = '535d3b203808bdc8';
 export const FEATURES: Feature[] = [
   {
     "id": "home.today",
@@ -416,42 +419,52 @@ export const FEATURES: Feature[] = [
     "limits": "Writes text and pictures from your wallet. Reels and video are Coming soon."
   },
   {
-    "id": "marketing.campaigns",
+    "id": "marketing.leadspace",
     "department": "marketing",
-    "label": "Campaigns and landing pages",
+    "label": "LeadSpace",
     "icon": "Megaphone",
-    "route": "/dashboard/marketing/campaigns",
+    "route": "/dashboard/marketing/leadspace",
     "legacyRoutes": [
+      "/dashboard/leadspace",
       {
         "from": "/dashboard/campaigns",
-        "tab": "campaigns"
+        "tab": "promote"
       },
       {
         "from": "/dashboard/landing-page",
-        "tab": "landing"
+        "tab": "page"
       }
     ],
-    "purpose": "campaigns",
-    "minPlan": "BOS",
+    "purpose": "leadspace",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
     "status": "LIMITED",
-    "testId": "campaigns.vendor",
-    "limits": "Plan, save and track campaigns and landing pages; AI-written content needs the AI key; publishing to social networks is Coming soon. A vendor who already has campaigns keeps them open on any plan.",
+    "testId": "leadspace.capture",
+    "addonKey": "leadspace",
     "moduleKey": "growth_hub",
+    "limits": "A free landing page, verified leads and a prepaid wallet. Customer codes go out on WhatsApp once the common Get4Domain number is approved by Meta (until then it runs in a test mode); posts reach Facebook, Instagram and Telegram once those pages are connected by our team.",
     "tabs": [
       {
-        "key": "campaigns",
-        "label": "Campaigns"
+        "key": "home",
+        "label": "Home"
       },
       {
-        "key": "landing",
-        "label": "Landing pages"
+        "key": "leads",
+        "label": "Leads"
+      },
+      {
+        "key": "page",
+        "label": "Page"
+      },
+      {
+        "key": "promote",
+        "label": "Promote"
+      },
+      {
+        "key": "wallet",
+        "label": "Wallet"
       }
-    ],
-    "upgrade": {
-      "headline": "Run campaigns from one place",
-      "body": "Plan campaigns and build landing pages."
-    }
+    ]
   },
   {
     "id": "marketing.social",

@@ -11,6 +11,7 @@ import { LeadCaptureService } from './capture.service';
 import { LeadCreditsService } from './credits.service';
 import { LeadspaceAdminController, LeadspacePublicController, LeadspaceVendorController } from './leadspace.controllers';
 import { LeadsService } from './leads.service';
+import { LegacyImportService } from './legacy-import.service';
 import { LeadOtpService } from './otp.service';
 import { LeadspacePagesAdminController, LeadspacePagesPublicController, LeadspacePageVendorController } from './pages.controllers';
 import { LeadPricingService } from './pricing.service';
@@ -34,11 +35,11 @@ import { LeadspaceRefillAdminController, LeadspaceRefillController, LeadspaceRef
   ],
   providers: [
     LeadPricingService, LeadPurseService, LeadOtpService, LeadAlertsService, LeadCaptureService, LeadsService, LeadCreditsService,
-    LeadspaceProfileService, LeadRefillService, PromotionService, LeadspaceReportsService,
+    LeadspaceProfileService, LeadRefillService, PromotionService, LeadspaceReportsService, LegacyImportService,
   ],
   exports: [
     LeadspaceSettingsModule, LeadPricingService, LeadPurseService, LeadOtpService, LeadCaptureService, LeadsService, LeadCreditsService,
-    LeadspaceProfileService, LeadRefillService, PromotionService, LeadspaceReportsService,
+    LeadspaceProfileService, LeadRefillService, PromotionService, LeadspaceReportsService, LegacyImportService,
   ],
 })
 export class LeadspaceModule {}

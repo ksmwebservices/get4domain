@@ -79,9 +79,9 @@ export class LeadspaceProfileService {
     ];
   }
 
-  async mine(vendorId: string): Promise<Record<string, unknown> | null> {
+  async mine(vendorId: string): Promise<Record<string, unknown>> {
     const p = await this.prisma.leadspaceProfile.findUnique({ where: { vendorId } });
-    if (!p) return null;
+    if (!p) return { profile: null, categories: CATEGORIES };
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { phone: true } });
     const model = buildPage(p as unknown as PageSource);
     const gate = promotionGate(p);

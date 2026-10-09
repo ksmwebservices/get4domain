@@ -53,6 +53,13 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(root, 'nod
   ok('the existing customer is untouched; GSTIN / state NULL and opening balance 0', ct.name === 'Old customer' && ct.gstin === null && ct.state === null && Number(ct.openingBalancePaise) === 0, JSON.stringify(ct));
   ok('the new BOS tables exist and are empty', (await q(db, `SELECT count(*)::int AS n FROM g4d_bos_documents`))[0].n === 0 && (await q(db, `SELECT count(*)::int AS n FROM g4d_bos_journal_entries`))[0].n === 0);
 
+  // Migrations added AFTER this one (LeadSpace, ...) are part of today's schema.prisma, so they are applied on top before the two databases are compared.
+  const migDir = path.join(root, 'prisma', 'migrations');
+  const later = fs.readdirSync(migDir).filter((d) => d > MIGRATION && fs.existsSync(path.join(migDir, d, 'migration.sql'))).sort();
+  let laterOk = true; let laterErr = '';
+  for (const d of later) { try { await db.exec(fs.readFileSync(path.join(migDir, d, 'migration.sql'), 'utf8')); } catch (e) { laterOk = false; laterErr = `${d}: ${e.message}`; break; } }
+  ok(`the ${later.length} later migration(s) apply cleanly on top`, laterOk, laterErr);
+
   const fresh = new PGlite();
   await fresh.exec(prismaSql(['--from-empty', '--to-schema-datamodel', path.join(root, 'prisma', 'schema.prisma')]));
   const shape = async (c) => JSON.stringify(await q(c, `SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, column_name`));

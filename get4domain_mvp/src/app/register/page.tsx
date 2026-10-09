@@ -25,6 +25,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [industry, setIndustry] = useState('');
+  // /register?product=leadspace: the free LeadSpace account. No industry question; the trade is chosen when the page is created.
+  const [leadspace, setLeadspace] = useState(false);
+  useEffect(() => { setLeadspace(new URLSearchParams(window.location.search).get('product') === 'leadspace'); }, []);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +49,7 @@ export default function RegisterPage() {
 
   const passwordOk = PASSWORD_RULES.every((r) => r.test(password));
   const canSubmit =
-    name.trim() && /\S+@\S+\.\S+/.test(email) && passwordOk && businessName.trim() && industry && agreed;
+    name.trim() && /\S+@\S+\.\S+/.test(email) && passwordOk && businessName.trim() && (industry || leadspace) && agreed;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,13 +61,14 @@ export default function RegisterPage() {
       email: email.trim(),
       password,
       businessName: businessName.trim(),
-      industry,
+      industry: leadspace ? 'general' : industry,
+      ...(leadspace ? { product: 'leadspace' as const } : {}),
     });
     setLoading(false);
     if (result.success && result.user) {
       refresh();
       // Land straight on the freshly-created website; fall back to the dashboard.
-      router.push(result.user.subdomain ? `/site/${result.user.subdomain}` : '/dashboard');
+      router.push(leadspace || !result.user.subdomain ? '/dashboard' : `/site/${result.user.subdomain}`);
     } else {
       setError(result.error ?? 'Could not create your account. Please try again.');
     }
@@ -83,8 +87,8 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-5 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-slate-900">Create Your Account</h1>
-            <p className="mt-2 text-sm text-slate-600">Launch your business online in 24 hours</p>
+            <h1 className="text-2xl font-bold text-slate-900">{leadspace ? 'Start free with LeadSpace' : 'Create Your Account'}</h1>
+            <p className="mt-2 text-sm text-slate-600">{leadspace ? 'A free page for your business. You pay only for customers who verify their number.' : 'Launch your business online in 24 hours'}</p>
           </div>
 
           <div className="card-base p-6 sm:p-8">
@@ -112,7 +116,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div>
+              {!leadspace && <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Industry</label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -123,7 +127,7 @@ export default function RegisterPage() {
                     ))}
                   </select>
                 </div>
-              </div>
+              </div>}
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Email Address</label>
@@ -162,7 +166,7 @@ export default function RegisterPage() {
               </label>
 
               <Button type="submit" size="lg" fullWidth disabled={!canSubmit || loading} rightIcon={<ArrowRight className="h-4 w-4" />}>
-                {loading ? 'Creating your site…' : 'Create Account'}
+                {loading ? (leadspace ? 'Creating your account…' : 'Creating your site…') : 'Create Account'}
               </Button>
             </form>
 

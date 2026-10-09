@@ -117,6 +117,8 @@ export interface RegisterInput {
   businessName: string;
   industry: string;
   phone?: string;
+  /** leadspace = a LeadSpace-only account (free page, verified leads, prepaid wallet) */
+  product?: 'leadspace';
 }
 
 /** Self-service signup → creates the vendor and logs in (same session handling as login). */

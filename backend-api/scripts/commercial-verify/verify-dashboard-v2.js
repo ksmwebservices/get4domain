@@ -58,7 +58,7 @@ const seed = () => ({
     const on = (vid, kind = 'vendorModule', key = 'moduleKey') => prisma.$tables[kind].filter((r) => r.vendorId === vid && r.enabled).map((r) => r[key]).sort();
     const es = desiredAccess('WORKSPACE', false, 'COMMERCE');
     const pro = desiredAccess('BOS', false, 'COMMERCE');
-    ok('Essentials gets only modules whose features are built and in the plan', es.modules.includes('telecrm') && es.modules.includes('website_manager') && !es.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'), es.modules.join());
+    ok('Essentials gets only modules whose features are built and in the plan (LeadSpace, which replaced Campaigns, is in every plan)', es.modules.includes('telecrm') && es.modules.includes('website_manager') && es.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'), es.modules.join());
     ok('Pro is a superset of Essentials, and includes the Reports and Campaigns modules now that those screens are built and verified (Full BOS); never an unbuilt one', es.modules.every((m) => pro.modules.includes(m)) && pro.modules.includes('analytics_hub') && pro.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'));
 
     const a1 = await provisionModules(prisma, 'v1', 'WORKSPACE', { actor: 'test', reason: 'activation' });
@@ -128,13 +128,13 @@ const seed = () => ({
     const r1 = await analyseVendor(prisma, REG, AVAILABLE_MODULES, vendors[0], NAV_V2_DEFAULT_FROM);
     const r2 = await analyseVendor(prisma, REG, AVAILABLE_MODULES, vendors[1], NAV_V2_DEFAULT_FROM);
     ok('READ-ONLY: the analysis changes no row', JSON.stringify(prisma.$tables) === snapshot);
-    ok('a vendor using Campaigns (screen is Coming soon in v2) is flagged "would lose access" with the data found', r1.wouldLose.length === 1 && r1.wouldLose[0].module === 'growth_hub' && r1.wouldLose[0].data.join().includes('campaignPage'), JSON.stringify(r1.wouldLose));
+    ok('a vendor using Campaigns and landing pages is NOT flagged: they became LeadSpace, open on every plan (Phase 7 acceptance: the would-lose-access list is empty)', r1.wouldLose.length === 0, JSON.stringify(r1.wouldLose));
     ok('telecrm with leads is NOT flagged: Leads is Open on Essentials', !r1.wouldLose.some((w) => w.module === 'telecrm'));
     ok('a module switched on with NO data is not flagged (nothing to lose)', r2.wouldLose.length === 0);
     ok('plan is read from the current term, shown by display name', r1.planName === 'Essentials' && r2.planName === 'Pro');
     ok('existing vendors are reported as v2 OFF (created before the release)', r1.navV2Now === false);
     const md = renderReport([r1, r2], { at: '2026-10-09T00:00:00Z', host: 'test' });
-    ok('the report names the blocked vendor and says how many are blocked', md.includes('Blocked (would lose access to something they use): **1**') && md.includes('Uses Campaigns'));
+    ok('the report says nobody is blocked', md.includes('Blocked (would lose access to something they use): **0**') && md.includes('Nobody.'));
   }
 
   section('[feat:account.billing.plan-access] admin Plan access: map from the registry, exceptions need a reason, audited, staff-only');
@@ -146,7 +146,7 @@ const seed = () => ({
     const svc = new PlanAccessService(prisma, new CommercialAuditService(prisma));
     const ADMIN = { id: 'admin1', email: 'admin@get4domain.com', role: 'SUPER_ADMIN', adminRole: 'SUPER_ADMIN' };
     const map = svc.map();
-    ok('the map comes from the registry: every row names a feature and its minimum plan by display name', map.length > 5 && map.every((r) => r.featureId && ['Essentials', 'Pro', 'Custom'].includes(r.minPlan)));
+    ok('the map comes from the registry: every row names a feature and its minimum plan by display name', map.length > 5 && map.every((r) => r.featureId && ['LeadSpace', 'Essentials', 'Pro', 'Custom'].includes(r.minPlan)));
     const before = await svc.forVendor('v1');
     ok('a vendor view shows plan, profile and what provisioning would grant', before.planName === 'Essentials' && before.profile === 'COMMERCE' && before.provisionPlan.grantModules.includes('telecrm'));
     await rejects('an exception without a real reason is refused', svc.setException('v1', { kind: 'module', key: 'telecrm', enabled: false, reason: 'no' }, ADMIN), { status: 400 });
@@ -168,8 +168,8 @@ const seed = () => ({
     ok('the whole Plan access controller sits behind CommercialAdminGuard (no route is open)', guards.includes(CommercialAdminGuard));
     // tenancy: forVendor only returns the vendor asked for, never another vendor's rows
     prisma.$tables.vendor.push({ id: 'v2', name: 'B', email: 'b@x.in', businessName: 'B Co', subdomain: 'bco', industry: 'retail', role: 'VENDOR' });
-    prisma.$tables.vendorModule.push({ id: 'zz', vendorId: 'v2', moduleKey: 'growth_hub', enabled: true });
-    ok('a vendor view never includes another vendor module rows', (await svc.forVendor('v1')).modules.find((m) => m.key === 'growth_hub').enabled === false);
+    prisma.$tables.vendorModule.push({ id: 'zz', vendorId: 'v2', moduleKey: 'analytics_hub', enabled: true });
+    ok('a vendor view never includes another vendor module rows', (await svc.forVendor('v1')).modules.find((m) => m.key === 'analytics_hub').enabled === false);
   }
 
   section('[feat:account.billing.honest-copy] new dashboard text: plan names, banned words, bot navigation from the registry');

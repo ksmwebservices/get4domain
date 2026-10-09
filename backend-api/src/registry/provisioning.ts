@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { FEATURES, featureState, profileOfIndustry } from './registry.generated';
-import type { PlanKey, Profile } from './registry.generated';
+import type { PlanKey, Profile, VendorPlan } from './registry.generated';
 
 /**
  * Plan-driven module provisioning (Release 1A, Phase 4). The registry (registry/features.ts) is the only place that says which module or
@@ -27,7 +27,7 @@ export interface ProvisionPlan {
 }
 
 /** The modules/add-ons a vendor on `plan` (a Custom client when `custom`) with this business `profile` is entitled to. */
-export function desiredAccess(plan: PlanKey, custom: boolean, profile: Profile): DesiredAccess {
+export function desiredAccess(plan: VendorPlan, custom: boolean, profile: Profile): DesiredAccess {
   const modules = new Set<string>();
   const addons = new Set<string>();
   for (const f of FEATURES) {
@@ -49,7 +49,7 @@ export function planProvision(cur: CurrentAccess, want: DesiredAccess): Provisio
     keptOffModules: want.modules.filter((k) => modOn.get(k) === false),
     keptOffAddons: want.addons.filter((k) => addOn.get(k) === false),
     beyondPlanModules: cur.modules.filter((m) => m.enabled && !want.modules.includes(m.moduleKey)).map((m) => m.moduleKey).sort(),
-    beyondPlanAddons: cur.addons.filter((a) => a.enabled && !want.addons.includes(a.addonKey) && a.addonKey !== 'nav_v2' && a.addonKey !== 'bos_custom' && a.addonKey !== 'workspace_menu').map((a) => a.addonKey).sort(),
+    beyondPlanAddons: cur.addons.filter((a) => a.enabled && !want.addons.includes(a.addonKey) && a.addonKey !== 'nav_v2' && a.addonKey !== 'bos_custom' && a.addonKey !== 'workspace_menu' && a.addonKey !== 'leadspace_only').map((a) => a.addonKey).sort(),
   };
 }
 
@@ -73,6 +73,9 @@ export async function provisionModules(
   const custom = addons.some((a) => a.addonKey === 'bos_custom' && a.enabled);
   const want = desiredAccess(planKey, custom, profileOfIndustry(vendor?.industry));
   const plan = planProvision({ modules, addons }, want);
+  // A vendor who buys a plan leaves the LeadSpace-only app: the full dashboard takes over (LeadSpace stays under Marketing and Growth). Nothing is deleted.
+  const leavingLeadspaceOnly = addons.some((a) => a.addonKey === 'leadspace_only' && a.enabled);
+  if (leavingLeadspaceOnly) await db.vendorAddon.update({ where: { vendorId_addonKey: { vendorId, addonKey: 'leadspace_only' } }, data: { enabled: false } });
   const changed = plan.grantModules.length + plan.grantAddons.length > 0;
   if (!changed) return { plan, changed };
   for (const moduleKey of plan.grantModules) {

@@ -9,6 +9,7 @@ import { RATE } from '../common/throttling';
 import { LeadspaceStaffGuard } from './staff.guard';
 import { PromotionToggleDto, RegulatedReviewDto, ReportActionDto, ReportPageDto, SavePageDto, SuspendDto, TrackDto, VerifyPhoneConfirmDto, VerifyPhoneRequestDto } from './leadspace.dto';
 import { LeadspaceProfileService } from './profile.service';
+import { LegacyImportService } from './legacy-import.service';
 import { PageModel } from './page-builder';
 
 /** Public: the page itself, funnel beacons, abuse reports, the sitemap and the product feed. Nothing here needs a login and nothing private is returned. */
@@ -50,7 +51,7 @@ export class LeadspacePagesPublicController {
 @RequireModule('website')
 @Controller('leadspace/page')
 export class LeadspacePageVendorController {
-  constructor(private readonly pages: LeadspaceProfileService) {}
+  constructor(private readonly pages: LeadspaceProfileService, private readonly legacy: LegacyImportService) {}
 
   @Get()
   @ApiOperation({ summary: 'Page tab: your page, the live preview, what is missing, the embed code and whether promotion is allowed' })
@@ -89,6 +90,14 @@ export class LeadspacePageVendorController {
   @Get('feed')
   @ApiOperation({ summary: 'Product vendors: your Merchant Centre feed address and which items are ready' })
   feed(@CurrentUser() u: AuthenticatedUser) { return this.pages.feedStatus(u.sub); }
+
+  @Get('import-legacy')
+  @ApiOperation({ summary: 'What is waiting to be copied from your earlier Campaigns and landing pages into LeadSpace' })
+  legacyPlan(@CurrentUser() u: AuthenticatedUser) { return this.legacy.plan(u.sub); }
+
+  @Post('import-legacy')
+  @ApiOperation({ summary: 'Copy your earlier campaigns, landing page and campaign leads into LeadSpace. Nothing is deleted; running it twice changes nothing.' })
+  legacyRun(@CurrentUser() u: AuthenticatedUser) { return this.legacy.run(u.sub, true); }
 }
 
 /** Admin: the page queue, regulated-trade review, suspend and abuse reports. */

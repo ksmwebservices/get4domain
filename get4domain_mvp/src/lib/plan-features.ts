@@ -10,7 +10,7 @@ import { CAPABILITIES, DEPARTMENTS, FEATURES, type Feature, type MinPlan } from 
  */
 export interface PlanLine { id: string; label: string; group: string; state: 'INCLUDED' | 'COMING_SOON'; note?: string }
 
-const RANK: Record<MinPlan, number> = { WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
+const RANK: Record<MinPlan, number> = { LEADSPACE: 0, WORKSPACE: 1, BOS: 2, CUSTOM: 3 };
 const built = (f: Feature): boolean => f.status === 'WORKING' || f.status === 'LIMITED';
 const groupOf = (f: Feature): string => DEPARTMENTS.find((d) => d.id === f.department)?.label ?? f.department;
 

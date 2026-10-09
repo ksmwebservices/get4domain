@@ -52,6 +52,12 @@ export class AuthService {
       phone: dto.phone,
       subdomain,
     });
+    // A LeadSpace signup: the five-tab app instead of the full dashboard until the vendor buys a plan (provisioning switches the mode off then).
+    if (dto.product === 'leadspace') {
+      for (const addonKey of ['leadspace', 'leadspace_only']) {
+        await this.prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId: vendor.id, addonKey } }, create: { vendorId: vendor.id, addonKey, enabled: true }, update: { enabled: true } });
+      }
+    }
 
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
     return {

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiCall } from '@/lib/api';
-import { FEATURES, featureState, type Feature, type FeatureState, type PlanKey, type Profile, type VendorFacts } from '@/lib/nav.generated';
+import { FEATURES, featureState, type Feature, type FeatureState, type Profile, type VendorFacts, type VendorPlan } from '@/lib/nav.generated';
 
 /** What GET /dashboard/context returns (backend DashboardContextService). */
 export interface V2Context {
@@ -10,7 +10,7 @@ export interface V2Context {
   businessName: string;
   industry: string;
   profile: Profile;
-  plan: PlanKey | null;
+  plan: VendorPlan | null;
   planDisplay: string;
   custom: boolean;
   navV2: boolean;
@@ -59,8 +59,6 @@ export function stateFor(f: Feature, v: V2Value | null): FeatureState {
   if (!v?.facts || !v.ctx) return 'HIDDEN';
   const base = featureState(f, v.facts);
   if (base === 'HIDDEN') return base;
-  // A vendor who already made campaigns keeps them open on any plan (Allwin Tours): data is never hidden behind a plan.
-  if (f.id === 'marketing.campaigns' && base === 'LOCKED' && v.ctx.signals?.hasCampaigns) return 'OPEN';
   if (v.ctx.memberAreas && !memberCanSee(f, v.ctx.memberAreas)) return 'HIDDEN';
   return base;
 }
