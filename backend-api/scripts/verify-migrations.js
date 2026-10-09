@@ -39,6 +39,20 @@ for (const dir of fs.readdirSync(root, { withFileTypes: true })) {
     problems.slice(0, 8).forEach((p) => console.log(`        ${p}`));
   }
 }
+// A shell can eat a dollar sign when SQL is written from a terminal ("DO $" instead of "DO $$"). Every .sql file must close what it opens.
+{
+  const sqlFiles = [path.join(__dirname, '..', 'prisma', 'sql')].flatMap((d) => (fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.sql')).map((f) => path.join(d, f)) : []));
+  for (const dir of fs.readdirSync(root, { withFileTypes: true })) if (dir.isDirectory()) sqlFiles.push(path.join(root, dir.name, 'migration.sql'));
+  for (const file of sqlFiles) {
+    files += 1;
+    const NL = String.fromCharCode(10);
+    const text = fs.readFileSync(file, 'utf8').split(NL).filter((l) => !l.trimStart().startsWith('--')).join(NL);
+    const problems = [];
+    if (/DO\s+\$(?!\$|[A-Za-z_])/.test(text) || /END\s+\$(?!\$|[A-Za-z_])/.test(text)) problems.push('a lone "$" where "$$" is needed (DO $$ ... END $$;)');
+    if (((text.match(/\$\$/g) || []).length) % 2 !== 0) problems.push('an odd number of "$$" (a dollar-quoted block is not closed)');
+    if (problems.length) { failures += 1; console.log(`FAIL  ${path.relative(path.join(__dirname, '..'), file)}`); problems.forEach((p) => console.log(`        ${p}`)); }
+  }
+}
 notes.forEach((n) => console.log(`note  ${n}`));
 console.log(`\n${files - failures} passed, ${failures} failed (${files} migration files scanned)`);
 process.exit(failures ? 1 : 0);
