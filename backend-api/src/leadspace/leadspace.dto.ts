@@ -148,3 +148,28 @@ export class ReportActionDto {
   @IsIn(['ACTIONED', 'DISMISSED']) action!: 'ACTIONED' | 'DISMISSED';
   @IsOptional() @IsString() @MaxLength(300) suspendReason?: string;
 }
+
+export class RefillOrderDto {
+  @IsOptional() @IsString() @MaxLength(60) packId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100_000_000) customPaise?: number;
+}
+
+export class VerifyRefillDto {
+  @IsString() @MaxLength(80) razorpayOrderId!: string;
+  @IsString() @MaxLength(80) razorpayPaymentId!: string;
+  @IsString() @MaxLength(200) razorpaySignature!: string;
+}
+
+export class SavePackDto {
+  @IsOptional() @IsString() @MaxLength(60) id?: string;
+  @IsString() @MinLength(2) @MaxLength(40) label!: string;
+  @Type(() => Number) @IsInt() @Min(10_000) @Max(100_000_000) payPaise!: number;
+  @Type(() => Number) @IsInt() @Min(10_000) @Max(200_000_000) creditPaise!: number;
+  @IsIn(['INCLUSIVE', 'EXCLUSIVE']) gstMode!: 'INCLUSIVE' | 'EXCLUSIVE';
+  @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) sort?: number;
+}
+
+export class ReconcileDto {
+  @IsString() @MaxLength(80) razorpayPaymentId!: string;
+}

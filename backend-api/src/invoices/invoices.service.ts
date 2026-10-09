@@ -132,9 +132,12 @@ export class InvoicesService {
     paymentId?: string;
     subscriptionId?: string;
     nextRenewal?: Date | null;
+    /** GST rate as a fraction (0.18). Defaults to the platform rate; LeadSpace refills pass the admin-configured rate. */
+    gstRate?: number;
   }): Promise<Invoice | null> {
     try {
-      const taxable = Math.round(opts.paidPaise / (1 + GST_RATE));
+      const rate = opts.gstRate ?? GST_RATE;
+      const taxable = Math.round(opts.paidPaise / (1 + rate));
       const gstAmount = opts.paidPaise - taxable;
       const invoiceNumber = await this.generateInvoiceNumber();
 

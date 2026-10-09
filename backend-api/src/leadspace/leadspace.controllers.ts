@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { RATE } from '../common/throttling';
 import { CommercialAdminGuard, actorOf } from '../commercial/foundation.services';
 import { WhatsappGatewayService } from '../messaging/whatsapp/whatsapp-gateway.service';
@@ -48,6 +49,7 @@ export class LeadspacePublicController {
 /** Vendor: leads, the LEADS purse, disputes and the low-balance choice. Every query is scoped to the signed-in vendor. */
 @ApiTags('leadspace')
 @ApiBearerAuth()
+@RequireModule('campaigns')
 @Controller('leadspace')
 export class LeadspaceVendorController {
   constructor(
@@ -83,6 +85,7 @@ export class LeadspaceVendorController {
   @ApiOperation({ summary: 'Say a delivered lead is not valid. An admin decides; a credit lands in your wallet.' })
   dispute(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: DisputeDto) { return this.credits.dispute(u.sub, id, dto.reason, dto.note); }
 
+  @RequireModule('wallet')
   @Get('wallet')
   @ApiOperation({ summary: 'Wallet tab: balance, the price list for your trade and city, and the ledger' })
   async wallet(@CurrentUser() u: AuthenticatedUser) {
@@ -94,6 +97,7 @@ export class LeadspaceVendorController {
     return { balancePaise, held, ledger, prices, lowBalanceMode: profile?.lowBalanceMode ?? 'HOLD', lowBalanceThresholdsPaise: s.lowBalanceThresholdsPaise, expiryMonths: s.expiryMonths, refundWindowMonths: s.refundWindowMonths, disputeWindowHours: s.disputeWindowHours };
   }
 
+  @RequireModule('wallet')
   @Put('wallet/low-balance-mode')
   @ApiOperation({ summary: 'Choose what happens to a customer when your wallet is empty: hold their request (default) or show a polite message' })
   async mode(@CurrentUser() u: AuthenticatedUser, @Body() dto: LowBalanceModeDto) {
@@ -101,10 +105,12 @@ export class LeadspaceVendorController {
     return { lowBalanceMode: dto.mode };
   }
 
+  @RequireModule('wallet')
   @Post('wallet/release')
   @ApiOperation({ summary: 'Release waiting customers, oldest first, as far as the balance allows' })
   release(@CurrentUser() u: AuthenticatedUser) { return this.captureSvc.releaseHeld(u.sub); }
 
+  @RequireModule('wallet')
   @Post('wallet/refund-request')
   @ApiOperation({ summary: 'Ask for unused balance to be refunded (inside the refund window, less the payment fee)' })
   refund(@CurrentUser() u: AuthenticatedUser, @Body() dto: RefundRequestDto) { return this.credits.requestRefund(u.sub, dto.note); }

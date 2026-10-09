@@ -32,6 +32,12 @@ export interface LsSettings {
   manualApprovalDays: number;
   /** a vendor sending more than this many OTPs a day that never complete is flagged */
   vendorSpamOtpPerDay: number;
+  /** custom refill amount limits (paise) and how much of a custom amount is credited (100 = one for one) */
+  refillCustomMinPaise: number;
+  refillCustomMaxPaise: number;
+  customCreditPercent: number;
+  /** whether a custom amount already includes GST */
+  customGstMode: 'INCLUSIVE' | 'EXCLUSIVE';
 }
 
 export const LS_DEFAULTS: LsSettings = {
@@ -54,6 +60,10 @@ export const LS_DEFAULTS: LsSettings = {
   channelDailyCaps: { FACEBOOK_PAGE: 3, INSTAGRAM: 3, TELEGRAM: 6, GOOGLE_BUSINESS: 1 },
   manualApprovalDays: 14,
   vendorSpamOtpPerDay: 60,
+  refillCustomMinPaise: 99900,
+  refillCustomMaxPaise: 5_000_000,
+  customCreditPercent: 100,
+  customGstMode: 'INCLUSIVE',
 };
 
 @Injectable()
@@ -76,6 +86,8 @@ export class LeadspaceSettingsService {
     const model = LS_DEFAULTS[key];
     const bad = new BadRequestException(`The value for ${key} is not in the right form.`);
     if (typeof model === 'boolean' && typeof value !== 'boolean') throw bad;
+    if (key === 'customGstMode' && value !== 'INCLUSIVE' && value !== 'EXCLUSIVE') throw bad;
+    if (typeof model === 'string' && typeof value !== 'string') throw bad;
     if (typeof model === 'number' && !(typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000)) throw bad;
     if (Array.isArray(model)) {
       const wantNumbers = typeof model[0] === 'number';

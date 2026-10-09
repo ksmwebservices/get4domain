@@ -4,8 +4,9 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { RequireModule } from '../common/decorators/require-module.decorator';
 import { RATE } from '../common/throttling';
-import { CommercialAdminGuard } from '../commercial/foundation.services';
+import { LeadspaceStaffGuard } from './staff.guard';
 import { PromotionToggleDto, RegulatedReviewDto, ReportActionDto, ReportPageDto, SavePageDto, SuspendDto, TrackDto, VerifyPhoneConfirmDto, VerifyPhoneRequestDto } from './leadspace.dto';
 import { LeadspaceProfileService } from './profile.service';
 import { PageModel } from './page-builder';
@@ -46,6 +47,7 @@ export class LeadspacePagesPublicController {
 /** Vendor: build, edit, publish and verify the page. Scoped to the signed-in vendor. */
 @ApiTags('leadspace')
 @ApiBearerAuth()
+@RequireModule('website')
 @Controller('leadspace/page')
 export class LeadspacePageVendorController {
   constructor(private readonly pages: LeadspaceProfileService) {}
@@ -92,7 +94,7 @@ export class LeadspacePageVendorController {
 /** Admin: the page queue, regulated-trade review, suspend and abuse reports. */
 @ApiTags('admin-leadspace')
 @ApiBearerAuth()
-@UseGuards(CommercialAdminGuard)
+@UseGuards(LeadspaceStaffGuard)
 @Controller('admin/leadspace')
 export class LeadspacePagesAdminController {
   constructor(private readonly pages: LeadspaceProfileService) {}
