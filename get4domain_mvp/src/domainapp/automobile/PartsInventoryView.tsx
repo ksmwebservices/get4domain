@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Part { id: string; name: string; partNumber?: string; quantity: number; reorderLevel: number; unitPrice: number }
 
@@ -42,7 +43,7 @@ export default function PartsInventoryView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, quantity: Number(form.quantity) || 0, reorderLevel: Number(form.reorderLevel) || 0, unitPrice: Number(form.unitPrice) || 0 };
+      const payload = editable({ ...form, quantity: Number(form.quantity) || 0, reorderLevel: Number(form.reorderLevel) || 0, unitPrice: Number(form.unitPrice) || 0 });
       editing ? await api.updatePart(editing.id, payload) : await api.createPart(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

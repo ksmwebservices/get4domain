@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface ProjectRef { id: string; name: string }
 interface Task {
@@ -49,7 +50,7 @@ export default function TasksView() {
     if (!String(form.title).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, estimateHours: Number(form.estimateHours) || undefined, projectId: form.projectId || undefined, dueDate: form.dueDate || undefined };
+      const payload = editable({ ...form, estimateHours: Number(form.estimateHours) || undefined, projectId: form.projectId || undefined, dueDate: form.dueDate || undefined });
       await api.createTechTask(payload);
       setOpen(false); setForm(emptyForm()); load();
     } finally { setSaving(false); }

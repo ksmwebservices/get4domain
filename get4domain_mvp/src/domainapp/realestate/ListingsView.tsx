@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Listing { id: string; title: string; propertyType: string; location?: string; price: number; areaSqft?: number; bhk?: string; status: string; description?: string }
 
@@ -41,7 +42,7 @@ export default function ListingsView() {
     if (!String(form.title).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, price: Number(form.price) || 0, areaSqft: Number(form.areaSqft) || undefined };
+      const payload = editable({ ...form, price: Number(form.price) || 0, areaSqft: Number(form.areaSqft) || undefined });
       editing ? await api.updateListing(editing.id, payload) : await api.createListing(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

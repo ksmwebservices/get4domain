@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Project {
   id: string; name: string; clientName: string; contactId?: string; projectType: string; techStack?: string; billingType: string;
@@ -46,7 +47,7 @@ export default function ProjectsView() {
     if (!String(form.name).trim() || !String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, contractValue: Number(form.contractValue) || 0, deadline: form.deadline || undefined };
+      const payload = editable({ ...form, contractValue: Number(form.contractValue) || 0, deadline: form.deadline || undefined });
       editing ? await api.updateTechProject(editing.id, payload) : await api.createTechProject(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

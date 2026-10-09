@@ -144,6 +144,7 @@ export default function IntegrationsPage() {
                     <div className="mt-3 flex gap-2">
                       <input
                         type={s.secret ? 'password' : 'text'}
+                        autoComplete={s.secret ? 'new-password' : 'off'}
                         placeholder={`New ${s.label}`}
                         value={drafts[id(s.category, s.key)] ?? ''}
                         onChange={(e) => setDrafts((d) => ({ ...d, [id(s.category, s.key)]: e.target.value }))}

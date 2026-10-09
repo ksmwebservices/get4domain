@@ -81,6 +81,9 @@ export const PLAN_TERMS: Record<'workspace' | 'bos', PlanTerm> = {
   },
 };
 
+/** Wallet top-up packs: what the vendor pays (rupees) and the credit they get. The admin can change the credits (live pricing `topups`). */
+export const TOPUP_DEFAULTS: { pay: number; credits: number }[] = [{ pay: 499, credits: 499 }, { pay: 999, credits: 1100 }, { pay: 2499, credits: 3000 }, { pay: 4999, credits: 6500 }];
+
 export const formatINR = (amount: number): string =>
   `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
@@ -108,6 +111,14 @@ export async function fetchLivePricing(): Promise<LivePricing | null> {
   } catch {
     return null;
   }
+}
+
+/** The top-up packs to offer: the live credit for each pack when the API gave one, else the default. */
+export function topupTiers(live: LivePricing | null): { amount: number; credits: number; label: string; creditsLabel: string }[] {
+  return TOPUP_DEFAULTS.map((d) => {
+    const credits = live?.topups?.[String(d.pay)] ?? d.credits;
+    return { amount: d.pay * 100, credits: credits * 100, label: formatINR(d.pay), creditsLabel: formatINR(credits) };
+  });
 }
 
 /** Overlay live subscription numbers onto the PLAN_TERMS shape the card renders. */

@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Session { id: string; topic: string; date?: string; startTime?: string; status: string }
 interface Batch {
@@ -51,7 +52,7 @@ export default function BatchesView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, capacity: Number(form.capacity) || 30, fee: Number(form.fee) || 0, startDate: form.startDate || undefined };
+      const payload = editable({ ...form, capacity: Number(form.capacity) || 30, fee: Number(form.fee) || 0, startDate: form.startDate || undefined });
       editing ? await api.updateCoachingBatch(editing.id, payload) : await api.createCoachingBatch(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

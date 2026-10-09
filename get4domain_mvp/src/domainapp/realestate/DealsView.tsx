@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface ListingRef { id: string; title: string }
 interface Deal {
@@ -48,7 +49,7 @@ export default function DealsView() {
     if (!String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, value: Number(form.value) || 0, listingId: form.listingId || undefined };
+      const payload = editable({ ...form, value: Number(form.value) || 0, listingId: form.listingId || undefined });
       editing ? await api.updateDeal(editing.id, payload) : await api.createDeal(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

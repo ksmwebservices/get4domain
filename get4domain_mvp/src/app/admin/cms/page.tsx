@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, Save, CheckCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { editable } from '@/lib/editable';
 
 const FIELDS: Array<{ key: string; label: string; placeholder?: string }> = [
   { key: 'logo', label: 'Logo URL' },
@@ -40,7 +41,7 @@ export default function AdminCmsPage() {
     setSaved(false);
     setError('');
     try {
-      const res = await api.updatePlatformCMS(values);
+      const res = await api.updatePlatformCMS(editable(values));
       setValues(res.data ?? values);
       setSaved(true);
     } catch (err) {

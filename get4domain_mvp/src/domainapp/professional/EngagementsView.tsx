@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface DocItem { id: string; name: string; required: boolean; status: string; notes?: string }
 interface Engagement {
@@ -55,7 +56,7 @@ export default function EngagementsView() {
     if (!String(form.title).trim() || !String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, feeValue: Number(form.feeValue) || 0, hourlyRate: Number(form.hourlyRate) || undefined, startDate: form.startDate || undefined, dueDate: form.dueDate || undefined };
+      const payload = editable({ ...form, feeValue: Number(form.feeValue) || 0, hourlyRate: Number(form.hourlyRate) || undefined, startDate: form.startDate || undefined, dueDate: form.dueDate || undefined });
       editing ? await api.updateEngagement(editing.id, payload) : await api.createEngagement(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

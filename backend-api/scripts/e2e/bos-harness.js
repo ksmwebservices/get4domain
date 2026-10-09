@@ -55,7 +55,7 @@ async function startHarness({ port = 3098, pgPort = 54330, schemaSql } = {}) {
   const dist = (p) => require(path.join(BE, 'dist', 'src', p));
   const app = await NestFactory.create(dist('app.module').AppModule, { rawBody: true, logger: ['error'] });
   app.enableCors(dist('common/cors').buildCorsOptions());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(dist('common/pipes/edit-validation.pipe').buildValidationPipe()); // the same pipe main.ts installs
   app.useGlobalInterceptors(new (dist('common/interceptors/transform.interceptor').TransformInterceptor)());
   app.useGlobalFilters(new (dist('common/filters/http-exception.filter').HttpExceptionFilter)());
   await app.listen(port, '127.0.0.1');

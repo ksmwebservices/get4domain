@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsObject, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateCatalogItemDto {
   @ApiProperty({ example: 'Goa 3N/4D Package' })
@@ -35,6 +35,12 @@ export class CreateCatalogItemDto {
   @IsOptional()
   @IsObject()
   customFields?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ description: 'Units in stock (empty = not counted)' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  stock?: number | null;
 }
 
 export class UpdateCatalogItemDto extends PartialType(CreateCatalogItemDto) {}

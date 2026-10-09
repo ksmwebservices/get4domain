@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Deliverable { id: string; name: string; status: string; dueDate?: string }
 interface Shoot {
@@ -53,7 +54,7 @@ export default function ShootsView() {
     if (!String(form.title).trim() || !String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, coverageHours: Number(form.coverageHours) || undefined, packageValue: Number(form.packageValue) || 0, advancePaid: Number(form.advancePaid) || 0, eventDate: form.eventDate || undefined, deliveryDueDate: form.deliveryDueDate || undefined };
+      const payload = editable({ ...form, coverageHours: Number(form.coverageHours) || undefined, packageValue: Number(form.packageValue) || 0, advancePaid: Number(form.advancePaid) || 0, eventDate: form.eventDate || undefined, deliveryDueDate: form.deliveryDueDate || undefined });
       editing ? await api.updateShoot(editing.id, payload) : await api.createShoot(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

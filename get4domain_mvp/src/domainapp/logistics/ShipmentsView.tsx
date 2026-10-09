@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Shipment {
   id: string; trackingNo: string; clientName: string; contactId?: string; origin: string; destination: string;
@@ -50,7 +51,7 @@ export default function ShipmentsView() {
     if (!String(form.trackingNo).trim() || !String(form.origin).trim() || !String(form.destination).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, weight: Number(form.weight) || undefined, freightAmount: Number(form.freightAmount) || 0, pickupDate: form.pickupDate || undefined, eta: form.eta || undefined };
+      const payload = editable({ ...form, weight: Number(form.weight) || undefined, freightAmount: Number(form.freightAmount) || 0, pickupDate: form.pickupDate || undefined, eta: form.eta || undefined });
       editing ? await api.updateShipment(editing.id, payload) : await api.createShipment(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

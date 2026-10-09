@@ -54,8 +54,8 @@ function AcceptInviteForm() {
         <p className="mt-1 text-sm text-slate-400">Set a password to join the Get4Domain team.</p>
       </div>
       {error && <div className="rounded-xl border border-error-500/40 bg-error-500/10 px-4 py-3 text-sm text-error-300">{error}</div>}
-      <input type="password" required placeholder="New password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
-      <input type="password" required placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputClass} />
+      <input type="password" autoComplete="new-password" required placeholder="New password (min 8 chars)" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} />
+      <input type="password" autoComplete="new-password" required placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputClass} />
       <button type="submit" disabled={submitting} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-500 disabled:opacity-60">
         {submitting && <Loader2 className="h-4 w-4 animate-spin" />}Set Password
       </button>

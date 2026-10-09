@@ -5,6 +5,7 @@ import { Wallet, Shield, CheckCircle2, Loader2, Info, Clock } from 'lucide-react
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { fetchLivePricing, topupTiers } from '@/lib/pricing';
 
 interface WalletTxn {
   id: string;
@@ -45,12 +46,6 @@ declare global {
   }
 }
 
-const TOPUP_TIERS = [
-  { amount: 49900, credits: 49900, label: '₹499', creditsLabel: '₹499' },
-  { amount: 99900, credits: 110000, label: '₹999', creditsLabel: '₹1,100' },
-  { amount: 249900, credits: 300000, label: '₹2,499', creditsLabel: '₹3,000' },
-  { amount: 499900, credits: 650000, label: '₹4,999', creditsLabel: '₹6,500' },
-];
 
 const formatCurrency = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 const formatDate = (iso: string): string => new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -71,6 +66,8 @@ export default function WalletPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [nextExpiry, setNextExpiry] = useState<{ amount: number; date: string } | null>(null);
   const [transactions, setTransactions] = useState<WalletTxn[]>([]);
+  const [tiers, setTiers] = useState(topupTiers(null));
+  useEffect(() => { fetchLivePricing().then((live) => setTiers(topupTiers(live))); }, []);
   const [loading, setLoading] = useState(true);
   const [payingTier, setPayingTier] = useState<number | null>(null);
   const [error, setError] = useState('');
@@ -94,7 +91,7 @@ export default function WalletPage() {
     .filter((t) => t.type === 'debit' && new Date(t.createdAt).getMonth() === now.getMonth() && new Date(t.createdAt).getFullYear() === now.getFullYear())
     .reduce((sum, t) => sum + t.amount, 0);
 
-  async function handleTopup(tier: typeof TOPUP_TIERS[number]) {
+  async function handleTopup(tier: ReturnType<typeof topupTiers>[number]) {
     if (!user) return;
     setError('');
     setPayingTier(tier.amount);
@@ -179,7 +176,7 @@ export default function WalletPage() {
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
         <h3 className="text-base font-bold text-slate-900 mb-4">Top Up Wallet</h3>
         <div className="grid gap-3 sm:grid-cols-3">
-          {TOPUP_TIERS.map((tier) => (
+          {tiers.map((tier) => (
             <div key={tier.amount} className="rounded-xl border-2 border-slate-200 p-4 text-center hover:border-primary-300 transition-colors">
               <div className="text-lg font-bold text-slate-900">{tier.label}</div>
               <div className="mt-1 text-xs text-success-700 font-semibold">Get {tier.creditsLabel} credits</div>

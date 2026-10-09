@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Menu, X, ChevronRight, Bell, HelpCircle, Settings } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboardConfig, TAB_ADDON_REQUIREMENT } from '@/lib/dashboard-config';
-import { api } from '@/lib/api';
+import { api, apiCall } from '@/lib/api';
 import { requestNotificationPermission, subscribeToPush } from '@/lib/push-notifications';
 import { getIndustryExperience } from '@/config/industry-experience';
 import { OPERATIONS } from '@/config/operations';
@@ -73,6 +73,12 @@ function LegacyDashboardLayout({ children }: { children: React.ReactNode }) {
   const [userMenu, setUserMenu] = useState(false);
 
   const cfg = useDashboardConfig(user?.industry);
+  // The plan the vendor is really on (Essentials / Pro), from the server; never a hard-coded name (Bug B5).
+  const [planName, setPlanName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!user || user.role !== 'vendor') return;
+    apiCall('/bos/entitlements').then((r) => setPlanName(((r.data ?? r) as { planName?: string }).planName ?? null)).catch(() => setPlanName(null));
+  }, [user]);
   // Opt-in Workspace menu (per-vendor addon switch `workspace_menu`, default off): the sidebar is built from a fixed Workspace list.
   const workspace = isWorkspaceMenu(cfg.addons);
   const [unread, setUnread] = useState(0);
@@ -284,9 +290,9 @@ function LegacyDashboardLayout({ children }: { children: React.ReactNode }) {
               {cfg.industry && <div className="mt-0.5 text-xs text-primary-600">{cfg.industry.label}</div>}
             </div>
           </div>
-          {user.plan && (
+          {planName && (
             <div className="mt-2 rounded-lg bg-white px-2.5 py-1.5">
-              <span className="text-xs font-semibold text-primary-700">{user.plan}</span>
+              <span className="text-xs font-semibold text-primary-700">{planName} plan</span>
             </div>
           )}
         </div>

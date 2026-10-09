@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { buildValidationPipe } from './common/pipes/edit-validation.pipe';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { existsSync, mkdirSync } from 'fs';
@@ -29,11 +30,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors(buildCorsOptions());
 
   app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
+    buildValidationPipe(),
   );
 
   app.useGlobalInterceptors(new TransformInterceptor());

@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Product { id: string; name: string; sku?: string; category?: string; price: number; stockQty: number; reorderLevel: number; active: boolean }
 
@@ -39,7 +40,7 @@ export default function ProductsView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, price: Number(form.price) || 0, stockQty: Number(form.stockQty) || 0, reorderLevel: Number(form.reorderLevel) || 0 };
+      const payload = editable({ ...form, price: Number(form.price) || 0, stockQty: Number(form.stockQty) || 0, reorderLevel: Number(form.reorderLevel) || 0 });
       editing ? await api.updateRetailProduct(editing.id, payload) : await api.createRetailProduct(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

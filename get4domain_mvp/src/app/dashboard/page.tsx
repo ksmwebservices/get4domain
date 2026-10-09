@@ -14,6 +14,8 @@ import { api } from '@/lib/api';
 import { Badge } from '@/components/vendor/Badge';
 import { Icon } from '@/components/vendor/Icon';
 import TodayPanel from '@/dashboard-v2/TodayPanel';
+import { planDisplayName } from '@/lib/nav.generated';
+import { usePlanTerms, perMonth } from '@/lib/use-plan-terms';
 import { EmptyState } from '@/components/vendor/EmptyState';
 
 interface CrmLead { id: string; name: string; phone: string; source: string | null; status: string; createdAt: string; followUpDate: string | null }
@@ -43,6 +45,7 @@ interface RecentCall { id?: string; name?: string; phone?: string; outcome?: str
 interface Notification { id?: string; title?: string; body?: string; createdAt?: string; href?: string }
 
 export default function DashboardHome() {
+  const plans = usePlanTerms();
   const { user } = useAuth();
   const cfg = useDashboardConfig(user?.industry);
   const [leads, setLeads] = useState<CrmLead[]>([]);
@@ -160,7 +163,7 @@ export default function DashboardHome() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <div className="text-base font-bold text-ink-50">You&apos;re exploring a demo sandbox</div>
-                  <div className="mt-0.5 text-sm text-ink-300">Loved it? Go live with your real account — plans from ₹999/month (Essentials) or ₹1,999/month (Pro), billed annually. Your demo data carries over.</div>
+                  <div className="mt-0.5 text-sm text-ink-300">Loved it? Go live with your real account — plans from {perMonth(plans.workspace)} ({planDisplayName('WORKSPACE')}) or {perMonth(plans.bos)} ({planDisplayName('BOS')}), billed annually. Your demo data carries over.</div>
                 </div>
                 <span className="btn-gold shrink-0">Go live <ArrowUpRight className="h-4 w-4" /></span>
               </div>

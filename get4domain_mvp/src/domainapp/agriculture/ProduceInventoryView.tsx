@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Stock {
   id: string; produceName: string; grade: string; unit: string; quantityAvailable: number; ratePerUnit: number; harvestDate?: string; status: string;
@@ -48,7 +49,7 @@ export default function ProduceInventoryView() {
     if (!String(form.produceName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, quantityAvailable: Number(form.quantityAvailable) || 0, ratePerUnit: Number(form.ratePerUnit) || 0, harvestDate: form.harvestDate || undefined };
+      const payload = editable({ ...form, quantityAvailable: Number(form.quantityAvailable) || 0, ratePerUnit: Number(form.ratePerUnit) || 0, harvestDate: form.harvestDate || undefined });
       editing ? await api.updateProduceStock(editing.id, payload) : await api.createProduceStock(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

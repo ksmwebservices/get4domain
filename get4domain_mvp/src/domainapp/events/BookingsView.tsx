@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface VendorAssign { id: string; vendorName: string; service: string; contactPhone?: string; cost: number; status: string }
 interface Booking {
@@ -52,7 +53,7 @@ export default function BookingsView() {
     if (!String(form.title).trim() || !String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, guestCount: Number(form.guestCount) || 0, packageValue: Number(form.packageValue) || 0, advancePaid: Number(form.advancePaid) || 0, eventDate: form.eventDate || undefined };
+      const payload = editable({ ...form, guestCount: Number(form.guestCount) || 0, packageValue: Number(form.packageValue) || 0, advancePaid: Number(form.advancePaid) || 0, eventDate: form.eventDate || undefined });
       editing ? await api.updateBooking(editing.id, payload) : await api.createBooking(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

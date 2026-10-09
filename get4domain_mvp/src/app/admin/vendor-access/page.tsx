@@ -202,10 +202,10 @@ export default function VendorAccessPage() {
         <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-white"><UserPlus className="h-4 w-4 text-primary-400" />New Vendor</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <input className={inputCls} placeholder="Owner name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <input className={inputCls} placeholder="Business name" value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} />
-          <input className={inputCls} placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <input className={inputCls} placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <input className={inputCls} placeholder="Password (8+ chars)" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <input className={inputCls} placeholder="Business name" autoComplete="off" value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} />
+          <input className={inputCls} placeholder="Email" type="email" autoComplete="off" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input className={inputCls} placeholder="Phone" autoComplete="off" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input className={inputCls} placeholder="Password (8+ chars)" type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
           <select className={inputCls} value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })}>
             {industries.map((i) => <option key={i.key} value={i.key}>{i.label}</option>)}
           </select>

@@ -98,7 +98,6 @@ export async function loginWithCredentials(
       businessName: backendUser.businessName,
       industry: backendUser.industry ?? undefined,
       subdomain: backendUser.subdomain ?? undefined,
-      plan: 'DomainApp Startup',
       initials: getInitials(backendUser.name),
       kind: backendUser.kind ?? undefined,
       modules: Array.isArray(backendUser.modules) ? backendUser.modules : undefined,
@@ -152,7 +151,6 @@ export async function registerWithCredentials(
       businessName: backendUser.businessName,
       industry: backendUser.industry ?? undefined,
       subdomain: backendUser.subdomain ?? undefined,
-      plan: 'DomainApp Startup',
       initials: getInitials(backendUser.name),
     };
 

@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Milestone { id: string; name: string; status: string; amount: number; dueDate?: string }
 interface Project {
@@ -53,7 +54,7 @@ export default function ProjectsView() {
     if (!String(form.name).trim() || !String(form.clientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, budget: Number(form.budget) || 0, spent: Number(form.spent) || 0, startDate: form.startDate || undefined, targetDate: form.targetDate || undefined };
+      const payload = editable({ ...form, budget: Number(form.budget) || 0, spent: Number(form.spent) || 0, startDate: form.startDate || undefined, targetDate: form.targetDate || undefined });
       editing ? await api.updateProject(editing.id, payload) : await api.createProject(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

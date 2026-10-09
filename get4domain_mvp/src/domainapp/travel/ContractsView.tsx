@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Contact { id: string; name: string }
 interface Ref { id: string; name: string }
@@ -74,7 +75,7 @@ export default function ContractsView() {
     if (!String(form.contactId) || !String(form.title).trim() || !String(form.startDate)) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload = editable({
         ...form,
         monthlyRate: Number(form.monthlyRate) || 0,
         gstRate: Number(form.gstRate) || 0,
@@ -83,7 +84,7 @@ export default function ContractsView() {
         assignments: assignments
           .filter((a) => a.vehicleId || a.driverId || a.routeLabel)
           .map((a) => ({ vehicleId: a.vehicleId || undefined, driverId: a.driverId || undefined, routeLabel: a.routeLabel || undefined })),
-      };
+      });
       if (editing) await api.updateContract(editing.id, payload);
       else await api.createContract(payload);
       setOpen(false); load();

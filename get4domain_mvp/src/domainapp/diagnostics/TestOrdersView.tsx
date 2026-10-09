@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Item { id: string; testName: string; sampleType: string; price: number }
 interface Order {
@@ -52,7 +53,7 @@ export default function TestOrdersView() {
     if (!String(form.patientName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, testDate: form.testDate || undefined };
+      const payload = editable({ ...form, testDate: form.testDate || undefined });
       editing ? await api.updateTestOrder(editing.id, payload) : await api.createTestOrder(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

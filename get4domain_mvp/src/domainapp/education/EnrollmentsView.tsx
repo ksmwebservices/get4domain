@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface BatchRef { id: string; name: string }
 interface Enrollment {
@@ -50,7 +51,7 @@ export default function EnrollmentsView() {
     if (!String(form.studentName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, feeAmount: Number(form.feeAmount) || 0, feePaid: Number(form.feePaid) || 0, batchId: form.batchId || undefined };
+      const payload = editable({ ...form, feeAmount: Number(form.feeAmount) || 0, feePaid: Number(form.feePaid) || 0, batchId: form.batchId || undefined });
       editing ? await api.updateEnrollment(editing.id, payload) : await api.createEnrollment(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

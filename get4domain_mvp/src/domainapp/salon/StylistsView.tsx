@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Stylist { id: string; name: string; phone?: string; specialty?: string; status: string; notes?: string }
 interface Chair { id: string; name: string; status: string }
@@ -47,13 +48,13 @@ export default function StylistsView() {
   async function saveS() {
     if (!String(sForm.name).trim()) return;
     setSaving(true);
-    try { editS ? await api.updateStylist(editS.id, sForm) : await api.createStylist(sForm); setSOpen(false); load(); }
+    try { editS ? await api.updateStylist(editS.id, editable(sForm)) : await api.createStylist(sForm); setSOpen(false); load(); }
     finally { setSaving(false); }
   }
   async function saveC() {
     if (!String(cForm.name).trim()) return;
     setSaving(true);
-    try { editC ? await api.updateChair(editC.id, cForm) : await api.createChair(cForm); setCOpen(false); load(); }
+    try { editC ? await api.updateChair(editC.id, editable(cForm)) : await api.createChair(cForm); setCOpen(false); load(); }
     finally { setSaving(false); }
   }
   async function delS(s: Stylist) { if (confirm(`Delete ${s.name}?`)) { await api.deleteStylist(s.id); load(); } }

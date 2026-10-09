@@ -12,6 +12,7 @@ import { openMyWebsite } from '@/lib/view-website';
 import { api } from '@/lib/api';
 import { getListingFields } from '@/data/listing-fields';
 import { STATE_CLASS, STATE_LABEL, checkImageFile, makeMain, moveItem, stockState } from '@/lib/stock-ui';
+import { editable } from '@/lib/editable';
 
 interface ProductLabels {
   singular: string;
@@ -209,7 +210,7 @@ export default function MyProductsPage() {
     if (gallery.length > 0) customFields.gallery = gallery;
     if (sizes.trim()) customFields.sizes = sizes.split(',').map((s) => s.trim()).filter(Boolean);
     if (colors.trim()) customFields.colors = colors.split(',').map((c) => c.trim()).filter(Boolean);
-    const payload: Record<string, unknown> = { ...form, customFields, status };
+    const payload: Record<string, unknown> = editable({ ...form, customFields, status });
     if (showStock || wasTracked) {
       payload.trackStock = trackStock;
       if (trackStock) {

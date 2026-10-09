@@ -7,6 +7,8 @@ import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { setSession } from '@/lib/auth';
+import { planFeatureLines } from '@/lib/plan-features';
+import { usePlanTerms, perMonth, exactYearlyTotal, formatINR } from '@/lib/use-plan-terms';
 
 interface RazorpayResponse { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }
 interface RazorpayOptions {
@@ -29,19 +31,6 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
-const PLAN_INCLUDED: Record<'workspace' | 'bos', string[]> = {
-  workspace: [
-    'Your industry website + customer portal', 'Bookings, contacts, catalog & GST invoicing',
-    'Leads, call list & AI Studio', 'SMS & email from your wallet; WhatsApp once your number is connected', '₹499 AI Studio credit included',
-    '3 free SEO keywords', '2 theme changes/year',
-  ],
-  bos: [
-    'Everything in Essentials', 'Expenses, P&L and GST tracking',
-    '₹1,299 AI Studio credit included',
-    '6 free SEO keywords', '4 theme changes/year',
-  ],
-};
-
 export default function GoLivePage() {
   const { user, refresh } = useAuth();
   const [form, setForm] = useState({
@@ -52,12 +41,18 @@ export default function GoLivePage() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
   const [plan, setPlan] = useState<'workspace' | 'bos'>('workspace');
+  const terms = usePlanTerms();
   const PLANS = {
-    workspace: { name: planDisplayName('WORKSPACE'), total: '₹14,145.84', sub: '₹999/mo · billed annually', note: 'incl. 18% GST' },
-    bos: { name: planDisplayName('BOS'), total: '₹28,305.84', sub: '₹1,999/mo · billed annually', note: 'incl. 18% GST' },
+    workspace: { name: planDisplayName('WORKSPACE'), total: exactYearlyTotal(terms.workspace), sub: `${perMonth(terms.workspace)} · billed annually`, note: 'incl. 18% GST' },
+    bos: { name: planDisplayName('BOS'), total: exactYearlyTotal(terms.bos), sub: `${perMonth(terms.bos)} · billed annually`, note: 'incl. 18% GST' },
   } as const;
   const sel = PLANS[plan];
-  const INCLUDED = PLAN_INCLUDED[plan];
+  // Generated from what the product does today (the feature registry): built features are listed, the rest say "Coming soon", nothing else is claimed.
+  const planTerm = plan === 'bos' ? terms.bos : terms.workspace;
+  const INCLUDED = [
+    `${formatINR(planTerm.welcomeCredit)} AI Studio credit with your first payment`, `${planTerm.freeSeoKeywords} free SEO keywords`, `${planTerm.themeChangesPerYear} theme changes a year`,
+    ...planFeatureLines(plan === 'bos' ? 'BOS' : 'WORKSPACE').map((l) => (l.state === 'INCLUDED' ? l.label : `${l.label} (coming soon)`)),
+  ];
 
   const valid = form.businessName.trim() && /.+@.+\..+/.test(form.email) && form.password.length >= 6;
 
@@ -137,8 +132,8 @@ export default function GoLivePage() {
               <input placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
               <input type="tel" placeholder="Mobile" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
             </div>
-            <input type="email" placeholder="Email (your login)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
-            <input type="password" placeholder="Create a password (6+ characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            <input type="email" autoComplete="email" placeholder="Email (your login)" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
+            <input type="password" autoComplete="new-password" placeholder="Create a password (6+ characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-4 py-2.5 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
           </div>
           {error && <div className="mt-4 rounded-xl border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700">{error}</div>}
           <Button className="mt-5" size="lg" fullWidth loading={paying} disabled={!valid || paying} onClick={goLive} leftIcon={<ShieldCheck className="h-5 w-5" />}>

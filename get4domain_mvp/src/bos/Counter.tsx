@@ -105,7 +105,7 @@ export default function Counter() {
         </div>
 
         <Card padded className="space-y-3">
-          <div className="flex items-baseline justify-between"><span className="text-sm text-slate-500">To pay</span><span className="text-2xl font-bold text-slate-900">{totals ? rupees(total) : '₹0'}</span></div>
+          <div className="flex items-baseline justify-between"><span className="text-sm text-slate-500">To pay</span><span className="text-2xl font-bold text-slate-900">{rupees(totals ? total : 0)}</span></div>
           {totals && totals.roundOffPaise !== 0 && <div className="text-xs text-slate-400">includes round off {rupees(totals.roundOffPaise)}</div>}
           <Field label="Discount on the whole bill ₹"><input className={inputCls} inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} autoComplete="off" /></Field>
           <PartyPicker value={party} onChange={setParty} label="Customer (optional, needed if not fully paid)" />

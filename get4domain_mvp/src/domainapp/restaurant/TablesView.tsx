@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Table { id: string; name: string; seats: number; status: string; orderTotal?: number | null }
 
@@ -42,7 +43,7 @@ export default function TablesView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, seats: Number(form.seats) || 2 };
+      const payload = editable({ ...form, seats: Number(form.seats) || 2 });
       editing ? await api.updateRestaurantTable(editing.id, payload) : await api.createRestaurantTable(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

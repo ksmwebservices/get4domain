@@ -94,7 +94,7 @@ export default function CommercialBilling({ data, onChanged }: { data: VendorBil
       <div className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-bold text-slate-900">DomainApp {PLAN_LABEL[term.planKey]}</h3>
+            <h3 className="text-base font-bold text-slate-900">{PLAN_LABEL[term.planKey]} plan</h3>
             <p className="mt-0.5 text-sm text-slate-500">{term.billingCycle === 'CUSTOM_MONTHS' ? `${term.cycleMonths}-month term` : `${CYCLE_LABEL[term.billingCycle]} billing`}{term.adminDeal ? ' · special terms' : ''}</p>
           </div>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${term.status === 'LAPSED' ? 'bg-error-50 text-error-700' : term.status === 'ACTIVE_PAYMENT_DUE' ? 'bg-warning-100 text-warning-800' : 'bg-success-100 text-success-700'}`}>{term.status === 'ACTIVE_PAYMENT_DUE' ? 'Payment due' : term.status === 'LAPSED' ? 'Lapsed' : 'Active'}</span>

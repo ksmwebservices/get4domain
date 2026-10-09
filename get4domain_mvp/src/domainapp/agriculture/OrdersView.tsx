@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Order {
   id: string; buyerName: string; contactId?: string; produceName: string; quantity: number; unit: string; grade: string;
@@ -50,7 +51,7 @@ export default function OrdersView() {
     if (!String(form.buyerName).trim() || !String(form.produceName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, quantity: Number(form.quantity) || 0, ratePerUnit: Number(form.ratePerUnit) || 0, harvestDate: form.harvestDate || undefined };
+      const payload = editable({ ...form, quantity: Number(form.quantity) || 0, ratePerUnit: Number(form.ratePerUnit) || 0, harvestDate: form.harvestDate || undefined });
       editing ? await api.updateProduceOrder(editing.id, payload) : await api.createProduceOrder(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

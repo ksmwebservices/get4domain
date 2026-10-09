@@ -51,6 +51,21 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'GSTIN (for tax invoices)' })
+  @IsOptional()
+  @IsString()
+  gstin?: string;
+
+  @ApiPropertyOptional({ description: 'State, for the place of supply' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
 }
 
 export class UpdateContactDto extends PartialType(CreateContactDto) {}

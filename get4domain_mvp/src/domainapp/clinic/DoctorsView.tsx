@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Doctor {
   id: string; name: string; specialty?: string; phone?: string; email?: string; consultationFee: number; availability?: string; active: boolean;
@@ -38,7 +39,7 @@ export default function DoctorsView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, consultationFee: Number(form.consultationFee) || 0 };
+      const payload = editable({ ...form, consultationFee: Number(form.consultationFee) || 0 });
       editing ? await api.updateDoctor(editing.id, payload) : await api.createDoctor(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

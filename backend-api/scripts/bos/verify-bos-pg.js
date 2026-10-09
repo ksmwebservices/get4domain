@@ -452,6 +452,36 @@ const pick = (a) => a[Math.floor(rnd() * a.length)];
       rr = await call('POST', `/bos/stock/items/${shoe.id}/variant-stock`, { variantKey: 'UK9', mode: 'remove', quantity: 3, reason: 'DAMAGE' }, v.token);
       ok('removing more of a size than it has is refused', rr.status === 400, J(rr.body));
     }
+
+    section('[feat:site.edit-contract] Bug B1: a screen that loads a record and sends it back must save (class: every edit form)');
+    {
+      const v = await h.createVendor({ key: 'editor', industry: 'clinic', plan: 'WORKSPACE' });
+      const T = v.token;
+      // exactly what the Website Manager does: load, change one field, send everything back
+      await call('PUT', `/cms/vendor/${v.id}`, { businessName: 'Echo Clinic', tagline: 'Care', businessHours: 'Mon-Sat 9-6' }, T);
+      const loaded = (await call('GET', `/cms/vendor/${v.id}`, undefined, T)).data;
+      ok('the loaded site record carries the bookkeeping keys that used to break the save', ['id', 'vendorId', 'createdAt', 'updatedAt', 'businessHours'].every((k) => k in loaded), J(Object.keys(loaded)));
+      let rr = await call('PUT', `/cms/vendor/${v.id}`, { ...loaded, tagline: 'Care, close to home' }, T);
+      ok('B1: saving the whole loaded record now works (HTTP 200) and the change is kept', rr.status === 200 && (await call('GET', `/cms/vendor/${v.id}`, undefined, T)).data.tagline === 'Care, close to home', J(rr.body).slice(0, 300));
+      ok('opening hours (a real field the form carries) are saved, not dropped', (await call('GET', `/cms/vendor/${v.id}`, undefined, T)).data.businessHours === 'Mon-Sat 9-6');
+      rr = await call('PUT', `/cms/vendor/${v.id}`, { role: 'ADMIN' }, T);
+      ok('an unknown key is still refused, and the message is a plain sentence', rr.status === 400 && /Role cannot be changed here/.test(rr.body?.message ?? '') && !/should not exist|property /.test(rr.body?.message ?? ''), J(rr.body));
+      rr = await call('PUT', `/cms/vendor/${v.id}`, { logo: 12345 }, T);
+      ok('a wrong value gets a plain sentence too, not a validation dump', rr.status === 400 && !/must be a string|should/.test(rr.body?.message ?? ''), J(rr.body));
+
+      // an industry editor: {...record} is what every industry edit form sends
+      const doc = await prisma.doctor.create({ data: { vendorId: v.id, name: 'Dr Rao', specialty: 'ENT', consultationFee: 400 } });
+      const doctors = (await call('GET', '/clinic/doctors', undefined, T)).data;
+      rr = await call('PATCH', `/clinic/doctors/${doc.id}`, { ...doctors[0], consultationFee: 450 }, T);
+      ok('an industry edit form that echoes its whole record saves (doctor)', rr.status === 200 && rr.data.consultationFee === 450, J(rr.body).slice(0, 300));
+      // customers carry the new BOS columns now: the old customer form must still save
+      const cust = (await call('POST', '/bos/parties', { name: 'Echo Customer', phone: '9100000099', type: 'customer', state: 'Tamil Nadu', openingBalance: 100 }, T)).data;
+      const row = (await call('GET', `/domainapp/contacts/${cust.id}`, undefined, T)).data;
+      rr = await call('PUT', `/domainapp/contacts/${cust.id}`, { ...row, notes: 'edited in the old customer form' }, T);
+      ok('the older customer form still saves a customer that has GSTIN / state / opening balance (nothing lost)', rr.status === 200, J(rr.body).slice(0, 300));
+      const after = await prisma.contact.findUnique({ where: { id: cust.id } });
+      ok('and the opening balance was not touched by that save', after.openingBalancePaise === 10000 && after.state === 'Tamil Nadu');
+    }
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');
   } finally {

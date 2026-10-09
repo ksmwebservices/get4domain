@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Room { id: string; number: string; roomType: string; capacity: number; pricePerNight: number; status: string; housekeeping: string; notes?: string }
 
@@ -42,7 +43,7 @@ export default function RoomsView() {
     if (!String(form.number).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, capacity: Number(form.capacity) || 1, pricePerNight: Number(form.pricePerNight) || 0 };
+      const payload = editable({ ...form, capacity: Number(form.capacity) || 1, pricePerNight: Number(form.pricePerNight) || 0 });
       editing ? await api.updateRoom(editing.id, payload) : await api.createRoom(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

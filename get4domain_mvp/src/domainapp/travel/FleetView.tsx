@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Vehicle {
   id: string; name: string; type: string; regNumber?: string;
@@ -44,7 +45,7 @@ export default function FleetView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, capacity: Number(form.capacity) || 1 };
+      const payload = editable({ ...form, capacity: Number(form.capacity) || 1 });
       if (editing) await api.updateVehicle(editing.id, payload);
       else await api.createVehicle(payload);
       setOpen(false); load();

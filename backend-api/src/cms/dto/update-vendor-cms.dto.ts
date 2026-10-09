@@ -26,6 +26,7 @@ export class UpdateVendorCmsDto {
   @ApiProperty({ required: false }) @IsOptional() @IsString() phone?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() email?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() address?: string;
+  @ApiProperty({ required: false, description: 'Opening hours as free text, shown on the site and used by the WhatsApp bot' }) @IsOptional() @IsString() @MaxLength(500) businessHours?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() whatsapp?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() facebook?: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() instagram?: string;

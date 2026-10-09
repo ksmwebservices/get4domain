@@ -7,6 +7,7 @@ import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, Save, LayoutTemplate,
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
+import { editable, CMS_EDITABLE } from '@/lib/editable';
 import { openMyWebsite } from '@/lib/view-website';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
@@ -175,7 +176,7 @@ export default function WebsiteManagerPage() {
     if (!user) return;
     setSaving(true); setError(''); setSaved(false);
     try {
-      await api.updateVendorCMS(user.id, cms);
+      await api.updateVendorCMS(user.id, editable(cms, CMS_EDITABLE));
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {

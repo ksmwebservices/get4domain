@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Ref { id: string; name: string }
 interface Appt {
@@ -54,7 +55,7 @@ export default function SalonScheduleView() {
     if (!String(form.clientName).trim() || !String(form.serviceName).trim() || !String(form.startAt)) return;
     setSaving(true);
     try {
-      const payload = { ...form, durationMin: Number(form.durationMin) || 45, price: Number(form.price) || 0, stylistId: form.stylistId || undefined, chairId: form.chairId || undefined, startAt: new Date(form.startAt as string).toISOString() };
+      const payload = editable({ ...form, durationMin: Number(form.durationMin) || 45, price: Number(form.price) || 0, stylistId: form.stylistId || undefined, chairId: form.chairId || undefined, startAt: new Date(form.startAt as string).toISOString() });
       editing ? await api.updateSalonAppointment(editing.id, payload) : await api.createSalonAppointment(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

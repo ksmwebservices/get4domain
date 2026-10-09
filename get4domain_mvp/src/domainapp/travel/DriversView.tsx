@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Driver {
   id: string; name: string; phone?: string; licenseNo?: string; status: string; notes?: string;
@@ -42,7 +43,7 @@ export default function DriversView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      if (editing) await api.updateDriver(editing.id, form);
+      if (editing) await api.updateDriver(editing.id, editable(form));
       else await api.createDriver(form);
       setOpen(false); load();
     } finally { setSaving(false); }

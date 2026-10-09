@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Loader2, MessageCircle, Pencil, X, Check } from 'lucide-react';
 import { api } from '@/lib/api';
+import { editable } from '@/lib/editable';
 
 interface KbEntry {
   id: string;
@@ -52,7 +53,7 @@ export default function WhatsappBotPage() {
   }
 
   async function saveEdit(id: string) {
-    await api.updateKbEntry(id, editForm).catch(() => {});
+    await api.updateKbEntry(id, editable(editForm)).catch(() => {});
     setEditingId(null);
     await load();
   }
@@ -100,7 +101,7 @@ export default function WhatsappBotPage() {
         </div>
         <div className="mt-3">
           <label className="mb-1 block text-xs font-medium text-slate-600">Answer (sent to the customer as-is)</label>
-          <textarea value={form.answer} onChange={(e) => setForm({ ...form, answer: e.target.value })} rows={2} placeholder="Our services start from ₹499. Would you like our team to contact you?"
+          <textarea value={form.answer} onChange={(e) => setForm({ ...form, answer: e.target.value })} rows={2} placeholder="Our prices are on our website. Would you like our team to contact you?"
             className="w-full rounded-lg border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
         </div>
         <button onClick={add} disabled={saving} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60">

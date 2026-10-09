@@ -139,7 +139,7 @@ export default function MyServicesPage() {
             </div>
             <div>
               <div className="text-sm font-bold text-slate-900">DomainCampaign — Managed Ads &amp; Growth</div>
-              <p className="mt-0.5 max-w-md text-xs text-slate-600">We run your Meta &amp; Google ads, content and organic growth. Management fee from ₹2,000/month, set by your monthly ad budget.</p>
+              <p className="mt-0.5 max-w-md text-xs text-slate-600">We run your Meta &amp; Google ads, content and organic growth. The management fee is set by your monthly ad budget, and we confirm it with you before anything starts.</p>
             </div>
           </div>
           <Button size="sm" onClick={() => setDcOpen(true)}>Add DomainCampaign</Button>
@@ -237,7 +237,7 @@ export default function MyServicesPage() {
             <div className="rounded-xl bg-slate-50 p-4 space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-slate-500">Business</span><span className="font-medium text-slate-900">{user?.businessName ?? user?.name}</span></div>
               <div className="flex justify-between"><span className="text-slate-500">Email</span><span className="text-slate-900">{user?.email}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Pricing</span><span className="text-slate-900">₹2,000–₹10,000/mo by ad budget</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Pricing</span><span className="text-slate-900">Set by your monthly ad budget (confirmed before we start)</span></div>
             </div>
             <input
               type="tel" inputMode="tel" placeholder="Your phone number" value={dcPhone}

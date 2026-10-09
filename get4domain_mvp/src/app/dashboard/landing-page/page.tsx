@@ -8,6 +8,7 @@ import {
 import Button from '@/components/ui/Button';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
+import { editable } from '@/lib/editable';
 
 interface CampaignPage {
   id: string;
@@ -112,7 +113,7 @@ export default function LandingPagePage() {
     setSaving(true);
     setSaved(false);
     try {
-      await api.updateCampaignPage(page.id, form);
+      await api.updateCampaignPage(page.id, editable(form));
       setPage({ ...page, ...form });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);

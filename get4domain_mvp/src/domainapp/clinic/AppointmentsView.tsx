@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface DoctorRef { id: string; name: string; specialty?: string; consultationFee?: number }
 interface Appt {
@@ -61,14 +62,14 @@ export default function AppointmentsView() {
     if (!String(form.patientName).trim() || !String(form.startAt).trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload = editable({
         ...form,
         durationMin: Number(form.durationMin) || 30,
         fee: Number(form.fee) || 0,
         startAt: new Date(form.startAt as string).toISOString(),
         doctorId: form.doctorId || undefined,
         followUpDate: form.followUpDate || undefined,
-      };
+      });
       editing ? await api.updateClinicAppointment(editing.id, payload) : await api.createClinicAppointment(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

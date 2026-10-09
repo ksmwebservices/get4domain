@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface ProjectRef { id: string; name: string }
 interface Material {
@@ -48,7 +49,7 @@ export default function MaterialsView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, quantity: Number(form.quantity) || 0, unitCost: Number(form.unitCost) || 0, projectId: form.projectId || undefined };
+      const payload = editable({ ...form, quantity: Number(form.quantity) || 0, unitCost: Number(form.unitCost) || 0, projectId: form.projectId || undefined });
       editing ? await api.updateMaterial(editing.id, payload) : await api.createMaterial(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus, Loader2, X, Pencil, Trash2, Mail, Phone } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { api } from '@/lib/api';
+import { editable } from '@/lib/editable';
 
 interface TeamMember {
   id: string;
@@ -92,7 +93,7 @@ export default function TeamPage() {
     if (!editMember) return;
     setSaving(true);
     try {
-      await api.updateTeamMember(editMember.id, editForm);
+      await api.updateTeamMember(editMember.id, editable(editForm));
       setEditMember(null);
       load();
     } catch (err) {

@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { billingApi, type VendorBilling } from '@/lib/commerce';
 import PlanOverview, { type PlanTier } from './PlanOverview';
+import { usePlanTerms, perMonth, formatINR } from '@/lib/use-plan-terms';
 import CommercialBilling from './CommercialBilling';
 
 interface Invoice {
@@ -92,6 +93,7 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 export default function BillingPage() {
+  const plans = usePlanTerms();
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscription, setSubscription] = useState<SubscriptionView | null>(null);
@@ -269,7 +271,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      {planTier && <PlanOverview tier={planTier} adminDeal={Boolean(term?.adminDeal)} />}
+      {planTier && <PlanOverview tier={planTier} adminDeal={Boolean(term?.adminDeal)} aiCreditPaise={term?.aiCreditIncludedPaise ?? null} />}
 
       {term ? null : pendingInvoice ? (
         <div className="rounded-2xl border-2 border-warning-300 bg-white p-6 shadow-sm">
@@ -313,7 +315,7 @@ export default function BillingPage() {
           </div>
 
           <p className="mt-4 rounded-xl bg-slate-50 px-3.5 py-2.5 text-center text-xs text-slate-500">
-            Plan billing: Essentials is ₹11,988 + 18% GST once a year (₹999/month equivalent); Pro is ₹23,988 + 18% GST once a year (₹1,999/month equivalent). The amount above is exactly what you&apos;ll be charged now.
+            Plan billing: {planDisplayName('WORKSPACE')} is {formatINR(plans.workspace.baseAmount)} + 18% GST once a year ({perMonth(plans.workspace)} equivalent); {planDisplayName('BOS')} is {formatINR(plans.bos.baseAmount)} + 18% GST once a year ({perMonth(plans.bos)} equivalent). The amount above is exactly what you&apos;ll be charged now.
           </p>
         </div>
       ) : (

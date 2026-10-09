@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface RoomRef { id: string; number: string; roomType?: string }
 interface Booking {
@@ -46,7 +47,7 @@ export default function ReservationsView() {
     if (!String(form.guestName).trim() || !String(form.checkIn) || !String(form.checkOut)) return;
     setSaving(true);
     try {
-      const payload = { ...form, guests: Number(form.guests) || 1, totalAmount: Number(form.totalAmount) || 0, roomId: form.roomId || undefined };
+      const payload = editable({ ...form, guests: Number(form.guests) || 1, totalAmount: Number(form.totalAmount) || 0, roomId: form.roomId || undefined });
       editing ? await api.updateRoomBooking(editing.id, payload) : await api.createRoomBooking(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

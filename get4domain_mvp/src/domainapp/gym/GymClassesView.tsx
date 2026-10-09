@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface GymClass { id: string; name: string; trainer?: string; dayOfWeek: string; startTime: string; durationMin: number; capacity: number; active: boolean }
 
@@ -37,7 +38,7 @@ export default function GymClassesView() {
     if (!String(form.name).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, durationMin: Number(form.durationMin) || 60, capacity: Number(form.capacity) || 20 };
+      const payload = editable({ ...form, durationMin: Number(form.durationMin) || 60, capacity: Number(form.capacity) || 20 });
       editing ? await api.updateGymClass(editing.id, payload) : await api.createGymClass(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

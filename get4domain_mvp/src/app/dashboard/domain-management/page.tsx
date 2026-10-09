@@ -178,7 +178,7 @@ export default function DomainManagementPage() {
           {(buyError === 'notconfigured' || (config && !config.searchEnabled && !results)) && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
               <p className="text-sm font-semibold text-amber-800">Domain registration is being enabled</p>
-              <p className="mt-1 text-sm text-amber-700">Our registrar connection is being finalized. Contact support to register your domain now (from ₹599/year .in, ₹999/year .com).</p>
+              <p className="mt-1 text-sm text-amber-700">Our registrar connection is being finalized. Contact support to register your domain now; we confirm the price for the name you choose before you pay.</p>
               <a href="/dashboard/support" className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-amber-800 shadow-sm"><LifeBuoy className="h-4 w-4" />Contact Support</a>
             </div>
           )}

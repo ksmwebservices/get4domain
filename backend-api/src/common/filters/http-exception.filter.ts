@@ -8,6 +8,32 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+/** "createdAt" -> "Created at" */
+const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
+
+/**
+ * A validation failure arrives as a list of machine sentences ("property id should not exist", "name should not be empty"). Nobody should read those:
+ * turn them into one plain sentence that says which details to fix. A message that is already a plain sentence (our own DTO messages) is kept.
+ */
+export function plainValidation(messages: string[]): { message: string; fields: string[] } {
+  const fields: string[] = []; const parts: string[] = [];
+  for (const raw of messages) {
+    const m = String(raw);
+    let field: string | null = null; let text: string;
+    const notExist = /^property ([\w.\[\]]+) should not exist$/.exec(m);
+    const empty = /^([\w.\[\]]+) should not be empty$/.exec(m);
+    const generic = /^([\w.\[\]]+) (must|should|has|is|are)/.exec(m);
+    if (notExist) { field = notExist[1]; text = `${words(field)} cannot be changed here`; }
+    else if (empty) { field = empty[1]; text = `${words(field)} is required`; }
+    else if (generic && !/^[A-Z]/.test(m)) { field = generic[1]; text = `${words(field)} does not look right`; }
+    else text = m.endsWith('.') ? m.slice(0, -1) : m;
+    if (field) fields.push(field.split('.').pop() as string);
+    if (!parts.includes(text)) parts.push(text);
+  }
+  const shown = parts.slice(0, 4).join('. ');
+  return { message: `${shown}${parts.length > 4 ? ` (and ${parts.length - 4} more)` : ''}. Check those details and try again.`, fields };
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -57,12 +83,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
+    let outMessage: string | string[] = message;
+    let fieldInfo: { fields: string[] } | null = null;
+    if (statusCode === 400 && Array.isArray(message)) { const p = plainValidation(message); outMessage = p.message; fieldInfo = p.fields.length ? { fields: p.fields } : null; }
+
     response.status(statusCode).json({
       success: false,
       statusCode,
-      message,
+      message: outMessage,
       ...extra,
-      data: details ?? (Object.keys(extra).length ? extra : null),
+      data: details ?? (Object.keys(extra).length ? extra : fieldInfo),
       timestamp: new Date().toISOString(),
     });
   }

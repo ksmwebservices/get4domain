@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface ListingRef { id: string; title: string }
 interface Visit {
@@ -45,7 +46,7 @@ export default function VisitsView() {
     if (!String(form.clientName).trim() || !String(form.scheduledAt)) return;
     setSaving(true);
     try {
-      const payload = { ...form, listingId: form.listingId || undefined, scheduledAt: new Date(form.scheduledAt as string).toISOString() };
+      const payload = editable({ ...form, listingId: form.listingId || undefined, scheduledAt: new Date(form.scheduledAt as string).toISOString() });
       editing ? await api.updateVisit(editing.id, payload) : await api.createVisit(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

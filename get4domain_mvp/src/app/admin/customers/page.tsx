@@ -238,7 +238,7 @@ export default function AdminCustomersPage() {
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">Temporary Password</label>
-                <input required minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
+                <input required minLength={8} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100" />
               </div>
               <div>

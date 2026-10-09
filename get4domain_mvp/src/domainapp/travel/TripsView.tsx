@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Contact { id: string; name: string }
 interface Ref { id: string; name: string }
@@ -77,7 +78,7 @@ export default function TripsView() {
     if (!String(form.title).trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload = editable({
         ...form,
         pax: Number(form.pax) || 1,
         packageCost: Number(form.packageCost) || 0,
@@ -88,7 +89,7 @@ export default function TripsView() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         itinerary: days.filter((d) => d.title.trim()),
-      };
+      });
       if (editing) await api.updateTrip(editing.id, payload);
       else await api.createTrip(payload);
       setOpen(false); load();

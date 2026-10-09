@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Trip { id: string; title: string }
 interface Visa {
@@ -52,7 +53,7 @@ export default function VisaView() {
     if (!String(form.travelerName).trim() || !String(form.country).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, tripId: form.tripId || undefined, appliedDate: form.appliedDate || undefined, decisionDate: form.decisionDate || undefined };
+      const payload = editable({ ...form, tripId: form.tripId || undefined, appliedDate: form.appliedDate || undefined, decisionDate: form.decisionDate || undefined });
       if (editing) await api.updateVisa(editing.id, payload);
       else await api.createVisa(payload);
       setOpen(false); load();

@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Membership {
   id: string; memberName: string; memberPhone?: string; planName: string; price: number;
@@ -60,7 +61,7 @@ export default function MembershipsView() {
     if (!String(form.memberName).trim() || !String(form.planName).trim() || !String(form.startDate) || !String(form.endDate)) return;
     setSaving(true);
     try {
-      const payload = { ...form, price: Number(form.price) || 0 };
+      const payload = editable({ ...form, price: Number(form.price) || 0 });
       editing ? await api.updateMembership(editing.id, payload) : await api.createMembership(payload);
       setOpen(false); load();
     } finally { setSaving(false); }

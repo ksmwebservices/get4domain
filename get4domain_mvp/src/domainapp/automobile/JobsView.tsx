@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import { Input, Select, Textarea } from '@/components/ui/Input';
 import EmptyState from '@/domainapp/shared/EmptyState';
+import { editable } from '@/lib/editable';
 
 interface Line { id: string; kind: string; description: string; quantity: number; rate: number }
 interface Job {
@@ -53,7 +54,7 @@ export default function JobsView() {
     if (!String(form.vehicleNumber).trim() || !String(form.customerName).trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, odometer: Number(form.odometer) || undefined, estimateAmount: Number(form.estimateAmount) || 0, promisedDate: form.promisedDate || undefined };
+      const payload = editable({ ...form, odometer: Number(form.odometer) || undefined, estimateAmount: Number(form.estimateAmount) || 0, promisedDate: form.promisedDate || undefined });
       editing ? await api.updateJob(editing.id, payload) : await api.createJob(payload);
       setOpen(false); load();
     } finally { setSaving(false); }
