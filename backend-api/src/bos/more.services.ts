@@ -12,7 +12,7 @@ import { BosPaymentsService } from './payments.service';
 import { BosStockService } from './bos-stock.service';
 import { EntitlementsService } from './entitlements.service';
 import { ACC } from './chart';
-import { openingLines } from './posting-rules';
+import { openingLines, stockAdjustmentLines } from './posting-rules';
 import { toPaise } from './gst';
 import { addMonths } from '../commercial/pricing-math';
 
@@ -85,16 +85,19 @@ export class BosPartiesService {
 
 @Injectable()
 export class BosStockViewsService {
-  constructor(private readonly prisma: PrismaService, private readonly stock: BosStockService, private readonly ent: EntitlementsService) {}
+  constructor(private readonly prisma: PrismaService, private readonly stock: BosStockService, private readonly ent: EntitlementsService, private readonly posting: PostingService) {}
 
   async overview(vendorId: string, q: { search?: string; lowOnly?: boolean } = {}) {
     const items = await this.prisma.vendorProduct.findMany({ where: { vendorId, status: { not: 'archived' }, ...(q.search ? { name: { contains: q.search, mode: 'insensitive' } } : {}) }, select: { id: true, name: true, sku: true, unit: true, image: true, trackStock: true, stockQty: true, reorderLevel: true, purchasePriceAmount: true, hsn: true, gstRate: true, priceAmount: true, price: true }, orderBy: { name: 'asc' }, take: 1000 });
     const last = await this.prisma.stockMovement.groupBy({ by: ['productId'], where: { vendorId }, _max: { createdAt: true } });
     const lastBy = new Map(last.map((l) => [l.productId, l._max.createdAt]));
+    const vsum = await this.prisma.stockMovement.groupBy({ by: ['productId', 'variantKey'], where: { vendorId, variantKey: { not: null } }, _sum: { delta: true } });
+    const variantsBy = new Map<string, { variantKey: string; onHand: number }[]>();
+    for (const v of vsum) variantsBy.set(v.productId, [...(variantsBy.get(v.productId) ?? []), { variantKey: v.variantKey as string, onHand: v._sum.delta ?? 0 }]);
     const rows = items.map((i) => {
       const cost = i.purchasePriceAmount == null ? null : Math.round(i.purchasePriceAmount * 100);
       const qty = i.trackStock ? (i.stockQty ?? 0) : null;
-      return { id: i.id, name: i.name, sku: i.sku, unit: i.unit, image: i.image, tracked: i.trackStock, onHand: qty, reorderLevel: i.reorderLevel, low: i.trackStock && i.reorderLevel != null && (qty ?? 0) <= i.reorderLevel, unitCostPaise: cost, valuePaise: i.trackStock && cost != null ? Math.round((qty ?? 0) * cost) : null, hsn: i.hsn, gstRate: i.gstRate, lastMovementAt: lastBy.get(i.id) ?? null };
+      return { id: i.id, name: i.name, sku: i.sku, unit: i.unit, image: i.image, tracked: i.trackStock, onHand: qty, reorderLevel: i.reorderLevel, low: i.trackStock && i.reorderLevel != null && (qty ?? 0) <= i.reorderLevel, unitCostPaise: cost, valuePaise: i.trackStock && cost != null ? Math.round((qty ?? 0) * cost) : null, hsn: i.hsn, gstRate: i.gstRate, ratePaise: i.priceAmount != null ? Math.round(i.priceAmount * 100) : null, variants: variantsBy.get(i.id) ?? [], lastMovementAt: lastBy.get(i.id) ?? null };
     }).filter((r) => !q.lowOnly || r.low);
     return { rows, totalValuePaise: rows.reduce((s, r) => s + (r.valuePaise ?? 0), 0), trackedCount: rows.filter((r) => r.tracked).length };
   }
@@ -117,6 +120,35 @@ export class BosStockViewsService {
       locations: locations.map((l) => ({ id: l.id, name: l.name, isDefault: l.isDefault, onHand: locSum.get(l.id) ?? 0 })),
       history,
     };
+  }
+
+  /**
+   * Add or remove stock of one variant (size / colour). The movement carries the variant; the books get the entry at cost in the same transaction.
+   * `reason`: add = OPENING | ADJUSTMENT | RETURN, remove = DAMAGE | ADJUSTMENT. A removal can never take a variant below what it has.
+   */
+  async adjustVariant(vendorId: string, productId: string, input: { variantKey: string; mode: 'add' | 'remove'; quantity: number; reason: 'OPENING' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE'; note?: string; idempotencyKey?: string }, actor?: string) {
+    const variantKey = input.variantKey.trim();
+    if (!variantKey) throw new BadRequestException('Type the size or colour, for example "M" or "Blue / L".');
+    if (!Number.isInteger(input.quantity) || input.quantity < 1) throw new BadRequestException('Enter a whole number of 1 or more.');
+    if (input.mode === 'add' ? input.reason === 'DAMAGE' : (input.reason === 'OPENING' || input.reason === 'RETURN')) throw new BadRequestException('That reason does not go with adding or removing stock. Choose another.');
+    const idem = `varadj:${input.idempotencyKey ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+    const ref = { type: 'VARIANT_ADJ', id: idem };
+    return this.prisma.$transaction(async (tx) => {
+      const prod = await tx.vendorProduct.findFirst({ where: { id: productId, vendorId }, select: { id: true, trackStock: true } });
+      if (!prod) throw new NotFoundException('Item not found.');
+      if (!prod.trackStock) throw new BadRequestException('Turn on "track stock" for this item first.');
+      const line = { productId, qty: input.quantity, variantKey };
+      const res = input.mode === 'add'
+        ? await this.stock.add(tx, vendorId, [line], ref, idem, input.reason, actor)
+        : await this.stock.sale(tx, vendorId, [line], ref, idem, 'BLOCK', actor, input.reason);
+      const unit = res.unitCostPaise.get(productId);
+      if (unit && unit > 0) {
+        const value = Math.round(input.quantity * unit) * (input.mode === 'add' ? 1 : -1);
+        const lines = input.mode === 'add' && input.reason === 'OPENING' ? openingLines({ stockPaise: value, receivables: [], payables: [] }) : stockAdjustmentLines(value);
+        await this.posting.post(tx, { vendorId, sourceType: 'STOCK', sourceId: idem, date: new Date(), memo: `Stock ${input.reason.toLowerCase()} (${variantKey})`, lines });
+      }
+      return { ok: true, onHand: await this.stock.onHand(tx, vendorId, productId, { variantKey }) };
+    });
   }
 
   async setItemFields(vendorId: string, productId: string, f: { hsn?: string; gstRate?: number; purchasePrice?: number }) {

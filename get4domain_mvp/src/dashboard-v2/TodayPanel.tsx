@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Circle, ShoppingBag, UserPlus } from 'lucide-react';
 import { checklistDone, goLiveChecklist } from '@/lib/nav.generated';
 import { useV2 } from '@/dashboard-v2/context';
+import { apiCall } from '@/lib/api';
 
 const rupees = (paise: number): string => `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
@@ -11,6 +13,30 @@ const rupees = (paise: number): string => `₹${(paise / 100).toLocaleString('en
  * Dashboard v2 "Today": what needs attention now. Every number comes from the vendor's own data (GET /dashboard/context).
  * Shown above the existing Overview, only for vendors on Dashboard v2.
  */
+interface MoneyToday { salesTodayPaise: number; collectedTodayPaise: number; billsToday: number; outstandingPaise: number; outstandingInvoices: number; salesMonthPaise: number; expensesMonthPaise: number; lowStock: number; ordersWaiting: number }
+
+/** The same numbers as Accounts and Customer invoices (one source: the business records), so Home never disagrees with them. */
+function MoneyPanel() {
+  const [m, setM] = useState<MoneyToday | null>(null);
+  useEffect(() => { apiCall('/bos/reports/today').then((r) => setM((r.data ?? r) as MoneyToday)).catch(() => setM(null)); }, []);
+  if (!m) return null;
+  const empty = m.billsToday === 0 && m.outstandingPaise === 0 && m.salesMonthPaise === 0 && m.expensesMonthPaise === 0;
+  return (
+    <div className="rounded-2xl border border-ink-800 bg-ink-900/60 p-5 lg:col-span-2" aria-label="Money">
+      <div className="flex items-center justify-between"><h2 className="text-sm font-bold text-ink-50">Money</h2><Link href="/dashboard/finance/expenses" className="text-xs font-semibold text-brand-300 hover:text-brand-200">Open Accounts →</Link></div>
+      {empty ? (
+        <p className="mt-3 text-sm text-ink-400">Nothing billed yet. <Link href="/dashboard/finance/invoices" className="font-semibold text-brand-300">Make your first invoice</Link> or take a sale at the counter and the numbers appear here.</p>
+      ) : (
+        <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[['Sold today', rupees(m.salesTodayPaise), `${m.billsToday} bill${m.billsToday === 1 ? '' : 's'}`], ['Collected today', rupees(m.collectedTodayPaise), ''], ['Waiting to be paid', rupees(m.outstandingPaise), `${m.outstandingInvoices} invoice${m.outstandingInvoices === 1 ? '' : 's'}`], ['This month', rupees(m.salesMonthPaise), `expenses ${rupees(m.expensesMonthPaise)}`]].map(([k, v, hint]) => (
+            <div key={k} className="rounded-xl border border-ink-800 px-3 py-2"><dt className="text-xs text-ink-400">{k}</dt><dd className="text-lg font-bold text-ink-50">{v}</dd>{hint && <div className="text-xs text-ink-500">{hint}</div>}</div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
 export default function TodayPanel() {
   const v2 = useV2();
   const ctx = v2?.ctx;
@@ -58,6 +84,7 @@ export default function TodayPanel() {
           })}
         </ul>
       </div>
+      <MoneyPanel />
     </section>
   );
 }

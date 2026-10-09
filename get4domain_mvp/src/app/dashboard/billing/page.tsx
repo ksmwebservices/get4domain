@@ -204,7 +204,7 @@ export default function BillingPage() {
           </div>
         </div>
         <div className="mt-6 flex gap-3 justify-center">
-          <Link href="/dashboard/invoices"><Button variant="outline" size="sm">View Invoice</Button></Link>
+          <Link href="/dashboard/billing/receipts"><Button variant="outline" size="sm">View Invoice</Button></Link>
           <Link href="/dashboard"><Button size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>Dashboard</Button></Link>
         </div>
       </div>

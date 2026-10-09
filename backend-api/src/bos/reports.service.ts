@@ -66,6 +66,19 @@ export class BosReportsService {
 
   // ── Books (Pro): ledger, day book, trial balance, P&L, balance sheet ───────────────────────────
 
+  /** The BOS side of the older Accounts page (rupees): sales net of tax, expenses net of claimed GST, GST in and out. Added to the older figures so that page is no longer all zero. */
+  async legacyTotals(vendorId: string, r: Range): Promise<{ revenueNet: number; outputGst: number; revenueGross: number; expensesNet: number; inputGst: number; expensesGross: number }> {
+    const [s, exp, bills] = await Promise.all([
+      this.summary(vendorId, r),
+      this.prisma.bosExpense.aggregate({ where: { vendorId, status: 'ACTIVE', expenseDate: dateWhere(r) }, _sum: { totalPaise: true, cgstPaise: true, sgstPaise: true, igstPaise: true } }),
+      this.prisma.bosDocument.aggregate({ where: { vendorId, docType: 'PURCHASE_BILL', status: { in: ['ISSUED', 'PART_PAID', 'PAID'] }, docDate: dateWhere(r) }, _sum: { cgstPaise: true, sgstPaise: true, igstPaise: true } }),
+    ]);
+    const expTax = (exp._sum.cgstPaise ?? 0) + (exp._sum.sgstPaise ?? 0) + (exp._sum.igstPaise ?? 0);
+    const billTax = (bills._sum.cgstPaise ?? 0) + (bills._sum.sgstPaise ?? 0) + (bills._sum.igstPaise ?? 0);
+    const rs = (p: number): number => p / 100;
+    return { revenueNet: rs(s.salesExTaxPaise), outputGst: rs(s.gstCollectedPaise), revenueGross: rs(s.salesPaise), expensesNet: rs((exp._sum.totalPaise ?? 0) - expTax), inputGst: rs(expTax + billTax), expensesGross: rs(exp._sum.totalPaise ?? 0) };
+  }
+
   async trialBalance(vendorId: string, asOf?: Date) {
     const [accs, bal] = await Promise.all([this.accounts(vendorId), this.balances(vendorId, { to: asOf })]);
     const rows = accs.map((a) => { const b = bal.get(a.code) ?? { debit: 0, credit: 0 }; const net = b.debit - b.credit; return { code: a.code, name: a.name, type: a.type, debitPaise: net > 0 ? net : 0, creditPaise: net < 0 ? -net : 0 }; }).filter((r) => r.debitPaise || r.creditPaise);

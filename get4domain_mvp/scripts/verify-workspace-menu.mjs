@@ -30,7 +30,7 @@ ok('only an explicit boolean true turns the Workspace menu on', M.isWorkspaceMen
 ok('a vendor with no such addon (every other vendor today) keeps the standard menu', M.isWorkspaceMenu({ fleet: true, inventory_management: true }) === false);
 
 console.log('\nTHE WORKSPACE SET');
-for (const want of ['Home', 'My Products', 'Stock', 'Orders', 'Leads & CRM', 'TeleCRM', 'Website Manager', 'Domain', 'AI Studio', 'Invoices', 'Expenses', 'Team', 'Plan & Billing', 'Settings']) ok(`shows "${want}"`, labels.includes(want));
+for (const want of ['Home', 'My Products', 'Stock', 'Orders', 'Leads & CRM', 'TeleCRM', 'Website Manager', 'Domain', 'AI Studio', 'Customer invoices', 'Accounts', 'Team', 'Plan & Billing', 'Settings']) ok(`shows "${want}"`, labels.includes(want));
 ok('Plan & Billing links to the billing page (audit finding 7)', items.find((i) => i.label === 'Plan & Billing')?.href === '/dashboard/billing');
 ok('no BOS-only item is present (HRM, campaigns/Growth Hub, WhatsApp bot, communication hub, stationery, customer hub, analytics hub, website engine, embed)', M.BOS_ONLY_HREFS.every((h) => !hrefs.some((x) => x === h || x.startsWith(`${h}/`))), hrefs.join());
 ok('no industry catalogue / retail inventory / POS tab (the duplicate CatalogItem / RetailProduct screens)', hrefs.every((h) => !h.startsWith(M.DUPLICATE_CATALOGUE_PREFIX)));

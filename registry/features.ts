@@ -26,7 +26,7 @@ export const FEATURES: Feature[] = [
     minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
   { id: 'sales.customers', department: 'sales', label: 'Customers', icon: 'UserCircle', route: '/dashboard/sales/customers', purpose: 'customers', minPlan: 'WORKSPACE', profiles: ALL,
     status: 'LIMITED', manualCheck: `${WALK}#sales.customers`, limits: 'One customer list per business (the editor follows your industry).', moduleKey: 'domainapp' },
-  { id: 'sales.quotes', department: 'sales', label: 'Quotes', icon: 'FileText', route: '/dashboard/sales/quotes', purpose: 'quotes', minPlan: 'WORKSPACE', profiles: ALL, status: 'UNTESTED' },
+  { id: 'sales.quotes', department: 'sales', label: 'Quotes', icon: 'FileText', route: '/dashboard/sales/quotes', purpose: 'quotes', minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'bos.spine' },
   { id: 'sales.portal', department: 'sales', label: 'Customer portal', icon: 'Share2', route: '/dashboard/sales/portal', legacyRoutes: ['/dashboard/customer-hub'], purpose: 'customer-portal',
     minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#sales.portal`, limits: 'Portal invites by SMS/WhatsApp are sent only once the messaging key is set.', moduleKey: 'customer_hub' },
 
@@ -64,28 +64,33 @@ export const FEATURES: Feature[] = [
     moduleKey: 'website_manager',
     limits: 'Three product stores still exist (My Products, industry catalogue, retail products); they are mounted here as tabs and unified in a later release.' },
   { id: 'commerce.stock', department: 'commerce', label: 'Stock', icon: 'Boxes', route: '/dashboard/commerce/stock', legacyRoutes: ['/dashboard/stock'], purpose: 'stock', minPlan: 'WORKSPACE',
-    profiles: ['COMMERCE'], status: 'WORKING', testId: 'commerce.stock.atomic', moduleKey: 'website_manager' },
+    profiles: ['COMMERCE'], status: 'WORKING', testId: 'bos.stock-ledger', moduleKey: 'website_manager' },
   { id: 'commerce.orders', department: 'commerce', label: 'Orders, bookings, enquiries', labelByProfile: ORDER_LABELS, icon: 'ShoppingBag', route: '/dashboard/commerce/orders',
     legacyRoutes: ['/dashboard/orders'], purpose: 'orders', minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'commerce.orders.request', moduleKey: 'website_manager' },
   { id: 'commerce.workspace', department: 'commerce', label: 'Industry workspace', icon: 'LayoutGrid', route: '/dashboard/commerce/workspace', purpose: 'industry-workspace',
     minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#commerce.workspace`, moduleKey: 'domainapp',
     limits: 'Your industry\'s existing operation screens, with their add-on rules unchanged. The full set is Coming soon.' },
   { id: 'commerce.workspace-full', department: 'commerce', label: 'Full industry workspace', icon: 'LayoutGrid', route: '/dashboard/commerce/workspace-full', purpose: 'industry-workspace-full', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
-  { id: 'commerce.inventory', department: 'commerce', label: 'Inventory and purchases', icon: 'Boxes', route: '/dashboard/commerce/inventory', purpose: 'inventory-purchases', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
-  { id: 'commerce.pos', department: 'commerce', label: 'Counter and POS', icon: 'Store', route: '/dashboard/commerce/pos', purpose: 'pos', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
+  { id: 'commerce.inventory', department: 'commerce', label: 'Purchases and suppliers', icon: 'Boxes', route: '/dashboard/commerce/inventory', purpose: 'inventory-purchases', minPlan: 'BOS', profiles: ALL, status: 'WORKING', testId: 'bos.purchases',
+    upgrade: { headline: 'Record what you buy', body: 'Purchase bills, suppliers, what you owe, and the GST you can claim back. Pro keeps your stock cost up to date from your purchases.' } },
+  { id: 'commerce.pos', department: 'commerce', label: 'Counter billing', icon: 'Store', route: '/dashboard/commerce/pos', purpose: 'pos', minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'bos.counter' },
   { id: 'commerce.tasks', department: 'commerce', label: 'Tasks and workflow', icon: 'ClipboardList', route: '/dashboard/commerce/tasks', purpose: 'tasks', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
   { id: 'commerce.documents', department: 'commerce', label: 'Documents', icon: 'FileText', route: '/dashboard/commerce/documents', purpose: 'documents', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
 
   // ───────────────────────────── Finance and Accounts
-  { id: 'finance.invoices', department: 'finance', label: 'Customer invoices', icon: 'FileText', route: '/dashboard/finance/invoices', purpose: 'customer-invoices', minPlan: 'WORKSPACE', profiles: ALL,
-    status: 'LIMITED', manualCheck: `${WALK}#finance.invoices`, limits: 'GST is one flat rate per invoice; invoice numbers are not yet per financial year.', moduleKey: 'domainapp' },
-  { id: 'finance.collect-payments', department: 'finance', label: 'Collect payments', icon: 'CreditCard', route: '/dashboard/finance/collect-payments', purpose: 'collect-payments',
-    minPlan: 'WORKSPACE', profiles: ALL, status: 'UNTESTED' },
-  { id: 'finance.recurring', department: 'finance', label: 'Recurring billing', icon: 'Receipt', route: '/dashboard/finance/recurring', purpose: 'recurring-billing', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
-  { id: 'finance.expenses', department: 'finance', label: 'Expenses and GST', icon: 'Receipt', route: '/dashboard/finance/expenses', legacyRoutes: ['/dashboard/accounts'], purpose: 'expenses-gst',
-    minPlan: 'BOS', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#finance.expenses`, limits: 'Expense and GST tracking; accounting entries and GST filing are not built.',
-    upgrade: { headline: 'Track expenses and GST', body: 'Record expenses, see profit and the GST you owe.' } },
-  { id: 'finance.ca-accounts', department: 'finance', label: 'Accounts for the CA', icon: 'FileText', route: '/dashboard/finance/ca-accounts', purpose: 'ca-accounts', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
+  { id: 'finance.invoices', department: 'finance', label: 'Customer invoices', icon: 'FileText', route: '/dashboard/finance/invoices',
+    legacyRoutes: [{ from: '/dashboard/invoices', query: 'note=billing-moved' }], purpose: 'customer-invoices', minPlan: 'WORKSPACE', profiles: ALL,
+    status: 'WORKING', testId: 'bos.spine',
+    tabs: [{ key: 'invoices', label: 'Invoices' }, { key: 'quotes', label: 'Quotes' }, { key: 'money-in', label: 'Money in' }, { key: 'credit-notes', label: 'Credit notes' }] },
+  { id: 'finance.collect-payments', department: 'finance', label: 'Collect payments', icon: 'CreditCard', route: '/dashboard/finance/collect-payments', legacyRoutes: ['/dashboard/payments'], purpose: 'collect-payments',
+    minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'bos.payments-keys' },
+  { id: 'finance.recurring', department: 'finance', label: 'Recurring billing', icon: 'Receipt', route: '/dashboard/finance/recurring', purpose: 'recurring-billing', minPlan: 'BOS', profiles: ALL, status: 'WORKING', testId: 'bos.recurring',
+    upgrade: { headline: 'Bill the same customer every month', body: 'Set an invoice to repeat monthly, quarterly or yearly, and get a reminder list of who is overdue.' } },
+  { id: 'finance.expenses', department: 'finance', label: 'Accounts', icon: 'Receipt', route: '/dashboard/finance/expenses', legacyRoutes: ['/dashboard/accounts'], purpose: 'expenses-gst',
+    minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'bos.journal',
+    tabs: [{ key: 'summary', label: 'Summary' }, { key: 'expenses', label: 'Expenses' }, { key: 'books', label: 'Books' }, { key: 'more', label: 'Industry view and GST filing' }] },
+  { id: 'finance.ca-accounts', department: 'finance', label: 'Accounts for the CA', icon: 'FileText', route: '/dashboard/finance/ca-accounts', purpose: 'ca-accounts', minPlan: 'BOS', profiles: ALL, status: 'WORKING', testId: 'bos.ca-pack',
+    upgrade: { headline: 'One file for your CA', body: 'GST summary, HSN summary and every register in one Excel workbook with a summary page, for any month, quarter or year.' } },
 
   // ───────────────────────────── People and HR
   { id: 'people.team', department: 'people', label: 'Team and roles', icon: 'UserPlus', route: '/dashboard/people/team', legacyRoutes: ['/dashboard/team'], purpose: 'team', minPlan: 'WORKSPACE', profiles: ALL,
@@ -106,7 +111,7 @@ export const FEATURES: Feature[] = [
 
   // ───────────────────────────── Your Get4Domain account
   { id: 'account.billing', department: 'account', label: 'Plan and billing', icon: 'CreditCard', route: '/dashboard/account/billing',
-    legacyRoutes: ['/dashboard/billing', { from: '/dashboard/go-live', tab: 'golive' }, { from: '/dashboard/my-services', tab: 'services' }, { from: '/dashboard/invoices', tab: 'receipts' }],
+    legacyRoutes: ['/dashboard/billing', { from: '/dashboard/billing/receipts', tab: 'receipts' }, { from: '/dashboard/go-live', tab: 'golive' }, { from: '/dashboard/my-services', tab: 'services' }],
     purpose: 'plan-billing', minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'commercial.vendor-billing',
     tabs: [{ key: 'billing', label: 'Plan and invoices' }, { key: 'golive', label: 'Buy or go live' }, { key: 'services', label: 'Add-ons and services' }, { key: 'receipts', label: 'Receipts' }] },
   { id: 'account.wallet', department: 'account', label: 'Wallet', icon: 'Wallet', route: '/dashboard/account/wallet', legacyRoutes: ['/dashboard/wallet'], purpose: 'wallet', minPlan: 'WORKSPACE', profiles: ALL,
@@ -132,7 +137,6 @@ export const FEATURES: Feature[] = [
  * route, a legacy route or listed here (the guard enforces it).
  */
 export const KEPT_ROUTES: { route: string; reason: string }[] = [
-  { route: '/dashboard/payments', reason: 'Collect payments is Coming soon in the menu, but this old screen holds the checkout-mode switch (order requests / online payment) that live shops already use; it stays reachable by address until KSM verifies Collect payments.' },
 ];
 
 /** Dashboard routes that are served by the generic v2 route (`/dashboard/[dept]/[screen]`) or are real files; used by the guard's route scan. */

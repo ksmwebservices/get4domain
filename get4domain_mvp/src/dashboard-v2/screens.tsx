@@ -26,15 +26,22 @@ const AiStudio = lazy(() => import('@/app/dashboard/ai-studio/page'));
 const DomainPage = lazy(() => import('@/app/dashboard/domain-management/page'));
 const EmbedPage = lazy(() => import('@/app/dashboard/embed/page'));
 const Readiness = lazy(() => import('@/app/dashboard/website-engine/page'));
-const StockPage = lazy(() => import('@/app/dashboard/stock/page'));
-const AccountsPage = lazy(() => import('@/app/dashboard/accounts/page'));
+const StockPage = lazy(() => import('@/bos/Stock'));
+const AccountsPage = lazy(() => import('@/bos/Accounts'));
+const InvoicesPage = lazy(() => import('@/bos/Invoices'));
+const QuotesPage = lazy(() => import('@/bos/Quotes'));
+const CounterPage = lazy(() => import('@/bos/Counter'));
+const PurchasesPage = lazy(() => import('@/bos/Purchases'));
+const PaymentsPage = lazy(() => import('@/bos/PaymentsSettings'));
+const RecurringPage = lazy(() => import('@/bos/Recurring'));
+const CaPage = lazy(() => import('@/bos/CaAccounts'));
 const TeamPage = lazy(() => import('@/app/dashboard/team/page'));
 const InboxPage = lazy(() => import('@/app/dashboard/communication/page'));
 const NotificationsPage = lazy(() => import('@/app/dashboard/notifications/page'));
 const BillingPage = lazy(() => import('@/app/dashboard/billing/page'));
 const GoLivePage = lazy(() => import('@/app/dashboard/go-live/page'));
 const MyServicesPage = lazy(() => import('@/app/dashboard/my-services/page'));
-const ReceiptsPage = lazy(() => import('@/app/dashboard/invoices/page'));
+const ReceiptsPage = lazy(() => import('@/dashboard-v2/PlanReceipts'));
 const WalletPage = lazy(() => import('@/app/dashboard/wallet/page'));
 const SupportPage = lazy(() => import('@/app/dashboard/support/page'));
 const StationeryPage = lazy(() => import('@/app/dashboard/stationery/page'));
@@ -55,8 +62,14 @@ export const SCREENS: Record<string, Screen> = {
   'commerce.stock': { kind: 'page', Component: StockPage },
   'commerce.orders': { kind: 'industry', owner: 'orders' },
   'commerce.workspace': { kind: 'industry', owner: 'workspace' },
-  'finance.invoices': { kind: 'industry', owner: 'invoices' },
+  'sales.quotes': { kind: 'page', Component: QuotesPage },
+  'commerce.pos': { kind: 'page', Component: CounterPage },
+  'commerce.inventory': { kind: 'page', Component: PurchasesPage },
+  'finance.invoices': { kind: 'page', Component: InvoicesPage },
+  'finance.collect-payments': { kind: 'page', Component: PaymentsPage },
+  'finance.recurring': { kind: 'page', Component: RecurringPage },
   'finance.expenses': { kind: 'page', Component: AccountsPage },
+  'finance.ca-accounts': { kind: 'page', Component: CaPage },
   'people.team': { kind: 'page', Component: TeamPage },
   'communication.inbox': { kind: 'page', Component: InboxPage },
   'communication.notifications': { kind: 'page', Component: NotificationsPage },
@@ -73,5 +86,5 @@ export const SCREENS: Record<string, Screen> = {
 /** The old address to send a flag-OFF vendor to when they open a v2 address (e.g. from a shared link or a stale cookie). */
 export const OLD_ADDRESS: Record<string, string> = {
   'website.design': '/dashboard/my-website', 'website.search': '/dashboard/my-website',
-  'commerce.workspace': '/dashboard', 'sales.customers': '/dashboard', 'finance.invoices': '/dashboard',
+  'commerce.workspace': '/dashboard', 'sales.customers': '/dashboard',
 };

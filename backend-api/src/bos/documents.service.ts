@@ -173,6 +173,13 @@ export class BosDocumentsService {
 
   // ── Drafts ───────────────────────────────────────────────────────────────────────────────────────
 
+  /** The exact totals a document would get (tax split, round off), without saving anything. The screens show this, so the customer is never quoted a different number than the one issued. */
+  async preview(vendorId: string, input: DocInput): Promise<{ subtotalPaise: number; discountPaise: number; shippingPaise: number; taxablePaise: number; cgstPaise: number; sgstPaise: number; igstPaise: number; roundOffPaise: number; totalPaise: number; taxKind: string; priceMode: string; intraState: boolean }> {
+    const b = await this.build(this.prisma, vendorId, input);
+    const t = b.totals;
+    return { subtotalPaise: t.subtotalPaise, discountPaise: t.discountPaise, shippingPaise: t.shippingPaise, taxablePaise: t.taxablePaise, cgstPaise: t.cgstPaise, sgstPaise: t.sgstPaise, igstPaise: t.igstPaise, roundOffPaise: t.roundOffPaise, totalPaise: t.totalPaise, taxKind: b.taxKind, priceMode: b.priceMode, intraState: b.intraState };
+  }
+
   async createDraft(vendorId: string, input: DocInput, actor?: string, db: Tx | PrismaService = this.prisma): Promise<DocWithLines> {
     if (input.idempotencyKey) {
       const found = await db.bosDocument.findUnique({ where: { vendorId_idempotencyKey: { vendorId, idempotencyKey: input.idempotencyKey } }, include: { lines: { orderBy: { lineNo: 'asc' } } } });

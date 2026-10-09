@@ -45,8 +45,8 @@ export const WORKSPACE_SECTIONS: WorkspaceNavSection[] = [
   {
     title: 'Money',
     items: [
-      { label: 'Invoices', href: '/dashboard/invoices', icon: 'FileText' },
-      { label: 'Expenses', href: '/dashboard/accounts', icon: 'Receipt' },
+      { label: 'Customer invoices', href: '/dashboard/invoices', icon: 'FileText' },
+      { label: 'Accounts', href: '/dashboard/accounts', icon: 'Receipt' },
       // AI Studio runs on the wallet, so topping it up has to stay reachable.
       { label: 'Wallet', href: '/dashboard/wallet', icon: 'Wallet' },
     ],

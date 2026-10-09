@@ -21,7 +21,7 @@ export type Status = 'WORKING' | 'LIMITED' | 'UNTESTED' | 'NOT_BUILT';
 
 export type FeatureState = 'HIDDEN' | 'OPEN' | 'LOCKED' | 'COMING_SOON';
 
-export type LegacyRoute = string | { from: string; tab?: string };
+export type LegacyRoute = string | { from: string; tab?: string; query?: string };
 
 /** A named plan limit: the number each plan gets (null = unlimited). The defaults live here; KSM changes them in admin (g4d_plan_overrides) without a deploy. */
 export type PlanLimits = Record<PlanKey, number | null>;

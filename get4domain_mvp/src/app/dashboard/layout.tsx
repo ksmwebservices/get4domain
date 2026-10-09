@@ -28,7 +28,7 @@ const TEAM_AREA_BY_MODULE: Record<string, string> = {
   website_manager: 'website', analytics_hub: 'reports',
 };
 const TEAM_AREA_BY_HREF: Record<string, string> = {
-  '/dashboard/accounts': 'accounts', '/dashboard/wallet': 'wallet', '/dashboard/invoices': 'wallet',
+  '/dashboard/accounts': 'accounts', '/dashboard/wallet': 'wallet', '/dashboard/invoices': 'accounts',
   '/dashboard/campaigns': 'campaigns', '/dashboard/telecrm': 'telecrm',
   '/dashboard/communication': 'communication', '/dashboard/my-website': 'website',
   '/dashboard/my-products': 'website', '/dashboard/website-engine': 'website',
@@ -162,7 +162,7 @@ function LegacyDashboardLayout({ children }: { children: React.ReactNode }) {
           { label: 'Profile', href: '/dashboard/settings', icon: 'UserCircle' },
           { label: 'Wallet & Billing', href: '/dashboard/wallet', icon: 'Wallet' },
           { label: 'Payments', href: '/dashboard/payments', icon: 'CreditCard' },
-          { label: 'Invoices', href: '/dashboard/invoices', icon: 'FileText' },
+          { label: 'Customer invoices', href: '/dashboard/invoices', icon: 'FileText' },
           { label: 'Accounts', href: '/dashboard/accounts', icon: 'Receipt' },
           { label: 'HRM', href: '/dashboard/hrm', icon: 'UserCog' },
           { label: 'Stationery', href: '/dashboard/stationery', icon: 'Package' },

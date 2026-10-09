@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 3fbfc29d736eaf97
+// registry-hash: 38f00e5e030b420c
 // Legacy dashboard address -> Dashboard v2 address. Applied ONLY for vendors with nav_v2 on (cookie g4d_nav_v2=1).
 /* eslint-disable */
 
@@ -18,6 +18,8 @@ export const LEGACY_MAP: Record<string, string> = {
   "/dashboard/my-products": "/dashboard/commerce/products",
   "/dashboard/stock": "/dashboard/commerce/stock",
   "/dashboard/orders": "/dashboard/commerce/orders",
+  "/dashboard/invoices": "/dashboard/finance/invoices?note=billing-moved",
+  "/dashboard/payments": "/dashboard/finance/collect-payments",
   "/dashboard/accounts": "/dashboard/finance/expenses",
   "/dashboard/team": "/dashboard/people/team",
   "/dashboard/hrm": "/dashboard/people/hr",
@@ -25,9 +27,9 @@ export const LEGACY_MAP: Record<string, string> = {
   "/dashboard/whatsapp-bot": "/dashboard/communication/whatsapp-bot",
   "/dashboard/notifications": "/dashboard/communication/notifications",
   "/dashboard/billing": "/dashboard/account/billing",
+  "/dashboard/billing/receipts": "/dashboard/account/billing?tab=receipts",
   "/dashboard/go-live": "/dashboard/account/billing?tab=golive",
   "/dashboard/my-services": "/dashboard/account/billing?tab=services",
-  "/dashboard/invoices": "/dashboard/account/billing?tab=receipts",
   "/dashboard/wallet": "/dashboard/account/wallet",
   "/dashboard/settings": "/dashboard/account/profile",
   "/dashboard/support": "/dashboard/account/help",

@@ -167,7 +167,8 @@ export class BosCounterService {
 
   /** A walk-in shortcut for the daily summary: today's counter bills by payment mode. */
   async summary(vendorId: string, day = new Date()) {
-    const from = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate()) - 330 * 60_000); const to = new Date(from.getTime() + 86_400_000);
+    const ist = new Date(day.getTime() + 330 * 60_000); // the shop's day is the Indian day
+    const from = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()) - 330 * 60_000); const to = new Date(from.getTime() + 86_400_000);
     const bills = await this.prisma.bosDocument.findMany({ where: { vendorId, docType: 'SALES_INVOICE', source: 'COUNTER', status: { not: 'CANCELLED' }, docDate: { gte: from, lt: to } } });
     const pays = await this.prisma.bosPayment.findMany({ where: { vendorId, kind: 'RECEIPT', source: 'COUNTER', status: 'ACTIVE', paymentDate: { gte: from, lt: to } } });
     const byMode: Record<string, number> = {};

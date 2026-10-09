@@ -109,7 +109,7 @@ export default function DashboardHome() {
   // Real alerts.
   const alerts = [
     followups.length > 0 && { label: `${followups.length} follow-up${followups.length === 1 ? '' : 's'} due`, count: followups.length, severity: 'warning' as const, icon: 'BellRing', href: '/dashboard/telecrm' },
-    pendingInvoices > 0 && { label: `${pendingInvoices} unpaid invoice${pendingInvoices === 1 ? '' : 's'}`, count: pendingInvoices, severity: 'urgent' as const, icon: 'FileClock', href: '/dashboard/invoices' },
+    pendingInvoices > 0 && { label: `${pendingInvoices} unpaid invoice${pendingInvoices === 1 ? '' : 's'}`, count: pendingInvoices, severity: 'urgent' as const, icon: 'FileClock', href: '/dashboard/billing/receipts' },
     walletBalance !== null && walletBalance < 20000 && { label: 'Low wallet balance', count: 1, severity: 'info' as const, icon: 'Wallet', href: '/dashboard/wallet' },
   ].filter(Boolean) as { label: string; count: number; severity: 'info' | 'warning' | 'urgent'; icon: string; href: string }[];
   const severityStyle: Record<string, { variant: 'info' | 'warning' | 'error'; ring: string; color: string }> = {
@@ -121,7 +121,7 @@ export default function DashboardHome() {
   // Real activity — merge newest leads, paid invoices, recent calls and notifications.
   const activity: ActivityItem[] = [
     ...leads.slice(0, 5).map((l) => ({ id: `lead-${l.id}`, icon: 'UserPlus', label: `New lead — ${l.name}`, sub: `${l.source ?? 'manual'} · ${l.phone}`, at: l.createdAt, href: '/dashboard/telecrm', tone: 'positive' as const })),
-    ...invoices.filter((i) => i.status === 'PAID' && i.paidAt).slice(0, 5).map((i) => ({ id: `inv-${i.id}`, icon: 'IndianRupee', label: `Invoice ${i.invoiceNumber} paid`, sub: rupees(i.total), at: i.paidAt as string, href: '/dashboard/invoices', tone: 'positive' as const })),
+    ...invoices.filter((i) => i.status === 'PAID' && i.paidAt).slice(0, 5).map((i) => ({ id: `inv-${i.id}`, icon: 'IndianRupee', label: `Invoice ${i.invoiceNumber} paid`, sub: rupees(i.total), at: i.paidAt as string, href: '/dashboard/billing/receipts', tone: 'positive' as const })),
     ...recentCalls.slice(0, 4).map((c, idx) => ({ id: `call-${c.id ?? idx}`, icon: c.outcome === 'missed' ? 'PhoneMissed' : 'Phone', label: `Call ${c.outcome ?? 'logged'} — ${c.name ?? c.phone ?? 'lead'}`, sub: c.phone ?? '', at: c.createdAt ?? new Date().toISOString(), href: '/dashboard/telecrm', tone: (c.outcome === 'missed' ? 'negative' : 'neutral') as 'negative' | 'neutral' })),
     ...notifications.slice(0, 4).map((n, idx) => ({ id: `notif-${n.id ?? idx}`, icon: 'Bell', label: n.title ?? 'Notification', sub: n.body ?? '', at: n.createdAt ?? new Date().toISOString(), href: n.href ?? '/dashboard/notifications', tone: 'neutral' as const })),
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 6);

@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 3fbfc29d736eaf97
+// registry-hash: 38f00e5e030b420c
 // Same registry for the API: provisioning, context endpoint, arrangements.
 /* eslint-disable */
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
@@ -25,7 +25,7 @@ export type Status = 'WORKING' | 'LIMITED' | 'UNTESTED' | 'NOT_BUILT';
 
 export type FeatureState = 'HIDDEN' | 'OPEN' | 'LOCKED' | 'COMING_SOON';
 
-export type LegacyRoute = string | { from: string; tab?: string };
+export type LegacyRoute = string | { from: string; tab?: string; query?: string };
 
 /** A named plan limit: the number each plan gets (null = unlimited). The defaults live here; KSM changes them in admin (g4d_plan_overrides) without a deploy. */
 export type PlanLimits = Record<PlanKey, number | null>;
@@ -226,7 +226,9 @@ export function resolveLegacyRoute(features: Feature[], pathname: string, search
       const from = typeof l === 'string' ? l : l.from;
       if (from !== path) continue;
       const tab = typeof l === 'string' ? undefined : l.tab;
-      return join(tab ? `${f.route}?tab=${encodeURIComponent(tab)}` : f.route);
+      const query = typeof l === 'string' ? undefined : l.query;
+      const base = tab ? `${f.route}?tab=${encodeURIComponent(tab)}` : query ? `${f.route}?${query}` : f.route;
+      return join(base);
     }
   }
   return null;
@@ -273,7 +275,7 @@ export function checklistDone(id: ChecklistId, s: GoLiveSignals): boolean {
   }
 }
 
-export const REGISTRY_HASH = '3fbfc29d736eaf97';
+export const REGISTRY_HASH = '38f00e5e030b420c';
 export const FEATURES: Feature[] = [
   {
     "id": "home.today",
@@ -375,7 +377,8 @@ export const FEATURES: Feature[] = [
     "purpose": "quotes",
     "minPlan": "WORKSPACE",
     "profiles": "all",
-    "status": "UNTESTED"
+    "status": "WORKING",
+    "testId": "bos.spine"
   },
   {
     "id": "sales.portal",
@@ -624,7 +627,7 @@ export const FEATURES: Feature[] = [
       "COMMERCE"
     ],
     "status": "WORKING",
-    "testId": "commerce.stock.atomic",
+    "testId": "bos.stock-ledger",
     "moduleKey": "website_manager"
   },
   {
@@ -678,24 +681,30 @@ export const FEATURES: Feature[] = [
   {
     "id": "commerce.inventory",
     "department": "commerce",
-    "label": "Inventory and purchases",
+    "label": "Purchases and suppliers",
     "icon": "Boxes",
     "route": "/dashboard/commerce/inventory",
     "purpose": "inventory-purchases",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "NOT_BUILT"
+    "status": "WORKING",
+    "testId": "bos.purchases",
+    "upgrade": {
+      "headline": "Record what you buy",
+      "body": "Purchase bills, suppliers, what you owe, and the GST you can claim back. Pro keeps your stock cost up to date from your purchases."
+    }
   },
   {
     "id": "commerce.pos",
     "department": "commerce",
-    "label": "Counter and POS",
+    "label": "Counter billing",
     "icon": "Store",
     "route": "/dashboard/commerce/pos",
     "purpose": "pos",
-    "minPlan": "BOS",
+    "minPlan": "WORKSPACE",
     "profiles": "all",
-    "status": "NOT_BUILT"
+    "status": "WORKING",
+    "testId": "bos.counter"
   },
   {
     "id": "commerce.tasks",
@@ -725,13 +734,35 @@ export const FEATURES: Feature[] = [
     "label": "Customer invoices",
     "icon": "FileText",
     "route": "/dashboard/finance/invoices",
+    "legacyRoutes": [
+      {
+        "from": "/dashboard/invoices",
+        "query": "note=billing-moved"
+      }
+    ],
     "purpose": "customer-invoices",
     "minPlan": "WORKSPACE",
     "profiles": "all",
-    "status": "LIMITED",
-    "manualCheck": "docs/v2/evidence/dashboard-v2/WALKTHROUGH.md#finance.invoices",
-    "limits": "GST is one flat rate per invoice; invoice numbers are not yet per financial year.",
-    "moduleKey": "domainapp"
+    "status": "WORKING",
+    "testId": "bos.spine",
+    "tabs": [
+      {
+        "key": "invoices",
+        "label": "Invoices"
+      },
+      {
+        "key": "quotes",
+        "label": "Quotes"
+      },
+      {
+        "key": "money-in",
+        "label": "Money in"
+      },
+      {
+        "key": "credit-notes",
+        "label": "Credit notes"
+      }
+    ]
   },
   {
     "id": "finance.collect-payments",
@@ -739,10 +770,14 @@ export const FEATURES: Feature[] = [
     "label": "Collect payments",
     "icon": "CreditCard",
     "route": "/dashboard/finance/collect-payments",
+    "legacyRoutes": [
+      "/dashboard/payments"
+    ],
     "purpose": "collect-payments",
     "minPlan": "WORKSPACE",
     "profiles": "all",
-    "status": "UNTESTED"
+    "status": "WORKING",
+    "testId": "bos.payments-keys"
   },
   {
     "id": "finance.recurring",
@@ -753,27 +788,45 @@ export const FEATURES: Feature[] = [
     "purpose": "recurring-billing",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "NOT_BUILT"
+    "status": "WORKING",
+    "testId": "bos.recurring",
+    "upgrade": {
+      "headline": "Bill the same customer every month",
+      "body": "Set an invoice to repeat monthly, quarterly or yearly, and get a reminder list of who is overdue."
+    }
   },
   {
     "id": "finance.expenses",
     "department": "finance",
-    "label": "Expenses and GST",
+    "label": "Accounts",
     "icon": "Receipt",
     "route": "/dashboard/finance/expenses",
     "legacyRoutes": [
       "/dashboard/accounts"
     ],
     "purpose": "expenses-gst",
-    "minPlan": "BOS",
+    "minPlan": "WORKSPACE",
     "profiles": "all",
-    "status": "LIMITED",
-    "manualCheck": "docs/v2/evidence/dashboard-v2/WALKTHROUGH.md#finance.expenses",
-    "limits": "Expense and GST tracking; accounting entries and GST filing are not built.",
-    "upgrade": {
-      "headline": "Track expenses and GST",
-      "body": "Record expenses, see profit and the GST you owe."
-    }
+    "status": "WORKING",
+    "testId": "bos.journal",
+    "tabs": [
+      {
+        "key": "summary",
+        "label": "Summary"
+      },
+      {
+        "key": "expenses",
+        "label": "Expenses"
+      },
+      {
+        "key": "books",
+        "label": "Books"
+      },
+      {
+        "key": "more",
+        "label": "Industry view and GST filing"
+      }
+    ]
   },
   {
     "id": "finance.ca-accounts",
@@ -784,7 +837,12 @@ export const FEATURES: Feature[] = [
     "purpose": "ca-accounts",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "NOT_BUILT"
+    "status": "WORKING",
+    "testId": "bos.ca-pack",
+    "upgrade": {
+      "headline": "One file for your CA",
+      "body": "GST summary, HSN summary and every register in one Excel workbook with a summary page, for any month, quarter or year."
+    }
   },
   {
     "id": "people.team",
@@ -908,16 +966,16 @@ export const FEATURES: Feature[] = [
     "legacyRoutes": [
       "/dashboard/billing",
       {
+        "from": "/dashboard/billing/receipts",
+        "tab": "receipts"
+      },
+      {
         "from": "/dashboard/go-live",
         "tab": "golive"
       },
       {
         "from": "/dashboard/my-services",
         "tab": "services"
-      },
-      {
-        "from": "/dashboard/invoices",
-        "tab": "receipts"
       }
     ],
     "purpose": "plan-billing",
@@ -1108,12 +1166,7 @@ export const FEATURES: Feature[] = [
     "status": "NOT_BUILT"
   }
 ];
-export const KEPT_ROUTES: { route: string; reason: string }[] = [
-  {
-    "route": "/dashboard/payments",
-    "reason": "Collect payments is Coming soon in the menu, but this old screen holds the checkout-mode switch (order requests / online payment) that live shops already use; it stays reachable by address until KSM verifies Collect payments."
-  }
-];
+export const KEPT_ROUTES: { route: string; reason: string }[] = [];
 export const CAPABILITIES: Capability[] = [
   {
     "id": "bos.purchases",

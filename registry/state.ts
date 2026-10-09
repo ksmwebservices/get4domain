@@ -141,7 +141,9 @@ export function resolveLegacyRoute(features: Feature[], pathname: string, search
       const from = typeof l === 'string' ? l : l.from;
       if (from !== path) continue;
       const tab = typeof l === 'string' ? undefined : l.tab;
-      return join(tab ? `${f.route}?tab=${encodeURIComponent(tab)}` : f.route);
+      const query = typeof l === 'string' ? undefined : l.query;
+      const base = tab ? `${f.route}?tab=${encodeURIComponent(tab)}` : query ? `${f.route}?${query}` : f.route;
+      return join(base);
     }
   }
   return null;

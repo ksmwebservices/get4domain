@@ -51,7 +51,8 @@ export const CAPABILITIES: Capability[] = ${JSON.stringify(reg.CAPABILITIES, nul
     for (const l of f.legacyRoutes ?? []) {
       const from = typeof l === 'string' ? l : l.from;
       const tab = typeof l === 'string' ? undefined : l.tab;
-      map[from] = tab ? `${f.route}?tab=${tab}` : f.route;
+      const query = typeof l === 'string' ? undefined : l.query;
+      map[from] = tab ? `${f.route}?tab=${tab}` : query ? `${f.route}?${query}` : f.route;
     }
   }
   map['/dashboard/domain-app'] = '/dashboard';

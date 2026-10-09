@@ -184,3 +184,12 @@ export class RecurringDto {
 
 export class EmailDocDto { @IsOptional() @IsString() @MaxLength(120) to?: string; }
 export class AlertsDto { @IsBoolean() daily!: boolean; }
+
+export class VariantStockDto {
+  @IsString() @MinLength(1, { message: 'Type the size or colour, for example "M" or "Blue / L".' }) @MaxLength(60) variantKey!: string;
+  @IsIn(['add', 'remove']) mode!: 'add' | 'remove';
+  @IsInt() @Min(1, { message: 'Enter a whole number of 1 or more.' }) quantity!: number;
+  @IsIn(['OPENING', 'ADJUSTMENT', 'RETURN', 'DAMAGE']) reason!: 'OPENING' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE';
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
+  @IsOptional() @IsString() @MaxLength(80) idempotencyKey?: string;
+}

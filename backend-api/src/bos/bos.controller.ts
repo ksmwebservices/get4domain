@@ -17,7 +17,7 @@ import { renderDocumentHtml } from './export/render';
 import { EntitlementsService, RequireCapability } from './entitlements.service';
 import { EXPENSE_HEADS, DEFAULT_ACCOUNTS } from './chart';
 import {
-  ApplyAdvanceDto, AlertsDto, EmailDocDto, ConvertDto, CounterSaleDto, CreditNoteDto, DocDto, ExpenseDto, ItemCostDto, LocationDto, LockDto, PartyDto, PaymentDto, QuoteStatusDto, ReasonDto, RecurringDto, SettingsDto, TransferDto, UpdateDocDto, UpdatePartyDto,
+  ApplyAdvanceDto, AlertsDto, EmailDocDto, ConvertDto, CounterSaleDto, CreditNoteDto, DocDto, ExpenseDto, ItemCostDto, LocationDto, LockDto, PartyDto, PaymentDto, QuoteStatusDto, ReasonDto, RecurringDto, SettingsDto, TransferDto, UpdateDocDto, UpdatePartyDto, VariantStockDto,
 } from './dto';
 
 const NL = String.fromCharCode(10);
@@ -73,6 +73,10 @@ export class BosController {
     if (dto.issue) return this.docs.createAndIssue(u.sub, toInput(dto), { actor: u.email });
     return { doc: await this.docs.createDraft(u.sub, toInput(dto), u.email), warnings: [], replayed: false };
   }
+
+  @Post('documents/preview')
+  @ApiOperation({ summary: 'The exact totals (tax split, round off) a document would get, without saving it' })
+  previewDoc(@CurrentUser() u: AuthenticatedUser, @Body() dto: DocDto) { return this.docs.preview(u.sub, toInput(dto)); }
 
   @Get('documents/:id')
   @ApiOperation({ summary: 'One document with its lines, payments and credit notes' })
@@ -348,6 +352,9 @@ export class BosStockController {
 
   @Get('valuation') @RequireCapability('bos.stock-valuation') @ApiOperation({ summary: 'Stock valuation at cost (Pro)' })
   valuation(@CurrentUser() u: AuthenticatedUser) { return this.reports.stockValuation(u.sub); }
+
+  @Post('items/:id/variant-stock') @ApiOperation({ summary: 'Add or remove stock of one size / colour of an item' })
+  variantStock(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: VariantStockDto) { return this.views.adjustVariant(u.sub, id, dto, u.email); }
 
   @Put('items/:id') @ApiOperation({ summary: 'HSN, GST rate and purchase price of an item' })
   item(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: ItemCostDto) { return this.views.setItemFields(u.sub, id, dto); }

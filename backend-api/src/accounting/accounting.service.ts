@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Expense, PaymentRecord, GstFiling } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { BosReportsService, parseRange } from '../bos/reports.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpsertGstFilingDto } from './dto/upsert-gst-filing.dto';
@@ -30,7 +31,7 @@ export interface TravelAccountingSummary {
 
 @Injectable()
 export class AccountingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly bos?: BosReportsService) {}
 
   /** GST EXCLUSIVE: amount is the taxable base; GST is computed on top. Matches the
    *  sales-invoice logic (GenericInvoice / invoices.service GST_RATE 0.18). */
@@ -115,14 +116,16 @@ export class AccountingService {
       }),
     ]);
 
-    const revenueNet = round2(invoices.reduce((s, i) => s + i.subtotal, 0));
-    const outputGst = round2(invoices.reduce((s, i) => s + i.gstAmount, 0));
-    const revenueGross = round2(invoices.reduce((s, i) => s + i.total, 0));
-    const expensesNet = round2(expenses.reduce((s, e) => s + e.amount, 0));
-    const inputGst = round2(expenses.reduce((s, e) => s + e.gstAmount, 0));
-    const expensesGross = round2(expenses.reduce((s, e) => s + e.total, 0));
+    // The invoices, receipts and expenses made in Full BOS count too (they used to be invisible here, which is why this page showed zero).
+    const b = this.bos ? await this.bos.legacyTotals(vendorId, parseRange(from, to)) : { revenueNet: 0, outputGst: 0, revenueGross: 0, expensesNet: 0, inputGst: 0, expensesGross: 0 };
+    const revenueNet = round2(invoices.reduce((s, i) => s + i.subtotal, 0) + b.revenueNet);
+    const outputGst = round2(invoices.reduce((s, i) => s + i.gstAmount, 0) + b.outputGst);
+    const revenueGross = round2(invoices.reduce((s, i) => s + i.total, 0) + b.revenueGross);
+    const expensesNet = round2(expenses.reduce((s, e) => s + e.amount, 0) + b.expensesNet);
+    const inputGst = round2(expenses.reduce((s, e) => s + e.gstAmount, 0) + b.inputGst);
+    const expensesGross = round2(expenses.reduce((s, e) => s + e.total, 0) + b.expensesGross);
     const expensesOnline = round2(expenses.filter((e) => e.paymentMethod === 'online').reduce((s, e) => s + e.total, 0));
-    const expensesOffline = round2(expenses.filter((e) => e.paymentMethod !== 'online').reduce((s, e) => s + e.total, 0));
+    const expensesOffline = round2(expenses.filter((e) => e.paymentMethod !== 'online').reduce((s, e) => s + e.total, 0) + b.expensesGross);
 
     return {
       from: from ?? null, to: to ?? null,

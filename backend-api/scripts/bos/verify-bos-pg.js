@@ -312,7 +312,9 @@ const pick = (a) => a[Math.floor(rnd() * a.length)];
       const token = rr.data.link.split('/d/')[1];
       const page = await fetch(`${h.base}/public/bos/doc/${token}`);
       const html = await page.text();
-      ok('the public page opens without login and shows a Bill of Supply (not GST-registered) with no Pay now (no own gateway)', page.status === 200 && /Bill of Supply/.test(html) && !/Pay .* now/.test(html), html.slice(0, 200));
+      ok('the public page is real HTML (not JSON), opens without login, shows a Bill of Supply (not GST-registered) and no Pay now (no own gateway)', page.status === 200 && /text\/html/.test(page.headers.get('content-type') ?? '') && html.startsWith('<!doctype html>') && /Bill of Supply/.test(html) && !/Pay .* now/.test(html), html.slice(0, 200));
+      const own = await fetch(`${h.base}/bos/documents/${inv.id}/html`, { headers: { Authorization: `Bearer ${v.token}` } });
+      ok('the printable page of an invoice is real HTML too', own.status === 200 && (await own.text()).startsWith('<!doctype html>'));
       rr = await call('POST', `/bos/documents/${inv.id}/email`, {}, v.token);
       ok('e-mail without an address on file asks for one in plain words', rr.status === 400 && /e-mail address/i.test(J(rr.body)), J(rr.body));
       rr = await call('POST', `/bos/documents/${inv.id}/email`, { to: 'meena@example.com' }, v.token);
@@ -327,6 +329,128 @@ const pick = (a) => a[Math.floor(rnd() * a.length)];
       await call('PUT', '/bos/stock/alerts', { daily: false }, v.token);
       await prisma.notification.deleteMany({ where: { recipientId: v.id, type: 'LOW_STOCK_DAILY' } });
       ok('the vendor can switch the daily message off', (await jobs.runLowStock()).notified === 0 && (await call('GET', '/bos/stock/alerts', undefined, v.token)).data.daily === false);
+    }
+
+    section('[feat:bos.purchases] Purchases (Pro): supplier, purchase bill with input GST, stock in, cost updated, payables, payment out, cancel');
+    let proId = null; let proToken = null;
+    {
+      const pr = await h.createVendor({ key: 'buyer', industry: 'retail', plan: 'BOS' }); proId = pr.id; proToken = pr.token; const PT = pr.token;
+      await call('PUT', '/bos/settings', { gstRegistered: true, gstin: '33AAAAA0000A1Z5', state: 'Tamil Nadu', purchaseUpdatesCost: true }, PT);
+      const sup = (await call('POST', '/bos/parties', { name: 'Metro Wholesale', phone: '9888888888', type: 'supplier', state: 'Tamil Nadu', gstin: '33BBBBB1111B1Z5' }, PT)).data;
+      const it = await mk(pr.id, 'Bulk shirt', 500, { purchasePriceAmount: 200, gstRate: 5 }); await open(pr.id, it, 4);
+      let rr = await call('POST', '/bos/purchases', { docType: 'PURCHASE_BILL', partyId: sup.id, supplierRef: 'MW-2210', lines: [{ itemId: it.id, qty: 10, rate: 250, gstRate: 5 }], issue: true }, PT);
+      ok('a purchase bill is recorded and numbered', rr.status < 300 && /^PB/.test(rr.data?.doc?.number ?? ''), J(rr.body).slice(0, 300));
+      const bill = rr.data.doc;
+      ok('input GST is split: taxable 2,500 and 5% = 125 (CGST 62.50 + SGST 62.50), total 2,625', bill.taxablePaise === 250000 && bill.cgstPaise + bill.sgstPaise === 12500 && bill.totalPaise === 262500, J({ t: bill.taxablePaise, c: bill.cgstPaise, s: bill.sgstPaise, tot: bill.totalPaise }));
+      const p1 = await prisma.vendorProduct.findUnique({ where: { id: it.id } });
+      ok('stock went up by 10 and the item cost price follows the latest purchase (setting on)', p1.stockQty === 14 && p1.purchasePriceAmount === 250, `${p1.stockQty} ${p1.purchasePriceAmount}`);
+      rr = await call('GET', '/bos/outstanding?kind=SUPPLIER', undefined, PT);
+      const owed = (rr.data.parties ?? []).find((x) => x.partyId === sup.id);
+      ok('payables show what is owed to the supplier', owed && owed.totalPaise === 262500, J(rr.body).slice(0, 200));
+      rr = await call('POST', '/bos/payments', { kind: 'PAYMENT_OUT', partyId: sup.id, mode: 'BANK', amount: 1000, allocations: [{ documentId: bill.id, amount: 1000 }] }, PT);
+      ok('a payment to the supplier is recorded against the bill', rr.status < 300, J(rr.body).slice(0, 200));
+      rr = await call('GET', '/bos/outstanding?kind=SUPPLIER', undefined, PT);
+      ok('and the payable drops to 1,625', (rr.data.parties ?? []).find((x) => x.partyId === sup.id)?.totalPaise === 162500, J(rr.body).slice(0, 200));
+      rr = await call('GET', '/bos/books/purchase-register', undefined, PT);
+      ok('purchase register lists the bill', rr.status === 200 && J(rr.body).includes('MW-2210') || J(rr.body).includes(bill.number), J(rr.body).slice(0, 200));
+      const costGl = await prisma.bosJournalLine.findMany({ where: { vendorId: pr.id, accountCode: '1200' } });
+      ok('stock account was debited with the stock value of the bill', costGl.some((l) => l.debitPaise === 250000));
+      const sale = await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyName: 'Walker', lines: [{ itemId: it.id, qty: 2 }], issue: true, taxKind: 'GST' }, PT);
+      ok('the next sale uses the new cost for cost of goods (2 x 250 = 500)', sale.status < 300 && (await prisma.bosJournalLine.findMany({ where: { vendorId: pr.id, accountCode: '5100' } })).some((l) => l.debitPaise === 50000), J(sale.body).slice(0, 200));
+      rr = await call('POST', `/bos/purchases/${bill.id}/cancel`, { reason: 'Supplier sent wrong goods' }, PT);
+      ok('a bill with a payment against it cannot be cancelled, and the sentence says what to do first', rr.status === 409 && /Cancel those first/.test(J(rr.body)), J(rr.body).slice(0, 200));
+      const paid = (await call('GET', '/bos/payments?kind=PAYMENT_OUT', undefined, PT)).data;
+      const payRow = (paid.rows ?? paid)[0];
+      await call('POST', `/bos/payments/${payRow.id}/cancel`, { reason: 'Wrong amount paid' }, PT);
+      const stockBeforeCancel = (await prisma.vendorProduct.findUnique({ where: { id: it.id } })).stockQty;
+      rr = await call('POST', `/bos/purchases/${bill.id}/cancel`, { reason: 'Supplier sent wrong goods' }, PT);
+      ok('after the payment is cancelled the bill can be cancelled (reversal) and 10 units leave stock', rr.status < 300 && (await prisma.vendorProduct.findUnique({ where: { id: it.id } })).stockQty === stockBeforeCancel - 10, J(rr.body).slice(0, 200));
+    }
+
+    section('[feat:bos.ca-pack] GST summary, HSN summary, CA pack, period lock (Pro)');
+    {
+      const PT = proToken;
+      const cust = (await call('POST', '/bos/parties', { name: 'GST Customer', phone: '9100000001', type: 'customer', state: 'Tamil Nadu', gstin: '33CCCCC2222C1Z5' }, PT)).data;
+      const it2 = await mk(proId, 'Taxed item', 1000, { gstRate: 18, hsn: '6109' }); await open(proId, it2, 20);
+      const sale = await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyId: cust.id, lines: [{ itemId: it2.id, qty: 3 }], issue: true }, PT);
+      let rr = await call('GET', '/bos/books/gst-summary', undefined, PT);
+      ok('GST summary shows output tax and input tax tables', rr.status === 200 && J(rr.body).includes('6109') === false && (J(rr.body).toLowerCase().includes('output') || J(rr.body).toLowerCase().includes('gstr')), J(rr.body).slice(0, 300));
+      rr = await call('GET', '/bos/books/hsn-summary', undefined, PT);
+      ok('HSN summary groups the sale under its HSN code and rate', rr.status === 200 && J(rr.body).includes('6109') && J(rr.body).includes('18'), J(rr.body).slice(0, 300));
+      const res = await fetch(`${h.base}/bos/books/ca-pack?kind=month&value=${new Date().toISOString().slice(0, 7)}`, { headers: { Authorization: `Bearer ${PT}` } });
+      const buf = Buffer.from(await res.arrayBuffer());
+      ok('CA pack downloads as a zip with the workbook inside', res.status === 200 && buf.readUInt32LE(0) === 0x04034b50 && buf.includes(Buffer.from('.xlsx')), `${res.status} ${buf.length}`);
+      const bad = await fetch(`${h.base}/bos/books/ca-pack?kind=week&value=1`, { headers: { Authorization: `Bearer ${PT}` } });
+      ok('an unknown period gets a plain sentence', bad.status === 400 && /Choose the period/.test(await bad.text()));
+      // period lock: lock up to yesterday; a document dated inside the lock is refused, one dated today is fine
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      rr = await call('PUT', '/bos/settings/lock', { lockedUntil: yesterday }, PT);
+      ok('the period can be locked', rr.status < 300, J(rr.body).slice(0, 200));
+      rr = await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyName: 'Late entry', docDate: new Date(Date.now() - 5 * 86400000).toISOString(), lines: [{ itemId: it2.id, qty: 1 }], issue: true }, PT);
+      ok('a document dated in a locked period is refused with a plain sentence that says what to do', rr.status >= 400 && /lock/i.test(J(rr.body)), J(rr.body).slice(0, 300));
+      rr = await call('POST', `/bos/documents/${sale.data.doc.id}/credit-note`, { lines: [{ refLineId: (await call('GET', `/bos/documents/${sale.data.doc.id}`, undefined, PT)).data.lines[0].id, qty: 1, restock: true }], reason: 'Return after the lock', issue: true }, PT);
+      ok('a credit note dated today (after the lock) is allowed instead', rr.status < 300, J(rr.body).slice(0, 300));
+      await call('PUT', '/bos/settings/lock', { lockedUntil: null }, PT);
+    }
+
+    section('[feat:bos.recurring] Recurring invoices (Pro): runs once per due date, pauses when the plan drops, never deleted');
+    {
+      const PT = proToken;
+      const cust = (await call('POST', '/bos/parties', { name: 'Monthly client', phone: '9100000002', type: 'customer', state: 'Tamil Nadu' }, PT)).data;
+      const svc = await mk(proId, 'Monthly care plan', 1500, { trackStock: false, stockQty: null, purchasePriceAmount: null, gstRate: 18 });
+      const tpl = (await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyId: cust.id, lines: [{ itemId: svc.id, qty: 1 }], issue: true }, PT)).data.doc;
+      let rr = await call('POST', '/bos/books/recurring', { templateId: tpl.id, frequency: 'MONTHLY', nextRunOn: new Date().toISOString() }, PT);
+      ok('an invoice can be set to repeat monthly', rr.status < 300, J(rr.body).slice(0, 200));
+      const jobs = h.svc('BosJobsService', 'bos/more.services');
+      const later = new Date(Date.now() + 60000);
+      const r1 = await jobs.runRecurring(later); const r2 = await jobs.runRecurring(later);
+      ok('the due invoice is created once, and running the job again creates nothing', r1.created === 1 && r2.created === 0, J([r1, r2]));
+      const nextRows = await call('GET', '/bos/books/recurring', undefined, PT);
+      ok('the schedule moves on to next month', nextRows.data.length === 1 && new Date(nextRows.data[0].nextRunOn).getTime() > Date.now() + 25 * 86400000, J(nextRows.body).slice(0, 200));
+      await prisma.billingTerm.updateMany({ where: { vendorId: proId, isCurrent: true }, data: { planKey: 'WORKSPACE' } }); ent.invalidate(proId);
+      await prisma.bosRecurring.updateMany({ where: { vendorId: proId }, data: { nextRunOn: new Date(Date.now() - 1000) } });
+      const r3 = await jobs.runRecurring(new Date());
+      ok('after a downgrade the schedule pauses (nothing is created, nothing is deleted)', r3.created === 0 && (await prisma.bosRecurring.count({ where: { vendorId: proId } })) === 1);
+      ok('and Essentials cannot open the recurring screen (PLAN_REQUIRED)', (await call('GET', '/bos/books/recurring', undefined, PT)).body?.code === 'PLAN_REQUIRED');
+    }
+
+    section('[feat:bos.journal] Expenses post to the books on every plan and show in the Accounts totals');
+    {
+      const e = await h.createVendor({ key: 'spender', industry: 'retail', plan: 'WORKSPACE' });
+      await call('PUT', '/bos/settings', { gstRegistered: true, state: 'Tamil Nadu' }, e.token);
+      let rr = await call('POST', '/bos/expenses', { category: '5300', description: 'Shop rent', amount: 5000, paymentMode: 'BANK' }, e.token);
+      ok('an expense is recorded on Essentials', rr.status < 300, J(rr.body).slice(0, 200));
+      rr = await call('POST', '/bos/expenses', { category: '5300', description: 'Packing material with GST', amount: 1180, gstRate: 18, amountIncludesGst: true, claimGst: false, paymentMode: 'CASH' }, e.token);
+      ok('an expense with GST inside the amount is accepted', rr.status < 300, J(rr.body).slice(0, 200));
+      rr = await call('GET', '/bos/reports/summary', undefined, e.token);
+      ok('the Accounts summary shows the expenses (6,180) instead of zero', rr.data.expensesPaise === 618000, J(rr.body).slice(0, 300));
+      rr = await call('GET', '/accounting/summary', undefined, e.token);
+      ok('the older Accounts page is no longer all zero: it now includes the expenses made here', rr.status === 200 && rr.data.expensesGross === 6180, J(rr.body).slice(0, 300));
+      const exp = (await call('GET', '/bos/expenses', undefined, e.token)).data;
+      const first = (exp.rows ?? exp)[0];
+      rr = await call('POST', `/bos/expenses/${first.id}/cancel`, { reason: 'Entered twice by mistake' }, e.token);
+      ok('an expense is cancelled by reversal, never deleted', rr.status < 300 && (await prisma.bosExpense.count({ where: { vendorId: e.id } })) === 2);
+    }
+
+    section('[feat:bos.variants] Sizes and colours: stock per variant, sold by variant, refused when that variant is short');
+    {
+      const v = await h.createVendor({ key: 'footwear', industry: 'retail', plan: 'WORKSPACE' });
+      await call('PUT', '/bos/settings', { gstRegistered: true, state: 'Tamil Nadu', negativeStock: 'BLOCK', priceMode: 'EXCLUSIVE' }, v.token);
+      const shoe = await mk(v.id, 'Runner shoe', 1999, { gstRate: 12, hsn: '6403', purchasePriceAmount: 1200 });
+      let rr = await call('POST', `/bos/stock/items/${shoe.id}/variant-stock`, { variantKey: 'UK8', mode: 'add', quantity: 5, reason: 'OPENING' }, v.token);
+      ok('opening stock can be entered for a size', rr.status < 300 && rr.data.onHand === 5, J(rr.body));
+      await call('POST', `/bos/stock/items/${shoe.id}/variant-stock`, { variantKey: 'UK9', mode: 'add', quantity: 2, reason: 'OPENING' }, v.token);
+      rr = await call('GET', '/bos/stock', undefined, v.token);
+      const row = rr.data.rows.find((x) => x.id === shoe.id);
+      ok('the Stock screen lists each size with its own count, and the item total is the sum', row.onHand === 7 && row.variants.length === 2 && row.variants.find((x) => x.variantKey === 'UK9').onHand === 2, J(row));
+      rr = await call('POST', '/bos/counter/sale', { lines: [{ itemId: shoe.id, qty: 3, variantKey: 'UK9' }], payments: [{ mode: 'CASH', amount: 6717 }], idempotencyKey: 'variant-sale-001' }, v.token);
+      ok('selling 3 of a size that has 2 is refused with the size and the count in the sentence', rr.status === 400 && /UK9/.test(J(rr.body)) && /only 2 left/.test(J(rr.body)), J(rr.body));
+      rr = await call('POST', '/bos/counter/sale', { lines: [{ itemId: shoe.id, qty: 2, variantKey: 'UK8' }], payments: [{ mode: 'UPI', amount: 4478 }], idempotencyKey: 'variant-sale-002' }, v.token);
+      ok('selling 2 of a size that has 5 works and the invoice line carries the size', rr.status < 300 && rr.data.invoice.status === 'PAID' && rr.data.invoice.lines[0].variantKey === 'UK8', J(rr.body).slice(0, 300));
+      rr = await call('GET', `/bos/stock/items/${shoe.id}`, undefined, v.token);
+      ok('item detail shows UK8 = 3 and UK9 = 2 after the sale', rr.data.variants.find((x) => x.variantKey === 'UK8').onHand === 3 && rr.data.variants.find((x) => x.variantKey === 'UK9').onHand === 2, J(rr.data.variants));
+      rr = await call('POST', `/bos/stock/items/${shoe.id}/variant-stock`, { variantKey: 'UK9', mode: 'remove', quantity: 3, reason: 'DAMAGE' }, v.token);
+      ok('removing more of a size than it has is refused', rr.status === 400, J(rr.body));
     }
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');
