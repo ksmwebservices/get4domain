@@ -7,7 +7,7 @@ Dispatch: `GET4DOMAIN_DISPATCH_V2_LEADSPACE_10OCT2026.md` (repo root). Started 2
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
 | 0 audit | DONE | (this commit) | `docs/v2/evidence/leadspace/AUDIT.md` |
-| 1 data model | NOT STARTED | | |
+| 1 data model | DONE | see git log | migration `20261010100000_leadspace` (21 new tables, additive), RLS script comment updated and re-read (`DO $` / `END $;` intact). Registry plan key LEADSPACE is added in phase 4 with the dashboard |
 | 2 landing pages | NOT STARTED | | |
 | 3 capture engine, common WhatsApp, wallet rules | NOT STARTED | | |
 | 4 vendor mobile dashboard | NOT STARTED | | |

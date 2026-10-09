@@ -29,6 +29,8 @@
 
 -- Full BOS (2026-10-09): the new g4d_bos_* tables and g4d_plan_overrides (migration 20261009180000_bos_spine) are picked up by this same script,
 -- which enables RLS on every public table that lacks it. Re-run it after `prisma migrate deploy`.
+-- LeadSpace (2026-10-10): the 21 g4d_lead*/g4d_leadspace_*/g4d_social_*/g4d_whatsapp_*/g4d_post_jobs/g4d_promotion_plans/g4d_ad_spend_entries
+-- tables (migration 20261010100000_leadspace) are covered by the same loop below.
 
 DO $$
 DECLARE

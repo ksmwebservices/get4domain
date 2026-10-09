@@ -3133,3 +3133,456 @@ model PlanOverride {
 
   @@map("g4d_plan_overrides")
 }
+
+// ── LEADSPACE (Dispatch B, 10-Oct-2026) — ADDITIVE ONLY ─────────────────────────────────────────────
+// A free single landing page per vendor, verified enquiries / bookings / site visits / orders, a prepaid LEADS purse charged per verified event,
+// and a Get4Domain-run promotion scheduler. Vendor links are soft (vendorId, no FK) so no existing table changes. Money is integer paise.
+
+/// One per vendor: the landing page and its single goal.
+model LeadspaceProfile {
+  id                 String    @id @default(cuid())
+  vendorId           String    @unique
+  slug               String    @unique
+  category           String
+  subcategory        String?
+  city               String
+  serviceArea        String?
+  /// ENQUIRY | BOOKING | APPOINTMENT | SITE_VISIT | CART_ORDER
+  goal               String    @default("ENQUIRY")
+  /// TEMPLATE | EXISTING_PAGE
+  mode               String    @default("TEMPLATE")
+  templateId         String    @default("generic")
+  businessName       String
+  tagline            String?
+  about              String?
+  phone              String?
+  /// The vendor's own WhatsApp number: where alerts go and where the conversation continues.
+  alertWhatsapp      String?
+  email              String?
+  address            String?
+  mapsLink           String?
+  heroImage          String?
+  /// [{ name, price?, description?, image? }]
+  services           Json      @default("[]")
+  /// { headline?, text?, validUntil? }
+  offer              Json?
+  gallery            Json?
+  faqs               Json?
+  trust              Json?
+  hours              String?
+  existingPageUrl    String?
+  /// UNVERIFIED | VERIFIED | REJECTED
+  verificationStatus String    @default("UNVERIFIED")
+  noindex            Boolean   @default(true)
+  /// { advocate?, clinic?, realEstate? } : regulated-trade flags set from the category
+  regulated          Json?
+  reraNumber         String?
+  /// DRAFT | PUBLISHED | SUSPENDED
+  status             String    @default("DRAFT")
+  suspendedReason    String?
+  /// HOLD (default: capture, hold, unlock on refill) | REJECT (polite message)
+  lowBalanceMode     String    @default("HOLD")
+  /// vendor switch + admin switch must both be on before any post goes out
+  promotionEnabled   Boolean   @default(false)
+  views              Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([category, city])
+  @@index([status])
+  @@map("g4d_leadspace_profiles")
+}
+
+/// A verified customer event. Created in one transaction with its charge.
+model LeadEvent {
+  id               String    @id @default(cuid())
+  vendorId         String
+  profileId        String?
+  /// ENQUIRY | BOOKING | APPOINTMENT | SITE_VISIT | CART_ORDER
+  type             String
+  customerName     String
+  customerPhone    String
+  phoneHash        String
+  /// { message?, items?, date?, time?, service?, property?, budget?, address?, notes? }
+  payload          Json      @default("{}")
+  source           String?
+  utm              Json?
+  consentId        String?
+  otpVerifiedAt    DateTime?
+  /// NEW | HELD | DELIVERED | CONTACTED | WON | LOST | DISPUTED | CREDITED
+  status           String    @default("NEW")
+  /// the price the event was quoted at capture (null when no price rule existed yet)
+  priceQuotedPaise Int?
+  priceChargedPaise Int      @default(0)
+  ledgerId         String?
+  vendorNote       String?
+  /// cart orders: PENDING | CONFIRMED | DECLINED
+  orderDecision    String?
+  idempotencyKey   String
+  deliveredAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, phoneHash, type, createdAt])
+  @@map("g4d_lead_events")
+}
+
+/// Admin-editable fixed price per event type. Rows are never edited: a change ends the old row and adds a new one (versioned).
+model LeadPriceRule {
+  id            String    @id @default(cuid())
+  category      String?
+  city          String?
+  eventType     String
+  pricePaise    Int
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  createdBy     String?
+  note          String?
+  createdAt     DateTime  @default(now())
+
+  @@index([eventType, effectiveFrom])
+  @@map("g4d_lead_price_rules")
+}
+
+/// A typed purse. LEADS is the only kind stored here: the AI credit stays in the existing wallet, untouched.
+model LeadPurse {
+  id             String   @id @default(cuid())
+  vendorId       String
+  /// LEADS
+  kind           String   @default("LEADS")
+  balancePaise   Int      @default(0)
+  totalCredited  Int      @default(0)
+  totalDebited   Int      @default(0)
+  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now())
+
+  @@unique([vendorId, kind])
+  @@map("g4d_lead_purses")
+}
+
+/// Append-only ledger of the purse. Every row carries the running balance and a unique idempotency key.
+model LeadPurseEntry {
+  id             String    @id @default(cuid())
+  purseId        String
+  vendorId       String
+  /// CREDIT | DEBIT
+  type           String
+  amountPaise    Int
+  balanceAfter   Int
+  /// REFILL | LEAD_CHARGE | CREDIT_INVALID | REFUND | ADJUSTMENT | EXPIRY
+  reason         String
+  refType        String?
+  refId          String?
+  note           String?
+  idempotencyKey String    @unique
+  razorpayId     String?   @unique
+  expiresAt      DateTime?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_lead_purse_entries")
+}
+
+/// What the customer was shown and agreed to when they asked for the code.
+model ConsentRecord {
+  id           String   @id @default(cuid())
+  phoneHash    String
+  textVersion  String
+  purpose      String
+  vendorId     String?
+  slug         String?
+  ipHash       String?
+  createdAt    DateTime @default(now())
+
+  @@index([phoneHash, createdAt])
+  @@map("g4d_consent_records")
+}
+
+/// Credit given back for a lead that was not valid. Every one also has a CREDIT row in the purse ledger.
+model InvalidLeadCredit {
+  id          String   @id @default(cuid())
+  leadId      String
+  vendorId    String
+  /// WRONG_NUMBER | DUPLICATE | SPAM | VENDOR_OWN | OTHER
+  reason      String
+  /// AUTO | ADMIN
+  decidedBy   String
+  decidedById String?
+  amountPaise Int
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@index([leadId])
+  @@map("g4d_invalid_lead_credits")
+}
+
+/// A vendor's dispute of a delivered lead, decided by an admin.
+model LeadDispute {
+  id          String    @id @default(cuid())
+  leadId      String
+  vendorId    String
+  reason      String
+  note        String?
+  /// OPEN | CREDITED | REJECTED
+  status      String    @default("OPEN")
+  decidedBy   String?
+  decisionNote String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([vendorId])
+  @@map("g4d_lead_disputes")
+}
+
+/// One-time codes sent over WhatsApp. Only a hash of the code is stored.
+model LeadOtp {
+  id         String    @id @default(cuid())
+  phoneHash  String
+  codeHash   String
+  vendorId   String?
+  consentId  String?
+  deviceHash String?
+  ipHash     String?
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phoneHash, createdAt])
+  @@index([deviceHash, createdAt])
+  @@map("g4d_lead_otps")
+}
+
+/// Numbers that never receive a code again (spam, opt-out).
+model LeadBlockedPhone {
+  id        String   @id @default(cuid())
+  phoneHash String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@map("g4d_lead_blocked_phones")
+}
+
+/// Refill packs. `payPaise` is what the vendor pays Razorpay; `creditPaise` is what lands in the purse; `gstMode` says whether the price includes GST.
+model LeadRefillPack {
+  id          String   @id @default(cuid())
+  label       String
+  payPaise    Int
+  creditPaise Int
+  /// INCLUSIVE | EXCLUSIVE
+  gstMode     String   @default("INCLUSIVE")
+  active      Boolean  @default(true)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("g4d_lead_refill_packs")
+}
+
+/// A vendor's request to take unused balance back.
+model LeadRefundRequest {
+  id            String    @id @default(cuid())
+  vendorId      String
+  amountPaise   Int
+  note          String?
+  /// REQUESTED | APPROVED | PAID | REJECTED
+  status        String    @default("REQUESTED")
+  paymentFeePaise Int     @default(0)
+  decidedBy     String?
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([status])
+  @@map("g4d_lead_refund_requests")
+}
+
+/// Admin settings for LeadSpace (key to JSON): refund and expiry rules, dedupe window, margin floor, global kill switch, daily caps.
+model LeadspaceSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("g4d_leadspace_settings")
+}
+
+/// Template registry for the WhatsApp provider layer, with approval status per template.
+model WhatsappTemplate {
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  /// AUTHENTICATION | UTILITY
+  category           String
+  language           String   @default("en")
+  body               String
+  /// SANDBOX | PENDING | APPROVED | REJECTED
+  approvalStatus     String   @default("SANDBOX")
+  providerTemplateId String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("g4d_whatsapp_templates")
+}
+
+/// Every message the common Get4Domain number sends (the number is masked), for spam-rate monitoring per vendor.
+model WhatsappMessageLog {
+  id                String   @id @default(cuid())
+  provider          String
+  template          String
+  toMasked          String
+  phoneHash         String
+  vendorId          String?
+  /// QUEUED | SENT | DELIVERED | FAILED | REFUSED
+  status            String
+  providerMessageId String?
+  error             String?
+  createdAt         DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@index([phoneHash, createdAt])
+  @@map("g4d_whatsapp_message_logs")
+}
+
+/// A connected social account (Get4Domain's own page, or a vendor's own). Tokens are stored encrypted.
+model SocialAccount {
+  id         String    @id @default(cuid())
+  /// PLATFORM | VENDOR
+  ownerType  String
+  vendorId   String?
+  /// FACEBOOK_PAGE | INSTAGRAM | TELEGRAM | GOOGLE_BUSINESS
+  channel    String
+  name       String
+  externalId String?
+  /// the theme of a Get4Domain page, for example "Chennai Home Services Deals"
+  theme      String?
+  city       String?
+  category   String?
+  tokenEnc   String?
+  scopes     Json?
+  /// SANDBOX | AWAITING_APPROVAL | CONNECTED | DISCONNECTED
+  status     String    @default("SANDBOX")
+  dailyCap   Int       @default(3)
+  lastSyncAt DateTime?
+  lastError  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([ownerType, channel])
+  @@index([vendorId])
+  @@map("g4d_social_accounts")
+}
+
+/// The shared publisher's post log: scheduling, retries and results.
+model SocialPost {
+  id             String    @id @default(cuid())
+  accountId      String
+  /// TEXT | IMAGE | LINK
+  kind           String    @default("TEXT")
+  content        String
+  imageUrl       String?
+  linkUrl        String?
+  scheduledFor   DateTime
+  /// SCHEDULED | POSTING | POSTED | FAILED | CANCELLED
+  status         String    @default("SCHEDULED")
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime?
+  providerPostId String?
+  postUrl        String?
+  error          String?
+  results        Json?
+  idempotencyKey String    @unique
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([accountId, scheduledFor])
+  @@map("g4d_social_posts")
+}
+
+/// Which vendor Get4Domain promotes, where, how often.
+model PromotionPlan {
+  id              String    @id @default(cuid())
+  vendorId        String    @unique
+  channels        Json      @default("[]")
+  /// { perWeek: number, days?: string[] }
+  schedule        Json      @default("{}")
+  theme           String?
+  offer           String?
+  /// DRAFT | ACTIVE | PAUSED
+  status          String    @default("DRAFT")
+  /// posts need an admin's approval until this date, then optionally never
+  manualUntil     DateTime?
+  autoApprove     Boolean   @default(false)
+  killSwitch      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("g4d_promotion_plans")
+}
+
+/// One post to make. Network groups that have no API become a manual task with ready copy.
+model PostJob {
+  id            String    @id @default(cuid())
+  planId        String
+  vendorId      String
+  /// FACEBOOK_PAGE | INSTAGRAM | TELEGRAM | GOOGLE_BUSINESS | MANUAL
+  channel       String
+  accountId     String?
+  scheduledFor  DateTime
+  theme         String?
+  /// { caption, hashtags?, imagePrompt? }
+  content       Json
+  assetUrl      String?
+  linkUrl       String?
+  /// DRAFT | AWAITING_APPROVAL | APPROVED | SCHEDULED | POSTED | FAILED | SKIPPED
+  status        String    @default("AWAITING_APPROVAL")
+  approvalLog   Json      @default("[]")
+  results       Json?
+  socialPostId  String?
+  manualTask    Boolean   @default(false)
+  manualDoneAt  DateTime?
+  manualTarget  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([vendorId])
+  @@map("g4d_post_jobs")
+}
+
+/// Money Get4Domain spends itself on boosts (entered by hand), so cost per verified lead can be measured.
+model AdSpendEntry {
+  id          String   @id @default(cuid())
+  date        DateTime
+  channel     String
+  category    String?
+  city        String?
+  amountPaise Int
+  note        String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@map("g4d_ad_spend_entries")
+}
+
+/// "Report this page" on a public LeadSpace page.
+model LeadspaceAbuseReport {
+  id        String   @id @default(cuid())
+  slug      String
+  reason    String
+  note      String?
+  ipHash    String?
+  /// OPEN | ACTIONED | DISMISSED
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+
+  @@index([slug])
+  @@index([status])
+  @@map("g4d_leadspace_abuse_reports")
+}
