@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LeadAlertsService } from './alerts.service';
 import { clean, summarise, validatePayload } from './goals';
 import { EVENT_TYPES, EventType, normalizePhone, phoneHash } from './leadspace.types';
-import { LeadOtpService } from './otp.service';
+import { LeadOtpService, VENDOR_VERIFY_DEVICE } from './otp.service';
 import { LeadPricingService } from './pricing.service';
 import { LeadPurseService } from './purse.service';
 import { LeadspaceSettingsService } from './settings.service';
@@ -70,7 +70,7 @@ export class LeadCaptureService {
     if (replay && ten && replay.phoneHash === phoneHash(ten)) return this.done(replay, profile, true);
 
     const checked = await this.otp.check(i.otpId, i.phone, i.code);
-    if (checked.vendorId !== profile.vendorId) throw new BadRequestException('That code is not right or has expired. Request a new code and try again.');
+    if (checked.vendorId !== profile.vendorId || checked.deviceHash === VENDOR_VERIFY_DEVICE) throw new BadRequestException('That code is not right or has expired. Request a new code and try again.');
 
     const s = await this.settings.get();
     const now = Date.now();

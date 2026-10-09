@@ -3185,6 +3185,8 @@ model LeadspaceProfile {
   /// vendor switch + admin switch must both be on before any post goes out
   promotionEnabled   Boolean   @default(false)
   views              Int       @default(0)
+  /// hash of the network that created the page, for the creation rate limit
+  createdIpHash      String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -3585,4 +3587,19 @@ model LeadspaceAbuseReport {
   @@index([slug])
   @@index([status])
   @@map("g4d_leadspace_abuse_reports")
+}
+
+/// One row per page per day: the top of the funnel (page views, button taps, forms started). Views are not lead events, so they live here.
+model LeadspaceDailyStat {
+  id         String   @id @default(cuid())
+  profileId  String
+  vendorId   String
+  day        DateTime @db.Date
+  views      Int      @default(0)
+  ctaClicks  Int      @default(0)
+  formStarts Int      @default(0)
+
+  @@unique([profileId, day])
+  @@index([vendorId, day])
+  @@map("g4d_leadspace_daily_stats")
 }

@@ -22,6 +22,7 @@ const suites = [
   ['Full BOS migration on REAL Postgres: rehearsal on existing data, no drift, RLS covered', '../bos/verify-bos-migration-pg.js'],
   ['Full BOS on REAL Postgres: chains A-D, stock-ledger property, concurrency, upgrade/downgrade, order bridge, backfill', '../bos/verify-bos-pg.js'],
   ['LeadSpace on REAL Postgres: OTP + consent, verified-event charge, hold and release, atomic wallet, disputes, refunds, common WhatsApp number rules', '../leadspace/verify-leadspace-pg.js'],
+  ['LeadSpace pages on REAL Postgres: twelve trade templates, auto-generation, existing-page mode, goal flows, abuse controls, regulated trades, SEO, product feed', '../leadspace/verify-pages-pg.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
 // The admin nav lives in the Next.js app; run its check from here too when the monorepo sibling is present.

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsDefined, IsIn, IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { ArrayMaxSize } from 'class-validator';
+import { IsArray, IsBoolean, IsDefined, IsIn, IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { DISPUTE_REASONS } from './credits.service';
 import { EVENT_TYPES } from './leadspace.types';
 
@@ -82,4 +83,68 @@ export class TemplateApprovalDto {
 
 export class ApplyDto {
   @IsOptional() @IsBoolean() apply?: boolean;
+}
+
+/** Create or save a page. Every field is optional on save; the service cleans each one. Lists are checked item by item there. */
+export class SavePageDto {
+  @IsOptional() @IsString() @MaxLength(40) category?: string;
+  @IsOptional() @IsString() @MaxLength(60) subcategory?: string;
+  @IsOptional() @IsString() @MaxLength(60) city?: string;
+  @IsOptional() @IsString() @MaxLength(120) serviceArea?: string;
+  @IsOptional() @IsIn(EVENT_TYPES as unknown as string[]) goal?: string;
+  @IsOptional() @IsIn(['TEMPLATE', 'EXISTING_PAGE']) mode?: string;
+  @IsOptional() @IsString() @MaxLength(80) businessName?: string;
+  @IsOptional() @IsString() @MaxLength(120) tagline?: string;
+  @IsOptional() @IsString() @MaxLength(900) about?: string;
+  @IsOptional() @IsString() @MaxLength(240) address?: string;
+  @IsOptional() @IsString() @MaxLength(500) mapsLink?: string;
+  @IsOptional() @IsString() @MaxLength(500) heroImage?: string;
+  @IsOptional() @IsString() @MaxLength(120) email?: string;
+  @IsOptional() @IsString() @MaxLength(160) hours?: string;
+  @IsOptional() @IsString() @MaxLength(500) existingPageUrl?: string;
+  @IsOptional() @IsString() @MaxLength(60) reraNumber?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(40) services?: unknown[];
+  @IsOptional() @IsObject() offer?: Record<string, unknown>;
+  @IsOptional() @IsArray() @ArrayMaxSize(12) gallery?: unknown[];
+  @IsOptional() @IsArray() @ArrayMaxSize(12) faqs?: unknown[];
+  @IsOptional() @IsArray() @ArrayMaxSize(8) trust?: unknown[];
+}
+
+export class VerifyPhoneRequestDto {
+  @IsString() @MaxLength(20) phone!: string;
+}
+
+export class VerifyPhoneConfirmDto {
+  @IsString() @MaxLength(20) phone!: string;
+  @IsString() @MaxLength(60) otpId!: string;
+  @IsString() @MaxLength(8) code!: string;
+}
+
+export class TrackDto {
+  @IsString() @MaxLength(60) slug!: string;
+  @IsIn(['view', 'cta', 'form']) kind!: 'view' | 'cta' | 'form';
+}
+
+export class ReportPageDto {
+  @IsString() @MaxLength(60) slug!: string;
+  @IsIn(['SPAM', 'MISLEADING', 'ILLEGAL', 'NOT_A_REAL_BUSINESS', 'OTHER']) reason!: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+
+export class PromotionToggleDto {
+  @IsBoolean() on!: boolean;
+}
+
+export class SuspendDto {
+  @IsString() @MinLength(5, { message: 'Write a short reason (at least 5 characters).' }) @MaxLength(300) reason!: string;
+}
+
+export class RegulatedReviewDto {
+  @IsBoolean() approve!: boolean;
+  @IsOptional() @IsBoolean() allowPromotion?: boolean;
+}
+
+export class ReportActionDto {
+  @IsIn(['ACTIONED', 'DISMISSED']) action!: 'ACTIONED' | 'DISMISSED';
+  @IsOptional() @IsString() @MaxLength(300) suspendReason?: string;
 }

@@ -39,7 +39,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://get4domain.com/sitemap.xml',
+    sitemap: ['https://get4domain.com/sitemap.xml', 'https://get4domain.com/sitemap-leadspace.xml'],
     host: 'get4domain.com',
   };
 }

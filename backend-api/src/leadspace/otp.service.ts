@@ -8,6 +8,9 @@ import { LeadspaceSettingsService } from './settings.service';
 
 const tooMany = (sentence: string): HttpException => new HttpException(sentence, HttpStatus.TOO_MANY_REQUESTS);
 
+/** Marker stored in LeadOtp.deviceHash for codes that prove a vendor owns their number. Such a code can never be used to capture a customer event. */
+export const VENDOR_VERIFY_DEVICE = 'vendor-verify';
+
 export interface OtpRequestInput { phone: string; vendorId: string; slug: string; deviceId?: string | null; ip?: string | null; consent: boolean }
 export interface OtpRequestResult { otpId: string; expiresInSeconds: number; sandbox: boolean }
 
@@ -59,8 +62,36 @@ export class LeadOtpService {
     return { otpId, expiresInSeconds: s.otpTtlMinutes * 60, sandbox: this.gateway.getProvider().sandbox };
   }
 
+  /** A vendor proves they own the number their alerts go to. Same limits per phone and the same blocklist; no consent record is needed. */
+  async requestForVendor(vendorId: string, phone: string): Promise<OtpRequestResult> {
+    const ten = normalizePhone(phone);
+    if (!ten) throw new BadRequestException('Enter a valid 10-digit mobile number.');
+    const s = await this.settings.get();
+    const ph = phoneHash(ten);
+    if (await this.prisma.leadBlockedPhone.findUnique({ where: { phoneHash: ph } })) throw new BadRequestException('We cannot send a code to this number. Please use another number.');
+    const hourAgo = new Date(Date.now() - 3_600_000);
+    if ((await this.prisma.leadOtp.count({ where: { phoneHash: ph, createdAt: { gte: hourAgo } } })) >= s.otpPerPhonePerHour) throw tooMany('Too many codes were requested for this number. Please wait an hour and try again.');
+    const otpId = crypto.randomUUID();
+    const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+    await this.prisma.leadOtp.create({ data: { id: otpId, phoneHash: ph, codeHash: this.codeHash(otpId, code), vendorId, deviceHash: VENDOR_VERIFY_DEVICE, expiresAt: new Date(Date.now() + s.otpTtlMinutes * 60_000) } });
+    const sent = await this.gateway.send({ template: 'leadspace_otp', phone: ten, variables: [code], vendorId });
+    if (sent.status === 'REFUSED' || sent.status === 'FAILED') {
+      await this.prisma.leadOtp.update({ where: { id: otpId }, data: { usedAt: new Date() } });
+      throw new HttpException('We could not send the code just now. Please try again in a minute.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    return { otpId, expiresInSeconds: s.otpTtlMinutes * 60, sandbox: this.gateway.getProvider().sandbox };
+  }
+
+  /** Confirms the vendor's code and returns the verified ten-digit number. */
+  async confirmForVendor(vendorId: string, otpId: string, phone: string, code: string): Promise<string> {
+    const c = await this.check(otpId, phone, code);
+    if (c.vendorId !== vendorId || c.deviceHash !== VENDOR_VERIFY_DEVICE) throw new BadRequestException('That code is not right or has expired. Request a new code and try again.');
+    if (!(await this.consume(this.prisma, otpId))) throw new BadRequestException('That code is not right or has expired. Request a new code and try again.');
+    return c.ten;
+  }
+
   /** Checks a code without consuming it. A wrong code counts as an attempt; too many attempts burn the code. */
-  async check(otpId: string, phone: string, code: string): Promise<{ consentId: string | null; vendorId: string | null; phoneHash: string; ten: string }> {
+  async check(otpId: string, phone: string, code: string): Promise<{ consentId: string | null; vendorId: string | null; phoneHash: string; ten: string; deviceHash: string | null }> {
     const ten = normalizePhone(phone);
     if (!ten) throw new BadRequestException('Enter a valid 10-digit mobile number.');
     const s = await this.settings.get();
@@ -74,7 +105,7 @@ export class LeadOtpService {
       await this.prisma.leadOtp.update({ where: { id: otpId }, data: { attempts: { increment: 1 } } });
       throw bad;
     }
-    return { consentId: row.consentId, vendorId: row.vendorId, phoneHash: ph, ten };
+    return { consentId: row.consentId, vendorId: row.vendorId, phoneHash: ph, ten, deviceHash: row.deviceHash };
   }
 
   /** Inside the capture transaction: use the code exactly once. */
