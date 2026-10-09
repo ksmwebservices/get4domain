@@ -277,3 +277,37 @@ Rebuild **both** containers: a backend-only or frontend-only rebuild does not de
 Before switching Step N Rock or anyone else: read the dry-run report in `docs/v2/evidence/`. A vendor listed under "would lose access" uses a module (for example Campaigns) whose v2 screen is still Coming soon; leave that vendor on the old dashboard.
 
 **Heads-up for Step N Rock:** its current term is half-year, GST not charged. After this release a half-year term, no GST or a UPI QR channel exists only through a special arrangement. If you want its next renewal to stay half-year / no GST / QR, create its arrangement (Admin > Pricing > Special arrangements) **before** the renewal invoice is built (about 15 days before the term ends). Without one, the renewal invoice is the annual plan, Razorpay only, GST 18% on top, and you get an admin notification saying so. Nothing was changed for Step N Rock by this release.
+
+## 8. Full BOS — migration and VM steps (2026-10-09, KSM only)
+
+Claude Code did not touch the server or any production database. Everything below runs on the VM, in this order. Take a backup first.
+
+```
+ssh ksmwebtechservices@34.14.130.68
+cd /srv/get4domain-site && git pull origin get4domain-site
+cd backend-api && npx prisma migrate deploy && npx prisma generate     # applies 20261009180000_bos_spine (additive only)
+# run backend-api/prisma/sql/enable_rls_public.sql in the Supabase SQL editor (it covers every public table, so the 13 new tables are included)
+docker compose build --no-cache && docker compose up -d --force-recreate
+docker compose logs --tail=50 backend                                   # look for "Nest application successfully started"
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+```
+
+Rebuild **both** containers.
+
+**Opening balances (backfill).** Dry run first; it only reads and prints what it would post. Then write for one vendor at a time, starting with `ksm-webtech-services`, then `stepnrock`:
+
+```
+cd /srv/get4domain-site/backend-api
+node scripts/bos-spine-backfill.js                                        # dry run, every vendor
+node scripts/bos-spine-backfill.js --vendor ksm-webtech-services          # dry run, one vendor
+node scripts/bos-spine-backfill.js --vendor ksm-webtech-services --apply  # writes opening stock (at cost) and what customers owe on old invoices
+node scripts/bos-spine-backfill.js --vendor stepnrock --apply
+```
+
+It invents no old invoices, changes no product, quantity or customer detail, and is safe to run twice.
+
+**Razorpay key report (read only, lists, changes nothing):** `node scripts/bos/razorpay-key-report.js` lists any vendor whose saved Key ID is not an `rzp_` key (Bug B2). Those vendors see "enter your Key ID again" on Collect payments and cannot take online payment until they do.
+
+**Switching Dashboard v2 on** is unchanged from section 7 (`set-vendor-access.js --nav-v2 on --vendor <subdomain>`, dry run first), for `ksm-webtech-services` first. Allwin Tours can now be switched: Campaigns is open to it (it already has campaigns), so the dry-run list "would lose access" should be empty; check it before switching.
+
+**After deploy, check once:** open a shared invoice link (`/d/<token>`) in a private window (must show the invoice page, not text); make a counter sale; open Accounts and Home (same numbers); on an Essentials vendor open Purchases (must show the upgrade card, not an error).

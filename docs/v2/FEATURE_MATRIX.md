@@ -1,5 +1,9 @@
 # Master Feature Matrix (PRD §92.1)
 
+## Full BOS update (2026-10-09)
+
+The baseline tables below date from 2026-10-02. Where they say a BOS capability is missing, partial or broken, the 2026-10-09 audit and build in [FULL_BOS.md](FULL_BOS.md) supersede them: customer invoices with receipts and credit notes, counter billing, stock ledger with variants and locations, purchases and payables, expenses, books, GST and HSN tables, CA pack, period lock, recurring billing and the vendor's own payment gateway are now built and covered by tests (`npm run bos:verify`). Per-feature results of the audit (55 registry features: 22 worked, 6 partial, 2 broken, 25 not built before this work) are in [evidence/full-bos/AUDIT_2026-10-09.md](evidence/full-bos/AUDIT_2026-10-09.md); what is still not built is in [FULL_BOS_BACKLOG.md](FULL_BOS_BACKLOG.md).
+
 > Part of the Get4Domain V2 audit baseline (2026-10-02, audit-only; no code changed by this work). Statuses use the PRD §64.2 vocabulary. **Static-verified only** — nothing here was executed against a running system. Source evidence: `evidence/*.md`. Summary and verdict: [AUDIT_REPORT.md](AUDIT_REPORT.md).
 
 ## Consolidated tally

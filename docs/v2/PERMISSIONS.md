@@ -1,5 +1,17 @@
 # Roles, Permissions and Tenancy (PRD §47, §56, §86, §63K)
 
+## Full BOS permissions (2026-10-09)
+
+| Route family | Who | Enforced by |
+|---|---|---|
+| `/bos/*` (invoices, quotes, counter, receipts, parties, expenses, stock, Accounts totals) | vendor owner; team member only with the **accounts** area (stock screens: **website** area) | `JwtAuthGuard`, `@RequireModule('accounts' / 'website')`; every query filters by the vendor id |
+| `/bos/purchases`, `/bos/books/*`, `/bos/stock/locations|transfer|valuation`, period lock, recurring | the same people, **and the plan must include it** | `EntitlementGuard`: HTTP 403 `PLAN_REQUIRED` with `{feature, requiredPlan}`; a team invite beyond the plan's seats gets 403 `LIMIT_REACHED` |
+| `/public/bos/doc/:token` (shared invoice, Pay now) | anyone with the unguessable link | public by design; the page shows only that document; Pay now exists only if the vendor set up their own Razorpay; the amount always comes from the server |
+| `/admin/bos/capabilities`, `/admin/bos/vendors/:id/capability` | platform admin only (the MARKETING staff role is refused) | `CommercialAdminGuard`; each change needs a written reason and is audited |
+| `/vendor-payments`, `/vendor-payments/test` | the vendor | the secret is write-only and never returned; a saved Key ID that is not an `rzp_` key is never shown back and can never take a payment |
+
+The MARKETING staff role stays refused on commerce, pricing, billing and accounts routes.
+
 > Part of the Get4Domain V2 audit baseline (2026-10-02, audit-only). Statuses use the PRD §64.2 vocabulary. **Static-verified only.** Source evidence: `evidence/platform.md §2-§3, evidence/bos.md §2/§14`. Verdict: [AUDIT_REPORT.md](AUDIT_REPORT.md).
 
 ## A. Principal / role / permission matrix (as implemented)

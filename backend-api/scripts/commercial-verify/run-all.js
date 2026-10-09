@@ -19,6 +19,7 @@ const suites = [
   ['Special arrangements: rules, enforcement, renewal reversion, notices, GST report, permissions', 'verify-arrangements.js'],
   ['Special arrangements on REAL Postgres (PGlite): migration rehearsal + drift + service', 'verify-arrangements-pg.js'],
   ['Full BOS rule book: GST table, every document type balances, reversals net to zero, xlsx/zip', '../bos/verify-bos-pure.js'],
+  ['Full BOS migration on REAL Postgres: rehearsal on existing data, no drift, RLS covered', '../bos/verify-bos-migration-pg.js'],
   ['Full BOS on REAL Postgres: chains A-D, stock-ledger property, concurrency, upgrade/downgrade, order bridge, backfill', '../bos/verify-bos-pg.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];

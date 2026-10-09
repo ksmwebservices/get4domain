@@ -1,5 +1,16 @@
 # STATUS — Get4Domain V2 (current reality)
 
+## Full BOS (2026-10-09)
+
+Built on branch `get4domain-site`, tested locally on real Postgres (PGlite), **nothing deployed, no production database touched**. Full description: [FULL_BOS.md](FULL_BOS.md). One command proves it: `npm run bos:verify`.
+
+- **One spine for every plan and industry**: Party = customer record, Item = the website product, numbered documents (gapless per financial year), payments and allocations, an append-only stock ledger, a double-entry journal posted in the same transaction as each document.
+- **Screens**: Customer invoices (with quotes, money in, credit notes), Counter billing, Stock, Purchases and suppliers, Accounts, Accounts for the CA, Recurring billing, Collect payments (the vendor's own gateway), a public invoice page with Pay now, Today with the same numbers as Accounts.
+- **Plans only switch views, exports and limits**: capture is never gated; an upgrade needs no migration or re-entry; a downgrade locks and deletes nothing (proved by an automated Essentials, Pro, Essentials, Pro run). KSM edits the split in admin; the server answers `PLAN_REQUIRED`.
+- **Bugs B1-B7 fixed with their whole class and a permanent guard** (see the table in FULL_BOS.md). Found on the way: shared invoice pages and file downloads were being wrapped in JSON.
+- **Opened with tests**: Quotes, Counter billing, Purchases, Collect payments, Recurring, Accounts, Accounts for the CA, Reports, WhatsApp bot answers, Campaigns (a vendor who already has campaigns keeps them open on any plan, which unblocks Allwin Tours).
+- **Needs KSM**: apply migration `20261009180000_bos_spine`, re-run the RLS script, deploy both containers, run the backfill (dry run first), then the steps in [DEPLOYMENT.md](DEPLOYMENT.md) section 8.
+
 ## Release 1A — Dashboard v2 and special arrangements (2026-10-09)
 
 Built on branch `get4domain-site`, nothing deployed. Details: [DASHBOARD_V2.md](DASHBOARD_V2.md).

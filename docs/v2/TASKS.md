@@ -1,5 +1,10 @@
 # TASKS — Get4Domain V2 (single-developer ordered backlog)DONE 2026-10-08 — notifications are real; Settings shows real details read-only (Support changes them) |DONE 2026-10-08 — StockService: conditional UPDATE, all-or-nothing, ledger (VendorProduct only; Retail/Catalog POS paths not covered) |DONE 2026-10-08 — status + availability bucket in the public API; storefront badge |PARTIAL 2026-10-08 — cancel/failure restores stock; auto-refund NOT built (shop is alerted with the payment id) |PARTIAL 2026-10-08 — address + order-request workflow (Mark paid / Cancel); no separate order detail page |PARTIAL 2026-10-08 — low-stock notification + restock banner + Stock list; no Overview widget |DONE 2026-10-08 — real errors, OpenAI⇄Claude fallback, wallet checked first; run ai-health.js on the VM |PARTIAL 2026-10-08 — generated images saved to our uploads; no server-side library yet |
 
+## Full BOS (2026-10-09) — done in this release
+
+DONE: S0 audit · S1 spine (documents, payments, stock ledger, journal, GST engine, backfill) · S2 sell and bill screens · S3 stock and purchases · S4 accounts and CA pack · S5 plan-driven entitlements with admin editing, seat limits and the Essentials/Pro/Essentials/Pro proof · S6 bugs B1-B7 with class audits · S7 sweep (records to invoices, Campaigns/Reports/WhatsApp bot opened with tests, five-profile proof) · S8 guards (`npm run bos:verify`) and docs.
+Remaining work is in [FULL_BOS_BACKLOG.md](FULL_BOS_BACKLOG.md); deploy steps for KSM are in [DEPLOYMENT.md](DEPLOYMENT.md) section 8.
+
 > Status of every task: **NOT STARTED** (audit-only baseline, 2026-10-02). Do not start without KSM's go-ahead. IDs are stable; sizes S/M/L/XL per [RELEASE_PLAN.md](RELEASE_PLAN.md). "Evidence" points at the finding that motivates the task.
 
 ## V2.0a — Stabilise
