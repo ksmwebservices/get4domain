@@ -18,19 +18,19 @@ export const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
 export async function loadRegistry() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'g4d-registry-'));
   const out = {};
-  for (const name of ['state', 'features']) {
+  for (const name of ['state', 'features', 'capabilities']) {
     const js = ts.transpileModule(read(`registry/${name}.ts`), { compilerOptions: { module: ts.ModuleKind.ES2020, target: ts.ScriptTarget.ES2020 } }).outputText;
     fs.writeFileSync(path.join(tmp, `${name}.mjs`), js);
   }
   fs.writeFileSync(path.join(tmp, 'types.mjs'), 'export {};');
-  for (const name of ['state', 'features']) out[name] = await import(pathToFileURL(path.join(tmp, `${name}.mjs`)).href);
+  for (const name of ['state', 'features', 'capabilities']) out[name] = await import(pathToFileURL(path.join(tmp, `${name}.mjs`)).href);
   fs.rmSync(tmp, { recursive: true, force: true });
-  return { ...out.state, ...out.features };
+  return { ...out.state, ...out.features, ...out.capabilities };
 }
 
 export function sourceHash() {
   const h = crypto.createHash('sha256');
-  for (const f of ['registry/types.ts', 'registry/state.ts', 'registry/features.ts']) h.update(read(f));
+  for (const f of ['registry/types.ts', 'registry/state.ts', 'registry/features.ts', 'registry/capabilities.ts']) h.update(read(f));
   return h.digest('hex').slice(0, 16);
 }
 
@@ -42,7 +42,8 @@ function embed(rel) {
 export function generatedFiles(reg) {
   const hash = sourceHash();
   const header = (what) => `// GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run \`npm run registry:build\` after changing the registry.\n// registry-hash: ${hash}\n// ${what}\n/* eslint-disable */\n`;
-  const body = `${embed('registry/types.ts')}\n\n${embed('registry/state.ts')}\n\nexport const REGISTRY_HASH = '${hash}';\nexport const FEATURES: Feature[] = ${JSON.stringify(reg.FEATURES, null, 2)};\nexport const KEPT_ROUTES: { route: string; reason: string }[] = ${JSON.stringify(reg.KEPT_ROUTES, null, 2)};\n`;
+  const body = `${embed('registry/types.ts')}\n\n${embed('registry/state.ts')}\n\nexport const REGISTRY_HASH = '${hash}';\nexport const FEATURES: Feature[] = ${JSON.stringify(reg.FEATURES, null, 2)};\nexport const KEPT_ROUTES: { route: string; reason: string }[] = ${JSON.stringify(reg.KEPT_ROUTES, null, 2)};
+export const CAPABILITIES: Capability[] = ${JSON.stringify(reg.CAPABILITIES, null, 2)};\n`;
 
   // Static legacy → v2 map (the dynamic /dashboard/domain-app/<tab> family is resolved by tabOwner()).
   const map = {};

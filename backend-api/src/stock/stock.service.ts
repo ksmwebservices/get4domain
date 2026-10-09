@@ -22,6 +22,9 @@ export interface AdjustInput {
   idempotencyKey?: string;
 }
 
+/** A stock movement written by a manual change (adjust / opening). Listeners run INSIDE the same transaction (the BOS posts its journal from here). */
+export type MoveListener = (tx: Tx, event: { vendorId: string; productId: string; movement: StockMovement }) => Promise<void>;
+
 export const SELLABLE_ERROR = 'One or more items are no longer available.';
 
 /**
@@ -33,7 +36,16 @@ export const SELLABLE_ERROR = 'One or more items are no longer available.';
 export class StockService {
   private readonly logger = new Logger(StockService.name);
 
+  private readonly listeners: MoveListener[] = [];
+
   constructor(private readonly prisma: PrismaService, private readonly notifications: NotificationsService) {}
+
+  /** Register something that must happen in the same transaction as every manual stock change (the BOS journal). */
+  registerMoveListener(fn: MoveListener): void { this.listeners.push(fn); }
+
+  private async emit(tx: Tx, vendorId: string, productId: string, movement: StockMovement): Promise<void> {
+    for (const fn of this.listeners) await fn(tx, { vendorId, productId, movement });
+  }
 
   // ── Order paths (called inside the caller's transaction) ─────────────────────────────────────────
 
@@ -97,9 +109,10 @@ export class StockService {
     if (!cur) throw new NotFoundException('Product not found');
     const before = cur.stockQty ?? 0;
     await tx.vendorProduct.update({ where: { id: productId }, data: { stockQty: quantity, trackStock: true } });
-    await tx.stockMovement.create({
+    const opening = await tx.stockMovement.create({
       data: { vendorId, productId, delta: quantity - before, reason: 'OPENING', refType: 'PRODUCT', refId: productId, note: 'Opening stock', balanceAfter: quantity, createdBy: createdBy ?? null, idempotencyKey: `open:${productId}:${randomUUID()}` },
     });
+    await this.emit(tx, vendorId, productId, opening);
   }
 
   /** Add, remove or set a counted quantity. Never below 0. */
@@ -145,6 +158,7 @@ export class StockService {
           note: input.note?.trim().slice(0, 300) || null, balanceAfter: after, createdBy: createdBy ?? null, idempotencyKey: key,
         },
       });
+      await this.emit(tx, vendorId, productId, movement);
       return { stockQty: after, movement, replayed: false, change: { productId, name: prod.name, before, after, reorderLevel: prod.reorderLevel } as StockChange | null };
     });
 

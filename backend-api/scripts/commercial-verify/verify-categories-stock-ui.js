@@ -151,8 +151,14 @@ const names = (rows) => rows.map((c) => c.name);
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((f) => (f.isDirectory() ? walk(path.join(d, f.name)) : /\.ts$/.test(f.name) ? [path.join(d, f.name)] : []));
     const files = walk(srcDir).filter((f) => /stockQty/.test(fs.readFileSync(f, 'utf8')));
     const rel = files.map((f) => path.relative(srcDir, f).split(path.sep).join('/'));
-    ok('only these files mention stockQty: the stock module, CMS (validation + setOpening), checkout (read-only preflight), the dashboard low-stock count (read-only), the separate RetailProduct POS, DTOs/rules', rel.every((f) => /^stock\//.test(f) || ['cms/cms.service.ts', 'cms/dto/create-product.dto.ts', 'engine/public-checkout.service.ts', 'registry/dashboard-context.service.ts', 'retail/retail.service.ts', 'retail/dto/retail.dto.ts'].includes(f)), rel.join());
+    ok('only these files mention stockQty: the stock module, the BOS module (reads, plus bos-stock.service which writes WITH a movement - checked below), CMS (validation + setOpening), checkout (read-only preflight), the dashboard low-stock count (read-only), the separate RetailProduct POS, DTOs/rules', rel.every((f) => /^stock\//.test(f) || /^bos\//.test(f) || ['cms/cms.service.ts', 'cms/dto/create-product.dto.ts', 'engine/public-checkout.service.ts', 'registry/dashboard-context.service.ts', 'retail/retail.service.ts', 'retail/dto/retail.dto.ts'].includes(f)), rel.join());
     const cmsLines = fs.readFileSync(path.join(srcDir, 'cms/cms.service.ts'), 'utf8').split('\n').filter((l) => /stockQty/.test(l));
+    {
+      const bs = fs.readFileSync(path.join(srcDir, 'bos', 'bos-stock.service.ts'), 'utf8');
+      const writes = (bs.match(/stockQty: \{ (decrement|increment)/g) || []).length;
+      const moves = (bs.match(/stockMovement\.create/g) || []).length;
+      ok('BOS stock service: every stockQty write has a StockMovement written in the same method (and no other BOS file writes stockQty)', writes > 0 && moves >= writes && files.filter((f) => /[\/]bos[\/]/.test(f) && !/bos-stock\.service/.test(f)).every((f) => !/stockQty: \{ (decrement|increment|set)|stockQty: [0-9a-z.]+ *\}\s*\}/.test(fs.readFileSync(f, 'utf8').replace(/stockQty: (moved|0|l\.qty)/g, ''))), `${writes} writes / ${moves} movements`);
+    }
     ok('CMS never writes stockQty directly: each mention is a validation or a setOpening() call (which writes the movement)', cmsLines.every((l) => /setOpening|stockQty !== undefined|stockQty > 0|\{ .*stockQty.* \} = dto|const \{.*stockQty/.test(l)), cmsLines.join(' | ').slice(0, 300));
     const checkoutLines = fs.readFileSync(path.join(srcDir, 'engine/public-checkout.service.ts'), 'utf8').split('\n').filter((l) => /stockQty/.test(l));
     ok('checkout only READS stockQty (select / preflight) — the decrement is StockService.reserve', checkoutLines.every((l) => /select:|stock: p\.trackStock/.test(l)), checkoutLines.join(' | ').slice(0, 200));

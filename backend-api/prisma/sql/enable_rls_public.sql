@@ -27,7 +27,10 @@
 -- tables RLS-disabled).
 -- =====================================================================
 
-DO $$
+-- Full BOS (2026-10-09): the new g4d_bos_* tables and g4d_plan_overrides (migration 20261009180000_bos_spine) are picked up by this same script,
+-- which enables RLS on every public table that lacks it. Re-run it after `prisma migrate deploy`.
+
+DO $
 DECLARE
   r record;
   n int := 0;

@@ -23,6 +23,24 @@ export type FeatureState = 'HIDDEN' | 'OPEN' | 'LOCKED' | 'COMING_SOON';
 
 export type LegacyRoute = string | { from: string; tab?: string };
 
+/** A named plan limit: the number each plan gets (null = unlimited). The defaults live here; KSM changes them in admin (g4d_plan_overrides) without a deploy. */
+export type PlanLimits = Record<PlanKey, number | null>;
+
+/**
+ * What a plan switches on that is NOT a menu screen: reports, exports, extra locations, staff seats.
+ * `capture` is the Full BOS rule: capturing a business record (an invoice, a receipt, a stock movement, an expense) is NEVER gated, so an upgrade needs no
+ * migration; only views, exports and limits are `gated`.
+ */
+export interface Capability {
+  id: string;
+  label: string;
+  minPlan: PlanKey;
+  capture: 'always' | 'gated';
+  /** Named limits of this capability, e.g. { seats: { WORKSPACE: 1, BOS: 5 } }. */
+  limits?: Record<string, PlanLimits>;
+  upgrade: { headline: string; body: string };
+}
+
 export interface Feature {
   /** Stable dotted id, unique. */
   id: string;
@@ -54,6 +72,10 @@ export interface Feature {
   upgrade?: { headline: string; body: string };
   /** Never rendered in the menu (reachable only from where the registry says). */
   hidden?: boolean;
+  /** Named limits of this screen's plan (null = unlimited), e.g. invoices per month. */
+  planLimits?: Record<string, PlanLimits>;
+  /** Full BOS: `always` = capture is never gated (the screen's records are stored the same for every plan). */
+  capture?: 'always' | 'gated';
   /** Tabs of a hub screen (labels; the components are mapped in the frontend). */
   tabs?: { key: string; label: string }[];
 }

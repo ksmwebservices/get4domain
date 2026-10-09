@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 6da5f03fb4b8e1ee
+// registry-hash: 3fbfc29d736eaf97
 // Same registry for the API: provisioning, context endpoint, arrangements.
 /* eslint-disable */
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
@@ -26,6 +26,24 @@ export type Status = 'WORKING' | 'LIMITED' | 'UNTESTED' | 'NOT_BUILT';
 export type FeatureState = 'HIDDEN' | 'OPEN' | 'LOCKED' | 'COMING_SOON';
 
 export type LegacyRoute = string | { from: string; tab?: string };
+
+/** A named plan limit: the number each plan gets (null = unlimited). The defaults live here; KSM changes them in admin (g4d_plan_overrides) without a deploy. */
+export type PlanLimits = Record<PlanKey, number | null>;
+
+/**
+ * What a plan switches on that is NOT a menu screen: reports, exports, extra locations, staff seats.
+ * `capture` is the Full BOS rule: capturing a business record (an invoice, a receipt, a stock movement, an expense) is NEVER gated, so an upgrade needs no
+ * migration; only views, exports and limits are `gated`.
+ */
+export interface Capability {
+  id: string;
+  label: string;
+  minPlan: PlanKey;
+  capture: 'always' | 'gated';
+  /** Named limits of this capability, e.g. { seats: { WORKSPACE: 1, BOS: 5 } }. */
+  limits?: Record<string, PlanLimits>;
+  upgrade: { headline: string; body: string };
+}
 
 export interface Feature {
   /** Stable dotted id, unique. */
@@ -58,6 +76,10 @@ export interface Feature {
   upgrade?: { headline: string; body: string };
   /** Never rendered in the menu (reachable only from where the registry says). */
   hidden?: boolean;
+  /** Named limits of this screen's plan (null = unlimited), e.g. invoices per month. */
+  planLimits?: Record<string, PlanLimits>;
+  /** Full BOS: `always` = capture is never gated (the screen's records are stored the same for every plan). */
+  capture?: 'always' | 'gated';
   /** Tabs of a hub screen (labels; the components are mapped in the frontend). */
   tabs?: { key: string; label: string }[];
 }
@@ -251,7 +273,7 @@ export function checklistDone(id: ChecklistId, s: GoLiveSignals): boolean {
   }
 }
 
-export const REGISTRY_HASH = '6da5f03fb4b8e1ee';
+export const REGISTRY_HASH = '3fbfc29d736eaf97';
 export const FEATURES: Feature[] = [
   {
     "id": "home.today",
@@ -1090,5 +1112,109 @@ export const KEPT_ROUTES: { route: string; reason: string }[] = [
   {
     "route": "/dashboard/payments",
     "reason": "Collect payments is Coming soon in the menu, but this old screen holds the checkout-mode switch (order requests / online payment) that live shops already use; it stays reachable by address until KSM verifies Collect payments."
+  }
+];
+export const CAPABILITIES: Capability[] = [
+  {
+    "id": "bos.purchases",
+    "label": "Purchases, suppliers and payables",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "Record what you buy",
+      "body": "Purchase bills, suppliers, what you owe, and the GST you can claim back. Pro keeps your stock cost up to date from your purchases."
+    }
+  },
+  {
+    "id": "bos.multi-location",
+    "label": "More than one stock location, transfers",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "limits": {
+      "locations": {
+        "WORKSPACE": 1,
+        "BOS": 10
+      }
+    },
+    "upgrade": {
+      "headline": "Stock in more than one place",
+      "body": "Keep a shop, a godown and more as separate stock locations and move stock between them. Your existing stock stays as it is."
+    }
+  },
+  {
+    "id": "bos.stock-valuation",
+    "label": "Stock valuation",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "See what your stock is worth",
+      "body": "Stock value at cost for every item and in total. The cost comes from the purchases and prices you already entered."
+    }
+  },
+  {
+    "id": "bos.books",
+    "label": "Ledger, day book, trial balance, profit and loss, balance sheet",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "Your full books",
+      "body": "Ledger, day book, trial balance, profit and loss and balance sheet, built from the invoices, payments and expenses you have already recorded, including everything from before you upgraded."
+    }
+  },
+  {
+    "id": "bos.gst-reports",
+    "label": "GST summary and HSN summary",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "GST returns made simple",
+      "body": "GSTR-1 and GSTR-3B style summaries and the HSN summary, ready to hand to your accountant, from the bills you have already made."
+    }
+  },
+  {
+    "id": "bos.ca-pack",
+    "label": "CA pack export",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "One file for your CA",
+      "body": "All registers in one Excel workbook with a summary page, for any month, quarter or year."
+    }
+  },
+  {
+    "id": "bos.period-lock",
+    "label": "Period lock",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "Lock a closed month",
+      "body": "Once your CA has the month, lock it so nothing in it can change by mistake."
+    }
+  },
+  {
+    "id": "bos.recurring",
+    "label": "Recurring invoices and scheduled payment reminders",
+    "minPlan": "BOS",
+    "capture": "gated",
+    "upgrade": {
+      "headline": "Bill the same customer every month",
+      "body": "Set an invoice to repeat monthly, quarterly or yearly, and get a reminder list of who is overdue."
+    }
+  },
+  {
+    "id": "bos.staff",
+    "label": "Extra staff users and roles",
+    "minPlan": "WORKSPACE",
+    "capture": "gated",
+    "limits": {
+      "seats": {
+        "WORKSPACE": 1,
+        "BOS": 5
+      }
+    },
+    "upgrade": {
+      "headline": "Add your team",
+      "body": "Invite more people with their own access. Your plan includes a number of seats; Pro includes more."
+    }
   }
 ];

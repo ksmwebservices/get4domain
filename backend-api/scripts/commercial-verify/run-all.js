@@ -18,6 +18,8 @@ const suites = [
   ['Dashboard v2: lead to customer, provisioning, Plan access, honest copy, reels/video Coming soon', 'verify-dashboard-v2.js'],
   ['Special arrangements: rules, enforcement, renewal reversion, notices, GST report, permissions', 'verify-arrangements.js'],
   ['Special arrangements on REAL Postgres (PGlite): migration rehearsal + drift + service', 'verify-arrangements-pg.js'],
+  ['Full BOS rule book: GST table, every document type balances, reversals net to zero, xlsx/zip', '../bos/verify-bos-pure.js'],
+  ['Full BOS on REAL Postgres: chains A-D, stock-ledger property, concurrency, upgrade/downgrade, order bridge, backfill', '../bos/verify-bos-pg.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
 // The admin nav lives in the Next.js app; run its check from here too when the monorepo sibling is present.

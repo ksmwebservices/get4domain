@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { normaliseStatus } from '../stock/stock-rules';
 import type { StockChange } from '../stock/stock.service';
 import { assertCapturedPayment, checkoutSignatureValid, lockPayment } from '../payments/payment-verification';
+import { BosOrderBridge } from '../bos/flows.service';
 import { PricedLine, baseProductName, cartHash, cartTotalPaise, parseListedPrice } from './checkout-pricing';
 
 export interface WebOrder {
@@ -54,6 +55,8 @@ export class PublicCheckoutService {
     // Handover 2026-10-08 (optional so older manual constructions in tests keep working):
     @Optional() private readonly stock?: StockService,
     @Optional() private readonly notifications?: NotificationsService,
+    // Full BOS (optional so older manual constructions in tests keep working): a website order creates its customer and its invoice.
+    @Optional() private readonly bos?: BosOrderBridge,
   ) {}
 
   /** How this vendor takes orders: online (own Razorpay keys), as a request the shop confirms, or not at all. */
@@ -257,6 +260,7 @@ export class PublicCheckoutService {
       this.logger.warn(`Web order ${sale.id} recorded but CRM lead failed: ${e instanceof Error ? e.message : 'error'}`);
     }
 
+    await this.bos?.onOrder(vendorId, sale.id, 'PAID');
     this.logger.log(`Web order ${sale.id} recorded for vendor ${vendorId} (₹${rupees})`);
     return { ok: true, saleId: sale.id, amount: rupees };
   }
@@ -349,6 +353,7 @@ export class PublicCheckoutService {
       await this.notifications?.notifyVendor(vendorId, 'NEW_ORDER', `New order: ${input.name} — ₹${rupees}`, `${summary}. Phone ${phone}. Open Orders to confirm.`, { priority: 'INFO', data: { orderId: sale.id }, actionRequired: true, actionType: 'OPEN_ORDER', actionData: { orderId: sale.id } });
     } catch (e) { this.logger.warn(`Order ${sale.id} saved but notification failed: ${e instanceof Error ? e.message : 'error'}`); }
     await this.stock?.notifyLow(vendorId, changes);
+    await this.bos?.onOrder(vendorId, sale.id, 'PLACED');
     this.logger.log(`Order request ${sale.id} for vendor ${vendorId} (₹${rupees})`);
     return { ok: true, orderId: sale.id, status: sale.status, amount: rupees, replayed: false };
   }
@@ -361,6 +366,7 @@ export class PublicCheckoutService {
       if (!exists) throw new NotFoundException('Order not found');
       throw new ConflictException('This order is not waiting for payment.');
     }
+    await this.bos?.onOrder(vendorId, orderId, 'PAID');
     return (await this.listWebOrders(vendorId)).find((o) => o.id === orderId) as WebOrder;
   }
 
@@ -378,6 +384,7 @@ export class PublicCheckoutService {
         if (l.catalogItemId) await tx.catalogItem.updateMany({ where: { id: l.catalogItemId, vendorId, stock: { not: null } }, data: { stock: { increment: l.qty } } });
       }
     });
+    await this.bos?.onOrder(vendorId, orderId, 'CANCELLED');
     return (await this.listWebOrders(vendorId)).find((o) => o.id === orderId) as WebOrder;
   }
 

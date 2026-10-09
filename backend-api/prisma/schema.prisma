@@ -314,6 +314,10 @@ model VendorProduct {
   /// Handover 2026-10-08: true = stockQty is authoritative (orders reserve it, adjustments move it). false = stock not tracked.
   trackStock   Boolean   @default(false)
   reorderLevel Int?
+  /// BOS item master (additive): HSN/SAC code, GST rate % (null = vendor default), purchase price in rupees (drives cost of goods sold).
+  hsn          String?
+  gstRate      Float?
+  purchasePriceAmount Float?
   /// active | inactive | draft | archived | out_of_stock. `active` (Boolean) remains what
   /// live readers filter on until the separate cutover dispatch; migrated rows carry
   /// active=false + their real state here, so copying never surfaces anything new.
@@ -626,6 +630,11 @@ model Contact {
   customFields    Json?
   tags            Json?
   notes           String?
+  /// BOS party fields (additive): GSTIN, place-of-supply state, shipping address, opening balance (paise; customer: they owe us, supplier: we owe them).
+  gstin           String?
+  state           String?
+  shippingAddress String?
+  openingBalancePaise Int                @default(0)
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   records         Record[]
@@ -2743,6 +2752,8 @@ enum StockMovementReason {
   OPENING
   DAMAGE
   RECOUNT
+  PURCHASE
+  TRANSFER
 }
 
 /// Append-only ledger of every stock change on a VendorProduct. Written in the SAME transaction as the stock update.
@@ -2759,6 +2770,9 @@ model StockMovement {
   balanceAfter   Int
   createdBy      String?
   idempotencyKey String              @unique
+  /// BOS (additive): which variant (size / colour) and which stock location the movement belongs to; null = the product total / default location.
+  variantKey     String?
+  locationId     String?
   createdAt      DateTime            @default(now())
 
   @@index([vendorId, productId, createdAt])
@@ -2792,4 +2806,330 @@ model SpecialArrangement {
   @@index([vendorId, active])
   @@index([validUntil])
   @@map("g4d_special_arrangements")
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// FULL BOS SPINE (dispatch 09-Oct-2026) — ADDITIVE ONLY. One set of business records for every plan and every industry:
+// parties are the existing Contact rows, items are the existing VendorProduct rows, stock is the existing StockMovement ledger.
+// Money is integer paise. Documents are numbered gaplessly per vendor, per document type, per financial year. Everything posts to
+// a double-entry journal in the same transaction as the document. Posted documents are never deleted: cancel = reversal.
+// Plans only switch screens, reports and limits on or off; nothing here is gated at capture time.
+// ══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+/// Per-vendor business settings for the BOS (one row per vendor, created on first use).
+model BosSettings {
+  id                  String    @id @default(cuid())
+  vendorId            String    @unique
+  /// Registered for GST? false = bills are "Bill of Supply" with no tax.
+  gstRegistered       Boolean   @default(false)
+  gstin               String?
+  legalName           String?
+  /// Vendor state, used for place of supply (CGST+SGST inside the state, IGST outside).
+  state               String?
+  defaultGstRate      Float     @default(18)
+  /// Prices entered on documents include GST (INCLUSIVE) or not (EXCLUSIVE).
+  priceMode           String    @default("EXCLUSIVE")
+  roundOff            Boolean   @default(true)
+  /// Per document type prefixes, e.g. { "SALES_INVOICE": "SNR" }. Missing = built-in default.
+  prefixes            Json?
+  /// BLOCK | WARN | ALLOW — what a sale does when stock would go below zero.
+  negativeStock       String    @default("WARN")
+  /// PAID | CONFIRMED | OFF — when a website order creates its invoice by itself.
+  orderInvoiceOn      String    @default("PAID")
+  /// A purchase bill updates the item purchase price.
+  purchaseUpdatesCost Boolean   @default(true)
+  bankDetails         String?
+  upiId               String?
+  terms               String?
+  notes               String?
+  /// Documents dated on or before this day cannot be created, changed or cancelled (period lock).
+  lockedUntil         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("g4d_bos_settings")
+}
+
+/// Gapless numbering: one row per (vendor, document type, financial year). Incremented inside the document's own transaction,
+/// so a failed document never burns a number.
+model BosDocSeries {
+  id         String @id @default(cuid())
+  vendorId   String
+  docType    String
+  fy         String // "26-27"
+  lastNumber Int    @default(0)
+
+  @@unique([vendorId, docType, fy])
+  @@map("g4d_bos_doc_series")
+}
+
+/// Quote, sales order, sales invoice, credit note and purchase bill share one header table (docType). A sales invoice is called
+/// BosDocument/SALES_INVOICE so it can never be confused with Get4Domain's own `Invoice` (what the vendor pays Get4Domain).
+model BosDocument {
+  id               String   @id @default(cuid())
+  vendorId         String
+  /// QUOTE | SALES_ORDER | SALES_INVOICE | CREDIT_NOTE | PURCHASE_BILL
+  docType          String
+  number           String?  // null while DRAFT; assigned on issue
+  fy               String?
+  /// DRAFT | ISSUED | PART_PAID | PAID | CANCELLED (quotes: DRAFT | ISSUED(sent) | ACCEPTED | REJECTED | CONVERTED | CANCELLED)
+  status           String   @default("DRAFT")
+  partyId          String?
+  partyName        String?  // snapshot at issue time (walk-in customers have no party)
+  partyGstin       String?
+  partyState       String?
+  billingAddress   String?
+  docDate          DateTime
+  dueDate          DateTime?
+  /// GST (tax invoice) | NONE (bill of supply, no tax)
+  taxKind          String   @default("NONE")
+  priceMode        String   @default("EXCLUSIVE")
+  placeOfSupply    String?
+  intraState       Boolean  @default(true)
+  subtotalPaise    Int      @default(0) // sum of line amounts before document discount, ex-tax
+  discountPaise    Int      @default(0)
+  shippingPaise    Int      @default(0)
+  taxablePaise     Int      @default(0)
+  cgstPaise        Int      @default(0)
+  sgstPaise        Int      @default(0)
+  igstPaise        Int      @default(0)
+  roundOffPaise    Int      @default(0)
+  totalPaise       Int      @default(0)
+  /// Money received/credited against this document (derived from allocations, cached for lists).
+  paidPaise        Int      @default(0)
+  /// MANUAL | COUNTER | ORDER | QUOTE | RECURRING | WEBSITE
+  source           String   @default("MANUAL")
+  sourceType       String?  // e.g. POS_SALE
+  sourceId         String?  // e.g. the PosSale id of the website order
+  refDocId         String?  // credit note → invoice; invoice → quote; supplier credit etc.
+  supplierRef      String?  // the supplier's own bill number (purchase bills)
+  notes            String?
+  terms            String?
+  publicToken      String?  @unique
+  idempotencyKey   String?
+  issuedAt         DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  createdBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  lines            BosDocumentLine[]
+
+  @@unique([vendorId, docType, number])
+  @@unique([vendorId, idempotencyKey])
+  @@unique([vendorId, docType, sourceType, sourceId])
+  @@index([vendorId, docType, status])
+  @@index([vendorId, partyId])
+  @@index([vendorId, docDate])
+  @@map("g4d_bos_documents")
+}
+
+model BosDocumentLine {
+  id             String      @id @default(cuid())
+  documentId     String
+  document       BosDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  vendorId       String
+  lineNo         Int
+  itemId         String?     // VendorProduct id (null = free text line)
+  name           String
+  description    String?
+  variantKey     String?     // e.g. "9 / Black"
+  hsn            String?
+  unit           String?
+  qty            Float       @default(1)
+  ratePaise      Int         @default(0) // per unit, as entered (ex-tax or incl-tax by the document price mode)
+  discountPaise  Int         @default(0) // line discount
+  taxablePaise   Int         @default(0)
+  gstRate        Float       @default(0)
+  cgstPaise      Int         @default(0)
+  sgstPaise      Int         @default(0)
+  igstPaise      Int         @default(0)
+  totalPaise     Int         @default(0)
+  /// Purchase cost per unit at the moment of sale; drives cost of goods sold and item-wise profit.
+  unitCostPaise  Int?
+  /// Stock units this line moved (0 for untracked items).
+  stockQty       Float       @default(0)
+  /// Credit note lines: the invoice line this one returns (so a line can never be credited more than once), and whether the goods go back on the shelf.
+  refLineId      String?
+  restock        Boolean     @default(true)
+
+  @@index([documentId])
+  @@index([vendorId, itemId])
+  @@map("g4d_bos_document_lines")
+}
+
+/// Money in (receipt) or money out (payment to a supplier). Allocated to documents; any part not allocated is an advance.
+model BosPayment {
+  id             String   @id @default(cuid())
+  vendorId       String
+  /// RECEIPT | PAYMENT_OUT
+  kind           String
+  number         String?
+  fy             String?
+  partyId        String?
+  partyName      String?
+  /// CASH | UPI | BANK | CARD | CHEQUE | GATEWAY
+  mode           String   @default("CASH")
+  amountPaise    Int
+  paymentDate    DateTime
+  reference      String?
+  notes          String?
+  /// ACTIVE | CANCELLED
+  status         String   @default("ACTIVE")
+  source         String   @default("MANUAL") // MANUAL | COUNTER | ORDER | GATEWAY
+  sourceId       String?
+  idempotencyKey String?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  allocations    BosAllocation[]
+
+  @@unique([vendorId, kind, number])
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, partyId])
+  @@index([vendorId, paymentDate])
+  @@map("g4d_bos_payments")
+}
+
+/// A slice of a payment or a credit note applied to an invoice or purchase bill.
+model BosAllocation {
+  id           String      @id @default(cuid())
+  vendorId     String
+  documentId   String      // the invoice / purchase bill being settled
+  paymentId    String?
+  payment      BosPayment? @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  creditNoteId String?     // a CREDIT_NOTE document applied to the invoice
+  amountPaise  Int
+  createdAt    DateTime    @default(now())
+
+  @@index([vendorId, documentId])
+  @@index([paymentId])
+  @@map("g4d_bos_allocations")
+}
+
+model BosExpense {
+  id             String   @id @default(cuid())
+  vendorId       String
+  number         String?
+  fy             String?
+  expenseDate    DateTime
+  /// Account code of the expense head (see the chart of accounts), e.g. 5300 Rent.
+  category       String
+  description    String
+  supplierId     String?
+  taxablePaise   Int
+  gstRate        Float    @default(0)
+  cgstPaise      Int      @default(0)
+  sgstPaise      Int      @default(0)
+  igstPaise      Int      @default(0)
+  totalPaise     Int
+  /// CASH | UPI | BANK | CARD | CHEQUE | CREDIT (unpaid, owed to the supplier)
+  paymentMode    String   @default("CASH")
+  attachment     String?
+  /// NONE | MONTHLY | QUARTERLY | YEARLY
+  recurring      String   @default("NONE")
+  /// ACTIVE | CANCELLED
+  status         String   @default("ACTIVE")
+  idempotencyKey String?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+
+  @@unique([vendorId, number])
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, expenseDate])
+  @@map("g4d_bos_expenses")
+}
+
+/// Chart of accounts, seeded per vendor on first use. `system` accounts cannot be removed.
+model BosAccount {
+  id        String  @id @default(cuid())
+  vendorId  String
+  code      String
+  name      String
+  /// ASSET | LIABILITY | INCOME | EXPENSE | EQUITY
+  type      String
+  system    Boolean @default(false)
+
+  @@unique([vendorId, code])
+  @@map("g4d_bos_accounts")
+}
+
+model BosJournalEntry {
+  id            String   @id @default(cuid())
+  vendorId      String
+  entryDate     DateTime
+  /// SALES_INVOICE | CREDIT_NOTE | PURCHASE_BILL | RECEIPT | PAYMENT_OUT | EXPENSE | STOCK | OPENING
+  sourceType    String
+  sourceId      String
+  sourceVersion Int      @default(1)
+  memo          String?
+  /// Set when this entry reverses another (cancellation).
+  reversalOfId  String?
+  createdAt     DateTime @default(now())
+  lines         BosJournalLine[]
+
+  @@unique([vendorId, sourceType, sourceId, sourceVersion])
+  @@index([vendorId, entryDate])
+  @@index([vendorId, sourceType, sourceId])
+  @@map("g4d_bos_journal_entries")
+}
+
+model BosJournalLine {
+  id          String          @id @default(cuid())
+  entryId     String
+  entry       BosJournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  vendorId    String
+  accountCode String
+  partyId     String?
+  debitPaise  Int             @default(0)
+  creditPaise Int             @default(0)
+
+  @@index([entryId])
+  @@index([vendorId, accountCode])
+  @@index([vendorId, partyId])
+  @@map("g4d_bos_journal_lines")
+}
+
+/// Stock locations (Pro: more than one). Every vendor has one default location, created on first use.
+model BosStockLocation {
+  id        String  @id @default(cuid())
+  vendorId  String
+  name      String
+  isDefault Boolean @default(false)
+  active    Boolean @default(true)
+
+  @@unique([vendorId, name])
+  @@map("g4d_bos_stock_locations")
+}
+
+/// A recurring invoice template (Pro): the daily job issues a new invoice from it on `nextRunOn`.
+model BosRecurring {
+  id           String    @id @default(cuid())
+  vendorId     String
+  templateId   String // a SALES_INVOICE document used as the template
+  /// MONTHLY | QUARTERLY | YEARLY
+  frequency    String
+  nextRunOn    DateTime
+  endsOn       DateTime?
+  active       Boolean   @default(true)
+  lastRunOn    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([vendorId, active, nextRunOn])
+  @@map("g4d_bos_recurring")
+}
+
+/// Admin-editable plan access (Release: Full BOS). `key` = a registry feature id or capability id, `value` = { minPlan?, limits? }.
+/// The registry holds the defaults; a row here changes them without a deploy.
+model PlanOverride {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("g4d_plan_overrides")
 }

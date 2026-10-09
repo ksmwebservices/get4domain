@@ -12,6 +12,7 @@ import { ActionRegistry } from './action-registry';
 import { EngineService } from './engine.service';
 import { EngineController } from './engine.controller';
 import { PublicCheckoutService } from './public-checkout.service';
+import { BosModule } from '../bos/bos.module';
 
 /**
  * Business Action Engine.
@@ -25,7 +26,7 @@ import { PublicCheckoutService } from './public-checkout.service';
  *  - NotificationsModule — vendor lead-routing on public actions
  */
 @Module({
-  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule, CrmModule, VendorPaymentsModule, StockModule],
+  imports: [RestaurantModule, RetailModule, RealEstateModule, PaymentsModule, CmsModule, NotificationsModule, CrmModule, VendorPaymentsModule, StockModule, BosModule],
   providers: [ActionRegistry, EngineService, PublicCheckoutService],
   controllers: [EngineController],
   exports: [EngineService],
