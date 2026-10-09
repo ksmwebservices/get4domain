@@ -40,6 +40,8 @@ export interface LsSettings {
   customGstMode: 'INCLUSIVE' | 'EXCLUSIVE';
   /** a vendor with at least this many leads in 30 days is shown the offer to move up to a plan with customers and invoices */
   upgradeLeadThreshold: number;
+  /** months after which a customer's name, number and request are anonymised in the leads list (the money ledger is never touched) */
+  retentionMonths: number;
 }
 
 export const LS_DEFAULTS: LsSettings = {
@@ -67,6 +69,7 @@ export const LS_DEFAULTS: LsSettings = {
   customCreditPercent: 100,
   customGstMode: 'INCLUSIVE',
   upgradeLeadThreshold: 10,
+  retentionMonths: 24,
 };
 
 @Injectable()

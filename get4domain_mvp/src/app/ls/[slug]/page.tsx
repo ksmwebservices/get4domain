@@ -166,6 +166,7 @@ export default async function LeadSpacePage({ params, searchParams }: { params: 
       </main>
       <footer className="mx-auto max-w-3xl space-y-3 px-5 pb-10 text-center text-xs text-slate-500">
         <ReportBox slug={m.slug} initiallyOpen={report === '1'} />
+        <p><a href="/privacy-policy" className="underline">Privacy notice</a> · <a href="mailto:privacy@get4domain.com?subject=Please%20delete%20my%20data" className="underline">Delete my data</a></p>
         <p>Page by <a href="https://get4domain.com" className="underline" rel="noopener">Get4Domain LeadSpace</a></p>
       </footer>
       <StickyCta slug={m.slug} label={m.stickyCta.label} color={t.accent} />

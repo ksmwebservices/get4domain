@@ -20,6 +20,7 @@ const steps = [
   ['registry guard (routes, ids, evidence, generated files current)', ROOT, [node, 'registry/check.mjs']],
   ['registry rules, menus per plan, redirects (retired routes redirect, query kept)', ROOT, [node, 'registry/verify-registry.mjs']],
   ['vendor plan lists are generated from registry state (Bug B4)', ROOT, [node, 'registry/verify-plan-lists.mjs']],
+  ['LeadSpace guard (admin routes guarded, common-number rules, no typed prices, additive migrations, dry-run scripts)', ROOT, [node, 'scripts/leadspace-guard.mjs']],
   ['migration guard: every new migration is additive', BE, [node, 'scripts/verify-migrations-additive.js']],
   ['migration SQL hygiene', BE, [node, 'scripts/verify-migrations.js']],
   ['update DTOs accept every editable column of their table (Bug B1, server side)', BE, [node, 'scripts/audit/dto-echo.js', '--strict']],

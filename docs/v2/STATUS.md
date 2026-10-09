@@ -1,5 +1,14 @@
 # STATUS — Get4Domain V2 (current reality)
 
+## LeadSpace (2026-10-10)
+
+Built on branch `get4domain-site`, tested locally on real Postgres (PGlite) and looked at in a browser against a local API; **nothing deployed, no production database touched**. Design and manual: [LEADSPACE.md](LEADSPACE.md); progress by phase: [LEADSPACE_PROGRESS.md](LEADSPACE_PROGRESS.md); compliance pack: [LEADSPACE_COMPLIANCE.md](LEADSPACE_COMPLIANCE.md); pilot runbook: [LEADSPACE_PILOT.md](LEADSPACE_PILOT.md). One command proves it: `npm run bos:verify`.
+
+- **A free page for every vendor** (twelve trades, generated from the vendor's details, or just a button and form added to their existing website), verified enquiries, bookings, appointments, site visits and cart orders, a prepaid LEADS wallet charged once per verified customer, hold-and-release when the wallet is low, invalid-lead credits, refunds, GST tax invoice on every refill.
+- **Campaigns and DomainCampaign are now LeadSpace** in the vendor dashboard, the admin and the marketing site (permanent redirects); the existing data is copied, never moved (dry-run script with rollback).
+- **Shared services built here** because Dispatch A's did not exist: the WhatsApp provider layer (sandbox + Cloud API, common-number rules in code) and the social publisher (accounts with encrypted tokens, caps, retries, kill switches).
+- **Needs KSM**: Meta approval of the common WhatsApp number and templates (status reads **Awaiting approval** until then), connecting the Facebook, Instagram and Telegram pages, setting prices (none are in code), the CA's and lawyer's answers in the compliance pack, then the steps in [DEPLOYMENT.md](DEPLOYMENT.md) section 9.
+
 ## Full BOS (2026-10-09)
 
 Built on branch `get4domain-site`, tested locally on real Postgres (PGlite), **nothing deployed, no production database touched**. Full description: [FULL_BOS.md](FULL_BOS.md). One command proves it: `npm run bos:verify`.

@@ -311,3 +311,41 @@ It invents no old invoices, changes no product, quantity or customer detail, and
 **Switching Dashboard v2 on** is unchanged from section 7 (`set-vendor-access.js --nav-v2 on --vendor <subdomain>`, dry run first), for `ksm-webtech-services` first. Allwin Tours can now be switched: Campaigns is open to it (it already has campaigns), so the dry-run list "would lose access" should be empty; check it before switching.
 
 **After deploy, check once:** open a shared invoice link (`/d/<token>`) in a private window (must show the invoice page, not text); make a counter sale; open Accounts and Home (same numbers); on an Essentials vendor open Purchases (must show the upgrade card, not an error).
+
+## 9. LeadSpace — migrations and VM steps (2026-10-10, KSM only)
+
+Claude Code did not touch the server or any production database. Read `LEADSPACE.md` first. Run on the VM, in this order, after Claude confirms the report. Take a backup first (Supabase dashboard, Database, Backups: confirm one from today exists).
+
+```
+ssh ksmwebtechservices@34.14.130.68
+cd /srv/get4domain-site && git pull origin get4domain-site
+cd backend-api && npx prisma migrate deploy && npx prisma generate      # 20261010100000_leadspace (21 tables) and 20261010110000_leadspace_page_stats (1 table + 1 nullable column); additive only
+cat prisma/sql/enable_rls_public.sql                                     # print it, check the line "DO $$" and the line "END $$;" are there
+# run backend-api/prisma/sql/enable_rls_public.sql in the Supabase SQL editor (it covers every public table, so the 22 new tables are included)
+docker compose build --no-cache && docker compose up -d --force-recreate
+docker compose logs --tail=50 backend                                    # look for "Nest application successfully started"
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+```
+
+Rebuild **both** containers. The frontend now redirects `/domain-campaign` to `/leadspace` (permanent) and `/dashboard/campaigns`, `/dashboard/landing-page` to LeadSpace.
+
+**Environment (set before the rebuild, in the backend `.env` on the VM; do not commit):** `LEADSPACE_HASH_SALT` (a long random string, set once, never change it), `PUBLIC_APP_URL=https://get4domain.com`, `PUBLIC_API_URL=https://gapi.get4domain.com`, `RAZORPAY_WEBHOOK_SECRET` if not set. Frontend: `INTERNAL_API_URL` (the API address as the web container sees it). Leave the `WHATSAPP_*` variables **unset** for the first test: the common number then runs in test mode and reads "Awaiting approval". In the Razorpay dashboard add a second webhook `https://gapi.get4domain.com/leadspace/refill/webhook` for `payment.captured` (same secret).
+
+**Campaign merge (do it before vendors see the new screens):** dry run, paste the output to Claude, then `--apply`, one vendor first.
+
+```
+cd /srv/get4domain-site/backend-api
+node scripts/leadspace-migrate-campaigns.js                            # dry run, everyone with campaign data
+node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --apply
+```
+
+Then re-run the dashboard dry run (`node scripts/nav-v2-dry-run.js`): the "would lose access" list must be empty. Rollback note: `--rollback` (dry run) and `--rollback --apply` remove only what the import made.
+
+**First test, then the pilot:** follow `LEADSPACE_PILOT.md` section 1 with one test vendor (page, code in test mode, held lead, refill, release, deduction, ledger, tax invoice). Only if it passes: the ten pilot vendors (section 2) and the test campaigns of about 5,000 rupees each for three trades (section 3).
+
+**Prices:** set them in Admin > LeadSpace > Prices and rules; none is in code. Until a price exists, a verified request is delivered free.
+
+**Going live on WhatsApp (later, when Meta approves):** submit the five templates from `LEADSPACE_COMPLIANCE.md` section 6, set `WHATSAPP_PROVIDER=cloud`, `WHATSAPP_CLOUD_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, point Meta's webhook at `https://gapi.get4domain.com/messaging/whatsapp/webhook`, mark each template Approved in Admin > LeadSpace > WhatsApp number, rebuild the backend. The status turns to Live only when `leadspace_otp` is Approved.
+
+**Rollback:** the migrations only add; to roll back the application, redeploy the previous commit. The new tables can stay empty. Dropping them is described at the top of each migration file and is only safe while nothing has been written.
+

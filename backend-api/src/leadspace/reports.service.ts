@@ -82,6 +82,45 @@ export class LeadspaceReportsService {
     return { from, to, floorPercent: s.marginFloorPercent, rows, unallocatedSpendPaise: Math.round(unallocated), total, alerts: rows.filter((r) => r.alert).map((r) => `${r.category} in ${r.city}: ${r.alert}`) };
   }
 
+  // — the test-campaign sheet: per UTM campaign, spend against verified leads —
+
+  /**
+   * KSM's manual test ads: one row per `utm_campaign` (convention: <trade>-<city>-<yyyymm>) with the verified leads it brought and the spend recorded for it.
+   * Spend is matched by writing the campaign name in the note of the AdSpendEntry, so one entry per boost is enough.
+   */
+  async utmSheet(from: string, to: string): Promise<{ from: string; to: string; rows: { campaign: string; sources: string[]; verifiedEvents: number; held: number; credited: number; spendPaise: number; costPerVerifiedLeadPaise: number | null; chargedPaise: number }[] }> {
+    const events = await this.prisma.leadEvent.findMany({ where: { createdAt: { gte: day(from), lte: day(to, true) } }, select: { utm: true, status: true, priceChargedPaise: true } });
+    const spend = await this.prisma.adSpendEntry.findMany({ where: { date: { gte: day(from), lte: day(to, true) } } });
+    const by = new Map<string, { sources: Set<string>; verified: number; held: number; credited: number; charged: number }>();
+    for (const e of events) {
+      const u = (e.utm && typeof e.utm === 'object' ? e.utm : {}) as Record<string, string>;
+      const c = (u.utm_campaign ?? '').trim().toLowerCase() || '(no campaign)';
+      const g = by.get(c) ?? { sources: new Set<string>(), verified: 0, held: 0, credited: 0, charged: 0 };
+      if (u.utm_source) g.sources.add(u.utm_source);
+      if (e.status === 'CREDITED') g.credited++; else g.verified++;
+      if (e.status === 'HELD') g.held++;
+      g.charged += e.priceChargedPaise;
+      by.set(c, g);
+    }
+    const rows = [...by.entries()].map(([campaign, g]) => {
+      const spendPaise = campaign === '(no campaign)' ? 0 : spend.filter((sp) => (sp.note ?? '').toLowerCase().includes(campaign)).reduce((a, sp) => a + sp.amountPaise, 0);
+      return { campaign, sources: [...g.sources], verifiedEvents: g.verified, held: g.held, credited: g.credited, spendPaise, costPerVerifiedLeadPaise: g.verified ? Math.round(spendPaise / g.verified) : null, chargedPaise: g.charged };
+    }).sort((a, b) => a.campaign.localeCompare(b.campaign));
+    // a campaign with spend and no events yet still gets a row
+    for (const sp of spend) {
+      const m = /([a-z0-9-]+-[a-z0-9-]+-\d{6})/i.exec(sp.note ?? '');
+      if (m && !rows.some((r) => r.campaign === m[1].toLowerCase())) rows.push({ campaign: m[1].toLowerCase(), sources: [], verifiedEvents: 0, held: 0, credited: 0, spendPaise: spend.filter((x) => (x.note ?? '').toLowerCase().includes(m[1].toLowerCase())).reduce((a, x) => a + x.amountPaise, 0), costPerVerifiedLeadPaise: null, chargedPaise: 0 });
+    }
+    return { from, to, rows };
+  }
+
+  csvSheet(rows: { campaign: string; sources: string[]; verifiedEvents: number; held: number; credited: number; spendPaise: number; costPerVerifiedLeadPaise: number | null; chargedPaise: number }[]): string {
+    const NL = String.fromCharCode(10);
+    const rs = (p: number | null): string => (p === null ? '' : (p / 100).toFixed(2));
+    return [['Campaign', 'Sources', 'Verified leads', 'Held', 'Credited', 'Spend (Rs)', 'Cost per verified lead (Rs)', 'Charged to vendors (Rs)'].join(','),
+      ...rows.map((r) => [r.campaign, r.sources.join('/'), r.verifiedEvents, r.held, r.credited, rs(r.spendPaise), rs(r.costPerVerifiedLeadPaise), rs(r.chargedPaise)].join(','))].join(NL);
+  }
+
   // — one vendor's funnel —
 
   async funnel(vendorId: string, from: string, to: string): Promise<Record<string, unknown>> {

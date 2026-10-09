@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequireModule } from '../common/decorators/require-module.decorator';
@@ -121,6 +121,16 @@ export class LeadspaceReportsAdminController {
   @Get('cost-report')
   @ApiOperation({ summary: 'Cost per verified lead by trade and city, from ad spend entries and events, with margin alerts below the floor' })
   cost(@Query('from') from?: string, @Query('to') to?: string) { return this.reports.costReport(from ?? lastDays(30), to ?? today()); }
+
+  @Get('test-campaign-sheet')
+  @ApiOperation({ summary: 'Test ads sheet: per UTM campaign, the verified leads, the spend recorded for it and the cost per verified lead' })
+  sheet(@Query('from') from?: string, @Query('to') to?: string) { return this.reports.utmSheet(from ?? lastDays(30), to ?? today()); }
+
+  @Get('test-campaign-sheet.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="leadspace-test-campaigns.csv"')
+  @ApiOperation({ summary: 'The same sheet as a CSV file' })
+  async sheetCsv(@Query('from') from?: string, @Query('to') to?: string) { return this.reports.csvSheet((await this.reports.utmSheet(from ?? lastDays(30), to ?? today())).rows); }
 
   @Get('ad-spend')
   @ApiOperation({ summary: 'Ad spend entries' })

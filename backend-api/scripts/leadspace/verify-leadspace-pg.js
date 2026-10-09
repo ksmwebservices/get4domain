@@ -322,6 +322,29 @@ const nextPhone = () => `9${String(100000000 + (phoneSeq += 7919)).padStart(9, '
     const stats = await gateway.spamStats(shop.id);
     ok('spam stats per vendor count sent and refused messages', stats.sent > 0 && stats.refused > 0, J(stats));
 
+    section('[feat:leadspace.privacy] A customer can be forgotten; old leads are anonymised; money records stay');
+    await fund(shop.id, 60000, 'privacy-fund');
+    const priv = await lead('9812300001');
+    const privId = priv.data.eventId;
+    const ledgerBefore = await prisma.leadPurseEntry.count({ where: { vendorId: shop.id } });
+    r = await call('POST', '/admin/leadspace/privacy/erase', { phone: '9812300001' }, A);
+    ok('a deletion request removes the name, number and request text from every lead', r.status < 300 && r.data.events >= 1 && r.data.blocked === true, J(r.body));
+    const gone = await prisma.leadEvent.findUnique({ where: { id: privId } });
+    ok('what is left is anonymous but the price charged and the dates remain for the books', gone.customerName === 'Deleted customer' && gone.customerPhone === '0000000000' && J(gone.payload) === '{}' && gone.priceChargedPaise === 15000);
+    ok('the money ledger is untouched', (await prisma.leadPurseEntry.count({ where: { vendorId: shop.id } })) === ledgerBefore);
+    r = await call('POST', '/leadspace/public/otp', { slug: profile.slug, phone: '9812300001', consent: true });
+    ok('no code is ever sent to that number again (consent withdrawn)', r.status === 400, J(r.body));
+    r = await call('GET', '/leadspace/leads', undefined, V);
+    ok('the vendor sees the lead as a deleted customer, not the person', r.data.rows.some((x) => x.id === privId && x.customerName === 'Deleted customer'));
+    ok('a vendor cannot run a deletion', (await call('POST', '/admin/leadspace/privacy/erase', { phone: '9812300002' }, V)).status === 403);
+    const old = await lead('9812300003'); const oldHeld = await prisma.leadEvent.create({ data: { vendorId: shop.id, type: 'ENQUIRY', customerName: 'Old Held', customerPhone: '9812300004', phoneHash: 'old-held', payload: { message: 'x' }, status: 'HELD', idempotencyKey: 'old-held-1' } });
+    const longAgo = new Date(Date.now() - 800 * 86_400_000);
+    await prisma.leadEvent.updateMany({ where: { id: { in: [old.data.eventId, oldHeld.id] } }, data: { createdAt: longAgo } });
+    r = await call('POST', '/admin/leadspace/privacy/retention-sweep', {}, A);
+    ok('the retention sweep is a dry run unless asked, and counts the old lead but not the held one', r.data.applied === false && r.data.events >= 1 && r.data.months === 24, J(r.body));
+    r = await call('POST', '/admin/leadspace/privacy/retention-sweep', { apply: true }, A);
+    ok('applying anonymises old leads and leaves a held lead the vendor has not seen yet', r.data.applied === true && (await prisma.leadEvent.findUnique({ where: { id: old.data.eventId } })).customerName === 'Deleted customer' && (await prisma.leadEvent.findUnique({ where: { id: oldHeld.id } })).customerName === 'Old Held');
+
     section('[feat:leadspace.isolation] Every query is scoped to the signed-in vendor');
     r = await call('GET', '/leadspace/leads', undefined, other.token);
     ok('another vendor sees none of this vendor\'s leads', r.data.total === 0, J(r.data));

@@ -18,6 +18,7 @@ import {
 } from './leadspace.dto';
 import { LeadsService } from './leads.service';
 import { LeadOtpService } from './otp.service';
+import { LeadPrivacyService } from './privacy.service';
 import { LeadPricingService } from './pricing.service';
 import { LeadPurseService } from './purse.service';
 import { LeadspaceSettingsService, LsSettings } from './settings.service';
@@ -125,6 +126,7 @@ export class LeadspaceAdminController {
   constructor(
     private readonly pricing: LeadPricingService, private readonly settings: LeadspaceSettingsService, private readonly credits: LeadCreditsService,
     private readonly otp: LeadOtpService, private readonly gateway: WhatsappGatewayService, private readonly prisma: PrismaService, private readonly captureSvc: LeadCaptureService,
+    private readonly privacy: LeadPrivacyService,
   ) {}
 
   @Get('prices')
@@ -174,6 +176,14 @@ export class LeadspaceAdminController {
   @Delete('blocked-phones/:phone')
   @ApiOperation({ summary: 'Allow codes to this number again' })
   async unblock(@Param('phone') phone: string) { await this.otp.unblock(phone); return { blocked: false }; }
+
+  @Post('privacy/erase')
+  @ApiOperation({ summary: 'A customer asked for their data to be deleted: name, number, request and codes are removed; the money ledger stays; the number is never sent a code again' })
+  erase(@Body() dto: BlockPhoneDto, @CurrentUser() u: AuthenticatedUser) { return this.privacy.erase(dto.phone, actorOf(u).id); }
+
+  @Post('privacy/retention-sweep')
+  @ApiOperation({ summary: 'Anonymise leads older than the retention period. Shows what it would do unless apply is true.' })
+  retention(@Body() dto: ApplyDto) { return this.privacy.retentionSweep(dto.apply === true); }
 
   @Get('whatsapp')
   @ApiOperation({ summary: 'Common WhatsApp number: live status and the template list with approval status' })

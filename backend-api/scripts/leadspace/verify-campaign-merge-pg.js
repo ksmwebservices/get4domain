@@ -113,6 +113,10 @@ const J = (x) => JSON.stringify(x);
     const reg = h.dist('registry/registry.generated');
     ok('Campaigns is no longer a feature; LeadSpace is, under Marketing and Growth', !reg.FEATURES.some((f) => f.id === 'marketing.campaigns') && reg.FEATURES.find((f) => f.id === 'marketing.leadspace').department === 'marketing');
     ok('the old dashboard addresses redirect to LeadSpace tabs', reg.resolveLegacyRoute(reg.FEATURES, '/dashboard/campaigns') === '/dashboard/marketing/leadspace?tab=promote' && reg.resolveLegacyRoute(reg.FEATURES, '/dashboard/landing-page') === '/dashboard/marketing/leadspace?tab=page' && reg.resolveLegacyRoute(reg.FEATURES, '/dashboard/leadspace') === '/dashboard/marketing/leadspace');
+    const { analyseVendor } = require('../nav-v2-dry-run-lib');
+    const { AVAILABLE_MODULES, NAV_V2_DEFAULT_FROM } = h.dist('addons/addons.constants');
+    const dry = await analyseVendor(prisma, reg, AVAILABLE_MODULES, await prisma.vendor.findUnique({ where: { id: allwin.id } }), NAV_V2_DEFAULT_FROM);
+    ok('the nav dry run for the Allwin-style vendor (growth hub module, campaign data) says "would lose access": nothing (the list is empty)', dry.wouldLose.length === 0, J(dry.wouldLose));
     ok('the AI credit wallet is unchanged by all of this: the same table, no LeadSpace write to it', (await prisma.walletTransaction.count()) === 0 && (await prisma.wallet.count({ where: { vendorId: allwin.id } })) <= 1);
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');
