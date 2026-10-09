@@ -181,3 +181,6 @@ export class RecurringDto {
   @IsDateString() nextRunOn!: string;
   @IsOptional() @IsDateString() endsOn?: string;
 }
+
+export class EmailDocDto { @IsOptional() @IsString() @MaxLength(120) to?: string; }
+export class AlertsDto { @IsBoolean() daily!: boolean; }

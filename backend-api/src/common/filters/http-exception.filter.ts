@@ -50,7 +50,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && (exceptionResponse as Record<string, unknown>).code === 'PLAN_REQUIRED') {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', 'LIMIT_REACHED'].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       for (const k of ['code', 'feature', 'requiredPlan'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
         if (typeof v === 'string') extra[k] = v;

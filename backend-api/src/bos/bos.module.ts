@@ -12,12 +12,15 @@ import { BosJobsService, BosPartiesService, BosPayNowService, BosStockViewsServi
 import { BosReportsService } from './reports.service';
 import { BosCaPackService } from './export/ca-pack.service';
 import { EntitlementGuard, EntitlementsService } from './entitlements.service';
+import { CommercialModule } from '../commercial/commercial.module';
+import { EmailModule } from '../email/email.module';
+import { BosAdminController } from './bos-admin.controller';
 import { BosBooksController, BosController, BosPublicController, BosPurchasesController, BosStockController } from './bos.controller';
 
 /** Full BOS: one set of business records (parties, items, documents, payments, stock ledger, journal) for every plan. */
 @Module({
-  imports: [StockModule, NotificationsModule, VendorPaymentsModule],
-  controllers: [BosController, BosPurchasesController, BosStockController, BosBooksController, BosPublicController],
+  imports: [StockModule, NotificationsModule, VendorPaymentsModule, CommercialModule, EmailModule],
+  controllers: [BosAdminController, BosController, BosPurchasesController, BosStockController, BosBooksController, BosPublicController],
   providers: [
     BosSettingsService, ChartService, NumberingService, PostingService, BosStockService, BosDocumentsService, BosPaymentsService,
     BosCounterService, BosExpensesService, BosOrderBridge, BosStockPosting, BosPartiesService, BosStockViewsService, BosPayNowService, BosJobsService,

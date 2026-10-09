@@ -1,4 +1,5 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, SetMetadata } from '@nestjs/common';
+import { BadRequestException, CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException, SetMetadata } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
@@ -72,6 +73,32 @@ export class EntitlementsService {
     const value: Entitlements = { plan, planName: planDisplayName(plan), custom, lapsed, capabilities };
     this.cache.set(vendorId, { at: now, value });
     return value;
+  }
+
+  /** Admin: change the plan that includes a capability, or its limits. Stored as an override of the registry default; `reset` removes it. */
+  async setOverride(capabilityId: string, patch: { minPlan?: PlanKey; limits?: Record<string, Partial<Record<PlanKey, number | null>>>; reset?: boolean }, actor: string): Promise<void> {
+    const cap = CAPABILITIES.find((c) => c.id === capabilityId);
+    if (!cap) throw new NotFoundException('That feature does not exist.');
+    if (patch.reset) {
+      await this.prisma.planOverride.deleteMany({ where: { key: capabilityId } });
+    } else {
+      const prev = ((await this.prisma.planOverride.findUnique({ where: { key: capabilityId } }))?.value ?? {}) as Override;
+      for (const name of Object.keys(patch.limits ?? {})) if (!cap.limits?.[name]) throw new BadRequestException(`"${name}" is not a limit of this feature.`);
+      const mergedLimits: NonNullable<Override['limits']> = { ...(prev.limits ?? {}) };
+      for (const [k, v] of Object.entries(patch.limits ?? {})) mergedLimits[k] = { ...(prev.limits?.[k] ?? {}), ...v };
+      const next: Override = { ...prev, ...(patch.minPlan ? { minPlan: patch.minPlan } : {}), limits: mergedLimits };
+      await this.prisma.planOverride.upsert({ where: { key: capabilityId }, create: { key: capabilityId, value: next as unknown as Prisma.InputJsonValue, updatedBy: actor }, update: { value: next as unknown as Prisma.InputJsonValue, updatedBy: actor } });
+    }
+    this.invalidate();
+  }
+
+  /** Admin: switch one capability on or off for one vendor (null removes the exception and the plan decides again). */
+  async setVendorException(vendorId: string, capabilityId: string, enabled: boolean | null): Promise<void> {
+    if (!CAPABILITIES.some((c) => c.id === capabilityId)) throw new NotFoundException('That feature does not exist.');
+    const key = `cap:${capabilityId}`;
+    if (enabled === null) await this.prisma.vendorAddon.deleteMany({ where: { vendorId, addonKey: key } });
+    else await this.prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId, addonKey: key } }, create: { vendorId, addonKey: key, enabled }, update: { enabled } });
+    this.invalidate(vendorId);
   }
 
   /** Throws the plain, structured 403 the dashboard turns into the upgrade card. */

@@ -8,6 +8,7 @@ import { WhatsAppService } from '../notifications/whatsapp.service';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
+import { EntitlementsService } from '../bos/entitlements.service';
 
 /** A team member as returned to clients — never the password hash or invite token. */
 export type SafeTeamMember = Omit<TeamMember, 'password' | 'inviteToken'>;
@@ -23,9 +24,22 @@ export class TeamService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly whatsappService: WhatsAppService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async invite(vendorId: string, dto: InviteMemberDto): Promise<SafeTeamMember> {
+    // The plan decides how many people can be added; people already added are never removed when a plan changes.
+    const seats = await this.entitlements.limit(vendorId, 'bos.staff', 'seats');
+    if (seats !== null) {
+      const used = await this.prisma.teamMember.count({ where: { vendorId, status: { not: 'removed' } } });
+      if (used >= seats) {
+        const e = await this.entitlements.resolve(vendorId);
+        throw new ForbiddenException({
+          message: `Your ${e.planName} plan includes ${seats} team ${seats === 1 ? 'member' : 'members'}, and you have ${used}. Upgrade your plan to add more people. Everyone already added keeps their access.`,
+          code: 'LIMIT_REACHED', feature: 'bos.staff',
+        });
+      }
+    }
     const inviteToken = crypto.randomBytes(24).toString('hex');
     const member = await this.prisma.teamMember.create({
       data: {

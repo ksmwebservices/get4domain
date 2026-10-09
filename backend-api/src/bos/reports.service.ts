@@ -181,6 +181,11 @@ export class BosReportsService {
     void from;
     const r: Range = { from: dayStart, to: new Date(dayStart.getTime() + 86_400_000 - 1) };
     const [s, month] = await Promise.all([this.summary(vendorId, r), this.summary(vendorId, { from: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) - 330 * 60_000), to: r.to })]);
-    return { salesTodayPaise: s.salesPaise, collectedTodayPaise: s.receivedPaise, billsToday: s.invoices, outstandingPaise: s.outstandingPaise, outstandingInvoices: s.outstandingInvoices, salesMonthPaise: month.salesPaise, expensesMonthPaise: month.expensesPaise };
+    const [lowRows, ordersWaiting] = await Promise.all([
+      this.prisma.vendorProduct.findMany({ where: { vendorId, trackStock: true, reorderLevel: { not: null }, active: true }, select: { stockQty: true, reorderLevel: true } }),
+      this.prisma.posSale.count({ where: { vendorId, type: 'web', status: 'PENDING_PAYMENT' } }),
+    ]);
+    const lowStock = lowRows.filter((i) => (i.stockQty ?? 0) <= (i.reorderLevel ?? 0)).length;
+    return { lowStock, ordersWaiting, salesTodayPaise: s.salesPaise, collectedTodayPaise: s.receivedPaise, billsToday: s.invoices, outstandingPaise: s.outstandingPaise, outstandingInvoices: s.outstandingInvoices, salesMonthPaise: month.salesPaise, expensesMonthPaise: month.expensesPaise };
   }
 }

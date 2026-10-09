@@ -91,13 +91,22 @@ async function startHarness({ port = 3098, pgPort = 54330, schemaSql } = {}) {
     return { id: vendor.id, email, password, token, subdomain: vendor.subdomain, state, login };
   }
 
+  /** A platform admin login (role SUPER_ADMIN). */
+  async function createAdmin({ key = 'admin' } = {}) {
+    const password = `Local-${crypto.randomBytes(9).toString('base64url')}`;
+    const email = `${key}@local.test`;
+    await prisma.vendor.create({ data: { name: `${key} admin`, email, password: await AuthService.hashPassword(password), businessName: `${key} admin`, role: 'SUPER_ADMIN' } });
+    const login = await call('POST', '/auth/login', { email, password });
+    return { email, token: login.data?.accessToken ?? login.data?.access_token ?? login.body?.accessToken, login };
+  }
+
   async function stop() {
     try { await app.close(); } catch { /* ignore */ }
     try { await sockServer.stop(); } catch { /* ignore */ }
     try { await db.close(); } catch { /* ignore */ }
   }
 
-  return { app, prisma, svc, dist, call, createVendor, stop, base, db };
+  return { app, prisma, svc, dist, call, createVendor, createAdmin, stop, base, db };
 }
 
 module.exports = { startHarness, available };

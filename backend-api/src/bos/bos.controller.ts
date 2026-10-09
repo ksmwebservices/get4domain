@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Post
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequireModule } from '../common/decorators/require-module.decorator';
@@ -16,9 +17,10 @@ import { renderDocumentHtml } from './export/render';
 import { EntitlementsService, RequireCapability } from './entitlements.service';
 import { EXPENSE_HEADS, DEFAULT_ACCOUNTS } from './chart';
 import {
-  ApplyAdvanceDto, ConvertDto, CounterSaleDto, CreditNoteDto, DocDto, ExpenseDto, ItemCostDto, LocationDto, LockDto, PartyDto, PaymentDto, QuoteStatusDto, ReasonDto, RecurringDto, SettingsDto, TransferDto, UpdateDocDto, UpdatePartyDto,
+  ApplyAdvanceDto, AlertsDto, EmailDocDto, ConvertDto, CounterSaleDto, CreditNoteDto, DocDto, ExpenseDto, ItemCostDto, LocationDto, LockDto, PartyDto, PaymentDto, QuoteStatusDto, ReasonDto, RecurringDto, SettingsDto, TransferDto, UpdateDocDto, UpdatePartyDto,
 } from './dto';
 
+const NL = String.fromCharCode(10);
 const SALES_TYPES: DocType[] = ['QUOTE', 'SALES_ORDER', 'SALES_INVOICE', 'CREDIT_NOTE'];
 
 function toInput(dto: DocDto): DocInput { const { issue: _i, ...rest } = dto; void _i; return rest as DocInput; }
@@ -32,7 +34,7 @@ export class BosController {
   constructor(
     private readonly prisma: PrismaService, private readonly settings: BosSettingsService, private readonly docs: BosDocumentsService, private readonly payments: BosPaymentsService,
     private readonly counter: BosCounterService, private readonly expenses: BosExpensesService, private readonly bridge: BosOrderBridge, private readonly parties: BosPartiesService,
-    private readonly reports: BosReportsService, private readonly ent: EntitlementsService,
+    private readonly reports: BosReportsService, private readonly ent: EntitlementsService, private readonly email: EmailService,
   ) {}
 
   // — settings —
@@ -129,6 +131,27 @@ export class BosController {
     return { link, text, whatsappUrl: `https://wa.me/${phone.length === 10 ? `91${phone}` : phone}?text=${encodeURIComponent(text)}`, email: party?.email ?? null };
   }
 
+  @Post('documents/:id/email')
+  @ApiOperation({ summary: 'E-mail the public link of an issued document to the customer' })
+  async emailDoc(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: EmailDocDto) {
+    const d = await this.docs.getRaw(u.sub, id);
+    if (d.status === 'DRAFT' || !d.publicToken) throw new BadRequestException('Issue the document first, then send it.');
+    const party = d.partyId ? await this.prisma.contact.findFirst({ where: { id: d.partyId, vendorId: u.sub }, select: { email: true, name: true } }) : null;
+    const to = (dto.to ?? party?.email ?? '').trim();
+    if (!to) throw new BadRequestException('This customer has no e-mail address. Type one here, or add it to their record.');
+    const brand = await this.brand(u.sub);
+    const base = (process.env.FRONTEND_URL ?? 'https://get4domain.com').replace(/\/+$/, '');
+    const link = `${base}/d/${d.publicToken}`;
+    const kind = d.docType === 'QUOTE' ? 'quote' : d.docType === 'CREDIT_NOTE' ? 'credit note' : 'invoice';
+    const esc = (x: string): string => x.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] as string);
+    try {
+      await this.email.sendGeneric(to, `${brand.name}: ${kind} ${d.number}`, `<p>Hello${party?.name ? ` ${esc(party.name)}` : ''},</p><p>Here is your ${kind} <b>${esc(d.number ?? '')}</b> from ${esc(brand.name)} for <b>₹${(d.totalPaise / 100).toLocaleString('en-IN')}</b>.</p><p><a href="${esc(link)}">View ${kind}</a></p>`, { fromName: brand.name, replyTo: brand.email ?? undefined });
+    } catch {
+      throw new BadRequestException('We could not send the e-mail just now. Use the WhatsApp or copy-link option, or try again in a minute.');
+    }
+    return { sent: true, to };
+  }
+
   // — counter —
   @Post('counter/sale')
   @ApiOperation({ summary: 'Counter billing: invoice + payment(s) + stock + books in one transaction' })
@@ -181,6 +204,22 @@ export class BosController {
     const inr = (p: number): string => (p / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 });
     const esc = (x: string): string => x.replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] as string);
     return `<!doctype html><html><head><meta charset="utf-8"><title>Statement</title><style>body{font-family:Arial;max-width:760px;margin:24px auto;color:#0f172a}table{width:100%;border-collapse:collapse}td,th{padding:6px;border-bottom:1px solid #e2e8f0;text-align:left}td.r,th.r{text-align:right}</style></head><body><h2>${esc(b.name)}</h2><h3>Statement: ${esc(s.party.name)}</h3><p>Opening balance: ₹${inr(s.openingPaise)}</p><table><tr><th>Date</th><th>Type</th><th>Reference</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Balance</th></tr>${s.rows.map((r) => `<tr><td>${r.date.toISOString().slice(0, 10)}</td><td>${esc(r.type)}</td><td>${esc(r.ref)}</td><td class="r">${r.debitPaise ? inr(r.debitPaise) : ''}</td><td class="r">${r.creditPaise ? inr(r.creditPaise) : ''}</td><td class="r">${inr(r.balancePaise)}</td></tr>`).join('')}</table><h3>Closing balance: ₹${inr(s.closingPaise)}</h3></body></html>`;
+  }
+
+  @Get('parties/:id/reminder')
+  @ApiOperation({ summary: 'A ready payment-reminder message (copy it, or open WhatsApp with it filled in)' })
+  async reminder(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string) {
+    const party = await this.prisma.contact.findFirst({ where: { id, vendorId: u.sub }, select: { name: true, phone: true } });
+    if (!party) throw new BadRequestException('Customer not found.');
+    const out = await this.payments.outstanding(u.sub, 'CUSTOMER');
+    const row = out.parties.find((p) => p.partyId === id);
+    if (!row || row.totalPaise <= 0) throw new BadRequestException('This customer owes you nothing right now.');
+    const brand = await this.brand(u.sub);
+    const base = (process.env.FRONTEND_URL ?? 'https://get4domain.com').replace(/\/+$/, '');
+    const lines = await Promise.all(row.documents.slice(0, 5).map(async (d) => { const r = await this.prisma.bosDocument.findUnique({ where: { id: d.id }, select: { publicToken: true } }); return `${d.number} ₹${(d.outstandingPaise / 100).toLocaleString('en-IN')}${r?.publicToken ? ` ${base}/d/${r.publicToken}` : ''}`; }));
+    const text = `Hello ${party.name}, a gentle reminder from ${brand.name}: ₹${(row.totalPaise / 100).toLocaleString('en-IN')} is pending.${NL}${lines.join(NL)}${NL}Thank you.`;
+    const phone = (party.phone ?? '').replace(/\D/g, '');
+    return { text, outstandingPaise: row.totalPaise, whatsappUrl: `https://wa.me/${phone.length === 10 ? `91${phone}` : phone}?text=${encodeURIComponent(text)}` };
   }
 
   // — parties —
@@ -288,6 +327,12 @@ export class BosStockController {
 
   @Get() @ApiOperation({ summary: 'Items with on-hand, low flag, cost and value ("Not tracked" when stock is not tracked)' })
   overview(@CurrentUser() u: AuthenticatedUser, @Query('search') search?: string, @Query('low') low?: string) { return this.views.overview(u.sub, { search, lowOnly: low === '1' }); }
+
+  @Get('alerts') @ApiOperation({ summary: 'Is the daily low-stock message on?' })
+  async alerts(@CurrentUser() u: AuthenticatedUser) { return this.views.dailyAlert(u.sub); }
+
+  @Put('alerts') @ApiOperation({ summary: 'Switch the daily low-stock message on or off' })
+  setAlerts(@CurrentUser() u: AuthenticatedUser, @Body() dto: AlertsDto) { return this.views.setDailyAlert(u.sub, dto.daily); }
 
   @Get('low') @ApiOperation({ summary: 'Items at or below their alert level' })
   low(@CurrentUser() u: AuthenticatedUser) { return this.views.low(u.sub); }

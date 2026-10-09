@@ -149,6 +149,16 @@ export class BosStockViewsService {
     return { ok: true };
   }
 
+  async dailyAlert(vendorId: string) {
+    const row = await this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId, addonKey: 'bos_lowstock_daily' } } });
+    return { daily: !(row && row.enabled === false) };
+  }
+
+  async setDailyAlert(vendorId: string, daily: boolean) {
+    await this.prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId, addonKey: 'bos_lowstock_daily' } }, create: { vendorId, addonKey: 'bos_lowstock_daily', enabled: daily }, update: { enabled: daily } });
+    return { daily };
+  }
+
   /** Low-stock items for the Today panel and the optional daily message. */
   async low(vendorId: string) {
     const o = await this.overview(vendorId, { lowOnly: true });
@@ -272,9 +282,30 @@ export class BosJobsService {
     return { notified };
   }
 
+  /** The optional daily low-stock message (an in-app notification, once a day, only when something is low). A vendor can switch it off on the Stock screen. */
+  async runLowStock(now = new Date()): Promise<{ notified: number }> {
+    const vendors = await this.prisma.vendorProduct.groupBy({ by: ['vendorId'], where: { trackStock: true, reorderLevel: { not: null }, active: true } });
+    let notified = 0;
+    for (const g of vendors) {
+      try {
+        const off = await this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId: g.vendorId, addonKey: 'bos_lowstock_daily' } } });
+        if (off && off.enabled === false) continue;
+        const items = await this.prisma.vendorProduct.findMany({ where: { vendorId: g.vendorId, trackStock: true, reorderLevel: { not: null }, active: true }, select: { name: true, stockQty: true, reorderLevel: true } });
+        const low = items.filter((i) => (i.stockQty ?? 0) <= (i.reorderLevel ?? 0));
+        if (!low.length) continue;
+        const since = new Date(now.getTime() - 20 * 3_600_000);
+        const recent = await this.prisma.notification.findFirst({ where: { recipientId: g.vendorId, type: 'LOW_STOCK_DAILY', createdAt: { gte: since } }, select: { id: true } });
+        if (recent) continue;
+        await this.notifications.notifyVendor(g.vendorId, 'LOW_STOCK_DAILY', `${low.length} item${low.length === 1 ? ' is' : 's are'} low on stock`, `${low.slice(0, 5).map((i) => `${i.name} (${i.stockQty ?? 0} left)`).join(', ')}${low.length > 5 ? ` and ${low.length - 5} more` : ''}. Open Stock to reorder.`, { priority: 'INFO' });
+        notified += 1;
+      } catch (e) { this.logger.warn(`Low-stock message for ${g.vendorId} failed: ${e instanceof Error ? e.message : 'error'}`); }
+    }
+    return { notified };
+  }
+
   @Cron('30 6 * * *', { timeZone: 'Asia/Kolkata' })
   async daily(): Promise<void> {
-    try { this.logger.log(`BOS daily: recurring ${JSON.stringify(await this.runRecurring())}, reminders ${JSON.stringify(await this.runReminders())}`); }
+    try { this.logger.log(`BOS daily: recurring ${JSON.stringify(await this.runRecurring())}, reminders ${JSON.stringify(await this.runReminders())}, low stock ${JSON.stringify(await this.runLowStock())}`); }
     catch (e) { this.logger.error(`BOS daily job failed: ${e instanceof Error ? e.message : 'error'}`); }
   }
 }

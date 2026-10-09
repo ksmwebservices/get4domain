@@ -252,6 +252,82 @@ const pick = (a) => a[Math.floor(rnd() * a.length)];
       await applyVendor(prisma, again);
       ok('a second run posts nothing', (await count()) === 2 && again.stockPaise === 0 && again.receivables.length === 0, J(again));
     }
+
+    section('[feat:bos.payments-keys] Vendor payment keys (Bug B2): format checked, plain sentences, test connection, never filled from another field');
+    {
+      const k = await h.createVendor({ key: 'keys', industry: 'retail', plan: 'WORKSPACE' });
+      let rr = await call('PUT', '/vendor-payments', { razorpayKeyId: 'keys@local.test' }, k.token);
+      ok('an e-mail address in the Key ID is refused with a plain sentence that says what to do', rr.status === 400 && /rzp_test_|rzp_live_/.test(J(rr.body)) && !/must match|regular expression/i.test(J(rr.body)), J(rr.body));
+      rr = await call('PUT', '/vendor-payments', { razorpayKeyId: 'rzp_test_AbC123xyz789', razorpayKeySecret: 'secretsecret123456', enabled: true, checkoutMode: 'ONLINE' }, k.token);
+      ok('a real-looking test key saves, and the secret is never returned', rr.status === 200 && rr.data.razorpayKeyId === 'rzp_test_AbC123xyz789' && rr.data.mode === 'test' && rr.data.hasSecret === true && !J(rr.body).includes('secretsecret'), J(rr.body));
+      // an old row that holds an e-mail (what the report script lists) is never shown back and never takes a payment
+      await prisma.vendorPaymentConfig.update({ where: { vendorId: k.id }, data: { razorpayKeyId: 'someone@example.com' } });
+      rr = await call('GET', '/vendor-payments', undefined, k.token);
+      ok('a stored value that is not a Razorpay key is hidden and flagged so the screen asks for it again', rr.data.razorpayKeyId === null && rr.data.keyIdInvalid === true, J(rr.body));
+      const pay = h.svc('VendorPaymentsService', 'vendor-payments/vendor-payments.service');
+      ok('and it can never be used to take a payment', (await pay.getKeys(k.id)) === null);
+      const okFetch = async () => ({ ok: true, status: 200 }); const badFetch = async () => ({ ok: false, status: 401 }); const downFetch = async () => { throw new Error('network'); };
+      ok('test connection: accepted keys', (await pay.testConnection(k.id, { razorpayKeyId: 'rzp_live_AbC123xyz789', razorpayKeySecret: 'secretsecret123456' }, okFetch)).ok === true);
+      const rej = await pay.testConnection(k.id, { razorpayKeyId: 'rzp_live_AbC123xyz789', razorpayKeySecret: 'wrongwrongwrong' }, badFetch);
+      ok('test connection: rejected keys say what to check', rej.ok === false && /Key ID and the Key Secret/.test(rej.message));
+      ok('test connection: Razorpay unreachable says so, without blaming the keys', (await pay.testConnection(k.id, { razorpayKeyId: 'rzp_live_AbC123xyz789', razorpayKeySecret: 'secretsecret123456' }, downFetch)).message.includes('could not reach'));
+    }
+
+    section('[feat:bos.entitlements-admin] Admin edits the plan split; per-vendor exceptions; staff seats follow the plan');
+    {
+      const adm = await h.createAdmin({ key: 'padmin' });
+      const v = await h.createVendor({ key: 'seats', industry: 'retail', plan: 'WORKSPACE' });
+      let rr = await call('GET', '/admin/bos/capabilities', undefined, adm.token);
+      ok('admin sees every capability with its plan and limits', rr.status === 200 && rr.data.length >= 9 && rr.data.some((c) => c.id === 'bos.staff' && c.limits.seats.WORKSPACE === 1), J(rr.body).slice(0, 200));
+      { const guard = new (h.dist('commercial/foundation.services').CommercialAdminGuard)(); const ctx = (user) => ({ switchToHttp: () => ({ getRequest: () => ({ user }) }) }); let refused = false; try { guard.canActivate(ctx({ role: 'ADMIN', adminRole: 'MARKETING' })); } catch { refused = true; } ok('the MARKETING staff role is refused (403) by the guard on these routes', refused); }
+      ok('a vendor is refused (403)', (await call('GET', '/admin/bos/capabilities', undefined, v.token)).status === 403);
+      const invite = (n) => call('POST', '/team/invite', { name: `Member ${n}`, role: 'Sales', modules: ['crm'] }, v.token);
+      rr = await invite(1);
+      ok('Essentials: the first extra team member can be added', rr.status < 300, J(rr.body));
+      rr = await invite(2);
+      ok('Essentials: the second is refused with LIMIT_REACHED and a plain sentence about upgrading', rr.status === 403 && rr.body?.code === 'LIMIT_REACHED' && /Upgrade/.test(rr.body?.message ?? ''), J(rr.body));
+      rr = await call('PUT', '/admin/bos/capabilities/bos.staff', { limits: { seats: { WORKSPACE: 3 } }, reason: 'KSM raised Essentials seats' }, adm.token);
+      ok('admin raises the Essentials seat limit (stored as config, not code)', rr.status === 200 && rr.data.find((c) => c.id === 'bos.staff').limits.seats.WORKSPACE === 3, J(rr.body).slice(0, 200));
+      ok('the new limit applies at once', (await invite(2)).status < 300);
+      rr = await call('PUT', '/admin/bos/capabilities/bos.staff', { limits: { seats: { WORKSPACE: 3 } }, reason: 'no' }, adm.token);
+      ok('a change without a real reason is refused in plain words', rr.status === 400 && /reason/i.test(J(rr.body)), J(rr.body));
+      rr = await call('POST', `/admin/bos/vendors/${v.id}/capability`, { capabilityId: 'bos.books', enabled: true, reason: 'Pilot customer, trial of the books' }, adm.token);
+      ok('admin switches the books on for one Essentials vendor', rr.status < 300 && rr.data.capabilities['bos.books'].allowed === true && rr.data.capabilities['bos.books'].reason === 'EXCEPTION_ON', J(rr.data.capabilities['bos.books']));
+      ok('and that vendor can now open the trial balance', (await call('GET', '/bos/books/trial-balance', undefined, v.token)).status === 200);
+      await call('POST', `/admin/bos/vendors/${v.id}/capability`, { capabilityId: 'bos.books', enabled: null, reason: 'Trial finished, plan decides again' }, adm.token);
+      ok('removing the exception puts the plan back in charge', (await call('GET', '/bos/books/trial-balance', undefined, v.token)).status === 403);
+      const audit = await prisma.commercialAuditLog.findMany({ where: { action: { startsWith: 'plan.capability' } } });
+      ok('every change is in the audit trail', audit.length >= 3, audit.length);
+    }
+
+    section('[feat:bos.share] Share, reminder, Today numbers, optional daily low-stock message');
+    {
+      const v = await h.createVendor({ key: 'sharer', industry: 'retail', plan: 'WORKSPACE' });
+      await call('PUT', '/bos/settings', { gstRegistered: false }, v.token);
+      const item = await mk(v.id, 'Shared item', 100); await open(v.id, item, 3); await prisma.vendorProduct.update({ where: { id: item.id }, data: { reorderLevel: 5 } });
+      const cust = (await call('POST', '/bos/parties', { name: 'Meena', phone: '9777777777', type: 'customer' }, v.token)).data;
+      const inv = (await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyId: cust.id, dueDate: new Date(Date.now() - 5 * 86400000).toISOString(), lines: [{ itemId: item.id, qty: 1 }], issue: true }, v.token)).data.doc;
+      let rr = await call('GET', `/bos/documents/${inv.id}/share`, undefined, v.token);
+      ok('share gives a public link and a WhatsApp deep link with the text filled in', rr.status === 200 && /\/d\/[A-Za-z0-9_-]{20,}/.test(rr.data.link) && rr.data.whatsappUrl.startsWith('https://wa.me/919777777777?text='), J(rr.body).slice(0, 200));
+      const token = rr.data.link.split('/d/')[1];
+      const page = await fetch(`${h.base}/public/bos/doc/${token}`);
+      const html = await page.text();
+      ok('the public page opens without login and shows a Bill of Supply (not GST-registered) with no Pay now (no own gateway)', page.status === 200 && /Bill of Supply/.test(html) && !/Pay .* now/.test(html), html.slice(0, 200));
+      rr = await call('POST', `/bos/documents/${inv.id}/email`, {}, v.token);
+      ok('e-mail without an address on file asks for one in plain words', rr.status === 400 && /e-mail address/i.test(J(rr.body)), J(rr.body));
+      rr = await call('POST', `/bos/documents/${inv.id}/email`, { to: 'meena@example.com' }, v.token);
+      ok('e-mail with no mail provider configured says so kindly instead of a server error', rr.status === 400 && /could not send/i.test(J(rr.body)) || rr.status < 300, J(rr.body));
+      rr = await call('GET', `/bos/parties/${cust.id}/reminder`, undefined, v.token);
+      ok('the reminder message names the amount and links to the invoice', rr.status === 200 && /₹100/.test(rr.data.text) && rr.data.text.includes('/d/') && rr.data.whatsappUrl.includes('wa.me'), J(rr.body).slice(0, 300));
+      rr = await call('GET', '/bos/reports/today', undefined, v.token);
+      ok('Today numbers: sales, outstanding, low stock and orders waiting are real', rr.data.salesTodayPaise === 10000 && rr.data.outstandingPaise === 10000 && rr.data.lowStock === 1 && rr.data.ordersWaiting === 0, J(rr.body));
+      const jobs = h.svc('BosJobsService', 'bos/more.services');
+      ok('the daily job sends one low-stock message', (await jobs.runLowStock()).notified === 1);
+      ok('and not a second one the same day', (await jobs.runLowStock()).notified === 0);
+      await call('PUT', '/bos/stock/alerts', { daily: false }, v.token);
+      await prisma.notification.deleteMany({ where: { recipientId: v.id, type: 'LOW_STOCK_DAILY' } });
+      ok('the vendor can switch the daily message off', (await jobs.runLowStock()).notified === 0 && (await call('GET', '/bos/stock/alerts', undefined, v.token)).data.daily === false);
+    }
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');
   } finally {
