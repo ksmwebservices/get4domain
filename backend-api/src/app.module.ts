@@ -41,6 +41,8 @@ import { DomainAppModule } from './domainapp/domainapp.module';
 import { AddonsModule } from './addons/addons.module';
 import { RegistryModule } from './registry/registry.module';
 import { BosModule } from './bos/bos.module';
+import { MessagingModule } from './messaging/messaging.module';
+import { LeadspaceModule } from './leadspace/leadspace.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WhatsappBotModule } from './whatsapp-bot/whatsapp-bot.module';
@@ -148,6 +150,8 @@ import { ModuleGuard } from './common/guards/module.guard';
     AddonsModule,
     RegistryModule,
     BosModule,
+    MessagingModule,
+    LeadspaceModule,
     PlatformSettingsModule,
     WhatsappModule,
     WhatsappBotModule,
