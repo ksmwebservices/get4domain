@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 38f00e5e030b420c
+// registry-hash: a3cf41554b70d4b2
 // Navigation data + pure state logic for the dashboard.
 /* eslint-disable */
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
@@ -275,7 +275,7 @@ export function checklistDone(id: ChecklistId, s: GoLiveSignals): boolean {
   }
 }
 
-export const REGISTRY_HASH = '38f00e5e030b420c';
+export const REGISTRY_HASH = 'a3cf41554b70d4b2';
 export const FEATURES: Feature[] = [
   {
     "id": "home.today",
@@ -302,7 +302,9 @@ export const FEATURES: Feature[] = [
     "purpose": "reports",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "UNTESTED",
+    "status": "LIMITED",
+    "testId": "reports.usage",
+    "limits": "Counts of leads, calls, AI use and orders for the business; charts by period are Coming soon.",
     "moduleKey": "analytics_hub",
     "upgrade": {
       "headline": "See how your business is doing",
@@ -432,7 +434,9 @@ export const FEATURES: Feature[] = [
     "purpose": "campaigns",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "UNTESTED",
+    "status": "LIMITED",
+    "testId": "campaigns.vendor",
+    "limits": "Plan, save and track campaigns and landing pages; AI-written content needs the AI key; publishing to social networks is Coming soon. A vendor who already has campaigns keeps them open on any plan.",
     "moduleKey": "growth_hub",
     "tabs": [
       {
@@ -924,7 +928,9 @@ export const FEATURES: Feature[] = [
     "purpose": "whatsapp-bot",
     "minPlan": "BOS",
     "profiles": "all",
-    "status": "UNTESTED",
+    "status": "LIMITED",
+    "testId": "bot.kb",
+    "limits": "Your questions and answers are kept and checked here; live replies on WhatsApp need your WhatsApp number connected.",
     "moduleKey": "communication_hub",
     "upgrade": {
       "headline": "Answer customers on WhatsApp automatically",

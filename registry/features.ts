@@ -14,7 +14,7 @@ export const FEATURES: Feature[] = [
   { id: 'home.today', department: 'home', label: 'Today', icon: 'LayoutDashboard', route: '/dashboard', purpose: 'home', minPlan: 'WORKSPACE', profiles: ALL,
     status: 'LIMITED', manualCheck: `${WALK}#home.today`, limits: 'Go-live checklist and banner are computed from live data; revenue widgets are the existing Overview.' },
   { id: 'home.reports', department: 'home', label: 'Reports', icon: 'BarChart3', route: '/dashboard/home/reports', legacyRoutes: ['/dashboard/reports'], purpose: 'reports',
-    minPlan: 'BOS', profiles: ALL, status: 'UNTESTED', moduleKey: 'analytics_hub',
+    minPlan: 'BOS', profiles: ALL, status: 'LIMITED', testId: 'reports.usage', limits: 'Counts of leads, calls, AI use and orders for the business; charts by period are Coming soon.', moduleKey: 'analytics_hub',
     upgrade: { headline: 'See how your business is doing', body: 'Cross-module reports for leads, orders and revenue.' } },
 
   // ───────────────────────────── Sales and CRM
@@ -36,7 +36,8 @@ export const FEATURES: Feature[] = [
     limits: 'Writes text and pictures from your wallet. Reels and video are Coming soon.' },
   { id: 'marketing.campaigns', department: 'marketing', label: 'Campaigns and landing pages', icon: 'Megaphone', route: '/dashboard/marketing/campaigns',
     legacyRoutes: [{ from: '/dashboard/campaigns', tab: 'campaigns' }, { from: '/dashboard/landing-page', tab: 'landing' }], purpose: 'campaigns', minPlan: 'BOS', profiles: ALL,
-    status: 'UNTESTED', moduleKey: 'growth_hub', tabs: [{ key: 'campaigns', label: 'Campaigns' }, { key: 'landing', label: 'Landing pages' }],
+    status: 'LIMITED', testId: 'campaigns.vendor', limits: 'Plan, save and track campaigns and landing pages; AI-written content needs the AI key; publishing to social networks is Coming soon. A vendor who already has campaigns keeps them open on any plan.',
+    moduleKey: 'growth_hub', tabs: [{ key: 'campaigns', label: 'Campaigns' }, { key: 'landing', label: 'Landing pages' }],
     upgrade: { headline: 'Run campaigns from one place', body: 'Plan campaigns and build landing pages.' } },
   { id: 'marketing.social', department: 'marketing', label: 'Social posting', icon: 'Share2', route: '/dashboard/marketing/social', purpose: 'social-publish', minPlan: 'BOS', profiles: ALL,
     status: 'NOT_BUILT', hidden: true },
@@ -103,7 +104,7 @@ export const FEATURES: Feature[] = [
     minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#communication.inbox`, limits: 'WhatsApp and website chat. SMS and e-mail are Coming soon.', moduleKey: 'communication_hub' },
   { id: 'communication.sms-email', department: 'communication', label: 'SMS and e-mail', icon: 'Mail', route: '/dashboard/communication/sms-email', purpose: 'sms-email', minPlan: 'WORKSPACE', profiles: ALL, status: 'NOT_BUILT' },
   { id: 'communication.whatsapp-bot', department: 'communication', label: 'WhatsApp bot', icon: 'MessageCircle', route: '/dashboard/communication/whatsapp-bot', legacyRoutes: ['/dashboard/whatsapp-bot'],
-    purpose: 'whatsapp-bot', minPlan: 'BOS', profiles: ALL, status: 'UNTESTED', moduleKey: 'communication_hub',
+    purpose: 'whatsapp-bot', minPlan: 'BOS', profiles: ALL, status: 'LIMITED', testId: 'bot.kb', limits: 'Your questions and answers are kept and checked here; live replies on WhatsApp need your WhatsApp number connected.', moduleKey: 'communication_hub',
     upgrade: { headline: 'Answer customers on WhatsApp automatically', body: 'Replies from your own answers, with a hand-off to you.' } },
   { id: 'communication.notifications', department: 'communication', label: 'Notifications', icon: 'Bell', route: '/dashboard/communication/notifications', legacyRoutes: ['/dashboard/notifications'], purpose: 'notifications',
     minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'notifications.own-only' },

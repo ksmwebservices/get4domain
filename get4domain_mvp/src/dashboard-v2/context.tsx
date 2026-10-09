@@ -18,7 +18,7 @@ export interface V2Context {
   memberAreas: string[] | null;
   term: { status: string; paymentDueAt: string | null; periodEnd: string | null; graceDays: number } | null;
   paymentDue: { invoiceId: string; invoiceNumber: string; totalPaise: number; dueDate: string | null; overdue: boolean } | null;
-  signals: { productsAdded: number; paymentsConnected: boolean; domainConnected: boolean; seoBasics: boolean; firstLead: boolean; newLeads7d: number; pendingOrders: number; lowStock: number };
+  signals: { productsAdded: number; paymentsConnected: boolean; domainConnected: boolean; seoBasics: boolean; firstLead: boolean; newLeads7d: number; pendingOrders: number; lowStock: number; hasCampaigns?: boolean };
 }
 
 interface V2Value {
@@ -59,6 +59,8 @@ export function stateFor(f: Feature, v: V2Value | null): FeatureState {
   if (!v?.facts || !v.ctx) return 'HIDDEN';
   const base = featureState(f, v.facts);
   if (base === 'HIDDEN') return base;
+  // A vendor who already made campaigns keeps them open on any plan (Allwin Tours): data is never hidden behind a plan.
+  if (f.id === 'marketing.campaigns' && base === 'LOCKED' && v.ctx.signals?.hasCampaigns) return 'OPEN';
   if (v.ctx.memberAreas && !memberCanSee(f, v.ctx.memberAreas)) return 'HIDDEN';
   return base;
 }

@@ -210,6 +210,25 @@ export class BosController {
     return `<!doctype html><html><head><meta charset="utf-8"><title>Statement</title><style>body{font-family:Arial;max-width:760px;margin:24px auto;color:#0f172a}table{width:100%;border-collapse:collapse}td,th{padding:6px;border-bottom:1px solid #e2e8f0;text-align:left}td.r,th.r{text-align:right}</style></head><body><h2>${esc(b.name)}</h2><h3>Statement: ${esc(s.party.name)}</h3><p>Opening balance: ₹${inr(s.openingPaise)}</p><table><tr><th>Date</th><th>Type</th><th>Reference</th><th class="r">Debit</th><th class="r">Credit</th><th class="r">Balance</th></tr>${s.rows.map((r) => `<tr><td>${r.date.toISOString().slice(0, 10)}</td><td>${esc(r.type)}</td><td>${esc(r.ref)}</td><td class="r">${r.debitPaise ? inr(r.debitPaise) : ''}</td><td class="r">${r.creditPaise ? inr(r.creditPaise) : ''}</td><td class="r">${inr(r.balancePaise)}</td></tr>`).join('')}</table><h3>Closing balance: ₹${inr(s.closingPaise)}</h3></body></html>`;
   }
 
+  @Get('parties/:id')
+  @ApiOperation({ summary: 'One customer or supplier with what they owe / are owed' })
+  async partyOne(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string) {
+    const [row] = await this.parties.list(u.sub, { id });
+    if (!row) throw new BadRequestException('Customer or supplier not found.');
+    return row;
+  }
+
+  @Post('documents/from-record/:recordId')
+  @ApiOperation({ summary: 'A draft invoice from a booking / appointment / job in the industry workspace (one per record)' })
+  async fromRecord(@CurrentUser() u: AuthenticatedUser, @Param('recordId') recordId: string) {
+    const rec = await this.prisma.record.findFirst({ where: { id: recordId, vendorId: u.sub }, include: { catalogItem: { select: { name: true } } } });
+    if (!rec) throw new BadRequestException('That booking was not found.');
+    if (!rec.contactId) throw new BadRequestException('Link a customer to this booking first, then make the invoice.');
+    const name = rec.catalogItem?.name ?? 'Service';
+    const doc = await this.docs.createDraft(u.sub, { docType: 'SALES_INVOICE', partyId: rec.contactId, lines: [{ name, qty: 1, rate: rec.amount || 0 }], notes: rec.notes ?? undefined, source: 'RECORD', sourceType: 'RECORD', sourceId: rec.id, idempotencyKey: `record:${rec.id}` } as DocInput, u.email);
+    return { doc, warnings: [], replayed: false };
+  }
+
   @Get('parties/:id/reminder')
   @ApiOperation({ summary: 'A ready payment-reminder message (copy it, or open WhatsApp with it filled in)' })
   async reminder(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string) {

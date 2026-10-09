@@ -19,16 +19,16 @@ const st = (id, v) => reg.featureState(get(id), v);
 section('state rules (KSM 2026-10-08)');
 ok('flag off: the v2 menu does not exist for the vendor (everything HIDDEN)', F.every((f) => reg.featureState(f, V({ navV2: false })) === 'HIDDEN'));
 ok('a built feature the plan includes is OPEN (Essentials: Products)', st('commerce.products', V()) === 'OPEN');
-ok('built, plan lacks it → LOCKED with an upgrade card (Essentials: Expenses and GST)', st('finance.expenses', V()) === 'LOCKED' && !!get('finance.expenses').upgrade);
-ok('the same feature is OPEN on Pro', st('finance.expenses', V({ plan: 'BOS' })) === 'OPEN');
+ok('built, plan lacks it → LOCKED with an upgrade card (Essentials: Purchases and suppliers)', st('commerce.inventory', V()) === 'LOCKED' && !!get('commerce.inventory').upgrade);
+ok('the same feature is OPEN on Pro', st('commerce.inventory', V({ plan: 'BOS' })) === 'OPEN');
 ok('NOT BUILT is Coming soon even for the higher plan — never "upgrade" for something that does not exist', st('sales.lead-tools', V()) === 'COMING_SOON' && st('sales.lead-tools', V({ plan: 'BOS' })) === 'COMING_SOON');
-ok('UNTESTED is Coming soon too (WhatsApp bot, Quotes, Collect payments)', ['communication.whatsapp-bot', 'sales.quotes', 'finance.collect-payments'].every((id) => st(id, V({ plan: 'BOS' })) === 'COMING_SOON'));
+ok('UNTESTED is Coming soon too (every feature still marked UNTESTED)', F.filter((f) => f.status === 'UNTESTED' && !f.hidden && f.department !== 'custom').every((f) => st(f.id, V({ plan: 'BOS' })) === 'COMING_SOON'));
 ok('no LOCKED item is ever unbuilt (all plans, all profiles)', ['WORKSPACE', 'BOS'].every((plan) => ['COMMERCE', 'APPOINTMENTS', 'PACKAGES', 'SERVICES', 'LISTINGS'].every((profile) => F.every((f) => reg.featureState(f, V({ plan, profile })) !== 'LOCKED' || f.status === 'WORKING' || f.status === 'LIMITED'))));
 ok('hidden features never show (Social posting, Stationery)', st('marketing.social', V({ plan: 'BOS' })) === 'HIDDEN' && st('account.stationery', V({ plan: 'BOS' })) === 'HIDDEN');
 ok('profile filter: Stock is only for product businesses', st('commerce.stock', V()) === 'OPEN' && st('commerce.stock', V({ profile: 'SERVICES' })) === 'HIDDEN' && st('commerce.stock', V({ profile: 'LISTINGS' })) === 'HIDDEN');
 ok('BOS Custom is invisible to everyone but Custom clients, who see it as Coming soon', F.filter((f) => f.department === 'custom').every((f) => reg.featureState(f, V({ plan: 'BOS' })) === 'HIDDEN' && reg.featureState(f, V({ plan: 'BOS', custom: true })) === 'COMING_SOON'));
-ok('a vendor with no term yet (demo) is treated as the entry plan', st('finance.expenses', V({ plan: null })) === 'LOCKED' && st('commerce.products', V({ plan: null })) === 'OPEN');
-ok('Custom is not a plan: a Custom client keeps Pro access to Pro features', st('finance.expenses', V({ plan: 'BOS', custom: true })) === 'OPEN');
+ok('a vendor with no term yet (demo) is treated as the entry plan', st('commerce.inventory', V({ plan: null })) === 'LOCKED' && st('commerce.products', V({ plan: null })) === 'OPEN');
+ok('Custom is not a plan: a Custom client keeps Pro access to Pro features', st('commerce.inventory', V({ plan: 'BOS', custom: true })) === 'OPEN');
 
 section('names and profiles');
 ok('display names: Essentials / Pro; internal keys unchanged', reg.planDisplayName('WORKSPACE') === 'Essentials' && reg.planDisplayName('BOS') === 'Pro' && reg.planDisplayName(null) === 'Essentials');
@@ -45,23 +45,23 @@ const menuPro = reg.buildMenu(F, V({ plan: 'BOS', custom: true }));
 ok('the ten departments exist, in KSM\'s order', JSON.stringify(reg.DEPARTMENTS.map((d) => d.label)) === JSON.stringify(['Home', 'Sales and CRM', 'Marketing and Growth', 'Website and Domain', 'Commerce and Operations', 'Finance and Accounts', 'People and HR', 'Communication', 'Your Get4Domain account', 'BOS Custom']));
 ok('a Custom client sees all ten; an Essentials vendor sees nine (no BOS Custom)', menuPro.length === 10 && reg.buildMenu(F, V()).length === 9);
 ok('every contract row exists with the right plan and starting state', (() => {
-  const want = { 'home.today': ['WORKSPACE', true], 'home.reports': ['BOS', false], 'sales.leads': ['WORKSPACE', true], 'sales.customers': ['WORKSPACE', true], 'sales.quotes': ['WORKSPACE', false], 'sales.portal': ['WORKSPACE', true],
-    'marketing.ai-studio': ['WORKSPACE', true], 'marketing.campaigns': ['BOS', false], 'marketing.social': ['BOS', false], 'marketing.reviews-offers': ['BOS', false],
+  const want = { 'home.today': ['WORKSPACE', true], 'home.reports': ['BOS', true], 'sales.leads': ['WORKSPACE', true], 'sales.customers': ['WORKSPACE', true], 'sales.quotes': ['WORKSPACE', true], 'sales.portal': ['WORKSPACE', true],
+    'marketing.ai-studio': ['WORKSPACE', true], 'marketing.campaigns': ['BOS', true], 'marketing.social': ['BOS', false], 'marketing.reviews-offers': ['BOS', false],
     'website.content': ['WORKSPACE', true], 'website.new-pages': ['BOS', false], 'website.design': ['WORKSPACE', true], 'website.domain': ['WORKSPACE', true], 'website.search': ['WORKSPACE', true], 'website.search-pro': ['BOS', false], 'website.widget': ['WORKSPACE', true], 'website.readiness': ['WORKSPACE', true],
-    'commerce.products': ['WORKSPACE', true], 'commerce.stock': ['WORKSPACE', true], 'commerce.orders': ['WORKSPACE', true], 'commerce.workspace': ['WORKSPACE', true], 'commerce.workspace-full': ['BOS', false], 'commerce.inventory': ['BOS', false], 'commerce.pos': ['BOS', false], 'commerce.tasks': ['BOS', false], 'commerce.documents': ['BOS', false],
-    'finance.invoices': ['WORKSPACE', true], 'finance.collect-payments': ['WORKSPACE', false], 'finance.recurring': ['BOS', false], 'finance.expenses': ['BOS', true], 'finance.ca-accounts': ['BOS', false],
-    'people.team': ['WORKSPACE', true], 'people.hr': ['BOS', false], 'communication.inbox': ['WORKSPACE', true], 'communication.whatsapp-bot': ['BOS', false], 'communication.notifications': ['WORKSPACE', true], 'communication.reminders': ['BOS', false],
+    'commerce.products': ['WORKSPACE', true], 'commerce.stock': ['WORKSPACE', true], 'commerce.orders': ['WORKSPACE', true], 'commerce.workspace': ['WORKSPACE', true], 'commerce.workspace-full': ['BOS', false], 'commerce.inventory': ['BOS', true], 'commerce.pos': ['WORKSPACE', true], 'commerce.tasks': ['BOS', false], 'commerce.documents': ['BOS', false],
+    'finance.invoices': ['WORKSPACE', true], 'finance.collect-payments': ['WORKSPACE', true], 'finance.recurring': ['BOS', true], 'finance.expenses': ['WORKSPACE', true], 'finance.ca-accounts': ['BOS', true],
+    'people.team': ['WORKSPACE', true], 'people.hr': ['BOS', false], 'communication.inbox': ['WORKSPACE', true], 'communication.whatsapp-bot': ['BOS', true], 'communication.notifications': ['WORKSPACE', true], 'communication.reminders': ['BOS', false],
     'account.billing': ['WORKSPACE', true], 'account.wallet': ['WORKSPACE', true], 'account.profile': ['WORKSPACE', true], 'account.connections': ['BOS', false], 'account.disclosures': ['WORKSPACE', false], 'account.help': ['WORKSPACE', true] };
   return Object.entries(want).every(([id, [plan, open]]) => { const f = get(id); return f && f.minPlan === plan && ((f.status === 'WORKING' || f.status === 'LIMITED') === open); });
 })(), 'a contract row differs');
-ok('KSM\'s "Open — verify" row (WhatsApp bot) was downgraded because nothing verifies it (documented decision)', get('communication.whatsapp-bot').status === 'UNTESTED');
+ok('the WhatsApp bot row is Open only because a test now verifies its answers (bot.kb); live replies are stated as a limit', get('communication.whatsapp-bot').status === 'LIMITED' && get('communication.whatsapp-bot').testId === 'bot.kb' && /number connected/.test(get('communication.whatsapp-bot').limits));
 ok('reels and video: no registry feature offers them', F.every((f) => !/reel|video/i.test(f.label)));
 
 section('legacy routes');
 const nonTab = (r) => !r.includes('[');
-const legacy = F.flatMap((f) => (f.legacyRoutes ?? []).map((l) => ({ f, from: typeof l === 'string' ? l : l.from, tab: typeof l === 'string' ? undefined : l.tab })));
-ok('every legacy address resolves to its feature, with the tab and the query string kept', legacy.every(({ f, from, tab }) => {
-  const want = tab ? `${f.route}?tab=${tab}&x=1` : `${f.route}?x=1`;
+const legacy = F.flatMap((f) => (f.legacyRoutes ?? []).map((l) => ({ f, from: typeof l === 'string' ? l : l.from, tab: typeof l === 'string' ? undefined : l.tab, query: typeof l === 'string' ? undefined : l.query })));
+ok('every legacy address resolves to its feature, with the tab and the query string kept', legacy.every(({ f, from, tab, query }) => {
+  const want = tab ? `${f.route}?tab=${tab}&x=1` : query ? `${f.route}?${query}&x=1` : `${f.route}?x=1`;
   return reg.resolveLegacyRoute(F, from, '?x=1') === want;
 }));
 ok('no legacy address is also a current route (no loops)', legacy.every(({ from }) => !F.some((f) => f.route === from)));
@@ -77,8 +77,20 @@ ok('the domain-app family splits by what the tab is (products / customers / invo
   return r('catalog') === '/dashboard/commerce/products?tab=catalog&q=a' && r('patients') === '/dashboard/sales/customers?tab=patients&q=a' && r('billing') === '/dashboard/finance/invoices?tab=billing&q=a'
     && r('bookings') === '/dashboard/commerce/orders?tab=bookings&q=a' && r('fleet') === '/dashboard/commerce/workspace?tab=fleet&q=a' && reg.resolveLegacyRoute(F, '/dashboard/domain-app', '') === '/dashboard';
 })());
-ok('addresses that are not legacy return null (no accidental redirects)', reg.resolveLegacyRoute(F, '/dashboard/sales/leads', '') === null && reg.resolveLegacyRoute(F, '/dashboard', '') === null && reg.resolveLegacyRoute(F, '/dashboard/payments', '') === null);
+ok('addresses that are not legacy return null (no accidental redirects)', reg.resolveLegacyRoute(F, '/dashboard/sales/leads', '') === null && reg.resolveLegacyRoute(F, '/dashboard', '') === null && reg.resolveLegacyRoute(F, '/dashboard/finance/invoices', '') === null);
 ok('a trailing slash and an encoded tab are handled', reg.resolveLegacyRoute(F, '/dashboard/orders/', '') === '/dashboard/commerce/orders' && reg.resolveLegacyRoute(F, '/dashboard/domain-app/trip-sheets', '') === '/dashboard/commerce/workspace?tab=trip-sheets');
+section('[feat:routes.redirects] retired routes redirect (query kept, nothing 404s)');
+{
+  const R = (p, q = '') => reg.resolveLegacyRoute(F, p, q);
+  ok('the old sidebar Invoices address goes to Customer invoices with the one-time note, and any query is kept', R('/dashboard/invoices') === '/dashboard/finance/invoices?note=billing-moved' && R('/dashboard/invoices', '?x=1') === '/dashboard/finance/invoices?note=billing-moved&x=1');
+  ok('Get4Domain receipts live under Plan and billing', R('/dashboard/billing/receipts') === '/dashboard/account/billing?tab=receipts');
+  ok('the old Payments address goes to Collect payments', R('/dashboard/payments') === '/dashboard/finance/collect-payments');
+  ok('the old Accounts address goes to Accounts, the old Stock address to Stock', R('/dashboard/accounts') === '/dashboard/finance/expenses' && R('/dashboard/stock') === '/dashboard/commerce/stock');
+  const routes = new Set(F.map((f) => f.route));
+  const targets = legacy.map(({ from }) => R(from, '')).filter(Boolean).map((t) => t.split('?')[0]);
+  ok('every retired address lands on a real, registered screen', targets.length === legacy.length && targets.every((t) => routes.has(t) || t === '/dashboard'), targets.filter((t) => !routes.has(t)).join());
+  ok('no retired address is silently dropped: each is still in the registry (kept at least 180 days; the registry has no expiry, removal needs a reviewed change)', legacy.length >= 30);
+}
 const genRed = read('get4domain_mvp/src/lib/redirects.generated.ts');
 ok('the generated redirect table equals the registry (static entries)', legacy.every(({ from }) => genRed.includes(JSON.stringify(from))));
 
@@ -94,10 +106,10 @@ section('the guard catches seeded violations');
     // copy the registry to a temp tree, mutate it, run the guard there
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'g4d-guard-'));
     const cp = (rel) => { const d = path.join(tmp, rel); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(path.join(ROOT, rel), d); };
-    for (const r of ['registry/types.ts', 'registry/state.ts', 'registry/features.ts', 'registry/lib.mjs', 'registry/check.mjs', 'registry/build.mjs', 'backend-api/src/addons/addons.constants.ts', 'get4domain_mvp/package.json']) cp(r);
+    for (const r of ['registry/types.ts', 'registry/state.ts', 'registry/features.ts', 'registry/capabilities.ts', 'registry/lib.mjs', 'registry/check.mjs', 'registry/build.mjs', 'backend-api/src/addons/addons.constants.ts', 'get4domain_mvp/package.json']) cp(r);
     // reuse the real app tree + generated files by junction-free copy of what the guard reads
     const copyDir = (rel) => { const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (['node_modules', '.next', 'dist'].includes(e.name)) continue; const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else { const dst = path.join(tmp, path.relative(ROOT, p)); fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.copyFileSync(p, dst); } } }; walk(path.join(ROOT, rel)); };
-    for (const d of ['get4domain_mvp/src/app/dashboard', 'get4domain_mvp/src/dashboard-v2', 'get4domain_mvp/src/lib', 'backend-api/src/registry', 'backend-api/scripts', 'get4domain_mvp/scripts', 'stepnrock/scripts', 'docs/v2/evidence']) if (fs.existsSync(path.join(ROOT, d))) copyDir(d);
+    for (const d of ['get4domain_mvp/src/app/dashboard', 'get4domain_mvp/src/bos', 'get4domain_mvp/src/dashboard-v2', 'get4domain_mvp/src/lib', 'backend-api/src/registry', 'backend-api/scripts', 'get4domain_mvp/scripts', 'stepnrock/scripts', 'docs/v2/evidence']) if (fs.existsSync(path.join(ROOT, d))) copyDir(d);
     mutate(tmp);
     // typescript lives in the real get4domain_mvp/node_modules: point the copied lib at it
     const link = path.join(tmp, 'get4domain_mvp', 'node_modules');
@@ -108,12 +120,12 @@ section('the guard catches seeded violations');
   };
   const edit = (tmp, rel, fn) => { const p = path.join(tmp, rel); fs.writeFileSync(p, fn(fs.readFileSync(p, 'utf8'))); };
   const clean = run(() => undefined);
-  ok('the untouched registry passes the guard', /registry guard: OK/.test(clean) && /exit=0/.test(clean), clean.slice(-300));
+  ok('the untouched registry passes the guard', /registry guard: OK/.test(clean) && /exit=0/.test(clean), clean.slice(0, 600));
   ok('SEEDED: a dashboard route that is not registered fails (R1)', /R1.*\/dashboard\/surprise/.test(run((t) => { const d = path.join(t, 'get4domain_mvp/src/app/dashboard/surprise'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'page.tsx'), 'export default function P(){return null}'); })));
   ok('SEEDED: two features claiming one purpose fail (R2)', /R2.*purpose "orders"/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("purpose: 'stock'", "purpose: 'orders'")))));
   ok('SEEDED: WORKING without a testId fails (R3)', /R3.*WORKING without a testId/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("status: 'WORKING', testId: 'commerce.catalogue',", "status: 'WORKING',")))));
   ok('SEEDED: a testId no suite asserts fails (R3)', /R3.*no assertion tagged \[feat:made.up\]/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("testId: 'commerce.catalogue'", "testId: 'made.up'")))));
-  ok('SEEDED: an unbuilt feature claiming evidence fails (R4)', /R4/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("{ id: 'sales.quotes', department: 'sales', label: 'Quotes', icon: 'FileText',", "{ id: 'sales.quotes', department: 'sales', label: 'Quotes', testId: 'commerce.catalogue', icon: 'FileText',")))));
+  ok('SEEDED: an unbuilt feature claiming evidence fails (R4)', /R4/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("{ id: 'sales.lead-tools', department: 'sales', label: 'Pitch scripts, assignment, sales reports', icon: 'ClipboardList',", "{ id: 'sales.lead-tools', department: 'sales', label: 'Pitch scripts, assignment, sales reports', testId: 'commerce.catalogue', icon: 'ClipboardList',")))));
   ok('SEEDED: an out-of-date generated file fails (R5)', /R5/.test(run((t) => edit(t, 'get4domain_mvp/src/lib/nav.generated.ts', (s) => `${s}\n// tampered`))));
   ok('SEEDED: the old ComingSoon stub imported by v2 code fails (R6)', /R6/.test(run((t) => { const d = path.join(t, 'get4domain_mvp/src/dashboard-v2'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'X.tsx'), "import ComingSoon from '@/domainapp/shared/ComingSoon';"); })));
   ok('SEEDED: an unknown module key fails (R7)', /R7.*moduleKey "nope"/.test(run((t) => edit(t, 'registry/features.ts', (s) => s.replace("moduleKey: 'telecrm',", "moduleKey: 'nope',")))));

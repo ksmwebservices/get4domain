@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, Plus, Search } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import { bos, dateShort, rupees, useLoad, type Doc } from './client';
+import { bos, dateShort, rupees, useLoad, type Doc, type Party } from './client';
 import { Empty, ErrorView, OneTimeNote, Spinner, Stat, StatusPill, Tabs, inputCls, useTabParam } from './ui';
 import { CreditModal, DocEditor, DocView, PaymentModal } from './DocModals';
 import { MoneyIn } from './MoneyIn';
@@ -23,7 +23,7 @@ export default function Invoices() {
       </div>
       <OneTimeNote id="billing-moved">Your Get4Domain bills are now under Plan and billing. This page is for the invoices you give your own customers.</OneTimeNote>
       <Tabs active={tab} onChange={setTab} tabs={[{ key: 'invoices', label: 'Invoices' }, { key: 'quotes', label: 'Quotes' }, { key: 'money-in', label: 'Money in' }, { key: 'credit-notes', label: 'Credit notes' }]} />
-      {tab === 'invoices' && <DocList type="SALES_INVOICE" />}
+      {tab === 'invoices' && <DocList type="SALES_INVOICE" openFromAddress />}
       {tab === 'quotes' && <DocList type="QUOTE" />}
       {tab === 'money-in' && <MoneyIn />}
       {tab === 'credit-notes' && <DocList type="CREDIT_NOTE" />}
@@ -31,13 +31,22 @@ export default function Invoices() {
   );
 }
 
-export function DocList({ type }: { type: ListType }) {
+export function DocList({ type, openFromAddress = false }: { type: ListType; openFromAddress?: boolean }) {
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<{ doc?: Doc | null } | null>(null);
   const [viewing, setViewing] = useState<string | null>(null);
   const [paying, setPaying] = useState<Doc | null>(null);
   const [crediting, setCrediting] = useState<Doc | null>(null);
+  const [presetParty, setPresetParty] = useState<Party | null>(null);
+  // Deep links from other screens: ?doc=<id> opens that document, ?new=1&party=<customer id> starts one for that customer (leads, customers and bookings use these).
+  useEffect(() => {
+    if (!openFromAddress) return;
+    const q = new URLSearchParams(window.location.search);
+    const d = q.get('doc'); const p = q.get('party');
+    if (d) setViewing(d);
+    else if (q.get('new') && p) bos<Party>(`/bos/parties/${encodeURIComponent(p)}`).then((row) => { setPresetParty(row); setEditing({}); }).catch(() => undefined);
+  }, [openFromAddress]);
   const { data, loading, error, reload } = useLoad(() => bos<{ rows: Doc[]; total: number }>(`/bos/documents?docType=${type}${status ? `&status=${status}` : ''}${q.trim() ? `&search=${encodeURIComponent(q.trim())}` : ''}`), [type, status, q]);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -81,7 +90,7 @@ export function DocList({ type }: { type: ListType }) {
       )}
       {data && data.total > data.rows.length && <p className="text-center text-xs text-slate-400">Showing the latest {data.rows.length} of {data.total}. Search to find an older one.</p>}
 
-      {editing && <DocEditor docType={type === 'QUOTE' ? 'QUOTE' : 'SALES_INVOICE'} doc={editing.doc ?? null} onClose={() => setEditing(null)} onSaved={(d) => { setEditing(null); reload(); summary.reload(); setViewing(d.id); }} />}
+      {editing && <DocEditor docType={type === 'QUOTE' ? 'QUOTE' : 'SALES_INVOICE'} doc={editing.doc ?? null} initialParty={presetParty} onClose={() => setEditing(null)} onSaved={(d) => { setEditing(null); reload(); summary.reload(); setViewing(d.id); }} />}
       {viewing && <DocView id={viewing} onClose={() => setViewing(null)} onChanged={() => { reload(); summary.reload(); }} onEdit={(d) => { setViewing(null); setEditing({ doc: d }); }} onPay={(d) => { setViewing(null); setPaying(d); }} onCredit={(d) => { setViewing(null); setCrediting(d); }} />}
       {paying && <PaymentModal doc={paying} onClose={() => setPaying(null)} onDone={() => { const id = paying.id; setPaying(null); reload(); summary.reload(); setViewing(id); }} />}
       {crediting && <CreditModal doc={crediting} onClose={() => setCrediting(null)} onDone={() => { setCrediting(null); reload(); summary.reload(); }} />}

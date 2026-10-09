@@ -30,6 +30,8 @@ export interface DashboardContext {
     newLeads7d: number;
     pendingOrders: number;
     lowStock: number;
+    /** The vendor already has campaigns: Campaigns stays open to them whatever the plan (nothing they made is hidden). */
+    hasCampaigns: boolean;
   };
 }
 
@@ -49,7 +51,7 @@ export class DashboardContextService {
     const on = (key: string): boolean => addonStates.find((a) => a.key === key)?.enabled === true;
 
     const weekAgo = new Date(now.getTime() - 7 * 86_400_000);
-    const [term, openInvoice, productsAdded, payCfg, cms, anyLead, newLeads7d, pendingOrders, tracked] = await Promise.all([
+    const [term, openInvoice, productsAdded, payCfg, cms, anyLead, newLeads7d, pendingOrders, tracked, campaignCount] = await Promise.all([
       this.prisma.billingTerm.findFirst({ where: { vendorId, isCurrent: true }, select: { planKey: true, status: true, paymentDueAt: true, periodEnd: true, graceDays: true } }),
       this.prisma.invoice.findFirst({
         where: { vendorId, kind: { not: null }, status: { in: [...OPEN_INVOICE_STATUSES] } },
@@ -63,6 +65,7 @@ export class DashboardContextService {
       this.prisma.campaignLead.count({ where: { vendorId, createdAt: { gte: weekAgo } } }),
       this.prisma.posSale.count({ where: { vendorId, type: 'web', status: 'PENDING_PAYMENT' } }),
       this.prisma.vendorProduct.findMany({ where: { vendorId, trackStock: true, reorderLevel: { not: null } }, select: { stockQty: true, reorderLevel: true } }),
+      this.prisma.campaign.count({ where: { vendorId } }),
     ]);
 
     const plan = (term?.planKey as PlanKey | undefined) ?? null;
@@ -91,6 +94,7 @@ export class DashboardContextService {
         newLeads7d,
         pendingOrders,
         lowStock: tracked.filter((p) => (p.stockQty ?? 0) <= (p.reorderLevel ?? 0)).length,
+        hasCampaigns: campaignCount > 0,
       },
     };
   }

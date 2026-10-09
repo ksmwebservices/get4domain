@@ -33,6 +33,7 @@ const { WalletService } = dist('wallet/wallet.service');
 const { AiService } = dist('ai/ai.service');
 const { PaymentsService } = dist('payments/payments.service');
 const { PlatformSettingsService } = dist('platform-settings/platform-settings.service');
+const { EntitlementsService } = dist('bos/entitlements.service');
 
 const REV = process.env.BASELINE_REV;
 const baselineFiles = [];
@@ -89,6 +90,7 @@ Module({
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     JwtStrategy, { provide: TeamService, useClass: TeamServiceImpl }, VendorsService, InvoicesService, SubscriptionsService,
     { provide: PrismaService, useValue: prismaFake },
+    { provide: EntitlementsService, useValue: { limit: async () => null, resolve: async () => ({ planName: 'Essentials' }) } }, // the team service checks the plan's seat limit
     ...[EmailService, WhatsAppService, WalletService, AiService, PaymentsService, PlatformSettingsService].map((c) => ({ provide: c, useValue: recorder(c.name) })),
   ],
 })(TestModule);

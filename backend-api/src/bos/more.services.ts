@@ -62,8 +62,8 @@ export class BosPartiesService {
   }
 
   /** Customers / suppliers with what they owe you or you owe them, straight from the books. */
-  async list(vendorId: string, q: { kind?: 'customer' | 'supplier'; search?: string; take?: number }) {
-    const where: Prisma.ContactWhereInput = { vendorId };
+  async list(vendorId: string, q: { kind?: 'customer' | 'supplier'; search?: string; take?: number; id?: string }) {
+    const where: Prisma.ContactWhereInput = { vendorId, ...(q.id ? { id: q.id } : {}) };
     if (q.kind === 'supplier') where.type = { in: ['supplier', 'both'] };
     else if (q.kind === 'customer') where.type = { notIn: ['supplier'] };
     if (q.search) where.OR = [{ name: { contains: q.search, mode: 'insensitive' } }, { phone: { contains: q.search } }];

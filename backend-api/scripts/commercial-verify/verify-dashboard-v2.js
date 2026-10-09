@@ -59,7 +59,7 @@ const seed = () => ({
     const es = desiredAccess('WORKSPACE', false, 'COMMERCE');
     const pro = desiredAccess('BOS', false, 'COMMERCE');
     ok('Essentials gets only modules whose features are built and in the plan', es.modules.includes('telecrm') && es.modules.includes('website_manager') && !es.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'), es.modules.join());
-    ok('Pro is a superset of Essentials and never includes an unbuilt feature module', es.modules.every((m) => pro.modules.includes(m)) && !pro.modules.includes('analytics_hub') && !pro.modules.includes('growth_hub'));
+    ok('Pro is a superset of Essentials, and includes the Reports and Campaigns modules now that those screens are built and verified (Full BOS); never an unbuilt one', es.modules.every((m) => pro.modules.includes(m)) && pro.modules.includes('analytics_hub') && pro.modules.includes('growth_hub') && !es.modules.includes('analytics_hub'));
 
     const a1 = await provisionModules(prisma, 'v1', 'WORKSPACE', { actor: 'test', reason: 'activation' });
     ok('ACTIVATION: the Essentials modules are switched on for the vendor', a1.changed && es.modules.every((m) => on('v1').includes(m)), on('v1').join());

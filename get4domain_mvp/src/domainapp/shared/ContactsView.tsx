@@ -69,6 +69,7 @@ export default function ContactsView({ industry, icon }: { industry: IndustryCon
     { key: 'name', header: label, render: (r) => <span className="font-medium text-slate-900">{r.name}</span> },
     { key: 'phone', header: 'Phone' },
     { key: 'email', header: 'Email', render: (r) => r.email || <span className="text-slate-400">—</span> },
+    { key: 'bill', header: '', render: (r) => <span className="flex gap-3 whitespace-nowrap text-xs font-semibold"><a className="text-primary-600 hover:underline" href={`/dashboard/sales/quotes?new=1&party=${encodeURIComponent(r.id)}`} onClick={(e) => e.stopPropagation()}>Quote</a><a className="text-primary-600 hover:underline" href={`/dashboard/invoices?new=1&party=${encodeURIComponent(r.id)}`} onClick={(e) => e.stopPropagation()}>Invoice</a></span> },
   ];
 
   return (

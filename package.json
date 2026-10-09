@@ -1,0 +1,10 @@
+{
+  "name": "get4domain-site",
+  "private": true,
+  "description": "Repo-level commands. Each app keeps its own package.json.",
+  "scripts": {
+    "bos:verify": "node scripts/bos-verify.mjs",
+    "registry:build": "node registry/build.mjs",
+    "registry:check": "node registry/check.mjs"
+  }
+}

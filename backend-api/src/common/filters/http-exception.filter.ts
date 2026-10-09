@@ -27,7 +27,7 @@ export function plainValidation(messages: string[]): { message: string; fields: 
     else if (empty) { field = empty[1]; text = `${words(field)} is required`; }
     else if (generic && !/^[A-Z]/.test(m)) { field = generic[1]; text = `${words(field)} does not look right`; }
     else text = m.endsWith('.') ? m.slice(0, -1) : m;
-    if (field) fields.push(field.split('.').pop() as string);
+    if (field && !fields.includes(field.split('.').pop() as string)) fields.push(field.split('.').pop() as string);
     if (!parts.includes(text)) parts.push(text);
   }
   const shown = parts.slice(0, 4).join('. ');

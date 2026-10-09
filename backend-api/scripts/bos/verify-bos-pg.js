@@ -482,6 +482,87 @@ const pick = (a) => a[Math.floor(rnd() * a.length)];
       const after = await prisma.contact.findUnique({ where: { id: cust.id } });
       ok('and the opening balance was not touched by that save', after.openingBalancePaise === 10000 && after.state === 'Tamil Nadu');
     }
+
+    section('[feat:bos.records] A booking / appointment becomes a customer invoice on the same spine');
+    {
+      const v = await h.createVendor({ key: 'booker', industry: 'salon', plan: 'WORKSPACE' });
+      const T = v.token;
+      await call('PUT', '/bos/settings', { gstRegistered: true, state: 'Tamil Nadu' }, T);
+      const c = (await call('POST', '/bos/parties', { name: 'Walk Customer', phone: '9100000555', type: 'customer', state: 'Tamil Nadu' }, T)).data;
+      const cat = await prisma.catalogItem.create({ data: { vendorId: v.id, name: 'Haircut and styling', price: 800 } });
+      const rec = await prisma.record.create({ data: { vendorId: v.id, contactId: c.id, catalogItemId: cat.id, status: 'completed', date: new Date(), amount: 800, notes: 'Booked online' } });
+      let rr = await call('POST', `/bos/documents/from-record/${rec.id}`, {}, T);
+      ok('a completed booking becomes a draft invoice for its customer with the service on it', rr.status < 300 && rr.data.doc.partyId === c.id && rr.data.doc.status === 'DRAFT' && rr.data.doc.lines[0].name === 'Haircut and styling', J(rr.body).slice(0, 300));
+      const again = await call('POST', `/bos/documents/from-record/${rec.id}`, {}, T);
+      ok('pressing it twice makes one invoice', again.data.doc.id === rr.data.doc.id);
+      rr = await call('POST', `/bos/documents/${rr.data.doc.id}/issue`, {}, T);
+      ok('it issues like any other invoice (gapless number, books posted)', rr.status < 300 && /^INV\//.test(rr.data.doc.number), J(rr.body).slice(0, 200));
+      const noContact = await prisma.record.create({ data: { vendorId: v.id, status: 'draft', date: new Date(), amount: 100 } });
+      rr = await call('POST', `/bos/documents/from-record/${noContact.id}`, {}, T);
+      ok('a booking with no customer says what to do', rr.status === 400 && /customer/.test(J(rr.body)), J(rr.body));
+      rr = await call('GET', `/bos/parties/${c.id}`, undefined, T);
+      ok('a single customer can be fetched by id (deep links from other screens)', rr.status === 200 && rr.data.id === c.id, J(rr.body));
+    }
+
+    section('[feat:campaigns.vendor] Campaigns: a vendor can make, list and read campaigns; existing campaigns stay open on any plan');
+    {
+      const v = await h.createVendor({ key: 'camp', industry: 'travel', plan: 'WORKSPACE' });
+      const T = v.token;
+      let rr = await call('GET', '/dashboard/context', undefined, T);
+      ok('no campaigns yet: the Essentials vendor sees Campaigns as part of Pro', rr.status === 200 && rr.data.signals.hasCampaigns === false, J(rr.body).slice(0, 200));
+      rr = await call('POST', '/campaigns', { name: 'Diwali Goa offer', description: 'Festive package', channels: ['whatsapp'], content: { whatsapp: 'Goa 3N/4D from our site' } }, T);
+      ok('a campaign can be created', rr.status < 300 && rr.data?.id, J(rr.body).slice(0, 300));
+      const id = rr.data?.id;
+      rr = await call('GET', '/campaigns', undefined, T);
+      ok('it is listed for its owner only', rr.status === 200 && rr.data.some((c) => c.id === id), J(rr.body).slice(0, 200));
+      const other = await h.createVendor({ key: 'camp2', industry: 'travel', plan: 'WORKSPACE' });
+      ok('another vendor does not see it', !(await call('GET', '/campaigns', undefined, other.token)).data.some((c) => c.id === id));
+      ok('and cannot open it by id', (await call('GET', `/campaigns/${id}`, undefined, other.token)).status >= 400);
+      rr = await call('GET', '/dashboard/context', undefined, T);
+      ok('with a campaign on record, Campaigns is open to this vendor whatever the plan (signal)', rr.data.signals.hasCampaigns === true, J(rr.body).slice(0, 200));
+    }
+
+    section('[feat:reports.usage] Reports: the usage counts are real');
+    {
+      const v = await h.createVendor({ key: 'reporter', industry: 'retail', plan: 'BOS' });
+      const rr = await call('GET', '/analytics/usage', undefined, v.token);
+      ok('the usage report answers with counts (leads, calls, AI use)', rr.status === 200 && typeof rr.data.leads === 'number' && typeof rr.data.calls === 'number', J(rr.body).slice(0, 200));
+    }
+
+    section('[feat:bot.kb] WhatsApp bot answers: add, change (echoing the whole record), switch off, remove');
+    {
+      const v = await h.createVendor({ key: 'botter', industry: 'retail', plan: 'BOS' });
+      const T = v.token;
+      let rr = await call('POST', '/whatsapp-bot/kb', { question: 'Opening hours', answer: 'We open 9 to 8, Monday to Saturday.', keywords: 'hours, open, timing' }, T);
+      ok('an answer can be added', rr.status < 300 && rr.data?.id, J(rr.body).slice(0, 200));
+      const id = rr.data.id;
+      const list = (await call('GET', '/whatsapp-bot/kb', undefined, T)).data;
+      rr = await call('PATCH', `/whatsapp-bot/kb/${id}`, { ...list.find((x) => x.id === id), answer: 'We open 10 to 8.' }, T);
+      ok('changing it with the whole record sent back saves (Bug B1 class)', rr.status === 200 && rr.data.answer === 'We open 10 to 8.', J(rr.body).slice(0, 300));
+      rr = await call('PATCH', `/whatsapp-bot/kb/${id}`, { active: false }, T);
+      ok('it can be switched off', rr.status === 200 && rr.data.active === false);
+      ok('and removed', (await call('DELETE', `/whatsapp-bot/kb/${id}`, undefined, T)).status < 300);
+    }
+
+    section('[feat:bos.profiles] One spine, five profiles: invoice, receipt and Accounts totals work the same for each');
+    {
+      const profiles = [['COMMERCE', 'retail', 'Leather sandal'], ['SERVICES', 'professional', 'GST return filing'], ['APPOINTMENTS', 'salon', 'Haircut and styling'], ['LISTINGS', 'realestate', 'Site visit fee'], ['PACKAGES', 'travel', 'Goa 3N/4D package']];
+      for (const [profile, industry, what] of profiles) {
+        const v = await h.createVendor({ key: `prof-${profile.toLowerCase()}`, industry, plan: 'WORKSPACE' });
+        const T = v.token;
+        await call('PUT', '/bos/settings', { gstRegistered: true, state: 'Tamil Nadu', roundOff: false }, T);
+        const c = (await call('POST', '/bos/parties', { name: `${profile} customer`, phone: `91000${profile.length}0000`.slice(0, 10), type: 'customer', state: 'Tamil Nadu' }, T)).data;
+        let rr = await call('POST', '/bos/documents', { docType: 'SALES_INVOICE', partyId: c.id, lines: [{ name: what, qty: 1, rate: 1000, gstRate: 18 }], issue: true }, T);
+        const inv = rr.data?.doc;
+        ok(`${profile} (${industry}): an invoice for "${what}" is issued with GST`, rr.status < 300 && inv.totalPaise === 118000 && inv.cgstPaise === 9000, J(rr.body).slice(0, 200));
+        rr = await call('POST', '/bos/payments', { kind: 'RECEIPT', partyId: c.id, mode: 'UPI', amount: 500, allocations: [{ documentId: inv.id, amount: 500 }] }, T);
+        ok(`${profile}: a part receipt is recorded`, rr.status < 300, J(rr.body).slice(0, 200));
+        rr = await call('GET', '/bos/reports/summary', undefined, T);
+        ok(`${profile}: Accounts shows sales 1,180, received 500, still to come 680`, rr.data.salesPaise === 118000 && rr.data.receivedPaise === 50000 && rr.data.outstandingPaise === 68000, J(rr.body).slice(0, 250));
+        rr = await call('GET', '/bos/reports/today', undefined, T);
+        ok(`${profile}: Home shows the same numbers as Accounts`, rr.data.salesTodayPaise === 118000 && rr.data.outstandingPaise === 68000, J(rr.body).slice(0, 250));
+      }
+    }
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');
   } finally {

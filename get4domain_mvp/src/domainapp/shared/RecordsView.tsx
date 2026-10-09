@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, FileText } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, apiCall } from '@/lib/api';
 import { type IndustryConfig } from '@/lib/dashboard-config';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -153,14 +153,10 @@ export default function RecordsView({ industry, icon }: { industry: IndustryConf
     }
     setBusy(true);
     try {
-      const desc = r.catalogItem?.name ?? label;
-      await api.daCreateInvoice({
-        contactId: r.contact?.id ?? r.contactId,
-        recordId: r.id,
-        items: [{ description: desc, quantity: 1, rate: r.amount || 0 }],
-        gstRate: 18,
-      });
-      alert('Invoice created. Find it under Billing.');
+      // One invoice system for the whole business: the draft lands in Customer invoices (with GST, numbering, receipts and the books).
+      const res = await apiCall(`/bos/documents/from-record/${r.id}`, { method: 'POST' });
+      const id = (res.data ?? res)?.doc?.id as string | undefined;
+      window.location.href = `/dashboard/invoices${id ? `?doc=${encodeURIComponent(id)}` : ''}`;
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to create invoice');
     } finally {

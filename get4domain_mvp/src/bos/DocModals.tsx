@@ -16,9 +16,9 @@ const blank = (gst: number): EditLine => ({ key: lineKey++, name: '', variantKey
 const num = (s: string): number => { const n = Number(s); return Number.isFinite(n) ? n : 0; };
 
 /** Create or change a quote / invoice draft. Totals shown here are the preview; the server computes the real ones when it saves. */
-export function DocEditor({ docType, doc, onClose, onSaved }: { docType: 'QUOTE' | 'SALES_INVOICE' | 'PURCHASE_BILL'; doc?: Doc | null; onClose: () => void; onSaved: (d: Doc) => void }) {
+export function DocEditor({ docType, doc, initialParty, onClose, onSaved }: { docType: 'QUOTE' | 'SALES_INVOICE' | 'PURCHASE_BILL'; doc?: Doc | null; initialParty?: Party | null; onClose: () => void; onSaved: (d: Doc) => void }) {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [party, setParty] = useState<Party | null>(null);
+  const [party, setParty] = useState<Party | null>(initialParty ?? null);
   const [docDate, setDocDate] = useState(new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState('');
   const [taxKind, setTaxKind] = useState<'GST' | 'NONE'>('GST');

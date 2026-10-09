@@ -33,6 +33,10 @@ for (const [label, file, cwd] of suites) {
   console.log(`\n▶ ${label}`);
   const r = spawnSync(process.execPath, [path.isAbsolute(file) ? file : path.join(__dirname, file)], { cwd: cwd ?? process.cwd(), stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
   const out = (r.stdout || '') + (r.stderr || '');
+  if (process.env.G4D_SUITE_LOG) require('fs').appendFileSync(process.env.G4D_SUITE_LOG, `
+##### ${label}
+${out}
+`);
   const lines = out.split('\n');
   console.log(lines.filter((l) => /FAIL|passed,|Error:/.test(l)).join('\n') || '(no output)');
   const ok = r.status === 0;
