@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
     // is ever pointed at a remote host.
     remotePatterns: [],
   },
+  // Campaigns and DomainCampaign became LeadSpace (Dispatch B, phase 7). The old marketing address stays as a permanent redirect for at least 180 days.
+  async redirects() {
+    return [
+      { source: '/domain-campaign', destination: '/leadspace', permanent: true },
+      { source: '/domain-campaign/:path*', destination: '/leadspace/:path*', permanent: true },
+    ];
+  },
   async rewrites() {
     if (!leadspaceDomain) return [];
     const escaped = leadspaceDomain.replace(/\./g, '\\.');

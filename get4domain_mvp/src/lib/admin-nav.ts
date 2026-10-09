@@ -16,6 +16,7 @@ export interface AdminNavEntry {
 const SUPER: AdminRoleKey[] = ['SUPER_ADMIN'];
 const SUPER_MKT: AdminRoleKey[] = ['SUPER_ADMIN', 'MARKETING'];
 const SUPER_OPS: AdminRoleKey[] = ['SUPER_ADMIN', 'OPERATIONS'];
+const ALL_STAFF: AdminRoleKey[] = ['SUPER_ADMIN', 'MARKETING', 'OPERATIONS'];
 
 /** Everything under this prefix is the Commerce area. */
 export const COMMERCE_PREFIX = '/admin/commerce';
@@ -37,7 +38,7 @@ export const ADMIN_NAV: AdminNavEntry[] = [
   { label: 'Domains', href: '/admin/domains', roles: SUPER_OPS },
   { label: 'Accounting', href: '/admin/accounting', roles: SUPER },
   { label: 'Utilization', href: '/admin/utilization', roles: SUPER },
-  { label: 'Campaigns', href: '/admin/campaigns', roles: SUPER },
+  { label: 'LeadSpace', href: '/admin/leadspace', roles: ALL_STAFF },
   { label: 'Support', href: '/admin/support', roles: SUPER_OPS },
   { label: 'Website CMS', href: '/admin/cms', roles: SUPER_OPS },
   { label: 'Vendor Access', href: '/admin/vendor-access', roles: SUPER },

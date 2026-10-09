@@ -13,9 +13,9 @@ export default function AddOnMarketplace({ limit }: { limit?: number }) {
     <section id="addons" className="section-py">
       <div className="container-mx container-px">
         <SectionHeading
-          eyebrow="DomainCampaign Add-ons"
+          eyebrow="LeadSpace Managed Ads Add-ons"
           title="Grow Your Business Further"
-          description="All add-on services are part of DomainCampaign — fully managed by our team. Available as standalone or bundled with your DomainApp subscription."
+          description="All add-on services are part of LeadSpace Managed Ads — fully managed by our team. Available as standalone or bundled with your DomainApp subscription."
         />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {displayedAddOns.map((addon) => {

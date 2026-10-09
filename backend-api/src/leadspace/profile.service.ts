@@ -131,6 +131,8 @@ export class LeadspaceProfileService {
         mapsLink: URL_OK.test(clean(input.mapsLink ?? cms?.googleMaps, 500)) ? clean(input.mapsLink ?? cms?.googleMaps, 500) : null,
         heroImage: IMG_OK.test(clean(input.heroImage ?? cms?.banner, 500)) ? clean(input.heroImage ?? cms?.banner, 500) : null,
         services: services as unknown as Prisma.InputJsonValue, hours: clean(input.hours ?? cms?.businessHours, 160) || null,
+        ...(input.offer !== undefined ? { offer: cleanOffer(input.offer) } : {}), ...(input.faqs !== undefined ? { faqs: cleanFaqs(input.faqs) as unknown as Prisma.InputJsonValue } : {}),
+        ...(input.trust !== undefined ? { trust: cleanTrust(input.trust) as unknown as Prisma.InputJsonValue } : {}), ...(input.gallery !== undefined ? { gallery: cleanGallery(input.gallery) as unknown as Prisma.InputJsonValue } : {}),
         existingPageUrl: URL_OK.test(clean(input.existingPageUrl, 500)) ? clean(input.existingPageUrl, 500) : null,
         regulated: cat.regulated ? ({ [cat.regulated]: true, reviewed: false } as Prisma.InputJsonValue) : undefined,
         reraNumber: cat.regulated === 'realEstate' && reraLooksValid(input.reraNumber) ? clean(input.reraNumber, 60) : null,

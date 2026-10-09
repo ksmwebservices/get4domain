@@ -23,7 +23,7 @@ const NAV_ICONS: Record<string, typeof LayoutDashboard> = {
   '/admin': LayoutDashboard, '/admin/telecrm': Phone, '/admin/ai-studio': Sparkles, '/admin/library': Sparkles,
   '/admin/send-quote': FileSignature, '/admin/managed-services': Briefcase, '/admin/leads': CalendarCheck,
   '/admin/customers': Users, '/admin/invoices': FileText, [COMMERCE_PREFIX]: Wallet, '/admin/renewals': RefreshCw,
-  '/admin/domains': Globe, '/admin/accounting': BarChart3, '/admin/utilization': BarChart3, '/admin/campaigns': Megaphone,
+  '/admin/domains': Globe, '/admin/accounting': BarChart3, '/admin/utilization': BarChart3, '/admin/leadspace': Megaphone,
   '/admin/support': MessageSquare, '/admin/cms': Globe, '/admin/vendor-access': SlidersHorizontal,
   '/admin/pricing': IndianRupee, '/admin/api-settings': Settings, '/admin/team': ShieldCheck,
 };

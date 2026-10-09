@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
     template: '%s | Get4Domain',
   },
-  description: "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus DomainCampaign managed ads from ₹2,000/month and custom-quoted Managed Services.",
+  description: "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus LeadSpace Managed Ads managed ads from ₹2,000/month and custom-quoted Managed Services.",
   keywords: [
     'business website India',
     'online identity platform India',

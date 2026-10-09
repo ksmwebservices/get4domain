@@ -1,7 +1,7 @@
 import { Mail, MapPin, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
-// DomainCampaign and Managed Services are optional add-on services. They are
+// LeadSpace Managed Ads and Managed Services are optional add-on services. They are
 // summarised on /pricing and have their own pages, linked from here too.
 const MANAGED_HREF = '/managed-services';
 const MANAGED_SERVICES = ['SEO', 'Google Business Profile', 'Social Media', 'Content', 'Campaigns', 'Paid Ads', 'GEO', 'AEO'];
@@ -13,7 +13,7 @@ const footerSections = [
       { label: 'DomainApp', href: '/domain-app' },
       { label: 'Industries', href: '/industries' },
       { label: 'Pricing', href: '/pricing' },
-      { label: 'DomainCampaign', href: '/domain-campaign' },
+      { label: 'LeadSpace', href: '/leadspace' },
       { label: 'AI Studio', href: '/pricing' },
     ],
   },

@@ -666,7 +666,7 @@ export const api = {
   respondPublicProposal: (token: string, status: 'accepted' | 'declined') =>
     apiCall(`/quotes/public/${token}/respond`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
-  // DomainCampaign — public marketing enquiry, dashboard CTA, and admin spend/billing tool
+  // LeadSpace Managed Ads — public marketing enquiry, dashboard CTA, and admin spend/billing tool
   domainCampaignEnquiry: (data: { name: string; phone: string; email?: string; business: string; message?: string }) =>
     apiCall('/domain-campaign/enquiry', { method: 'POST', body: JSON.stringify(data) }),
   addDomainCampaignFromDashboard: (data: { name: string; phone: string; email?: string; business: string; message?: string }) =>

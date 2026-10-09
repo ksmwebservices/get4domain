@@ -214,3 +214,7 @@ export class AdSpendDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(1_000_000_000) amountPaise!: number;
   @IsOptional() @IsString() @MaxLength(200) note?: string;
 }
+
+export class CapsDto {
+  @IsObject() caps!: Record<string, number>;
+}

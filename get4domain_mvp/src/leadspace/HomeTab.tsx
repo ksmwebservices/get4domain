@@ -8,6 +8,9 @@ import { rupees, useLoad } from '@/bos/client';
 import { Empty, ErrorView, Spinner, Stat } from '@/bos/ui';
 import { planDisplayName } from '@/lib/nav.generated';
 import { ls, type PromoteData, type Summary } from './ls';
+import { useState } from 'react';
+import { plain } from '@/bos/client';
+import { Alert } from '@/bos/ui';
 import type { TabKey } from './LeadSpaceApp';
 
 type Home = Summary & { upgradeSuggested?: boolean; upgradeThreshold?: number; todayBookings?: number; todayOrders?: number };
@@ -25,8 +28,18 @@ function nextAction(s: Home, promo: PromoteData | null): { text: string; button:
   return { text: 'All good. Share your page link with customers, or keep an eye on the Leads tab.', button: 'See my leads', tab: 'leads' };
 }
 
+interface LegacyPlan { page: { action: string }; campaigns: { toImport: number }; leads: { toImport: number } }
+
 export default function HomeTab({ go }: { go: (t: TabKey) => void }) {
   const sum = useLoad(() => ls<Home>('/leadspace/summary'), []);
+  const legacy = useLoad(() => ls<LegacyPlan | null>('/leadspace/page/import-legacy').catch(() => null), []);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  async function importLegacy(): Promise<void> {
+    setImporting(true); setImportMsg(null);
+    try { await ls('/leadspace/page/import-legacy', { method: 'POST', body: {} }); setImportMsg({ tone: 'ok', text: 'Done. Your earlier landing page is now a draft in the Page tab, your campaigns are in Promote and your leads are in Leads. Nothing was deleted.' }); legacy.reload(); sum.reload(); } catch (e) { setImportMsg({ tone: 'error', text: plain(e) }); } finally { setImporting(false); }
+  }
+  const waiting = legacy.data ? (legacy.data.page.action === 'CREATE' ? 1 : 0) + legacy.data.campaigns.toImport + legacy.data.leads.toImport : 0;
   const promo = useLoad(() => ls<PromoteData>('/leadspace/promote').catch(() => null), []);
   if (sum.loading && !sum.data) return <Spinner />;
   if (sum.error && !sum.data) return <ErrorView error={sum.error} />;
@@ -61,8 +74,19 @@ export default function HomeTab({ go }: { go: (t: TabKey) => void }) {
         </div>
       </Card>
 
+      {waiting > 0 && (
+        <Card padded className="border-primary-200 bg-primary-50">
+          <div className="text-sm font-semibold text-slate-900">We found your earlier campaigns</div>
+          <p className="mt-1 text-sm text-slate-700">Campaigns and landing pages are now part of LeadSpace. Copy what you made before into LeadSpace: your landing page becomes a draft page, your campaigns appear in Promote and your campaign leads in Leads. Nothing is deleted, and your old page address keeps working until you publish the new page.</p>
+          <div className="mt-3"><Button size="sm" loading={importing} onClick={importLegacy}>Copy them into LeadSpace</Button></div>
+        </Card>
+      )}
+      {importMsg && <Alert tone={importMsg.tone}>{importMsg.text}</Alert>}
+
       <div className="grid grid-cols-2 gap-3">
         <Stat label="New today" value={s.today} />
+        {(s.todayBookings ?? 0) > 0 && <Stat label="Bookings and visits today" value={s.todayBookings ?? 0} />}
+        {(s.todayOrders ?? 0) > 0 && <Stat label="Orders today" value={s.todayOrders ?? 0} />}
         <Stat label="Last 7 days" value={s.last7} />
         <Stat label="Waiting (held)" value={s.held} tone={s.held ? 'warn' : 'default'} />
         <Stat label="Won (all time)" value={s.won} tone={s.won ? 'good' : 'default'} />

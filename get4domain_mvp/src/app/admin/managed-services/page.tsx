@@ -99,7 +99,7 @@ export default function ManagedServicesAdminPage() {
           { key: 'leads' as const, label: 'Leads', icon: Users },
           { key: 'proposals' as const, label: 'Proposals', icon: FileText },
           { key: 'catalog' as const, label: 'Catalog', icon: Settings2 },
-          { key: 'domaincampaign' as const, label: 'DomainCampaign', icon: Target },
+          { key: 'domaincampaign' as const, label: 'LeadSpace Managed Ads', icon: Target },
         ].map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-medium ${tab === t.key ? 'bg-primary-600 text-white' : 'text-slate-400'}`}>
             <t.icon className="h-3.5 w-3.5" />{t.label}
@@ -277,7 +277,7 @@ function CatalogEditor({ catalog, loading, reload }: { catalog: CatalogItem[]; l
   );
 }
 
-// ── DomainCampaign — leads, clients, and the monthly ad-spend/fee billing tool.
+// ── LeadSpace Managed Ads — leads, clients, and the monthly ad-spend/fee billing tool.
 // Mirrors backend-api/src/domain-campaign/domain-campaign-fee.ts (PRD §88 brackets, paise, ex-GST).
 const dcBracket = (adSpendPaise: number): { fee: number; label: string } => {
   if (adSpendPaise <= 2_000_000) return { fee: 200_000, label: 'up to ₹20,000 ad spend' };
@@ -415,7 +415,7 @@ function DomainCampaignPanel() {
       <div>
         <h3 className="mb-2 text-sm font-bold text-white">Enquiries</h3>
         {leads.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No DomainCampaign enquiries yet.</div>
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No LeadSpace Managed Ads enquiries yet.</div>
         ) : (
           <div className="space-y-2">
             {leads.map((lead) => (
@@ -444,7 +444,7 @@ function DomainCampaignPanel() {
             {nonClientVendors.map((v) => <option key={v.id} value={v.id}>{v.businessName} ({v.name})</option>)}
           </select>
           <button onClick={addClient} disabled={!addingVendorId || adding} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-60">
-            {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}Add as DomainCampaign client
+            {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}Add as LeadSpace Managed Ads client
           </button>
         </div>
       </div>
@@ -453,7 +453,7 @@ function DomainCampaignPanel() {
       <div>
         <h3 className="mb-2 text-sm font-bold text-white">Clients — record spend &amp; bill</h3>
         {clients.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No DomainCampaign clients yet.</div>
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900/50 p-5 text-center text-sm text-slate-500">No LeadSpace Managed Ads clients yet.</div>
         ) : (
           <div className="space-y-2">
             {clients.map((c) => {

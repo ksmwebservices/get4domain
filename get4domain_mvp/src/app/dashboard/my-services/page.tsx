@@ -130,7 +130,7 @@ export default function MyServicesPage() {
         )}
       </div>
 
-      {/* DomainCampaign — separate managed service, percentage-of-spend pricing */}
+      {/* LeadSpace Managed Ads — separate managed service, percentage-of-spend pricing */}
       <div className="rounded-2xl border-2 border-warning-300 bg-warning-50/40 p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
@@ -138,11 +138,11 @@ export default function MyServicesPage() {
               <Target className="h-5 w-5 text-warning-700" />
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-900">DomainCampaign — Managed Ads &amp; Growth</div>
+              <div className="text-sm font-bold text-slate-900">LeadSpace Managed Ads — Managed Ads &amp; Growth</div>
               <p className="mt-0.5 max-w-md text-xs text-slate-600">We run your Meta &amp; Google ads, content and organic growth. The management fee is set by your monthly ad budget, and we confirm it with you before anything starts.</p>
             </div>
           </div>
-          <Button size="sm" onClick={() => setDcOpen(true)}>Add DomainCampaign</Button>
+          <Button size="sm" onClick={() => setDcOpen(true)}>Add LeadSpace Managed Ads</Button>
         </div>
       </div>
 
@@ -224,7 +224,7 @@ export default function MyServicesPage() {
         )}
       </Modal>
 
-      <Modal isOpen={dcOpen} onClose={() => { setDcOpen(false); setDcSent(false); setDcError(''); }} title="Add DomainCampaign" maxWidth="max-w-md">
+      <Modal isOpen={dcOpen} onClose={() => { setDcOpen(false); setDcSent(false); setDcError(''); }} title="Add LeadSpace Managed Ads" maxWidth="max-w-md">
         {dcSent ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-success-100"><Check className="h-6 w-6 text-success-600" /></span>

@@ -1,10 +1,10 @@
 {
   "app/(marketing)/about/page.tsx": 1,
   "app/(marketing)/domain-app/page.tsx": 5,
-  "app/(marketing)/domain-campaign/page.tsx": 6,
   "app/(marketing)/features/page.tsx": 8,
   "app/(marketing)/how-it-works/page.tsx": 1,
   "app/(marketing)/industries/[id]/page.tsx": 1,
+  "app/(marketing)/leadspace/page.tsx": 5,
   "app/(marketing)/managed-services/page.tsx": 1,
   "app/(marketing)/page.tsx": 5,
   "app/(marketing)/pricing/page.tsx": 22,

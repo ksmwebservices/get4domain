@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { CommercialAdminGuard } from '../commercial/foundation.services';
-import { AdSpendDto, ApproveJobsDto, CalendarDto, ChangeRequestDto, EditJobDto, PromotionPlanDto, RejectJobDto, SwitchDto } from './leadspace.dto';
+import { AdSpendDto, ApproveJobsDto, CalendarDto, CapsDto, ChangeRequestDto, EditJobDto, PromotionPlanDto, RejectJobDto, SwitchDto } from './leadspace.dto';
 import { PromotionService } from './promotion.service';
 import { LeadspaceReportsService } from './reports.service';
 import { LeadspaceSettingsService } from './settings.service';
@@ -84,6 +84,14 @@ export class LeadspacePromotionAdminController {
   @Put('vendors/:vendorId/auto-approve')
   @ApiOperation({ summary: "After the first weeks, let this vendor's posts go out without approval" })
   auto(@Param('vendorId') vendorId: string, @Body() dto: SwitchDto) { return this.promo.setAutoApprove(vendorId, dto.on); }
+
+  @Get('status')
+  @ApiOperation({ summary: 'The global kill switch and the daily post caps per channel' })
+  async status() { const s = await this.settings.get(); return { globalKillSwitch: s.globalKillSwitch, channelDailyCaps: s.channelDailyCaps }; }
+
+  @Put('caps')
+  @ApiOperation({ summary: 'Daily post caps per account, by channel' })
+  async caps(@Body() dto: CapsDto, @CurrentUser() u: AuthenticatedUser) { return { channelDailyCaps: (await this.settings.set('channelDailyCaps', dto.caps, u.email || u.sub)).channelDailyCaps }; }
 
   @Put('global-kill')
   @ApiOperation({ summary: 'Global kill switch: nothing is posted for anyone while it is on' })
