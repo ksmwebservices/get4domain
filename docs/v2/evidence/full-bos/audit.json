@@ -1,0 +1,612 @@
+{
+ "rows": [
+  {
+   "id": "commerce.products",
+   "dept": "commerce",
+   "tested": "created 3 products (sizes/colours, tracked and untracked) through the real API",
+   "result": "WORKS",
+   "evidence": "create statuses 201/201/201",
+   "size": "S"
+  },
+  {
+   "id": "home.today",
+   "dept": "home",
+   "tested": "GET /dashboard/context signals after the seeded order",
+   "result": "PARTIAL",
+   "evidence": "signals {\"productsAdded\":3,\"paymentsConnected\":true,\"domainConnected\":false,\"seoBasics\":false,\"firstLead\":true,\"newLeads7d\":1,\"pendingOrders\":0,\"low…: counts leads/orders/stock only; no sales/collected/outstanding (no books)",
+   "size": "M"
+  },
+  {
+   "id": "home.reports",
+   "dept": "home",
+   "tested": "usage analytics endpoint (the registry says UNTESTED)",
+   "result": "WORKS",
+   "evidence": "GET /analytics/usage → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"leads\":1,\"calls\":0,\"aiGenera…",
+   "size": "-"
+  },
+  {
+   "id": "sales.leads",
+   "dept": "sales",
+   "tested": "list leads",
+   "result": "WORKS",
+   "evidence": "GET /crm/leads → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"id\":\"cmv0me5kc000yht98kmzcg…",
+   "size": "-"
+  },
+  {
+   "id": "sales.lead-tools",
+   "dept": "sales",
+   "tested": "registry says not built",
+   "result": "NOT BUILT",
+   "evidence": "no endpoints",
+   "size": "L"
+  },
+  {
+   "id": "sales.customers",
+   "dept": "sales",
+   "tested": "list customers (contacts)",
+   "result": "WORKS",
+   "evidence": "GET /domainapp/contacts → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"items\":[{\"id\":\"cmv0me5m60011…",
+   "size": "-"
+  },
+  {
+   "id": "sales.quotes",
+   "dept": "sales",
+   "tested": "vendor-side quotes: /quotes is the platform admin quote tool (to prospects), not a vendor sales quote",
+   "result": "NOT BUILT",
+   "evidence": "the existing Quote model is Get4Domain's own quote to vendors/prospects (admin/quotes)",
+   "size": "M"
+  },
+  {
+   "id": "sales.portal",
+   "dept": "sales",
+   "tested": "vendor side: portal invite (customer side needs a phone OTP, not exercised)",
+   "result": "PARTIAL",
+   "evidence": "portal address and invites are on the vendor side; the customer OTP login and portal pages were not exercised in this audit (customer phone OTP needs SMS)",
+   "size": "S"
+  },
+  {
+   "id": "marketing.ai-studio",
+   "dept": "marketing",
+   "tested": "AI templates list",
+   "result": "WORKS",
+   "evidence": "GET /ai-templates → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "marketing.campaigns",
+   "dept": "marketing",
+   "tested": "campaigns list",
+   "result": "WORKS",
+   "evidence": "GET /campaigns → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "marketing.social",
+   "dept": "marketing",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "mock publish removed from menu",
+   "size": "L"
+  },
+  {
+   "id": "marketing.reviews-offers",
+   "dept": "marketing",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "website.content",
+   "dept": "website",
+   "tested": "GET site + PUT vendor CMS (round trip, Bug B1)",
+   "result": "BROKEN",
+   "evidence": "PUT 400: {\"success\":false,\"statusCode\":400,\"message\":[\"property id should not exist\",\"property vendorId should not exist\",\"property businessHours should not exist\",\"property createdAt should not exist\",\"proper…",
+   "size": "S"
+  },
+  {
+   "id": "website.new-pages",
+   "dept": "website",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "website.design",
+   "dept": "website",
+   "tested": "themes list",
+   "result": "WORKS",
+   "evidence": "GET /website-themes → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "website.domain",
+   "dept": "website",
+   "tested": "my domains",
+   "result": "WORKS",
+   "evidence": "GET /domains/mine → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "website.search",
+   "dept": "website",
+   "tested": "SEO fields live inside the same CMS save as Bug B1",
+   "result": "PARTIAL",
+   "evidence": "shares the B1 save: 400",
+   "size": "S"
+  },
+  {
+   "id": "website.search-pro",
+   "dept": "website",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "website.widget",
+   "dept": "website",
+   "tested": "widget key",
+   "result": "WORKS",
+   "evidence": "GET /widget/my-key → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"widgetKey\":\"wgt_9b87bc3914b8…",
+   "size": "-"
+  },
+  {
+   "id": "website.readiness",
+   "dept": "website",
+   "tested": "registered engine actions",
+   "result": "WORKS",
+   "evidence": "GET /engine/actions → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"intent\":\"engine.enquiry\",\"i…",
+   "size": "-"
+  },
+  {
+   "id": "commerce.stock",
+   "dept": "commerce",
+   "tested": "low stock",
+   "result": "WORKS",
+   "evidence": "GET /stock/low → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"id\":\"cmv0me5hr000oht98wo8zs…",
+   "size": "-"
+  },
+  {
+   "id": "commerce.orders",
+   "dept": "commerce",
+   "tested": "Chain A steps A2-A4",
+   "result": "WORKS",
+   "evidence": "A2 ok A2bok A3 ok",
+   "size": "S"
+  },
+  {
+   "id": "commerce.workspace",
+   "dept": "commerce",
+   "tested": "industry records list",
+   "result": "WORKS",
+   "evidence": "GET /domainapp/records → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"items\":[],\"total\":0,\"page\":1…",
+   "size": "-"
+  },
+  {
+   "id": "commerce.workspace-full",
+   "dept": "commerce",
+   "tested": "registry says not built",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "commerce.inventory",
+   "dept": "commerce",
+   "tested": "registry says not built",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "commerce.pos",
+   "dept": "commerce",
+   "tested": "registry says not built",
+   "result": "PARTIAL",
+   "evidence": "a RetailProduct/PosSale POS exists (store 3) but not on the one catalogue",
+   "size": "M"
+  },
+  {
+   "id": "commerce.tasks",
+   "dept": "commerce",
+   "tested": "registry says not built",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "commerce.documents",
+   "dept": "commerce",
+   "tested": "registry says not built",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "finance.invoices",
+   "dept": "finance",
+   "tested": "Chain B",
+   "result": "BROKEN",
+   "evidence": "manual invoice only; no order→invoice, receipts, credit notes, per-year numbering (see Chain B)",
+   "size": "L"
+  },
+  {
+   "id": "finance.collect-payments",
+   "dept": "finance",
+   "tested": "vendor's own gateway (Payments screen) round trip",
+   "result": "PARTIAL",
+   "evidence": "GET /vendor-payments 200; Bug B2 field binding is a frontend issue (see bugs)",
+   "size": "M"
+  },
+  {
+   "id": "finance.recurring",
+   "dept": "finance",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "finance.expenses",
+   "dept": "finance",
+   "tested": "Chain D",
+   "result": "PARTIAL",
+   "evidence": "expenses + paid-invoice totals only; website orders and counter sales are not in the numbers",
+   "size": "L"
+  },
+  {
+   "id": "finance.ca-accounts",
+   "dept": "finance",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "people.team",
+   "dept": "people",
+   "tested": "team list",
+   "result": "WORKS",
+   "evidence": "GET /team/members → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "people.team-pro",
+   "dept": "people",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "people.hr",
+   "dept": "people",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "placeholder removed",
+   "size": "XL"
+  },
+  {
+   "id": "communication.inbox",
+   "dept": "communication",
+   "tested": "inbox messages",
+   "result": "WORKS",
+   "evidence": "GET /communication/threads → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"contactId\":\"cmv0me5m60011ht…",
+   "size": "-"
+  },
+  {
+   "id": "communication.sms-email",
+   "dept": "communication",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "communication.whatsapp-bot",
+   "dept": "communication",
+   "tested": "bot FAQ list",
+   "result": "WORKS",
+   "evidence": "GET /whatsapp-bot/kb → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "communication.notifications",
+   "dept": "communication",
+   "tested": "own notifications",
+   "result": "WORKS",
+   "evidence": "GET /notifications → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"id\":\"cmv0me5kg000zht98segv3…",
+   "size": "-"
+  },
+  {
+   "id": "communication.reminders",
+   "dept": "communication",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "account.billing",
+   "dept": "account",
+   "tested": "vendor billing summary (term, invoices)",
+   "result": "WORKS",
+   "evidence": "GET /billing/me → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"term\":{\"id\":\"cmv0me5b60002ht…",
+   "size": "-"
+  },
+  {
+   "id": "account.wallet",
+   "dept": "account",
+   "tested": "wallet balance",
+   "result": "WORKS",
+   "evidence": "GET /wallet/balance → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"balance\":0,\"nextExpiry\":null…",
+   "size": "-"
+  },
+  {
+   "id": "account.profile",
+   "dept": "account",
+   "tested": "business profile read",
+   "result": "WORKS",
+   "evidence": "GET /cms/vendor/cmv0me5aw0000ht989exl6mz7 → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"id\":\"cmv0me5z2001dht98uo2mq8…",
+   "size": "-"
+  },
+  {
+   "id": "account.connections",
+   "dept": "account",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "L"
+  },
+  {
+   "id": "account.disclosures",
+   "dept": "account",
+   "tested": "registry",
+   "result": "NOT BUILT",
+   "evidence": "-",
+   "size": "M"
+  },
+  {
+   "id": "account.help",
+   "dept": "account",
+   "tested": "my support tickets",
+   "result": "WORKS",
+   "evidence": "GET /support/tickets/vendor/cmv0me5aw0000ht989exl6mz7 → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "account.stationery",
+   "dept": "account",
+   "tested": "stationery items",
+   "result": "WORKS",
+   "evidence": "GET /stationery → 200 {\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[],\"timestamp\":\"2026-10-09T07:…",
+   "size": "-"
+  },
+  {
+   "id": "custom.delivery",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.workflow",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.portals",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.integrations",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.finance",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.people",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  },
+  {
+   "id": "custom.branding",
+   "dept": "custom",
+   "tested": "registry (BOS Custom, quote-only)",
+   "result": "NOT BUILT",
+   "evidence": "Custom clients only",
+   "size": "-"
+  }
+ ],
+ "chains": {
+  "A": [
+   {
+    "step": "A1 website shows the product (public /cms/site)",
+    "ok": true,
+    "evidence": "status 200"
+   },
+   {
+    "step": "A2 website cart → order placed (PENDING_PAYMENT, stock reserved)",
+    "ok": true,
+    "evidence": "status 201 {\"success\":true,\"statusCode\":201,\"message\":\"Success\",\"data\":{\"ok\":true,\"orderId\":\"cmv0me5jz000uht98tdm4t3qb\",\"status\":\"P…"
+   },
+   {
+    "step": "A2b stock reduced by the order (6 → 4)",
+    "ok": true,
+    "evidence": "stockQty 4"
+   },
+   {
+    "step": "A3 payment recorded (owner marks the order paid)",
+    "ok": true,
+    "evidence": "status 201"
+   },
+   {
+    "step": "A4 order status visible in the dashboard",
+    "ok": true,
+    "evidence": "{\"id\":\"cmv0me5jz000uht98tdm4t3qb\",\"items\":[{\"qty\":2,\"name\":\"Aero Flight Sneakers — 9 / Black\",\"price\":1299,\"tracked\":tru…"
+   },
+   {
+    "step": "A5 CUSTOMER RECORD created/updated from the order (Contact)",
+    "ok": false,
+    "evidence": "no Contact row; only a CRM lead exists (web-order)"
+   }
+  ],
+  "B": [
+   {
+    "step": "B0 (workaround) create the customer by hand",
+    "ok": true,
+    "evidence": "status 201"
+   },
+   {
+    "step": "B1 order → customer invoice, automatically",
+    "ok": false,
+    "evidence": "no code path creates an invoice from an order; only a manual invoice exists"
+   },
+   {
+    "step": "B1b manual invoice can be created at all",
+    "ok": true,
+    "evidence": "status 201 {\"success\":true,\"statusCode\":201,\"message\":\"Success\",\"data\":{\"id\":\"cmv0me5mn0013ht98wj5ghy5y\",\"vendo…"
+   },
+   {
+    "step": "B2 invoice PDF/HTML for sharing",
+    "ok": true,
+    "evidence": "status 200"
+   },
+   {
+    "step": "B3 share link (needs the vendor's own Razorpay; WhatsApp deep link)",
+    "ok": false,
+    "evidence": "status 500 {\"success\":false,\"statusCode\":500,\"message\":\"Authentication failed\",\"data\":null,\"timestamp\":\"2026-10-09T07:04:34.882Z\"}"
+   },
+   {
+    "step": "B4 mark paid (binary PENDING→PAID only)",
+    "ok": true,
+    "evidence": "status 200"
+   },
+   {
+    "step": "B5 receipts, part payments, advances, outstanding by customer, ageing, statement",
+    "ok": false,
+    "evidence": "no receipt/allocation model exists: invoices are paid or not paid, nothing in between"
+   },
+   {
+    "step": "B6 credit notes / returns",
+    "ok": false,
+    "evidence": "no credit-note model or endpoint"
+   }
+  ],
+  "C": [
+   {
+    "step": "C1 tracked product with stock; low-stock list",
+    "ok": true,
+    "evidence": "{\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":[{\"id\":\"cmv0me5hr000oht98wo8zs0kp\",\"name\":\"Velocity Runner\",\"image\":null,\"stockQ…"
+   },
+   {
+    "step": "C2 manual adjustment (damaged)",
+    "ok": true,
+    "evidence": "status 201 {\"success\":true,\"statusCode\":201,\"message\":\"Success\",\"data\":{\"stockQty\":1,\"movement\":{\"id\":\"cmv0me5w…"
+   },
+   {
+    "step": "C3 stock history lists every movement",
+    "ok": true,
+    "evidence": "2 movements"
+   },
+   {
+    "step": "C4 website order wrote a ledger movement (sale reduces stock)",
+    "ok": true,
+    "evidence": "movements OPENING:6,ONLINE_ORDER:-2"
+   },
+   {
+    "step": "C5 variants (size/colour) tracked in stock",
+    "ok": false,
+    "evidence": "variants live in customFields JSON; StockMovement and stockQty are per product only"
+   },
+   {
+    "step": "C6 multi-location, purchase receipts, transfers",
+    "ok": false,
+    "evidence": "not modelled (one quantity per product)"
+   }
+  ],
+  "D": [
+   {
+    "step": "D1 Accounts summary shows the PAID website order of ₹2,598 (taken right after the order was paid)",
+    "ok": false,
+    "evidence": "revenueGross=0: the paid order is invisible, the summary reads only manual invoices"
+   },
+   {
+    "step": "D2 ledger / day book / trial balance / P&L / balance sheet",
+    "ok": false,
+    "evidence": "none exist; only a summary of invoices and expenses"
+   },
+   {
+    "step": "D3 GST collected per sale",
+    "ok": false,
+    "evidence": "website orders carry no GST at all (taxAmount 0)"
+   },
+   {
+    "step": "D4 receivables / payables ageing",
+    "ok": false,
+    "evidence": "no model"
+   }
+  ],
+  "E": [
+   {
+    "step": "E1 store 1 VendorProduct (g4d VendorProduct): website, My Products, orders, stock read it",
+    "ok": true,
+    "evidence": "the storefront, order pricing (priceCart) and StockService all read VendorProduct"
+   },
+   {
+    "step": "E2 store 2 CatalogItem: an item created there appears on the website / is sellable (stores AGREE)",
+    "ok": false,
+    "evidence": "create 201; NOT on the website, not sellable, not in stock → DISAGREES with store 1"
+   },
+   {
+    "step": "E3 store 3 RetailProduct: an item created there appears on the website / My Products / Stock (stores AGREE)",
+    "ok": false,
+    "evidence": "create 201; NOT on the website, not in My Products or Stock → DISAGREES with store 1"
+   },
+   {
+    "step": "E4 \"My Products\" lists items of ALL three stores",
+    "ok": false,
+    "evidence": "status 200: it lists store 1 only"
+   },
+   {
+    "step": "E5 a retail POS sale also moves the stock the website sells from (one stock)",
+    "ok": false,
+    "evidence": "POS sale status 201: it can only decrement RetailProduct, never VendorProduct stock"
+   }
+  ]
+ },
+ "bugs": {
+  "B1": {
+   "status": 400,
+   "message": "{\"success\":false,\"statusCode\":400,\"message\":[\"property id should not exist\",\"property vendorId should not exist\",\"property businessHours should not exist\",\"property createdAt should not exist\",\"property updatedAt should not exist\"],\"data\":null,\"timestamp\":\"202…",
+   "reproduced": true
+  },
+  "B2": {
+   "current": "{\"success\":true,\"statusCode\":200,\"message\":\"Success\",\"data\":{\"razorpayKeyId\":null,\"enabled\":false,\"hasSecret\":false,\"checkoutMode\":\"ORDER_REQUEST\"},\"timestamp\":…"
+  }
+ },
+ "generatedAt": "2026-10-09T07:04:35.255Z"
+}
