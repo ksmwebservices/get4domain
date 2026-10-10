@@ -329,12 +329,13 @@ cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d 
 
 Rebuild **both** containers. The frontend now redirects `/domain-campaign` to `/leadspace` (permanent) and `/dashboard/campaigns`, `/dashboard/landing-page` to LeadSpace.
 
-**Environment (set before the rebuild, in the backend `.env` on the VM; do not commit):** `LEADSPACE_HASH_SALT` (a long random string, set once, never change it), `PUBLIC_APP_URL=https://get4domain.com`, `PUBLIC_API_URL=https://gapi.get4domain.com`, `RAZORPAY_WEBHOOK_SECRET` if not set. Frontend: `INTERNAL_API_URL` (the API address as the web container sees it). Leave the `WHATSAPP_*` variables **unset** for the first test: the common number then runs in test mode and reads "Awaiting approval". In the Razorpay dashboard add a second webhook `https://gapi.get4domain.com/leadspace/refill/webhook` for `payment.captured` (same secret).
+**Environment (set before the rebuild, in `/srv/get4domain-site/backend-api/.env.local`, the file the backend container reads; do not commit):** `LEADSPACE_HASH_SALT` (a long random string, set once, never change it), `PUBLIC_APP_URL=https://get4domain.com`, `PUBLIC_API_URL=https://gapi.get4domain.com`, `RAZORPAY_WEBHOOK_SECRET` if not set. The frontend needs no new variable (the page falls back to `NEXT_PUBLIC_API_URL`). Leave the `WHATSAPP_*` variables **unset** for the first test: the common number then runs in test mode and reads "Awaiting approval". In the Razorpay dashboard add a second webhook `https://gapi.get4domain.com/leadspace/refill/webhook` for `payment.captured` (same secret).
 
 **Campaign merge (do it before vendors see the new screens):** dry run, paste the output to Claude, then `--apply`, one vendor first.
 
 ```
 cd /srv/get4domain-site/backend-api
+npx nest build                                                          # the script reads dist/, build it once on the VM host
 node scripts/leadspace-migrate-campaigns.js                            # dry run, everyone with campaign data
 node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --apply
 ```
