@@ -33,8 +33,6 @@ function CreatePage({ categories, onDone }: { categories: Category[]; onDone: ()
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('');
   const [name, setName] = useState(user?.businessName ?? '');
-  const [mode, setMode] = useState<'TEMPLATE' | 'EXISTING_PAGE'>('TEMPLATE');
-  const [existing, setExisting] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const cat = categories.find((c) => c.id === category);
@@ -42,7 +40,7 @@ function CreatePage({ categories, onDone }: { categories: Category[]; onDone: ()
   async function create(): Promise<void> {
     setBusy(true); setErr('');
     try {
-      await ls('/leadspace/page', { method: 'POST', body: { category, city: city.trim(), businessName: name.trim(), mode, ...(mode === 'EXISTING_PAGE' && existing.trim() ? { existingPageUrl: existing.trim() } : {}) } });
+      await ls('/leadspace/page', { method: 'POST', body: { category, city: city.trim(), businessName: name.trim() } });
       onDone();
     } catch (e) { setErr(plain(e)); } finally { setBusy(false); }
   }
@@ -63,12 +61,6 @@ function CreatePage({ categories, onDone }: { categories: Category[]; onDone: ()
         {cat && <p className="-mt-2 text-xs text-slate-500">{cat.blurb}{cat.regulated ? ' Extra rules apply to this trade; we will tell you what they are.' : ''}</p>}
         <Field label="Business name"><input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="organization" /></Field>
         <Field label="City you serve"><input className={inputCls} value={city} onChange={(e) => setCity(e.target.value)} maxLength={60} autoComplete="address-level2" /></Field>
-        <fieldset className="space-y-2">
-          <legend className="mb-1 text-xs font-semibold text-slate-600">How do you want it?</legend>
-          <label className="flex items-start gap-2 text-sm text-slate-700"><input type="radio" name="mode" checked={mode === 'TEMPLATE'} onChange={() => setMode('TEMPLATE')} className="mt-1" /><span><strong>A new page made for me</strong> with offer, services, trust points, map and questions.</span></label>
-          <label className="flex items-start gap-2 text-sm text-slate-700"><input type="radio" name="mode" checked={mode === 'EXISTING_PAGE'} onChange={() => setMode('EXISTING_PAGE')} className="mt-1" /><span><strong>I already have a website.</strong> Add only a button and a request form to it. Nothing on your website is changed.</span></label>
-        </fieldset>
-        {mode === 'EXISTING_PAGE' && <Field label="Your website address"><input className={inputCls} value={existing} onChange={(e) => setExisting(e.target.value)} placeholder="https://" inputMode="url" autoComplete="url" /></Field>}
         {err && <Alert>{err}</Alert>}
         <Button fullWidth loading={busy} disabled={!category || !city.trim() || !name.trim()} onClick={create}>Create my page</Button>
       </Card>
@@ -93,8 +85,8 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
 
   /** Only the fields on this screen are sent, never the record that was loaded. */
   const body = useMemo(() => ({
-    businessName: f.businessName.trim(), tagline: f.tagline.trim(), about: f.about.trim(), city: f.city.trim(), serviceArea: f.serviceArea.trim(), address: f.address.trim(), mapsLink: f.mapsLink.trim(),
-    hours: f.hours.trim(), heroImage: f.heroImage.trim(), goal: f.goal, mode: f.mode, existingPageUrl: f.existingPageUrl.trim(), reraNumber: f.reraNumber.trim(),
+    businessName: f.businessName.trim(), tagline: f.tagline.trim(), about: f.about.trim(), city: f.city.trim(), serviceArea: f.serviceArea.trim(), 
+    hours: f.hours.trim(), heroImage: f.heroImage.trim(), goal: f.goal, reraNumber: f.reraNumber.trim(),
     offer: { headline: f.offerHeadline.trim(), text: f.offerText.trim() },
     services: services.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: s.price === '' || s.price == null ? null : s.price, description: (s.description ?? '').trim() || null, image: s.image ?? null })),
     faqs: faqs.filter((x) => x.q.trim() && x.a.trim()),
@@ -150,17 +142,10 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
         <Field label="What should visitors do?" hint="This is the one button on your page.">
           <select className={inputCls} value={f.goal} onChange={(e) => set('goal', e.target.value)}>{goalsFor(cat).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
         </Field>
-        <Field label="Page type">
-          <select className={inputCls} value={f.mode} onChange={(e) => set('mode', e.target.value)}>
-            <option value="TEMPLATE">A page made for me</option>
-            <option value="EXISTING_PAGE">I use my own website (only add a button and form)</option>
-          </select>
-        </Field>
-        {f.mode === 'EXISTING_PAGE' && <Field label="Your website address"><input className={inputCls} value={f.existingPageUrl} onChange={(e) => set('existingPageUrl', e.target.value)} inputMode="url" autoComplete="url" placeholder="https://" /></Field>}
         {cat?.regulated === 'realEstate' && <Field label="RERA registration number" hint="Shown on your page and on every post. Needed for promotion."><input className={inputCls} value={f.reraNumber} onChange={(e) => set('reraNumber', e.target.value)} maxLength={60} autoComplete="off" /></Field>}
       </Card>
 
-      {f.mode === 'TEMPLATE' && (
+      {(
         <>
           <Card padded className="space-y-3">
             <div className="flex items-center justify-between"><div className="text-sm font-semibold text-slate-900">{p.goal === 'CART_ORDER' ? 'Products' : 'Services'}</div><Button size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />} onClick={() => setServices((s) => [...s, { name: '', price: '', description: '' }])}>Add</Button></div>
@@ -184,8 +169,6 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
             <Field label="Offer headline"><input className={inputCls} value={f.offerHeadline} onChange={(e) => set('offerHeadline', e.target.value)} maxLength={80} autoComplete="off" /></Field>
             <Field label="Offer details"><input className={inputCls} value={f.offerText} onChange={(e) => set('offerText', e.target.value)} maxLength={240} autoComplete="off" /></Field>
             <Field label="Banner picture address (optional)"><input className={inputCls} value={f.heroImage} onChange={(e) => set('heroImage', e.target.value)} inputMode="url" autoComplete="off" placeholder="https://" /></Field>
-            <Field label="Address"><input className={inputCls} value={f.address} onChange={(e) => set('address', e.target.value)} maxLength={240} autoComplete="street-address" /></Field>
-            <Field label="Google Maps link"><input className={inputCls} value={f.mapsLink} onChange={(e) => set('mapsLink', e.target.value)} inputMode="url" autoComplete="off" /></Field>
             <Field label="Opening hours"><input className={inputCls} value={f.hours} onChange={(e) => set('hours', e.target.value)} maxLength={160} autoComplete="off" /></Field>
           </Card>
 
@@ -203,14 +186,6 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
         </>
       )}
 
-      {f.mode === 'EXISTING_PAGE' && (
-        <Card padded className="space-y-2">
-          <div className="text-sm font-semibold text-slate-900">Add the button to your website</div>
-          <p className="text-sm text-slate-600">Paste this line just before the end of the page on your website. It adds one button at the bottom of the screen and a request form. It does not touch anything else on your page.</p>
-          <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-xs text-slate-100">{data.embed}</pre>
-          <Button size="sm" variant="outline" leftIcon={<Copy className="h-4 w-4" />} onClick={async () => setMsg((await copy(data.embed)) ? { tone: 'ok', text: 'Copied.' } : { tone: 'info', text: 'Select the line above and copy it.' })}>Copy</Button>
-        </Card>
-      )}
 
       {p.goal === 'CART_ORDER' && feed.data && (
         <Card padded className="space-y-2">

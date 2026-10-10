@@ -29,7 +29,7 @@ const J = (x) => JSON.stringify(x);
     section('[feat:leadspace.templates] A template for each of the twelve trades');
     ok('the catalogue lists twelve trades and every one has a template', CATEGORIES.length === 12 && CATEGORIES.every((c) => TEMPLATES[c.id]), J(CATEGORIES.map((c) => c.id)));
     for (const c of CATEGORIES) {
-      const src = { slug: `t-${c.id}`, category: c.id, city: 'Chennai', goal: c.goal, mode: 'TEMPLATE', templateId: c.id, businessName: `Sample ${c.label}`, tagline: null, about: null, services: [], verificationStatus: 'VERIFIED', noindex: false, status: 'PUBLISHED', reraNumber: c.regulated === 'realEstate' ? 'TN/29/Building/0123/2020' : null, address: '12 Main Road', mapsLink: 'https://maps.example/x' };
+      const src = { slug: `t-${c.id}`, category: c.id, city: 'Chennai', goal: c.goal, mode: 'TEMPLATE', templateId: c.id, businessName: `Sample ${c.label}`, tagline: null, about: null, services: [], verificationStatus: 'VERIFIED', noindex: false, status: 'PUBLISHED', reraNumber: c.regulated === 'realEstate' ? 'TN/29/Building/0123/2020' : null, address: '12 Main Road', mapsLink: 'https://maps.example/x', serviceArea: 'Adyar and Velachery' };
       const m = buildPage(src);
       const types = m.blocks.map((b) => b.type);
       ok(`${c.id}: hero, services, trust, map and FAQ blocks, one primary button, a sticky bar and the goal's form`, ['hero', 'services', 'trust', 'map', 'faq'].every((t) => types.includes(t)) && m.blocks.filter((b) => b.type === 'hero').length === 1 && m.primaryButton.length > 3 && m.stickyCta.label === m.primaryButton && m.form.goal === c.goal && m.form.fields.some((f) => f.key === 'phone'), J(types));
@@ -262,6 +262,7 @@ const J = (x) => JSON.stringify(x);
     ok('the canonical address is the page address', seo.canonical.endsWith(`/ls/${p1.slug}`));
     ok('the page carries schema.org LocalBusiness with name, city and area served', seo.jsonLd['@type'] === 'LocalBusiness' && seo.jsonLd.name === 'Ravi Plumbing Works' && seo.jsonLd.areaServed.name === 'Chennai' && seo.jsonLd.address.addressLocality === 'Chennai', J(seo.jsonLd));
     ok('priced services appear as offers in INR', seo.jsonLd.hasOfferCatalog.itemListElement[0].priceCurrency === 'INR');
+    ok('no street address, map link, e-mail or phone is published: only the areas served and the hours', !/Lake View Road/.test(J(r.data)) && !/maps\.example/.test(J(r.data)) && !/@/.test(J(r.data.blocks)) && r.data.seo.jsonLd.address.streetAddress === undefined, J(r.data.blocks.find((b) => b.type === 'map')));
     ok('the vendor phone is not in the page data (leads come through the verified form)', !/9812345678|9000000000/.test(J(r.data)));
   } catch (e) {
     console.log(`  FAIL  suite crashed -> ${e.stack || e}`); fail += 1; failures.push('crash');

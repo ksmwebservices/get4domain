@@ -139,11 +139,9 @@ export default async function LeadSpacePage({ params, searchParams }: { params: 
             case 'map':
               return (
                 <section key={i}>
-                  <h2 className="mb-2 text-xl font-bold" style={{ color: t.accentDark }}>Find us</h2>
-                  {b.address ? <p className="text-slate-700">{b.address}</p> : null}
+                  <h2 className="mb-2 text-xl font-bold" style={{ color: t.accentDark }}>Where we serve</h2>
                   {b.area ? <p className="text-sm text-slate-600">Areas we serve: {b.area}</p> : null}
                   {b.hours ? <p className="text-sm text-slate-600">Hours: {b.hours}</p> : null}
-                  {b.mapsLink ? <p className="mt-2"><a className="font-medium underline" href={b.mapsLink} target="_blank" rel="noopener nofollow">Open in Google Maps</a></p> : null}
                 </section>
               );
             case 'faq':

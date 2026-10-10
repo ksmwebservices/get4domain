@@ -88,7 +88,7 @@ function jsonLd(p: PageSource, url: string, description: string, items: { name: 
   const out: Record<string, unknown> = {
     '@context': 'https://schema.org', '@type': type, name: p.businessName, url, description,
     areaServed: { '@type': 'City', name: p.city },
-    address: { '@type': 'PostalAddress', addressLocality: p.city, addressCountry: 'IN', ...(p.address ? { streetAddress: p.address } : {}) },
+    address: { '@type': 'PostalAddress', addressLocality: p.city, addressCountry: 'IN' },
     ...(p.heroImage ? { image: p.heroImage } : {}),
     ...(p.hours ? { openingHours: p.hours } : {}),
   };
@@ -138,7 +138,8 @@ export function buildPage(p: PageSource): PageModel {
   if (p.about) model.blocks.push({ type: 'about', text: clip(p.about, 900) });
   if (gallery.length) model.blocks.push({ type: 'gallery', images: gallery.slice(0, 12) });
   model.blocks.push({ type: 'trust', items: trust.length ? trust : t.trust });
-  if (p.address || p.mapsLink || p.serviceArea) model.blocks.push({ type: 'map', address: p.address ?? null, mapsLink: p.mapsLink ?? null, area: p.serviceArea ?? null, hours: p.hours ?? null });
+  // Contact details are never published: enquiries come through us. Only the areas served and the hours are shown (no address, no map link, no phone, no e-mail).
+  if (p.serviceArea || p.hours) model.blocks.push({ type: 'map', address: null, mapsLink: null, area: p.serviceArea ?? null, hours: p.hours ?? null });
   model.blocks.push({ type: 'faq', items: (faqs.length ? faqs : t.faqs).map((f) => ({ q: fill(f.q, ctx), a: fill(f.a, ctx) })) });
   return model;
 }
