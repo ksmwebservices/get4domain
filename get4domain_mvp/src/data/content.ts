@@ -430,9 +430,9 @@ export const testimonials: Testimonial[] = [
     ownerName: 'Suresh Patel',
     city: 'Ahmedabad',
     rating: 5,
-    review: 'The LeadSpace Managed Ads team manages all our social media and Google ads. We have seen a 3x increase in enquiries since we started.',
+    review: 'The Managed Ads team manages all our social media and Google ads. We have seen a 3x increase in enquiries since we started.',
     avatar: '/demo-library/pexels-1222271.jpg',
-    product: 'LeadSpace Managed Ads Business',
+    product: 'Managed Ads Business',
   },
   {
     id: 't5',
@@ -484,8 +484,8 @@ export const faqs: FAQItem[] = [
   },
   {
     id: 'faq4',
-    question: 'What is LeadSpace Managed Ads?',
-    answer: 'LeadSpace Managed Ads is our managed paid-ads and growth service. Our team runs your Meta and Google ads, produces content, works on SEO/GEO/AEO and sends a monthly spend and fee statement. The fee is a flat monthly amount set by your ad budget — from ₹2,000/month (plus 18% GST), with ad spend paid directly to the platforms. See the pricing page for the full fee table.',
+    question: 'What is Managed Ads?',
+    answer: 'Managed Ads is our managed paid-ads and growth service. Our team runs your Meta and Google ads, produces content, works on SEO/GEO/AEO and sends a monthly spend and fee statement. The fee is a flat monthly amount set by your ad budget — from ₹2,000/month (plus 18% GST), with ad spend paid directly to the platforms. See the pricing page for the full fee table.',
     category: 'products',
   },
   {
@@ -497,7 +497,7 @@ export const faqs: FAQItem[] = [
   {
     id: 'faq6',
     question: 'Can I upgrade my plan later?',
-    answer: 'Yes. Ask us and we will move you from Workspace to BOS. You can also add LeadSpace Managed Ads to your existing DomainApp subscription, and request custom builds or managed marketing through Managed Services.',
+    answer: 'Yes. Ask us and we will move you from Workspace to BOS. You can also add Managed Ads to your existing DomainApp subscription, and request custom builds or managed marketing through Managed Services.',
     category: 'products',
   },
   {

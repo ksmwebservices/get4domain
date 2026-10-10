@@ -10,7 +10,7 @@ import { plain, useLoad, dateShort } from '@/bos/client';
 import { Alert, Empty, ErrorView, Field, Spinner, inputCls } from '@/bos/ui';
 import { downloadFile } from '@/bos/ui';
 import { planDisplayName } from '@/lib/nav.generated';
-import { EVENT_LABEL, STATUS_LABEL, ago, ls, telHref, waHref, type LeadRow, type Summary } from './ls';
+import { EVENT_LABEL, STATUS_LABEL, ago, istDay, ls, telHref, waHref, type LeadRow, type Summary } from './ls';
 import type { TabKey } from './LeadSpaceApp';
 
 const TYPE_CHIPS = ['', 'ENQUIRY', 'BOOKING', 'APPOINTMENT', 'SITE_VISIT', 'CART_ORDER'];
@@ -36,16 +36,21 @@ export default function LeadsTab({ go, onChange }: { go: (t: TabKey) => void; on
   const [type, setType] = useState('');
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
+  const [callsOnly, setCallsOnly] = useState(false);
   const [open, setOpen] = useState<LeadRow | null>(null);
   const [dispute, setDispute] = useState<LeadRow | null>(null);
   const [err, setErr] = useState('');
-  const qs = new URLSearchParams({ ...(type ? { type } : {}), ...(status ? { status } : {}), ...(search.trim() ? { search: search.trim() } : {}) }).toString();
+  const qs = new URLSearchParams({ ...(type ? { type } : {}), ...(status ? { status } : {}), ...(search.trim() ? { search: search.trim() } : {}), ...(callsOnly ? { calls: 'due' } : {}) }).toString();
   const list = useLoad(() => ls<{ total: number; rows: LeadRow[] }>(`/leadspace/leads${qs ? `?${qs}` : ''}`), [qs]);
   const sum = useLoad(() => ls<Summary & { upgradeSuggested?: boolean }>('/leadspace/summary'), []);
 
   async function setLeadStatus(l: LeadRow, s: string): Promise<void> {
     setErr('');
     try { await ls(`/leadspace/leads/${l.id}/status`, { method: 'PUT', body: { status: s } }); list.reload(); onChange(); setOpen(null); } catch (e) { setErr(plain(e)); }
+  }
+  async function setCallback(l: LeadRow, date: string | null): Promise<void> {
+    setErr('');
+    try { const r = await ls<LeadRow>(`/leadspace/leads/${l.id}/callback`, { method: 'PUT', body: { date } }); setOpen(r); list.reload(); sum.reload(); onChange(); } catch (e) { setErr(plain(e)); }
   }
   async function decide(l: LeadRow, decision: 'CONFIRMED' | 'DECLINED'): Promise<void> {
     setErr('');
@@ -69,6 +74,15 @@ export default function LeadsTab({ go, onChange }: { go: (t: TabKey) => void; on
 
       {err && <Alert>{err}</Alert>}
 
+      {(sum.data?.ordersWaiting ?? 0) > 0 && (
+        <Card padded className="border-amber-200 bg-amber-50">
+          <p className="text-sm text-amber-900">{sum.data?.ordersWaiting} order{sum.data?.ordersWaiting === 1 ? ' is' : 's are'} waiting for you to confirm or decline{sum.data?.oldestWaitingAt ? `. The oldest came ${ago(sum.data.oldestWaitingAt)}` : ''}. Customers expect an answer within a few hours.</p>
+          <div className="mt-2"><Button size="sm" onClick={() => { setType('CART_ORDER'); setStatus(''); setCallsOnly(false); }}>Show these orders</Button></div>
+        </Card>
+      )}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Calls to make">
+        <button className={chip(callsOnly)} onClick={() => setCallsOnly((x) => !x)} aria-pressed={callsOnly}>Today&apos;s calls{(sum.data?.callsDue ?? 0) > 0 ? ` (${sum.data?.callsDue})` : ''}</button>
+      </div>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Kind of lead">
         {TYPE_CHIPS.map((t) => <button key={t || 'all'} className={chip(type === t)} onClick={() => setType(t)}>{t ? EVENT_LABEL[t] : 'All'}</button>)}
       </div>
@@ -99,6 +113,7 @@ export default function LeadsTab({ go, onChange }: { go: (t: TabKey) => void; on
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${l.held ? 'bg-amber-50 text-amber-700' : l.status === 'WON' ? 'bg-success-50 text-success-700' : l.status === 'DELIVERED' ? 'bg-primary-50 text-primary-700' : 'bg-slate-100 text-slate-600'}`}>{STATUS_LABEL[l.status] ?? l.status}</span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm text-slate-700">{l.summary}</p>
+                {l.callbackAt && !l.held ? <p className="mt-1 text-xs font-medium text-primary-700">Call again on {dateShort(istDay(l.callbackAt))}</p> : null}
                 {l.type === 'CART_ORDER' && !l.held && <p className="mt-1 text-xs font-medium text-slate-500">Order: {l.orderDecision === 'CONFIRMED' ? 'confirmed' : l.orderDecision === 'DECLINED' ? 'declined' : 'waiting for you to confirm'}</p>}
               </button>
             </li>
@@ -129,6 +144,15 @@ export default function LeadsTab({ go, onChange }: { go: (t: TabKey) => void; on
                   <a href={telHref(open.customerPhone)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white"><Phone className="h-4 w-4" /> Call</a>
                   <a href={waHref(open.customerPhone, `Hello ${open.customerName.split(' ')[0]}, this is about your request.`)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
                 </div>
+                {open.status !== 'CREDITED' && open.status !== 'WON' && open.status !== 'LOST' ? (
+                  <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 p-3">
+                    <label className="flex-1 text-sm text-slate-700">
+                      <span className="mb-1 block text-xs font-medium text-slate-500">Call again on</span>
+                      <input type="date" className={inputCls} min={new Date().toISOString().slice(0, 10)} value={open.callbackAt ? istDay(open.callbackAt) : ''} onChange={(e) => { if (e.target.value) void setCallback(open, e.target.value); }} />
+                    </label>
+                    {open.callbackAt ? <Button size="sm" variant="outline" onClick={() => setCallback(open, null)}>Clear</Button> : null}
+                  </div>
+                ) : null}
                 {open.type === 'CART_ORDER' ? (
                   <div className="grid grid-cols-2 gap-2">
                     <Button onClick={() => decide(open, 'CONFIRMED')} disabled={open.orderDecision === 'CONFIRMED'}>Confirm order</Button>

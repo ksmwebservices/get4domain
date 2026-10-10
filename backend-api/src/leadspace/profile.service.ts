@@ -16,6 +16,17 @@ export interface PageInput {
 }
 
 const URL_OK = /^https?:\/\/[^\s<>"']{4,500}$/i;
+// "Buy it here" links must go to a shop or product page, never to a way of reaching the vendor: no phone, e-mail, WhatsApp or chat links.
+const CONTACT_HOST = /(^|\.)(wa\.me|whatsapp\.com|t\.me|telegram\.(me|org)|signal\.(me|group)|m\.me|messenger\.com|truecaller\.com)$/i;
+export function safeBuyUrl(raw: unknown): string | null {
+  const s = clean(raw, 500);
+  if (!URL_OK.test(s) || !/^https:\/\//i.test(s)) return null;
+  try {
+    const u = new URL(s);
+    if (CONTACT_HOST.test(u.hostname) || u.username || u.password) return null;
+    return u.toString();
+  } catch { return null; }
+}
 const IMG_OK = /^(https?:\/\/[^\s<>"']{4,500}|\/[A-Za-z0-9_\-./]{2,300})$/i;
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -29,7 +40,7 @@ export function cleanServices(v: unknown): ServiceItem[] {
       ? (Number.isFinite(n) && n >= 0 && n <= 100_000_000 ? n : null)
       : clean(o.price, 40) || null;
     const img = clean(o.image, 500);
-    return { name, price, description: clean(o.description, 240) || null, image: IMG_OK.test(img) ? img : null };
+    return { name, price, description: clean(o.description, 240) || null, image: IMG_OK.test(img) ? img : null, buyUrl: safeBuyUrl(o.buyUrl) };
   }).filter((s) => s.name);
 }
 const cleanFaqs = (v: unknown): { q: string; a: string }[] => arr(v).slice(0, 12).map((x) => ({ q: clean(obj(x).q, 160), a: clean(obj(x).a, 500) })).filter((f) => f.q && f.a);
@@ -236,6 +247,22 @@ export class LeadspaceProfileService {
     if (!p || p.status === 'DRAFT') throw new NotFoundException('This page is not available.');
     if (p.status === 'SUSPENDED') throw new GoneException('This page has been taken down.');
     return buildPage(p as unknown as PageSource);
+  }
+
+  /** A visitor tapped an item's own "buy it here" link. Counted for the vendor (never charged); the address comes only from what the vendor saved, never from the request. */
+  async outbound(slug: string, index: number): Promise<{ url: string }> {
+    const p = await this.prisma.leadspaceProfile.findUnique({ where: { slug: clean(slug, 60) }, select: { id: true, vendorId: true, status: true, services: true } });
+    if (!p || p.status !== 'PUBLISHED') throw new NotFoundException('This page is not available.');
+    const item = cleanServices(p.services)[index];
+    const url = item ? safeBuyUrl(item.buyUrl) : null;
+    if (!url) throw new NotFoundException('That link is not available.');
+    const day = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+    await this.prisma.leadspaceDailyStat.upsert({
+      where: { profileId_day: { profileId: p.id, day } },
+      create: { profileId: p.id, vendorId: p.vendorId, day, outboundClicks: 1 },
+      update: { outboundClicks: { increment: 1 } },
+    });
+    return { url };
   }
 
   async track(slug: string, kind: 'view' | 'cta' | 'form'): Promise<{ ok: true }> {

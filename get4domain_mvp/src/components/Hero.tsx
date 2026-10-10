@@ -57,7 +57,7 @@ export default function Hero() {
               </div>
               <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <Megaphone className="h-4 w-4 text-secondary-500 flex-shrink-0" />
-                <span><strong>LeadSpace Managed Ads</strong> — Managed Social Media, SEO & Digital Marketing</span>
+                <span><strong>Managed Ads</strong> — Managed Social Media, SEO & Digital Marketing</span>
               </div>
             </div>
 
@@ -122,13 +122,13 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* LeadSpace Managed Ads badge */}
+              {/* Managed Ads badge */}
               <div className="card-base p-4 flex items-center gap-3 shadow-card">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-500 flex-shrink-0">
                   <Megaphone className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-slate-900">LeadSpace Managed Ads</div>
+                  <div className="text-sm font-bold text-slate-900">Managed Ads</div>
                   <div className="text-xs text-slate-500">120 posts/mo · SEO · GBP · Reports</div>
                 </div>
                 <span className="rounded-full bg-secondary-50 px-2.5 py-1 text-xs font-semibold text-secondary-700 flex-shrink-0">Managed</span>

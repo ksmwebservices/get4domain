@@ -7,7 +7,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { RATE } from '../common/throttling';
 import { LeadspaceStaffGuard } from './staff.guard';
-import { PromotionToggleDto, RegulatedReviewDto, ReportActionDto, ReportPageDto, SavePageDto, SuspendDto, TrackDto, VerifyPhoneConfirmDto, VerifyPhoneRequestDto } from './leadspace.dto';
+import { OutboundDto, PromotionToggleDto, RegulatedReviewDto, ReportActionDto, ReportPageDto, SavePageDto, SuspendDto, TrackDto, VerifyPhoneConfirmDto, VerifyPhoneRequestDto } from './leadspace.dto';
 import { LeadspaceProfileService } from './profile.service';
 import { LegacyImportService } from './legacy-import.service';
 import { PageModel } from './page-builder';
@@ -27,6 +27,11 @@ export class LeadspacePagesPublicController {
   @Throttle(RATE.publicAction)
   @ApiOperation({ summary: 'Count a page view, a button tap or a started form (the top of the funnel)' })
   track(@Body() dto: TrackDto) { return this.pages.track(dto.slug, dto.kind); }
+
+  @Post('outbound')
+  @Throttle(RATE.publicAction)
+  @ApiOperation({ summary: "Count a tap on an item's own buy link and return the address the vendor saved for it" })
+  outbound(@Body() dto: OutboundDto) { return this.pages.outbound(dto.slug, dto.index); }
 
   @Post('report')
   @Throttle(RATE.otpRequest)

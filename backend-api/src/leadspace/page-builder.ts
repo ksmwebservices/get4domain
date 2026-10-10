@@ -10,11 +10,11 @@ export interface PageSource {
   verificationStatus: string; noindex: boolean; status: string; reraNumber?: string | null; updatedAt?: Date | string;
 }
 
-export interface ServiceItem { name: string; price?: number | string | null; description?: string | null; image?: string | null }
+export interface ServiceItem { name: string; price?: number | string | null; description?: string | null; image?: string | null; /** the vendor's own web address for buying this item (never shown; the page links through our counted redirect) */ buyUrl?: string | null }
 export type Block =
   | { type: 'hero'; headline: string; subline: string; image: string | null; primaryButton: string }
   | { type: 'offer'; headline: string; text: string; validUntil: string | null }
-  | { type: 'services'; title: string; items: { name: string; priceText: string | null; description: string | null; image: string | null }[] }
+  | { type: 'services'; title: string; items: { name: string; priceText: string | null; description: string | null; image: string | null; buyPath: string | null }[] }
   | { type: 'gallery'; images: { src: string; alt: string }[] }
   | { type: 'trust'; items: string[] }
   | { type: 'map'; address: string | null; mapsLink: string | null; area: string | null; hours: string | null }
@@ -103,7 +103,7 @@ export function buildPage(p: PageSource): PageModel {
   const goal = (p.goal as EventType) || 'ENQUIRY';
   const ctx = { business: p.businessName, city: p.city };
   const services = arr<ServiceItem>(p.services).filter((s) => s && String(s.name ?? '').trim());
-  const serviceView = services.map((s) => ({ name: String(s.name).slice(0, 120), priceText: priceText(s.price), description: s.description ? clip(String(s.description), 240) : null, image: s.image ?? null }));
+  const serviceView = services.map((s, i) => ({ name: String(s.name).slice(0, 120), priceText: priceText(s.price), description: s.description ? clip(String(s.description), 240) : null, image: s.image ?? null, buyPath: s.buyUrl ? `/ls/${p.slug}/go/${i}` : null }));
   const names = serviceView.map((s) => s.name);
   const primaryButton = t.cta[goal];
   const indexable = p.status === 'PUBLISHED' && p.verificationStatus === 'VERIFIED' && !p.noindex;
@@ -130,7 +130,7 @@ export function buildPage(p: PageSource): PageModel {
   const gallery = arr<{ src?: string; alt?: string } | string>(p.gallery).map((g) => (typeof g === 'string' ? { src: g, alt: p.businessName } : { src: String(g?.src ?? ''), alt: String(g?.alt ?? p.businessName) })).filter((g) => /^https?:\/\//.test(g.src) || g.src.startsWith('/'));
   const trust = arr<string>(p.trust).map(String).filter(Boolean);
   const faqs = arr<{ q?: string; a?: string }>(p.faqs).filter((f) => f?.q && f?.a).map((f) => ({ q: String(f.q), a: String(f.a) }));
-  const starter = t.starterServices.map((n) => ({ name: n, priceText: null as string | null, description: null as string | null, image: null as string | null }));
+  const starter = t.starterServices.map((n) => ({ name: n, priceText: null as string | null, description: null as string | null, image: null as string | null, buyPath: null as string | null }));
 
   model.blocks.push({ type: 'hero', headline: fill(t.headline, ctx), subline: p.tagline ? `${p.tagline}. ${fill(t.subline, ctx)}` : fill(t.subline, ctx), image: p.heroImage ?? null, primaryButton });
   if (offer && (offer.headline || offer.text)) model.blocks.push({ type: 'offer', headline: String(offer.headline ?? 'Offer'), text: String(offer.text ?? ''), validUntil: offer.validUntil ?? null });

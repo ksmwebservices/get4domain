@@ -39,7 +39,7 @@ export default function LeadSpaceAdmin() {
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
         <h1 className="text-xl font-bold text-white">LeadSpace</h1>
-        <p className="mt-1 text-sm text-slate-400">Free pages, verified leads, the prepaid wallet and our own promotion. Campaigns and LeadSpace Managed Ads now live here.</p>
+        <p className="mt-1 text-sm text-slate-400">Free pages, verified leads, the prepaid wallet and our own promotion. Campaigns and Managed Ads now live here.</p>
       </div>
       <div role="tablist" aria-label="LeadSpace sections" className="flex flex-wrap gap-1 rounded-xl bg-slate-900 p-1">
         {tabs.map((t) => (

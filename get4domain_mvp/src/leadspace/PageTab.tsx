@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/lib/auth-context';
+import { api } from '@/lib/api';
 import { plain, useLoad } from '@/bos/client';
 import { Alert, ErrorView, Field, Spinner, inputCls } from '@/bos/ui';
 import { ls, type Category, type PageData, type Profile, type ServiceItem } from './ls';
@@ -73,6 +74,21 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
   const cat = data.categories.find((c) => c.id === p.category);
   const [f, setF] = useState(() => formOf(p));
   const [services, setServices] = useState<ServiceItem[]>(() => (p.services ?? []).map((s) => ({ ...s })));
+  const [uploading, setUploading] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState('');
+
+  async function pick(i: number, file: File): Promise<void> {
+    setUploadError('');
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { setUploadError('Choose a JPG, PNG or WebP picture.'); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError('That picture is too large. Choose one under 5 MB.'); return; }
+    setUploading(i);
+    try {
+      const r = await api.uploadImage(file);
+      const url = r.data?.url;
+      if (!url) throw new Error('The picture could not be uploaded. Try again.');
+      setServices((a) => a.map((x, j) => (j === i ? { ...x, image: url } : x)));
+    } catch (e) { setUploadError(plain(e, 'The picture could not be uploaded. Check your internet connection and try again.')); } finally { setUploading(null); }
+  }
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>(() => (p.faqs ?? []).map((x) => ({ ...x })));
   const [msg, setMsg] = useState<{ tone: 'ok' | 'error' | 'info'; text: string } | null>(null);
   const [busy, setBusy] = useState('');
@@ -88,7 +104,7 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
     businessName: f.businessName.trim(), tagline: f.tagline.trim(), about: f.about.trim(), city: f.city.trim(), serviceArea: f.serviceArea.trim(), 
     hours: f.hours.trim(), heroImage: f.heroImage.trim(), goal: f.goal, reraNumber: f.reraNumber.trim(),
     offer: { headline: f.offerHeadline.trim(), text: f.offerText.trim() },
-    services: services.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: s.price === '' || s.price == null ? null : s.price, description: (s.description ?? '').trim() || null, image: s.image ?? null })),
+    services: services.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: s.price === '' || s.price == null ? null : s.price, description: (s.description ?? '').trim() || null, image: s.image ?? null, buyUrl: (s.buyUrl ?? '').trim() || null })),
     faqs: faqs.filter((x) => x.q.trim() && x.a.trim()),
   }), [f, services, faqs]);
 
@@ -152,16 +168,27 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
             {services.length === 0 && <p className="text-sm text-slate-500">Add what you offer. Prices are optional but customers trust pages that show them.</p>}
             {services.map((s, i) => (
               <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">
-                {s.image ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.image} alt="" className="h-16 w-16 rounded-lg object-cover" /> : null}
+                <div className="flex items-center gap-3">
+                  {s.image ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.image} alt="" className="h-16 w-16 rounded-lg object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">No picture</div>}
+                  <div className="flex flex-wrap gap-2">
+                    <label className={`inline-flex cursor-pointer items-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 ${uploading === i ? 'pointer-events-none opacity-60' : ''}`}>
+                      {uploading === i ? 'Uploading...' : s.image ? 'Change picture' : 'Add picture'}
+                      <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void pick(i, file); }} />
+                    </label>
+                    {s.image ? <button type="button" className="rounded-lg px-3 py-2 text-sm text-slate-500 underline" onClick={() => setServices((a) => a.map((x, j) => (j === i ? { ...x, image: null } : x)))}>Remove picture</button> : null}
+                  </div>
+                </div>
                 <div className="grid grid-cols-[1fr_7rem_auto] gap-2">
                   <input className={inputCls} placeholder="Name" aria-label="Name" value={s.name} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} maxLength={120} autoComplete="off" />
                   <input className={inputCls} placeholder="Price" aria-label="Price in rupees" inputMode="decimal" value={s.price ?? ''} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} autoComplete="off" />
                   <button type="button" aria-label="Remove" onClick={() => setServices((a) => a.filter((_, j) => j !== i))} className="rounded-lg p-2 text-slate-400 hover:text-error-600"><Trash2 className="h-4 w-4" /></button>
                 </div>
                 <input className={inputCls} placeholder="A short description (optional)" aria-label="Description" value={s.description ?? ''} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} maxLength={240} autoComplete="off" />
+                <input className={inputCls} placeholder="Where to buy it online (optional, https://...)" aria-label="Your own web address for buying this" inputMode="url" value={s.buyUrl ?? ''} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, buyUrl: e.target.value } : x)))} maxLength={500} autoComplete="off" />
               </div>
             ))}
-            <p className="text-xs text-slate-500">Photos for products come from your catalogue in Website Manager. <Link href="/dashboard/my-website" className="font-semibold underline">Open Website Manager</Link></p>
+            {uploadError ? <p role="alert" className="text-sm text-error-600">{uploadError}</p> : null}
+            <p className="text-xs text-slate-500">Add a picture to each item so visitors can see what you sell (JPG, PNG or WebP). If you add a web address, the item shows a &quot;Buy online&quot; button that sends the visitor there, and we count how many tapped it. We do not charge for those taps. If you already use Website Manager, pictures from your catalogue are picked up automatically. <Link href="/dashboard/my-website" className="font-semibold underline">Open Website Manager</Link></p>
           </Card>
 
           <Card padded className="space-y-3">

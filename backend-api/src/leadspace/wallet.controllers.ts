@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Headers, Post, Put, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Header, Headers, Post, Put, Query, Req } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -12,6 +12,10 @@ import { CommercialAdminGuard } from '../commercial/foundation.services';
 import { PaymentsService } from '../payments/payments.service';
 import { ReconcileDto, RefillOrderDto, SavePackDto, VerifyRefillDto } from './leadspace.dto';
 import { LeadRefillService } from './refill.service';
+import { LeadspaceReportsService } from './reports.service';
+
+const lastDays = (n: number): string => new Date(Date.now() - (n - 1) * 86_400_000).toISOString().slice(0, 10);
+const today = (): string => new Date().toISOString().slice(0, 10);
 
 /** Vendor: buy credit for the LeadSpace wallet and see the tax invoices. Payment goes to Get4Domain's Razorpay. */
 @ApiTags('leadspace')
@@ -19,7 +23,7 @@ import { LeadRefillService } from './refill.service';
 @RequireModule('wallet')
 @Controller('leadspace/wallet')
 export class LeadspaceRefillController {
-  constructor(private readonly refill: LeadRefillService) {}
+  constructor(private readonly refill: LeadRefillService, private readonly reports: LeadspaceReportsService) {}
 
   @Get('packs')
   @ApiOperation({ summary: 'Refill packs with the exact amount you will pay (GST included or added, as set) and the custom amount limits' })
@@ -41,6 +45,16 @@ export class LeadspaceRefillController {
   @Get('receipts')
   @ApiOperation({ summary: 'Every refill with its GST tax invoice' })
   receipts(@CurrentUser() u: AuthenticatedUser) { return this.refill.receipts(u.sub); }
+
+  @Get('report')
+  @ApiOperation({ summary: 'Where your wallet money went: opening and closing balance, money in and out, spend by lead type, a per-day series and every charge' })
+  report(@CurrentUser() u: AuthenticatedUser, @Query('from') from?: string, @Query('to') to?: string) { return this.reports.walletReport(u.sub, from ?? lastDays(30), to ?? today()); }
+
+  @Get('report.csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="leadspace-wallet.csv"')
+  @ApiOperation({ summary: 'The wallet report as a spreadsheet' })
+  async reportCsv(@CurrentUser() u: AuthenticatedUser, @Query('from') from?: string, @Query('to') to?: string) { return this.reports.walletCsv(await this.reports.walletReport(u.sub, from ?? lastDays(30), to ?? today())); }
 }
 
 /** Razorpay tells us a payment was captured even if the vendor closed the browser before the confirm call. Same credit rules, same idempotency. */

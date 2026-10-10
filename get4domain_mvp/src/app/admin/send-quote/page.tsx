@@ -20,7 +20,7 @@ type Channel = 'email' | 'whatsapp' | 'sms';
 
 const QUOTE_TYPES: { key: QuoteType; label: string }[] = [
   { key: 'domainapp_plan', label: 'DomainApp Plan' },
-  { key: 'domaincampaign_wallet', label: 'LeadSpace Managed Ads Wallet' },
+  { key: 'domaincampaign_wallet', label: 'Managed Ads Wallet' },
   { key: 'custom', label: 'Custom' },
 ];
 

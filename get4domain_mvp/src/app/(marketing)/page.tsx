@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import HeroMockup from '@/components/marketing/HeroMockup';
+import LeadSpaceHero from '@/components/marketing/home/LeadSpaceHero';
 import PlatformSection from '@/components/marketing/home/PlatformSection';
 import FeatureGrid from '@/components/marketing/home/FeatureGrid';
 import DashboardPreview from '@/components/marketing/home/DashboardPreview';
@@ -12,9 +13,9 @@ import HomePricing from '@/components/marketing/home/HomePricing';
 import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
+  title: 'Get4Domain — Your Online Visible Partner | Free LeadSpace page',
   description:
-    "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus managed ads and custom software.",
+    "Get4Domain is your online visible partner. LeadSpace gives your business a free page where customers verify on WhatsApp and you pay only per verified customer. For bigger businesses, DomainApp (Essentials from ₹999/month, Pro from ₹1,999/month, billed annually) adds your industry website, CRM, invoicing and AI Studio.",
   alternates: { canonical: 'https://get4domain.com' },
 };
 
@@ -42,18 +43,24 @@ const TESTIMONIALS = [
 ];
 
 const FAQS = [
+  { q: 'What is LeadSpace?', a: 'LeadSpace is a free mini web page for your business. Customers ask for you on it and confirm on WhatsApp, and you pay a small amount only for each verified customer, from a prepaid wallet. There is no monthly fee. Your phone number and address are never shown on the page.' },
   { q: 'What is Get4Domain?', a: 'Get4Domain is a complete online identity platform for Indian SMBs. It combines your business website, operations (CRM, invoicing, expenses, accounting), and marketing campaigns into one platform — so you can build, manage and grow your entire online presence from one place.' },
   { q: 'Do I need technical knowledge to use it?', a: 'No. Your site deploys instantly on a ready-made industry template, and we customize the content and theme within 24 hours. You simply log in to a Workplace tailored to your industry and start working — no coding or design skills needed.' },
   { q: 'How much does it cost?', a: 'DomainApp has two annual plans: Workspace at ₹999/month (₹11,988 + GST billed once a year) and BOS at ₹1,999/month (₹23,988 + GST billed once a year). Both include your industry website, CRM, campaigns and a one-time AI Studio credit (₹499 Workspace, ₹1,299 BOS). Top up your wallet (from ₹499) only when you need more AI content, campaigns or messaging. See the pricing page for the full feature list.' },
-  { q: 'Can you run my ads or build custom software for me?', a: 'Yes — as separate, optional services. LeadSpace Managed Ads is managed Meta & Google ads and growth, from ₹2,000/month based on your ad budget. Managed Services covers custom web and mobile apps, bespoke CRM/ERP and managed marketing, quoted per project. Both are detailed on the pricing page.' },
+  { q: 'Can you run my ads or build custom software for me?', a: 'Yes — as separate, optional services. Managed Ads is managed Meta & Google ads and growth, from ₹2,000/month based on your ad budget. Managed Services covers custom web and mobile apps, bespoke CRM/ERP and managed marketing, quoted per project. Both are detailed on the pricing page.' },
   { q: 'I already have a website — is this still useful?', a: 'Yes. Use Get4Domain just for the workspace — CRM/TeleCRM, AI Studio, campaigns, WhatsApp/SMS/email, and accounts with expense tracking and GST-statement prep — without needing a new website.' },
 ];
 
 export default function HomePage() {
   return (
     <>
-      {/* SECTION 1 — HERO (direct port of the Bolt hero grid; renders its own dark section) */}
-      <HeroMockup />
+      {/* SECTION 1 — LEADSPACE: our own product leads the page */}
+      <LeadSpaceHero />
+
+      {/* SECTION 2 — DOMAINAPP: for bigger businesses (the Bolt hero grid; renders its own dark section) */}
+      <div id="domainapp">
+        <HeroMockup />
+      </div>
 
       {/* SECTIONS 2–7 — PRODUCT SHOWCASE (ported Bolt homepage sections; continuous dark region) */}
       <div className="relative overflow-hidden bg-slate-950 text-slate-100">

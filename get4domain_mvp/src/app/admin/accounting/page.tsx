@@ -84,7 +84,7 @@ export default function AccountingPage() {
   const sumTotal = (list: Invoice[]) => list.reduce((s, i) => s + i.totalAmount, 0) / 100;
   const sumGst = (list: Invoice[]) => list.reduce((s, i) => s + i.gstAmount, 0) / 100;
   const domainAppRevenue = allPaid.filter((i) => /domainapp/i.test(i.description)).reduce((s, i) => s + i.totalAmount, 0) / 100;
-  // Everything else paid (Managed Services proposals, LeadSpace Managed Ads once it has
+  // Everything else paid (Managed Services proposals, Managed Ads once it has
   // real invoices, one-off invoices, etc.) — generic rather than matching a
   // specific product name by regex, which drifts out of date as products launch.
   const otherRevenue = sumTotal(allPaid) - domainAppRevenue;

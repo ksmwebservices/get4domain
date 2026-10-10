@@ -66,8 +66,8 @@ The page is rendered from this JSON (`GET /leadspace/public/page/<slug>`, shown 
     { "type": "hero", "headline": "Trusted home services in Chennai", "subline": "Leaks fixed the same day. ...", "image": "https://.../hero.jpg", "primaryButton": "Book a visit" },
     { "type": "offer", "headline": "Monsoon check", "text": "Free leak inspection this month", "validUntil": null },
     { "type": "services", "title": "What we do", "items": [
-        { "name": "Tap repair", "priceText": "Rs 350", "description": "Leaking taps fixed", "image": "https://.../tap.jpg" },
-        { "name": "Geyser fitting", "priceText": "Rs 900", "description": null, "image": null } ] },
+        { "name": "Tap repair", "priceText": "Rs 350", "description": "Leaking taps fixed", "image": "https://.../tap.jpg", "buyPath": null },
+        { "name": "Geyser fitting", "priceText": "Rs 900", "description": null, "image": null, "buyPath": "/ls/ravi-plumbing-chennai/go/1" } ] },
     { "type": "about", "text": "A family-run plumbing team ..." },
     { "type": "gallery", "images": [ { "src": "https://.../1.jpg", "alt": "..." } ] },
     { "type": "trust", "items": ["Background-checked professionals", "Clear price before work starts"] },
@@ -91,6 +91,7 @@ Rules the design must respect:
 - `rera` (real estate) is shown wherever the business name is prominent, if present.
 - The `map` block has **no address and no link**; show it as "Where we serve" with the area and hours only.
 - `priceText` may be null (then show "Ask for price" or nothing).
+- `buyPath` is null for most items. When it is set, show a secondary "Buy online" link on that item's card (opens in a new tab, `rel="noopener noreferrer nofollow sponsored"`) pointing at exactly that path. It is a counted redirect on our side; never try to read or show the vendor's own address. The item still takes part in the order form as normal.
 - Sections without data are simply not shown. A new vendor may have only a name, one service and no pictures: that page must still look good.
 
 ## 6. What Bolt delivers

@@ -350,3 +350,21 @@ Then re-run the dashboard dry run (`node scripts/nav-v2-dry-run.js`): the "would
 
 **Rollback:** the migrations only add; to roll back the application, redeploy the previous commit. The new tables can stay empty. Dropping them is described at the top of each migration file and is only safe while nothing has been written.
 
+
+
+## 10. LeadSpace follow-ups (2026-10-10, after section 9) - KSM only
+
+New since section 9: the wallet money report, unfinished-order safeguards, call-again reminders, "Buy online" links per item, product picture upload, the yearly LeadSpace credit that comes with Essentials and Pro, and the home page, pricing page and LeadSpace page rewritten so LeadSpace leads (the managed service is now called plain "Managed Ads"). Claude did not touch the server.
+
+```
+ssh ksmwebtechservices@34.14.130.68
+cd /srv/get4domain-site && git pull origin get4domain-site
+cd backend-api && npx prisma migrate deploy && npx prisma generate      # ONE new migration: 20261010120000_leadspace_followups (2 columns + 1 index on existing LeadSpace tables); additive only, no new table
+docker compose build --no-cache && docker compose up -d --force-recreate
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+```
+
+- Row level security: the migration adds no table, so `enable_rls_public.sql` needs no re-run (re-running it is harmless).
+- Plan credit: the yearly amounts (Essentials Rs 200, Pro Rs 600) are the admin setting `planCreditPaise` (`/admin/leadspace` settings). It is granted when a paid term starts or renews; half-year terms get half. Vendors who are already on a paid term get it at their next renewal or plan change (nothing is back-filled). To give it earlier, use the admin ledger adjustment.
+- Expired plan credit is written off by the existing admin "expiry sweep" (dry run first, then apply). Run it monthly.
+- Vendors should press Save once on the Page tab after this deploy if their product pictures were missing.

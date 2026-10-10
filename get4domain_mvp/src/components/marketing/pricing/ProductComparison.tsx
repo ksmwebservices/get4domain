@@ -4,7 +4,7 @@ import { type PlanTerm, formatINR } from '@/lib/pricing';
 import { buildMatrix, type Cell } from '@/data/platform-features';
 
 /**
- * One table, four products: Workspace | BOS | LeadSpace Managed Ads | Managed Services.
+ * One table, four products: Workspace | BOS | Managed Ads | Managed Services.
  * Same row/group pattern as the earlier plan table (grouped rows, tinted BOS column), widened to
  * four columns. Column widths are compact on phones so all four products fit without sideways
  * scrolling; short column names replace the long ones below the `sm` breakpoint.
@@ -23,7 +23,7 @@ export default function ProductComparison({ workspace, bos }: { workspace: PlanT
   const heads = [
     { name: 'Workspace', short: 'Work-space', sub: `${workspace.headline}/mo`, bos: false },
     { name: 'BOS', short: 'BOS', sub: `${bos.headline}/mo`, bos: true },
-    { name: 'LeadSpace Managed Ads', short: 'Campaign', sub: 'from ₹2,000/mo', bos: false },
+    { name: 'Managed Ads', short: 'Campaign', sub: 'from ₹2,000/mo', bos: false },
     { name: 'Managed Services', short: 'Managed', sub: 'custom quote', bos: false },
   ];
   return (
@@ -32,7 +32,7 @@ export default function ProductComparison({ workspace, bos }: { workspace: PlanT
         <div className="mx-auto max-w-2xl px-1 text-center">
           <p className="text-xs font-bold uppercase tracking-wider text-primary-600">Compare everything</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Every feature, every product, one table</h2>
-          <p className="mt-3 text-slate-600">What each Get4Domain product includes — side by side. DomainApp plans are your software; LeadSpace Managed Ads and Managed Services are our team working for you.</p>
+          <p className="mt-3 text-slate-600">What each Get4Domain product includes — side by side. DomainApp plans are your software; Managed Ads and Managed Services are our team working for you.</p>
         </div>
 
         <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:mt-10">
@@ -78,7 +78,7 @@ export default function ProductComparison({ workspace, bos }: { workspace: PlanT
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
           <Link href="#domainapp" className="font-semibold text-primary-700 hover:underline">Choose Workspace or BOS →</Link>
-          <Link href="#domain-campaign" className="font-semibold text-primary-700 hover:underline">LeadSpace Managed Ads fees →</Link>
+          <Link href="#domain-campaign" className="font-semibold text-primary-700 hover:underline">Managed Ads fees →</Link>
           <Link href="#managed-services" className="font-semibold text-amber-700 hover:underline">Get a custom quote →</Link>
         </div>
       </div>

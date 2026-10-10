@@ -32,6 +32,7 @@
 -- LeadSpace (2026-10-10): the 21 g4d_lead*/g4d_leadspace_*/g4d_social_*/g4d_whatsapp_*/g4d_post_jobs/g4d_promotion_plans/g4d_ad_spend_entries
 -- tables (migration 20261010100000_leadspace) are covered by the same loop below.
 -- LeadSpace page stats (migration 20261010110000_leadspace_page_stats): g4d_leadspace_daily_stats is covered by the same loop.
+-- LeadSpace follow-ups (migration 20261010120000_leadspace_followups): adds columns to existing LeadSpace tables only; no new table, nothing to add here.
 
 DO $$
 DECLARE

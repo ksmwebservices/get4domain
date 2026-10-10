@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Layers, Megaphone, Code2 } from 'lucide-react';
+import { ArrowRight, Layers, Megaphone, Code2, Wallet } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import PlanComparison from '@/components/marketing/pricing/PlanComparison';
 import ProductComparison from '@/components/marketing/pricing/ProductComparison';
@@ -13,8 +13,8 @@ import { fetchLivePricing, applyLivePricing } from '@/lib/pricing';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Pricing — DomainApp, LeadSpace Managed Ads & Managed Services',
-  description: 'All Get4Domain pricing in one place: DomainApp Workspace ₹11,988/yr or BOS ₹23,988/yr (+ GST), LeadSpace Managed Ads managed ads from ₹2,000/month by ad budget, and custom-quoted Managed Services for bespoke software and marketing.',
+  title: 'Pricing — LeadSpace, DomainApp, Managed Ads & Managed Services',
+  description: 'All Get4Domain pricing in one place: LeadSpace is a free page where you pay only for each verified customer from a prepaid wallet; DomainApp Workspace ₹11,988/yr or BOS ₹23,988/yr (+ GST), Managed Ads managed ads from ₹2,000/month by ad budget, and custom-quoted Managed Services for bespoke software and marketing.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 
@@ -34,15 +34,17 @@ const USAGE: [string, string][] = [
 ];
 
 const FAQS = [
+  { q: 'How does LeadSpace pricing work?', a: 'The page is free with no monthly fee. You top up a prepaid wallet and each verified customer (someone who confirmed their number on WhatsApp) is charged once, at a price set for your trade and city that you can see before you add money. If a lead is not real you can report it and the amount comes back. Every refill gets a GST tax invoice, and you can see exactly where your wallet money went.' },
+  { q: 'Is LeadSpace included in DomainApp?', a: 'Yes. Every DomainApp plan includes LeadSpace, with credit for your wallet each year that pays for verified customers, and your leads flow in automatically. Managed Ads is a separate optional service and is not part of LeadSpace.' },
   { q: 'What happens after I pay?', a: 'Your site deploys instantly on a ready-made industry template and we complete content & theme customization within 24 hours. We set up your Workplace dashboard and give you a one-time AI Studio credit (₹499 Workspace, ₹1,299 BOS) to start creating content immediately.' },
   { q: 'What is the Workplace?', a: 'The Workplace is your central business workspace — contacts, catalog, bookings/orders, invoicing, CRM, campaigns, AI tools and analytics, tailored to your industry, without the complexity of heavy ERP software.' },
   { q: 'How does the wallet work?', a: 'Your plan includes a one-time AI Studio credit. Use it for AI content, campaigns and messaging. When it runs low, top up from ₹499. Credits are valid for 90 days.' },
   { q: 'Can I use my own domain?', a: 'Yes. A free subdomain is included with every plan. You can also buy a domain through our dashboard or connect an existing one — custom domain is a separate service.' },
   { q: 'What industries do you support?', a: '20+ industries including Travel, Restaurant, Clinic, Salon, Hotel, Education, Retail, and more. Your Workplace adapts to your industry.' },
-  { q: 'How am I billed?', a: 'Both DomainApp plans are billed annually, upfront: Workspace ₹11,988 + 18% GST once a year (₹999/month equivalent), BOS ₹23,988 + 18% GST once a year (₹1,999/month equivalent). There is no quarterly or monthly billing option. LeadSpace Managed Ads is billed monthly; Managed Services are billed per the proposal you approve.' },
+  { q: 'How am I billed?', a: 'Both DomainApp plans are billed annually, upfront: Workspace ₹11,988 + 18% GST once a year (₹999/month equivalent), BOS ₹23,988 + 18% GST once a year (₹1,999/month equivalent). There is no quarterly or monthly billing option. Managed Ads is billed monthly; Managed Services are billed per the proposal you approve.' },
   { q: 'What does BOS add over Workspace?', a: 'BOS includes everything in Workspace plus WhatsApp bot reply, full accounting with P&L and GSTR filing, HRM (staff, attendance and payroll), inventory management, task management and assigning, 6 SEO keywords, 4 theme customizations a year and a ₹1,299 one-time AI Studio credit.' },
-  { q: 'What is the difference between DomainApp, LeadSpace Managed Ads and Managed Services?', a: 'DomainApp is the subscription: your industry website plus the software to run your business. LeadSpace Managed Ads is a managed service where our team runs your Meta & Google ads and organic growth for a flat monthly fee set by your ad budget. Managed Services is custom work — bespoke web/mobile apps, CRM/ERP, and managed marketing or production — scoped and quoted per project. You can use any of them on their own or together.' },
-  { q: 'How much does LeadSpace Managed Ads cost?', a: 'A flat management fee set by your monthly ad budget: up to ₹20,000 → ₹2,000/month; ₹20,001 to ₹1,00,000 → ₹5,000/month; above ₹1,00,000 → ₹10,000/month, plus 18% GST. Enterprise and multi-brand clients get a custom quote. Your ad spend is paid directly to Meta/Google and is separate.' },
+  { q: 'What is the difference between DomainApp, Managed Ads and Managed Services?', a: 'DomainApp is the subscription: your industry website plus the software to run your business. Managed Ads is a managed service where our team runs your Meta & Google ads and organic growth for a flat monthly fee set by your ad budget. Managed Services is custom work — bespoke web/mobile apps, CRM/ERP, and managed marketing or production — scoped and quoted per project. You can use any of them on their own or together.' },
+  { q: 'How much does Managed Ads cost?', a: 'A flat management fee set by your monthly ad budget: up to ₹20,000 → ₹2,000/month; ₹20,001 to ₹1,00,000 → ₹5,000/month; above ₹1,00,000 → ₹10,000/month, plus 18% GST. Enterprise and multi-brand clients get a custom quote. Your ad spend is paid directly to Meta/Google and is separate.' },
   { q: 'How do I get a Managed Services quote?', a: 'Use "Get a Custom Quote" on this page. Tell us what you need, our team follows up to scope it, and you receive an itemized proposal. There is no fixed price list because every engagement is different.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Cancel anytime — your website stays live until the end of the year you have already paid for.' },
 ];
@@ -74,9 +76,10 @@ export default async function PricingPage() {
 
   // The three products, as jump tiles in the hero so none of them is below the fold.
   const tiles = [
+    { href: '/leadspace', icon: Wallet, name: 'LeadSpace', price: 'Free page', unit: 'pay only per verified customer', blurb: 'A free mini web page for your business. Customers confirm on WhatsApp; you pay for each verified one from a prepaid wallet. No monthly fee.', cta: 'See how it works', accent: true },
     { href: '#compare', icon: Layers, name: 'DomainApp', price: `${terms.workspace.headline} – ${terms.bos.headline}`, unit: '/month, billed annually', blurb: 'Industry website + the software to run your business. Workspace or BOS.', cta: 'Compare plans', accent: false },
-    { href: '#domain-campaign', icon: Megaphone, name: 'LeadSpace Managed Ads', price: 'From ₹2,000', unit: '/month, by ad budget', blurb: 'Our team runs your Meta & Google ads and organic growth.', cta: 'See fees & scope', accent: false },
-    { href: '#managed-services', icon: Code2, name: 'Managed Services', price: 'Custom quote', unit: 'scoped per project', blurb: 'Bespoke web/mobile apps, CRM/ERP and managed marketing, built for you.', cta: 'Get a custom quote', accent: true },
+    { href: '#domain-campaign', icon: Megaphone, name: 'Managed Ads', price: 'From ₹2,000', unit: '/month, by ad budget', blurb: 'Our team runs your Meta & Google ads and organic growth.', cta: 'See fees & scope', accent: false },
+    { href: '#managed-services', icon: Code2, name: 'Managed Services', price: 'Custom quote', unit: 'scoped per project', blurb: 'Bespoke web/mobile apps, CRM/ERP and managed marketing, built for you.', cta: 'Get a custom quote', accent: false },
   ];
 
   return (
@@ -92,13 +95,13 @@ export default async function PricingPage() {
             Simple pricing
           </span>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl md:mt-4 md:text-5xl">
-            Three ways to work with us. <span className="text-gradient-hero">One price page.</span>
+            Start free. <span className="text-gradient-hero">Grow when you are ready.</span>
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-base text-slate-400 md:mt-4 md:text-lg">
-            A subscription to run your business, a team to run your ads, or a custom build — compare all three below.
+            A free page where you pay only for real customers, a subscription to run your business, a team to run your ads, or a custom build.
           </p>
 
-          <div className="mt-6 grid gap-3 text-left md:mt-10 md:grid-cols-3 md:gap-4">
+          <div className="mt-6 grid gap-3 text-left sm:grid-cols-2 md:mt-10 lg:grid-cols-4 md:gap-4">
             {tiles.map((t) => {
               const Icon = t.icon;
               return (
@@ -119,11 +122,11 @@ export default async function PricingPage() {
               );
             })}
           </div>
-          <p className="mt-5 text-xs text-slate-500">DomainApp and LeadSpace Managed Ads prices exclude 18% GST. Managed Services are quoted per project.</p>
+          <p className="mt-5 text-xs text-slate-500">DomainApp and Managed Ads prices exclude 18% GST. LeadSpace prices per verified customer are set by trade and city and shown in your wallet before you add money. Managed Services are quoted per project.</p>
         </div>
       </div>
 
-      {/* COMPARE — one table: Workspace | BOS | LeadSpace Managed Ads | Managed Services */}
+      {/* COMPARE — one table: Workspace | BOS | Managed Ads | Managed Services */}
       <ProductComparison workspace={terms.workspace} bos={terms.bos} />
 
       {/* 1 · DOMAINAPP — plan cards */}
@@ -179,7 +182,7 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <Faq items={FAQS} subtitle="Everything about DomainApp, LeadSpace Managed Ads and Managed Services." />
+      <Faq items={FAQS} subtitle="Everything about DomainApp, Managed Ads and Managed Services." />
     </>
   );
 }

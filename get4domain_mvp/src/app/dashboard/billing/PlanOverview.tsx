@@ -121,7 +121,7 @@ export default function PlanOverview({ tier, adminDeal = false, aiCreditPaise }:
         <p className="mt-1 text-sm text-slate-500">Separate, optional services run by our team — they&apos;re not part of your plan.</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary-600" /><p className="text-xs font-bold uppercase tracking-wider text-primary-600">LeadSpace Managed Ads</p></div>
+            <div className="flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary-600" /><p className="text-xs font-bold uppercase tracking-wider text-primary-600">Managed Ads</p></div>
             <p className="mt-2 text-sm font-semibold text-slate-900">Managed paid ads &amp; growth</p>
             <List items={CAMPAIGN_SUMMARY} />
             <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
@@ -132,7 +132,7 @@ export default function PlanOverview({ tier, adminDeal = false, aiCreditPaise }:
               ))}
             </div>
             <p className="mt-1.5 text-[11px] text-slate-500">Management fee + 18% GST.</p>
-            <Link href="/dashboard/my-services" className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-primary-600 hover:text-primary-700">Request LeadSpace Managed Ads <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/dashboard/my-services" className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-primary-600 hover:text-primary-700">Request Managed Ads <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <div className="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center gap-2"><Code2 className="h-4 w-4 text-primary-600" /><p className="text-xs font-bold uppercase tracking-wider text-primary-600">Managed Services</p></div>

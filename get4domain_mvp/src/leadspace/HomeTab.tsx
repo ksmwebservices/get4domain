@@ -63,6 +63,17 @@ export default function HomeTab({ go }: { go: (t: TabKey) => void }) {
         {s.held > 0 && <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{s.held} customer{s.held === 1 ? ' is' : 's are'} waiting. Their details unlock when you refill, oldest first.</p>}
       </Card>
 
+      {((s.callsDue ?? 0) > 0 || (s.ordersWaiting ?? 0) > 0) && (
+        <Card padded className="border-amber-200 bg-amber-50">
+          <div className="text-xs font-semibold uppercase tracking-wide text-amber-800">Needs you today</div>
+          <ul className="mt-1 space-y-1 text-sm text-amber-900">
+            {(s.callsDue ?? 0) > 0 && <li>{s.callsDue} call{s.callsDue === 1 ? '' : 's'} to make today</li>}
+            {(s.ordersWaiting ?? 0) > 0 && <li>{s.ordersWaiting} order{s.ordersWaiting === 1 ? '' : 's'} waiting for your reply</li>}
+          </ul>
+          <div className="mt-3"><Button size="sm" onClick={() => go('leads')}>Open Leads</Button></div>
+        </Card>
+      )}
+
       <Card padded className="border-primary-200 bg-primary-50">
         <div className="flex items-start gap-3">
           <Rocket className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary-600" aria-hidden />

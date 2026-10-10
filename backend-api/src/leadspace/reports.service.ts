@@ -14,6 +14,19 @@ export interface CostRow {
   costPerVerifiedLeadPaise: number | null; marginPercent: number | null; alert: string | null;
 }
 
+export interface WalletReportLine {
+  at: string; reason: string; direction: 'IN' | 'OUT'; amountPaise: number; balanceAfterPaise: number;
+  leadType: string | null; customer: string | null; leadStatus: string | null; note: string | null;
+}
+export interface WalletReport {
+  from: string; to: string; openingPaise: number; closingPaise: number;
+  totals: { inPaise: number; outPaise: number; chargedPaise: number; creditedBackPaise: number; refilledPaise: number; charges: number; averageChargePaise: number | null; verifiedLeads: number };
+  byReason: Record<string, { count: number; paise: number }>;
+  byType: Record<string, { count: number; paise: number }>;
+  perDay: { day: string; inPaise: number; outPaise: number; charges: number; closingPaise: number }[];
+  lines: WalletReportLine[]; truncated: boolean;
+}
+
 const day = (s: string, end = false): Date => new Date(`${s}T${end ? '23:59:59.999' : '00:00:00.000'}Z`);
 
 /** Money maths for the admin: what Get4Domain spent on boosts against what verified leads earned, and the funnel a vendor sees. */
@@ -121,16 +134,74 @@ export class LeadspaceReportsService {
       ...rows.map((r) => [r.campaign, r.sources.join('/'), r.verifiedEvents, r.held, r.credited, rs(r.spendPaise), rs(r.costPerVerifiedLeadPaise), rs(r.chargedPaise)].join(','))].join(NL);
   }
 
+  // — one vendor's wallet report: every rupee in and out, from the append-only ledger —
+
+  /**
+   * "Where did my wallet money go?" Read straight from the ledger, so it always agrees with the balance: opening and closing balance, money in by reason,
+   * money out by event type, a per-day series, and the individual charges (customer shown masked). Nothing here can change a balance.
+   */
+  async walletReport(vendorId: string, from: string, to: string): Promise<WalletReport> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) throw new BadRequestException('Choose the dates as year-month-day, start before end.');
+    const range = { gte: day(from), lte: day(to, true) };
+    const [entries, before] = await Promise.all([
+      this.prisma.leadPurseEntry.findMany({ where: { vendorId, createdAt: range }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: 5000 }),
+      this.prisma.leadPurseEntry.findFirst({ where: { vendorId, createdAt: { lt: day(from) } }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { balanceAfter: true } }),
+    ]);
+    const eventIds = entries.filter((e) => e.refType === 'LeadEvent' && e.refId).map((e) => e.refId as string);
+    const events = eventIds.length ? await this.prisma.leadEvent.findMany({ where: { vendorId, id: { in: eventIds } }, select: { id: true, type: true, customerName: true, customerPhone: true, status: true, createdAt: true } }) : [];
+    const ev = new Map(events.map((e) => [e.id, e]));
+    const mask = (p: string): string => (p.length > 4 ? `${'X'.repeat(p.length - 4)}${p.slice(-4)}` : p);
+    const byReason: Record<string, { count: number; paise: number }> = {};
+    const byType: Record<string, { count: number; paise: number }> = {};
+    const days = new Map<string, { day: string; inPaise: number; outPaise: number; charges: number; closingPaise: number }>();
+    const lines: WalletReportLine[] = [];
+    let inPaise = 0; let outPaise = 0; let charges = 0;
+    for (const e of entries) {
+      const signed = e.type === 'CREDIT' ? e.amountPaise : -e.amountPaise;
+      const r = (byReason[e.reason] ??= { count: 0, paise: 0 });
+      r.count++; r.paise += signed;
+      const d = e.createdAt.toISOString().slice(0, 10);
+      const dd = days.get(d) ?? { day: d, inPaise: 0, outPaise: 0, charges: 0, closingPaise: 0 };
+      if (signed > 0) { inPaise += signed; dd.inPaise += signed; } else { outPaise += -signed; dd.outPaise += -signed; }
+      dd.closingPaise = e.balanceAfter;
+      const lead = e.refType === 'LeadEvent' && e.refId ? ev.get(e.refId) : undefined;
+      if (e.reason === 'LEAD_CHARGE') {
+        charges++; dd.charges++;
+        const t = (byType[lead?.type ?? 'OTHER'] ??= { count: 0, paise: 0 });
+        t.count++; t.paise += e.amountPaise;
+      }
+      days.set(d, dd);
+      lines.push({ at: e.createdAt.toISOString(), reason: e.reason, direction: e.type === 'CREDIT' ? 'IN' : 'OUT', amountPaise: e.amountPaise, balanceAfterPaise: e.balanceAfter, leadType: lead?.type ?? null, customer: lead ? `${lead.customerName.split(' ')[0]} ${mask(lead.customerPhone)}` : null, leadStatus: lead?.status ?? null, note: e.note });
+    }
+    const closing = entries.length ? entries[entries.length - 1].balanceAfter : (before?.balanceAfter ?? 0);
+    const verified = await this.prisma.leadEvent.count({ where: { vendorId, createdAt: range, status: { not: 'CREDITED' } } });
+    return {
+      from, to, openingPaise: before?.balanceAfter ?? 0, closingPaise: closing,
+      totals: { inPaise, outPaise, chargedPaise: -(byReason.LEAD_CHARGE?.paise ?? 0), creditedBackPaise: byReason.CREDIT_INVALID?.paise ?? 0, refilledPaise: byReason.REFILL?.paise ?? 0, charges, averageChargePaise: charges ? Math.round((-(byReason.LEAD_CHARGE?.paise ?? 0)) / charges) : null, verifiedLeads: verified },
+      byReason, byType, perDay: [...days.values()], lines: lines.reverse().slice(0, 500), truncated: entries.length >= 5000,
+    };
+  }
+
+  /** The same report as a spreadsheet (one row per ledger line). */
+  walletCsv(r: WalletReport): string {
+    const NL = String.fromCharCode(10);
+    const q = (s: string | null): string => `"${(s ?? '').replace(/"/g, '""')}"`;
+    return [['When', 'What', 'Direction', 'Amount (Rs)', 'Balance after (Rs)', 'Lead type', 'Customer', 'Lead status', 'Note'].join(','),
+      ...r.lines.map((l) => [l.at, l.reason, l.direction, (l.amountPaise / 100).toFixed(2), (l.balanceAfterPaise / 100).toFixed(2), l.leadType ?? '', q(l.customer), l.leadStatus ?? '', q(l.note)].join(','))].join(NL);
+  }
+
   // — one vendor's funnel —
 
   async funnel(vendorId: string, from: string, to: string): Promise<Record<string, unknown>> {
     const range = { gte: day(from), lte: day(to, true) };
     const [stats, otps, events] = await Promise.all([
-      this.prisma.leadspaceDailyStat.aggregate({ where: { vendorId, day: { gte: day(from), lte: day(to) } }, _sum: { views: true, ctaClicks: true, formStarts: true } }),
+      this.prisma.leadspaceDailyStat.aggregate({ where: { vendorId, day: { gte: day(from), lte: day(to) } }, _sum: { views: true, ctaClicks: true, formStarts: true, outboundClicks: true } }),
       this.prisma.leadOtp.count({ where: { vendorId, createdAt: range, OR: [{ deviceHash: null }, { deviceHash: { not: 'vendor-verify' } }] } }),
       this.prisma.leadEvent.findMany({ where: { vendorId, createdAt: range }, select: { type: true, status: true, priceChargedPaise: true } }),
     ]);
     const profile = await this.prisma.leadspaceProfile.findUnique({ where: { vendorId }, select: { category: true, city: true } });
+    // a code that was sent, never used and has now expired: the customer started and did not finish. Never charged.
+    const unfinished = await this.prisma.leadOtp.count({ where: { vendorId, createdAt: range, usedAt: null, expiresAt: { lt: new Date() }, OR: [{ deviceHash: null }, { deviceHash: { not: 'vendor-verify' } }] } });
     const byType = Object.fromEntries(EVENT_TYPES.map((t) => [t, events.filter((e) => e.type === t).length]));
     const n = (st: string): number => events.filter((e) => e.status === st).length;
     const spent = events.reduce((a, e) => a + e.priceChargedPaise, 0);
@@ -142,8 +213,9 @@ export class LeadspaceReportsService {
       if (row && row.verifiedEvents > 0) { costPerVerifiedEventPaise = row.costPerVerifiedLeadPaise; attributedSpendPaise = Math.round((row.spendPaise * valid) / row.verifiedEvents); }
     }
     return {
-      from, to, views: stats._sum.views ?? 0, buttonTaps: stats._sum.ctaClicks ?? 0, formsStarted: stats._sum.formStarts ?? 0, codesRequested: otps,
+      from, to, views: stats._sum.views ?? 0, buttonTaps: stats._sum.ctaClicks ?? 0, formsStarted: stats._sum.formStarts ?? 0, buyLinkTaps: stats._sum.outboundClicks ?? 0, codesRequested: otps,
       verifiedEvents: events.length, byType, held: n('HELD'), delivered: n('DELIVERED') + n('CONTACTED') + n('WON') + n('LOST') + n('DISPUTED'), contacted: n('CONTACTED') + n('WON') + n('LOST'), won: n('WON'), credited: n('CREDITED'),
+      unfinished, cartOrders: byType.CART_ORDER ?? 0, ordersConfirmed: events.filter((e) => e.type === 'CART_ORDER' && e.status === 'WON').length, ordersDeclined: events.filter((e) => e.type === 'CART_ORDER' && e.status === 'LOST').length,
       chargedPaise: spent, attributedSpendPaise, costPerVerifiedEventPaise,
       conversion: { viewToTap: ratio(stats._sum.ctaClicks, stats._sum.views), tapToForm: ratio(stats._sum.formStarts, stats._sum.ctaClicks), formToCode: ratio(otps, stats._sum.formStarts), codeToEvent: ratio(events.length, otps) },
     };

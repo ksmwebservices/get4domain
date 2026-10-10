@@ -3,7 +3,7 @@ import { LeadPurseEntry, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type Tx = Prisma.TransactionClient;
-export type PurseReason = 'REFILL' | 'LEAD_CHARGE' | 'CREDIT_INVALID' | 'REFUND' | 'ADJUSTMENT' | 'EXPIRY';
+export type PurseReason = 'REFILL' | 'LEAD_CHARGE' | 'CREDIT_INVALID' | 'REFUND' | 'ADJUSTMENT' | 'EXPIRY' | 'PLAN_CREDIT';
 
 export interface PurseMove {
   vendorId: string;
@@ -18,6 +18,19 @@ export interface PurseMove {
   createdBy?: string;
 }
 export interface PurseResult { ok: boolean; entry: LeadPurseEntry | null; replayed: boolean; balancePaise: number }
+
+/** The credit itself, as a plain function on a transaction, so plan settlement can use it without importing the LeadSpace module. */
+export async function creditInTx(tx: Tx, m: PurseMove): Promise<PurseResult> {
+  if (!Number.isInteger(m.amountPaise) || m.amountPaise <= 0) throw new BadRequestException('The amount must be a positive whole number of paise.');
+  const seen = await tx.leadPurseEntry.findUnique({ where: { idempotencyKey: m.idempotencyKey } });
+  if (seen) return { ok: true, entry: seen, replayed: true, balancePaise: seen.balanceAfter };
+  await tx.leadPurse.upsert({ where: { vendorId_kind: { vendorId: m.vendorId, kind: 'LEADS' } }, create: { vendorId: m.vendorId, kind: 'LEADS' }, update: {} });
+  const purse = await tx.leadPurse.update({ where: { vendorId_kind: { vendorId: m.vendorId, kind: 'LEADS' } }, data: { balancePaise: { increment: m.amountPaise }, totalCredited: { increment: m.amountPaise } } });
+  const entry = await tx.leadPurseEntry.create({
+    data: { purseId: purse.id, vendorId: m.vendorId, type: 'CREDIT', amountPaise: m.amountPaise, balanceAfter: purse.balancePaise, reason: m.reason, refType: m.refType ?? null, refId: m.refId ?? null, note: m.note ?? null, idempotencyKey: m.idempotencyKey, razorpayId: m.razorpayId ?? null, expiresAt: m.expiresAt ?? null, createdBy: m.createdBy ?? null },
+  });
+  return { ok: true, entry, replayed: false, balancePaise: purse.balancePaise };
+}
 
 /**
  * The LEADS purse: closed-loop money that can only be spent on Get4Domain services. A pair of tables (balance + append-only ledger) kept beside
@@ -37,17 +50,7 @@ export class LeadPurseService {
   }
 
   /** Add money. Replays of the same idempotency key return the first entry and change nothing. */
-  async credit(tx: Tx, m: PurseMove): Promise<PurseResult> {
-    if (!Number.isInteger(m.amountPaise) || m.amountPaise <= 0) throw new BadRequestException('The amount must be a positive whole number of paise.');
-    const seen = await tx.leadPurseEntry.findUnique({ where: { idempotencyKey: m.idempotencyKey } });
-    if (seen) return { ok: true, entry: seen, replayed: true, balancePaise: seen.balanceAfter };
-    await this.ensure(tx, m.vendorId);
-    const purse = await tx.leadPurse.update({ where: { vendorId_kind: { vendorId: m.vendorId, kind: 'LEADS' } }, data: { balancePaise: { increment: m.amountPaise }, totalCredited: { increment: m.amountPaise } } });
-    const entry = await tx.leadPurseEntry.create({
-      data: { purseId: purse.id, vendorId: m.vendorId, type: 'CREDIT', amountPaise: m.amountPaise, balanceAfter: purse.balancePaise, reason: m.reason, refType: m.refType ?? null, refId: m.refId ?? null, note: m.note ?? null, idempotencyKey: m.idempotencyKey, razorpayId: m.razorpayId ?? null, expiresAt: m.expiresAt ?? null, createdBy: m.createdBy ?? null },
-    });
-    return { ok: true, entry, replayed: false, balancePaise: purse.balancePaise };
-  }
+  async credit(tx: Tx, m: PurseMove): Promise<PurseResult> { return creditInTx(tx, m); }
 
   /** Take money only if there is enough. `ok:false` means the balance was too low and nothing changed. */
   async debit(tx: Tx, m: PurseMove): Promise<PurseResult> {

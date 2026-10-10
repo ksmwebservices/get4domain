@@ -216,7 +216,7 @@ function DealBuilder() {
               ) : (
                 <Field label="Invoice type">
                   <select className={selectCls} value={kind} onChange={(e) => setKind(e.target.value as 'ADDON' | 'MANAGED_SERVICE')}>
-                    <option value="ADDON">Add-on (e.g. LeadSpace Managed Ads)</option>
+                    <option value="ADDON">Add-on (e.g. Managed Ads)</option>
                     <option value="MANAGED_SERVICE">Managed Service</option>
                   </select>
                 </Field>
@@ -230,7 +230,7 @@ function DealBuilder() {
               {addons.map((a) => (
                 <div key={a.id} className="grid grid-cols-[1fr_6.5rem_3.5rem_2rem] gap-2 sm:grid-cols-[8rem_1fr_7rem_4rem_2rem]">
                   <select className={`${selectCls} hidden sm:block`} value={a.kind} onChange={(e) => setAddons(addons.map((x) => x.id === a.id ? { ...x, kind: e.target.value as 'ADDON' | 'CUSTOM' } : x))}><option value="ADDON">Add-on</option><option value="CUSTOM">Custom</option></select>
-                  <input className={inputCls} placeholder="Description (e.g. LeadSpace Managed Ads — first month)" value={a.label} onChange={(e) => setAddons(addons.map((x) => x.id === a.id ? { ...x, label: e.target.value } : x))} />
+                  <input className={inputCls} placeholder="Description (e.g. Managed Ads — first month)" value={a.label} onChange={(e) => setAddons(addons.map((x) => x.id === a.id ? { ...x, label: e.target.value } : x))} />
                   <input className={inputCls} inputMode="decimal" placeholder="₹ amount" value={a.rupees} onChange={(e) => setAddons(addons.map((x) => x.id === a.id ? { ...x, rupees: e.target.value.replace(/[^0-9.]/g, '') } : x))} />
                   <input className={inputCls} inputMode="numeric" placeholder="Qty" value={a.qty} onChange={(e) => setAddons(addons.map((x) => x.id === a.id ? { ...x, qty: e.target.value.replace(/\D/g, '') } : x))} />
                   <button type="button" onClick={() => setAddons(addons.filter((x) => x.id !== a.id))} aria-label="Remove line" className="rounded-lg text-slate-500 hover:text-error-400"><Trash2 className="mx-auto h-4 w-4" /></button>

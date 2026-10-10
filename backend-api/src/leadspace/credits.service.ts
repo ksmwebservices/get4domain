@@ -1,3 +1,4 @@
+import { expirePlanCredits } from './plan-credit';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { LeadDispute, LeadRefundRequest } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -90,7 +91,7 @@ export class LeadCreditsService {
   }
 
   /** Admin sweep (also runnable on a schedule): balance older than the expiry window is written off in the ledger. Dry run unless apply is true. */
-  async expirySweep(apply: boolean, adminId: string): Promise<{ vendors: number; paise: number; applied: boolean }> {
+  async expirySweep(apply: boolean, adminId: string): Promise<{ vendors: number; paise: number; applied: boolean; planCreditExpiredPaise: number }> {
     const s = await this.settings.get();
     const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - s.expiryMonths);
     const purses = await this.prisma.leadPurse.findMany({ where: { balancePaise: { gt: 0 } } });
@@ -101,6 +102,12 @@ export class LeadCreditsService {
       vendors++; paise += p.balancePaise;
       if (apply) await this.prisma.$transaction(async (tx) => { await this.purse.debit(tx, { vendorId: p.vendorId, amountPaise: p.balancePaise, reason: 'EXPIRY', idempotencyKey: `expiry:${p.vendorId}:${new Date().toISOString().slice(0, 10)}`, createdBy: adminId, note: 'Unused balance expired' }); });
     }
-    return { vendors, paise, applied: apply };
+    // plan credit whose term has ended and was not used (one ledger row per grant; running it again changes nothing)
+    let planCreditExpiredPaise = 0;
+    const withPlan = await this.prisma.leadPurseEntry.findMany({ where: { reason: 'PLAN_CREDIT', type: 'CREDIT', expiresAt: { lt: new Date() } }, select: { vendorId: true }, distinct: ['vendorId'] });
+    for (const w of withPlan) {
+      if (apply) planCreditExpiredPaise += await this.prisma.$transaction((tx) => expirePlanCredits(tx, w.vendorId));
+    }
+    return { vendors, paise, applied: apply, planCreditExpiredPaise };
   }
 }

@@ -1,9 +1,10 @@
 import Link from 'next/link';
+import DomainCampaignForm from '@/components/marketing/DomainCampaignForm';
 import { CAMPAIGN_BRACKETS as BRACKETS } from '@/data/platform-features';
 import { ArrowRight, Check, Target, PenTool, BarChart3, Search, Users2, Share2, type LucideIcon } from 'lucide-react';
 
 /**
- * LeadSpace Managed Ads on /pricing: the full spend-bracket fee table (PRD §88) and the complete
+ * Managed Ads on /pricing: the full spend-bracket fee table (PRD §88) and the complete
  * service scope. Brackets mirror backend/domain-campaign-fee.ts and the /leadspace page.
  */
 
@@ -39,7 +40,7 @@ export default function CampaignPricing() {
     <section id="domain-campaign" className="scroll-mt-24 border-t border-slate-200 bg-slate-50 py-16 md:py-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-wider text-primary-600">2 · LeadSpace Managed Ads</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-primary-600">2 · Managed Ads</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Want us to run your ads &amp; growth?</h2>
           <p className="mt-3 text-slate-600">A managed service — our team plans, runs and optimizes your paid ads and organic growth every month. A flat management fee set by your monthly ad budget. Available with or without a DomainApp plan.</p>
         </div>
@@ -61,7 +62,7 @@ export default function CampaignPricing() {
           <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center gap-x-2 bg-warning-50/60 px-4 py-3.5 sm:grid-cols-3 sm:px-5">
             <span className="text-sm font-medium text-slate-800">Enterprise / multi-brand</span>
             <span className="text-right text-lg font-bold text-slate-900 sm:text-left">Custom quote</span>
-            <span className="col-span-2 text-xs text-slate-500 sm:col-span-1 sm:text-sm">Fee agreed per client — <Link href="/leadspace#get-started" className="font-semibold text-primary-700 hover:underline">talk to us</Link></span>
+            <span className="col-span-2 text-xs text-slate-500 sm:col-span-1 sm:text-sm">Fee agreed per client — <a href="#managed-ads-enquiry" className="font-semibold text-primary-700 hover:underline">talk to us</a></span>
           </div>
         </div>
         <ul className="mx-auto mt-4 grid max-w-3xl gap-1.5 text-sm text-slate-600 sm:grid-cols-3">
@@ -90,16 +91,19 @@ export default function CampaignPricing() {
         </div>
 
         <p className="mx-auto mt-6 max-w-3xl text-center text-sm text-slate-500">
-          Not the same as the campaign tools inside DomainApp (landing pages, AI content, messaging, which are part of your subscription) — LeadSpace Managed Ads is our team doing the work for you.
+          Not the same as the campaign tools inside DomainApp (landing pages, AI content, messaging, which are part of your subscription) — Managed Ads is our team doing the work for you.
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link href="/leadspace#get-started" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-7 py-3.5 font-semibold text-white transition-all hover:bg-primary-700 sm:w-auto">
-            Start with LeadSpace Managed Ads <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <Link href="/leadspace#managed-ads" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-7 py-3.5 font-medium text-slate-700 hover:bg-slate-100 sm:w-auto">
-            See full details
-          </Link>
+          <a href="#managed-ads-enquiry" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-7 py-3.5 font-semibold text-white transition-all hover:bg-primary-700 sm:w-auto">
+            Start with Managed Ads <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </a>
+        </div>
+
+        <div id="managed-ads-enquiry" className="mx-auto mt-10 max-w-2xl scroll-mt-24 rounded-3xl bg-slate-950 p-6 sm:p-8">
+          <h3 className="text-center text-xl font-bold text-white">Tell us about your business</h3>
+          <p className="mb-6 mt-2 text-center text-sm text-slate-400">Our team will follow up to understand your ad budget and goals. Managed Ads is separate from LeadSpace: you fund your own ad accounts and we manage them for a monthly fee.</p>
+          <DomainCampaignForm />
         </div>
       </div>
     </section>

@@ -11,7 +11,7 @@ const API = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || '
 type Block =
   | { type: 'hero'; headline: string; subline: string; image: string | null; primaryButton: string }
   | { type: 'offer'; headline: string; text: string; validUntil: string | null }
-  | { type: 'services'; title: string; items: { name: string; priceText: string | null; description: string | null; image: string | null }[] }
+  | { type: 'services'; title: string; items: { name: string; priceText: string | null; description: string | null; image: string | null; buyPath?: string | null }[] }
   | { type: 'gallery'; images: { src: string; alt: string }[] }
   | { type: 'trust'; items: string[] }
   | { type: 'map'; address: string | null; mapsLink: string | null; area: string | null; hours: string | null }
@@ -116,6 +116,7 @@ export default async function LeadSpacePage({ params, searchParams }: { params: 
                           {it.priceText ? <p className="whitespace-nowrap font-semibold" style={{ color: t.accentDark }}>{it.priceText}</p> : null}
                         </div>
                         {it.description ? <p className="mt-1 text-sm text-slate-600">{it.description}</p> : null}
+                        {it.buyPath ? <a href={it.buyPath} target="_blank" rel="noopener noreferrer nofollow sponsored" className="mt-3 inline-block rounded-lg border px-3 py-2 text-sm font-semibold" style={{ borderColor: t.accent, color: t.accentDark }}>Buy online</a> : null}
                       </li>
                     ))}
                   </ul>

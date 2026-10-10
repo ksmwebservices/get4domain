@@ -30,6 +30,11 @@ export class LeadStatusDto {
   @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
 
+export class CallbackDto {
+  /** year-month-day, or null to clear the reminder */
+  @IsOptional() @IsString() @MaxLength(10) date?: string | null;
+}
+
 export class OrderDecisionDto {
   @IsIn(['CONFIRMED', 'DECLINED']) decision!: 'CONFIRMED' | 'DECLINED';
   @IsOptional() @IsString() @MaxLength(500) note?: string;
@@ -118,6 +123,11 @@ export class VerifyPhoneConfirmDto {
   @IsString() @MaxLength(20) phone!: string;
   @IsString() @MaxLength(60) otpId!: string;
   @IsString() @MaxLength(8) code!: string;
+}
+
+export class OutboundDto {
+  @IsString() @MaxLength(60) slug!: string;
+  @IsInt() @Min(0) @Max(39) index!: number;
 }
 
 export class TrackDto {

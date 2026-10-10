@@ -14,6 +14,7 @@ import { activationPeriod } from './term-rules';
 import * as crypto from 'crypto';
 import { advisoryXactLock } from '../common/db-lock';
 import { aiStudioCreditPaise } from './ai-credit';
+import { grantLeadspacePlanCredit } from '../leadspace/plan-credit';
 
 type Db = Prisma.TransactionClient | PrismaService;
 
@@ -239,6 +240,8 @@ export class SettlementService {
     await provisionModules(tx, vendorId, planKey, { actor: 'settlement', reason: 'term started or renewed' });
 
     await this.grantAiCredit(tx, vendorId, planKey, termId);
+    // The plan's yearly LeadSpace credit lands in the LeadSpace wallet (rupees, prorated, expires with the term, once per term).
+    await grantLeadspacePlanCredit(tx, vendorId, planKey, termId);
   }
 
   /** The AI Studio credit a new term for `inv` carries: the deal's stored amount (computed or admin override), else prorated. */

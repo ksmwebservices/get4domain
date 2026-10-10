@@ -17,7 +17,7 @@ export default function FAQ({ limit }: FAQProps) {
         <SectionHeading
           eyebrow="FAQ"
           title="Common Questions"
-          description="Everything you need to know about Get4Domain, DomainApp and LeadSpace Managed Ads."
+          description="Everything you need to know about Get4Domain, DomainApp and Managed Ads."
         />
         <div className="mx-auto max-w-3xl">
           <AccordionComponent

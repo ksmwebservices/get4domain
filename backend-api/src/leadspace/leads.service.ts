@@ -9,8 +9,12 @@ import { LeadspaceSettingsService } from './settings.service';
 export interface LeadRow {
   id: string; type: string; typeLabel: string; status: string; held: boolean;
   customerName: string; customerPhone: string; summary: string; payload: unknown;
-  priceChargedPaise: number; orderDecision: string | null; vendorNote: string | null; source: string | null; createdAt: Date; deliveredAt: Date | null; disputeStatus?: string | null;
+  priceChargedPaise: number; orderDecision: string | null; vendorNote: string | null; source: string | null; createdAt: Date; deliveredAt: Date | null; callbackAt: Date | null; disputeStatus?: string | null;
 }
+
+const IST = '+05:30';
+/** The calendar date (year-month-day) in India for a moment in time. */
+const istDate = (d: Date): string => new Date(d.getTime() + 330 * 60_000).toISOString().slice(0, 10);
 
 const VENDOR_STATUSES = ['CONTACTED', 'WON', 'LOST'] as const;
 
@@ -24,7 +28,7 @@ export function present(e: LeadEvent): LeadRow {
     customerPhone: held ? (ten ? maskPhone(ten) : 'hidden') : e.customerPhone,
     summary: held ? 'Refill your wallet to see this request.' : summarise(e.type as EventType, e.payload as Record<string, unknown>),
     payload: held ? null : e.payload,
-    priceChargedPaise: e.priceChargedPaise, orderDecision: e.orderDecision, vendorNote: held ? null : e.vendorNote, source: e.source, createdAt: e.createdAt, deliveredAt: e.deliveredAt,
+    priceChargedPaise: e.priceChargedPaise, orderDecision: e.orderDecision, vendorNote: held ? null : e.vendorNote, source: e.source, createdAt: e.createdAt, deliveredAt: e.deliveredAt, callbackAt: held ? null : e.callbackAt,
   };
 }
 
@@ -32,8 +36,10 @@ export function present(e: LeadEvent): LeadRow {
 export class LeadsService {
   constructor(private readonly prisma: PrismaService, private readonly purse: LeadPurseService, private readonly settings: LeadspaceSettingsService) {}
 
-  async list(vendorId: string, q: { status?: string; type?: string; search?: string; from?: string; to?: string; take?: number; skip?: number }): Promise<{ total: number; rows: LeadRow[] }> {
+  async list(vendorId: string, q: { status?: string; type?: string; search?: string; from?: string; to?: string; take?: number; skip?: number; calls?: string }): Promise<{ total: number; rows: LeadRow[] }> {
     const where: Prisma.LeadEventWhereInput = { vendorId };
+    // "Today's calls": leads whose reminder date has come, still open (not won, lost or credited back)
+    if (q.calls === 'due') { where.callbackAt = { lte: new Date(`${istDate(new Date())}T23:59:59.999${IST}`) }; where.status = { in: ['DELIVERED', 'CONTACTED'] }; }
     if (q.status) where.status = q.status;
     if (q.type) where.type = q.type;
     if (q.from || q.to) where.createdAt = { ...(q.from ? { gte: new Date(q.from) } : {}), ...(q.to ? { lte: new Date(q.to) } : {}) };
@@ -42,7 +48,7 @@ export class LeadsService {
     if (search) where.AND = [{ status: { not: 'HELD' } }, { OR: [{ customerName: { contains: search, mode: 'insensitive' } }, { customerPhone: { contains: search.replace(/\D/g, '') || search } }] }];
     const [total, events] = await Promise.all([
       this.prisma.leadEvent.count({ where }),
-      this.prisma.leadEvent.findMany({ where, orderBy: { createdAt: 'desc' }, take: Math.min(q.take ?? 50, 200), skip: q.skip ?? 0 }),
+      this.prisma.leadEvent.findMany({ where, orderBy: q.calls === 'due' ? { callbackAt: 'asc' } : { createdAt: 'desc' }, take: Math.min(q.take ?? 50, 200), skip: q.skip ?? 0 }),
     ]);
     const disputes = events.length ? await this.prisma.leadDispute.findMany({ where: { vendorId, leadId: { in: events.map((e) => e.id) } }, orderBy: { createdAt: 'desc' } }) : [];
     return { total, rows: events.map((e) => ({ ...present(e), disputeStatus: disputes.find((d) => d.leadId === e.id)?.status ?? null })) };
@@ -53,7 +59,7 @@ export class LeadsService {
     const week = new Date(day.getTime() - 6 * 86_400_000);
     const month = new Date(day.getTime() - 29 * 86_400_000);
     const count = (where: Prisma.LeadEventWhereInput) => this.prisma.leadEvent.count({ where: { vendorId, ...where } });
-    const [today, last7, last30, held, won, contacted, delivered, spent, views, balancePaise, profile, cfg, todayBookings, todayOrders] = await Promise.all([
+    const [today, last7, last30, held, won, contacted, delivered, spent, views, balancePaise, profile, cfg, todayBookings, todayOrders, ordersWaiting, oldestWaiting, callsDue] = await Promise.all([
       count({ createdAt: { gte: day } }), count({ createdAt: { gte: week } }), count({ createdAt: { gte: month } }), count({ status: 'HELD' }),
       count({ status: 'WON' }), count({ status: { in: ['CONTACTED', 'WON', 'LOST'] } }), count({ status: { not: 'HELD' } }),
       this.prisma.leadEvent.aggregate({ where: { vendorId, createdAt: { gte: month } }, _sum: { priceChargedPaise: true } }),
@@ -63,8 +69,11 @@ export class LeadsService {
       this.settings.get(),
       count({ createdAt: { gte: day }, type: { in: ['BOOKING', 'APPOINTMENT', 'SITE_VISIT'] }, status: { not: 'HELD' } }),
       count({ createdAt: { gte: day }, type: 'CART_ORDER', status: { not: 'HELD' } }),
+      count({ type: 'CART_ORDER', orderDecision: 'PENDING', status: { notIn: ['HELD', 'CREDITED'] } }),
+      this.prisma.leadEvent.findFirst({ where: { vendorId, type: 'CART_ORDER', orderDecision: 'PENDING', status: { notIn: ['HELD', 'CREDITED'] } }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
+      count({ callbackAt: { lte: new Date(`${istDate(new Date())}T23:59:59.999${IST}`) }, status: { in: ['DELIVERED', 'CONTACTED'] } }),
     ]);
-    return { today, last7, last30, held, won, contacted, delivered, spentLast30Paise: spent._sum.priceChargedPaise ?? 0, pageViews: views?.views ?? 0, balancePaise, page: profile, todayBookings, todayOrders, upgradeThreshold: cfg.upgradeLeadThreshold, upgradeSuggested: last30 >= cfg.upgradeLeadThreshold };
+    return { today, last7, last30, held, won, contacted, delivered, spentLast30Paise: spent._sum.priceChargedPaise ?? 0, pageViews: views?.views ?? 0, balancePaise, page: profile, todayBookings, todayOrders, ordersWaiting, oldestWaitingAt: oldestWaiting?.createdAt ?? null, callsDue, upgradeThreshold: cfg.upgradeLeadThreshold, upgradeSuggested: last30 >= cfg.upgradeLeadThreshold };
   }
 
   async setStatus(vendorId: string, id: string, status: string, note?: string): Promise<LeadRow> {
@@ -72,8 +81,27 @@ export class LeadsService {
     const ev = await this.prisma.leadEvent.findFirst({ where: { id, vendorId } });
     if (!ev) throw new NotFoundException('We could not find that lead.');
     if (ev.status === 'HELD') throw new BadRequestException('Refill your wallet to release this customer first.');
-    const updated = await this.prisma.leadEvent.update({ where: { id }, data: { status: ev.status === 'CREDITED' || ev.status === 'DISPUTED' ? ev.status : status, vendorNote: note ? note.slice(0, 500) : ev.vendorNote } });
+    const updated = await this.prisma.leadEvent.update({ where: { id }, data: { status: ev.status === 'CREDITED' || ev.status === 'DISPUTED' ? ev.status : status, vendorNote: note ? note.slice(0, 500) : ev.vendorNote, ...(status === 'WON' || status === 'LOST' ? { callbackAt: null } : {}) } });
     return present(updated);
+  }
+
+  /**
+   * "Call again on" for one lead. A reminder only: leads are still captured by the page, never typed in by the vendor, and this is not a CRM.
+   * A date in India (year-month-day) or null to clear it; not in the past by more than today, and not more than a year ahead.
+   */
+  async setCallback(vendorId: string, id: string, date: string | null): Promise<LeadRow> {
+    const ev = await this.prisma.leadEvent.findFirst({ where: { id, vendorId } });
+    if (!ev) throw new NotFoundException('We could not find that lead.');
+    if (ev.status === 'HELD') throw new BadRequestException('Refill your wallet to release this customer first.');
+    if (ev.status === 'CREDITED') throw new BadRequestException('This lead was credited back to your wallet.');
+    let at: Date | null = null;
+    if (date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00${IST}`))) throw new BadRequestException('Choose the date to call again.');
+      at = new Date(`${date}T00:00:00${IST}`);
+      if (date < istDate(new Date())) throw new BadRequestException('Choose today or a day in the future.');
+      if (at.getTime() > Date.now() + 366 * 86_400_000) throw new BadRequestException('Choose a date within the next year.');
+    }
+    return present(await this.prisma.leadEvent.update({ where: { id }, data: { callbackAt: at } }));
   }
 
   /** Cart orders: the vendor confirms or declines the verified order request. Payment is between vendor and customer. */
@@ -81,7 +109,7 @@ export class LeadsService {
     const ev = await this.prisma.leadEvent.findFirst({ where: { id, vendorId, type: 'CART_ORDER' } });
     if (!ev) throw new NotFoundException('We could not find that order.');
     if (ev.status === 'HELD') throw new BadRequestException('Refill your wallet to release this order first.');
-    return present(await this.prisma.leadEvent.update({ where: { id }, data: { orderDecision: decision, vendorNote: note ? note.slice(0, 500) : ev.vendorNote, status: decision === 'CONFIRMED' ? 'WON' : 'LOST' } }));
+    return present(await this.prisma.leadEvent.update({ where: { id }, data: { orderDecision: decision, vendorNote: note ? note.slice(0, 500) : ev.vendorNote, status: decision === 'CONFIRMED' ? 'WON' : 'LOST', callbackAt: null } }));
   }
 
   /** CSV of delivered leads only (held leads are never exported). */

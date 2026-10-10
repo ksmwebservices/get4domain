@@ -1,52 +1,40 @@
 import type { Metadata } from 'next';
-import { ArrowRight, Target, PenTool, BarChart3, Search, Users2, Share2, Check } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Check, Smartphone, ShieldCheck, Wallet, BarChart3 } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
-import DomainCampaignForm from '@/components/marketing/DomainCampaignForm';
 
 export const metadata: Metadata = {
-  title: 'LeadSpace: a free page, and you pay only for customers who verify',
-  description: 'A free landing page for your business, customers verified on WhatsApp, a prepaid wallet you control, and promotion on our own pages for your city and trade. Managed paid ads are available too.',
+  title: 'LeadSpace: your online visible partner | free page, pay only for verified customers',
+  description: 'A free mini web page for your business. Customers ask for you on it and confirm on WhatsApp, and you pay a small amount only for each verified customer, from a prepaid wallet you control.',
   alternates: { canonical: 'https://get4domain.com/leadspace' },
 };
 
 const HOW: { title: string; blurb: string }[] = [
-  { title: 'Tell us your trade and city', blurb: 'We write the page for you from your details and your catalogue: offer, services with prices, trust points, map and answers to common questions. Or add just a button and a form to the website you already have.' },
-  { title: 'Customers verify on WhatsApp', blurb: 'A visitor fills in the request, gets a code on WhatsApp and confirms. You only receive real people who agreed to be contacted.' },
-  { title: 'You pay per verified customer', blurb: 'Top up a prepaid wallet. Each verified customer is charged once at a price you can see. If your wallet is empty your page keeps working and customers are held for you.' },
+  { title: 'Make your free page', blurb: 'Tell us your trade and city. We write the page for you in minutes: your name, what you offer with pictures and prices, why people trust you and answers to common questions.' },
+  { title: 'Customers verify on WhatsApp', blurb: 'A visitor fills in a short request, gets a code on WhatsApp and confirms. You only receive real people who agreed to be contacted. Your own phone number is never shown on the page.' },
+  { title: 'Pay per verified customer', blurb: 'Top up a prepaid wallet. Each verified customer is charged once, at a price you can see before you add a rupee. No monthly fee, no contract.' },
 ];
 
-const INCLUDED: { title: string; blurb: string }[] = [
-  { title: 'Alerts the moment someone asks', blurb: 'On WhatsApp, by e-mail and as a notification on your phone, with one tap to call or chat.' },
-  { title: 'Promotion on our own pages', blurb: 'We post about you on our themed pages for your city and trade, and send the people who respond to your page.' },
-  { title: 'Bookings, appointments, site visits and orders', blurb: 'Pick one goal for your page. Orders are requests you confirm; no payment is taken on the page.' },
-  { title: 'GST tax invoice for every refill', blurb: 'E-mailed and listed in your wallet. Unused balance can be refunded on request.' },
+const INCLUDED: { icon: typeof Check; title: string; blurb: string }[] = [
+  { icon: Smartphone, title: 'An app-style page for your business', blurb: 'One clean page that works like a small app on a phone, in a look that suits your trade. Share the link anywhere.' },
+  { icon: ShieldCheck, title: 'Details stay private', blurb: 'Visitors see your business name, services and products. They contact you only through us, so your number and address are never published.' },
+  { icon: Check, title: 'Your leads, one tap to call', blurb: 'New customers appear in your LeadSpace app with their request. Call or message in one tap, and set a day to call again.' },
+  { icon: Wallet, title: 'Every rupee accounted for', blurb: 'See exactly where your wallet money went, by day and by customer, and download it as a spreadsheet. GST tax invoice for every refill.' },
+  { icon: BarChart3, title: 'Know what is working', blurb: 'Page views, taps, started requests and verified customers in one simple view, so you know your real cost per customer.' },
+  { icon: Check, title: 'Bookings, appointments, visits and orders', blurb: 'Pick the one thing you want visitors to do. Orders are requests you confirm; no payment is taken on the page.' },
 ];
 
-const CAPABILITIES: { icon: typeof Target; name: string; blurb: string }[] = [
-  { icon: Target, name: 'Managed Paid Ads', blurb: 'Meta (Facebook & Instagram) and Google Ads — set up, launched and optimized by our team every month.' },
-  { icon: PenTool, name: 'Content Management', blurb: 'Posts, creative and campaign assets produced and scheduled for you.' },
-  { icon: BarChart3, name: 'Analytics & Reporting', blurb: 'A monthly statement showing exactly what was spent and what you were billed — no black box.' },
-  { icon: Search, name: 'SEO / GEO / AEO', blurb: 'Organic search, local/geo visibility and answer-engine optimization, worked on continuously.' },
-  { icon: Users2, name: 'Group & Community Posting', blurb: 'Your offers shared into relevant local groups and communities.' },
-  { icon: Share2, name: 'Link Sharing', blurb: 'Your site and campaign links placed and shared where your customers already are.' },
-];
-
-const BRACKET_EXAMPLES = [
-  { range: 'Up to ₹20,000 ad budget', spend: '₹15,000', fee: '₹2,000' },
-  { range: '₹20,001 – ₹1,00,000', spend: '₹50,000', fee: '₹5,000' },
-  { range: 'Above ₹1,00,000', spend: '₹1,50,000', fee: '₹10,000' },
-];
+const WHO = ['Drivers and travel', 'Freelancers', 'Clinics', 'Tutors', 'Salons and beauty', 'Photographers and events', 'Home services', 'Builders and interiors', 'Real estate agents', 'Start-ups', 'Small shops', 'Food and catering'];
 
 const FAQ = [
-  { q: 'Is LeadSpace really free?', a: 'The page is free and there is no monthly fee. You pay only when a customer verifies their number on WhatsApp, from a wallet you top up yourself.' },
+  { q: 'Is LeadSpace really free?', a: 'The page is free and there is no monthly fee. You pay only when a customer verifies their number on WhatsApp, from a wallet you top up yourself. The price per verified customer depends on your trade and city and is shown to you before you add money.' },
   { q: 'What if my wallet runs out?', a: 'Your page keeps working. New customers are held for you and shown with a hidden number; when you refill, they are released oldest first. You can choose instead to show customers a polite message.' },
-  { q: 'Can I use it with the website I already have?', a: 'Yes. Choose the option that adds only a button and a request form to your existing website. Nothing on your website is changed.' },
-  { q: 'Which businesses can use it?', a: 'Home services, builders and interiors, real estate, freelancers, start-ups, photographers and event planners, tutors, salons, shops, food and catering, advocates and clinics. Advocates and clinics get information-only pages and are not promoted unless our team allows it; real estate needs a RERA number to be promoted.' },
-  { q: 'How is pricing calculated?', a: 'Our management fee is a flat monthly amount set by your monthly ad budget: up to ₹20,000 → ₹2,000/month; ₹20,001 to ₹1,00,000 → ₹5,000/month; above ₹1,00,000 → ₹10,000/month. Enterprise and multi-brand clients are quoted a custom fee. Plus 18% GST. Your ad spend itself is paid directly to Meta/Google and is separate from our fee.' },
-  { q: 'How is my ad spend recorded?', a: 'Your account manager records your actual monthly spend directly from your Meta and Google ad accounts, and your monthly statement shows that figure alongside the fee calculation — so every number is checked against the source and fully transparent.' },
-  { q: 'Is this the same as the campaign tools in my DomainApp plan?', a: 'No. DomainApp includes basic campaign tools (landing pages, AI content, messaging) as part of your subscription. LeadSpace Managed Ads is a separate, managed service — our team actually plans, runs and optimizes paid ads and organic growth on your behalf, billed against your ad spend.' },
-  { q: 'Do I need to already be a Get4Domain customer?', a: 'No — LeadSpace Managed Ads is available whether or not you use DomainApp, though if you do, we can pre-fill your details from your dashboard.' },
-  { q: 'Who actually spends the ad budget?', a: 'You fund and own your Meta/Google ad accounts directly — we plan, execute and optimize campaigns within the budget you set. Our fee is for that management work, calculated from what you actually spent.' },
+  { q: 'What if a lead is not real?', a: 'Report it from the lead within the dispute window. Our team checks it and, if it is a wrong number, spam or the same customer again, the amount goes back to your wallet.' },
+  { q: 'What if a customer starts but does not finish?', a: 'You are charged only for a customer who completed the request and confirmed the WhatsApp code. A request that was started and never confirmed is never charged, and it is never shown to you as a lead.' },
+  { q: 'Will my phone number be on the page?', a: 'No. Visitors cannot see your phone number, e-mail or address. They send their request through your page, and we pass it to you.' },
+  { q: 'Which businesses can use it?', a: 'Drivers, freelancers, clinics, tutors, salons, photographers, home services, builders, real estate, start-ups, small shops, food and caterers, and more. Advocates and clinics get information-only pages and are not promoted unless our team allows it; real estate needs a RERA number.' },
+  { q: 'I run a bigger business. Is there more?', a: 'Yes. DomainApp (Essentials and Pro) adds your full industry website, billing and GST invoices, stock, accounts and a customer CRM. Every plan includes LeadSpace credit for your wallet, and your leads flow in automatically.' },
+  { q: 'Do you also run ads for businesses?', a: 'Yes, as a separate optional service called Managed Ads, where our team runs paid ads on your behalf for a monthly fee. It is not part of LeadSpace. See the pricing page for details.' },
 ];
 
 export default function LeadSpacePage() {
@@ -61,26 +49,35 @@ export default function LeadSpacePage() {
       {/* HERO */}
       <section className="relative mx-auto max-w-3xl px-4 pb-6 pt-16 text-center sm:px-6 md:pt-24">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">
-          LeadSpace
+          LeadSpace · Your online visible partner
         </span>
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
           A free page for your business. <span className="text-gradient-hero">Pay only for customers who verify.</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-slate-400">
-          Get a landing page in minutes, built from your details. Every enquiry, booking, appointment, site visit and order is checked on WhatsApp before it reaches you. No monthly fee, no contract.
+          Get found online in minutes, with no website to build and no ads to manage. Every enquiry, booking, appointment, site visit and order is confirmed on WhatsApp before it reaches you.
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a href="/register?product=leadspace" className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warning-400 px-6 py-3 font-semibold text-slate-900 transition-all hover:bg-warning-300 hover:shadow-glow-amber sm:w-auto">
-            Start free <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            Create your free page <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </a>
           <a href="#how" className="inline-flex w-full items-center justify-center rounded-xl border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800 sm:w-auto">
             How it works
           </a>
         </div>
+        <p className="mt-4 text-xs text-slate-500">No monthly fee. No contract. Your wallet, your control.</p>
+      </section>
+
+      {/* WHO IT IS FOR */}
+      <section className="relative mx-auto max-w-4xl px-4 pb-4 pt-8 sm:px-6">
+        <p className="text-center text-xs font-semibold uppercase tracking-wide text-slate-500">Made for people who sell their time and skill</p>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          {WHO.map((w) => <span key={w} className="rounded-full border border-white/5 bg-slate-800/60 px-3 py-1 text-xs text-slate-300">{w}</span>)}
+        </div>
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="relative mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
+      <section id="how" className="relative mx-auto max-w-5xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
         <div className="grid gap-4 md:grid-cols-3">
           {HOW.map((h, i) => (
             <div key={h.title} className="rounded-2xl border border-white/5 bg-slate-800/60 p-6 backdrop-blur-xl">
@@ -90,82 +87,38 @@ export default function LeadSpacePage() {
             </div>
           ))}
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {INCLUDED.map((x) => (
-            <div key={x.title} className="flex gap-3 rounded-2xl border border-white/5 bg-slate-800/40 p-5">
-              <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning-300" aria-hidden />
-              <div><p className="text-sm font-semibold text-white">{x.title}</p><p className="mt-0.5 text-sm text-slate-400">{x.blurb}</p></div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-6 text-center text-sm text-slate-400">The price of a verified customer is set per trade and city and shown to you before you add a rupee. A customer who is not real can be reported and the amount comes back to your wallet.</p>
       </section>
 
-      {/* MANAGED ADS */}
-      <section id="managed-ads" className="relative border-t border-white/5 bg-slate-900/40 pt-16">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300">LeadSpace Managed Ads</span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-white md:text-4xl">Want us to run your <span className="text-gradient-hero">paid ads too?</span></h2>
-          <p className="mx-auto mt-3 max-w-xl text-slate-400">Managed Meta &amp; Google ads, content, analytics and organic SEO/GEO/AEO growth, set up, run and optimized by our team every month. It sits alongside LeadSpace: the customers it brings are verified the same way.</p>
-          <div className="mx-auto mt-7 flex max-w-sm flex-col items-center gap-1 rounded-2xl border border-warning-400/30 bg-warning-400/10 px-6 py-4">
-            <span className="text-3xl font-bold text-warning-200">From ₹2,000/month</span>
-            <span className="text-sm text-slate-300">management fee, set by your ad budget · + 18% GST</span>
-          </div>
-          <div className="mt-7">
-            <a href="#get-started" className="group inline-flex items-center justify-center gap-2 rounded-xl border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800">Talk to us <ArrowRight className="h-4 w-4" /></a>
-          </div>
-        </div>
-      </section>
-
-      {/* CAPABILITIES */}
-      <section className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CAPABILITIES.map((c) => {
-            const Icon = c.icon;
+      {/* WHAT YOU GET */}
+      <section className="relative mx-auto max-w-5xl px-4 pb-16 sm:px-6 lg:px-8">
+        <h2 className="mb-6 text-center text-2xl font-bold tracking-tight text-white sm:text-3xl">What you get, <span className="text-gradient-hero">free page included</span></h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {INCLUDED.map((x) => {
+            const Icon = x.icon;
             return (
-              <div key={c.name} className="flex flex-col rounded-2xl border border-white/5 bg-slate-800/60 p-6 backdrop-blur-xl transition-all hover:border-primary-400/20 hover:shadow-glow">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600">
-                  <Icon className="h-5 w-5 text-white" />
-                </div>
-                <h2 className="mt-4 text-base font-bold text-white">{c.name}</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{c.blurb}</p>
+              <div key={x.title} className="flex gap-3 rounded-2xl border border-white/5 bg-slate-800/40 p-5">
+                <Icon className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning-300" aria-hidden />
+                <div><p className="text-sm font-semibold text-white">{x.title}</p><p className="mt-0.5 text-sm text-slate-400">{x.blurb}</p></div>
               </div>
             );
           })}
         </div>
+        <p className="mt-6 text-center text-sm text-slate-400">The price of a verified customer is set per trade and city and shown to you before you add a rupee. A customer who is not real can be reported and the amount comes back to your wallet.</p>
       </section>
 
-      {/* PRICING EXPLAINER */}
-      <section className="relative border-t border-white/5 bg-slate-900/60 py-16">
+      {/* BIGGER BUSINESS */}
+      <section className="relative border-t border-white/5 bg-slate-900/40 py-14">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Pricing, worked out in the open.</h2>
-          <p className="mt-3 text-slate-400">A flat monthly management fee, set by the size of your monthly ad budget. Your ad spend itself goes straight to Meta and Google — our fee is separate. No retainer, no surprise line items.</p>
-          <div className="mx-auto mt-8 grid gap-4 sm:grid-cols-3">
-            {BRACKET_EXAMPLES.map((b) => (
-              <div key={b.range} className="rounded-2xl border border-white/5 bg-slate-800/60 p-6 text-left backdrop-blur-xl">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{b.range}</p>
-                <p className="mt-2 text-sm text-slate-300">Spend <span className="font-semibold text-white">{b.spend}/month</span></p>
-                <p className="mt-3 flex items-center gap-2 text-lg font-bold text-warning-300"><Check className="h-4 w-4" />Pay {b.fee}/month</p>
-                <p className="mt-0.5 text-xs text-slate-500">management fee + GST</p>
-              </div>
-            ))}
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Running a bigger business?</h2>
+          <p className="mx-auto mt-3 max-w-xl text-slate-400">DomainApp gives you your full industry website and the software behind it: billing and GST invoices, stock, accounts and a customer CRM. LeadSpace is included, with credit for your wallet every year, and your leads flow in automatically.</p>
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/pricing" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800">See DomainApp plans <ArrowRight className="h-4 w-4" /></Link>
+            <Link href="/book-demo" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-600 px-6 py-3 font-medium text-white hover:bg-slate-800">Book a free demo</Link>
           </div>
-          <p className="mt-5 text-sm text-slate-400">Enterprise or multi-brand? We&apos;ll quote a custom fee — <a href="#get-started" className="font-semibold text-primary-300 hover:underline">talk to us</a>.</p>
         </div>
       </section>
 
-      {/* FORM */}
-      <section id="get-started" className="relative border-t border-white/5 py-16">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Let&apos;s get your growth running.</h2>
-            <p className="mt-3 text-slate-400">Tell us about your business — our team will follow up to get you set up.</p>
-          </div>
-          <DomainCampaignForm />
-        </div>
-      </section>
-
-      <Faq items={FAQ} subtitle="LeadSpace and LeadSpace Managed Ads, explained." />
+      <Faq items={FAQ} subtitle="LeadSpace, explained." />
     </div>
   );
 }

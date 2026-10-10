@@ -12,6 +12,7 @@ import { planLabel } from './quote-builder';
 import { payUrl } from './pay-token';
 import { advisoryXactLock } from '../common/db-lock';
 import { aiStudioCreditPaise, resolveAiCredit } from './ai-credit';
+import { grantLeadspacePlanCredit } from '../leadspace/plan-credit';
 import { ArrangementsService } from './arrangements.service';
 import { renewalBilling, shadowGst } from './arrangement-rules';
 
@@ -122,6 +123,7 @@ export class TermsService {
       // A longer term or a higher admin figure grants only the difference; a grace-days/status-only override grants nothing.
       if (!(o.planKey && o.planKey !== cur.planKey) && (aiCredit !== cur.aiCreditPaise || months !== cur.cycleMonths)) {
         await this.settlement.grantAiCredit(tx, vendorId, newPlan, created.id);
+        await grantLeadspacePlanCredit(tx, vendorId, newPlan, created.id);
       }
       if (aiCredit !== cur.aiCreditPaise) await this.audit.log(actor, 'term.ai_credit', 'BillingTerm', created.id, { vendorId, beforePaise: cur.aiCreditPaise, afterPaise: aiCredit, computedPaise: aiStudioCreditPaise(newPlan, months), reason: o.reason.trim() }, tx);
       await this.audit.log(actor, 'term.override', 'BillingTerm', created.id, { vendorId, reason: o.reason.trim(), before: pickTerm(cur), after: pickTerm(created) }, tx);

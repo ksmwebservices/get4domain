@@ -14,7 +14,7 @@ import { LeadCaptureService } from './capture.service';
 import { LeadCreditsService } from './credits.service';
 import { CONSENT_TEXT, CONSENT_TEXT_VERSION } from './goals';
 import {
-  ApplyDto, BlockPhoneDto, CaptureEventDto, DisputeDecisionDto, DisputeDto, LeadStatusDto, LowBalanceModeDto, OrderDecisionDto, OtpRequestDto, RefundDecisionDto, RefundRequestDto, SetPriceDto, SettingValueDto, TemplateApprovalDto,
+  ApplyDto, BlockPhoneDto, CallbackDto, CaptureEventDto, DisputeDecisionDto, DisputeDto, LeadStatusDto, LowBalanceModeDto, OrderDecisionDto, OtpRequestDto, RefundDecisionDto, RefundRequestDto, SetPriceDto, SettingValueDto, TemplateApprovalDto,
 } from './leadspace.dto';
 import { LeadsService } from './leads.service';
 import { LeadOtpService } from './otp.service';
@@ -64,8 +64,8 @@ export class LeadspaceVendorController {
 
   @Get('leads')
   @ApiOperation({ summary: 'Leads tab. Held leads show a masked contact only.' })
-  list(@CurrentUser() u: AuthenticatedUser, @Query('status') status?: string, @Query('type') type?: string, @Query('search') search?: string, @Query('from') from?: string, @Query('to') to?: string, @Query('take') take?: string, @Query('skip') skip?: string) {
-    return this.leads.list(u.sub, { status, type, search, from, to, take: take ? Number(take) : undefined, skip: skip ? Number(skip) : undefined });
+  list(@CurrentUser() u: AuthenticatedUser, @Query('status') status?: string, @Query('type') type?: string, @Query('search') search?: string, @Query('from') from?: string, @Query('to') to?: string, @Query('take') take?: string, @Query('skip') skip?: string, @Query('calls') calls?: string) {
+    return this.leads.list(u.sub, { status, type, search, from, to, calls, take: take ? Number(take) : undefined, skip: skip ? Number(skip) : undefined });
   }
 
   @Get('leads/export.csv')
@@ -77,6 +77,10 @@ export class LeadspaceVendorController {
   @Put('leads/:id/status')
   @ApiOperation({ summary: 'Mark a lead Contacted, Won or Lost' })
   status(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: LeadStatusDto) { return this.leads.setStatus(u.sub, id, dto.status, dto.note); }
+
+  @Put('leads/:id/callback')
+  @ApiOperation({ summary: 'Set or clear the date to call this customer again (a reminder; leads are never typed in by hand)' })
+  callback(@CurrentUser() u: AuthenticatedUser, @Param('id') id: string, @Body() dto: CallbackDto) { return this.leads.setCallback(u.sub, id, dto.date || null); }
 
   @Put('leads/:id/order')
   @ApiOperation({ summary: 'Confirm or decline a cart order request' })

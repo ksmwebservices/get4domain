@@ -66,7 +66,7 @@ export interface MatrixGroup { title: string; rows: MatrixRow[] }
 
 const BUILD = 'Custom build';
 
-/** Workspace | BOS | LeadSpace Managed Ads | Managed Services. `false` renders a dash. */
+/** Workspace | BOS | Managed Ads | Managed Services. `false` renders a dash. */
 export function buildMatrix(ws: PlanTerm, bos: PlanTerm, fmt: (n: number) => string): MatrixGroup[] {
   return [
     {
@@ -143,7 +143,7 @@ export const WHY_ROWS: { feature: string; us: string | true; builders: string; a
   { feature: 'Typical monthly cost', us: 'From ₹999', builders: '₹5,000–15,000+', agency: 'Project fee + retainer' },
 ];
 
-/** LeadSpace Managed Ads management-fee brackets (PRD §88; mirrors backend domain-campaign-fee.ts and /domain-campaign). */
+/** Managed Ads management-fee brackets (PRD §88; mirrors backend domain-campaign-fee.ts and /domain-campaign). */
 export const CAMPAIGN_BRACKETS = [
   { range: 'Up to ₹20,000', fee: '₹2,000', example: 'Spend ₹15,000 → pay ₹2,000' },
   { range: '₹20,001 – ₹1,00,000', fee: '₹5,000', example: 'Spend ₹50,000 → pay ₹5,000' },

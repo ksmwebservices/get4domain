@@ -3220,6 +3220,8 @@ model LeadEvent {
   vendorNote       String?
   /// cart orders: PENDING | CONFIRMED | DECLINED
   orderDecision    String?
+  /// the vendor's own reminder: call this customer again on or after this moment
+  callbackAt       DateTime?
   idempotencyKey   String
   deliveredAt      DateTime?
   createdAt        DateTime  @default(now())
@@ -3229,6 +3231,7 @@ model LeadEvent {
   @@index([vendorId, createdAt])
   @@index([vendorId, status, createdAt])
   @@index([vendorId, phoneHash, type, createdAt])
+  @@index([vendorId, callbackAt])
   @@map("g4d_lead_events")
 }
 
@@ -3598,6 +3601,8 @@ model LeadspaceDailyStat {
   views      Int      @default(0)
   ctaClicks  Int      @default(0)
   formStarts Int      @default(0)
+  /// taps on a product's own "buy it here" link (counted, never charged)
+  outboundClicks Int  @default(0)
 
   @@unique([profileId, day])
   @@index([vendorId, day])

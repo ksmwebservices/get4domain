@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { dateShort, plain, rupees, useLoad } from '@/bos/client';
 import { Alert, Empty, ErrorView, Field, Spinner, inputCls, openHtml } from '@/bos/ui';
+import WalletReportView from './WalletReport';
 import { EVENT_ONE, ls, type PacksData, type Receipt, type WalletData } from './ls';
 
 interface RzpResponse { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }
@@ -19,7 +20,6 @@ function loadRazorpay(): Promise<void> {
   });
 }
 
-const REASON: Record<string, string> = { REFILL: 'Refill', LEAD_CHARGE: 'Verified customer', CREDIT_INVALID: 'Credit for an invalid lead', REFUND: 'Refund', ADJUSTMENT: 'Adjustment', EXPIRY: 'Expired balance' };
 
 export default function WalletTab({ onChange }: { onChange: () => void }) {
   const w = useLoad(() => ls<WalletData>('/leadspace/wallet'), []);
@@ -146,18 +146,8 @@ export default function WalletTab({ onChange }: { onChange: () => void }) {
       </section>
 
       <section>
-        <button className="text-sm font-semibold text-primary-700 underline" onClick={() => setShowLedger((x) => !x)}>{showLedger ? 'Hide' : 'Show'} every deduction and credit</button>
-        {showLedger && (
-          <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            {d.ledger.length === 0 && <li className="px-4 py-3 text-sm text-slate-500">Nothing yet.</li>}
-            {d.ledger.map((e) => (
-              <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                <div><div className="text-slate-800">{REASON[e.reason] ?? e.reason}</div><div className="text-xs text-slate-500">{dateShort(e.createdAt)}{e.note ? ` · ${e.note}` : ''}</div></div>
-                <div className="text-right"><div className={e.type === 'CREDIT' ? 'font-semibold text-success-700' : 'font-semibold text-slate-900'}>{e.type === 'CREDIT' ? '+' : '-'}{rupees(e.amountPaise)}</div><div className="text-xs text-slate-400">balance {rupees(e.balanceAfter)}</div></div>
-              </li>
-            ))}
-          </ul>
-        )}
+        <button className="text-sm font-semibold text-primary-700 underline" onClick={() => setShowLedger((x) => !x)}>{showLedger ? 'Hide' : 'Show'} where my wallet money went</button>
+        {showLedger && <div className="mt-3"><WalletReportView /></div>}
       </section>
 
       <Card padded className="space-y-1">

@@ -36,6 +36,13 @@ Dispatch: `GET4DOMAIN_DISPATCH_V2_LEADSPACE_10OCT2026.md` (repo root). Started 2
 16. Privacy: a deletion request anonymises name, number and request but keeps the ledger and a one-way number hash; retention default 24 months (setting), swept by an admin action.
 17. Unverified or unreviewed pages are never promoted; AI text that breaks the guardrails is discarded and replaced by template text, never edited silently.
 
+18. Product direction (KSM, 2026-10-10): LeadSpace is a product of its own, not a part of BOS; only our own landing page for now (no embed into a customer's website); the public page hides phone, e-mail, address and map; the home page, pricing page and /leadspace lead with LeadSpace; the managed-ads service is called plain "Managed Ads" and is not LeadSpace.
+19. The wallet report reads the ledger only (no separate totals table), so it cannot drift from the balance.
+20. A lead is charged only after the WhatsApp code is confirmed; there is no charge for abandoned carts. The unfinished count is codes sent and never used. Cart and details are kept in the browser (6 hours) so leaving to read the code does not lose the order.
+21. Plan credit is rupees (Essentials 200, Pro 600 a year), prorated for shorter terms, expires with the term, is used before refilled money, and is granted inside the settlement transaction as a plain function (no LeadSpace module import, so no module cycle). Nothing is back-filled for terms that started before this deploy.
+22. "Buy online" links are counted and never charged (recommendation; billing per tap can be added later as a price rule).
+23. Call-again is a reminder date on a lead, not a task system; closing a lead clears it.
+
 ## Resume notes
 
 - Run everything: `npm run bos:verify -- --build` from the repo root. Never run `security-verify/run-all.js` (it boots the app against the database in `.env.local`).

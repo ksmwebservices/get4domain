@@ -1,3 +1,4 @@
+import { PLAN_CREDIT_DEFAULT } from './plan-credit';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -42,6 +43,8 @@ export interface LsSettings {
   upgradeLeadThreshold: number;
   /** months after which a customer's name, number and request are anonymised in the leads list (the money ledger is never touched) */
   retentionMonths: number;
+  /** yearly LeadSpace credit that comes with a plan, in paise, by plan key (WORKSPACE = Essentials, BOS = Pro) */
+  planCreditPaise: Record<string, number>;
 }
 
 export const LS_DEFAULTS: LsSettings = {
@@ -70,6 +73,7 @@ export const LS_DEFAULTS: LsSettings = {
   customGstMode: 'INCLUSIVE',
   upgradeLeadThreshold: 10,
   retentionMonths: 24,
+  planCreditPaise: PLAN_CREDIT_DEFAULT,
 };
 
 @Injectable()

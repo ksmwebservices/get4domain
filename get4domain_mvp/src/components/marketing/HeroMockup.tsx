@@ -100,17 +100,17 @@ export default function HomeHero() {
                   <span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-primary-400 opacity-75" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-400" />
                 </span>
-                Your Online Identity Partner
+                DomainApp · for growing businesses
               </div>
             </div>
 
             {/* headline — OUR copy (locked); reference sizing/leading */}
-            <h1 className="mt-3 animate-fade-up text-[1.75rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ animationDelay: '60ms' }}>
+            <h2 className="mt-3 animate-fade-up text-[1.75rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ animationDelay: '60ms' }}>
               Turn Your Website Into a <span className="text-gradient-hero">WebApp</span>
               <span className="mt-1.5 block text-lg font-semibold text-slate-200 sm:text-xl lg:text-2xl">
                 Manage your full business operations, along with <span className="text-warning-300">AI Studio</span>.
               </span>
-            </h1>
+            </h2>
 
             {/* subheadline */}
             <p className="mx-auto mt-3 max-w-md animate-fade-up text-sm leading-relaxed text-slate-400 sm:mx-0" style={{ animationDelay: '120ms' }}>

@@ -64,7 +64,9 @@ export function validatePayload(type: EventType, raw: unknown): Record<string, u
         const price = Math.floor(Number(o.pricePaise));
         return { name, qty, ...(Number.isFinite(price) && price >= 0 && price <= 100_000_000 ? { pricePaise: price } : {}) };
       });
-      return { items, address: need(clean(p.address, 400), 'Enter the delivery address so the business can reach you.'), ...(notes ? { notes } : {}) };
+      const address = need(clean(p.address, 400), 'Enter the delivery address so the business can reach you.');
+      if (address.length < 10) throw new BadRequestException('Enter the full delivery address: house or shop number, street and area.');
+      return { items, address, ...(notes ? { notes } : {}) };
     }
     default:
       throw new BadRequestException('This kind of request is not supported.');

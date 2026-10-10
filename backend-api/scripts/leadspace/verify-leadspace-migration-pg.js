@@ -1,4 +1,4 @@
-// The LeadSpace migrations (20261010100000_leadspace and 20261010110000_leadspace_page_stats) on REAL Postgres (PGlite), never the production database.
+// The LeadSpace migrations (20261010100000_leadspace, 20261010110000_leadspace_page_stats and 20261010120000_leadspace_followups) on REAL Postgres (PGlite), never the production database.
 // Rehearses them on top of the schema as it was BEFORE LeadSpace, with live-looking rows in the tables the merge reads (vendor, products, campaigns, landing pages,
 // campaign leads, a DomainCampaign record), then proves: they apply cleanly, every existing row is untouched, the migrated database equals one built straight from
 // schema.prisma (no drift), nothing is dropped or altered in an existing table, and the RLS script covers every new table.
@@ -12,7 +12,7 @@ const { pathToFileURL } = require('url');
 const root = path.join(__dirname, '..', '..');
 const pgDir = process.env.G4D_PGLITE_DIR || path.join(os.tmpdir(), 'pgtest');
 const FIRST = '20261010100000_leadspace';
-const MIGRATIONS = [FIRST, '20261010110000_leadspace_page_stats'];
+const MIGRATIONS = [FIRST, '20261010110000_leadspace_page_stats', '20261010120000_leadspace_followups'];
 let pass = 0; let fail = 0;
 const ok = (name, cond, detail) => { if (cond) { pass += 1; console.log(`  PASS  ${name}`); } else { fail += 1; console.log(`  FAIL  ${name}${detail ? ` -> ${String(detail).slice(0, 300)}` : ''}`); } };
 
@@ -51,13 +51,13 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(root, 'nod
   let applied = true; let err = '';
   const sqls = MIGRATIONS.map((m) => fs.readFileSync(path.join(root, 'prisma', 'migrations', m, 'migration.sql'), 'utf8'));
   for (const s of sqls) { try { await db.exec(s); } catch (e) { applied = false; err = e.message; break; } }
-  ok('both migrations apply cleanly, in order, on top of the previous schema with campaign data present', applied, err);
+  ok('all three migrations apply cleanly, in order, on top of the previous schema with campaign data present', applied, err);
   ok('EVERY existing row is exactly as it was (vendor, product, campaign, landing page, campaign lead, DomainCampaign record)', (await snap()) === before);
   const tables = [...sqls.join('\n').matchAll(/CREATE TABLE "([^"]+)"/g)].map((m) => m[1]);
   ok(`the ${tables.length} new LeadSpace tables exist and are empty`, tables.length === 22 && (await Promise.all(tables.map(async (t) => (await q(db, `SELECT count(*)::int AS n FROM "${t}"`))[0].n))).every((n) => n === 0), String(tables.length));
   const stmts = sqls.join('\n').replace(/--.*$/gm, '').split(';').map((x) => x.trim()).filter(Boolean);
-  const touchesOld = stmts.filter((x) => /^(DROP|TRUNCATE|DELETE|UPDATE|INSERT)/i.test(x) || (/^ALTER TABLE/i.test(x) && !/^ALTER TABLE "g4d_leadspace_profiles" ADD COLUMN/i.test(x)));
-  ok('nothing is dropped, deleted or altered in an existing table (the only ALTER adds a nullable column to a LeadSpace table)', touchesOld.length === 0, touchesOld.join(' | '));
+  const touchesOld = stmts.filter((x) => /^(DROP|TRUNCATE|DELETE|UPDATE|INSERT)/i.test(x) || (/^ALTER TABLE/i.test(x) && !/^ALTER TABLE "(g4d_leadspace_profiles|g4d_leadspace_daily_stats|g4d_lead_events)" ADD COLUMN/i.test(x)));
+  ok('nothing is dropped, deleted or altered in an existing table (the only ALTERs add a column to a LeadSpace table)', touchesOld.length === 0, touchesOld.join(' | '));
   const fresh = new PGlite();
   await fresh.exec(prismaSql(['--from-empty', '--to-schema-datamodel', path.join(root, 'prisma', 'schema.prisma')]));
   const shape = async (c) => JSON.stringify(await q(c, `SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, column_name`));
@@ -72,7 +72,7 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(root, 'nod
   const rls = fs.readFileSync(path.join(root, 'prisma', 'sql', 'enable_rls_public.sql'), 'utf8');
   ok('the RLS script enables RLS on every public table, so every new table is covered', /pg_tables/i.test(rls) && /ENABLE ROW LEVEL SECURITY/i.test(rls));
   ok('the RLS script still has its dollar quotes (a shell once ate them)', /DO \$\$/.test(rls) && /END \$\$;/.test(rls));
-  ok('and says in a comment that the LeadSpace tables are covered', /LeadSpace/.test(rls) && /20261010100000_leadspace/.test(rls) && /20261010110000_leadspace_page_stats/.test(rls));
+  ok('and says in a comment that the LeadSpace tables are covered', /LeadSpace/.test(rls) && /20261010100000_leadspace/.test(rls) && /20261010110000_leadspace_page_stats/.test(rls) && /20261010120000_leadspace_followups/.test(rls));
   console.log(`\n${pass} passed, ${fail} failed`);
   setTimeout(() => process.exit(fail ? 1 : 0), 300);
 })();

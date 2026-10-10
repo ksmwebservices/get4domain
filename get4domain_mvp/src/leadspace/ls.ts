@@ -5,6 +5,9 @@ import { bos } from '@/bos/client';
 
 export const ls = bos;
 
+/** The calendar date (year-month-day) in India for a moment in time. Call-again reminders are whole days in India. */
+export const istDay = (iso: string): string => new Date(new Date(iso).getTime() + 330 * 60_000).toISOString().slice(0, 10);
+
 export const EVENT_LABEL: Record<string, string> = { ENQUIRY: 'Enquiries', BOOKING: 'Bookings', APPOINTMENT: 'Appointments', SITE_VISIT: 'Site visits', CART_ORDER: 'Orders' };
 export const EVENT_ONE: Record<string, string> = { ENQUIRY: 'Enquiry', BOOKING: 'Booking', APPOINTMENT: 'Appointment', SITE_VISIT: 'Site visit', CART_ORDER: 'Order' };
 export const STATUS_LABEL: Record<string, string> = { HELD: 'Waiting', DELIVERED: 'New', CONTACTED: 'Contacted', WON: 'Won', LOST: 'Lost', DISPUTED: 'Under review', CREDITED: 'Credited' };
@@ -12,10 +15,11 @@ export const STATUS_LABEL: Record<string, string> = { HELD: 'Waiting', DELIVERED
 export interface Summary {
   today: number; last7: number; last30: number; held: number; won: number; contacted: number; delivered: number; spentLast30Paise: number; pageViews: number; balancePaise: number;
   page: { status: string; verificationStatus: string; lowBalanceMode: string; slug: string } | null;
+  callsDue?: number; ordersWaiting?: number; oldestWaitingAt?: string | null; todayBookings?: number; todayOrders?: number;
 }
 export interface LeadRow {
   id: string; type: string; typeLabel: string; status: string; held: boolean; customerName: string; customerPhone: string; summary: string; payload: Record<string, unknown> | null;
-  priceChargedPaise: number; orderDecision: string | null; vendorNote: string | null; source: string | null; createdAt: string; deliveredAt: string | null; disputeStatus?: string | null;
+  callbackAt?: string | null; priceChargedPaise: number; orderDecision: string | null; vendorNote: string | null; source: string | null; createdAt: string; deliveredAt: string | null; disputeStatus?: string | null;
 }
 export interface LedgerRow { id: string; type: 'CREDIT' | 'DEBIT'; amountPaise: number; balanceAfter: number; reason: string; note: string | null; createdAt: string }
 export interface WalletData {
@@ -26,7 +30,7 @@ export interface Pack { id: string; label: string; payPaise: number; creditPaise
 export interface PacksData { packs: Pack[]; custom: { minPaise: number; maxPaise: number; creditPercent: number; gstMode: 'INCLUSIVE' | 'EXCLUSIVE' } }
 export interface Receipt { at: string; creditPaise: number; paidRef: string | null; invoiceId: string | null; invoiceNumber: string | null; totalPaise: number | null; balanceAfter: number }
 export interface Category { id: string; label: string; goal: string; regulated?: string; blurb: string }
-export interface ServiceItem { name: string; price?: number | string | null; description?: string | null; image?: string | null }
+export interface ServiceItem { name: string; price?: number | string | null; description?: string | null; image?: string | null; /** the vendor's own web address for buying this item; visitors are sent there through a counted link */ buyUrl?: string | null }
 export interface Profile {
   id: string; slug: string; category: string; city: string; goal: string; mode: string; businessName: string; tagline: string | null; about: string | null; address: string | null; mapsLink: string | null;
   heroImage: string | null; services: ServiceItem[]; offer: { headline?: string; text?: string; validUntil?: string | null } | null; faqs: { q: string; a: string }[] | null; hours: string | null;
@@ -55,3 +59,13 @@ export const ago = (iso: string): string => {
   const h = Math.floor(mins / 60);
   return h < 24 ? `${h} h ago` : `${Math.floor(h / 24)} d ago`;
 };
+
+export interface WalletReport {
+  from: string; to: string; openingPaise: number; closingPaise: number;
+  totals: { inPaise: number; outPaise: number; chargedPaise: number; creditedBackPaise: number; refilledPaise: number; charges: number; averageChargePaise: number | null; verifiedLeads: number };
+  byReason: Record<string, { count: number; paise: number }>;
+  byType: Record<string, { count: number; paise: number }>;
+  perDay: { day: string; inPaise: number; outPaise: number; charges: number; closingPaise: number }[];
+  lines: { at: string; reason: string; direction: 'IN' | 'OUT'; amountPaise: number; balanceAfterPaise: number; leadType: string | null; customer: string | null; leadStatus: string | null; note: string | null }[];
+  truncated: boolean;
+}

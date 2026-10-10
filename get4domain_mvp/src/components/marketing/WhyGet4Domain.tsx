@@ -13,7 +13,7 @@ const ARGUMENTS = [
   { icon: Zap, title: 'Live in 24 hours, not months', body: 'Your site deploys instantly on a ready-made industry template and is customized to your brand within 24 hours. No discovery phase, no six-month build.' },
   { icon: Layers, title: 'One login instead of ten subscriptions', body: 'Website, CRM, accounting, HRM, inventory, WhatsApp, SMS, email, AI content and SEO share one dashboard and one set of customer data — nothing to stitch together.' },
   { icon: IndianRupee, title: 'Priced for Indian businesses', body: 'GST invoicing, UPI and card payments, WhatsApp-first communication and 20+ industry setups, from ₹999/month — a fraction of piecemeal tools or a custom build.' },
-  { icon: LifeBuoy, title: 'We run it, and we can run it for you', body: 'Hosting, updates and support are ours. When you want more than software, LeadSpace Managed Ads runs your ads and Managed Services builds what no template can.' },
+  { icon: LifeBuoy, title: 'We run it, and we can run it for you', body: 'Hosting, updates and support are ours. When you want more than software, Managed Ads runs your ads and Managed Services builds what no template can.' },
 ];
 
 export default function WhyGet4Domain({ tone = 'light' }: { tone?: 'light' | 'dark' }) {
