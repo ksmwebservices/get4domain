@@ -1,0 +1,22 @@
+/* Motion and small helpers for the LeadSpace page app. Prefixed lsa- so nothing else on the site is touched. */
+.lsa-fade-in { animation: lsaFadeIn 0.4s ease-out both; }
+.lsa-slide-up { animation: lsaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.lsa-scale-in { animation: lsaScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.lsa-tab { animation: lsaTabFade 0.25s ease-out both; }
+.lsa-shimmer {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: lsaShimmer 1.5s infinite;
+}
+.lsa-no-scrollbar::-webkit-scrollbar { display: none; }
+.lsa-no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes lsaFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lsaSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lsaScaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes lsaTabFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lsaShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lsa-fade-in, .lsa-slide-up, .lsa-scale-in, .lsa-tab, .lsa-shimmer { animation: none; }
+}
