@@ -165,6 +165,8 @@ export class LeadspaceProfileService {
     set('mapsLink', (v) => (URL_OK.test(clean(v, 500)) ? clean(v, 500) : null)); set('heroImage', (v) => (IMG_OK.test(clean(v, 500)) ? clean(v, 500) : null));
     set('existingPageUrl', (v) => (URL_OK.test(clean(v, 500)) ? clean(v, 500) : null));
     set('services', (v) => cleanServices(v)); set('faqs', (v) => cleanFaqs(v)); set('trust', (v) => cleanTrust(v)); set('gallery', (v) => cleanGallery(v));
+    // A service saved without its picture gets the picture of the catalogue product with the same name (a save from an older screen dropped them).
+    if (Array.isArray(data.services)) data.services = (await this.withCatalogueImages(vendorId, data.services as ServiceItem[])) as unknown as Prisma.InputJsonValue;
     if (input.offer !== undefined) data.offer = cleanOffer(input.offer);
     if (input.mode !== undefined) data.mode = input.mode === 'EXISTING_PAGE' ? 'EXISTING_PAGE' : 'TEMPLATE';
     if (input.goal !== undefined || input.category) data.goal = this.goalFor(category, input.goal ?? p.goal);
@@ -176,6 +178,13 @@ export class LeadspaceProfileService {
     const catReg = categoryOf(category)?.regulated;
     if (catReg && !(p.regulated as Record<string, unknown> | null)?.[catReg]) data.regulated = { [catReg]: true, reviewed: false } as Prisma.InputJsonValue;
     return this.prisma.leadspaceProfile.update({ where: { id: p.id }, data });
+  }
+
+  private async withCatalogueImages(vendorId: string, services: ServiceItem[]): Promise<ServiceItem[]> {
+    if (!services.some((x) => !x.image)) return services;
+    const products = await this.prisma.vendorProduct.findMany({ where: { vendorId, active: true, image: { not: null } }, select: { name: true, image: true }, take: 200 });
+    const byName = new Map(products.map((x) => [x.name.trim().toLowerCase(), String(x.image ?? '').trim()]));
+    return services.map((x) => { if (x.image) return x; const img = byName.get(x.name.trim().toLowerCase()); return img && IMG_OK.test(img) ? { ...x, image: img } : x; });
   }
 
   private reviewed(p: LeadspaceProfile): boolean { return !categoryOf(p.category)?.regulated || Boolean((p.regulated as Record<string, unknown> | null)?.reviewed); }

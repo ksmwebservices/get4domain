@@ -96,7 +96,7 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
     businessName: f.businessName.trim(), tagline: f.tagline.trim(), about: f.about.trim(), city: f.city.trim(), serviceArea: f.serviceArea.trim(), address: f.address.trim(), mapsLink: f.mapsLink.trim(),
     hours: f.hours.trim(), heroImage: f.heroImage.trim(), goal: f.goal, mode: f.mode, existingPageUrl: f.existingPageUrl.trim(), reraNumber: f.reraNumber.trim(),
     offer: { headline: f.offerHeadline.trim(), text: f.offerText.trim() },
-    services: services.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: s.price === '' || s.price == null ? null : s.price, description: (s.description ?? '').trim() || null })),
+    services: services.filter((s) => s.name.trim()).map((s) => ({ name: s.name.trim(), price: s.price === '' || s.price == null ? null : s.price, description: (s.description ?? '').trim() || null, image: s.image ?? null })),
     faqs: faqs.filter((x) => x.q.trim() && x.a.trim()),
   }), [f, services, faqs]);
 
@@ -167,6 +167,7 @@ function EditPage({ data, reload, go }: { data: PageData; reload: () => void; go
             {services.length === 0 && <p className="text-sm text-slate-500">Add what you offer. Prices are optional but customers trust pages that show them.</p>}
             {services.map((s, i) => (
               <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">
+                {s.image ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.image} alt="" className="h-16 w-16 rounded-lg object-cover" /> : null}
                 <div className="grid grid-cols-[1fr_7rem_auto] gap-2">
                   <input className={inputCls} placeholder="Name" aria-label="Name" value={s.name} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} maxLength={120} autoComplete="off" />
                   <input className={inputCls} placeholder="Price" aria-label="Price in rupees" inputMode="decimal" value={s.price ?? ''} onChange={(e) => setServices((a) => a.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} autoComplete="off" />
