@@ -60,10 +60,10 @@ Record each boost under Admin > LeadSpace > Cost per lead > Ad spend with the **
 
 ```
 node scripts/leadspace-migrate-campaigns.js                            # dry run for everyone who has campaign data
-node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours      # dry run for one vendor
-node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --apply
-node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --rollback           # what a rollback would remove
-node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --rollback --apply
+node scripts/leadspace-migrate-campaigns.js --vendor allwintours      # dry run for one vendor
+node scripts/leadspace-migrate-campaigns.js --vendor allwintours --apply
+node scripts/leadspace-migrate-campaigns.js --vendor allwintours --rollback           # what a rollback would remove
+node scripts/leadspace-migrate-campaigns.js --vendor allwintours --rollback --apply
 ```
 
 It is a copy; no old row is changed or deleted. The old landing page becomes a **draft** LeadSpace page at the same address slug; `/go/<slug>` keeps serving the old page (so running ads keep working) until the vendor publishes the new one, after which `/go/<slug>` redirects there. Paste the dry-run output to Claude before `--apply`. A vendor can also do it themselves from the banner on the LeadSpace Home tab.

@@ -4,11 +4,11 @@
  * Campaigns and DomainCampaign became LeadSpace. This copies what vendors already have into the new tables, without losing anything. KSM runs it on the VM.
  *
  *   node scripts/leadspace-migrate-campaigns.js                        # DRY RUN for every vendor that has campaigns, landing pages or campaign leads
- *   node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours  # dry run for one vendor (subdomain or id)
- *   node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --apply
+ *   node scripts/leadspace-migrate-campaigns.js --vendor allwintours  # dry run for one vendor (subdomain or id)
+ *   node scripts/leadspace-migrate-campaigns.js --vendor allwintours --apply
  *   node scripts/leadspace-migrate-campaigns.js --apply                # every vendor (do one vendor first)
- *   node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --rollback           # what a rollback would remove (dry run)
- *   node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --rollback --apply   # remove what the import created
+ *   node scripts/leadspace-migrate-campaigns.js --vendor allwintours --rollback           # what a rollback would remove (dry run)
+ *   node scripts/leadspace-migrate-campaigns.js --vendor allwintours --rollback --apply   # remove what the import created
  *
  * It is a COPY: the old campaign, landing page, lead and DomainCampaign rows are never changed or deleted. The landing page becomes a DRAFT LeadSpace page, so
  * the old /go/<slug> address keeps serving until the vendor publishes the new one. Safe to run twice. Reads DATABASE_URL from the environment or backend-api/.env.
@@ -24,7 +24,7 @@ const { runMigration } = require('./leadspace-migrate-lib');
 const args = process.argv.slice(2);
 const vi = args.indexOf('--vendor');
 const VENDOR = vi >= 0 ? args[vi + 1] : undefined;
-if (vi >= 0 && (!VENDOR || VENDOR.startsWith('--'))) { console.error('--vendor needs a subdomain, for example: --vendor allwin-tours'); process.exit(2); }
+if (vi >= 0 && (!VENDOR || VENDOR.startsWith('--'))) { console.error('--vendor needs a subdomain, for example: --vendor allwintours'); process.exit(2); }
 
 if (!process.env.DATABASE_URL) {
   for (const name of ['.env', '.env.local']) {

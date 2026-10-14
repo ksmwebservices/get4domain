@@ -337,7 +337,7 @@ Rebuild **both** containers. The frontend now redirects `/domain-campaign` to `/
 cd /srv/get4domain-site/backend-api
 npx nest build                                                          # the script reads dist/, build it once on the VM host
 node scripts/leadspace-migrate-campaigns.js                            # dry run, everyone with campaign data
-node scripts/leadspace-migrate-campaigns.js --vendor allwin-tours --apply
+node scripts/leadspace-migrate-campaigns.js --vendor allwintours --apply
 ```
 
 Then re-run the dashboard dry run (`node scripts/nav-v2-dry-run.js`): the "would lose access" list must be empty. Rollback note: `--rollback` (dry run) and `--rollback --apply` remove only what the import made.
