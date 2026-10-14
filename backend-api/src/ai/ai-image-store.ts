@@ -1,7 +1,5 @@
-import { mkdirSync, existsSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { randomBytes } from 'crypto';
-import { detectImage, uploadsDir } from '../uploads/uploads.util';
+import { detectImage } from '../uploads/uploads.util';
+import { cleanForWeb, writeUpload } from '../uploads/media.service';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -19,10 +17,9 @@ export async function persistGeneratedImage(sourceUrl: string, fetchImpl: typeof
     if (buf.length === 0 || buf.length > MAX_BYTES) return null;
     const kind = detectImage(buf);
     if (!kind || kind.ext === '.svg') return null; // a generated picture is raster; never store text a browser could run
-    const dir = uploadsDir();
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const name = `ai_${Date.now()}_${randomBytes(6).toString('hex')}${kind.ext}`;
-    writeFileSync(join(dir, name), buf);
+    // the shared service's cleaning and writing: no camera data, web size, one unique name
+    const web = kind.ext === '.gif' ? { data: buf } : await cleanForWeb(buf, kind.ext, 'OTHER');
+    const name = writeUpload(web.data, kind.ext, '', 'ai_');
     const base = (process.env.PUBLIC_API_URL ?? 'https://gapi.get4domain.com').replace(/\/+$/, '');
     return `${base}/uploads/${name}`;
   } catch {

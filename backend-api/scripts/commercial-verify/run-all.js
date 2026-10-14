@@ -29,6 +29,8 @@ const suites = [
   ['LeadSpace campaign merge on REAL Postgres: dry run, copy without loss, twice-safe, rollback, vendor self-serve, registry and old addresses', '../leadspace/verify-campaign-merge-pg.js'],
   ['LeadSpace pilot kit on REAL Postgres: onboarding script for pilot vendors, test pages per trade with UTM links, the test-campaign sheet', '../leadspace/verify-pilot-pg.js'],
   ['LeadSpace migrations on REAL Postgres: rehearsal on existing campaign data, nothing altered, no drift, RLS covered', '../leadspace/verify-leadspace-migration-pg.js'],
+  ['Website Manager on REAL Postgres: draft never public, preview link, publish and refresh, failure keeps the old site, last 10 versions and restore, plan limits, lapsed gate, backfill and rollback', '../website-manager/verify-site-doc-pg.js'],
+  ['Website Manager uploads guard: every picture goes through the shared service', '../website-manager/uploads-guard.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
 // The admin nav lives in the Next.js app; run its check from here too when the monorepo sibling is present.
