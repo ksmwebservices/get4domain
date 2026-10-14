@@ -49,7 +49,7 @@ export function planProvision(cur: CurrentAccess, want: DesiredAccess): Provisio
     keptOffModules: want.modules.filter((k) => modOn.get(k) === false),
     keptOffAddons: want.addons.filter((k) => addOn.get(k) === false),
     beyondPlanModules: cur.modules.filter((m) => m.enabled && !want.modules.includes(m.moduleKey)).map((m) => m.moduleKey).sort(),
-    beyondPlanAddons: cur.addons.filter((a) => a.enabled && !want.addons.includes(a.addonKey) && a.addonKey !== 'nav_v2' && a.addonKey !== 'bos_custom' && a.addonKey !== 'workspace_menu' && a.addonKey !== 'leadspace_only').map((a) => a.addonKey).sort(),
+    beyondPlanAddons: cur.addons.filter((a) => a.enabled && !want.addons.includes(a.addonKey) && a.addonKey !== 'nav_v2' && a.addonKey !== 'bos_custom' && a.addonKey !== 'workspace_menu' && a.addonKey !== 'leadspace_only' && a.addonKey !== 'site_doc_v2').map((a) => a.addonKey).sort(),
   };
 }
 

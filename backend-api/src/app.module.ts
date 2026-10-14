@@ -9,6 +9,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CmsModule } from './cms/cms.module';
+import { SiteDocModule } from './site-doc/site-doc.module';
 import { EmailModule } from './email/email.module';
 import { SupportModule } from './support/support.module';
 import { AiModule } from './ai/ai.module';
@@ -97,6 +98,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     InvoicesModule,
     PaymentsModule,
     CmsModule,
+    SiteDocModule,
     EmailModule,
     SupportModule,
     AiModule,

@@ -42,15 +42,15 @@ export class CmsController {
   @Public()
   @Get('site/:subdomain')
   @ApiOperation({ summary: 'Resolve a live vendor public site by subdomain (public — powers /site/[subdomain])' })
-  getSite(@Param('subdomain') subdomain: string) {
-    return this.cmsService.getSiteBySubdomain(subdomain);
+  getSite(@Param('subdomain') subdomain: string, @Query('preview') preview?: string) {
+    return this.cmsService.getSiteBySubdomain(subdomain, preview);
   }
 
   @Public()
   @Get('vendor/:vendorId')
   @ApiOperation({ summary: "Get a vendor's website CMS settings (public — powers their vendor site)" })
-  getVendorCms(@Param('vendorId') vendorId: string): Promise<VendorCMS | null> {
-    return this.cmsService.getVendorCMS(vendorId);
+  getVendorCms(@Param('vendorId') vendorId: string): Promise<Omit<VendorCMS, 'draft'> | null> {
+    return this.cmsService.getPublicVendorCMS(vendorId);
   }
 
   @ApiBearerAuth()

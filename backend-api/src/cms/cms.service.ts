@@ -9,12 +9,23 @@ import { countSeoKeywords, entitlementsFor, PlanKey } from '../commercial/entitl
 import { addMonths } from '../commercial/pricing-math';
 import { StockService } from '../stock/stock.service';
 import { PUBLIC_PRODUCT_SELECT, PublicProduct, activeFor, normaliseStatus, toPublicProduct, ProductStatus } from '../stock/stock-rules';
+import { readPreviewToken } from '../site-doc/preview-token';
+import { overlayDraft } from '../site-doc/site-merge';
+import { SITE_FLAG_ADDON } from '../site-doc/site-doc.constants';
 
 /** Theme-change allowance is PER YEAR: the next reset is one year after the previous one (not the end of a shorter billing cycle). */
 export function nextYearlyReset(previous: Date, now: Date): Date {
   let next = addMonths(previous, 12);
   while (next.getTime() <= now.getTime()) next = addMonths(next, 12);
   return next;
+}
+
+/** A site row as the PUBLIC may see it: never the unpublished draft. */
+export function toPublicCms<T extends { draft?: unknown }>(row: T | null): Omit<T, 'draft'> | null {
+  if (!row) return null;
+  const { draft: _draft, ...rest } = row;
+  void _draft;
+  return rest;
 }
 
 @Injectable()
@@ -91,6 +102,11 @@ export class CmsService {
     return this.prisma.vendorCMS.findUnique({ where: { vendorId } });
   }
 
+  /** What anyone may read about a vendor's site: the published fields only, never a pending draft. */
+  async getPublicVendorCMS(vendorId: string): Promise<Omit<VendorCMS, 'draft'> | null> {
+    return toPublicCms(await this.getVendorCMS(vendorId));
+  }
+
   /** Free SEO keywords per plan. Only vendors on a commercial billing term are capped; everyone else is untouched. */
   private async assertSeoKeywordAllowance(vendorId: string, raw: string | undefined | null): Promise<void> {
     const term = await this.prisma.billingTerm.findFirst({ where: { vendorId, isCurrent: true }, select: { planKey: true, status: true } });
@@ -102,6 +118,34 @@ export class CmsService {
   }
 
   async updateVendorCMS(vendorId: string, dto: UpdateVendorCmsDto): Promise<VendorCMS> {
+    await this.preflightVendorCms(vendorId, dto);
+    // dto.portfolio is a class-validator-typed array (PortfolioImageDto[]); Prisma's
+    // Json input type wants a plain InputJsonValue - structurally identical at
+    // runtime, just not assignable without this cast.
+    const data = this.toColumns(dto);
+    return this.prisma.vendorCMS.upsert({
+      where: { vendorId },
+      create: { vendorId, ...data },
+      update: data,
+    });
+  }
+
+  /** The DTO as database columns (JSON fields need Prisma's JSON type). */
+  toColumns(dto: UpdateVendorCmsDto): Omit<Prisma.VendorCMSUncheckedCreateInput, 'vendorId'> {
+    return {
+      ...dto,
+      portfolio: dto.portfolio as unknown as Prisma.InputJsonValue | undefined,
+      testimonials: dto.testimonials as unknown as Prisma.InputJsonValue | undefined,
+      pages: dto.pages as unknown as Prisma.InputJsonValue | undefined,
+      layout: dto.layout as unknown as Prisma.InputJsonValue | undefined,
+    };
+  }
+
+  /**
+   * Every rule that must hold before site content goes live: lapsed plan, SEO keyword allowance, premium template unlock, the yearly theme-change
+   * allowance. Shared by the immediate save (vendors not on the draft workflow) and by Publish (vendors on it), so the two can never drift apart.
+   */
+  async preflightVendorCms(vendorId: string, dto: UpdateVendorCmsDto): Promise<void> {
     // A lapsed vendor keeps read access but cannot publish site changes until they pay.
     await this.gate?.assertNotLapsed(vendorId, 'publish');
     // Free SEO keywords come from the plan (planKey) — only enforced for vendors on a commercial billing term.
@@ -152,15 +196,6 @@ export class CmsService {
       }
     }
 
-    // dto.portfolio is a class-validator-typed array (PortfolioImageDto[]); Prisma's
-    // Json input type wants a plain InputJsonValue - structurally identical at
-    // runtime, just not assignable without this cast.
-    const data = { ...dto, portfolio: dto.portfolio as unknown as Prisma.InputJsonValue | undefined };
-    return this.prisma.vendorCMS.upsert({
-      where: { vendorId },
-      create: { vendorId, ...data },
-      update: data,
-    });
   }
 
   /** FULL rows, including inactive products and stock fields — for the vendor's own dashboard only (authenticated route). */
@@ -339,9 +374,13 @@ export class CmsService {
   }
 
   /** Public: resolve a live (non-sandbox) vendor's public site by subdomain. */
-  async getSiteBySubdomain(subdomain: string): Promise<{
+  async getSiteBySubdomain(subdomain: string, previewToken?: string): Promise<{
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
-    cms: VendorCMS | null;
+    cms: Omit<VendorCMS, 'draft'> | null;
+    /** true when this vendor is on the draft/publish workflow (the new renderer and the new rules apply) */
+    docV2: boolean;
+    /** true only for the vendor's own signed preview link: the cms below then includes the unpublished draft */
+    preview: boolean;
     products: PublicProduct[];
     theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown; pages: unknown; css: string | null; js: string | null; fonts: unknown } | null;
     paymentsEnabled: boolean;
@@ -351,14 +390,18 @@ export class CmsService {
     if (!vendor || vendor.isSandbox) {
       throw new NotFoundException('Site not found');
     }
-    const [cms, products] = await Promise.all([
+    const [cmsRow, products, flag] = await Promise.all([
       this.prisma.vendorCMS.findUnique({ where: { vendorId: vendor.id } }),
       this.prisma.vendorProduct.findMany({
         where: { vendorId: vendor.id, active: true },
         select: PUBLIC_PRODUCT_SELECT, // explicit whitelist: no internal field can reach the public payload
         orderBy: { createdAt: 'desc' },
       }),
+      this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId: vendor.id, addonKey: SITE_FLAG_ADDON } }, select: { enabled: true } }),
     ]);
+    const preview = !!cmsRow && readPreviewToken(previewToken) === vendor.id;
+    // Anyone may read the published site. Only the vendor's own signed preview link also sees the pending draft; the draft column itself is never sent.
+    const cms = cmsRow ? (preview ? overlayDraft(cmsRow) : toPublicCms(cmsRow)) : null;
     // The vendor's selected template (with its data-driven layout), if any — so the
     // public site can render a chosen design with no redeploy.
     const themeRow = cms?.themeId
@@ -376,7 +419,9 @@ export class CmsService {
         industry: vendor.industry ?? 'general',
         subdomain: vendor.subdomain,
       },
-      cms,
+      cms: cms as Omit<VendorCMS, 'draft'> | null,
+      docV2: flag?.enabled === true,
+      preview,
       products: products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null),
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }

@@ -42,6 +42,8 @@ export const AVAILABLE_ADDONS: AddonDefinition[] = [
   { key: 'workspace_menu', label: 'Workspace menu (trimmed)', description: 'Show only the Workspace-plan tabs; hide BOS-only and duplicate catalogue tabs', category: 'plan', defaultEnabled: false },
   // LeadSpace (Dispatch B): `leadspace` is the feature (granted by the registry to every plan); `leadspace_only` is a dashboard MODE like nav_v2: it shows the five-tab LeadSpace app instead of the full dashboard and is switched off when the vendor buys a plan.
   { key: 'leadspace', label: 'LeadSpace', description: 'A free landing page, verified leads and a prepaid wallet', category: 'marketing', defaultEnabled: false },
+  // Website Manager (14-Oct-2026): per-vendor switch for the draft/preview/publish workflow, themes and layouts and the new public renderer. Off = the old editor and renderer, unchanged.
+  { key: 'site_doc_v2', label: 'New Website Manager', description: 'Draft, preview, publish, versions, themes and layouts', category: 'plan', defaultEnabled: false },
   { key: 'leadspace_only', label: 'LeadSpace-only account', description: 'Show the five-tab LeadSpace app instead of the full dashboard', category: 'plan', defaultEnabled: false },
   { key: 'fleet', label: 'Fleet Management', description: 'Vehicles, maintenance, assignment', category: 'operations', defaultEnabled: false },
   { key: 'driver', label: 'Driver Management', description: 'Drivers, duty, trip sheets', category: 'operations', defaultEnabled: false },

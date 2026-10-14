@@ -1,0 +1,117 @@
+{
+  "_comment": "What each hand-written standalone public site shows TODAY, copied from its source code, so the backfill can put it in the vendor's Website Manager without any page changing on day one. Only EMPTY fields are ever filled. Source files are named per vendor.",
+  "allwintours": {
+    "source": "allwin-tours/src/lib/constants.ts, src/components/Hero.tsx, src/app/about/page.tsx, src/app/layout.tsx",
+    "cms": {
+      "businessName": "Allwin Tours & Travels",
+      "tagline": "Your Journey, Our Priority",
+      "about": "Allwin Tours & Travels has been serving travellers from Main Road, Gandhi Salai, Cuddalore, Tamil Nadu with safe, comfortable and reliable journeys across Tamil Nadu and South India. From pilgrimage trips to family holidays, airport transfers to corporate travel, our team is committed to making every journey stress-free and memorable.\n\nWith a fleet of well-maintained AC vehicles and experienced, verified drivers, we take pride in punctual service, transparent pricing, and round-the-clock support for our passengers.",
+      "address": "Main Road, Gandhi Salai, Cuddalore, Tamil Nadu",
+      "phone": "8220467673",
+      "whatsapp": "918220467673",
+      "seoTitle": "Allwin Tours & Travels — Cuddalore",
+      "seoDesc": "Premium cab services and tour packages from Cuddalore, Tamil Nadu.",
+      "testimonials": [
+        {
+          "quote": "Excellent service for our Tirupati trip! Very clean vehicle and professional driver. Highly recommend!",
+          "author": "Murugan",
+          "note": "Cuddalore"
+        },
+        {
+          "quote": "Booked for our family tour to Ooty. Perfect journey, comfortable vehicle, reached on time.",
+          "author": "Lakshmi",
+          "note": "Villupuram"
+        },
+        {
+          "quote": "Used for airport drop at 3am. Driver was very punctual and professional. Great service!",
+          "author": "Karthik",
+          "note": "Cuddalore"
+        },
+        {
+          "quote": "Good service for our corporate trip. Clean vehicle and experienced driver.",
+          "author": "Priya",
+          "note": "Chennai"
+        }
+      ]
+    },
+    "products": [
+      {
+        "name": "Ooty Package",
+        "category": "Tour packages",
+        "price": "4500",
+        "description": "2D/1N. Botanical Gardens, Ooty Lake, Tea Estates.",
+        "image": "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Kodaikanal Package",
+        "category": "Tour packages",
+        "price": "4800",
+        "description": "2D/1N. Kodai Lake, Bryant Park, Pillar Rocks.",
+        "image": "https://images.unsplash.com/photo-1606298855672-3efb63017be8?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Tirupati Pilgrimage",
+        "category": "Tour packages",
+        "price": "2500",
+        "description": "1D. Tirumala Temple, Alipiri, Kapila Theertham.",
+        "image": "https://images.unsplash.com/photo-1545158535-c3f7168c28b6?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Rameswaram Tour",
+        "category": "Tour packages",
+        "price": "3500",
+        "description": "2D/1N. Ramanathaswamy Temple, Dhanushkodi, Pamban Bridge.",
+        "image": "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Kanyakumari Tour",
+        "category": "Tour packages",
+        "price": "3000",
+        "description": "1D. Sunrise Point, Vivekananda Rock, Thiruvalluvar Statue.",
+        "image": "https://images.unsplash.com/photo-1516937941344-00b4e0337589?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Pondicherry Day Trip",
+        "category": "Tour packages",
+        "price": "2000",
+        "description": "1D. Auroville, French Quarter, Paradise Beach.",
+        "image": "https://images.unsplash.com/photo-1598847461268-75e25e4c8fd7?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Toyota Innova Crysta",
+        "category": "Our fleet",
+        "price": "",
+        "description": "7 Seater. AC, GPS Tracked.",
+        "image": "https://images.unsplash.com/photo-1590362891991-f776e747a588?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Swift Dzire / Sedan",
+        "category": "Our fleet",
+        "price": "",
+        "description": "4 Seater. AC, Comfortable.",
+        "image": "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Maruti Ertiga / MPV",
+        "category": "Our fleet",
+        "price": "",
+        "description": "7 Seater. AC, Family Friendly.",
+        "image": "https://images.unsplash.com/photo-1609521263047-f8f205293f24?w=600&h=400&fit=crop"
+      },
+      {
+        "name": "Tempo Traveller",
+        "category": "Our fleet",
+        "price": "",
+        "description": "12 Seater. AC, Group Tours.",
+        "image": "https://mrtravelstours.vercel.app/bus_interior1.jpeg"
+      },
+      {
+        "name": "Mini Bus",
+        "category": "Our fleet",
+        "price": "",
+        "description": "20 Seater. AC, Corporate.",
+        "image": "https://mrtravelstours.vercel.app/bus_exterior.jpeg"
+      }
+    ]
+  }
+}

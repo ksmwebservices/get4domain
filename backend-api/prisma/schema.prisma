@@ -266,8 +266,72 @@ model VendorCMS {
   // nullable; a vendor's public site falls back to its own static showcase images
   // until this is populated via the dashboard.
   portfolio         Json?
+  // Website Manager (14-Oct-2026). The columns above are the PUBLISHED site (what the public renderer, the readiness check and the WhatsApp bot read).
+  // The columns below hold the pending draft, the design choices and the publish history pointer. All nullable/defaulted: additive only.
+  /// edits not yet published: a partial of the editable fields; null when there is nothing pending
+  draft             Json?
+  /// published design choices: { themeKey, hero, about, services, gallery, testimonials, contact }
+  layout            Json?
+  ogImage           String?
+  /// vendor-written testimonials: [{ quote, author, note? }]
+  testimonials      Json?
+  /// extra pages: [{ slug, title, body }]; the count is limited by plan
+  pages             Json?
+  /// the category pack this site was generated from (g4d_category_packs.key)
+  packKey           String?
+  publishedAt       DateTime?
+  siteVersion       Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+/// Last published versions of a vendor's site (the published fields as they were), for restore. Pruned to the newest 10 per vendor.
+model SiteVersion {
+  id        String   @id @default(cuid())
+  vendorId  String
+  version   Int
+  snapshot  Json
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([vendorId, version])
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_versions")
+}
+
+/// Every image the shared upload service stored: the web-sized file, the untouched original, and the size, so a plan's media limit can be checked.
+model MediaAsset {
+  id            String   @id @default(cuid())
+  vendorId      String
+  /// LOGO | BANNER | GALLERY | PRODUCT | ABOUT | FAVICON | OG | OTHER
+  kind          String
+  url           String
+  originalUrl   String?
+  mime          String
+  bytes         Int
+  originalBytes Int
+  width         Int?
+  height        Int?
+  createdAt     DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_media_assets")
+}
+
+/// A category pack: how a website for one kind of business is generated (sections, goal flow, default text, theme, layout, SEO type, AI prompts). Data, not code.
+model CategoryPack {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  enabled   Boolean  @default(true)
+  /// the whole pack: keywords, goal, sections, itemSchema, defaults, theme, layouts, seoType, aiPrompts
+  config    Json
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("g4d_category_packs")
 }
 
 model VendorProduct {
