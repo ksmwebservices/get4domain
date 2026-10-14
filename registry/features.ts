@@ -45,19 +45,20 @@ export const FEATURES: Feature[] = [
 
   // ───────────────────────────── Website and Domain
   { id: 'website.content', department: 'website', label: 'Content and pages', icon: 'Globe', route: '/dashboard/website/content', legacyRoutes: ['/dashboard/my-website'], purpose: 'website-content',
-    minPlan: 'WORKSPACE', profiles: ALL, status: 'WORKING', testId: 'site.live-edit', moduleKey: 'website_manager' },
-  { id: 'website.new-pages', department: 'website', label: 'Add new pages', icon: 'FileText', route: '/dashboard/website/new-pages', purpose: 'website-pages', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
-  { id: 'website.design', department: 'website', label: 'Design and themes', icon: 'Sparkles', route: '/dashboard/website/design', purpose: 'website-design', minPlan: 'WORKSPACE', profiles: ALL,
-    status: 'LIMITED', testId: 'themes.unlock', limits: 'Pick a template and logo/banner; theme changes per year follow your plan.', moduleKey: 'website_manager' },
+    minPlan: 'LEADSPACE', profiles: ALL, status: 'WORKING', testId: 'website-manager.fields', moduleKey: 'website_manager' },
+  { id: 'website.new-pages', department: 'website', label: 'Add new pages', icon: 'FileText', route: '/dashboard/website/new-pages', purpose: 'website-pages', minPlan: 'LEADSPACE', profiles: ALL, status: 'WORKING', testId: 'website-manager.plans',
+    limits: 'Pages per plan: LeadSpace 1, Essentials 5, Pro 25 (the home page counts as one).', moduleKey: 'website_manager' },
+  { id: 'website.design', department: 'website', label: 'Design and themes', icon: 'Sparkles', route: '/dashboard/website/design', purpose: 'website-design', minPlan: 'LEADSPACE', profiles: ALL,
+    status: 'WORKING', testId: 'website-manager.themes', moduleKey: 'website_manager' },
   { id: 'website.domain', department: 'website', label: 'Domain', icon: 'Link', route: '/dashboard/website/domain', legacyRoutes: ['/dashboard/domain-management'], purpose: 'domain',
     minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#website.domain`, limits: 'Search and connect are shown; registration and DNS steps are completed by Get4Domain.' },
-  { id: 'website.search', department: 'website', label: 'Search and AI visibility', icon: 'Search', route: '/dashboard/website/search', purpose: 'seo-basic', minPlan: 'WORKSPACE', profiles: ALL,
-    status: 'LIMITED', manualCheck: `${WALK}#website.search`, limits: 'Title, description and keywords per page.', moduleKey: 'website_manager' },
+  { id: 'website.search', department: 'website', label: 'Search and AI visibility', icon: 'Search', route: '/dashboard/website/search', purpose: 'seo-basic', minPlan: 'LEADSPACE', profiles: ALL,
+    status: 'WORKING', testId: 'website-manager.fields', moduleKey: 'website_manager' },
   { id: 'website.search-pro', department: 'website', label: 'AI answers, Google tools', icon: 'Search', route: '/dashboard/website/search-pro', purpose: 'seo-pro', minPlan: 'BOS', profiles: ALL, status: 'NOT_BUILT' },
   { id: 'website.widget', department: 'website', label: 'Chat widget', icon: 'Code', route: '/dashboard/website/widget', legacyRoutes: ['/dashboard/embed'], purpose: 'chat-widget',
     minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#website.widget`, limits: 'Embeds your chat/enquiry widget on any website you control.', moduleKey: 'website_manager' },
   { id: 'website.readiness', department: 'website', label: 'Go-live readiness', icon: 'Rocket', route: '/dashboard/website/readiness', legacyRoutes: ['/dashboard/website-engine'], purpose: 'readiness',
-    minPlan: 'WORKSPACE', profiles: ALL, status: 'LIMITED', manualCheck: `${WALK}#website.readiness`, limits: 'The technical list of wired actions is an admin view.', moduleKey: 'website_manager' },
+    minPlan: 'LEADSPACE', profiles: ALL, status: 'WORKING', testId: 'website-manager.readiness', moduleKey: 'website_manager' },
 
   // ───────────────────────────── Commerce and Operations
   { id: 'commerce.products', department: 'commerce', label: 'Products and services', labelByProfile: PRODUCT_LABELS, icon: 'Package', route: '/dashboard/commerce/products',

@@ -33,6 +33,7 @@
 -- tables (migration 20261010100000_leadspace) are covered by the same loop below.
 -- LeadSpace page stats (migration 20261010110000_leadspace_page_stats): g4d_leadspace_daily_stats is covered by the same loop.
 -- LeadSpace follow-ups (migration 20261010120000_leadspace_followups): adds columns to existing LeadSpace tables only; no new table, nothing to add here.
+-- Website Manager (migration 20261014100000_website_manager): g4d_site_versions, g4d_media_assets and g4d_category_packs are covered by the same loop below.
 
 DO $$
 DECLARE

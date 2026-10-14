@@ -23,6 +23,8 @@ export const SITE_FIELDS = [...SITE_TEXT_FIELDS, ...SITE_JSON_FIELDS] as const;
 export const SITE_THEME_KEYS = [
   'clean-teal', 'classic-blue', 'warm-sand', 'fresh-green', 'bold-violet', 'sunset-orange', 'soft-rose',
   'midnight-gold', 'forest-night', 'ocean-dark', 'plum-night',
+  // the two colour schemes of the first hand-written sites (Allwin Tours, Step N Rock), so they look the same when moved onto the shared renderer
+  'harbour-amber', 'street-orange',
 ] as const;
 
 export const SITE_VARIANTS = {

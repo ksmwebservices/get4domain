@@ -1,9 +1,10 @@
 import { ArrowRight } from 'lucide-react';
 import type { HeroCta, KitStat } from './model';
 
-const Img = ({ src, alt, className }: { src: string; alt: string; className?: string }) =>
+const Img = ({ src, alt, className }: { src: string; alt: string; className?: string }) => (src
   // eslint-disable-next-line @next/next/no-img-element
-  <img src={src} alt={alt} className={className} />;
+  ? <img src={src} alt={alt} className={className} />
+  : <div aria-hidden className={className} style={{ background: 'linear-gradient(135deg, var(--eng-accent), var(--eng-accent-2))', opacity: 0.9 }} />);
 
 function Ctas({ primary, secondary }: { primary?: HeroCta; secondary?: HeroCta }) {
   const p = primary ?? { label: 'Get started', href: '#enquiry' };

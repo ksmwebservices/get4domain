@@ -4,7 +4,10 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { ShoppingCart, X, Plus, Minus, Trash2, ShieldCheck, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 
-export interface CartLine { name: string; price: number; qty: number; catalogItemId?: string }
+export interface CartLine { name: string; price: number; qty: number; catalogItemId?: string; productId?: string }
+
+/** ONLINE: the shopper pays on the page into the vendor's own Razorpay. ORDER_REQUEST: no payment on the page; the shop gets the order (stock reserved) and calls to confirm. */
+export type CheckoutMode = 'ONLINE' | 'ORDER_REQUEST';
 
 interface CartCtx {
   enabled: boolean;
@@ -47,7 +50,7 @@ interface RzpResponse { razorpay_order_id: string; razorpay_payment_id: string; 
  * the VENDOR's Razorpay keys, open Razorpay, then confirm (record sale + stock). Money
  * goes straight to the vendor. Reused across every industry via the engine.
  */
-export function CartProvider({ enabled, subdomain, brandName, children }: { enabled: boolean; subdomain: string; brandName: string; children: ReactNode }) {
+export function CartProvider({ enabled, subdomain, brandName, mode = 'ONLINE', children }: { enabled: boolean; subdomain: string; brandName: string; mode?: CheckoutMode; children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [open, setOpen] = useState(false);
 
@@ -76,21 +79,35 @@ export function CartProvider({ enabled, subdomain, brandName, children }: { enab
           <ShoppingCart className="h-4 w-4" /> {value.count} · {rupees(lines.reduce((s, l) => s + l.price * l.qty, 0))}
         </button>
       )}
-      {enabled && open && <CheckoutModal subdomain={subdomain} brandName={brandName} lines={lines} onClose={() => setOpen(false)} onDone={() => { setLines([]); }} setQty={value.setQty} remove={value.remove} />}
+      {enabled && open && <CheckoutModal mode={mode} subdomain={subdomain} brandName={brandName} lines={lines} onClose={() => setOpen(false)} onDone={() => { setLines([]); }} setQty={value.setQty} remove={value.remove} />}
     </Ctx.Provider>
   );
 }
 
-function CheckoutModal({ subdomain, brandName, lines, onClose, onDone, setQty, remove }: {
-  subdomain: string; brandName: string; lines: CartLine[]; onClose: () => void; onDone: () => void;
+function CheckoutModal({ mode, subdomain, brandName, lines, onClose, onDone, setQty, remove }: {
+  mode: CheckoutMode; subdomain: string; brandName: string; lines: CartLine[]; onClose: () => void; onDone: () => void;
   setQty: (name: string, qty: number) => void; remove: (name: string) => void;
 }) {
-  const [form, setForm] = useState({ name: '', phone: '', email: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' });
+  const [key] = useState(() => `cart-${Math.random().toString(36).slice(2, 12)}${Date.now().toString(36)}`);
   const [paying, setPaying] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
   const total = lines.reduce((s, l) => s + l.price * l.qty, 0);
-  const valid = form.name.trim() && /^\d{10}$/.test(form.phone.replace(/\D/g, '').slice(-10));
+  const valid = form.name.trim() && /^\d{10}$/.test(form.phone.replace(/\D/g, '').slice(-10)) && (mode !== 'ORDER_REQUEST' || form.address.trim().length >= 10);
+
+  /** ORDER_REQUEST: no payment here. The order is saved (stock reserved) and the shop calls to confirm and collect payment. */
+  const sendRequest = async () => {
+    if (!valid || lines.length === 0) { setError('Add items, enter your name, a 10-digit mobile and your full delivery address (house or street, area, city, PIN).'); return; }
+    setError(''); setPaying(true);
+    try {
+      const phone = form.phone.replace(/\D/g, '').slice(-10);
+      const items = lines.map((l) => ({ productId: l.productId, catalogItemId: l.catalogItemId, name: l.name, qty: l.qty }));
+      await api.engineDispatchPublic(subdomain, 'engine.checkout.request', { items, name: form.name, phone, email: form.email || undefined, address: form.address.trim(), idempotencyKey: key });
+      setDone(true); onDone();
+    } catch (e) { setError(e instanceof Error ? e.message : 'We could not send your order. Please check your details and try again.'); }
+    finally { setPaying(false); }
+  };
 
   const pay = async () => {
     if (!valid || lines.length === 0) { setError('Add items and enter your name + a 10-digit mobile.'); return; }
@@ -164,14 +181,15 @@ function CheckoutModal({ subdomain, brandName, lines, onClose, onDone, setQty, r
             <div className="mt-4 space-y-2.5">
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-slate-400 focus:outline-none" />
               <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} inputMode="numeric" placeholder="10-digit mobile" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-slate-400 focus:outline-none" />
+              {mode === 'ORDER_REQUEST' && <textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} placeholder="Full delivery address (house or street, area, city, PIN)" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm" />}
               <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} type="email" placeholder="Email (optional)" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-slate-400 focus:outline-none" />
             </div>
             {error && <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{error}</div>}
-            <button onClick={pay} disabled={paying || !valid || lines.length === 0}
+            <button onClick={mode === 'ORDER_REQUEST' ? sendRequest : pay} disabled={paying || !valid || lines.length === 0}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--eng-accent)] px-5 py-3 text-sm font-bold text-[var(--eng-accent-fg)] disabled:opacity-50">
-              <ShieldCheck className="h-4 w-4" /> {paying ? 'Processing…' : `Pay ${rupees(total)}`}
+              <ShieldCheck className="h-4 w-4" /> {paying ? 'Processing…' : mode === 'ORDER_REQUEST' ? `Send my order (${rupees(total)})` : `Pay ${rupees(total)}`}
             </button>
-            <p className="mt-2 text-center text-[11px] text-slate-400">Secure payment · goes directly to {brandName}.</p>
+            <p className="mt-2 text-center text-[11px] text-slate-400">{mode === 'ORDER_REQUEST' ? `No payment now. ${brandName} will call you to confirm your order and the payment.` : `Secure payment · goes directly to ${brandName}.`}</p>
           </>
         )}
       </div>
@@ -180,11 +198,11 @@ function CheckoutModal({ subdomain, brandName, lines, onClose, onDone, setQty, r
 }
 
 /** Item "Add" button — self-hides unless a shop-enabled CartProvider is above it. */
-export function AddToCartButton({ name, price, catalogItemId }: { name: string; price: number; catalogItemId?: string }) {
+export function AddToCartButton({ name, price, catalogItemId, productId }: { name: string; price: number; catalogItemId?: string; productId?: string }) {
   const cart = useCart();
   if (!cart.enabled || !(price > 0)) return null;
   return (
-    <button onClick={() => cart.add({ name, price, catalogItemId })}
+    <button onClick={() => cart.add({ name, price, catalogItemId, productId })}
       className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--eng-accent)] px-4 py-2 text-xs font-bold text-[var(--eng-accent-fg)]">
       <Plus className="h-3.5 w-3.5" /> Add to cart
     </button>

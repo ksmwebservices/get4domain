@@ -18,7 +18,8 @@ export async function persistGeneratedImage(sourceUrl: string, fetchImpl: typeof
     const kind = detectImage(buf);
     if (!kind || kind.ext === '.svg') return null; // a generated picture is raster; never store text a browser could run
     // the shared service's cleaning and writing: no camera data, web size, one unique name
-    const web = kind.ext === '.gif' ? { data: buf } : await cleanForWeb(buf, kind.ext, 'OTHER');
+    let web: { data: Buffer } = { data: buf };
+    if (kind.ext !== '.gif') { try { web = await cleanForWeb(buf, kind.ext, 'OTHER'); } catch { /* a picture the cleaner cannot read is kept as the provider sent it, as before */ } }
     const name = writeUpload(web.data, kind.ext, '', 'ai_');
     const base = (process.env.PUBLIC_API_URL ?? 'https://gapi.get4domain.com').replace(/\/+$/, '');
     return `${base}/uploads/${name}`;

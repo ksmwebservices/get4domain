@@ -8,7 +8,7 @@
  *  - Products it adds are marked in customFields.backfill so a rollback removes exactly those and nothing a vendor created.
  */
 const SEED_FIELDS = ['businessName', 'tagline', 'about', 'logo', 'banner', 'favicon', 'ogImage', 'seoTitle', 'seoDesc', 'seoKeywords', 'phone', 'whatsapp', 'email', 'address', 'businessHours', 'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps'];
-const JSON_FIELDS = ['testimonials'];
+const JSON_FIELDS = ['testimonials', 'layout'];
 const MARK = 'website-manager-backfill';
 const CONFIRM = 'I_HAVE_READ_THE_DRY_RUN';
 

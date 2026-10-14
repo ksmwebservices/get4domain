@@ -12,6 +12,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3006
+      # Website Manager: the API asks this app to refresh a vendor's cached pages after Publish. Put the same value in backend-api/.env.local (REVALIDATE_SECRET) and in get4domain_mvp/.env
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-}
     networks:
       - get4domain_net
 

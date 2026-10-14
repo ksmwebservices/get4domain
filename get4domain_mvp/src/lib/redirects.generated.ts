@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 535d3b203808bdc8
+// registry-hash: 37dc715c95cbc6de
 // Legacy dashboard address -> Dashboard v2 address. Applied ONLY for vendors with nav_v2 on (cookie g4d_nav_v2=1).
 /* eslint-disable */
 

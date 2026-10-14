@@ -27,6 +27,8 @@ const steps = [
   ['forms and API agree on edits; no edit sends a loaded record (Bug B1, client side)', FE, [node, 'scripts/verify-payload-contract.mjs']],
   ['every credential-like input decides its autocomplete (Bug B2)', FE, [node, 'scripts/audit-credential-fields.mjs']],
   ['no typed price or plan name in vendor dashboard code (Bug B3)', FE, [node, 'scripts/audit-hardcoded-prices.mjs']],
+  ['Website Manager themes: every theme passes AA contrast and the lists agree', FE, [node, 'scripts/verify-site-themes.mjs']],
+  ['Website Manager rendered pages: every field, publish refresh, no stock content, every theme and layout, readiness equals the page (builds the frontend the first time)', BE, [node, 'scripts/website-manager/verify-site-render.js']],
   ['security suites that need no database (never boots the app against a real database)', BE, [node, 'scripts/security-verify/run-offline.js']],
   ['all backend suites: rule book, real-Postgres chains A-D, stock ledger property + concurrency, upgrade/downgrade, order bridge, backfill, commercial engine', BE, [node, 'scripts/commercial-verify/run-all.js']],
 ];

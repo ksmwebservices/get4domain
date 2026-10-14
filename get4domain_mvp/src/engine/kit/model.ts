@@ -21,10 +21,13 @@ export interface KitBrand {
   email?: string;
   address?: string;
   businessHours?: string;
+  facebook?: string; instagram?: string; linkedin?: string; youtube?: string; googleMaps?: string;
 }
 
 export interface KitStat { value: string; label: string }
 export interface KitItem {
+  /** the vendor's product id, so a cart line can be priced and stocked by the server */
+  id?: string;
   title: string;
   subtitle?: string;
   price?: string;
@@ -62,9 +65,11 @@ export type KitSection =
   | { type: 'iconGrid'; id: string; eyebrow: string; title: string; sub?: string; items: KitFeature[] }
   | { type: 'rows'; id: string; eyebrow: string; title: string; sub?: string; note?: string; items: KitRow[] }
   | { type: 'steps'; id: string; eyebrow: string; title: string; sub?: string; items: KitStep[] }
-  | { type: 'gallery'; id: string; eyebrow: string; title: string; images: string[] }
+  | { type: 'gallery'; id: string; eyebrow: string; title: string; images: string[]; variant?: 'mosaic' | 'grid' | 'strip' }
+  | { type: 'about'; id: string; variant: 'split' | 'centered' | 'columns'; eyebrow: string; title: string; text: string; image?: string; points?: string[] }
+  | { type: 'contact'; id: string; variant: 'card' | 'split' | 'minimal'; eyebrow: string; title: string; sub?: string }
   | { type: 'people'; id: string; eyebrow: string; title: string; sub?: string; items: KitPerson[] }
-  | { type: 'testimonials'; id: string; eyebrow: string; title: string; items: KitQuote[] }
+  | { type: 'testimonials'; id: string; eyebrow: string; title: string; items: KitQuote[]; variant?: 'cards' | 'quote' | 'list' }
   | { type: 'faq'; id: string; eyebrow: string; title: string; items: KitFaqItem[] }
   | { type: 'cta'; id: string; title: string; sub?: string; image?: string }
   | { type: 'enquiry'; id: string; eyebrow: string; title: string; sub: string; points?: string[]; tabs: EnquiryTab[] };

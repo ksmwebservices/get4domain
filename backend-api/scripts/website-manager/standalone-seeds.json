@@ -32,7 +32,17 @@
           "author": "Priya",
           "note": "Chennai"
         }
-      ]
+      ],
+      "layout": {
+        "themeKey": "harbour-amber",
+        "hero": "overlay",
+        "about": "centered",
+        "services": "cards",
+        "gallery": "mosaic",
+        "testimonials": "cards",
+        "contact": "card"
+      },
+      "businessHours": "Open 24 hours for airport transfers and outstation trips"
     },
     "products": [
       {
@@ -113,5 +123,21 @@
         "image": "https://mrtravelstours.vercel.app/bus_exterior.jpeg"
       }
     ]
+  },
+  "stepnrock": {
+    "source": "stepnrock/app/page.tsx (hero picture and colours); its text, logo, phone and SEO are already in Website Manager",
+    "cms": {
+      "banner": "https://images.pexels.com/photos/1503010/pexels-photo-1503010.jpeg?auto=compress&cs=tinysrgb&h=650&w=940",
+      "layout": {
+        "themeKey": "street-orange",
+        "hero": "split",
+        "about": "split",
+        "services": "cards",
+        "gallery": "grid",
+        "testimonials": "cards",
+        "contact": "split"
+      }
+    },
+    "products": []
   }
 }

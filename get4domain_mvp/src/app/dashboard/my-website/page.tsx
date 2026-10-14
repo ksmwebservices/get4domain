@@ -11,6 +11,7 @@ import { editable, CMS_EDITABLE } from '@/lib/editable';
 import { openMyWebsite } from '@/lib/view-website';
 import { useDashboardConfig } from '@/lib/dashboard-config';
 import { api } from '@/lib/api';
+import SiteEditorV2 from './SiteEditorV2';
 
 type Tab = 'basic' | 'branding' | 'about' | 'seo' | 'template' | 'portfolio';
 
@@ -32,7 +33,21 @@ const EMPTY: VendorCms = {
 
 const field = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
 
+/**
+ * Vendors switched onto the new Website Manager (draft, preview, publish, versions, themes and layouts) get the new editor; everyone else keeps the editor below
+ * until KSM switches them (add-on `site_doc_v2`, one vendor at a time).
+ */
 export default function WebsiteManagerPage() {
+  const [state, setState] = useState<{ loading: boolean; view: unknown | null }>({ loading: true, view: null });
+  useEffect(() => {
+    api.siteDoc().then((r) => { const v = r.data as { enabled?: boolean } | undefined; setState({ loading: false, view: v?.enabled ? v : null }); }).catch(() => setState({ loading: false, view: null }));
+  }, []);
+  if (state.loading) return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+  if (state.view) return <SiteEditorV2 initial={state.view as never} />;
+  return <LegacyWebsiteManager />;
+}
+
+function LegacyWebsiteManager() {
   const { user } = useAuth();
   const cfg = useDashboardConfig(user?.industry);
   // Dashboard v2 offers this screen as three menu items; `section` limits the tabs (null = every tab, the old behaviour).

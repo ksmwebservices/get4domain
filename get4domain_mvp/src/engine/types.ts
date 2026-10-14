@@ -51,6 +51,13 @@ export interface EngineSiteData {
     logo: string | null; banner: string | null; phone: string | null; whatsapp: string | null;
     email: string | null; address: string | null; seoTitle: string | null; seoDesc: string | null;
     seoKeywords: string | null; businessHours?: string | null;
+    // Website Manager (new renderer): every editor field that a page can show
+    favicon?: string | null; ogImage?: string | null; facebook?: string | null; instagram?: string | null; linkedin?: string | null; youtube?: string | null;
+    googleMaps?: string | null; googleAnalyticsId?: string | null; packKey?: string | null;
+    portfolio?: { id?: string; src: string; alt?: string; title?: string; category?: string }[] | null;
+    testimonials?: { quote: string; author: string; note?: string }[] | null;
+    pages?: { slug: string; title: string; body: string }[] | null;
+    layout?: Record<string, string> | null;
   } | null;
   products: {
     id: string; name: string; description: string | null; price: string | null;
@@ -58,6 +65,9 @@ export interface EngineSiteData {
   }[];
   /** Vendor has switched on their own Razorpay → the public shop/checkout is available. */
   paymentsEnabled?: boolean;
+  /** the vendor is on the new Website Manager: the pack-driven renderer and the no-stock-content rules apply */
+  docV2?: boolean;
+  pack?: { key: string; name: string; config: unknown } | null;
 }
 
 /** A revenue/launch readiness check evaluated against resolved site data. */

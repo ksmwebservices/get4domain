@@ -56,6 +56,22 @@ export interface VendorCommsSettings {
 /** PATCH payload: send only what changed. `null` clears an override. */
 export type VendorCommsPatch = Partial<Omit<VendorCommsSettings, 'businessName' | 'waVerifiedAt' | 'waStatus'>>;
 
+/** Shrinks a large raster picture in the browser (longest side 2000 px) so uploads stay well under any proxy limit. Transparency is kept for PNG. Falls back to the original. */
+async function shrinkForUpload(file: File): Promise<File> {
+  try {
+    if (typeof document === 'undefined' || file.size < 900 * 1024 || !/^image\/(png|jpeg|webp)$/.test(file.type)) return file;
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale); canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d')?.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const type = file.type === 'image/png' ? 'image/png' : file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+    const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, type, 0.88));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name, { type });
+  } catch { return file; }
+}
+
 export const api = {
   // Auth
   login: (email: string, password: string) =>
@@ -701,17 +717,19 @@ export const api = {
     apiCall('/ai/call-summary', { method: 'POST', body: JSON.stringify(data) }),
   generateDesignImage: (prompt: string) =>
     apiCall('/ai/generate-image', { method: 'POST', body: JSON.stringify({ prompt }) }),
-  // Image upload (multipart) — stored on the VM disk, returns { data: { url } }.
-  uploadImage: async (file: File): Promise<{ data?: { url: string } }> => {
+  // Image upload (multipart): ONE shared service on the server (check, clean, resize, count against the plan; the original is kept). Large pictures are shrunk in the
+  // browser first so a phone photo or a big PNG does not hit a proxy size limit; every failure comes back as a plain sentence the vendor can act on.
+  uploadImage: async (file: File, kind?: 'LOGO' | 'BANNER' | 'GALLERY' | 'PRODUCT' | 'ABOUT' | 'OTHER'): Promise<{ data?: { url: string; originalUrl?: string; favicon?: string; ogImage?: string } }> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
+    const toSend = await shrinkForUpload(file);
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', toSend);
     // Bound the request so a hung upload can't leave the UI stuck on "Uploading…" forever.
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 30000);
+    const timer = setTimeout(() => ctrl.abort(), 60000);
     let res: Response;
     try {
-      res = await fetch(`${API_BASE}/uploads`, {
+      res = await fetch(`${API_BASE}/uploads${kind ? `?kind=${kind}` : ''}`, {
         method: 'POST',
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: fd,
@@ -719,13 +737,33 @@ export const api = {
       });
     } catch (e) {
       clearTimeout(timer);
-      throw new Error((e as Error)?.name === 'AbortError' ? 'Upload timed out — please try a smaller image or check your connection.' : 'Upload failed — could not reach the server.');
+      throw new Error((e as Error)?.name === 'AbortError' ? 'The upload took too long. Check your connection, or choose a smaller picture, and try again.' : 'The upload could not reach our server. Check your internet connection and try again.');
     }
     clearTimeout(timer);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error((data as { message?: string }).message || 'Upload failed');
-    return data as { data?: { url: string } };
+    if (res.status === 413) throw new Error('This picture is too large for our server. Choose one under 5 MB (a photo saved at a smaller size is usually enough).');
+    if (!res.ok) throw new Error((data as { message?: string }).message || 'The picture could not be uploaded. Please try again, or choose a PNG or JPG.');
+    return data as { data?: { url: string; originalUrl?: string; favicon?: string; ogImage?: string } };
   },
+
+  // ── Website Manager: draft, preview, publish, versions (every plan) ──
+  siteDoc: () => apiCall('/site-doc/me'),
+  siteDocSave: (patch: Record<string, unknown>) => apiCall('/site-doc/me/draft', { method: 'PUT', body: JSON.stringify(patch) }),
+  siteDocDiscard: () => apiCall('/site-doc/me/draft', { method: 'DELETE' }),
+  siteDocPreview: () => apiCall('/site-doc/me/preview-link', { method: 'POST', body: JSON.stringify({}) }),
+  siteDocPublish: (note?: string) => apiCall('/site-doc/me/publish', { method: 'POST', body: JSON.stringify(note ? { note } : {}) }),
+  siteDocVersions: () => apiCall('/site-doc/me/versions'),
+  siteDocRestore: (version: number) => apiCall(`/site-doc/me/versions/${version}/restore`, { method: 'POST', body: JSON.stringify({}) }),
+  siteDocCategories: () => apiCall('/site-doc/me/categories'),
+  siteDocGenerate: (data: { packKey: string; businessName: string; city?: string; phone?: string }) => apiCall('/site-doc/me/generate', { method: 'POST', body: JSON.stringify(data) }),
+  // Category packs (admin)
+  adminPacks: () => apiCall('/admin/category-packs'),
+  adminPack: (key: string) => apiCall(`/admin/category-packs/${key}`),
+  adminPackPreview: (key: string) => apiCall(`/admin/category-packs/${key}/preview`),
+  adminPackCreate: (data: unknown) => apiCall('/admin/category-packs', { method: 'POST', body: JSON.stringify(data) }),
+  adminPackUpdate: (key: string, data: unknown) => apiCall(`/admin/category-packs/${key}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminPackDuplicate: (key: string, data: { key: string; name: string }) => apiCall(`/admin/category-packs/${key}/duplicate`, { method: 'POST', body: JSON.stringify(data) }),
+  adminPackSeed: () => apiCall('/admin/category-packs/seed/starter', { method: 'POST', body: JSON.stringify({}) }),
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
   getVideoProvider: () => apiCall('/video/provider'),

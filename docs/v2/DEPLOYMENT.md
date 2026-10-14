@@ -368,3 +368,118 @@ cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d 
 - Plan credit: the yearly amounts (Essentials Rs 200, Pro Rs 600) are the admin setting `planCreditPaise` (`/admin/leadspace` settings). It is granted when a paid term starts or renews; half-year terms get half. Vendors who are already on a paid term get it at their next renewal or plan change (nothing is back-filled). To give it earlier, use the admin ledger adjustment.
 - Expired plan credit is written off by the existing admin "expiry sweep" (dry run first, then apply). Run it monthly.
 - Vendors should press Save once on the Page tab after this deploy if their product pictures were missing.
+
+
+## 11. Website Manager (14 Oct 2026) - KSM only
+
+Read `WEBSITE_MANAGER.md` first. Claude did not touch the server or any production data (the only production access was a SELECT-only audit, see `evidence/website-manager/AUDIT.md`). Every command is labelled. **No vendor is switched onto the new Website Manager until you do it in step 9.** Until then, behaviour is as before, with two exceptions that apply to everyone: pictures are now checked, shrunk and counted (so the nginx size limit in step 2 matters), and public vendor pages on the shared renderer are cached for a minute (a change shows within a minute, or at once after Publish for vendors on the new workflow).
+
+**1. VM terminal: backup first**
+
+```
+ssh ksmwebtechservices@34.14.130.68
+mkdir -p ~/backups && cd /srv/get4domain-site/backend-api
+set -a; . ./.env.local; set +a
+pg_dump "${DIRECT_URL:-$DATABASE_URL}" -Fc -f ~/backups/g4d_before_websitemanager_$(date +%F_%H%M).dump
+ls -lh ~/backups | tail -3        # the new file must be more than a few hundred KB
+```
+
+Also confirm a Supabase backup from today (Supabase dashboard, Database, Backups) if your plan has one.
+
+**2. VM terminal: nginx must accept pictures up to 10 MB on the API host.** The default limit is 1 MB, which refuses most PNG logos and phone photos and is the likely cause of "PNG refused". Find the file for `gapi.get4domain.com`, add the line inside its `server { ... }` block, test and reload:
+
+```
+sudo grep -rl "gapi.get4domain.com" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null
+sudo nano <the file printed above>        # inside server { }, add:   client_max_body_size 10m;
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+(The API itself allows 5 MB per picture and says so in plain words; 10m leaves room for the upload envelope.) If Cloudflare is in front, no change is needed there (its limit is far higher).
+
+**3. VM terminal: pull, migrate**
+
+```
+cd /srv/get4domain-site && git pull origin get4domain-site
+cd backend-api && npx prisma migrate deploy && npx prisma generate     # 20261014100000_website_manager: 8 added columns on "VendorCMS" + 3 new tables; additive only
+```
+
+**4. VM terminal, then Supabase SQL editor: row level security for the 3 new tables**
+
+```
+cat prisma/sql/enable_rls_public.sql | head -60        # check the line "DO $$" and the line "END $$;" are there
+```
+
+Paste only the file's content into the Supabase SQL editor and run it (it covers every public table). Expect "Success. No rows returned"; then run `SELECT tablename FROM pg_tables WHERE schemaname='public' AND rowsecurity=false;` and expect 0 rows.
+
+**5. VM terminal: environment (one new secret, the same value in two places)**
+
+```
+cd /srv/get4domain-site
+SECRET=$(openssl rand -hex 32)
+echo "REVALIDATE_SECRET=$SECRET" >> backend-api/.env.local
+echo "FRONTEND_INTERNAL_URL=https://get4domain.com" >> backend-api/.env.local
+echo "REVALIDATE_SECRET=$SECRET" > get4domain_mvp/.env
+```
+
+(Never commit these files.) The first line lets the API ask the website to refresh a vendor's pages after Publish; the second says where; the third gives the website the same secret (the compose file passes it into the container).
+
+**6. VM terminal: rebuild both containers (backend first)**
+
+```
+cd /srv/get4domain-site/backend-api && docker compose build --no-cache && docker compose up -d --force-recreate
+docker compose logs --tail=40 backend                       # look for "Nest application successfully started"
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+```
+
+**7. VM terminal: dry runs (write nothing)**
+
+```
+cd /srv/get4domain-site/backend-api && npx nest build
+node scripts/site-document-backfill.js                      # every vendor with a subdomain
+node scripts/site-document-backfill.js --vendor allwintours
+node scripts/site-document-backfill.js --vendor stepnrock
+node scripts/site-document-backfill.js --vendor ksm-webtech-services
+```
+
+Expected from the production audit: `allwintours` would fill name, tagline, about, address, phone, WhatsApp, SEO title and description, hours, testimonials and layout, keep its uploaded logo, and add 11 items (6 tour packages, 5 vehicles); `stepnrock` would add a banner and a layout and keep everything else; `ksm-webtech-services` has nothing to copy. Paste the output to Claude if anything differs.
+
+**8. VM terminal: apply for ONE vendor, then check**
+
+```
+SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/site-document-backfill.js --vendor allwintours --apply
+# to undo exactly what it wrote:
+# SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/site-document-backfill.js --vendor allwintours --rollback --apply
+```
+
+This does not change what the public sees (Allwin's public site is still its own app).
+
+**9. VM terminal: switch vendors on, one at a time, in this order** (each: dry run, then `--apply`; `--off` puts the vendor back with nothing deleted)
+
+```
+node scripts/site-doc-flag.js --on --vendor ksm-webtech-services
+SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/site-doc-flag.js --on --vendor ksm-webtech-services --apply
+```
+
+Do the six checks below on `ksm-webtech-services` first. Then the same two commands for `allwintours`, then `stepnrock`, then the rest. A vendor on the flag edits and publishes in Website Manager; its public site at `get4domain.com/site/<subdomain>` is the new page.
+
+**10. VM terminal: moving Allwin's own address onto the shared site (later, only after step 9 for `allwintours` looks right)**
+
+`allwintours.get4domain.com` is served by its own container today (nginx to port 3010). To serve it from the shared renderer, change that nginx vhost to proxy to the website container and keep the host name, then reload:
+
+```
+sudo nano /etc/nginx/sites-enabled/<allwintours vhost>      # proxy_pass http://127.0.0.1:3006;   proxy_set_header Host $host;
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+The website then turns `allwintours.get4domain.com/anything` into `/site/allwintours/anything` by itself. To go back, point `proxy_pass` back to `http://127.0.0.1:3010` and reload; nothing else changes. Do the same for `stepnrock` (port 3015) only after you have compared its shop (cart, order requests, product pages) with the shared page. The order-request cart now exists on the shared page, but the old Step N Rock app has extra product pages and size/colour choices that the shared page does not, so keep Step N Rock on its own app until you are happy.
+
+**Six checks for KSM after deploy** (on a vendor that is switched on)
+
+1. Website Manager, Logo and Banner: upload a **PNG** logo, Publish; the public page shows it, and the browser tab shows its small icon.
+2. Basic Info and About: change the tagline and the About text, press Preview (private), then Publish; the public page changes within seconds.
+3. Theme and layout: pick another theme and layouts, Preview, Publish; nothing you wrote is lost.
+4. SEO: change the SEO title, Publish; view the page source: the title tag changed.
+5. Go-live readiness: the ticked items match what the public page shows.
+6. Versions: open Versions, put an older version live; the page changes back; the newer one is still in the list.
+
+**If something goes wrong:** `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable) returns that vendor to the old editor and renderer; the backfill rollback in step 8 undoes the copy; the migration is additive and can stay.

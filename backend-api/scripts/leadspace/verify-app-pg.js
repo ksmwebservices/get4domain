@@ -33,13 +33,13 @@ const J = (x) => JSON.stringify(x);
     r = await call('GET', '/dashboard/context', undefined, r.data.accessToken);
     ok('and its plan is unchanged (no term yet)', r.data.plan === null, J(r.body).slice(0, 200));
 
-    section('[feat:leadspace.base-tier] LeadSpace is in every plan, and the free tier gets nothing else');
+    section('[feat:leadspace.base-tier] LeadSpace is in every plan, and the free tier gets only LeadSpace and the Website Manager');
     const F = reg.FEATURES; const get = (id) => F.find((f) => f.id === id);
     const V = (plan) => ({ plan, custom: false, profile: 'SERVICES', navV2: true });
     ok('LeadSpace is open on the free tier, Essentials and Pro', ['LEADSPACE', 'WORKSPACE', 'BOS'].every((p) => reg.featureState(get('marketing.leadspace'), V(p)) === 'OPEN'));
     ok('the free tier has no customer invoices, stock, accounts or TeleCRM (never open)', ['finance.invoices', 'commerce.stock', 'finance.expenses', 'sales.leads', 'commerce.pos'].every((id) => reg.featureState(get(id), V('LEADSPACE')) !== 'OPEN'));
     const want = desiredAccess('LEADSPACE', false, 'SERVICES');
-    ok('provisioning for the free tier grants only the LeadSpace feature (and the Growth Hub module it lives on)', J(want.addons) === J(['leadspace']) && want.modules.includes('growth_hub') && !want.modules.includes('telecrm') && !want.modules.includes('website_manager'), J(want));
+    ok('provisioning for the free tier grants the LeadSpace feature, the Growth Hub module it lives on, and the Website Manager (every plan gets the editor: Website Manager dispatch of 14 Oct 2026)', J(want.addons) === J(['leadspace']) && want.modules.includes('growth_hub') && !want.modules.includes('telecrm') && want.modules.includes('website_manager'), J(want));
     ok('Essentials and Pro get LeadSpace too, so nobody who had Campaigns loses access', desiredAccess('WORKSPACE', false, 'SERVICES').addons.includes('leadspace') && desiredAccess('BOS', false, 'SERVICES').modules.includes('growth_hub'));
 
     section('[feat:leadspace.upgrade] Buying a plan leaves LeadSpace-only mode and deletes nothing');

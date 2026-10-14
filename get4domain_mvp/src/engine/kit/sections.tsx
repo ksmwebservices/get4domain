@@ -108,7 +108,7 @@ export function Showcase({ id, variant, eyebrow, title, sub, items }: {
                     {p.tags && <div className="mt-3 flex flex-wrap gap-1.5">{p.tags.map((t) => <span key={t} className="border border-[var(--eng-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--eng-muted)]">{t}</span>)}</div>}
                     <div className="mt-4 flex items-center gap-3">
                       <a href="#enquiry" className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--eng-accent)]">Enquire <ArrowUpRight className="h-3.5 w-3.5" /></a>
-                      <AddToCartButton name={p.title} price={priceNum(p.price)} />
+                      <AddToCartButton name={p.title} price={priceNum(p.price)} productId={p.id} />
                     </div>
                   </div>
                 </article>
@@ -246,19 +246,39 @@ export function Steps({ id, eyebrow, title, sub, items }: {
 }
 
 /* ── Gallery mosaic ── */
-export function Gallery({ id, eyebrow, title, images }: { id: string; eyebrow: string; title: string; images: string[] }) {
+export function Gallery({ id, eyebrow, title, images, variant = 'mosaic' }: { id: string; eyebrow: string; title: string; images: string[]; variant?: 'mosaic' | 'grid' | 'strip' }) {
   if (!images.length) return null;
   return (
     <section id={id} className="scroll-mt-20 px-5 py-20 md:py-24">
       <div className="mx-auto max-w-6xl">
         <Heading eyebrow={eyebrow} title={title} />
-        <div className="mt-12 grid auto-rows-[180px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-4">
-          {images.slice(0, 6).map((src, i) => (
-            <figure key={src} className={`overflow-hidden ${i === 0 ? 'col-span-2 row-span-2' : ''} ${i === 3 ? 'md:col-span-2' : ''}`} style={{ borderRadius: 'var(--eng-radius)' }}>
-              <Img src={src} alt={`${title} ${i + 1}`} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
-            </figure>
-          ))}
-        </div>
+        {variant === 'mosaic' && (
+          <div className="mt-12 grid auto-rows-[180px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-4">
+            {images.slice(0, 6).map((src, i) => (
+              <figure key={src} className={`overflow-hidden ${i === 0 ? 'col-span-2 row-span-2' : ''} ${i === 3 ? 'md:col-span-2' : ''}`} style={{ borderRadius: 'var(--eng-radius)' }}>
+                <Img src={src} alt={`${title} ${i + 1}`} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+              </figure>
+            ))}
+          </div>
+        )}
+        {variant === 'grid' && (
+          <div className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-3">
+            {images.slice(0, 12).map((src, i) => (
+              <figure key={src} className="aspect-square overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}>
+                <Img src={src} alt={`${title} ${i + 1}`} className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
+              </figure>
+            ))}
+          </div>
+        )}
+        {variant === 'strip' && (
+          <div className="mt-12 flex snap-x gap-3 overflow-x-auto pb-3">
+            {images.slice(0, 12).map((src, i) => (
+              <figure key={src} className="h-64 w-72 shrink-0 snap-start overflow-hidden md:h-80 md:w-96" style={{ borderRadius: 'var(--eng-radius)' }}>
+                <Img src={src} alt={`${title} ${i + 1}`} className="h-full w-full object-cover" />
+              </figure>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -291,7 +311,33 @@ export function People({ id, eyebrow, title, sub, items }: {
 }
 
 /* ── Testimonials ── */
-export function Testimonials({ id, eyebrow, title, items }: { id: string; eyebrow: string; title: string; items: KitQuote[] }) {
+export function Testimonials({ id, eyebrow, title, items, variant = 'cards' }: { id: string; eyebrow: string; title: string; items: KitQuote[]; variant?: 'cards' | 'quote' | 'list' }) {
+  if (variant === 'quote' && items.length) {
+    const q = items[0];
+    return (
+      <section id={id} className="scroll-mt-20 px-5 py-20 md:py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <Heading eyebrow={eyebrow} title={title} center />
+          <Quote className="mx-auto mt-10 h-8 w-8 text-[var(--eng-accent)]" />
+          <p className="mt-4 font-[family-name:var(--eng-fontDisplay)] text-2xl leading-snug md:text-3xl">{q.quote}</p>
+          <p className="mt-5 text-sm"><span className="font-semibold">{q.author}</span>{q.note && <span className="text-[var(--eng-muted)]"> · {q.note}</span>}</p>
+          {items.length > 1 && <ul className="mt-10 grid gap-4 text-left text-sm text-[var(--eng-muted)] sm:grid-cols-2">{items.slice(1).map((o) => <li key={o.author} className="border-l-2 border-[var(--eng-accent)] pl-4">&ldquo;{o.quote}&rdquo; <span className="text-[var(--eng-fg)]">{o.author}</span></li>)}</ul>}
+        </div>
+      </section>
+    );
+  }
+  if (variant === 'list') {
+    return (
+      <section id={id} className="scroll-mt-20 px-5 py-20 md:py-24">
+        <div className="mx-auto max-w-3xl">
+          <Heading eyebrow={eyebrow} title={title} />
+          <ul className="mt-10 divide-y divide-[var(--eng-border)]">
+            {items.map((q) => <li key={q.author} className="py-5"><p className="text-[var(--eng-fg)]">&ldquo;{q.quote}&rdquo;</p><p className="mt-2 text-sm text-[var(--eng-muted)]">{q.author}{q.note && ` · ${q.note}`}</p></li>)}
+          </ul>
+        </div>
+      </section>
+    );
+  }
   return (
     <section id={id} className="scroll-mt-20 px-5 py-20 md:py-24">
       <div className="mx-auto max-w-6xl">
@@ -328,6 +374,81 @@ export function Faq({ id, eyebrow, title, items }: { id: string; eyebrow: string
           ))}
         </div>
       </div>
+    </section>
+  );
+}
+
+/* ── About: three layouts (text beside a picture, centred text, text in columns) ── */
+export function About({ id, variant, eyebrow, title, text, image, points }: { id: string; variant: 'split' | 'centered' | 'columns'; eyebrow: string; title: string; text: string; image?: string; points?: string[] }) {
+  const paras = text.split(/\n{2,}/).filter(Boolean);
+  const pts = points && points.length ? <ul className="mt-6 grid gap-2 text-sm sm:grid-cols-2">{points.map((p) => <li key={p} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--eng-accent)]" />{p}</li>)}</ul> : null;
+  return (
+    <section id={id} className="scroll-mt-20 px-5 py-20 md:py-24">
+      {variant === 'centered' && (
+        <div className="mx-auto max-w-3xl text-center">
+          <Heading eyebrow={eyebrow} title={title} center />
+          <div className="mt-8 space-y-4 text-[var(--eng-muted)] md:text-lg">{paras.map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}</div>
+          {pts}
+        </div>
+      )}
+      {variant === 'columns' && (
+        <div className="mx-auto max-w-6xl">
+          <Heading eyebrow={eyebrow} title={title} />
+          <div className="mt-8 gap-10 text-[var(--eng-muted)] md:columns-2 md:text-lg">{paras.map((p, i) => <p key={i} className="mb-4 break-inside-avoid whitespace-pre-line">{p}</p>)}</div>
+          {pts}
+        </div>
+      )}
+      {variant === 'split' && (
+        <div className={`mx-auto grid max-w-6xl items-center gap-10 ${image ? 'md:grid-cols-2' : ''}`}>
+          <div>
+            <Heading eyebrow={eyebrow} title={title} />
+            <div className="mt-6 space-y-4 text-[var(--eng-muted)] md:text-lg">{paras.map((p, i) => <p key={i} className="whitespace-pre-line">{p}</p>)}</div>
+            {pts}
+          </div>
+          {image && <figure className="aspect-[4/3] overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}><Img src={image} alt={title} className="h-full w-full object-cover" /></figure>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── Contact details: three layouts. The form itself is the enquiry section; this shows how else to reach the business. ── */
+export function ContactDetails({ id, variant, eyebrow, title, sub, brand }: {
+  id: string; variant: 'card' | 'split' | 'minimal'; eyebrow: string; title: string; sub?: string;
+  brand: { phone?: string; whatsapp?: string; email?: string; address?: string; businessHours?: string; googleMaps?: string; facebook?: string; instagram?: string; linkedin?: string; youtube?: string };
+}) {
+  const wa = brand.whatsapp ? `https://wa.me/${brand.whatsapp.replace(/\D/g, '')}` : '';
+  const rows: { label: string; node: React.ReactNode }[] = [];
+  if (brand.phone) rows.push({ label: 'Phone', node: <a href={`tel:${brand.phone}`} className="hover:text-[var(--eng-accent)]">{brand.phone}</a> });
+  if (wa) rows.push({ label: 'WhatsApp', node: <a href={wa} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--eng-accent)]">Chat with us</a> });
+  if (brand.email) rows.push({ label: 'E-mail', node: <a href={`mailto:${brand.email}`} className="hover:text-[var(--eng-accent)]">{brand.email}</a> });
+  if (brand.address) rows.push({ label: 'Address', node: <span>{brand.address}{brand.googleMaps && <> · <a href={brand.googleMaps} target="_blank" rel="noopener noreferrer" className="text-[var(--eng-accent)] underline">View on map</a></>}</span> });
+  if (brand.businessHours) rows.push({ label: 'Hours', node: <span>{brand.businessHours}</span> });
+  const socials = [['Facebook', brand.facebook], ['Instagram', brand.instagram], ['LinkedIn', brand.linkedin], ['YouTube', brand.youtube]].filter(([, u]) => !!u) as [string, string][];
+  if (rows.length === 0 && socials.length === 0) return null;
+  const list = <dl className="space-y-3 text-sm">{rows.map((r) => <div key={r.label} className="flex gap-4"><dt className="w-20 shrink-0 text-[11px] uppercase tracking-widest text-[var(--eng-muted)]">{r.label}</dt><dd>{r.node}</dd></div>)}</dl>;
+  const soc = socials.length ? <p className="mt-5 flex flex-wrap gap-4 text-sm">{socials.map(([n, u]) => <a key={n} href={u} target="_blank" rel="noopener noreferrer" className="text-[var(--eng-accent)] underline">{n}</a>)}</p> : null;
+  return (
+    <section id={id} className="scroll-mt-20 px-5 py-16 md:py-20">
+      {variant === 'card' && (
+        <div className="mx-auto max-w-xl border border-[var(--eng-border)] bg-[var(--eng-surface)] p-8" style={{ borderRadius: 'var(--eng-radius)' }}>
+          <Heading eyebrow={eyebrow} title={title} sub={sub} />
+          <div className="mt-6">{list}{soc}</div>
+        </div>
+      )}
+      {variant === 'split' && (
+        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2">
+          <Heading eyebrow={eyebrow} title={title} sub={sub} />
+          <div className="self-center">{list}{soc}</div>
+        </div>
+      )}
+      {variant === 'minimal' && (
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--eng-accent)]">{eyebrow}</p>
+          <div className="mt-4 inline-block text-left">{list}</div>
+          {soc && <div className="text-center">{soc}</div>}
+        </div>
+      )}
     </section>
   );
 }

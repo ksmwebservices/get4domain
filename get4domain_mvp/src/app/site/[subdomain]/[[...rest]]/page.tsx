@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Script from 'next/script';
 import { notFound } from 'next/navigation';
 import { Star } from 'lucide-react';
 import { getCategory } from '@/data/demo-site';
@@ -11,13 +12,15 @@ import DemoCatalogGrid from '@/components/DemoCatalogGrid';
 import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
+import KitRenderer from '@/engine/kit/KitRenderer';
+import { buildPageModel, buildSiteDocModel, jsonLdFor } from '@/engine/sitedoc/build';
 import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
 import { themePages } from '@/engine/raw-html-site';
 import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
 
-// Live vendor sites are per-vendor and change whenever the vendor edits — never static.
-export const dynamic = 'force-dynamic';
+// Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
+// within seconds. The vendor's private preview link (?preview=) is never cached.
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
@@ -31,17 +34,22 @@ interface SiteData {
     businessName: string | null; tagline: string | null; about: string | null;
     logo: string | null; banner: string | null; phone: string | null; whatsapp: string | null;
     email: string | null; address: string | null; seoTitle: string | null; seoDesc: string | null;
-    seoKeywords: string | null;
+    seoKeywords: string | null; favicon?: string | null; ogImage?: string | null; googleAnalyticsId?: string | null;
   } | null;
   products: VendorProduct[];
   theme?: (ThemeRow & { pages?: unknown; css?: string | null; js?: string | null; fonts?: unknown }) | null;
   paymentsEnabled?: boolean;
+  docV2?: boolean;
+  checkoutMode?: 'ONLINE' | 'ORDER_REQUEST' | 'NONE';
+  preview?: boolean;
+  pack?: { key: string; name: string; config: unknown } | null;
 }
 
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
-async function fetchSite(subdomain: string): Promise<SiteData | null> {
+async function fetchSite(subdomain: string, preview?: string): Promise<SiteData | null> {
   try {
-    const res = await fetch(`${API_BASE}/cms/site/${encodeURIComponent(subdomain)}`, { cache: 'no-store' });
+    const url = `${API_BASE}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}` : ''}`;
+    const res = await fetch(url, preview ? { cache: 'no-store' } : { next: { tags: [`site:${subdomain}`], revalidate: 60 } });
     if (!res.ok) return null;
     const json = await res.json();
     return (json.data ?? json) as SiteData;
@@ -89,24 +97,29 @@ function buildCatalog(site: SiteData): CategoryCatalog {
 
 interface Params { subdomain: string; rest?: string[] }
 
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string }> }): Promise<Metadata> {
   const { subdomain } = await params;
-  const site = await fetchSite(subdomain);
+  const { preview } = await searchParams;
+  const site = await fetchSite(subdomain, preview);
   if (!site) return { title: 'Site not found' };
   const name = site.cms?.businessName || site.vendor.businessName;
   const title = site.cms?.seoTitle || `${name} — ${site.cms?.tagline ?? 'Official Website'}`;
   const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
+  const share = site.cms?.ogImage || site.cms?.banner || site.cms?.logo;
   return {
     title,
     description,
     keywords: site.cms?.seoKeywords ?? undefined,
-    openGraph: { title, description, type: 'website', images: site.cms?.banner ? [site.cms.banner] : [] },
+    ...(site.docV2 && site.cms?.favicon ? { icons: { icon: site.cms.favicon } } : {}),
+    ...(site.preview ? { robots: { index: false, follow: false } } : {}),
+    openGraph: { title, description, type: 'website', images: share ? [share] : [] },
   };
 }
 
-export default async function VendorSitePage({ params }: { params: Promise<Params> }) {
+export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string }> }) {
   const { subdomain, rest = [] } = await params;
-  const site = await fetchSite(subdomain);
+  const { preview } = await searchParams;
+  const site = await fetchSite(subdomain, preview);
   if (!site) notFound();
 
   // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
@@ -128,6 +141,39 @@ export default async function VendorSitePage({ params }: { params: Promise<Param
   const selectedTemplate = templateFromThemeRow(site.theme);
   if (selectedTemplate && (rest.length === 0 || rest[0] === 'home')) {
     return <>{renderKitTemplate(selectedTemplate, site as unknown as EngineSiteData, { kind: 'live', subdomain })}</>;
+  }
+
+  // The new Website Manager (per-vendor switch `site_doc_v2`): the site is the vendor's own content + a category pack + a theme and layouts they chose.
+  // No stock photo, invented testimonial or invented number is ever added; an empty field is hidden or shows the pack's plain wording.
+  if (site.docV2) {
+    const mode = { kind: 'live' as const, subdomain };
+    // a shop can take online payment (the vendor's own Razorpay) or order requests the shop confirms by phone
+    const shop = !!site.paymentsEnabled || site.checkoutMode === 'ORDER_REQUEST';
+    const checkoutMode = site.checkoutMode === 'ORDER_REQUEST' ? ('ORDER_REQUEST' as const) : ('ONLINE' as const);
+    const bar = site.preview ? <div className="fixed inset-x-0 top-0 z-50 bg-amber-300 px-4 py-2 text-center text-sm font-semibold text-slate-900">Preview: this is how your site will look. It is not live until you publish.</div> : null;
+    if (rest[0] === 'p' && rest[1]) {
+      const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
+      if (!pg) notFound();
+      return <>{bar}<KitRenderer model={buildPageModel(site as unknown as EngineSiteData, pg)} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
+    }
+    if (rest.length === 0 || rest[0] === 'home') {
+      const ga = site.cms?.googleAnalyticsId?.trim();
+      return (
+        <>
+          {bar}
+          {/* eslint-disable-next-line react/no-danger */}
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFor(site as unknown as EngineSiteData, `https://${subdomain}.get4domain.com`)).replace(/</g, '\\u003c') }} />
+          {ga && /^[A-Za-z0-9-]{4,20}$/.test(ga) && !site.preview ? (
+            <>
+              <Script src={`https://www.googletagmanager.com/gtag/js?id=${ga}`} strategy="afterInteractive" />
+              <Script id="ga-init" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`}</Script>
+            </>
+          ) : null}
+          <KitRenderer model={buildSiteDocModel(site as unknown as EngineSiteData)} mode={mode} shop={shop} checkoutMode={checkoutMode} />
+        </>
+      );
+    }
+    notFound();
   }
 
   // Industry-switch: if this vendor's industry has a bespoke engine site (Real

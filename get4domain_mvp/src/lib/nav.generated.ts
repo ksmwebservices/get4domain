@@ -1,5 +1,5 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
-// registry-hash: 535d3b203808bdc8
+// registry-hash: 37dc715c95cbc6de
 // Navigation data + pure state logic for the dashboard.
 /* eslint-disable */
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
@@ -278,7 +278,7 @@ export function checklistDone(id: ChecklistId, s: GoLiveSignals): boolean {
   }
 }
 
-export const REGISTRY_HASH = '535d3b203808bdc8';
+export const REGISTRY_HASH = '37dc715c95cbc6de';
 export const FEATURES: Feature[] = [
   {
     "id": "home.today",
@@ -499,10 +499,10 @@ export const FEATURES: Feature[] = [
       "/dashboard/my-website"
     ],
     "purpose": "website-content",
-    "minPlan": "WORKSPACE",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
     "status": "WORKING",
-    "testId": "site.live-edit",
+    "testId": "website-manager.fields",
     "moduleKey": "website_manager"
   },
   {
@@ -512,9 +512,12 @@ export const FEATURES: Feature[] = [
     "icon": "FileText",
     "route": "/dashboard/website/new-pages",
     "purpose": "website-pages",
-    "minPlan": "BOS",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
-    "status": "NOT_BUILT"
+    "status": "WORKING",
+    "testId": "website-manager.plans",
+    "limits": "Pages per plan: LeadSpace 1, Essentials 5, Pro 25 (the home page counts as one).",
+    "moduleKey": "website_manager"
   },
   {
     "id": "website.design",
@@ -523,11 +526,10 @@ export const FEATURES: Feature[] = [
     "icon": "Sparkles",
     "route": "/dashboard/website/design",
     "purpose": "website-design",
-    "minPlan": "WORKSPACE",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
-    "status": "LIMITED",
-    "testId": "themes.unlock",
-    "limits": "Pick a template and logo/banner; theme changes per year follow your plan.",
+    "status": "WORKING",
+    "testId": "website-manager.themes",
     "moduleKey": "website_manager"
   },
   {
@@ -553,11 +555,10 @@ export const FEATURES: Feature[] = [
     "icon": "Search",
     "route": "/dashboard/website/search",
     "purpose": "seo-basic",
-    "minPlan": "WORKSPACE",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
-    "status": "LIMITED",
-    "manualCheck": "docs/v2/evidence/dashboard-v2/WALKTHROUGH.md#website.search",
-    "limits": "Title, description and keywords per page.",
+    "status": "WORKING",
+    "testId": "website-manager.fields",
     "moduleKey": "website_manager"
   },
   {
@@ -598,11 +599,10 @@ export const FEATURES: Feature[] = [
       "/dashboard/website-engine"
     ],
     "purpose": "readiness",
-    "minPlan": "WORKSPACE",
+    "minPlan": "LEADSPACE",
     "profiles": "all",
-    "status": "LIMITED",
-    "manualCheck": "docs/v2/evidence/dashboard-v2/WALKTHROUGH.md#website.readiness",
-    "limits": "The technical list of wired actions is an admin view.",
+    "status": "WORKING",
+    "testId": "website-manager.readiness",
     "moduleKey": "website_manager"
   },
   {

@@ -12,6 +12,8 @@ import { getMetadataStorage } from 'class-validator';
 export const ECHOED_READ_ONLY_KEYS: readonly string[] = [
   'id', 'vendorId', 'createdAt', 'updatedAt', 'deletedAt',
   'createdBy', 'nameNormalized', 'openingBalancePaise', 'deliveredAt', 'lastBilledPeriod',
+  // Website Manager bookkeeping the server owns (draft/publish workflow, category pack generation)
+  'draft', 'packKey', 'publishedAt', 'siteVersion',
 ];
 
 const EDIT_DTO = /^(Update|Patch|Edit)[A-Z]/;

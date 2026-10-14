@@ -12,6 +12,7 @@ import { PUBLIC_PRODUCT_SELECT, PublicProduct, activeFor, normaliseStatus, toPub
 import { readPreviewToken } from '../site-doc/preview-token';
 import { overlayDraft } from '../site-doc/site-merge';
 import { SITE_FLAG_ADDON } from '../site-doc/site-doc.constants';
+import { resolvePack } from '../site-doc/pack-resolve';
 
 /** Theme-change allowance is PER YEAR: the next reset is one year after the previous one (not the end of a shorter billing cycle). */
 export function nextYearlyReset(previous: Date, now: Date): Date {
@@ -379,6 +380,8 @@ export class CmsService {
     cms: Omit<VendorCMS, 'draft'> | null;
     /** true when this vendor is on the draft/publish workflow (the new renderer and the new rules apply) */
     docV2: boolean;
+    /** the category pack (section order, wording, layouts) the new renderer uses; null on the old path */
+    pack: { key: string; name: string; config: unknown } | null;
     /** true only for the vendor's own signed preview link: the cms below then includes the unpublished draft */
     preview: boolean;
     products: PublicProduct[];
@@ -421,6 +424,7 @@ export class CmsService {
       },
       cms: cms as Omit<VendorCMS, 'draft'> | null,
       docV2: flag?.enabled === true,
+      pack: flag?.enabled === true ? await resolvePack(this.prisma, cmsRow?.packKey, vendor.industry) : null,
       preview,
       products: products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null),
       theme: themeRow

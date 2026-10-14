@@ -30,6 +30,8 @@ const suites = [
   ['LeadSpace pilot kit on REAL Postgres: onboarding script for pilot vendors, test pages per trade with UTM links, the test-campaign sheet', '../leadspace/verify-pilot-pg.js'],
   ['LeadSpace migrations on REAL Postgres: rehearsal on existing campaign data, nothing altered, no drift, RLS covered', '../leadspace/verify-leadspace-migration-pg.js'],
   ['Website Manager on REAL Postgres: draft never public, preview link, publish and refresh, failure keeps the old site, last 10 versions and restore, plan limits, lapsed gate, backfill and rollback', '../website-manager/verify-site-doc-pg.js'],
+  ['Website Manager category packs on REAL Postgres: create, duplicate, edit, switch off, preview, starter packs, generate + edit + publish a Salon site with no code change', '../website-manager/verify-packs-pg.js'],
+  ['Website Manager migration on REAL Postgres: rehearsal on existing site rows, nothing altered, no drift, RLS covered', '../website-manager/verify-migration-pg.js'],
   ['Website Manager uploads guard: every picture goes through the shared service', '../website-manager/uploads-guard.js'],
   ['stock + migration on REAL Postgres (PGlite; SKIPs if G4D_PGLITE_DIR is not set up)', 'verify-stock-pg.js'],
 ];
