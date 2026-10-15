@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsObject, IsOptional, IsString, Matches, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsObject, IsOptional, IsString, Matches, MaxLength, ValidateNested } from 'class-validator';
 
 // Categorized portfolio gallery item (e.g. a photography vendor's Ceremony/
 // Portraits/Details/Celebration gallery). Stored as VendorCMS.portfolio (Json).
@@ -16,6 +16,8 @@ export class TestimonialDto {
   @ApiProperty() @IsString() @MaxLength(600) quote!: string;
   @ApiProperty() @IsString() @MaxLength(120) author!: string;
   @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(160) note?: string;
+  /** true while this is the starter quote; the public site hides it */
+  @ApiProperty({ required: false }) @IsOptional() @IsBoolean() sample?: boolean;
 }
 
 export class SitePageDto {
@@ -63,4 +65,12 @@ export class UpdateVendorCmsDto {
   @ApiProperty({ required: false, description: 'Design choices: themeKey, hero, about, services, gallery, testimonials, contact' })
   @IsOptional() @IsObject()
   layout?: Record<string, string>;
+
+  @ApiProperty({ required: false, description: 'The design (one of the four of your category) the site uses' })
+  @IsOptional() @IsString() @MaxLength(40)
+  designKey?: string;
+
+  @ApiProperty({ required: false, description: 'Headline, sub-line, button label, announcement, trust points, questions, steps, statistics, team, before and after, and the sample markers' })
+  @IsOptional() @IsObject()
+  extras?: Record<string, unknown>;
 }

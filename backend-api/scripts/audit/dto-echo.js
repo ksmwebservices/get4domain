@@ -16,7 +16,7 @@ const { ECHOED_READ_ONLY_KEYS } = require(path.join(DIST, 'common', 'pipes', 'ed
 const META = new Set(ECHOED_READ_ONLY_KEYS);
 // Reviewed: a DTO that deliberately does not accept some column of its table. Each needs the reason.
 const REVIEWED = {
-  UpdateVendorCmsDto: 'draft, packKey, publishedAt and siteVersion are managed by the server (draft/publish workflow, category pack generation); the editor never sends them',
+  UpdateVendorCmsDto: 'draft, packKey, publishedAt, siteVersion and siteStatus are managed by the server (draft/publish workflow, category pack generation, hidden-until-published sites); the editor never sends them',
   UpdateVendorDto: 'admin-only form; role, status, isSandbox, expiresAt, configOverride and the reseller ids are deliberately NOT editable here (they have their own audited actions)',
   UpdateSessionDto: 'only changed by a status button ({ status } literal in coaching/BatchesView); its batch is fixed when the session is made',
   UpdateCaseDocumentDto: 'only changed by a status button ({ status } literal in finance/CasesView and DocumentsView)',

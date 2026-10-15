@@ -1,0 +1,1346 @@
+[
+ {
+  "category": "advocate",
+  "name": "Advocate and legal",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "advocate/classic-desktop.webp",
+   "mobile": "advocate/classic-mobile.webp"
+  },
+  "desktopHeight": 4661,
+  "mobileHeight": 6093
+ },
+ {
+  "category": "advocate",
+  "name": "Advocate and legal",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "advocate/bold-desktop.webp",
+   "mobile": "advocate/bold-mobile.webp"
+  },
+  "desktopHeight": 5476,
+  "mobileHeight": 4985
+ },
+ {
+  "category": "advocate",
+  "name": "Advocate and legal",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "advocate/minimal-desktop.webp",
+   "mobile": "advocate/minimal-mobile.webp"
+  },
+  "desktopHeight": 6317,
+  "mobileHeight": 6277
+ },
+ {
+  "category": "advocate",
+  "name": "Advocate and legal",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "advocate/warm-desktop.webp",
+   "mobile": "advocate/warm-mobile.webp"
+  },
+  "desktopHeight": 4922,
+  "mobileHeight": 6871
+ },
+ {
+  "category": "agriculture",
+  "name": "Agriculture",
+  "family": "shop",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "agriculture/classic-desktop.webp",
+   "mobile": "agriculture/classic-mobile.webp"
+  },
+  "desktopHeight": 4545,
+  "mobileHeight": 5523
+ },
+ {
+  "category": "agriculture",
+  "name": "Agriculture",
+  "family": "shop",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "agriculture/bold-desktop.webp",
+   "mobile": "agriculture/bold-mobile.webp"
+  },
+  "desktopHeight": 4628,
+  "mobileHeight": 6369
+ },
+ {
+  "category": "agriculture",
+  "name": "Agriculture",
+  "family": "shop",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "agriculture/minimal-desktop.webp",
+   "mobile": "agriculture/minimal-mobile.webp"
+  },
+  "desktopHeight": 4997,
+  "mobileHeight": 5031
+ },
+ {
+  "category": "agriculture",
+  "name": "Agriculture",
+  "family": "shop",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "agriculture/warm-desktop.webp",
+   "mobile": "agriculture/warm-mobile.webp"
+  },
+  "desktopHeight": 5174,
+  "mobileHeight": 5728
+ },
+ {
+  "category": "automobile",
+  "name": "Automobile services",
+  "family": "booking",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "automobile/classic-desktop.webp",
+   "mobile": "automobile/classic-mobile.webp"
+  },
+  "desktopHeight": 5617,
+  "mobileHeight": 8295
+ },
+ {
+  "category": "automobile",
+  "name": "Automobile services",
+  "family": "booking",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "automobile/bold-desktop.webp",
+   "mobile": "automobile/bold-mobile.webp"
+  },
+  "desktopHeight": 4467,
+  "mobileHeight": 4624
+ },
+ {
+  "category": "automobile",
+  "name": "Automobile services",
+  "family": "booking",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "automobile/minimal-desktop.webp",
+   "mobile": "automobile/minimal-mobile.webp"
+  },
+  "desktopHeight": 4323,
+  "mobileHeight": 4799
+ },
+ {
+  "category": "automobile",
+  "name": "Automobile services",
+  "family": "booking",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "automobile/warm-desktop.webp",
+   "mobile": "automobile/warm-mobile.webp"
+  },
+  "desktopHeight": 7103,
+  "mobileHeight": 8587
+ },
+ {
+  "category": "clinic",
+  "name": "Clinic and healthcare",
+  "family": "booking",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "clinic/classic-desktop.webp",
+   "mobile": "clinic/classic-mobile.webp"
+  },
+  "desktopHeight": 5609,
+  "mobileHeight": 8490
+ },
+ {
+  "category": "clinic",
+  "name": "Clinic and healthcare",
+  "family": "booking",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "clinic/bold-desktop.webp",
+   "mobile": "clinic/bold-mobile.webp"
+  },
+  "desktopHeight": 4467,
+  "mobileHeight": 4624
+ },
+ {
+  "category": "clinic",
+  "name": "Clinic and healthcare",
+  "family": "booking",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "clinic/minimal-desktop.webp",
+   "mobile": "clinic/minimal-mobile.webp"
+  },
+  "desktopHeight": 4331,
+  "mobileHeight": 5062
+ },
+ {
+  "category": "clinic",
+  "name": "Clinic and healthcare",
+  "family": "booking",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "clinic/warm-desktop.webp",
+   "mobile": "clinic/warm-mobile.webp"
+  },
+  "desktopHeight": 7165,
+  "mobileHeight": 8717
+ },
+ {
+  "category": "coaching",
+  "name": "Coaching and tutoring",
+  "family": "courses",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "bold-violet",
+  "files": {
+   "desktop": "coaching/classic-desktop.webp",
+   "mobile": "coaching/classic-mobile.webp"
+  },
+  "desktopHeight": 5138,
+  "mobileHeight": 7806
+ },
+ {
+  "category": "coaching",
+  "name": "Coaching and tutoring",
+  "family": "courses",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "forest-night",
+  "files": {
+   "desktop": "coaching/bold-desktop.webp",
+   "mobile": "coaching/bold-mobile.webp"
+  },
+  "desktopHeight": 4967,
+  "mobileHeight": 4997
+ },
+ {
+  "category": "coaching",
+  "name": "Coaching and tutoring",
+  "family": "courses",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "coaching/minimal-desktop.webp",
+   "mobile": "coaching/minimal-mobile.webp"
+  },
+  "desktopHeight": 7396,
+  "mobileHeight": 7680
+ },
+ {
+  "category": "coaching",
+  "name": "Coaching and tutoring",
+  "family": "courses",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "coaching/warm-desktop.webp",
+   "mobile": "coaching/warm-mobile.webp"
+  },
+  "desktopHeight": 4909,
+  "mobileHeight": 5614
+ },
+ {
+  "category": "construction",
+  "name": "Construction and interiors",
+  "family": "portfolio",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "construction/classic-desktop.webp",
+   "mobile": "construction/classic-mobile.webp"
+  },
+  "desktopHeight": 5497,
+  "mobileHeight": 6592
+ },
+ {
+  "category": "construction",
+  "name": "Construction and interiors",
+  "family": "portfolio",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "construction/bold-desktop.webp",
+   "mobile": "construction/bold-mobile.webp"
+  },
+  "desktopHeight": 6024,
+  "mobileHeight": 6040
+ },
+ {
+  "category": "construction",
+  "name": "Construction and interiors",
+  "family": "portfolio",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "construction/minimal-desktop.webp",
+   "mobile": "construction/minimal-mobile.webp"
+  },
+  "desktopHeight": 5579,
+  "mobileHeight": 6459
+ },
+ {
+  "category": "construction",
+  "name": "Construction and interiors",
+  "family": "portfolio",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "construction/warm-desktop.webp",
+   "mobile": "construction/warm-mobile.webp"
+  },
+  "desktopHeight": 4709,
+  "mobileHeight": 6929
+ },
+ {
+  "category": "diagnostics",
+  "name": "Diagnostics and labs",
+  "family": "booking",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "diagnostics/classic-desktop.webp",
+   "mobile": "diagnostics/classic-mobile.webp"
+  },
+  "desktopHeight": 5609,
+  "mobileHeight": 8347
+ },
+ {
+  "category": "diagnostics",
+  "name": "Diagnostics and labs",
+  "family": "booking",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "diagnostics/bold-desktop.webp",
+   "mobile": "diagnostics/bold-mobile.webp"
+  },
+  "desktopHeight": 4467,
+  "mobileHeight": 4624
+ },
+ {
+  "category": "diagnostics",
+  "name": "Diagnostics and labs",
+  "family": "booking",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "diagnostics/minimal-desktop.webp",
+   "mobile": "diagnostics/minimal-mobile.webp"
+  },
+  "desktopHeight": 4371,
+  "mobileHeight": 4939
+ },
+ {
+  "category": "diagnostics",
+  "name": "Diagnostics and labs",
+  "family": "booking",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "diagnostics/warm-desktop.webp",
+   "mobile": "diagnostics/warm-mobile.webp"
+  },
+  "desktopHeight": 7103,
+  "mobileHeight": 8683
+ },
+ {
+  "category": "education",
+  "name": "Education and schools",
+  "family": "courses",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "education/classic-desktop.webp",
+   "mobile": "education/classic-mobile.webp"
+  },
+  "desktopHeight": 5158,
+  "mobileHeight": 7874
+ },
+ {
+  "category": "education",
+  "name": "Education and schools",
+  "family": "courses",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "forest-night",
+  "files": {
+   "desktop": "education/bold-desktop.webp",
+   "mobile": "education/bold-mobile.webp"
+  },
+  "desktopHeight": 4539,
+  "mobileHeight": 4394
+ },
+ {
+  "category": "education",
+  "name": "Education and schools",
+  "family": "courses",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "bold-violet",
+  "files": {
+   "desktop": "education/minimal-desktop.webp",
+   "mobile": "education/minimal-mobile.webp"
+  },
+  "desktopHeight": 6987,
+  "mobileHeight": 7141
+ },
+ {
+  "category": "education",
+  "name": "Education and schools",
+  "family": "courses",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "education/warm-desktop.webp",
+   "mobile": "education/warm-mobile.webp"
+  },
+  "desktopHeight": 4909,
+  "mobileHeight": 5614
+ },
+ {
+  "category": "events",
+  "name": "Events and venues",
+  "family": "packages",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "events/classic-desktop.webp",
+   "mobile": "events/classic-mobile.webp"
+  },
+  "desktopHeight": 6045,
+  "mobileHeight": 8542
+ },
+ {
+  "category": "events",
+  "name": "Events and venues",
+  "family": "packages",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "events/bold-desktop.webp",
+   "mobile": "events/bold-mobile.webp"
+  },
+  "desktopHeight": 4996,
+  "mobileHeight": 6647
+ },
+ {
+  "category": "events",
+  "name": "Events and venues",
+  "family": "packages",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "events/minimal-desktop.webp",
+   "mobile": "events/minimal-mobile.webp"
+  },
+  "desktopHeight": 4789,
+  "mobileHeight": 4689
+ },
+ {
+  "category": "events",
+  "name": "Events and venues",
+  "family": "packages",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "events/warm-desktop.webp",
+   "mobile": "events/warm-mobile.webp"
+  },
+  "desktopHeight": 5226,
+  "mobileHeight": 5537
+ },
+ {
+  "category": "finance",
+  "name": "Finance and advisory",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "finance/classic-desktop.webp",
+   "mobile": "finance/classic-mobile.webp"
+  },
+  "desktopHeight": 4661,
+  "mobileHeight": 6361
+ },
+ {
+  "category": "finance",
+  "name": "Finance and advisory",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "finance/bold-desktop.webp",
+   "mobile": "finance/bold-mobile.webp"
+  },
+  "desktopHeight": 5576,
+  "mobileHeight": 4996
+ },
+ {
+  "category": "finance",
+  "name": "Finance and advisory",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "finance/minimal-desktop.webp",
+   "mobile": "finance/minimal-mobile.webp"
+  },
+  "desktopHeight": 6884,
+  "mobileHeight": 6791
+ },
+ {
+  "category": "finance",
+  "name": "Finance and advisory",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "finance/warm-desktop.webp",
+   "mobile": "finance/warm-mobile.webp"
+  },
+  "desktopHeight": 4898,
+  "mobileHeight": 7260
+ },
+ {
+  "category": "freelancer",
+  "name": "Freelancer",
+  "family": "portfolio",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "freelancer/classic-desktop.webp",
+   "mobile": "freelancer/classic-mobile.webp"
+  },
+  "desktopHeight": 5445,
+  "mobileHeight": 6516
+ },
+ {
+  "category": "freelancer",
+  "name": "Freelancer",
+  "family": "portfolio",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "freelancer/bold-desktop.webp",
+   "mobile": "freelancer/bold-mobile.webp"
+  },
+  "desktopHeight": 5517,
+  "mobileHeight": 5580
+ },
+ {
+  "category": "freelancer",
+  "name": "Freelancer",
+  "family": "portfolio",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "freelancer/minimal-desktop.webp",
+   "mobile": "freelancer/minimal-mobile.webp"
+  },
+  "desktopHeight": 5407,
+  "mobileHeight": 5987
+ },
+ {
+  "category": "freelancer",
+  "name": "Freelancer",
+  "family": "portfolio",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "freelancer/warm-desktop.webp",
+   "mobile": "freelancer/warm-mobile.webp"
+  },
+  "desktopHeight": 4653,
+  "mobileHeight": 6457
+ },
+ {
+  "category": "gym",
+  "name": "Gym and fitness",
+  "family": "booking",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "forest-night",
+  "files": {
+   "desktop": "gym/classic-desktop.webp",
+   "mobile": "gym/classic-mobile.webp"
+  },
+  "desktopHeight": 5589,
+  "mobileHeight": 8307
+ },
+ {
+  "category": "gym",
+  "name": "Gym and fitness",
+  "family": "booking",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "gym/bold-desktop.webp",
+   "mobile": "gym/bold-mobile.webp"
+  },
+  "desktopHeight": 4415,
+  "mobileHeight": 4624
+ },
+ {
+  "category": "gym",
+  "name": "Gym and fitness",
+  "family": "booking",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "gym/minimal-desktop.webp",
+   "mobile": "gym/minimal-mobile.webp"
+  },
+  "desktopHeight": 4331,
+  "mobileHeight": 4927
+ },
+ {
+  "category": "gym",
+  "name": "Gym and fitness",
+  "family": "booking",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "gym/warm-desktop.webp",
+   "mobile": "gym/warm-mobile.webp"
+  },
+  "desktopHeight": 7051,
+  "mobileHeight": 8675
+ },
+ {
+  "category": "home-services",
+  "name": "Home services",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "home-services/classic-desktop.webp",
+   "mobile": "home-services/classic-mobile.webp"
+  },
+  "desktopHeight": 4605,
+  "mobileHeight": 6382
+ },
+ {
+  "category": "home-services",
+  "name": "Home services",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "home-services/bold-desktop.webp",
+   "mobile": "home-services/bold-mobile.webp"
+  },
+  "desktopHeight": 900,
+  "mobileHeight": 5100
+ },
+ {
+  "category": "home-services",
+  "name": "Home services",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "home-services/minimal-desktop.webp",
+   "mobile": "home-services/minimal-mobile.webp"
+  },
+  "desktopHeight": 7363,
+  "mobileHeight": 7122
+ },
+ {
+  "category": "home-services",
+  "name": "Home services",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "home-services/warm-desktop.webp",
+   "mobile": "home-services/warm-mobile.webp"
+  },
+  "desktopHeight": 5308,
+  "mobileHeight": 7549
+ },
+ {
+  "category": "hotel",
+  "name": "Hotel and hospitality",
+  "family": "packages",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "hotel/classic-desktop.webp",
+   "mobile": "hotel/classic-mobile.webp"
+  },
+  "desktopHeight": 6121,
+  "mobileHeight": 8574
+ },
+ {
+  "category": "hotel",
+  "name": "Hotel and hospitality",
+  "family": "packages",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "hotel/bold-desktop.webp",
+   "mobile": "hotel/bold-mobile.webp"
+  },
+  "desktopHeight": 5016,
+  "mobileHeight": 6681
+ },
+ {
+  "category": "hotel",
+  "name": "Hotel and hospitality",
+  "family": "packages",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "hotel/minimal-desktop.webp",
+   "mobile": "hotel/minimal-mobile.webp"
+  },
+  "desktopHeight": 4789,
+  "mobileHeight": 4643
+ },
+ {
+  "category": "hotel",
+  "name": "Hotel and hospitality",
+  "family": "packages",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "hotel/warm-desktop.webp",
+   "mobile": "hotel/warm-mobile.webp"
+  },
+  "desktopHeight": 5202,
+  "mobileHeight": 5523
+ },
+ {
+  "category": "technology",
+  "name": "IT and web services",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "technology/classic-desktop.webp",
+   "mobile": "technology/classic-mobile.webp"
+  },
+  "desktopHeight": 4749,
+  "mobileHeight": 6653
+ },
+ {
+  "category": "technology",
+  "name": "IT and web services",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "technology/bold-desktop.webp",
+   "mobile": "technology/bold-mobile.webp"
+  },
+  "desktopHeight": 5596,
+  "mobileHeight": 5197
+ },
+ {
+  "category": "technology",
+  "name": "IT and web services",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "technology/minimal-desktop.webp",
+   "mobile": "technology/minimal-mobile.webp"
+  },
+  "desktopHeight": 7411,
+  "mobileHeight": 7373
+ },
+ {
+  "category": "technology",
+  "name": "IT and web services",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "technology/warm-desktop.webp",
+   "mobile": "technology/warm-mobile.webp"
+  },
+  "desktopHeight": 5368,
+  "mobileHeight": 7693
+ },
+ {
+  "category": "logistics",
+  "name": "Logistics and transport",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "logistics/classic-desktop.webp",
+   "mobile": "logistics/classic-mobile.webp"
+  },
+  "desktopHeight": 4705,
+  "mobileHeight": 6273
+ },
+ {
+  "category": "logistics",
+  "name": "Logistics and transport",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "logistics/bold-desktop.webp",
+   "mobile": "logistics/bold-mobile.webp"
+  },
+  "desktopHeight": 5596,
+  "mobileHeight": 4980
+ },
+ {
+  "category": "logistics",
+  "name": "Logistics and transport",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "logistics/minimal-desktop.webp",
+   "mobile": "logistics/minimal-mobile.webp"
+  },
+  "desktopHeight": 6936,
+  "mobileHeight": 6647
+ },
+ {
+  "category": "logistics",
+  "name": "Logistics and transport",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "logistics/warm-desktop.webp",
+   "mobile": "logistics/warm-mobile.webp"
+  },
+  "desktopHeight": 4878,
+  "mobileHeight": 7132
+ },
+ {
+  "category": "general",
+  "name": "Other business",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "general/classic-desktop.webp",
+   "mobile": "general/classic-mobile.webp"
+  },
+  "desktopHeight": 4408,
+  "mobileHeight": 5686
+ },
+ {
+  "category": "general",
+  "name": "Other business",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "general/bold-desktop.webp",
+   "mobile": "general/bold-mobile.webp"
+  },
+  "desktopHeight": 5085,
+  "mobileHeight": 4660
+ },
+ {
+  "category": "general",
+  "name": "Other business",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "general/minimal-desktop.webp",
+   "mobile": "general/minimal-mobile.webp"
+  },
+  "desktopHeight": 5247,
+  "mobileHeight": 5158
+ },
+ {
+  "category": "general",
+  "name": "Other business",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "general/warm-desktop.webp",
+   "mobile": "general/warm-mobile.webp"
+  },
+  "desktopHeight": 4427,
+  "mobileHeight": 5797
+ },
+ {
+  "category": "photography",
+  "name": "Photography and studio",
+  "family": "portfolio",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "photography/classic-desktop.webp",
+   "mobile": "photography/classic-mobile.webp"
+  },
+  "desktopHeight": 5497,
+  "mobileHeight": 6630
+ },
+ {
+  "category": "photography",
+  "name": "Photography and studio",
+  "family": "portfolio",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "photography/bold-desktop.webp",
+   "mobile": "photography/bold-mobile.webp"
+  },
+  "desktopHeight": 6024,
+  "mobileHeight": 6080
+ },
+ {
+  "category": "photography",
+  "name": "Photography and studio",
+  "family": "portfolio",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "photography/minimal-desktop.webp",
+   "mobile": "photography/minimal-mobile.webp"
+  },
+  "desktopHeight": 5571,
+  "mobileHeight": 6538
+ },
+ {
+  "category": "photography",
+  "name": "Photography and studio",
+  "family": "portfolio",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "photography/warm-desktop.webp",
+   "mobile": "photography/warm-mobile.webp"
+  },
+  "desktopHeight": 4757,
+  "mobileHeight": 7008
+ },
+ {
+  "category": "professional",
+  "name": "Professional services",
+  "family": "enquiry",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "professional/classic-desktop.webp",
+   "mobile": "professional/classic-mobile.webp"
+  },
+  "desktopHeight": 4653,
+  "mobileHeight": 6420
+ },
+ {
+  "category": "professional",
+  "name": "Professional services",
+  "family": "enquiry",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "plum-night",
+  "files": {
+   "desktop": "professional/bold-desktop.webp",
+   "mobile": "professional/bold-mobile.webp"
+  },
+  "desktopHeight": 5596,
+  "mobileHeight": 5034
+ },
+ {
+  "category": "professional",
+  "name": "Professional services",
+  "family": "enquiry",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "professional/minimal-desktop.webp",
+   "mobile": "professional/minimal-mobile.webp"
+  },
+  "desktopHeight": 6856,
+  "mobileHeight": 6849
+ },
+ {
+  "category": "professional",
+  "name": "Professional services",
+  "family": "enquiry",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "harbour-amber",
+  "files": {
+   "desktop": "professional/warm-desktop.webp",
+   "mobile": "professional/warm-mobile.webp"
+  },
+  "desktopHeight": 4898,
+  "mobileHeight": 7212
+ },
+ {
+  "category": "realestate",
+  "name": "Real estate",
+  "family": "listings",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "classic-blue",
+  "files": {
+   "desktop": "realestate/classic-desktop.webp",
+   "mobile": "realestate/classic-mobile.webp"
+  },
+  "desktopHeight": 4894,
+  "mobileHeight": 7703
+ },
+ {
+  "category": "realestate",
+  "name": "Real estate",
+  "family": "listings",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "realestate/bold-desktop.webp",
+   "mobile": "realestate/bold-mobile.webp"
+  },
+  "desktopHeight": 6285,
+  "mobileHeight": 7230
+ },
+ {
+  "category": "realestate",
+  "name": "Real estate",
+  "family": "listings",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "realestate/minimal-desktop.webp",
+   "mobile": "realestate/minimal-mobile.webp"
+  },
+  "desktopHeight": 4553,
+  "mobileHeight": 4514
+ },
+ {
+  "category": "realestate",
+  "name": "Real estate",
+  "family": "listings",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "realestate/warm-desktop.webp",
+   "mobile": "realestate/warm-mobile.webp"
+  },
+  "desktopHeight": 5791,
+  "mobileHeight": 7620
+ },
+ {
+  "category": "restaurant",
+  "name": "Restaurant, cafe and catering",
+  "family": "menu",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "restaurant/classic-desktop.webp",
+   "mobile": "restaurant/classic-mobile.webp"
+  },
+  "desktopHeight": 5465,
+  "mobileHeight": 6336
+ },
+ {
+  "category": "restaurant",
+  "name": "Restaurant, cafe and catering",
+  "family": "menu",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "restaurant/bold-desktop.webp",
+   "mobile": "restaurant/bold-mobile.webp"
+  },
+  "desktopHeight": 4700,
+  "mobileHeight": 7052
+ },
+ {
+  "category": "restaurant",
+  "name": "Restaurant, cafe and catering",
+  "family": "menu",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "street-orange",
+  "files": {
+   "desktop": "restaurant/minimal-desktop.webp",
+   "mobile": "restaurant/minimal-mobile.webp"
+  },
+  "desktopHeight": 3737,
+  "mobileHeight": 3494
+ },
+ {
+  "category": "restaurant",
+  "name": "Restaurant, cafe and catering",
+  "family": "menu",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "restaurant/warm-desktop.webp",
+   "mobile": "restaurant/warm-mobile.webp"
+  },
+  "desktopHeight": 6118,
+  "mobileHeight": 8597
+ },
+ {
+  "category": "retail",
+  "name": "Retail and e-commerce",
+  "family": "shop",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "bold-violet",
+  "files": {
+   "desktop": "retail/classic-desktop.webp",
+   "mobile": "retail/classic-mobile.webp"
+  },
+  "desktopHeight": 4545,
+  "mobileHeight": 5561
+ },
+ {
+  "category": "retail",
+  "name": "Retail and e-commerce",
+  "family": "shop",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "midnight-gold",
+  "files": {
+   "desktop": "retail/bold-desktop.webp",
+   "mobile": "retail/bold-mobile.webp"
+  },
+  "desktopHeight": 4720,
+  "mobileHeight": 6409
+ },
+ {
+  "category": "retail",
+  "name": "Retail and e-commerce",
+  "family": "shop",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "retail/minimal-desktop.webp",
+   "mobile": "retail/minimal-mobile.webp"
+  },
+  "desktopHeight": 5021,
+  "mobileHeight": 4997
+ },
+ {
+  "category": "retail",
+  "name": "Retail and e-commerce",
+  "family": "shop",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "retail/warm-desktop.webp",
+   "mobile": "retail/warm-mobile.webp"
+  },
+  "desktopHeight": 5306,
+  "mobileHeight": 5766
+ },
+ {
+  "category": "salon",
+  "name": "Salon and beauty",
+  "family": "booking",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "soft-rose",
+  "files": {
+   "desktop": "salon/classic-desktop.webp",
+   "mobile": "salon/classic-mobile.webp"
+  },
+  "desktopHeight": 5609,
+  "mobileHeight": 8804
+ },
+ {
+  "category": "salon",
+  "name": "Salon and beauty",
+  "family": "booking",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "salon/bold-desktop.webp",
+   "mobile": "salon/bold-mobile.webp"
+  },
+  "desktopHeight": 4415,
+  "mobileHeight": 4624
+ },
+ {
+  "category": "salon",
+  "name": "Salon and beauty",
+  "family": "booking",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "clean-teal",
+  "files": {
+   "desktop": "salon/minimal-desktop.webp",
+   "mobile": "salon/minimal-mobile.webp"
+  },
+  "desktopHeight": 4351,
+  "mobileHeight": 4914
+ },
+ {
+  "category": "salon",
+  "name": "Salon and beauty",
+  "family": "booking",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "salon/warm-desktop.webp",
+   "mobile": "salon/warm-mobile.webp"
+  },
+  "desktopHeight": 7558,
+  "mobileHeight": 9308
+ },
+ {
+  "category": "travel",
+  "name": "Travel and tours",
+  "family": "packages",
+  "design": "Classic",
+  "key": "classic",
+  "theme": "warm-sand",
+  "files": {
+   "desktop": "travel/classic-desktop.webp",
+   "mobile": "travel/classic-mobile.webp"
+  },
+  "desktopHeight": 6576,
+  "mobileHeight": 9123
+ },
+ {
+  "category": "travel",
+  "name": "Travel and tours",
+  "family": "packages",
+  "design": "Bold",
+  "key": "bold",
+  "theme": "ocean-dark",
+  "files": {
+   "desktop": "travel/bold-desktop.webp",
+   "mobile": "travel/bold-mobile.webp"
+  },
+  "desktopHeight": 5020,
+  "mobileHeight": 7288
+ },
+ {
+  "category": "travel",
+  "name": "Travel and tours",
+  "family": "packages",
+  "design": "Minimal",
+  "key": "minimal",
+  "theme": "sunset-orange",
+  "files": {
+   "desktop": "travel/minimal-desktop.webp",
+   "mobile": "travel/minimal-mobile.webp"
+  },
+  "desktopHeight": 4962,
+  "mobileHeight": 4854
+ },
+ {
+  "category": "travel",
+  "name": "Travel and tours",
+  "family": "packages",
+  "design": "Warm",
+  "key": "warm",
+  "theme": "fresh-green",
+  "files": {
+   "desktop": "travel/warm-desktop.webp",
+   "mobile": "travel/warm-mobile.webp"
+  },
+  "desktopHeight": 5126,
+  "mobileHeight": 5682
+ }
+]

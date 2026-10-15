@@ -42,8 +42,8 @@ export class CmsController {
   @Public()
   @Get('site/:subdomain')
   @ApiOperation({ summary: 'Resolve a live vendor public site by subdomain (public — powers /site/[subdomain])' })
-  getSite(@Param('subdomain') subdomain: string, @Query('preview') preview?: string) {
-    return this.cmsService.getSiteBySubdomain(subdomain, preview);
+  getSite(@Param('subdomain') subdomain: string, @Query('preview') preview?: string, @Query('design') design?: string) {
+    return this.cmsService.getSiteBySubdomain(subdomain, preview, design);
   }
 
   @Public()

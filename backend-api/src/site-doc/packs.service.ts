@@ -2,15 +2,40 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SiteDocService } from './site-doc.service';
+import { StarterService } from './starter.service';
 import { PackConfig, fillPlaceholders, validatePack } from './pack.types';
-import { starterPacks } from './pack-seeds';
+import { planStarterSeed } from './industry-seeds';
+import { FAMILIES, designsFor } from './families';
 
 const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /** Category Packs: create, copy, edit, switch on or off, preview, and generate a vendor's site from one. No pack is ever needed in code. */
 @Injectable()
 export class PacksService {
-  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService) {}
+  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService, private readonly starter: StarterService) {}
+
+  /**
+   * A pack the admin typed with only the essentials (a flow family and the starter content) becomes a complete pack: the four designs of that family in the chosen
+   * theme colours, the default design, and every older field filled from the starter content. Nothing about a new category needs code.
+   */
+  completePack(c: Partial<PackConfig>): PackConfig {
+    if (!c.family || !FAMILIES[c.family] || !c.seed) return c as PackConfig;
+    const fam = FAMILIES[c.family];
+    const designs = c.designs ?? designsFor(c.family, c.themeKey ?? fam.themes[0]);
+    const seed = c.seed;
+    const noun = c.item?.noun ?? 'item';
+    return {
+      keywords: c.keywords ?? [], goal: c.goal ?? fam.goal, ctaLabel: c.ctaLabel ?? seed.cta ?? 'Get in touch',
+      sections: c.sections ?? ['hero', 'services', 'about', 'gallery', 'testimonials', 'faq', 'contact'],
+      item: c.item ?? { kind: fam.itemKind, noun, nounPlural: `${noun}s` },
+      defaults: c.defaults ?? { tagline: seed.tagline, about: seed.about, headline: seed.headline, subline: seed.subline, trust: seed.trust ?? [], faq: seed.faq ?? [] },
+      themeKey: c.themeKey ?? designs[0].themeKey,
+      layouts: c.layouts ?? { hero: 'overlay', about: 'split', services: 'cards', gallery: 'mosaic', testimonials: 'cards', contact: 'card' },
+      seoType: c.seoType ?? fam.seoType,
+      aiPrompts: c.aiPrompts ?? { about: `Write a warm, honest 80-word About text for {business}, {city}. No claims that cannot be checked.`, tagline: 'A short tagline (under 8 words) for {business}, {city}.', images: `Three photo ideas: ${fam.imageMood}.` },
+      family: c.family, designs, defaultDesign: c.defaultDesign ?? designs[0].key, seed,
+    };
+  }
 
   list() { return this.prisma.categoryPack.findMany({ orderBy: { name: 'asc' } }); }
 
@@ -27,7 +52,8 @@ export class PacksService {
     if (problems.length) throw new BadRequestException(problems.join(' '));
   }
 
-  async create(key: string, name: string, config: PackConfig, actor: string) {
+  async create(key: string, name: string, input: PackConfig, actor: string) {
+    const config = this.completePack(input);
     this.check(key, name, config);
     if (await this.prisma.categoryPack.findUnique({ where: { key } })) throw new ConflictException('A pack with this key already exists. Choose another key, or edit that pack.');
     return this.prisma.categoryPack.create({ data: { key, name: name.trim(), config: config as unknown as Prisma.InputJsonValue, createdBy: actor } });
@@ -36,7 +62,7 @@ export class PacksService {
   async update(key: string, patch: { name?: string; enabled?: boolean; config?: PackConfig }) {
     const cur = await this.get(key);
     const name = patch.name ?? cur.name;
-    const config = patch.config ?? (cur.config as unknown as PackConfig);
+    const config = patch.config ? this.completePack(patch.config) : (cur.config as unknown as PackConfig);
     this.check(undefined, name, config);
     return this.prisma.categoryPack.update({ where: { key }, data: { name: name.trim(), enabled: patch.enabled ?? cur.enabled, config: config as unknown as Prisma.InputJsonValue } });
   }
@@ -46,16 +72,17 @@ export class PacksService {
     return this.create(newKey, newName, src.config as unknown as PackConfig, actor);
   }
 
-  /** Create the starter packs that are missing (the 12 LeadSpace trades and the 20 website-engine industries). Never changes a pack that exists. */
-  async seedStarter(actor: string): Promise<{ created: string[]; kept: number }> {
-    const have = new Set((await this.prisma.categoryPack.findMany({ select: { key: true } })).map((p) => p.key));
-    const created: string[] = [];
-    for (const p of starterPacks()) {
-      if (have.has(p.key)) continue;
-      await this.prisma.categoryPack.create({ data: { key: p.key, name: p.name, config: p.config as unknown as Prisma.InputJsonValue, createdBy: actor } });
-      created.push(p.key);
-    }
-    return { created, kept: have.size };
+  /**
+   * Creates the 24 starter categories that are missing, each with its flow family, four designs and starter content. A pack that already exists keeps everything an admin
+   * edited; one that has no designs yet (an older starter pack) gets the family, the four designs and the starter content ADDED, and nothing else changes.
+   */
+  async seedStarter(actor: string): Promise<{ created: string[]; upgraded: string[]; kept: number }> {
+    const plan = planStarterSeed(await this.prisma.categoryPack.findMany({ select: { key: true, config: true } }));
+    const created: string[] = []; const upgraded: string[] = [];
+    for (const p of plan.create) { await this.prisma.categoryPack.create({ data: { key: p.key, name: p.name, config: p.config as unknown as Prisma.InputJsonValue, createdBy: actor } }); created.push(p.key); }
+    for (const p of plan.upgrade) { await this.prisma.categoryPack.update({ where: { key: p.key }, data: { config: p.config as unknown as Prisma.InputJsonValue } }); upgraded.push(p.key); }
+    const kept = plan.kept;
+    return { created, upgraded, kept };
   }
 
   /** A pack filled with sample company details, so staff can see what a vendor would start with. Writes nothing. */
@@ -70,6 +97,7 @@ export class PacksService {
         headline: fillPlaceholders(c.defaults.headline, v), subline: fillPlaceholders(c.defaults.subline, v),
         trust: c.defaults.trust.map((t) => fillPlaceholders(t, v)), faq: c.defaults.faq.map((f) => ({ q: fillPlaceholders(f.q, v), a: fillPlaceholders(f.a, v) })),
         layout: { themeKey: c.themeKey, ...c.layouts },
+        family: c.family ?? null, designs: (c.designs ?? []).map((d) => ({ key: d.key, name: d.name, enabled: d.enabled !== false, themeKey: d.themeKey })), items: (c.seed?.items ?? []).map((i) => i.title),
       },
     };
   }
@@ -83,6 +111,13 @@ export class PacksService {
     if (!p || !p.enabled) throw new NotFoundException('That category is not available right now. Choose another, or contact support.');
     const c = p.config as unknown as PackConfig;
     const v = { business: company.businessName.trim(), city: (company.city ?? '').trim(), phone: company.phone?.trim() };
+    // a pack with starter content and designs: the company details first, then the starter content over everything still empty (their own words always win)
+    if (c.seed) {
+      await this.prisma.vendorCMS.upsert({ where: { vendorId }, create: { vendorId, packKey: p.key }, update: { packKey: p.key } });
+      await this.site.writeDraft(vendorId, { businessName: v.business, ...(v.phone ? { phone: v.phone } : {}), ...(v.city ? { address: v.city } : {}) });
+      await this.starter.seed(vendorId, p.key, { businessName: v.business, city: v.city, phone: v.phone }, 'draft');
+      return this.site.view(vendorId);
+    }
     const row = await this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { tagline: true, about: true } });
     await this.prisma.vendorCMS.upsert({ where: { vendorId }, create: { vendorId, packKey: p.key }, update: { packKey: p.key } });
     return this.site.saveDraft(vendorId, {

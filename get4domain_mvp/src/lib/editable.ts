@@ -5,10 +5,10 @@
  *   api.updateVendorCMS(id, editable(cms, CMS_FIELDS))        // or an explicit allow-list
  * The server also ignores these keys on edits (EditTolerantValidationPipe), so this is belt and braces; the allow-list form is the strict one.
  */
-export const READ_ONLY_KEYS = ['id', 'vendorId', 'createdAt', 'updatedAt', 'deletedAt', 'createdBy', 'nameNormalized', 'openingBalancePaise', 'deliveredAt', 'lastBilledPeriod', 'draft', 'packKey', 'publishedAt', 'siteVersion'] as const;
+export const READ_ONLY_KEYS = ['id', 'vendorId', 'createdAt', 'updatedAt', 'deletedAt', 'createdBy', 'nameNormalized', 'openingBalancePaise', 'deliveredAt', 'lastBilledPeriod', 'draft', 'packKey', 'publishedAt', 'siteVersion', 'siteStatus'] as const;
 
 /** The Website Manager's editable fields. Must equal the API's UpdateVendorCmsDto (minus `portfolio`, saved on its own); scripts/verify-payload-contract.mjs checks it. */
-export const CMS_EDITABLE = ['businessName', 'tagline', 'about', 'logo', 'banner', 'themeId', 'favicon', 'seoTitle', 'seoDesc', 'seoKeywords', 'phone', 'email', 'address', 'businessHours', 'whatsapp', 'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps', 'googleAnalyticsId', 'ogImage', 'layout'] as const;
+export const CMS_EDITABLE = ['businessName', 'tagline', 'about', 'logo', 'banner', 'themeId', 'favicon', 'seoTitle', 'seoDesc', 'seoKeywords', 'phone', 'email', 'address', 'businessHours', 'whatsapp', 'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps', 'googleAnalyticsId', 'ogImage', 'layout', 'designKey', 'extras'] as const;
 
 export function editable<T extends object>(record: T, allow?: readonly string[]): Partial<T> {
   const out: Record<string, unknown> = {};

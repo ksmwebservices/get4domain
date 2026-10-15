@@ -73,4 +73,5 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 }
 
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths
-export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)'] };
+// robots.txt and sitemap.xml are matched too, so a vendor's own host answers them for itself (the main host passes straight through)
+export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml'] };

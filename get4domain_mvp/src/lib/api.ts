@@ -755,6 +755,9 @@ export const api = {
   siteDocVersions: () => apiCall('/site-doc/me/versions'),
   siteDocRestore: (version: number) => apiCall(`/site-doc/me/versions/${version}/restore`, { method: 'POST', body: JSON.stringify({}) }),
   siteDocCategories: () => apiCall('/site-doc/me/categories'),
+  siteDocDesigns: () => apiCall('/site-doc/me/designs'),
+  siteDocSetDesign: (designKey: string) => apiCall('/site-doc/me/design', { method: 'POST', body: JSON.stringify({ designKey }) }),
+  siteDocResetStarter: () => apiCall('/site-doc/me/reset-starter', { method: 'POST', body: JSON.stringify({}) }),
   siteDocGenerate: (data: { packKey: string; businessName: string; city?: string; phone?: string }) => apiCall('/site-doc/me/generate', { method: 'POST', body: JSON.stringify(data) }),
   // Category packs (admin)
   adminPacks: () => apiCall('/admin/category-packs'),
@@ -764,6 +767,7 @@ export const api = {
   adminPackUpdate: (key: string, data: unknown) => apiCall(`/admin/category-packs/${key}`, { method: 'PUT', body: JSON.stringify(data) }),
   adminPackDuplicate: (key: string, data: { key: string; name: string }) => apiCall(`/admin/category-packs/${key}/duplicate`, { method: 'POST', body: JSON.stringify(data) }),
   adminPackSeed: () => apiCall('/admin/category-packs/seed/starter', { method: 'POST', body: JSON.stringify({}) }),
+  adminPackCreateSite: (data: { categoryKey: string; businessName: string; subdomain: string; city?: string; phone?: string }) => apiCall('/admin/category-packs/sites', { method: 'POST', body: JSON.stringify(data) }),
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
   getVideoProvider: () => apiCall('/video/provider'),

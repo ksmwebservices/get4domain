@@ -192,6 +192,7 @@ async function page(sub, rest = '', qs = '') { const r = await fetch(`${FRONT}/s
       name: t.includes(d.name), tagline: !!d.cms?.tagline && t.includes(d.cms.tagline), about: !!d.cms?.about && t.includes(d.cms.about), phone: !!d.cms?.phone && t.includes(d.cms.phone),
       whatsapp: (!!d.cms?.whatsapp && t.includes(`wa.me/${String(d.cms.whatsapp).replace(/\D/g, '')}`)) || (!!d.cms?.phone && t.includes(d.cms.phone)),
       catalog: d.products.length > 0 && t.includes(d.products[0].name), images: d.products.some((p) => p.image && t.includes(p.image)) || (!!d.cms?.banner && t.includes(d.cms.banner)),
+      sample: !/Contact for price/.test(t), // no starter item is on the page, so the starter-text check is ticked
       address: !!d.cms?.address && t.includes(d.cms.address), seo: !!d.cms?.seoTitle && !!d.cms?.seoDesc && t.includes(d.cms.seoTitle) && t.includes(d.cms.seoDesc),
     });
     for (const v of [full, bare]) {

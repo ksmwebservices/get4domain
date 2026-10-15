@@ -28,8 +28,8 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(root, 'nod
   const { PGlite } = pglite;
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'g4d-wm-mig-'));
   console.log('\n== Website Manager migration on a database that already holds data');
-  let ref = 'HEAD';
-  try { const added = execFileSync('git', ['log', '--diff-filter=A', '--format=%H', '-1', '--', `backend-api/prisma/migrations/${MIG}`], { cwd: path.join(root, '..') }).toString().trim(); ref = added ? `${added}^` : 'HEAD'; } catch { /* uncommitted: the committed schema is the "before" */ }
+  let ref = 'HEAD'; let newRef = null;
+  try { const added = execFileSync('git', ['log', '--diff-filter=A', '--format=%H', '-1', '--', `backend-api/prisma/migrations/${MIG}`], { cwd: path.join(root, '..') }).toString().trim(); ref = added ? `${added}^` : 'HEAD'; newRef = added || null; } catch { /* uncommitted: the committed schema is the "before" */ }
   const oldSchema = path.join(tmp, 'old.prisma');
   fs.writeFileSync(oldSchema, execFileSync('git', ['show', `${ref}:backend-api/prisma/schema.prisma`], { cwd: path.join(root, '..'), maxBuffer: 64 * 1024 * 1024 }));
   const db = new PGlite();
@@ -54,7 +54,10 @@ const prismaSql = (args) => execFileSync(process.execPath, [path.join(root, 'nod
   const adds = [...sql.matchAll(/ADD COLUMN\s+"(\w+)"\s+([A-Z0-9()]+)([^,;]*)/g)];
   ok('every added column is nullable or has a default (no row can fail)', adds.length === 8 && adds.every((m) => !/NOT NULL/.test(m[3]) || /DEFAULT/.test(m[3])), J(adds.map((m) => m.slice(1, 4))));
   const fresh = new PGlite();
-  await fresh.exec(prismaSql(['--from-empty', '--to-schema-datamodel', path.join(root, 'prisma', 'schema.prisma')]));
+  // the schema as it was when this migration was added: later migrations (for example industry designs) add their own columns and have their own rehearsal
+  let newSchema = path.join(root, 'prisma', 'schema.prisma');
+  if (newRef) { newSchema = path.join(tmp, 'new.prisma'); fs.writeFileSync(newSchema, execFileSync('git', ['show', `${newRef}:backend-api/prisma/schema.prisma`], { cwd: path.join(root, '..'), maxBuffer: 64 * 1024 * 1024 })); }
+  await fresh.exec(prismaSql(['--from-empty', '--to-schema-datamodel', newSchema]));
   const tables = ['VendorCMS', 'g4d_site_versions', 'g4d_media_assets', 'g4d_category_packs'];
   const shape = async (c) => JSON.stringify((await q(c, `SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, column_name`)).filter((r) => tables.includes(r.table_name)));
   const idx = async (c) => JSON.stringify((await q(c, `SELECT indexname, indexdef FROM pg_indexes WHERE schemaname='public' ORDER BY indexname`)).filter((r) => tables.some((t) => r.indexdef.includes(`"${t}"`))));

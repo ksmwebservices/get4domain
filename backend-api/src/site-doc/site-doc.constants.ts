@@ -9,12 +9,12 @@ export const SITE_TEXT_FIELDS = [
   'seoTitle', 'seoDesc', 'seoKeywords', 'googleAnalyticsId',
   'phone', 'whatsapp', 'email', 'address', 'businessHours',
   'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps',
-  'themeId',
+  'themeId', 'designKey',
 ] as const;
 export type SiteTextField = (typeof SITE_TEXT_FIELDS)[number];
 
 /** Structured fields (JSON). */
-export const SITE_JSON_FIELDS = ['portfolio', 'testimonials', 'pages', 'layout'] as const;
+export const SITE_JSON_FIELDS = ['portfolio', 'testimonials', 'pages', 'layout', 'extras'] as const;
 export type SiteJsonField = (typeof SITE_JSON_FIELDS)[number];
 
 export const SITE_FIELDS = [...SITE_TEXT_FIELDS, ...SITE_JSON_FIELDS] as const;
@@ -43,7 +43,31 @@ export interface SiteLayout {
 }
 
 export interface SitePage { slug: string; title: string; body: string }
-export interface SiteTestimonial { quote: string; author: string; note?: string }
+export interface SiteTestimonial { quote: string; author: string; note?: string; sample?: boolean }
+
+/**
+ * Everything a design shows that is not a plain column: stored in one JSON field (`extras`) and edited in Website Manager. The `sample` map says which of
+ * these (and which of tagline, about, banner, gallery) are still the starter text; a field the vendor changes stops being sample.
+ */
+export const SITE_EXTRAS_TEXT = ['headline', 'subline', 'ctaLabel', 'announcement', 'announcementLink'] as const;
+export const SITE_EXTRAS_LISTS = ['trust', 'faq', 'steps', 'stats', 'team', 'beforeAfter'] as const;
+export const SITE_SAMPLE_KEYS = ['tagline', 'about', 'banner', 'gallery', ...SITE_EXTRAS_TEXT, ...SITE_EXTRAS_LISTS] as const;
+export interface SiteExtras {
+  headline?: string; subline?: string; ctaLabel?: string; announcement?: string; announcementLink?: string;
+  trust?: string[];
+  faq?: { q: string; a: string }[];
+  steps?: { title: string; desc?: string }[];
+  stats?: { value: string; label: string }[];
+  team?: { name: string; role?: string; note?: string; image?: string }[];
+  beforeAfter?: { before: string; after: string; caption?: string }[];
+  /** true = still the starter text */
+  sample?: Record<string, boolean>;
+}
+
+/** Limits that keep the extras from becoming a novel. */
+export const SITE_EXTRAS_LIMITS = { trust: 8, faq: 12, steps: 8, stats: 6, team: 12, beforeAfter: 8 } as const;
+
+export const SITE_STATUSES = ['LIVE', 'DRAFT', 'UNCLAIMED'] as const;
 
 /** What a plan allows. Limits only: every plan gets the whole editor, themes, layouts, preview and publish. */
 export type SitePlan = 'LEADSPACE' | 'WORKSPACE' | 'BOS';

@@ -35,8 +35,11 @@ export interface KitItem {
   desc?: string;
   tags?: string[];
   meta?: { label: string; value: string }[];
+  /** menu items: a veg, non-veg or egg mark */
+  veg?: 'veg' | 'nonveg' | 'egg';
 }
 export interface KitPerson { name: string; role?: string; note?: string; image?: string }
+export interface KitBeforeAfter { before: string; after: string; caption?: string }
 export interface KitFeature { label: string; icon: string; desc?: string }
 export interface KitRow { label: string; value: string }
 export interface KitStep { title: string; desc?: string; state?: 'done' | 'active' | 'upcoming' }
@@ -58,21 +61,29 @@ export interface BottomNavItem {
 export interface HeroCta { label: string; href: string }
 
 export type KitSection =
-  | { type: 'hero'; variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta }
-  | { type: 'stats'; items: KitStat[] }
+  | { type: 'hero'; variant: 'overlay' | 'split' | 'panel' | 'center' | 'card'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; imageAlt?: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta; card?: { title: string; lines: string[] } }
+  | { type: 'announce'; variant: 'strip' | 'accent' | 'ticker'; text: string; href?: string }
+  | { type: 'trust'; variant: 'icons' | 'pills' | 'divided'; items: string[] }
+  | { type: 'catalog'; id: string; variant: 'grid' | 'list' | 'compact'; eyebrow: string; title: string; sub?: string; items: KitItem[]; categories: string[] }
+  | { type: 'packages'; id: string; variant: 'cards' | 'featured' | 'horizontal'; eyebrow: string; title: string; sub?: string; items: KitItem[] }
+  | { type: 'menu'; id: string; variant: 'twocol' | 'tabs' | 'photo'; eyebrow: string; title: string; sub?: string; items: KitItem[]; categories: string[] }
+  | { type: 'pricing'; id: string; variant: 'table' | 'cards' | 'compare'; eyebrow: string; title: string; sub?: string; items: KitItem[] }
+  | { type: 'beforeAfter'; id: string; variant: 'pair' | 'slider' | 'stack'; eyebrow: string; title: string; items: KitBeforeAfter[] }
+  | { type: 'hours'; id: string; variant: 'table' | 'card' | 'strip'; eyebrow: string; title: string; rows: KitRow[] }
+  | { type: 'stats'; variant?: 'band' | 'cards' | 'inline'; items: KitStat[] }
   | { type: 'showcase'; id: string; variant: 'rows' | 'cards' | 'menu' | 'tiles'; eyebrow: string; title: string; sub?: string; items: KitItem[] }
   | { type: 'featureIndex'; id: string; eyebrow: string; title: string; sub?: string; items: { label: string; blurb: string }[] }
   | { type: 'iconGrid'; id: string; eyebrow: string; title: string; sub?: string; items: KitFeature[] }
   | { type: 'rows'; id: string; eyebrow: string; title: string; sub?: string; note?: string; items: KitRow[] }
-  | { type: 'steps'; id: string; eyebrow: string; title: string; sub?: string; items: KitStep[] }
+  | { type: 'steps'; id: string; variant?: 'cards' | 'timeline' | 'line'; eyebrow: string; title: string; sub?: string; items: KitStep[] }
   | { type: 'gallery'; id: string; eyebrow: string; title: string; images: string[]; variant?: 'mosaic' | 'grid' | 'strip' }
   | { type: 'about'; id: string; variant: 'split' | 'centered' | 'columns'; eyebrow: string; title: string; text: string; image?: string; points?: string[] }
   | { type: 'contact'; id: string; variant: 'card' | 'split' | 'minimal'; eyebrow: string; title: string; sub?: string }
-  | { type: 'people'; id: string; eyebrow: string; title: string; sub?: string; items: KitPerson[] }
+  | { type: 'people'; id: string; variant?: 'cards' | 'circles' | 'list'; eyebrow: string; title: string; sub?: string; items: KitPerson[] }
   | { type: 'testimonials'; id: string; eyebrow: string; title: string; items: KitQuote[]; variant?: 'cards' | 'quote' | 'list' }
-  | { type: 'faq'; id: string; eyebrow: string; title: string; items: KitFaqItem[] }
-  | { type: 'cta'; id: string; title: string; sub?: string; image?: string }
-  | { type: 'enquiry'; id: string; eyebrow: string; title: string; sub: string; points?: string[]; tabs: EnquiryTab[] };
+  | { type: 'faq'; id: string; variant?: 'accordion' | 'columns' | 'cards'; eyebrow: string; title: string; items: KitFaqItem[] }
+  | { type: 'cta'; id: string; variant?: 'band' | 'card' | 'split'; title: string; sub?: string; image?: string; label?: string }
+  | { type: 'enquiry'; id: string; variant?: 'panel' | 'split' | 'card'; eyebrow: string; title: string; sub: string; points?: string[]; tabs: EnquiryTab[] };
 
 /** A conversion tab in the enquiry block, mapped to an engine action + input fields. */
 export interface EnquiryTab {
@@ -86,8 +97,17 @@ export interface EnquiryTab {
   submitLabel: string;
 }
 
+/** How a design dresses the page: button shape, navigation, footer and the mobile action bar. Old builders leave it out and keep the original look. */
+export interface KitStyle {
+  button: 'solid' | 'outline' | 'pill';
+  nav: 'bar' | 'centered' | 'minimal';
+  footer: 'columns' | 'centered' | 'minimal';
+  actionBar: 'tabs' | 'cta' | 'split';
+}
+
 export interface KitSiteModel {
   brand: KitBrand;
+  style?: KitStyle;
   theme: ThemeTokens;
   /** Options for the "choice" field (e.g. service/room/course) surfaced in the enquiry. */
   choices: string[];

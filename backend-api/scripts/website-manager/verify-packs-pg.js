@@ -81,9 +81,9 @@ const SALON = {
     site = (await call('GET', `/cms/site/${byIndustry.subdomain}`)).data;
     ok('a vendor with no chosen pack is matched by its industry', site.pack && site.pack.key === 'salon', J(site.pack));
     r = await call('POST', '/admin/category-packs/seed/starter', {}, A);
-    ok('seeding adds the 12 LeadSpace trades and the 20 website industries (Salon already existed, so it is kept)', r.status < 300 && r.data.kept === 2 && r.data.created.length >= 30 && r.data.created.includes('shop-retail') && r.data.created.includes('travel') && r.data.created.includes('retail'), J(r.body).slice(0, 300));
+    ok('seeding adds the 24 launch categories (Salon already existed without designs, so it gets the designs and starter content added and nothing else changed)', r.status < 300 && r.data.created.length === 23 && r.data.upgraded.length === 1 && r.data.upgraded[0] === 'salon' && r.data.created.includes('travel') && r.data.created.includes('retail') && r.data.created.includes('technology'), J(r.body).slice(0, 300));
     r = await call('POST', '/admin/category-packs/seed/starter', {}, A);
-    ok('seeding again changes nothing', r.status < 300 && r.data.created.length === 0, J(r.body).slice(0, 200));
+    ok('seeding again changes nothing', r.status < 300 && r.data.created.length === 0 && r.data.upgraded.length === 0 && r.data.kept === 24, J(r.body).slice(0, 200));
     const all = (await call('GET', '/admin/category-packs', undefined, A)).data;
     const { validatePack } = h.dist('site-doc/pack.types');
     ok('every starter pack passes the same checks a hand-made pack must pass', all.every((p) => validatePack(p.config).length === 0), all.filter((p) => validatePack(p.config).length).map((p) => p.key).join(','));

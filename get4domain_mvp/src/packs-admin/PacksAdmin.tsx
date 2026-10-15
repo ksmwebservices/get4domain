@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SITE_THEME_LIST, VARIANTS } from '@/engine/sitedoc/build';
+import { BLANK_SEED, CreateSiteCard, DesignsFields, FAMILY_LABEL, type DesignFields } from './DesignsAdmin';
 
 interface Pack { key: string; name: string; enabled: boolean; config: PackConfig }
 interface PackConfig {
@@ -11,6 +12,7 @@ interface PackConfig {
   item: { kind: string; noun: string; nounPlural: string };
   defaults: { tagline: string; about: string; headline: string; subline: string; trust: string[]; faq: { q: string; a: string }[] };
   themeKey: string; layouts: Record<string, string>; seoType: string; aiPrompts: { about: string; tagline: string; images: string };
+  family?: string; designs?: DesignFields['designs']; defaultDesign?: string; seed?: DesignFields['seed'];
 }
 const GOALS = ['ENQUIRY', 'BOOKING', 'APPOINTMENT', 'SITE_VISIT', 'CART_ORDER'];
 const SECTIONS = ['hero', 'services', 'about', 'gallery', 'testimonials', 'faq', 'contact'];
@@ -23,6 +25,7 @@ const BLANK: PackConfig = {
   defaults: { tagline: '{business} in {city}', about: '{business} is a business in {city}. Tell us what you need and we will get back to you.', headline: '{business}', subline: 'Send your details and we will reply.', trust: [], faq: [] },
   themeKey: 'clean-teal', layouts: { hero: 'overlay', about: 'split', services: 'cards', gallery: 'mosaic', testimonials: 'cards', contact: 'card' }, seoType: 'LocalBusiness',
   aiPrompts: { about: 'Write a warm 80-word About text for {business} in {city}.', tagline: 'A short tagline for {business}.', images: 'Three photo ideas for the website of this kind of business.' },
+  family: 'enquiry', seed: BLANK_SEED,
 };
 
 const inp = 'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-primary-400 focus:outline-none';
@@ -66,13 +69,13 @@ export default function PacksAdmin() {
 
       <div className="overflow-hidden rounded-xl border border-slate-700">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-800 text-xs uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2">Pack</th><th className="px-3 py-2">Goal</th><th className="px-3 py-2">Theme</th><th className="px-3 py-2">Status</th><th className="px-3 py-2" /></tr></thead>
+          <thead className="bg-slate-800 text-xs uppercase tracking-wide text-slate-400"><tr><th className="px-3 py-2">Pack</th><th className="px-3 py-2">Flow family</th><th className="px-3 py-2">Designs</th><th className="px-3 py-2">Status</th><th className="px-3 py-2" /></tr></thead>
           <tbody className="divide-y divide-slate-800">
             {packs.length === 0 && <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-500">No packs yet. {canEdit ? 'Add the starter packs, or create one.' : ''}</td></tr>}
             {packs.map((p) => (
               <tr key={p.key} className="text-slate-200">
                 <td className="px-3 py-2"><div className="font-medium">{p.name}</div><div className="text-xs text-slate-500">{p.key}</div></td>
-                <td className="px-3 py-2">{p.config.goal}</td><td className="px-3 py-2">{p.config.themeKey}</td>
+                <td className="px-3 py-2">{FAMILY_LABEL[p.config.family ?? ''] ?? <span className="text-amber-300">none yet</span>}</td><td className="px-3 py-2 text-xs">{p.config.designs ? p.config.designs.filter((d) => d.enabled !== false).map((d) => d.name).join(', ') : <span className="text-amber-300">Use Add starter packs</span>}</td>
                 <td className="px-3 py-2">{p.enabled ? <span className="text-emerald-300">On</span> : <span className="text-slate-500">Off</span>}</td>
                 <td className="space-x-3 px-3 py-2 text-right">
                   <button className="text-primary-300 underline" onClick={() => void api.adminPackPreview(p.key).then((r) => setSample(r.data as Record<string, unknown>)).catch((e: Error) => setErr(e.message))}>Preview</button>
@@ -87,6 +90,8 @@ export default function PacksAdmin() {
           </tbody>
         </table>
       </div>
+
+      {canEdit && <CreateSiteCard categories={packs.filter((p) => p.enabled && p.config.seed).map((p) => ({ key: p.key, name: p.name }))} />}
 
       {sample && (
         <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-4 text-sm text-slate-200">
@@ -126,6 +131,7 @@ export default function PacksAdmin() {
             <div className="md:col-span-2"><label className={lab}>Sub-line under the headline</label><input className={inp} value={c.defaults.subline} onChange={(e) => setC({ defaults: { ...c.defaults, subline: e.target.value } })} /></div>
             <div><label className={lab}>Trust points (one per line, up to 8)</label><textarea rows={4} className={inp} value={c.defaults.trust.join('\n')} onChange={(e) => setC({ defaults: { ...c.defaults, trust: lines(e.target.value) } })} /></div>
             <div><label className={lab}>Questions (one per line as: question | answer)</label><textarea rows={4} className={inp} value={c.defaults.faq.map((f) => `${f.q} | ${f.a}`).join('\n')} onChange={(e) => setC({ defaults: { ...c.defaults, faq: lines(e.target.value).map((l) => { const [q, ...a] = l.split('|'); return { q: q.trim(), a: a.join('|').trim() }; }).filter((f) => f.q && f.a) } })} /></div>
+            <DesignsFields c={c} setC={(p) => setC(p)} />
             <div><label className={lab}>AI Studio: About text prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.about} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, about: e.target.value } })} /></div>
             <div><label className={lab}>AI Studio: tagline prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.tagline} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, tagline: e.target.value } })} /></div>
             <div className="md:col-span-2"><label className={lab}>AI Studio: picture ideas prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.images} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, images: e.target.value } })} /></div>

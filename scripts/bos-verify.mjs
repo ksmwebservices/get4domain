@@ -29,6 +29,10 @@ const steps = [
   ['no typed price or plan name in vendor dashboard code (Bug B3)', FE, [node, 'scripts/audit-hardcoded-prices.mjs']],
   ['Website Manager themes: every theme passes AA contrast and the lists agree', FE, [node, 'scripts/verify-site-themes.mjs']],
   ['Website Manager rendered pages: every field, publish refresh, no stock content, every theme and layout, readiness equals the page (builds the frontend the first time)', BE, [node, 'scripts/website-manager/verify-site-render.js']],
+  ['Industry designs: categories, starter content, public safety, design switching, admin-made category (real Postgres, real API)', BE, [node, 'scripts/industry-designs/verify-designs-pg.js']],
+  ['Industry designs migration: additive, no existing row touched, no drift (real Postgres)', BE, [node, 'scripts/industry-designs/verify-designs-migration-pg.js']],
+  ['Industry designs offline: contrast, no hard-coded business text, lists agree, an input for every field the page reads', FE, [node, 'scripts/verify-designs.mjs']],
+  ['Industry designs rendered: every design of every category on desktop and phone, SEO, speed, every saved field reaches the page, sample content hidden', BE, [node, 'scripts/industry-designs/verify-designs-render.js']],
   ['security suites that need no database (never boots the app against a real database)', BE, [node, 'scripts/security-verify/run-offline.js']],
   ['all backend suites: rule book, real-Postgres chains A-D, stock ledger property + concurrency, upgrade/downgrade, order bridge, backfill, commercial engine', BE, [node, 'scripts/commercial-verify/run-all.js']],
 ];
@@ -60,6 +64,10 @@ for (const line of log) {
   const id = inline ? inline[1] : scope;
   if (m && id) { const t = tags.get(id) ?? { pass: 0, fail: 0 }; t[m[1] === 'PASS' ? 'pass' : 'fail'] += 1; tags.set(id, t); }
 }
+// every industry-designs test id must have run and passed (they are not menu features, so the registry check above does not cover them)
+const DESIGN_IDS = ['categories', 'seed', 'public-safety', 'switch', 'admin', 'existing-vendors', 'migration', 'render', 'editable', 'seo', 'contrast', 'speed', 'no-hardcode'].map((x) => `industry-designs.${x}`);
+const designMissing = DESIGN_IDS.filter((id) => { const t = tags.get(id); return !t || t.fail > 0 || t.pass === 0; });
+results.push({ name: `every industry-designs test id ran and passed (${DESIGN_IDS.length - designMissing.length} of ${DESIGN_IDS.length}: ${DESIGN_IDS.map((i) => i.split('.')[1]).join(', ')})`, ok: designMissing.length === 0, note: designMissing.join(', ') });
 const reg = await (await import(pathToFileURL(path.join(ROOT, 'registry', 'lib.mjs')).href)).loadRegistry();
 const open = reg.FEATURES.filter((f) => (f.status === 'WORKING' || f.status === 'LIMITED') && f.testId);
 // verified by an end-to-end suite that needs a built storefront and is run on its own

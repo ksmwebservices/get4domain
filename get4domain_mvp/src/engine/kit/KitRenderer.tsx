@@ -6,6 +6,8 @@ import type { KitSiteModel } from './model';
 import KitNav from './KitNav';
 import KitHero from './KitHero';
 import KitEnquiry from './KitEnquiry';
+import { AnnounceBar, BeforeAfterStatic, DesignFooter, Hours, MenuSection, MobileActionBar, Packages, Pricing, TrustStrip } from './design-sections';
+import { BeforeAfterSlider, Catalog, MenuTabs } from './design-client';
 import {
   StatsBand, Showcase, FeatureIndex, IconGrid, Rows, Steps, Gallery, People, Testimonials, Faq, CtaBand, About, ContactDetails,
 } from './sections';
@@ -54,15 +56,29 @@ function KitFooter({ model }: { model: KitSiteModel }) {
 export default function KitRenderer({ model, mode, shop = false, checkoutMode = 'ONLINE' }: { model: KitSiteModel; mode: EngineMode; shop?: boolean; checkoutMode?: CheckoutMode }) {
   const b = model.brand;
   const subdomain = mode.kind === 'live' ? mode.subdomain : '';
+  const st = model.style;
+  const announce = model.sections.find((x) => x.type === 'announce');
+  // the mobile action bar: "tabs" keeps the original bottom navigation; the other two are a call-to-action bar
+  const barVariant = st?.actionBar ?? 'tabs';
   return (
     <CartProvider enabled={shop && !!subdomain} subdomain={subdomain} brandName={b.name} mode={checkoutMode}>
-    <EngineSiteFrame tokens={model.theme} bottomNav={model.bottomNav}>
-      <KitNav brand={b.name} logo={b.logo} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} />
+    <EngineSiteFrame tokens={model.theme} bottomNav={barVariant === 'tabs' ? model.bottomNav : []}>
+      <div className={st ? `eng-btn-${st.button}` : undefined}>
+      {announce && announce.type === 'announce' && <AnnounceBar variant={announce.variant} text={announce.text} href={announce.href} />}
+      <KitNav brand={b.name} logo={b.logo} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} variant={st?.nav} offset={announce ? 36 : 0} />
       {model.sections.map((s, i) => {
         const el = (() => {
           switch (s.type) {
             case 'hero': return <KitHero {...s} />;
-            case 'stats': return <StatsBand items={s.items} />;
+            case 'announce': return null;
+            case 'trust': return <TrustStrip variant={s.variant} items={s.items} />;
+            case 'catalog': return <Catalog {...s} />;
+            case 'packages': return <Packages {...s} />;
+            case 'menu': return s.variant === 'tabs' ? <MenuTabs {...s} /> : <MenuSection {...s} variant={s.variant} />;
+            case 'pricing': return <Pricing {...s} />;
+            case 'beforeAfter': return s.variant === 'slider' ? <BeforeAfterSlider {...s} /> : <BeforeAfterStatic {...s} variant={s.variant} />;
+            case 'hours': return <Hours {...s} />;
+            case 'stats': return <StatsBand items={s.items} variant={s.variant} />;
             case 'showcase': return <Showcase {...s} />;
             case 'featureIndex': return <FeatureIndex {...s} />;
             case 'iconGrid': return <IconGrid {...s} />;
@@ -77,7 +93,7 @@ export default function KitRenderer({ model, mode, shop = false, checkoutMode = 
             case 'cta': return <CtaBand {...s} />;
             case 'enquiry':
               return (
-                <KitEnquiry mode={mode}
+                <KitEnquiry mode={mode} variant={s.variant}
                   brand={{ name: b.name, phone: b.phone, whatsapp: b.whatsapp }}
                   choices={model.choices} choiceLabel={model.choiceLabel}
                   eyebrow={s.eyebrow} title={s.title} sub={s.sub} points={s.points} tabs={s.tabs} />
@@ -91,7 +107,9 @@ export default function KitRenderer({ model, mode, shop = false, checkoutMode = 
         // The hero stays instant (above the fold); every other section reveals on scroll.
         return s.type === 'hero' ? <div key={i} data-layout={layout}>{el}</div> : <Reveal key={i}><div data-layout={layout}>{el}</div></Reveal>;
       })}
-      <KitFooter model={model} />
+      {st && st.footer !== 'columns' ? <DesignFooter variant={st.footer} brand={b} cta={model.primaryCta.label} /> : <KitFooter model={model} />}
+      {(barVariant === 'cta' || barVariant === 'split') && <MobileActionBar variant={barVariant} label={model.primaryCta.label} phone={b.phone} whatsapp={b.whatsapp} />}
+      </div>
     </EngineSiteFrame>
     </CartProvider>
   );

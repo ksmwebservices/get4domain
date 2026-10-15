@@ -44,8 +44,18 @@ const Img = ({ src, alt, className }: { src: string; alt: string; className?: st
   // eslint-disable-next-line @next/next/no-img-element
   <img src={src} alt={alt} loading="lazy" className={className} />;
 
-/* ── Stats band ── */
-export function StatsBand({ items }: { items: KitStat[] }) {
+/* ── Stats: a band, cards, or one inline line ── */
+export function StatsBand({ items, variant = 'band' }: { items: KitStat[]; variant?: 'band' | 'cards' | 'inline' }) {
+  if (variant === 'inline') {
+    return (
+      <section className="px-5 py-8"><ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm">{items.map((s) => <li key={s.label}><span className="font-[family-name:var(--eng-fontDisplay)] text-xl text-[var(--eng-accent)]">{s.value}</span> <span className="text-[var(--eng-muted)]">{s.label}</span></li>)}</ul></section>
+    );
+  }
+  if (variant === 'cards') {
+    return (
+      <section className="px-5 py-14"><div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 sm:grid-cols-4">{items.map((s) => <div key={s.label} className="border border-[var(--eng-border)] bg-[var(--eng-surface)] p-6 text-center" style={{ borderRadius: 'var(--eng-radius)' }}><div className="font-[family-name:var(--eng-fontDisplay)] text-3xl text-[var(--eng-accent)]">{s.value}</div><div className="mt-1 text-[11px] uppercase tracking-widest text-[var(--eng-muted)]">{s.label}</div></div>)}</div></section>
+    );
+  }
   return (
     <section className="border-y border-[var(--eng-border)] px-5 py-12">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 sm:grid-cols-4">
@@ -219,27 +229,54 @@ export function Rows({ id, eyebrow, title, sub, note, items }: {
   );
 }
 
-/* ── Steps / process / timeline ── */
-export function Steps({ id, eyebrow, title, sub, items }: {
-  id: string; eyebrow: string; title: string; sub?: string; items: KitStep[];
+/* ── Steps / process: cards, a vertical timeline, or one horizontal line ── */
+export function Steps({ id, variant = 'cards', eyebrow, title, sub, items }: {
+  id: string; variant?: 'cards' | 'timeline' | 'line'; eyebrow: string; title: string; sub?: string; items: KitStep[];
 }) {
+  const dot = (c: KitStep, i: number) => (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--eng-border)] bg-[var(--eng-bg)]">
+      {c.state === 'done' ? <Check className="h-4 w-4 text-[var(--eng-accent)]" />
+        : c.state === 'active' ? <Loader2 className="h-4 w-4 animate-spin text-[var(--eng-accent)]" />
+        : <span className="font-[family-name:var(--eng-fontDisplay)] text-sm text-[var(--eng-accent)]">{i + 1}</span>}
+    </span>
+  );
   return (
     <section id={id} className="scroll-mt-20 border-y border-[var(--eng-border)] bg-[var(--eng-surface)] px-5 py-20 md:py-24">
       <div className="mx-auto max-w-6xl">
         <Heading eyebrow={eyebrow} title={title} sub={sub} />
-        <ol className="mt-12 grid gap-6 md:grid-cols-4">
-          {items.map((c, i) => (
-            <li key={c.title} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-6" style={{ borderRadius: 'var(--eng-radius)' }}>
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--eng-border)]">
-                {c.state === 'done' ? <Check className="h-4 w-4 text-[var(--eng-accent)]" />
-                  : c.state === 'active' ? <Loader2 className="h-4 w-4 animate-spin text-[var(--eng-accent)]" />
-                  : <span className="font-[family-name:var(--eng-fontDisplay)] text-sm text-[var(--eng-muted)]">{i + 1}</span>}
-              </span>
-              <div className="mt-4 font-[family-name:var(--eng-fontDisplay)] text-lg">{c.title}</div>
-              {c.desc && <div className="mt-1 text-sm text-[var(--eng-muted)]">{c.desc}</div>}
-            </li>
-          ))}
-        </ol>
+        {variant === 'cards' && (
+          <ol className="mt-12 grid gap-6 md:grid-cols-4">
+            {items.map((c, i) => (
+              <li key={c.title} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-6" style={{ borderRadius: 'var(--eng-radius)' }}>
+                {dot(c, i)}
+                <div className="mt-4 font-[family-name:var(--eng-fontDisplay)] text-lg">{c.title}</div>
+                {c.desc && <div className="mt-1 text-sm text-[var(--eng-muted)]">{c.desc}</div>}
+              </li>
+            ))}
+          </ol>
+        )}
+        {variant === 'timeline' && (
+          <ol className="relative mt-12 max-w-2xl space-y-8 border-l border-[var(--eng-border)] pl-8">
+            {items.map((c, i) => (
+              <li key={c.title} className="relative">
+                <span className="absolute -left-[3.05rem] top-0">{dot(c, i)}</span>
+                <div className="font-[family-name:var(--eng-fontDisplay)] text-lg">{c.title}</div>
+                {c.desc && <div className="mt-1 text-sm text-[var(--eng-muted)]">{c.desc}</div>}
+              </li>
+            ))}
+          </ol>
+        )}
+        {variant === 'line' && (
+          <ol className="mt-12 grid gap-8 md:grid-flow-col md:auto-cols-fr md:gap-0">
+            {items.map((c, i) => (
+              <li key={c.title} className="relative md:px-4 md:text-center">
+                <div className="flex items-center gap-3 md:justify-center">{dot(c, i)}{i < items.length - 1 && <span aria-hidden className="hidden h-px flex-1 bg-[var(--eng-border)] md:block" />}</div>
+                <div className="mt-3 font-[family-name:var(--eng-fontDisplay)] text-lg">{c.title}</div>
+                {c.desc && <div className="mt-1 text-sm text-[var(--eng-muted)]">{c.desc}</div>}
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </section>
   );
@@ -284,27 +321,54 @@ export function Gallery({ id, eyebrow, title, images, variant = 'mosaic' }: { id
   );
 }
 
-/* ── People (doctors / stylists / faculty / team) ── */
-export function People({ id, eyebrow, title, sub, items }: {
-  id: string; eyebrow: string; title: string; sub?: string; items: KitPerson[];
+/* ── People (doctors / stylists / faculty / team): cards, round portraits, or a list ── */
+export function People({ id, variant = 'cards', eyebrow, title, sub, items }: {
+  id: string; variant?: 'cards' | 'circles' | 'list'; eyebrow: string; title: string; sub?: string; items: KitPerson[];
 }) {
+  const face = (m: KitPerson, cls: string) => (
+    <div className={`${cls} shrink-0 overflow-hidden rounded-full border border-[var(--eng-border)]`}>
+      {m.image ? <Img src={m.image} alt={m.name} className="h-full w-full object-cover" />
+        : <div className="flex h-full w-full items-center justify-center bg-[var(--eng-surface)] text-[var(--eng-accent)]"><Users className="h-1/3 w-1/3" /></div>}
+    </div>
+  );
   return (
     <section id={id} className="scroll-mt-20 border-y border-[var(--eng-border)] bg-[var(--eng-surface)] px-5 py-20 md:py-24">
       <div className="mx-auto max-w-6xl">
         <Heading eyebrow={eyebrow} title={title} sub={sub} />
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((m) => (
-            <div key={m.name} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ borderRadius: 'var(--eng-radius)' }}>
-              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border border-[var(--eng-border)]">
-                {m.image ? <Img src={m.image} alt={m.name} className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center bg-[var(--eng-surface)] text-[var(--eng-accent)]"><Users className="h-8 w-8" /></div>}
+        {variant === 'cards' && (
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {items.map((m) => (
+              <div key={m.name} className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg" style={{ borderRadius: 'var(--eng-radius)' }}>
+                {face(m, 'mx-auto h-20 w-20')}
+                <h3 className="mt-3 font-[family-name:var(--eng-fontDisplay)] text-lg">{m.name}</h3>
+                {m.role && <p className="text-sm text-[var(--eng-accent)]">{m.role}</p>}
+                {m.note && <p className="mt-1 text-xs text-[var(--eng-muted)]">{m.note}</p>}
               </div>
-              <h3 className="mt-3 font-[family-name:var(--eng-fontDisplay)] text-lg">{m.name}</h3>
-              {m.role && <p className="text-sm text-[var(--eng-accent)]">{m.role}</p>}
-              {m.note && <p className="mt-1 text-xs text-[var(--eng-muted)]">{m.note}</p>}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+        {variant === 'circles' && (
+          <div className="mt-12 flex flex-wrap justify-center gap-x-10 gap-y-8">
+            {items.map((m) => (
+              <div key={m.name} className="w-40 text-center">
+                {face(m, 'mx-auto h-32 w-32')}
+                <h3 className="mt-3 font-[family-name:var(--eng-fontDisplay)] text-lg">{m.name}</h3>
+                {m.role && <p className="text-sm text-[var(--eng-accent)]">{m.role}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+        {variant === 'list' && (
+          <ul className="mt-10 divide-y divide-[var(--eng-border)] border-y border-[var(--eng-border)]">
+            {items.map((m) => (
+              <li key={m.name} className="flex items-center gap-4 py-4">
+                {face(m, 'h-12 w-12')}
+                <div><h3 className="font-medium">{m.name}</h3>{m.role && <p className="text-sm text-[var(--eng-accent)]">{m.role}</p>}</div>
+                {m.note && <p className="ml-auto hidden max-w-xs text-sm text-[var(--eng-muted)] sm:block">{m.note}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );
@@ -356,24 +420,47 @@ export function Testimonials({ id, eyebrow, title, items, variant = 'cards' }: {
   );
 }
 
-/* ── FAQ (native details/summary — no JS) ── */
-export function Faq({ id, eyebrow, title, items }: { id: string; eyebrow: string; title: string; items: KitFaqItem[] }) {
+/* ── FAQ (native details/summary, no script): an accordion, two columns, or cards ── */
+export function Faq({ id, variant = 'accordion', eyebrow, title, items }: { id: string; variant?: 'accordion' | 'columns' | 'cards'; eyebrow: string; title: string; items: KitFaqItem[] }) {
   return (
     <section id={id} className="scroll-mt-20 border-y border-[var(--eng-border)] bg-[var(--eng-surface)] px-5 py-20 md:py-24">
-      <div className="mx-auto max-w-3xl">
-        <Heading eyebrow={eyebrow} title={title} center />
-        <div className="mt-10 divide-y divide-[var(--eng-border)]">
-          {items.map((f) => (
-            <details key={f.q} className="group py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[var(--eng-fg)]">
-                <span className="font-medium">{f.q}</span>
-                <Circle className="h-2 w-2 shrink-0 fill-[var(--eng-accent)] text-[var(--eng-accent)] transition-transform group-open:scale-150" />
-              </summary>
-              <p className="mt-3 text-sm text-[var(--eng-muted)]">{f.a}</p>
-            </details>
-          ))}
+      {variant === 'accordion' && (
+        <div className="mx-auto max-w-3xl">
+          <Heading eyebrow={eyebrow} title={title} center />
+          <div className="mt-10 divide-y divide-[var(--eng-border)]">
+            {items.map((f) => (
+              <details key={f.q} className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[var(--eng-fg)]">
+                  <span className="font-medium">{f.q}</span>
+                  <Circle className="h-2 w-2 shrink-0 fill-[var(--eng-accent)] text-[var(--eng-accent)] transition-transform group-open:scale-150" />
+                </summary>
+                <p className="mt-3 text-sm text-[var(--eng-muted)]">{f.a}</p>
+              </details>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+      {variant === 'columns' && (
+        <div className="mx-auto max-w-6xl">
+          <Heading eyebrow={eyebrow} title={title} />
+          <dl className="mt-10 grid gap-x-12 gap-y-8 md:grid-cols-2">
+            {items.map((f) => <div key={f.q}><dt className="font-[family-name:var(--eng-fontDisplay)] text-lg">{f.q}</dt><dd className="mt-2 text-sm text-[var(--eng-muted)]">{f.a}</dd></div>)}
+          </dl>
+        </div>
+      )}
+      {variant === 'cards' && (
+        <div className="mx-auto max-w-6xl">
+          <Heading eyebrow={eyebrow} title={title} center />
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {items.map((f) => (
+              <details key={f.q} className="group border border-[var(--eng-border)] bg-[var(--eng-bg)] p-5" style={{ borderRadius: 'var(--eng-radius)' }}>
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-3 font-medium"><span>{f.q}</span><span aria-hidden className="text-[var(--eng-accent)] transition-transform group-open:rotate-45">+</span></summary>
+                <p className="mt-3 text-sm text-[var(--eng-muted)]">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -453,15 +540,33 @@ export function ContactDetails({ id, variant, eyebrow, title, sub, brand }: {
   );
 }
 
-/* ── Mid-page CTA band ── */
-export function CtaBand({ id, title, sub, image }: { id: string; title: string; sub?: string; image?: string }) {
+/* ── Mid-page call to action: a band, a card, or text beside a button ── */
+export function CtaBand({ id, variant = 'band', title, sub, image, label = 'Get in touch' }: { id: string; variant?: 'band' | 'card' | 'split'; title: string; sub?: string; image?: string; label?: string }) {
+  const btn = <a href="#enquiry" className="inline-flex bg-[var(--eng-accent)] px-7 py-3.5 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>{label}</a>;
+  if (variant === 'card') {
+    return (
+      <section id={id} className="px-5 py-16"><div className="mx-auto max-w-4xl border border-[var(--eng-border)] bg-[var(--eng-surface)] p-10 text-center md:p-14" style={{ borderRadius: 'var(--eng-radius)' }}>
+        <h2 className="font-[family-name:var(--eng-fontDisplay)] text-2xl md:text-4xl">{title}</h2>
+        {sub && <p className="mx-auto mt-3 max-w-xl text-[var(--eng-muted)]">{sub}</p>}
+        <div className="mt-7">{btn}</div>
+      </div></section>
+    );
+  }
+  if (variant === 'split') {
+    return (
+      <section id={id} className="px-5 py-14"><div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 border-y border-[var(--eng-border)] py-10 md:flex-row md:items-center">
+        <div><h2 className="font-[family-name:var(--eng-fontDisplay)] text-2xl md:text-3xl">{title}</h2>{sub && <p className="mt-2 max-w-xl text-[var(--eng-muted)]">{sub}</p>}</div>
+        {btn}
+      </div></section>
+    );
+  }
   return (
     <section id={id} className="relative overflow-hidden px-5 py-24">
       {image && <><Img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 eng-surface-80" /></>}
       <div className="relative mx-auto max-w-3xl text-center">
         <h2 className="font-[family-name:var(--eng-fontDisplay)] text-3xl md:text-5xl">{title}</h2>
         {sub && <p className="mx-auto mt-4 max-w-xl text-[var(--eng-muted)]">{sub}</p>}
-        <a href="#enquiry" className="mt-8 inline-flex bg-[var(--eng-accent)] px-7 py-3.5 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>Get in touch</a>
+        <div className="mt-8">{btn}</div>
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 import type { EngineSiteData, ThemeTokens } from '../types';
 import type { BottomNavItem, EnquiryTab, KitItem, KitSection, KitSiteModel } from '../kit/model';
 import themesJson from '../kit/site-themes.json';
+import { activeDesign, buildDesignModel } from './design-build';
 
 /**
  * The new public renderer's model builder: a vendor's site is its Website Manager content + the category pack (section order, wording, layouts) + a theme.
@@ -27,6 +28,8 @@ export interface PackConfigLite {
   item: { kind: string; noun: string; nounPlural: string };
   defaults: { tagline: string; about: string; headline: string; subline: string; trust: string[]; faq: { q: string; a: string }[] };
   themeKey: string; layouts: Record<string, string>; seoType: string;
+  /** industry designs: the flow family, the category's designs and the default one */
+  family?: string; designs?: unknown[]; defaultDesign?: string;
 }
 
 /** Used when no pack matches the vendor yet: short, plain, true of any business. */
@@ -76,6 +79,9 @@ export function packOf(site: EngineSiteData): PackConfigLite {
 export function buildSiteDocModel(site: EngineSiteData): KitSiteModel {
   const cms = site.cms;
   const pack = packOf(site);
+  // a category with designs: the design decides the sections and their layouts
+  const design = activeDesign(site, pack);
+  if (design) return buildDesignModel(site, pack, design);
   const lay = resolveLayout(site, pack);
   const name = (cms?.businessName || site.vendor.businessName || '').trim();
   const phone = cms?.phone?.trim() || undefined;
@@ -167,5 +173,7 @@ export function jsonLdFor(site: EngineSiteData, url: string): Record<string, unk
     ...(cms?.about ? { description: cms.about.slice(0, 300) } : {}), ...(cms?.logo ? { logo: cms.logo, image: cms?.banner || cms.logo } : cms?.banner ? { image: cms.banner } : {}),
     ...(cms?.phone ? { telephone: cms.phone } : {}), ...(cms?.email ? { email: cms.email } : {}), ...(cms?.address ? { address: cms.address } : {}),
     ...(cms?.businessHours ? { openingHours: cms.businessHours } : {}), ...(same.length ? { sameAs: same } : {}), areaServed: 'IN',
+    // the vendor's items, by name only: a starter price is never published
+    ...(site.products.length ? { hasOfferCatalog: { '@type': 'OfferCatalog', name: pack.item.nounPlural, itemListElement: site.products.slice(0, 12).map((p) => ({ '@type': 'Offer', itemOffered: { '@type': pack.item.kind === 'product' ? 'Product' : 'Service', name: p.name, ...(p.description ? { description: p.description.slice(0, 200) } : {}) } })) } } : {}),
   };
 }

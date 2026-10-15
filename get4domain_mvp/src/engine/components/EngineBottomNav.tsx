@@ -47,6 +47,8 @@ export default function EngineBottomNav({ items }: BottomNavConfig) {
     return () => obs.disconnect();
   }, [items]);
 
+  if (items.length === 0) return null;
+
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 grid border-t border-[var(--eng-border)] eng-surface-95 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur md:hidden"

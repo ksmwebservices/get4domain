@@ -58,6 +58,8 @@ export interface EngineSiteData {
     testimonials?: { quote: string; author: string; note?: string }[] | null;
     pages?: { slug: string; title: string; body: string }[] | null;
     layout?: Record<string, string> | null;
+    /** industry designs: headline, sub-line, questions, steps and the like, the chosen design, and whether the site is live */
+    extras?: Record<string, unknown> | null; designKey?: string | null; siteStatus?: string | null;
   } | null;
   products: {
     id: string; name: string; description: string | null; price: string | null;
@@ -68,6 +70,8 @@ export interface EngineSiteData {
   /** the vendor is on the new Website Manager: the pack-driven renderer and the no-stock-content rules apply */
   docV2?: boolean;
   pack?: { key: string; name: string; config: unknown } | null;
+  /** false while the site is a draft, unclaimed, a preview, or shows only starter content: the page then asks search engines not to index it */
+  indexable?: boolean;
 }
 
 /** A revenue/launch readiness check evaluated against resolved site data. */

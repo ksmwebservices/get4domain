@@ -1,0 +1,167 @@
+{
+  "realestate": [],
+  "retail": [],
+  "clinic": [
+    "hero-split",
+    "stats",
+    "showcase-cards",
+    "people",
+    "iconGrid",
+    "rows",
+    "testimonials",
+    "faq",
+    "enquiry"
+  ],
+  "salon": [
+    "hero-overlay",
+    "showcase-menu",
+    "people",
+    "gallery",
+    "iconGrid",
+    "testimonials",
+    "enquiry"
+  ],
+  "gym": [
+    "hero-overlay",
+    "stats",
+    "showcase-cards",
+    "showcase-menu",
+    "steps",
+    "people",
+    "testimonials",
+    "enquiry"
+  ],
+  "coaching": [
+    "hero-split",
+    "showcase-cards",
+    "steps",
+    "people",
+    "stats",
+    "testimonials",
+    "faq",
+    "enquiry"
+  ],
+  "education": [
+    "hero-overlay",
+    "featureIndex",
+    "showcase-cards",
+    "people",
+    "stats",
+    "gallery",
+    "faq",
+    "enquiry"
+  ],
+  "professional": [
+    "hero-split",
+    "showcase-cards",
+    "steps",
+    "people",
+    "testimonials",
+    "faq",
+    "enquiry"
+  ],
+  "finance": [
+    "hero-overlay",
+    "showcase-cards",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "diagnostics": [
+    "hero-split",
+    "showcase-cards",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "photography": [
+    "hero-overlay",
+    "showcase-tiles",
+    "showcase-menu",
+    "steps",
+    "gallery",
+    "testimonials",
+    "enquiry"
+  ],
+  "hotel": [
+    "hero-overlay",
+    "showcase-rows",
+    "iconGrid",
+    "gallery",
+    "rows",
+    "testimonials",
+    "enquiry"
+  ],
+  "events": [
+    "hero-panel",
+    "showcase-cards",
+    "gallery",
+    "steps",
+    "stats",
+    "testimonials",
+    "enquiry"
+  ],
+  "travel": [
+    "hero-split",
+    "showcase-cards",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "restaurant": [
+    "hero-overlay",
+    "showcase-menu",
+    "rows",
+    "featureIndex",
+    "gallery",
+    "testimonials",
+    "enquiry"
+  ],
+  "agriculture": [
+    "hero-split",
+    "showcase-cards",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "automobile": [
+    "hero-overlay",
+    "showcase-cards",
+    "stats",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "construction": [
+    "hero-overlay",
+    "showcase-cards",
+    "stats",
+    "showcase-tiles",
+    "steps",
+    "iconGrid",
+    "enquiry"
+  ],
+  "technology": [
+    "hero-split",
+    "showcase-cards",
+    "featureIndex",
+    "stats",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ],
+  "logistics": [
+    "hero-split",
+    "showcase-cards",
+    "stats",
+    "iconGrid",
+    "steps",
+    "testimonials",
+    "enquiry"
+  ]
+}

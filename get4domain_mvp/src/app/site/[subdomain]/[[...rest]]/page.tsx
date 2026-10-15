@@ -43,12 +43,13 @@ interface SiteData {
   checkoutMode?: 'ONLINE' | 'ORDER_REQUEST' | 'NONE';
   preview?: boolean;
   pack?: { key: string; name: string; config: unknown } | null;
+  indexable?: boolean;
 }
 
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
-async function fetchSite(subdomain: string, preview?: string): Promise<SiteData | null> {
+async function fetchSite(subdomain: string, preview?: string, design?: string): Promise<SiteData | null> {
   try {
-    const url = `${API_BASE}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}` : ''}`;
+    const url = `${API_BASE}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : ''}`;
     const res = await fetch(url, preview ? { cache: 'no-store' } : { next: { tags: [`site:${subdomain}`], revalidate: 60 } });
     if (!res.ok) return null;
     const json = await res.json();
@@ -97,29 +98,36 @@ function buildCatalog(site: SiteData): CategoryCatalog {
 
 interface Params { subdomain: string; rest?: string[] }
 
-export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string }> }): Promise<Metadata> {
-  const { subdomain } = await params;
-  const { preview } = await searchParams;
-  const site = await fetchSite(subdomain, preview);
-  if (!site) return { title: 'Site not found' };
+const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string; design?: string }> }): Promise<Metadata> {
+  const { subdomain, rest = [] } = await params;
+  const { preview, design } = await searchParams;
+  const site = await fetchSite(subdomain, preview, design);
+  // a site that does not exist or is still a draft answers 404 (the page body is the not-found page), so it can never be indexed
+  if (!site) notFound();
   const name = site.cms?.businessName || site.vendor.businessName;
   const title = site.cms?.seoTitle || `${name} — ${site.cms?.tagline ?? 'Official Website'}`;
   const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
   const share = site.cms?.ogImage || site.cms?.banner || site.cms?.logo;
   return {
-    title,
+    // a vendor's own title is used exactly as written (the platform name is not added)
+    title: site.docV2 ? { absolute: title } : title,
     description,
     keywords: site.cms?.seoKeywords ?? undefined,
     ...(site.docV2 && site.cms?.favicon ? { icons: { icon: site.cms.favicon } } : {}),
-    ...(site.preview ? { robots: { index: false, follow: false } } : {}),
-    openGraph: { title, description, type: 'website', images: share ? [share] : [] },
+    // a preview, a draft, an unclaimed site, or a site that still shows only starter content is not offered to search engines
+    ...(site.preview || (site.docV2 && site.indexable === false) ? { robots: { index: false, follow: false } } : {}),
+    // one canonical address per page: the vendor's own host
+    ...(site.docV2 ? { alternates: { canonical: `https://${subdomain}.${SITE_BASE}${rest[0] === 'p' && rest[1] ? `/p/${rest[1]}` : ''}` } } : {}),
+    openGraph: { title, description, type: 'website', url: `https://${subdomain}.${SITE_BASE}`, images: share ? [{ url: share, alt: name }] : [] },
   };
 }
 
-export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string }> }) {
+export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string; design?: string }> }) {
   const { subdomain, rest = [] } = await params;
-  const { preview } = await searchParams;
-  const site = await fetchSite(subdomain, preview);
+  const { preview, design } = await searchParams;
+  const site = await fetchSite(subdomain, preview, design);
   if (!site) notFound();
 
   // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
@@ -150,7 +158,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     // a shop can take online payment (the vendor's own Razorpay) or order requests the shop confirms by phone
     const shop = !!site.paymentsEnabled || site.checkoutMode === 'ORDER_REQUEST';
     const checkoutMode = site.checkoutMode === 'ORDER_REQUEST' ? ('ORDER_REQUEST' as const) : ('ONLINE' as const);
-    const bar = site.preview ? <div className="fixed inset-x-0 top-0 z-50 bg-amber-300 px-4 py-2 text-center text-sm font-semibold text-slate-900">Preview: this is how your site will look. It is not live until you publish.</div> : null;
+    const bar = site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null;
     if (rest[0] === 'p' && rest[1]) {
       const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
       if (!pg) notFound();

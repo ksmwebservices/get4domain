@@ -19,15 +19,20 @@ export const isEngineKey = (key: string): boolean => (ENGINE_KEYS as readonly st
 export function genericReadiness(site: EngineSiteData): ReadinessCheck[] {
   const cms = site.cms;
   const has = (v: string | null | undefined) => !!(v && v.trim());
+  // starter text (industry designs) is shown on a new site but is not the vendor's own yet: it does not count as done
+  const sample = ((cms?.extras as { sample?: Record<string, boolean> } | null | undefined)?.sample ?? {}) as Record<string, boolean>;
+  const ownItems = site.products.filter((p) => p.customFields?.sample !== 'true');
+  const starterLeft = Object.values(sample).filter(Boolean).length + (site.products.length - ownItems.length);
   return [
     { key: 'name', label: 'Business name set', weight: 'required', passed: has(cms?.businessName) || has(site.vendor.businessName) },
-    { key: 'tagline', label: 'Tagline / positioning', weight: 'recommended', passed: has(cms?.tagline), hint: 'A one-line promise customers remember.' },
-    { key: 'about', label: 'About your business', weight: 'recommended', passed: has(cms?.about) },
+    { key: 'tagline', label: 'Tagline / positioning', weight: 'recommended', passed: has(cms?.tagline) && !sample.tagline, hint: 'A one-line promise customers remember.' },
+    { key: 'about', label: 'About your business', weight: 'recommended', passed: has(cms?.about) && !sample.about },
     { key: 'phone', label: 'Phone number for callbacks', weight: 'required', passed: has(cms?.phone) },
     { key: 'whatsapp', label: 'WhatsApp enquiry number', weight: 'required', passed: has(cms?.whatsapp) || has(cms?.phone), hint: 'Most enquiries start on WhatsApp.' },
-    { key: 'catalog', label: 'At least one service / product listed', weight: 'required', passed: site.products.length > 0, hint: 'Add items in Website Manager → Services/Products.' },
-    { key: 'images', label: 'Photos uploaded', weight: 'required', passed: site.products.some((p) => !!p.image) || has(cms?.banner), hint: 'Customers decide on images first.' },
+    { key: 'catalog', label: 'At least one service / product listed', weight: 'required', passed: ownItems.length > 0, hint: 'Add items in Website Manager → Services/Products.' },
+    { key: 'images', label: 'Photos uploaded', weight: 'required', passed: ownItems.some((p) => !!p.image) || (has(cms?.banner) && !sample.banner), hint: 'Customers decide on images first.' },
     { key: 'address', label: 'Business address', weight: 'recommended', passed: has(cms?.address) },
+    { key: 'sample', label: 'Starter text replaced with your own', weight: 'recommended', passed: starterLeft === 0, hint: 'Website Manager lists every part that is still sample text, with a button to edit it. Sample prices and sample customer quotes are never shown to the public.' },
     { key: 'seo', label: 'SEO title & description', weight: 'recommended', passed: has(cms?.seoTitle) && has(cms?.seoDesc) },
   ];
 }

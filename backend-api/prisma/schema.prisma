@@ -281,6 +281,12 @@ model VendorCMS {
   packKey           String?
   publishedAt       DateTime?
   siteVersion       Int      @default(0)
+  /// Industry designs (15-Oct-2026): headline, sub-line, button label, announcement, trust points, questions, steps, statistics, team, before/after and the `sample` markers
+  extras            Json?
+  /// the design (one of the four of the category) the site uses
+  designKey         String?
+  /// LIVE (default, every existing site), DRAFT or UNCLAIMED: the last two are hidden from the public until published or claimed
+  siteStatus        String   @default("LIVE")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

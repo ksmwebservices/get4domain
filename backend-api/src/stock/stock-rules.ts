@@ -113,8 +113,10 @@ export interface PublicProduct {
 export function toPublicProduct(row: PublicProductRow): PublicProduct | null {
   const availability = availabilityOf(row);
   if (availability === null) return null;
+  // a starter item's sample price is never shown as real: the public gets no price, and the page says "Contact for price"
+  const samplePrice = !!row.customFields && typeof row.customFields === 'object' && !Array.isArray(row.customFields) && (row.customFields as Record<string, unknown>).samplePrice === 'true';
   return {
-    id: row.id, name: row.name, description: row.description, price: row.price, priceAmount: row.priceAmount ?? null,
+    id: row.id, name: row.name, description: row.description, price: samplePrice ? null : row.price, priceAmount: samplePrice ? null : row.priceAmount ?? null,
     image: row.image, category: row.category, categoryId: row.categoryId, unit: row.unit,
     customFields: sanitiseCustomFields(row.customFields), availability, maxQty: maxOrderQty(row), createdAt: row.createdAt,
   };

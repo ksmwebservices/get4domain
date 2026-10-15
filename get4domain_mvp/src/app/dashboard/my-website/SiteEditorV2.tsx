@@ -7,18 +7,20 @@ import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import { api } from '@/lib/api';
 import { CMS_EDITABLE, editable } from '@/lib/editable';
+import { useAuth } from '@/lib/auth-context';
 import { useWebsiteSection, WEBSITE_SECTION_TABS } from '@/dashboard-v2/section-context';
+import { ItemsTab, PageContentTab, SamplePanel, TemplateTab, type DesignsView, type Extras, type SampleSummary } from './SiteContentTabs';
 import { SITE_THEME_LIST, VARIANTS } from '@/engine/sitedoc/build';
 
-type Doc = Record<string, unknown> & { portfolio?: { id: string; src: string; title?: string; category?: string }[]; testimonials?: { quote: string; author: string; note?: string }[]; pages?: { slug: string; title: string; body: string }[]; layout?: Record<string, string> };
-interface View { enabled: boolean; plan: string; limits: { pages: number; mediaMb: number }; usage: { pages: number; mediaBytes: number }; subdomain: string | null; publicUrl: string | null; live: Doc; doc: Doc; dirty: boolean; version: number; publishedAt: string | null }
+type Doc = Record<string, unknown> & { portfolio?: { id: string; src: string; title?: string; category?: string }[]; testimonials?: { quote: string; author: string; note?: string; sample?: boolean }[]; pages?: { slug: string; title: string; body: string }[]; layout?: Record<string, string>; extras?: Extras; designKey?: string };
+interface View { enabled: boolean; plan: string; limits: { pages: number; mediaMb: number }; usage: { pages: number; mediaBytes: number }; subdomain: string | null; publicUrl: string | null; live: Doc; doc: Doc; dirty: boolean; version: number; publishedAt: string | null; siteStatus?: string; sample?: SampleSummary }
 interface Version { version: number; note: string | null; createdAt: string; createdBy: string | null; current: boolean }
-type Tab = 'basic' | 'branding' | 'about' | 'portfolio' | 'testimonials' | 'pages' | 'seo' | 'design';
+type Tab = 'basic' | 'content' | 'items' | 'branding' | 'template' | 'about' | 'portfolio' | 'testimonials' | 'pages' | 'seo' | 'design';
 
 const field = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
 const lbl = 'mb-1.5 block text-xs font-medium text-slate-600';
-const TEXT_FIELDS = ['businessName', 'tagline', 'about', 'logo', 'banner', 'favicon', 'ogImage', 'seoTitle', 'seoDesc', 'seoKeywords', 'googleAnalyticsId', 'phone', 'whatsapp', 'email', 'address', 'businessHours', 'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps'];
-const JSON_FIELDS = ['portfolio', 'testimonials', 'pages', 'layout'];
+const TEXT_FIELDS = ['businessName', 'tagline', 'about', 'logo', 'banner', 'favicon', 'ogImage', 'seoTitle', 'seoDesc', 'seoKeywords', 'googleAnalyticsId', 'phone', 'whatsapp', 'email', 'address', 'businessHours', 'facebook', 'instagram', 'linkedin', 'youtube', 'googleMaps', 'designKey'];
+const JSON_FIELDS = ['portfolio', 'testimonials', 'pages', 'layout', 'extras'];
 const SLOT_LABEL: Record<string, string> = { hero: 'Top of the page', about: 'About', services: 'Your items', gallery: 'Gallery', testimonials: 'Customer quotes', contact: 'Contact' };
 const mb = (n: number): string => `${(n / 1024 / 1024).toFixed(1)} MB`;
 const slugOf = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50);
@@ -26,10 +28,12 @@ const slugOf = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-'
 /** The new Website Manager: edit a draft, preview it, publish it, go back to an earlier version. Every plan has all of it; plans limit pages and picture storage. */
 export default function SiteEditorV2({ initial }: { initial: View }) {
   const section = useWebsiteSection();
+  const { user } = useAuth();
+  const [designs, setDesigns] = useState<DesignsView | null>(null);
   const [view, setView] = useState<View>(initial);
   const [doc, setDoc] = useState<Doc>(initial.doc);
   const [saved, setSaved] = useState<Doc>(initial.doc);
-  const [tab, setTab] = useState<Tab>(section === 'design' ? 'design' : section === 'search' ? 'seo' : 'basic');
+  const [tab, setTab] = useState<Tab>(section === 'design' ? 'template' : section === 'search' ? 'seo' : 'basic');
   const [busy, setBusy] = useState<'' | 'save' | 'publish' | 'preview' | 'discard' | 'upload' | 'generate'>('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -41,7 +45,7 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
   const set = (k: string, v: unknown): void => setDoc((d) => ({ ...d, [k]: v }));
   const changes = useMemo(() => {
     const out: Record<string, unknown> = {};
-    for (const f of [...TEXT_FIELDS, ...JSON_FIELDS]) if (JSON.stringify(doc[f] ?? null) !== JSON.stringify(saved[f] ?? null)) out[f] = doc[f] ?? (JSON_FIELDS.includes(f) ? (f === 'layout' ? {} : []) : '');
+    for (const f of [...TEXT_FIELDS, ...JSON_FIELDS]) if (JSON.stringify(doc[f] ?? null) !== JSON.stringify(saved[f] ?? null)) out[f] = doc[f] ?? (JSON_FIELDS.includes(f) ? (f === 'layout' || f === 'extras' ? {} : []) : '');
     return out;
   }, [doc, saved]);
   const hasLocal = Object.keys(changes).length > 0;
@@ -94,8 +98,32 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
     try { const r = await api.siteDocGenerate({ packKey: gen.packKey, businessName: gen.businessName.trim(), city: gen.city.trim() || undefined, phone: gen.phone.trim() || undefined }); accept(r.data as View); setNotice('Your site is ready as a draft. Check each tab, press Preview, then Publish.'); } catch (e) { fail(e); } finally { setBusy(''); }
   };
 
+  const loadDesigns = useCallback(async (): Promise<void> => {
+    try { const r = await api.siteDocDesigns(); setDesigns(r.data as DesignsView); } catch { setDesigns({ packKey: null, family: null, current: null, defaultDesign: null, designs: [] }); }
+  }, []);
+  useEffect(() => { void loadDesigns(); }, [loadDesigns]);
+
+  // the private preview address the four design thumbnails use; a fresh one after every save
+  const [designBase, setDesignBase] = useState('');
+  const refreshDesignBase = useCallback(async (): Promise<void> => {
+    if (!(await saveDraft())) return;
+    try { const r = await api.siteDocPreview(); setDesignBase((r.data as { url: string }).url); } catch (e) { fail(e); }
+  }, [saveDraft]);
+  useEffect(() => { if (tab === 'template' && !designBase) void refreshDesignBase(); }, [tab, designBase, refreshDesignBase]);
+
+  const pickDesign = async (key: string): Promise<void> => {
+    if (!(await saveDraft())) return;
+    setBusy('save'); setError('');
+    try { const r = await api.siteDocSetDesign(key); accept(r.data as View); setNotice('Design changed in your draft. Your words, items and pictures are unchanged. Press Publish to put it live.'); await loadDesigns(); setDesignBase(''); } catch (e) { fail(e); } finally { setBusy(''); }
+  };
+  const resetStarter = async (): Promise<void> => {
+    if (!(await saveDraft())) return;
+    setBusy('generate'); setError('');
+    try { const r = await api.siteDocResetStarter(); accept((r.data as { view: View }).view); setNotice('Starter content added where something was empty or still sample. Nothing you wrote was changed. Check it, then Publish.'); } catch (e) { fail(e); } finally { setBusy(''); }
+  };
+
   const tabs: { key: Tab; label: string }[] = ([
-    { key: 'basic', label: 'Basic Info' }, { key: 'branding', label: 'Logo & Banner' }, { key: 'about', label: 'About & Social' }, { key: 'portfolio', label: 'Portfolio' },
+    { key: 'basic', label: 'Basic Info' }, { key: 'content', label: 'Page content' }, { key: 'items', label: 'Items' }, { key: 'branding', label: 'Logo & Banner' }, { key: 'template', label: 'Template' }, { key: 'about', label: 'About & Social' }, { key: 'portfolio', label: 'Portfolio' },
     { key: 'testimonials', label: 'Customer quotes' }, { key: 'pages', label: 'Pages' }, { key: 'seo', label: 'SEO' }, { key: 'design', label: 'Theme & layout' },
   ] as { key: Tab; label: string }[]).filter((t) => !section || (WEBSITE_SECTION_TABS[section] ?? []).includes(t.key));
 
@@ -164,6 +192,9 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
         </Card>
       )}
 
+      {view.sample && <SamplePanel sample={view.sample} onGo={(t) => setTab(t as Tab)} onReset={() => void resetStarter()} busy={busy === 'generate'} />}
+      {view.siteStatus && view.siteStatus !== 'LIVE' && <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">Your site is not visible to the public yet. It goes live when you press Publish.</div>}
+
       <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
         {tabs.map((t) => <button key={t.key} onClick={() => setTab(t.key)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${tab === t.key ? 'bg-primary-50 text-primary-700' : 'text-slate-500'}`}>{t.label}</button>)}
       </div>
@@ -193,13 +224,16 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
             <p className="mt-2 text-xs text-slate-500">These pictures show as the gallery on your site.</p>
           </div>
         )}
+        {tab === 'content' && <PageContentTab extras={(doc.extras ?? {}) as Extras} set={(next) => set('extras', next)} />}
+        {tab === 'items' && user?.id && <ItemsTab vendorId={user.id} noun={'item'} itemFields={designs?.itemFields ?? []} onChanged={() => void api.siteDoc().then((r) => accept(r.data as View))} />}
+        {tab === 'template' && <TemplateTab view={designs} previewBase={designBase} onPick={(k) => void pickDesign(k)} busy={busy === 'save'} onRefresh={() => { setDesignBase(''); }} />}
         {tab === 'testimonials' && (
           <div className="space-y-3">
-            <p className="text-sm text-slate-500">Add real quotes from customers who agreed to be named. Nothing is shown until you add one.</p>
+            <p className="text-sm text-slate-500">Add real quotes from customers who agreed to be named. Quotes marked Sample are examples: they are never shown to the public. Replace each one with a real quote.</p>
             {quotes.map((q, i) => (
               <div key={i} className="grid gap-2 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_12rem_auto]">
-                <textarea rows={2} className={field} placeholder="What they said" value={q.quote} maxLength={600} onChange={(e) => set('testimonials', quotes.map((x, j) => (j === i ? { ...x, quote: e.target.value } : x)))} />
-                <input className={field} placeholder="Name" value={q.author} maxLength={120} onChange={(e) => set('testimonials', quotes.map((x, j) => (j === i ? { ...x, author: e.target.value } : x)))} />
+                <textarea rows={2} className={field} placeholder="What they said" value={q.quote} maxLength={600} onChange={(e) => set('testimonials', quotes.map((x, j) => (j === i ? { ...x, quote: e.target.value, sample: undefined } : x)))} />
+                <input className={field} placeholder={q.sample ? 'Sample: not shown to the public' : 'Name'} value={q.author} maxLength={120} onChange={(e) => set('testimonials', quotes.map((x, j) => (j === i ? { ...x, author: e.target.value, sample: undefined } : x)))} />
                 <button type="button" aria-label="Remove" className="text-slate-400 hover:text-error-600" onClick={() => set('testimonials', quotes.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></button>
               </div>
             ))}

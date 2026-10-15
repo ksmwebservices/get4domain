@@ -17,7 +17,8 @@ const waHref = (num: string | undefined, text: string): string | null =>
  * preview → simulated. The tabs (appointment / order / enquiry / quote …) and fields
  * are declared per-industry, so each site converts in its own language.
  */
-export default function KitEnquiry({ mode, brand, choices, choiceLabel, eyebrow, title, sub, points, tabs }: {
+export default function KitEnquiry({ mode, brand, choices, choiceLabel, eyebrow, title, sub, points, tabs, variant = 'panel' }: {
+  variant?: 'panel' | 'split' | 'card';
   mode: EngineMode;
   brand: { name: string; phone?: string; whatsapp?: string };
   choices: string[];
@@ -75,18 +76,18 @@ export default function KitEnquiry({ mode, brand, choices, choiceLabel, eyebrow,
   const wa = waHref(brand.whatsapp, `Hi ${brand.name}, I'm interested. Please share details.`);
 
   return (
-    <section id="enquiry" className="scroll-mt-20 bg-[var(--eng-surface)] px-5 py-20 md:py-28">
-      <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2">
-        <div>
+    <section id="enquiry" className={`scroll-mt-20 px-5 py-20 md:py-28 ${variant === 'card' ? 'border-y border-[var(--eng-border)]' : 'bg-[var(--eng-surface)]'}`}>
+      <div className={variant === 'card' ? 'mx-auto grid max-w-xl gap-8' : 'mx-auto grid max-w-6xl gap-12 md:grid-cols-2'}>
+        <div className={variant === 'card' ? 'text-center' : variant === 'split' ? 'md:order-2 md:border-l md:border-[var(--eng-border)] md:pl-12' : ''}>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--eng-accent)]">{eyebrow}</p>
           <h2 className="mt-3 font-[family-name:var(--eng-fontDisplay)] text-3xl leading-tight md:text-5xl">{title}</h2>
-          <p className="mt-5 max-w-md text-[var(--eng-muted)]">{sub}</p>
+          <p className={`mt-5 max-w-md text-[var(--eng-muted)] ${variant === 'card' ? 'mx-auto' : ''}`}>{sub}</p>
           {points && (
             <ul className="mt-8 space-y-3 text-sm">
               {points.map((t) => <li key={t} className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-[var(--eng-accent)]" /> {t}</li>)}
             </ul>
           )}
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className={`mt-8 flex flex-wrap gap-3 ${variant === 'card' ? 'justify-center' : ''}`}>
             {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-4 py-2.5 text-sm hover:border-[var(--eng-accent)]"><MessageSquare className="h-4 w-4" /> WhatsApp us</a>}
             {brand.phone && <a href={`tel:${brand.phone}`} className="inline-flex items-center gap-2 border border-[var(--eng-border)] px-4 py-2.5 text-sm hover:border-[var(--eng-accent)]"><Phone className="h-4 w-4" /> {brand.phone}</a>}
           </div>

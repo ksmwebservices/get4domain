@@ -13,6 +13,7 @@ import { readPreviewToken } from '../site-doc/preview-token';
 import { overlayDraft } from '../site-doc/site-merge';
 import { SITE_FLAG_ADDON } from '../site-doc/site-doc.constants';
 import { resolvePack } from '../site-doc/pack-resolve';
+import { hasRealContent, itemMarkersAfterEdit, publicQuotes } from '../site-doc/sample-markers';
 
 /** Theme-change allowance is PER YEAR: the next reset is one year after the previous one (not the end of a shorter billing cycle). */
 export function nextYearlyReset(previous: Date, now: Date): Date {
@@ -26,7 +27,9 @@ export function toPublicCms<T extends { draft?: unknown }>(row: T | null): Omit<
   if (!row) return null;
   const { draft: _draft, ...rest } = row;
   void _draft;
-  return rest;
+  // starter customer quotes are never public (industry designs): they appear in the vendor's editor only
+  const t = (rest as { testimonials?: unknown }).testimonials;
+  return Array.isArray(t) ? ({ ...rest, testimonials: publicQuotes(t) } as unknown as Omit<T, 'draft'>) : rest;
 }
 
 @Injectable()
@@ -139,6 +142,7 @@ export class CmsService {
       testimonials: dto.testimonials as unknown as Prisma.InputJsonValue | undefined,
       pages: dto.pages as unknown as Prisma.InputJsonValue | undefined,
       layout: dto.layout as unknown as Prisma.InputJsonValue | undefined,
+      extras: dto.extras as unknown as Prisma.InputJsonValue | undefined,
     };
   }
 
@@ -363,10 +367,15 @@ export class CmsService {
     if (turningOn && !this.stock) throw new BadRequestException('Stock tracking is not available');
     const trackPatch = trackStock === false ? { trackStock: false } : {};
 
+    // a starter item the vendor edits stops being sample; a changed price stops being a sample price (and a client that echoes the loaded item cannot drop the marks)
+    const content = (rest.name !== undefined && rest.name !== product.name) || (rest.description !== undefined && rest.description !== product.description) || (rest.image !== undefined && rest.image !== product.image) || (category !== undefined && (category ?? null) !== product.category);
+    const priceChanged = (rest.price !== undefined && rest.price !== product.price) || ((rest as { priceAmount?: number }).priceAmount !== undefined && (rest as { priceAmount?: number }).priceAmount !== product.priceAmount);
+    const marked = itemMarkersAfterEdit(product.customFields as Record<string, unknown> | null, (customFields ?? undefined) as Record<string, unknown> | undefined, { content, price: priceChanged });
+    const writeCf = marked !== undefined && (customFields !== undefined || JSON.stringify(marked) !== JSON.stringify(product.customFields ?? null));
     const data: Prisma.VendorProductUncheckedUpdateInput = {
       ...rest, ...categoryPatch, ...statusPatch, ...trackPatch,
       ...(reorderLevel !== undefined ? { reorderLevel } : {}),
-      ...(customFields !== undefined ? { customFields: customFields as Prisma.InputJsonValue } : {}),
+      ...(writeCf ? { customFields: marked as Prisma.InputJsonValue } : {}),
     };
     return this.prisma.$transaction(async (tx) => {
       if (turningOn) await this.stock!.setOpening(tx, product.vendorId, productId, stockQty ?? product.stockQty ?? 0, actor);
@@ -375,7 +384,7 @@ export class CmsService {
   }
 
   /** Public: resolve a live (non-sandbox) vendor's public site by subdomain. */
-  async getSiteBySubdomain(subdomain: string, previewToken?: string): Promise<{
+  async getSiteBySubdomain(subdomain: string, previewToken?: string, designPreview?: string): Promise<{
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };
     cms: Omit<VendorCMS, 'draft'> | null;
     /** true when this vendor is on the draft/publish workflow (the new renderer and the new rules apply) */
@@ -388,6 +397,8 @@ export class CmsService {
     theme: { id: string; name: string; industry: string | null; cssVars: unknown; layout: unknown; pages: unknown; css: string | null; js: string | null; fonts: unknown } | null;
     paymentsEnabled: boolean;
     checkoutMode: 'ONLINE' | 'ORDER_REQUEST' | 'NONE';
+    /** whether search engines may index this site (false while it is a draft, unclaimed, a preview, or shows only starter content) */
+    indexable: boolean;
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -403,8 +414,12 @@ export class CmsService {
       this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId: vendor.id, addonKey: SITE_FLAG_ADDON } }, select: { enabled: true } }),
     ]);
     const preview = !!cmsRow && readPreviewToken(previewToken) === vendor.id;
+    // A site that is still a DRAFT or UNCLAIMED is hidden from the public until it is published or claimed; only a signed preview link opens it.
+    if (cmsRow && cmsRow.siteStatus !== 'LIVE' && !preview) throw new NotFoundException('Site not found');
     // Anyone may read the published site. Only the vendor's own signed preview link also sees the pending draft; the draft column itself is never sent.
-    const cms = cmsRow ? (preview ? overlayDraft(cmsRow) : toPublicCms(cmsRow)) : null;
+    const cmsFull = cmsRow ? (preview ? overlayDraft(cmsRow) : toPublicCms(cmsRow)) : null;
+    // Starter customer quotes are never public; starter prices are removed from the products below. Starter TEXT may show.
+    let cms = cmsFull ? ({ ...cmsFull, testimonials: publicQuotes(cmsFull.testimonials) } as unknown as typeof cmsFull) : null;
     // The vendor's selected template (with its data-driven layout), if any — so the
     // public site can render a chosen design with no redeploy.
     const themeRow = cms?.themeId
@@ -415,6 +430,14 @@ export class CmsService {
     const paymentsEnabled = Boolean(pay?.enabled && pay.razorpayKeyId && pay.razorpayKeySecret);
     // How a shopper can order: online (vendor's own Razorpay), as an order request the vendor confirms, or not at all.
     const checkoutMode: 'ONLINE' | 'ORDER_REQUEST' | 'NONE' = pay?.checkoutMode === 'ORDER_REQUEST' ? 'ORDER_REQUEST' : paymentsEnabled ? 'ONLINE' : 'NONE';
+    const pack = flag?.enabled === true ? await resolvePack(this.prisma, cmsRow?.packKey, vendor.industry) : null;
+    // the vendor's private design preview: shows one of the category's designs with their own content (never public)
+    if (preview && designPreview && cms && pack) {
+      const d = ((pack.config as { designs?: { key: string; enabled?: boolean; themeKey?: string }[] }).designs ?? []).find((x) => x.key === designPreview && x.enabled !== false);
+      if (d) cms = { ...cms, designKey: d.key, layout: d.themeKey ? { themeKey: d.themeKey } : {} } as typeof cms;
+    }
+    const publicProducts = products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null);
+    const indexable = !preview && (!cmsRow || cmsRow.siteStatus === 'LIVE') && (flag?.enabled !== true || (!!cms && hasRealContent(cms as { about?: unknown; testimonials?: unknown; extras?: unknown }, publicProducts)));
     return {
       vendor: {
         id: vendor.id,
@@ -424,9 +447,10 @@ export class CmsService {
       },
       cms: cms as Omit<VendorCMS, 'draft'> | null,
       docV2: flag?.enabled === true,
-      pack: flag?.enabled === true ? await resolvePack(this.prisma, cmsRow?.packKey, vendor.industry) : null,
+      pack,
       preview,
-      products: products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null),
+      indexable,
+      products: publicProducts,
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }
         : null,

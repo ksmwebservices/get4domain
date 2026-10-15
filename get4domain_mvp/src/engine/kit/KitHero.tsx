@@ -42,10 +42,50 @@ function Stats({ items }: { items: KitStat[] }) {
  *  - split:   content on a solid ground beside a tall image (editorial, clean).
  *  - panel:   a colour panel with the headline over a shorter image banner (bold).
  */
-export default function KitHero({ variant, eyebrow, headline, subline, highlight, image, stats, ctaPrimary, ctaSecondary }: {
-  variant: 'overlay' | 'split' | 'panel'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta;
+export default function KitHero({ variant, eyebrow, headline, subline, highlight, image, imageAlt, stats, ctaPrimary, ctaSecondary, card }: {
+  variant: 'overlay' | 'split' | 'panel' | 'center' | 'card'; eyebrow?: string; headline: string; subline: string; highlight?: string; image: string; imageAlt?: string; stats?: KitStat[]; ctaPrimary?: HeroCta; ctaSecondary?: HeroCta; card?: { title: string; lines: string[] };
 }) {
+  const alt = imageAlt ?? headline;
   const ctas = <Ctas primary={ctaPrimary} secondary={ctaSecondary} />;
+  if (variant === 'center') {
+    return (
+      <section id="top" className="px-5 pb-6 pt-32 md:pt-40">
+        <div className="mx-auto max-w-4xl text-center">
+          {eyebrow && <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">{eyebrow}</p>}
+          <h1 className="font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.06] md:text-6xl">{headline}</h1>
+          <p className="mx-auto mt-6 max-w-xl text-[var(--eng-muted)] md:text-lg">{subline}</p>
+          <div className="flex justify-center">{ctas}</div>
+          {highlight && <p className="mt-6 text-xs uppercase tracking-widest text-[var(--eng-muted)]">{highlight}</p>}
+        </div>
+        {image && <div className="mx-auto mt-12 aspect-[21/9] max-w-6xl overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}><Img src={image} alt={alt} className="h-full w-full object-cover" /></div>}
+        {stats && <div className="mx-auto max-w-6xl"><Stats items={stats} /></div>}
+      </section>
+    );
+  }
+
+  if (variant === 'card') {
+    return (
+      <section id="top" className="relative overflow-hidden px-5 pb-16 pt-32 md:pt-36">
+        <div aria-hidden className="absolute inset-0"><Img src={image} alt="" className="h-full w-full object-cover" /></div>
+        <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--eng-bg) 94%, transparent), color-mix(in srgb, var(--eng-bg) 60%, transparent))' }} />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-[1.3fr_1fr]">
+          <div>
+            {eyebrow && <p className="mb-4 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--eng-accent)]">{eyebrow}</p>}
+            <h1 className="font-[family-name:var(--eng-fontDisplay)] text-4xl font-medium leading-[1.06] md:text-6xl">{headline}</h1>
+            <p className="mt-6 max-w-lg text-[var(--eng-muted)] md:text-lg">{subline}</p>
+            {highlight && <p className="mt-6 text-xs uppercase tracking-widest text-[var(--eng-muted)]">{highlight}</p>}
+          </div>
+          <aside className="border border-[var(--eng-border)] bg-[var(--eng-bg)] p-6 shadow-xl md:p-8" style={{ borderRadius: 'var(--eng-radius)' }}>
+            <h2 className="font-[family-name:var(--eng-fontDisplay)] text-xl">{card?.title ?? 'Get in touch'}</h2>
+            {card && card.lines.length > 0 && <ul className="mt-3 space-y-1.5 text-sm text-[var(--eng-muted)]">{card.lines.map((l) => <li key={l}>{l}</li>)}</ul>}
+            <a href={(ctaPrimary ?? { href: '#enquiry' }).href} className="mt-6 flex items-center justify-center gap-2 bg-[var(--eng-accent)] px-6 py-3.5 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>{(ctaPrimary ?? { label: 'Get started' }).label} <ArrowRight className="h-4 w-4" /></a>
+            {ctaSecondary && <a href={ctaSecondary.href} target={ctaSecondary.href.startsWith('http') ? '_blank' : undefined} rel={ctaSecondary.href.startsWith('http') ? 'noopener noreferrer' : undefined} className="mt-3 flex items-center justify-center border border-[var(--eng-border)] px-6 py-3 text-sm font-medium" style={{ borderRadius: 'var(--eng-radius)' }}>{ctaSecondary.label}</a>}
+          </aside>
+        </div>
+      </section>
+    );
+  }
+
   if (variant === 'split') {
     return (
       <section id="top" className="grid min-h-[86vh] items-stretch md:grid-cols-2">
@@ -58,7 +98,7 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
           {stats && <Stats items={stats} />}
         </div>
         <div className="relative min-h-[40vh] md:min-h-full">
-          <Img src={image} alt={headline} className="absolute inset-0 h-full w-full object-cover" />
+          <Img src={image} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
         </div>
       </section>
     );
@@ -78,7 +118,7 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
             </div>
           </div>
           <div className="relative -mt-6 aspect-[16/7] overflow-hidden" style={{ borderRadius: 'var(--eng-radius)' }}>
-            <Img src={image} alt={headline} className="h-full w-full object-cover" />
+            <Img src={image} alt={alt} className="h-full w-full object-cover" />
           </div>
           {stats && <div className="mt-10">{<Stats items={stats} />}</div>}
         </div>
@@ -89,7 +129,7 @@ export default function KitHero({ variant, eyebrow, headline, subline, highlight
   // overlay (default)
   return (
     <section id="top" className="relative min-h-[88vh] overflow-hidden">
-      <Img src={image} alt={headline} className="absolute inset-0 h-full w-full object-cover" />
+      <Img src={image} alt={alt} className="absolute inset-0 h-full w-full object-cover" />
       {/* Legibility scrim. Uses color-mix inline styles (NOT Tailwind's [var()]/opacity,
           which can't apply opacity to an arbitrary hex var): a LEFT-weighted horizontal
           gradient so the left-aligned copy always sits on a dark ground while the photo

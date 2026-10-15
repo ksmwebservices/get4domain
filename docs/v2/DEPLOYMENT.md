@@ -483,3 +483,98 @@ The website then turns `allwintours.get4domain.com/anything` into `/site/allwint
 6. Versions: open Versions, put an older version live; the page changes back; the newer one is still in the list.
 
 **If something goes wrong:** `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable) returns that vendor to the old editor and renderer; the backfill rollback in step 8 undoes the copy; the migration is additive and can stay.
+
+
+## 12. Industry designs (15 Oct 2026) - KSM only
+
+Read `INDUSTRY_DESIGNS.md` first. Claude did not touch the server or any production data. Every command is labelled. **Nothing here switches a vendor on, changes a live vendor's content, or changes a vendor's category by itself.** New designs apply only to vendors that already have the add-on `site_doc_v2`; the dry run in step 8 says what would change for each of them, and nothing is applied automatically. Allwin Tours, Step N Rock and every vendor that is not on the flag are untouched.
+
+What this release adds: three columns on `"VendorCMS"` (`extras`, `designKey`, `siteStatus`, all additive; every existing site stays `LIVE`), 24 categories with a flow family, four designs each and starter content, 120 starter pictures (our own artwork, in the website's `public/starter`), the Template, Page content and Items tabs in Website Manager, `sitemap.xml` and `robots.txt` for every vendor address, and a site that is still a draft is hidden (not-found page, noindex).
+
+**1. VM terminal: backup first.** The VM's own `pg_dump` is version 14 and fails against the Supabase database, so the dump runs inside the Postgres 17 image. The database address is read from the env file with `grep` (never source `.env.local`):
+
+```
+ssh ksmwebtechservices@34.14.130.68
+mkdir -p ~/backups
+DB_URL=$(grep '^DIRECT_URL=' /srv/get4domain-site/backend-api/.env.local | head -1 | cut -d= -f2- | tr -d "\"'")
+docker run --rm postgres:17 pg_dump "$DB_URL" -Fc > ~/backups/g4d_before_industrydesigns_$(date +%F_%H%M).dump
+unset DB_URL
+ls -lh ~/backups | tail -3        # the new file must be more than a few hundred KB
+```
+
+Also confirm a Supabase backup from today (Supabase dashboard, Database, Backups) if your plan has one.
+
+**2. VM terminal: pull the code**
+
+```
+cd /srv/get4domain-site && git pull origin get4domain-site
+git log --oneline -1
+```
+
+**3. VM terminal: migrate** (one migration, additive: 3 columns, no table)
+
+```
+cd /srv/get4domain-site/backend-api
+npx prisma migrate status                 # expect only 20261015100000_industry_designs pending
+npx prisma migrate deploy && npx prisma generate
+npx prisma migrate status                 # expect "Database schema is up to date!"
+```
+
+**4. VM terminal, then Supabase SQL editor: row level security.** This release adds no table, so the script needs no re-run, but run it anyway as the standing check:
+
+```
+cat prisma/sql/enable_rls_public.sql | head -80
+grep -n 'DO \$\$' prisma/sql/enable_rls_public.sql
+grep -n 'END \$\$;' prisma/sql/enable_rls_public.sql      # both greps must print a line
+```
+
+Paste the file into the Supabase SQL editor, run it, then `SELECT tablename FROM pg_tables WHERE schemaname='public' AND rowsecurity=false;` must return 0 rows.
+
+**5. VM terminal: rebuild, backend first**
+
+```
+cd /srv/get4domain-site/backend-api && docker compose build --no-cache && docker compose up -d --force-recreate
+docker compose logs --tail=40 backend                     # look for "Nest application successfully started"
+cd ../get4domain_mvp && docker compose build --no-cache && docker compose up -d --force-recreate
+```
+
+**6. VM terminal: the starter categories.** Dry run first, read it, then apply (or press Add starter packs in Admin, Category packs: it does the same). It only touches the table `g4d_category_packs`:
+
+```
+cd /srv/get4domain-site/backend-api && npx nest build
+node scripts/industry-designs/seed-starter-packs.js
+SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/industry-designs/seed-starter-packs.js --apply
+node ../scripts/industry-designs/seed-images.js --check     # expect "0 missing, 120 present" (the pictures came with the pull)
+```
+
+Expected: 24 created on a database that has none, or the older packs upgraded with designs and starter content and everything an admin edited kept. Run it again: nothing to do.
+
+**7. VM terminal: check the public pieces**
+
+```
+curl -s -o /dev/null -w "%{http_code}\n" https://get4domain.com/starter/clinic/hero.webp      # 200
+curl -s https://ksm-webtech-services.get4domain.com/robots.txt | head -3                     # only after nginx sends that host to the website (section 11 step 10)
+```
+
+**8. VM terminal: dry run for the vendors that are on the flag (read only, no apply mode exists)**
+
+```
+node scripts/industry-designs/flagged-vendors-dry-run.js
+```
+
+It prints, for each flagged vendor, the category found, the design it would start on, whether the site already holds starter content, and what "Reset to starter" would fill. Paste it to Claude if anything looks wrong. Nothing is written.
+
+**9. KSM review**
+
+1. On your Windows machine, after `git pull`, open `evidence/industry-designs/contact-sheet/index.html` in a browser. It shows every category and design, desktop and mobile, with its starter content. Mark the designs you want changed (a category and a design name is enough).
+2. `ksm-webtech-services` is stored as `retail` but is an IT and web services business. Correct the category (dry run first, one vendor, undoable by running it again with `--category retail`), then press Reset to starter in the dashboard:
+
+```
+cd /srv/get4domain-site/backend-api
+node scripts/industry-designs/set-vendor-category.js --vendor ksm-webtech-services --category technology
+SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/industry-designs/set-vendor-category.js --vendor ksm-webtech-services --category technology --apply
+```
+
+Then in the dashboard (Website Manager, with the new Website Manager switched on for that vendor as in section 11 step 9): press **Reset to starter**, look at **Preview**, then **Publish**. Check: (1) the page has a hero picture, services, questions and a contact form; (2) Template tab shows four designs and switching keeps your words; (3) sample prices show as "Contact for price"; (4) sample customer quotes are not on the page; (5) the page source has `noindex` until you write your own About text; (6) `https://ksm-webtech-services.get4domain.com/robots.txt` closes the site until then.
+
+**Rollback:** the migration only adds and can stay. To go back to the earlier look for a vendor, `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable). To undo a category change run the script again with the previous category. Starter packs can be switched off one by one in Admin.

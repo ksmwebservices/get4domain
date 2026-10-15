@@ -399,3 +399,16 @@
 .eng-surface-55 { background-color: color-mix(in srgb, var(--eng-bg) 55%, transparent); }
 .eng-accent-15  { background-color: color-mix(in srgb, var(--eng-accent) 15%, transparent); }
 .eng-muted-70   { color: color-mix(in srgb, var(--eng-muted) 70%, transparent); }
+
+
+/* ── Industry designs: button shapes and the announcement ticker ────────────
+   A design chooses solid, outline or pill buttons. The primary buttons all carry the accent background class, so the two non-default shapes
+   restyle exactly those links and buttons (not the colour panels). */
+.eng-btn-outline a[class*="bg-[var(--eng-accent)]"], .eng-btn-outline button[class*="bg-[var(--eng-accent)]"] {
+  background: transparent !important; color: var(--eng-accent) !important; box-shadow: inset 0 0 0 1.5px var(--eng-accent);
+}
+.eng-btn-pill a[class*="bg-[var(--eng-accent)]"], .eng-btn-pill button[class*="bg-[var(--eng-accent)]"],
+.eng-btn-pill a[class*="border-[var(--eng-border)]"][class*="px-"] { border-radius: 9999px !important; }
+@keyframes eng-marquee { from { transform: translateX(0); } to { transform: translateX(-25%); } }
+.eng-ticker-track { display: flex; width: max-content; white-space: nowrap; animation: eng-marquee 28s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .eng-ticker-track { animation: none; } }

@@ -1,0 +1,28 @@
+{
+  "sections": {
+    "announce": ["strip", "accent", "ticker"],
+    "hero": ["overlay", "split", "panel", "center", "card"],
+    "trust": ["icons", "pills", "divided"],
+    "items": ["cards", "rows", "tiles", "menu", "index", "catalog-grid", "catalog-list", "catalog-compact", "package-cards", "package-featured", "package-horizontal", "menu-twocol", "menu-tabs", "menu-photo"],
+    "about": ["split", "centered", "columns"],
+    "pricing": ["table", "cards", "compare"],
+    "process": ["cards", "timeline", "line"],
+    "stats": ["band", "cards", "inline"],
+    "team": ["cards", "circles", "list"],
+    "gallery": ["mosaic", "grid", "strip"],
+    "beforeAfter": ["pair", "slider", "stack"],
+    "testimonials": ["cards", "quote", "list"],
+    "faq": ["accordion", "columns", "cards"],
+    "hours": ["table", "card", "strip"],
+    "enquiry": ["panel", "split", "card"],
+    "contact": ["card", "split", "minimal"],
+    "cta": ["band", "card", "split"]
+  },
+  "fonts": ["serif", "sans", "humanist", "classic"],
+  "radius": ["sharp", "soft", "round"],
+  "buttons": ["solid", "outline", "pill"],
+  "nav": ["bar", "centered", "minimal"],
+  "footer": ["columns", "centered", "minimal"],
+  "actionBar": ["tabs", "cta", "split"],
+  "families": ["shop", "booking", "enquiry", "packages", "menu", "portfolio", "listings", "courses"]
+}
