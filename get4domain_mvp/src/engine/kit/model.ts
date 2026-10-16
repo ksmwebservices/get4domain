@@ -1,4 +1,5 @@
 import type { EngineActionSpec, ThemeTokens } from '../types';
+import type { ShellRuntime } from '../shell/types';
 
 /**
  * The engine section KIT — reusable CAPABILITY components that different industries
@@ -119,4 +120,6 @@ export interface KitSiteModel {
   /** Primary CTA (used by the desktop nav + metadata). */
   primaryCta: EngineActionSpec;
   sections: KitSection[];
+  /** industry designs round 2: the engine shell (popup, bottom navigation, footer links); set for sites on the new Website Manager */
+  shell?: ShellRuntime;
 }

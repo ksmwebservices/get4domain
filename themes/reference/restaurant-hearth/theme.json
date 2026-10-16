@@ -1,0 +1,55 @@
+{
+  "id": "restaurant-hearth",
+  "name": "Restaurant Hearth",
+  "version": 1,
+  "author": "Get4Domain",
+  "description": "A warm, appetising theme for restaurants, cafes and bakeries: the menu in tabs, order or book a table in one tap, hours and map up front.",
+  "families": [
+    "menu"
+  ],
+  "categories": [
+    "restaurant"
+  ],
+  "pages": [
+    {
+      "slug": "menu",
+      "template": "menu",
+      "title": "Menu",
+      "navLabel": "Menu"
+    },
+    {
+      "slug": "about",
+      "template": "about",
+      "title": "Our story",
+      "navLabel": "Our story"
+    },
+    {
+      "slug": "gallery",
+      "template": "gallery",
+      "title": "Gallery",
+      "navLabel": "Gallery"
+    },
+    {
+      "slug": "contact",
+      "template": "contact",
+      "title": "Find us",
+      "navLabel": "Find us"
+    }
+  ],
+  "itemsPage": "menu",
+  "googleFonts": [
+    "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@500;700&display=swap"
+  ],
+  "colors": {
+    "bg": "#1f1612",
+    "fg": "#f6ede3",
+    "muted": "#cdbfae",
+    "accent": "#e8a33d",
+    "accentFg": "#1f1612"
+  },
+  "cssVars": {
+    "--g4d-radius": "10px",
+    "--g4d-surface": "#2a1f19",
+    "--g4d-border": "#4a3a30"
+  }
+}

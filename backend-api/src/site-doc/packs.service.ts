@@ -6,6 +6,7 @@ import { StarterService } from './starter.service';
 import { PackConfig, fillPlaceholders, validatePack } from './pack.types';
 import { planStarterSeed } from './industry-seeds';
 import { FAMILIES, designsFor } from './families';
+import { shellFor } from './shell';
 
 const KEY_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -33,7 +34,7 @@ export class PacksService {
       layouts: c.layouts ?? { hero: 'overlay', about: 'split', services: 'cards', gallery: 'mosaic', testimonials: 'cards', contact: 'card' },
       seoType: c.seoType ?? fam.seoType,
       aiPrompts: c.aiPrompts ?? { about: `Write a warm, honest 80-word About text for {business}, {city}. No claims that cannot be checked.`, tagline: 'A short tagline (under 8 words) for {business}, {city}.', images: `Three photo ideas: ${fam.imageMood}.` },
-      family: c.family, designs, defaultDesign: c.defaultDesign ?? designs[0].key, seed,
+      family: c.family, designs, defaultDesign: c.defaultDesign ?? designs[0].key, seed, shell: c.shell ?? shellFor(c.family),
     };
   }
 

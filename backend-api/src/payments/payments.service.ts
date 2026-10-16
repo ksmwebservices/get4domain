@@ -221,13 +221,20 @@ export class PaymentsService {
     return expected.length === received.length && crypto.timingSafeEqual(expected, received);
   }
 
+  /** Handlers for Razorpay's "payment.captured" message, registered by the module that created the order (for example theme purchases). They must be safe to call twice. */
+  private readonly capturedHandlers: ((payment: { id: string; order_id?: string; amount?: number; notes?: Record<string, string> | unknown[] | null }) => Promise<void>)[] = [];
+  registerCapturedHandler(h: (payment: { id: string; order_id?: string; amount?: number; notes?: Record<string, string> | unknown[] | null }) => Promise<void>): void { this.capturedHandlers.push(h); }
+
   async handleWebhookEvent(event: {
     event: string;
     payload: {
       payment_link?: { entity: { id: string; reference_id?: string } };
-      payment?: { entity: { id: string; order_id?: string } };
+      payment?: { entity: { id: string; order_id?: string; amount?: number; notes?: Record<string, string> | unknown[] | null } };
     };
   }): Promise<void> {
+    if (event.event === 'payment.captured' && event.payload.payment) {
+      for (const h of this.capturedHandlers) await h(event.payload.payment.entity);
+    }
     if (event.event === 'payment_link.paid' && event.payload.payment_link) {
       const linkId = event.payload.payment_link.entity.id;
       const invoice = await this.prisma.invoice.findFirst({

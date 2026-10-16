@@ -1,9 +1,15 @@
+import type { ReactNode } from 'react';
+import type { ShellRuntime } from '../shell/types';
 import EngineSiteFrame from '../components/EngineSiteFrame';
 import Reveal from '../components/Reveal';
 import { CartProvider, type CheckoutMode } from '../components/EngineCart';
 import type { EngineMode } from '../types';
 import type { KitSiteModel } from './model';
 import KitNav from './KitNav';
+import { ShellProvider } from '../shell/ShellProvider';
+import ShellBottomNav from '../shell/ShellBottomNav';
+import ShellFooter from '../shell/ShellFooter';
+import { FloatingContact } from '../shell/ShellExtras';
 import KitHero from './KitHero';
 import KitEnquiry from './KitEnquiry';
 import { AnnounceBar, BeforeAfterStatic, DesignFooter, Hours, MenuSection, MobileActionBar, Packages, Pricing, TrustStrip } from './design-sections';
@@ -47,6 +53,18 @@ function KitFooter({ model }: { model: KitSiteModel }) {
   );
 }
 
+/** The engine shell around a built-in design: popup and quick view, the mobile bottom navigation and the floating call and WhatsApp buttons. Without a shell, nothing is added. */
+function ShellWrap({ shell, children }: { shell?: ShellRuntime; children: ReactNode }) {
+  if (!shell) return <>{children}</>;
+  return (
+    <ShellProvider runtime={shell}>
+      {children}
+      <ShellBottomNav />
+      <FloatingContact runtime={shell} />
+    </ShellProvider>
+  );
+}
+
 /**
  * Renders a data-driven KitSiteModel into a full bespoke site. The industry's builder
  * decides theme + section composition + content; this maps sections to kit components.
@@ -62,10 +80,11 @@ export default function KitRenderer({ model, mode, shop = false, checkoutMode = 
   const barVariant = st?.actionBar ?? 'tabs';
   return (
     <CartProvider enabled={shop && !!subdomain} subdomain={subdomain} brandName={b.name} mode={checkoutMode}>
-    <EngineSiteFrame tokens={model.theme} bottomNav={barVariant === 'tabs' ? model.bottomNav : []}>
+    <EngineSiteFrame tokens={model.theme} bottomNav={!model.shell && barVariant === 'tabs' ? model.bottomNav : []}>
+      <ShellWrap shell={model.shell}>
       <div className={st ? `eng-btn-${st.button}` : undefined}>
       {announce && announce.type === 'announce' && <AnnounceBar variant={announce.variant} text={announce.text} href={announce.href} />}
-      <KitNav brand={b.name} logo={b.logo} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} variant={st?.nav} offset={announce ? 36 : 0} />
+      <KitNav brand={b.name} logo={b.logo} links={model.nav} phone={b.phone} primaryLabel={model.primaryCta.label} variant={st?.nav} offset={announce ? 36 : 0} whatsapp={model.shell?.social.whatsapp} />
       {model.sections.map((s, i) => {
         const el = (() => {
           switch (s.type) {
@@ -107,9 +126,12 @@ export default function KitRenderer({ model, mode, shop = false, checkoutMode = 
         // The hero stays instant (above the fold); every other section reveals on scroll.
         return s.type === 'hero' ? <div key={i} data-layout={layout}>{el}</div> : <Reveal key={i}><div data-layout={layout}>{el}</div></Reveal>;
       })}
-      {st && st.footer !== 'columns' ? <DesignFooter variant={st.footer} brand={b} cta={model.primaryCta.label} /> : <KitFooter model={model} />}
-      {(barVariant === 'cta' || barVariant === 'split') && <MobileActionBar variant={barVariant} label={model.primaryCta.label} phone={b.phone} whatsapp={b.whatsapp} />}
+      {model.shell
+        ? <ShellFooter runtime={model.shell} variant={st?.footer === 'centered' || st?.footer === 'minimal' ? st.footer : 'columns'} tagline={b.tagline} links={model.nav.slice(0, 8)} />
+        : st && st.footer !== 'columns' ? <DesignFooter variant={st.footer} brand={b} cta={model.primaryCta.label} /> : <KitFooter model={model} />}
+      {!model.shell && (barVariant === 'cta' || barVariant === 'split') && <MobileActionBar variant={barVariant} label={model.primaryCta.label} phone={b.phone} whatsapp={b.whatsapp} />}
       </div>
+      </ShellWrap>
     </EngineSiteFrame>
     </CartProvider>
   );

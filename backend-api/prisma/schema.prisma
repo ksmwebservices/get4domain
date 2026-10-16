@@ -340,6 +340,83 @@ model CategoryPack {
   @@map("g4d_category_packs")
 }
 
+/// Round 2 (16-Oct-2026): an imported theme package. Plain HTML and CSS with data slots, made safe at import (see src/themes/core). One row per theme version; the pages
+/// and the scoped stylesheet are stored as text, the pictures and fonts in g4d_theme_assets. Prices are set by an admin only, never in code.
+model ThemePackage {
+  id               String   @id @default(cuid())
+  /// the manifest id (a vendor's design is "t:<key>"); several versions share a key
+  key              String
+  version          Int
+  name             String
+  manifest         Json
+  /// { home: "<html>", about: "<html>", ... } already sanitised
+  pages            Json
+  /// the stylesheet, scoped to .g4d-theme-<key>
+  css              String
+  /// [{ path, mime, bytes }] of the files in g4d_theme_assets
+  assetIndex       Json
+  googleFonts      Json?
+  families         Json
+  /// the categories this theme may be used for (an admin can narrow what the manifest declared)
+  categories       Json
+  /// FREE_DEFAULT (a free design of its categories) or MARKETPLACE (sold per year)
+  role             String   @default("MARKETPLACE")
+  /// for FREE_DEFAULT: which built-in design slot (classic, bold, minimal, warm) it replaces
+  replacesDesign   String?
+  /// yearly price in paise, ex-GST; set by an admin only
+  priceYearlyPaise Int?
+  /// DRAFT, LIVE or RETIRED
+  status           String   @default("DRAFT")
+  previewPath      String?
+  lint             Json?
+  createdBy        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  assets           ThemeAsset[]
+
+  @@unique([key, version])
+  @@index([status])
+  @@map("g4d_theme_packages")
+}
+
+model ThemeAsset {
+  id        String       @id @default(cuid())
+  packageId String
+  pkg       ThemePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  path      String
+  mime      String
+  bytes     Int
+  data      Bytes
+  createdAt DateTime     @default(now())
+
+  @@unique([packageId, path])
+  @@map("g4d_theme_assets")
+}
+
+/// A vendor's right to use a marketplace theme for a year. Vendor-scoped. ACTIVE until endsAt, then EXPIRED (the site falls back to the free default design).
+model ThemeEntitlement {
+  id            String   @id @default(cuid())
+  vendorId      String
+  themeKey      String
+  startsAt      DateTime
+  endsAt        DateTime
+  /// ACTIVE, EXPIRED or CANCELLED
+  status        String   @default("ACTIVE")
+  /// the Razorpay payment id; unique, so the same payment can never grant twice
+  paymentRef    String?  @unique
+  invoiceRef    String?
+  amountPaise   Int      @default(0)
+  gstPaise      Int      @default(0)
+  /// { "30": iso, "7": iso, "1": iso } reminders already sent
+  remindersSent Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([vendorId, themeKey])
+  @@index([status, endsAt])
+  @@map("g4d_theme_entitlements")
+}
+
 model VendorProduct {
   id           String    @id @default(cuid())
   vendorId     String

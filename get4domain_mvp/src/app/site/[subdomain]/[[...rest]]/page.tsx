@@ -18,6 +18,8 @@ import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
 import { themePages } from '@/engine/raw-html-site';
 import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
+import { withShell } from '@/engine/shell/with-shell';
+import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/site';
 
 // Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
 // within seconds. The vendor's private preview link (?preview=) is never cached.
@@ -44,6 +46,10 @@ interface SiteData {
   preview?: boolean;
   pack?: { key: string; name: string; config: unknown } | null;
   indexable?: boolean;
+  /** industry designs round 2: the imported theme this site renders (null = a built-in design) */
+  themeRef?: { id: string; key: string; version: number; name: string } | null;
+  themeNotice?: { kind: string; message: string } | null;
+  pagesLimit?: number;
 }
 
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
@@ -100,12 +106,18 @@ interface Params { subdomain: string; rest?: string[] }
 
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
 
-export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string; design?: string }> }): Promise<Metadata> {
+type Query = { preview?: string; design?: string; sent?: string; e?: string };
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Query> }): Promise<Metadata> {
   const { subdomain, rest = [] } = await params;
   const { preview, design } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
   // a site that does not exist or is still a draft answers 404 (the page body is the not-found page), so it can never be indexed
   if (!site) notFound();
+  if (site.docV2 && site.themeRef) {
+    const pkg = await fetchThemePackage(site.themeRef.id);
+    if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: `/site/${subdomain}`, subdomain, preview: !!site.preview });
+  }
   const name = site.cms?.businessName || site.vendor.businessName;
   const title = site.cms?.seoTitle || `${name} — ${site.cms?.tagline ?? 'Official Website'}`;
   const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
@@ -124,9 +136,9 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   };
 }
 
-export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<{ preview?: string; design?: string }> }) {
+export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Query> }) {
   const { subdomain, rest = [] } = await params;
-  const { preview, design } = await searchParams;
+  const { preview, design, sent, e } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
   if (!site) notFound();
 
@@ -158,11 +170,24 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     // a shop can take online payment (the vendor's own Razorpay) or order requests the shop confirms by phone
     const shop = !!site.paymentsEnabled || site.checkoutMode === 'ORDER_REQUEST';
     const checkoutMode = site.checkoutMode === 'ORDER_REQUEST' ? ('ORDER_REQUEST' as const) : ('ONLINE' as const);
+    // an imported theme (round 2): its pages filled with the vendor's data inside the engine shell. A theme that cannot be loaded falls through to the built-in design.
+    if (site.themeRef) {
+      const pkg = await fetchThemePackage(site.themeRef.id);
+      if (pkg) {
+        const keep = preview ? `preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : '';
+        return (
+          <>
+            {site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null}
+            <ThemeSite site={site as unknown as EngineSiteData} pkg={pkg} rest={rest} subdomain={subdomain} opts={{ base: `/site/${subdomain}`, mode: site.preview ? 'preview' : 'live', shop, checkoutMode, keep, flash: { sent: sent === '1', error: e } }} />
+          </>
+        );
+      }
+    }
     const bar = site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null;
     if (rest[0] === 'p' && rest[1]) {
       const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
       if (!pg) notFound();
-      return <>{bar}<KitRenderer model={buildPageModel(site as unknown as EngineSiteData, pg)} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
+      return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
     }
     if (rest.length === 0 || rest[0] === 'home') {
       const ga = site.cms?.googleAnalyticsId?.trim();
@@ -177,7 +202,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
               <Script id="ga-init" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`}</Script>
             </>
           ) : null}
-          <KitRenderer model={buildSiteDocModel(site as unknown as EngineSiteData)} mode={mode} shop={shop} checkoutMode={checkoutMode} />
+          <KitRenderer model={withShell(buildSiteDocModel(site as unknown as EngineSiteData), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: true })} mode={mode} shop={shop} checkoutMode={checkoutMode} />
         </>
       );
     }

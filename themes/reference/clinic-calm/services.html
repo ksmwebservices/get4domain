@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <g4d-action class="btn btn-primary head-cta"></g4d-action>
+  </div>
+</header>
+<main>
+  <section class="page-head"><div class="wrap"><h1>{{terms.items}}</h1><p class="lead" style="margin-top:12px">Everything we offer. Choose one to see the details, or book straight away.</p></div></section>
+
+  <section class="sec"><div class="wrap">
+    <g4d-tabs for="groups" tab-class="tab" panel-class="panel">
+      <template><div class="grid">
+<template data-g4d-each="group.items">
+  <article class="card" data-g4d-item="{{item.id}}">
+    <img data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}" loading="lazy">
+    <h3><a href="{{item.href}}">{{item.name}}</a></h3>
+    <p class="desc" data-g4d-if="item.description">{{item.description}}</p>
+    <div class="row"><span class="price" data-g4d-if="item.price">{{item.price}}</span><g4d-action class="link" item="{{item.id}}" label="Book this"></g4d-action></div>
+  </article>
+</template>
+      </div></template>
+    </g4d-tabs>
+  </div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

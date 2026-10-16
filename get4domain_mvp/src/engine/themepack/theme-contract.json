@@ -1,0 +1,664 @@
+{
+  "contract": 1,
+  "limits": {
+    "packageBytes": 5242880,
+    "imageBytes": 1048576,
+    "fontBytes": 1048576,
+    "htmlBytes": 400000,
+    "cssBytes": 400000,
+    "maxPages": 40,
+    "maxFiles": 400,
+    "dataUriBytes": 20000
+  },
+  "families": [
+    "shop",
+    "booking",
+    "enquiry",
+    "packages",
+    "menu",
+    "portfolio",
+    "listings",
+    "courses"
+  ],
+  "pageTemplates": [
+    "home",
+    "about",
+    "services",
+    "gallery",
+    "contact",
+    "page",
+    "item",
+    "menu",
+    "packages",
+    "properties",
+    "courses",
+    "doctors",
+    "portfolio"
+  ],
+  "standardSlugs": {
+    "home": "",
+    "about": "about",
+    "services": "services",
+    "gallery": "gallery",
+    "contact": "contact",
+    "menu": "menu",
+    "packages": "packages",
+    "properties": "properties",
+    "courses": "courses",
+    "doctors": "doctors",
+    "portfolio": "portfolio"
+  },
+  "itemPages": [
+    "services",
+    "menu",
+    "packages",
+    "properties",
+    "courses",
+    "portfolio",
+    "doctors"
+  ],
+  "slots": [
+    "site.name",
+    "site.tagline",
+    "site.logo",
+    "site.favicon",
+    "site.year",
+    "site.url",
+    "hero.title",
+    "hero.subtitle",
+    "hero.image",
+    "hero.cta",
+    "about.title",
+    "about.text",
+    "about.image",
+    "contact.phone",
+    "contact.phoneHref",
+    "contact.whatsapp",
+    "contact.email",
+    "contact.address",
+    "contact.mapUrl",
+    "hours",
+    "social.instagram",
+    "social.facebook",
+    "social.youtube",
+    "social.linkedin",
+    "social.x",
+    "social.whatsapp",
+    "social.maps",
+    "social.custom",
+    "social.customLabel",
+    "page.title",
+    "page.body",
+    "page.slug",
+    "terms.team",
+    "terms.teamOne",
+    "terms.items",
+    "terms.itemOne",
+    "terms.groups",
+    "cta.label"
+  ],
+  "repeaters": {
+    "items": {
+      "as": "item",
+      "fields": [
+        "id",
+        "name",
+        "description",
+        "price",
+        "image",
+        "duration",
+        "badge",
+        "href",
+        "category",
+        "tags",
+        "includes",
+        "location",
+        "area",
+        "bedrooms",
+        "veg",
+        "slug"
+      ]
+    },
+    "groups": {
+      "as": "group",
+      "fields": [
+        "name",
+        "slug",
+        "count",
+        "items"
+      ]
+    },
+    "team": {
+      "as": "member",
+      "fields": [
+        "id",
+        "name",
+        "role",
+        "note",
+        "image"
+      ]
+    },
+    "testimonials": {
+      "as": "testimonial",
+      "fields": [
+        "quote",
+        "author",
+        "note"
+      ]
+    },
+    "faqs": {
+      "as": "faq",
+      "fields": [
+        "q",
+        "a"
+      ]
+    },
+    "gallery": {
+      "as": "image",
+      "fields": [
+        "src",
+        "alt",
+        "title"
+      ]
+    },
+    "steps": {
+      "as": "step",
+      "fields": [
+        "title",
+        "desc",
+        "n"
+      ]
+    },
+    "trust": {
+      "as": "point",
+      "fields": [
+        "text"
+      ]
+    },
+    "stats": {
+      "as": "stat",
+      "fields": [
+        "value",
+        "label"
+      ]
+    },
+    "pages": {
+      "as": "navpage",
+      "fields": [
+        "title",
+        "href"
+      ]
+    }
+  },
+  "itemSlots": [
+    "item.id",
+    "item.name",
+    "item.description",
+    "item.price",
+    "item.image",
+    "item.duration",
+    "item.badge",
+    "item.href",
+    "item.category",
+    "item.tags",
+    "item.includes",
+    "item.location",
+    "item.area",
+    "item.bedrooms",
+    "item.slug"
+  ],
+  "tags": [
+    "g4d-action",
+    "g4d-header-nav",
+    "g4d-bottom-nav",
+    "g4d-footer",
+    "g4d-social",
+    "g4d-hours",
+    "g4d-map",
+    "g4d-tabs",
+    "g4d-cart"
+  ],
+  "tagAttributes": {
+    "g4d-action": [
+      "label",
+      "item",
+      "kind",
+      "class",
+      "style",
+      "data-kind"
+    ],
+    "g4d-header-nav": [
+      "class",
+      "style",
+      "label"
+    ],
+    "g4d-bottom-nav": [
+      "class"
+    ],
+    "g4d-footer": [
+      "variant",
+      "class",
+      "style"
+    ],
+    "g4d-social": [
+      "class",
+      "style",
+      "label"
+    ],
+    "g4d-hours": [
+      "variant",
+      "class",
+      "style",
+      "title"
+    ],
+    "g4d-map": [
+      "class",
+      "style",
+      "title",
+      "height"
+    ],
+    "g4d-tabs": [
+      "for",
+      "class",
+      "style",
+      "as",
+      "tab-class",
+      "panel-class"
+    ],
+    "g4d-cart": [
+      "class",
+      "style",
+      "label"
+    ]
+  },
+  "requiredTags": [
+    "g4d-header-nav",
+    "g4d-footer",
+    "g4d-bottom-nav",
+    "g4d-action"
+  ],
+  "dataAttributes": [
+    "data-g4d-each",
+    "data-g4d-as",
+    "data-g4d-if",
+    "data-g4d-if-not",
+    "data-g4d-open",
+    "data-g4d-quickview",
+    "data-g4d-item"
+  ],
+  "elements": [
+    "a",
+    "abbr",
+    "address",
+    "article",
+    "aside",
+    "b",
+    "blockquote",
+    "br",
+    "button",
+    "caption",
+    "cite",
+    "code",
+    "col",
+    "colgroup",
+    "dd",
+    "del",
+    "details",
+    "dfn",
+    "div",
+    "dl",
+    "dt",
+    "em",
+    "figcaption",
+    "figure",
+    "footer",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "header",
+    "hgroup",
+    "hr",
+    "i",
+    "img",
+    "ins",
+    "kbd",
+    "label",
+    "li",
+    "main",
+    "mark",
+    "nav",
+    "ol",
+    "p",
+    "picture",
+    "pre",
+    "q",
+    "s",
+    "samp",
+    "section",
+    "small",
+    "source",
+    "span",
+    "strong",
+    "sub",
+    "summary",
+    "sup",
+    "svg",
+    "path",
+    "g",
+    "circle",
+    "rect",
+    "line",
+    "polyline",
+    "polygon",
+    "ellipse",
+    "defs",
+    "lineargradient",
+    "radialgradient",
+    "stop",
+    "clippath",
+    "mask",
+    "use",
+    "symbol",
+    "title",
+    "desc",
+    "table",
+    "tbody",
+    "td",
+    "template",
+    "tfoot",
+    "th",
+    "thead",
+    "time",
+    "tr",
+    "u",
+    "ul",
+    "var",
+    "wbr"
+  ],
+  "dropWithContent": [
+    "script",
+    "style",
+    "iframe",
+    "frame",
+    "frameset",
+    "object",
+    "embed",
+    "applet",
+    "form",
+    "noscript",
+    "base",
+    "meta",
+    "link",
+    "audio",
+    "canvas",
+    "dialog",
+    "select",
+    "textarea",
+    "input",
+    "option",
+    "optgroup",
+    "math",
+    "foreignobject",
+    "animate",
+    "animatetransform",
+    "set",
+    "head"
+  ],
+  "attributes": [
+    "alt",
+    "title",
+    "role",
+    "id",
+    "class",
+    "style",
+    "href",
+    "src",
+    "srcset",
+    "sizes",
+    "width",
+    "height",
+    "loading",
+    "decoding",
+    "colspan",
+    "rowspan",
+    "scope",
+    "datetime",
+    "open",
+    "target",
+    "rel",
+    "type",
+    "media",
+    "aria-label",
+    "aria-labelledby",
+    "aria-hidden",
+    "aria-describedby",
+    "aria-expanded",
+    "aria-live",
+    "aria-current",
+    "lang",
+    "dir",
+    "hidden",
+    "tabindex",
+    "d",
+    "fill",
+    "stroke",
+    "stroke-width",
+    "stroke-linecap",
+    "stroke-linejoin",
+    "viewbox",
+    "xmlns",
+    "cx",
+    "cy",
+    "r",
+    "rx",
+    "ry",
+    "x",
+    "y",
+    "x1",
+    "x2",
+    "y1",
+    "y2",
+    "points",
+    "transform",
+    "opacity",
+    "offset",
+    "stop-color",
+    "stop-opacity",
+    "gradientunits",
+    "gradienttransform",
+    "fill-rule",
+    "clip-rule",
+    "preserveaspectratio"
+  ],
+  "uriAttributes": [
+    "href",
+    "src",
+    "srcset"
+  ],
+  "allowedUriSchemes": [
+    "http",
+    "https",
+    "tel",
+    "mailto"
+  ],
+  "googleFontsPrefix": "https://fonts.googleapis.com/css",
+  "familyPages": {
+    "booking": {
+      "pages": [
+        "home",
+        "services",
+        "doctors",
+        "about",
+        "gallery",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "items",
+        "team",
+        "testimonials",
+        "faqs",
+        "hours"
+      ],
+      "tags": [
+        "g4d-tabs",
+        "g4d-hours",
+        "g4d-map"
+      ]
+    },
+    "enquiry": {
+      "pages": [
+        "home",
+        "services",
+        "about",
+        "portfolio",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "items",
+        "steps",
+        "faqs"
+      ],
+      "tags": [
+        "g4d-map"
+      ]
+    },
+    "packages": {
+      "pages": [
+        "home",
+        "packages",
+        "about",
+        "gallery",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "items",
+        "gallery",
+        "testimonials"
+      ],
+      "tags": [
+        "g4d-tabs"
+      ]
+    },
+    "menu": {
+      "pages": [
+        "home",
+        "menu",
+        "about",
+        "gallery",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "groups",
+        "gallery",
+        "hours"
+      ],
+      "tags": [
+        "g4d-tabs",
+        "g4d-cart",
+        "g4d-hours",
+        "g4d-map"
+      ]
+    },
+    "shop": {
+      "pages": [
+        "home",
+        "services",
+        "about",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "groups",
+        "items"
+      ],
+      "tags": [
+        "g4d-tabs",
+        "g4d-cart"
+      ]
+    },
+    "listings": {
+      "pages": [
+        "home",
+        "properties",
+        "about",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "items",
+        "team",
+        "gallery"
+      ],
+      "tags": [
+        "g4d-tabs",
+        "g4d-map"
+      ]
+    },
+    "courses": {
+      "pages": [
+        "home",
+        "courses",
+        "about",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "items",
+        "team",
+        "stats",
+        "faqs"
+      ],
+      "tags": [
+        "g4d-tabs"
+      ]
+    },
+    "portfolio": {
+      "pages": [
+        "home",
+        "portfolio",
+        "about",
+        "contact",
+        "page",
+        "item"
+      ],
+      "home": [
+        "hero.title",
+        "hero.cta",
+        "gallery",
+        "items",
+        "testimonials"
+      ],
+      "tags": [
+        "g4d-tabs"
+      ]
+    }
+  }
+}

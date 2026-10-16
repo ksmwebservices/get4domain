@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <div class="head-tools"><g4d-cart class="cartbtn" label="Cart"></g4d-cart><g4d-action class="btn btn-primary head-cta"></g4d-action></div>
+  </div>
+</header>
+<main>
+  <section class="page-head"><div class="wrap"><h1>Our story</h1></div></section>
+
+  <section class="sec"><div class="wrap split">
+    <div><p class="prose" style="margin-top:0">{{about.text}}</p>
+      <div style="margin-top:24px"><g4d-action class="btn btn-primary"></g4d-action></div></div>
+    <div><img class="photo" data-g4d-if="about.image" src="{{about.image}}" alt="{{site.name}}"><img class="photo" data-g4d-if-not="about.image" src="assets/hero-art.svg" alt=""></div>
+  </div></section>
+  <section class="sec alt" data-g4d-if="team"><div class="wrap">
+    <p class="eyebrow">{{terms.team}}</p><h2>The people behind the food</h2>
+    <div class="tiles"><template data-g4d-each="team"><div class="tile"><strong>{{member.name}}</strong><span>{{member.role}}</span></div></template></div>
+  </div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

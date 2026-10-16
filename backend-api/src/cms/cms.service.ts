@@ -11,7 +11,8 @@ import { StockService } from '../stock/stock.service';
 import { PUBLIC_PRODUCT_SELECT, PublicProduct, activeFor, normaliseStatus, toPublicProduct, ProductStatus } from '../stock/stock-rules';
 import { readPreviewToken } from '../site-doc/preview-token';
 import { overlayDraft } from '../site-doc/site-merge';
-import { SITE_FLAG_ADDON } from '../site-doc/site-doc.constants';
+import { SITE_FLAG_ADDON, SITE_PLAN_LIMITS } from '../site-doc/site-doc.constants';
+import { THEME_PREFIX, ThemeCatalogService, ThemeNotice, ThemeRef } from '../themes/theme-catalog.service';
 import { resolvePack } from '../site-doc/pack-resolve';
 import { hasRealContent, itemMarkersAfterEdit, publicQuotes } from '../site-doc/sample-markers';
 
@@ -40,6 +41,8 @@ export class CmsService {
     @Optional() private readonly gate?: BillingGateService,
     // Handover 2026-10-08: stock + movements (optional so manual constructions in tests keep working).
     @Optional() private readonly stock?: StockService,
+    // Round 2: imported theme packages (optional so manual constructions in tests keep working).
+    @Optional() private readonly themes?: ThemeCatalogService,
   ) {}
 
   async getPlatformCms(): Promise<Record<string, string>> {
@@ -399,6 +402,11 @@ export class CmsService {
     checkoutMode: 'ONLINE' | 'ORDER_REQUEST' | 'NONE';
     /** whether search engines may index this site (false while it is a draft, unclaimed, a preview, or shows only starter content) */
     indexable: boolean;
+    /** round 2: the imported theme this site renders, or null for a built-in design (a licence that has ended or a retired theme also gives null, with the reason in themeNotice) */
+    themeRef: ThemeRef | null;
+    themeNotice: ThemeNotice | null;
+    /** how many pages the plan allows (the home page counts as one) */
+    pagesLimit: number;
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -431,11 +439,30 @@ export class CmsService {
     // How a shopper can order: online (vendor's own Razorpay), as an order request the vendor confirms, or not at all.
     const checkoutMode: 'ONLINE' | 'ORDER_REQUEST' | 'NONE' = pay?.checkoutMode === 'ORDER_REQUEST' ? 'ORDER_REQUEST' : paymentsEnabled ? 'ONLINE' : 'NONE';
     const pack = flag?.enabled === true ? await resolvePack(this.prisma, cmsRow?.packKey, vendor.industry) : null;
-    // the vendor's private design preview: shows one of the category's designs with their own content (never public)
+    // the vendor's private design preview: shows one of the category's designs (or a theme) with their own content (never public)
     if (preview && designPreview && cms && pack) {
       const d = ((pack.config as { designs?: { key: string; enabled?: boolean; themeKey?: string }[] }).designs ?? []).find((x) => x.key === designPreview && x.enabled !== false);
       if (d) cms = { ...cms, designKey: d.key, layout: d.themeKey ? { themeKey: d.themeKey } : {} } as typeof cms;
+      else if (designPreview.startsWith(THEME_PREFIX)) cms = { ...cms, designKey: designPreview, layout: {} } as typeof cms;
     }
+    // round 2: which design is in force. A built-in slot replaced by a free theme shows that theme; a theme the vendor may not use (licence ended, retired, wrong category, prospect site) falls back to the category's default free design
+    let themeRef: ThemeRef | null = null; let themeNotice: ThemeNotice | null = null;
+    if (flag?.enabled === true && cms && pack && this.themes) {
+      const catKey = pack.key; const packDefault = (pack.config as { defaultDesign?: string }).defaultDesign;
+      const asked = (cms as { designKey?: string | null }).designKey ?? packDefault;
+      const slots = await this.themes.freeSlots(catKey);
+      let want: string | undefined = asked && slots[asked] ? `${THEME_PREFIX}${slots[asked].key}` : asked ?? undefined;
+      const siteStatus = cmsRow?.siteStatus ?? 'LIVE';
+      for (let i = 0; i < 2 && want?.startsWith(THEME_PREFIX); i++) {
+        const r = await this.themes.resolve(vendor.id, want, { categoryKey: catKey, siteStatus, preview: preview && !!designPreview });
+        if (r.ref) { themeRef = r.ref; break; }
+        themeNotice = themeNotice ?? r.notice;
+        want = await this.themes.defaultFreeDesign(catKey, packDefault);
+        if (want === asked) break;
+      }
+      cms = { ...cms, designKey: themeRef ? `${THEME_PREFIX}${themeRef.key}` : (want?.startsWith(THEME_PREFIX) ? packDefault : want) ?? null } as typeof cms;
+    }
+    const pagesLimit = flag?.enabled === true ? await this.pagesLimitFor(vendor.id) : 1;
     const publicProducts = products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null);
     const indexable = !preview && (!cmsRow || cmsRow.siteStatus === 'LIVE') && (flag?.enabled !== true || (!!cms && hasRealContent(cms as { about?: unknown; testimonials?: unknown; extras?: unknown }, publicProducts)));
     return {
@@ -450,6 +477,7 @@ export class CmsService {
       pack,
       preview,
       indexable,
+      themeRef, themeNotice, pagesLimit,
       products: publicProducts,
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }
@@ -457,6 +485,12 @@ export class CmsService {
       paymentsEnabled,
       checkoutMode,
     };
+  }
+
+  /** How many pages the vendor's plan allows: LeadSpace 1, Essentials 5, Pro 25 (the home page counts as one). */
+  async pagesLimitFor(vendorId: string): Promise<number> {
+    const term = await this.prisma.billingTerm.findFirst({ where: { vendorId, isCurrent: true, status: { in: ['ACTIVE', 'ACTIVE_PAYMENT_DUE', 'LAPSED'] } }, select: { planKey: true } });
+    return SITE_PLAN_LIMITS[term?.planKey === 'BOS' ? 'BOS' : term?.planKey === 'WORKSPACE' ? 'WORKSPACE' : 'LEADSPACE'].pages;
   }
 
   async deleteProduct(productId: string): Promise<VendorProduct> {

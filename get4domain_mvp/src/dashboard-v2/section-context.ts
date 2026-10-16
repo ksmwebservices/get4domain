@@ -13,6 +13,6 @@ export const useWebsiteSection = (): WebsiteSection => useContext(WebsiteSection
 /** Which Website Manager tabs belong to which v2 menu item. */
 export const WEBSITE_SECTION_TABS: Record<Exclude<WebsiteSection, null>, string[]> = {
   content: ['basic', 'content', 'items', 'about', 'portfolio', 'testimonials', 'pages'],
-  design: ['branding', 'template', 'design'],
+  design: ['branding', 'template', 'navigation', 'popup', 'design', 'preview'],
   search: ['seo'],
 };

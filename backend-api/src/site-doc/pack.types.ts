@@ -1,5 +1,6 @@
 import { SITE_THEME_KEYS, SITE_VARIANTS } from './site-doc.constants';
 import { DesignSpec, FAMILIES, FamilyKey, VOCAB, validateDesign } from './families';
+import { Shell, validateShell } from './shell';
 
 /**
  * A Category Pack: everything needed to generate a website for one kind of business, as DATA. Adding a category is creating one of these in the admin screen,
@@ -51,6 +52,8 @@ export interface PackConfig {
   designs?: DesignSpec[];
   defaultDesign?: string;
   seed?: StarterSeed;
+  /** round 2: the words, the five bottom-navigation slots and the steps of the primary-action popup */
+  shell?: Shell;
 }
 
 const isStr = (v: unknown, max = 600): v is string => typeof v === 'string' && v.trim().length > 0 && v.length <= max;
@@ -94,6 +97,7 @@ export function validateDesigns(o: Partial<PackConfig>): string[] {
   for (const k of ['headline', 'subline', 'tagline', 'about'] as const) if (typeof s[k] !== 'string' || !s[k].trim()) p.push(`Starter content: write the ${k === 'subline' ? 'sub-line' : k}.`);
   if (!Array.isArray(s.items) || s.items.length < 3 || s.items.length > 12 || !s.items.every((i) => i && isStr(i.title, 120) && typeof i.desc === 'string')) p.push('Starter content: add 3 to 12 items, each with a name and a short description.');
   if (!Array.isArray(s.faq) || s.faq.length < 3 || s.faq.length > 12 || !s.faq.every((f) => f && isStr(f.q, 200) && isStr(f.a, 800))) p.push('Starter content: add at least 3 common questions, each with an answer.');
+  if (o.shell !== undefined) p.push(...validateShell(o.shell));
   if (!Array.isArray(s.quotes) || !s.quotes.every((q) => q && isStr(q.quote, 600) && isStr(q.author, 120))) p.push('Starter content: sample customer quotes need a quote and a name.');
   return p;
 }

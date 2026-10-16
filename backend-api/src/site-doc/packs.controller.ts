@@ -8,6 +8,8 @@ import { LeadspaceStaffGuard } from '../leadspace/staff.guard';
 import { PackConfig } from './pack.types';
 import { PacksService } from './packs.service';
 import { StarterService } from './starter.service';
+import { ThemeVendorService } from './theme-vendor.service';
+import { ThemePurchaseService } from '../themes/theme-purchase.service';
 
 class CreatePackDto {
   @IsString() @MaxLength(60) key!: string;
@@ -27,7 +29,12 @@ class CreateSiteDto {
   @IsOptional() @IsString() @MaxLength(80) city?: string;
   @IsOptional() @IsString() @MaxLength(20) phone?: string;
 }
-class DesignDto { @IsString() @MaxLength(40) designKey!: string }
+class DesignDto { @IsString() @MaxLength(60) designKey!: string }
+class ConfirmThemeBody {
+  @IsString() @MaxLength(100) razorpayOrderId!: string;
+  @IsString() @MaxLength(100) razorpayPaymentId!: string;
+  @IsString() @MaxLength(300) razorpaySignature!: string;
+}
 class GenerateDto {
   @IsString() @MaxLength(60) packKey!: string;
   @IsString() @MaxLength(120) businessName!: string;
@@ -65,7 +72,16 @@ export class PacksAdminController {
 @RequireModule('website')
 @Controller('site-doc/me')
 export class PacksVendorController {
-  constructor(private readonly packs: PacksService, private readonly starter: StarterService) {}
+  constructor(private readonly packs: PacksService, private readonly starter: StarterService, private readonly themeTab: ThemeVendorService, private readonly purchase: ThemePurchaseService) {}
+
+  @Get('themes') @ApiOperation({ summary: 'The paid themes that suit your category, the price for a year with GST, and what you already own' })
+  themes(@CurrentUser() u: AuthenticatedUser) { return this.themeTab.tab(u.sub); }
+
+  @Post('themes/:key/order') @ApiOperation({ summary: 'Start buying a theme for a year: creates the payment order at the price the admin set, plus GST' })
+  async themeOrder(@CurrentUser() u: AuthenticatedUser, @Param('key') key: string) { return this.purchase.createOrder(u.sub, key, await this.themeTab.categoryOf(u.sub)); }
+
+  @Post('themes/:key/confirm') @ApiOperation({ summary: 'Confirm the payment with Razorpay and start the year. Safe to send twice.' })
+  themeConfirm(@CurrentUser() u: AuthenticatedUser, @Param('key') key: string, @Body() dto: ConfirmThemeBody) { return this.purchase.confirm(u.sub, key, dto); }
 
   @Get('designs') @ApiOperation({ summary: 'The four designs of your category, and the one in use' })
   designs(@CurrentUser() u: AuthenticatedUser) { return this.starter.designsOf(u.sub); }

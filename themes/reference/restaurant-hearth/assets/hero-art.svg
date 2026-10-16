@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-label="A steaming bowl with sprigs and spice">
+  <defs>
+    <radialGradient id="g" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#4a3326"/><stop offset="1" stop-color="#2a1f19"/></radialGradient>
+    <linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1c27a"/><stop offset="1" stop-color="#c9822a"/></linearGradient>
+  </defs>
+  <rect width="640" height="520" rx="30" fill="url(#g)"/>
+  <circle cx="320" cy="300" r="190" fill="#e8a33d" opacity=".12"/>
+  <path d="M130 290h380c0 110-84 190-190 190S130 400 130 290z" fill="url(#bowl)"/>
+  <ellipse cx="320" cy="290" rx="190" ry="34" fill="#f6ede3"/>
+  <ellipse cx="320" cy="292" rx="168" ry="24" fill="#d9532b" opacity=".85"/>
+  <circle cx="270" cy="288" r="10" fill="#f6ede3" opacity=".8"/><circle cx="340" cy="296" r="8" fill="#9bbf5c"/><circle cx="378" cy="284" r="9" fill="#f6ede3" opacity=".7"/><circle cx="300" cy="300" r="7" fill="#9bbf5c"/>
+  <path d="M250 230c-24-30 24-44 0-80M320 220c-28-34 28-52 0-100M390 230c-24-30 24-44 0-80" fill="none" stroke="#f6ede3" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+  <path d="M96 120l22 22M544 150l-24 22M110 420l-18 22" stroke="#e8a33d" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+</svg>

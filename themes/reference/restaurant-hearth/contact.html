@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <div class="head-tools"><g4d-cart class="cartbtn" label="Cart"></g4d-cart><g4d-action class="btn btn-primary head-cta"></g4d-action></div>
+  </div>
+</header>
+<main>
+  <section class="page-head"><div class="wrap"><h1>Find us</h1><p class="lead" style="margin-top:12px">Order, book a table, or ask us anything.</p></div></section>
+
+  <section class="sec"><div class="wrap split">
+    <div>
+      <ul class="contact-list">
+        <li data-g4d-if="contact.phone"><span class="muted">Phone</span><br><a href="{{contact.phoneHref}}">{{contact.phone}}</a></li>
+        <li data-g4d-if="contact.email"><span class="muted">E-mail</span><br><a href="mailto:{{contact.email}}">{{contact.email}}</a></li>
+        <li data-g4d-if="contact.address"><span class="muted">Address</span><br>{{contact.address}}</li>
+      </ul>
+      <g4d-action class="btn btn-primary"></g4d-action>
+      <div style="margin-top:22px"><g4d-social></g4d-social></div>
+      <div style="margin-top:22px"><g4d-hours variant="card" title="Opening hours"></g4d-hours></div>
+    </div>
+    <g4d-map title="Find us" height="380"></g4d-map>
+  </div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

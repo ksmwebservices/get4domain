@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <div class="head-tools"><g4d-cart class="cartbtn" label="Cart"></g4d-cart><g4d-action class="btn btn-primary head-cta"></g4d-action></div>
+  </div>
+</header>
+<main>
+  <section class="page-head"><div class="wrap"><h1>Gallery</h1></div></section>
+
+  <section class="sec"><div class="wrap"><div class="strip">
+    <template data-g4d-each="gallery"><img src="{{image.src}}" alt="{{image.alt}}" loading="lazy"></template>
+  </div></div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

@@ -1,4 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { SmsService } from '../notifications/sms.service';
+import { EmailService } from '../email/email.service';
 import { RestaurantService } from '../restaurant/restaurant.service';
 import { RetailService } from '../retail/retail.service';
 import { RealEstateService } from '../realestate/realestate.service';
@@ -48,6 +51,10 @@ export class ActionRegistry {
     private readonly notifications: NotificationsService,
     private readonly crm: CrmService,
     private readonly checkout: PublicCheckoutService,
+    // Round 2: the vendor's own "notification contact" for the primary-action popup (optional, so manual constructions keep working)
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly sms?: SmsService,
+    @Optional() private readonly email?: EmailService,
   ) {
     // ── engine.enquiry → CrmService.createLead (PUBLIC, universal website lead-capture) ──
     // The generic conversion every engine industry site can fire. Lands in the vendor's
@@ -66,6 +73,7 @@ export class ActionRegistry {
         });
         await this.routeLead(ctx.vendorId, 'website_enquiry', 'New website enquiry',
           `${input.name} enquired${input.phone ? ` (${input.phone})` : ''}.`, { leadId: lead.id });
+        await this.notifyContacts(ctx.vendorId, input);
         return lead;
       },
     });
@@ -209,6 +217,28 @@ export class ActionRegistry {
       `${input.clientName} started a ₹${input.amount} token payment${input.propertyRef ? ` for ${input.propertyRef}` : ''}.`,
       { dealId: deal.id, amount: input.amount });
     return result;
+  }
+
+  /**
+   * The vendor may name a phone and/or e-mail (Website Manager, Popup form) that should hear about every new enquiry, besides the in-app notice. Best effort, never fails the action.
+   * Only the vendor's own saved contact is used; nothing a visitor typed decides where a notice goes.
+   */
+  private async notifyContacts(vendorId: string, input: { name: string; phone: string; message?: string }): Promise<void> {
+    if (!this.prisma) return;
+    try {
+      const row = await this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { extras: true } });
+      const popup = ((row?.extras as { popup?: { notifyPhone?: string; notifyEmail?: string } } | null)?.popup ?? {});
+      const text = `New website enquiry from ${input.name} (${input.phone})${input.message ? `: ${input.message.slice(0, 300)}` : ''}`;
+      const phone = (popup.notifyPhone ?? '').replace(/\D/g, '').slice(-10);
+      if (phone.length === 10 && this.sms) await this.sms.send(phone, text);
+      const to = (popup.notifyEmail ?? '').trim();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) && this.email) {
+        const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+        await this.email.sendGeneric(to, 'New website enquiry', `<p>${esc(text)}</p>`);
+      }
+    } catch (err) {
+      this.logger.warn(`Notification contact failed for vendor ${vendorId}: ${err instanceof Error ? err.message : 'error'}`);
+    }
   }
 
   /** Best-effort lead routing: notify the vendor in-app. Never fails the action. */

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { SITE_THEME_LIST, VARIANTS } from '@/engine/sitedoc/build';
+import { ShellFields } from './ShellAdmin';
+import type { PackShell } from '@/engine/shell/types';
 import { BLANK_SEED, CreateSiteCard, DesignsFields, FAMILY_LABEL, type DesignFields } from './DesignsAdmin';
 
 interface Pack { key: string; name: string; enabled: boolean; config: PackConfig }
@@ -12,7 +14,7 @@ interface PackConfig {
   item: { kind: string; noun: string; nounPlural: string };
   defaults: { tagline: string; about: string; headline: string; subline: string; trust: string[]; faq: { q: string; a: string }[] };
   themeKey: string; layouts: Record<string, string>; seoType: string; aiPrompts: { about: string; tagline: string; images: string };
-  family?: string; designs?: DesignFields['designs']; defaultDesign?: string; seed?: DesignFields['seed'];
+  family?: string; designs?: DesignFields['designs']; defaultDesign?: string; seed?: DesignFields['seed']; shell?: PackShell;
 }
 const GOALS = ['ENQUIRY', 'BOOKING', 'APPOINTMENT', 'SITE_VISIT', 'CART_ORDER'];
 const SECTIONS = ['hero', 'services', 'about', 'gallery', 'testimonials', 'faq', 'contact'];
@@ -132,6 +134,7 @@ export default function PacksAdmin() {
             <div><label className={lab}>Trust points (one per line, up to 8)</label><textarea rows={4} className={inp} value={c.defaults.trust.join('\n')} onChange={(e) => setC({ defaults: { ...c.defaults, trust: lines(e.target.value) } })} /></div>
             <div><label className={lab}>Questions (one per line as: question | answer)</label><textarea rows={4} className={inp} value={c.defaults.faq.map((f) => `${f.q} | ${f.a}`).join('\n')} onChange={(e) => setC({ defaults: { ...c.defaults, faq: lines(e.target.value).map((l) => { const [q, ...a] = l.split('|'); return { q: q.trim(), a: a.join('|').trim() }; }).filter((f) => f.q && f.a) } })} /></div>
             <DesignsFields c={c} setC={(p) => setC(p)} />
+            <ShellFields shell={c.shell} setShell={(s) => setC({ shell: s })} />
             <div><label className={lab}>AI Studio: About text prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.about} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, about: e.target.value } })} /></div>
             <div><label className={lab}>AI Studio: tagline prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.tagline} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, tagline: e.target.value } })} /></div>
             <div className="md:col-span-2"><label className={lab}>AI Studio: picture ideas prompt</label><textarea rows={2} className={inp} value={c.aiPrompts.images} onChange={(e) => setC({ aiPrompts: { ...c.aiPrompts, images: e.target.value } })} /></div>

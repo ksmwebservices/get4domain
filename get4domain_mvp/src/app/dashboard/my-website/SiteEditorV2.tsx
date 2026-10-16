@@ -11,11 +11,12 @@ import { useAuth } from '@/lib/auth-context';
 import { useWebsiteSection, WEBSITE_SECTION_TABS } from '@/dashboard-v2/section-context';
 import { ItemsTab, PageContentTab, SamplePanel, TemplateTab, type DesignsView, type Extras, type SampleSummary } from './SiteContentTabs';
 import { SITE_THEME_LIST, VARIANTS } from '@/engine/sitedoc/build';
+import { MarketplacePanel, NavigationTab, PopupTab, PreviewTab, SocialExtraFields, type FullExtras } from './SiteShellTabs';
 
 type Doc = Record<string, unknown> & { portfolio?: { id: string; src: string; title?: string; category?: string }[]; testimonials?: { quote: string; author: string; note?: string; sample?: boolean }[]; pages?: { slug: string; title: string; body: string }[]; layout?: Record<string, string>; extras?: Extras; designKey?: string };
 interface View { enabled: boolean; plan: string; limits: { pages: number; mediaMb: number }; usage: { pages: number; mediaBytes: number }; subdomain: string | null; publicUrl: string | null; live: Doc; doc: Doc; dirty: boolean; version: number; publishedAt: string | null; siteStatus?: string; sample?: SampleSummary }
 interface Version { version: number; note: string | null; createdAt: string; createdBy: string | null; current: boolean }
-type Tab = 'basic' | 'content' | 'items' | 'branding' | 'template' | 'about' | 'portfolio' | 'testimonials' | 'pages' | 'seo' | 'design';
+type Tab = 'basic' | 'content' | 'items' | 'branding' | 'template' | 'about' | 'portfolio' | 'testimonials' | 'pages' | 'seo' | 'design' | 'navigation' | 'popup' | 'preview';
 
 const field = 'w-full rounded-xl border border-slate-200 bg-white text-slate-900 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100';
 const lbl = 'mb-1.5 block text-xs font-medium text-slate-600';
@@ -65,7 +66,7 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
   const preview = async (): Promise<void> => {
     if (!(await saveDraft())) return;
     setBusy('preview'); setError('');
-    try { const r = await api.siteDocPreview(); const url = (r.data as { url: string }).url; setPreviewUrl(url); if (tab !== 'design') window.open(url, '_blank', 'noopener'); } catch (e) { fail(e); } finally { setBusy(''); }
+    try { const r = await api.siteDocPreview(); const url = (r.data as { url: string }).url; setPreviewUrl(url); if (tab !== 'design' && tab !== 'preview') window.open(url, '_blank', 'noopener'); } catch (e) { fail(e); } finally { setBusy(''); }
   };
 
   const publish = async (): Promise<void> => {
@@ -123,8 +124,8 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
   };
 
   const tabs: { key: Tab; label: string }[] = ([
-    { key: 'basic', label: 'Basic Info' }, { key: 'content', label: 'Page content' }, { key: 'items', label: 'Items' }, { key: 'branding', label: 'Logo & Banner' }, { key: 'template', label: 'Template' }, { key: 'about', label: 'About & Social' }, { key: 'portfolio', label: 'Portfolio' },
-    { key: 'testimonials', label: 'Customer quotes' }, { key: 'pages', label: 'Pages' }, { key: 'seo', label: 'SEO' }, { key: 'design', label: 'Theme & layout' },
+    { key: 'basic', label: 'Basic Info' }, { key: 'content', label: 'Page content' }, { key: 'items', label: 'Items' }, { key: 'branding', label: 'Logo & Banner' }, { key: 'template', label: 'Template' }, { key: 'navigation', label: 'Navigation' }, { key: 'popup', label: 'Popup form' }, { key: 'about', label: 'About & Social' }, { key: 'portfolio', label: 'Portfolio' },
+    { key: 'testimonials', label: 'Customer quotes' }, { key: 'pages', label: 'Pages' }, { key: 'seo', label: 'SEO' }, { key: 'design', label: 'Theme & layout' }, { key: 'preview', label: 'Preview' },
   ] as { key: Tab; label: string }[]).filter((t) => !section || (WEBSITE_SECTION_TABS[section] ?? []).includes(t.key));
 
   const text = (k: string, label: string, opts: { area?: boolean; wide?: boolean; hint?: string } = {}) => (
@@ -150,6 +151,9 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
     </div>
   );
 
+  const MAIN_PAGE: Record<string, string> = { shop: 'services', booking: 'services', enquiry: 'services', packages: 'packages', menu: 'menu', portfolio: 'portfolio', listings: 'properties', courses: 'courses' };
+  const pageChoices = [{ target: 'home', label: 'Home' }, ...(designs?.family && MAIN_PAGE[designs.family] ? [{ target: MAIN_PAGE[designs.family], label: designs.shell?.terms?.items ?? 'Main list' }] : []), { target: 'about', label: 'About' }, { target: 'gallery', label: 'Gallery' }, { target: 'contact', label: 'Contact' }, ...(doc.pages ?? []).filter((p) => p.slug).map((p) => ({ target: `p:${p.slug}`, label: `Your page: ${p.title || p.slug}` }))];
+  useEffect(() => { if (tab === 'preview' && !previewUrl) void preview(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
   const layout = (doc.layout ?? {}) as Record<string, string>;
   const setLayout = (k: string, v: string): void => set('layout', { ...layout, [k]: v });
   const pages = doc.pages ?? [];
@@ -202,7 +206,7 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
       <Card>
         {tab === 'basic' && <div className="grid gap-4 sm:grid-cols-2">{text('businessName', 'Business name')}{text('tagline', 'Tagline')}{text('phone', 'Phone')}{text('whatsapp', 'WhatsApp')}{text('email', 'E-mail')}{text('address', 'Address')}{text('businessHours', 'Opening hours', { wide: true, hint: 'for example Mon to Sat, 9 am to 6 pm' })}</div>}
         {tab === 'branding' && <div className="space-y-6">{picker('BANNER', 'banner', 'Banner picture', 'the photo at the top of your site. Without one, your theme colours are used.')}{picker('LOGO', 'logo', 'Logo', 'a PNG keeps its transparent background. A browser-tab icon and a share picture are made from it.')}</div>}
-        {tab === 'about' && <div className="grid gap-4 sm:grid-cols-2">{text('about', 'About your business', { area: true, wide: true })}{text('facebook', 'Facebook')}{text('instagram', 'Instagram')}{text('linkedin', 'LinkedIn')}{text('youtube', 'YouTube')}{text('googleMaps', 'Google Maps link', { wide: true })}</div>}
+        {tab === 'about' && <div className="grid gap-4 sm:grid-cols-2">{text('about', 'About your business', { area: true, wide: true })}{text('facebook', 'Facebook')}{text('instagram', 'Instagram')}{text('linkedin', 'LinkedIn')}{text('youtube', 'YouTube')}{text('googleMaps', 'Google Maps link', { wide: true })}<SocialExtraFields extras={(doc.extras ?? {}) as FullExtras} set={(next) => set('extras', next)} /></div>}
         {tab === 'portfolio' && (
           <div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -227,6 +231,10 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
         {tab === 'content' && <PageContentTab extras={(doc.extras ?? {}) as Extras} set={(next) => set('extras', next)} />}
         {tab === 'items' && user?.id && <ItemsTab vendorId={user.id} noun={'item'} itemFields={designs?.itemFields ?? []} onChanged={() => void api.siteDoc().then((r) => accept(r.data as View))} />}
         {tab === 'template' && <TemplateTab view={designs} previewBase={designBase} onPick={(k) => void pickDesign(k)} busy={busy === 'save'} onRefresh={() => { setDesignBase(''); }} />}
+        {tab === 'template' && designs && designs.designs.length > 0 && <MarketplacePanel previewBase={designBase} current={designs.current} businessName={String(doc.businessName ?? '')} onUse={(k) => void pickDesign(k)} />}
+        {tab === 'navigation' && <NavigationTab extras={(doc.extras ?? {}) as FullExtras} set={(next) => set('extras', next)} designs={designs} pageChoices={pageChoices} />}
+        {tab === 'popup' && <PopupTab extras={(doc.extras ?? {}) as FullExtras} set={(next) => set('extras', next)} designs={designs} />}
+        {tab === 'preview' && <PreviewTab previewUrl={previewUrl} onRefresh={() => void preview()} busy={busy === 'preview'} />}
         {tab === 'testimonials' && (
           <div className="space-y-3">
             <p className="text-sm text-slate-500">Add real quotes from customers who agreed to be named. Quotes marked Sample are examples: they are never shown to the public. Replace each one with a real quote.</p>

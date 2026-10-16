@@ -1,4 +1,5 @@
 import { FamilyKey, FAMILIES, designsFor } from './families';
+import { BottomNavSlot, ShellOverride, shellFor } from './shell';
 import type { PackConfig, StarterSeed } from './pack.types';
 import { PART1 } from './seeds/part1';
 import { PART2 } from './seeds/part2';
@@ -52,6 +53,28 @@ export function seedFor(s: CategorySeed): StarterSeed {
   };
 }
 
+/**
+ * The words and mobile slots a category uses beyond its family's defaults (KSM's list, 15 Oct 2026). Everything not listed here uses the family's own defaults.
+ * This is data: an admin changes any of it in Admin, Category packs, with no deploy.
+ */
+const NAV = (rows: [string, string, string, string][]): BottomNavSlot[] => rows.map(([key, label, icon, target]) => ({ key, label, icon, target }));
+export const SHELL_OVERRIDES: Record<string, ShellOverride> = {
+  clinic: { terms: { team: 'Doctors', teamOne: 'Doctor', items: 'Treatments', itemOne: 'Treatment', groups: 'Specialities' }, bottomNav: NAV([['home', 'Home', 'home', 'home'], ['items', 'Treatments', 'services', 'items'], ['action', 'Book', 'book', 'action'], ['team', 'Doctors', 'users', 'team'], ['more', 'More', 'more', 'more']]) },
+  diagnostics: { terms: { team: 'Specialists', teamOne: 'Specialist', items: 'Tests', itemOne: 'Test', groups: 'Test types' } },
+  salon: { terms: { team: 'Stylists', teamOne: 'Stylist', items: 'Services', itemOne: 'Service', groups: 'Service types' } },
+  gym: { terms: { team: 'Trainers', teamOne: 'Trainer', items: 'Plans', itemOne: 'Plan', groups: 'Plan types' } },
+  restaurant: { terms: { team: 'Chefs', teamOne: 'Chef', items: 'Menu', itemOne: 'Dish', groups: 'Menu sections' } },
+  retail: { terms: { team: 'Team', teamOne: 'Team member', items: 'Products', itemOne: 'Product', groups: 'Categories' } },
+  travel: { popup: { title: 'Plan my trip' } },
+  hotel: { terms: { team: 'Team', teamOne: 'Team member', items: 'Rooms', itemOne: 'Room', groups: 'Room types' } },
+  realestate: { terms: { team: 'Agents', teamOne: 'Agent', items: 'Properties', itemOne: 'Property', groups: 'Property types' } },
+  education: { terms: { team: 'Faculty', teamOne: 'Teacher', items: 'Courses', itemOne: 'Course', groups: 'Streams' }, bottomNav: NAV([['home', 'Home', 'home', 'home'], ['items', 'Courses', 'courses', 'items'], ['action', 'Enrol', 'enquiry', 'action'], ['results', 'Results', 'plans', 'page:results'], ['more', 'More', 'more', 'more']]) },
+  coaching: { terms: { team: 'Coaches', teamOne: 'Coach', items: 'Programmes', itemOne: 'Programme', groups: 'Streams' } },
+  technology: { terms: { team: 'Team', teamOne: 'Team member', items: 'Services', itemOne: 'Service', groups: 'Service areas' }, bottomNav: NAV([['home', 'Home', 'home', 'home'], ['items', 'Services', 'services', 'items'], ['action', 'Quote', 'quote', 'action'], ['work', 'Work', 'gallery', 'gallery'], ['more', 'More', 'more', 'more']]) },
+  photography: { terms: { team: 'Photographers', teamOne: 'Photographer', items: 'Packages', itemOne: 'Package', groups: 'Collections' } },
+  construction: { terms: { team: 'Team', teamOne: 'Team member', items: 'Projects', itemOne: 'Project', groups: 'Project types' } },
+};
+
 export function packFromSeed(s: CategorySeed): { key: string; name: string; config: PackConfig } {
   const fam = FAMILIES[s.family];
   const designs = designsFor(s.family, s.theme);
@@ -74,6 +97,7 @@ export function packFromSeed(s: CategorySeed): { key: string; name: string; conf
         images: `Three photo ideas for the website of ${s.name.toLowerCase()}: ${fam.imageMood}.`,
       },
       family: s.family, designs, defaultDesign: first.key, seed,
+      shell: shellFor(s.family, SHELL_OVERRIDES[s.key]),
     },
   };
 }
@@ -92,6 +116,7 @@ export function planStarterSeed(existing: { key: string; config: unknown }[]): {
     const old = have.get(p.key);
     if (!old) create.push(p);
     else if (!old.designs) upgrade.push({ key: p.key, config: { ...old, keywords: [...new Set([...(old.keywords ?? []), ...p.config.keywords])], family: p.config.family, designs: p.config.designs, defaultDesign: p.config.defaultDesign, seed: p.config.seed } });
+    else if (!old.shell) upgrade.push({ key: p.key, config: { ...old, shell: p.config.shell } });
     else kept += 1;
   }
   return { create, upgrade, kept };

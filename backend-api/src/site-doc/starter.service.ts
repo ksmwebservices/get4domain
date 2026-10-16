@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SiteDocService } from './site-doc.service';
 import { PackConfig } from './pack.types';
 import { FAMILIES } from './families';
+import { THEME_PREFIX, ThemeCatalogService } from '../themes/theme-catalog.service';
 import { overlayDraft } from './site-merge';
 import { sampleMap } from './sample-markers';
 import { makePreviewToken } from './preview-token';
@@ -41,7 +42,7 @@ const isEmptyValue = (v: unknown): boolean => v === undefined || v === null || (
  */
 @Injectable()
 export class StarterService {
-  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService) {}
+  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService, private readonly themes: ThemeCatalogService) {}
 
   async packFor(packKey: string | null | undefined, industry: string | null | undefined): Promise<{ key: string; config: PackConfig } | null> {
     const keys = [packKey, industry].filter((k): k is string => !!k);
@@ -132,21 +133,28 @@ export class StarterService {
   }
 
   /** The four designs of the vendor's own category, with the one in use. Nothing else is ever offered to the vendor. */
-  async designsOf(vendorId: string): Promise<{ packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: { key: string; name: string; themeKey: string; font: string; radius: string; button: string; sections: string[] }[]; itemFields: { key: string; label: string }[] }> {
+  async designsOf(vendorId: string): Promise<{ packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: { key: string; name: string; themeKey: string; font: string; radius: string; button: string; sections: string[]; theme?: boolean; id?: string; previewPath?: string | null; replaces?: string }[]; itemFields: { key: string; label: string }[]; shell?: PackConfig["shell"] | null; ctaLabel?: string }> {
     const [row, vendor] = await Promise.all([this.prisma.vendorCMS.findUnique({ where: { vendorId } }), this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } })]);
     const pack = await this.packFor(row?.packKey, vendor?.industry);
     if (!pack) return { packKey: null, family: null, current: null, defaultDesign: null, designs: [], itemFields: [] };
     const cur = (row ? overlayDraft(row as unknown as { draft?: unknown }) : {}) as Record<string, unknown>;
-    const designs = (pack.config.designs ?? []).filter((d) => d.enabled !== false).map((d) => ({ key: d.key, name: d.name, themeKey: d.themeKey, font: d.font, radius: d.radius, button: d.button, sections: d.sections.map((s) => `${s.type}:${s.variant}`) }));
-    return { packKey: pack.key, family: pack.config.family ?? null, current: (cur.designKey as string | undefined) || pack.config.defaultDesign || null, defaultDesign: pack.config.defaultDesign ?? null, designs, itemFields: pack.config.family ? FAMILIES[pack.config.family].itemFields : [] };
+    // a free imported theme replaces one of the four built-in designs of its category (round 2); the vendor still sees exactly four
+    const slots = await this.themes.freeSlots(pack.key);
+    const designs = (pack.config.designs ?? []).filter((d) => d.enabled !== false).map((d) => (slots[d.key]
+      ? { key: `${THEME_PREFIX}${slots[d.key].key}`, name: slots[d.key].name, themeKey: d.themeKey, font: d.font, radius: d.radius, button: d.button, sections: [] as string[], theme: true, id: slots[d.key].id, previewPath: slots[d.key].previewPath, replaces: d.key }
+      : { key: d.key, name: d.name, themeKey: d.themeKey, font: d.font, radius: d.radius, button: d.button, sections: d.sections.map((s) => `${s.type}:${s.variant}`) }));
+    const asked = (cur.designKey as string | undefined) || pack.config.defaultDesign || null;
+    const current = asked && slots[asked] ? `${THEME_PREFIX}${slots[asked].key}` : asked;
+    return { packKey: pack.key, family: pack.config.family ?? null, current, defaultDesign: await this.themes.defaultFreeDesign(pack.key, pack.config.defaultDesign) ?? null, designs, itemFields: pack.config.family ? FAMILIES[pack.config.family].itemFields : [], shell: pack.config.shell ?? null, ctaLabel: pack.config.ctaLabel };
   }
 
   /** Switching design changes layout and style only; every word, item and picture stays (sections are matched by type). Written to the draft. */
   async switchDesign(vendorId: string, key: string) {
     await this.site.assertDesignAllowed(vendorId, key);
     const d = await this.designsOf(vendorId);
-    const theme = d.designs.find((x) => x.key === key)?.themeKey;
-    await this.site.writeDraft(vendorId, { designKey: key, layout: theme ? { themeKey: theme } : {} });
+    const picked = d.designs.find((x) => x.key === key);
+    // a built-in design brings its colours; an imported theme brings its own, so the colour choice is cleared
+    await this.site.writeDraft(vendorId, { designKey: key, layout: picked && !picked.theme && !key.startsWith(THEME_PREFIX) && picked.themeKey ? { themeKey: picked.themeKey } : {} });
     return this.site.view(vendorId);
   }
 

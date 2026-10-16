@@ -768,6 +768,26 @@ export const api = {
   adminPackDuplicate: (key: string, data: { key: string; name: string }) => apiCall(`/admin/category-packs/${key}/duplicate`, { method: 'POST', body: JSON.stringify(data) }),
   adminPackSeed: () => apiCall('/admin/category-packs/seed/starter', { method: 'POST', body: JSON.stringify({}) }),
   adminPackCreateSite: (data: { categoryKey: string; businessName: string; subdomain: string; city?: string; phone?: string }) => apiCall('/admin/category-packs/sites', { method: 'POST', body: JSON.stringify(data) }),
+  // ── Theme marketplace (industry designs round 2) ──
+  siteDocThemes: () => apiCall('/site-doc/me/themes'),
+  siteDocThemeOrder: (key: string) => apiCall(`/site-doc/me/themes/${encodeURIComponent(key)}/order`, { method: 'POST', body: JSON.stringify({}) }),
+  siteDocThemeConfirm: (key: string, body: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) => apiCall(`/site-doc/me/themes/${encodeURIComponent(key)}/confirm`, { method: 'POST', body: JSON.stringify(body) }),
+  adminThemes: () => apiCall('/admin/themes'),
+  adminThemeReport: () => apiCall('/admin/themes/report'),
+  adminTheme: (id: string) => apiCall(`/admin/themes/${id}`),
+  adminThemePreviewLinks: (id: string) => apiCall(`/admin/themes/${id}/preview-links`),
+  adminThemeUpdate: (id: string, data: unknown) => apiCall(`/admin/themes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  adminThemeDuplicate: (id: string, key: string) => apiCall(`/admin/themes/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ key }) }),
+  /** Upload a theme zip. With dryRun nothing is stored; a refused upload comes back as ok:false with plain sentences (it is not thrown). */
+  adminThemeImport: async (file: File, dryRun: boolean): Promise<{ ok: boolean; lines: { level: string; text: string }[]; id?: string; key?: string; version?: number; contrast?: { what: string; ratio: number | null; ok: boolean }[]; fileCount?: number }> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('g4d_token') : null;
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API_BASE}/admin/themes/import${dryRun ? '?dryRun=1' : ''}`, { method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: fd });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.message || 'The upload could not be checked. Please try again.');
+    return (j.data ?? j) as never;
+  },
 
   // AI Studio — video/reel (Runway or HeyGen, admin-selectable; async job)
   getVideoProvider: () => apiCall('/video/provider'),

@@ -7,8 +7,9 @@ import { makePreviewToken } from './preview-token';
 import { draftDiffers, overlayDraft } from './site-merge';
 import { applyEditMarkers, isSampleItem, sampleMap } from './sample-markers';
 import { SiteRefreshService } from './site-refresh.service';
+import { THEME_PREFIX, ThemeCatalogService, ThemeNotice } from '../themes/theme-catalog.service';
 import {
-  SITE_EXTRAS_LISTS, SITE_EXTRAS_LIMITS, SITE_EXTRAS_TEXT, SITE_FIELDS, SITE_FLAG_ADDON, SITE_PLAN_LIMITS, SITE_SAMPLE_KEYS, SITE_TEXT_MAX, SITE_THEME_KEYS, SITE_VARIANTS, SITE_VERSIONS_KEPT,
+  SITE_EXTRAS_LISTS, SITE_EXTRAS_LIMITS, SITE_EXTRAS_OBJECTS, SITE_EXTRAS_TEXT, SITE_FIELDS, SITE_FLAG_ADDON, SITE_PLAN_LIMITS, SITE_SAMPLE_KEYS, SITE_TEXT_MAX, SITE_THEME_KEYS, SITE_VARIANTS, SITE_VERSIONS_KEPT,
   SitePlan, SiteVariantSlot,
 } from './site-doc.constants';
 
@@ -31,13 +32,15 @@ export interface SiteView {
   siteStatus: string;
   /** what is still starter text: the fields, the number of starter items and of starter customer quotes */
   sample: { fields: string[]; items: number; quotes: number };
+  /** round 2: set when the chosen theme cannot be used (licence ended, withdrawn, wrong category); the site then shows the free default design and nothing is lost */
+  themeNotice: ThemeNotice | null;
 }
 
 const PICK_SNAPSHOT = [...SITE_FIELDS, 'packKey'] as const;
 
 @Injectable()
 export class SiteDocService {
-  constructor(private readonly prisma: PrismaService, private readonly cms: CmsService, private readonly refresh: SiteRefreshService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cms: CmsService, private readonly refresh: SiteRefreshService, private readonly themes: ThemeCatalogService) {}
 
   async enabled(vendorId: string): Promise<boolean> {
     const a = await this.prisma.vendorAddon.findUnique({ where: { vendorId_addonKey: { vendorId, addonKey: SITE_FLAG_ADDON } }, select: { enabled: true } });
@@ -80,6 +83,7 @@ export class SiteDocService {
       live, doc: doc as Record<string, unknown>, dirty: row ? draftDiffers(base as { draft?: unknown } & Record<string, unknown>) : false,
       version: row?.siteVersion ?? 0, publishedAt: row?.publishedAt ?? null, siteStatus: row?.siteStatus ?? 'LIVE',
       sample: this.sampleSummary(doc as Record<string, unknown>, products),
+      themeNotice: await this.themeNotice(vendorId, row?.designKey ?? null, row?.siteStatus ?? 'LIVE'),
     };
   }
 
@@ -130,6 +134,16 @@ export class SiteDocService {
     }
     const link = ex.announcementLink;
     if (typeof link === 'string' && link && !/^(https?:\/\/|#|tel:|\/)/i.test(link)) throw new BadRequestException('The announcement link must start with https://, tel: or #.');
+    for (const k of SITE_EXTRAS_OBJECTS) {
+      const v = ex[k];
+      if (v === undefined) continue;
+      if (!v || typeof v !== 'object' || Array.isArray(v)) throw new BadRequestException(`"${k}" is not in the right form.`);
+      if (JSON.stringify(v).length > 6000) throw new BadRequestException(`"${k}" is too long. Keep it short.`);
+    }
+    const nav = ex.navigation as { header?: unknown[]; bottom?: unknown[] } | undefined;
+    if (nav && ((nav.header !== undefined && (!Array.isArray(nav.header) || nav.header.length > 8)) || (nav.bottom !== undefined && (!Array.isArray(nav.bottom) || nav.bottom.length > 5)))) throw new BadRequestException('The header can have up to 8 links and the mobile bottom bar up to 5 slots.');
+    const soc = ex.social as { x?: unknown; customUrl?: unknown } | undefined;
+    for (const u of [soc?.x, soc?.customUrl]) if (typeof u === 'string' && u && !/^https?:\/\//i.test(u)) throw new BadRequestException('Social links must start with https://');
     for (const k of SITE_EXTRAS_LISTS) {
       const v = ex[k];
       if (v === undefined) continue;
@@ -172,8 +186,22 @@ export class SiteDocService {
     return this.cms.toColumns(patch as unknown as UpdateVendorCmsDto);
   }
 
-  /** The design must be one of the enabled designs of the vendor's own category. */
+  /** Why the vendor's chosen theme is not showing, if it is not (so the dashboard can say so and offer Renew). */
+  async themeNotice(vendorId: string, designKey: string | null, siteStatus: string): Promise<ThemeNotice | null> {
+    if (!designKey || !designKey.startsWith(THEME_PREFIX)) return null;
+    const [row, vendor] = await Promise.all([this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { packKey: true } }), this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } })]);
+    const cat = row?.packKey || vendor?.industry || null;
+    return (await this.themes.resolve(vendorId, designKey, { categoryKey: cat, siteStatus })).notice;
+  }
+
+  /** The design must be one of the enabled designs of the vendor's own category, or an imported theme the vendor may use (free for the category, or licensed). Previewing any compatible theme is free and needs none of this. */
   async assertDesignAllowed(vendorId: string, key: string): Promise<void> {
+    if (key.startsWith(THEME_PREFIX)) {
+      const [row, vendor] = await Promise.all([this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { packKey: true, siteStatus: true } }), this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } })]);
+      const r = await this.themes.resolve(vendorId, key, { categoryKey: row?.packKey || vendor?.industry || null, siteStatus: row?.siteStatus ?? 'LIVE' });
+      if (r.ref) return;
+      throw new BadRequestException(r.notice?.kind === 'not-owned' || r.notice?.kind === 'expired' ? 'This is a paid theme. Buy it (preview is free), then apply it.' : r.notice?.kind === 'prospect' ? 'This site is not live yet, so it uses a free design.' : 'That theme is not available for your category.');
+    }
     const [row, vendor] = await Promise.all([this.prisma.vendorCMS.findUnique({ where: { vendorId }, select: { packKey: true } }), this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } })]);
     const keys = [row?.packKey, vendor?.industry].filter((k): k is string => !!k);
     for (const k of keys) {

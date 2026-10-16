@@ -40,6 +40,7 @@ export const ADMIN_NAV: AdminNavEntry[] = [
   { label: 'Utilization', href: '/admin/utilization', roles: SUPER },
   { label: 'LeadSpace', href: '/admin/leadspace', roles: ALL_STAFF },
   { label: 'Category packs', href: '/admin/category-packs', roles: ALL_STAFF },
+  { label: 'Theme marketplace', href: '/admin/themes', roles: ALL_STAFF },
   { label: 'Support', href: '/admin/support', roles: SUPER_OPS },
   { label: 'Website CMS', href: '/admin/cms', roles: SUPER_OPS },
   { label: 'Vendor Access', href: '/admin/vendor-access', roles: SUPER },

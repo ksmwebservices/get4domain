@@ -1,6 +1,7 @@
 import type { EngineSiteData, ThemeTokens } from '../types';
 import type { BottomNavItem, EnquiryTab, KitItem, KitSection, KitSiteModel } from '../kit/model';
 import vocab from './design-vocab.json';
+import { hoursRows } from '../shell/hours';
 import { SITE_THEMES, VARIANTS, type PackConfigLite } from './build';
 
 /**
@@ -36,16 +37,7 @@ const BOOKING = new Set(['BOOKING', 'APPOINTMENT', 'SITE_VISIT']);
 const RESERVED_META = new Set(['tags', 'veg', 'sample', 'sampleprice', 'website-manager-backfill']);
 const priceStr = (p?: string | null): string | undefined => { const t = (p ?? '').trim(); return t ? (/^[₹$]/.test(t) ? t : `₹${t}`) : undefined; };
 
-/** Opening hours text -> rows ("Mon to Sat, 9 am to 6 pm; Sun closed" becomes two rows). */
-export function hoursRows(text: string | null | undefined): { label: string; value: string }[] {
-  const parts = (text ?? '').split(/\n|;/).map((p) => p.trim()).filter(Boolean);
-  const rows: { label: string; value: string }[] = [];
-  for (const p of parts) {
-    const m = p.match(/^([A-Za-z][A-Za-z .&-]{1,24}?)[:,\s]+(\d.*|closed.*|open.*|by appointment.*)$/i);
-    rows.push(m ? { label: m[1].trim(), value: m[2].trim() } : { label: 'Hours', value: p });
-  }
-  return rows.slice(0, 8);
-}
+export { hoursRows };
 
 /** The design in use: the vendor's pick if it is one of the category's enabled designs, else the category's default. */
 export function activeDesign(site: EngineSiteData, pack: PackConfigLite): DesignLite | null {

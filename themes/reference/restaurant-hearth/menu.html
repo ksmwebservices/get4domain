@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <div class="head-tools"><g4d-cart class="cartbtn" label="Cart"></g4d-cart><g4d-action class="btn btn-primary head-cta"></g4d-action></div>
+  </div>
+</header>
+<main>
+  <section class="page-head"><div class="wrap"><h1>The menu</h1><p class="lead" style="margin-top:12px">Everything we cook. Tap a dish for details, or order straight away.</p></div></section>
+
+  <section class="sec"><div class="wrap">
+    <g4d-tabs for="groups" tab-class="tab" panel-class="panel">
+      <template><div>
+<template data-g4d-each="group.items">
+  <article class="dish" data-g4d-item="{{item.id}}">
+    <img data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}" loading="lazy">
+    <div class="body">
+      <div class="top"><h3><a href="{{item.href}}">{{item.name}}</a><span class="badge" data-g4d-if="item.veg">{{item.veg}}</span></h3><span class="price" data-g4d-if="item.price">{{item.price}}</span></div>
+      <p class="desc" data-g4d-if="item.description">{{item.description}}</p>
+      <div class="acts"><button class="link" data-g4d-quickview="{{item.id}}">Quick view</button><g4d-action class="link" item="{{item.id}}" label="Order this"></g4d-action></div>
+    </div>
+  </article>
+</template>
+      </div></template>
+    </g4d-tabs>
+  </div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

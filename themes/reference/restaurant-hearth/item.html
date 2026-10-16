@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><body>
+
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt=""><span>{{site.name}}</span></a>
+    <g4d-header-nav class="nav" label="Main"></g4d-header-nav>
+    <div class="head-tools"><g4d-cart class="cartbtn" label="Cart"></g4d-cart><g4d-action class="btn btn-primary head-cta"></g4d-action></div>
+  </div>
+</header>
+<main>
+  <section class="sec"><div class="wrap split">
+    <div>
+      <p class="crumbs"><a href="/">Home</a> / <a href="menu.html">Menu</a> / {{item.name}}</p>
+      <img class="photo" data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}">
+      <img class="photo" data-g4d-if-not="item.image" src="assets/hero-art.svg" alt="">
+    </div>
+    <div>
+      <p class="eyebrow" data-g4d-if="item.category">{{item.category}}</p>
+      <h1>{{item.name}}</h1>
+      <p class="prose" data-g4d-if="item.description">{{item.description}}</p>
+      <ul class="facts">
+        <li data-g4d-if="item.price"><span class="muted">Price</span><strong>{{item.price}}</strong></li>
+        <li data-g4d-if="item.veg"><span class="muted">Diet</span><strong>{{item.veg}}</strong></li>
+        <li data-g4d-if="item.includes"><span class="muted">Comes with</span><strong>{{item.includes}}</strong></li>
+      </ul>
+      <g4d-action class="btn btn-primary" item="{{item.id}}" label="Order this"></g4d-action>
+    </div>
+  </div></section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-bottom-nav></g4d-bottom-nav>
+</body></html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-label="Calm shapes with a leaf and a cross">
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9f0ec"/><stop offset="1" stop-color="#9ed6cc"/></linearGradient>
+    <linearGradient id="b" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f766e"/><stop offset="1" stop-color="#2aa396"/></linearGradient>
+  </defs>
+  <rect width="640" height="520" rx="36" fill="#eef7f5"/>
+  <circle cx="470" cy="150" r="130" fill="url(#a)"/>
+  <circle cx="170" cy="400" r="150" fill="#d9f0ec"/>
+  <path d="M320 430c-96-60-150-148-122-236 18-56 76-84 128-60 56 26 82 96 62 160-14 46-38 96-68 136z" fill="url(#b)" opacity=".92"/>
+  <path d="M322 420c8-70 6-138-6-204" fill="none" stroke="#eef7f5" stroke-width="6" stroke-linecap="round"/>
+  <path d="M322 330c-28-18-52-44-62-76M324 290c24-14 44-36 54-62" fill="none" stroke="#eef7f5" stroke-width="5" stroke-linecap="round"/>
+  <rect x="438" y="96" width="30" height="108" rx="8" fill="#ffffff"/>
+  <rect x="399" y="135" width="108" height="30" rx="8" fill="#ffffff"/>
+  <circle cx="110" cy="110" r="10" fill="#0f766e" opacity=".5"/><circle cx="560" cy="400" r="14" fill="#0f766e" opacity=".35"/><circle cx="76" cy="250" r="6" fill="#0f766e" opacity=".4"/>
+</svg>

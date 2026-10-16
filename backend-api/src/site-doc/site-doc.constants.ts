@@ -51,6 +51,12 @@ export interface SiteTestimonial { quote: string; author: string; note?: string;
  */
 export const SITE_EXTRAS_TEXT = ['headline', 'subline', 'ctaLabel', 'announcement', 'announcementLink'] as const;
 export const SITE_EXTRAS_LISTS = ['trust', 'faq', 'steps', 'stats', 'team', 'beforeAfter'] as const;
+/**
+ * Round 2: structured settings a vendor edits in Website Manager that are not lists of text. `navigation` (header items, bottom-navigation labels, main button label),
+ * `popup` (which optional fields the popup form shows, the confirmation message, where notices go), `social` (X, a custom link) and `pagePlan` (which standard
+ * theme pages are on, in what order).
+ */
+export const SITE_EXTRAS_OBJECTS = ['navigation', 'popup', 'social', 'pagePlan'] as const;
 export const SITE_SAMPLE_KEYS = ['tagline', 'about', 'banner', 'gallery', ...SITE_EXTRAS_TEXT, ...SITE_EXTRAS_LISTS] as const;
 export interface SiteExtras {
   headline?: string; subline?: string; ctaLabel?: string; announcement?: string; announcementLink?: string;
@@ -60,6 +66,10 @@ export interface SiteExtras {
   stats?: { value: string; label: string }[];
   team?: { name: string; role?: string; note?: string; image?: string }[];
   beforeAfter?: { before: string; after: string; caption?: string }[];
+  navigation?: { header?: { label: string; target: string }[]; bottom?: { key: string; label: string }[]; primaryLabel?: string };
+  popup?: { email?: 'hidden' | 'optional' | 'required'; message?: 'hidden' | 'optional' | 'required'; confirm?: string; notifyPhone?: string; notifyEmail?: string };
+  social?: { x?: string; customLabel?: string; customUrl?: string };
+  pagePlan?: { order?: string[]; hidden?: string[] };
   /** true = still the starter text */
   sample?: Record<string, boolean>;
 }

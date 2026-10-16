@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Menu, X, Phone } from 'lucide-react';
+import { Menu, X, Phone, MessageCircle } from 'lucide-react';
 
 /** Shared engine top nav: transparent over the hero, condenses to a solid ground on
  *  scroll, keeps a persistent primary CTA. Links + brand + label are per-industry. */
-export default function KitNav({ brand, logo, links, phone, primaryLabel, variant = 'bar', offset = 0 }: {
-  brand: string; logo?: string; links: { href: string; label: string }[]; phone?: string; primaryLabel: string; variant?: 'bar' | 'centered' | 'minimal'; offset?: number;
+export default function KitNav({ brand, logo, links, phone, primaryLabel, variant = 'bar', offset = 0, whatsapp }: {
+  brand: string; logo?: string; links: { href: string; label: string }[]; phone?: string; primaryLabel: string; variant?: 'bar' | 'centered' | 'minimal'; offset?: number; whatsapp?: string;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -31,6 +31,7 @@ export default function KitNav({ brand, logo, links, phone, primaryLabel, varian
         </nav>
         <div className={`flex items-center gap-3 ${variant === 'centered' ? 'absolute right-5 md:static' : ''}`}>
           {phone && <a href={`tel:${phone}`} className="hidden items-center gap-1.5 text-sm text-[var(--eng-muted)] hover:text-[var(--eng-fg)] sm:flex"><Phone className="h-3.5 w-3.5" /> {phone}</a>}
+          {whatsapp && <a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp" className="hidden h-10 w-10 items-center justify-center border border-[var(--eng-border)] text-[var(--eng-fg)] hover:text-[var(--eng-accent)] md:flex" style={{ borderRadius: 'var(--eng-radius)' }}><MessageCircle className="h-4 w-4" /></a>}
           <a href="#enquiry" className="hidden bg-[var(--eng-accent)] px-4 py-2 text-sm font-semibold text-[var(--eng-accent-fg)] md:inline-block" style={{ borderRadius: 'var(--eng-radius)' }}>{primaryLabel}</a>
           <button className={`text-[var(--eng-fg)] ${variant === 'minimal' ? '' : 'md:hidden'}`} onClick={() => setOpen((v) => !v)} aria-label="Menu">{open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}</button>
         </div>
