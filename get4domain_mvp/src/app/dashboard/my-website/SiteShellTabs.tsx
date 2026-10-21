@@ -213,3 +213,29 @@ export function MarketplacePanel({ previewBase, current, onUse, businessName }: 
     </div>
   );
 }
+
+/* ── Pages of the imported theme: hide and reorder ── */
+export function ThemePagesPanel({ extras, set, pages }: { extras: FullExtras; set: (next: FullExtras) => void; pages: { slug: string; title: string }[] }) {
+  if (pages.length === 0) return null;
+  const plan = extras.pagePlan ?? {};
+  const hidden = new Set(plan.hidden ?? []);
+  const rank = (s: string): number => { const i = (plan.order ?? []).indexOf(s); return i < 0 ? 999 : i; };
+  const ordered = [...pages].sort((a, b) => rank(a.slug) - rank(b.slug));
+  const put = (patch: Partial<NonNullable<ShellExtras['pagePlan']>>): void => set({ ...extras, pagePlan: { ...plan, ...patch } });
+  const move = (slug: string, d: number): void => { const list = ordered.map((p) => p.slug); const i = list.indexOf(slug); const j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; put({ order: list }); };
+  return (
+    <div className="rounded-xl border border-slate-200 p-3">
+      <h3 className="text-sm font-semibold text-slate-900">Pages that come with your theme</h3>
+      <p className="mt-1 text-xs text-slate-500">Your plan decides how many pages show. Pages you hide, or put lower, are the ones left out first. Your contact page and your list page are always kept.</p>
+      <ul className="mt-2 space-y-1.5">
+        {ordered.map((p, i) => (
+          <li key={p.slug} className="flex items-center gap-3 text-sm">
+            <label className="flex flex-1 items-center gap-2"><input type="checkbox" checked={!hidden.has(p.slug)} onChange={(e) => put({ hidden: e.target.checked ? [...hidden].filter((x) => x !== p.slug) : [...hidden, p.slug] })} />{p.title}</label>
+            <button type="button" aria-label={`Move ${p.title} up`} disabled={i === 0} className="px-2 text-slate-500 disabled:opacity-30" onClick={() => move(p.slug, -1)}>↑</button>
+            <button type="button" aria-label={`Move ${p.title} down`} disabled={i === ordered.length - 1} className="px-2 text-slate-500 disabled:opacity-30" onClick={() => move(p.slug, 1)}>↓</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

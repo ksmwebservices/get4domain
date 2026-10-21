@@ -485,11 +485,15 @@ The website then turns `allwintours.get4domain.com/anything` into `/site/allwint
 **If something goes wrong:** `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable) returns that vendor to the old editor and renderer; the backfill rollback in step 8 undoes the copy; the migration is additive and can stay.
 
 
-## 12. Industry designs (15 Oct 2026) - KSM only
+## 12. Combined release: industry designs (15 Oct 2026) plus themes and the shell (16 Oct 2026) - KSM only
 
 Read `INDUSTRY_DESIGNS.md` first. Claude did not touch the server or any production data. Every command is labelled. **Nothing here switches a vendor on, changes a live vendor's content, or changes a vendor's category by itself.** New designs apply only to vendors that already have the add-on `site_doc_v2`; the dry run in step 8 says what would change for each of them, and nothing is applied automatically. Allwin Tours, Step N Rock and every vendor that is not on the flag are untouched.
 
-What this release adds: three columns on `"VendorCMS"` (`extras`, `designKey`, `siteStatus`, all additive; every existing site stays `LIVE`), 24 categories with a flow family, four designs each and starter content, 120 starter pictures (our own artwork, in the website's `public/starter`), the Template, Page content and Items tabs in Website Manager, `sitemap.xml` and `robots.txt` for every vendor address, and a site that is still a draft is hidden (not-found page, noindex).
+**Read this box first if the new code is already on the VM but the database steps were not done.** The symptom is that every vendor site, Step N Rock included, shows no data and Website Manager will not open, because the code now reads columns and tables the database does not have yet (backend log: `P2022` or `column ... does not exist`). Nothing is lost. Do steps 1, 3, 4 and 5 below in order (backup, migrate, row level security, restart the backend). Never run `prisma migrate reset` or `prisma db push`. If `migrate deploy` stops with a failed-migration or drift message, stop and paste it to Claude. To get the public sites back at once instead, check out the commit you ran before (`git log --oneline`, `git checkout <commit>`), rebuild both containers; the new columns do no harm to older code, and you can migrate later.
+
+What the second round (themes and the shell) adds: three new tables (`g4d_theme_packages`, `g4d_theme_assets`, `g4d_theme_entitlements`; no existing table is touched), the Theme marketplace screen in Admin, the five-button phone bar, the popup for the main button, the footer with social icons, multi-page imported themes (each page its own address, in the sitemap), paid yearly themes bought through the existing Razorpay path with 18 percent GST added, and two reference themes (Clinic Calm, Restaurant Hearth) that are registered only when you run step 6b. Theme pictures live in the database table, so **there is no new volume and no new storage location**. Nothing is switched on for any vendor, and no vendor's page changes until you set a theme Live in Admin.
+
+What the first round adds: three columns on `"VendorCMS"` (`extras`, `designKey`, `siteStatus`, all additive; every existing site stays `LIVE`), 24 categories with a flow family, four designs each and starter content, 120 starter pictures (our own artwork, in the website's `public/starter`), the Template, Page content and Items tabs in Website Manager, `sitemap.xml` and `robots.txt` for every vendor address, and a site that is still a draft is hidden (not-found page, noindex).
 
 **1. VM terminal: backup first.** The VM's own `pg_dump` is version 14 and fails against the Supabase database, so the dump runs inside the Postgres 17 image. The database address is read from the env file with `grep` (never source `.env.local`):
 
@@ -511,16 +515,16 @@ cd /srv/get4domain-site && git pull origin get4domain-site
 git log --oneline -1
 ```
 
-**3. VM terminal: migrate** (one migration, additive: 3 columns, no table)
+**3. VM terminal: migrate** (two migrations, both additive: `20261015100000_industry_designs` adds 3 columns; `20261016100000_theme_packages` adds 3 tables. Earlier ones may also show as pending if an earlier release block was not finished; apply them all, in the order shown)
 
 ```
 cd /srv/get4domain-site/backend-api
-npx prisma migrate status                 # expect only 20261015100000_industry_designs pending
+npx prisma migrate status                 # expect 20261015100000_industry_designs and 20261016100000_theme_packages pending (and nothing you do not recognise)
 npx prisma migrate deploy && npx prisma generate
 npx prisma migrate status                 # expect "Database schema is up to date!"
 ```
 
-**4. VM terminal, then Supabase SQL editor: row level security.** This release adds no table, so the script needs no re-run, but run it anyway as the standing check:
+**4. VM terminal, then Supabase SQL editor: row level security.** This release adds three tables (the theme tables), so the script MUST be run again:
 
 ```
 cat prisma/sql/enable_rls_public.sql | head -80
@@ -529,6 +533,8 @@ grep -n 'END \$\$;' prisma/sql/enable_rls_public.sql      # both greps must prin
 ```
 
 Paste the file into the Supabase SQL editor, run it, then `SELECT tablename FROM pg_tables WHERE schemaname='public' AND rowsecurity=false;` must return 0 rows.
+
+**4b. VM terminal: environment (before the rebuild in step 5).** Nothing new is needed on the backend. The website build needs `NEXT_PUBLIC_RAZORPAY_KEY_ID` (the same value the billing page already uses) so the Buy button in the Template tab can open the payment window; if it is missing the Buy button says payments are not switched on and charges nothing. A theme zip can be up to 6 MB, so the API host's nginx `client_max_body_size 10m;` from section 11 step 2 must be in place.
 
 **5. VM terminal: rebuild, backend first**
 
@@ -549,6 +555,15 @@ node ../scripts/industry-designs/seed-images.js --check     # expect "0 missing,
 
 Expected: 24 created on a database that has none, or the older packs upgraded with designs and starter content and everything an admin edited kept. Run it again: nothing to do.
 
+**6b. On your computer (not the VM): register the two reference themes through the Admin import route.** Dry run first; it only checks. `--apply` registers them as free designs (Clinic Calm takes the "warm" slot of clinic and diagnostics, Restaurant Hearth the "bold" slot of restaurant) as DRAFT-checked, live free designs. **Do this only after you have looked at them** (Admin, Theme marketplace, Open, Desktop and Phone, Open the popup). A vendor who is on a replaced slot will see the theme as soon as it is live, so run step 8 first.
+
+```
+node scripts/theme/register-reference.mjs --api https://gapi.get4domain.com --token <your admin token>
+node scripts/theme/register-reference.mjs --api https://gapi.get4domain.com --token <your admin token> --apply
+```
+
+The token is your admin login token; it is not stored or printed. To add any other theme later you do not need a deploy: Admin, Theme marketplace, Upload (the same check runs on your computer with `node scripts/theme/lint.mjs <folder>`; see `THEME_CONTRACT.md` and `THEME_PROMPTS.md`).
+
 **7. VM terminal: check the public pieces**
 
 ```
@@ -562,7 +577,7 @@ curl -s https://ksm-webtech-services.get4domain.com/robots.txt | head -3        
 node scripts/industry-designs/flagged-vendors-dry-run.js
 ```
 
-It prints, for each flagged vendor, the category found, the design it would start on, whether the site already holds starter content, and what "Reset to starter" would fill. Paste it to Claude if anything looks wrong. Nothing is written.
+It prints, for each flagged vendor, the category found, the design it would start on, whether the site already holds starter content, what "Reset to starter" would fill, **what the new shell would add (the phone bar words, the popup steps, the footer icons) and whether a live free theme would replace the vendor's current built-in design**. Paste it to Claude if anything looks wrong. Nothing is written.
 
 **9. KSM review**
 
@@ -577,4 +592,6 @@ SITE_DOC_CONFIRM=I_HAVE_READ_THE_DRY_RUN node scripts/industry-designs/set-vendo
 
 Then in the dashboard (Website Manager, with the new Website Manager switched on for that vendor as in section 11 step 9): press **Reset to starter**, look at **Preview**, then **Publish**. Check: (1) the page has a hero picture, services, questions and a contact form; (2) Template tab shows four designs and switching keeps your words; (3) sample prices show as "Contact for price"; (4) sample customer quotes are not on the page; (5) the page source has `noindex` until you write your own About text; (6) `https://ksm-webtech-services.get4domain.com/robots.txt` closes the site until then.
 
-**Rollback:** the migration only adds and can stay. To go back to the earlier look for a vendor, `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable). To undo a category change run the script again with the previous category. Starter packs can be switched off one by one in Admin.
+**10. Licences (themes).** A daily job at 06:30 IST reminds vendors 30, 7 and 1 days before a theme year ends, marks ended years EXPIRED, and the site then shows the category's free default design with a plain notice; nothing the vendor wrote changes, and renewing restores the theme. Check it ran: `docker compose logs backend | grep "Theme licence run"`. Prices are set only in Admin, Theme marketplace; there is no price in code.
+
+**Rollback:** both migrations only add and can stay. To take a theme away, Admin, Theme marketplace, Retire (vendors who paid keep it until their year ends; others fall back to a free design). To go back to the earlier look for a vendor, `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable). To undo a category change run the script again with the previous category. Starter packs can be switched off one by one in Admin. To go back to the earlier look for a vendor, `node scripts/site-doc-flag.js --off --vendor <subdomain> --apply` (with the confirm variable). To undo a category change run the script again with the previous category. Starter packs can be switched off one by one in Admin.

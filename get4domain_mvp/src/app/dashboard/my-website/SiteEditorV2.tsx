@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useWebsiteSection, WEBSITE_SECTION_TABS } from '@/dashboard-v2/section-context';
 import { ItemsTab, PageContentTab, SamplePanel, TemplateTab, type DesignsView, type Extras, type SampleSummary } from './SiteContentTabs';
 import { SITE_THEME_LIST, VARIANTS } from '@/engine/sitedoc/build';
-import { MarketplacePanel, NavigationTab, PopupTab, PreviewTab, SocialExtraFields, type FullExtras } from './SiteShellTabs';
+import { MarketplacePanel, NavigationTab, ThemePagesPanel, PopupTab, PreviewTab, SocialExtraFields, type FullExtras } from './SiteShellTabs';
 
 type Doc = Record<string, unknown> & { portfolio?: { id: string; src: string; title?: string; category?: string }[]; testimonials?: { quote: string; author: string; note?: string; sample?: boolean }[]; pages?: { slug: string; title: string; body: string }[]; layout?: Record<string, string>; extras?: Extras; designKey?: string };
 interface View { enabled: boolean; plan: string; limits: { pages: number; mediaMb: number }; usage: { pages: number; mediaBytes: number }; subdomain: string | null; publicUrl: string | null; live: Doc; doc: Doc; dirty: boolean; version: number; publishedAt: string | null; siteStatus?: string; sample?: SampleSummary }
@@ -250,6 +250,7 @@ export default function SiteEditorV2({ initial }: { initial: View }) {
         )}
         {tab === 'pages' && (
           <div className="space-y-3">
+            {designs?.themePages && designs.themePages.length > 0 && <ThemePagesPanel extras={(doc.extras ?? {}) as FullExtras} set={(next) => set('extras', next)} pages={designs.themePages} />}
             <p className="text-sm text-slate-500">Your plan includes {view.limits.pages} page{view.limits.pages === 1 ? '' : 's'} (the home page counts as one). You are using {1 + pages.length}.</p>
             {pages.map((p, i) => (
               <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">

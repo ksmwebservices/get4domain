@@ -102,6 +102,14 @@ export function themeJsonLd(site: EngineSiteData, route: Route, url: string): Re
   return null;
 }
 
+/** The colour and size variables the theme sets on its root (`:root { --g4d-accent: ... }` becomes a rule on its scope). They are handed to the engine's own parts (phone bar, popup, cart) from outside the theme's scope, so the theme's class names can never restyle them. */
+function rootVarsOf(css: string, id: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const re = new RegExp(String.raw`(?:^|\})\s*\.g4d-theme-` + id.replace(/[^a-z0-9-]/g, '') + String.raw`\s*\{([^{}]*)\}`, 'g');
+  for (const m of css.matchAll(re)) for (const d of m[1].split(';')) { const i = d.indexOf(':'); const k = d.slice(0, i).trim(); const v = d.slice(i + 1).trim(); if (/^--[a-z0-9-]+$/i.test(k) && v && !/[<>{}]|url\(/i.test(v)) out[k] = v; }
+  return out;
+}
+
 const cssSafe = (css: string, assetBase: string, assets: Map<string, string>): string =>
   css.replace(/asset:\/\/([^"')\s]+)/g, (_m, p: string) => { const f = assets.get(p); return f ? `${assetBase}${f}` : ''; }).replace(/<\/(style)/gi, '<\\/$1');
 
@@ -134,6 +142,8 @@ export default function ThemeSite({ site, pkg, rest, opts, subdomain }: { site: 
   const groups = groupsOf(items);
   const publicUrl = `https://${subdomain}.${SITE_BASE}`;
   const cls = `g4d-theme-${manifest.id}`;
+  const annEx = extrasOf(site) as { announcement?: string; announcementLink?: string };
+  const announcement = annEx.announcement?.trim() ? { text: annEx.announcement.trim().slice(0, 200), href: ['https://', 'http://', '#', 'tel:', '/'].some((p) => (annEx.announcementLink ?? '').toLowerCase().startsWith(p)) ? annEx.announcementLink : undefined } : null;
   const name = shell.business.name;
 
   let body: ReactNode;
@@ -159,15 +169,16 @@ export default function ThemeSite({ site, pkg, rest, opts, subdomain }: { site: 
   const ld = themeJsonLd(site, route, `${publicUrl}${routePath(route, set)}`);
   const vars = Object.fromEntries(Object.entries(manifest.cssVars ?? {}).filter(([k]) => /^--g4d-[a-z0-9-]+$/.test(k)));
   // the theme's class and colours sit on the outermost element so the cart, the popup and the bottom bar (which sit beside the page, not inside it) wear the theme's colours too
-  const wrap = { display: 'contents', ...vars, ['--eng-accent' as string]: 'var(--g4d-accent, #0f766e)', ['--eng-accent-fg' as string]: 'var(--g4d-accent-fg, #ffffff)' } as CSSProperties;
+  const wrap = { display: 'contents', ...rootVarsOf(pkg.css, manifest.id), ...vars, ['--eng-accent' as string]: 'var(--g4d-accent, #0f766e)', ['--eng-accent-fg' as string]: 'var(--g4d-accent-fg, #ffffff)' } as CSSProperties;
   return (
-    <div className={cls} style={wrap} data-g4d-theme={manifest.id}>
+    <div style={wrap} data-g4d-theme={manifest.id}>
     <CartProvider enabled={cartOn} subdomain={subdomain} brandName={name} mode={opts.checkoutMode}>
       <ShellProvider runtime={shell}>
         {pkg.googleFonts.map((href) => <link key={href} rel="stylesheet" href={href} precedence="g4d-fonts" />)}
         {/* eslint-disable-next-line react/no-danger */}
         <style dangerouslySetInnerHTML={{ __html: cssSafe(pkg.css, assetBase, assets) }} />
         {ld && /* eslint-disable-next-line react/no-danger */ <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, '\\u003c') }} />}
+        {announcement && <AnnounceStrip text={announcement.text} href={announcement.href} />}
         <div className={cls}>{body}</div>
         <ShellBottomNav />
         <FloatingContact runtime={shell} />
@@ -175,6 +186,12 @@ export default function ThemeSite({ site, pkg, rest, opts, subdomain }: { site: 
     </CartProvider>
     </div>
   );
+}
+
+/** The announcement bar (the vendor's own words from the Page content tab), drawn by the engine above any theme. */
+function AnnounceStrip({ text, href }: { text: string; href?: string }) {
+  const inner = <span>{text}</span>;
+  return <div role="status" className="bg-[var(--sh-accent)] px-4 py-2 text-center text-sm font-medium text-[var(--sh-accent-fg)]" data-g4d-announce>{href ? <a href={href} className="underline">{inner}</a> : inner}</div>;
 }
 
 const buildTagline = (site: EngineSiteData): string => site.cms?.tagline?.trim() || '';

@@ -133,7 +133,7 @@ export class StarterService {
   }
 
   /** The four designs of the vendor's own category, with the one in use. Nothing else is ever offered to the vendor. */
-  async designsOf(vendorId: string): Promise<{ packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: { key: string; name: string; themeKey: string; font: string; radius: string; button: string; sections: string[]; theme?: boolean; id?: string; previewPath?: string | null; replaces?: string }[]; itemFields: { key: string; label: string }[]; shell?: PackConfig["shell"] | null; ctaLabel?: string }> {
+  async designsOf(vendorId: string): Promise<{ packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: { key: string; name: string; themeKey: string; font: string; radius: string; button: string; sections: string[]; theme?: boolean; id?: string; previewPath?: string | null; replaces?: string }[]; itemFields: { key: string; label: string }[]; shell?: PackConfig["shell"] | null; ctaLabel?: string; themePages?: { slug: string; title: string }[] }> {
     const [row, vendor] = await Promise.all([this.prisma.vendorCMS.findUnique({ where: { vendorId } }), this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } })]);
     const pack = await this.packFor(row?.packKey, vendor?.industry);
     if (!pack) return { packKey: null, family: null, current: null, defaultDesign: null, designs: [], itemFields: [] };
@@ -145,7 +145,13 @@ export class StarterService {
       : { key: d.key, name: d.name, themeKey: d.themeKey, font: d.font, radius: d.radius, button: d.button, sections: d.sections.map((s) => `${s.type}:${s.variant}`) }));
     const asked = (cur.designKey as string | undefined) || pack.config.defaultDesign || null;
     const current = asked && slots[asked] ? `${THEME_PREFIX}${slots[asked].key}` : asked;
-    return { packKey: pack.key, family: pack.config.family ?? null, current, defaultDesign: await this.themes.defaultFreeDesign(pack.key, pack.config.defaultDesign) ?? null, designs, itemFields: pack.config.family ? FAMILIES[pack.config.family].itemFields : [], shell: pack.config.shell ?? null, ctaLabel: pack.config.ctaLabel };
+    // the pages of the imported theme in use, so the vendor can hide or reorder them in the Pages tab
+    let themePages: { slug: string; title: string }[] | undefined;
+    if (current && current.startsWith(THEME_PREFIX)) {
+      const row = await this.prisma.themePackage.findFirst({ where: { key: current.slice(THEME_PREFIX.length), status: { in: ['LIVE', 'DRAFT'] } }, orderBy: { version: 'desc' }, select: { manifest: true } });
+      themePages = ((row?.manifest as { pages?: { slug: string; title: string }[] } | undefined)?.pages ?? []).map((p) => ({ slug: p.slug, title: p.title }));
+    }
+    return { packKey: pack.key, family: pack.config.family ?? null, current, defaultDesign: await this.themes.defaultFreeDesign(pack.key, pack.config.defaultDesign) ?? null, designs, itemFields: pack.config.family ? FAMILIES[pack.config.family].itemFields : [], shell: pack.config.shell ?? null, ctaLabel: pack.config.ctaLabel, themePages };
   }
 
   /** Switching design changes layout and style only; every word, item and picture stays (sections are matched by type). Written to the draft. */

@@ -201,7 +201,7 @@ export function ItemsTab({ vendorId, itemFields, noun, onChanged }: { vendorId: 
 
 /* ── Template: the four designs of the vendor's own category, shown with the vendor's own content ── */
 export interface DesignOption { key: string; name: string; themeKey: string; font: string; radius: string; button: string; sections: string[] }
-export interface DesignsView { packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: DesignOption[]; itemFields?: { key: string; label: string }[]; shell?: { terms?: { items: string }; bottomNav: { key: string; label: string; icon: string; target: string }[]; popup: { title: string; steps: { key: string; kind: string; label: string }[]; confirm: string } } | null; ctaLabel?: string }
+export interface DesignsView { packKey: string | null; family: string | null; current: string | null; defaultDesign: string | null; designs: DesignOption[]; itemFields?: { key: string; label: string }[]; shell?: { terms?: { items: string }; bottomNav: { key: string; label: string; icon: string; target: string }[]; popup: { title: string; steps: { key: string; kind: string; label: string }[]; confirm: string } } | null; ctaLabel?: string; themePages?: { slug: string; title: string }[] }
 
 export function TemplateTab({ view, previewBase, onPick, busy, onRefresh }: { view: DesignsView | null; previewBase: string; onPick: (key: string) => void; busy: boolean; onRefresh: () => void }) {
   if (!view) return <p className="text-sm text-slate-500">Loading designs...</p>;

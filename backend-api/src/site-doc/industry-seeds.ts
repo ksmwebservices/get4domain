@@ -115,7 +115,7 @@ export function planStarterSeed(existing: { key: string; config: unknown }[]): {
   for (const p of starterDesignPacks()) {
     const old = have.get(p.key);
     if (!old) create.push(p);
-    else if (!old.designs) upgrade.push({ key: p.key, config: { ...old, keywords: [...new Set([...(old.keywords ?? []), ...p.config.keywords])], family: p.config.family, designs: p.config.designs, defaultDesign: p.config.defaultDesign, seed: p.config.seed } });
+    else if (!old.designs) upgrade.push({ key: p.key, config: { ...old, keywords: [...new Set([...(old.keywords ?? []), ...p.config.keywords])], family: p.config.family, designs: p.config.designs, defaultDesign: p.config.defaultDesign, seed: p.config.seed, shell: old.shell ?? p.config.shell } });
     else if (!old.shell) upgrade.push({ key: p.key, config: { ...old, shell: p.config.shell } });
     else kept += 1;
   }

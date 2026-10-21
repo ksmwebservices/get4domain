@@ -31,6 +31,10 @@ const steps = [
   ['Website Manager rendered pages: every field, publish refresh, no stock content, every theme and layout, readiness equals the page (builds the frontend the first time)', BE, [node, 'scripts/website-manager/verify-site-render.js']],
   ['Industry designs: categories, starter content, public safety, design switching, admin-made category (real Postgres, real API)', BE, [node, 'scripts/industry-designs/verify-designs-pg.js']],
   ['Industry designs migration: additive, no existing row touched, no drift (real Postgres)', BE, [node, 'scripts/industry-designs/verify-designs-migration-pg.js']],
+  ['Theme packages migration: additive, no row touched, three new tables, no drift (real Postgres)', BE, [node, 'scripts/themes/verify-themes-migration-pg.js']],
+  ['Themes (round 2) on real Postgres: package schema, sanitiser, lint and --fix, marketplace and prices, free-design slots, switching, licences, idempotent payment message, reminders, expiry and retirement', BE, [node, 'scripts/themes/verify-themes-pg.js']],
+  ['Themes offline: contrast, no hard-coded business text, every slot has an editor input, one contract for website and API', FE, [node, 'scripts/verify-themes.mjs']],
+  ['Themes rendered: both reference themes for every declared category, every page and item, sitemap, plan limits, shell and phone bar, popup (focus, Escape, lead created), social icons, editable fields, SEO, throttled speed, a category made only in Admin (builds the frontend the first time)', BE, [node, 'scripts/themes/verify-themes-render.js']],
   ['Industry designs offline: contrast, no hard-coded business text, lists agree, an input for every field the page reads', FE, [node, 'scripts/verify-designs.mjs']],
   ['Industry designs rendered: every design of every category on desktop and phone, SEO, speed, every saved field reaches the page, sample content hidden', BE, [node, 'scripts/industry-designs/verify-designs-render.js']],
   ['security suites that need no database (never boots the app against a real database)', BE, [node, 'scripts/security-verify/run-offline.js']],
@@ -65,9 +69,9 @@ for (const line of log) {
   if (m && id) { const t = tags.get(id) ?? { pass: 0, fail: 0 }; t[m[1] === 'PASS' ? 'pass' : 'fail'] += 1; tags.set(id, t); }
 }
 // every industry-designs test id must have run and passed (they are not menu features, so the registry check above does not cover them)
-const DESIGN_IDS = ['categories', 'seed', 'public-safety', 'switch', 'admin', 'existing-vendors', 'migration', 'render', 'editable', 'seo', 'contrast', 'speed', 'no-hardcode'].map((x) => `industry-designs.${x}`);
+const DESIGN_IDS = [...['categories', 'seed', 'public-safety', 'switch', 'admin', 'existing-vendors', 'migration', 'render', 'editable', 'seo', 'contrast', 'speed', 'no-hardcode', 'shell', 'popup', 'footer-social', 'dynamic'].map((x) => `industry-designs.${x}`), ...['package-schema', 'sanitiser', 'render', 'lint', 'switch', 'multipage', 'marketplace', 'expiry'].map((x) => `theme.${x}`)];
 const designMissing = DESIGN_IDS.filter((id) => { const t = tags.get(id); return !t || t.fail > 0 || t.pass === 0; });
-results.push({ name: `every industry-designs test id ran and passed (${DESIGN_IDS.length - designMissing.length} of ${DESIGN_IDS.length}: ${DESIGN_IDS.map((i) => i.split('.')[1]).join(', ')})`, ok: designMissing.length === 0, note: designMissing.join(', ') });
+results.push({ name: `every industry-designs and theme test id ran and passed (${DESIGN_IDS.length - designMissing.length} of ${DESIGN_IDS.length}: ${DESIGN_IDS.map((i) => i.split('.')[1]).join(', ')})`, ok: designMissing.length === 0, note: designMissing.join(', ') });
 const reg = await (await import(pathToFileURL(path.join(ROOT, 'registry', 'lib.mjs')).href)).loadRegistry();
 const open = reg.FEATURES.filter((f) => (f.status === 'WORKING' || f.status === 'LIMITED') && f.testId);
 // verified by an end-to-end suite that needs a built storefront and is run on its own

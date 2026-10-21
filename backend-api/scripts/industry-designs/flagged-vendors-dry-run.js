@@ -15,7 +15,7 @@ const JSON_OUT = process.argv.includes('--json');
 const line = (s = '') => { if (!JSON_OUT) console.log(s); };
 
 /** The pure part, also used by the tests: what would change for one vendor. */
-function report(vendor, cms, products, packs) {
+function report(vendor, cms, products, packs, themes = []) {
   const ind = (vendor.industry || '').toLowerCase();
   const byKey = (k) => packs.find((p) => p.key === k && p.enabled);
   const pack = byKey(cms && cms.packKey) || byKey(ind) || packs.find((p) => p.enabled && (p.config.keywords || []).some((w) => w.toLowerCase() === ind));
@@ -44,6 +44,25 @@ function report(vendor, cms, products, packs) {
   out.items = (products || []).length;
   if (empty.length) out.wouldChange.push(`"Reset to starter" (a button the vendor presses; never automatic) would fill: ${empty.join(', ')}. It never overwrites what the vendor wrote.`);
   else out.notes.push('Nothing is empty: Reset to starter would change nothing.');
+  // round 2: the engine shell and imported themes
+  const shell = pack.config.shell || null;
+  const links = ['facebook', 'instagram', 'youtube', 'linkedin'].filter((k) => cms && cms[k]).concat(cms && (cms.whatsapp || cms.phone) ? ['whatsapp'] : [], cms && cms.googleMaps ? ['maps'] : []);
+  out.shell = {
+    phoneBar: shell && shell.bottomNav ? shell.bottomNav.map((n) => n.label) : 'the standard bar of the family',
+    popupSteps: shell && shell.popup ? shell.popup.steps.map((x) => x.label) : 'the standard steps of the family',
+    footerIcons: links, hasPhone: !!(cms && cms.phone), hasHours: !!(cms && cms.businessHours),
+  };
+  out.wouldChange.push(`the engine shell would appear on the page: a popup for the main button, a five-button bar at the bottom of a phone (${Array.isArray(out.shell.phoneBar) ? out.shell.phoneBar.join(', ') : out.shell.phoneBar}), and a footer with ${links.length ? `icons for ${links.join(', ')}` : 'no social icons (no links filled in yet)'}${out.shell.hasPhone ? '' : '; no phone number is set, so the call button and the floating call button are left out'}`);
+  const mine = themes.filter((t) => (t.categories || []).includes(pack.key));
+  const free = mine.filter((t) => t.role === 'FREE_DEFAULT');
+  const paid = mine.filter((t) => t.role === 'MARKETPLACE');
+  out.themes = { free: free.map((t) => `${t.name} (replaces ${t.replacesDesign})`), paid: paid.map((t) => t.name) };
+  if (free.length) out.wouldChange.push(`the Template tab would offer ${free.length} free imported theme(s) in place of built-in design(s): ${out.themes.free.join(', ')}. A vendor on a different built-in design is not affected.`);
+  const cur = (cms && cms.designKey) || pack.config.defaultDesign;
+  const takes = free.find((t) => t.replacesDesign === cur);
+  if (takes) out.wouldChange.push(`this vendor is on the built-in design "${cur}", which the free theme "${takes.name}" replaces: once that theme is set Live in Admin, the vendor's page is drawn by the theme (their words, items and pictures stay). Set the theme Live only after KSM has looked at it.`);
+  if (paid.length) out.notes.push(`${paid.length} paid theme(s) would be offered in the Template tab: ${out.themes.paid.join(', ')}. Previewing is free; applying needs a yearly licence.`);
+  if (cms && typeof cms.designKey === 'string' && cms.designKey.startsWith('t:')) out.notes.push(`The vendor already uses the imported theme ${cms.designKey.slice(2)}.`);
   if (!out.wouldChange.length) out.notes.push('Nothing would change.');
   return out;
 }
@@ -68,6 +87,8 @@ if (require.main === module) {
     try {
       const flagged = await prisma.vendorAddon.findMany({ where: { addonKey: 'site_doc_v2', enabled: true }, select: { vendorId: true } });
       const packs = await prisma.categoryPack.findMany();
+      let themes = [];
+      try { themes = await prisma.themePackage.findMany({ where: { status: 'LIVE' }, select: { key: true, name: true, role: true, replacesDesign: true, categories: true } }); } catch { line('note: the theme tables are not in this database yet (the theme packages migration has not been applied): no imported theme can be in use.'); }
       const all = [];
       line(`Vendors on the new Website Manager: ${flagged.length}. READ ONLY: nothing is written.`);
       for (const f of flagged) {
@@ -75,9 +96,10 @@ if (require.main === module) {
         if (!vendor || vendor.isSandbox) continue;
         const cms = await prisma.vendorCMS.findUnique({ where: { vendorId: f.vendorId } });
         const products = await prisma.vendorProduct.findMany({ where: { vendorId: f.vendorId }, select: { id: true } });
-        const r = report(vendor, cms, products, packs);
+        const r = report(vendor, cms, products, packs, themes);
         all.push(r);
         line(`\n${r.name} (${r.subdomain}), industry ${r.industry}, category ${r.category || 'none'}${r.family ? ` (${r.family})` : ''}`);
+        if (r.shell) line(`  shell: phone bar ${Array.isArray(r.shell.phoneBar) ? r.shell.phoneBar.join(' / ') : r.shell.phoneBar}; popup ${Array.isArray(r.shell.popupSteps) ? r.shell.popupSteps.join(' > ') : r.shell.popupSteps}; footer icons: ${r.shell.footerIcons.join(', ') || 'none'}`);
         if (r.designs) line(`  designs: ${r.designs.join(', ')}; current: ${r.currentDesign || 'none chosen'}; starter content: ${r.hasStarterContent ? 'yes' : 'no'}; items: ${r.items}`);
         for (const w of r.wouldChange) line(`  would change: ${w}`);
         for (const n of r.notes) line(`  note: ${n}`);

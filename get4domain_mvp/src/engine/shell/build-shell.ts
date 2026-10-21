@@ -34,6 +34,13 @@ export const DEFAULT_SHELL: PackShell = {
 
 export const packShellOf = (site: EngineSiteData): PackShell => ((site.pack?.config as { shell?: PackShell } | undefined)?.shell ?? DEFAULT_SHELL);
 
+/** A button of the phone bar never points nowhere: when a page or section does not exist for this vendor (no team yet, a smaller plan), it points at the nearest one that does. */
+function fallbackTarget(t: ShellTargets, target: string): string | undefined {
+  const chain: Record<string, (keyof ShellTargets)[]> = { items: ['items', 'gallery', 'about', 'contact', 'home'], team: ['team', 'about', 'gallery', 'items', 'contact', 'home'], gallery: ['gallery', 'items', 'about', 'contact', 'home'], about: ['about', 'contact', 'items', 'home'], contact: ['contact', 'about', 'items', 'home'] };
+  for (const k of chain[target] ?? [target as keyof ShellTargets]) { const v = t[k]; if (typeof v === 'string' && v) return v; }
+  return undefined;
+}
+
 export function buildShell(site: EngineSiteData, opts: { base: string; family: string; goal: string; primaryLabel: string; mode: ShellRuntime['mode']; targets: ShellTargets; cart: boolean }): ShellRuntime {
   const cms = site.cms;
   const ex = ((cms as { extras?: ExtrasShell } | null)?.extras ?? {}) as ExtrasShell;
@@ -55,7 +62,7 @@ export function buildShell(site: EngineSiteData, opts: { base: string; family: s
     if (s.target === 'action') { slots.push({ key: s.key, label, icon: s.icon, kind: 'action' }); return; }
     if (s.target === 'cart') { slots.push(opts.cart ? { key: s.key, label, icon: s.icon, kind: 'cart' } : { key: s.key, label: centre ? (labels.get(s.key) || opts.primaryLabel).slice(0, 14) : label, icon: 'enquiry', kind: 'action' }); return; }
     if (s.target === 'more') { slots.push({ key: s.key, label, icon: s.icon, kind: 'more' }); return; }
-    const href = s.target === 'home' ? t.home : s.target.startsWith('page:') ? t.pages[s.target.slice(5)] : (t as unknown as Record<string, string | undefined>)[s.target];
+    const href = s.target === 'home' ? t.home : s.target.startsWith('page:') ? (t.pages[s.target.slice(5)] ?? fallbackTarget(t, 'about')) : fallbackTarget(t, s.target);
     if (href) slots.push({ key: s.key, label, icon: s.icon, kind: 'link', href });
   });
   // a slot whose page does not exist is left out; the bar still needs its main action in the middle

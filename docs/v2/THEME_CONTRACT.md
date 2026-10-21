@@ -108,3 +108,11 @@ node scripts/theme/lint.mjs my-theme.zip --json         # machine-readable
 ```
 
 Upload the zip in Admin, Theme marketplace. The reference themes in `themes/reference/` (Clinic Calm, Restaurant Hearth) are complete examples.
+
+## 9. Themes made by a generator (later)
+
+A tool that writes themes for you (the v0 platform API, the Claude API, a designer's export script) uses the same door as a person: it produces the files in section 1 and the zip goes through the same checks. There is no private route. A generator must be given this page and the prompt in `THEME_PROMPTS.md` for the family, must write the manifest, and must run the lint (`node scripts/theme/lint.mjs`, or the same code through the admin upload with `?dryRun=1`) until it reports no problems; a package that fails is refused with plain sentences and nothing is stored. The result arrives as a DRAFT in Admin, Theme marketplace, where KSM looks at it on desktop and phone before setting it Live. Raw code that has not been through the sanitiser is never run on a vendor's site.
+
+## 10. What the engine adds around a theme
+
+The announcement bar (the vendor's own words), the phone's bottom bar, the popup, the quick view, the floating call and WhatsApp buttons on a computer, the privacy and terms pages, the form pages (`/book`, `/enquire`, `/order`), a plain header and footer when a page has none, and the per-host sitemap and robots. None of these can be styled by theme class names, because a theme's rules only reach the page content.

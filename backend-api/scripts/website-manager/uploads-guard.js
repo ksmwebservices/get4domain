@@ -12,6 +12,7 @@ const src = path.join(__dirname, '..', '..', 'src');
 // The only places that may take a file. `shared` = goes through MediaService. A private document is not site media and has its own rules, said here on purpose.
 const ALLOWED = {
   'uploads/uploads.controller.ts': { shared: true, why: 'the one picture endpoint (logo, banner, gallery, products, about, receipts, AI Studio, LeadSpace items)' },
+  'themes/themes.controllers.ts': { shared: false, why: 'admin-only theme zip (never a loose picture, nothing is written to the uploads folder): staff-guarded, 6 MB, taken apart and made safe by the theme sanitiser; its pictures are stored inside the database' },
   'commercial/commercial.controllers.ts': { shared: false, why: 'payment-proof screenshots: private (never public), 3 MB, checked by the payment service' },
 };
 

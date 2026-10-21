@@ -48,6 +48,24 @@ try {
   const dz = (await h.call('GET', '/site-doc/me/designs', undefined, v.token)).data;
   for (const d of dz.designs) await shot(browser, `${FRONT}${prev}&design=${d.key}`, path.join(OUT, `after-design-${d.key}-desktop.png`), { width: 1280, height: 900, maxHeight: 2400 });
   notes.push(`After: ${after.height}px tall with a hero picture, services, how-it-works, questions and a contact form, and the four designs of IT and web services: ${dz.designs.map((d) => d.name).join(', ')}.`);
+  // round 2: the shell. A phone screen with the bottom bar, and the popup open on a phone and on a computer.
+  const view = async (file, w, hgt, query) => {
+    const pg = await browser.newPage();
+    try {
+      await pg.setViewport({ width: w, height: hgt, deviceScaleFactor: 1, isMobile: w < 700, hasTouch: w < 700 });
+      await pg.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+      await pg.goto(`${url}${query}`, { waitUntil: 'networkidle2', timeout: 60000 });
+      await new Promise((r) => setTimeout(r, 1500));
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      await pg.screenshot({ path: file, type: 'png' });
+      return pg.evaluate(() => ({ bar: [...(document.querySelector('nav[aria-label="Main"].fixed')?.querySelectorAll('a,button') ?? [])].map((x) => x.textContent.trim()), dialog: !!document.querySelector('[role="dialog"]'), steps: document.querySelector('[role="dialog"] ol')?.children.length ?? 0 }));
+    } finally { await pg.close(); }
+  };
+  const bar = await view(path.join(OUT, 'after-mobile-bottom-nav.png'), 390, 800, '');
+  const popM = await view(path.join(OUT, 'after-mobile-popup.png'), 390, 800, '?popup=1');
+  const popD = await view(path.join(OUT, 'after-desktop-popup.png'), 1280, 900, '?popup=1');
+  notes.push(`Shell: the phone screen shows the five-button bottom bar (${bar.bar.join(', ')}); the popup opens on a phone (${popM.dialog ? 'yes, ' + popM.steps + ' steps' : 'NO'}) and on a computer (${popD.dialog ? 'yes' : 'NO'}).`);
+  notes.push('No reference theme applies: the category is IT and web services (enquiry family) and the two reference themes are for booking (clinic, diagnostics) and menu (restaurant) businesses, so the after pictures use the built-in designs, each with the new shell.');
   fs.writeFileSync(path.join(OUT, 'README.md'), `# ksm-webtech-services: before and after\n\nMade ${new Date().toISOString().slice(0, 10)} by \`scripts/industry-designs/ksm-before-after.mjs\` on a copy of its situation (the production vendor was not touched).\n\n${notes.map((n) => `- ${n}`).join('\n')}\n\nPictures: \`before-desktop.png\`, \`before-mobile.png\`, \`after-desktop.png\`, \`after-mobile.png\`, \`after-design-<name>-desktop.png\`.\n`);
   console.log(notes.join('\n'));
 } finally { await browser.close(); await stack.stop(); }
