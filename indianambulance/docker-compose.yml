@@ -1,0 +1,26 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # The public origin used for canonical / Open Graph / sitemap URLs. Put the business's own domain here once it points at this server.
+        - SITE_URL=${SITE_URL:-https://indianambulance.get4domain.com}
+        - SITE_CONNECT_API=${SITE_CONNECT_API:-https://gapi.get4domain.com}
+    container_name: indianambulance
+    restart: unless-stopped
+    ports:
+      - "3017:3017"
+    environment:
+      - NODE_ENV=production
+      - PORT=3017
+      - SITE_URL=${SITE_URL:-https://indianambulance.get4domain.com}
+      # connected mode: where the app reads the vendor's site document, and the shared secret Publish uses to refresh this app at once (same value as the backend's REVALIDATE_SECRET)
+      - SITE_CONNECT_API=${SITE_CONNECT_API:-https://gapi.get4domain.com}
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET}
+    networks:
+      - indianambulance_net
+
+networks:
+  indianambulance_net:
+    driver: bridge
