@@ -109,3 +109,33 @@ There is no JS test runner in `get4domain_mvp/` (`package.json` has only `build`
 4. A5, A7, A8, A10
 5. A9, A11
 6. A4 (live check, then nginx/Cloudflare as a separate ops task)
+
+---
+
+## 7. A4 — www / https plan (PLAN ONLY, written 2026-11-03; no code, nginx, Cloudflare or DNS was changed)
+
+This replaces the A4 row in §3 (which proposed an nginx `www` redirect). Today Cloudflare SSL is **Flexible** (visitors reach Cloudflare over HTTPS; Cloudflare reaches the VM over plain HTTP on :80), and every nginx vhost carries the comment "no redirect, no certbot" because an origin-side redirect or certificate would loop under Flexible. Apex and `www` are served identically.
+
+1. **Inventory first (read-only).** List every proxied hostname on the zone and every nginx vhost (`get4domain`, `stepnrock`, `deebiphotography`, `ksmquantum`, `allwintours`, `indianambulance`, the gapi API host). Full (strict) is a **zone-wide** setting unless a Configuration Rule scopes it per hostname, so each vhost needs :443 before the switch, or the switch is scoped.
+2. **Origin certificate.** Create a Cloudflare Origin CA certificate for `get4domain.com` and `*.get4domain.com`; install it on the VM; add `listen 443 ssl;` blocks that proxy to the same upstreams; keep :80 working. `nginx -t`, reload. Verify straight against the origin with `curl --resolve` on :443.
+3. **Switch SSL/TLS to Full (strict)**, first for `get4domain.com` only (Configuration Rule), then the zone. Smoke-test every site. **Rollback = set the mode back to Flexible** (instant; nothing else changes).
+4. **`www` → apex 301 as a Cloudflare Redirect Rule** (hostname equals `www.get4domain.com` → `https://get4domain.com` + path + query, 301), created *before* any nginx change so the origin stays untouched. Turn on "Always Use HTTPS" at the edge.
+5. **HSTS timing.** Only after step 3 has run clean for a week: `max-age=300`, then 1 day, 1 week, 6 months. `includeSubDomains` only when every subdomain (all vendor hosts) is confirmed on HTTPS; `preload` last and only deliberately (hard to undo).
+6. **After Full (strict) is stable:** replace the "do not redirect/certbot" comments in the repo's nginx files and optionally add an origin http→https 301 (safe under Full strict).
+7. Custom vendor domains (a vendor's own `.in`, say) are separate Cloudflare zones with their own SSL mode; `docs/v2/CUSTOM_DOMAIN_RUNBOOK.md` stays valid for them until each is moved.
+
+Verify live before and after (read-only): `curl -sI http://get4domain.com`, `https://www.get4domain.com`, `https://get4domain.com` — record status and `Location`.
+
+## 8. As built (auto-run, branch `v3-step0`)
+
+| Plan item | Commit | Notes |
+|---|---|---|
+| P1–P9 legacy removal | `5a6e49e` | Root/home titles, descriptions, OG/Twitter, og:image alt, `llms.txt`, root keywords, SoftwareApplication offers, industry-page Offer. FAQPage structured data skips any Q&A that still uses retired wording (visible copy untouched; queue Q-SEO-1). |
+| D1–D6 demo gate | `1073e7f` | `/visit-demo` server page + client form island; noindex meta and header on every variant; noindex header on `/demo/*` responses (both 307s and pages served with a pass); `/demo/*` out of the sitemap; no robots Disallow. |
+| A2, A3 canonicals, redirects, JSON-LD | `4839fcf` | 301 `get4domain.com/site/<sub>` → vendor host and vendor-host `/site/<sub>/x` → `/x` (GET/HEAD only); `vendorCanonical()` for every renderer; Organization / WebSite / SoftwareApplication only in the marketing layout; SearchAction and empty `sameAs` removed. |
+| A5, A7–A11 | `faf37a9` | robots.txt (`/_next/` open; AI bots disallow `/admin/ /dashboard/ /app/ /api/`); private-page noindex header; cart/order-success noindex meta; real 308 for `/products` and `/digital-growth`; footer links to three orphans; `path` required in `createPageMetadata`; sitemap without invented dates/priorities. |
+| §4 verification | next commit | `scripts/seo-check.mjs` (34 checks, local server only; `npm run seo:check`). |
+
+**Decisions taken where the dispatch did not say:** redirect status 301 (the dispatch), not 308 as drafted in A2a; GET/HEAD only so a POST is never turned into a GET; `foundingDate` left as it was live (TODO in `SiteJsonLd.tsx` to confirm it with the About page); `sameAs` omitted with a TODO; A6 (shortening over-long titles) **not done** because it needs wording the owner should choose; A9's "all 20 industry links in the server HTML" not done (only the three orphan pages, as dispatched).
+
+**Not done / owner actions:** `public/og-banner.jpg` still may carry a price in the picture itself (check by eye; replace the asset if so). Q-SEO-1 (pricing copy rewrite) is blocked on the V3 price source. Frontend `next lint` is not configured (it stops at an interactive prompt); the build's type check and `tsc --noEmit` were used instead.
