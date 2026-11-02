@@ -3,6 +3,12 @@ import { getCategory, resolveDemoQuery, canonicalIndustryId } from '@/data/demo-
 import { DEMO_PASS_COOKIE, verifyDemoPass } from '@/lib/demo-access';
 import { FEATURES, resolveLegacyRoute } from '@/lib/nav.generated';
 
+/** Demo URLs are gated behind an OTP pass and are never to be indexed: every response for them, redirect or page, says so. */
+function noindex<T extends NextResponse>(res: T): T {
+  res.headers.set('X-Robots-Tag', 'noindex');
+  return res;
+}
+
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
  * query string kept — but ONLY for a vendor whose browser carries the g4d_nav_v2 cookie (set by the v2 shell). Everyone else keeps the old
@@ -58,18 +64,18 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     if (!r) return NextResponse.next(); // unknown → let the page 404
     const url = req.nextUrl.clone();
     url.pathname = r.subId === 'general' ? `/demo/${r.categoryId}` : `/demo/${r.categoryId}/${r.subId}`;
-    return NextResponse.redirect(url, 307);
+    return noindex(NextResponse.redirect(url, 307));
   }
 
   const canonical = canonicalIndustryId(seg);
   const pass = await verifyDemoPass(req.cookies.get(DEMO_PASS_COOKIE)?.value);
-  if (pass && canonicalIndustryId(pass.category) === canonical) return NextResponse.next();
+  if (pass && canonicalIndustryId(pass.category) === canonical) return noindex(NextResponse.next());
 
   // No / wrong pass → verification entry (carries the intended demo path).
   const entry = req.nextUrl.clone();
   entry.pathname = '/visit-demo';
   entry.search = `?to=${encodeURIComponent(pathname)}`;
-  return NextResponse.redirect(entry, 307);
+  return noindex(NextResponse.redirect(entry, 307));
 }
 
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths

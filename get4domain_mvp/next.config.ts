@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
       { source: '/domain-campaign/:path*', destination: '/leadspace/:path*', permanent: true },
     ];
   },
+  // The OTP gate is never content. Header and page meta both say noindex; robots.txt must NOT disallow it, or a crawler never gets to read them.
+  async headers() {
+    return [{ source: '/visit-demo', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+  },
   async rewrites() {
     if (!leadspaceDomain) return [];
     const escaped = leadspaceDomain.replace(/\./g, '\\.');

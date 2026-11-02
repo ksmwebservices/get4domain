@@ -1,6 +1,4 @@
 import type { MetadataRoute } from 'next';
-import { allDemoPaths } from '@/data/demo-site';
-
 const BASE = 'https://get4domain.com';
 
 const pages = [
@@ -47,13 +45,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }));
 
-  // All demo-site pages (category homes + subcategory homes + section routes).
-  const demoPages = allDemoPaths().map((path) => ({
-    url: `${BASE}${path}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }));
+  // Demo pages (/demo/*) are deliberately NOT listed: they are behind an OTP gate (middleware redirects every visit to /visit-demo), so a crawler can only
+  // ever see the redirect. Listing them made ~680 URLs resolve to one gate page (docs/v3/SEO_0_PLAN.md, D2).
 
-  return [...staticPages, ...industryPages, ...demoPages];
+  return [...staticPages, ...industryPages];
 }
