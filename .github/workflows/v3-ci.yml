@@ -44,9 +44,10 @@ jobs:
         run: npm run test:ci
 
   staging-gate:
-    # Read-only checks against the STAGING database only. The guard in scripts/staging/guard.js refuses any project
-    # that is not on the staging allow-list or that is on the production deny-list, so a wrong secret fails closed.
-    name: Staging database gate (read-only)
+    # Checks against the STAGING database only. The guard in scripts/staging/guard.js refuses any project that is not on
+    # the staging allow-list or that is on the production deny-list, so a wrong secret fails closed. Migration status and
+    # RLS are read-only; the isolation tests create synthetic tenants (email @v3test.invalid, name V3TEST...) and delete them.
+    name: Staging database gate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Forked PRs do not receive secrets.
@@ -75,6 +76,11 @@ jobs:
         run: npm run db:staging:migrate-status
       - name: Staging tables with RLS off (must be 0)
         run: npm run db:staging:rls-off
+      - name: Cross-tenant isolation tests (synthetic tenants on staging, cleaned up afterwards)
+        run: npm run test:int
+      - name: Sweep any leftover synthetic tenants (runs even if the tests crashed)
+        if: always()
+        run: npm run test:cleanup-staging
 
   frontend-build:
     # Informational for now: shows whether the Next.js app builds from the committed tree. Promote to blocking once stable.
