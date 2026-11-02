@@ -16,13 +16,18 @@ import { SeededTenant, cleanupTenants, newPrisma, seedBootstrapAdmin, seedStaff,
 
 /**
  * S7 end to end, with REAL staff accounts (rows in g4d_admin_team_members) and the REAL JwtStrategy + JwtAuthGuard + AdminGuard.
- * The routes below are stubs, but they are declared with the same controller prefix, method and path as real AdminGuard routes
- * (DELETE /vendors/:id, POST /wallet/deduct, GET /leads, ...), so Express reports the same `req.route.path` the matrix is keyed on.
- * Before the fix a MARKETING member could call every one of them. Handlers only return a marker: no data is touched.
+ * The routes below are stubs, but each is declared with the same controller prefix, method and path as a real AdminGuard route, so Express
+ * reports the same `req.route.path` the matrix is keyed on. Handlers only return a marker: no data is touched.
+ *
+ * Three tiers (owner decisions; tightened to match the admin UI):
+ *   SUPER_ADMIN only     DELETE /vendors/:id · GET /leads · GET /analytics/platform-accounting
+ *   OPERATIONS + SUPER   POST /vendors/:id/suspend · POST /wallet/deduct · POST /invoices/:id/mark-paid · GET /support/tickets
+ *   all staff            GET /admin/quotes
  */
 @Controller('vendors')
 class StubVendors {
   @Delete(':id') @UseGuards(AdminGuard) remove() { return { ran: 'DELETE /vendors/:id' }; }
+  @Post(':id/suspend') @UseGuards(AdminGuard) suspend() { return { ran: 'POST /vendors/:id/suspend' }; }
 }
 @Controller('wallet')
 class StubWallet {
@@ -36,10 +41,27 @@ class StubInvoices {
 class StubLeads {
   @Get() @UseGuards(AdminGuard) list() { return { ran: 'GET /leads' }; }
 }
+@Controller('support')
+class StubSupport {
+  @Get('tickets') @UseGuards(AdminGuard) tickets() { return { ran: 'GET /support/tickets' }; }
+}
+@Controller('analytics')
+class StubAnalytics {
+  @Get('platform-accounting') @UseGuards(AdminGuard) accounting() { return { ran: 'GET /analytics/platform-accounting' }; }
+}
+@Controller('admin/quotes')
+class StubQuotes {
+  @Get() @UseGuards(AdminGuard) list() { return { ran: 'GET /admin/quotes' }; }
+}
 @Controller('not-in-the-matrix')
 class StubUnlisted {
   @Get('x') @UseGuards(AdminGuard) x() { return { ran: 'GET /not-in-the-matrix/x' }; }
 }
+
+type M = 'get' | 'post' | 'delete';
+const SUPER_ONLY: Array<[M, string]> = [['delete', '/vendors/abc'], ['get', '/leads'], ['get', '/analytics/platform-accounting']];
+const OPS_AND_SUPER: Array<[M, string]> = [['post', '/vendors/abc/suspend'], ['post', '/wallet/deduct'], ['post', '/invoices/abc/mark-paid'], ['get', '/support/tickets']];
+const ALL_STAFF: Array<[M, string]> = [['get', '/admin/quotes']];
 
 describe('AdminGuard with real staff accounts (staging database)', () => {
   let app: INestApplication;
@@ -47,16 +69,22 @@ describe('AdminGuard with real staff accounts (staging database)', () => {
   let vendor: SeededTenant;
   let t: { SUPER_ADMIN: string; OPERATIONS: string; MARKETING: string; bootstrap: string; invited: string };
 
-  const call = (token: string | undefined, method: 'get' | 'post' | 'delete', path: string) => {
+  const call = (token: string | undefined, method: M, path: string) => {
     const r = request(app.getHttpServer())[method](path);
     return token ? r.set('Authorization', `Bearer ${token}`) : r;
+  };
+  const expectStatus = async (who: string, token: string, [method, path]: [M, string], ok: boolean) => {
+    const res = await call(token, method, path);
+    const good = ok ? res.status < 300 : res.status === 403;
+    if (!good) throw new Error(`${who} ${method.toUpperCase()} ${path} answered ${res.status}, expected ${ok ? '2xx' : '403'} (handler ran: ${JSON.stringify(res.body).includes('ran')})`);
+    if (!ok) expect(JSON.stringify(res.body)).not.toContain('ran');
   };
 
   beforeAll(async () => {
     prisma = newPrisma();
     const moduleRef = await Test.createTestingModule({
       imports: [PrismaModule, PassportModule],
-      controllers: [StubVendors, StubWallet, StubInvoices, StubLeads, StubUnlisted],
+      controllers: [StubVendors, StubWallet, StubInvoices, StubLeads, StubSupport, StubAnalytics, StubQuotes, StubUnlisted],
       providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }],
     }).compile();
     app = moduleRef.createNestApplication();
@@ -77,33 +105,31 @@ describe('AdminGuard with real staff accounts (staging database)', () => {
     try { await cleanupTenants(prisma, RUN_ID); } finally { await app?.close(); await prisma?.$disconnect(); }
   }, 120000);
 
-  const DENIED_TO_MARKETING: Array<['get' | 'post' | 'delete', string]> = [
-    ['delete', '/vendors/abc'], ['post', '/wallet/deduct'], ['post', '/invoices/abc/mark-paid'],
-  ];
-
   describe('MARKETING staff', () => {
-    it.each(DENIED_TO_MARKETING)('is refused with 403 on %s %s', async (method, path) => {
-      const res = await call(t.MARKETING, method, path);
-      if (res.status !== 403) throw new Error(`MARKETING ${method.toUpperCase()} ${path} answered ${res.status}, expected 403 (handler ran: ${JSON.stringify(res.body).includes('ran')})`);
-      expect(JSON.stringify(res.body)).not.toContain('ran');
+    it.each([...SUPER_ONLY, ...OPS_AND_SUPER])('is refused with 403 on %s %s', async (method, path) => {
+      await expectStatus('MARKETING', t.MARKETING, [method, path], false);
     });
-    it('still works on a route its job needs (GET /leads)', async () => {
-      const res = await call(t.MARKETING, 'get', '/leads');
-      expect(res.status).toBe(200);
+    it.each(ALL_STAFF)('still works on a route its job needs (%s %s)', async (method, path) => {
+      await expectStatus('MARKETING', t.MARKETING, [method, path], true);
     });
   });
 
-  describe('OPERATIONS and SUPER_ADMIN staff', () => {
-    it.each([['OPERATIONS'], ['SUPER_ADMIN']] as const)('%s can use every route', async (role) => {
-      for (const [method, path] of [...DENIED_TO_MARKETING, ['get', '/leads']] as Array<['get' | 'post' | 'delete', string]>) {
-        const res = await call(t[role], method, path);
-        if (res.status >= 300) throw new Error(`${role} ${method.toUpperCase()} ${path} answered ${res.status}`);
-      }
+  describe('OPERATIONS staff', () => {
+    it.each(SUPER_ONLY)('is refused with 403 on the SUPER_ADMIN-only route %s %s', async (method, path) => {
+      await expectStatus('OPERATIONS', t.OPERATIONS, [method, path], false);
     });
-    it('the seeded platform admin (a Vendor row with role ADMIN) can use every route', async () => {
-      for (const [method, path] of [...DENIED_TO_MARKETING, ['get', '/leads']] as Array<['get' | 'post' | 'delete', string]>) {
-        expect((await call(t.bootstrap, method, path)).status).toBeLessThan(300);
-      }
+    it.each([...OPS_AND_SUPER, ...ALL_STAFF])('can use %s %s', async (method, path) => {
+      await expectStatus('OPERATIONS', t.OPERATIONS, [method, path], true);
+    });
+    it('may suspend a vendor but not delete one', async () => {
+      await expectStatus('OPERATIONS', t.OPERATIONS, ['post', '/vendors/abc/suspend'], true);
+      await expectStatus('OPERATIONS', t.OPERATIONS, ['delete', '/vendors/abc'], false);
+    });
+  });
+
+  describe('SUPER_ADMIN and the seeded platform admin', () => {
+    it.each([['SUPER_ADMIN'], ['bootstrap']] as const)('%s can use every route, including the SUPER_ADMIN-only ones', async (who) => {
+      for (const route of [...SUPER_ONLY, ...OPS_AND_SUPER, ...ALL_STAFF]) await expectStatus(who, t[who], route, true);
     });
   });
 
@@ -118,14 +144,14 @@ describe('AdminGuard with real staff accounts (staging database)', () => {
 
   describe('everyone else is still refused', () => {
     it('a vendor owner and a vendor team member get 403', async () => {
-      expect((await call(vendor.token, 'get', '/leads')).status).toBe(403);
-      expect((await call(vendor.memberToken, 'get', '/leads')).status).toBe(403);
+      expect((await call(vendor.token, 'get', '/admin/quotes')).status).toBe(403);
+      expect((await call(vendor.memberToken, 'get', '/admin/quotes')).status).toBe(403);
     });
     it('a staff member who has not accepted the invite gets 401', async () => {
-      expect((await call(t.invited, 'get', '/leads')).status).toBe(401);
+      expect((await call(t.invited, 'get', '/admin/quotes')).status).toBe(401);
     });
     it('no token is 401', async () => {
-      expect((await call(undefined, 'get', '/leads')).status).toBe(401);
+      expect((await call(undefined, 'get', '/admin/quotes')).status).toBe(401);
     });
   });
 });

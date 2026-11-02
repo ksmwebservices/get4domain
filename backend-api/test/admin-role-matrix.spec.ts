@@ -9,10 +9,16 @@ import { scanRoutes } from './support/route-scan';
  * S7: AdminGuard used to check only "is this an admin?", so MARKETING and OPERATIONS staff could do everything a super admin could
  * (delete or suspend vendors, mark invoices paid, deduct wallets). It now checks the staff role against a central matrix, deny by default.
  *
- * ORACLE: the owner-approved matrix, typed out independently of the implementation.
- *   MARKETING denied  -> money, plans, vendors, domains, platform content, demo data (OPERATIONS and SUPER_ADMIN allowed)
- *   everyone allowed  -> CRM, quotes, AI templates, analytics, campaigns, leads, support, managed services, push, themes GET
+ * ORACLE: the owner-approved matrix, typed out independently of the implementation. Three tiers:
+ *   SUPER_ADMIN only   -> platform accounting, Demo Bookings (/leads), vendor DELETE (tightened to match the admin UI)
+ *   MARKETING denied   -> money, plans, vendors (incl. suspend), support, domains, platform content, demo data (OPERATIONS and SUPER_ADMIN allowed)
+ *   everyone allowed   -> CRM, quotes, AI templates, usage analytics, campaigns, managed services, push, themes GET
  */
+const SUPER_ONLY_ROUTES = [
+  'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
+  'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
+  'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
+];
 const MARKETING_DENIED = [
   'POST /addons/vendor/:key/enable', 'POST /addons/vendor/:key/disable', 'POST /modules/vendor/:key/enable', 'POST /modules/vendor/:key/disable',
   'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
@@ -23,7 +29,8 @@ const MARKETING_DENIED = [
   'POST /invoices', 'GET /invoices', 'POST /invoices/:id/send-payment-link', 'POST /invoices/:id/mark-paid',
   'POST /subscriptions', 'GET /subscriptions', 'PUT /subscriptions/:id/activate', 'PUT /subscriptions/:id/cancel',
   'GET /admin/vendor-comms', 'PATCH /admin/vendor-comms',
-  'GET /vendors', 'POST /vendors', 'GET /vendors/:id', 'PUT /vendors/:id', 'DELETE /vendors/:id', 'POST /vendors/:id/suspend', 'POST /vendors/:id/activate',
+  'GET /vendors', 'POST /vendors', 'GET /vendors/:id', 'PUT /vendors/:id', 'POST /vendors/:id/suspend', 'POST /vendors/:id/activate',
+  'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve',
   'POST /wallet/deduct',
   'POST /website-themes', 'PUT /website-themes/:id', 'DELETE /website-themes/:id',
 ];
@@ -31,13 +38,11 @@ const ALL_STAFF_ROUTES = [
   'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
   'GET /admin-team/me',
   'GET /ai-templates/all', 'POST /ai-templates', 'PUT /ai-templates/:id', 'DELETE /ai-templates/:id',
-  'GET /analytics/usage/all', 'GET /analytics/platform-accounting',
+  'GET /analytics/usage/all',
   'GET /campaigns/admin/all', 'POST /growth-hub/ads/:id/launch',
-  'GET /leads', 'PUT /leads/:id/status',
   'GET /admin/managed-services/leads', 'GET /admin/managed-services/catalog', 'POST /admin/managed-services/catalog', 'PUT /admin/managed-services/catalog/:id',
   'POST /notifications/push',
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
-  'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
 ];
 
@@ -58,7 +63,8 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
-    const oracle = [...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
+    const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
+    expect(oracle).toHaveLength(73);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
@@ -70,6 +76,9 @@ describe('admin-role-matrix (the implementation must reproduce the oracle)', () 
   });
   it('has no entry that matches no real AdminGuard route (typos)', () => {
     expect(Object.keys(ADMIN_ROLE_MATRIX).filter((k) => !scanned.includes(k))).toEqual([]);
+  });
+  it.each(SUPER_ONLY_ROUTES.map((r) => [r]))('ONLY SUPER_ADMIN is allowed on %s', (route) => {
+    expect([...rolesFor(route)]).toEqual(['SUPER_ADMIN']);
   });
   it.each(MARKETING_DENIED.map((r) => [r]))('MARKETING is NOT allowed on %s, OPERATIONS and SUPER_ADMIN are', (route) => {
     expect([...rolesFor(route)].sort()).toEqual(['OPERATIONS', 'SUPER_ADMIN']);
@@ -83,17 +92,25 @@ describe('admin-role-matrix (the implementation must reproduce the oracle)', () 
 });
 
 describe('AdminGuard', () => {
-  it('MARKETING is refused with 403 on every money / vendor / plan / domain / platform route', () => {
-    const wrongly = MARKETING_DENIED.filter((r) => allowed(principal('MARKETING'), r));
+  it('MARKETING is refused with 403 on every money / vendor / support / plan / domain / platform / accounts route', () => {
+    const wrongly = [...MARKETING_DENIED, ...SUPER_ONLY_ROUTES].filter((r) => allowed(principal('MARKETING'), r));
     expect(wrongly).toEqual([]);
   });
   it('MARKETING keeps the routes its work needs', () => {
     expect(ALL_STAFF_ROUTES.filter((r) => !allowed(principal('MARKETING'), r))).toEqual([]);
   });
-  it('OPERATIONS and SUPER_ADMIN can use every AdminGuard route', () => {
-    for (const role of ['OPERATIONS', 'SUPER_ADMIN'] as const) {
-      expect({ role, refused: [...MARKETING_DENIED, ...ALL_STAFF_ROUTES].filter((r) => !allowed(principal(role), r)) }).toEqual({ role, refused: [] });
-    }
+  it('OPERATIONS can use every route except the four SUPER_ADMIN-only ones', () => {
+    expect([...MARKETING_DENIED, ...ALL_STAFF_ROUTES].filter((r) => !allowed(principal('OPERATIONS'), r))).toEqual([]);
+    expect(SUPER_ONLY_ROUTES.filter((r) => allowed(principal('OPERATIONS'), r))).toEqual([]);
+  });
+  it('SUPER_ADMIN can use every AdminGuard route', () => {
+    expect([...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES].filter((r) => !allowed(principal('SUPER_ADMIN'), r))).toEqual([]);
+  });
+  it('vendors: OPERATIONS may suspend and activate but not delete', () => {
+    expect(allowed(principal('OPERATIONS'), 'POST /vendors/:id/suspend')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'POST /vendors/:id/activate')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'DELETE /vendors/:id')).toBe(false);
+    expect(allowed(principal('SUPER_ADMIN'), 'DELETE /vendors/:id')).toBe(true);
   });
   it('the seeded admin (an admin Vendor row, adminRole SUPER_ADMIN) can use everything, including an unlisted route', () => {
     expect(allowed(principal('bootstrap'), 'DELETE /vendors/:id')).toBe(true);
@@ -110,7 +127,8 @@ describe('AdminGuard', () => {
   });
   it('a trailing slash does not change the answer', () => {
     expect(allowed(principal('MARKETING'), 'DELETE /vendors/:id/')).toBe(false);
-    expect(allowed(principal('MARKETING'), 'GET /leads/')).toBe(true);
+    expect(allowed(principal('MARKETING'), 'GET /admin/quotes/')).toBe(true);
+    expect(allowed(principal('OPERATIONS'), 'GET /leads/')).toBe(false);
   });
   it('vendors, team members and anonymous callers are still refused', () => {
     expect(allowed(principal('VENDOR'), 'GET /leads')).toBe(false);

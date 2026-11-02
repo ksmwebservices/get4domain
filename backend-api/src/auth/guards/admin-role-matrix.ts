@@ -11,8 +11,10 @@
  * Owner-approved decisions (2026-11-03):
  *   MARKETING is refused on: vendors, subscriptions, invoices, wallet deduction, add-on / module switches, industry overrides, domains,
  *     domain campaign billing, vendor communication settings, platform CMS, demo data, and writes to the theme catalogue.
- *   OPERATIONS and SUPER_ADMIN may use every AdminGuard route.
- *   MARKETING keeps what its work needs: CRM, quotes, AI templates, analytics, campaigns, leads, support, managed services, push, theme reads.
+ *   Tightened to match the admin UI (owner-approved): SUPER_ADMIN ONLY on platform accounting, Demo Bookings (/leads) and vendor DELETE;
+ *     support tickets are OPERATIONS + SUPER_ADMIN. Suspend / activate vendor stay OPERATIONS + SUPER_ADMIN.
+ *   OPERATIONS and SUPER_ADMIN may use every other AdminGuard route.
+ *   MARKETING keeps what its work needs: CRM, quotes, AI templates, usage analytics, campaigns, managed services, push, theme reads.
  * Not changed here (they have their own guards): the commerce / LeadSpace / money admin controllers (CommercialAdminGuard, MoneyAdminGuard,
  * LeadspaceStaffGuard) and SuperAdminGuard routes.
  */
@@ -26,7 +28,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // ── Operations + super admin only (MARKETING refused) ────────────────────────────────────────────────
   // vendors: create, read, edit, delete, suspend, activate
   'GET /vendors': OPS_AND_SUPER, 'POST /vendors': OPS_AND_SUPER, 'GET /vendors/:id': OPS_AND_SUPER, 'PUT /vendors/:id': OPS_AND_SUPER,
-  'DELETE /vendors/:id': OPS_AND_SUPER, 'POST /vendors/:id/suspend': OPS_AND_SUPER, 'POST /vendors/:id/activate': OPS_AND_SUPER,
+  'DELETE /vendors/:id': SUPER_ONLY, 'POST /vendors/:id/suspend': OPS_AND_SUPER, 'POST /vendors/:id/activate': OPS_AND_SUPER,
   // subscriptions and invoices (money)
   'POST /subscriptions': OPS_AND_SUPER, 'GET /subscriptions': OPS_AND_SUPER, 'PUT /subscriptions/:id/activate': OPS_AND_SUPER, 'PUT /subscriptions/:id/cancel': OPS_AND_SUPER,
   'POST /invoices': OPS_AND_SUPER, 'GET /invoices': OPS_AND_SUPER, 'POST /invoices/:id/send-payment-link': OPS_AND_SUPER, 'POST /invoices/:id/mark-paid': OPS_AND_SUPER,
@@ -51,14 +53,14 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /admin/crm/leads': ALL_STAFF, 'GET /admin/crm/leads/:id': ALL_STAFF, 'PUT /admin/crm/leads/:id': ALL_STAFF, 'POST /admin/crm/leads/:id/call': ALL_STAFF,
   'GET /admin-team/me': ALL_STAFF,
   'GET /ai-templates/all': ALL_STAFF, 'POST /ai-templates': ALL_STAFF, 'PUT /ai-templates/:id': ALL_STAFF, 'DELETE /ai-templates/:id': ALL_STAFF,
-  'GET /analytics/usage/all': ALL_STAFF, 'GET /analytics/platform-accounting': ALL_STAFF,   // see docs: the admin UI shows accounting to SUPER_ADMIN only; owner to confirm
+  'GET /analytics/usage/all': ALL_STAFF, 'GET /analytics/platform-accounting': SUPER_ONLY,   // owner-approved: matches the admin UI (accounts are SUPER_ADMIN only)
   'GET /campaigns/admin/all': ALL_STAFF, 'POST /growth-hub/ads/:id/launch': ALL_STAFF,
-  'GET /leads': ALL_STAFF, 'PUT /leads/:id/status': ALL_STAFF,
+  'GET /leads': SUPER_ONLY, 'PUT /leads/:id/status': SUPER_ONLY,   // Demo Bookings: SUPER_ADMIN only (owner-approved)
   'GET /admin/managed-services/leads': ALL_STAFF, 'GET /admin/managed-services/catalog': ALL_STAFF, 'POST /admin/managed-services/catalog': ALL_STAFF, 'PUT /admin/managed-services/catalog/:id': ALL_STAFF,
   'POST /notifications/push': ALL_STAFF,
   'POST /admin/quotes': ALL_STAFF, 'GET /admin/quotes': ALL_STAFF, 'GET /admin/quotes/:id': ALL_STAFF, 'PUT /admin/quotes/:id/status': ALL_STAFF,
   'POST /admin/quotes/proposals': ALL_STAFF, 'GET /admin/quotes/:id/pdf': ALL_STAFF, 'POST /admin/quotes/:id/share': ALL_STAFF,
-  'GET /support/tickets': ALL_STAFF, 'PUT /support/tickets/:id/reply': ALL_STAFF, 'PUT /support/tickets/:id/resolve': ALL_STAFF,
+  'GET /support/tickets': OPS_AND_SUPER, 'PUT /support/tickets/:id/reply': OPS_AND_SUPER, 'PUT /support/tickets/:id/resolve': OPS_AND_SUPER,   // MARKETING out (owner-approved)
   'GET /website-themes/all': ALL_STAFF, 'GET /website-themes/:id/unlocks': ALL_STAFF,
 };
 
