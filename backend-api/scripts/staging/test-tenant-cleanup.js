@@ -17,8 +17,16 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
   const counts = { vendors: 0 };
   // Synthetic Get4Domain staff (S7 tests): not tied to any vendor, so they are removed first, by the same email marker.
   const staffWhere = { email: { endsWith: TEST_EMAIL_SUFFIX, ...(runId ? { contains: runId } : {}) } };
-  counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   const ids = await findTestVendorIds(prisma, runId);
+  // S13 security ledgers (reset links, refresh tokens) point at accounts by id with no foreign key: remove them before the accounts.
+  const staffIds = (await prisma.adminTeamMember.findMany({ where: staffWhere, select: { id: true } })).map((r) => r.id);
+  const memberIds = ids.length ? (await prisma.teamMember.findMany({ where: { vendorId: { in: ids } }, select: { id: true } })).map((r) => r.id) : [];
+  const accountIds = [...ids, ...staffIds, ...memberIds];
+  if (accountIds.length) {
+    counts.passwordResets = (await prisma.accountPasswordReset.deleteMany({ where: { accountId: { in: accountIds } } })).count;
+    counts.refreshTokens = (await prisma.authRefreshToken.deleteMany({ where: { accountId: { in: accountIds } } })).count;
+  }
+  counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
   const steps = [

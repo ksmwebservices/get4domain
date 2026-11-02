@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { AccountSecurityModule } from './account-security/account-security.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { InvoicesModule } from './invoices/invoices.module';
@@ -95,6 +96,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     PrismaModule,
     HealthModule,
     AuthModule,
+    AccountSecurityModule,
     VendorsModule,
     SubscriptionsModule,
     InvoicesModule,

@@ -15,6 +15,7 @@ const staging = guard.loadStagingEnv();
 process.env.DATABASE_URL = staging.DATABASE_URL;
 process.env.DIRECT_URL = staging.DIRECT_URL;
 process.env.NODE_ENV = 'test';
+process.env.EMAIL_MODE = 'test';        // EmailService captures mail in EmailService.outbox instead of calling the provider
 process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
 
 const PROVIDER_ENV = [
