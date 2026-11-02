@@ -7,6 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
+import { randomBytes } from 'crypto';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -34,6 +36,29 @@ export function plainValidation(messages: string[]): { message: string; fields: 
   return { message: `${shown}${parts.length > 4 ? ` (and ${parts.length - 4} more)` : ''}. Check those details and try again.`, fields };
 }
 
+/**
+ * Prisma errors a client can act on, with a fixed sentence each. The Prisma message itself is never sent: it contains the
+ * server's file path, the failing call and the constraint name.
+ */
+const PRISMA_CLIENT_ERRORS: Record<string, { status: number; message: string }> = {
+  P2025: { status: HttpStatus.NOT_FOUND, message: 'That item could not be found.' },
+  P2002: { status: HttpStatus.CONFLICT, message: 'That already exists.' },
+  P2003: { status: HttpStatus.CONFLICT, message: 'This item is still linked to other records (for example invoices or bookings), so it cannot be removed or changed that way. Remove or reassign those first.' },
+  P2014: { status: HttpStatus.CONFLICT, message: 'This item is still linked to other records (for example invoices or bookings), so it cannot be removed or changed that way. Remove or reassign those first.' },
+};
+const GENERIC_SERVER_ERROR = 'Something went wrong on our side. Please try again.';
+const PROVIDER_ERROR = 'A connected provider (payments, messaging or similar) could not complete this request. Please try again in a moment.';
+
+/** What the client is told about an error that is not a deliberate HttpException. The real detail goes to the server log only. */
+interface Classified {
+  status: number;
+  message: string;
+  /** Present for 5xx: shown to the client and written next to the full error in the log so support can find it. */
+  reference?: string;
+  /** Short note for the server log of a mapped (non-5xx) error. */
+  logNote?: string;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
@@ -43,29 +68,38 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    const classified = this.classify(exception);
+
     const statusCode =
-      exception instanceof HttpException
+      classified?.status ??
+      (exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : HttpStatus.INTERNAL_SERVER_ERROR);
 
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
 
+    // A deliberate HttpException keeps its own message. Anything else uses the classified, fixed sentence: raw error text
+    // (file paths, SQL, Prisma invocation text, provider detail) must never reach the client.
     const message =
-      exceptionResponse && typeof exceptionResponse === 'object' && 'message' in exceptionResponse
+      classified?.message ??
+      (exceptionResponse && typeof exceptionResponse === 'object' && 'message' in exceptionResponse
         ? (exceptionResponse as { message: string | string[] }).message
         : exception instanceof Error
           ? exception.message
-          : this.extractMessage(exception);
+          : 'Internal server error');
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       // Log the full error detail, not just the route. Some SDKs (e.g. Razorpay)
       // reject with a plain object rather than an Error, so `instanceof Error`
       // fails and we would otherwise lose the message and stack entirely.
+      const ref = classified?.reference ? `[${classified.reference}] ` : '';
       this.logger.error(
-        `${request.method} ${request.url} -> ${statusCode}: ${this.describe(exception)}`,
+        `${ref}${request.method} ${request.url} -> ${statusCode}: ${this.describe(exception)}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+    } else if (classified?.logNote) {
+      this.logger.warn(`${request.method} ${request.url} -> ${statusCode} (${classified.logNote})`);
     }
 
     // An exception may carry structured `details` (e.g. the open invoice that blocked a deal) so a screen can offer a link / override.
@@ -92,19 +126,31 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode,
       message: outMessage,
       ...extra,
-      data: details ?? (Object.keys(extra).length ? extra : fieldInfo),
+      data: details ?? (classified?.reference ? { reference: classified.reference } : Object.keys(extra).length ? extra : fieldInfo),
       timestamp: new Date().toISOString(),
     });
   }
 
-  /** Best-effort human-readable message for non-Error / non-HttpException throws. */
-  private extractMessage(exception: unknown): string {
-    if (exception && typeof exception === 'object') {
-      const err = exception as { error?: { description?: string }; message?: string };
-      if (err.error?.description) return err.error.description;
-      if (typeof err.message === 'string' && err.message) return err.message;
+  /**
+   * Decide what a client may be told about anything that is not a deliberate HttpException (those return null: their message
+   * was written to be shown). Prisma constraint errors become 404/409 with a fixed sentence; provider SDK objects become 502;
+   * everything else becomes a generic 500 carrying only a reference id.
+   */
+  private classify(exception: unknown): Classified | null {
+    if (exception instanceof HttpException) return null;
+
+    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      const mapped = PRISMA_CLIENT_ERRORS[exception.code];
+      if (mapped) return { status: mapped.status, message: mapped.message, logNote: `Prisma ${exception.code}` };
     }
-    return 'Internal server error';
+
+    const reference = randomBytes(4).toString('hex');
+    // A payment/messaging SDK rejecting with a plain object like { statusCode, error: { code, description } } (Razorpay does this).
+    const providerShaped =
+      exception !== null && typeof exception === 'object' && !(exception instanceof Error) &&
+      typeof (exception as { error?: unknown }).error === 'object' && (exception as { error?: unknown }).error !== null;
+    if (providerShaped) return { status: HttpStatus.BAD_GATEWAY, message: `${PROVIDER_ERROR} Reference: ${reference}`, reference };
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: `${GENERIC_SERVER_ERROR} Reference: ${reference}`, reference };
   }
 
   /** Full description of any thrown value for server logs (Error, plain object, or primitive). */
