@@ -134,7 +134,7 @@ Verify live before and after (read-only): `curl -sI http://get4domain.com`, `htt
 | D1–D6 demo gate | `1073e7f` | `/visit-demo` server page + client form island; noindex meta and header on every variant; noindex header on `/demo/*` responses (both 307s and pages served with a pass); `/demo/*` out of the sitemap; no robots Disallow. |
 | A2, A3 canonicals, redirects, JSON-LD | `4839fcf` | 301 `get4domain.com/site/<sub>` → vendor host and vendor-host `/site/<sub>/x` → `/x` (GET/HEAD only); `vendorCanonical()` for every renderer; Organization / WebSite / SoftwareApplication only in the marketing layout; SearchAction and empty `sameAs` removed. |
 | A5, A7–A11 | `faf37a9` | robots.txt (`/_next/` open; AI bots disallow `/admin/ /dashboard/ /app/ /api/`); private-page noindex header; cart/order-success noindex meta; real 308 for `/products` and `/digital-growth`; footer links to three orphans; `path` required in `createPageMetadata`; sitemap without invented dates/priorities. |
-| §4 verification | next commit | `scripts/seo-check.mjs` (34 checks, local server only; `npm run seo:check`). |
+| §4 verification | `d3ca48a` | `scripts/seo-check.mjs` (34 checks, local server only; `npm run seo:check`). |
 
 **Decisions taken where the dispatch did not say:** redirect status 301 (the dispatch), not 308 as drafted in A2a; GET/HEAD only so a POST is never turned into a GET; `foundingDate` left as it was live (TODO in `SiteJsonLd.tsx` to confirm it with the About page); `sameAs` omitted with a TODO; A6 (shortening over-long titles) **not done** because it needs wording the owner should choose; A9's "all 20 industry links in the server HTML" not done (only the three orphan pages, as dispatched).
 
