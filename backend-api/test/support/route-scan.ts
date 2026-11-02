@@ -20,6 +20,7 @@ export interface RouteInfo {
   readsPrincipal: boolean;  // some parameter uses @CurrentUser (or @Req) in this handler
   module?: string;          // @RequireModule('x')
   roles?: string;           // @Roles(...)
+  ownerOnly?: boolean;      // @UseGuards(VendorOwnerGuard): a vendor's team member is refused (present only when true)
 }
 
 const HTTP = new Set(['Get', 'Post', 'Put', 'Patch', 'Delete', 'Options', 'Head', 'All']);
@@ -42,6 +43,10 @@ const str = (e: ts.Expression | undefined): string | undefined => (e && (ts.isSt
 
 function hasAdminGuard(ds: Deco[]): boolean {
   return ds.some((d) => d.name === 'UseGuards' && d.args.some((a) => ts.isIdentifier(a) && ADMIN_GUARDS.has(a.text)));
+}
+
+function hasGuard(ds: Deco[], name: string): boolean {
+  return ds.some((d) => d.name === 'UseGuards' && d.args.some((a) => ts.isIdentifier(a) && a.text === name));
 }
 
 function join(...parts: (string | undefined)[]): string {
@@ -96,6 +101,7 @@ export function scanRoutes(srcDir: string): RouteInfo[] {
           readsPrincipal,
           ...(mod ? { module: mod } : {}),
           ...(rolesDeco ? { roles: rolesDeco.args.map((a) => str(a) ?? a.getText()).join(',') } : {}),
+          ...(hasGuard(classDecos, 'VendorOwnerGuard') || hasGuard(md, 'VendorOwnerGuard') ? { ownerOnly: true } : {}),
         });
       }
     });

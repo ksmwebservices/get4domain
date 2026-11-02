@@ -59,6 +59,13 @@ export async function seedTenant(prisma: PrismaClient, label: string, runId: str
   };
 }
 
+/** An extra team member of `vendorId` with exactly the given team areas (e.g. ['telecrm'] = no 'accounts'). Returns the member's JWT. */
+export async function seedMember(prisma: PrismaClient, vendorId: string, label: string, runId: string, modules: string[]): Promise<string> {
+  const email = `member-${label}-${runId}@v3test.invalid`;
+  const m = await prisma.teamMember.create({ data: { vendorId, name: 'V3TEST member', role: 'staff', modules, status: 'active', email } });
+  return sign({ sub: vendorId, email, role: 'VENDOR', kind: 'team_member', memberId: m.id });
+}
+
 /** A tenant with nothing but the vendor row (for tests of one subsystem, e.g. the wallet). Same deletion markers as seedTenant. */
 export async function seedBareVendor(prisma: PrismaClient, label: string, runId: string): Promise<{ vendorId: string; email: string }> {
   const email = `${label}-${runId}@v3test.invalid`;

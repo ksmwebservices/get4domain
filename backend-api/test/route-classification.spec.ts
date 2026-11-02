@@ -20,7 +20,43 @@ const STAFF_PATH_EXCEPTIONS: Record<string, string> = {
   'POST /admin-team/invite/accept': 'a newly invited staff member accepts with a one-time token before they have an account',
 };
 
+/**
+ * S8-A: routes only the account OWNER may call (a vendor's team member is refused with 403, whatever areas they were granted).
+ * Money, payment credentials and domains must never be reachable by an invited team member.
+ */
+const OWNER_ONLY_ROUTES = [
+  'PUT /vendor-payments',            // replaces the vendor's Razorpay keys (redirects customers' payments)
+  'POST /vendor-payments/test',      // calls Razorpay with typed keys
+  'POST /domains/register',          // spends the vendor wallet
+  'POST /domains/connect',           // claims a domain
+  'POST /domains/verify',
+  'GET /team/members',
+  'GET /team/activity',
+  // already owner-only before S8-A (regression guard)
+  'POST /team/invite', 'PUT /team/members/:id', 'DELETE /team/members/:id',
+];
+/** Routes that need a named team area (not owner-only): a member WITHOUT the area is refused. */
+const REQUIRED_MODULE: Record<string, string> = { 'GET /vendor-payments': 'accounts' };
+/**
+ * HELD for an owner decision (S8-A): `/billing/*` (10 routes), `POST /payments/create-order`, `POST /payments/verify`,
+ * `POST /website-themes/:id/unlock/order|confirm`. A team member with the `wallet` ("Wallet & Billing") area is deliberately let
+ * into billing today (commercial.controllers.ts assertVendorPrincipal), and the `website` area owns the screen with the theme
+ * buy buttons. Do not add them to the list above until the owner has chosen.
+ */
+
 describe('route classification (static scan of all controllers)', () => {
+  it('makes the money / credentials / domains routes owner-only (S8-A)', () => {
+    const byRoute = new Map(current.map((r) => [r.route, r]));
+    const missing = OWNER_ONLY_ROUTES.filter((r) => byRoute.get(r)?.ownerOnly !== true);
+    expect(missing).toEqual([]);
+  });
+
+  it('requires the named team area where one is specified (S8-A)', () => {
+    const byRoute = new Map(current.map((r) => [r.route, r]));
+    const wrong = Object.entries(REQUIRED_MODULE).filter(([route, area]) => byRoute.get(route)?.module !== area).map(([route]) => route);
+    expect(wrong).toEqual([]);
+  });
+
   it('finds a plausible number of routes (the scanner itself is working)', () => {
     expect(current.length).toBeGreaterThan(600);
     expect(new Set(current.map((r) => r.cls))).toEqual(new Set(['public', 'admin', 'authenticated']));
@@ -45,6 +81,7 @@ describe('route classification (static scan of all controllers)', () => {
       if (was.readsPrincipal !== now.readsPrincipal) changed.push(`${k}: readsPrincipal ${was.readsPrincipal} -> ${now.readsPrincipal}`);
       if ((was.module ?? null) !== (now.module ?? null)) changed.push(`${k}: module ${was.module ?? '-'} -> ${now.module ?? '-'}`);
       if ((was.roles ?? null) !== (now.roles ?? null)) changed.push(`${k}: roles ${was.roles ?? '-'} -> ${now.roles ?? '-'}`);
+      if ((was.ownerOnly ?? false) !== (now.ownerOnly ?? false)) changed.push(`${k}: ownerOnly ${was.ownerOnly ?? false} -> ${now.ownerOnly ?? false}`);
     }
     expect(changed).toEqual([]);
   });

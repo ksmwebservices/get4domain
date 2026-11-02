@@ -365,7 +365,8 @@
    "route": "DELETE /team/members/:id",
    "controller": "src/team/team.controller.ts#TeamController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "DELETE /technology/projects/:id",
@@ -2252,13 +2253,15 @@
    "route": "GET /team/activity",
    "controller": "src/team/team.controller.ts#TeamController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "GET /team/members",
    "controller": "src/team/team.controller.ts#TeamController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "GET /technology/projects",
@@ -2337,7 +2340,8 @@
    "route": "GET /vendor-payments",
    "controller": "src/vendor-payments/vendor-payments.controller.ts#VendorPaymentsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "module": "accounts"
   },
   {
    "route": "GET /vendors/:id",
@@ -3608,19 +3612,22 @@
    "route": "POST /domains/connect",
    "controller": "src/domains/domains.controller.ts#DomainsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /domains/register",
    "controller": "src/domains/domains.controller.ts#DomainsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /domains/verify",
    "controller": "src/domains/domains.controller.ts#DomainsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /education/batches",
@@ -4229,7 +4236,8 @@
    "route": "POST /team/invite",
    "controller": "src/team/team.controller.ts#TeamController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /technology/projects",
@@ -4289,7 +4297,8 @@
    "route": "POST /vendor-payments/test",
    "controller": "src/vendor-payments/vendor-payments.controller.ts#VendorPaymentsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /vendors/:id/activate",
@@ -4792,13 +4801,15 @@
    "route": "PUT /team/members/:id",
    "controller": "src/team/team.controller.ts#TeamController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "PUT /vendor-payments",
    "controller": "src/vendor-payments/vendor-payments.controller.ts#VendorPaymentsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "PUT /vendors/:id",

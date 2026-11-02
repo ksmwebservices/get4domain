@@ -22,6 +22,7 @@ export class TeamController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(VendorOwnerGuard)
   @Get('members')
   @ApiOperation({ summary: "List the current vendor's team members" })
   findMembers(@CurrentUser() user: AuthenticatedUser) {
@@ -52,6 +53,7 @@ export class TeamController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(VendorOwnerGuard)
   @Get('activity')
   @ApiOperation({ summary: 'Recent team activity (status and last login per member)' })
   activity(@CurrentUser() user: AuthenticatedUser) {
