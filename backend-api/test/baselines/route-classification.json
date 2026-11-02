@@ -119,14 +119,16 @@
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "DELETE /cms/vendor/:vendorId/categories/:id",
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "DELETE /coaching/batches/:id",
@@ -478,7 +480,8 @@
    "route": "GET /addons/vendor",
    "controller": "src/addons/addons.controller.ts#AddonsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /addons",
@@ -1372,7 +1375,8 @@
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "GET /cms/vendor/:vendorId/categories",
@@ -1386,7 +1390,8 @@
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "GET /cms/vendor/:vendorId/products",
@@ -1818,19 +1823,22 @@
    "route": "GET /invoices/:id/pdf",
    "controller": "src/invoices/invoices.controller.ts#InvoicesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /invoices/:id",
    "controller": "src/invoices/invoices.controller.ts#InvoicesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /invoices/vendor/:vendorId",
    "controller": "src/invoices/invoices.controller.ts#InvoicesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /invoices",
@@ -1983,7 +1991,8 @@
    "route": "GET /modules/vendor",
    "controller": "src/addons/modules.controller.ts#ModulesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /modules",
@@ -1995,7 +2004,8 @@
    "route": "GET /notifications",
    "controller": "src/notifications/notifications.controller.ts#NotificationsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /photography/deliverables",
@@ -2248,13 +2258,15 @@
    "controller": "src/stock/stock.controller.ts#StockController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "GET /subscriptions/vendor/:vendorId",
    "controller": "src/subscriptions/subscriptions.controller.ts#SubscriptionsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /subscriptions",
@@ -2267,7 +2279,8 @@
    "route": "GET /support/tickets/vendor/:vendorId",
    "controller": "src/support/support.controller.ts#SupportController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "GET /support/tickets",
@@ -3145,7 +3158,8 @@
    "route": "POST /ai/call-summary",
    "controller": "src/ai/ai.controller.ts#AiController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /ai/chat",
@@ -3157,13 +3171,15 @@
    "route": "POST /ai/generate-content",
    "controller": "src/ai/ai.controller.ts#AiController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /ai/generate-image",
    "controller": "src/ai/ai.controller.ts#AiController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /ai/generate-page",
@@ -3508,14 +3524,16 @@
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "POST /cms/vendor/:vendorId/products",
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "POST /coaching/batches/:id/sessions",
@@ -3837,7 +3855,8 @@
    "route": "POST /invoices/:id/email",
    "controller": "src/invoices/invoices.controller.ts#InvoicesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /invoices/:id/mark-paid",
@@ -4050,7 +4069,8 @@
    "route": "POST /notifications/subscribe",
    "controller": "src/notifications/notifications.controller.ts#NotificationsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /otp/request",
@@ -4172,7 +4192,8 @@
    "route": "POST /reels/render",
    "controller": "src/reels/reels.controller.ts#ReelsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /restaurant/orders/:id/bill",
@@ -4309,7 +4330,8 @@
    "controller": "src/stock/stock.controller.ts#StockController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "POST /subscriptions",
@@ -4429,7 +4451,8 @@
    "route": "POST /video/generate",
    "controller": "src/video/video.controller.ts#VideoController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "POST /wallet/deduct",
@@ -4733,28 +4756,32 @@
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "PUT /cms/vendor/:vendorId/categories/:id",
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "PUT /cms/vendor/:vendorId/categories/order",
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "PUT /cms/vendor/:vendorId",
    "controller": "src/cms/cms.controller.ts#CmsController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "staffMatrix": true
   },
   {
    "route": "PUT /crm/leads/:id",
@@ -4860,13 +4887,15 @@
    "route": "PUT /notifications/:id/read",
    "controller": "src/notifications/notifications.controller.ts#NotificationsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "PUT /notifications/read-all",
    "controller": "src/notifications/notifications.controller.ts#NotificationsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "staffMatrix": true
   },
   {
    "route": "PUT /platform-settings/:category/:key",

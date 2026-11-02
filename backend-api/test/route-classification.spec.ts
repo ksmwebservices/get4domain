@@ -93,6 +93,7 @@ describe('route classification (static scan of all controllers)', () => {
       if ((was.roles ?? null) !== (now.roles ?? null)) changed.push(`${k}: roles ${was.roles ?? '-'} -> ${now.roles ?? '-'}`);
       if ((was.ownerOnly ?? false) !== (now.ownerOnly ?? false)) changed.push(`${k}: ownerOnly ${was.ownerOnly ?? false} -> ${now.ownerOnly ?? false}`);
       if ((was.adminGuard ?? false) !== (now.adminGuard ?? false)) changed.push(`${k}: adminGuard ${was.adminGuard ?? false} -> ${now.adminGuard ?? false}`);
+      if ((was.staffMatrix ?? false) !== (now.staffMatrix ?? false)) changed.push(`${k}: staffMatrix ${was.staffMatrix ?? false} -> ${now.staffMatrix ?? false}`);
     }
     expect(changed).toEqual([]);
   });

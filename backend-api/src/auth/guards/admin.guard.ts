@@ -1,22 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
-import { rolesFor, StaffRole } from './admin-role-matrix';
-
-const STAFF_ROLES: ReadonlySet<string> = new Set<StaffRole>(['SUPER_ADMIN', 'OPERATIONS', 'MARKETING']);
-
-/** The principal's Get4Domain staff role. JwtStrategy sets it from the staff member's row (or SUPER_ADMIN for the seeded admin vendor). */
-function staffRoleOf(user: AuthenticatedUser): StaffRole | undefined {
-  const role = user.adminRole ?? (user.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : undefined);
-  return role && STAFF_ROLES.has(role) ? (role as StaffRole) : undefined;
-}
-
-/** "METHOD /route/pattern" as Express reports it, e.g. "DELETE /vendors/:id" (a trailing slash does not change the answer). */
-function routeKeyOf(request: { method?: string; route?: { path?: string } }): string {
-  const method = String(request.method ?? 'GET').toUpperCase();
-  let path = request.route?.path ?? '';
-  if (path.length > 1) path = path.replace(/\/+$/, '');
-  return `${method} ${path}`;
-}
+import { rolesFor } from './admin-role-matrix';
+import { isStaffPrincipal, routeKeyOf, staffRoleOf } from './staff-access';
 
 /**
  * Admin routes: the caller must be Get4Domain staff AND their staff role must be allowed on this route by the central matrix
@@ -28,7 +13,7 @@ export class AdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user as AuthenticatedUser | undefined;
 
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+    if (!user || !isStaffPrincipal(user)) {
       throw new ForbiddenException('Admin access required');
     }
 

@@ -64,6 +64,35 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /website-themes/all': ALL_STAFF, 'GET /website-themes/:id/unlocks': ALL_STAFF,
 };
 
+/**
+ * S7-B: routes a VENDOR uses on their own data and that also let STAFF act on any vendor's data (previously "any staff role", decided inline in
+ * each controller). The handler asks `staffMayUse(user, routeKey)` (auth/guards/staff-access.ts) through the `@RouteKey()` parameter.
+ * Same rules: deny by default (an unlisted route is SUPER_ADMIN only); SUPER_ADMIN behaviour is unchanged; MARKETING is refused wherever the
+ * same data is refused under AdminGuard in S7 (invoices, subscriptions, vendors, support, add-ons, modules, CMS, stock, the shared admin inbox).
+ * `test/staff-vendor-access.spec.ts` fails if a route that asks has no entry here, or an entry matches no route.
+ */
+export const STAFF_VENDOR_ACCESS_MATRIX: Readonly<Record<string, readonly StaffRole[]>> = {
+  // CMS / website content of any vendor
+  'PUT /cms/vendor/:vendorId': OPS_AND_SUPER, 'GET /cms/vendor/:vendorId/products/manage': OPS_AND_SUPER, 'GET /cms/vendor/:vendorId/categories/manage': OPS_AND_SUPER,
+  'POST /cms/vendor/:vendorId/categories': OPS_AND_SUPER, 'PUT /cms/vendor/:vendorId/categories/order': OPS_AND_SUPER, 'PUT /cms/vendor/:vendorId/categories/:id': OPS_AND_SUPER,
+  'DELETE /cms/vendor/:vendorId/categories/:id': OPS_AND_SUPER, 'POST /cms/vendor/:vendorId/products': OPS_AND_SUPER, 'PUT /cms/products/:id': OPS_AND_SUPER, 'DELETE /cms/products/:id': OPS_AND_SUPER,
+  // invoices, subscriptions, support tickets, add-ons and modules of any vendor
+  'GET /invoices/vendor/:vendorId': OPS_AND_SUPER, 'GET /invoices/:id': OPS_AND_SUPER, 'GET /invoices/:id/pdf': OPS_AND_SUPER, 'POST /invoices/:id/email': OPS_AND_SUPER,
+  'GET /subscriptions/vendor/:vendorId': OPS_AND_SUPER,
+  'GET /support/tickets/vendor/:vendorId': OPS_AND_SUPER,
+  'GET /addons/vendor': OPS_AND_SUPER, 'GET /modules/vendor': OPS_AND_SUPER,
+  // the shared admin notification inbox (a staff role not listed reads its own, empty, inbox instead)
+  'GET /notifications': OPS_AND_SUPER, 'PUT /notifications/:id/read': OPS_AND_SUPER, 'PUT /notifications/read-all': OPS_AND_SUPER, 'POST /notifications/subscribe': OPS_AND_SUPER,
+  // stock of any vendor's product
+  'POST /stock/products/:productId/adjust': OPS_AND_SUPER, 'GET /stock/products/:productId/history': OPS_AND_SUPER,
+  // free internal AI / video / reel generation (kept for every staff role: the team tests and produces content without topping up a wallet)
+  'POST /ai/generate-content': ALL_STAFF, 'POST /ai/call-summary': ALL_STAFF, 'POST /ai/generate-image': ALL_STAFF, 'POST /video/generate': ALL_STAFF, 'POST /reels/render': ALL_STAFF,
+};
+
+export function staffRolesFor(routeKey: string): readonly StaffRole[] {
+  return STAFF_VENDOR_ACCESS_MATRIX[routeKey] ?? SUPER_ONLY;
+}
+
 /** Roles allowed on a route; a route with no entry is SUPER_ADMIN only (deny by default). */
 export function rolesFor(routeKey: string): readonly StaffRole[] {
   return ADMIN_ROLE_MATRIX[routeKey] ?? SUPER_ONLY;
