@@ -55,6 +55,7 @@ import { GrowthHubModule } from './growth-hub/growth-hub.module';
 import { CommunicationModule } from './communication/communication.module';
 import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
+import { HealthModule } from './health/health.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -92,6 +93,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    HealthModule,
     AuthModule,
     VendorsModule,
     SubscriptionsModule,

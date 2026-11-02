@@ -65,4 +65,4 @@ function loadStagingEnv() {
   return { DATABASE_URL, DIRECT_URL, mask };
 }
 
-module.exports = { loadStagingEnv, projectRef, sha, parseEnvFile, REPO_ROOT, CONFIG };
+module.exports = { loadStagingEnv, projectRef, sha, parseEnvFile, secretsOf, maskWith, REPO_ROOT, CONFIG };

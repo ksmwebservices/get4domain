@@ -94,11 +94,14 @@ async function main() {
       const r = prisma(['db', 'execute', '--file', 'prisma/sql/enable_rls_public.sql', '--schema', 'prisma/schema.prisma'], env, env.mask);
       if (r.status !== 0) process.exit(7);
     } else if (step === 'status') {
-      prisma(['migrate', 'status'], env, env.mask);
+      // `prisma migrate status` exits non-zero when migrations are pending, failed or missing: propagate it (CI gate).
+      const r = prisma(['migrate', 'status'], env, env.mask);
+      if (r.status !== 0) { console.error('GATE FAILED: staging is not up to date with prisma/migrations.'); process.exit(9); }
     } else if (step === 'rls-off') {
       const rows = await sql(env, RLS_OFF);
       console.log(`tables with RLS OFF: ${rows.length}`);
       rows.forEach((x) => console.log('  -', x.tbl));
+      if (rows.length > 0) { console.error('GATE FAILED: tables without row-level security on staging.'); process.exit(10); }
     } else { console.error('unknown command'); process.exit(2); }
   }
 }
