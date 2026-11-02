@@ -1,88 +1,96 @@
-# V3 Implementation Plan (Phase V3.0 output)
+# V3 Implementation Plan
 
-> Derived from `V3_REQUIREMENTS_MATRIX.md`. Audit-only: nothing here has been started. Each phase below needs **explicit approval** before it begins (spec Rule 9; CLAUDE.md "never auto-advance").
+> Derived from `V3_REQUIREMENTS_MATRIX.md`. Revised 2026-11-02 to apply the owner's final decisions D1, D3, D4. Each phase needs **explicit approval** before it starts (spec Rule 9; no auto-advance).
 
-## 0. Decisions needed before V3.1 (blocking)
+## 0. Decisions
 
-| # | Decision | Why it blocks | Recommendation |
+### Final (owner, 2026-11-02 — override anything earlier)
+
+| ID | Decision | Consequence for the plan |
+|---|---|---|
+| **D1** | V3 = **public business directory + instant free websites + the four spec-§3 plans only (Free, Handyman, Professional, Ecommerce).** Billing quarterly / half-yearly / annual; optional monthly possible later. Plans, prices, taxes, billing periods, discounts, grace periods and entitlements are **database data editable by admin without code changes.** **Workspace and BOS are legacy, out of V3 scope**: not extended, built on, deleted or migrated; existing vendor data is not touched. | V3 plan tables are new and V3-named. No V3 code reads/writes the legacy billing, BOS, commercial-engine or menu-gating tables. The earlier "build on Commercial Engine", "grandfather", "reuse BOS spine" ideas are **withdrawn**. |
+| **D3** | Keep the existing **HTML/CSS themes**. **Defer Next.js theme packages.** | V3.3 is hardening/eligibility of the HTML/CSS marketplace only. |
+| **D4** | **Redis/BullMQ approved, but not added in Step 0.** A managed Redis service is introduced only when queues are needed (≈V3.6/V3.7). | Step 0–V3.5 use no Redis; light cron stays on `@nestjs/schedule`. |
+
+### Not yet decided by the owner — working assumptions (confirm or correct)
+
+| ID | Item | Working assumption | Why it matters |
 |---|---|---|---|
-| D1 | **Plan model**: keep Workspace/BOS (annual-only, ₹11,988/₹23,988) or adopt spec's Handyman/Professional/Ecommerce with Q/H/A billing and spec prices | Entitlements, billing engine, registry, pricing pages, Razorpay Plans all hang off it. KSM retired quarterly on 2026-10-01; spec re-introduces it. Live vendors (stepnrock etc.) are on current terms | Keep the existing engine (it already supports `HALF_YEARLY`, `ANNUAL`, `MONTHLY`, `CUSTOM_MONTHS`); make plans **data-driven** and map spec tiers onto it. Do **not** re-price existing vendors; grandfather. KSM confirms the three tiers + whether quarterly returns |
-| D2 | **Tenant model**: introduce `Tenant` entity or keep `Vendor` as tenant | Affects every later migration and §20 "Core" | Keep `Vendor` as the tenant (no ID rewrite). Add only what is missing (see migration plan: roles/permissions, branches later) |
-| D3 | **Theme format**: HTML/CSS contract (shipped) vs Next.js packages (spec §5.3) | Scope of V3.3 | Keep HTML/CSS as the supported format; record Next.js package support as a later, sandboxed, separate-build-service phase |
-| D4 | **Queue infra**: add Redis + BullMQ | Needed for scheduled social posts, usage metering retries, domain polling, email/SMS dispatch at scale | Add in V3.1/V3.7 behind an interface; keep `@nestjs/schedule` for light cron |
-| D5 | **Directory ownership**: new `DirectoryListing` vs reuse `Listing` | `Listing` is the real-estate module's table | New table(s); do not reuse |
-| D6 | Pending-deploy backlog (see §2) is applied/deployed **before** V3 migrations are layered on | Stacking V3 migrations on an unreconciled production history is the biggest operational risk | Reconcile first, in V3.1 step 0 |
+| D2 | Tenant model | `Vendor` **is** the tenant (no ID rewrite, no new `Tenant` table). The Step 0 tenant guard is built on `vendorId` | Every later migration and test |
+| D5 | Directory naming | Done: the real-estate `Listing` is untouched; all directory objects are `Directory*` (`DirectoryBusiness`, `DirectoryCategory`, `DirectoryLocation`, …) | Prevents Prisma/table clashes |
+| D6 | Production reconciliation | Read-only comparison of production to the 54 local migrations is Step 0 item 1 | Baseline for staging and for rehearsing V3 migrations |
+| Q1 | Are the 20 industry modules, DomainApp, universal catalogue and LeadSpace legacy or reusable platform assets? | **Unknown — blocks V3.5 design** (V3.5 is not detailed until answered) | Decides how much of V3.5 can reuse code |
+| Q2 | Website Manager / category packs / `/site/<sub>` renderer | Reuse the renderer and packs for the free website; replace their plan-based limits with V3 entitlements; do not touch legacy data | V3.2/V3.3 scope |
+| Q3 | Legacy dashboard/billing for Workspace/BOS vendors | Stays available and untouched | Coexistence |
 
 ## 1. Phase plan
 
-Effort is in rough engineer-weeks for one engineer and is an **estimate, not a commitment**. "Reuse" names existing code to extend rather than duplicate (Rule 3/4).
+Effort is in rough engineer-weeks for one engineer: an **estimate**, not a commitment.
 
-### V3.1 — SaaS Foundation (est. 3–4 wks)
-- **Step 0 — Stabilise baseline:** reconcile migration state with production (read-only check first), confirm which security fixes (S1–S6) are deployed, close S7–S15 that remain open, add a `/health` endpoint, introduce CI that runs build + existing `verify:*` scripts. Introduce a real test runner (Jest for Nest, Vitest or Jest for pure logic).
-- **Plans/entitlements as data:** `Plan`, `PlanPrice`, `Feature`, `PlanFeature` tables seeded from today's constants and `registry/`. Keep `plan-pricing.constants.ts` as a read-only fallback until cutover. *Reuse:* Commercial Engine (`BillingTerm`, `BillingDeal`, `PlanOverride`), `registry/` feature registry, `provisionModules`.
-- **Tenant guard abstraction:** one decorator/guard resolving `vendorId` from JWT/host, used everywhere; start the cross-tenant test suite (Rule 7).
-- **Staff roles:** extend `AdminRole` to the 14 spec roles via a role→permission table rather than a larger enum. *Reuse:* `AdminTeamMember`, admin-team module, permissions doc `docs/v2/PERMISSIONS.md`.
-- **Audit log:** platform-wide `AuditLog` (generalise `CommercialAuditLog`).
-- **Vendor registration + employee-assisted registration:** reuse auth/vendors, add "registered by employee" provenance.
+### V3.1 — SaaS Foundation (est. 4–5 wks, starting with Step 0)
 
-### V3.2 — Directory and Free Website (est. 4–5 wks)
-- **New:** Location engine (state/district/city), Category tree (reconcile with `Category`/`CategoryPack`/vendor taxonomy), `DirectoryListing` + service/product/media/placement tables, public routes `/businesses/...` and `/business/<slug>`, directory sitemaps + sitemap index, listing enquiry form → existing Lead pipeline.
-- **Reuse:** category packs and `starter.service` for the instant free one-page site; `/site/<sub>` renderer; LeadSpace free page; SEO routes.
-- **Rules to build in:** sponsored labelling; organic relevance not purely price-ranked; avoid thin location pages (noindex until threshold).
-- **Free-plan restrictions** enforced server-side through the V3.1 entitlements.
+**Step 0 — Stabilise baseline (est. 1.5–2 wks). No product features until Step 0 is green (tests pass in CI on staging).**
+1. Read-only comparison of production to the 54 local migrations (no writes of any kind).
+2. Separate **staging database**; migrations never run against production from this work.
+3. Test runner, CI, and a `/health` endpoint.
+4. Tenant guard + first cross-tenant isolation tests.
+5. Close open security findings S7–S15, one fix each.
+Detailed plan is in the Step 0 plan presented for approval (not auto-started).
 
-### V3.3 — Theme Marketplace and Website Manager (est. 3–5 wks, mostly hardening)
-- **Mostly exists** (round 2, undeployed). Work: confirm/ship the deployed state, map eligibility to V3 plans, ensure five themes cover the named verticals, add **schedule publication** and **employee/vendor approval** states, decide pages/sections relational model vs `VendorCMS` JSON (recommend keeping the JSON document model and adding a read-only projection if §20 tables are wanted for reporting).
-- **Defer:** Next.js theme packages (D3).
+**Then V3.1 proper (after approval):**
+- **Plans & entitlements as data (D1):** `g4d_plans`, `g4d_plan_prices` (plan × period), `g4d_features`, `g4d_plan_features`, `g4d_tax_rates`, `g4d_discount_rules`, `g4d_plan_settings` (grace, upgrade rules), V3 subscription/term tables, entitlement overrides. Seeded with spec §3 (Free ₹0; Handyman Q ₹2,997 / H ₹5,694 / A ₹9,990; Professional Q ₹5,997 / H ₹11,394 / A ₹19,990; Ecommerce Q ₹8,997 / H ₹17,094 / A ₹29,990 — "proposed" prices, admin-editable). One server-side `can(tenant, feature)` check used everywhere. Admin screens to edit all of it. Optional monthly = a price row with period `MONTHLY`, no code change.
+- **Staff roles:** role/permission tables for the 14 spec roles (replacing reliance on the 3-value enum for V3 screens).
+- **Vendor registration + employee-assisted registration** with provenance.
+- **Platform audit log** (new table).
+- **Billing for V3 plans:** Razorpay order/payment-link flow for V3 subscriptions, built fresh against the new tables (reusing only generic, non-legacy utilities like payment idempotency helpers and advisory locks).
 
-### V3.4 — Domain Services (est. 5–7 wks; heavily credential-gated)
-- **First:** validate ResellerClub on the OT&E sandbox (never run live). Registrar adapter interface so a second registrar can be swapped in.
-- **New:** DNS record manager, nameserver manager, domain-ownership verification (TXT token), automated TLS for custom domains (decision: Cloudflare for SaaS / Caddy on-demand TLS / certbot — current setup is manual per-domain nginx + Cloudflare), custom-domain tenant resolution in middleware + canonical redirect, transfer workflow with encrypted auth-code handling, renewal/expiry reminders and cron, migration-history records.
-- **Never** mark a transfer complete until the registrar confirms (spec §4.2).
+### V3.2 — Public Business Directory + Free Website (est. 6–8 wks) — **main V3 deliverable**
+- **Directory (spec §7):** `DirectoryLocation` (state→district→city, Tamil Nadu first), `DirectoryCategory` (tree, spec's 21 categories + subcategories), `DirectoryBusiness` with services / products / media / placements, optional `DirectoryReview`.
+- **Public routes:** `/businesses/`, `/businesses/<state>/`, `/businesses/<state>/<city>/`, `/businesses/<state>/<city>/<category>/`, `/business/<slug>/`. Server-rendered, canonical URLs, JSON-LD, noindex for thin location/category pages below a content threshold.
+- **Search:** keyword + category + location using Postgres full-text/trigram on the same database; no new search service in V3.2.
+- **Profile:** hours, map, contact, services, products, gallery, verification status, WhatsApp/website links, enquiry form → existing lead pipeline (vendor-scoped); plan-based appearance and clearly labelled sponsored placement from entitlements; organic relevance not purely price-ranked.
+- **Free website:** instant one-page site from registration using existing category packs + `/site/<sub>` renderer + free subdomain, limits from V3 entitlements (Q2).
+- **Free vendor onboarding:** self-registration and employee-assisted registration create a vendor, a directory profile and a free site together.
+- **Sitemaps:** main, category, location, business, with index files.
+- **Naming rule:** nothing named `Listing`.
 
-### V3.5 — Paid Webapps and CRM (est. 5–7 wks)
-- **Reuse heavily:** 20 industry operation modules, BOS spine, Counter billing, CRM, telecrm, Appointment.
-- **Modify:** enforce the six-stage pipeline, duplicate detection, export; vendor-side coupons/discounts; variants entity; shipping adapter (carrier choice = commercial decision) and returns request flow; finish **Universal Catalogue** cutover (migration is written, not applied) so web, POS and BOS read one catalogue.
+### V3.3 — HTML/CSS Theme Marketplace + Website Manager hardening (est. 3–4 wks)
+- HTML/CSS themes only (D3). Map theme eligibility to V3 plans; ensure five usable themes cover the spec's verticals; add scheduled publication and employee/vendor approval; keep the single-document `VendorCMS` model.
 
-### V3.6 — Central Enquiry Hub and Chatbots (est. 5–6 wks; approval-gated)
-- **New:** unified `Enquiry` entity + router + attribution report over existing Lead/LeadEvent; central inbox model; common chatbot engine (config, knowledge source, intents, history, channel adapters, handover, consent, usage); adapters for Website widget (exists), WhatsApp (two providers → consolidate behind one interface), Messenger, Instagram.
-- **Gate:** Meta app review + Page/Instagram permissions + WhatsApp number approval. Build behind adapters with sandbox providers; label "Pending approval".
+### V3.4 — Domain Services (est. 5–7 wks; credential-gated)
+- Validate ResellerClub on the sandbox first (never run live). Registrar adapter interface. DNS record manager, nameserver manager, ownership verification (TXT), automated TLS decision, custom-domain tenant resolution + canonical redirects, transfers with encrypted auth codes, renewal/expiry reminders and cron, migration history. Never mark a transfer complete until the registrar confirms.
+
+### V3.5 — Paid webapps, CRM, ecommerce operations (est. TBD — **re-scope after Q1**)
+- Not detailed. Cannot assume reuse of BOS spine, counter billing or industry modules (D1). Candidates once Q1 is answered: six-stage lead pipeline, duplicate detection, export, appointments, vendor coupons, variants, shipping adapter, returns/refunds, ecommerce analytics.
+
+### V3.6 — Central Enquiry Hub + Chatbots (est. 5–6 wks; approval-gated)
+- Unified `Enquiry` + router + attribution; common chatbot engine with channel adapters (website widget, WhatsApp, Messenger, Instagram); human handover. **Managed Redis introduced here if queues are required (D4).** Sandbox providers first; Meta approvals gate live.
 
 ### V3.7 — Communication and Billing (est. 4–5 wks)
-- **New:** `UsageTransaction` ledger (idempotency key = provider message id or request id), per-plan monthly allowances with reset policy, prepaid packs with validity, provider cost vs selling price, failed-message charging rules per provider, reports. Resend webhooks for bounce/complaint + suppression list. SMS DLT mapping.
-- **Reuse:** wallet (`Wallet`, `WalletTransaction.expiresAt`), payment idempotency patterns (`razorpayId @unique`, advisory locks via `advisoryXactLock`).
-- **Gate:** provider contracts, DLT registration, provider cost sheet (spec's allowance numbers are "subject to provider cost validation").
+- Usage ledger with idempotency, per-plan allowances, prepaid packs with validity, Resend webhooks + suppression, SMS DLT mapping, reports. **Redis/BullMQ in use here** for dispatch/retry.
 
-### V3.8 — Social and Marketing Operations (est. 4–5 wks; approval-gated)
-- **Reuse:** `social/` publisher (sandbox providers, caps, retries, kill switches). Add content calendar UI, approval flow, platform formatting, YouTube/LinkedIn/WhatsApp Channel only if APIs permit; OAuth flows for vendor accounts (currently token paste). Marketing request workflow + monthly entitlement counters. Manual publishing fallback first.
-- **Gate:** Meta/Google/LinkedIn/YouTube reviews.
+### V3.8 — Social and marketing operations (est. 4–5 wks; approval-gated)
+- Build on the existing sandbox `social/` publisher; calendar, approval, vendor OAuth, marketing requests, monthly entitlement counters.
 
 ### V3.9 — SEO, GEO, AEO (est. 3–4 wks)
-- RSS/Atom, redirect manager, sitemap index + category/location/business sitemaps (after V3.2), structured data per entity, technical SEO audit job, Search Console + GA4 Data API (OAuth), robots policy for custom domains, thin-content guards.
+- RSS/Atom, redirect manager, full sitemap index, structured data per entity, technical audit job, Search Console / GA4.
 
-### V3.10 — Production Testing (est. 3–4 wks)
-- Tenant isolation suite on every API, security review (re-run `security-verify`, S1–S15 closure), integration tests behind sandbox flags, E2E (browser), load/perf, backup + restore drill, migration rehearsal on a production copy, blue/green or rollback procedure, Node base image upgrade (Node 20 is EOL), upgrade standalone sites' Next versions.
+### V3.10 — Production testing (est. 3–4 wks)
+- Tenant isolation on every API, security review, E2E, load/perf, backup/restore drill, migration rehearsal on a production copy, deployment/rollback, Node base-image upgrade.
 
-**Total (single engineer, sequential): ≈ 40–50 weeks** before external approvals/credentials, which can add calendar time independent of effort. Treat as order-of-magnitude.
+**Order-of-magnitude total ≈ 40 weeks single-engineer**, excluding external approvals and credentials; V3.5 is unestimated.
 
-## 2. Pending production backlog to reconcile in V3.1 Step 0
+## 2. Legacy handling (replaces the earlier "pending production backlog" section)
 
-(From V2 docs; **production state unverified by me** — the first action is a read-only check of `_prisma_migrations` and deployed commit.)
-
-- Migrations documented as "written, not applied" at various dates: `domain_campaign_custom_fee`, `payment_idempotency`, `universal_catalogue_columns`, `stepnrock_handover`, `special_arrangements`, `bos_spine`, `leadspace` (+ `page_stats`, `followups`), `website_manager`, `industry_designs`, `theme_packages`, `existing_clients`, `ai_credit_per_term`. Several were later noted as applied; the latest authoritative statement must be re-verified.
-- Razorpay Plans (annual Workspace/BOS) to be created by KSM; Payee & QR configuration; stepnrock activation.
-- RLS script must be re-run after every migration that adds tables.
-- Decisions awaiting KSM listed in `docs/v2/STATUS.md`.
+- Workspace/BOS and everything coupled to them are **legacy**: see "Legacy, out of V3 scope" in the requirements matrix, including the vendors, subscriptions and payments known to depend on them.
+- V3 does not apply, finish or revert legacy pending migrations (e.g. `universal_catalogue_columns`). Step 0 only **records** what production has applied.
+- The owner decides the future of legacy data and vendors separately.
 
 ## 3. Cross-cutting engineering rules for every V3 phase
 
-1. **Additive migrations only**; `verify-migrations-additive.js` + `verify-migrations.js` must pass; back up before applying; never `db push` against production.
-2. **Feature flags per vendor** (existing pattern: `nav_v2`, `site_doc_v2`) so a phase can ship dark and be switched on vendor by vendor.
-3. **No fake functionality** — a UI action must have a working backend or be shown "Coming soon"/"Pending approval". Mock providers remain labelled.
-4. **Integrations behind adapters** with `sandbox | live` mode and status values from Rule 6.
-5. **CLAUDE.md conflicts** (for a decision, not for me to resolve): the platform CLAUDE.md says UUID IDs, soft delete (`deletedAt`), refresh tokens, shadcn, lint/tests required. Actual code: `cuid()`, no soft delete on most models, bearer JWT, no shadcn, no tests. V3 plan follows *reality* and does not mass-rewrite IDs; new tables may adopt `deletedAt` where the spec's retention rules need it.
-6. Each phase ends with the Rule 9 report (objective, reuse, files, DB changes, routes, frontend, tests, results, outstanding) and updates this tracker set.
-
-## 4. Proposed first slice after approval (V3.1 Step 0 only)
-
-Read-only production reconciliation → CI + test runner + `/health` → tenant-guard + first cross-tenant tests → S7–S15 closure list. No new product features until that baseline is green.
+1. **Additive database changes only**; the migration guard scripts must pass; back up before applying anywhere that holds real data; never `db push` against production; **never run migrations against production from V3 work without explicit approval**.
+2. **Feature flags** so a phase can ship dark. V3 flags are new and V3-named; V3 does not depend on the legacy `nav_v2` / `site_doc_v2` / `workspace_menu` switches.
+3. **No fake functionality** — a UI action needs a working backend or a visible "Coming soon / Pending approval" state. Mock providers stay labelled.
+4. **Integrations behind adapters** with `sandbox | live` mode and Rule 6 status values.
+5. **Identifiers:** the code uses `cuid()` IDs on every model. The platform `CLAUDE.md` said UUID; the correction is proposed separately. V3 keeps `cuid()` and does not rewrite existing IDs.
+6. Each phase ends with the Rule 9 report (objective, reuse, files modified, files added, DB changes, routes, frontend, tests, results, outstanding) and updates the tracker set.

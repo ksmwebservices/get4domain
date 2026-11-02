@@ -23,16 +23,58 @@
 
 A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a dispatch, not deployed/verified live.
 
+## Owner decisions applied (2026-11-02, final — override anything earlier in this file's history)
+
+| ID | Decision | Effect on this matrix |
+|---|---|---|
+| **D1** | V3 covers the **public business directory, instant free websites, and the four plans in spec §3 only: Free, Handyman, Professional, Ecommerce.** Billing: quarterly, half-yearly, annual; optional monthly possible later. Plans, prices, taxes, billing periods, discounts, grace periods and entitlements are **database data editable by admin without code changes.** | Rows in §3 are **ND**. **Workspace and BOS are legacy, out of V3 scope**: not extended, not built on, not deleted, not migrated; existing vendor data is untouched. No "grandfathering" or "build on Workspace/BOS" work exists in the V3 plan. Dependents are listed in the section "Legacy, out of V3 scope" below. |
+| **D3** | Keep the existing **HTML/CSS themes**. **Next.js theme packages are deferred.** | §5.3 Next.js row = **Deferred**. |
+| **D4** | Redis/BullMQ approved, but **not added in Step 0.** A managed Redis is introduced only when queues are needed (≈V3.6/V3.7). | §19 queue row = **ND, scheduled V3.6/V3.7**. |
+
 ## Headline findings (the ones that change the plan)
 
-1. **The pricing model conflicts with the spec.** Spec: Free + Handyman ₹999 / Professional ₹1,999 / Ecommerce ₹2,999 per month-equivalent, billed quarterly / half-yearly / annual. Code today: **Workspace (₹11,988/yr) and BOS (₹23,988/yr), annual-only**, plus LeadSpace (free) and "Essentials / Pro" naming in later dispatches. Quarterly was deliberately *retired* on 2026-10-01 by a KSM decision. V3 §3 re-introduces it. → **business decision required before V3.1.**
+1. **Plan model: resolved by D1.** Spec §3 (Free, Handyman, Professional, Ecommerce; quarterly/half-yearly/annual; data-driven) is the V3 model. It is **new development** on new tables. The existing Workspace (₹11,988/yr) and BOS (₹23,988/yr) annual-only plans, with the "Essentials / Pro" display names used in later dispatches, are **legacy and out of V3 scope**.
 2. **There is no public business directory.** No `/businesses/...` routes, no Listing-as-directory, no location engine, no category/location sitemaps. The `Listing` model in the schema is a *real-estate* module model, not a directory. §7 is almost entirely **ND**.
 3. **The "Tenant" is the `Vendor` row.** There is no Tenant/Business/Branch/TenantMember split; auth is single-vendor-per-login with a small `TeamMember`. All 148 model IDs are `cuid()`. §20's "Core" entities are mostly **RM** (map onto Vendor) rather than new tables.
-4. **Theme packages exist, but as sanitised HTML/CSS — not Next.js.** The shipped contract (`docs/v2/THEME_CONTRACT.md`) is deliberately script-free, which satisfies spec §5.3/Rule 5 *security* intent but not its literal "first implementation must support Next.js frontend theme packages". → **decision required** (recommend keeping HTML/CSS contract; treat Next.js as a later, sandboxed phase).
+4. **Theme packages exist as sanitised HTML/CSS — not Next.js. Resolved by D3:** keep the HTML/CSS contract (`docs/v2/THEME_CONTRACT.md`); Next.js theme packages are deferred.
 5. **Zero automated test files are tracked in git and there is no CI** (`.github/` absent). Verification is bespoke Node scripts (`npm run bos:verify`, `verify:commercial`, `security-verify`). Spec Rule 7 (cross-tenant tests on every important API) cannot be claimed met.
-6. **No queue infrastructure.** No Redis/BullMQ anywhere (`backend-api/package.json`, `src/`). Spec §19 prefers it; scheduling today is `@nestjs/schedule` cron in-process.
+6. **No queue infrastructure.** No Redis/BullMQ anywhere (`backend-api/package.json`, `src/`). Approved by D4 but deliberately **not** added in Step 0; managed Redis arrives ≈V3.6/V3.7. Scheduling today is `@nestjs/schedule` cron in-process.
 7. **Many "integrations" are mock/sandbox or credential-blocked** (Meta publish, Google Ads, video, WhatsApp Cloud API approval, ResellerClub untested, Fast2SMS DLT). See `V3_INTEGRATION_STATUS.md`. Rule 6 forbids calling any of these complete.
 8. **Open security findings from V2 (S7–S15) are not confirmed fixed** in anything I read. S1–S6 were patched in code (commit 6cf999b) but the V2 docs said "not yet deployed" at the time; current production state is unverified by me.
+
+---
+
+## Legacy, out of V3 scope: Workspace and BOS
+
+Per D1, Workspace and BOS (displayed as "Essentials" and "Pro" in later dispatches) are **legacy**. V3 does not extend, build on, delete or migrate them, and existing vendor data is not touched. This section exists so the owner can decide their fate later.
+
+**Production data is not visible to this audit** (no database access was used). The vendor/subscription/payment lists below are therefore from repository docs and code only and **must be confirmed** by a read-only query (V3.1 Step 0, item 1, once approved). Nothing below should be treated as a complete roster.
+
+### Vendors / subscriptions / payments known to depend on them (from docs)
+
+| Dependent | Evidence | What depends |
+|---|---|---|
+| **stepnrock** (retail, owner Suresh) | `docs/v2/CLAIMS_VS_REALITY.md:67`, `STATUS.md`, `STEPNROCK_HANDOVER.md` | Workspace plan, half-yearly arrangement; billing term was `ACTIVE_PAYMENT_DUE`; documented invoices `INV-2026-0005` (void) and `INV-2026-0006` (open); one-time AI Studio credit (₹250) pending; `workspace_menu` add-on switched on only for this vendor; BOS spine backfill run command targets it |
+| Other live vendors | V2 audit: "0 of 5 live vendors have Razorpay keys" (`VENDOR_DASHBOARD_AUDIT.md:24`) | The five are not named in the docs I read; plan per vendor **unknown** until queried. Known live apps in the repo: MR Travels, Allwin Tours, deebiphotography, stepnrock, indianambulance, ksm-quantum (own site) |
+| Vendors on the "legacy_quarterly" / "legacy_yearly" tiers | `payments/plan-pricing.constants.ts` (`QUARTERLY_BASE_PAISE` ₹2,997, `YEARLY_BASE_PAISE` ₹9,999) | Amounts already on the books are classified by `planTierForAmount`; these are an *older* legacy tier than Workspace/BOS |
+| Demo vendors | V2: 39 expired demo vendors never cleaned | Not paying; unaffected by plan decisions |
+
+### Code that is legacy-coupled (do not extend)
+
+`backend-api/src/payments/plan-pricing.constants.ts`, `backend-api/src/commercial/*` (deals, entitlements, arrangements, manual payments, pay links), `backend-api/src/registry/provisioning.ts`, `backend-api/src/addons/addons.constants.ts`, `registry/*` (feature registry), `get4domain_mvp/src/lib/workspace-menu.ts`, `get4domain_mvp/src/lib/pricing.ts`, `get4domain_mvp/src/app/dashboard/layout.tsx` (workspace menu), `/admin/commerce/*`, `/admin/plans`, `/admin/pricing/*`, `backend-api/src/bos/*` and `get4domain_mvp/src/bos/*`; scripts `activate-stepnrock*`, `fix-stepnrock-term*`, `set-vendor-access*`, `bos-spine-backfill*`, `commercial-verify/*`.
+
+### Tables that are legacy (do not alter; additive V3 tables only)
+
+Plan/billing: `Subscription`, `Invoice`, `BillingTerm`, `BillingDeal`, `PlanOverride`, `PlanChangeRequest`, `PromoCode`, `PromoRedemption`, `ManualPaymentSubmission`, `PayeeSettings`, `SpecialArrangement`, `CommercialAuditLog`, `PaymentRecord`, `PlatformIncome`; enums `Plan`, `Product`, `BillingPlanKey`, `BillingCycle`, `GstMode`, `BillingTermStatus`, `TermSource`, `DealStatus`, `InvoiceKind`, `PayChannel`, `SubmissionStatus`, `PromoType`, `PlanChangeEffective`, `PlanChangeStatus`.
+BOS spine: `BosSettings`, `BosDocSeries`, `BosDocument`, `BosDocumentLine`, `BosPayment`, `BosAllocation`, `BosExpense`, `BosAccount`, `BosJournalEntry`, `BosJournalLine`, `BosStockLocation`, `BosRecurring`.
+Menu/entitlement: `VendorAddon`, `VendorModule` rows for `workspace_menu`, `nav_v2`, plan-driven modules.
+Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance (2 Workspace / 4 BOS per year).
+
+### Open questions for the owner (not decided; I have not assumed answers)
+
+1. The 20 industry operation modules (`g4d_*` tables for salon, gym, hotel, clinic, etc.), "DomainApp", the universal catalogue (`VendorProduct`, `StockMovement`) and LeadSpace were sold or gated through Workspace/BOS plans. Are they **legacy** too, or **platform assets V3 may reuse**? This decides how much of V3.5 can reuse existing code.
+2. Website Manager, category packs, themes and the `/site/<sub>` renderer are plan-agnostic in code but limit pages/storage by LeadSpace/Essentials/Pro. I assume V3.2/V3.3 **reuse the renderer and packs** but replace the limits with V3 entitlements, without touching legacy data. Confirm.
+3. When Workspace/BOS vendors exist alongside V3 vendors, should the legacy dashboard and billing stay available to them unchanged (assumed: yes, untouched)?
 
 ---
 
@@ -53,12 +95,13 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | # | Requirement | Class | Evidence / notes |
 |---|---|---|---|
 | 3.1 | Free listing + free one-page website | **EI** | LeadSpace free page (twelve trades) + free subdomain site via category packs. No *directory listing* half. Docs-only. |
-| 3.2 | Handyman plan ₹999 (Q ₹2,997 / H ₹5,694 / A ₹9,990) | **RM + COMM** | No such plan. Closest: Workspace ₹11,988/yr annual-only. Enum `BillingPlanKey { WORKSPACE, BOS }`. |
-| 3.3 | Professional plan ₹1,999 (Q/H/A) | **RM + COMM** | Closest: BOS ₹23,988/yr. Prices differ from spec (A: spec ₹19,990 vs code ₹23,988). |
-| 3.4 | Ecommerce plan ₹2,999 | **ND + COMM** | No third tier. |
-| 3.5 | Configurable plan/price engine (Q/H/A + optional monthly; admin-editable prices, taxes, discounts, grace, upgrade rules) | **EI** | Commercial Engine v1: deals, terms (`BillingCycle` MONTHLY/HALF_YEARLY/ANNUAL/CUSTOM_MONTHS), promo codes, plan changes, `PlanOverride`, `BillingTerm` grace. Pricing constants are partly **hard-coded** in `payments/plan-pricing.constants.ts` (and mirrored in frontend `lib/pricing.ts`) → violates "without source-code changes". **RM.** |
-| 3.x | Plan entitlements (features per plan; "Locked / Open / Coming soon") | **EI** | `registry/` feature registry + `provisionModules`; plan→menu mapping exists. Entitlements not a DB-driven `Features/PlanFeatures` model. |
-| 3.x | Monthly allowances: email/SMS/WA units, social creatives, reels | **ND + COMM** | No allowance/metering tables; wallet is a single paise balance. |
+| 3.2 | Handyman plan ₹999 (Q ₹2,997 / H ₹5,694 / A ₹9,990) | **ND + COMM** | Does not exist. Stored as **plan + plan-price rows** (admin-editable), not code. Workspace/BOS are legacy and are **not** a starting point. |
+| 3.3 | Professional plan ₹1,999 (Q ₹5,997 / H ₹11,394 / A ₹19,990) | **ND + COMM** | As above. |
+| 3.4 | Ecommerce plan ₹2,999 (Q ₹8,997 / H ₹17,094 / A ₹29,990) | **ND + COMM** | As above. |
+| 3.1 | Free plan (₹0) as a real plan row with restrictions | **ND** | Free restrictions (no custom domain, no premium themes, no ecommerce checkout, no advanced CRM…) enforced from entitlement rows. |
+| 3.5 | Plan/price engine: Q/H/A + optional monthly; admin-editable prices, **taxes**, discounts, **grace periods**, upgrade rules — all DB data, no code change | **ND** | New tables (plans, plan prices, features, plan features, tax rates, discount rules, subscription terms). The legacy Commercial Engine (`BillingTerm`, `BillingDeal`, `PlanOverride`, promo codes) and the hard-coded `payments/plan-pricing.constants.ts` serve legacy plans only; **V3 neither extends nor reads them.** |
+| 3.x | Plan entitlements (features per plan; Locked / Open / Coming soon) | **ND** | New data-driven `Feature` / `PlanFeature` model with one server-side check function. The legacy `registry/` + `provisionModules` + `VendorModule`/`VendorAddon` menu gating is legacy-coupled and is **not** the V3 source of truth. |
+| 3.x | Monthly allowances: email/SMS/WA units, social creatives, reels | **ND + COMM** | No allowance/metering tables today. Later phases (V3.7+). |
 
 ## §4 Domain services and migration
 
@@ -79,7 +122,7 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | 5.2 | ≥5 usable themes (corporate, healthcare, real estate, construction, ecommerce) | **EI** | 13 built-in themes (`site-themes.json`) + reference themes; imported HTML themes. Mapping to the five named verticals not confirmed. |
 | 5.3 | Admin theme upload: validate → preview → publish → marketplace | **EI** | `ThemePackage`, `ThemeAsset`, `ThemeEntitlement`, `themes/core/{sanitise,lint,contract}`, `/admin/themes`. Docs-only for round 2. **Format differs from spec (HTML/CSS, not Next.js).** |
 | 5.3 | Theme security (no arbitrary code, size limits, version, rollback, tenant isolation) | **EW** (design) | Script-free contract, sanitiser, lint CLI, size limits. Rollback via versions. Static review only. |
-| 5.3 | Next.js theme packages with controlled build/preview deployments | **ND (decision)** | Not present; spec says "first implementation". Recommend defer + sandbox. |
+| 5.3 | Next.js theme packages with controlled build/preview deployments | **Deferred (D3)** | Out of V3 scope for now. The HTML/CSS contract is the supported format. |
 | 5.4 | Vendor Theme Marketplace (browse, filter, desktop/mobile preview, preview with own content, activate, change, restore) | **EI** | Paid yearly marketplace, unlock/buy, `theme-preview`, theme-change limits (2/4 per year). Per-plan eligibility mapping to V3 plans = **RM**. |
 | 5.5 | Global/page/section managers (all listed components) | **EI** | Website Manager: `VendorCMS` single-row model + `draft` JSON + pack sections. Not a relational Pages/Sections model (§20 wants `WebsitePages`, `WebsiteSections`). |
 | 5.5 | Draft / preview / publish / revision history / restore | **EW** (docs) | `SiteVersion` keeps last 10 versions; signed 30-min preview link. |
@@ -96,14 +139,18 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | 6 | Domain verification, SSL provisioning, canonical, secondary redirects, uptime monitoring | **ND** | SSL is Cloudflare Flexible / manual certbot. No `/health`, no monitoring in repo. |
 | 6 | Tenant-specific SEO | **EW** | Per-host `robots.txt` / `sitemap.xml` routes exist. |
 
-## §7 Directory and public marketplace
+## §7 Directory and public marketplace — **the main V3.2 deliverable**
+
+**Naming rule:** the existing Prisma model `Listing` (table `g4d_listings`) belongs to the real-estate module and must not be reused, renamed or shadowed. New directory objects use the `Directory*` prefix: `DirectoryBusiness`, `DirectoryCategory`, `DirectoryLocation`, `DirectoryBusinessService`, `DirectoryBusinessProduct`, `DirectoryBusinessMedia`, `DirectoryPlacement`, `DirectoryReview`; tables `g4d_directory_*`. Public wording may still say "listing"; code, tables, API routes and DTOs do not.
 
 | # | Requirement | Class | Evidence / notes |
 |---|---|---|---|
-| 7.1 | Searchable public directory, 21 initial categories, subcategories | **ND** | Vendor category taxonomy migration (`20260924010000`) exists; no public directory. Category list ≠ spec's 21 (needs reconciling). |
-| 7.2 | `/businesses/<state>/<city>/<category>` + `/business/<slug>` | **ND** | Absent. Needs Location engine (no Location model). |
-| 7.3 | Listing features (hours, map, verification, reviews) | **ND** | No Review model in schema. |
-| 7.4 | Plan-based listing appearance; sponsored labelling; organic not purely price-ranked | **ND + COMM** | Absent. |
+| 7.1 | Searchable public directory, 21 initial categories, subcategories | **ND (V3.2 core)** | Vendor category taxonomy migration (`20260924010000`) exists; no public directory. Category list ≠ spec's 21 (reconcile into `DirectoryCategory`). |
+| 7.2 | `/businesses/`, `/businesses/<state>/`, `/businesses/<state>/<city>/`, `/businesses/<state>/<city>/<category>/`, `/business/<slug>/` | **ND (V3.2 core)** | Absent. Needs `DirectoryLocation` (no location model exists). |
+| 7.2 | Search (keyword + category + location) | **ND (V3.2 core)** | Absent. Start with Postgres full-text/trigram on the same database; no new search service in V3.2. |
+| 7.3 | Business profile features (hours, map, verification status, services, products, gallery, enquiry form, WhatsApp/website links) | **ND (V3.2 core)** | Reviews (`DirectoryReview`) only if moderation is in scope; no Review model exists. |
+| 7.4 | Plan-based appearance; sponsored labelling; organic relevance not purely price-ranked | **ND + COMM** | Driven by V3 plan entitlements (D1). Absent. |
+| 7.x | Directory sitemaps (main, category, location, business) + sitemap index; noindex for thin pages | **ND** | Part of V3.2 (basic) and V3.9 (full SEO). |
 
 ## §8 Central Enquiry Hub
 
@@ -130,7 +177,7 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 |---|---|---|---|
 | 10 | Lead pipeline New→Contacted→Qualified→Follow-up→Converted→Lost | **EI / RM** | `Lead.status` is a free String default `"pending"`; pipeline values not enforced. Also `crm/`, `admin-crm/`, `telecrm`. |
 | 10 | Customer records, notes, tasks, reminders, call records, appointments | **EI** | `Contact`, `LeadCallLog`, `CallLog`, `VendorTask`, `Appointment` (booked/completed/cancelled/no_show). |
-| 10 | Assignment, duplicate detection, export, reports | **EI** | `assignedTo` present; dedupe/export/reports partial (BOS reports). |
+| 10 | Assignment, duplicate detection, export, reports | **EI** | `assignedTo` present; dedupe/export/reports not in place. (Existing BOS reports are legacy, not reusable under D1.) |
 | 10 | Telecalling compliance (consent / telecom rules) | **EI + COMM** | LeadSpace compliance pack exists; legal answers pending (CA/lawyer per docs). |
 
 ## §11 Ecommerce
@@ -142,10 +189,10 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | 11 | Vendor-direct Razorpay (separate from platform collections) | **EI** | `VendorPaymentConfig` (AES-GCM keys); V2 flagged client-priced checkout → patched S2; **0 of 5 live vendors could take online payments** (V2 audit). |
 | 11 | Coupons / discount rules (vendor-side) | **ND** | `PromoCode` exists but for *platform plan* promos only. |
 | 11 | Shipping integration, tracking | **ND + CRED** | Only a `shippingPaise` amount; no carrier integration. (`Shipment` model is logistics module.) |
-| 11 | Returns / refunds | **EI** | BOS credit notes with return-to-shelf; no customer-facing return-request workflow; no automatic refunds. |
+| 11 | Returns / refunds | **ND** | Only legacy BOS credit notes exist (out of V3 scope). A V3 customer return-request / refund workflow is new development (V3.5, Ecommerce plan). |
 | 11 | Customer accounts | **EI** | `customer/` OTP portal (not a store account with order history across vendors). |
 | 11 | COD | **EI** | ORDER_REQUEST mode ≈ pay-on-confirm; explicit COD not confirmed. |
-| 11 | Sales analytics | **EI** | BOS reports/Today. |
+| 11 | Sales analytics | **ND** | Only legacy BOS reports/Today exist. New V3 reports in V3.5. |
 
 ## §12 Communication and usage billing
 
@@ -204,7 +251,7 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | # | Requirement | Class | Evidence / notes |
 |---|---|---|---|
 | 19 | Next.js + TS + Tailwind + NestJS + Postgres + Prisma | **EW** | Next 15.5 / React 19 / Tailwind 3.4; NestJS 11; Prisma 6.19.3; Supabase Postgres. (Standalone vendor sites run older Next: 13.5.1 / 14.2.35.) |
-| 19 | Redis + BullMQ background jobs | **ND** | Not present. |
+| 19 | Redis + BullMQ background jobs | **ND — approved (D4), scheduled ≈V3.6/V3.7** | Not present and **not added in Step 0**; managed Redis only when queues are needed. |
 | 19 | Storage (object storage / Supabase) | **EI** | Local-disk uploads on Docker named volumes; Supabase Storage only for AI hero image. |
 | 19 | Razorpay (platform) + vendor merchant integrations | **EI + CRED** | Razorpay Plans for annual tiers still to be created by KSM; keys env-only. |
 | 19 | Multi-tenant context; all business data tenant-scoped | **EI** | Vendor-scoped queries; JWT carries vendor; RLS enabled via manual SQL script (`prisma/sql/enable_rls_public.sql`, must be re-run after migrations). Not enforced via a tenant guard abstraction. |
@@ -218,7 +265,7 @@ A row can carry several flags, e.g. `EI + CRED + APPR`. "Docs-only" = built in a
 | Spec group | Coverage |
 |---|---|
 | Core (Users, Roles, Permissions, Tenants, Businesses, Branches, Employees, TenantMembers) | **RM** — `Vendor`, `AdminTeamMember`, `TeamMember` partially cover; no Permissions/Tenant/Business/Branch tables. |
-| Subscription (Plans, PlanPrices, Features, PlanFeatures, Subscriptions, Entitlements, UsageRecords, Invoices, Payments, Refunds) | **EI** — `Subscription`, `Invoice`, `BillingTerm`, `BillingDeal`, `PlanOverride`, `PaymentRecord`, `PromoCode`; no Plans/PlanPrices/Features tables (plans are code), no Refund entity, no UsageRecords. |
+| Subscription (Plans, PlanPrices, Features, PlanFeatures, Subscriptions, Entitlements, UsageRecords, Invoices, Payments, Refunds) | **ND** under D1. New V3 tables for plans, prices, features, plan features, taxes, discounts, subscription terms, entitlements, refunds, usage. The existing `Subscription`, `Invoice`, `BillingTerm`, `BillingDeal`, `PlanOverride`, `PaymentRecord`, `PromoCode` tables are **legacy (Workspace/BOS era), out of V3 scope**. Where V3 needs invoices/payments it adds V3-named tables rather than altering these. |
 | Website (Websites, Domains, DomainVerifications, DNSRecords, SSLRecords, WebsitePages/Sections/Revisions/Media, ThemePackages/Versions/Deployments) | **EI** — `VendorCMS`(single row), `SiteVersion`, `MediaAsset`, `ThemePackage`(versioned), `ThemeAsset`, `ThemeEntitlement`, `WebsiteTheme`; domain fields live on `Vendor`; `DomainRegistration` exists. No Verification/DNS/SSL tables. |
 | Directory | **ND** (see §7; `Category`, `CategoryPack` exist) |
 | Domain | **EI** — `DomainRegistration` only. DomainTransfers / MigrationJobs / RegistrarTransactions / RenewalRecords **ND**. |

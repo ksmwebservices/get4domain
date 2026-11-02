@@ -45,21 +45,23 @@ Names are working titles; final DDL is written in each phase after approval. Exi
 ### V3.1 SaaS Foundation
 | New / extended | Notes |
 |---|---|
-| `g4d_plans`, `g4d_plan_prices`, `g4d_features`, `g4d_plan_features` | Seed from `plan-pricing.constants.ts` + `registry/`. Existing `BillingPlanKey` enum stays; add `planId` nullable FK on `BillingTerm`/`Subscription`, backfilled from the enum. No change to historical rows |
-| `g4d_entitlements` (tenant-level overrides/usage caps) | Extends the idea behind `PlanOverride`; do not duplicate — either generalise `PlanOverride` or reference it |
+| `g4d_plans`, `g4d_plan_prices` (plan × billing period: quarterly / half-yearly / annual / optional monthly), `g4d_features`, `g4d_plan_features`, `g4d_tax_rates`, `g4d_discount_rules`, `g4d_plan_settings` (grace periods, upgrade rules) | **All admin-editable data (D1).** Seeded once with spec §3: Free, Handyman, Professional, Ecommerce. **Not** seeded from `plan-pricing.constants.ts` or `registry/`. No FK to, and no change of, any legacy billing table |
+| `g4d_subscriptions_v3` (or `g4d_plan_subscriptions`), `g4d_subscription_terms`, `g4d_entitlement_overrides` | V3-named tables so they never collide with legacy `Subscription`/`BillingTerm`/`PlanOverride`. Final names fixed at V3.1 design time |
 | `g4d_staff_roles`, `g4d_permissions`, `g4d_role_permissions` | Link `AdminTeamMember` → role(s). Keep the `AdminRole` enum column for backward compatibility during transition |
-| `g4d_audit_logs` | Generalises `CommercialAuditLog`; old table untouched and dual-written until retired |
+| `g4d_audit_logs` | New platform audit log for V3 actions. Legacy `CommercialAuditLog` is untouched and not dual-written |
 | `Vendor` provenance columns (`registeredByStaffId`, `source`) | nullable |
 | Optional `g4d_branches` | Defer unless a spec requirement forces it (spec lists Branches under Core) |
 
-### V3.2 Directory and Free Website
+### V3.2 Public Business Directory (main deliverable) and Free Website
+Naming: the existing Prisma model `Listing` / table `g4d_listings` is the real-estate module's. **Nothing in V3 uses the word "listing" in a model, table, route or DTO name.** All directory objects use the `Directory*` prefix.
+
 | New | Notes |
 |---|---|
-| `g4d_locations` (state → district → city tree, slug unique per parent) | Seed Tamil Nadu first |
-| `g4d_directory_categories` (tree) **or** extend `Category` | Decide after reconciling `Category` / `CategoryPack` / vendor taxonomy (`20260924010000`) to avoid a third taxonomy |
-| `g4d_directory_listings` (+ `_services`, `_products`, `_media`, `_placements`) | **Not** the existing real-estate `Listing`. Link `vendorId` nullable (unclaimed listings possible only if policy allows) |
-| `g4d_reviews` | Only if reviews are in scope; moderation required |
-| Slug uniqueness + indexes for `(locationId, categoryId)` browse queries | Plan explicit composite indexes |
+| `DirectoryLocation` → `g4d_directory_locations` (state → district → city tree, slug unique per parent) | Seed Tamil Nadu first |
+| `DirectoryCategory` → `g4d_directory_categories` (tree, slug unique per parent, the spec's 21 initial categories) | New table; reconcile with `Category` / `CategoryPack` / vendor taxonomy (`20260924010000`) by mapping, not by altering them |
+| `DirectoryBusiness` → `g4d_directory_businesses` (+ `DirectoryBusinessService`, `DirectoryBusinessProduct`, `DirectoryBusinessMedia`, `DirectoryPlacement`) | Link `vendorId` nullable (unclaimed profiles only if policy allows). Public slug unique. `search_vector` / trigram index for search (Postgres full-text, same DB) |
+| `DirectoryReview` → `g4d_directory_reviews` | Only if reviews are in scope; moderation required |
+| Composite indexes for `(locationId, categoryId)` browse and slug lookups; sitemap pagination index | Planned explicitly; verify with `EXPLAIN` on staging |
 
 ### V3.3 Theme / Website Manager
 | Change | Notes |
@@ -79,7 +81,7 @@ Names are working titles; final DDL is written in each phase after approval. Exi
 ### V3.5 Webapps / CRM / Ecommerce
 | Change | Notes |
 |---|---|
-| Apply pending `universal_catalogue_columns` + data migration per `UNIVERSAL_CATALOGUE_MODEL.md` §4 | Already designed; cutover is a separate approval |
+| **Re-scope required (D1).** The universal catalogue, 20 industry modules and BOS spine were sold through Workspace/BOS. Whether any is reusable is an open owner question (see matrix, "Legacy" section). **No V3.5 schema is designed until answered.** | The pending `universal_catalogue_columns` migration is **not** part of V3 and is not applied by V3 work |
 | `g4d_product_variants`, `g4d_coupons` (vendor-scope), `g4d_shipments_ecom`, `g4d_return_requests` | Name `Shipment` is taken (logistics) — avoid collision |
 | Lead pipeline: constrain `Lead.status` via enum/check **after** profiling the distinct values in production (it is a free string today) | Expand with a mapping table; never rewrite rows blindly |
 
@@ -106,7 +108,7 @@ Extend `SocialAccount` / `SocialPost` / `PostJob`; add `g4d_social_assets`, `g4d
 | `db push` drift | Cannot rebuild DB; CI impossible | Baseline migration |
 | Free-form `Lead.status`, `Appointment.status`, etc. | Enum conversion breaks rows | Profile first; add mapping, no destructive cast |
 | RLS forgotten on new tables | Cross-tenant data exposure via Supabase API | Make RLS script a mandatory post-step and a CI check |
-| Plan model change vs live terms | Price changes for paying vendors | Plans as data with **grandfathered** price rows; never recompute existing terms |
+| V3 plan tables sitting beside legacy Workspace/BOS billing tables | Confusion, accidental coupling, or writes to legacy rows | V3 uses new, V3-named tables only (D1). No FK from V3 plan tables to legacy billing tables, no V3 code path reads/writes `Subscription`/`BillingTerm`/`BillingDeal`; legacy vendor data is never touched |
 | Dual sources of truth during expand/contract (domains, catalogue, audit) | Drift | Single writer per field; dual-write only with a reconcile script |
 | Large backfills on hot tables | Lock contention | Batched, off-peak, advisory-lock guarded |
 | Secrets in new tables (auth codes, OAuth tokens) | Leak | Encrypt with `PLATFORM_SETTINGS_KEY` pipeline; never return from APIs; add to secret-redaction list |
