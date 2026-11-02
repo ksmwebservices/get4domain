@@ -7,7 +7,7 @@
 | Item | Value |
 |---|---|
 | Engine | PostgreSQL (Supabase), Prisma 6.19.3, pooled `DATABASE_URL` + `DIRECT_URL` |
-| Schema | 3,757 lines, 150 `model`, 20 `enum` |
+| Schema | 3,757 lines, 150 `model`, 21 `enum` |
 | Migration folders | 53 (latest `20261016100000_theme_packages`) |
 | ID style | `String @id @default(cuid())` on all 148 id fields (CLAUDE.md says UUID — not followed) |
 | Table naming | `g4d_*` via `@@map` |

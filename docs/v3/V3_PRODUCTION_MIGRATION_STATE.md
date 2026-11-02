@@ -33,4 +33,4 @@ Staging is a separate Supabase project. It was built with a baseline generated f
 
 ## Corrections to earlier V3 docs
 - Migration folders: 53 (not 54). Fixed in the matrix and plans.
-- Enums: 21 (not 20) in `schema.prisma`. To be corrected in a later docs commit.
+- Enums: 21 (not 20) in `schema.prisma`. Corrected in the matrix and the migration plan.
