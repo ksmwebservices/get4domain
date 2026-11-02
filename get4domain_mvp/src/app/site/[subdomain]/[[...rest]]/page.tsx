@@ -20,6 +20,7 @@ import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
 import { withShell } from '@/engine/shell/with-shell';
 import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/site';
+import { vendorCanonical } from '@/lib/site-canonical';
 
 // Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
 // within seconds. The vendor's private preview link (?preview=) is never cached.
@@ -122,6 +123,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const title = site.cms?.seoTitle || `${name} — ${site.cms?.tagline ?? 'Official Website'}`;
   const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
   const share = site.cms?.ogImage || site.cms?.banner || site.cms?.logo;
+  const canonical = vendorCanonical(subdomain, rest, SITE_BASE);
   return {
     // a vendor's own title is used exactly as written (the platform name is not added)
     title: site.docV2 ? { absolute: title } : title,
@@ -130,9 +132,9 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
     ...(site.docV2 && site.cms?.favicon ? { icons: { icon: site.cms.favicon } } : {}),
     // a preview, a draft, an unclaimed site, or a site that still shows only starter content is not offered to search engines
     ...(site.preview || (site.docV2 && site.indexable === false) ? { robots: { index: false, follow: false } } : {}),
-    // one canonical address per page: the vendor's own host
-    ...(site.docV2 ? { alternates: { canonical: `https://${subdomain}.${SITE_BASE}${rest[0] === 'p' && rest[1] ? `/p/${rest[1]}` : ''}` } } : {}),
-    openGraph: { title, description, type: 'website', url: `https://${subdomain}.${SITE_BASE}`, images: share ? [{ url: share, alt: name }] : [] },
+    // one self-canonical per page, for every renderer: the vendor's own host plus this page's own path (not the home page, not the /site/<sub> copy)
+    alternates: { canonical },
+    openGraph: { title, description, type: 'website', url: canonical, images: share ? [{ url: share, alt: name }] : [] },
   };
 }
 

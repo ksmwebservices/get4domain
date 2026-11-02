@@ -35,12 +35,40 @@ function legacyDashboardRedirect(req: NextRequest): NextResponse {
 // here, so a vendor whose address still points at its own hand-written app is untouched until nginx is changed for it. The main sites are never rewritten.
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'gapi', 'admin', 'mail', 'cdn', 'static', 'staging', 'demo']);
+const isReadRequest = (req: NextRequest): boolean => req.method === 'GET' || req.method === 'HEAD';   // a redirect would turn a POST into a GET
+const isVendorName = (sub: string): boolean => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(sub) && !RESERVED_HOSTS.has(sub);
+
+/**
+ * The main site must not serve a vendor's pages at get4domain.com/site/<sub>: that is a second copy of every page and splits the vendor's search
+ * ranking. It answers a permanent redirect to the vendor's own address, path and query kept (so ?preview= links keep working). Local and
+ * unknown hosts are untouched, so development and previews behave as before.
+ */
+function mainHostSiteRedirect(req: NextRequest): NextResponse | null {
+  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+  if (host !== SITE_BASE && host !== `www.${SITE_BASE}` || !isReadRequest(req)) return null;
+  const m = /^\/site\/([^/]+)(\/.*)?$/.exec(req.nextUrl.pathname);
+  if (!m || !isVendorName(m[1].toLowerCase()) || m[1] !== m[1].toLowerCase()) return null;
+  const url = req.nextUrl.clone();
+  url.protocol = 'https:';
+  url.hostname = `${m[1]}.${SITE_BASE}`;
+  url.port = '';
+  url.pathname = m[2] ?? '/';
+  return NextResponse.redirect(url, 301);
+}
+
 function vendorHostRewrite(req: NextRequest): NextResponse | null {
   const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
   if (!host.endsWith(`.${SITE_BASE}`)) return null;
   const sub = host.slice(0, -(SITE_BASE.length + 1));
-  if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(sub) || RESERVED_HOSTS.has(sub)) return null;
+  if (!isVendorName(sub)) return null;
   const { pathname } = req.nextUrl;
+  // The shared renderer's own links carry the /site/<sub> prefix; on the vendor's host that is a duplicate of the clean address, so it redirects there.
+  const prefix = `/site/${sub}`;
+  if (isReadRequest(req) && (pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    const url = req.nextUrl.clone();
+    url.pathname = pathname.slice(prefix.length) || '/';
+    return NextResponse.redirect(url, 301);
+  }
   if (pathname.startsWith('/site/') || pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/uploads')) return null;
   const url = req.nextUrl.clone();
   url.pathname = `/site/${sub}${pathname === '/' ? '' : pathname}`;
@@ -48,6 +76,8 @@ function vendorHostRewrite(req: NextRequest): NextResponse | null {
 }
 
 export async function middleware(req: NextRequest): Promise<NextResponse> {
+  const moved = mainHostSiteRedirect(req);
+  if (moved) return moved;
   const rewritten = vendorHostRewrite(req);
   if (rewritten) return rewritten;
   const { pathname } = req.nextUrl;
