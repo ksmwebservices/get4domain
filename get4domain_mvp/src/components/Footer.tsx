@@ -21,6 +21,9 @@ const footerSections = [
     title: 'Company',
     links: [
       { label: 'About Us', href: '/about' },
+      { label: 'How it works', href: '/how-it-works' },
+      { label: 'Portfolio', href: '/portfolio' },
+      { label: 'Templates', href: '/templates' },
       { label: 'Contact', href: '/contact' },
       { label: 'Support', href: '/support' },
       { label: 'Managed Services', href: MANAGED_HREF },

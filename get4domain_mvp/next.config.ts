@@ -4,6 +4,11 @@ import type { NextConfig } from 'next';
 // page. Off by default, so no existing site changes; turning it on also needs a wildcard DNS record and an nginx server block (docs/v2/LEADSPACE.md).
 const leadspaceDomain = (process.env.LEADSPACE_BASE_DOMAIN ?? '').trim().toLowerCase();
 
+const NOINDEX_PATHS = [
+  '/dashboard/:path*', '/admin/:path*', '/customer/:path*', '/login', '/register', '/admin-team/:path*', '/d/:path*', '/quote/:path*', '/pay/:path*',
+  '/theme-preview/:path*', '/theme-local-test', '/offline', '/cart', '/order-success',
+];
+
 const nextConfig: NextConfig = {
   output: 'standalone',
   images: {
@@ -16,13 +21,19 @@ const nextConfig: NextConfig = {
   // Campaigns and DomainCampaign became LeadSpace (Dispatch B, phase 7). The old marketing address stays as a permanent redirect for at least 180 days.
   async redirects() {
     return [
+      // two retired marketing addresses: a real 308 (a page that calls redirect() is prerendered as HTML with a meta refresh and answers 200)
+      { source: '/products', destination: '/features', permanent: true },
+      { source: '/digital-growth', destination: '/leadspace', permanent: true },
       { source: '/domain-campaign', destination: '/leadspace', permanent: true },
       { source: '/domain-campaign/:path*', destination: '/leadspace/:path*', permanent: true },
     ];
   },
   // The OTP gate is never content. Header and page meta both say noindex; robots.txt must NOT disallow it, or a crawler never gets to read them.
+  // Private, token and transactional addresses are never search results. A header covers client-rendered pages too, which cannot export metadata.
+  // (robots.txt already disallows most of these; a disallowed page is never fetched, so it cannot show a noindex. Both are kept on purpose.)
   async headers() {
-    return [{ source: '/visit-demo', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] }];
+    const noindex = [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }];
+    return ['/visit-demo', ...NOINDEX_PATHS].map((source) => ({ source, headers: noindex }));
   },
   async rewrites() {
     if (!leadspaceDomain) return [];
