@@ -4,14 +4,12 @@ import { siteConfig } from '@/constants/site';
 interface PageMetadataOptions {
   title: string;
   description?: string;
-  keywords?: string[];
   path?: string;
 }
 
 export function createPageMetadata({
   title,
   description,
-  keywords,
   path = '',
 }: PageMetadataOptions): Metadata {
   const url = `${siteConfig.url}${path}`;
@@ -22,7 +20,6 @@ export function createPageMetadata({
     // isn't appended twice (was producing "… | Get4Domain | Get4Domain").
     title: { absolute: fullTitle },
     description,
-    keywords: keywords ?? siteConfig.keywords,
     alternates: {
       canonical: url,
     },
