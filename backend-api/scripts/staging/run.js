@@ -93,6 +93,15 @@ async function main() {
     } else if (step === 'rls') {
       const r = prisma(['db', 'execute', '--file', 'prisma/sql/enable_rls_public.sql', '--schema', 'prisma/schema.prisma'], env, env.mask);
       if (r.status !== 0) process.exit(7);
+    } else if (step === 'migrate-deploy') {
+      // Applies pending prisma/migrations folders to STAGING only (the guard above refuses any other database).
+      const r = prisma(['migrate', 'deploy'], env, env.mask);
+      if (r.status !== 0) { console.error('migrate deploy failed on staging.'); process.exit(11); }
+    } else if (step === 'drift') {
+      // Exit 0 = the live staging structure equals prisma/schema.prisma; exit 2 = they differ (the diff is printed, masked).
+      const r = prisma(['migrate', 'diff', '--from-schema-datasource', 'prisma/schema.prisma', '--to-schema-datamodel', 'prisma/schema.prisma', '--exit-code'], env, env.mask);
+      if (r.status !== 0) { console.error('GATE FAILED: staging structure differs from schema.prisma.'); process.exit(12); }
+      console.log('no drift: staging structure equals schema.prisma');
     } else if (step === 'status') {
       // `prisma migrate status` exits non-zero when migrations are pending, failed or missing: propagate it (CI gate).
       const r = prisma(['migrate', 'status'], env, env.mask);

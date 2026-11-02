@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, Optional } from '@nestjs/common';
 import { BillingGateService, GatedAction } from '../commercial/billing-gate.service';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
-import { Wallet, WalletTransaction } from '@prisma/client';
+import { Prisma, Wallet, WalletTransaction } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptSecret } from '../platform-settings/crypto.util';
 import { TopupDto } from './dto/topup.dto';
@@ -10,6 +10,23 @@ import { VerifyTopupDto } from './dto/verify-topup.dto';
 import { InvoicesService } from '../invoices/invoices.service';
 import { grantWalletCredit, NINETY_DAYS_MS } from './wallet-credit.util';
 import { assertCapturedPayment, lockPayment } from '../payments/payment-verification';
+
+/** Options for deduct() and refund(). */
+export interface WalletWriteOptions {
+  /**
+   * Same key + same vendor, amount and service = the same operation: a repeat returns the original result and moves no money.
+   * The same key with a different vendor, amount or service is refused with 409 IDEMPOTENCY_KEY_REUSED.
+   */
+  idempotencyKey?: string;
+  /**
+   * Run inside the caller's interactive transaction, so a status change and the debit commit or roll back together.
+   * With this option a concurrent duplicate of the same key surfaces as an error and a rollback of the caller's transaction
+   * (retry it: the retry returns the original result).
+   */
+  tx?: Prisma.TransactionClient;
+}
+
+type Db = PrismaService | Prisma.TransactionClient;
 
 function bonusPercentFor(amountPaise: number): number {
   if (amountPaise >= 499900) return 30;
@@ -156,34 +173,104 @@ export class WalletService {
     return grantWalletCredit(this.prisma, vendorId, amount, description, service);
   }
 
-  async deduct(vendorId: string, amount: number, description: string, service: string): Promise<Wallet> {
+  /**
+   * Debit the wallet by `amount` paise. ATOMIC: one conditional UPDATE (`balance >= amount`) takes the money, so parallel
+   * debits can never overdraw (the row lock makes later ones re-check the balance after earlier ones commit).
+   *  - amount 0 is a successful no-op (a free rate): no row, no change.
+   *  - a negative, fractional or non-finite amount is 400 INVALID_AMOUNT.
+   *  - not enough balance (or no wallet) is 400 INSUFFICIENT_WALLET_BALANCE, unchanged.
+   *  - with `idempotencyKey`, a repeat returns the original result (balance as it was after the first debit) and moves no money.
+   */
+  async deduct(vendorId: string, amount: number, description: string, service: string, opts: WalletWriteOptions = {}): Promise<Wallet> {
+    WalletService.assertWholePaise(amount, true);
+    const key = opts.idempotencyKey;
+    const expected = { vendorId, amount, service, type: 'debit' } as const;
+
+    // A repeat of a debit that already happened answers with the original result, even if the vendor has lapsed since.
+    if (key) {
+      const db: Db = opts.tx ?? this.prisma;
+      const prior = await db.walletTransaction.findUnique({ where: { idempotencyKey: key } });
+      if (prior) return this.replayOf(db, prior, expected);
+    }
+
     const action = WalletService.gatedActionFor(service);
     if (action) await this.gate?.assertNotLapsed(vendorId, action);
-    return this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.findUnique({ where: { vendorId } });
-      if (!wallet || wallet.balance < amount) {
-        throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    if (amount === 0) return this.getOrCreateWallet(vendorId);
+
+    if (opts.tx) return this.debitIn(opts.tx, vendorId, amount, description, service, key);
+    try {
+      return await this.prisma.$transaction((tx) => this.debitIn(tx, vendorId, amount, description, service, key));
+    } catch (e) {
+      // Two requests with the same key raced: the loser rolled back (unique violation) or found the money already spent.
+      // If the winner committed, this is a replay, not a failure.
+      if (key) {
+        const prior = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey: key } });
+        if (prior) return this.replayOf(this.prisma, prior, expected);
       }
+      throw e;
+    }
+  }
 
-      const updated = await tx.wallet.update({
+  /**
+   * Put money back as a CREDIT ROW ONLY: balance and totalCredited go up, totalDebited is NOT restored, and the credit
+   * does not expire (it returns what was taken). `idempotencyKey` is required: a repeat returns the first result.
+   */
+  async refund(vendorId: string, amount: number, description: string, service: string, idempotencyKey: string, opts: { tx?: Prisma.TransactionClient } = {}): Promise<Wallet> {
+    WalletService.assertWholePaise(amount, false);
+    if (!idempotencyKey) throw new BadRequestException('IDEMPOTENCY_KEY_REQUIRED');
+    const expected = { vendorId, amount, service, type: 'credit' } as const;
+    const db: Db = opts.tx ?? this.prisma;
+    const prior = await db.walletTransaction.findUnique({ where: { idempotencyKey } });
+    if (prior) return this.replayOf(db, prior, expected);
+
+    const credit = async (tx: Prisma.TransactionClient): Promise<Wallet> => {
+      const wallet = await tx.wallet.upsert({
         where: { vendorId },
-        data: { balance: { decrement: amount }, totalDebited: { increment: amount } },
+        create: { vendorId, balance: amount, totalCredited: amount },
+        update: { balance: { increment: amount }, totalCredited: { increment: amount } },
       });
-
       await tx.walletTransaction.create({
-        data: {
-          vendorId,
-          walletId: wallet.id,
-          type: 'debit',
-          amount,
-          description,
-          service,
-          balanceAfter: updated.balance,
-        },
+        data: { vendorId, walletId: wallet.id, type: 'credit', amount, description, service, balanceAfter: wallet.balance, expiresAt: null, idempotencyKey },
       });
+      return wallet;
+    };
+    if (opts.tx) return credit(opts.tx);
+    try {
+      return await this.prisma.$transaction(credit);
+    } catch (e) {
+      const raced = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey } });
+      if (raced) return this.replayOf(this.prisma, raced, expected);
+      throw e;
+    }
+  }
 
-      return updated;
+  /** The conditional UPDATE that takes the money. Count 0 means the balance was too low (or there is no wallet): nothing was changed. */
+  private async debitIn(tx: Prisma.TransactionClient, vendorId: string, amount: number, description: string, service: string, key: string | undefined): Promise<Wallet> {
+    const claimed = await tx.wallet.updateMany({
+      where: { vendorId, balance: { gte: amount } },
+      data: { balance: { decrement: amount }, totalDebited: { increment: amount } },
     });
+    if (claimed.count === 0) throw new BadRequestException('INSUFFICIENT_WALLET_BALANCE');
+    // We hold the row lock until commit, so this reads our own write and nobody else's.
+    const updated = await tx.wallet.findUniqueOrThrow({ where: { vendorId } });
+    await tx.walletTransaction.create({
+      data: { vendorId, walletId: updated.id, type: 'debit', amount, description, service, balanceAfter: updated.balance, idempotencyKey: key ?? null },
+    });
+    return updated;
+  }
+
+  /** The result a repeated call gets: the wallet, showing the balance as it was right after the original operation. */
+  private async replayOf(db: Db, prior: WalletTransaction, expected: { vendorId: string; amount: number; service: string; type: 'debit' | 'credit' }): Promise<Wallet> {
+    if (prior.vendorId !== expected.vendorId || prior.amount !== expected.amount || prior.service !== expected.service || prior.type !== expected.type) {
+      throw new ConflictException('IDEMPOTENCY_KEY_REUSED');
+    }
+    const current = await db.wallet.findUniqueOrThrow({ where: { id: prior.walletId } });
+    return { ...current, balance: prior.balanceAfter };
+  }
+
+  /** Whole paise only. `allowZero`: a debit of 0 is a valid free action; a refund of 0 is not. */
+  private static assertWholePaise(amount: number, allowZero: boolean): void {
+    if (!Number.isInteger(amount) || amount < 0 || (!allowZero && amount === 0)) throw new BadRequestException('INVALID_AMOUNT');
   }
 
   /** Which lapse-gate action a wallet debit belongs to (domain purchases are not gated). */

@@ -59,6 +59,18 @@ export async function seedTenant(prisma: PrismaClient, label: string, runId: str
   };
 }
 
+/** A tenant with nothing but the vendor row (for tests of one subsystem, e.g. the wallet). Same deletion markers as seedTenant. */
+export async function seedBareVendor(prisma: PrismaClient, label: string, runId: string): Promise<{ vendorId: string; email: string }> {
+  const email = `${label}-${runId}@v3test.invalid`;
+  const vendor = await prisma.vendor.create({ data: { name: `V3TEST ${label}`, email, password: 'not-a-real-hash', businessName: `V3TEST ${label} ${runId}` } });
+  return { vendorId: vendor.id, email };
+}
+
+/** A wallet holding `balance` paise, as if it had been topped up (so balance === totalCredited - totalDebited holds). */
+export async function seedWallet(prisma: PrismaClient, vendorId: string, balance: number) {
+  return prisma.wallet.create({ data: { vendorId, balance, totalCredited: balance } });
+}
+
 /** Exact current state of every seeded row, as JSON, to prove an attack changed nothing (including updatedAt). */
 export async function snapshot(prisma: PrismaClient, t: SeededTenant): Promise<Record<string, string>> {
   const j = (v: unknown) => JSON.stringify(v);

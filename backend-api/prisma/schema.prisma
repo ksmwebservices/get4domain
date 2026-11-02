@@ -600,6 +600,9 @@ model WalletTransaction {
   balanceAfter Int
   expiresAt    DateTime?
   razorpayId   String?   @unique
+  /// V3 Step 0 (S12): an optional caller-supplied key. A second debit/refund with the same key is a replay and returns the first result;
+  /// the same key with a different amount, vendor or service is refused (409). NULL for rows that do not use one.
+  idempotencyKey String? @unique
   createdAt    DateTime  @default(now())
 
   @@map("g4d_wallet_transactions")

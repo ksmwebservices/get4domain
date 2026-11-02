@@ -14,6 +14,8 @@
     "db:staging:apply-baseline": "node scripts/staging/run.js apply-baseline",
     "db:staging:resolve-all": "node scripts/staging/run.js resolve-all",
     "db:staging:rls": "node scripts/staging/run.js rls",
+    "db:staging:migrate-deploy": "node scripts/staging/run.js migrate-deploy",
+    "db:staging:drift": "node scripts/staging/run.js drift",
     "db:staging:migrate-status": "node scripts/staging/run.js status",
     "db:staging:rls-off": "node scripts/staging/run.js rls-off",
     "db:staging:all": "node scripts/staging/run.js all",
