@@ -18,7 +18,7 @@
 |---|---|---|---|
 | D2 | Tenant model | `Vendor` **is** the tenant (no ID rewrite, no new `Tenant` table). The Step 0 tenant guard is built on `vendorId` | Every later migration and test |
 | D5 | Directory naming | Done: the real-estate `Listing` is untouched; all directory objects are `Directory*` (`DirectoryBusiness`, `DirectoryCategory`, `DirectoryLocation`, …) | Prevents Prisma/table clashes |
-| D6 | Production reconciliation | Read-only comparison of production to the 54 local migrations is Step 0 item 1 | Baseline for staging and for rehearsing V3 migrations |
+| D6 | Production reconciliation | Read-only comparison of production to the 53 local migrations is Step 0 item 1 | Baseline for staging and for rehearsing V3 migrations |
 | Q1 | Are the 20 industry modules, DomainApp, universal catalogue and LeadSpace legacy or reusable platform assets? | **Unknown — blocks V3.5 design** (V3.5 is not detailed until answered) | Decides how much of V3.5 can reuse code |
 | Q2 | Website Manager / category packs / `/site/<sub>` renderer | Reuse the renderer and packs for the free website; replace their plan-based limits with V3 entitlements; do not touch legacy data | V3.2/V3.3 scope |
 | Q3 | Legacy dashboard/billing for Workspace/BOS vendors | Stays available and untouched | Coexistence |
@@ -30,7 +30,7 @@ Effort is in rough engineer-weeks for one engineer: an **estimate**, not a commi
 ### V3.1 — SaaS Foundation (est. 4–5 wks, starting with Step 0)
 
 **Step 0 — Stabilise baseline (est. 1.5–2 wks). No product features until Step 0 is green (tests pass in CI on staging).**
-1. Read-only comparison of production to the 54 local migrations (no writes of any kind).
+1. Read-only comparison of production to the 53 local migrations (no writes of any kind).
 2. Separate **staging database**; migrations never run against production from this work.
 3. Test runner, CI, and a `/health` endpoint.
 4. Tenant guard + first cross-tenant isolation tests.

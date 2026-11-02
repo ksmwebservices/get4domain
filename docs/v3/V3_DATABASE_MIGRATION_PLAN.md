@@ -8,7 +8,7 @@
 |---|---|
 | Engine | PostgreSQL (Supabase), Prisma 6.19.3, pooled `DATABASE_URL` + `DIRECT_URL` |
 | Schema | 3,757 lines, 150 `model`, 20 `enum` |
-| Migration folders | 54 (latest `20261016100000_theme_packages`) |
+| Migration folders | 53 (latest `20261016100000_theme_packages`) |
 | ID style | `String @id @default(cuid())` on all 148 id fields (CLAUDE.md says UUID — not followed) |
 | Table naming | `g4d_*` via `@@map` |
 | Tenant key | `vendorId` on business tables; `Vendor` is the tenant |
@@ -32,7 +32,7 @@
 
 | Action | Detail |
 |---|---|
-| Read-only check | Compare `_prisma_migrations` on production against the 54 local folders. Record exactly which are applied / failed / rolled back |
+| Read-only check | Compare `_prisma_migrations` on production against the 53 local folders. Record exactly which are applied / failed / rolled back |
 | Resolve strays | Any failed row needs `prisma migrate resolve --rolled-back <name>` before `deploy` |
 | Close the drift | Optionally baseline the `db push` tables with a `prisma migrate diff`-generated baseline migration marked as applied, so a fresh database can be built (needed for CI and for a proper staging DB) |
 | Separate environments | Create a **staging database** distinct from production (V2 found them shared). Migration rehearsals run there |

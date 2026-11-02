@@ -260,7 +260,7 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 
 ## §20 Database design — entity coverage
 
-148 `cuid()` IDs; **150 `model` + 20 `enum`** blocks; **54 migration folders** (28 core tables historically created by `prisma db push`, drift noted in V2 `MIGRATION_PLAN.md`; `20260719093736_add_leads` applied in DB with no local folder).
+148 `cuid()` IDs; **150 `model` + 20 `enum`** blocks; **53 migration folders** (28 core tables historically created by `prisma db push`, drift noted in V2 `MIGRATION_PLAN.md`; `20260719093736_add_leads` applied in DB with no local folder).
 
 | Spec group | Coverage |
 |---|---|
