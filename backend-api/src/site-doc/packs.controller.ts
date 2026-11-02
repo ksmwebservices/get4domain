@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/comm
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsBoolean, IsDefined, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { CommercialAdminGuard } from '../commercial/foundation.services';
 import { LeadspaceStaffGuard } from '../leadspace/staff.guard';
@@ -77,9 +78,11 @@ export class PacksVendorController {
   @Get('themes') @ApiOperation({ summary: 'The paid themes that suit your category, the price for a year with GST, and what you already own' })
   themes(@CurrentUser() u: AuthenticatedUser) { return this.themeTab.tab(u.sub); }
 
+  @UseGuards(VendorOwnerGuard)   // S8-B: buying a theme is owner-only
   @Post('themes/:key/order') @ApiOperation({ summary: 'Start buying a theme for a year: creates the payment order at the price the admin set, plus GST' })
   async themeOrder(@CurrentUser() u: AuthenticatedUser, @Param('key') key: string) { return this.purchase.createOrder(u.sub, key, await this.themeTab.categoryOf(u.sub)); }
 
+  @UseGuards(VendorOwnerGuard)
   @Post('themes/:key/confirm') @ApiOperation({ summary: 'Confirm the payment with Razorpay and start the year. Safe to send twice.' })
   themeConfirm(@CurrentUser() u: AuthenticatedUser, @Param('key') key: string, @Body() dto: ConfirmThemeBody) { return this.purchase.confirm(u.sub, key, dto); }
 

@@ -34,14 +34,24 @@ const OWNER_ONLY_ROUTES = [
   'GET /team/activity',
   // already owner-only before S8-A (regression guard)
   'POST /team/invite', 'PUT /team/members/:id', 'DELETE /team/members/:id',
+  // S8-B (owner decision 2026-11-03, production had 0 team members): anything that starts a payment, buys, or tops up the wallet.
+  'POST /billing/invoices/:id/razorpay/order', 'POST /billing/invoices/:id/razorpay/verify', 'POST /billing/invoices/:id/proof',
+  'POST /billing/invoices/:id/promo', 'DELETE /billing/invoices/:id/promo', 'POST /billing/plan-change-requests',
+  'POST /payments/create-order', 'POST /payments/verify',
+  'POST /website-themes/:id/unlock/order', 'POST /website-themes/:id/unlock/confirm',
+  'POST /wallet/topup', 'POST /wallet/topup/verify',
+  'POST /leadspace/wallet/refill', 'POST /leadspace/wallet/refill/verify',
+  'POST /site-doc/me/themes/:key/order', 'POST /site-doc/me/themes/:key/confirm',
 ];
 /** Routes that need a named team area (not owner-only): a member WITHOUT the area is refused. */
-const REQUIRED_MODULE: Record<string, string> = { 'GET /vendor-payments': 'accounts' };
+const REQUIRED_MODULE: Record<string, string> = {
+  'GET /vendor-payments': 'accounts',
+  'GET /website-themes/mine': 'website',       // S8-B: viewing the theme screen is gated by the website area
+};
 /**
- * HELD for an owner decision (S8-A): `/billing/*` (10 routes), `POST /payments/create-order`, `POST /payments/verify`,
- * `POST /website-themes/:id/unlock/order|confirm`. A team member with the `wallet` ("Wallet & Billing") area is deliberately let
- * into billing today (commercial.controllers.ts assertVendorPrincipal), and the `website` area owns the screen with the theme
- * buy buttons. Do not add them to the list above until the owner has chosen.
+ * Reads stay area-gated, not owner-only (owner decision): billing reads (`GET /billing/me|invoices/:id/pay|pdf|upi`) are gated by the
+ * `wallet` area inside commercial.controllers.ts assertVendorPrincipal; wallet balance/transactions by the class-level @RequireModule('wallet').
+ * Wallet-spending feature routes (AI Studio, reels, video, messaging, campaign approve) also stay area-gated.
  */
 
 describe('route classification (static scan of all controllers)', () => {

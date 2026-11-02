@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Headers, Post, RawBodyRequest, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
@@ -8,6 +8,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { RATE } from '../common/throttling';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -15,6 +16,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @ApiBearerAuth()
+  @UseGuards(VendorOwnerGuard)   // S8-B: paying an invoice is owner-only
   @Throttle(RATE.payment)
   @Post('create-order')
   @ApiOperation({ summary: 'Create a Razorpay order to pay one of your own invoices (amount is taken from the invoice, never from the request)' })
@@ -23,6 +25,7 @@ export class PaymentsController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(VendorOwnerGuard)
   @Throttle(RATE.payment)
   @Post('verify')
   @ApiOperation({ summary: 'Confirm a Razorpay payment with Razorpay itself (amount, invoice, vendor, captured) and mark the invoice paid' })

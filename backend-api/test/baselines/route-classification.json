@@ -86,7 +86,8 @@
    "route": "DELETE /billing/invoices/:id/promo",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "DELETE /bos/documents/:id",
@@ -2427,7 +2428,8 @@
    "route": "GET /website-themes/mine",
    "controller": "src/website-themes/website-themes.controller.ts#WebsiteThemesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "module": "website"
   },
   {
    "route": "GET /website-themes",
@@ -3209,31 +3211,36 @@
    "route": "POST /billing/invoices/:id/promo",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /billing/invoices/:id/proof",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /billing/invoices/:id/razorpay/order",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /billing/invoices/:id/razorpay/verify",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /billing/plan-change-requests",
    "controller": "src/commercial/commercial.controllers.ts#VendorBillingController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /bos/books/recurring/:id/stop",
@@ -3933,14 +3940,16 @@
    "controller": "src/leadspace/wallet.controllers.ts#LeadspaceRefillController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "wallet"
+   "module": "wallet",
+   "ownerOnly": true
   },
   {
    "route": "POST /leadspace/wallet/refill",
    "controller": "src/leadspace/wallet.controllers.ts#LeadspaceRefillController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "wallet"
+   "module": "wallet",
+   "ownerOnly": true
   },
   {
    "route": "POST /leadspace/wallet/refund-request",
@@ -4023,13 +4032,15 @@
    "route": "POST /payments/create-order",
    "controller": "src/payments/payments.controller.ts#PaymentsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /payments/verify",
    "controller": "src/payments/payments.controller.ts#PaymentsController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /payments/webhook",
@@ -4233,14 +4244,16 @@
    "controller": "src/site-doc/packs.controller.ts#PacksVendorController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "ownerOnly": true
   },
   {
    "route": "POST /site-doc/me/themes/:key/order",
    "controller": "src/site-doc/packs.controller.ts#PacksVendorController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "website"
+   "module": "website",
+   "ownerOnly": true
   },
   {
    "route": "POST /site-doc/me/versions/:version/restore",
@@ -4395,26 +4408,30 @@
    "controller": "src/wallet/wallet.controller.ts#WalletController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "wallet"
+   "module": "wallet",
+   "ownerOnly": true
   },
   {
    "route": "POST /wallet/topup",
    "controller": "src/wallet/wallet.controller.ts#WalletController",
    "cls": "authenticated",
    "readsPrincipal": true,
-   "module": "wallet"
+   "module": "wallet",
+   "ownerOnly": true
   },
   {
    "route": "POST /website-themes/:id/unlock/confirm",
    "controller": "src/website-themes/website-themes.controller.ts#WebsiteThemesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /website-themes/:id/unlock/order",
    "controller": "src/website-themes/website-themes.controller.ts#WebsiteThemesController",
    "cls": "authenticated",
-   "readsPrincipal": true
+   "readsPrincipal": true,
+   "ownerOnly": true
   },
   {
    "route": "POST /website-themes",
