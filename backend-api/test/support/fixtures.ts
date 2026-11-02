@@ -66,6 +66,20 @@ export async function seedMember(prisma: PrismaClient, vendorId: string, label: 
   return sign({ sub: vendorId, email, role: 'VENDOR', kind: 'team_member', memberId: m.id });
 }
 
+/** A synthetic Get4Domain STAFF member with the given role (status 'active'). Returns the JWT JwtStrategy accepts for `kind: 'admin_member'`. */
+export async function seedStaff(prisma: PrismaClient, label: string, runId: string, role: 'SUPER_ADMIN' | 'OPERATIONS' | 'MARKETING', status = 'active'): Promise<string> {
+  const email = `staff-${label}-${runId}@v3test.invalid`;
+  const m = await prisma.adminTeamMember.create({ data: { name: 'V3TEST staff', email, role, status } });
+  return sign({ sub: m.id, email, role: 'ADMIN', kind: 'admin_member' });
+}
+
+/** A synthetic platform admin stored as a Vendor row with role ADMIN (how the seeded admin@get4domain.com works). Returns its JWT. */
+export async function seedBootstrapAdmin(prisma: PrismaClient, label: string, runId: string): Promise<string> {
+  const email = `${label}-${runId}@v3test.invalid`;
+  const v = await prisma.vendor.create({ data: { name: `V3TEST ${label}`, email, password: 'not-a-real-hash', businessName: `V3TEST ${label} ${runId}`, role: 'ADMIN' } });
+  return sign({ sub: v.id, email, role: 'ADMIN' });
+}
+
 /** A tenant with nothing but the vendor row (for tests of one subsystem, e.g. the wallet). Same deletion markers as seedTenant. */
 export async function seedBareVendor(prisma: PrismaClient, label: string, runId: string): Promise<{ vendorId: string; email: string }> {
   const email = `${label}-${runId}@v3test.invalid`;

@@ -21,6 +21,7 @@ export interface RouteInfo {
   module?: string;          // @RequireModule('x')
   roles?: string;           // @Roles(...)
   ownerOnly?: boolean;      // @UseGuards(VendorOwnerGuard): a vendor's team member is refused (present only when true)
+  adminGuard?: boolean;     // @UseGuards(AdminGuard): staff-role checked against auth/guards/admin-role-matrix.ts (present only when true)
 }
 
 const HTTP = new Set(['Get', 'Post', 'Put', 'Patch', 'Delete', 'Options', 'Head', 'All']);
@@ -102,6 +103,7 @@ export function scanRoutes(srcDir: string): RouteInfo[] {
           ...(mod ? { module: mod } : {}),
           ...(rolesDeco ? { roles: rolesDeco.args.map((a) => str(a) ?? a.getText()).join(',') } : {}),
           ...(hasGuard(classDecos, 'VendorOwnerGuard') || hasGuard(md, 'VendorOwnerGuard') ? { ownerOnly: true } : {}),
+          ...(hasGuard(classDecos, 'AdminGuard') || hasGuard(md, 'AdminGuard') ? { adminGuard: true } : {}),
         });
       }
     });

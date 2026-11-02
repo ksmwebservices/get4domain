@@ -14,8 +14,11 @@ async function findTestVendorIds(prisma, runId) {
 }
 
 async function cleanupTestTenants(prisma, { runId } = {}) {
-  const ids = await findTestVendorIds(prisma, runId);
   const counts = { vendors: 0 };
+  // Synthetic Get4Domain staff (S7 tests): not tied to any vendor, so they are removed first, by the same email marker.
+  const staffWhere = { email: { endsWith: TEST_EMAIL_SUFFIX, ...(runId ? { contains: runId } : {}) } };
+  counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
+  const ids = await findTestVendorIds(prisma, runId);
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
   const steps = [
