@@ -18,6 +18,9 @@ export interface SeededTenant {
 const jwt = () => new JwtService({ secret: process.env.JWT_SECRET });
 const sign = (payload: Record<string, unknown>): string => jwt().sign(payload, { expiresIn: '15m' });
 
+/** The owner's JWT for any vendor row (for vendors a test did not create with seedTenant, for example one made by a provisioning job). */
+export const vendorToken = (vendorId: string, email: string): string => sign({ sub: vendorId, email, role: 'VENDOR' });
+
 export function newPrisma(): PrismaClient {
   return new PrismaClient({ datasourceUrl: process.env.DATABASE_URL, log: [] });
 }
