@@ -25,7 +25,7 @@ A theme is a folder (or zip) of plain HTML templates and CSS. It only **presents
 | 9 | Fonts | ten approved fonts, "declared in manifest.fonts", no other font | `googleFonts[]` (Google Fonts CSS addresses only) | `manifest.fonts` lists approved names only; **no CSS may name an outside address** (so no Google Fonts link in a theme). The platform delivers the approved fonts itself (self-hosted is the privacy-friendly choice); the importer can derive the as-built `googleFonts` field. System fonts, including Tamil-capable ones, are allowed in stacks (T1B needs Tamil glyphs; none of the ten fonts has them). |
 | 10 | Families | 12 families (home-services, auto-services, healthcare ...) | 8 *flow* families (`shop booking enquiry packages menu portfolio listings courses`) | **Both, with different jobs.** `families` in the manifest = V3 family (what a theme is designed for); each category also records its `flow` = the as-built flow family. |
 | 11 | Categories | 41 ids | 24 category packs, with other ids | **The 41 ids are V3.** Each records the nearest as-built `packKey`. The mapping is an inference (the backend does not state it); review it before the importer is built. |
-| 12 | Free / Pro | Free, Pro | `FREE_DEFAULT`, `MARKETPLACE` roles | **`tier`: `Standard` or `Premium`** (C0.2). Free = Standard, Pro = Premium. The backend role is a separate, later mapping. |
+| 12 | Free / Pro | Free, Pro | `FREE_DEFAULT`, `MARKETPLACE` roles | **`tier` is a price class of a theme, not a plan.** `Standard` and `Premium` say what a theme costs to buy; they say nothing about what a vendor's plan can do. Plans decide two separate things: a **Free-plan vendor** is given an assigned Standard layout; a **Pro-plan vendor** may choose any Standard or Premium theme. What a vendor can *use* (video, cart, booking, custom domain) comes from the vendor's **entitlements**, which the platform passes to the renderer at render time (section 7), never from the theme tier. The backend role (`FREE_DEFAULT`, `MARKETPLACE`) is a separate, later mapping. |
 | 13 | Size budgets | page under 100 KB, `theme.css` under 60 KB | page 400 KB, stylesheet 400 KB | **Stricter wins**: page under 100 KB; layout CSS (base + tokens + print) under 40 KB (T1B); motion CSS under 6 KB (T5). The as-built limits stay the upper bound for an upload. |
 | 14 | Iframes | no `<iframe>` in a theme; map/video are platform slots | `iframe` is dropped | **None in a theme.** The *platform's* map slot may emit a map iframe from an allowed host; the lint checks the rendered output against the allowed-host list. Videos are click-to-load facades, never an iframe. |
 | 15 | Reviews | `reviews` slot with Google reviews and customer testimonials | `testimonials` list (sample quotes never public) | **Both stay.** `testimonials` remains the vendor's list; the `reviews` slot draws the two kinds under separate labels. Google reviews are display only, never invented, never filtered. |
@@ -54,7 +54,7 @@ Limits: package 5 MB, one file 1 MB, 400 files, a template under 100 KB, layout 
 | `id` | string | 3-40 chars, `^[a-z0-9]+(-[a-z0-9]+)*$` |
 | `version` | integer >= 1 | raised on every upload |
 | `name` | string | shown to vendors and staff |
-| `tier` | `Standard` or `Premium` | |
+| `tier` | `Standard` or `Premium` | a price class of the theme only (conflict 12): no slot, feature or plan rule depends on it |
 | `tracks` | array of `handyman`, `professional`, `ecommerce` | which tracks the theme is designed for |
 | `families` | array of V3 family ids | at least one; every category the theme lists must belong to one of them |
 | `categories` | array of the 41 category ids | each must be in a declared family, a declared track and eligible for the tier |
@@ -85,31 +85,31 @@ Every page:
 Placed with a custom element; the renderer replaces it with the platform's markup (wrapper with a reserved size, labelled, accessible). The theme styles the wrapper only.
 
 <!-- GENERATED:slots:START -->
-| Slot | Tag in a template | Origin | Required |
-|---|---|---|---|
-| `action` | `<g4d-action>` | as built | every theme |
-| `header-nav` | `<g4d-header-nav>` | as built | every theme |
-| `bottom-nav` | `<g4d-bottom-nav>` | as built | every theme |
-| `footer` | `<g4d-footer>` | as built | every theme |
-| `hours` | `<g4d-hours>` | as built | optional |
-| `tabs` | `<g4d-tabs>` | as built | optional |
-| `map` | `<g4d-map>` | as built | every theme |
-| `social-links` | `<g4d-social>` | as built | every theme |
-| `cart` | `<g4d-cart>` | as built | optional |
-| `enquiry-form` | `<g4d-enquiry-form>` | V3 addition | every theme |
-| `whatsapp-float` | `<g4d-whatsapp-float>` | V3 addition | every theme |
-| `reviews` | `<g4d-reviews>` | V3 addition | every theme |
-| `video` | `<g4d-video>` | V3 addition | Premium themes |
-| `booking` | `<g4d-booking>` | V3 addition | optional |
-| `product-grid` | `<g4d-product-grid>` | V3 addition | Ecommerce categories |
-| `search` | `<g4d-search>` | V3 addition | optional |
-| `claim-banner` | `<g4d-claim-banner>` | V3 addition | optional |
-| `listed-on-badge` | `<g4d-listed-on-badge>` | V3 addition | every theme |
-| `open-now` | `<g4d-open-now>` | V3 addition | every theme |
-| `share-qr` | `<g4d-share-qr>` | V3 addition | every theme |
+| Slot | Tag in a template | Origin | Required in a theme | Drawn when |
+|---|---|---|---|---|
+| `action` | `<g4d-action>` | as built | every theme | always (when it has something to show) |
+| `header-nav` | `<g4d-header-nav>` | as built | every theme | always (when it has something to show) |
+| `bottom-nav` | `<g4d-bottom-nav>` | as built | every theme | always (when it has something to show) |
+| `footer` | `<g4d-footer>` | as built | every theme | always (when it has something to show) |
+| `hours` | `<g4d-hours>` | as built | optional | always (when it has something to show) |
+| `tabs` | `<g4d-tabs>` | as built | optional | always (when it has something to show) |
+| `map` | `<g4d-map>` | as built | every theme | always (when it has something to show) |
+| `social-links` | `<g4d-social>` | as built | every theme | always (when it has something to show) |
+| `cart` | `<g4d-cart>` | as built | optional | the vendor has the `cart` entitlement |
+| `enquiry-form` | `<g4d-enquiry-form>` | V3 addition | every theme | always (when it has something to show) |
+| `whatsapp-float` | `<g4d-whatsapp-float>` | V3 addition | every theme | always (when it has something to show) |
+| `reviews` | `<g4d-reviews>` | V3 addition | every theme | always (when it has something to show) |
+| `video` | `<g4d-video>` | V3 addition | optional | the vendor has the `video` entitlement |
+| `booking` | `<g4d-booking>` | V3 addition | optional | the vendor has the `booking` entitlement |
+| `product-grid` | `<g4d-product-grid>` | V3 addition | Ecommerce categories | always (when it has something to show) |
+| `search` | `<g4d-search>` | V3 addition | optional | always (when it has something to show) |
+| `claim-banner` | `<g4d-claim-banner>` | V3 addition | optional | the page is unclaimed |
+| `listed-on-badge` | `<g4d-listed-on-badge>` | V3 addition | every theme | always (when it has something to show) |
+| `open-now` | `<g4d-open-now>` | V3 addition | every theme | always (when it has something to show) |
+| `share-qr` | `<g4d-share-qr>` | V3 addition | every theme | always (when it has something to show) |
 <!-- GENERATED:slots:END -->
 
-Rules: every theme places the "every theme" slots (T0 item 6: reviews, map and social links on every layout); a Premium theme also places `video`; an Ecommerce category needs `product-grid`; `cart` is only drawn for Premium Ecommerce (Standard Ecommerce is "Shop Lite": product enquiry, no cart). Every slot wrapper must reserve its space in CSS (`min-height` or `aspect-ratio`) so nothing jumps. Allowed outside hosts: map embed `www.google.com`, `maps.google.com`, `www.openstreetmap.org`; videos (links and posters only) `www.youtube.com`, `www.youtube-nocookie.com`, `youtu.be`, `player.vimeo.com`, `vimeo.com`.
+Rules: every theme places the "every theme" slots (T0 item 6: reviews, map and social links on every layout); an Ecommerce category needs `product-grid`. **Any theme may place `video`, `cart` and `booking`** (a theme is never required to, and its tier does not decide it). The platform draws them only when the vendor's **entitlements** say so (section 7). When an entitlement is off the slot draws **nothing at all** (no wrapper, no empty box), and a section that exists only to host a gated slot must be hidden with `data-g4d-if="entitlements.<name>"` so no gap is left. With the cart off, an Ecommerce product shows an enquiry link; with it on, an add-to-cart link. $1
 
 ## 7. Bindings and the renderer's outputs
 
@@ -120,12 +120,23 @@ the 38 as-built slots (`site.*`, `hero.*`, `about.*`, `contact.*`, `social.*`, `
 
 **Conditionals**: `data-g4d-if="path"` shows the element only when the value or list is non-empty; `data-g4d-if-not="path"` is the opposite.
 
-**`renderPage({ theme, page, content, settings, vendor, host })`** returns `{ html, lang, seo, slots, warnings }`:
+**`renderPage({ theme, page, content, settings, vendor, host, entitlements })`** returns `{ html, lang, seo, slots, warnings }`:
 
 - `html` - static markup inside the wrapper `<div class="g4d-theme g4d-theme-<id>" lang=... data-motion=... data-variant=...>`;
 - `seo` - the inputs for the platform SEO layer, **not** output by the theme: `title`, `description`, `canonical`, `structuredData` (a JSON-LD object for the category's schema type), and `hreflang` (`en-IN` and `ta-IN` alternates);
 - `slots` - which platform slots were drawn;
 - `warnings` - unknown bindings, empty required fields.
+
+**Entitlements** (the vendor's plan, decided by the platform, not by the theme): `{ video, cart, booking, customDomain }`, each defaulting to `false`; only an explicit `true` counts.
+
+| Entitlement | When true | When false |
+|---|---|---|
+| `video` | `<g4d-video>` draws the vendor's videos as click-to-load facades | nothing is drawn |
+| `cart` | `<g4d-cart>` draws the cart link and each product shows "Add to cart" (Ecommerce Pro) | nothing is drawn; each product shows the enquiry link ("Shop Lite") |
+| `booking` | `<g4d-booking>` draws the booking request block (offered to Handyman and Professional vendors) | nothing is drawn |
+| `customDomain` | `host.customDomain` (an https origin) becomes the canonical address, the hreflang base and the share link | the `host.siteUrl` address is used |
+
+A template can also test them: `data-g4d-if="entitlements.booking"` (bindings `entitlements.video`, `.cart`, `.booking`, `.customDomain`). The lint renders every category with all entitlements on and all off (rule `entitlements-render`).
 
 It is a pure function: no network, no clock (the year comes from `content.site.year`), no randomness; the same input gives byte-identical output.
 
@@ -177,7 +188,7 @@ Nothing else (primary colour, spacing, templates) can be changed by a vendor.
 
 ## 10. The 41 categories
 
-Tracks: **Handyman** (13), **Professional** (20), **Ecommerce** (8). Tier eligibility: every category accepts both tiers.
+Tracks: **Handyman** (13), **Professional** (20), **Ecommerce** (8). Price class (tier) eligibility: every category accepts both Standard and Premium themes.
 
 <!-- GENERATED:categories:START -->
 | # | Category id | Label | Track | V3 family | Schema type | Primary call to action | Extra blocks (first is shown first) | Flow (as built) | Pack (as built) |
@@ -235,7 +246,7 @@ How the rendered rules work: for every category the theme lists (or all 41 with 
 
 | Id | Checks |
 |---|---|
-| `manifest-valid` | `theme.json` matches the schema; categories sit in declared families, tracks and tier |
+| `manifest-valid` | `theme.json` matches the schema; categories sit in declared families, tracks and price class |
 | `no-script-tag` | no `<script>` in a template |
 | `no-inline-handler` | no `on*=` attribute |
 | `no-forbidden-element` | no `iframe object embed form input select textarea style link meta base title canvas audio dialog` in a template |
@@ -265,13 +276,14 @@ How the rendered rules work: for every category the theme lists (or all 41 with 
 | `hero-visible` | the hero section exists, is not optional, has no reveal class, and no rule hides it at load |
 | `motion-properties` | animations and transitions use only `transform`, `opacity`, `clip-path`, `filter` (and registered custom properties for counters); never `width`, `height`, `top`, `left` |
 | `motion-count` | at most 12 animated elements in any one section of a rendered page |
-| `slots-required` | every required slot is placed (Premium: also `video`; Ecommerce: `product-grid`) |
+| `slots-required` | every required slot is placed (Ecommerce categories: `product-grid`); video, cart and booking are optional for every theme |
 | `slots-reserve-space` | every placed slot has a CSS rule that reserves its size |
 | `bindings-known` | no unknown binding, list, list field or `g4d-*` tag |
 | `print-stylesheet` | `print.css` exists and hides navigation and slots |
 | `html-budget` | see `css-budget-layout` |
 | `category-renders` | the theme renders with sample content for every category it lists, with no warning and with all of the category's extra blocks present |
-| `category-fit-order` | the first extra block drawn is the category's lead block |
+$1
+| `entitlements-render` | every category is rendered with all entitlements on and all off (every template); both must render without warnings, with no empty slot box, no section left empty by a missing entitlement, no gated slot drawn when its entitlement is off, and each gated slot the theme places drawn when its entitlement is on |
 
 ## 12. Not in this kit (follow-ups)
 

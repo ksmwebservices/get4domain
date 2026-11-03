@@ -9,15 +9,17 @@
 //   content  the vendor's content in the theme-independent model (see fixtures/index.mjs)
 //   settings what a vendor may change: accent, accentDark, fontHeading, fontBody, logo, sectionOrder, hiddenSections, motionIntensity
 //   vendor   { id, unclaimed? }
-//   host     { siteUrl, allowEmbeds?, sampleImages? }       the platform's facts about where the page is served
+//   host     { siteUrl, customDomain?, allowEmbeds?, sampleImages? }       the platform's facts about where the page is served
+//   entitlements { video, cart, booking, customDomain }   what the vendor's plan has switched on; each defaults to false. The theme tier does NOT decide this.
+//            video, cart and booking draw nothing at all (no empty box) unless their entitlement is exactly true; customDomain lets host.customDomain be the canonical address.
 import { parse, serialize } from './html.mjs';
-import { BINDINGS, REPEATERS, NESTED_LISTS, SLOTS, SLOT_BY_TAG, APPROVED_FONTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, ALLOWED_URI_SCHEMES, MOTION_INTENSITIES } from './vocabulary.mjs';
+import { ENTITLEMENT_KEYS, BINDINGS, REPEATERS, NESTED_LISTS, SLOTS, SLOT_BY_TAG, APPROVED_FONTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, ALLOWED_URI_SCHEMES, MOTION_INTENSITIES } from './vocabulary.mjs';
 import { categoryById, hasCategory, FAMILIES } from './categories.mjs';
 
 // ---------------------------------------------------------------- wording
 const UI = {
-  en: { skip: 'Skip to main content', menu: 'Menu', close: 'Close menu', home: 'Home', about: 'About', gallery: 'Gallery', contact: 'Contact', call: 'Call', whatsapp: 'WhatsApp', directions: 'Directions', readMore: 'Read more', viewAll: 'View all', badge: 'Listed on Get4Domain', googleReviews: 'Google reviews', testimonials: 'Customer testimonials', noReviews: 'No reviews yet', viewOnGoogle: 'View on Google', writeReview: 'Write a review on Google', ownerReply: 'Reply from the owner', reviewsBased: 'based on', reviewsWord: 'reviews', outOf: 'out of 5', yourName: 'Your name', yourPhone: 'Phone number', message: 'Message', consent: 'I agree to be contacted about this enquiry', send: 'Send enquiry', enquiryTitle: 'Send an enquiry', booking: 'Request a booking', share: 'Share this site', scan: 'Scan to open this site', hoursTitle: 'Opening hours', closed: 'Closed', map: 'Map', areas: 'Service areas', videos: 'Videos', watch: 'Watch video', transcript: 'Transcript', search: 'Search', searchLabel: 'Search this site', cart: 'Cart', claim: 'Is this your business? Claim this page', privacy: 'Privacy', terms: 'Terms', ask: 'Ask about this', hoursWord: 'Hours', whatsappFloat: 'Chat on WhatsApp', sampleBadge: 'Sample', products: 'Products', mainNav: 'Main', closeImage: 'Close picture', faq: 'Frequently asked questions', process: 'How it works' },
-  ta: { skip: 'முதன்மை உள்ளடக்கத்துக்குச் செல்', menu: 'பட்டி', close: 'பட்டியை மூடு', home: 'முகப்பு', about: 'எங்களைப் பற்றி', gallery: 'படங்கள்', contact: 'தொடர்பு', call: 'அழை', whatsapp: 'வாட்ஸ்அப்', directions: 'வழி', readMore: 'மேலும் படிக்க', viewAll: 'அனைத்தும்', badge: 'Get4Domain-இல் பட்டியலிடப்பட்டுள்ளது', googleReviews: 'Google மதிப்புரைகள்', testimonials: 'வாடிக்கையாளர் கருத்துகள்', noReviews: 'இன்னும் மதிப்புரைகள் இல்லை', viewOnGoogle: 'Google-இல் பார்க்க', writeReview: 'Google-இல் மதிப்புரை எழுதுங்கள்', ownerReply: 'உரிமையாளர் பதில்', reviewsBased: 'அடிப்படை', reviewsWord: 'மதிப்புரைகள்', outOf: '5 இல்', yourName: 'உங்கள் பெயர்', yourPhone: 'தொலைபேசி எண்', message: 'செய்தி', consent: 'இந்த விசாரணை தொடர்பாக என்னைத் தொடர்புகொள்ள ஒப்புக்கொள்கிறேன்', send: 'விசாரணை அனுப்பு', enquiryTitle: 'விசாரணை அனுப்புங்கள்', booking: 'முன்பதிவு கோருங்கள்', share: 'இந்த தளத்தைப் பகிருங்கள்', scan: 'இந்த தளத்தைத் திறக்க ஸ்கேன் செய்யுங்கள்', hoursTitle: 'திறந்திருக்கும் நேரம்', closed: 'மூடப்பட்டிருக்கும்', map: 'வரைபடம்', areas: 'சேவைப் பகுதிகள்', videos: 'காணொளிகள்', watch: 'காணொளி பார்க்க', transcript: 'எழுத்து வடிவம்', search: 'தேடு', searchLabel: 'இந்த தளத்தில் தேடு', cart: 'கூடை', claim: 'இது உங்கள் வணிகமா? இந்தப் பக்கத்தை உரிமை கோருங்கள்', privacy: 'தனியுரிமை', terms: 'விதிமுறைகள்', ask: 'இதைப் பற்றி கேளுங்கள்', hoursWord: 'நேரம்', whatsappFloat: 'வாட்ஸ்அப்பில் அரட்டை', sampleBadge: 'மாதிரி', products: 'பொருட்கள்', mainNav: 'முதன்மை', closeImage: 'படத்தை மூடு', faq: 'அடிக்கடி கேட்கப்படும் கேள்விகள்', process: 'எப்படி செயல்படுகிறது' },
+  en: { skip: 'Skip to main content', menu: 'Menu', close: 'Close menu', home: 'Home', about: 'About', gallery: 'Gallery', contact: 'Contact', call: 'Call', whatsapp: 'WhatsApp', directions: 'Directions', readMore: 'Read more', viewAll: 'View all', badge: 'Listed on Get4Domain', googleReviews: 'Google reviews', testimonials: 'Customer testimonials', noReviews: 'No reviews yet', viewOnGoogle: 'View on Google', writeReview: 'Write a review on Google', ownerReply: 'Reply from the owner', reviewsBased: 'based on', reviewsWord: 'reviews', outOf: 'out of 5', yourName: 'Your name', yourPhone: 'Phone number', message: 'Message', consent: 'I agree to be contacted about this enquiry', send: 'Send enquiry', enquiryTitle: 'Send an enquiry', booking: 'Request a booking', share: 'Share this site', scan: 'Scan to open this site', hoursTitle: 'Opening hours', closed: 'Closed', map: 'Map', areas: 'Service areas', videos: 'Videos', watch: 'Watch video', transcript: 'Transcript', search: 'Search', searchLabel: 'Search this site', cart: 'Cart', claim: 'Is this your business? Claim this page', privacy: 'Privacy', terms: 'Terms', ask: 'Ask about this', addToCart: 'Add to cart', hoursWord: 'Hours', whatsappFloat: 'Chat on WhatsApp', sampleBadge: 'Sample', products: 'Products', mainNav: 'Main', closeImage: 'Close picture', faq: 'Frequently asked questions', process: 'How it works' },
+  ta: { skip: 'முதன்மை உள்ளடக்கத்துக்குச் செல்', menu: 'பட்டி', close: 'பட்டியை மூடு', home: 'முகப்பு', about: 'எங்களைப் பற்றி', gallery: 'படங்கள்', contact: 'தொடர்பு', call: 'அழை', whatsapp: 'வாட்ஸ்அப்', directions: 'வழி', readMore: 'மேலும் படிக்க', viewAll: 'அனைத்தும்', badge: 'Get4Domain-இல் பட்டியலிடப்பட்டுள்ளது', googleReviews: 'Google மதிப்புரைகள்', testimonials: 'வாடிக்கையாளர் கருத்துகள்', noReviews: 'இன்னும் மதிப்புரைகள் இல்லை', viewOnGoogle: 'Google-இல் பார்க்க', writeReview: 'Google-இல் மதிப்புரை எழுதுங்கள்', ownerReply: 'உரிமையாளர் பதில்', reviewsBased: 'அடிப்படை', reviewsWord: 'மதிப்புரைகள்', outOf: '5 இல்', yourName: 'உங்கள் பெயர்', yourPhone: 'தொலைபேசி எண்', message: 'செய்தி', consent: 'இந்த விசாரணை தொடர்பாக என்னைத் தொடர்புகொள்ள ஒப்புக்கொள்கிறேன்', send: 'விசாரணை அனுப்பு', enquiryTitle: 'விசாரணை அனுப்புங்கள்', booking: 'முன்பதிவு கோருங்கள்', share: 'இந்த தளத்தைப் பகிருங்கள்', scan: 'இந்த தளத்தைத் திறக்க ஸ்கேன் செய்யுங்கள்', hoursTitle: 'திறந்திருக்கும் நேரம்', closed: 'மூடப்பட்டிருக்கும்', map: 'வரைபடம்', areas: 'சேவைப் பகுதிகள்', videos: 'காணொளிகள்', watch: 'காணொளி பார்க்க', transcript: 'எழுத்து வடிவம்', search: 'தேடு', searchLabel: 'இந்த தளத்தில் தேடு', cart: 'கூடை', claim: 'இது உங்கள் வணிகமா? இந்தப் பக்கத்தை உரிமை கோருங்கள்', privacy: 'தனியுரிமை', terms: 'விதிமுறைகள்', ask: 'இதைப் பற்றி கேளுங்கள்', addToCart: 'கூடையில் சேர்', hoursWord: 'நேரம்', whatsappFloat: 'வாட்ஸ்அப்பில் அரட்டை', sampleBadge: 'மாதிரி', products: 'பொருட்கள்', mainNav: 'முதன்மை', closeImage: 'படத்தை மூடு', faq: 'அடிக்கடி கேட்கப்படும் கேள்விகள்', process: 'எப்படி செயல்படுகிறது' },
 };
 const UI_BINDINGS = { 'ui.skip': 'skip', 'ui.call': 'call', 'ui.whatsapp': 'whatsapp', 'ui.directions': 'directions', 'ui.menu': 'menu', 'ui.readMore': 'readMore', 'ui.viewAll': 'viewAll', 'ui.home': 'home', 'ui.about': 'about', 'ui.gallery': 'gallery', 'ui.contact': 'contact', 'ui.closeImage': 'closeImage', 'ui.faq': 'faq', 'ui.process': 'process' };
 
@@ -68,7 +70,13 @@ const BAD_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link'
 const URL_ATTRS = new Set(['href', 'src', 'poster', 'action', 'formaction', 'xlink:href', 'cite']);
 
 // ---------------------------------------------------------------- context
-function makeCtx({ theme, page, content, settings, vendor, host }) {
+/** Only an explicit `true` switches an entitlement on; anything else (missing, 'yes', 1) is off. */
+function normalizeEntitlements(e) {
+  const src = e && typeof e === 'object' ? e : {};
+  return Object.fromEntries(ENTITLEMENT_KEYS.map((k) => [k, src[k] === true]));
+}
+
+function makeCtx({ theme, page, content, settings, vendor, host, entitlements }) {
   const c = content && typeof content === 'object' ? content : {};
   const p = typeof page === 'string' ? { slug: page } : page && typeof page === 'object' ? page : { slug: 'home' };
   const warnings = [];
@@ -77,7 +85,7 @@ function makeCtx({ theme, page, content, settings, vendor, host }) {
   if (!catId) warn('unknown-category');
   const cat = catId ? categoryById(catId) : null;
   const lang = c.lang === 'ta' ? 'ta' : 'en';
-  return { theme, page: p, c, settings: settings && typeof settings === 'object' ? settings : {}, vendor: vendor ?? {}, host: host ?? {}, warnings, warn, cat, lang, ui: UI[lang], scopes: [], uid: 0, slots: [], variant: cat ? FAMILIES[cat.family].variant : null };
+  return { theme, page: p, ent: normalizeEntitlements(entitlements), c, settings: settings && typeof settings === 'object' ? settings : {}, vendor: vendor ?? {}, host: host ?? {}, warnings, warn, cat, lang, ui: UI[lang], scopes: [], uid: 0, slots: [], variant: cat ? FAMILIES[cat.family].variant : null };
 }
 
 const getPath = (obj, parts) => parts.reduce((o, k) => (o !== null && o !== undefined && typeof o === 'object' ? o[k] : undefined), obj);
@@ -114,6 +122,7 @@ function lookup(ctx, path) {
   if (path === 'cta.label') return ctx.c.cta?.label || ctx.cat?.ctaPrimary;
   if (path === 'page.title') return pageTitleDefault(ctx);
   if (path === 'page.slug') return ctx.page.slug;
+  if (path.startsWith('entitlements.')) return ctx.ent[path.slice('entitlements.'.length)];
   if (path === 'site.logo' && ctx.settings.logo) return ctx.settings.logo;
   if (path === 'contact.phoneHref' && !ctx.c.contact?.phoneHref && ctx.c.contact?.phone) return `tel:${String(ctx.c.contact.phone).replace(/[^+\d]/g, '')}`;
   return getPath(ctx.c, parts);
@@ -206,7 +215,6 @@ function renderSlot(ctx, name, attrs, childNodes) {
   const site = c.site ?? {};
   const contact = c.contact ?? {};
   const cta = c.cta ?? {};
-  const tier = theme?.manifest?.tier;
   const ecommerce = cat?.track === 'ecommerce';
   switch (name) {
     case 'header-nav': {
@@ -270,7 +278,7 @@ function renderSlot(ctx, name, attrs, childNodes) {
       return wrap(ctx, name, 'section', inner, attrs);
     }
     case 'video': {
-      if (tier !== 'Premium') { ctx.warn('slot-needs-premium:video'); return ''; }
+      if (!ctx.ent.video) { ctx.slots.push({ name, rendered: false }); return ''; }
       const vids = (Array.isArray(c.videos) ? c.videos : []).filter((v) => VIDEO_HOSTS.includes(hostOf(safeUrl(v?.url)))).slice(0, 6);
       if (!vids.length) { ctx.slots.push({ name, rendered: false }); return ''; }
       const html = `<h2>${esc(ui.videos)}</h2><ul class="g4d-video__list">${vids.map((v) => { const poster = resolveImage(v.poster, ctx.host); return `<li class="g4d-video"><a class="g4d-video__facade" href="${esc(safeUrl(v.url))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(ui.watch)}: ${esc(v.title)}">${poster ? `<img src="${esc(poster)}" alt="" role="presentation" width="640" height="360" loading="lazy">` : '<span class="g4d-video__nopic" aria-hidden="true">▶</span>'}<span class="g4d-video__title">${esc(v.title)}</span>${v.duration ? `<span class="g4d-video__duration">${esc(v.duration)}</span>` : ''}</a>${v.transcript ? `<details><summary>${esc(ui.transcript)}</summary><p>${esc(v.transcript)}</p></details>` : ''}</li>`; }).join('')}</ul>`;
@@ -288,15 +296,15 @@ function renderSlot(ctx, name, attrs, childNodes) {
       ctx.slots.push({ name, rendered: true });
       return `<a class="g4d-slot g4d-slot--whatsapp-float${cls(attrs.class) ? ` ${cls(attrs.class)}` : ''}" data-g4d-slot="whatsapp-float" data-track="whatsapp" href="${esc(href)}" rel="noopener noreferrer" aria-label="${esc(ui.whatsappFloat)}">${esc(ui.whatsapp)}</a>`;
     }
-    case 'booking': return wrap(ctx, name, 'section', `<h2>${esc(ui.booking)}</h2><p><a class="g4d-btn" href="/book">${esc(cta.label || cat?.ctaPrimary || ui.booking)}</a></p>`, attrs);
+    case 'booking': if (!ctx.ent.booking) { ctx.slots.push({ name, rendered: false }); return ''; } return wrap(ctx, name, 'section', `<h2>${esc(ui.booking)}</h2><p><a class="g4d-btn" href="/book">${esc(cta.label || cat?.ctaPrimary || ui.booking)}</a></p>`, attrs);
     case 'product-grid': {
       const prods = Array.isArray(c.products) ? c.products : [];
       if (!ecommerce || !prods.length) { ctx.slots.push({ name, rendered: false }); return ''; }
-      const html = `<h2>${esc(c.terms?.items || ui.products)}</h2><ul class="g4d-products">${prods.slice(0, 24).map((p) => { const img = resolveImage(p?.image, ctx.host); return `<li class="g4d-product">${img ? `<img src="${esc(img)}" alt="${esc(p?.name)}" width="400" height="300" loading="lazy">` : ''}<h3>${esc(p?.name)}</h3><p class="g4d-product__price">${esc(p?.price)}</p><a href="/enquire?item=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.ask)}</a></li>`; }).join('')}</ul>`;
+      const html = `<h2>${esc(c.terms?.items || ui.products)}</h2><ul class="g4d-products">${prods.slice(0, 24).map((p) => { const img = resolveImage(p?.image, ctx.host); return `<li class="g4d-product">${img ? `<img src="${esc(img)}" alt="${esc(p?.name)}" width="400" height="300" loading="lazy">` : ''}<h3>${esc(p?.name)}</h3><p class="g4d-product__price">${esc(p?.price)}</p>${ctx.ent.cart ? `<a class="g4d-btn" href="/cart?add=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.addToCart)}</a>` : `<a href="/enquire?item=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.ask)}</a>`}</li>`; }).join('')}</ul>`;
       return wrap(ctx, name, 'section', html, attrs);
     }
     case 'cart': {
-      if (tier !== 'Premium' || !ecommerce) { ctx.slots.push({ name, rendered: false }); return ''; }
+      if (!ctx.ent.cart) { ctx.slots.push({ name, rendered: false }); return ''; }
       return wrap(ctx, name, 'div', `<a class="g4d-cart" href="/cart">${esc(attrs.label || ui.cart)}</a>`, attrs);
     }
     case 'search': {
@@ -309,7 +317,7 @@ function renderSlot(ctx, name, attrs, childNodes) {
     }
     case 'listed-on-badge': return wrap(ctx, name, 'div', `<a class="g4d-badge" href="https://get4domain.com/?ref=badge" rel="noopener">${esc(ui.badge)}</a>`, attrs);
     case 'share-qr': {
-      const url = ctx.host.siteUrl || site.url || '';
+      const url = siteBase(ctx) || site.url || '';
       const enc = encodeURIComponent(url);
       const links = url ? `<ul class="g4d-share__links"><li><a href="https://wa.me/?text=${enc}" rel="noopener noreferrer">${esc(ui.whatsapp)}</a></li><li><a href="https://www.facebook.com/sharer/sharer.php?u=${enc}" rel="noopener noreferrer">Facebook</a></li></ul><p class="g4d-share__url">${esc(url)}</p>` : '';
       return wrap(ctx, name, 'div', `<p class="g4d-share__title">${esc(ui.share)}</p>${links}<img class="g4d-share__qr" src="/_qr.svg" alt="${esc(ui.scan)}" width="160" height="160" loading="lazy">`, attrs);
@@ -426,10 +434,17 @@ function applySections(nodes, settings, ctx) {
 const cut = (s, max) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); if (t.length <= max) return t; const w = t.slice(0, max - 1).replace(/\s+\S*$/, ''); return `${w || t.slice(0, max - 1)}…`; };
 const DAY_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+/** The address pages are served from: the vendor's own domain only when the customDomain entitlement is on and the platform gave an https origin. */
+function siteBase(ctx) {
+  const custom = String(ctx.host.customDomain ?? '').replace(/\/+$/, '');
+  if (ctx.ent.customDomain && /^https:\/\/[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i.test(custom)) return custom;
+  return String(ctx.host.siteUrl ?? '').replace(/\/+$/, '');
+}
+
 function buildSeo(ctx) {
   const { c, page, cat, host, lang } = ctx;
   const site = c.site ?? {};
-  const base = String(host.siteUrl ?? '').replace(/\/+$/, '');
+  const base = siteBase(ctx);
   if (!base) ctx.warn('missing:host.siteUrl');
   const path = page.slug === 'home' || !page.slug ? '/' : page.slug === 'item' && page.item ? `/${page.parent || 'services'}/${page.item.slug || page.item.id}` : `/${page.slug}`;
   const enHref = base ? `${base}${path}` : '';

@@ -18,7 +18,7 @@
     <ul class="cards g4d-reveal"><template data-g4d-each="items"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/{{item.slug}}"><img data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}" width="400" height="300" loading="lazy"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><span class="card-title">{{item.name}}</span><span class="desc" data-g4d-if="item.description">{{item.description}}</span><span class="price" data-g4d-if="item.price">{{item.price}}</span></a></li></template></ul>
   </div>
 </section>
-<section class="sec" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true"><div class="wrap"><g4d-product-grid></g4d-product-grid></div></section>
+<section class="sec" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true" data-g4d-if="products"><div class="wrap"><g4d-product-grid></g4d-product-grid></div></section>
 </main>
 <g4d-bottom-nav></g4d-bottom-nav>
 <g4d-whatsapp-float></g4d-whatsapp-float>

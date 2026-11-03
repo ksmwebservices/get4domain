@@ -2,7 +2,7 @@
 // Source rules read the theme's templates and CSS; rendered rules call the ONE renderer (render.mjs) with the sample content for each
 // category, in English and Tamil, plus the extreme fixtures. Nothing is executed and nothing is fetched.
 import { Buffer } from 'node:buffer';
-import { parse, byTag, findAll, classesOf } from './html.mjs';
+import { parse, byTag, findAll, classesOf, textOf } from './html.mjs';
 import { parseRules, eachRule, eachAt, toPx, classesIn } from './css.mjs';
 import { parseHex, ratio, suggestAccent, AA_TEXT } from './contrast.mjs';
 import { renderPage } from './render.mjs';
@@ -10,15 +10,15 @@ import { validateManifest } from './schema.mjs';
 import { pageDocument } from './document.mjs';
 import { measureOverflow } from './browser.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
-import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS } from '../fixtures/index.mjs';
+import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 import { categoryById, hasCategory } from './categories.mjs';
-import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, REQUIRED_SLOTS_PREMIUM, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, SYSTEM_FONTS, TAMIL_CAPABLE_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
+import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, SYSTEM_FONTS, TAMIL_CAPABLE_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
 
 export const RULE_IDS = [
   'manifest-valid', 'no-script-tag', 'no-inline-handler', 'no-forbidden-element', 'no-seo-output', 'no-external-request', 'iframe-hosts', 'css-hygiene', 'css-scoped',
   'approved-fonts', 'tamil-fonts', 'tokens-defined', 'contrast-tokens', 'contrast-accent', 'one-h1', 'landmarks', 'skip-link', 'language-attr', 'alt-text', 'form-labels',
   'touch-targets', 'responsive-static', 'responsive-browser', 'text-stretch', 'css-budget-layout', 'css-budget-motion', 'reduced-motion', 'hero-visible', 'motion-properties',
-  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order',
+  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render',
 ];
 
 const FORBIDDEN = new Set(['iframe', 'object', 'embed', 'form', 'input', 'select', 'textarea', 'style', 'canvas', 'audio', 'dialog', 'base', 'frame', 'frameset', 'applet', 'noscript']);
@@ -27,7 +27,7 @@ const ALLOWED_ANIMATED = new Set(['transform', 'opacity', 'clip-path', 'filter',
 const GENERIC_FAMILIES = new Set(['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'inherit', 'initial', 'unset']);
 const RESERVE_EXEMPT = new Set(['action', 'header-nav', 'footer']);
 const HIDING = [['opacity', /^0(\.0+)?$/], ['visibility', /^hidden$/], ['display', /^none$/]];
-const BLOCKING_WARNINGS = /^(unknown-binding|unknown-list|unknown-slot|not-text|not-a-list|missing-template|element-removed|inline-handler-removed|binding-in-style|empty-image-dropped|slot-needs-premium|setting-ignored|missing:(site\.name|hero\.title))/;
+const BLOCKING_WARNINGS = /^(unknown-binding|unknown-list|unknown-slot|not-text|not-a-list|missing-template|element-removed|inline-handler-removed|binding-in-style|empty-image-dropped|setting-ignored|missing:(site\.name|hero\.title))/;
 
 class Findings {
   constructor() { this.list = []; this.seen = new Map(); }
@@ -295,11 +295,8 @@ function checkHero(theme, model, F, state) {
 
 function checkSlotsSource(theme, model, F, state, categories) {
   const need = new Set(REQUIRED_SLOTS_ALL);
-  const tier = theme.manifest?.tier;
-  if (tier === 'Premium') REQUIRED_SLOTS_PREMIUM.forEach((s) => need.add(s));
   if (categories.some((c) => categoryById(c).track === 'ecommerce')) need.add('product-grid');
   for (const s of need) if (!state.slots.has(s)) F.add('slots-required', 'templates/', `the platform slot "${s}" is not placed in any template`);
-  if (tier === 'Standard' && state.slots.has('video')) F.add('slots-required', 'templates/', 'the video slot is Premium only: a Standard theme must not place it');
   const reserves = (slot) => model.rules.some(({ r }) => r.selectors.some((s) => s.includes(`.g4d-slot--${slot}`)) && r.decls.some((d) => ['min-height', 'aspect-ratio', 'height', 'min-block-size'].includes(d.prop) && d.value !== '0' && d.value !== 'auto'));
   for (const s of state.slots) if (!RESERVE_EXEMPT.has(s) && !reserves(s)) F.add('slots-reserve-space', 'css/base.css', `no rule reserves space for the "${s}" slot (.g4d-slot--${s} needs a min-height or aspect-ratio)`);
 }
@@ -367,7 +364,7 @@ function checkRendered(theme, F, state, categories, opts) {
   const langs = opts.langs ?? ['en', 'ta'];
   const templates = Object.keys(theme.templates ?? {});
   const sink = (r, where, cat) => {
-    for (const w of r.warnings) if (BLOCKING_WARNINGS.test(w)) F.add(/^unknown-/.test(w) ? 'bindings-known' : /^slot-needs-premium/.test(w) ? 'slots-required' : 'category-renders', where, `renderer warning: ${w}`, { category: cat });
+    for (const w of r.warnings) if (BLOCKING_WARNINGS.test(w)) F.add(/^unknown-/.test(w) ? 'bindings-known' : 'category-renders', where, `renderer warning: ${w}`, { category: cat });
   };
   const safe = (fn, rule, where, cat) => { try { return fn(); } catch (e) { F.add(rule, where, `rendering failed: ${String(e.message ?? e).split('\n')[0]}`, { category: cat }); return null; } };
 
@@ -406,6 +403,40 @@ function checkRendered(theme, F, state, categories, opts) {
   }
 }
 
+/**
+ * entitlements-render: the platform decides at render time which of video, cart and booking a vendor gets, so every category is rendered
+ * with all entitlements ON and all OFF. Both must render cleanly, and neither may leave a gap: no empty slot box, and no section that
+ * exists only to host a gated slot (guard such a section with data-g4d-if="entitlements.<name>").
+ */
+function checkEntitlements(theme, F, state, categories, opts) {
+  const render = opts.render ?? renderPage;
+  const templates = Object.keys(theme.templates ?? {});
+  for (const cat of categories) {
+    const sample = sampleContent(cat, { lang: 'en' });
+    for (const [mode, ent] of [['on', ENTITLEMENTS_ON], ['off', ENTITLEMENTS_OFF]]) {
+      for (const tpl of templates) {
+        const where = `render:${tpl} (entitlements ${mode})`;
+        let r;
+        try { r = renderOne(render, theme, tpl, sample, { entitlements: ent }); } catch (e) { F.add('entitlements-render', where, `rendering failed: ${String(e.message ?? e).split('\n')[0]}`, { category: cat }); continue; }
+        for (const w of r.warnings) if (BLOCKING_WARNINGS.test(w)) F.add('entitlements-render', where, `renderer warning: ${w}`, { category: cat });
+        const nodes = parse(r.html);
+        for (const n of findAll(nodes, (x) => 'data-g4d-slot' in x.attrs)) {
+          const name = n.attrs['data-g4d-slot'];
+          if (!n.children.some((k) => (k.type === 'el') || (k.type === 'text' && k.value.trim() !== '') || k.type === 'raw')) F.add('entitlements-render', where, `the "${name}" slot is drawn as an empty box (entitlements ${mode})`, { category: cat });
+          if (mode === 'off' && GATED_SLOTS[name]) F.add('entitlements-render', where, `the "${name}" slot is drawn although its entitlement is off`, { category: cat });
+        }
+        for (const sec of findAll(nodes, (x) => 'data-g4d-section' in x.attrs)) {
+          const solid = textOf(sec.children).trim() !== '' || findAll(sec.children, (x) => ['img', 'iframe', 'svg', 'picture'].includes(x.tag)).length > 0;
+          if (!solid) F.add('entitlements-render', where, `section "${sec.attrs['data-g4d-section']}" is empty when the entitlements are ${mode}: hide it with data-g4d-if="entitlements.<name>" (or content) so no gap is left`, { category: cat });
+        }
+        if (mode === 'on') for (const [slot, key] of Object.entries(GATED_SLOTS)) {
+          if (state.slots.has(slot) && !r.slots.some((s) => s.name === slot && s.rendered) && ['home', 'item', 'contact'].includes(tpl) && theme.templates[tpl].includes(`<g4d-${slot}>`)) F.add('entitlements-render', where, `entitlements.${key} is on but the "${slot}" slot was not drawn`, { category: cat });
+        }
+      }
+    }
+  }
+}
+
 // ------------------------------------------------------------ the entry points
 /**
  * @param {object} theme  see lib/theme.mjs
@@ -423,6 +454,7 @@ export function lintTheme(theme, opts = {}) {
   checkHero(theme, model, F, state);
   checkSlotsSource(theme, model, F, state, categories);
   checkRendered(theme, F, state, categories, opts);
+  checkEntitlements(theme, F, state, categories, opts);
 
   for (const tag of state.renderedTags) if (!state.touchTags.has(tag)) F.add('touch-targets', 'css/base.css', `no rule gives <${tag}> a minimum height of 44px (e.g. .g4d-theme :is(a, button, summary) { min-height: 44px })`);
 

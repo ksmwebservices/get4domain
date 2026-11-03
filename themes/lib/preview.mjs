@@ -11,7 +11,7 @@ import { parse, findAll, byTag } from './html.mjs';
 import { parseRules, eachRule } from './css.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { ratio, parseHex, suggestAccent, AA_TEXT } from './contrast.mjs';
-import { sampleContent } from '../fixtures/index.mjs';
+import { sampleContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 import { CATEGORIES, FAMILIES, categoryById, hasCategory, variantFor } from './categories.mjs';
 import { MOTION_INTENSITIES, LIMITS } from './vocabulary.mjs';
 
@@ -63,7 +63,8 @@ function params(url, themes) {
   const motion = MOTION_INTENSITIES.find((x) => x.toLowerCase() === mRaw) ?? null;
   const page = PAGES.includes(q.get('page')) ? q.get('page') : 'home';
   const accent = HEX.test(q.get('accent') ?? '') ? q.get('accent') : null;
-  return { theme, category, lang, motion, page, accent, reduced: q.get('reduced') === '1', raw: q };
+  const ent = q.get('ent') === 'all' ? 'all' : 'none';
+  return { theme, category, lang, motion, page, accent, ent, reduced: q.get('reduced') === '1', raw: q };
 }
 const bad = (raw, key, valid) => { const v = raw.get(key); return v !== null && v !== '' && !valid(v); };
 
@@ -73,7 +74,7 @@ function renderFor(p, themeObj) {
   const settings = {};
   if (p.motion) settings.motionIntensity = p.motion;
   if (p.accent) settings.accent = p.accent;
-  return renderPage({ theme: themeObj, page, content, settings, vendor: { id: 'preview', unclaimed: false }, host: { siteUrl: content.host.siteUrl, allowEmbeds: false } });
+  return renderPage({ theme: themeObj, page, content, settings, vendor: { id: 'preview', unclaimed: false }, host: { siteUrl: content.host.siteUrl, allowEmbeds: false }, entitlements: p.ent === 'all' ? ENTITLEMENTS_ON : ENTITLEMENTS_OFF });
 }
 
 // ---------------------------------------------------------------- pages
@@ -114,7 +115,7 @@ function variantsPage(p, themes) {
   const effCategory = wanted && variantIds.includes(wanted) && v.id !== wanted ? CATEGORIES.find((c) => FAMILIES[c.family].variant.id === wanted)?.id ?? p.category : p.category;
   const eff = categoryById(effCategory);
   const ev = variantFor(effCategory);
-  const qs = (extra = {}) => new URLSearchParams({ theme: p.theme, category: effCategory, lang: p.lang, page: p.page, ...(p.motion ? { motion: p.motion } : {}), ...(p.accent ? { accent: p.accent } : {}), ...extra }).toString();
+  const qs = (extra = {}) => new URLSearchParams({ theme: p.theme, category: effCategory, lang: p.lang, page: p.page, ...(p.motion ? { motion: p.motion } : {}), ...(p.accent ? { accent: p.accent } : {}), ...(p.ent === 'all' ? { ent: 'all' } : {}), ...extra }).toString();
   const sel = (name, options, cur) => `<select name="${name}">${options.map(([val, label]) => `<option value="${esc(val)}"${val === cur ? ' selected' : ''}>${esc(label)}</option>`).join('')}</select>`;
   const form = `<form class="h-form" method="get" action="/variants">
 <label>Theme${sel('theme', themes.map((t) => [t, t]), p.theme)}</label>
@@ -123,6 +124,7 @@ function variantsPage(p, themes) {
 <label>Motion intensity${sel('motion', [['', 'theme default'], ...MOTION_INTENSITIES.map((m) => [m, m])], p.motion ?? '')}</label>
 <label>Language${sel('lang', [['en', 'English'], ['ta', 'Tamil']], p.lang)}</label>
 <label>Page${sel('page', PAGES.map((x) => [x, x]), p.page)}</label>
+<label>Entitlements (video, cart, booking, custom domain)${sel('ent', [['none', 'none (Free plan)'], ['all', 'all on (Pro plan)']], p.ent)}</label>
 <label>Vendor accent<input name="accent" value="${esc(p.accent ?? '')}" placeholder="#0a5f7a" size="8"></label>
 <button type="submit">Show</button></form>`;
   const src = `/render?${qs()}`;

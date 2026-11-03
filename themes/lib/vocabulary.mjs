@@ -27,6 +27,8 @@ export const V3_BINDINGS = [
   'social.pinterest', 'social.telegram', 'social.whatsappChannel',
   'page.intro',
   // Platform wording in the visitor's language (English or Tamil): the theme never hard-codes it.
+  // What the vendor's plan has switched on (see renderPage `entitlements`): usable in data-g4d-if, e.g. data-g4d-if="entitlements.booking".
+  'entitlements.video', 'entitlements.cart', 'entitlements.booking', 'entitlements.customDomain',
   'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact', 'ui.closeImage', 'ui.faq', 'ui.process',
 ];
 
@@ -53,6 +55,8 @@ export const V3_REPEATERS = {
   credentials: { as: 'credential', fields: ['title', 'detail'] },
   // Category extra blocks (price list, packages, timetable ...): one generic loop renders every block the category has.
   blocks: { as: 'block', fields: ['key', 'title', 'items'] },
+  // Ecommerce products (the product-grid slot draws them); usable as data-g4d-if="products" so a section can disappear when there are none.
+  products: { as: 'product', fields: ITEM_FIELDS },
   'block.items': { as: 'entry', fields: ['title', 'detail', 'price'] },
 };
 
@@ -99,9 +103,12 @@ export const SLOTS = {
 export const SLOT_BY_TAG = Object.fromEntries(Object.entries(SLOTS).map(([name, s]) => [s.tag, name]));
 export const SLOT_TAGS = Object.keys(SLOT_BY_TAG);
 
-/** Slots every theme must place; Premium themes must also place `video`; product-grid is required for Ecommerce categories. */
+/** Slots every theme must place. product-grid is also required for Ecommerce categories. video, cart and booking are optional for every theme: the platform draws them only for vendors entitled to them. */
 export const REQUIRED_SLOTS_ALL = ['enquiry-form', 'whatsapp-float', 'bottom-nav', 'map', 'reviews', 'social-links', 'open-now', 'share-qr', 'listed-on-badge', 'action', 'header-nav', 'footer'];
-export const REQUIRED_SLOTS_PREMIUM = ['video'];
+/** What a vendor's plan can switch on at render time. All default to false. */
+export const ENTITLEMENT_KEYS = ['video', 'cart', 'booking', 'customDomain'];
+/** Slots drawn only when the matching entitlement is true (the others are always drawn). */
+export const GATED_SLOTS = { video: 'video', cart: 'cart', booking: 'booking' };
 
 /** Hosts that may appear in an iframe or a click-to-load video link. Nothing else may be loaded from outside. */
 export const MAP_EMBED_HOSTS = ['www.google.com', 'maps.google.com', 'www.openstreetmap.org'];
@@ -117,6 +124,7 @@ export const TOKENS = ['--g4d-primary', '--g4d-primary-contrast', '--g4d-accent'
 export const MOTION_TOKENS = ['--g4d-motion-speed', '--g4d-motion-ease', '--g4d-motion-distance'];
 
 export const MOTION_INTENSITIES = ['Off', 'Low', 'Medium', 'Rich'];
+/** Tier is a PRICE CLASS of a theme, not a plan and not a capability. */
 export const TIERS = ['Standard', 'Premium'];
 export const TRACKS = ['handyman', 'professional', 'ecommerce'];
 

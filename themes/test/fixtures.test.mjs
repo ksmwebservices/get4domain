@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATEGORIES, CATEGORY_IDS } from '../lib/categories.mjs';
 import { SEEDS } from '../fixtures/data.mjs';
-import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, LANGS, allSamples } from '../fixtures/index.mjs';
+import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, LANGS, allSamples, ENTITLEMENTS_ON, ENTITLEMENTS_OFF, sampleEntitlements } from '../fixtures/index.mjs';
 
 const TAMIL = /[஀-௿]/;
 const strings = (v, out = []) => { if (typeof v === 'string') out.push(v); else if (Array.isArray(v)) v.forEach((x) => strings(x, out)); else if (v && typeof v === 'object') Object.values(v).forEach((x) => strings(x, out)); return out; };
@@ -79,4 +79,17 @@ test('stretchContent makes readable text about 1.6x longer and leaves links alon
   assert.equal(t.contact.phoneHref, s.contact.phoneHref);
   assert.equal(t.hero.image, s.hero.image);
   assert.equal(t.contact.mapUrl, s.contact.mapUrl);
+});
+
+test('entitlement fixtures: all on, all off, and a realistic set per plan and track', () => {
+  const keys = ['video', 'cart', 'booking', 'customDomain'];
+  assert.deepEqual(Object.keys(ENTITLEMENTS_ON).sort(), [...keys].sort());
+  assert.ok(keys.every((k) => ENTITLEMENTS_ON[k] === true && ENTITLEMENTS_OFF[k] === false));
+  assert.deepEqual(sampleEntitlements('plumber', { pro: false }), ENTITLEMENTS_OFF);
+  const pro = sampleEntitlements('plumber', { pro: true });
+  assert.equal(pro.cart, false, 'cart is Ecommerce Pro only');
+  assert.equal(pro.booking, true, 'booking is offered on Handyman and Professional');
+  assert.equal(sampleEntitlements('jewellery', { pro: true }).cart, true);
+  assert.equal(sampleEntitlements('jewellery', { pro: true }).booking, false, 'booking is not offered on Ecommerce');
+  assert.throws(() => sampleEntitlements('nope'), RangeError);
 });

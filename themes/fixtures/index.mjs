@@ -5,6 +5,16 @@ import { CATEGORIES, categoryById, blockTitle } from '../lib/categories.mjs';
 import { SEEDS } from './data.mjs';
 
 export const LANGS = ['en', 'ta'];
+
+/** Entitlements for the renderer: everything off (the default) and everything on (the lint renders both). */
+export const ENTITLEMENTS_OFF = Object.freeze({ video: false, cart: false, booking: false, customDomain: false });
+export const ENTITLEMENTS_ON = Object.freeze({ video: true, cart: true, booking: true, customDomain: true });
+/** A realistic set: a Free-plan vendor has none; a Pro-plan vendor has video and a custom domain, booking on Handyman and Professional, the cart on Ecommerce. */
+export function sampleEntitlements(categoryId, { pro = false } = {}) {
+  const cat = categoryById(categoryId);
+  if (!pro) return { ...ENTITLEMENTS_OFF };
+  return { video: true, cart: cat.track === 'ecommerce', booking: cat.track !== 'ecommerce', customDomain: true };
+}
 export const EXTREME_KINDS = ['long-name', 'long-list', 'empty', 'no-images', 'long-text'];
 
 const T = (lang, en, ta) => (lang === 'ta' ? ta : en);

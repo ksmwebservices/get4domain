@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { renderPage } from '../lib/render.mjs';
 import { parse, findAll, byTag } from '../lib/html.mjs';
 import { SLOTS } from '../lib/vocabulary.mjs';
-import { sampleContent, extremeContent } from '../fixtures/index.mjs';
+import { sampleContent, extremeContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 import { minimalManifest } from './helpers/minimal-theme.mjs';
 
 const TPL = `<a class="skip-link" href="#main">Skip</a>
@@ -144,12 +144,12 @@ const slotsOf = (html) => findAll(tags(html), (n) => 'data-g4d-slot' in n.attrs)
 
 test('every platform slot is drawn in place, as a labelled wrapper, and reported', () => {
   const all = Object.keys(SLOTS);
-  const t = theme({ tier: 'Premium' }, { home: slotTpl(all) });
+  const t = theme({}, { home: slotTpl(all) });
   const c = sampleContent('plumber');
   c.reviews = { ...c.reviews };
-  const r = render(t, c, { vendor: { id: 'v1', unclaimed: true }, host: { ...HOST, allowEmbeds: true } });
+  const r = render(t, c, { vendor: { id: 'v1', unclaimed: true }, host: { ...HOST, allowEmbeds: true }, entitlements: ENTITLEMENTS_ON });
   const drawn = slotsOf(r.html);
-  for (const n of all.filter((x) => !['cart', 'product-grid'].includes(x))) assert.ok(drawn.includes(n), `${n} drawn: ${drawn}`);
+  for (const n of all.filter((x) => x !== 'product-grid')) assert.ok(drawn.includes(n), `${n} drawn: ${drawn}`);
   assert.deepEqual(r.slots.map((s) => s.name).sort(), all.sort());
   assert.ok(slotsOf(r.html).indexOf('map') > slotsOf(r.html).indexOf('action') || true);
   for (const w of findAll(tags(r.html), (n) => 'data-g4d-slot' in n.attrs)) assert.match(w.attrs.class, /g4d-slot/);
@@ -167,17 +167,73 @@ test('an unknown slot tag is dropped with a warning', () => {
   assert.ok(r.warnings.includes('unknown-slot:g4d-teleporter'));
 });
 
-test('video is Premium only; hosts are checked; videos are facades, never iframes', () => {
+const GATED = ['video', 'cart', 'booking'];
+
+test('video, cart and booking are drawn only when the vendor is entitled, whatever the theme tier; nothing is left behind otherwise', () => {
+  for (const tier of ['Standard', 'Premium']) {
+    const t = theme({ tier }, { home: slotTpl(GATED) });
+    for (const ent of [undefined, ENTITLEMENTS_OFF, {}, { video: 'yes', cart: 1, booking: 'true' }]) {
+      const r = render(t, plumber(), ent === undefined ? {} : { entitlements: ent });
+      assert.deepEqual(slotsOf(r.html), [], `${tier} ${JSON.stringify(ent)}: nothing drawn`);
+      assert.doesNotMatch(r.html, /g4d-slot--(video|cart|booking)/);
+      assert.equal(findAll(tags(r.html), (n) => n.tag === 'main')[0].children.filter((c) => c.type === 'el').length, 1, 'only the h1 is left in main: no empty box');
+      assert.deepEqual(r.slots.map((s) => [s.name, s.rendered]).sort(), GATED.map((n) => [n, false]).sort());
+      assert.deepEqual(r.warnings.filter((w) => /premium|entitle/i.test(w)), [], 'not drawing is not a warning');
+    }
+  }
+});
+
+test('each entitlement switches on exactly its own slot', () => {
+  const t = theme({ tier: 'Standard' }, { home: slotTpl(GATED) });
+  for (const name of GATED) {
+    const r = render(t, plumber(), { entitlements: { [name]: true } });
+    assert.deepEqual(slotsOf(r.html), [name], name);
+  }
+  assert.deepEqual(slotsOf(render(t, plumber(), { entitlements: ENTITLEMENTS_ON }).html).sort(), [...GATED].sort());
+});
+
+test('video: hosts are checked and videos are facades, never iframes', () => {
   const c = plumber();
   c.videos.push({ title: 'Evil', url: 'https://evil.example/watch?v=1', poster: '', duration: '1:00' });
-  const std = render(theme({ tier: 'Standard' }, { home: slotTpl(['video']) }), c);
-  assert.equal(slotsOf(std.html).includes('video'), false);
-  assert.ok(std.warnings.includes('slot-needs-premium:video'));
-  const prem = render(theme({ tier: 'Premium' }, { home: slotTpl(['video']) }), c);
-  const nodes = tags(prem.html);
+  const nodes = tags(render(theme({ tier: 'Standard' }, { home: slotTpl(['video']) }), c, { entitlements: { video: true } }).html);
   assert.equal(byTag(nodes, 'iframe').length, 0);
   assert.equal(findAll(nodes, (n) => n.tag === 'a' && n.attrs.href?.includes('evil.example')).length, 0);
   assert.equal(findAll(nodes, (n) => n.tag === 'a' && n.attrs.href?.includes('youtube-nocookie.com')).length, 3);
+  const none = render(theme({}, { home: slotTpl(['video']) }), { ...plumber(), videos: [] }, { entitlements: { video: true } });
+  assert.equal(slotsOf(none.html).length, 0, 'entitled but no videos: no empty box either');
+});
+
+test('ecommerce: with the cart off every product shows an enquiry link, with the cart on an add-to-cart link', () => {
+  const t = theme({ categories: ['jewellery'], families: ['fashion-lifestyle'], tracks: ['ecommerce'], layoutVariantRules: { 'fashion-lifestyle': 'product-first' } }, { home: slotTpl(['product-grid', 'cart']) });
+  const c = sampleContent('jewellery');
+  const off = tags(render(t, c).html);
+  const links = (nodes) => findAll(nodes, (n) => n.tag === 'a' && n.attrs.href?.startsWith('/enquire?item='));
+  assert.equal(links(off).length, 6);
+  assert.equal(findAll(off, (n) => n.tag === 'a' && n.attrs.href?.startsWith('/cart')).length, 0);
+  const on = tags(render(t, c, { entitlements: { cart: true } }).html);
+  assert.equal(links(on).length, 0);
+  assert.equal(findAll(on, (n) => n.tag === 'a' && /^\/cart\?add=/.test(n.attrs.href ?? '')).length, 6);
+  assert.ok(slotsOf(render(t, c, { entitlements: { cart: true } }).html).includes('cart'));
+});
+
+test('entitlements.* can be used in data-g4d-if so a section that hosts a gated slot disappears with it', () => {
+  const t = theme({}, { home: '<h1>{{hero.title}}</h1><section data-g4d-section="b" data-g4d-optional="true" data-g4d-if="entitlements.booking"><g4d-booking></g4d-booking></section><p data-g4d-if-not="entitlements.video">no video</p>' });
+  const off = render(t, plumber());
+  assert.equal(findAll(tags(off.html), (n) => 'data-g4d-section' in n.attrs).length, 0);
+  assert.match(off.html, /no video/);
+  assert.deepEqual(off.warnings.filter((w) => w.startsWith('unknown-binding')), []);
+  const on = render(t, plumber(), { entitlements: { booking: true, video: true } });
+  assert.equal(findAll(tags(on.html), (n) => 'data-g4d-section' in n.attrs).length, 1);
+  assert.doesNotMatch(on.html, /no video/);
+});
+
+test('customDomain: the canonical address uses the vendor\'s own domain only when entitled', () => {
+  const host = { siteUrl: 'https://kaveri-flow.get4domain.com', customDomain: 'https://kaveriflow.in' };
+  const t = theme();
+  assert.equal(render(t, plumber(), { host }).seo.canonical, 'https://kaveri-flow.get4domain.com/');
+  assert.equal(render(t, plumber(), { host, entitlements: { customDomain: true } }).seo.canonical, 'https://kaveriflow.in/');
+  assert.equal(render(t, plumber(), { host: { siteUrl: host.siteUrl }, entitlements: { customDomain: true } }).seo.canonical, 'https://kaveri-flow.get4domain.com/');
+  assert.equal(render(t, plumber(), { host: { ...host, customDomain: 'javascript:alert(1)' }, entitlements: { customDomain: true } }).seo.canonical, 'https://kaveri-flow.get4domain.com/');
 });
 
 test('map embeds only from allowed hosts and only when the host allows embeds', () => {

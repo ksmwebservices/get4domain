@@ -64,6 +64,7 @@ const bad = (t) => ({
   'slots-required': { theme: clone(t, { templates: { home: t.templates.home.replace('<g4d-reviews></g4d-reviews>', '') } }) },
   'slots-reserve-space': { theme: clone(t, { css: { base: t.css.base.replace(/\.g4d-theme \.g4d-slot--map \{[^}]*\}/, '') } }) },
   'bindings-known': { theme: clone(t, { templates: { home: `${t.templates.home}<p>{{foo.bar}}</p><g4d-teleporter></g4d-teleporter>` } }) },
+  'entitlements-render': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<section data-g4d-section="vid" data-g4d-optional="true"><div class="wrap"><g4d-video></g4d-video></div></section></main>') } }) },
   'print-stylesheet': { theme: clone(t, { css: { print: '' } }) },
   'category-renders': { theme: clone(t, { templates: { home: t.templates.home.replace('data-block="{{block.key}}"', 'data-x="{{block.key}}"') } }) },
   'category-fit-order': { theme: t, opts: { render: (i) => renderPage({ ...i, content: { ...i.content, blocks: [...(i.content.blocks ?? [])].reverse() } }) } },
@@ -82,14 +83,29 @@ test('every lint rule has a red fixture that fails it, and the good theme does n
   }
 });
 
-test('a Premium theme must place the video slot; a Standard theme must not', () => {
+test('the tier is a price class only: no slot rule depends on it', () => {
   const t = starter();
-  const premium = clone(t, { manifest: { tier: 'Premium' } });
-  assert.ok(ruleSet(lint(premium)).has('slots-required'), 'Premium without video fails');
-  const withVideo = clone(premium, { templates: { home: t.templates.home.replace('<g4d-reviews></g4d-reviews>', '<g4d-reviews></g4d-reviews><g4d-video></g4d-video>') } });
-  assert.deepEqual(lint(withVideo).findings.map((f) => `${f.rule}:${f.message}`), []);
-  const standardWithVideo = clone(t, { templates: { home: t.templates.home.replace('<g4d-reviews></g4d-reviews>', '<g4d-reviews></g4d-reviews><g4d-video></g4d-video>') } });
-  assert.ok(ruleSet(lint(standardWithVideo)).has('slots-required'), 'Standard with video fails');
+  for (const tier of ['Standard', 'Premium']) {
+    const r = lint(clone(t, { manifest: { tier } }));
+    assert.deepEqual(r.findings.map((f) => `${f.rule}:${f.message}`), [], tier);
+  }
+  const noGated = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replace(/<g4d-(video|cart|booking)><\/g4d-\1>/g, '')])) });
+  assert.deepEqual(lint(clone(noGated, { manifest: { tier: 'Premium' } })).findings.filter((f) => f.rule === 'slots-required'), [], 'a Premium theme need not place video');
+});
+
+test('any theme may place video, cart and booking; the starter places all three and renders cleanly with entitlements on and off', () => {
+  const t = starter();
+  const placed = new Set(Object.values(t.templates).flatMap((h) => [...h.matchAll(/<g4d-(video|cart|booking)>/g)].map((m) => m[1])));
+  assert.deepEqual([...placed].sort(), ['booking', 'cart', 'video']);
+  assert.equal(lint(t, { categories: CATEGORY_IDS }).ok, true);
+});
+
+test('a section that only hosts a gated slot leaves a gap when the entitlement is off, and the lint says so', () => {
+  const t = starter();
+  const gap = clone(t, { templates: { home: t.templates.home.replace('</main>', '<section data-g4d-section="vid" data-g4d-optional="true"><div class="wrap"><g4d-video></g4d-video></div></section></main>') } });
+  const r = lint(gap);
+  const f = r.findings.find((x) => x.rule === 'entitlements-render');
+  assert.ok(f && /entitlement/i.test(f.message) && /vid/.test(f.message), JSON.stringify(f));
 });
 
 test('an Ecommerce category needs the product-grid slot', () => {

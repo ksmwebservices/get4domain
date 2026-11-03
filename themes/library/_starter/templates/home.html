@@ -52,6 +52,9 @@
 <section class="sec" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
   <div class="wrap"><g4d-reviews></g4d-reviews></div>
 </section>
+<section class="sec" data-g4d-section="videos" data-g4d-label="Videos" data-g4d-optional="true" data-g4d-if="entitlements.video">
+  <div class="wrap"><g4d-video></g4d-video></div>
+</section>
 <section class="sec" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true" data-g4d-if="faqs">
   <div class="wrap narrow">
     <h2 class="sec-title">{{ui.faq}}</h2>
@@ -68,11 +71,12 @@
       <g4d-hours variant="table"></g4d-hours>
       <g4d-social></g4d-social>
       <g4d-map></g4d-map>
+      <g4d-booking></g4d-booking>
     </div>
     <g4d-enquiry-form></g4d-enquiry-form>
   </div>
 </section>
-<section class="sec" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true">
+<section class="sec" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true" data-g4d-if="products">
   <div class="wrap"><g4d-product-grid></g4d-product-grid></div>
 </section>
 <section class="sec alt" data-g4d-section="share" data-g4d-label="Share" data-g4d-optional="true">

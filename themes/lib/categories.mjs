@@ -97,7 +97,7 @@ export const blockTitle = (key, lang = 'en') => {
 
 export const CATEGORIES = ROWS.map(([id, label, family, schemaType, ctaPrimary, extraBlocks, flow, packKey]) => ({
   id, label, family, track: FAMILIES[family].track, schemaType, ctaPrimary, extraBlocks, flow, packKey,
-  /** Both tiers are eligible in every category. Ecommerce Standard is "Shop Lite" (product enquiry, no cart). */
+  /** Both price classes (Standard, Premium) are eligible in every category. Tier is a price class of a theme, not a plan. */
   tiers: ['Standard', 'Premium'],
 }));
 

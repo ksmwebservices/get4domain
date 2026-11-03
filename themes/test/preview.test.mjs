@@ -76,6 +76,17 @@ test('variant picker: theme, category, variant (read only), motion intensity and
   assert.match(r.body, /motion=Rich/);
 });
 
+test('entitlements can be switched on in the render and in the variant picker frames', async () => {
+  const off = await get('/render?theme=_starter&category=plumber');
+  assert.doesNotMatch(off.body, /data-g4d-slot="(video|booking|cart)"/);
+  const on = await get('/render?theme=_starter&category=plumber&ent=all');
+  assert.match(on.body, /data-g4d-slot="video"/);
+  assert.match(on.body, /data-g4d-slot="booking"/);
+  const v = await get('/variants?theme=_starter&category=plumber&ent=all');
+  assert.match(v.body, /<iframe[^>]+src="\/render\?[^"]*ent=all/);
+  assert.match(v.body, /Entitlements/);
+});
+
 test('performance readout: CSS size, image count, estimated LCP element, layout-shift risk', async () => {
   const r = await get('/performance');
   for (const h of ['CSS size', 'Images', 'Estimated LCP element', 'Layout shift risk']) assert.ok(r.body.includes(h), h);

@@ -1,6 +1,6 @@
 // Generates the tables inside themes/CONTRACT.md from the code, so the document cannot drift from the data.
 import { CATEGORIES, FAMILIES, TRACK_LABELS } from './categories.mjs';
-import { SLOTS, REQUIRED_SLOTS_ALL, REQUIRED_SLOTS_PREMIUM } from './vocabulary.mjs';
+import { SLOTS, REQUIRED_SLOTS_ALL, GATED_SLOTS } from './vocabulary.mjs';
 
 const cell = (s) => String(s).replace(/\|/g, '\\|');
 
@@ -20,10 +20,11 @@ export function variantTable() {
 }
 
 export function slotTable() {
-  const head = '| Slot | Tag in a template | Origin | Required |\n|---|---|---|---|';
+  const head = '| Slot | Tag in a template | Origin | Required in a theme | Drawn when |\n|---|---|---|---|---|';
   const rows = Object.entries(SLOTS).map(([name, s]) => {
-    const req = REQUIRED_SLOTS_ALL.includes(name) ? 'every theme' : REQUIRED_SLOTS_PREMIUM.includes(name) ? 'Premium themes' : name === 'product-grid' ? 'Ecommerce categories' : 'optional';
-    return `| \`${name}\` | \`<${s.tag}>\` | ${s.as === 'engine' ? 'as built' : 'V3 addition'} | ${req} |`;
+    const req = REQUIRED_SLOTS_ALL.includes(name) ? 'every theme' : name === 'product-grid' ? 'Ecommerce categories' : 'optional';
+    const when = GATED_SLOTS[name] ? `the vendor has the \`${GATED_SLOTS[name]}\` entitlement` : name === 'claim-banner' ? 'the page is unclaimed' : 'always (when it has something to show)';
+    return `| \`${name}\` | \`<${s.tag}>\` | ${s.as === 'engine' ? 'as built' : 'V3 addition'} | ${req} | ${when} |`;
   });
   return `${head}\n${rows.join('\n')}`;
 }
