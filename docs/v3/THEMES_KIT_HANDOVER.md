@@ -14,7 +14,7 @@
 | Sample content, 41 categories x English and Tamil, extreme fixtures | `themes/fixtures/` | done; all invented |
 | Preview harness and screenshots | `themes/lib/{preview,shots}.mjs` | done; 127.0.0.1 only |
 | Internal reference theme | `themes/library/_starter/` | passes all rules for all 41 categories, including at six widths in a real browser |
-| Tests | `themes/test/` | 180 tests, all green |
+| Tests | `themes/test/` | 206 tests, all green |
 | Five Standard themes with 41 category presets | `themes/library/free-*`, built from `themes/source` | all pass the whole lint, including the real-browser check at six widths |
 | Category map for the backend importer | `themes/data/category-map.json` | generated from `themes/lib/categories.mjs`, drift-checked, marked as an inference |
 
@@ -60,12 +60,16 @@ All 17 are in the table in `themes/CONTRACT.md` section 2 with the decision for 
 7. `--all` for screenshots means every Standard theme with the categories it lists; Tamil is a sample of three per theme.
 8. Looking at screenshots found real layout bugs that the lint cannot see (a phantom grid column that made a phone page 14,560 px tall, a block rendering one letter per line, Tamil headings hyphenated oddly, one giant product per row on a phone); all were fixed in the shared core and are recorded in the log. A page-height sanity check is not part of the lint.
 
+**Pictures (THEMES-CC-1b).** Before: 22 to 25 `<img>` per Standard home page (gallery thumbnails plus a second copy of every photo for the lightbox, a picture on every service, hidden service pictures in Practice and Studio, team photos, video posters that were decorative, and a logo that was not lazy). After: at most 12 with the Free limits and 18 with the largest Pro content (budget 19), enforced by the lint rule `image-budget` for all 41 categories. Decorations are SVG or CSS, only the hero picture is eager, the gallery has one picture per photo, a letter badge replaces team photos on the home page, the first three services carry a picture, shop catalogues carry three, video posters are limited to three on the home page. Contract additions: loop helpers `featured`, `shown`, `initial`; slot attributes `<g4d-video limit>` and `<g4d-product-grid images>`.
+
 ## Open questions for the owner (Standard themes)
 1. The presets' starter FAQs and service names are generic and I wrote the Tamil: a Tamil speaker should read `themes/source/*/presets.mjs` (and the fixtures) before a customer sees them.
 2. The colour palettes (41 hues) are my choice from the category's mood; do you want to review them in the Coverage and Variant picker pages and change any?
 3. Hospitality shows the booking button on the picture and in the contact block only when the booking entitlement is on; the reservation button from the category's call to action is always shown. Is that the intended split?
 4. Should the Free plan really show the WhatsApp button in the header on every theme (it is placed in all five), or only the phone?
 5. When the backend importer is built, should each theme's `presets/` be imported as part of the `ThemePackage` row, or kept as separate preset rows keyed by category?
+6. Team photos no longer appear on the home page (a letter badge shows instead, to stay inside the picture budget); the About page still shows real photos. Is that acceptable, or should the Free budget allow team photos instead of, say, the about picture?
+7. The picture budget assumes a Free site shows at most 8 gallery images on the home page and gives pictures to the first three services only: is that the right trade-off for Free sites?
 
 ## Owner's answers (applied in THEMES-CC-0b)
 
