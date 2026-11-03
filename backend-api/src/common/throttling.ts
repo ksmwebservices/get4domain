@@ -45,6 +45,9 @@ export const RATE = {
   payment: { default: { limit: 20, ttl: 60_000 } },
   /** Public storefront actions (enquiry / checkout order / confirm). */
   publicAction: { default: { limit: 30, ttl: 60_000 } },
+  /** V3 claim links: a public token-guessing target. 20 per minute per IP. */
+  // targets the "reads" throttler: the "default" one skips GET requests
+  claimStatus: { reads: { limit: 20, ttl: 60_000 } },
   /** Provider webhooks: generous (providers retry), but not unlimited. */
   webhook: { default: { limit: 120, ttl: 60_000 } },
   whatsappWebhook: { default: { limit: 300, ttl: 60_000 } },

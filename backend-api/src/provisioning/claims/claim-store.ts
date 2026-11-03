@@ -27,6 +27,8 @@ export abstract class ClaimStore {
   abstract revokeActive(vendorId: string): Promise<number>;
   abstract markExpired(id: string): Promise<void>;
   abstract hasUsedToken(vendorId: string): Promise<boolean>;
+  /** The owner's email and the public business name, for staff "reissue". */
+  abstract vendorContact(vendorId: string): Promise<{ email: string; businessName: string } | null>;
 }
 
 @Injectable()
@@ -85,5 +87,9 @@ export class PrismaClaimStore extends ClaimStore {
 
   async hasUsedToken(vendorId: string): Promise<boolean> {
     return (await this.prisma.v3ClaimToken.count({ where: { vendorId, status: 'USED' } })) > 0;
+  }
+
+  async vendorContact(vendorId: string): Promise<{ email: string; businessName: string } | null> {
+    return this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { email: true, businessName: true } });
   }
 }

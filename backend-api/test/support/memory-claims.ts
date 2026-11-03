@@ -6,6 +6,7 @@ export class MemoryClaimStore extends ClaimStore {
   rows: ClaimTokenRow[] = [];
   vendors = new Map<string, string>();   // vendorId -> businessName (public name)
   invites?: MemoryInviteStore;
+  vendorContacts = new Map<string, { email: string; businessName: string }>();
   private seq = 0;
 
   async issue(a: IssueArgs): Promise<{ id: string }> {
@@ -33,6 +34,7 @@ export class MemoryClaimStore extends ClaimStore {
     return n;
   }
   async markExpired(id: string): Promise<void> { const r = this.rows.find((x) => x.id === id); if (r && r.status === 'ACTIVE') { r.status = 'EXPIRED'; r.activeKey = null; this.invites?.clearBodies(r.id); } }
+  async vendorContact(vendorId: string) { return this.vendorContacts.get(vendorId) ?? null; }
   async hasUsedToken(vendorId: string): Promise<boolean> { return this.rows.some((r) => r.vendorId === vendorId && r.status === 'USED'); }
 }
 
