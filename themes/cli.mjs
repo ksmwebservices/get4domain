@@ -7,6 +7,7 @@
 //   node themes/cli.mjs validate-package <file.zip>    check a zip without extracting or executing anything in it
 //   node themes/cli.mjs lint [theme-id | --all] [--category id | --all-categories] [--json file] [--browser]
 //   node themes/cli.mjs preview [--port 4173]          local review server on 127.0.0.1 only
+//   node themes/cli.mjs bolt-kit [--out dir]          write dist/get4domain-bolt-kit.zip, the self-contained kit for Bolt
 //   node themes/cli.mjs shots --theme id --category id | --all      PNG screenshots at 360, 768 and 1280 px into themes/.shots/
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -22,6 +23,7 @@ const COMMANDS = {
   lint: './commands/lint.mjs',
   preview: './commands/preview.mjs',
   shots: './commands/shots.mjs',
+  'bolt-kit': './commands/bolt-kit.mjs',
 };
 
 export function parseArgs(argv) {
