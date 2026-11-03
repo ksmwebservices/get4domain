@@ -11,9 +11,9 @@ import { parse, findAll, byTag } from './html.mjs';
 import { parseRules, eachRule, resolveVarFallback } from './css.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { ratio, parseHex, suggestAccent, AA_TEXT } from './contrast.mjs';
-import { sampleContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
+import { sampleContent, freeLimitContent, proMaxContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 import { CATEGORIES, FAMILIES, categoryById, hasCategory, variantFor } from './categories.mjs';
-import { MOTION_INTENSITIES, LIMITS } from './vocabulary.mjs';
+import { MOTION_INTENSITIES, LIMITS, IMAGE_BUDGET } from './vocabulary.mjs';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const PAGES = ['home', 'services', 'about', 'gallery', 'contact', 'page', 'item'];
@@ -163,22 +163,24 @@ function perfFor(themeObj, themeId, category) {
   eachRule(reserve, (rule) => { if (rule.decls.some((d) => ['min-height', 'aspect-ratio', 'height', 'min-block-size'].includes(d.prop))) for (const s of rule.selectors) for (const m of s.matchAll(/g4d-slot--([\w-]+)/g)) reserved.add(m[1]); });
   const unreserved = slotsPlaced.filter((s) => !['action', 'header-nav', 'footer'].includes(s) && !reserved.has(s));
   const risk = noDims + unreserved.length + (heroImg && heroImg.attrs.loading === 'lazy' ? 1 : 0);
-  return { css, images: imgs.length, lazy: imgs.filter((i) => i.attrs.loading === 'lazy').length, lcp, noDims, unreserved, risk: risk === 0 ? 'low' : risk <= 2 ? 'medium' : 'high', slots: slotsPlaced.length };
+  const homeImgs = (themeObjX, content, ent) => byTag(parse(renderPage({ theme: themeObjX, page: { slug: 'home' }, content, settings: {}, vendor: { id: 'preview' }, host: { siteUrl: content.host.siteUrl }, entitlements: ent }).html), 'img').length;
+  const free = homeImgs(themeObj, freeLimitContent(category), ENTITLEMENTS_OFF);
+  const pro = homeImgs(themeObj, proMaxContent(category), ENTITLEMENTS_ON);
+  return { free, pro, css, images: imgs.length, lazy: imgs.filter((i) => i.attrs.loading === 'lazy').length, lcp, noDims, unreserved, risk: risk === 0 ? 'low' : risk <= 2 ? 'medium' : 'high', slots: slotsPlaced.length };
 }
 
 function performancePage(themes) {
   const loaded = themes.map((t) => [t, loadTheme(t)]);
   const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
   const size = (o, ks) => ks.reduce((n, k) => n + Buffer.byteLength(o.css[k] ?? ''), 0);
-  const summary = loaded.map(([t, o]) => `<tr><td>${esc(t)}</td><td>${esc(o.manifest.tier)}</td><td>${o.manifest.categories.length}</td><td>${Object.keys(o.templates).length}</td><td>${Object.keys(o.presets ?? {}).length}</td><td class="${size(o, ['tokens', 'base', 'print']) < LIMITS.layoutCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['tokens', 'base', 'print']))} of ${LIMITS.layoutCssBytes / 1024} KB</td><td class="${size(o, ['motion']) < LIMITS.motionCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['motion']))} of ${LIMITS.motionCssBytes / 1024} KB</td></tr>`).join('');
-  const sections = loaded.map(([t, themeObj]) => {
-    const rows = themeObj.manifest.categories.map((id) => {
-      const f = perfFor(themeObj, t, id);
-      return `<tr><td><code>${esc(id)}</code></td><td>${(f.css.layout / 1024).toFixed(1)} KB / ${(f.css.motion / 1024).toFixed(1)} KB</td><td>${f.images} (${f.lazy} lazy)</td><td>${esc(f.lcp)}</td><td class="${f.risk === 'low' ? 'cell pass' : 'cell fail'}">${esc(f.risk)}${f.noDims ? ` - ${f.noDims} image(s) without size` : ''}${f.unreserved.length ? ` - no reserved space: ${esc(f.unreserved.join(', '))}` : ''}</td></tr>`;
-    }).join('');
-    return `<h2>${esc(t)}</h2><p class="note">Estimates come from the markup (no browser): LCP is the hero image if there is one, otherwise the main heading. Layout shift risk counts images without a size and slots without reserved space.</p><table><tr><th>Category</th><th>CSS size (layout / motion)</th><th>Images</th><th>Estimated LCP element</th><th>Layout shift risk</th></tr>${rows}</table>`;
+  const perf = new Map(loaded.map(([t, o]) => [t, o.manifest.categories.map((id) => [id, perfFor(o, t, id)])]));
+  const worst = (t, k) => Math.max(...perf.get(t).map(([, f]) => f[k]));
+  const summary = loaded.map(([t, o]) => `<tr><td>${esc(t)}</td><td>${esc(o.manifest.tier)}</td><td>${o.manifest.categories.length}</td><td>${Object.keys(o.templates).length}</td><td>${Object.keys(o.presets ?? {}).length}</td><td class="${size(o, ['tokens', 'base', 'print']) < LIMITS.layoutCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['tokens', 'base', 'print']))} of ${LIMITS.layoutCssBytes / 1024} KB</td><td class="${size(o, ['motion']) < LIMITS.motionCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['motion']))} of ${LIMITS.motionCssBytes / 1024} KB</td><td class="${worst(t, 'free') <= IMAGE_BUDGET.free ? 'cell pass' : 'cell fail'}">${worst(t, 'free')} of ${IMAGE_BUDGET.free}</td><td class="${worst(t, 'pro') <= IMAGE_BUDGET.pro ? 'cell pass' : 'cell fail'}">${worst(t, 'pro')} of ${IMAGE_BUDGET.pro}</td></tr>`).join('');
+  const sections = loaded.map(([t]) => {
+    const rows = perf.get(t).map(([id, f]) => `<tr><td><code>${esc(id)}</code></td><td>${(f.css.layout / 1024).toFixed(1)} KB / ${(f.css.motion / 1024).toFixed(1)} KB</td><td>${f.images}</td><td class="${f.free <= IMAGE_BUDGET.free ? 'cell pass' : 'cell fail'}">${f.free}</td><td class="${f.pro <= IMAGE_BUDGET.pro ? 'cell pass' : 'cell fail'}">${f.pro}</td><td>${esc(f.lcp)}</td><td class="${f.risk === 'low' ? 'cell pass' : 'cell fail'}">${esc(f.risk)}${f.noDims ? ` - ${f.noDims} image(s) without size` : ''}${f.unreserved.length ? ` - no reserved space: ${esc(f.unreserved.join(', '))}` : ''}</td></tr>`).join('');
+    return `<h2>${esc(t)}</h2><p class="note">Estimates come from the markup (no browser): LCP is the hero image if there is one, otherwise the main heading. Pictures are real &lt;img&gt; elements on the home page: with the sample content, with the Free limits (8 services, 5 gallery images, 6 FAQs; entitlements off) and with the largest Pro content (entitlements on). Layout shift risk counts images without a size and slots without reserved space.</p><table><tr><th>Category</th><th>CSS size (layout / motion)</th><th>Pictures (sample content)</th><th>Pictures (Free limits, budget ${IMAGE_BUDGET.free})</th><th>Pictures (largest Pro content, budget ${IMAGE_BUDGET.pro})</th><th>Estimated LCP element</th><th>Layout shift risk</th></tr>${rows}</table>`;
   });
-  return shell('Performance', `<h1>Performance readout</h1><h2>Summary</h2><table><tr><th>Theme</th><th>Tier</th><th>Categories</th><th>Pages</th><th>Presets</th><th>Layout CSS (budget ${LIMITS.layoutCssBytes / 1024} KB)</th><th>Motion CSS (budget ${LIMITS.motionCssBytes / 1024} KB)</th></tr>${summary}</table>${sections.join('')}`);
+  return shell('Performance', `<h1>Performance readout</h1><h2>Summary</h2><table><tr><th>Theme</th><th>Tier</th><th>Categories</th><th>Pages</th><th>Presets</th><th>Layout CSS (budget ${LIMITS.layoutCssBytes / 1024} KB)</th><th>Motion CSS (budget ${LIMITS.motionCssBytes / 1024} KB)</th><th>Most pictures, Free limits</th><th>Most pictures, largest Pro content</th></tr>${summary}</table>${sections.join('')}`);
 }
 
 function contrastPage(p, themes) {

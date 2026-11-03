@@ -67,6 +67,7 @@ const bad = (t) => ({
   'bindings-known': { theme: clone(t, { templates: { home: `${t.templates.home}<p>{{foo.bar}}</p><g4d-teleporter></g4d-teleporter>` } }) },
   'entitlements-render': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<section data-g4d-section="vid" data-g4d-optional="true"><div class="wrap"><g4d-video></g4d-video></div></section></main>') } }) },
   'preset-valid': { theme: { ...t, presets: { plumber: goodPreset('plumber', { fonts: { heading: 'Lora', body: 'Inter' } }) } } },
+  'image-budget': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<ul><template data-g4d-each="gallery"><li><img src="{{image.src}}" alt="{{image.alt}}" width="40" height="30" loading="lazy"></li></template></ul><ul><template data-g4d-each="items"><li><img src="{{item.image}}" alt="{{item.name}}" width="40" height="30" loading="lazy"></li></template></ul></main>') } }) },
   'print-stylesheet': { theme: clone(t, { css: { print: '' } }) },
   'category-renders': { theme: clone(t, { templates: { home: t.templates.home.replace('data-block="{{block.key}}"', 'data-x="{{block.key}}"') } }) },
   'category-fit-order': { theme: t, opts: { render: (i) => renderPage({ ...i, content: { ...i.content, blocks: [...(i.content.blocks ?? [])].reverse() } }) } },
@@ -91,13 +92,13 @@ test('the tier is a price class only: no slot rule depends on it', () => {
     const r = lint(clone(t, { manifest: { tier } }));
     assert.deepEqual(r.findings.map((f) => `${f.rule}:${f.message}`), [], tier);
   }
-  const noGated = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replace(/<g4d-(video|cart|booking)><\/g4d-\1>/g, '')])) });
+  const noGated = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replace(/<g4d-(video|cart|booking)[^>]*><\/g4d-\1>/g, '')])) });
   assert.deepEqual(lint(clone(noGated, { manifest: { tier: 'Premium' } })).findings.filter((f) => f.rule === 'slots-required'), [], 'a Premium theme need not place video');
 });
 
 test('any theme may place video, cart and booking; the starter places all three and renders cleanly with entitlements on and off', () => {
   const t = starter();
-  const placed = new Set(Object.values(t.templates).flatMap((h) => [...h.matchAll(/<g4d-(video|cart|booking)>/g)].map((m) => m[1])));
+  const placed = new Set(Object.values(t.templates).flatMap((h) => [...h.matchAll(/<g4d-(video|cart|booking)[ >]/g)].map((m) => m[1])));
   assert.deepEqual([...placed].sort(), ['booking', 'cart', 'video']);
   assert.equal(lint(t, { categories: CATEGORY_IDS }).ok, true);
 });
@@ -112,7 +113,7 @@ test('a section that only hosts a gated slot leaves a gap when the entitlement i
 
 test('an Ecommerce category needs the product-grid slot', () => {
   const t = starter();
-  const noGrid = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replaceAll('<g4d-product-grid></g4d-product-grid>', '')])) });
+  const noGrid = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replace(/<g4d-product-grid[^>]*><\/g4d-product-grid>/g, '')])) });
   assert.ok(ruleSet(lintTheme(noGrid, { categories: ['jewellery'] })).has('slots-required'));
   assert.ok(!ruleSet(lintTheme(noGrid, { categories: ['plumber'] })).has('slots-required'));
 });

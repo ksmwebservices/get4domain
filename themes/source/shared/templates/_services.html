@@ -1,6 +1,6 @@
 <section class="sec services" data-g4d-section="services" data-g4d-label="Services" data-g4d-optional="true" data-g4d-if="items">
   <div class="wrap">
     <h2 class="sec-title">{{terms.items}}</h2>
-    <div class="cards-box"><ul class="cards g4d-reveal"><template data-g4d-each="items"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/{{item.slug}}"><img data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}" width="400" height="300" loading="lazy" decoding="async"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><span class="card-title">{{item.name}}</span><span class="desc" data-g4d-if="item.description">{{item.description}}</span><span class="price" data-g4d-if="item.price">{{item.price}}</span></a></li></template></ul></div>
+    <div class="cards-box"><ul class="cards g4d-reveal"><template data-g4d-each="items"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/{{item.slug}}"><img data-g4d-if="item.featured" src="{{item.image}}" alt="{{item.name}}" width="400" height="300" loading="lazy" decoding="async"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><span class="card-title">{{item.name}}</span><span class="desc" data-g4d-if="item.description">{{item.description}}</span><span class="price" data-g4d-if="item.price">{{item.price}}</span></a></li></template></ul></div>
   </div>
 </section>

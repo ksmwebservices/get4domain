@@ -11,15 +11,15 @@ import { validatePreset, paletteFindings, PRESET_SCHEMA } from './preset.mjs';
 import { pageDocument } from './document.mjs';
 import { measureOverflow } from './browser.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
-import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
+import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, ENTITLEMENTS_ON, ENTITLEMENTS_OFF, freeLimitContent, proMaxContent } from '../fixtures/index.mjs';
 import { categoryById, hasCategory } from './categories.mjs';
-import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, APPROVED_TAMIL_FONTS, SYSTEM_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
+import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, IMAGE_BUDGET, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, APPROVED_TAMIL_FONTS, SYSTEM_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
 
 export const RULE_IDS = [
   'manifest-valid', 'no-script-tag', 'no-inline-handler', 'no-forbidden-element', 'no-seo-output', 'no-external-request', 'iframe-hosts', 'css-hygiene', 'css-scoped',
   'approved-fonts', 'tamil-fonts', 'tokens-defined', 'contrast-tokens', 'contrast-accent', 'one-h1', 'landmarks', 'skip-link', 'language-attr', 'alt-text', 'form-labels',
   'touch-targets', 'responsive-static', 'responsive-browser', 'text-stretch', 'css-budget-layout', 'css-budget-motion', 'reduced-motion', 'hero-visible', 'motion-properties',
-  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render', 'preset-valid',
+  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render', 'preset-valid', 'image-budget',
 ];
 
 const FORBIDDEN = new Set(['iframe', 'object', 'embed', 'form', 'input', 'select', 'textarea', 'style', 'canvas', 'audio', 'dialog', 'base', 'frame', 'frameset', 'applet', 'noscript']);
@@ -473,6 +473,39 @@ function checkPresets(theme, model, F, state) {
   for (const id of theme.manifest?.categories ?? []) if (hasCategory(id) && !presets[id]) F.add('preset-valid', 'presets/', `the theme lists the category "${id}" but has no preset for it`);
 }
 
+/**
+ * image-budget: the home page of every category is rendered with the Free limits (8 services, 5 gallery images, 6 FAQs, a picture on everything) and with the largest Pro
+ * content (entitlements on). It may hold at most 12 pictures (<img>) for Free and 19 for Pro. Only the hero picture is eager (exactly one, fetchpriority high); every other
+ * picture is loading="lazy" with a width and a height; a decorative picture (alt="" or role="presentation") is not allowed: decoration is inline SVG or CSS.
+ */
+function checkImages(theme, F, state, categories, opts) {
+  const render = opts.render ?? renderPage;
+  const modes = [['Free limits', freeLimitContent, ENTITLEMENTS_OFF, IMAGE_BUDGET.free], ['maximum Pro content', proMaxContent, ENTITLEMENTS_ON, IMAGE_BUDGET.pro]];
+  for (const cat of categories) {
+    for (const [label, make, ent, max] of modes) {
+      const where = `render:home (${label})`;
+      let r;
+      try { r = renderOne(render, theme, 'home', make(cat), { entitlements: ent }); } catch (e) { F.add('image-budget', where, `rendering failed: ${String(e.message ?? e).split('\n')[0]}`, { category: cat }); continue; }
+      const nodes = parse(r.html);
+      const imgs = byTag(nodes, 'img');
+      if (imgs.length > max) F.add('image-budget', where, `${imgs.length} pictures on the home page; the limit is ${max}. Show fewer pictures (the first three services, at most eight gallery images, no copies for the lightbox) and draw decoration with SVG or CSS`, { category: cat });
+      const hero = findAll(nodes, (n) => n.attrs['data-g4d-section'] === 'hero')[0];
+      const heroImgs = hero ? byTag(hero.children, 'img') : [];
+      if (heroImgs.length > 1) F.add('image-budget', where, `the hero holds ${heroImgs.length} pictures; only one is allowed and it is the eager one`, { category: cat });
+      for (const img of heroImgs) {
+        if (img.attrs.fetchpriority !== 'high') F.add('image-budget', where, 'the hero picture needs fetchpriority="high"', { category: cat });
+        if (img.attrs.loading === 'lazy') F.add('image-budget', where, 'the hero picture must not be loading="lazy"', { category: cat });
+      }
+      for (const img of imgs) {
+        const what = (img.attrs.alt || img.attrs.src || 'a picture').slice(0, 40);
+        if (!heroImgs.includes(img) && img.attrs.loading !== 'lazy') F.add('image-budget', where, `"${what}" is below the first screen and must be loading="lazy" (only the hero picture is eager)`, { category: cat });
+        if (img.attrs.alt === '' || img.attrs.role === 'presentation' || img.attrs['aria-hidden'] === 'true') F.add('image-budget', where, `a decorative picture ("${what}") is not allowed: draw decoration as inline SVG or CSS`, { category: cat });
+        if (!/^\d+$/.test(img.attrs.width ?? '') || !/^\d+$/.test(img.attrs.height ?? '')) F.add('image-budget', where, `"${what}" has no width and height`, { category: cat });
+      }
+    }
+  }
+}
+
 // ------------------------------------------------------------ the entry points
 /**
  * @param {object} theme  see lib/theme.mjs
@@ -492,6 +525,7 @@ export function lintTheme(theme, opts = {}) {
   checkPresets(theme, model, F, state);
   checkRendered(theme, F, state, categories, opts);
   checkEntitlements(theme, F, state, categories, opts);
+  checkImages(theme, F, state, categories, opts);
 
   for (const tag of state.renderedTags) if (!state.touchTags.has(tag)) F.add('touch-targets', 'css/base.css', `no rule gives <${tag}> a minimum height of 44px (e.g. .g4d-theme :is(a, button, summary) { min-height: 44px })`);
 

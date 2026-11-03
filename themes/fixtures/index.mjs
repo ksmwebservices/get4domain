@@ -206,3 +206,22 @@ export function stretchContent(content, factor = 1.6) {
 export function allSamples({ lang = 'en' } = {}) {
   return Object.fromEntries(CATEGORIES.map((c) => [c.id, sampleContent(c.id, { lang })]));
 }
+
+// ---------------------------------------------------------------- content at the two sizes the picture budget is checked with
+const grow = (arr, n, fix) => Array.from({ length: n }, (_, k) => fix({ ...arr[k % arr.length] }, k));
+function sized(categoryId, lang, { items, gallery, faqs, testimonials, team, videos }) {
+  const c = sampleContent(categoryId, { lang });
+  c.items = grow(c.items, items, (x, k) => ({ ...x, id: `item-${k + 1}`, slug: `item-${k + 1}`, href: `/item-${k + 1}`, image: `sample:item-${(k % 6) + 1}` }));
+  c.gallery = grow(c.gallery, gallery, (x, k) => ({ ...x, src: `sample:gallery-${(k % 6) + 1}` }));
+  c.faqs = grow(c.faqs, faqs, (x) => x);
+  c.testimonials = grow(c.testimonials, testimonials, (x) => x);
+  c.team = grow(c.team, team, (x, k) => ({ ...x, id: `t${k + 1}`, image: `sample:team-${(k % 3) + 1}` }));
+  c.videos = grow(c.videos, videos, (x, k) => ({ ...x, poster: `sample:video-${(k % 3) + 1}` }));
+  c.groups = [{ ...c.groups[0], items: c.items.slice(0, Math.ceil(items / 2)) }, { ...c.groups[1], items: c.items.slice(Math.ceil(items / 2)) }];
+  c.products = categoryById(categoryId).track === 'ecommerce' ? c.items : [];
+  return c;
+}
+/** What a Free site can hold: 8 services, 5 gallery images, 6 FAQs, with a picture on everything. */
+export const freeLimitContent = (categoryId, { lang = 'en' } = {}) => sized(categoryId, lang, { items: 8, gallery: 5, faqs: 6, testimonials: 3, team: 3, videos: 0 });
+/** The largest Pro content the picture budget allows for: 24 services or products, 12 gallery images, 12 FAQs, 6 team members, 6 videos. */
+export const proMaxContent = (categoryId, { lang = 'en' } = {}) => sized(categoryId, lang, { items: 24, gallery: 12, faqs: 12, testimonials: 12, team: 6, videos: 6 });

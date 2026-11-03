@@ -19,7 +19,7 @@ Run from the repository root (`C:\Get4Domain\get4domain-themes` in the themes wo
 $1. `--all` shoots every Standard theme with the categories it lists and `--tamil` adds a Tamil sample (three categories per theme); `--entitlements all` draws the video, cart and booking slots. |
 | `node themes/cli.mjs contract-table [--check]` | Regenerates (or checks) the tables inside `CONTRACT.md`. |
 $1| `node themes/cli.mjs build-themes [--check]` | Copies the shared sources (`themes/source/shared`) into each Standard theme and writes `themes/library/<id>/`; `--check` fails if the committed files differ from what the sources produce. |
-| `node --test "themes/test/*.test.mjs"` or `npm test` inside `themes/` | The whole test suite (180 tests). |
+| `node --test "themes/test/*.test.mjs"` or `npm test` inside `themes/` | The whole test suite (206 tests). |
 
 Screenshots and `--browser` use the Playwright and Chromium **already on the machine** (looked up in the global npm folder, `PLAYWRIGHT_MODULE`, and `%LOCALAPPDATA%\ms-playwright`); nothing is installed. Without them these two features report that they are unavailable and the rest still works.
 
@@ -63,7 +63,9 @@ themes/
 
 Standard is a price class of theme, not a plan: Free-plan vendors are given the Standard theme of their category, Pro-plan vendors may choose any Standard or Premium theme. Every Standard theme ships the full page set and its home page works on its own (a Free site is one page; the platform enforces the page limit). They are built from `themes/source`: **edit the source, then run `node themes/cli.mjs build-themes`** (never hand-edit `themes/library/free-*`; a test fails if the committed files differ from the build).
 
-**Category presets.** One layout looks clearly different per category through `presets/<categoryId>.json` in each package: palette (light and dark, contrast-checked), font pair, the order of the extra blocks (the category's lead block first), a hero pattern, starter services and FAQs in English and Tamil, and sections hidden or moved by default. The renderer applies a preset as the category's default; the vendor's own accent, fonts, section order, hidden sections and motion intensity override it. See `CONTRACT.md` section 9b. The 41 presets are generated from short design seeds in `themes/source/<theme-id>/presets.mjs`.
+**Pictures.** A Standard home page holds at most 12 `<img>` with the Free limits and 19 with the largest Pro content (lint rule `image-budget`): one eager hero picture, everything else lazy with a size, decoration as SVG or CSS, the gallery with one picture per photo (the lightbox is that same figure opened with `:target`), and services, team and products drawn with few or no pictures (`item.featured`, `member.initial`, `images="3"`). See `CONTRACT.md` section 7.
+
+$& One layout looks clearly different per category through `presets/<categoryId>.json` in each package: palette (light and dark, contrast-checked), font pair, the order of the extra blocks (the category's lead block first), a hero pattern, starter services and FAQs in English and Tamil, and sections hidden or moved by default. The renderer applies a preset as the category's default; the vendor's own accent, fonts, section order, hidden sections and motion intensity override it. See `CONTRACT.md` section 9b. The 41 presets are generated from short design seeds in `themes/source/<theme-id>/presets.mjs`.
 
 ## How the rest of the platform will use the kit (not built yet)
 

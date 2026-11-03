@@ -21,7 +21,6 @@
 .g4d-theme .services .cards { counter-reset: dept; gap: 1.25rem; }
 .g4d-theme .services .card { counter-increment: dept; border-color: var(--g4d-border); border-top: 3px solid var(--g4d-accent); box-shadow: none; }
 .g4d-theme .services .card-link { padding-top: 1rem; }
-.g4d-theme .services .card img { display: none; }
 .g4d-theme .services .card-title::before { content: counter(dept, decimal-leading-zero); display: block; font-size: 0.8rem; letter-spacing: 0.1em; color: var(--g4d-accent); margin-bottom: 0.15rem; }
 .g4d-theme .services .price { font-weight: 600; color: var(--g4d-muted); font-size: 0.95rem; }
 .g4d-theme[data-services='tabbed-list'] .services .cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
@@ -39,5 +38,5 @@
 .g4d-theme .why li { background: var(--g4d-surface); border-color: transparent; }
 .g4d-theme .why li::before { background: var(--g4d-accent); color: var(--g4d-bg); }
 .g4d-theme .team-card { border-radius: var(--g4d-radius); }
-.g4d-theme .team-card img { border: 3px solid var(--g4d-surface); }
+.g4d-theme .team-card .avatar { border: 3px solid var(--g4d-surface); }
 .g4d-theme .hours-box { margin-inline: auto; }

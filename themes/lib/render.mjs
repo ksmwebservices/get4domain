@@ -287,9 +287,9 @@ function renderSlot(ctx, name, attrs, childNodes) {
     }
     case 'video': {
       if (!ctx.ent.video) { ctx.slots.push({ name, rendered: false }); return ''; }
-      const vids = (Array.isArray(c.videos) ? c.videos : []).filter((v) => VIDEO_HOSTS.includes(hostOf(safeUrl(v?.url)))).slice(0, 6);
+      const vids = (Array.isArray(c.videos) ? c.videos : []).filter((v) => VIDEO_HOSTS.includes(hostOf(safeUrl(v?.url)))).slice(0, Number.isInteger(Number(attrs.limit)) && Number(attrs.limit) > 0 ? Math.min(Number(attrs.limit), 6) : 6);
       if (!vids.length) { ctx.slots.push({ name, rendered: false }); return ''; }
-      const html = `<h2>${esc(ui.videos)}</h2><ul class="g4d-video__list">${vids.map((v) => { const poster = resolveImage(v.poster, ctx.host); return `<li class="g4d-video"><a class="g4d-video__facade" href="${esc(safeUrl(v.url))}" target="_blank" rel="noopener noreferrer" aria-label="${esc(ui.watch)}: ${esc(v.title)}">${poster ? `<img src="${esc(poster)}" alt="" role="presentation" width="640" height="360" loading="lazy">` : '<span class="g4d-video__nopic" aria-hidden="true">▶</span>'}<span class="g4d-video__title">${esc(v.title)}</span>${v.duration ? `<span class="g4d-video__duration">${esc(v.duration)}</span>` : ''}</a>${v.transcript ? `<details><summary>${esc(ui.transcript)}</summary><p>${esc(v.transcript)}</p></details>` : ''}</li>`; }).join('')}</ul>`;
+      const html = `<h2>${esc(ui.videos)}</h2><ul class="g4d-video__list">${vids.map((v) => { const poster = resolveImage(v.poster, ctx.host); return `<li class="g4d-video"><a class="g4d-video__facade" href="${esc(safeUrl(v.url))}" target="_blank" rel="noopener noreferrer" title="${esc(ui.watch)}">${poster ? `<img src="${esc(poster)}" alt="${esc(ui.watch)}: ${esc(v.title)}" width="640" height="360" loading="lazy" decoding="async">` : '<span class="g4d-video__nopic" aria-hidden="true">▶</span>'}<span class="g4d-video__title"${poster ? ' aria-hidden="true"' : ''}>${esc(v.title)}</span>${v.duration ? `<span class="g4d-video__duration">${esc(v.duration)}</span>` : ''}</a>${v.transcript ? `<details><summary>${esc(ui.transcript)}</summary><p>${esc(v.transcript)}</p></details>` : ''}</li>`; }).join('')}</ul>`;
       return wrap(ctx, name, 'section', html, attrs);
     }
     case 'enquiry-form': {
@@ -310,8 +310,9 @@ function renderSlot(ctx, name, attrs, childNodes) {
       if (!prods.length && ecommerce && Array.isArray(c.items)) prods = c.items; // little content: the items are the catalogue
       const lim = Number(attrs.limit);
       const cap = Number.isInteger(lim) && lim > 0 ? Math.min(lim, 24) : 24;
+      const picCap = attrs.images !== undefined && Number.isInteger(Number(attrs.images)) && Number(attrs.images) >= 0 ? Number(attrs.images) : 24;
       if (!ecommerce || !prods.length) { ctx.slots.push({ name, rendered: false }); return ''; }
-      const html = `<h2>${esc(c.terms?.items || ui.products)}</h2><ul class="g4d-products">${prods.slice(0, cap).map((p) => { const img = resolveImage(p?.image, ctx.host); return `<li class="g4d-product">${img ? `<img src="${esc(img)}" alt="${esc(p?.name)}" width="400" height="300" loading="lazy">` : ''}<h3>${esc(p?.name)}</h3><p class="g4d-product__price">${esc(p?.price)}</p>${ctx.ent.cart ? `<a class="g4d-btn" href="/cart?add=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.addToCart)}</a>` : `<a href="/enquire?item=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.ask)}</a>`}</li>`; }).join('')}</ul>`;
+      const html = `<h2>${esc(c.terms?.items || ui.products)}</h2><ul class="g4d-products">${prods.slice(0, cap).map((p, idx) => { const img = idx < picCap ? resolveImage(p?.image, ctx.host) : ''; return `<li class="g4d-product">${img ? `<img src="${esc(img)}" alt="${esc(p?.name)}" width="400" height="300" loading="lazy" decoding="async">` : ''}<h3>${esc(p?.name)}</h3><p class="g4d-product__price">${esc(p?.price)}</p>${ctx.ent.cart ? `<a class="g4d-btn" href="/cart?add=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.addToCart)}</a>` : `<a href="/enquire?item=${encodeURIComponent(String(p?.id ?? ''))}">${esc(ui.ask)}</a>`}</li>`; }).join('')}</ul>`;
       return wrap(ctx, name, 'section', html, attrs);
     }
     case 'cart': {
@@ -388,6 +389,17 @@ function lookupForTest(ctx, path) {
   return v;
 }
 
+const PICTURE_KEYS = ['image', 'src', 'photo', 'poster'];
+function loopMeta(item, i, state) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+  const keys = PICTURE_KEYS.filter((k) => k in item);
+  let featured;
+  if (keys.length === 0) featured = i < 3;
+  else { featured = state.featured < 3 && keys.some((k) => String(item[k] ?? '').trim() !== ''); if (featured) state.featured++; }
+  const first = Array.from(String(item.name ?? item.title ?? '').trim())[0] ?? '';
+  return { ...item, n: item.n ?? i + 1, featured, shown: i < 8, initial: first.toLocaleUpperCase() };
+}
+
 function renderLoop(ctx, n) {
   const listPath = n.attrs['data-g4d-each'];
   const known = REPEATERS[listPath] || NESTED_LISTS[listPath];
@@ -399,8 +411,9 @@ function renderLoop(ctx, n) {
   if (!Array.isArray(list)) { ctx.warn(`not-a-list:${listPath}`); return []; }
   const name = n.attrs['data-g4d-as'] || varNameOf(listPath);
   const out = [];
+  const state = { featured: 0 };
   for (const [i, item] of list.entries()) {
-    ctx.scopes.push({ name, value: item && typeof item === 'object' && !Array.isArray(item) && item.n === undefined ? { ...item, n: i + 1 } : item });
+    ctx.scopes.push({ name, value: loopMeta(item, i, state) });
     out.push(...renderNodes(ctx, n.children));
     ctx.scopes.pop();
   }

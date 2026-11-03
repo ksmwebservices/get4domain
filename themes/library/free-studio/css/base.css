@@ -124,18 +124,20 @@
 .g4d-theme .steps li { counter-increment: step; }
 .g4d-theme .steps li::before { content: counter(step) '. '; font-weight: 700; color: var(--g4d-accent); }
 .g4d-theme .team-card { text-align: center; padding: 1rem; }
-.g4d-theme .team-card img { width: 6rem; height: 6rem; border-radius: 50%; object-fit: cover; margin: 0 auto 0.5rem; }
+.g4d-theme .team-card .avatar { display: flex; align-items: center; justify-content: center; width: 6rem; height: 6rem; border-radius: 50%; margin: 0 auto 0.5rem; background: var(--g4d-primary); color: var(--g4d-primary-contrast); font-family: var(--g4d-font-heading); font-size: 2rem; font-weight: 700; }
 .g4d-theme .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
 .g4d-theme .chips li { border: 1px solid var(--g4d-primary); border-radius: 999px; padding: 0.2rem 0.9rem; font-weight: 600; color: var(--g4d-primary); }
 
-/* gallery with a CSS-only lightbox (:target) */
+/* gallery: one picture per photo; the lightbox is that same figure opened with :target (no second copy of the picture) */
 .g4d-theme .gallery { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); }
 .g4d-theme .thumb { display: block; }
 .g4d-theme .thumb img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: calc(var(--g4d-radius) / 2); }
-.g4d-theme .lightbox { display: none; position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.88); color: #ffffff; padding: 1rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; overflow-y: auto; }
-.g4d-theme .lightbox:target { display: flex; }
-.g4d-theme .lightbox img { max-height: 70vh; width: auto; }
-.g4d-theme .lightbox-close { display: inline-flex; align-items: center; padding: 0 1rem; background: #ffffff; color: #14211e; border-radius: var(--g4d-radius); text-decoration: none; }
+.g4d-theme .shot { margin: 0; }
+.g4d-theme .shot-close, .g4d-theme .shot figcaption { display: none; }
+.g4d-theme .shot:target { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.9); color: #ffffff; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; overflow-y: auto; }
+.g4d-theme .shot:target .thumb img { max-height: 75vh; width: auto; max-width: 100%; aspect-ratio: auto; object-fit: contain; border-radius: 0; }
+.g4d-theme .shot:target .shot-close { display: inline-flex; align-items: center; order: -1; padding: 0 1rem; background: #ffffff; color: #14211e; border-radius: var(--g4d-radius); text-decoration: none; }
+.g4d-theme .shot:target figcaption { display: block; }
 
 /* FAQ, hours, contact */
 .g4d-theme .faq details { border: 1px solid var(--g4d-border); border-radius: var(--g4d-radius); margin-bottom: 0.5rem; background: var(--g4d-bg); }
@@ -231,7 +233,6 @@
 .g4d-theme .services .card { border: 0; background: var(--g4d-surface); border-top: 6px solid var(--g4d-primary); }
 .g4d-theme .services .card:nth-child(3n+2) { border-top-color: var(--g4d-accent); }
 .g4d-theme .services .card:nth-child(3n) { border-top-color: var(--g4d-muted); }
-.g4d-theme .services .card img { display: none; }
 .g4d-theme .services .card-link { padding-top: 1rem; }
 .g4d-theme .services .price { align-self: flex-start; background: var(--g4d-primary); color: var(--g4d-primary-contrast); border-radius: 999px; padding: 0.1rem 0.9rem; margin-inline: 1rem; font-size: 0.95rem; }
 
@@ -244,7 +245,7 @@
 .g4d-theme [data-block='results'] li { border-bottom: 0; padding-inline-start: 1.4rem; position: relative; }
 .g4d-theme [data-block='results'] li::before { content: '\2605'; position: absolute; inset-inline-start: 0; color: var(--g4d-accent); }
 .g4d-theme .team-card { background: var(--g4d-surface); border-radius: var(--g4d-radius); border: 0; padding: 1.2rem; }
-.g4d-theme .team-card img { width: 7rem; height: 7rem; border: 4px solid var(--g4d-accent); }
+.g4d-theme .team-card .avatar { width: 7rem; height: 7rem; border: 4px solid var(--g4d-accent); }
 .g4d-theme .why li { border-radius: 999px; border: 0; background: var(--g4d-surface); padding-inline: 1.1rem; }
 .g4d-theme .g4d-review, .g4d-theme .faq details { border-radius: var(--g4d-radius); }
 .g4d-theme .g4d-slot--enquiry-form { border-radius: var(--g4d-radius); }

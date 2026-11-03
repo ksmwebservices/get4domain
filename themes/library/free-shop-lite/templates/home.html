@@ -2,7 +2,7 @@
 <g4d-claim-banner></g4d-claim-banner>
 <header class="site-header">
   <div class="wrap bar">
-    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48"><span class="brand-name">{{site.name}}</span></a>
+    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a>
     <a class="head-phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}" data-track="call"><span class="head-phone__label">{{ui.call}}</span> <strong>{{contact.phone}}</strong></a>
     <a class="head-wa" data-g4d-if="contact.whatsappHref" href="{{contact.whatsappHref}}" data-track="whatsapp" rel="noopener noreferrer">{{ui.whatsapp}}</a>
     <g4d-header-nav label="Main"></g4d-header-nav>
@@ -36,7 +36,7 @@
   <div class="wrap">
     <h2 class="sec-title">{{terms.items}}</h2>
     <ul class="chips" data-g4d-if="groups"><template data-g4d-each="groups"><li>{{group.name}}</li></template></ul>
-    <g4d-product-grid limit="12"></g4d-product-grid>
+    <g4d-product-grid limit="12" images="3"></g4d-product-grid>
     <p class="note-line">{{ui.shippingNote}}</p>
   </div>
 </section>
@@ -52,15 +52,14 @@
 <section id="gallery" class="sec" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true" data-g4d-if="gallery">
   <div class="wrap">
     <h2 class="sec-title">{{ui.gallery}}</h2>
-    <ul class="gallery g4d-reveal"><template data-g4d-each="gallery"><li><a class="thumb" href="#photo-{{image.n}}"><img src="{{image.src}}" alt="{{image.alt}}" width="600" height="400" loading="lazy" decoding="async"></a></li></template></ul>
+    <ul class="gallery"><template data-g4d-each="gallery"><li data-g4d-if="image.shown"><figure class="shot" id="photo-{{image.n}}"><a class="shot-close" href="#gallery">{{ui.closeImage}}</a><a class="thumb" href="#photo-{{image.n}}"><img src="{{image.src}}" alt="{{image.alt}}" width="600" height="400" loading="lazy" decoding="async"></a><figcaption data-g4d-if="image.title">{{image.title}}</figcaption></figure></li></template></ul>
   </div>
-  <template data-g4d-each="gallery"><div class="lightbox" id="photo-{{image.n}}" role="dialog" aria-label="{{image.alt}}"><a class="lightbox-close" href="#gallery">{{ui.closeImage}}</a><img src="{{image.src}}" alt="{{image.alt}}" width="600" height="400" loading="lazy" decoding="async"><p data-g4d-if="image.title">{{image.title}}</p></div></template>
 </section>
 <section class="sec alt" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
   <div class="wrap"><g4d-reviews></g4d-reviews></div>
 </section>
 <section class="sec" data-g4d-section="videos" data-g4d-label="Videos" data-g4d-optional="true" data-g4d-if="entitlements.video">
-  <div class="wrap"><g4d-video></g4d-video></div>
+  <div class="wrap"><g4d-video limit="3"></g4d-video></div>
 </section>
 <section class="sec" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true" data-g4d-if="faqs">
   <div class="wrap narrow">

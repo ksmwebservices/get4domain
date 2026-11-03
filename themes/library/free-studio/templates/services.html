@@ -2,7 +2,7 @@
 <g4d-claim-banner></g4d-claim-banner>
 <header class="site-header">
   <div class="wrap bar">
-    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48"><span class="brand-name">{{site.name}}</span></a>
+    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a>
     <a class="head-phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}" data-track="call"><span class="head-phone__label">{{ui.call}}</span> <strong>{{contact.phone}}</strong></a>
     <a class="head-wa" data-g4d-if="contact.whatsappHref" href="{{contact.whatsappHref}}" data-track="whatsapp" rel="noopener noreferrer">{{ui.whatsapp}}</a>
     <g4d-header-nav label="Main"></g4d-header-nav>
@@ -17,7 +17,7 @@
 <section class="sec services" data-g4d-section="services" data-g4d-label="Services" data-g4d-optional="true" data-g4d-if="items">
   <div class="wrap">
     <h2 class="sec-title">{{terms.items}}</h2>
-    <div class="cards-box"><ul class="cards g4d-reveal"><template data-g4d-each="items"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/{{item.slug}}"><img data-g4d-if="item.image" src="{{item.image}}" alt="{{item.name}}" width="400" height="300" loading="lazy" decoding="async"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><span class="card-title">{{item.name}}</span><span class="desc" data-g4d-if="item.description">{{item.description}}</span><span class="price" data-g4d-if="item.price">{{item.price}}</span></a></li></template></ul></div>
+    <div class="cards-box"><ul class="cards g4d-reveal"><template data-g4d-each="items"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/{{item.slug}}"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><span class="card-title">{{item.name}}</span><span class="desc" data-g4d-if="item.description">{{item.description}}</span><span class="price" data-g4d-if="item.price">{{item.price}}</span></a></li></template></ul></div>
   </div>
 </section>
 <section class="sec alt highlights" data-g4d-section="highlights" data-g4d-label="Highlights" data-g4d-optional="true" data-g4d-if="blocks">

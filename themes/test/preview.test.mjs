@@ -126,7 +126,7 @@ test('performance readout: one table per Standard theme with only its own catego
 
 test('performance readout: CSS size, image count, estimated LCP element, layout-shift risk', async () => {
   const r = await get('/performance');
-  for (const h of ['CSS size', 'Images', 'Estimated LCP element', 'Layout shift risk']) assert.ok(r.body.includes(h), h);
+  for (const h of ['CSS size', 'Pictures', 'Estimated LCP element', 'Layout shift risk']) assert.ok(r.body.includes(h), h);
   assert.ok(r.body.includes('plumber'));
 });
 
@@ -170,6 +170,17 @@ test('shots: PNG screenshots at 360, 768 and 1280 px (needs the Playwright alrea
     }
     assert.ok(files.every((f) => f.startsWith(out)));
   } finally { await b.close(); fs.rmSync(out, { recursive: true, force: true }); }
+});
+
+test('performance readout: pictures per home page for the sample, the Free limits and the largest Pro content, against the budget', async () => {
+  const r = await get('/performance');
+  assert.match(r.body, /Pictures \(Free limits, budget 12\)/);
+  assert.match(r.body, /Pictures \(largest Pro content, budget 19\)/);
+  assert.match(r.body, /Most pictures, Free limits/);
+  assert.equal((r.body.match(/class="cell fail"/g) ?? []).length, 0, 'every theme is within its picture budget');
+  const row = r.body.match(/<td><code>plumber<\/code><\/td><td>[^<]+<\/td><td>(\d+)<\/td><td class="cell pass">(\d+)<\/td><td class="cell pass">(\d+)<\/td>/);
+  assert.ok(row, 'a row with sample, Free-limit and Pro-max picture counts');
+  assert.ok(Number(row[2]) <= 12 && Number(row[3]) <= 19);
 });
 
 test('stop: the server closes', async () => {

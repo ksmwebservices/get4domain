@@ -63,7 +63,10 @@ export const V3_REPEATERS = {
 };
 
 // Every list also exposes `n` (1-based position, supplied by the renderer) so a theme can build unique ids for a CSS-only lightbox; gallery items also expose `caption`.
-const withN = (r) => ({ ...r, fields: r.fields.includes('n') ? r.fields : [...r.fields, 'n'] });
+// Loop helpers (also supplied by the renderer): n = position, featured = one of the first three entries that has a picture (or just the first three when entries have none),
+// shown = among the first eight, initial = the first letter of the name, upper case.
+const LOOP_HELPERS = ['n', 'featured', 'shown', 'initial'];
+const withN = (r) => ({ ...r, fields: [...r.fields, ...LOOP_HELPERS.filter((f) => !r.fields.includes(f))] });
 export const REPEATERS = Object.fromEntries(Object.entries({ ...AS_BUILT_REPEATERS, ...V3_REPEATERS }).map(([k, r]) => [k, withN(k === 'gallery' ? { ...r, fields: [...r.fields, 'caption'] } : r)]));
 /** Nested lists reachable from a loop variable, e.g. data-g4d-each="group.items". */
 export const NESTED_LISTS = { 'group.items': 'items', 'block.items': 'block.items' };
@@ -155,3 +158,10 @@ export const BREAKPOINTS = [360, 414, 768, 1024, 1280, 1536];
 export const PRESET_PATTERNS = ['dots', 'grid', 'waves', 'rays', 'rings', 'chevrons', 'diagonal', 'blobs'];
 /** What the Free plan allows (the platform enforces these; presets and themes are designed to fit them). */
 export const FREE_LIMITS = { pages: 1, services: 8, gallery: 5, faqs: 6 };
+
+/**
+ * Pictures (<img> elements) on a Standard home page. Hero, logo and QR code are always there; the rest is shared by the gallery (at most 8 shown),
+ * the first three service or product pictures, the about picture and, with the video entitlement, up to 3 video posters.
+ * free: a Free site with the Free limits (8 services, 5 gallery images, 6 FAQs). pro: the largest Pro content, which must stay under 20.
+ */
+export const IMAGE_BUDGET = { free: 12, pro: 19 };
