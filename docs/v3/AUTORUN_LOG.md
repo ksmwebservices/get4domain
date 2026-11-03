@@ -167,3 +167,24 @@ Nothing was skipped silently. Not done: SEO A6 (title shortening, needs wording)
 5. **Deploy the frontend** (your normal steps). Before it, check `public/og-banner.jpg` by eye for a baked-in price. After deploy, in **Search Console**: inspect `/visit-demo?to=/demo/clinic` (should show noindex), submit the sitemap (now 37 URLs), expect "Page with redirect" or "Crawled - not indexed" for the old demo URLs for some weeks, and watch the `/site/<sub>` copies drop in favour of `<sub>.get4domain.com`. Do **not** add `Disallow: /demo/` or `/visit-demo` to robots.txt yet.
 6. **Cloudflare / nginx (plan in `docs/v3/SEO_0_PLAN.md` section 7):** inventory hostnames and vhosts, then Origin CA certificate and :443 blocks, then Full (strict) per hostname and zone, then `www` to apex 301 as a Cloudflare Redirect Rule, Always Use HTTPS, HSTS in stages. Rollback is setting SSL back to Flexible.
 7. **Decisions waiting for you:** V3 prices (unblocks Q-SEO-1 and re-enables the FAQ schema for the rewritten items); title wording for A6; `sameAs` URLs and `foundingDate`; whether the four legacy client sites are still to be migrated (then follow `docs/v3/BASELINE_COMMIT_GROUPS.md`); the monthly spend cap per team member; the follow-up on legacy `/auth/login` once `auth.service.ts` is committed.
+
+---
+
+# CI-FIX-1 — wallet concurrency errors and the no-plan state
+
+**Failure:** CI run 41563276200, job "Staging database gate", `wallet-atomic.int.spec.ts`: 2 failed, 261 passed. A refused concurrent debit reached the caller as `PrismaClientKnownRequestError` instead of `BadRequestException('INSUFFICIENT_WALLET_BALANCE')`, and the 20-debit test did not end at exactly 10 successes.
+
+**Cause (reproduced):** 20 debits queue on one wallet row. On a slow link to the database an interactive transaction exceeds Prisma's default limits (2 s to start, 5 s to run) and fails with **P2028**. It did not reproduce on this machine with default limits (25 rounds x 8 debits, all clean, even with a pool of 2 or 3), so the repro shrank the limits (maxWait 60 ms, timeout 400 ms): 114 of 114 rejections were raw `PrismaClientKnownRequestError:P2028` ("Unable to start a transaction in the given time"). The CI log did not print the code itself; P2028 is the inference from the 76 s test time and the reproduction. P2034 and P2002 are handled too.
+
+**Fix (`wallet.service.ts`):** transaction limits 15 s / 30 s; up to 4 attempts with jittered backoff on P2034/P2028, retried only when nothing can have been committed or an idempotency key makes a repeat harmless; a keyed failure that did commit returns the existing result; exhausted attempts give INSUFFICIENT_WALLET_BALANCE if the balance is short, otherwise 503 `WALLET_BUSY`. Refund gets the same retry. Debit is still one atomic conditional update, idempotent, balance never negative.
+
+**Part 3:** `entitlementsFor(undefined|null|'')` returns `NO_PLAN_ENTITLEMENTS`; `vendorTermView` returns `planKey: null, hasPlan: false` and no AI credit instead of a RangeError (GET /billing/me). A present but unknown key still throws, and `grantEntitlements` refuses a missing key. `cms.service.ts` calls `entitlementsFor` too but is one of the owner's modified files: not touched (it reads a non-null DB column, so it is not affected).
+
+| Check | Red | Green |
+|---|---|---|
+| Reproduction | raw P2028 escaped 114 of 114 times with tight limits | |
+| New unit specs (stubbed Prisma errors; no-plan) | suites could not load (symbols missing) | 13/13 |
+| Staging slow-link test (200 ms per query, 20 debits) | with the old 2 s / 5 s limits and one attempt: 1 failed (debits refused as busy) | passes; `wallet-atomic` 25/25 three runs in a row |
+| Full | | unit 233/233, staging int 264/264 (9 suites), lint 0 errors, build and verifies exit 0, drift none, RLS-off 0, leftovers 0 |
+
+Honest limit: I could not run the original failing code on CI hardware. "At least 10 repeated runs" was done as 25 + 6 rounds inside the repro plus 4 full wallet-atomic runs, not 10 separate jest runs.
