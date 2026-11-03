@@ -43,7 +43,7 @@ my-theme/
   css/motion.css             required: motion, reduced-motion block (may be tiny; Off intensity must be fully static)
   css/print.css              required: business-card print
   presets/<categoryId>.json   optional: the default look and starter content of one category (Standard themes ship one for every category they list; section 9b)
-$1
+  assets/                    png, jpg, webp, svg (no script), woff2
 ```
 
 Limits: package 5 MB, one file 1 MB, 400 files, a template under 100 KB, layout CSS under 40 KB, motion CSS under 6 KB. A file path may not contain `..`, a leading `/`, a drive letter or a backslash. No executable file of any kind (by extension or by first bytes).
@@ -119,7 +119,7 @@ the 38 as-built slots (`site.*`, `hero.*`, `about.*`, `contact.*`, `social.*`, `
 
 **Lists**: `<template data-g4d-each="items"> ... {{item.name}} ... </template>` for `items groups team testimonials faqs gallery steps trust stats pages` (as built) and `areas credentials blocks products offers` (new). `blocks` is the category's extra blocks (price list, packages, timetable ...): one generic loop draws all of them, in the category's order. Nested: `group.items`, `block.items`. A missing value is an empty string, never the word `undefined`; every miss is reported in the renderer's `warnings`.
 
-$&
+**Conditionals**: `data-g4d-if="path"` shows the element only when the value or list is non-empty; `data-g4d-if-not="path"` is the opposite.
 
 **Loop helpers** (supplied by the renderer on every list entry, so a template can limit what it draws): `n` (position, from 1), `featured` (one of the first three entries that have a picture; for lists without pictures, simply the first three), `shown` (among the first eight) and `initial` (the first letter of the name, upper case, for a letter badge instead of a photo). Example: `<img data-g4d-if="item.featured" ...>` gives only the first three services a picture; `<li data-g4d-if="image.shown">` shows at most eight gallery images on the home page.
 
@@ -150,7 +150,7 @@ Details fixed by the renderer (C0.3):
 - **Pictures**: a value of the form `sample:<name>` (fixtures only) becomes a deterministic placeholder picture; any other value must be `http`, `https` or a relative path, otherwise it renders empty (and an `<img>` with no source is dropped).
 - **Removed on sight** (even if the lint was skipped): `script style iframe object embed link meta base title canvas audio dialog form input select textarea` elements with their content, `on*` attributes, bindings inside a `style` attribute, and unsafe `href`/`src` values. This mirrors the existing sanitiser.
 - **Settings**: an invalid accent, an unapproved font, an unknown motion intensity or any `layoutVariant` is ignored and reported in `warnings` (`setting-ignored:<name>`).
-$&
+- **Mobile menu** is the platform's `:target` menu (`#g4d-menu`), styled by the theme; no script.
 - **Pictures** (a Standard home page may hold at most **12** `<img>` with the Free limits, 8 services, 5 gallery images and 6 FAQs, and at most **19** with the largest Pro content; rule `image-budget`): the hero picture is the only eager one (exactly one, `fetchpriority="high"`); every other picture is `loading="lazy"` with a width and a height; **decoration is inline SVG or CSS, never an `<img>`** (no `alt=""`, no `role="presentation"` pictures). The gallery has **one picture per photo**: the lightbox is the same `<figure class="shot" id="photo-N">` opened with `:target` (it becomes fixed and full-screen), never a second copy of the picture. Slot attributes: `<g4d-video limit="3">` (1 to 6 videos; the poster is a real picture with alt text) and `<g4d-product-grid limit="12" images="3">` (`images` = how many cards carry a picture; the rest are text cards).
 
 ## 8. Layout variants (T5)
@@ -174,7 +174,7 @@ The variant is set by the category's family and is **read-only** for vendors.
 | `gifts-books` | Ecommerce | `product-first` | split | shop | bento | - | product | curve | tags | Medium | product-first, offer strip marquee |
 <!-- GENERATED:variants:END -->
 
-$&
+Where T5 gives no value (for example a divider for home services), the safest value from the same family of choices was used; "minimal motion" for legal and finance is read as `Low`.
 
 ### How a Premium theme implements the nine variants
 
@@ -329,10 +329,10 @@ How the rendered rules work: for every category the theme lists (or all 41 with 
 | `print-stylesheet` | `print.css` exists and hides navigation and slots |
 | `html-budget` | see `css-budget-layout` |
 | `category-renders` | the theme renders with sample content for every category it lists, with no warning and with all of the category's extra blocks present |
-$1
-$1
-$1
-$&
+| `category-fit-order` | the first extra block drawn is the category's lead block |
+| `entitlements-render` | every category is rendered with all entitlements on and all off (every template); both must render without warnings, with no empty slot box, no section left empty by a missing entitlement, no gated slot drawn when its entitlement is off, and each gated slot the theme places drawn when its entitlement is on |
+| `preset-valid` | every `presets/<id>.json`: valid against the schema, fonts listed in `theme.json`, the lead block first, AA contrast in light and dark against the theme's own text colours, a hero pattern the theme's CSS defines, only existing and optional sections hidden; and a preset for every category the theme lists (when it has any) |
+| `image-budget` | the home page of every category, rendered with the Free limits (entitlements off) and with the largest Pro content (entitlements on): at most 12 and at most 19 pictures; exactly one eager hero picture with `fetchpriority="high"`; every other picture lazy; no decorative picture; width and height on every picture |
 | `variant-coverage` | Premium themes only: every layout variant used by one of the theme's categories has CSS that selects `[data-variant=<id>]` |
 
 ## 12. Not in this kit (follow-ups)
