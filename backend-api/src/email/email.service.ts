@@ -43,6 +43,15 @@ export class EmailService {
     });
   }
 
+  /**
+   * V3 provisioning: a plain-text transactional message (the owner invite). Used ONLY by the guarded LiveEmailAdapter, which refuses to call it unless the
+   * environment flag V3_INVITE_LIVE_ENABLED is "true". Links in the text become clickable; nothing else is interpreted.
+   */
+  async sendPlainText(to: string, subject: string, text: string): Promise<void> {
+    const html = escapeHtml(text).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>').replace(/\n/g, '<br>');
+    await this.send({ to, subject, html: `<div>${html}</div>` });
+  }
+
   async sendPasswordChangedNotice(to: string, name: string): Promise<void> {
     await this.send({
       to,
