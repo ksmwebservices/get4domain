@@ -18,6 +18,15 @@ const SUPER_ONLY_ROUTES = [
   'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
+  // S51.6: every WRITE of the plans slice is a money rule, SUPER_ADMIN only
+  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'DELETE /v3/admin/plans/:id',
+  'POST /v3/admin/plans/:id/prices', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
+  'POST /v3/admin/features', 'PUT /v3/admin/features/:key', 'DELETE /v3/admin/features/:key', 'PUT /v3/admin/plans/:id/features',
+  'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
+  'POST /v3/admin/discount-rules', 'PUT /v3/admin/discount-rules/:id', 'DELETE /v3/admin/discount-rules/:id',
+  'PUT /v3/admin/plan-settings/:key',
+  'POST /v3/admin/vendors/:id/subscription', 'POST /v3/admin/vendors/:id/overrides', 'PUT /v3/admin/overrides/:overrideId', 'DELETE /v3/admin/overrides/:overrideId',
+  'PUT /v3/admin/vendors/:id/flags/v3_plans',
 ];
 const MARKETING_DENIED = [
   'POST /addons/vendor/:key/enable', 'POST /addons/vendor/:key/disable', 'POST /modules/vendor/:key/enable', 'POST /modules/vendor/:key/disable',
@@ -33,6 +42,10 @@ const MARKETING_DENIED = [
   'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve',
   'POST /wallet/deduct',
   'POST /website-themes', 'PUT /website-themes/:id', 'DELETE /website-themes/:id',
+  // S51.6: reads of the plans slice (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
+  'GET /v3/admin/tax-rates', 'GET /v3/admin/discount-rules', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
+  'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
 ];
 const ALL_STAFF_ROUTES = [
   'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
@@ -64,7 +77,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(73);
+    expect(oracle).toHaveLength(107);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
