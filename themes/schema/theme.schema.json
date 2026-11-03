@@ -1,0 +1,259 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://get4domain.com/schemas/theme.schema.json",
+  "title": "Get4Domain theme manifest (theme.json), contract version 1",
+  "description": "Fields marked \"package only\" are filled by `pack` and required in a packaged zip. Validated by themes/lib/schema.mjs (a small subset validator, no dependencies).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "version",
+    "name",
+    "tier",
+    "tracks",
+    "families",
+    "categories",
+    "layoutVariantRules",
+    "motion",
+    "settingsSchema",
+    "fonts"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 40
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 80
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Premium"
+      ]
+    },
+    "tracks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "handyman",
+          "professional",
+          "ecommerce"
+        ]
+      }
+    },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "home-services",
+          "auto-services",
+          "healthcare",
+          "legal-finance",
+          "education",
+          "wellness-beauty",
+          "creative-consulting",
+          "hospitality-property",
+          "fashion-lifestyle",
+          "food-grocery",
+          "electronics-home",
+          "gifts-books"
+        ]
+      }
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "plumber",
+          "electrician",
+          "carpenter",
+          "painter",
+          "ac-appliance-repair",
+          "pest-control",
+          "home-cleaning",
+          "locksmith",
+          "packers-movers",
+          "mason-contractor",
+          "cctv-security-installer",
+          "auto-mechanic",
+          "car-wash-detailing",
+          "doctor-clinic",
+          "dentist",
+          "physiotherapy",
+          "diagnostics-lab",
+          "lawyer",
+          "ca-tax-consultant",
+          "insurance-advisor",
+          "coaching-centre",
+          "tutor",
+          "music-dance-school",
+          "salon-spa",
+          "gym-yoga",
+          "photographer",
+          "interior-designer-architect",
+          "event-planner",
+          "it-consultant",
+          "restaurant-cafe",
+          "hotel-homestay",
+          "travel-agency",
+          "real-estate-agent",
+          "fashion-apparel",
+          "jewellery",
+          "grocery-kirana",
+          "bakery-sweets",
+          "electronics-mobile",
+          "home-furniture",
+          "gifts-handicrafts",
+          "books-stationery"
+        ]
+      }
+    },
+    "layoutVariantRules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 40
+      }
+    },
+    "motion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default"
+      ],
+      "properties": {
+        "default": {
+          "type": "string",
+          "enum": [
+            "Off",
+            "Low",
+            "Medium",
+            "Rich"
+          ]
+        },
+        "variantDefaults": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "Off",
+              "Low",
+              "Medium",
+              "Rich"
+            ]
+          }
+        }
+      }
+    },
+    "settingsSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accent": {
+          "type": "boolean"
+        },
+        "fonts": {
+          "type": "boolean"
+        },
+        "logo": {
+          "type": "boolean"
+        },
+        "sectionOrder": {
+          "type": "boolean"
+        },
+        "sectionVisibility": {
+          "type": "boolean"
+        },
+        "motionIntensity": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fonts": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "enum": [
+          "Inter",
+          "Poppins",
+          "DM Sans",
+          "Manrope",
+          "Nunito",
+          "Work Sans",
+          "Montserrat",
+          "Playfair Display",
+          "Lora",
+          "Merriweather",
+          "Noto Sans Tamil",
+          "Noto Serif Tamil"
+        ]
+      }
+    },
+    "assets": {
+      "type": "array",
+      "description": "package only: every file under assets/",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^assets/"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "contentHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "package only"
+    },
+    "internal": {
+      "type": "boolean",
+      "description": "true only for the kit's own _starter theme; never offered to vendors"
+    },
+    "author": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 400
+    }
+  }
+}

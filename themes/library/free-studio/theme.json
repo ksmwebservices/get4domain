@@ -1,0 +1,45 @@
+{
+  "id": "free-studio",
+  "version": 1,
+  "name": "Studio",
+  "description": "For coaching centres, tutors, music and dance schools, salons, spas, gyms and yoga studios: courses or services with prices, batches or a class timetable, trainer or faculty cards, results or packages, and a trial or demo button. Energetic, friendly, rounded.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "education",
+    "wellness-beauty"
+  ],
+  "categories": [
+    "coaching-centre",
+    "tutor",
+    "music-dance-school",
+    "salon-spa",
+    "gym-yoga"
+  ],
+  "layoutVariantRules": {
+    "education": "card-stack",
+    "wellness-beauty": "fullbleed-bento"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Nunito",
+    "Poppins",
+    "DM Sans",
+    "Montserrat",
+    "Noto Sans Tamil"
+  ]
+}

@@ -1,0 +1,167 @@
+// The one vocabulary shared by the schema, the renderer, the lint and the package validator.
+// It is a SUPERSET of the as-built contract (backend-api/src/themes/core/theme-contract.json): every as-built name is kept
+// (a test enforces it) and the V3 additions are listed separately so they are easy to review.
+// Plain data, no imports: the backend can import this file later.
+
+export const CONTRACT_VERSION = 1;
+
+/** Scalar bindings: {{name}}. */
+export const AS_BUILT_BINDINGS = [
+  'site.name', 'site.tagline', 'site.logo', 'site.favicon', 'site.year', 'site.url',
+  'hero.title', 'hero.subtitle', 'hero.image', 'hero.cta',
+  'about.title', 'about.text', 'about.image',
+  'contact.phone', 'contact.phoneHref', 'contact.whatsapp', 'contact.email', 'contact.address', 'contact.mapUrl',
+  'hours',
+  'social.instagram', 'social.facebook', 'social.youtube', 'social.linkedin', 'social.x', 'social.whatsapp', 'social.maps', 'social.custom', 'social.customLabel',
+  'page.title', 'page.body', 'page.slug',
+  'terms.team', 'terms.teamOne', 'terms.items', 'terms.itemOne', 'terms.groups',
+  'cta.label',
+];
+
+/** V3 additions (each maps a T0 brief key that the as-built contract has no slot for). */
+export const V3_BINDINGS = [
+  'site.established', 'site.registrationNo', 'site.logoAlt',
+  'hero.imageAlt', 'about.imageAlt',
+  'cta.href', 'cta.secondaryLabel', 'cta.secondaryHref',
+  'contact.city', 'contact.area', 'contact.pin', 'contact.whatsappHref',
+  'social.pinterest', 'social.telegram', 'social.whatsappChannel',
+  'page.intro', 'hero.badge',
+  // Platform wording in the visitor's language (English or Tamil): the theme never hard-codes it.
+  // What the vendor's plan has switched on (see renderPage `entitlements`): usable in data-g4d-if, e.g. data-g4d-if="entitlements.booking".
+  'entitlements.video', 'entitlements.cart', 'entitlements.booking', 'entitlements.customDomain',
+  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact', 'ui.closeImage', 'ui.faq', 'ui.process', 'ui.why', 'ui.hours', 'ui.orderOnWhatsApp', 'ui.shippingNote',
+];
+
+export const BINDINGS = [...AS_BUILT_BINDINGS, ...V3_BINDINGS];
+
+const ITEM_FIELDS = ['id', 'name', 'description', 'price', 'image', 'duration', 'badge', 'href', 'category', 'tags', 'includes', 'location', 'area', 'bedrooms', 'veg', 'slug'];
+
+/** Repeaters: <template data-g4d-each="NAME"> ... {{VAR.field}} ... </template>. */
+export const AS_BUILT_REPEATERS = {
+  items: { as: 'item', fields: ITEM_FIELDS },
+  groups: { as: 'group', fields: ['name', 'slug', 'count', 'items'] },
+  team: { as: 'member', fields: ['id', 'name', 'role', 'note', 'image'] },
+  testimonials: { as: 'testimonial', fields: ['quote', 'author', 'note'] },
+  faqs: { as: 'faq', fields: ['q', 'a'] },
+  gallery: { as: 'image', fields: ['src', 'alt', 'title'] },
+  steps: { as: 'step', fields: ['title', 'desc', 'n'] },
+  trust: { as: 'point', fields: ['text'] },
+  stats: { as: 'stat', fields: ['value', 'label'] },
+  pages: { as: 'navpage', fields: ['title', 'href'] },
+};
+
+export const V3_REPEATERS = {
+  areas: { as: 'area', fields: ['name'] },
+  credentials: { as: 'credential', fields: ['title', 'detail'] },
+  // Category extra blocks (price list, packages, timetable ...): one generic loop renders every block the category has.
+  blocks: { as: 'block', fields: ['key', 'title', 'items'] },
+  // Ecommerce products (the product-grid slot draws them); usable as data-g4d-if="products" so a section can disappear when there are none.
+  products: { as: 'product', fields: ITEM_FIELDS },
+  // Current offers for the offers strip (a Shop Lite feature): the platform fills it from the shop's offers.
+  offers: { as: 'offer', fields: ['title', 'detail', 'price'] },
+  'block.items': { as: 'entry', fields: ['title', 'detail', 'price'] },
+};
+
+// Every list also exposes `n` (1-based position, supplied by the renderer) so a theme can build unique ids for a CSS-only lightbox; gallery items also expose `caption`.
+// Loop helpers (also supplied by the renderer): n = position, featured = one of the first three entries that has a picture (or just the first three when entries have none),
+// shown = among the first eight, initial = the first letter of the name, upper case.
+const LOOP_HELPERS = ['n', 'featured', 'shown', 'initial'];
+const withN = (r) => ({ ...r, fields: [...r.fields, ...LOOP_HELPERS.filter((f) => !r.fields.includes(f))] });
+export const REPEATERS = Object.fromEntries(Object.entries({ ...AS_BUILT_REPEATERS, ...V3_REPEATERS }).map(([k, r]) => [k, withN(k === 'gallery' ? { ...r, fields: [...r.fields, 'caption'] } : r)]));
+/** Nested lists reachable from a loop variable, e.g. data-g4d-each="group.items". */
+export const NESTED_LISTS = { 'group.items': 'items', 'block.items': 'block.items' };
+
+/** The item page binds the single item as {{item.*}}. */
+export const ITEM_BINDINGS = ITEM_FIELDS.map((f) => `item.${f}`);
+
+export const DATA_ATTRIBUTES = [
+  'data-g4d-each', 'data-g4d-as', 'data-g4d-if', 'data-g4d-if-not', 'data-g4d-open', 'data-g4d-quickview', 'data-g4d-item',
+  // V3: the section wrapper that lets a vendor hide or reorder a section where allowed.
+  'data-g4d-section', 'data-g4d-label', 'data-g4d-optional',
+];
+
+/** Platform slots. `tag` is how a template places the slot (as-built style custom element). */
+export const SLOTS = {
+  // as-built engine tags
+  action: { tag: 'g4d-action', as: 'engine' },
+  'header-nav': { tag: 'g4d-header-nav', as: 'engine' },
+  'bottom-nav': { tag: 'g4d-bottom-nav', as: 'engine' },
+  footer: { tag: 'g4d-footer', as: 'engine' },
+  hours: { tag: 'g4d-hours', as: 'engine' },
+  tabs: { tag: 'g4d-tabs', as: 'engine' },
+  map: { tag: 'g4d-map', as: 'engine' },
+  'social-links': { tag: 'g4d-social', as: 'engine' }, // T0 calls it social-links; the as-built tag is kept
+  cart: { tag: 'g4d-cart', as: 'engine' },
+  // V3 additions
+  'enquiry-form': { tag: 'g4d-enquiry-form', as: 'v3' },
+  'whatsapp-float': { tag: 'g4d-whatsapp-float', as: 'v3' },
+  reviews: { tag: 'g4d-reviews', as: 'v3' },
+  video: { tag: 'g4d-video', as: 'v3' },
+  booking: { tag: 'g4d-booking', as: 'v3' },
+  'product-grid': { tag: 'g4d-product-grid', as: 'v3' },
+  search: { tag: 'g4d-search', as: 'v3' },
+  'claim-banner': { tag: 'g4d-claim-banner', as: 'v3' },
+  'listed-on-badge': { tag: 'g4d-listed-on-badge', as: 'v3' },
+  'open-now': { tag: 'g4d-open-now', as: 'v3' },
+  'share-qr': { tag: 'g4d-share-qr', as: 'v3' },
+};
+export const SLOT_BY_TAG = Object.fromEntries(Object.entries(SLOTS).map(([name, s]) => [s.tag, name]));
+export const SLOT_TAGS = Object.keys(SLOT_BY_TAG);
+
+/** Slots every theme must place. product-grid is also required for Ecommerce categories. video, cart and booking are optional for every theme: the platform draws them only for vendors entitled to them. */
+export const REQUIRED_SLOTS_ALL = ['enquiry-form', 'whatsapp-float', 'bottom-nav', 'map', 'reviews', 'social-links', 'open-now', 'share-qr', 'listed-on-badge', 'action', 'header-nav', 'footer'];
+/** What a vendor's plan can switch on at render time. All default to false. */
+export const ENTITLEMENT_KEYS = ['video', 'cart', 'booking', 'customDomain'];
+/** Slots drawn only when the matching entitlement is true (the others are always drawn). */
+export const GATED_SLOTS = { video: 'video', cart: 'cart', booking: 'booking' };
+
+/** Hosts that may appear in an iframe or a click-to-load video link. Nothing else may be loaded from outside. */
+export const MAP_EMBED_HOSTS = ['www.google.com', 'maps.google.com', 'www.openstreetmap.org'];
+export const VIDEO_HOSTS = ['www.youtube.com', 'www.youtube-nocookie.com', 'youtu.be', 'player.vimeo.com', 'vimeo.com'];
+
+/**
+ * The only web fonts a theme may name: the ten of T0 rule 4 plus the two Tamil fonts. The PLATFORM SELF-HOSTS every approved font (from its own storage, never from a
+ * third-party host), so a theme names a font but never loads one: no theme may contain an outside address.
+ */
+export const APPROVED_TAMIL_FONTS = ['Noto Sans Tamil', 'Noto Serif Tamil'];
+export const APPROVED_FONTS = ['Inter', 'Poppins', 'DM Sans', 'Manrope', 'Nunito', 'Work Sans', 'Montserrat', 'Playfair Display', 'Lora', 'Merriweather', ...APPROVED_TAMIL_FONTS];
+/** System fonts allowed in a stack (no network). The system Tamil names are only a fallback behind an approved Tamil font. */
+export const SYSTEM_FONTS = ['system-ui', 'ui-sans-serif', 'ui-serif', 'sans-serif', 'serif', 'monospace', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Georgia', 'Noto Sans', 'Noto Serif', 'Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil', 'inherit'];
+/** System Tamil fonts (fallbacks); the approved ones are APPROVED_TAMIL_FONTS. */
+export const TAMIL_CAPABLE_FONTS = ['Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil'];
+
+export const TOKENS = ['--g4d-primary', '--g4d-primary-contrast', '--g4d-accent', '--g4d-bg', '--g4d-surface', '--g4d-text', '--g4d-muted', '--g4d-border', '--g4d-radius', '--g4d-font-heading', '--g4d-font-body'];
+export const MOTION_TOKENS = ['--g4d-motion-speed', '--g4d-motion-ease', '--g4d-motion-distance'];
+
+export const MOTION_INTENSITIES = ['Off', 'Low', 'Medium', 'Rich'];
+/** Tier is a PRICE CLASS of a theme, not a plan and not a capability. */
+export const TIERS = ['Standard', 'Premium'];
+export const TRACKS = ['handyman', 'professional', 'ecommerce'];
+
+export const LIMITS = {
+  packageBytes: 5 * 1024 * 1024,
+  fileBytes: 1024 * 1024,
+  maxFiles: 400,
+  htmlPageBytes: 100 * 1024,   // T0 rule 8
+  layoutCssBytes: 40 * 1024,   // T1B
+  motionCssBytes: 6 * 1024,    // T5
+  maxExpansionRatio: 50,       // zip bomb guard
+};
+
+export const PAGE_TEMPLATES = ['home', 'about', 'services', 'gallery', 'contact', 'page', 'item', 'menu', 'packages', 'properties', 'courses', 'doctors', 'portfolio'];
+export const CSS_FILES = ['base', 'tokens', 'motion', 'print'];
+export const RESERVED_SLUGS = ['book', 'enquire', 'order', 'legal', 'p', 'api'];
+export const ALLOWED_URI_SCHEMES = ['http', 'https', 'tel', 'mailto'];
+export const BREAKPOINTS = [360, 414, 768, 1024, 1280, 1536];
+
+/** Hero decoration patterns a category preset may choose (pure CSS, defined by every Standard theme). */
+export const PRESET_PATTERNS = ['dots', 'grid', 'waves', 'rays', 'rings', 'chevrons', 'diagonal', 'blobs'];
+/** What the Free plan allows (the platform enforces these; presets and themes are designed to fit them). */
+export const FREE_LIMITS = { pages: 1, services: 8, gallery: 5, faqs: 6 };
+
+/**
+ * Pictures (<img> elements) on a Standard home page. Hero, logo and QR code are always there; the rest is shared by the gallery (at most 8 shown),
+ * the first three service or product pictures, the about picture and, with the video entitlement, up to 3 video posters.
+ * free: a Free site with the Free limits (8 services, 5 gallery images, 6 FAQs). pro: the largest Pro content, which must stay under 20.
+ */
+export const IMAGE_BUDGET = { free: 12, pro: 19 };

@@ -1,0 +1,40 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a>
+    <a class="head-phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}" data-track="call"><span class="head-phone__label">{{ui.call}}</span> <strong>{{contact.phone}}</strong></a>
+    <a class="head-wa" data-g4d-if="contact.whatsappHref" href="{{contact.whatsappHref}}" data-track="whatsapp" rel="noopener noreferrer">{{ui.whatsapp}}</a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-cart></g4d-cart>
+    <g4d-action class="btn btn-primary head-cta"></g4d-action>
+  </div>
+</header>
+<main id="main">
+<section class="sec" data-g4d-section="intro" data-g4d-label="Heading" data-g4d-optional="false">
+  <div class="wrap"><h1>{{page.title}}</h1></div>
+</section>
+<section id="hours" class="sec alt" data-g4d-section="hours" data-g4d-label="Opening hours" data-g4d-optional="true">
+  <div class="wrap hours-box"><h2 class="sec-title">{{ui.hours}}</h2><g4d-hours variant="table"></g4d-hours></div>
+</section>
+<section id="contact" class="sec" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true">
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h2 class="sec-title">{{ui.contact}}</h2>
+      <address class="addr" data-g4d-if="contact.address">{{contact.address}}</address>
+      <p data-g4d-if="contact.phone"><a href="{{contact.phoneHref}}">{{contact.phone}}</a></p>
+      <p data-g4d-if="contact.email"><a href="mailto:{{contact.email}}">{{contact.email}}</a></p>
+      <g4d-social></g4d-social>
+      <g4d-map></g4d-map>
+      <g4d-booking></g4d-booking>
+    </div>
+    <g4d-enquiry-form></g4d-enquiry-form>
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="share" data-g4d-label="Share" data-g4d-optional="true">
+  <div class="wrap closing"><g4d-share-qr></g4d-share-qr><g4d-listed-on-badge></g4d-listed-on-badge></div>
+</section>
+</main>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-footer variant="columns"></g4d-footer>

@@ -1,0 +1,39 @@
+/* Hospitality and Property: warm and image-led. The picture is the hero; the booking button sits on it. */
+.g4d-theme .site-header { border-bottom: 0; background: var(--g4d-bg); }
+.g4d-theme .brand { font-size: 1.15rem; }
+.g4d-theme .hero.hero--image { position: relative; display: grid; padding: 0; min-height: clamp(26rem, 55vh, 38rem); background-color: var(--g4d-primary); }
+.g4d-theme .hero--image .hero-art { grid-area: 1 / 1; overflow: hidden; }
+.g4d-theme .hero--image .hero-art img { width: 100%; height: 100%; min-height: clamp(26rem, 55vh, 38rem); aspect-ratio: auto; object-fit: cover; border-radius: 0; }
+.g4d-theme .hero--image .hero-over { grid-area: 1 / 1; align-self: end; position: relative; z-index: 1; padding-block: 1.25rem; }
+.g4d-theme .hero--image .hero-copy { max-width: 36rem; padding: 1.25rem 1.5rem; border-radius: var(--g4d-radius); background: var(--g4d-primary); color: var(--g4d-primary-contrast); }
+.g4d-theme .hero--image .hero-copy :is(.eyebrow, .lead, .g4d-slot--open-now) { color: var(--g4d-primary-contrast); }
+.g4d-theme .hero--image .hero-copy .btn { border-color: var(--g4d-primary-contrast); color: var(--g4d-primary-contrast); }
+.g4d-theme .hero--image .hero-copy .btn-primary { background: var(--g4d-primary-contrast); color: var(--g4d-primary); }
+.g4d-theme .hero--image .hero-badge { background: var(--g4d-primary-contrast); color: var(--g4d-primary); }
+.g4d-theme .hero h1 { font-weight: 700; }
+.g4d-theme .eyebrow { font-style: italic; }
+.g4d-theme .sec-title { font-weight: 700; }
+
+/* services as image cards: big pictures, name and price under them */
+.g4d-theme .services .cards { gap: 1.25rem; }
+.g4d-theme .services .card { border: 0; background: var(--g4d-surface); border-radius: var(--g4d-radius); }
+.g4d-theme .services .card img { aspect-ratio: 16 / 10; }
+.g4d-theme .services .card-title { font-size: 1.15rem; }
+.g4d-theme .services .price { font-size: 1.05rem; }
+
+/* menu, rooms, packages, listings: warm panels; amenities and places as chips (shared); the lead block first and wide */
+.g4d-theme .highlights { background: var(--g4d-surface); }
+.g4d-theme .block { border: 0; border-radius: var(--g4d-radius); box-shadow: 0 1px 0 var(--g4d-border), 0 8px 24px -16px rgba(0, 0, 0, 0.25); }
+.g4d-theme .blocks .block:first-child { border: 0; border-top: 6px solid var(--g4d-primary); }
+.g4d-theme .block h2 { font-weight: 700; }
+.g4d-theme :is([data-block='menu'], [data-block='rooms'], [data-block='listings'], [data-block='packages']) li { padding-block: 0.65rem; }
+.g4d-theme :is([data-block='menu'], [data-block='rooms'], [data-block='listings']) .price { font-size: 1.05rem; }
+.g4d-theme [data-block='amenities'] li, .g4d-theme [data-block='nearby'] li, .g4d-theme [data-block='destinations'] li { background: var(--g4d-bg); }
+.g4d-theme [data-block='reservations'] { background: var(--g4d-bg); }
+
+/* location up front */
+.g4d-theme .location .addr--big { font-size: clamp(1.1rem, 1rem + 0.8vw, 1.5rem); font-family: var(--g4d-font-heading); margin-bottom: 0.75rem; }
+.g4d-theme .location .g4d-slot--map { aspect-ratio: 21 / 9; min-height: 17rem; margin-bottom: 1.5rem; }
+.g4d-theme .why li { border: 0; background: var(--g4d-surface); }
+.g4d-theme .gallery { grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr)); }
+.g4d-theme .thumb img { aspect-ratio: 4 / 3; }

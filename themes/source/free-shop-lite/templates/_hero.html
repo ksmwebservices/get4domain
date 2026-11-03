@@ -1,0 +1,12 @@
+<section class="hero" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow" data-g4d-if="site.tagline">{{site.tagline}}</p>
+      <h1>{{hero.title}}</h1>
+      <p class="lead" data-g4d-if="hero.subtitle">{{hero.subtitle}}</p>
+      <div class="actions"><g4d-action class="btn btn-primary"></g4d-action><a class="btn btn-wa" data-g4d-if="contact.whatsappHref" href="{{contact.whatsappHref}}" data-track="whatsapp" rel="noopener noreferrer">{{ui.orderOnWhatsApp}}</a></div>
+      <g4d-open-now></g4d-open-now>
+    </div>
+    <div class="hero-art g4d-hero-zoom" data-g4d-if="hero.image"><img src="{{hero.image}}" alt="{{hero.imageAlt}}" width="1200" height="600" fetchpriority="high"></div>
+  </div>
+</section>

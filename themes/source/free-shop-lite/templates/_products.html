@@ -1,0 +1,8 @@
+<section id="catalogue" class="sec catalogue" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true" data-g4d-if="items">
+  <div class="wrap">
+    <h2 class="sec-title">{{terms.items}}</h2>
+    <ul class="chips" data-g4d-if="groups"><template data-g4d-each="groups"><li>{{group.name}}</li></template></ul>
+    <g4d-product-grid limit="12" images="3"></g4d-product-grid>
+    <p class="note-line">{{ui.shippingNote}}</p>
+  </div>
+</section>

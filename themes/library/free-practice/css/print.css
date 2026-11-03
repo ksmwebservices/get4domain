@@ -1,0 +1,10 @@
+/* Print: a business card. Name, address, phone and the services; no navigation, slots, pictures or colour. */
+@media print {
+  .g4d-theme { background: #ffffff; color: #000000; font-size: 11pt; }
+  .g4d-theme .g4d-slot, .g4d-theme .skip-link, .g4d-theme .shot-close, .g4d-theme .gallery, .g4d-theme img, .g4d-theme .head-cta, .g4d-theme nav { display: none; }
+  .g4d-theme .g4d-slot--footer { display: block; border: 0; padding: 0; background: transparent; }
+  .g4d-theme a { color: #000000; text-decoration: none; }
+  .g4d-theme a[href^='tel:']::after { content: ' (' attr(href) ')'; }
+  .g4d-theme .card { break-inside: avoid; border: 0; }
+  .g4d-theme .hero { background: transparent; padding: 0; }
+}

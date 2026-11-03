@@ -1,0 +1,14 @@
+<section id="contact" class="sec" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true">
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h2 class="sec-title">{{ui.contact}}</h2>
+      <address class="addr" data-g4d-if="contact.address">{{contact.address}}</address>
+      <p data-g4d-if="contact.phone"><a href="{{contact.phoneHref}}">{{contact.phone}}</a></p>
+      <p data-g4d-if="contact.email"><a href="mailto:{{contact.email}}">{{contact.email}}</a></p>
+      <g4d-social></g4d-social>
+      <g4d-map></g4d-map>
+      <g4d-booking></g4d-booking>
+    </div>
+    <g4d-enquiry-form></g4d-enquiry-form>
+  </div>
+</section>

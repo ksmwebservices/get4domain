@@ -1,0 +1,128 @@
+{
+  "category": "electrician",
+  "palette": {
+    "light": {
+      "primary": "#84600b",
+      "accent": "#6a7209",
+      "background": "#fcf9f3"
+    },
+    "dark": {
+      "primary": "#ecbd51",
+      "accent": "#e8f075",
+      "background": "#1a170f"
+    }
+  },
+  "fonts": {
+    "heading": "Poppins",
+    "body": "Inter"
+  },
+  "blocks": [
+    "areas",
+    "priceList",
+    "safetyCertificates",
+    "emergency24x7"
+  ],
+  "hero": {
+    "pattern": "rays"
+  },
+  "services": {
+    "en": [
+      {
+        "name": "Fan and light fitting",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Full house wiring",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "MCB and board repair",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Inverter connection",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Earthing check",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Fault finding",
+        "description": "Ask us for the details and a clear price."
+      }
+    ],
+    "ta": [
+      {
+        "name": "மின்விசிறி பொருத்துதல்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "முழு வீட்டு வயரிங்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "MCB பழுது",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "இன்வெர்ட்டர் இணைப்பு",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "எர்த்திங் சோதனை",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "பழுது கண்டறிதல்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      }
+    ]
+  },
+  "faqs": {
+    "en": [
+      {
+        "q": "Do you give a price before you start?",
+        "a": "Yes. We tell you the price first and start only after you agree."
+      },
+      {
+        "q": "Which areas do you cover?",
+        "a": "We cover your city and the areas around it. Call us to confirm your street."
+      },
+      {
+        "q": "Can you come the same day for urgent electrician work?",
+        "a": "For urgent jobs we try to reach you the same day. Call us or message us on WhatsApp."
+      },
+      {
+        "q": "How do I pay?",
+        "a": "By UPI, cash or bank transfer, after the work is done and you are happy with it."
+      }
+    ],
+    "ta": [
+      {
+        "q": "வேலையைத் தொடங்கும் முன் விலை சொல்வீர்களா?",
+        "a": "ஆம். முதலில் விலை சொல்வோம், நீங்கள் ஒப்புக்கொண்ட பின்தான் தொடங்குவோம்."
+      },
+      {
+        "q": "எந்தெந்த பகுதிகளில் சேவை செய்கிறீர்கள்?",
+        "a": "உங்கள் நகரத்திலும் அருகிலுள்ள பகுதிகளிலும். உங்கள் தெருவை உறுதிப்படுத்த அழையுங்கள்."
+      },
+      {
+        "q": "அவசர எலக்ட்ரீசியன் வேலைக்கு அதே நாள் வர முடியுமா?",
+        "a": "அவசர வேலைகளுக்கு அதே நாள் வர முயற்சிப்போம். அழையுங்கள் அல்லது வாட்ஸ்அப்பில் செய்தி அனுப்புங்கள்."
+      },
+      {
+        "q": "எப்படிப் பணம் செலுத்துவது?",
+        "a": "வேலை முடிந்து நீங்கள் திருப்தி அடைந்த பின் UPI, ரொக்கம் அல்லது வங்கிப் பரிமாற்றம் மூலம்."
+      }
+    ]
+  },
+  "sections": {
+    "order": [
+      "highlights"
+    ],
+    "hidden": [
+      "stats"
+    ]
+  }
+}
