@@ -129,6 +129,15 @@ the 38 as-built slots (`site.*`, `hero.*`, `about.*`, `contact.*`, `social.*`, `
 
 It is a pure function: no network, no clock (the year comes from `content.site.year`), no randomness; the same input gives byte-identical output.
 
+Details fixed by the renderer (C0.3):
+
+- **Platform wording** (`ui.skip`, `ui.call`, `ui.menu`, ...) comes from the renderer in the visitor's language (English or Tamil), so a theme never hard-codes visitor-facing words.
+- **Tamil URL pattern** for `hreflang`/canonical: English page at `<site>/<path>`, Tamil page at `<site>/ta/<path>`, `x-default` = English. The platform may change the pattern; the kit only needs one.
+- **Pictures**: a value of the form `sample:<name>` (fixtures only) becomes a deterministic placeholder picture; any other value must be `http`, `https` or a relative path, otherwise it renders empty (and an `<img>` with no source is dropped).
+- **Removed on sight** (even if the lint was skipped): `script style iframe object embed link meta base title canvas audio dialog form input select textarea` elements with their content, `on*` attributes, bindings inside a `style` attribute, and unsafe `href`/`src` values. This mirrors the existing sanitiser.
+- **Settings**: an invalid accent, an unapproved font, an unknown motion intensity or any `layoutVariant` is ignored and reported in `warnings` (`setting-ignored:<name>`).
+- **Mobile menu** is the platform's `:target` menu (`#g4d-menu`), styled by the theme; no script.
+
 ## 8. Layout variants (T5)
 
 The variant is set by the category's family and is **read-only** for vendors.

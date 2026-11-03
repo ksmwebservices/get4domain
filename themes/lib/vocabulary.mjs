@@ -26,6 +26,8 @@ export const V3_BINDINGS = [
   'contact.city', 'contact.area', 'contact.pin', 'contact.whatsappHref',
   'social.pinterest', 'social.telegram', 'social.whatsappChannel',
   'page.intro',
+  // Platform wording in the visitor's language (English or Tamil): the theme never hard-codes it.
+  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact',
 ];
 
 export const BINDINGS = [...AS_BUILT_BINDINGS, ...V3_BINDINGS];
