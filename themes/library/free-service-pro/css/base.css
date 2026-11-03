@@ -3,7 +3,7 @@
 .g4d-theme { background: var(--g4d-bg); color: var(--g4d-text); font-family: var(--g4d-font-body); font-size: 1rem; line-height: 1.6; overflow-wrap: anywhere; word-break: normal; --g4d-pat: var(--g4d-accent); }
 .g4d-theme *, .g4d-theme *::before, .g4d-theme *::after { box-sizing: border-box; min-width: 0; }
 .g4d-theme img, .g4d-theme picture, .g4d-theme svg, .g4d-theme video { max-width: 100%; height: auto; display: block; }
-.g4d-theme h1, .g4d-theme h2, .g4d-theme h3 { font-family: var(--g4d-font-heading); line-height: 1.2; margin: 0 0 0.6em; hyphens: auto; }
+.g4d-theme h1, .g4d-theme h2, .g4d-theme h3 { font-family: var(--g4d-font-heading); line-height: 1.2; margin: 0 0 0.6em; hyphens: manual; }
 .g4d-theme h1 { font-size: clamp(1.7rem, 1.15rem + 2.8vw, 3rem); }
 .g4d-theme h2 { font-size: clamp(1.3rem, 1.05rem + 1.3vw, 2rem); }
 .g4d-theme h3 { font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem); }
@@ -87,7 +87,7 @@
 .g4d-theme[data-card='sharp'] .card { border-radius: 2px; border-width: 2px; }
 .g4d-theme[data-card='flat'] .card { border-radius: 0; border-width: 0 0 2px; }
 .g4d-theme[data-card='round'] .card { border-radius: 24px; }
-.g4d-theme[data-services='price-table'] .cards, .g4d-theme[data-services='tabbed-list'] .cards, .g4d-theme[data-services='timeline'] .cards { grid-template-columns: minmax(0, 1fr); }
+.g4d-theme[data-services='price-table'] .services .cards, .g4d-theme[data-services='tabbed-list'] .services .cards, .g4d-theme[data-services='timeline'] .services .cards { grid-template-columns: minmax(0, 1fr); }
 .g4d-theme .card-link { display: flex; flex-direction: column; gap: 0.35rem; padding: 0 0 1rem; color: inherit; text-decoration: none; height: 100%; }
 .g4d-theme .card-link > :not(img) { padding-inline: 1rem; }
 .g4d-theme .card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
@@ -117,7 +117,8 @@
 .g4d-theme [data-block='emergency24x7'] .detail, .g4d-theme [data-block='sameDay'] .detail { color: var(--g4d-primary-contrast); }
 .g4d-theme [data-block='beforeAfter'] ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); gap: 0.5rem; }
 .g4d-theme [data-block='beforeAfter'] li { border: 1px solid var(--g4d-border); border-radius: calc(var(--g4d-radius) / 2); padding: 0.6rem; background: var(--g4d-surface); }
-.g4d-theme :is([data-block='classTimetable'], [data-block='timings']) li { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; }
+.g4d-theme :is([data-block='classTimetable'], [data-block='timings'], [data-block='consultationModes']) li { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: 1rem; }
+.g4d-theme :is([data-block='classTimetable'], [data-block='timings'], [data-block='consultationModes']) .detail { flex: 1 1 10rem; text-align: end; }
 .g4d-theme .steps { display: grid; gap: 0.75rem; counter-reset: step; }
 .g4d-theme .steps li { counter-increment: step; }
 .g4d-theme .steps li::before { content: counter(step) '. '; font-weight: 700; color: var(--g4d-accent); }

@@ -1,0 +1,127 @@
+{
+  "category": "interior-designer-architect",
+  "palette": {
+    "light": {
+      "primary": "#6b3724",
+      "accent": "#735e26",
+      "background": "#fbf6f4"
+    },
+    "dark": {
+      "primary": "#d38569",
+      "accent": "#d9c48c",
+      "background": "#1a120f"
+    }
+  },
+  "fonts": {
+    "heading": "Lora",
+    "body": "Work Sans"
+  },
+  "blocks": [
+    "portfolio",
+    "packages",
+    "process"
+  ],
+  "hero": {
+    "pattern": "diagonal"
+  },
+  "services": {
+    "en": [
+      {
+        "name": "Full home interiors",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Modular kitchen",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Living room design",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "3D design",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "House plan",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Site consultation",
+        "description": "Ask us for the details and a clear price."
+      }
+    ],
+    "ta": [
+      {
+        "name": "முழு வீட்டு உள்ளரங்கம்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "மாடுலர் சமையலறை",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வரவேற்பறை வடிவமைப்பு",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "3D வடிவமைப்பு",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வீட்டு வரைபடம்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "இடம் ஆலோசனை",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      }
+    ]
+  },
+  "faqs": {
+    "en": [
+      {
+        "q": "How do I book an appointment?",
+        "a": "Use the button above, call us, or message us on WhatsApp. We will confirm a time with you."
+      },
+      {
+        "q": "Can I consult you online?",
+        "a": "Many consultations can be done by phone or video. Ask us which interior designer and architect services are available online."
+      },
+      {
+        "q": "What should I bring with me?",
+        "a": "Bring any earlier reports, papers or notes that relate to your visit."
+      },
+      {
+        "q": "What are your timings?",
+        "a": "See the opening hours on this page. Appointments are preferred so that we can give you enough time."
+      },
+      {
+        "q": "Is the information on this website advice?",
+        "a": "The information here is general. Please speak to us about your own situation before you decide anything."
+      }
+    ],
+    "ta": [
+      {
+        "q": "நேரத்தை எப்படி முன்பதிவு செய்வது?",
+        "a": "மேலே உள்ள பொத்தானை அழுத்துங்கள், அழையுங்கள் அல்லது வாட்ஸ்அப்பில் செய்தி அனுப்புங்கள். நேரத்தை உறுதிப்படுத்துவோம்."
+      },
+      {
+        "q": "ஆன்லைனில் ஆலோசனை பெற முடியுமா?",
+        "a": "பல ஆலோசனைகளை தொலைபேசி அல்லது வீடியோ மூலம் செய்யலாம். எந்த உள்ளரங்க வடிவமைப்பு சேவைகள் ஆன்லைனில் கிடைக்கும் என்று கேளுங்கள்."
+      },
+      {
+        "q": "என்னென்ன கொண்டு வர வேண்டும்?",
+        "a": "உங்கள் வருகை தொடர்பான முந்தைய அறிக்கைகள், ஆவணங்கள் அல்லது குறிப்புகளைக் கொண்டு வாருங்கள்."
+      },
+      {
+        "q": "உங்கள் நேரங்கள் என்ன?",
+        "a": "இந்தப் பக்கத்தில் உள்ள திறந்திருக்கும் நேரங்களைப் பாருங்கள். போதிய நேரம் தர முன்பதிவு விரும்பப்படுகிறது."
+      },
+      {
+        "q": "இந்த இணையதளத்தில் உள்ள தகவல் ஆலோசனையா?",
+        "a": "இங்குள்ள தகவல் பொதுவானது. எதையும் முடிவு செய்யும் முன் உங்கள் சொந்த நிலை பற்றி எங்களிடம் பேசுங்கள்."
+      }
+    ]
+  }
+}

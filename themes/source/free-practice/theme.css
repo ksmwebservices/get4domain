@@ -1,0 +1,43 @@
+/* Practice: calm, clean, professional. Quiet colour, generous space, serif headings. */
+.g4d-theme { line-height: 1.7; }
+.g4d-theme .site-header { border-bottom-color: var(--g4d-border); }
+.g4d-theme .brand { font-weight: 700; letter-spacing: 0.01em; }
+.g4d-theme .head-phone { border-width: 1px; }
+.g4d-theme .hero { background-color: var(--g4d-bg); border-bottom: 1px solid var(--g4d-border); }
+.g4d-theme .hero h1 { font-weight: 600; max-width: 24ch; }
+.g4d-theme:lang(ta) .hero h1 { max-width: none; }
+.g4d-theme[data-hero='centered-statement'] .hero h1 { margin-inline: auto; }
+.g4d-theme .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.85rem; }
+.g4d-theme .btn, .g4d-theme .g4d-btn { border-width: 1px; font-weight: 600; }
+.g4d-theme .strip { background: var(--g4d-bg); border-color: var(--g4d-border); }
+.g4d-theme .creds { justify-content: center; gap: 0.4rem 2rem; font-size: 0.95rem; }
+.g4d-theme .creds li { display: flex; align-items: baseline; gap: 0.5rem; }
+.g4d-theme .creds li::before { content: ''; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--g4d-accent); flex: 0 0 auto; }
+.g4d-theme .creds strong::after { content: ':'; }
+.g4d-theme .sec-title { font-weight: 600; }
+.g4d-theme[data-hero='centered-statement'] .sec-title, .g4d-theme .highlights .sec-title { text-align: left; }
+
+/* services: departments or practice areas as a calm grid, each with a numbered mark */
+.g4d-theme .services .cards { counter-reset: dept; gap: 1.25rem; }
+.g4d-theme .services .card { counter-increment: dept; border-color: var(--g4d-border); border-top: 3px solid var(--g4d-accent); box-shadow: none; }
+.g4d-theme .services .card-link { padding-top: 1rem; }
+.g4d-theme .services .card img { display: none; }
+.g4d-theme .services .card-title::before { content: counter(dept, decimal-leading-zero); display: block; font-size: 0.8rem; letter-spacing: 0.1em; color: var(--g4d-accent); margin-bottom: 0.15rem; }
+.g4d-theme .services .price { font-weight: 600; color: var(--g4d-muted); font-size: 0.95rem; }
+.g4d-theme[data-services='tabbed-list'] .services .cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
+.g4d-theme[data-services='price-table'] .services .cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
+.g4d-theme[data-services='timeline'] .services .cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
+
+/* consultation modes, timings, departments: quiet panels; the disclaimer is a note */
+.g4d-theme .highlights { background: var(--g4d-surface); }
+.g4d-theme .block { border-color: var(--g4d-border); }
+.g4d-theme .blocks .block:first-child { border-width: 1px; border-top: 3px solid var(--g4d-primary); }
+.g4d-theme [data-block='disclaimer'] { background: var(--g4d-bg); font-style: italic; border-inline-start-width: 4px; }
+.g4d-theme [data-block='disclaimer'] li { border-bottom: 0; }
+.g4d-theme [data-block='departments'] ul, .g4d-theme [data-block='practiceAreas'] ul, .g4d-theme [data-block='conditions'] ul, .g4d-theme [data-block='treatments'] ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: 0.5rem; }
+.g4d-theme [data-block='departments'] li, .g4d-theme [data-block='practiceAreas'] li, .g4d-theme [data-block='conditions'] li { border: 1px solid var(--g4d-border); border-radius: calc(var(--g4d-radius) / 2); padding: 0.5rem 0.75rem; background: var(--g4d-surface); }
+.g4d-theme .why li { background: var(--g4d-surface); border-color: transparent; }
+.g4d-theme .why li::before { background: var(--g4d-accent); color: var(--g4d-bg); }
+.g4d-theme .team-card { border-radius: var(--g4d-radius); }
+.g4d-theme .team-card img { border: 3px solid var(--g4d-surface); }
+.g4d-theme .hours-box { margin-inline: auto; }
