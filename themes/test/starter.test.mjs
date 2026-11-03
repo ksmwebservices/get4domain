@@ -16,7 +16,7 @@ const dir = path.join(here, '..', 'library', '_starter');
 
 test('the starter is internal and never offered to vendors', () => {
   assert.ok(listThemeIds().includes('_starter'));
-  assert.deepEqual(listVendorThemeIds(), [], 'no vendor-facing theme exists yet');
+  assert.ok(!listVendorThemeIds().includes('_starter'), 'the internal starter is never offered to vendors');
   const t = loadTheme('_starter');
   assert.equal(t.manifest.internal, true);
   assert.match(t.manifest.description, /Not a vendor-facing theme/);

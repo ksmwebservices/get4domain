@@ -5,7 +5,7 @@
 import http from 'node:http';
 import { renderPage } from './render.mjs';
 import { lintTheme } from './lint.mjs';
-import { loadTheme, listThemeIds } from './theme.mjs';
+import { loadTheme, listThemeIds, listVendorThemeIds } from './theme.mjs';
 import { pageDocument, cssFor } from './document.mjs';
 import { parse, findAll, byTag } from './html.mjs';
 import { parseRules, eachRule, resolveVarFallback } from './css.mjs';
@@ -91,14 +91,21 @@ function homePage(themes) {
 <p class="note">Command line: <code>node themes/cli.mjs lint &lt;theme&gt; --all-categories</code>, <code>node themes/cli.mjs shots --theme &lt;theme&gt; --category &lt;id&gt;</code>.</p>`);
 }
 
-function coveragePage(themes) {
+function coveragePage(allThemes) {
+  // The Standard (vendor-facing) themes are what matters; internal kit themes only show when there is nothing else.
+  const vendor = listVendorThemeIds();
+  const themes = vendor.length ? vendor : allThemes;
+  const lists = (t, id) => loadTheme(t).manifest.categories.includes(id);
   const head = `<tr><th>Category</th><th>Track</th>${themes.map((t) => `<th>${esc(t)}</th>`).join('')}</tr>`;
   const rows = CATEGORIES.map((c) => `<tr><td><code>${esc(c.id)}</code></td><td>${esc(c.track)}</td>${themes.map((t) => {
+    if (!lists(t, c.id)) return '<td class="cell na">-</td>';
     const r = lintFor(t, c.id);
     return `<td class="cell ${r.ok ? 'pass' : 'fail'}"><a href="/lint?theme=${encodeURIComponent(t)}&amp;category=${encodeURIComponent(c.id)}">${r.ok ? 'PASS' : `FAIL (${r.findings.length})`}</a></td>`;
   }).join('')}</tr>`);
-  const pass = themes.reduce((n, t) => n + CATEGORIES.filter((c) => lintFor(t, c.id).ok).length, 0);
-  return shell('Coverage', `<h1>Coverage: theme by category</h1><p>${pass} of ${themes.length * CATEGORIES.length} combinations pass every rule (rendered in English and Tamil, stretched, and with the extreme fixtures).</p><table>${head}${rows.join('')}</table>`);
+  const combos = themes.flatMap((t) => CATEGORIES.filter((c) => lists(t, c.id)).map((c) => [t, c.id]));
+  const pass = combos.filter(([t, c]) => lintFor(t, c).ok).length;
+  const covered = CATEGORIES.filter((c) => themes.some((t) => lists(t, c.id))).length;
+  return shell('Coverage', `<h1>Coverage: categories against themes</h1><p>${covered} of ${CATEGORIES.length} categories have a theme. ${pass} of ${combos.length} theme and category combinations pass every rule (each rendered in English and Tamil, stretched, with the extreme fixtures and with the entitlements on and off). A dash means the theme does not list that category.</p><table>${head}${rows.join('')}</table>`);
 }
 
 function lintPage(p, themes) {

@@ -233,6 +233,12 @@ test('lint preset-valid: red fixtures', () => {
   }
 });
 
+test('lint category-fit-order follows the preset order, with the lead block first', () => {
+  const t = withPresets(full(), PATTERN_CSS);
+  const r = lintTheme(t, { categories: ['plumber', 'electrician'] });
+  assert.deepEqual(r.findings.filter((f) => f.rule === 'category-fit-order'), []);
+});
+
 test('lint preset-valid: a broken preset file is reported', () => {
   const t = withPresets(full(), PATTERN_CSS);
   t.presetErrors = [{ file: 'presets/plumber.json', message: 'not valid JSON' }];

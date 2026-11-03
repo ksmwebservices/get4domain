@@ -1,0 +1,51 @@
+/* Service Pro: warm, practical, high contrast. Phone number first. */
+.g4d-theme .site-header { border-bottom: 4px solid var(--g4d-primary); }
+.g4d-theme .brand { font-size: 1.05rem; }
+.g4d-theme .head-phone { background: var(--g4d-primary); color: var(--g4d-primary-contrast); font-size: 1.1rem; }
+.g4d-theme .head-phone__label { display: inline; }
+.g4d-theme .head-wa { border-color: var(--g4d-accent); color: var(--g4d-accent); }
+.g4d-theme[data-header='dark'] .site-header { background: var(--g4d-primary); border-color: var(--g4d-accent); }
+.g4d-theme[data-header='dark'] .brand, .g4d-theme[data-header='dark'] .g4d-menu-open { color: var(--g4d-primary-contrast); border-color: var(--g4d-primary-contrast); }
+.g4d-theme[data-header='dark'] .head-phone { background: var(--g4d-primary-contrast); color: var(--g4d-primary); }
+.g4d-theme[data-header='dark'] .head-wa { border-color: var(--g4d-primary-contrast); color: var(--g4d-primary-contrast); }
+.g4d-theme .sec-title::after { content: ''; display: block; width: 3.5rem; height: 4px; margin-top: 0.4rem; background: var(--g4d-accent); }
+.g4d-theme .hero { border-bottom: 4px solid var(--g4d-accent); }
+.g4d-theme .hero h1 { font-weight: 800; }
+.g4d-theme .hero-badge { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.g4d-theme .hero-call { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem; margin-block: 0.75rem; color: var(--g4d-text); text-decoration: none; font-weight: 600; }
+.g4d-theme .hero-call strong { font-family: var(--g4d-font-heading); font-size: clamp(1.6rem, 1.1rem + 2.4vw, 2.6rem); color: var(--g4d-primary); line-height: 1.1; }
+.g4d-theme[data-hero='full-bleed'] .hero-call, .g4d-theme[data-hero='full-bleed'] .hero-call strong { color: var(--g4d-primary-contrast); }
+.g4d-theme .creds { justify-content: space-between; }
+.g4d-theme .creds li { font-weight: 600; }
+
+/* services as a price list: one row per service */
+.g4d-theme .services .cards { grid-template-columns: minmax(0, 1fr); gap: 0; border: 2px solid var(--g4d-text); border-radius: var(--g4d-radius); overflow: hidden; }
+.g4d-theme .services .card { border: 0; border-bottom: 1px solid var(--g4d-border); border-radius: 0; }
+.g4d-theme .services .card:last-child { border-bottom: 0; }
+.g4d-theme .services .card:nth-child(even) { background: var(--g4d-surface); }
+.g4d-theme .services .card-link { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; align-items: center; column-gap: 0.9rem; padding: 0.6rem 1rem; height: auto; }
+.g4d-theme .services .card-link > :not(img) { padding-inline: 0; }
+.g4d-theme .services .card img { grid-row: 1 / span 3; width: 4.5rem; aspect-ratio: 1; border-radius: calc(var(--g4d-radius) / 2); }
+.g4d-theme .services .card-title { grid-column: 2; padding-top: 0; }
+.g4d-theme .services .desc { grid-column: 2; }
+.g4d-theme .services .price { grid-column: 3; grid-row: 1; font-size: 1.1rem; }
+.g4d-theme .services .badge { grid-column: 3; grid-row: 2; margin: 0; justify-self: end; }
+.g4d-theme .services .card:not(:has(img)) .card-link { grid-template-columns: minmax(0, 1fr) auto; }
+.g4d-theme .services .card:not(:has(img)) :is(.card-title, .desc) { grid-column: 1; }
+.g4d-theme .services .card:hover { transform: none; }
+.g4d-theme[data-services='bento'] .services .cards li:first-child { grid-column: auto; }
+
+/* the lead extra block (areas, price list, ...) is the first thing under the services */
+.g4d-theme .blocks .block:first-child h2 { font-size: 1.3rem; }
+.g4d-theme [data-block='areas'] li { font-weight: 600; }
+.g4d-theme [data-block='priceList'] li:nth-child(odd), .g4d-theme [data-block='pricing'] li:nth-child(odd) { background: var(--g4d-surface); }
+.g4d-theme [data-block='beforeAfter'] li:first-child { border-color: var(--g4d-muted); }
+.g4d-theme [data-block='beforeAfter'] li:last-child { border-color: var(--g4d-primary); }
+.g4d-theme .why li { border-width: 2px; }
+.g4d-theme .stats strong { color: var(--g4d-primary); }
+
+@media (max-width: 30rem) {
+  .g4d-theme .services .card-link { grid-template-columns: 3.5rem minmax(0, 1fr) auto; }
+  .g4d-theme .services .card img { width: 3.5rem; }
+  .g4d-theme .head-phone__label { display: none; }
+}

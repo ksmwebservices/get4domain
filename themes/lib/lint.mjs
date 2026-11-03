@@ -384,7 +384,10 @@ function checkRendered(theme, F, state, categories, opts) {
           const blocks = findAll(nodes, (n) => 'data-block' in n.attrs).map((n) => n.attrs['data-block']);
           const missing = c.extraBlocks.filter((b) => !blocks.includes(b));
           if (missing.length) F.add('category-renders', where, `the category's extra blocks are not drawn: ${missing.join(', ')} (render the "blocks" list with data-block="{{block.key}}")`, { category: cat });
-          else if (blocks.join() !== c.extraBlocks.join()) F.add('category-fit-order', where, `extra blocks are drawn as ${blocks.join(', ')}; this category leads with ${c.extraBlocks[0]} (${c.extraBlocks.join(', ')})`, { category: cat });
+          else {
+            const want = theme.presets?.[cat]?.blocks ?? c.extraBlocks; // a preset may reorder the blocks, but the category's lead block is always first
+            if (blocks[0] !== c.extraBlocks[0] || blocks.join() !== want.join()) F.add('category-fit-order', where, `extra blocks are drawn as ${blocks.join(', ')}; expected ${want.join(', ')} (the category leads with ${c.extraBlocks[0]})`, { category: cat });
+          }
           if (/undefined|\[object|NaN/.test(r.html)) F.add('category-renders', where, 'the page contains the text "undefined", "NaN" or "[object"', { category: cat });
         }
       }

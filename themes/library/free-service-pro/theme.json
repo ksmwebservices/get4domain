@@ -1,0 +1,55 @@
+{
+  "id": "free-service-pro",
+  "version": 1,
+  "name": "Service Pro",
+  "description": "For plumbers, electricians, repair and cleaning trades and garages: phone number first, an emergency or same-day badge, service areas, a clear price list, before and after, and licence or certificate details. Warm, practical, high contrast.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services",
+    "auto-services"
+  ],
+  "categories": [
+    "plumber",
+    "electrician",
+    "carpenter",
+    "painter",
+    "ac-appliance-repair",
+    "pest-control",
+    "home-cleaning",
+    "locksmith",
+    "packers-movers",
+    "mason-contractor",
+    "cctv-security-installer",
+    "auto-mechanic",
+    "car-wash-detailing"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split",
+    "auto-services": "dark-bento"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Montserrat",
+    "Work Sans",
+    "Poppins",
+    "Inter",
+    "Manrope",
+    "Nunito",
+    "Noto Sans Tamil"
+  ]
+}

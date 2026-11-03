@@ -8,6 +8,7 @@ import { startPreview } from '../lib/preview.mjs';
 import { openBrowser } from '../lib/browser.mjs';
 import { takeShots } from '../lib/shots.mjs';
 import { CATEGORY_IDS } from '../lib/categories.mjs';
+import { listVendorThemeIds, loadTheme } from '../lib/theme.mjs';
 
 let ctx;
 const get = (p, headers = {}) => new Promise((resolve, reject) => {
@@ -48,10 +49,15 @@ test('every page of the harness answers 200 and loads nothing from outside', asy
 
 test('coverage: a theme by category grid with a result for every one of the 41 categories', async () => {
   const r = await get('/coverage');
-  assert.match(r.body, /kit-starter|_starter/);
+  const vendor = listVendorThemeIds();
+  const shown = vendor.length ? vendor : ['_starter'];
+  for (const id of shown) assert.ok(r.body.includes(id), id);
   for (const id of CATEGORY_IDS) assert.ok(r.body.includes(id), id);
   assert.match(r.body, /PASS/);
-  assert.equal((r.body.match(/class="cell pass"/g) ?? []).length, 41);
+  const listed = shown.reduce((n, id) => n + loadTheme(id).manifest.categories.length, 0);
+  assert.equal((r.body.match(/class="cell pass"/g) ?? []).length, listed, 'every listed combination passes');
+  assert.equal((r.body.match(/class="cell fail"/g) ?? []).length, 0);
+  assert.match(r.body, /categories have a theme/);
 });
 
 test('motion lab: all ten effects, a reduced-motion toggle and the two readouts', async () => {
