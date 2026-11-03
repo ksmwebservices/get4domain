@@ -1,0 +1,13 @@
+{
+  "name": "get4domain-themes",
+  "private": true,
+  "type": "module",
+  "description": "Get4Domain theme kit: package format, single renderer, lint, fixtures, preview and screenshots. Plain Node, no dependencies.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "lint": "node cli.mjs lint --all --all-categories",
+    "preview": "node cli.mjs preview",
+    "shots": "node cli.mjs shots --all"
+  }
+}
