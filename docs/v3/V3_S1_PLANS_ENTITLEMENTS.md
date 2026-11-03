@@ -127,3 +127,15 @@ Error codes: `STALE_WRITE` 409, `PLAN_IN_USE` 409, `FEATURE_IN_USE` 409, `INVALI
 - **D-7** The registration hook is switched by the plan setting `registrationProvisioning` (there is no vendor yet at that moment) and never blocks or fails registration.
 - **D-8** Seed values are the owner's file: the engine reads whatever is in the tables; nothing in code names a price, limit or state.
 - **D-9** Staging integration tests need `.env.staging`; in this build session the file could not be copied into the worktree, so migration application and the integration tests are written and ready but must be run by the owner (commands in `S51_LOG.md`).
+
+## 10. Changes made while building (read with sections 7 to 9)
+
+| Design note said | Built | Why |
+|---|---|---|
+| `priceQuote(planId, termMonths, discounts)` | `priceQuote({ basePaise, taxInclusive, discounts, taxRatePercent })` plus `resolveApplicableDiscounts` and `selectTaxRate` | the pure function takes data; loading the price row, discounts and tax is the caller's job. TERM rules are reported but never subtracted again because the generated price already contains them. |
+| `PUT /v3/admin/plan-settings/:key` takes `expectedUpdatedAt` optionally | required when the setting already exists; creating a setting needs none | otherwise two staff could silently overwrite each other's money rule. |
+| vendor routes "owner and team per the existing owner-only rules" | `GET /v3/me/entitlements` is open to team members; `GET /v3/me/subscription` and `/events` are owner-only | the screens need entitlements to lock features; the subscription shows price and dates, which is billing information (owner decision S8-B). |
+| registration hook called "from the existing registration path" | `RegistrationHook.afterRegister` called by `AuthService.register` inside its own try/catch; `RegisterDto.track` added; `PlansModule` is `@Global()` | the auth module is not edited (the owner has uncommitted changes in `auth.service.ts`; the slice touches it in 6 lines). |
+| a replaced subscription | its row is closed with stored status CANCELLED and `currentVendorId` NULL | the engine ignores a CANCELLED row when a newer current row exists. |
+| error body | the HTTP exception filter passes the plan codes, `feature`, `upsellText` and `limit` through | so a screen can show the upgrade card; nothing else from an error body leaks (tested). |
+| staging steps | not run in the build session (the staging environment file could not be copied into the worktree) | see `S51_LOG.md` for the exact commands the owner runs. |
