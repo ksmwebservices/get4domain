@@ -42,6 +42,8 @@ const OWNER_ONLY_ROUTES = [
   'POST /wallet/topup', 'POST /wallet/topup/verify',
   'POST /leadspace/wallet/refill', 'POST /leadspace/wallet/refill/verify',
   'POST /site-doc/me/themes/:key/order', 'POST /site-doc/me/themes/:key/confirm',
+  // S51.7: what a vendor pays and when it ends is billing information: the owner sees it, a team member does not (the entitlements route stays open to members so the UI can lock features)
+  'GET /v3/me/subscription', 'GET /v3/me/subscription/events',
 ];
 /** Routes that need a named team area (not owner-only): a member WITHOUT the area is refused. */
 const REQUIRED_MODULE: Record<string, string> = {
