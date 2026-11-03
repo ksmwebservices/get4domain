@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Param,
   Post,
@@ -12,13 +11,12 @@ import { Invoice } from '@prisma/client';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { assertOwnerOrStaff } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 
-function assertOwnerOrAdmin(user: AuthenticatedUser, vendorId: string): void {
-  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
-  if (!isAdmin && user.sub !== vendorId) {
-    throw new ForbiddenException('You may only access your own invoices');
-  }
+function assertOwnerOrAdmin(user: AuthenticatedUser, vendorId: string, route: string): void {
+  assertOwnerOrStaff(user, vendorId, route, 'You may only access your own invoices');
 }
 
 @ApiTags('invoices')
@@ -43,33 +41,33 @@ export class InvoicesController {
 
   @Get('vendor/:vendorId')
   @ApiOperation({ summary: 'List invoices for a vendor (vendor sees own, admin sees any)' })
-  findByVendor(@Param('vendorId') vendorId: string, @CurrentUser() user: AuthenticatedUser): Promise<Invoice[]> {
-    assertOwnerOrAdmin(user, vendorId);
+  findByVendor(@Param('vendorId') vendorId: string, @CurrentUser() user: AuthenticatedUser, @RouteKey() route: string): Promise<Invoice[]> {
+    assertOwnerOrAdmin(user, vendorId, route);
     return this.invoicesService.findByVendor(vendorId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single invoice (vendor sees own, admin sees any)' })
-  async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
     const invoice = await this.invoicesService.findOne(id);
-    assertOwnerOrAdmin(user, invoice.vendorId);
+    assertOwnerOrAdmin(user, invoice.vendorId, route);
     return invoice;
   }
 
   @Get(':id/pdf')
   @ApiOperation({ summary: 'Get invoice as printable HTML (vendor sees own, admin sees any)' })
-  async getPdf(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async getPdf(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
     const invoice = await this.invoicesService.findOne(id);
-    assertOwnerOrAdmin(user, invoice.vendorId);
+    assertOwnerOrAdmin(user, invoice.vendorId, route);
     const html = await this.invoicesService.generatePDF(id);
     return { html };
   }
 
   @Post(':id/email')
   @ApiOperation({ summary: 'Email this invoice PDF to the vendor (vendor sends own, admin any)' })
-  async email(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async email(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
     const invoice = await this.invoicesService.findOne(id);
-    assertOwnerOrAdmin(user, invoice.vendorId);
+    assertOwnerOrAdmin(user, invoice.vendorId, route);
     return this.invoicesService.sendInvoiceEmail(id);
   }
 

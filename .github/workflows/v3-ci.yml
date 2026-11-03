@@ -1,0 +1,104 @@
+# Get4Domain V3 CI — runs ONLY for v3-* branches. It never deploys anything and never touches production.
+# The existing workflows (CI, Deploy Dev, pages-build-deployment) are untouched and trigger on develop/main only.
+name: V3 CI
+
+on:
+  push:
+    branches: ['v3-*']
+  pull_request:
+    branches: ['v3-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — build, verify, lint, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend-api/package-lock.json
+      - run: npm ci
+      - name: Build (prisma generate + nest build)
+        run: npm run build
+      - name: Migration files are clean SQL (offline)
+        run: npm run verify:migrations
+      - name: No unsafe raw SQL (offline)
+        run: npm run verify:raw-sql
+      - name: Lint (no --fix)
+        run: npm run lint:ci
+      - name: Tests (no database needed)
+        run: npm run test:ci
+
+  staging-gate:
+    # Checks against the STAGING database only. The guard in scripts/staging/guard.js refuses any project that is not on
+    # the staging allow-list or that is on the production deny-list, so a wrong secret fails closed. Migration status and
+    # RLS are read-only; the isolation tests create synthetic tenants (email @v3test.invalid, name V3TEST...) and delete them.
+    name: Staging database gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Forked PRs do not receive secrets.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: backend
+    concurrency:
+      group: v3-staging-db
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: backend-api
+    env:
+      STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      STAGING_DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+      PRISMA_HIDE_UPDATE_MESSAGE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend-api/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Staging migration status (must be "up to date")
+        run: npm run db:staging:migrate-status
+      - name: Staging tables with RLS off (must be 0)
+        run: npm run db:staging:rls-off
+      - name: Cross-tenant isolation tests (synthetic tenants on staging, cleaned up afterwards)
+        run: npm run test:int
+      - name: Sweep any leftover synthetic tenants (runs even if the tests crashed)
+        if: always()
+        run: npm run test:cleanup-staging
+
+  frontend-build:
+    # Informational for now: shows whether the Next.js app builds from the committed tree. Promote to blocking once stable.
+    name: Frontend — build (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: get4domain_mvp
+    env:
+      NEXT_PUBLIC_API_URL: https://api.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: get4domain_mvp/package-lock.json
+      - run: npm ci
+      - run: npm run build

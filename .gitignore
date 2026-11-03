@@ -1,0 +1,7 @@
+# Local credential files — never commit
+.env.prod-readonly
+.env.staging
+.env.*.local
+
+# Production export (names/timestamps) — never commit
+prod-migrations*.csv*

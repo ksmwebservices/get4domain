@@ -7,6 +7,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { RATE } from '../common/throttling';
+import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   Actor, CommercialAdminGuard, MoneyAdminGuard, PayeeService, CommercialAuditService, actorOf,
@@ -306,11 +307,13 @@ export class VendorBillingController {
   async pdf(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser) { await this.ctx(id, u); return { html: await this.invoices.pdfHtml(id) }; }
 
   @Throttle(RATE.payment)
+  @UseGuards(VendorOwnerGuard)   // S8-B: starting a payment is owner-only
   @Post('invoices/:id/razorpay/order')
   @ApiOperation({ summary: 'Create a Razorpay order for the balance (server-derived amount)' })
   async order(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser) { return this.pay.razorpayOrder(await this.ctx(id, u)); }
 
   @Throttle(RATE.payment)
+  @UseGuards(VendorOwnerGuard)
   @Post('invoices/:id/razorpay/verify')
   @ApiOperation({ summary: 'Verify a captured Razorpay payment (idempotent)' })
   async verify(@Param('id') id: string, @Body() dto: RazorpayVerifyDto, @CurrentUser() u: AuthenticatedUser) { return this.pay.razorpayVerify(await this.ctx(id, u), dto); }
@@ -320,6 +323,7 @@ export class VendorBillingController {
   async upi(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser) { return this.pay.upi(await this.ctx(id, u)); }
 
   @Throttle(PAY_PROOF)
+  @UseGuards(VendorOwnerGuard)
   @Post('invoices/:id/proof')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 3 * 1024 * 1024, files: 1 } }))
@@ -329,16 +333,19 @@ export class VendorBillingController {
   }
 
   @Throttle(PAY_PROMO)
+  @UseGuards(VendorOwnerGuard)
   @Post('invoices/:id/promo')
   @ApiOperation({ summary: 'Apply a promo code when the invoice allows it' })
   async promo(@Param('id') id: string, @Body() dto: PromoApplyDto, @CurrentUser() u: AuthenticatedUser, @Req() req: { ip?: string }) { return this.pay.applyPromo(await this.ctx(id, u), dto.code, req.ip); }
 
   @Throttle(PAY_PROMO)
+  @UseGuards(VendorOwnerGuard)
   @Delete('invoices/:id/promo')
   @ApiOperation({ summary: 'Remove an applied promo code' })
   async removePromo(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser) { return this.pay.removePromo(await this.ctx(id, u)); }
 
   @Throttle(RATE.payment)
+  @UseGuards(VendorOwnerGuard)
   @Post('plan-change-requests')
   @ApiOperation({ summary: 'Request a plan or billing-cycle change (reviewed by Get4Domain)' })
   requestChange(@Body() dto: PlanChangeRequestDto, @CurrentUser() u: AuthenticatedUser) {

@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { AccountSecurityModule } from './account-security/account-security.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { InvoicesModule } from './invoices/invoices.module';
@@ -55,6 +56,7 @@ import { GrowthHubModule } from './growth-hub/growth-hub.module';
 import { CommunicationModule } from './communication/communication.module';
 import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
+import { HealthModule } from './health/health.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -92,7 +94,9 @@ import { ModuleGuard } from './common/guards/module.guard';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    HealthModule,
     AuthModule,
+    AccountSecurityModule,
     VendorsModule,
     SubscriptionsModule,
     InvoicesModule,

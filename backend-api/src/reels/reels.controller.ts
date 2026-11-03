@@ -4,11 +4,10 @@ import { ReelsService, ReelRenderResult } from './reels.service';
 import { RenderReelDto } from './dto/render-reel.dto';
 import { MusicTrack } from './reels.tracks';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { staffMayUse } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 
-// Internal Get4Domain staff render for free (same rule as AI Studio content gen).
-function isInternalStaff(user: AuthenticatedUser): boolean {
-  return Boolean(user.adminRole) || user.kind === 'admin_member';
-}
+// Free internal rendering for Get4Domain staff (no wallet) is decided by the staff matrix (auth/guards/admin-role-matrix.ts), keyed by the route.
 
 @ApiTags('reels')
 @ApiBearerAuth()
@@ -24,7 +23,7 @@ export class ReelsController {
 
   @Post('render')
   @ApiOperation({ summary: "Render a slideshow reel from the vendor's own photos + text + optional music (MP4)" })
-  render(@CurrentUser() user: AuthenticatedUser, @Body() dto: RenderReelDto): Promise<ReelRenderResult> {
-    return this.service.render(user.sub, dto, isInternalStaff(user));
+  render(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: RenderReelDto): Promise<ReelRenderResult> {
+    return this.service.render(user.sub, dto, staffMayUse(user, route));
   }
 }

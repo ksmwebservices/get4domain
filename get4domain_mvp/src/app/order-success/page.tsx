@@ -8,6 +8,7 @@ export const metadata: Metadata = createPageMetadata({
   title: 'Order Success',
   description: 'Your order has been confirmed. Our team is already working on your website.',
   path: '/order-success',
+  noIndex: true,   // a receipt screen, not content
 });
 
 export default function OrderSuccessPage() {

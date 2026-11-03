@@ -114,7 +114,7 @@ export class CampaignPagesService {
     const page = await this.prisma.campaignPage.findUnique({ where: { slug } });
     if (!page || !page.active) throw new NotFoundException('Page not found');
 
-    await this.prisma.campaignLead.create({
+    const lead = await this.prisma.campaignLead.create({
       data: {
         campaignPageId: page.id,
         vendorId: page.vendorId,
@@ -133,17 +133,23 @@ export class CampaignPagesService {
       { priority: 'HIGH', actionRequired: true, actionType: 'view_lead' },
     );
 
-    await this.alertVendorByWhatsApp(page.vendorId, page.whatsapp, dto.name, dto.phone);
+    await this.alertVendorByWhatsApp(page.vendorId, page.whatsapp, dto.name, dto.phone, lead.id);
 
     return { success: true };
   }
 
-  private async alertVendorByWhatsApp(vendorId: string, whatsapp: string, leadName: string, leadPhone: string): Promise<void> {
+  private async alertVendorByWhatsApp(vendorId: string, whatsapp: string, leadName: string, leadPhone: string, leadId: string): Promise<void> {
     try {
+      // A wallet that cannot pay never causes a message to go out.
       const hasBalance = await this.walletService.hasSufficientBalance(vendorId, LEAD_WA_ALERT_COST);
       if (!hasBalance) return;
-      await this.walletService.deduct(vendorId, LEAD_WA_ALERT_COST, `WhatsApp lead alert for ${leadName}`, 'lead_wa_alert');
-      await this.whatsappService.sendTemplate(whatsapp, 'new_lead_alert', [leadName, leadPhone]);
+      const sent = await this.whatsappService.sendTemplate(whatsapp, 'new_lead_alert', [leadName, leadPhone]);
+      // Charge only for a message that was actually sent (sendTemplate returns false when WhatsApp is not configured or the send
+      // failed). The key is per lead, so a retry of the same alert is charged at most once.
+      if (!sent) return;
+      await this.walletService.deduct(vendorId, LEAD_WA_ALERT_COST, `WhatsApp lead alert for ${leadName}`, 'lead_wa_alert', {
+        idempotencyKey: `lead_wa_alert:${leadId}`,
+      });
     } catch (error) {
       this.logger.error('Lead WhatsApp alert failed', error instanceof Error ? error.stack : undefined);
     }

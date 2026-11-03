@@ -1,0 +1,9 @@
+{
+  "note": "SHA-256 hashes of Supabase project refs. Staging may be used by db:staging:*; production is always refused.",
+  "allowedProjectRefHashes": [
+    "5d1c5890b888e0aaf03fcd6c3648202b2da8c3708713babfb519037e8b9ac2a6"
+  ],
+  "deniedProjectRefHashes": [
+    "9f1e98dfed750bfef48b8d0a12e537f260b72bfb5a54adecc8df3a3984678a8c"
+  ]
+}

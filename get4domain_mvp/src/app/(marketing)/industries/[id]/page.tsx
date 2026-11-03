@@ -86,7 +86,6 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
       description: content.fullDesc,
       areaServed: { '@type': 'Country', name: 'India' },
       provider: { '@type': 'Organization', name: 'Get4Domain', url: 'https://get4domain.com' },
-      offers: { '@type': 'Offer', price: '999', priceCurrency: 'INR', url: pageUrl },
       url: pageUrl,
     },
     {

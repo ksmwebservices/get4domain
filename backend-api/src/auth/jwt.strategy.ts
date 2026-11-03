@@ -5,7 +5,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
 
+/**
+ * S13: a password change or reset stamps `passwordChangedAt`; any access token issued before that moment is refused, so a stolen token
+ * does not outlive the password it was issued under. A token's `iat` has whole-second resolution, so a token from the SAME second as the change
+ * cannot be told apart from one issued a moment before it: it is refused too (strict `<=`). Password change and reset therefore return only
+ * after the clock has passed that second (PasswordService), so every session issued after them is accepted.
+ * Accounts that never changed their password (null) are unaffected.
+ */
+function assertIssuedAfterPasswordChange(issuedAt: number | undefined, changedAt: Date | null | undefined): void {
+  if (!changedAt) return;
+  if (typeof issuedAt !== 'number' || issuedAt <= Math.floor(changedAt.getTime() / 1000)) {
+    throw new UnauthorizedException('Your session has ended. Please sign in again.');
+  }
+}
+
 interface JwtPayload {
+  iat?: number;
   sub: string;
   email: string;
   role: string;
@@ -31,6 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!member || member.status !== 'active') {
         throw new UnauthorizedException('Account not found or removed');
       }
+      assertIssuedAfterPasswordChange(payload.iat, member.passwordChangedAt);
       return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: member.role, kind: 'admin_member' };
     }
 
@@ -47,6 +63,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       if (!parent || parent.status === 'SUSPENDED') {
         throw new UnauthorizedException('Account not found or suspended');
       }
+      assertIssuedAfterPasswordChange(payload.iat, member.passwordChangedAt);
       return {
         sub: parent.id, email: member.email ?? payload.email, role: 'VENDOR',
         kind: 'team_member', memberId: member.id,
@@ -60,6 +77,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!vendor || vendor.status === 'SUSPENDED') {
       throw new UnauthorizedException('Account not found or suspended');
     }
+
+    assertIssuedAfterPasswordChange(payload.iat, vendor.passwordChangedAt);
 
     // Expired demo sandboxes can't be used even with an unexpired token.
     if (vendor.isSandbox && vendor.expiresAt && vendor.expiresAt < new Date()) {

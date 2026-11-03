@@ -33,6 +33,11 @@ export const RATE = {
   register: { default: { limit: 5, ttl: 60_000 } },
   /** Also called server-side by the Next.js demo route (one shared IP), so deliberately roomy. */
   refresh: { default: { limit: 120, ttl: 60_000 } },
+  /** S13 account security: a public refresh/logout is a token-guessing target, and a forgot/reset request sends mail or changes a password. */
+  sessionRefresh: { default: { limit: 30, ttl: 60_000 } },
+  passwordForgot: { default: { limit: 3, ttl: 60_000 } },
+  passwordReset: { default: { limit: 5, ttl: 60_000 } },
+  passwordChange: { default: { limit: 5, ttl: 60_000 } },
   /** OTP — SMS cost + code guessing. */
   otpRequest: { default: { limit: 3, ttl: 60_000 } },
   otpVerify: { default: { limit: 10, ttl: 60_000 } },

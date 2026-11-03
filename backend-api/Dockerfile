@@ -25,4 +25,7 @@ RUN mkdir -p /app/uploads /app/private-uploads && chown -R nestjs:nodejs /app/up
 USER nestjs
 EXPOSE 3008
 ENV PORT=3008
+# Liveness only (no database call), so a short database blip does not mark the container unhealthy. Uses Node's built-in fetch (no curl/wget needed).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3008)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
 CMD ["node", "dist/src/main"]

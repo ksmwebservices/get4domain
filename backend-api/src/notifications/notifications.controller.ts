@@ -5,6 +5,8 @@ import { SubscribeDto } from './dto/subscribe.dto';
 import { SendPushDto } from './dto/send-push.dto';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { staffMayUse } from '../auth/guards/staff-access';
+import { RouteKey } from '../common/decorators/route-key.decorator';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -14,29 +16,29 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'List notifications for the current vendor/admin, unread first' })
-  findMine(@CurrentUser() user: AuthenticatedUser) {
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  findMine(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
+    const isAdmin = staffMayUse(user, route);   // S7-B: staff see the shared admin inbox only where the matrix allows
     return this.notificationsService.findForRecipient(isAdmin ? ADMIN_RECIPIENT_ID : user.sub);
   }
 
   @Put(':id/read')
   @ApiOperation({ summary: 'Mark a single notification as read' })
-  markRead(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  markRead(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
+    const isAdmin = staffMayUse(user, route);   // S7-B: staff see the shared admin inbox only where the matrix allows
     return this.notificationsService.markRead(id, isAdmin ? ADMIN_RECIPIENT_ID : user.sub);
   }
 
   @Put('read-all')
   @ApiOperation({ summary: 'Mark all notifications as read for the current vendor/admin' })
-  markAllRead(@CurrentUser() user: AuthenticatedUser) {
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  markAllRead(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string) {
+    const isAdmin = staffMayUse(user, route);   // S7-B: staff see the shared admin inbox only where the matrix allows
     return this.notificationsService.markAllRead(isAdmin ? ADMIN_RECIPIENT_ID : user.sub);
   }
 
   @Post('subscribe')
   @ApiOperation({ summary: 'Register a Web Push subscription for the current vendor/admin' })
-  subscribe(@CurrentUser() user: AuthenticatedUser, @Body() dto: SubscribeDto) {
-    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  subscribe(@CurrentUser() user: AuthenticatedUser, @RouteKey() route: string, @Body() dto: SubscribeDto) {
+    const isAdmin = staffMayUse(user, route);   // S7-B: staff see the shared admin inbox only where the matrix allows
     return this.notificationsService.subscribe(
       isAdmin ? ADMIN_RECIPIENT_ID : user.sub,
       dto.userType,

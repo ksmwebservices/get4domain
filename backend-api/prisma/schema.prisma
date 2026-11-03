@@ -13,6 +13,7 @@ model Vendor {
   name                   String
   email                  String       @unique
   password               String
+  passwordChangedAt      DateTime? // S13: sessions issued before this are refused
   businessName           String
   phone                  String?
   industry               String?      @default("general")
@@ -600,6 +601,9 @@ model WalletTransaction {
   balanceAfter Int
   expiresAt    DateTime?
   razorpayId   String?   @unique
+  /// V3 Step 0 (S12): an optional caller-supplied key. A second debit/refund with the same key is a replay and returns the first result;
+  /// the same key with a different amount, vendor or service is refused (409). NULL for rows that do not use one.
+  idempotencyKey String? @unique
   createdAt    DateTime  @default(now())
 
   @@map("g4d_wallet_transactions")
@@ -708,6 +712,7 @@ model TeamMember {
   status      String    @default("active")
   inviteToken String?
   password    String?
+  passwordChangedAt DateTime? // S13: sessions issued before this are refused
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
 
@@ -1023,11 +1028,49 @@ model AdminTeamMember {
   status      String    @default("invited") // invited | active | removed
   inviteToken String?
   password    String?
+  passwordChangedAt DateTime? // S13: sessions issued before this are refused
   lastLogin   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@map("g4d_admin_team_members")
+}
+
+/// S13: a single-use, short-lived password-reset token. Only the SHA-256 of the token is stored. accountType = VENDOR | ADMIN_MEMBER | TEAM_MEMBER.
+/// Append-only security ledger (no updatedAt/deletedAt on purpose): rows are kept so a replayed token is still recognised as used.
+model AccountPasswordReset {
+  id          String    @id @default(cuid())
+  accountType String
+  accountId   String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  revokedAt   DateTime?
+  requestedIp String?
+  createdAt   DateTime  @default(now())
+
+  @@index([accountType, accountId, createdAt])
+  @@map("g4d_password_resets")
+}
+
+/// S13: a rotating refresh token. Only the SHA-256 is stored. Every use marks the row used and issues the next one in the same family;
+/// presenting a used token again (theft/replay) revokes the whole family. Same append-only ledger rule as AccountPasswordReset.
+model AuthRefreshToken {
+  id           String    @id @default(cuid())
+  accountType  String
+  accountId    String
+  familyId     String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  @@index([accountType, accountId])
+  @@index([familyId])
+  @@map("g4d_refresh_tokens")
 }
 
 enum VendorStatus {

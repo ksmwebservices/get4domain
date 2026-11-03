@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Campaign, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -60,16 +60,24 @@ export class CampaignsService {
   async approve(id: string, vendorId: string): Promise<Campaign> {
     const campaign = await this.findOne(id, vendorId);
 
-    await this.walletService.deduct(
-      vendorId,
-      campaign.walletCost,
-      `Campaign approved: ${campaign.name}`,
-      'campaign_approval',
-    );
-
-    const updated = await this.prisma.campaign.update({
-      where: { id },
-      data: { status: 'approved', approvedAt: new Date() },
+    // One transaction: claim the status change AND take the money, or neither happens. The claim only matches a campaign that is
+    // still waiting for approval, so a second (or parallel) approval finds nothing to claim and is refused instead of charging again.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.campaign.updateMany({
+        where: { id, vendorId, status: 'pending_approval' },
+        data: { status: 'approved', approvedAt: new Date() },
+      });
+      if (claimed.count === 0) {
+        throw new ConflictException('This campaign has already been approved or is not waiting for approval.');
+      }
+      await this.walletService.deduct(
+        vendorId,
+        campaign.walletCost,
+        `Campaign approved: ${campaign.name}`,
+        'campaign_approval',
+        { tx, idempotencyKey: `campaign_approval:${id}` },
+      );
+      return tx.campaign.findUniqueOrThrow({ where: { id } });
     });
 
     await this.notificationsService.notifyAdmin(

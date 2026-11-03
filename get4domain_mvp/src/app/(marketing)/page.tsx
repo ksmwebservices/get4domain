@@ -13,9 +13,11 @@ import HomePricing from '@/components/marketing/home/HomePricing';
 import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
 
 export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Visible Partner | Free LeadSpace page',
+  // `absolute` keeps the brand to one mention (the root template would append " | Get4Domain" again). Positioning: "Your Online Visible Partner".
+  // No plan names or prices here until a V3 price source exists (docs/v3/SEO_0_PLAN.md, P5).
+  title: { absolute: 'Get4Domain — Your Online Visible Partner' },
   description:
-    "Get4Domain is your online visible partner. LeadSpace gives your business a free page where customers verify on WhatsApp and you pay only per verified customer. For bigger businesses, DomainApp (Essentials from ₹999/month, Pro from ₹1,999/month, billed annually) adds your industry website, CRM, invoicing and AI Studio.",
+    'Get4Domain is your online visible partner: a professional website for your business, built fast, with the tools to capture leads, take bookings and grow.',
   alternates: { canonical: 'https://get4domain.com' },
 };
 
