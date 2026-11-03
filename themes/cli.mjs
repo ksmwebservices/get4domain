@@ -2,6 +2,7 @@
 // Get4Domain theme kit CLI. Plain Node, no dependencies. Commands are loaded on demand so a missing optional piece never blocks the others.
 //   node themes/cli.mjs contract-table [--check]      regenerate (or check) the generated tables inside themes/CONTRACT.md
 //   node themes/cli.mjs category-map [--check]        write (or check) themes/data/category-map.json for the backend importer
+//   node themes/cli.mjs build-themes [--check]        copy the shared sources into each Standard theme (themes/source -> themes/library)
 //   node themes/cli.mjs pack <theme-id|dir>            build dist/<id>-<version>.zip and its manifest with a content hash
 //   node themes/cli.mjs validate-package <file.zip>    check a zip without extracting or executing anything in it
 //   node themes/cli.mjs lint [theme-id | --all] [--category id | --all-categories] [--json file] [--browser]
@@ -15,6 +16,7 @@ export const THEMES_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const COMMANDS = {
   'contract-table': './commands/contract-table.mjs',
   'category-map': './commands/category-map.mjs',
+  'build-themes': './commands/build-themes.mjs',
   pack: './commands/pack.mjs',
   'validate-package': './commands/validate-package.mjs',
   lint: './commands/lint.mjs',

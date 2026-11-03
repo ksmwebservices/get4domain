@@ -25,11 +25,11 @@ export const V3_BINDINGS = [
   'cta.href', 'cta.secondaryLabel', 'cta.secondaryHref',
   'contact.city', 'contact.area', 'contact.pin', 'contact.whatsappHref',
   'social.pinterest', 'social.telegram', 'social.whatsappChannel',
-  'page.intro',
+  'page.intro', 'hero.badge',
   // Platform wording in the visitor's language (English or Tamil): the theme never hard-codes it.
   // What the vendor's plan has switched on (see renderPage `entitlements`): usable in data-g4d-if, e.g. data-g4d-if="entitlements.booking".
   'entitlements.video', 'entitlements.cart', 'entitlements.booking', 'entitlements.customDomain',
-  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact', 'ui.closeImage', 'ui.faq', 'ui.process',
+  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact', 'ui.closeImage', 'ui.faq', 'ui.process', 'ui.why', 'ui.hours', 'ui.orderOnWhatsApp', 'ui.shippingNote',
 ];
 
 export const BINDINGS = [...AS_BUILT_BINDINGS, ...V3_BINDINGS];

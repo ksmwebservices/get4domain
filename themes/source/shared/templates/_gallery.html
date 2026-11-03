@@ -1,0 +1,7 @@
+<section id="gallery" class="sec" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true" data-g4d-if="gallery">
+  <div class="wrap">
+    <h2 class="sec-title">{{ui.gallery}}</h2>
+    <ul class="gallery g4d-reveal"><template data-g4d-each="gallery"><li><a class="thumb" href="#photo-{{image.n}}"><img src="{{image.src}}" alt="{{image.alt}}" width="600" height="400" loading="lazy" decoding="async"></a></li></template></ul>
+  </div>
+  <template data-g4d-each="gallery"><div class="lightbox" id="photo-{{image.n}}" role="dialog" aria-label="{{image.alt}}"><a class="lightbox-close" href="#gallery">{{ui.closeImage}}</a><img src="{{image.src}}" alt="{{image.alt}}" width="600" height="400" loading="lazy" decoding="async"><p data-g4d-if="image.title">{{image.title}}</p></div></template>
+</section>

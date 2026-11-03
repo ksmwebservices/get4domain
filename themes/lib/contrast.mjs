@@ -16,7 +16,7 @@ export function ratio(a, b) {
 }
 export const AA_TEXT = 4.5;
 
-function rgbToHsl([r, g, b]) {
+export function rgbToHsl([r, g, b]) {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b); const min = Math.min(r, g, b); const l = (max + min) / 2;
   if (max === min) return [0, 0, l];
@@ -24,7 +24,7 @@ function rgbToHsl([r, g, b]) {
   const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
   return [h / 6, s, l];
 }
-function hslToHex([h, s, l]) {
+export function hslToHex([h, s, l]) {
   const f = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; };
   let r; let g; let b;
   if (s === 0) r = g = b = l;
