@@ -1,0 +1,37 @@
+/* Shop Lite: bright and product-first. The catalogue is the star; offers, chips and the WhatsApp order button support it. */
+.g4d-theme .site-header { border-bottom: 3px solid var(--g4d-primary); }
+.g4d-theme .brand { font-weight: 800; font-size: 1.1rem; }
+.g4d-theme .btn, .g4d-theme .g4d-btn, .g4d-theme .head-phone, .g4d-theme .head-wa { border-radius: 999px; }
+.g4d-theme .btn-wa { border-color: var(--g4d-accent); color: var(--g4d-accent); }
+.g4d-theme .hero { padding-block: clamp(1.25rem, 1rem + 2vw, 2.5rem); }
+.g4d-theme .hero h1 { font-weight: 800; }
+.g4d-theme .hero-art img { aspect-ratio: 3 / 2; border-radius: var(--g4d-radius); }
+.g4d-theme .sec-title { font-weight: 800; }
+
+/* offers strip: a row you can swipe */
+.g4d-theme .strip.offers { background: var(--g4d-primary); color: var(--g4d-primary-contrast); border: 0; padding-block: 0.6rem; }
+.g4d-theme .offer-strip { display: flex; gap: 0.5rem 2rem; overflow-x: auto; scroll-snap-type: x proximity; padding-block: 0.25rem; }
+.g4d-theme .offer-strip li { flex: 0 0 auto; scroll-snap-align: start; display: flex; align-items: baseline; gap: 0.5rem; }
+.g4d-theme .offer-strip .detail { color: var(--g4d-primary-contrast); display: none; }
+.g4d-theme .offer-strip li::before { content: '\2605'; }
+
+/* catalogue: a small grid of product cards, category chips on top */
+.g4d-theme .catalogue .chips li { background: var(--g4d-surface); border-color: transparent; }
+.g4d-theme .g4d-products { grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); gap: 0.75rem; }
+.g4d-theme .g4d-product { border-radius: var(--g4d-radius); border-width: 2px; }
+.g4d-theme .g4d-product img { aspect-ratio: 1; }
+.g4d-theme .g4d-product h3 { font-size: 1rem; margin-bottom: 0; }
+.g4d-theme .g4d-product__price { font-size: 1.1rem; }
+.g4d-theme .g4d-product .g4d-btn { align-self: flex-start; margin-inline: 0.9rem; padding-block: 0.25rem; font-size: 0.95rem; }
+.g4d-theme .g4d-product a { align-self: flex-start; }
+.g4d-theme .note-line { border-inline-start: 4px solid var(--g4d-accent); padding-inline-start: 0.75rem; }
+
+/* delivery PIN check, offers, collections and delivery notes */
+.g4d-theme .highlights { background: var(--g4d-surface); }
+.g4d-theme .block { border-radius: var(--g4d-radius); }
+.g4d-theme .blocks .block:first-child { border-color: var(--g4d-accent); }
+.g4d-theme [data-block='deliveryPinCheck'] { background: var(--g4d-bg); border-width: 2px; border-style: dashed; border-color: var(--g4d-accent); border-inline-start-width: 6px; }
+.g4d-theme [data-block='offers'] li, .g4d-theme [data-block='collections'] li { padding-block: 0.5rem; }
+.g4d-theme .why li { border-radius: 999px; border: 0; background: var(--g4d-surface); }
+.g4d-theme .gallery { grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); }
+.g4d-theme .thumb img { aspect-ratio: 1; }

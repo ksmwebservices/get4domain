@@ -1,0 +1,132 @@
+{
+  "category": "bakery-sweets",
+  "palette": {
+    "light": {
+      "primary": "#7d3212",
+      "accent": "#7d6812",
+      "background": "#fcf6f3"
+    },
+    "dark": {
+      "primary": "#ec7f51",
+      "accent": "#ecd579",
+      "background": "#1a120f"
+    }
+  },
+  "fonts": {
+    "heading": "Poppins",
+    "body": "Nunito"
+  },
+  "blocks": [
+    "menu",
+    "deliveryPinCheck",
+    "customOrders"
+  ],
+  "hero": {
+    "pattern": "blobs"
+  },
+  "services": {
+    "en": [
+      {
+        "name": "Plum cake 500 g",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Mysore pak 250 g",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Veg puff",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Custom birthday cake",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Murukku 250 g",
+        "description": "Ask us for the details and a clear price."
+      },
+      {
+        "name": "Festival sweet box",
+        "description": "Ask us for the details and a clear price."
+      }
+    ],
+    "ta": [
+      {
+        "name": "பிளம் கேக் 500 கி",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "மைசூர் பாக் 250 கி",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "வெஜ் பப்ஸ்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "பிறந்தநாள் கேக்",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "முறுக்கு 250 கி",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      },
+      {
+        "name": "பண்டிகை இனிப்புப் பெட்டி",
+        "description": "விவரங்களையும் தெளிவான விலையையும் கேளுங்கள்."
+      }
+    ]
+  },
+  "faqs": {
+    "en": [
+      {
+        "q": "How do I order?",
+        "a": "Pick what you like and send us an enquiry or a WhatsApp message. We will confirm the price and the details with you."
+      },
+      {
+        "q": "Do you deliver?",
+        "a": "Yes, in our area and, for many bakery and sweets items, further away. Ask us before you order and we will tell you the cost."
+      },
+      {
+        "q": "Can I return or exchange something?",
+        "a": "Tell us within a few days if something is not right and we will help you with a return or an exchange."
+      },
+      {
+        "q": "How do I pay?",
+        "a": "By UPI, cash on delivery where available, or bank transfer."
+      },
+      {
+        "q": "Are the products genuine?",
+        "a": "Yes. Ask us for the bill and warranty details for anything you buy."
+      }
+    ],
+    "ta": [
+      {
+        "q": "எப்படி ஆர்டர் செய்வது?",
+        "a": "உங்களுக்குப் பிடித்ததைத் தேர்ந்தெடுத்து விசாரணை அல்லது வாட்ஸ்அப் செய்தி அனுப்புங்கள். விலையையும் விவரங்களையும் உறுதிப்படுத்துவோம்."
+      },
+      {
+        "q": "டெலிவரி செய்கிறீர்களா?",
+        "a": "ஆம், எங்கள் பகுதியிலும், பல பேக்கரி பொருட்களுக்குத் தொலைவிலும். ஆர்டர் செய்யும் முன் கேளுங்கள், கட்டணத்தைச் சொல்வோம்."
+      },
+      {
+        "q": "திருப்பித் தரலாமா அல்லது மாற்றலாமா?",
+        "a": "ஏதாவது சரியில்லை என்றால் சில நாட்களுக்குள் சொல்லுங்கள்; திருப்புதல் அல்லது மாற்றலில் உதவுவோம்."
+      },
+      {
+        "q": "எப்படிப் பணம் செலுத்துவது?",
+        "a": "UPI, கிடைக்கும் இடங்களில் டெலிவரியில் ரொக்கம், அல்லது வங்கிப் பரிமாற்றம்."
+      },
+      {
+        "q": "பொருட்கள் உண்மையானவையா?",
+        "a": "ஆம். நீங்கள் வாங்கும் எதற்கும் பில் மற்றும் உத்தரவாத விவரங்களைக் கேளுங்கள்."
+      }
+    ]
+  },
+  "sections": {
+    "hidden": [
+      "stats"
+    ]
+  }
+}

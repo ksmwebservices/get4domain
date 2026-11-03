@@ -196,3 +196,22 @@ test('the real source tree: the shared CSS parses cleanly and only the five Stan
   for (const id of standardThemeIds()) assert.ok(allowed.includes(id), id);
   assert.deepEqual(await checkBuilt(), [], 'run: node themes/cli.mjs build-themes');
 });
+
+// ---------------------------------------------------------------- offers (the Shop Lite offers strip)
+test('offers: a list for the offers strip, filled for categories that have an offers block, in English and Tamil', () => {
+  assert.ok(BINDINGS.length > 0);
+  for (const c of CATEGORIES) for (const lang of ['en', 'ta']) {
+    const s = sampleContent(c.id, { lang });
+    if (c.extraBlocks.includes('offers')) {
+      assert.equal(s.offers.length, 3, `${c.id}/${lang}`);
+      for (const o of s.offers) assert.ok(o.title.length > 3);
+      if (lang === 'ta') assert.match(s.offers[0].title, /[஀-௿]/);
+    } else assert.deepEqual(s.offers, [], c.id);
+  }
+  const t = theme('<ul><template data-g4d-each="offers"><li class="o">{{offer.title}}|{{offer.detail}}</li></template></ul><p class="none" data-g4d-if-not="offers">no offers</p>');
+  assert.equal(findAll(parse(render(t, sampleContent('jewellery')).html), (n) => n.attrs.class === 'o').length, 3);
+  const none = render(t, sampleContent('plumber'));
+  assert.equal(findAll(parse(none.html), (n) => n.attrs.class === 'o').length, 0);
+  assert.equal(findAll(parse(none.html), (n) => n.attrs.class === 'none').length, 1);
+  assert.deepEqual(none.warnings.filter((w) => w.startsWith('unknown')), []);
+});

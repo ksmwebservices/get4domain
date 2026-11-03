@@ -57,6 +57,8 @@ export const V3_REPEATERS = {
   blocks: { as: 'block', fields: ['key', 'title', 'items'] },
   // Ecommerce products (the product-grid slot draws them); usable as data-g4d-if="products" so a section can disappear when there are none.
   products: { as: 'product', fields: ITEM_FIELDS },
+  // Current offers for the offers strip (a Shop Lite feature): the platform fills it from the shop's offers.
+  offers: { as: 'offer', fields: ['title', 'detail', 'price'] },
   'block.items': { as: 'entry', fields: ['title', 'detail', 'price'] },
 };
 

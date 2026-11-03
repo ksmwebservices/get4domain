@@ -123,3 +123,39 @@ test('coverage: the Standard themes that exist partition the 41 categories witho
   for (const c of seen.keys()) assert.ok(CATEGORY_IDS.includes(c));
   assert.ok(built.length >= 1, 'at least one Standard theme is built');
 });
+
+test('all five Standard themes exist and together cover each of the 41 categories exactly once', () => {
+  assert.deepEqual([...built].sort(), Object.keys(DEFS).sort(), 'the five Standard themes');
+  const owner = new Map();
+  for (const id of built) for (const c of loadTheme(id).manifest.categories) owner.set(c, [...(owner.get(c) ?? []), id]);
+  assert.equal(owner.size, 41);
+  for (const c of CATEGORY_IDS) assert.deepEqual(owner.get(c)?.length, 1, `${c} belongs to exactly one theme: ${owner.get(c)}`);
+  for (const c of CATEGORIES) {
+    const id = owner.get(c.id)[0];
+    assert.ok(DEFS[id].families.includes(c.family), `${c.id} (${c.family}) is in ${id}`);
+  }
+  const presets = built.reduce((n, id) => n + Object.keys(loadTheme(id).presets).length, 0);
+  assert.equal(presets, 41, 'a preset for every category');
+});
+
+test('every Standard theme is valid on its own: package, hash, no outside address, no script', () => {
+  for (const id of built) {
+    const { zip, manifest, validation } = packThemeDir(loadTheme(id).dir);
+    assert.equal(validation.ok, true, id);
+    assert.match(manifest.contentHash, /^[0-9a-f]{64}$/);
+    const text = Object.values(loadTheme(id).templates).join('\n') + Object.values(loadTheme(id).css).join('\n');
+    assert.doesNotMatch(text, /<script|javascript:|@import|url\(\s*['"]?https?:/i, id);
+    assert.ok(zip.length > 1000);
+  }
+});
+
+test('the shared files are byte-identical in all five themes', () => {
+  const ref = loadTheme(built[0]);
+  for (const id of built.slice(1)) {
+    const t = loadTheme(id);
+    assert.equal(t.css.motion, ref.css.motion, `${id} motion.css`);
+    assert.equal(t.css.print, ref.css.print, `${id} print.css`);
+    const core = (x) => x.css.base.split('/* shared:core:end */')[0];
+    assert.equal(core(t), core(ref), `${id} shared core in base.css`);
+  }
+});

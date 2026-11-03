@@ -117,7 +117,7 @@ Rules: every theme places the "every theme" slots (T0 item 6: reviews, map and s
 **Scalar bindings** `{{name}}` (all HTML-escaped; URL bindings must use `http`, `https`, `tel` or `mailto`, or a relative asset path, otherwise they render empty):
 the 38 as-built slots (`site.*`, `hero.*`, `about.*`, `contact.*`, `social.*`, `page.*`, `terms.*`, `cta.label`, `hours`) plus the V3 additions listed in `themes/lib/vocabulary.mjs` (`V3_BINDINGS`).
 
-**Lists**: `<template data-g4d-each="items"> ... {{item.name}} ... </template>` for `items groups team testimonials faqs gallery steps trust stats pages` (as built) and `areas credentials blocks` (new). `blocks` is the category's extra blocks (price list, packages, timetable ...): one generic loop draws all of them, in the category's order. Nested: `group.items`, `block.items`. A missing value is an empty string, never the word `undefined`; every miss is reported in the renderer's `warnings`.
+**Lists**: `<template data-g4d-each="items"> ... {{item.name}} ... </template>` for `items groups team testimonials faqs gallery steps trust stats pages` (as built) and `areas credentials blocks products offers` (new). `blocks` is the category's extra blocks (price list, packages, timetable ...): one generic loop draws all of them, in the category's order. Nested: `group.items`, `block.items`. A missing value is an empty string, never the word `undefined`; every miss is reported in the renderer's `warnings`.
 
 **Conditionals**: `data-g4d-if="path"` shows the element only when the value or list is non-empty; `data-g4d-if-not="path"` is the opposite.
 

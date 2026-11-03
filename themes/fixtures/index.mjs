@@ -105,6 +105,11 @@ export function sampleContent(categoryId, { lang = 'en' } = {}) {
     },
     videos: [1, 2, 3].map((n) => ({ title: T(lang, `How we work, part ${n}`, `நாங்கள் செயல்படும் விதம், பகுதி ${n}`), url: `https://www.youtube-nocookie.com/watch?v=sample${n}`, poster: `sample:video-${n}`, duration: `${n}:30`, chapters: [], transcript: T(lang, 'Sample transcript text for preview.', 'மாதிரி டிரான்ஸ்கிரிப்ட் உரை.') })),
     products: shop ? items : [],
+    offers: cat.extraBlocks.includes('offers') ? [
+      { title: T(lang, 'Festival offer: 10% off on selected items', 'பண்டிகைச் சலுகை: தேர்ந்தெடுத்த பொருட்களுக்கு 10% தள்ளுபடி'), detail: T(lang, 'Sample offer for preview', 'முன்னோட்டத்துக்கான மாதிரிச் சலுகை'), price: '' },
+      { title: T(lang, 'Free delivery on orders above ₹999', '₹999-க்கு மேல் ஆர்டருக்கு இலவச டெலிவரி'), detail: T(lang, 'Sample offer for preview', 'முன்னோட்டத்துக்கான மாதிரிச் சலுகை'), price: '' },
+      { title: T(lang, 'Buy two, get a small gift', 'இரண்டு வாங்கினால் சிறிய பரிசு'), detail: T(lang, 'Sample offer for preview', 'முன்னோட்டத்துக்கான மாதிரிச் சலுகை'), price: '' },
+    ] : [],
     host: { siteUrl: `https://${slug}.get4domain.com` },
   };
   return content;
@@ -152,7 +157,7 @@ export function extremeContent(categoryId, kind, { lang = 'en' } = {}) {
       c.hero.subtitle = ''; c.hero.image = ''; c.hero.imageAlt = '';
       c.about.image = ''; c.about.text = '';
       c.cta = { label: '', href: '', secondaryLabel: '', secondaryHref: '' };
-      for (const k of ['hours', 'items', 'groups', 'team', 'testimonials', 'faqs', 'gallery', 'steps', 'trust', 'stats', 'areas', 'credentials', 'blocks', 'videos', 'products']) c[k] = [];
+      for (const k of ['hours', 'items', 'groups', 'team', 'testimonials', 'faqs', 'gallery', 'steps', 'trust', 'stats', 'areas', 'credentials', 'blocks', 'videos', 'products', 'offers']) c[k] = [];
       c.reviews = { sample: false, summary: { rating: 0, count: 0 }, writeUrl: '', google: [] };
       return c;
     }
