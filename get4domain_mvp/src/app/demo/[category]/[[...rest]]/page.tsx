@@ -54,7 +54,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { category, rest = [] } = await params;
   const cat = getCategory(category);
   const parsed = cat ? parse(category, rest) : null;
-  if (!cat || !parsed) return { title: 'Demo — Get4Domain' };
+  // A demo is never content for a search engine: the OTP gate keeps it out, and the page says so too (the middleware adds the same header).
+  const robots = { index: false, follow: false };
+  if (!cat || !parsed) return { title: 'Demo — Get4Domain', robots };
   const sub = getSubcategory(category, parsed.subId);
   const section = parsed.sectionSlug ? getSection(category, parsed.sectionSlug) : undefined;
   const isSub = Boolean(parsed.subId && parsed.subId !== 'general');
@@ -72,7 +74,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return {
     title,
     description,
-    keywords: content.seoKeywords,
+    robots,
     openGraph: {
       title: ogTitle, description, type: 'website',
       images: [{ url: ogImage, width: 800, height: 600, alt: `${siteName} website` }],

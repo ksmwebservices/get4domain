@@ -83,7 +83,8 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const { pathname } = req.nextUrl;
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return legacyDashboardRedirect(req);
   const parts = pathname.split('/').filter(Boolean); // ['demo', <cat>, ...]
-  if (parts[0] !== 'demo' || parts.length < 2) return NextResponse.next();
+  if (parts[0] !== 'demo') return NextResponse.next();
+  if (parts.length < 2) return noindex(NextResponse.next());   // bare /demo
 
   const seg = decodeURIComponent(parts[1]).toLowerCase();
 
@@ -91,7 +92,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   // the redirected path is gated on its next pass through this middleware.
   if (!getCategory(seg)) {
     const r = resolveDemoQuery(seg);
-    if (!r) return NextResponse.next(); // unknown → let the page 404
+    if (!r) return noindex(NextResponse.next()); // unknown → let the page 404
     const url = req.nextUrl.clone();
     url.pathname = r.subId === 'general' ? `/demo/${r.categoryId}` : `/demo/${r.categoryId}/${r.subId}`;
     return noindex(NextResponse.redirect(url, 307));

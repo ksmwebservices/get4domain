@@ -161,6 +161,20 @@ check('demo', '/demo/<category> served with a valid pass is also noindex, and is
   const r = await get('/demo/clinic', { cookie: `g4d_demo_pass=${demoPass('clinic')}` });
   ok(r.status !== 307 && r.status !== 308, `answered ${r.status} (redirected although the pass is valid)`); ok(noindex(xrobots(r)), `X-Robots-Tag is "${xrobots(r)}"`);
 });
+check('demo', '/demo/* pages served with a valid pass say noindex in the HTML (robots meta) as well as in the header, and carry no keywords meta', async () => {
+  for (const p of ['/demo/clinic', '/demo/clinic/dental']) {
+    const r = await get(p, { cookie: `g4d_demo_pass=${demoPass('clinic')}` }); ok(r.status === 200, `${p} answered ${r.status}`);
+    ok(noindex(xrobots(r)), `${p}: X-Robots-Tag is "${xrobots(r)}"`);
+    ok(/noindex/i.test(metaNamed(r.body, 'robots') ?? ''), `${p}: robots meta is "${metaNamed(r.body, 'robots')}" (the header says noindex, the HTML must agree)`);
+    ok(metaNamed(r.body, 'keywords') === undefined, `${p}: still has a keywords meta`);
+    const bad = metaStrings(r.body).filter((s) => LEGACY.test(s)); ok(!bad.length, `${p}: legacy text in metadata: ${bad.join(' | ').slice(0, 200)}`);
+  }
+});
+check('demo', 'every other /demo address (bare /demo, unknown name, with or without a pass) also sends X-Robots-Tag noindex', async () => {
+  for (const p of ['/demo', '/demo/zz-not-a-category']) for (const cookie of [undefined, `g4d_demo_pass=${demoPass('clinic')}`]) {
+    const r = await get(p, { cookie }); ok(noindex(xrobots(r)), `${p} (status ${r.status}, ${cookie ? 'with' : 'without'} a pass): X-Robots-Tag is "${xrobots(r)}"`);
+  }
+});
 check('demo', 'sitemap.xml has no /demo/ URL, no /visit-demo and no private/dev URL; the 17 pages and 20 industries are there', async () => {
   const r = await get('/sitemap.xml'); ok(r.status === 200, `answered ${r.status}`);
   const locs = [...r.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => decode(m[1]));
