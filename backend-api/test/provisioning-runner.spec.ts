@@ -179,6 +179,16 @@ describe('job runner', () => {
     for (const t of h.tokens) expect(stored).not.toContain(t);
   });
 
+  it('a run that cannot settle (a claim step that never hands on a token) fails the job with a fixed message instead of throwing or looping', async () => {
+    const h = harness();
+    h.behaviour.CREATE_CLAIM_LINK = () => ({ outputRef: { claimTokenId: 'ct' } });   // no rawToken, so SEND_INVITE can never run
+    const { job } = await newJob(h);
+    const r = await h.runner().runOne();
+    expect(r).toMatchObject({ status: 'FAILED' });
+    expect(await h.repo.getJob(job.id)).toMatchObject({ status: 'FAILED', lastErrorCode: 'UNEXPECTED', lockedBy: null });
+    expect(h.calls.SEND_INVITE ?? 0).toBe(0);
+  });
+
   it('runDue works through several due jobs, up to the limit', async () => {
     const h = harness();
     await newJob(h, 'a'); await newJob(h, 'b'); await newJob(h, 'c');

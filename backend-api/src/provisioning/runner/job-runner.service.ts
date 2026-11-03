@@ -46,7 +46,7 @@ export class JobRunnerService {
   constructor(
     private readonly repo: ProvisioningRepository,
     @Inject(PROVISIONING_STEPS) private readonly steps: ProvisioningStep[],
-    private readonly settingsService: Pick<ProvisioningSettingsService, 'get'>,
+    @Inject(ProvisioningSettingsService) private readonly settingsService: Pick<ProvisioningSettingsService, 'get'>,
     private readonly audit: ProvisioningAudit,
     @Optional() @Inject(PROVISIONING_RUNNER_ID) private readonly runnerId: string = newRunnerId(),
   ) {}
@@ -117,6 +117,13 @@ export class JobRunnerService {
       await this.audit.record(actor, 'provisioning.step.done', 'provisioning_job', claimed.id, { step: step.key, ...(result.outputRef ?? {}) });
       if (!(await this.repo.extendLease(claimed.id, this.runnerId, this.clock(), LEASE_MS))) return { jobId: claimed.id, status: 'LEASE_LOST', stepsRun };
     }
-    throw new Error(`job ${claimed.id} did not settle in ${MAX_STEPS_PER_RUN} steps`);
+    // The loop did not settle (for example a step that never hands on what the next one needs). Fail the job with a fixed message instead of throwing:
+    // an exception here would leave the lease to lapse and the job would be picked up and spin again every few minutes.
+    const now = this.clock();
+    const ok = await this.repo.finishRun(claimed.id, this.runnerId, { status: 'FAILED', attempt: claimed.attempt + 1, lastErrorCode: 'UNEXPECTED', lastErrorMessage: sanitisedMessage('UNEXPECTED'), finishedAt: now });
+    if (!ok) return { jobId: claimed.id, status: 'LEASE_LOST', stepsRun };
+    await this.audit.record(actor, 'provisioning.step.failed', 'provisioning_job', claimed.id, { code: 'UNEXPECTED', reason: 'did not settle', willRetry: false });
+    this.logger.error(`job ${claimed.id} did not settle in ${MAX_STEPS_PER_RUN} steps and was failed`);
+    return { jobId: claimed.id, status: 'FAILED', stepsRun };
   }
 }

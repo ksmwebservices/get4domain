@@ -77,6 +77,12 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'PUT /v3/admin/plan-settings/:key': SUPER_ONLY,
   'POST /v3/admin/vendors/:id/subscription': SUPER_ONLY, 'POST /v3/admin/vendors/:id/overrides': SUPER_ONLY,
   'PUT /v3/admin/overrides/:overrideId': SUPER_ONLY, 'DELETE /v3/admin/overrides/:overrideId': SUPER_ONLY, 'PUT /v3/admin/vendors/:id/flags/v3_plans': SUPER_ONLY,
+
+  // ── V3 slice 5.3: provisioning jobs, claim links, invites ───────────────────────────────────────────────────────────────
+  // Onboarding work: OPERATIONS and SUPER_ADMIN read and write; MARKETING is refused on every route (a job holds a phone number and an email address).
+  'POST /v3/admin/provisioning/jobs': OPS_AND_SUPER, 'GET /v3/admin/provisioning/jobs': OPS_AND_SUPER, 'GET /v3/admin/provisioning/jobs/:id': OPS_AND_SUPER,
+  'POST /v3/admin/provisioning/jobs/:id/retry': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/cancel': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/run': OPS_AND_SUPER,
+  'POST /v3/admin/vendors/:id/claim-link/reissue': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/claim-link/revoke': OPS_AND_SUPER, 'GET /v3/admin/invites': OPS_AND_SUPER,
 };
 
 /**

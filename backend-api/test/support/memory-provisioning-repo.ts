@@ -81,6 +81,11 @@ export class MemoryProvisioningRepo extends ProvisioningRepository {
     return true;
   }
 
+  async makeDue(jobId: string, now: Date): Promise<void> {
+    const j = this.jobs.get(jobId);
+    if (j && (j.status === 'QUEUED' || j.status === 'WAITING')) j.nextRunAt = now;
+  }
+
   async resetForRetry(jobId: string, now: Date): Promise<void> {
     for (const k of STEP_ORDER) { const s = this.steps.get(this.k(jobId, k))!; if (s.status === 'FAILED') { s.status = 'PENDING'; s.errorCode = null; } }
     Object.assign(this.jobs.get(jobId)!, { status: 'QUEUED', attempt: 0, nextRunAt: now, lastErrorCode: null, lastErrorMessage: null, finishedAt: null, lockedBy: null, lockedUntil: null });

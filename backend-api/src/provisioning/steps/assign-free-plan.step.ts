@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { SubscriptionsService } from '../../plans/subscriptions/subscriptions.service';
 import { StepError } from '../provisioning.errors';
 import { ProvisioningStep, StepContext, StepResult } from '../runner/job-runner.service';
@@ -11,7 +11,7 @@ import { parseBusinessInput } from './business-input';
 @Injectable()
 export class AssignFreePlanStep implements ProvisioningStep {
   readonly key = 'ASSIGN_FREE_PLAN' as const;
-  constructor(private readonly subscriptions: Pick<SubscriptionsService, 'provisionFreeSubscription'>) {}
+  constructor(@Inject(SubscriptionsService) private readonly subscriptions: Pick<SubscriptionsService, 'provisionFreeSubscription'>) {}
 
   async run(ctx: StepContext): Promise<StepResult> {
     if (!ctx.vendorId) throw new StepError('UNKNOWN_VENDOR', false);

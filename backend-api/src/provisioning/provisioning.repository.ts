@@ -79,6 +79,8 @@ export abstract class ProvisioningRepository {
   abstract setVendor(jobId: string, vendorId: string): Promise<void>;
   /** Ends this runner's hold on the job. Writes nothing and returns false when the lease was lost. */
   abstract finishRun(jobId: string, runnerId: string, patch: JobFinish): Promise<boolean>;
+  /** Staff "run now": a QUEUED or WAITING job becomes due immediately. */
+  abstract makeDue(jobId: string, now: Date): Promise<void>;
   abstract resetForRetry(jobId: string, now: Date): Promise<void>;
   abstract cancel(jobId: string, now: Date, skipKeys: StepKey[]): Promise<void>;
 }
@@ -196,6 +198,10 @@ export class PrismaProvisioningRepository extends ProvisioningRepository {
       },
     });
     return r.count === 1;
+  }
+
+  async makeDue(jobId: string, now: Date): Promise<void> {
+    await this.prisma.v3ProvisioningJob.updateMany({ where: { id: jobId, status: { in: ['QUEUED', 'WAITING'] } }, data: { nextRunAt: now } });
   }
 
   async resetForRetry(jobId: string, now: Date): Promise<void> {

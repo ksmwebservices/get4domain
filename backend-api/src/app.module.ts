@@ -58,6 +58,7 @@ import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
 import { HealthModule } from './health/health.module';
 import { PlansModule } from './plans/plans.module';
+import { ProvisioningModule } from './provisioning/provisioning.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -99,6 +100,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     AuthModule,
     AccountSecurityModule,
     PlansModule,
+    ProvisioningModule,
     VendorsModule,
     SubscriptionsModule,
     InvoicesModule,

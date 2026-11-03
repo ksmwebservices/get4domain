@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 import { planError } from '../plans.errors';
 
 /** Pure validators for the admin writes. They throw 400 with a stable code where the design note names one. */
@@ -67,7 +68,7 @@ export function validateSettingValue(key: string, value: unknown): void {
     case 'renewalReminderDays': if (!Array.isArray(value) || value.length > 10 || !value.every((n) => intIn(n, 0, 365))) bad('must be a list of up to 10 day counts'); return;
     case 'downgradeBehaviour': if (!DOWNGRADE.includes(String(value))) bad(`must be one of ${DOWNGRADE.join(', ')}`); return;
     case 'upgradeProration': if (!PRORATION.includes(String(value))) bad(`must be one of ${PRORATION.join(', ')}`); return;
-    default: bad('is not a known plan setting');
+    default: validateProvisioningSetting(key, value);   // slice 5.3 keys; an unknown key is refused there with the same message
   }
 }
 

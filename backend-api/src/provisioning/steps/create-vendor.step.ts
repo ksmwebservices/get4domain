@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { StepError } from '../provisioning.errors';
 import { ProvisioningStep, StepContext, StepResult } from '../runner/job-runner.service';
 import { BusinessVendors, UniqueViolation } from '../vendors/business-vendors';
 import { parseBusinessInput, slugifySubdomain } from './business-input';
+
+export const PASSWORD_HASHER = Symbol('PASSWORD_HASHER');
 
 /** A random password nobody knows. The owner sets a real one when they claim the business. */
 const randomPasswordHash = (): Promise<string> => bcrypt.hash(randomBytes(24).toString('hex'), 10);
@@ -16,7 +18,7 @@ const randomPasswordHash = (): Promise<string> => bcrypt.hash(randomBytes(24).to
 @Injectable()
 export class CreateVendorStep implements ProvisioningStep {
   readonly key = 'CREATE_VENDOR' as const;
-  constructor(private readonly vendors: BusinessVendors, private readonly hashPassword: () => Promise<string> = randomPasswordHash) {}
+  constructor(private readonly vendors: BusinessVendors, @Optional() @Inject(PASSWORD_HASHER) private readonly hashPassword: () => Promise<string> = randomPasswordHash) {}
 
   async run(ctx: StepContext): Promise<StepResult> {
     if (ctx.job.vendorId) {
