@@ -353,6 +353,31 @@ describe('S13 password reset, change and refresh tokens (staging database)', () 
       expect((await probe(stale)).status).toBe(401);
     });
 
+    it('the cutoff has no one-second hole: a token issued in the same second as the change is refused, one issued after it is accepted', async () => {
+      const B = await seedTenant(prisma, 'sb', RUN_ID);
+      const changedAt = new Date();
+      await prisma.vendor.update({ where: { id: B.vendorId }, data: { passwordChangedAt: changedAt } });
+      const sec = Math.floor(changedAt.getTime() / 1000);
+      const tokenAt = (iat: number) => jwt.sign({ sub: B.vendorId, email: B.email, role: 'VENDOR', iat }, { expiresIn: '1h' });
+      expect((await probe(tokenAt(sec - 1))).status).toBe(401);
+      expect((await probe(tokenAt(sec))).status).toBe(401);          // same second: could be a token stolen a moment ago
+      expect((await probe(tokenAt(sec + 1))).status).toBe(200);
+    });
+
+    it('a password change returns only after the clock has moved past the change second, so the fresh session is never refused by that rule', async () => {
+      const C = await seedTenant(prisma, 'sc2', RUN_ID);
+      await setPassword('vendor', { id: C.vendorId }, OLD);
+      const a = body(await login(C.email, OLD));
+      const changed = await post('/auth/password/change', { currentPassword: OLD, newPassword: NEW }, a.accessToken as string);
+      expect(changed.status).toBe(200);
+      const row = await prisma.vendor.findUniqueOrThrow({ where: { id: C.vendorId }, select: { passwordChangedAt: true } });
+      expect(Math.floor(Date.now() / 1000)).toBeGreaterThan(Math.floor((row.passwordChangedAt as Date).getTime() / 1000));
+      expect((await probe(body(changed).accessToken as string)).status).toBe(200);
+      expect((await probe(a.accessToken as string)).status).toBe(401);           // issued before the change, possibly in the same second
+      const afterLogin = body(await login(C.email, NEW));
+      expect((await probe(afterLogin.accessToken as string)).status).toBe(200);
+    });
+
     it('the same cutoff applies to a team member and to staff (access tokens older than the change are refused)', async () => {
       await prisma.teamMember.update({ where: { id: V.ids.member }, data: { passwordChangedAt: null } });      // earlier tests reset these passwords
       await prisma.adminTeamMember.update({ where: { id: staffId }, data: { passwordChangedAt: null } });

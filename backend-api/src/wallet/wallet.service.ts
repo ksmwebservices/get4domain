@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, HttpException, Injectable, InternalServerErrorException, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { BillingGateService, GatedAction } from '../commercial/billing-gate.service';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
@@ -182,6 +182,15 @@ export class WalletService {
    *  - with `idempotencyKey`, a repeat returns the original result (balance as it was after the first debit) and moves no money.
    */
   async deduct(vendorId: string, amount: number, description: string, service: string, opts: WalletWriteOptions = {}): Promise<Wallet> {
+    if (opts.tx) return this.deductCore(vendorId, amount, description, service, opts);          // the caller owns that transaction and its error handling
+    try {
+      return await this.deductCore(vendorId, amount, description, service, opts);
+    } catch (e) {
+      throw this.asDomainError(e, 'debit');
+    }
+  }
+
+  private async deductCore(vendorId: string, amount: number, description: string, service: string, opts: WalletWriteOptions): Promise<Wallet> {
     WalletService.assertWholePaise(amount, true);
     const key = opts.idempotencyKey;
     const expected = { vendorId, amount, service, type: 'debit' } as const;
@@ -222,14 +231,44 @@ export class WalletService {
   /** Debits on one wallet queue behind its row lock, so a transaction may legitimately wait: more room than Prisma's 2 s / 5 s defaults. */
   private static readonly TX_OPTIONS = { maxWait: 15_000, timeout: 30_000 };
 
-  /** P2034 = write conflict or deadlock; P2028 = the transaction could not start in time or was closed (timeout). Neither says anything about the balance. */
-  private static isConcurrencyError(e: unknown): e is Prisma.PrismaClientKnownRequestError {
-    return e instanceof Prisma.PrismaClientKnownRequestError && (e.code === 'P2034' || e.code === 'P2028');
+  /**
+   * Prisma failures that say "the database was busy or unreachable", not "the balance is wrong": P2034 write conflict / deadlock, P2028 transaction could not
+   * start in time or was closed, P2024 timed out waiting for a pooled connection, P1001 cannot reach the server, P1002 the server timed out, P1017 the server
+   * closed the connection. Everything else from Prisma is unexpected.
+   */
+  private static readonly RETRYABLE_CODES: ReadonlySet<string> = new Set(['P2034', 'P2028', 'P2024', 'P1001', 'P1002', 'P1017']);
+
+  private static prismaCode(e: unknown): string | undefined {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) return e.code;
+    if (e instanceof Prisma.PrismaClientInitializationError) return e.errorCode;
+    return undefined;
   }
 
-  /** True when this failure proves no write was committed: the database rolled a conflict back, or the transaction never started. */
-  private static nothingCommitted(e: Prisma.PrismaClientKnownRequestError): boolean {
-    return e.code === 'P2034' || /unable to start a transaction/i.test(e.message);
+  private static isPrismaError(e: unknown): boolean {
+    return e instanceof Prisma.PrismaClientKnownRequestError || e instanceof Prisma.PrismaClientInitializationError
+      || e instanceof Prisma.PrismaClientUnknownRequestError || e instanceof Prisma.PrismaClientValidationError || e instanceof Prisma.PrismaClientRustPanicError;
+  }
+
+  private static isConcurrencyError(e: unknown): boolean {
+    const code = WalletService.prismaCode(e);
+    return code !== undefined && WalletService.RETRYABLE_CODES.has(code);
+  }
+
+  /** True when this failure proves no write was committed: a conflict is rolled back by the database, and with P2024 / P1001 / "unable to start" no transaction began. */
+  private static nothingCommitted(e: unknown): boolean {
+    const code = WalletService.prismaCode(e);
+    return code === 'P2034' || code === 'P2024' || code === 'P1001' || (code === 'P2028' && /unable to start a transaction/i.test((e as Error).message));
+  }
+
+  /**
+   * The boundary: no Prisma error leaves deduct() / refund() on their own transaction. Busy or unreachable database = 503 WALLET_BUSY; any other Prisma error =
+   * a generic 500 WALLET_ERROR. The details (code, first line of the message) go to the server log, never to the caller. Other errors are not disguised.
+   */
+  private asDomainError(e: unknown, op: string): unknown {
+    if (e instanceof HttpException || !WalletService.isPrismaError(e)) return e;
+    const code = WalletService.prismaCode(e);
+    this.logger.error(`Wallet ${op} failed with a database error: ${(e as Error).name} ${code ?? ''} ${String((e as Error).message).split('\n').pop()?.slice(0, 300) ?? ''}`.trim());
+    return WalletService.isConcurrencyError(e) ? new ServiceUnavailableException('WALLET_BUSY') : new InternalServerErrorException('WALLET_ERROR');
   }
 
   private backoff(attempt: number): Promise<void> {
@@ -248,6 +287,15 @@ export class WalletService {
    * does not expire (it returns what was taken). `idempotencyKey` is required: a repeat returns the first result.
    */
   async refund(vendorId: string, amount: number, description: string, service: string, idempotencyKey: string, opts: { tx?: Prisma.TransactionClient } = {}): Promise<Wallet> {
+    if (opts.tx) return this.refundCore(vendorId, amount, description, service, idempotencyKey, opts);
+    try {
+      return await this.refundCore(vendorId, amount, description, service, idempotencyKey, opts);
+    } catch (e) {
+      throw this.asDomainError(e, 'refund');
+    }
+  }
+
+  private async refundCore(vendorId: string, amount: number, description: string, service: string, idempotencyKey: string, opts: { tx?: Prisma.TransactionClient }): Promise<Wallet> {
     WalletService.assertWholePaise(amount, false);
     if (!idempotencyKey) throw new BadRequestException('IDEMPOTENCY_KEY_REQUIRED');
     const expected = { vendorId, amount, service, type: 'credit' } as const;

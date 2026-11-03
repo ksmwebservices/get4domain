@@ -83,7 +83,14 @@ export class PasswordService {
       await tx.accountPasswordReset.updateMany({ where: { accountType: ref.type, accountId: ref.id, usedAt: null, revokedAt: null }, data: { revokedAt: now } });
       await this.sessions.revokeAll(ref, tx);
     });
+    await this.untilAfterSecondOf(now);
     await this.notifyChanged(account);
+  }
+
+  /** Resolves once the clock is in a later whole second than `t`, so any token signed afterwards has a later `iat` than the change (see JwtStrategy). */
+  private async untilAfterSecondOf(t: Date): Promise<void> {
+    const wait = (Math.floor(t.getTime() / 1000) + 1) * 1000 - Date.now();
+    if (wait > 0) await new Promise<void>((resolve) => setTimeout(resolve, wait + 5));
   }
 
   /** The signed-in user changes their own password. Returns a fresh session, because every older one was just ended. */
@@ -101,6 +108,7 @@ export class PasswordService {
       await tx.accountPasswordReset.updateMany({ where: { accountType: ref.type, accountId: ref.id, usedAt: null, revokedAt: null }, data: { revokedAt: now } });
       await this.sessions.revokeAll(ref, tx);
     });
+    await this.untilAfterSecondOf(now);
     const account = await this.directory.load(ref);
     if (!account) throw new ForbiddenException('A password cannot be changed from this kind of session.');
     await this.notifyChanged(account);

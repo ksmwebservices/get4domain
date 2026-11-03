@@ -1,6 +1,6 @@
 // MUST stay the first import: runs the staging guard and sets the test environment (see support/staging-env.ts).
 import { RUN_ID } from './support/staging-env';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaClient, Wallet } from '@prisma/client';
 import { InvoicesService } from '../src/invoices/invoices.service';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -68,20 +68,41 @@ describe('wallet debit and refund (staging database)', () => {
       expect((await read(vendorId)).balance).toBe(0);
     }, 120000);
 
-    it('on a slow link (CI-like latency on every query) 20 parallel debits still give exactly 10 successes and clean refusals, never a Prisma error', async () => {
+    it('on a slow, starved link (latency on every query, small connection pool) 20 parallel debits never overdraw and never leak a Prisma error', async () => {
       const vendorId = await freshWallet(100);
       const ms = Number(process.env.WALLET_TEST_LATENCY_MS ?? 120);
-      const slow = prisma.$extends({ query: { $allOperations: async ({ args, query }) => { await new Promise((r) => setTimeout(r, ms)); return query(args); } } });
-      const slowWallet = new WalletService(slow as unknown as PrismaService, {} as InvoicesService);
-      const results = await Promise.allSettled(Array.from({ length: 20 }, (_, i) => slowWallet.deduct(vendorId, 10, `slow ${i}`, 'test_slow')));
-      const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
-      for (const r of rejected) {
-        expect(r.reason).toBeInstanceOf(BadRequestException);                      // not a PrismaClientKnownRequestError
-        expect((r.reason as BadRequestException).message).toBe('INSUFFICIENT_WALLET_BALANCE');
+      const pool = Number(process.env.WALLET_TEST_POOL ?? 3);
+      const poolTimeout = Number(process.env.WALLET_TEST_POOL_TIMEOUT ?? 5);          // seconds, Prisma's pool_timeout
+      const base = process.env.DATABASE_URL as string;
+      const limited = new PrismaClient({ datasourceUrl: `${base}${base.includes('?') ? '&' : '?'}connection_limit=${pool}&pool_timeout=${poolTimeout}`, log: [] });
+      let results: PromiseSettledResult<Wallet>[];
+      try {
+        const slow = limited.$extends({ query: { $allOperations: async ({ args, query }) => { await new Promise((r) => setTimeout(r, ms)); return query(args); } } });
+        const slowWallet = new WalletService(slow as unknown as PrismaService, {} as InvoicesService);
+        results = await Promise.allSettled(Array.from({ length: 20 }, (_, i) => slowWallet.deduct(vendorId, 10, `slow ${i}`, 'test_slow')));
+      } finally { await limited.$disconnect(); }
+
+      // Classify every outcome. Anything that is not a success or one of the two clean refusals is reported WITH the Prisma code, meta and message.
+      const raw: Array<Record<string, unknown>> = [];
+      let ok = 0, insufficient = 0, busy = 0;
+      for (const r of results) {
+        if (r.status === 'fulfilled') { ok += 1; continue; }
+        const reason = r.reason as unknown;
+        const d = reason as { name?: string; code?: string; meta?: unknown; message?: string };
+        if (reason instanceof BadRequestException && reason.message === 'INSUFFICIENT_WALLET_BALANCE') insufficient += 1;
+        else if (reason instanceof ServiceUnavailableException && reason.message === 'WALLET_BUSY') busy += 1;
+        else raw.push({ name: d?.name, code: d?.code, meta: d?.meta, message: String(d?.message ?? reason).split('\n').slice(-4).join(' | ').slice(0, 400) });
       }
+      if (raw.length) throw new Error(`${raw.length} unclassified rejection(s): ${JSON.stringify(raw.slice(0, 3))}`);
+
       const w = await read(vendorId);
-      expect({ ok: results.length - rejected.length, balance: w.balance, totalDebited: w.totalDebited }).toEqual({ ok: 10, balance: 0, totalDebited: 100 });
-    }, 180000);
+      const debitRows = (await rows(vendorId, 'test_slow')).filter((x) => x.type === 'debit').length;
+      expect(ok + insufficient + busy).toBe(20);
+      expect(w.balance).toBeGreaterThanOrEqual(0);
+      expect({ balance: w.balance, totalDebited: w.totalDebited, debitRows }).toEqual({ balance: 100 - ok * 10, totalDebited: ok * 10, debitRows: ok });
+      expect(ok).toBeLessThanOrEqual(10);
+      if (busy === 0) expect(ok).toBe(10);                                        // nothing starved: exactly the affordable number must have succeeded
+    }, 240000);
 
     it('mixed amounts in parallel never overdraw: balance is exactly the starting balance minus what succeeded', async () => {
       const vendorId = await freshWallet(100);

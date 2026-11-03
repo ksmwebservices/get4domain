@@ -1,4 +1,4 @@
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { InvoicesService } from '../src/invoices/invoices.service';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -93,5 +93,96 @@ describe('wallet debit: concurrency errors never reach the caller as Prisma erro
     stub.tx.mockRejectedValueOnce(P2034()).mockResolvedValueOnce(walletRow);
     await expect(wallet.refund('v1', 10, 'x', 'test_svc', 'rk1')).resolves.toEqual(walletRow);
     expect(stub.tx).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('wallet debit: every Prisma error that can escape is classified (CI-FIX-2)', () => {
+  const P2024 = () => prismaError('P2024', 'Timed out fetching a new connection from the connection pool. (Current connection pool timeout: 1, connection limit: 2)');
+  const P1017 = () => prismaError('P1017', 'Server has closed the connection.');
+  const P1001 = () => new Prisma.PrismaClientInitializationError("Can't reach database server", 'test', 'P1001');
+  const P1002 = () => new Prisma.PrismaClientInitializationError('The database server was reached but timed out', 'test', 'P1002');
+  const notRaw = (err: unknown) => {
+    expect(err).not.toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+    expect(err).not.toBeInstanceOf(Prisma.PrismaClientInitializationError);
+    expect(err).not.toBeInstanceOf(Prisma.PrismaClientUnknownRequestError);
+    expect(err).not.toBeInstanceOf(Prisma.PrismaClientValidationError);
+    expect(err).not.toBeInstanceOf(Prisma.PrismaClientRustPanicError);
+  };
+
+  it.each([['P2024 (pool timeout)', P2024], ['P1001 (cannot reach the database)', P1001]])('%s is retried: no transaction ran', async (_n, make) => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValueOnce(make()).mockResolvedValueOnce(walletRow);
+    await expect(wallet.deduct('v1', 10, 'x', 'test_svc')).resolves.toEqual(walletRow);
+    expect(stub.tx).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([['P1017 (connection closed)', P1017], ['P1002 (timed out)', P1002]])('%s may have happened after the commit, so without a key it is not repeated: clean WALLET_BUSY', async (_n, make) => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValue(make());
+    stub.walletFind.mockResolvedValue(walletRow);
+    const err = await wallet.deduct('v1', 10, 'x', 'test_svc').catch((e: unknown) => e);
+    notRaw(err);
+    expect(err).toBeInstanceOf(ServiceUnavailableException);
+    expect(stub.tx).toHaveBeenCalledTimes(1);
+  });
+
+  it('with a key the same failure is retried, because a repeat is harmless', async () => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValueOnce(P1017()).mockResolvedValueOnce(walletRow);
+    await expect(wallet.deduct('v1', 10, 'x', 'test_svc', { idempotencyKey: 'k2' })).resolves.toEqual(walletRow);
+    expect(stub.tx).toHaveBeenCalledTimes(2);
+  });
+
+  it('exhausted pool timeouts with a short balance: INSUFFICIENT_WALLET_BALANCE; with enough balance: WALLET_BUSY; the balance lookup itself failing: WALLET_BUSY', async () => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValue(P2024());
+    stub.walletFind.mockResolvedValueOnce({ ...walletRow, balance: 3 });
+    await expect(wallet.deduct('v1', 10, 'x', 'test_svc')).rejects.toThrow('INSUFFICIENT_WALLET_BALANCE');
+    stub.walletFind.mockResolvedValueOnce(walletRow);
+    const busy = await wallet.deduct('v1', 10, 'x', 'test_svc').catch((e: unknown) => e);
+    notRaw(busy); expect(busy).toBeInstanceOf(ServiceUnavailableException);
+    stub.walletFind.mockRejectedValueOnce(P2024());
+    const busy2 = await wallet.deduct('v1', 10, 'x', 'test_svc').catch((e: unknown) => e);
+    notRaw(busy2); expect(busy2).toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('the lookups the wallet does outside the transaction (idempotency key) cannot leak a Prisma error either', async () => {
+    const { wallet, stub } = build();
+    stub.txnFind.mockRejectedValue(P2024());
+    const err = await wallet.deduct('v1', 10, 'x', 'test_svc', { idempotencyKey: 'k3' }).catch((e: unknown) => e);
+    notRaw(err); expect(err).toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it.each([
+    ['an unknown known-request code (P2010)', () => prismaError('P2010', 'Raw query failed')],
+    ['an unknown request error', () => new Prisma.PrismaClientUnknownRequestError('boom', { clientVersion: 'test' })],
+    ['a validation error', () => new Prisma.PrismaClientValidationError('bad shape', { clientVersion: 'test' })],
+  ])('%s is wrapped into a generic clean error and logged server side, never given to the caller', async (_n, make) => {
+    const { wallet, stub } = build();
+    const logged = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    try {
+      stub.tx.mockRejectedValue(make());
+      const err = await wallet.deduct('v1', 10, 'x', 'test_svc').catch((e: unknown) => e);
+      notRaw(err);
+      expect(err).toBeInstanceOf(InternalServerErrorException);
+      expect((err as Error).message).toBe('WALLET_ERROR');
+      expect(logged).toHaveBeenCalled();
+    } finally { logged.mockRestore(); }
+  });
+
+  it('refund is wrapped the same way', async () => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValue(P2024());
+    const err = await wallet.refund('v1', 10, 'x', 'test_svc', 'rk9').catch((e: unknown) => e);
+    notRaw(err); expect(err).toBeInstanceOf(ServiceUnavailableException);
+    stub.tx.mockRejectedValue(prismaError('P2010', 'Raw query failed'));
+    const generic = await wallet.refund('v1', 10, 'x', 'test_svc', 'rk10').catch((e: unknown) => e);
+    notRaw(generic); expect(generic).toBeInstanceOf(InternalServerErrorException);
+  });
+
+  it('errors that are not Prisma errors are not disguised (a plain Error and a Forbidden from the billing gate pass through)', async () => {
+    const { wallet, stub } = build();
+    stub.tx.mockRejectedValue(new Error('something else'));
+    await expect(wallet.deduct('v1', 10, 'x', 'test_svc')).rejects.toThrow('something else');
   });
 });
