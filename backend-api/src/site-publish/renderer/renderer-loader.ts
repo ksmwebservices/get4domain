@@ -33,6 +33,8 @@ export interface Kit {
   hasCategory(id: string): boolean;
   variantFor(categoryId: string): { id: string; motion?: string } | string;
   sampleContent(categoryId: string, opts?: { lang?: 'en' | 'ta' }): Record<string, unknown>;
+  /** the kit's category map (legacy pack key -> kit categories); read from the build, never edited here */
+  categoryMap(): { packs: Record<string, string[]> };
   CATEGORIES: KitCategory[];
 }
 
@@ -77,6 +79,7 @@ export function loadKit(): Kit {
     renderPage: render.renderPage, loadTheme: theme.loadTheme, listVendorThemeIds: theme.listVendorThemeIds, lintTheme: lint.lintTheme,
     readThemeDir: pack.readThemeDir, computeContentHash: pack.computeContentHash,
     categoryById: cats.categoryById, hasCategory: cats.hasCategory, variantFor: cats.variantFor, CATEGORIES: cats.CATEGORIES, sampleContent: fixtures.sampleContent,
+    categoryMap: () => JSON.parse(fs.readFileSync(path.join(dir, 'data', 'category-map.json'), 'utf8')) as { packs: Record<string, string[]> },
   } as unknown as Kit;
   cached = { dir, kit };
   return kit;

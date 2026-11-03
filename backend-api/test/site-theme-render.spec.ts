@@ -78,6 +78,27 @@ describe('ThemeRenderService', () => {
   });
 });
 
+describe('contract: a Pro vendor may use any theme of their track, so every theme x every category of its tracks must render cleanly', () => {
+  const svc = new ThemeRenderService(kit); svc.init();
+  it('renders all pages for every (theme, category of the theme\'s tracks) pair with exactly one h1 and no blocking warning', () => {
+    const blocking = /^missing-template|^unknown-category|^missing:host|^preset-ignored:invalid/;
+    const problems: string[] = [];
+    for (const t of svc.listThemes()) {
+      const theme = svc.getTheme(t.id).theme;
+      for (const c of kit.CATEGORIES.filter((x) => t.tracks.includes(x.track))) {
+        for (const page of ['home', 'about', 'services', 'gallery', 'contact']) {
+          const out = svc.render(t.id, { page, content: kit.sampleContent(c.id), settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, entitlements: ENT_OFF });
+          const h1 = (out.html.match(/<h1[\s>]/g) ?? []).length;
+          if (h1 !== 1) problems.push(`${t.id}/${c.id}/${page}: ${h1} h1`);
+          for (const w of out.warnings) if (blocking.test(w)) problems.push(`${t.id}/${c.id}/${page}: ${w}`);
+        }
+        void theme;
+      }
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+  });
+});
+
 describe('contract: every theme, every category it lists, through the kit lint', () => {
   const svc = new ThemeRenderService(kit); svc.init();
   it.each(['free-hospitality', 'free-practice', 'free-service-pro', 'free-shop-lite', 'free-studio'])('%s passes the kit lint on all its categories (rendered by the same renderer)', (id) => {
