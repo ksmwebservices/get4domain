@@ -32,6 +32,12 @@ describe('toRendererInput (the ContentSource mapping)', () => {
     expect(c.cta).toMatchObject({ label: 'Call now', href: 'tel:+919876543210' });
   });
 
+  it('the About heading uses the kit\'s own wording with the vendor\'s name: English prefix, Tamil suffix', () => {
+    expect((input.content as { about: { title: string } }).about.title).toBe('About Sri Ganesh Plumbing');
+    const ta = toRendererInput(doc('plumber'), { categoryId: 'plumber', lang: 'ta', year: YEAR, ...HOST }).content as { about: { title: string } };
+    expect(ta.about.title).toBe('Sri Ganesh Plumbing பற்றி');
+  });
+
   it('host and vendor inputs: the vendor subdomain address, no embeds, unclaimed flag for the claim banner', () => {
     expect(input.host).toMatchObject({ siteUrl: 'https://sri-ganesh-plumbing.get4domain.com', allowEmbeds: false });
     expect(input.vendor).toMatchObject({ id: 'v-plumber', unclaimed: true });

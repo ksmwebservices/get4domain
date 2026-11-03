@@ -83,12 +83,15 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const extraPages = (cms?.pages ?? []).filter((p) => p.slug && !RESERVED_PAGE_SLUGS.has(slugify(p.slug)));
   const pages = cut(extraPages, lim.pages, 'pages', notes).map((p) => ({ slug: slugify(p.slug), title: str(p.title), body: str(p.body), href: `/${slugify(p.slug)}` }));
 
-  const kitTerms = (kit.sampleContent(o.categoryId, { lang: o.lang }) as { terms?: Record<string, string> }).terms;   // platform wording from the kit, in the page language
+  const sample = kit.sampleContent(o.categoryId, { lang: o.lang }) as { terms?: Record<string, string>; site?: { name?: string }; about?: { title?: string } };
+  const kitTerms = sample.terms;   // platform wording from the kit, in the page language
+  // the About heading: the kit's own wording for the language ("About X" / "X பற்றி") with the vendor's name in place of the sample name
+  const aboutTitle = sample.site?.name && sample.about?.title?.includes(sample.site.name) ? sample.about.title.replace(sample.site.name, name) : name;
   const content: Record<string, unknown> = {
     category: o.categoryId, lang: o.lang,
     site: { name, tagline: str(cms?.tagline), logo: str(cms?.logo), logoAlt: `${name} logo`, favicon: str(cms?.favicon), year: o.year, url: siteUrl },
     hero: { title: str(ex.headline) || str(cms?.tagline) || name, badge: str(ex.announcement), subtitle: str(ex.subline) || str(cms?.tagline), image: str(cms?.banner), imageAlt: name, cta: '' },
-    about: { text: str(cms?.about), image: '', imageAlt: '' },
+    about: { title: aboutTitle, text: str(cms?.about), image: '', imageAlt: '' },
     contact: {
       phone, phoneHref: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '', whatsapp: str(cms?.whatsapp) || phone, whatsappHref: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '',
       email, address, city, area: '', pin, mapUrl: str(cms?.googleMaps),
