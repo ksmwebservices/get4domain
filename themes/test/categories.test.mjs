@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORIES, CATEGORY_IDS, FAMILIES, FLOWS, variantFor, categoryById } from '../lib/categories.mjs';
-import { BINDINGS, AS_BUILT_REPEATERS, DATA_ATTRIBUTES, SLOT_TAGS, SLOTS, APPROVED_FONTS, TRACKS } from '../lib/vocabulary.mjs';
+import { BINDINGS, AS_BUILT_REPEATERS, DATA_ATTRIBUTES, SLOT_TAGS, SLOTS, APPROVED_FONTS, APPROVED_TAMIL_FONTS, TRACKS } from '../lib/vocabulary.mjs';
 import { renderDoc } from '../lib/contract-doc.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -67,7 +67,9 @@ test('the kit vocabulary is a superset of the as-built backend contract', () => 
 test('every slot has a unique tag, and the brief slot names are all present', () => {
   assert.equal(new Set(SLOT_TAGS).size, SLOT_TAGS.length);
   for (const n of ['enquiry-form', 'whatsapp-float', 'map', 'reviews', 'social-links', 'video', 'booking', 'cart', 'product-grid', 'search', 'claim-banner', 'listed-on-badge']) assert.ok(SLOTS[n], n);
-  assert.equal(APPROVED_FONTS.length, 10);
+  assert.equal(APPROVED_FONTS.length, 12);
+  for (const f of ['Noto Sans Tamil', 'Noto Serif Tamil']) assert.ok(APPROVED_FONTS.includes(f), f);
+  assert.deepEqual(APPROVED_TAMIL_FONTS, ['Noto Sans Tamil', 'Noto Serif Tamil']);
 });
 
 test('CONTRACT.md generated tables are current and list all 41 category ids', () => {

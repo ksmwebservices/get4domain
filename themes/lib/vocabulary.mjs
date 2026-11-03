@@ -114,11 +114,16 @@ export const GATED_SLOTS = { video: 'video', cart: 'cart', booking: 'booking' };
 export const MAP_EMBED_HOSTS = ['www.google.com', 'maps.google.com', 'www.openstreetmap.org'];
 export const VIDEO_HOSTS = ['www.youtube.com', 'www.youtube-nocookie.com', 'youtu.be', 'player.vimeo.com', 'vimeo.com'];
 
-/** The only fonts a theme may name (T0 rule 4). Delivered by the platform from its own storage, never from a third-party host. */
-export const APPROVED_FONTS = ['Inter', 'Poppins', 'DM Sans', 'Manrope', 'Nunito', 'Work Sans', 'Montserrat', 'Playfair Display', 'Lora', 'Merriweather'];
-/** System fonts allowed in a stack (no network). The Tamil names make Tamil text render without any web font. */
-export const SYSTEM_FONTS = ['system-ui', 'ui-sans-serif', 'ui-serif', 'sans-serif', 'serif', 'monospace', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Georgia', 'Noto Sans', 'Noto Serif', 'Noto Sans Tamil', 'Noto Serif Tamil', 'Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil', 'inherit'];
-export const TAMIL_CAPABLE_FONTS = ['Noto Sans Tamil', 'Noto Serif Tamil', 'Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil'];
+/**
+ * The only web fonts a theme may name: the ten of T0 rule 4 plus the two Tamil fonts. The PLATFORM SELF-HOSTS every approved font (from its own storage, never from a
+ * third-party host), so a theme names a font but never loads one: no theme may contain an outside address.
+ */
+export const APPROVED_TAMIL_FONTS = ['Noto Sans Tamil', 'Noto Serif Tamil'];
+export const APPROVED_FONTS = ['Inter', 'Poppins', 'DM Sans', 'Manrope', 'Nunito', 'Work Sans', 'Montserrat', 'Playfair Display', 'Lora', 'Merriweather', ...APPROVED_TAMIL_FONTS];
+/** System fonts allowed in a stack (no network). The system Tamil names are only a fallback behind an approved Tamil font. */
+export const SYSTEM_FONTS = ['system-ui', 'ui-sans-serif', 'ui-serif', 'sans-serif', 'serif', 'monospace', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Georgia', 'Noto Sans', 'Noto Serif', 'Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil', 'inherit'];
+/** System Tamil fonts (fallbacks); the approved ones are APPROVED_TAMIL_FONTS. */
+export const TAMIL_CAPABLE_FONTS = ['Latha', 'Nirmala UI', 'Tamil Sangam MN', 'Tamil MN', 'Lohit Tamil'];
 
 export const TOKENS = ['--g4d-primary', '--g4d-primary-contrast', '--g4d-accent', '--g4d-bg', '--g4d-surface', '--g4d-text', '--g4d-muted', '--g4d-border', '--g4d-radius', '--g4d-font-heading', '--g4d-font-body'];
 export const MOTION_TOKENS = ['--g4d-motion-speed', '--g4d-motion-ease', '--g4d-motion-distance'];

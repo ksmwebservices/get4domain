@@ -105,7 +105,8 @@
   },
   "fonts": [
     "Inter",
-    "Poppins"
+    "Poppins",
+    "Noto Sans Tamil"
   ],
   "internal": true
 }

@@ -44,6 +44,12 @@ test('pipeline: pack -> validate -> load from the zip -> lint passes for all 41 
   assert.equal(r.categories.length, 41);
 });
 
+test('the starter asks for Tamil in an approved, self-hosted font', () => {
+  const m = loadTheme('_starter').manifest;
+  assert.ok(m.fonts.includes('Noto Sans Tamil'));
+  assert.match(loadTheme('_starter').css.tokens, /'Noto Sans Tamil'/);
+});
+
 test('the packed starter fits the budgets', () => {
   const { zip } = packThemeDir(dir);
   assert.ok(zip.length < 100 * 1024, `zip is ${zip.length} bytes`);

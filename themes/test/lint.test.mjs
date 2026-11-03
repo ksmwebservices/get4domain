@@ -41,7 +41,7 @@ const bad = (t) => ({
   'css-hygiene': { theme: clone(t, { css: { base: `${t.css.base}\n.g4d-theme .x { color: red !important; }\n@import 'x.css';` } }) },
   'css-scoped': { theme: clone(t, { css: { base: `${t.css.base}\nbody { margin: 0; }` } }) },
   'approved-fonts': { theme: clone(t, { css: { tokens: t.css.tokens.replace("'Inter'", "'Comic Sans MS'") } }) },
-  'tamil-fonts': { theme: clone(t, { css: { tokens: t.css.tokens.replace(/'Noto Sans Tamil', 'Nirmala UI', 'Latha', /g, '') } }) },
+  'tamil-fonts': { theme: clone(t, { css: { tokens: t.css.tokens.replace(/'Noto Sans Tamil', /g, '') } }) },
   'tokens-defined': { theme: clone(t, { css: { tokens: t.css.tokens.replace('--g4d-border: #d3dcd9;', '') } }) },
   'contrast-tokens': { theme: clone(t, { css: { tokens: t.css.tokens.replace('--g4d-muted: #4a5a56;', '--g4d-muted: #bbbbbb;') } }) },
   'contrast-accent': { theme: t, opts: { vendorAccent: '#ffff00' } },

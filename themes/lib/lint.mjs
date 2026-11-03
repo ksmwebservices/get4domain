@@ -12,7 +12,7 @@ import { measureOverflow } from './browser.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
 import { categoryById, hasCategory } from './categories.mjs';
-import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, SYSTEM_FONTS, TAMIL_CAPABLE_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
+import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, APPROVED_TAMIL_FONTS, SYSTEM_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
 
 export const RULE_IDS = [
   'manifest-valid', 'no-script-tag', 'no-inline-handler', 'no-forbidden-element', 'no-seo-output', 'no-external-request', 'iframe-hosts', 'css-hygiene', 'css-scoped',
@@ -171,12 +171,12 @@ function checkCss(theme, model, F, state, opts) {
   }
   for (const { a, file } of ats) if (a.name === 'font-face') for (const d of a.decls ?? []) if (d.prop === 'font-family' && !APPROVED_FONTS.includes(fontNames(d.value)[0])) F.add('approved-fonts', `css/${file}.css`, `@font-face "${d.value}" is not on the approved list`);
 
-  // Tamil: the body font stack must reach a Tamil-capable system font (none of the ten approved fonts has Tamil glyphs)
+  // Tamil: the body font stack must name an approved Tamil font (Noto Sans Tamil or Noto Serif Tamil, self-hosted by the platform); system Tamil fonts may follow as a fallback
   {
     const stacks = [];
     for (const { r } of rules) for (const d of r.decls) if (d.prop === '--g4d-font-body' || d.prop === '--g4d-font-fallback' || (d.prop === 'font-family' && r.selectors.includes('.g4d-theme'))) stacks.push(d.value);
-    const tamil = stacks.flatMap(fontNames).some((n) => TAMIL_CAPABLE_FONTS.includes(n));
-    if (!tamil) F.add('tamil-fonts', 'css/tokens.css', 'the body font stack has no Tamil-capable font (add "Noto Sans Tamil", "Nirmala UI", "Latha" after the web font)');
+    const tamil = stacks.flatMap(fontNames).some((n) => APPROVED_TAMIL_FONTS.includes(n));
+    if (!tamil) F.add('tamil-fonts', 'css/tokens.css', 'the body font stack has no approved Tamil font: add "Noto Sans Tamil" (or "Noto Serif Tamil") after the Latin font, then system fallbacks');
   }
 
   // tokens and contrast
