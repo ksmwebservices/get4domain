@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "effectiveFrom": "2026-11-01T00:00:00.000Z",
+  "notes": "THE OWNER EDITS THIS FILE. Plans, the feature catalogue, the Free/Pro matrix, settings, term discounts and tax are DATA: change a value here (or in admin) and load it with `node scripts/seed-v3-plans.js --apply` (staging). Price rows are NOT in this file: they are generated from the base monthly rates (settings baseMonthlyPaise.<plan>) and the TERM discount rules below. Anything marked proposed:true is a proposal, not a confirmed business value. A price an admin has already APPROVED is never overwritten by the seed.",
+  "plans": [
+    { "key": "handyman_free", "track": "HANDYMAN", "level": "FREE", "name": "Handyman Free", "description": "A free website and directory listing for handyman and home-service businesses.", "status": "ACTIVE", "isPublic": true, "sortOrder": 10 },
+    { "key": "handyman_pro", "track": "HANDYMAN", "level": "PRO", "name": "Handyman Pro", "description": "More pages, services and photos, video, booking, your own domain and priority support.", "status": "ACTIVE", "isPublic": true, "sortOrder": 20 },
+    { "key": "professional_free", "track": "PROFESSIONAL", "level": "FREE", "name": "Professional Free", "description": "A free website and directory listing for clinics, advisers, studios and other professionals.", "status": "ACTIVE", "isPublic": true, "sortOrder": 30 },
+    { "key": "professional_pro", "track": "PROFESSIONAL", "level": "PRO", "name": "Professional Pro", "description": "The full site with booking, video, reports, Google connections and your own domain.", "status": "ACTIVE", "isPublic": true, "sortOrder": 40 },
+    { "key": "ecommerce_free", "track": "ECOMMERCE", "level": "FREE", "name": "Ecommerce Free", "description": "A free catalogue site with product enquiries.", "status": "ACTIVE", "isPublic": true, "sortOrder": 50 },
+    { "key": "ecommerce_pro", "track": "ECOMMERCE", "level": "PRO", "name": "Ecommerce Pro", "description": "A shop with a cart, a larger catalogue, video, reports and your own domain.", "status": "ACTIVE", "isPublic": true, "sortOrder": 60 }
+  ],
+  "features": [
+    { "key": "site.pages", "name": "Website pages", "group": "Website", "kind": "LIMIT", "unit": "pages", "free": { "state": "LIMITED", "limit": 1 }, "pro": { "state": "LIMITED", "limit": 24 } },
+    { "key": "site.services", "name": "Services", "group": "Website", "kind": "LIMIT", "unit": "services", "free": { "state": "LIMITED", "limit": 8 }, "pro": { "state": "LIMITED", "limit": 24 } },
+    { "key": "site.gallery", "name": "Gallery photos", "group": "Website", "kind": "LIMIT", "unit": "photos", "free": { "state": "LIMITED", "limit": 5 }, "pro": { "state": "LIMITED", "limit": 40 } },
+    { "key": "site.faqs", "name": "FAQs", "group": "Website", "kind": "LIMIT", "unit": "questions", "free": { "state": "LIMITED", "limit": 6 }, "pro": { "state": "LIMITED", "limit": 12 } },
+    { "key": "site.themes", "name": "Themes", "group": "Website", "kind": "ENUM", "description": "assigned = the layout chosen for your category; library = the whole theme library", "free": { "state": "ACTIVE", "enum": "assigned" }, "pro": { "state": "ACTIVE", "enum": "library" } },
+    { "key": "site.theme_change_fee_class", "name": "Theme change fee class", "group": "Website", "kind": "ENUM", "description": "Placeholder: the owner defines the classes. Hidden until then.", "proposed": true, "free": { "state": "HIDDEN" }, "pro": { "state": "HIDDEN" } },
+    { "key": "site.video", "name": "Video on your site", "group": "Website", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Show your work on video with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "site.booking", "name": "Online booking", "group": "Website", "kind": "BOOLEAN", "free": { "state": "HIDDEN" }, "pro": { "state": "ACTIVE" }, "tracks": { "ecommerce": { "free": { "state": "HIDDEN" }, "pro": { "state": "HIDDEN" } } } },
+    { "key": "site.language_ta", "name": "Tamil version of your site", "group": "Website", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Reach more customers with a Tamil site on Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "site.custom_domain", "name": "Your own domain", "group": "Website", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Use your own web address with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "site.revisions", "name": "Version history", "group": "Website", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Go back to an earlier version of your site with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "shop.cart", "name": "Shopping cart", "group": "Shop", "kind": "BOOLEAN", "free": { "state": "HIDDEN" }, "pro": { "state": "HIDDEN" }, "tracks": { "ecommerce": { "pro": { "state": "ACTIVE" } } } },
+    { "key": "shop.products", "name": "Products", "group": "Shop", "kind": "LIMIT", "unit": "products", "proposed": true, "free": { "state": "LIMITED", "limit": 12 }, "pro": { "state": "LIMITED", "limit": 500 }, "tracks": { "handyman": { "free": { "state": "HIDDEN" }, "pro": { "state": "HIDDEN" } }, "professional": { "free": { "state": "HIDDEN" }, "pro": { "state": "HIDDEN" } } } },
+    { "key": "directory.listing", "name": "Directory listing", "group": "Directory", "kind": "BOOLEAN", "free": { "state": "ACTIVE" }, "pro": { "state": "ACTIVE" } },
+    { "key": "directory.verified_badge", "name": "Verified badge", "group": "Directory", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Get a verified badge with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "directory.placement", "name": "Better placement in the directory", "group": "Directory", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Appear higher in the directory with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "leads.platform", "name": "Leads from the platform", "group": "Leads", "kind": "LIMIT", "unit": "per month", "proposed": true, "free": { "state": "LIMITED", "limit": 50 }, "pro": { "state": "LIMITED", "limit": 500 } },
+    { "key": "seo.tasks_included", "name": "SEO tasks included", "group": "SEO", "kind": "LIMIT", "unit": "per month", "proposed": true, "free": { "state": "LOCKED_PREVIEW", "upsell": "Get monthly SEO tasks done for you with Pro." }, "pro": { "state": "LIMITED", "limit": 10 } },
+    { "key": "seo.keyword_volumes", "name": "Keyword search volumes", "group": "SEO", "kind": "BOOLEAN", "description": "Unlocked per vendor when Google is connected, not by plan.", "free": { "state": "LOCKED_PREVIEW", "upsell": "Connect Google to see how many people search for your keywords." }, "pro": { "state": "LOCKED_PREVIEW", "upsell": "Connect Google to see how many people search for your keywords." } },
+    { "key": "reports.basic", "name": "Basic reports", "group": "Reports", "kind": "BOOLEAN", "free": { "state": "ACTIVE" }, "pro": { "state": "ACTIVE" } },
+    { "key": "reports.audit", "name": "Website audit report", "group": "Reports", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "See a full audit of your site with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "connections.google", "name": "Google connection", "group": "Connections", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Connect your Google account with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "promotion.allowance", "name": "Promotion allowance included", "group": "Promotion", "kind": "LIMIT", "unit": "rupees per month", "proposed": true, "free": { "state": "LOCKED_PREVIEW", "upsell": "Get a monthly promotion allowance with Pro." }, "pro": { "state": "LIMITED", "limit": 500 } },
+    { "key": "ai.credits_included", "name": "AI credits included", "group": "AI", "kind": "LIMIT", "unit": "credits per month", "proposed": true, "free": { "state": "LIMITED", "limit": 20 }, "pro": { "state": "LIMITED", "limit": 200 } },
+    { "key": "social.publishing", "name": "Social media publishing", "group": "Social", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Publish to your social pages from here with Pro." }, "pro": { "state": "ACTIVE" } },
+    { "key": "support.priority", "name": "Priority support", "group": "Support", "kind": "BOOLEAN", "free": { "state": "LOCKED_PREVIEW", "upsell": "Get priority support with Pro." }, "pro": { "state": "ACTIVE" } }
+  ],
+  "settings": {
+    "graceDays": { "value": 7, "description": "Days after a Pro term ends during which the Pro features still work (proposed)." },
+    "allowMonthly": { "value": false, "description": "Allow a 1-month term. Off: only 3, 6 and 12 months can be sold." },
+    "renewalReminderDays": { "value": [14, 7, 1], "description": "Days before the end of a term when reminders are sent (proposed)." },
+    "downgradeBehaviour": { "value": "FALL_TO_FREE", "description": "FALL_TO_FREE: after grace the vendor gets the same track's Free features. KEEP_UNTIL_REPLACED: keep the Pro features until staff change the plan." },
+    "upgradeProration": { "value": "NONE", "description": "NONE or PRORATE. Used by the purchase flow in slice 5.1b." },
+    "registrationProvisioning": { "value": false, "description": "When true, a new registration gets the Free plan of the chosen track automatically." },
+    "baseMonthlyPaise.handyman_pro": { "value": 49900, "description": "Base monthly-equivalent rate in paise (Rs 499). Price rows are generated from this and the TERM discount rules." },
+    "baseMonthlyPaise.professional_pro": { "value": 99900, "description": "Base monthly-equivalent rate in paise (Rs 999)." },
+    "baseMonthlyPaise.ecommerce_pro": { "value": 149900, "description": "Base monthly-equivalent rate in paise (Rs 1499)." }
+  },
+  "discountRules": [
+    { "type": "TERM", "name": "Quarterly", "percentOff": 0, "conditions": { "termMonths": 3 }, "stackable": false, "status": "PROPOSED" },
+    { "type": "TERM", "name": "Half-yearly", "percentOff": 10, "conditions": { "termMonths": 6 }, "stackable": false, "status": "PROPOSED" },
+    { "type": "TERM", "name": "Annual", "percentOff": 20, "conditions": { "termMonths": 12 }, "stackable": false, "status": "PROPOSED" }
+  ],
+  "taxRates": [
+    { "name": "GST", "ratePercent": 18, "appliesTo": "ALL", "active": true }
+  ]
+}
