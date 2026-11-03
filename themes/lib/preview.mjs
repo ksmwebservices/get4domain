@@ -56,15 +56,20 @@ const SECURITY_HEADERS = {
 function params(url, themes) {
   const q = url.searchParams;
   const themeIds = themes;
-  const theme = themeIds.includes(q.get('theme')) ? q.get('theme') : themeIds[0];
   const category = hasCategory(q.get('category')) ? q.get('category') : 'plumber';
+  // A category is shown in the theme that lists it: by default, and when the chosen theme does not list it.
+  const listed = (t) => loadTheme(t).manifest.categories.includes(category);
+  let theme = themeIds.includes(q.get('theme')) ? q.get('theme') : null;
+  let switchedFrom = null;
+  if (!theme) theme = themeIds.find(listed) ?? themeIds[0];
+  else if (!listed(theme)) { const alt = themeIds.find(listed); if (alt) { switchedFrom = theme; theme = alt; } }
   const lang = q.get('lang') === 'ta' ? 'ta' : 'en';
   const mRaw = (q.get('motion') ?? q.get('m') ?? '').toLowerCase();
   const motion = MOTION_INTENSITIES.find((x) => x.toLowerCase() === mRaw) ?? null;
   const page = PAGES.includes(q.get('page')) ? q.get('page') : 'home';
   const accent = HEX.test(q.get('accent') ?? '') ? q.get('accent') : null;
   const ent = q.get('ent') === 'all' ? 'all' : 'none';
-  return { theme, category, lang, motion, page, accent, ent, reduced: q.get('reduced') === '1', raw: q };
+  return { theme, switchedFrom, category, lang, motion, page, accent, ent, reduced: q.get('reduced') === '1', raw: q };
 }
 const bad = (raw, key, valid) => { const v = raw.get(key); return v !== null && v !== '' && !valid(v); };
 
@@ -136,7 +141,7 @@ function variantsPage(p, themes) {
 <button type="submit">Show</button></form>`;
   const src = `/render?${qs()}`;
   const frame = (w, h, label) => `<figure><figcaption>${label} - ${w}px</figcaption><iframe title="${label} ${w}px" width="${w}" height="${h}" src="${esc(src)}" loading="lazy"></iframe></figure>`;
-  return shell('Variant picker', `<h1>Variant picker</h1>${form}
+  return shell('Variant picker', `<h1>Variant picker</h1>${p.switchedFrom ? `<p class="warn">The category ${esc(p.category)} is not in ${esc(p.switchedFrom)}, so it is shown with ${esc(p.theme)}, the theme that lists it.</p>` : ''}${form}
 <p><strong>${esc(eff.label)}</strong> belongs to family <code>${esc(eff.family)}</code> ("${esc(FAMILIES[eff.family].label)}"), so the layout variant is <code>${esc(ev.id)}</code> and is <em>read only</em> for vendors. Hero: ${esc(ev.hero)}; header: ${esc(ev.header)}; services: ${esc(ev.services)}; card: ${esc(ev.card)}; divider: ${esc(ev.divider)}; decor: ${esc(ev.decor)}; default motion: ${esc(ev.motion)}. Vendors may change only the motion intensity and the accent colour.</p>
 <div class="frames">${frame(360, 700, 'Phone')}${frame(768, 800, 'Tablet')}${frame(1280, 800, 'Desktop')}</div>
 <p class="note"><a href="${esc(src)}">Open the page on its own</a> | <a href="/lint?${esc(new URLSearchParams({ theme: p.theme, category: effCategory }).toString())}">Lint result</a></p>`);
@@ -162,15 +167,18 @@ function perfFor(themeObj, themeId, category) {
 }
 
 function performancePage(themes) {
-  const sections = themes.map((t) => {
-    const themeObj = loadTheme(t);
-    const rows = CATEGORIES.map((c) => {
-      const f = perfFor(themeObj, t, c.id);
-      return `<tr><td><code>${esc(c.id)}</code></td><td>${(f.css.layout / 1024).toFixed(1)} KB / ${(f.css.motion / 1024).toFixed(1)} KB</td><td>${f.images} (${f.lazy} lazy)</td><td>${esc(f.lcp)}</td><td class="${f.risk === 'low' ? 'cell pass' : 'cell fail'}">${esc(f.risk)}${f.noDims ? ` - ${f.noDims} image(s) without size` : ''}${f.unreserved.length ? ` - no reserved space: ${esc(f.unreserved.join(', '))}` : ''}</td></tr>`;
+  const loaded = themes.map((t) => [t, loadTheme(t)]);
+  const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
+  const size = (o, ks) => ks.reduce((n, k) => n + Buffer.byteLength(o.css[k] ?? ''), 0);
+  const summary = loaded.map(([t, o]) => `<tr><td>${esc(t)}</td><td>${esc(o.manifest.tier)}</td><td>${o.manifest.categories.length}</td><td>${Object.keys(o.templates).length}</td><td>${Object.keys(o.presets ?? {}).length}</td><td class="${size(o, ['tokens', 'base', 'print']) < LIMITS.layoutCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['tokens', 'base', 'print']))} of ${LIMITS.layoutCssBytes / 1024} KB</td><td class="${size(o, ['motion']) < LIMITS.motionCssBytes ? 'cell pass' : 'cell fail'}">${kb(size(o, ['motion']))} of ${LIMITS.motionCssBytes / 1024} KB</td></tr>`).join('');
+  const sections = loaded.map(([t, themeObj]) => {
+    const rows = themeObj.manifest.categories.map((id) => {
+      const f = perfFor(themeObj, t, id);
+      return `<tr><td><code>${esc(id)}</code></td><td>${(f.css.layout / 1024).toFixed(1)} KB / ${(f.css.motion / 1024).toFixed(1)} KB</td><td>${f.images} (${f.lazy} lazy)</td><td>${esc(f.lcp)}</td><td class="${f.risk === 'low' ? 'cell pass' : 'cell fail'}">${esc(f.risk)}${f.noDims ? ` - ${f.noDims} image(s) without size` : ''}${f.unreserved.length ? ` - no reserved space: ${esc(f.unreserved.join(', '))}` : ''}</td></tr>`;
     }).join('');
-    return `<h2>${esc(t)}</h2><p class="note">Budgets: layout CSS ${LIMITS.layoutCssBytes / 1024} KB, motion CSS ${LIMITS.motionCssBytes / 1024} KB, page ${LIMITS.htmlPageBytes / 1024} KB. Estimates come from the markup (no browser): LCP is the hero image if there is one, otherwise the main heading.</p><table><tr><th>Category</th><th>CSS size (layout / motion)</th><th>Images</th><th>Estimated LCP element</th><th>Layout shift risk</th></tr>${rows}</table>`;
+    return `<h2>${esc(t)}</h2><p class="note">Estimates come from the markup (no browser): LCP is the hero image if there is one, otherwise the main heading. Layout shift risk counts images without a size and slots without reserved space.</p><table><tr><th>Category</th><th>CSS size (layout / motion)</th><th>Images</th><th>Estimated LCP element</th><th>Layout shift risk</th></tr>${rows}</table>`;
   });
-  return shell('Performance', `<h1>Performance readout</h1>${sections.join('')}`);
+  return shell('Performance', `<h1>Performance readout</h1><h2>Summary</h2><table><tr><th>Theme</th><th>Tier</th><th>Categories</th><th>Pages</th><th>Presets</th><th>Layout CSS (budget ${LIMITS.layoutCssBytes / 1024} KB)</th><th>Motion CSS (budget ${LIMITS.motionCssBytes / 1024} KB)</th></tr>${summary}</table>${sections.join('')}`);
 }
 
 function contrastPage(p, themes) {
@@ -253,7 +261,9 @@ function motionPage(p, themes) {
 
 // ---------------------------------------------------------------- server
 export async function startPreview({ port = 4173 } = {}) {
-  const themes = listThemeIds();
+  const all = listThemeIds();
+  const vendor = listVendorThemeIds();
+  const themes = [...vendor, ...all.filter((t) => !vendor.includes(t))];
   const server = http.createServer((req, res) => {
     const send = (status, body, type = 'text/html; charset=utf-8') => { res.writeHead(status, { 'Content-Type': type, ...SECURITY_HEADERS }); res.end(body); };
     try {

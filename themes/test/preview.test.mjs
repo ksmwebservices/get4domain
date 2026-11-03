@@ -93,6 +93,37 @@ test('entitlements can be switched on in the render and in the variant picker fr
   assert.match(v.body, /Entitlements/);
 });
 
+test('variant picker: a category is shown in its own Standard theme, by default and when the chosen theme does not list it', async () => {
+  const dflt = await get('/variants?category=jewellery');
+  assert.match(dflt.body, /<iframe[^>]+src="\/render\?[^"]*theme=free-shop-lite/, 'default theme for a shop category');
+  assert.match(dflt.body, /product-first/);
+  const sw = await get('/variants?theme=free-practice&category=plumber');
+  assert.match(sw.body, /<iframe[^>]+src="\/render\?[^"]*theme=free-service-pro/, 'switched to the theme that lists the category');
+  assert.match(sw.body, /is not in free-practice/);
+  const own = await get('/variants?theme=free-practice&category=lawyer');
+  assert.match(own.body, /theme=free-practice/);
+  assert.doesNotMatch(own.body, /is not in/);
+});
+
+test('every Standard theme renders its own categories through /render with its preset applied', async () => {
+  for (const [theme, category, pattern] of [['free-service-pro', 'plumber', 'waves'], ['free-practice', 'lawyer', 'diagonal'], ['free-studio', 'gym-yoga', 'rays'], ['free-hospitality', 'hotel-homestay', 'rings'], ['free-shop-lite', 'jewellery', 'rings']]) {
+    const r = await get(`/render?theme=${theme}&category=${category}`);
+    assert.equal(r.status, 200, theme);
+    assert.match(r.body, new RegExp(`data-pattern="${pattern}"`), `${theme}/${category} uses its preset pattern`);
+    assert.match(r.body, /--g4d-pal-primary:#[0-9a-f]{6}/);
+  }
+});
+
+test('performance readout: one table per Standard theme with only its own categories, and a summary of CSS sizes', async () => {
+  const r = await get('/performance');
+  for (const id of ['free-service-pro', 'free-practice', 'free-studio', 'free-hospitality', 'free-shop-lite']) assert.ok(r.body.includes(id), id);
+  assert.match(r.body, /Summary/);
+  const rows = (r.body.match(/<td><code>[a-z0-9-]+<\/code><\/td><td>[\d.]+ KB/g) ?? []).length;
+  const listed = ['free-service-pro', 'free-practice', 'free-studio', 'free-hospitality', 'free-shop-lite'].reduce((n, id) => n + loadTheme(id).manifest.categories.length, 0);
+  const starter = loadTheme('_starter').manifest.categories.length;
+  assert.equal(rows, listed + starter, 'a row per listed category for every theme, no more');
+});
+
 test('performance readout: CSS size, image count, estimated LCP element, layout-shift risk', async () => {
   const r = await get('/performance');
   for (const h of ['CSS size', 'Images', 'Estimated LCP element', 'Layout shift risk']) assert.ok(r.body.includes(h), h);
@@ -144,4 +175,28 @@ test('shots: PNG screenshots at 360, 768 and 1280 px (needs the Playwright alrea
 test('stop: the server closes', async () => {
   await ctx.close();
   await assert.rejects(() => get('/'));
+});
+
+test('shot plan: --all means every Standard theme with the categories it lists; Tamil is a sample of three per theme', async () => {
+  const { shotPlan, tamilSample } = await import('../lib/shots.mjs');
+  const plan = shotPlan({ all: true });
+  assert.deepEqual(plan.map((p) => p.theme).sort(), ['free-hospitality', 'free-practice', 'free-service-pro', 'free-shop-lite', 'free-studio']);
+  assert.deepEqual(Object.fromEntries(plan.map((p) => [p.theme, p.categories.length])), { 'free-hospitality': 4, 'free-practice': 11, 'free-service-pro': 13, 'free-shop-lite': 8, 'free-studio': 5 });
+  assert.equal(plan.reduce((n, p) => n + p.categories.length, 0), 41);
+  const ta = tamilSample(plan);
+  for (const p of ta) { assert.equal(p.categories.length, 3); assert.equal(new Set(p.categories).size, 3); for (const c of p.categories) assert.ok(plan.find((x) => x.theme === p.theme).categories.includes(c)); }
+  assert.equal(ta.length, 5);
+  assert.deepEqual(shotPlan({ theme: 'free-practice', category: 'lawyer' }), [{ theme: 'free-practice', categories: ['lawyer'] }]);
+  assert.deepEqual(shotPlan({ theme: '_starter', category: 'plumber' }), [{ theme: '_starter', categories: ['plumber'] }]);
+});
+
+test('shots by plan: a category in its own theme at three widths', async (t) => {
+  const b = await openBrowser();
+  if (!b.available) { t.skip(b.reason); return; }
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'g4d-shots2-'));
+  try {
+    const files = await takeShots({ browser: b.browser, plan: [{ theme: 'free-shop-lite', categories: ['jewellery'] }], out, widths: [360, 1280] });
+    assert.equal(files.length, 2);
+    assert.ok(files.every((f) => /free-shop-lite[\\/]jewellery[\\/]jewellery-en-home-(360|1280)\.png$/.test(f) && fs.statSync(f).size > 3000));
+  } finally { await b.close(); fs.rmSync(out, { recursive: true, force: true }); }
 });
