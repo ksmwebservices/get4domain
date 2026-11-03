@@ -38,3 +38,10 @@ export function listThemeIds() {
 /** The layout CSS (base + tokens + print) and the motion CSS, as the importer would concatenate them. */
 export const layoutCss = (t) => [t.css.tokens, t.css.base, t.css.print].filter(Boolean).join('\n');
 export const allCss = (t) => [t.css.tokens, t.css.base, t.css.motion, t.css.print].filter(Boolean).join('\n');
+
+/** Themes a vendor may ever be offered: everything in the library except internal kit themes such as _starter. */
+export function listVendorThemeIds() {
+  return listThemeIds().filter((id) => {
+    try { return JSON.parse(fs.readFileSync(path.join(LIBRARY_DIR, id, 'theme.json'), 'utf8')).internal !== true; } catch { return false; }
+  });
+}
