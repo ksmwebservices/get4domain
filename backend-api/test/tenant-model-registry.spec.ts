@@ -1,0 +1,45 @@
+import { Prisma } from '@prisma/client';
+import { VENDOR_SCOPED_MODELS } from '../src/common/tenant/for-tenant';
+
+/**
+ * S53.2 Part A: a CI-level net under the tenant guard for the V3 tables. `VENDOR_SCOPED_MODELS` is derived from the Prisma data model, so a table
+ * with a `vendorId` is scoped the moment it exists; what this test adds is that every V3 table that carries a `vendorId` has been CLASSIFIED by a
+ * person: either tenant data (a vendor's own rows, reachable by vendor routes) or a platform table that only staff read. A new V3 table with a
+ * vendorId that is in neither list fails here, so it cannot slip in unreviewed. The cross-tenant behaviour tests are in plans-tenant.int.spec.ts
+ * and provisioning-tenant.int.spec.ts.
+ */
+const TENANT_V3 = [
+  'V3PlanSubscription', 'V3SubscriptionEvent', 'V3EntitlementOverride', 'V3VendorFlag',   // slice 5.1
+  'V3ClaimToken', 'V3Invite',                                                              // slice 5.3
+];
+/** carry a vendorId only as a back-reference for staff; no vendor route reads them */
+const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob'];
+
+const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
+
+describe('tenant model registry (V3 tables)', () => {
+  it('every V3 model that carries a vendorId is classified as tenant data or platform-only', () => {
+    const unclassified = v3WithVendorId.filter((n) => !TENANT_V3.includes(n) && !PLATFORM_ONLY_WITH_VENDOR_ID.includes(n));
+    expect(unclassified).toEqual([]);
+  });
+
+  it('every classified tenant table exists in the schema and is in VENDOR_SCOPED_MODELS', () => {
+    for (const n of TENANT_V3) {
+      expect(v3WithVendorId).toContain(n);
+      expect(VENDOR_SCOPED_MODELS.has(n)).toBe(true);
+    }
+  });
+
+  it('every classified platform-only table exists in the schema (the list does not rot)', () => {
+    for (const n of PLATFORM_ONLY_WITH_VENDOR_ID) expect(v3WithVendorId).toContain(n);
+  });
+
+  it('every model with a vendorId anywhere in the schema is in VENDOR_SCOPED_MODELS', () => {
+    const all = Prisma.dmmf.datamodel.models.filter((m) => m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
+    expect(all.filter((n) => !VENDOR_SCOPED_MODELS.has(n))).toEqual([]);
+  });
+
+  it('the platform tables without a vendorId (steps) are NOT tenant data', () => {
+    expect(VENDOR_SCOPED_MODELS.has('V3ProvisioningStep')).toBe(false);
+  });
+});

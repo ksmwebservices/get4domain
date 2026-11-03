@@ -48,6 +48,9 @@ model Vendor {
   v3SubscriptionEvents V3SubscriptionEvent[]
   v3EntitlementOverrides V3EntitlementOverride[]
   v3Flags V3VendorFlag[]
+  v3ClaimTokens V3ClaimToken[]
+  v3Invites V3Invite[]
+  v3ProvisioningJobs V3ProvisioningJob[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -4089,4 +4092,162 @@ model V3VendorFlag {
 
   @@unique([vendorId, key])
   @@map("g4d_vendor_flags")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 slice 5.3: provisioning jobs and steps, claim tokens, invites. Additive. No relation to any legacy billing / BOS / commercial table.
+// Design: docs/v3/V3_S3_PROVISIONING.md
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+enum V3JobKind {
+  BUSINESS_FREE_SITE
+}
+
+enum V3JobStatus {
+  QUEUED
+  RUNNING
+  WAITING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum V3StepKey {
+  CREATE_VENDOR
+  ASSIGN_FREE_PLAN
+  CREATE_FREE_SITE_DRAFT
+  CREATE_CLAIM_LINK
+  SEND_INVITE
+}
+
+enum V3StepStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  SKIPPED
+}
+
+enum V3ClaimPurpose {
+  CLAIM
+}
+
+enum V3ClaimStatus {
+  ACTIVE
+  USED
+  REVOKED
+  EXPIRED
+}
+
+enum V3InviteChannel {
+  EMAIL
+}
+
+enum V3InviteMode {
+  SANDBOX
+  LIVE
+}
+
+enum V3InviteStatus {
+  QUEUED
+  SENT
+  FAILED
+  BOUNCED
+}
+
+model V3ProvisioningJob {
+  id             String      @id @default(cuid())
+  kind           V3JobKind   @default(BUSINESS_FREE_SITE)
+  status         V3JobStatus @default(QUEUED)
+  idempotencyKey String      @unique
+  // filled once the vendor step succeeds; a staff-only back-reference (no vendor route reads jobs)
+  vendorId       String?
+  input          Json // validated business details; never a secret or a token
+  currentStep    V3StepKey?
+  attempt        Int         @default(0)
+  maxAttempts    Int         @default(5)
+  nextRunAt      DateTime    @default(now())
+  lockedBy       String?
+  lockedUntil    DateTime?
+  lastErrorCode  String?
+  lastErrorMessage String? // sanitised sentence; never raw provider text
+  createdByType  V3ActorType @default(STAFF)
+  createdById    String?
+  finishedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  vendor Vendor?               @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  steps  V3ProvisioningStep[]
+
+  @@index([status, nextRunAt])
+  @@index([vendorId])
+  @@map("g4d_provisioning_jobs")
+}
+
+model V3ProvisioningStep {
+  id         String       @id @default(cuid())
+  jobId      String
+  stepKey    V3StepKey
+  status     V3StepStatus @default(PENDING)
+  attempts   Int          @default(0)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  outputRef  Json? // ids only
+  errorCode  String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  job V3ProvisioningJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, stepKey])
+  @@map("g4d_provisioning_steps")
+}
+
+model V3ClaimToken {
+  id            String         @id @default(cuid())
+  vendorId      String
+  // SHA-256 (hex) of a 32-byte random token. The raw token exists only inside the invite message at send time.
+  tokenHash     String         @unique
+  purpose       V3ClaimPurpose @default(CLAIM)
+  status        V3ClaimStatus  @default(ACTIVE)
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdByType V3ActorType    @default(SYSTEM)
+  createdById   String?
+  // At most one ACTIVE token per vendor and purpose: "<vendorId>:<purpose>" while ACTIVE, NULL otherwise; the unique index does the rest.
+  activeKey     String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  vendor  Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invites V3Invite[]
+
+  @@index([vendorId, status])
+  @@map("g4d_claim_tokens")
+}
+
+model V3Invite {
+  id                String          @id @default(cuid())
+  vendorId          String
+  channel           V3InviteChannel @default(EMAIL)
+  toAddress         String // stored; masked in every list
+  claimTokenId      String
+  adapterMode       V3InviteMode    @default(SANDBOX)
+  status            V3InviteStatus  @default(QUEUED)
+  providerMessageId String?
+  subject           String
+  bodyPreview       String // the token is masked
+  // The full rendered message, ONLY in sandbox mode (staff and tests read it); never stored for a live send; cleared when the token is used or revoked.
+  sandboxBody       String?
+  sentAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  vendor     Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  claimToken V3ClaimToken @relation(fields: [claimTokenId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([claimTokenId])
+  @@map("g4d_invites")
 }
