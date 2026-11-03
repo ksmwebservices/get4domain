@@ -14,7 +14,8 @@
 | Sample content, 41 categories x English and Tamil, extreme fixtures | `themes/fixtures/` | done; all invented |
 | Preview harness and screenshots | `themes/lib/{preview,shots}.mjs` | done; 127.0.0.1 only |
 | Internal reference theme | `themes/library/_starter/` | passes all rules for all 41 categories, including at six widths in a real browser |
-| Tests | `themes/test/` | 102 tests, all green |
+| Tests | `themes/test/` | 180 tests, all green |
+| Five Standard themes with 41 category presets | `themes/library/free-*`, built from `themes/source` | all pass the whole lint, including the real-browser check at six widths |
 | Category map for the backend importer | `themes/data/category-map.json` | generated from `themes/lib/categories.mjs`, drift-checked, marked as an inference |
 
 ## Decisions taken (each also recorded where it applies)
@@ -43,6 +44,29 @@ All 17 are in the table in `themes/CONTRACT.md` section 2 with the decision for 
 - The Tamil text in `themes/fixtures/data.mjs` was written by me and is plain and short; it should be read by a Tamil speaker before any customer sees a preview built from it. The same applies to the Tamil wording in `render.mjs` (`UI.ta`).
 - Extra-block content in the fixtures is generated per kind (price, place, text, list) from each category's own services; it is deliberately generic.
 
+## Standard themes (THEMES-CC-1)
+
+**What was built.** The five Standard themes (`free-service-pro` 13 categories, `free-practice` 11, `free-studio` 5, `free-hospitality` 4, `free-shop-lite` 8) with a preset for each of the 41 categories, built from `themes/source` by `node themes/cli.mjs build-themes` (a shared base copied into each self-contained package; a test fails if the committed files differ from the build or if the shared copies differ between themes). Each ships home, about, services, gallery, contact, page and item, plus the extras it needs (`doctors`, `courses`, `menu`, `packages`, `properties`). Results: lint PASS for every theme and category with `--browser` (39 rules, English, Tamil, extreme fixtures, entitlements on and off, six widths); layout CSS 29.5 to 30.9 KB of 40, motion CSS 5.1 KB of 6, zips 24 to 34 KB; layout-shift risk low for all 41 renders; the hero image is the estimated LCP element; 168 screenshots (`themes/.shots/standard`).
+
+**Contract changes** (all in `themes/CONTRACT.md`, each with a red test first): category presets (section 9b, the `preset-valid` lint rule, package validation `preset-invalid` and `preset-category`); a theme may list up to 12 fonts (was 4); the palette reaches themes as `--g4d-pal-*` variables (the vendor accent and dark accent replace the preset's); `category-fit-order` follows the preset's order with the lead block first; new bindings `hero.badge`, `ui.why`, `ui.hours`, `ui.orderOnWhatsApp`, `ui.shippingNote` and new lists `products` and `offers`; `<g4d-product-grid limit="N">` (capped at 24; with no products the items are the catalogue).
+
+**Decisions taken.**
+1. Shared parts are copied by a build step, not imported (the package format stays self-contained); partials and pages in a theme's own source beat the shared ones.
+2. Presets are generated from design seeds (hue, saturation, accent shift, font pair, hero pattern, block order, hidden and moved sections) by one palette function and refuse to build if a palette fails contrast; the generated JSON is what the package carries.
+3. A preset gives primary, accent and background only; surface, border and button text are derived by one rule shared by the renderer and the lint, so they cannot disagree.
+4. Starter content in a preset (services, FAQs) is generic, invented, without prices, and only shown when the vendor has none; it uses the same names as the fixtures.
+5. Standard themes use Low motion by default (the manifest says so); hover and reveal effects come from the shared motion kit.
+6. The lint of a theme runs for the categories the theme lists, never for all 41 (Coverage shows a dash for the others).
+7. `--all` for screenshots means every Standard theme with the categories it lists; Tamil is a sample of three per theme.
+8. Looking at screenshots found real layout bugs that the lint cannot see (a phantom grid column that made a phone page 14,560 px tall, a block rendering one letter per line, Tamil headings hyphenated oddly, one giant product per row on a phone); all were fixed in the shared core and are recorded in the log. A page-height sanity check is not part of the lint.
+
+## Open questions for the owner (Standard themes)
+1. The presets' starter FAQs and service names are generic and I wrote the Tamil: a Tamil speaker should read `themes/source/*/presets.mjs` (and the fixtures) before a customer sees them.
+2. The colour palettes (41 hues) are my choice from the category's mood; do you want to review them in the Coverage and Variant picker pages and change any?
+3. Hospitality shows the booking button on the picture and in the contact block only when the booking entitlement is on; the reservation button from the category's call to action is always shown. Is that the intended split?
+4. Should the Free plan really show the WhatsApp button in the header on every theme (it is placed in all five), or only the phone?
+5. When the backend importer is built, should each theme's `presets/` be imported as part of the `ThemePackage` row, or kept as separate preset rows keyed by category?
+
 ## Owner's answers (applied in THEMES-CC-0b)
 
 1. **Category map**: accepted **as an inference for now** (not yet confirmed against the backend). Exported as `themes/data/category-map.json`, marked `"status": "inference"`.
@@ -66,4 +90,6 @@ All 17 are in the table in `themes/CONTRACT.md` section 2 with the decision for 
 5. **Library themes T1 to T5** (the owner reviews this kit first): the five Standard layouts, the nine Premium themes, using the kit.
 6. A real **Tamil review** and a **keyboard and screen-reader pass** of the `_starter` and the platform slots.
 7. **Entitlements in the backend**: compute `{ video, cart, booking, customDomain }` from the vendor's plan (Pro plan: video and custom domain; booking for Handyman and Professional; cart for Ecommerce Pro), pass them to `renderPage`, assign a Standard layout to Free-plan vendors, and let Pro-plan vendors choose any Standard or Premium theme. None of this is in the kit.
-8. **Font hosting**: put the twelve approved fonts (woff2) on the platform's own storage and decide the loading strategy (preload the Latin font; load Tamil only for Tamil pages).
+$&
+9. **Presets in the backend**: store `presets/<categoryId>.json` with each theme package, apply them as the default for a vendor's category (the renderer already does), and teach the settings screen that the vendor's accent, fonts, section order, hidden sections and motion override them.
+10. **Free-plan limits** (1 page, 8 services, 5 gallery images, 6 FAQs) are not enforced by the kit: the platform must, and should assign the Standard theme of the vendor's category.
