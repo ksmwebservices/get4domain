@@ -174,7 +174,24 @@ The variant is set by the category's family and is **read-only** for vendors.
 | `gifts-books` | Ecommerce | `product-first` | split | shop | bento | - | product | curve | tags | Medium | product-first, offer strip marquee |
 <!-- GENERATED:variants:END -->
 
-Where T5 gives no value (for example a divider for home services), the safest value from the same family of choices was used; "minimal motion" for legal and finance is read as `Low`.
+$&
+
+### How a Premium theme implements the nine variants
+
+A theme has **one set of templates**. The renderer puts the variant on the wrapper (`<div class="g4d-theme" data-variant="bold-split" data-hero="split" data-header="bold" data-services="icon-grid" data-card="sharp" data-divider="notch" data-decor="badge-shapes" data-motion="medium">`) and the theme's CSS styles the **same markup** per variant with attribute selectors:
+
+```css
+.g4d-theme[data-variant="bold-split"] .hero { display: grid; grid-template-columns: 1.1fr 1fr; }
+.g4d-theme[data-variant="calm-centered"] .hero { text-align: center; }
+.g4d-theme[data-header="transparent"] .site-header { position: absolute; background: transparent; }
+.g4d-theme[data-card="round"] .card { border-radius: calc(var(--g4d-radius) * 2); }
+```
+
+- `data-variant` is the one hook the lint checks. The others (`data-hero`, `data-header`, `data-services`, `data-card`, `data-divider`, `data-decor`) are the parts of a variant and may be used on their own, so two variants that share a header can share one rule.
+- A Premium theme must have CSS for **every variant that one of its categories uses** (rule `variant-coverage`: at least one selector `[data-variant=<id>]`, quoted or not, in `css/base.css`, `tokens.css` or `motion.css`). A variant that none of its categories uses needs none. Standard themes are not asked for this.
+- An element that only some variants need (a badge, an offer strip, a booking panel) is **in the markup for every variant and hidden by CSS** where it is not wanted (`.v-only { display: none }`, then `[data-variant=...] .v-only { display: block }`). It must not be a second `<img>`: decoration is SVG or CSS, so the picture count (rule `image-budget`) never depends on the variant.
+- `data-motion` is also on the wrapper (`off`, `low`, `medium`, `rich`; the variant sets the default, the vendor's setting overrides it) and drives the shared motion kit (see `MOTION_KIT.md`).
+- Tested by `test/variants.test.mjs` with a minimal Premium fixture theme (the starter plus one variant-only element and one CSS block per variant).
 
 ## 9. Settings a vendor may change
 
@@ -315,7 +332,8 @@ How the rendered rules work: for every category the theme lists (or all 41 with 
 $1
 $1
 $1
-| `image-budget` | the home page of every category, rendered with the Free limits (entitlements off) and with the largest Pro content (entitlements on): at most 12 and at most 19 pictures; exactly one eager hero picture with `fetchpriority="high"`; every other picture lazy; no decorative picture; width and height on every picture |
+$&
+| `variant-coverage` | Premium themes only: every layout variant used by one of the theme's categories has CSS that selects `[data-variant=<id>]` |
 
 ## 12. Not in this kit (follow-ups)
 

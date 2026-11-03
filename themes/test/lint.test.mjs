@@ -68,6 +68,7 @@ const bad = (t) => ({
   'entitlements-render': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<section data-g4d-section="vid" data-g4d-optional="true"><div class="wrap"><g4d-video></g4d-video></div></section></main>') } }) },
   'preset-valid': { theme: { ...t, presets: { plumber: goodPreset('plumber', { fonts: { heading: 'Lora', body: 'Inter' } }) } } },
   'image-budget': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<ul><template data-g4d-each="gallery"><li><img src="{{image.src}}" alt="{{image.alt}}" width="40" height="30" loading="lazy"></li></template></ul><ul><template data-g4d-each="items"><li><img src="{{item.image}}" alt="{{item.name}}" width="40" height="30" loading="lazy"></li></template></ul></main>') } }) },
+  'variant-coverage': { theme: clone(t, { manifest: { tier: 'Premium' } }) },
   'print-stylesheet': { theme: clone(t, { css: { print: '' } }) },
   'category-renders': { theme: clone(t, { templates: { home: t.templates.home.replace('data-block="{{block.key}}"', 'data-x="{{block.key}}"') } }) },
   'category-fit-order': { theme: t, opts: { render: (i) => renderPage({ ...i, content: { ...i.content, blocks: [...(i.content.blocks ?? [])].reverse() } }) } },
@@ -90,7 +91,9 @@ test('the tier is a price class only: no slot rule depends on it', () => {
   const t = starter();
   for (const tier of ['Standard', 'Premium']) {
     const r = lint(clone(t, { manifest: { tier } }));
-    assert.deepEqual(r.findings.map((f) => `${f.rule}:${f.message}`), [], tier);
+    // the only rule that looks at the tier is variant-coverage (a Premium theme must style each variant it uses); it reads CSS, never slots or entitlements
+    assert.deepEqual(r.findings.filter((f) => f.rule !== 'variant-coverage').map((f) => `${f.rule}:${f.message}`), [], tier);
+    assert.equal(r.findings.some((f) => f.rule === 'variant-coverage'), tier === 'Premium', tier);
   }
   const noGated = clone(t, { templates: Object.fromEntries(Object.entries(t.templates).map(([k, v]) => [k, v.replace(/<g4d-(video|cart|booking)[^>]*><\/g4d-\1>/g, '')])) });
   assert.deepEqual(lint(clone(noGated, { manifest: { tier: 'Premium' } })).findings.filter((f) => f.rule === 'slots-required'), [], 'a Premium theme need not place video');

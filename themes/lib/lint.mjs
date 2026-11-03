@@ -12,14 +12,14 @@ import { pageDocument } from './document.mjs';
 import { measureOverflow } from './browser.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, ENTITLEMENTS_ON, ENTITLEMENTS_OFF, freeLimitContent, proMaxContent } from '../fixtures/index.mjs';
-import { categoryById, hasCategory } from './categories.mjs';
+import { categoryById, hasCategory, variantFor } from './categories.mjs';
 import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, GATED_SLOTS, IMAGE_BUDGET, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, APPROVED_TAMIL_FONTS, SYSTEM_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
 
 export const RULE_IDS = [
   'manifest-valid', 'no-script-tag', 'no-inline-handler', 'no-forbidden-element', 'no-seo-output', 'no-external-request', 'iframe-hosts', 'css-hygiene', 'css-scoped',
   'approved-fonts', 'tamil-fonts', 'tokens-defined', 'contrast-tokens', 'contrast-accent', 'one-h1', 'landmarks', 'skip-link', 'language-attr', 'alt-text', 'form-labels',
   'touch-targets', 'responsive-static', 'responsive-browser', 'text-stretch', 'css-budget-layout', 'css-budget-motion', 'reduced-motion', 'hero-visible', 'motion-properties',
-  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render', 'preset-valid', 'image-budget',
+  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render', 'preset-valid', 'image-budget', 'variant-coverage',
 ];
 
 const FORBIDDEN = new Set(['iframe', 'object', 'embed', 'form', 'input', 'select', 'textarea', 'style', 'canvas', 'audio', 'dialog', 'base', 'frame', 'frameset', 'applet', 'noscript']);
@@ -478,6 +478,18 @@ function checkPresets(theme, model, F, state) {
  * content (entitlements on). It may hold at most 12 pictures (<img>) for Free and 19 for Pro. Only the hero picture is eager (exactly one, fetchpriority high); every other
  * picture is loading="lazy" with a width and a height; a decorative picture (alt="" or role="presentation") is not allowed: decoration is inline SVG or CSS.
  */
+/** A Premium theme styles the same markup per layout variant with [data-variant=...] on the wrapper; every variant that one of its categories uses needs CSS. */
+export function checkVariantCoverage(theme, F, categories) {
+  if (theme.manifest?.tier !== 'Premium') return;
+  const css = ['base', 'tokens', 'motion'].map((k) => theme.css?.[k] ?? '').join('\n');
+  const used = new Map();
+  for (const c of categories) { const v = variantFor(c).id; used.set(v, [...(used.get(v) ?? []), c]); }
+  for (const [v, cats] of used) {
+    const re = new RegExp(`\\[data-variant\\s*[~|]?=\\s*["']?${v}["']?\\s*\\]`);
+    if (!re.test(css)) F.add('variant-coverage', 'css/base.css', `no CSS selects [data-variant=${v}] (used by ${cats.slice(0, 3).join(', ')}${cats.length > 3 ? ` and ${cats.length - 3} more` : ''}); a Premium theme must style the variant "${v}" (e.g. .g4d-theme[data-variant="${v}"] .hero { ... })`);
+  }
+}
+
 function checkImages(theme, F, state, categories, opts) {
   const render = opts.render ?? renderPage;
   const modes = [['Free limits', freeLimitContent, ENTITLEMENTS_OFF, IMAGE_BUDGET.free], ['maximum Pro content', proMaxContent, ENTITLEMENTS_ON, IMAGE_BUDGET.pro]];
@@ -526,6 +538,7 @@ export function lintTheme(theme, opts = {}) {
   checkRendered(theme, F, state, categories, opts);
   checkEntitlements(theme, F, state, categories, opts);
   checkImages(theme, F, state, categories, opts);
+  checkVariantCoverage(theme, F, categories);
 
   for (const tag of state.renderedTags) if (!state.touchTags.has(tag)) F.add('touch-targets', 'css/base.css', `no rule gives <${tag}> a minimum height of 44px (e.g. .g4d-theme :is(a, button, summary) { min-height: 44px })`);
 
