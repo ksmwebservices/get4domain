@@ -5,6 +5,8 @@
  */
 const TEST_EMAIL_SUFFIX = '@v3test.invalid';
 const TEST_NAME_PREFIX = 'V3TEST';
+/** Provisioning tests (slice 5.3) key their jobs `v3test-<runId>-...`, so a job whose vendor step never ran is still found. */
+const TEST_JOB_KEY_PREFIX = 'v3test-';
 
 async function findTestVendorIds(prisma, runId) {
   const and = [{ email: { endsWith: TEST_EMAIL_SUFFIX } }, { businessName: { startsWith: TEST_NAME_PREFIX } }];
@@ -27,6 +29,7 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     counts.refreshTokens = (await prisma.authRefreshToken.deleteMany({ where: { accountId: { in: accountIds } } })).count;
   }
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
+  await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
   const steps = [
@@ -45,17 +48,37 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     ['notifications', () => prisma.notification.deleteMany({ where: { recipientId: { in: ids } } })],
     ['teamMembers', () => prisma.teamMember.deleteMany({ where: byVendor })],
     ['vendorPaymentConfigs', () => prisma.vendorPaymentConfig.deleteMany({ where: byVendor })],
+    // the draft site the provisioning tests create (Vendor -> VendorCMS is RESTRICT, so it goes before the vendor)
+    ['vendorCMS', () => prisma.vendorCMS.deleteMany({ where: byVendor })],
     ['vendors', () => prisma.vendor.deleteMany({ where: { id: { in: ids } } })],
   ];
   for (const [name, run] of steps) counts[name] = (await run()).count;
   return counts;
 }
 
+/** Slice 5.3: jobs (their steps cascade), invites and claim tokens of the test vendors, and the audit rows the tests caused. Audit rows have no foreign key, so they are matched by entity id. */
+async function cleanupProvisioning(prisma, vendorIds, runId, counts) {
+  const jobs = await prisma.v3ProvisioningJob.findMany({
+    where: { OR: [...(vendorIds.length ? [{ vendorId: { in: vendorIds } }] : []), { idempotencyKey: { startsWith: `${TEST_JOB_KEY_PREFIX}${runId ?? ''}` } }] },
+    select: { id: true },
+  });
+  const jobIds = jobs.map((j) => j.id);
+  const tokens = vendorIds.length ? await prisma.v3ClaimToken.findMany({ where: { vendorId: { in: vendorIds } }, select: { id: true } }) : [];
+  const tokenIds = tokens.map((t) => t.id);
+  const entityIds = [...jobIds, ...tokenIds, ...vendorIds];
+  if (entityIds.length) counts.v3AuditLog = (await prisma.v3AuditLog.deleteMany({ where: { entityId: { in: entityIds } } })).count;
+  if (vendorIds.length) {
+    counts.v3Invite = (await prisma.v3Invite.deleteMany({ where: { vendorId: { in: vendorIds } } })).count;
+    counts.v3ClaimToken = (await prisma.v3ClaimToken.deleteMany({ where: { vendorId: { in: vendorIds } } })).count;
+  }
+  if (jobIds.length) counts.v3ProvisioningJob = (await prisma.v3ProvisioningJob.deleteMany({ where: { id: { in: jobIds } } })).count;
+}
+
 async function countTestTenants(prisma) {
   return (await findTestVendorIds(prisma)).length;
 }
 
-module.exports = { cleanupTestTenants, countTestTenants, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX };
+module.exports = { cleanupTestTenants, countTestTenants, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX, TEST_JOB_KEY_PREFIX };
 
 // CLI: node scripts/staging/test-tenant-cleanup.js [--count]   (staging only, via the guard)
 if (require.main === module) {
