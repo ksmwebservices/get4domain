@@ -13,6 +13,10 @@ import { generateToken, hashToken, hashesEqual } from './token';
 /** The one answer for every token that cannot be used: unknown, malformed, used, revoked, expired. Same status, same body, so nothing can be learned from it. */
 const invalidPublic = (): NotFoundException => new NotFoundException({ message: 'This link is not valid.', code: 'CLAIM_INVALID' });
 
+/** The address the existing staff site-creation code gives a site that has no owner yet (site+<sub>@sites.get4domain.invalid). Only this exact placeholder domain is refused: other addresses, including synthetic test ones, are real as far as reissue is concerned. */
+const PLACEHOLDER_OWNER_DOMAIN = '@sites.get4domain.invalid';
+export const isPlaceholderOwnerEmail = (email: string): boolean => email.trim().toLowerCase().endsWith(PLACEHOLDER_OWNER_DOMAIN);
+
 export interface ClaimStatus { valid: true; businessName: string; expiresAt: string }
 
 /**
@@ -69,7 +73,7 @@ export class ClaimsService {
     const vendor = await this.claims.vendorContact(vendorId);
     if (!vendor) throw unknownVendor();
     if (await this.claims.hasUsedToken(vendorId)) throw new ConflictException({ message: 'This business has already been claimed.', code: 'CLAIM_INVALID' });
-    if (/\.invalid$/i.test(vendor.email)) throw new BadRequestException('This business has no owner email address to send the link to.');
+    if (isPlaceholderOwnerEmail(vendor.email)) throw new BadRequestException('This business has no owner email address to send the link to.');
 
     const settings = await this.settings.get();
     const now = this.clock();

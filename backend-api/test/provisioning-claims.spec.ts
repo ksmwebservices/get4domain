@@ -117,6 +117,27 @@ describe('reissue() and revoke()', () => {
     await expect(w2.svc.reissue('v1', STAFF)).rejects.toMatchObject({ status: 400 });
     await expect(world().svc.reissue('nope', STAFF)).rejects.toMatchObject({ status: 404, response: { code: 'UNKNOWN_VENDOR' } });
   });
+  it('REGRESSION (staging run): an address that merely ends in .invalid is a real owner address as far as reissue is concerned; only the platform placeholder address is refused', async () => {
+    for (const email of ['owner@v3test.invalid', 'someone@example.invalid']) {
+      const w = world({ vendorEmail: email });
+      const r = await w.svc.reissue('v1', STAFF);
+      expect(r.inviteId).toBeDefined();
+      expect(w.invites.rows[0].toAddress).toBe(email);
+    }
+    const placeholder = world({ vendorEmail: 'site+acme@sites.get4domain.invalid' });
+    await expect(placeholder.svc.reissue('v1', STAFF)).rejects.toMatchObject({ status: 400 });
+    expect(placeholder.invites.rows).toHaveLength(0);
+  });
+
+  it('reissue works after a revoke and after an expiry (only a USED link blocks it)', async () => {
+    const w = world();
+    const a = await issue(w); await w.svc.revoke('v1', STAFF);
+    await expect(w.svc.reissue('v1', STAFF)).resolves.toBeDefined();
+    const b = await issue(w, -1);
+    await expect(w.svc.reissue('v1', STAFF)).resolves.toBeDefined();
+    expect(a.raw).not.toBe(b.raw);
+  });
+
   it('revoke kills the active link, clears the sandbox body and audits; revoking with nothing active is fine', async () => {
     const w = world(); const { raw, id } = await issue(w);
     await w.invites.create({ vendorId: 'v1', channel: 'EMAIL', toAddress: 'a@b.com', claimTokenId: id, adapterMode: 'SANDBOX', subject: 's', bodyPreview: 'p', sandboxBody: `link ${raw}` });
