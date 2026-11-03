@@ -1,0 +1,164 @@
+/**
+ * The entitlement core (S51.4). PURE: no database, no Nest, no clock (the caller passes `now`). It works for ANY plans, features, states and
+ * limits: nothing in here names a price, a limit or a feature. See docs/v3/V3_S1_PLANS_ENTITLEMENTS.md sections 3 to 5.
+ */
+export type FeatureStateName = 'ACTIVE' | 'LIMITED' | 'LOCKED_PREVIEW' | 'HIDDEN';
+export type SubscriptionStatusName = 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED';
+export type EntitlementSource = 'PLAN' | 'OVERRIDE' | 'STATUS';
+export type EntitlementMode = 'LEGACY' | 'V3' | 'UNASSIGNED';
+export type DenyReason = 'FEATURE_LOCKED' | 'FEATURE_HIDDEN' | 'LIMIT_REACHED';
+
+export interface EnginePlan { id: string; key: string; track: string; level: string; status: string }
+export interface EngineCell { state: FeatureStateName; limitValue: number | null; enumValue: string | null; upsellText: string | null }
+export interface EngineSubscription {
+  id: string; planId: string; status: SubscriptionStatusName; termMonths: number | null;
+  startsAt: Date; endsAt: Date | null; graceEndsAt: Date | null;
+}
+export interface EngineOverride {
+  id: string; featureKey: string; state: FeatureStateName; limitValue: number | null; enumValue: string | null;
+  reason: string; expiresAt: Date | null; createdAt: Date;
+}
+export interface EngineSettings { graceDays: number; downgradeBehaviour: string }
+
+export interface EngineInput {
+  now: Date;
+  /** the per-vendor flag v3_plans */
+  flagOn: boolean;
+  subscription: EngineSubscription | null;
+  plans: EnginePlan[];
+  /** plan id -> feature key -> cell */
+  matrix: Map<string, Map<string, EngineCell>>;
+  /** every key of the feature catalogue (so the result lists them all) */
+  featureKeys: string[];
+  overrides: EngineOverride[];
+  settings: EngineSettings;
+  /** how many items the vendor currently has per feature key (only needed to flag overLimit) */
+  usage?: Record<string, number>;
+}
+
+export interface ResolvedFeature {
+  state: FeatureStateName;
+  limit: number | null;
+  enumValue: string | null;
+  upsellText: string | null;
+  overLimit: boolean;
+  source: EntitlementSource;
+}
+export interface ResolvedEntitlements {
+  mode: EntitlementMode;
+  /** the plan whose features apply now (the Free plan after a downgrade) */
+  plan: string | null;
+  /** the plan on the subscription row */
+  subscribedPlan: string | null;
+  track: string | null;
+  level: string | null;
+  subscriptionStatus: SubscriptionStatusName | null;
+  graceWarning: boolean;
+  features: Record<string, ResolvedFeature>;
+}
+export interface CanResult { allowed: boolean; state: FeatureStateName; limit: number | null; reason: DenyReason | null; upsellText: string | null }
+
+const DAY_MS = 86_400_000;
+
+/** Computed from the dates every time, so a vendor never depends on a scheduled job. Only CANCELLED is taken from the stored row. */
+export function effectiveStatus(sub: Pick<EngineSubscription, 'status' | 'endsAt' | 'graceEndsAt'>, now: Date, settings: { graceDays: number }): SubscriptionStatusName {
+  if (sub.status === 'CANCELLED') return 'CANCELLED';
+  if (!sub.endsAt) return 'ACTIVE';
+  if (now.getTime() < sub.endsAt.getTime()) return 'ACTIVE';
+  const graceEnd = sub.graceEndsAt ?? new Date(sub.endsAt.getTime() + Math.max(0, settings.graceDays) * DAY_MS);
+  return now.getTime() < graceEnd.getTime() ? 'GRACE' : 'EXPIRED';
+}
+
+const hidden = (source: EntitlementSource = 'STATUS'): ResolvedFeature => ({ state: 'HIDDEN', limit: null, enumValue: null, upsellText: null, overLimit: false, source });
+
+function finish(cell: { state: FeatureStateName; limitValue: number | null; enumValue: string | null; upsellText: string | null }, source: EntitlementSource, used: number | undefined): ResolvedFeature {
+  const overLimit = cell.state === 'LIMITED' && cell.limitValue !== null && used !== undefined && used > cell.limitValue;
+  return { state: cell.state, limit: cell.limitValue, enumValue: cell.enumValue, upsellText: cell.upsellText, overLimit, source };
+}
+
+export function resolveEntitlements(input: EngineInput): ResolvedEntitlements {
+  const { now, subscription: sub, plans, matrix, featureKeys, overrides, settings, usage } = input;
+  const byId = new Map(plans.map((p) => [p.id, p]));
+  let mode: EntitlementMode = 'V3';
+  let status: SubscriptionStatusName | null = null;
+  let subscribed: EnginePlan | undefined;
+  let effective: EnginePlan | undefined;
+  let fellBack = false;
+
+  if (!sub) {
+    mode = input.flagOn ? 'UNASSIGNED' : 'LEGACY';
+  } else {
+    subscribed = byId.get(sub.planId);
+    status = effectiveStatus(sub, now, settings);
+    effective = subscribed;
+    const lapsed = status === 'EXPIRED' || status === 'CANCELLED';
+    if (lapsed && subscribed && subscribed.level !== 'FREE' && (status === 'CANCELLED' || settings.downgradeBehaviour !== 'KEEP_UNTIL_REPLACED')) {
+      effective = plans.find((p) => p.track === subscribed!.track && p.level === 'FREE');
+      fellBack = true;
+    }
+  }
+
+  // newest non-expired override per feature
+  const live = new Map<string, EngineOverride>();
+  for (const o of overrides) {
+    if (o.expiresAt && o.expiresAt.getTime() <= now.getTime()) continue;
+    const cur = live.get(o.featureKey);
+    if (!cur || o.createdAt.getTime() > cur.createdAt.getTime()) live.set(o.featureKey, o);
+  }
+
+  const planCells = effective ? matrix.get(effective.id) : undefined;
+  const keys = new Set([...featureKeys, ...live.keys()]);
+  const features: Record<string, ResolvedFeature> = {};
+  for (const key of keys) {
+    const o = live.get(key);
+    const cell = planCells?.get(key);
+    if (o) features[key] = finish({ state: o.state, limitValue: o.limitValue, enumValue: o.enumValue, upsellText: cell?.upsellText ?? null }, 'OVERRIDE', usage?.[key]);
+    else if (cell) features[key] = finish(cell, fellBack ? 'STATUS' : 'PLAN', usage?.[key]);
+    else features[key] = hidden('STATUS');
+  }
+
+  return {
+    mode,
+    plan: effective?.key ?? null,
+    subscribedPlan: subscribed?.key ?? null,
+    track: (effective ?? subscribed)?.track ?? null,
+    level: effective?.level ?? null,
+    subscriptionStatus: status,
+    graceWarning: status === 'GRACE',
+    features,
+  };
+}
+
+/** May the vendor use this feature? `currentCount` (how many they already have) is only needed for LIMITED features. */
+export function can(resolved: ResolvedEntitlements, key: string, currentCount?: number): CanResult {
+  const f = resolved.features[key] ?? hidden('STATUS');
+  const base = { state: f.state, limit: f.limit, upsellText: f.upsellText };
+  switch (f.state) {
+    case 'ACTIVE': return { ...base, allowed: true, reason: null };
+    case 'LIMITED':
+      if (f.limit !== null && currentCount !== undefined && currentCount >= f.limit) return { ...base, allowed: false, reason: 'LIMIT_REACHED' };
+      return { ...base, allowed: true, reason: null };
+    case 'LOCKED_PREVIEW': return { ...base, allowed: false, reason: 'FEATURE_LOCKED' };
+    default: return { ...base, allowed: false, reason: 'FEATURE_HIDDEN' };
+  }
+}
+
+export interface LimitError { code: 'FEATURE_LOCKED' | 'LIMIT_REACHED'; upsellText: string | null; state: FeatureStateName; limit: number | null }
+/** null when allowed; otherwise the stable machine code (a HIDDEN feature is reported as FEATURE_LOCKED too). */
+export function assertWithinLimitResult(resolved: ResolvedEntitlements, key: string, currentCount: number): LimitError | null {
+  const r = can(resolved, key, currentCount);
+  if (r.allowed) return null;
+  return { code: r.reason === 'LIMIT_REACHED' ? 'LIMIT_REACHED' : 'FEATURE_LOCKED', upsellText: r.upsellText, state: r.state, limit: r.limit };
+}
+
+export interface RenderEntitlements { video: boolean; cart: boolean; booking: boolean; customDomain: boolean }
+/**
+ * The four booleans the theme kit asks the platform for. Pinned by a test:
+ *   video = site.video ACTIVE; cart = shop.cart ACTIVE; booking = site.booking ACTIVE;
+ *   customDomain = site.custom_domain ACTIVE and a verified domain exists (a later slice supplies that fact; until then it is false).
+ * LIMITED, LOCKED_PREVIEW and HIDDEN are all false.
+ */
+export function toRenderEntitlements(resolved: ResolvedEntitlements, hasVerifiedDomain = false): RenderEntitlements {
+  const on = (key: string): boolean => resolved.features[key]?.state === 'ACTIVE';
+  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: on('site.custom_domain') && hasVerifiedDomain === true };
+}
