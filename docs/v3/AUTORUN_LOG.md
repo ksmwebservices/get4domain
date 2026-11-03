@@ -188,3 +188,31 @@ Nothing was skipped silently. Not done: SEO A6 (title shortening, needs wording)
 | Full | | unit 233/233, staging int 264/264 (9 suites), lint 0 errors, build and verifies exit 0, drift none, RLS-off 0, leftovers 0 |
 
 Honest limit: I could not run the original failing code on CI hardware. "At least 10 repeated runs" was done as 25 + 6 rounds inside the repro plus 4 full wallet-atomic runs, not 10 separate jest runs.
+
+---
+
+# CI-FIX-2 — the slow-link wallet test still failed in CI; pool starvation (P2024) escaped
+
+**Failure:** CI for `d793a9a`, `wallet-atomic.int.spec.ts` line 79 (the slow-link test): expected `BadRequestException`, received `PrismaClientKnownRequestError`. 1 failed, 263 passed.
+
+**Real error code (not guessed):** the test now classifies every rejection and, for anything that is not a success or a clean refusal, fails with the Prisma `name`, `code`, `meta` and `message`. With a starved connection pool (`connection_limit=2`, `pool_timeout=1`, 250 ms added to every query) against the CI-1 code: **18 of 20 rejections were `PrismaClientKnownRequestError` code `P2024`**, meta `{connection_limit: 2, timeout: 1}`, message "Timed out fetching a new connection from the connection pool". CI-1 only classified P2034 and P2028, so P2024 passed straight through. (A GitHub runner has few CPUs, so Prisma's default pool is small; the 20 parallel debits plus the lookups outside the transaction starve it.)
+
+**Fix (`wallet.service.ts`):**
+- Classified as "busy or unreachable, not a balance problem": P2034, P2028, P2024, P1001, P1002, P1017 (known-request and initialization errors both handled).
+- Retried (max 4 attempts, jittered backoff) only when nothing can have been committed (P2034 rolled back; P2024 and P1001 never got a connection; P2028 "unable to start") or when an idempotency key makes a repeat harmless. P1017 and P1002 can happen after a commit, so without a key they are not repeated.
+- Exhausted: `INSUFFICIENT_WALLET_BALANCE` if the balance is short, else 503 `WALLET_BUSY`.
+- A boundary wrapper on `deduct` / `refund` (when the wallet owns the transaction): every Prisma error that is left, including one thrown by the lookups made outside the transaction, becomes 503 `WALLET_BUSY` (retryable class) or a generic 500 `WALLET_ERROR` (anything else), and is logged server side with its code. Non-Prisma errors are not disguised. When the caller passes its own `tx`, its own error handling still applies, unchanged.
+
+**Test (`wallet-atomic.int.spec.ts`):** the slow-link test uses its own client with a small pool and short pool timeout (env `WALLET_TEST_POOL`, `WALLET_TEST_POOL_TIMEOUT`, `WALLET_TEST_LATENCY_MS`; defaults 3 / 5 s / 120 ms). It asserts behaviour, not timing: successes + insufficient + busy = 20; no unclassified rejection; balance never negative; final balance = start minus 10 per success; debit rows = successes; at most 10 successes, and exactly 10 when nothing starved. `WALLET_BUSY` is accepted for a rejection, because pool starvation can legitimately cause it.
+
+**A second finding, in my own S13 code (found by the regression runs):** `account-security.int.spec.ts` "change-password … rejects older access tokens" failed once in 3 full runs and reproduced on the 1st of 6 repeats. Cause: a real one-second hole. The cutoff refused `iat < floor(changedAt)`, so an access token issued in the *same second* as a password change survived the change. Fixed: strict `iat <= floor(changedAt)` in `jwt.strategy.ts`, and password change / reset now return only after the clock has passed the change second (`PasswordService.untilAfterSecondOf`, up to ~1 s on those two rare requests), so every session issued afterwards has a later `iat` and is accepted. Two deterministic tests added (same second refused, next second accepted; fresh session after a change accepted). This is outside the strict wording of CI-FIX-2; I fixed it because it was my bug, a flaky test would have kept CI red, and it was a small real security gap.
+
+| Check | Red | Green |
+|---|---|---|
+| Starved-pool run on the CI-1 code | 18 of 20 raw `P2024` | |
+| Unit `wallet-concurrency-errors.spec.ts` (classification, retries, boundary, lookups, unknown Prisma errors, refund) | 11 of 20 failing | 20/20 |
+| Staging `wallet-atomic` with pool 2, pool_timeout 1 s, 250 ms latency | 1 failed (raw P2024) | 25/25, three times in a row (and 25/25 with pool 1, 400 ms) |
+| Same-second token tests | 3 failed (incl. the formerly flaky one, now deterministic) | 31/31, three times |
+| Full | | unit 245/245; staging integration 266/266 across 9 suites, three complete runs; lint 0 errors; build and verifies exit 0; drift none, RLS-off 0, leftovers 0 |
+
+Disclosure: during the third complete run the command exceeded the tool's 10-minute limit and moved to the background while I started a second command, so two test processes briefly shared the staging database; a leftover count of 20 taken in that window was those live synthetic tenants, and the count was 0 once both finished. The low-pool `wallet-atomic` runs and the leftover check were then repeated on their own.
