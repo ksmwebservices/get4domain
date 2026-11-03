@@ -1,0 +1,22 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48"><span class="brand-name">{{site.name}}</span></a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-cart></g4d-cart>
+    <g4d-action class="btn btn-primary head-cta"></g4d-action>
+  </div>
+</header>
+<main id="main">
+<section class="sec" data-g4d-section="content" data-g4d-label="Item" data-g4d-optional="false">
+  <div class="wrap split">
+    <div class="about-copy"><h1>{{item.name}}</h1><p class="price" data-g4d-if="item.price">{{item.price}}</p><p class="desc" data-g4d-if="item.description">{{item.description}}</p><p><g4d-action class="btn btn-primary"></g4d-action></p></div>
+    <img data-g4d-if="item.image" class="about-img" src="{{item.image}}" alt="{{item.name}}" width="400" height="300">
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="booking" data-g4d-label="Booking" data-g4d-optional="true"><div class="wrap"><g4d-booking></g4d-booking></div></section>
+</main>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-footer variant="columns"></g4d-footer>

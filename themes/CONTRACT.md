@@ -89,7 +89,7 @@ Placed with a custom element; the renderer replaces it with the platform's marku
 |---|---|---|---|
 | `action` | `<g4d-action>` | as built | every theme |
 | `header-nav` | `<g4d-header-nav>` | as built | every theme |
-| `bottom-nav` | `<g4d-bottom-nav>` | as built | optional |
+| `bottom-nav` | `<g4d-bottom-nav>` | as built | every theme |
 | `footer` | `<g4d-footer>` | as built | every theme |
 | `hours` | `<g4d-hours>` | as built | optional |
 | `tabs` | `<g4d-tabs>` | as built | optional |
@@ -229,7 +229,9 @@ Tracks: **Handyman** (13), **Professional** (20), **Ecommerce** (8). Tier eligib
 
 ## 11. Lint rules
 
-Each rule has an id and a red fixture in `themes/test/lint.test.mjs`. Exit code 1 on any failure. Output: a readable report and a JSON report.
+Each rule has an id and a red fixture in `themes/test/lint.test.mjs` (a test fails if a rule has none). Run `node themes/cli.mjs lint <theme-folder> [--category id | --all-categories] [--browser] [--accent #rrggbb]`. Exit code 1 on any failure. Output: a readable report on screen and a JSON report in `themes/.reports/lint.json` (or `--json file`). `--browser` adds `responsive-browser` using the Playwright already on the machine.
+
+How the rendered rules work: for every category the theme lists (or all 41 with `--all-categories`) the lint renders **every template** with the English and the Tamil sample content, the same content stretched 1.6x, and the five extreme fixtures (long name, long list, empty, no images, long text), all through the one renderer, then checks the output. Two conventions follow from that: the home template must draw the `blocks` list with `data-block="{{block.key}}"` (so the category's extra blocks can be found, in order), and a list name may be used directly in `data-g4d-if` (for example `data-g4d-if="faqs"`).
 
 | Id | Checks |
 |---|---|

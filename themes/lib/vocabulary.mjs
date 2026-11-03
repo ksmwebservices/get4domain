@@ -27,7 +27,7 @@ export const V3_BINDINGS = [
   'social.pinterest', 'social.telegram', 'social.whatsappChannel',
   'page.intro',
   // Platform wording in the visitor's language (English or Tamil): the theme never hard-codes it.
-  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact',
+  'ui.skip', 'ui.call', 'ui.whatsapp', 'ui.directions', 'ui.menu', 'ui.readMore', 'ui.viewAll', 'ui.home', 'ui.about', 'ui.gallery', 'ui.contact', 'ui.closeImage', 'ui.faq', 'ui.process',
 ];
 
 export const BINDINGS = [...AS_BUILT_BINDINGS, ...V3_BINDINGS];
@@ -56,7 +56,9 @@ export const V3_REPEATERS = {
   'block.items': { as: 'entry', fields: ['title', 'detail', 'price'] },
 };
 
-export const REPEATERS = { ...AS_BUILT_REPEATERS, ...V3_REPEATERS };
+// Every list also exposes `n` (1-based position, supplied by the renderer) so a theme can build unique ids for a CSS-only lightbox; gallery items also expose `caption`.
+const withN = (r) => ({ ...r, fields: r.fields.includes('n') ? r.fields : [...r.fields, 'n'] });
+export const REPEATERS = Object.fromEntries(Object.entries({ ...AS_BUILT_REPEATERS, ...V3_REPEATERS }).map(([k, r]) => [k, withN(k === 'gallery' ? { ...r, fields: [...r.fields, 'caption'] } : r)]));
 /** Nested lists reachable from a loop variable, e.g. data-g4d-each="group.items". */
 export const NESTED_LISTS = { 'group.items': 'items', 'block.items': 'block.items' };
 
@@ -98,7 +100,7 @@ export const SLOT_BY_TAG = Object.fromEntries(Object.entries(SLOTS).map(([name, 
 export const SLOT_TAGS = Object.keys(SLOT_BY_TAG);
 
 /** Slots every theme must place; Premium themes must also place `video`; product-grid is required for Ecommerce categories. */
-export const REQUIRED_SLOTS_ALL = ['enquiry-form', 'whatsapp-float', 'map', 'reviews', 'social-links', 'open-now', 'share-qr', 'listed-on-badge', 'action', 'header-nav', 'footer'];
+export const REQUIRED_SLOTS_ALL = ['enquiry-form', 'whatsapp-float', 'bottom-nav', 'map', 'reviews', 'social-links', 'open-now', 'share-qr', 'listed-on-badge', 'action', 'header-nav', 'footer'];
 export const REQUIRED_SLOTS_PREMIUM = ['video'];
 
 /** Hosts that may appear in an iframe or a click-to-load video link. Nothing else may be loaded from outside. */
