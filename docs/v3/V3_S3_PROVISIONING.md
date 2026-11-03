@@ -126,6 +126,28 @@ Job detail adds `steps: [{ stepKey, status, attempts, errorCode, outputRef }]`, 
 - D-8 Compensation (rollback of a half-built business) is a manual staff action and is not built.
 - D-9 Retry of a FAILED job resets `attempt` to 0 and keeps DONE steps.
 
-## 11. Differences from the spec
+## 11. Differences from the spec (every one)
 
-(Filled in as the slice is built; see end of file.)
+1. **Role-matrix entries and the route baseline land with the controllers (S53.7), not in S53.2.** The oracle test enumerates real routes and fails on an entry that matches none, so the entries cannot exist before the routes. The order the spec wants (coverage test red before the entries exist) is kept: the oracle was extended first and failed (14 tests), then the controller and the matrix entries made it pass. The one public route went into the baseline in S53.6.
+2. **The vendor is not created through `VendorsService.create`.** The spec says "the existing vendor creation path". That method sends a real welcome email with a plaintext password and grants wallet credit; stop-line 2 forbids the email and an unclaimed business has no use for the credit. The new path (`PrismaBusinessVendors.createForJob`) writes the same `Vendor` row shape that `StarterService.createSite` already writes for staff-made sites (status PENDING, unusable random password hash), plus `source` and `registeredByStaffId`. Registrations through `AuthService.register` are untouched.
+3. **Settings live in `g4d_plan_settings`** (slice 5.1), validated by an additive extension of `validateSettingValue`; defaults in code, no seed rows needed. The wording of the invite is a placeholder.
+4. **`SiteProvisioner.createDraftSite` takes two optional extra fields** (`city`, `phone`) for the starter content. `language` is passed on but not stored: the site tables have no language column (slice 5.4). No `site_doc_v2` add-on row is created because `VendorAddon` is a legacy table (decision D1); whether the renderer needs it is a 5.4 question.
+5. **The sandbox invite keeps the raw token inside `sandboxBody`.** The spec asks for the full message in sandbox mode and also says the raw token never lives in the database. The two cannot both hold; the choice is the narrowest one that satisfies the first: sandbox only (never live), cleared when the token is used, revoked or expired, hidden in production, and every other column holds only a masked preview. Open question for the owner.
+6. **The `/run` endpoint is refused in production unless `provisioningRunnerEnabled` is true** (the spec says "staging and test use").
+7. **Cancel is refused for a RUNNING job whose lease is still valid** (409 `JOB_NOT_RETRYABLE`); the spec does not say. A job whose lease has lapsed can be cancelled.
+8. **Reissue refuses a business that has already claimed (409 `CLAIM_INVALID`) and a business whose email is a placeholder (400).** Not in the spec; both would send a useless or harmful message.
+9. **The claim status route is limited to 20 requests a minute per IP on the `reads` throttler.** The route-level limit on the `default` throttler does nothing for GET requests in this codebase (found by the HTTP test).
+10. **A run that cannot settle fails the job** (fixed message) instead of throwing, so a stuck loop cannot respin forever.
+11. **Duplicate detection blocks** (permanent `DUPLICATE_BUSINESS`); the spec leaves block-or-warn to the owner.
+12. **Phone numbers are stored normalised** (`+91XXXXXXXXXX`); duplicates compare the last ten digits, so old spellings still match.
+13. **Shared infrastructure touched:** `scripts/staging/test-tenant-cleanup.js` (it says to add a model when a test starts creating it), `src/common/throttling.ts` (one rate entry), `src/common/filters/http-exception.filter.ts` (four codes passed through), `src/email/email.service.ts` (one additive method, `sendPlainText`, used only by the guarded live adapter), `src/app.module.ts` (one import). None of these files has uncommitted changes in the owner's folder.
+14. **Test discipline.** Red first was shown for the schema (21 failing tests), the registry, the runner, the steps, the claims (including the HTTP rate limit), the role-matrix oracle (14) and the cleanup check (5). The pure state machine (S53.3) and the invite steps (S53.5) were written together with their code and not run red first.
+15. **The staging steps could not run** (no `.env.staging` in this worktree): migration apply, the three staging suites, the staging gates. See `S53_LOG.md`.
+
+## 12. As built
+
+- Code: `backend-api/src/provisioning/` (core state machine, runner, repository with the `SKIP LOCKED` claim, five steps, claims, invites, settings, admin API, module and providers list). One migration: `20261104100000_v3_provisioning`.
+- Routes: 9 staff (OPERATIONS and SUPER_ADMIN read and write, MARKETING refused) and 1 public.
+- Tests: 649 unit tests in 31 suites (was 467 in 20), 3 staging suites written and not run.
+- Raw SQL: one `$queryRaw` (the claim), all values bound; `npm run verify:raw-sql` passes.
+- Not built (by design): compensation of a half-built business (manual staff action), phone OTP and password setting (5.7), the theme-kit renderer (5.4), the live email adapter (exists, guarded OFF), the renewal and reminder jobs.
