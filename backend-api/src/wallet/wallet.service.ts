@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { BillingGateService, GatedAction } from '../commercial/billing-gate.service';
 import * as crypto from 'crypto';
 import Razorpay from 'razorpay';
@@ -198,17 +198,49 @@ export class WalletService {
     if (amount === 0) return this.getOrCreateWallet(vendorId);
 
     if (opts.tx) return this.debitIn(opts.tx, vendorId, amount, description, service, key);
-    try {
-      return await this.prisma.$transaction((tx) => this.debitIn(tx, vendorId, amount, description, service, key));
-    } catch (e) {
-      // Two requests with the same key raced: the loser rolled back (unique violation) or found the money already spent.
-      // If the winner committed, this is a replay, not a failure.
-      if (key) {
-        const prior = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey: key } });
-        if (prior) return this.replayOf(this.prisma, prior, expected);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.prisma.$transaction((tx) => this.debitIn(tx, vendorId, amount, description, service, key), WalletService.TX_OPTIONS);
+      } catch (e) {
+        // Two requests with the same key raced: the loser rolled back (unique violation) or found the money already spent.
+        // If the winner committed, this is a replay, not a failure.
+        if (key) {
+          const prior = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey: key } });
+          if (prior) return this.replayOf(this.prisma, prior, expected);
+        }
+        if (!WalletService.isConcurrencyError(e)) throw e;          // includes the clean INSUFFICIENT_WALLET_BALANCE from inside the transaction
+        // Safe to run again when nothing can have been written (it never started, or the database rolled it back), or when the key makes a repeat harmless.
+        if ((key || WalletService.nothingCommitted(e)) && attempt < WalletService.MAX_ATTEMPTS) { await this.backoff(attempt); continue; }
+        throw await this.cleanDebitFailure(vendorId, amount);
       }
-      throw e;
     }
+  }
+
+  /** Attempts for a transaction that fails because of contention (many requests queued on one wallet row, or a slow link to the database). */
+  static MAX_ATTEMPTS = 4;
+  static RETRY_BASE_MS = 40;
+  /** Debits on one wallet queue behind its row lock, so a transaction may legitimately wait: more room than Prisma's 2 s / 5 s defaults. */
+  private static readonly TX_OPTIONS = { maxWait: 15_000, timeout: 30_000 };
+
+  /** P2034 = write conflict or deadlock; P2028 = the transaction could not start in time or was closed (timeout). Neither says anything about the balance. */
+  private static isConcurrencyError(e: unknown): e is Prisma.PrismaClientKnownRequestError {
+    return e instanceof Prisma.PrismaClientKnownRequestError && (e.code === 'P2034' || e.code === 'P2028');
+  }
+
+  /** True when this failure proves no write was committed: the database rolled a conflict back, or the transaction never started. */
+  private static nothingCommitted(e: Prisma.PrismaClientKnownRequestError): boolean {
+    return e.code === 'P2034' || /unable to start a transaction/i.test(e.message);
+  }
+
+  private backoff(attempt: number): Promise<void> {
+    const ms = WalletService.RETRY_BASE_MS * attempt + Math.floor(Math.random() * WalletService.RETRY_BASE_MS);
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** The caller never sees a Prisma error: a short balance is INSUFFICIENT_WALLET_BALANCE, anything else is a plain "busy, try again". */
+  private async cleanDebitFailure(vendorId: string, amount: number): Promise<Error> {
+    const wallet = await this.prisma.wallet.findUnique({ where: { vendorId } }).catch(() => null);
+    return wallet && wallet.balance < amount ? new BadRequestException('INSUFFICIENT_WALLET_BALANCE') : new ServiceUnavailableException('WALLET_BUSY');
   }
 
   /**
@@ -235,12 +267,16 @@ export class WalletService {
       return wallet;
     };
     if (opts.tx) return credit(opts.tx);
-    try {
-      return await this.prisma.$transaction(credit);
-    } catch (e) {
-      const raced = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey } });
-      if (raced) return this.replayOf(this.prisma, raced, expected);
-      throw e;
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.prisma.$transaction(credit, WalletService.TX_OPTIONS);
+      } catch (e) {
+        const raced = await this.prisma.walletTransaction.findUnique({ where: { idempotencyKey } });
+        if (raced) return this.replayOf(this.prisma, raced, expected);
+        if (!WalletService.isConcurrencyError(e)) throw e;
+        if (attempt < WalletService.MAX_ATTEMPTS) { await this.backoff(attempt); continue; }      // the key makes a repeat harmless
+        throw new ServiceUnavailableException('WALLET_BUSY');
+      }
     }
   }
 

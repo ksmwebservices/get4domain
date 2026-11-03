@@ -68,6 +68,21 @@ describe('wallet debit and refund (staging database)', () => {
       expect((await read(vendorId)).balance).toBe(0);
     }, 120000);
 
+    it('on a slow link (CI-like latency on every query) 20 parallel debits still give exactly 10 successes and clean refusals, never a Prisma error', async () => {
+      const vendorId = await freshWallet(100);
+      const ms = Number(process.env.WALLET_TEST_LATENCY_MS ?? 120);
+      const slow = prisma.$extends({ query: { $allOperations: async ({ args, query }) => { await new Promise((r) => setTimeout(r, ms)); return query(args); } } });
+      const slowWallet = new WalletService(slow as unknown as PrismaService, {} as InvoicesService);
+      const results = await Promise.allSettled(Array.from({ length: 20 }, (_, i) => slowWallet.deduct(vendorId, 10, `slow ${i}`, 'test_slow')));
+      const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      for (const r of rejected) {
+        expect(r.reason).toBeInstanceOf(BadRequestException);                      // not a PrismaClientKnownRequestError
+        expect((r.reason as BadRequestException).message).toBe('INSUFFICIENT_WALLET_BALANCE');
+      }
+      const w = await read(vendorId);
+      expect({ ok: results.length - rejected.length, balance: w.balance, totalDebited: w.totalDebited }).toEqual({ ok: 10, balance: 0, totalDebited: 100 });
+    }, 180000);
+
     it('mixed amounts in parallel never overdraw: balance is exactly the starting balance minus what succeeded', async () => {
       const vendorId = await freshWallet(100);
       const amounts = [7, 13, 9, 21, 5, 17, 11, 8, 30, 12, 6, 14, 25, 10, 4, 19];

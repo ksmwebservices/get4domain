@@ -221,6 +221,7 @@ export class SettlementService {
    * theme-change counter the CMS enforces) and grants the one-time AI Studio credit exactly once per vendor.
    */
   async grantEntitlements(tx: Prisma.TransactionClient, vendorId: string, planKey: PlanKey, termId: string, start: Date, end: Date, netPaise: number): Promise<void> {
+    if (!planKey) throw new RangeError('Cannot grant entitlements without a plan key');   // reads treat a missing key as "no plan"; granting must not
     const ent = entitlementsFor(planKey);
     let sub = await tx.subscription.findFirst({ where: { vendorId, product: 'DOMAIN_APP' }, orderBy: { createdAt: 'desc' } });
     if (!sub) {
