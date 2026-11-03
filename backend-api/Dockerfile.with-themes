@@ -1,0 +1,32 @@
+# Build context = the REPOSITORY ROOT (not backend-api):  docker build -f backend-api/Dockerfile.with-themes .
+# The theme renderer is built from the shared themes/ folder at image build time (scripts/build-renderer.js). The ordinary backend-api/Dockerfile cannot see
+# ../themes, so its build would fail at the renderer step by design. NOT USED YET: switching docker-compose to this file is an owner decision at deploy time
+# (slice 5.4 deploys nothing). Same runner stage as backend-api/Dockerfile.
+FROM node:20-alpine AS base
+FROM base AS deps
+WORKDIR /repo/backend-api
+COPY backend-api/package.json backend-api/package-lock.json ./
+RUN npm ci
+FROM base AS builder
+WORKDIR /repo
+COPY --from=deps /repo/backend-api/node_modules ./backend-api/node_modules
+COPY backend-api ./backend-api
+COPY themes ./themes
+WORKDIR /repo/backend-api
+RUN npm run build
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+COPY --from=builder /repo/backend-api/dist ./dist
+COPY --from=builder /repo/backend-api/node_modules ./node_modules
+COPY --from=builder /repo/backend-api/package.json ./package.json
+COPY --from=builder /repo/backend-api/prisma ./prisma
+RUN mkdir -p /app/uploads /app/private-uploads && chown -R nestjs:nodejs /app/uploads /app/private-uploads
+USER nestjs
+EXPOSE 3008
+ENV PORT=3008
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:'+(process.env.PORT||3008)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+CMD ["node", "dist/src/main"]
