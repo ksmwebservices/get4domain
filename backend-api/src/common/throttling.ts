@@ -48,6 +48,8 @@ export const RATE = {
   /** V3 claim links: a public token-guessing target. 20 per minute per IP. */
   // targets the "reads" throttler: the "default" one skips GET requests
   claimStatus: { reads: { limit: 20, ttl: 60_000 } },
+  /** V3 public site read (internal consumers: the Next.js app, one IP): roomy, on the "reads" throttler. THROTTLE_TRUSTED_IPS can exempt the app server entirely. */
+  siteRead: { reads: { limit: 300, ttl: 60_000 } },
   /** Provider webhooks: generous (providers retry), but not unlimited. */
   webhook: { default: { limit: 120, ttl: 60_000 } },
   whatsappWebhook: { default: { limit: 300, ttl: 60_000 } },

@@ -31,6 +31,7 @@ const OWNER_ONLY_ROUTES = [
   'POST /domains/connect',           // claims a domain
   'POST /domains/verify',
   'GET /team/members',
+  'PUT /v3/me/site/theme', 'POST /v3/me/site/publish', 'POST /v3/me/site/rollback',   // S54.7: they change what the public sees
   'GET /team/activity',
   // already owner-only before S8-A (regression guard)
   'POST /team/invite', 'PUT /team/members/:id', 'DELETE /team/members/:id',
@@ -48,6 +49,7 @@ const OWNER_ONLY_ROUTES = [
 /** Routes that need a named team area (not owner-only): a member WITHOUT the area is refused. */
 const REQUIRED_MODULE: Record<string, string> = {
   'GET /vendor-payments': 'accounts',
+  'GET /v3/me/site': 'website', 'POST /v3/me/site/build': 'website', 'GET /v3/me/site/preview/:publicationId/:path': 'website',   // S54.7
   'GET /website-themes/mine': 'website',       // S8-B: viewing the theme screen is gated by the website area
 };
 /**

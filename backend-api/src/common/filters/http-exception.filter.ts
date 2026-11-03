@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PLAN_ERROR_CODES } from '../../plans/plans.errors';
 import { PROVISIONING_API_ERROR_CODES } from '../../provisioning/provisioning.errors';
+import { SITE_ERROR_CODES } from '../../site-publish/site.errors';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -112,13 +113,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
         if (typeof v === 'string') extra[k] = v;
       }
       const limit = (exceptionResponse as Record<string, unknown>).limit;
       if (typeof limit === 'number') extra.limit = limit;
+      // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
+      const missing = (exceptionResponse as Record<string, unknown>).missing;
+      if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));
     }
 
     let outMessage: string | string[] = message;

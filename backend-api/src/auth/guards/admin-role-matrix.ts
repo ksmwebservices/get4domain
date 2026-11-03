@@ -83,6 +83,12 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/provisioning/jobs': OPS_AND_SUPER, 'GET /v3/admin/provisioning/jobs': OPS_AND_SUPER, 'GET /v3/admin/provisioning/jobs/:id': OPS_AND_SUPER,
   'POST /v3/admin/provisioning/jobs/:id/retry': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/cancel': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/run': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/claim-link/reissue': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/claim-link/revoke': OPS_AND_SUPER, 'GET /v3/admin/invites': OPS_AND_SUPER,
+
+  // ── V3 slice 5.4: vendors' sites ────────────────────────────────────────────────────────────────────────────────────────
+  // Summaries (the list and one site) are open to all staff; MARKETING never sees html. Every write, and the preview that carries html, is OPERATIONS and SUPER_ADMIN.
+  'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
+  'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
+  'POST /v3/admin/vendors/:id/site/rollback': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path': OPS_AND_SUPER, 'PUT /v3/admin/vendors/:id/site/noindex': OPS_AND_SUPER,
 };
 
 /**

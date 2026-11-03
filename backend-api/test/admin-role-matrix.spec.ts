@@ -50,6 +50,9 @@ const MARKETING_DENIED = [
   'POST /v3/admin/provisioning/jobs', 'GET /v3/admin/provisioning/jobs', 'GET /v3/admin/provisioning/jobs/:id',
   'POST /v3/admin/provisioning/jobs/:id/retry', 'POST /v3/admin/provisioning/jobs/:id/cancel', 'POST /v3/admin/provisioning/jobs/:id/run',
   'POST /v3/admin/vendors/:id/claim-link/reissue', 'POST /v3/admin/vendors/:id/claim-link/revoke', 'GET /v3/admin/invites',
+  // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
+  'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
+  'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
 ];
 const ALL_STAFF_ROUTES = [
   'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
@@ -61,6 +64,7 @@ const ALL_STAFF_ROUTES = [
   'POST /notifications/push',
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
+  'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
 ];
 
 const scanned = scanRoutes(path.resolve(__dirname, '../src')).filter((r) => r.adminGuard === true).map((r) => r.route);
@@ -81,7 +85,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(116);
+    expect(oracle).toHaveLength(124);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
