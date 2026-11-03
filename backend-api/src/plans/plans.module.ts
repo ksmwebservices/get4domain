@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditService } from './admin/audit.service';
 import { FeaturesAdminService } from './admin/features-admin.service';
@@ -15,17 +15,22 @@ import { MePlansController } from './me/me-plans.controller';
 import { MePlansService } from './me/me-plans.service';
 import { PublicPlansController } from './public/public-plans.controller';
 import { PublicPlansService } from './public/public-plans.service';
+import { RegistrationHook } from './registration/registration.hook';
 import { SubscriptionsService } from './subscriptions/subscriptions.service';
 
-/** Plans, tracks and entitlements (slice 5.1). Import this module to use EntitlementsService, SubscriptionsService or @RequiresFeature. */
+/**
+ * Plans, tracks and entitlements (slice 5.1). Global, so EntitlementsService, SubscriptionsService, @RequiresFeature and the RegistrationHook can be injected anywhere
+ * without editing the importing module (the auth module is not touched).
+ */
+@Global()
 @Module({
   imports: [PrismaModule],
   controllers: [PlansAdminController, RulesAdminController, VendorPlansAdminController, PublicPlansController, MePlansController],
   providers: [
     PrismaPlansRepository, { provide: PlansRepository, useExisting: PrismaPlansRepository },
     EntitlementsService, FeatureGuard, AuditService, SubscriptionsService,
-    PlansAdminService, FeaturesAdminService, RulesAdminService, VendorPlansAdminService, PublicPlansService, MePlansService,
+    PlansAdminService, FeaturesAdminService, RulesAdminService, VendorPlansAdminService, PublicPlansService, MePlansService, RegistrationHook,
   ],
-  exports: [EntitlementsService, FeatureGuard, PlansRepository, SubscriptionsService, AuditService],
+  exports: [EntitlementsService, FeatureGuard, PlansRepository, SubscriptionsService, AuditService, RegistrationHook],
 })
 export class PlansModule {}

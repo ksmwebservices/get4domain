@@ -7,6 +7,8 @@ import { RegisterDto } from './dto/register.dto';
 import { VendorsService } from '../vendors/vendors.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
+import { Optional } from '@nestjs/common';
+import { RegistrationHook } from '../plans/registration/registration.hook';
 
 export interface LoginResult {
   accessToken: string;
@@ -33,6 +35,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly vendorsService: VendorsService,
+    @Optional() private readonly v3Registration?: RegistrationHook,
   ) {}
 
   /**
@@ -58,6 +61,9 @@ export class AuthService {
         await this.prisma.vendorAddon.upsert({ where: { vendorId_addonKey: { vendorId: vendor.id, addonKey } }, create: { vendorId: vendor.id, addonKey, enabled: true }, update: { enabled: true } });
       }
     }
+
+    // V3 slice 5.1: the Free plan of the chosen track, only when the plan setting registrationProvisioning is on. It can never block a signup.
+    try { await this.v3Registration?.afterRegister(vendor.id, dto.track); } catch { /* registration continues */ }
 
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
     return {

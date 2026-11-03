@@ -34,4 +34,9 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(['leadspace'])
   product?: 'leadspace';
+
+  @ApiProperty({ required: false, example: 'handyman', description: 'V3 plans: the track the business chooses (handyman, professional, ecommerce). Used only when free-plan provisioning at registration is switched on.' })
+  @IsOptional()
+  @IsIn(['handyman', 'professional', 'ecommerce'])
+  track?: 'handyman' | 'professional' | 'ecommerce';
 }

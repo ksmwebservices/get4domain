@@ -20,6 +20,8 @@ export interface AssignArgs {
 }
 
 const DAY_MS = 86_400_000;
+export const TRACKS = ['handyman', 'professional', 'ecommerce'] as const;
+export type TrackName = (typeof TRACKS)[number];
 
 /**
  * Creates subscriptions and their ledger events. No payments: a subscription is created by staff (source STAFF) or by the registration hook (REGISTRATION).
@@ -32,6 +34,34 @@ export class SubscriptionsService {
   async assignPlan(args: AssignArgs): Promise<V3PlanSubscription> {
     const sub = await this.prisma.$transaction((tx) => this.assignInTx(tx, args));
     this.entitlements.invalidate(args.vendorId);
+    return sub;
+  }
+
+  /**
+   * The registration hook's work: give a new vendor the FREE plan of their track. Idempotent (a vendor that already has any subscription is left alone) and
+   * race-safe (the database allows one current subscription per vendor; the loser of a race gets the winner back). Never charges anything.
+   */
+  async provisionFreeSubscription(vendorId: string, track: string, source: SubscriptionSource = 'REGISTRATION', now?: Date): Promise<V3PlanSubscription> {
+    if (!(TRACKS as readonly string[]).includes(track)) throw new BadRequestException('Unknown track: choose handyman, professional or ecommerce.');
+    const existing = await this.prisma.v3PlanSubscription.findFirst({ where: { vendorId } });
+    if (existing) return existing;
+    const actor: Actor = { type: 'SYSTEM', id: null, ip: null };
+    let sub: V3PlanSubscription;
+    try {
+      sub = await this.prisma.$transaction(async (tx) => {
+        const created = await this.assignInTx(tx, { vendorId, planKey: `${track}_free`, source, actor, reason: 'free plan at registration', now });
+        const v = await tx.vendor.findUnique({ where: { id: vendorId }, select: { id: true, source: true } });
+        if (v && !v.source) await tx.vendor.update({ where: { id: vendorId }, data: { source } });
+        return created;
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        const winner = await this.prisma.v3PlanSubscription.findFirst({ where: { vendorId } });
+        if (winner) return winner;
+      }
+      throw e;
+    }
+    this.entitlements.invalidate(vendorId);
     return sub;
   }
 
