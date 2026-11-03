@@ -37,10 +37,17 @@ model Vendor {
   // account at Phase 5 (buy-now). Filtered out of admin/real views.
   isSandbox              Boolean      @default(false)
   expiresAt              DateTime?
+  // V3 slice 5.1: where the account came from (provenance only; nullable, no behaviour depends on it)
+  source                 String?
+  registeredByStaffId    String?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
   subscriptions Subscription[]
+  v3Subscriptions V3PlanSubscription[]
+  v3SubscriptionEvents V3SubscriptionEvent[]
+  v3EntitlementOverrides V3EntitlementOverride[]
+  v3Flags V3VendorFlag[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -3797,4 +3804,289 @@ model LeadspaceDailyStat {
   @@unique([profileId, day])
   @@index([vendorId, day])
   @@map("g4d_leadspace_daily_stats")
+}
+
+// ============================================================================================================================
+// V3 slice 5.1: plans, tracks and entitlements. ALL ADDITIVE. Model and enum names carry a V3 prefix because Plan, SubStatus and others already exist;
+// the table names (@@map) are the ones fixed by the slice spec. No relation to any legacy billing, BOS, commercial or menu-gating model (owner decision D1).
+// Every price, limit, state and rule is DATA edited by an admin; nothing is defined in code.
+// ============================================================================================================================
+enum V3PlanTrack {
+  HANDYMAN
+  PROFESSIONAL
+  ECOMMERCE
+}
+
+enum V3PlanLevel {
+  FREE
+  PRO
+}
+
+enum V3PlanStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum V3PriceStatus {
+  PROPOSED
+  APPROVED
+}
+
+enum V3FeatureKind {
+  BOOLEAN
+  LIMIT
+  ENUM
+}
+
+enum V3FeatureState {
+  ACTIVE
+  LIMITED
+  LOCKED_PREVIEW
+  HIDDEN
+}
+
+enum V3DiscountType {
+  TERM
+  PROMO
+  MIGRATION
+}
+
+enum V3SubscriptionStatus {
+  ACTIVE
+  GRACE
+  EXPIRED
+  CANCELLED
+}
+
+enum V3SubscriptionSource {
+  REGISTRATION
+  SELF
+  STAFF
+  MIGRATION
+  PROMO
+}
+
+enum V3ActorType {
+  SYSTEM
+  STAFF
+  VENDOR
+}
+
+model V3Plan {
+  id          String       @id @default(cuid())
+  key         String       @unique // handyman_free, handyman_pro, professional_free, professional_pro, ecommerce_free, ecommerce_pro
+  track       V3PlanTrack
+  level       V3PlanLevel
+  name        String
+  description String?
+  status      V3PlanStatus @default(DRAFT)
+  isPublic    Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  prices        V3PlanPrice[]
+  features      V3PlanFeature[]
+  subscriptions V3PlanSubscription[]
+
+  @@unique([track, level])
+  @@map("g4d_plans")
+}
+
+model V3PlanPrice {
+  id            String        @id @default(cuid())
+  planId        String
+  termMonths    Int // 3, 6, 12 (1 only while the setting allowMonthly is true)
+  amountPaise   Int
+  currency      String        @default("INR")
+  taxInclusive  Boolean       @default(false)
+  status        V3PriceStatus @default(PROPOSED)
+  effectiveFrom DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  plan V3Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, termMonths, effectiveFrom])
+  @@index([planId])
+  @@map("g4d_plan_prices")
+}
+
+model V3Feature {
+  id          String        @id @default(cuid())
+  key         String        @unique // dotted, e.g. site.video
+  name        String
+  group       String
+  kind        V3FeatureKind @default(BOOLEAN)
+  unit        String?
+  description String?
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  planFeatures V3PlanFeature[]
+  overrides    V3EntitlementOverride[]
+
+  @@map("g4d_features")
+}
+
+model V3PlanFeature {
+  id          String         @id @default(cuid())
+  planId      String
+  featureKey  String
+  state       V3FeatureState @default(HIDDEN)
+  limitValue  Int?
+  enumValue   String?
+  upsellText  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  plan    V3Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature V3Feature @relation(fields: [featureKey], references: [key], onDelete: Restrict)
+
+  @@unique([planId, featureKey])
+  @@index([featureKey])
+  @@map("g4d_plan_features")
+}
+
+model V3TaxRate {
+  id          String   @id @default(cuid())
+  name        String
+  ratePercent Decimal  @db.Decimal(6, 3)
+  appliesTo   String   @default("ALL")
+  active      Boolean  @default(true)
+  validFrom   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("g4d_tax_rates")
+}
+
+model V3DiscountRule {
+  id             String         @id @default(cuid())
+  type           V3DiscountType
+  name           String
+  percentOff     Decimal?       @db.Decimal(6, 3)
+  amountOffPaise Int?
+  conditions     Json           @default("{}")
+  validFrom      DateTime       @default(now())
+  validTo        DateTime?
+  stackable      Boolean        @default(false)
+  active         Boolean        @default(true)
+  status         V3PriceStatus  @default(PROPOSED)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([type, active])
+  @@map("g4d_discount_rules")
+}
+
+model V3PlanSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  valueJson   Json
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("g4d_plan_settings")
+}
+
+model V3PlanSubscription {
+  id                String               @id @default(cuid())
+  vendorId          String
+  planId            String
+  status            V3SubscriptionStatus @default(ACTIVE)
+  termMonths        Int? // null for a FREE plan
+  startsAt          DateTime             @default(now())
+  endsAt            DateTime?
+  graceEndsAt       DateTime?
+  source            V3SubscriptionSource
+  priceSnapshotJson Json                 @default("{}")
+  createdByType     V3ActorType          @default(SYSTEM)
+  createdById       String?
+  // At most one CURRENT (ACTIVE or GRACE) subscription per vendor: equals vendorId while current, NULL otherwise; the unique index does the rest.
+  currentVendorId   String?              @unique
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plan   V3Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId, status])
+  @@index([planId])
+  @@map("g4d_plan_subscriptions")
+}
+
+model V3SubscriptionEvent {
+  id             String      @id @default(cuid())
+  subscriptionId String?
+  vendorId       String
+  type           String // ASSIGNED, CHANGED, CANCELLED, FREE_PROVISIONED
+  fromPlanId     String?
+  toPlanId       String?
+  reason         String?
+  actorType      V3ActorType @default(SYSTEM)
+  actorId        String?
+  at             DateTime    @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, at])
+  @@index([subscriptionId])
+  @@map("g4d_subscription_events")
+}
+
+model V3EntitlementOverride {
+  id                String         @id @default(cuid())
+  vendorId          String
+  featureKey        String
+  state             V3FeatureState
+  limitValue        Int?
+  enumValue         String?
+  reason            String
+  expiresAt         DateTime?
+  createdByStaffId  String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  vendor  Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  feature V3Feature @relation(fields: [featureKey], references: [key], onDelete: Restrict)
+
+  @@index([vendorId, featureKey])
+  @@index([expiresAt])
+  @@map("g4d_entitlement_overrides")
+}
+
+model V3AuditLog {
+  id         String      @id @default(cuid())
+  actorType  V3ActorType @default(STAFF)
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  beforeJson Json?
+  afterJson  Json?
+  ip         String?
+  at         DateTime    @default(now())
+
+  @@index([entityType, entityId, at])
+  @@index([at])
+  @@map("g4d_audit_logs")
+}
+
+model V3VendorFlag {
+  id                 String   @id @default(cuid())
+  vendorId           String
+  key                String // v3_plans
+  enabled            Boolean  @default(false)
+  updatedByStaffId   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, key])
+  @@map("g4d_vendor_flags")
 }
