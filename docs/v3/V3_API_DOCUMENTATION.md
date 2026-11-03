@@ -63,3 +63,33 @@ Design and examples: `V3_S3_PROVISIONING.md` section 8. Extra error codes (passe
 | GET /v3/admin/invites | invites, addresses masked; the sandbox message only outside production |
 
 9 staff routes and 1 public route. Settings (edited through `PUT /v3/admin/plan-settings/:key`): `provisioningRunnerEnabled`, `provisioningMaxAttempts`, `provisioningBackoffSeconds`, `claimLinkExpiryDays`, `inviteAdapterMode`, `publicAppUrl`, `inviteSubjectTemplate`, `inviteBodyTemplate`.
+
+## Slice 5.4: theme renderer, SEO layer, publish
+
+Design and examples: `V3_S4_RENDERER_PUBLISH.md` section 8. Extra error codes (passed through the error filter): `THEME_INVALID` (400), `THEME_LOCKED` (403), `SITE_BUDGET_EXCEEDED` (422), `PUBLISH_BLOCKED` (409, with `missing: [{code, label}]`), `PUBLICATION_NOT_FOUND` (404, also for another vendor's id). A plan lock is the existing `FEATURE_LOCKED`.
+
+### Vendor (JWT; team members need the website area; theme, publish and rollback are owner-only)
+| Method and path | What |
+|---|---|
+| GET /v3/me/site | settings, current and newest publication, what is missing for search engines, allowed themes (no html) |
+| PUT /v3/me/site/theme | `{ themeId }`, entitlement checked (owner) |
+| POST /v3/me/site/build | build a preview; `{ themeId? }`; returns `{ publication, reused }` |
+| POST /v3/me/site/publish | `{ publicationId }` (owner) |
+| POST /v3/me/site/rollback | `{ toVersion }`, needs version history on the plan (owner); creates a new version |
+| GET /v3/me/site/preview/:publicationId/:path | one stored page, path URL-encoded (`%2Fabout`); `X-Robots-Tag: noindex, nofollow, noarchive`, `Cache-Control: no-store` |
+
+### Staff (AdminGuard + role matrix)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/admin/sites | all staff | sites of all vendors, summaries only |
+| GET /v3/admin/vendors/:id/site | all staff | one site's summary (no html) |
+| PUT /v3/admin/vendors/:id/site/theme, POST .../site/build, POST .../site/publish, POST .../site/rollback | OPERATIONS, SUPER_ADMIN | the same actions on behalf of a vendor |
+| PUT /v3/admin/vendors/:id/site/noindex | OPERATIONS, SUPER_ADMIN | `{ forceNoindex }`; a live site is rebuilt and republished at once |
+| GET /v3/admin/vendors/:id/site/preview/:publicationId/:path | OPERATIONS, SUPER_ADMIN | one stored page (html); MARKETING is refused |
+
+### Public (internal, read-only, rate limited 300 per minute per IP)
+| Method and path | What |
+|---|---|
+| GET /v3/public/site/by-host?host=&path=&lang= | the PUBLISHED page as html with ETag (the page sha256), 304 on `If-None-Match`, cache and robots headers; one plain 404 for every miss |
+
+15 new routes. Nothing here exposes a site on a real host.

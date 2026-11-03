@@ -30,7 +30,7 @@ How it works: `backend-api/scripts/build-renderer.js` starts from the kit entry 
 - **ContentSource port.** `load(vendorId)` returns plain data (vendor, the published-plus-draft CMS fields, items, claim state). The Prisma implementation reads `Vendor`, `VendorCMS` (published columns with the `draft` overlay, via the existing `overlayDraft`), `VendorProduct` and the claim tokens. The mapping to the renderer's input (`content`, `settings`, `vendor`, `host`) is a pure function with fixtures. Slice 5.5 replaces the source; the port stays small.
 - **Category.** The kit's category id is taken from the vendor's industry / pack key through the kit's category map (`packKey` to category, first match); a vendor with none, or an unknown one, cannot be built (`PUBLISH_BLOCKED`, missing `CATEGORY`).
 - **Default theme.** The five Standard themes list disjoint categories that together cover all 41, so the default for a category is the one theme that lists it. This is derived from the theme manifests, not invented.
-- **Theme resolution.** Stored choice in `g4d_site_settings`, else the category default. The plan feature `site.themes` decides: `assigned` (Free) allows only the category default, `library` (Pro) allows any vendor theme that lists the vendor's category. A theme the plan does not allow is refused with `FEATURE_LOCKED` and the plan's upsell text; an unknown theme id or one that does not list the category is `THEME_INVALID`; an `internal` theme (`_starter`) is `THEME_LOCKED`.
+- **Theme resolution.** Stored choice in `g4d_site_settings`, else the category default. The plan feature `site.themes` decides: `assigned` (Free) allows only the category default, `library` (Pro) allows any vendor theme designed for the vendor's TRACK (the kit's `tracks` field). The five Standard themes list disjoint categories, so a category rule would leave every Pro vendor with no choice; by track, Professional vendors get three themes and Handyman and Ecommerce vendors one each until more themes exist. A theme the plan does not allow is refused with `FEATURE_LOCKED` and the plan's upsell text; a theme not designed for the vendor's track is `THEME_LOCKED`; an unknown id or the internal `_starter` is `THEME_INVALID`. A stored choice the plan no longer allows (a downgrade) falls back to the default on a build with a `theme-fallback` note, and a publish of such a snapshot is refused.
 - **Entitlements input.** `toRenderEntitlements(resolved, hasVerifiedDomain)` from slice 5.1 (`hasVerifiedDomain` is false until slice 5.6). Languages: Tamil pages are rendered only when `site.language_ta` is ACTIVE and the site setting asks for it. Motion intensity is clamped: Free sites are at most LOW (no plan feature names a motion level, so this is a documented platform rule), Pro sites any level.
 - **Rollback** needs `site.revisions` ACTIVE (Free shows it as a locked preview), publishing does not.
 
@@ -84,7 +84,7 @@ Size guards: a page above the contract budget (100 KB) or the stylesheet above 4
 
 - **SiteBuildService.build(vendorId, {themeId?, actor})**: resolves settings and theme, loads content, renders all pages for all enabled languages, builds the head, sitemap, robots and stylesheet, checks the budgets and the warning thresholds, writes a `DRAFT_PREVIEW` publication. Idempotent: if the newest publication has the same `themeHash`, `contentHash` and settings, it is returned and nothing is written. Warnings that make a build fail (`BLOCKING_WARNINGS`): `missing-template:*`, `unknown-category`, `missing:host.siteUrl`, `preset-ignored:invalid`. Other warnings (a vendor setting ignored, an empty optional field) are stored and shown, not blocking.
 - **PublishService.publish(publicationId, actor)**: one transaction under `advisoryXactLock('site-publish:' + vendorId)`: re-checks the publication (hard minimums, budgets, entitlements), moves the previous PUBLISHED to SUPERSEDED, sets this one PUBLISHED with `currentVendorId`, writes an audit row and a site event. **rollback(vendorId, toVersion, actor)** copies the chosen older snapshot into a new version (status PUBLISHED, `rolledBackFromVersion` set, the superseded one keeps its history) in the same locked transaction.
-- A concurrent double publish gives one PUBLISHED: the second waits for the lock, then finds a different current row and the database unique rule keeps one.
+- A concurrent double publish gives one PUBLISHED: the second waits for the lock, finds the first already done, and the database unique rule keeps one. The checks that read other tables (plan, content) run just BEFORE the locked transaction, not inside it, so two overlapping publishes cannot each hold a pooled connection while waiting for a second one; the row's status is read again inside the lock, which is what makes the transition safe.
 
 State machine (text):
 
@@ -141,6 +141,33 @@ Additive error codes (passed through the error filter; `PUBLISH_BLOCKED` carries
 - D-7 Free motion is clamped to LOW by a platform rule.
 - D-8 Hours: `VendorCMS.businessHours` is free text, the renderer wants structured rows. The adapter does not guess; hours stay empty until slice 5.5 supplies structure.
 
-## 11. Differences from the spec
+## 11. Differences from the spec (every one)
 
-(Completed at the end of the slice, section 12.)
+1. **Role-matrix entries and the route baseline land with the controllers (S54.7), not in S54.2**, as in slice 5.3: the oracle enumerates real routes. The oracle was extended first and failed, then the controllers and entries made it pass.
+2. **Theme choice is by track, not by category** (section 3). The spec says "check the plan's site.themes entitlement"; the entitlement says "assigned" or "library", and the library has no second theme for any category.
+3. **A fourth table, `g4d_site_events`**, for "a site event"; and `g4d_site_publication_pages` also carries `vendorId` (so the tenant guard scopes it) and `g4d_site_settings` a `forceNoindex` column (the staff switch). `g4d_site_publications` also stores `settingsHash`, `indexHeader`, `languages`, `totalBytes` and `rolledBackFromVersion`.
+4. **The stylesheet is one shared stored file** (`/assets/site.css`), not repeated in every page; `/sitemap.xml` and `/robots.txt` are stored the same way, in the pages table.
+5. **English is always built; Tamil only when the plan has `site.language_ta` and the setting asks for it.** A Tamil-only setting is treated as "en,ta"; on Free the Tamil pages are left out with a `language-locked` note, not an error.
+6. **Hours are not mapped**: the legacy document holds free text, the renderer wants rows (decision D-8). Nothing is guessed.
+7. **Starter (sample) prices and quotes are hidden**; the vendor's own prices still show in the page body and never in any SEO text.
+8. **Description text is composed from the vendor's own sentences** with repeats and unsafe sentences dropped, not taken from the renderer's joined tagline and subtitle (found by reading real output). The About heading uses the kit's own wording with the vendor's name.
+9. **Publish does not refuse an incomplete site**; it publishes it as noindex (decision D-4). Hard minimums that block: business name and category. Renderer warnings that block are `missing-template`, `unknown-category`, `missing:host`, `preset-ignored:invalid`.
+10. **The preview path is the URL-encoded last segment** (`/v3/me/site/preview/:publicationId/%2Fabout`), which matches the spec's `/:publicationId/:path` and needs no wildcard route. The stylesheet link inside a preview page is pointed at the preview route of the same publication so the page is styled; the stored snapshot is not changed. Previews carry a Content-Security-Policy.
+11. **The public by-host route returns the raw page** (not the JSON envelope) with ETag, 304, cache and robots headers, and the same plain 404 for every miss including bad input.
+12. **`siteDraftBuilderMode` defaults to `legacy` in code**; the spec says "default renderer on staging only if tests pass". The staging tests could not run (no `.env.staging`), so the owner switches staging to `renderer` after they pass (see `S54_LOG.md`). In renderer mode the city is written into the DRAFT address when the vendor has none.
+13. **Validation before the locked transaction**, not inside it (section 7).
+14. **A staff noindex switch rebuilds and republishes** a live site at once so the served page matches; a rollback to a snapshot that is indexable while the switch is on is blocked (`PUBLISH_BLOCKED`, `FORCE_NOINDEX`).
+15. **Free motion is limited to LOW** by a platform rule (no plan feature names a motion level).
+16. **`themes/.gitattributes` pins LF** for the kit: on a Windows checkout with `core.autocrlf=true` six of the kit's byte-for-byte tests failed (S54.0). No kit file or test was changed.
+17. **`backend-api/Dockerfile.with-themes`** is documented and unused; the existing Dockerfile cannot see `../themes` and its build fails loudly at the renderer step, by design.
+18. **The kit's `listed-on-badge` slot** (a link to get4domain.com) is drawn on every plan: the renderer has no entitlement that turns it off.
+19. **Test discipline.** Red first was shown for the schema, the renderer service and single-copy test, the content adapter, the description and About-heading defects, the role-matrix oracle and the API, and the provisioning seam. The first SEO suite, the build/publish suite and the static isolation suite were written together with their code and not run red first.
+20. **The staging steps could not run** (no `.env.staging`): migration apply, the three staging suites, the staging gates. See `S54_LOG.md`.
+
+## 12. As built
+
+- Code: `backend-api/src/site-publish/` (renderer loader and service, content port and mapping, theme resolution, SEO layer, indexing rule, build, publish, rollback, settings, preview, public read, three controllers, module) and `backend-api/src/provisioning/site/` (the mode switch and the renderer draft builder). One migration: `20261105100000_v3_site_publish`. One build script: `backend-api/scripts/build-renderer.js`.
+- Routes: 6 vendor, 8 staff, 1 public.
+- Tests: 839 backend unit tests in 42 suites (was 651 in 31 after the merge), the theme kit's 255, 3 staging suites written and not run.
+- Not built (by design): exposing any site on a real host, custom domains (5.6), content structure for hours and richer content (5.5), the vendor dashboard screens, a Premium theme set.
+
