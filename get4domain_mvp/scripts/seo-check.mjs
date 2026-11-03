@@ -305,6 +305,18 @@ check('links', 'sitemap hygiene: no invented lastmod/priority/changefreq (a requ
   ok(!/<priority>|<changefreq>/.test(r.body), 'sitemap still has priority/changefreq');
   ok(!r.body.includes('<lastmod>' + today), 'sitemap lastmod is today (the request time), not a real modification date');
 });
+/** every .ts/.tsx file under src, as [relative path, text] */
+function sourceFiles(dir = path.join(ROOT, 'src')) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? sourceFiles(path.join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [[path.relative(ROOT, path.join(dir, e.name)).replace(/\\/g, '/'), fs.readFileSync(path.join(dir, e.name), 'utf8')]] : []));
+}
+check('links', 'no internal link points at a retired address (/products, /digital-growth): they only redirect, so a link costs a hop and passes less to the target', async () => {
+  const hits = [];
+  for (const [file, text] of sourceFiles()) {
+    if (file === 'next.config.ts') continue;
+    for (const m of text.matchAll(/(?:href\s*[=:]\s*\{?\s*|path:\s*|push\(\s*|to=)["'`](\/(?:products|digital-growth))(?:["'`/?#])/g)) hits.push(file + ' -> ' + m[1]);
+  }
+  ok(!hits.length, 'links to a retired address: ' + hits.slice(0, 6).join(', '));
+});
 check('links', 'createPageMetadata requires its path argument (type) and refuses an empty or relative one (runtime)', async () => {
   const src = fs.readFileSync(path.join(ROOT, 'src/lib/metadata.ts'), 'utf8');
   ok(/\n\s*path: string;/.test(src) && !/path\?:/.test(src), 'path is still optional in PageMetadataOptions'); ok(!/path = ''/.test(src), 'path still defaults to the home page');

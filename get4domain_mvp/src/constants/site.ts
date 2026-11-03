@@ -34,21 +34,21 @@ export const siteConfig = {
 };
 
 export const navLinks = [
-  { label: 'Products', href: '/products' },
+  { label: 'Features', href: '/features' },
   { label: 'Industries', href: '/industries' },
   { label: 'DomainApp', href: '/domain-app' },
-  { label: 'LeadSpace', href: '/leadspace' },
+  { label: 'Free Business Page', href: '/leadspace' },
   { label: 'Pricing', href: '/pricing' },
   { label: 'Contact', href: '/contact' },
 ];
 
 export const routes = [
   { path: '/', title: 'Home', description: 'Professional business launch made easy.' },
-  { path: '/products', title: 'Products', description: 'DomainApp and Managed Ads — two powerful products for Indian SMBs.' },
+  { path: '/features', title: 'Features', description: 'What you get with a Get4Domain business website.' },
   { path: '/industries', title: 'Industries', description: 'Choose from 20+ industry-specific solutions.' },
-  { path: '/domain-app', title: 'DomainApp', description: 'Complete Business Operating System for Indian SMBs.' },
-  { path: '/leadspace', title: 'LeadSpace', description: 'A free landing page, customers verified on WhatsApp, and you pay only for those who verify.' },
-  { path: '/pricing', title: 'Pricing', description: 'Transparent pricing for DomainApp and Managed Ads.' },
+  { path: '/domain-app', title: 'DomainApp', description: 'An industry website with business tools for Indian businesses.' },
+  { path: '/leadspace', title: 'Free Business Page', description: 'A free landing page where customers confirm on WhatsApp.' },
+  { path: '/pricing', title: 'Pricing', description: 'Plans and pricing for Indian businesses.' },
   { path: '/portfolio', title: 'Portfolio', description: 'Businesses launched on Get4Domain.' },
   { path: '/how-it-works', title: 'How It Works', description: 'From inquiry to live business in days.' },
   { path: '/contact', title: 'Contact', description: 'Talk to our team.' },

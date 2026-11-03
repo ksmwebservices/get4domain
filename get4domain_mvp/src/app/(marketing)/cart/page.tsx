@@ -65,7 +65,7 @@ export default function CartPage() {
                     <div className="border-t border-slate-100 pt-3 flex justify-between"><span className="font-bold text-slate-900">Total</span><span className="text-lg font-bold text-primary-600">₹{total.toLocaleString('en-IN')}</span></div>
                   </div>
                   <Link href="/checkout" className="block mt-6"><Button size="lg" fullWidth rightIcon={<ArrowRight className="h-4 w-4" />}>Proceed to Checkout</Button></Link>
-                  <Link href="/digital-growth" className="block mt-3"><Button size="md" variant="outline" fullWidth>Add More Services</Button></Link>
+                  <Link href="/leadspace" className="block mt-3"><Button size="md" variant="outline" fullWidth>Add More Services</Button></Link>
                 </div>
               </div>
             </div>
