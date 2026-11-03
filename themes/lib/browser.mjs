@@ -96,8 +96,9 @@ export async function measureOverflow(browser, html, widths) {
   return out;
 }
 
-export async function screenshot(browser, html, file, { width, height = 900, fullPage = true }) {
-  const ctx = await browser.newContext({ viewport: { width, height }, javaScriptEnabled: false });
+// Reduced motion is ON for review pictures: a full-page capture never scrolls, so scroll-driven reveals would stay hidden. The static layout is what is reviewed here.
+export async function screenshot(browser, html, file, { width, height = 900, fullPage = true, reducedMotion = 'reduce' }) {
+  const ctx = await browser.newContext({ viewport: { width, height }, javaScriptEnabled: false, reducedMotion });
   const page = await ctx.newPage();
   try {
     await page.setContent(html, { waitUntil: 'load' });

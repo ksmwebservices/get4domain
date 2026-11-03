@@ -7,6 +7,7 @@
 .g4d-theme h2 { font-size: clamp(1.35rem, 1.1rem + 1.2vw, 2rem); }
 .g4d-theme h3 { font-size: 1.1rem; }
 .g4d-theme p { margin: 0 0 1em; }
+.g4d-theme :is(figure, blockquote) { margin: 0; }
 .g4d-theme ul, .g4d-theme ol { margin: 0; padding: 0; list-style: none; }
 .g4d-theme a { color: var(--g4d-accent); text-underline-offset: 0.18em; }
 .g4d-theme :is(a, button, summary) { min-height: var(--g4d-touch); }

@@ -9,6 +9,7 @@ import { renderPage } from './render.mjs';
 import { validateManifest } from './schema.mjs';
 import { pageDocument } from './document.mjs';
 import { measureOverflow } from './browser.mjs';
+import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS } from '../fixtures/index.mjs';
 import { categoryById, hasCategory } from './categories.mjs';
 import { BINDINGS, ITEM_BINDINGS, REPEATERS, NESTED_LISTS, DATA_ATTRIBUTES, SLOT_TAGS, SLOT_BY_TAG, REQUIRED_SLOTS_ALL, REQUIRED_SLOTS_PREMIUM, MAP_EMBED_HOSTS, VIDEO_HOSTS, APPROVED_FONTS, SYSTEM_FONTS, TAMIL_CAPABLE_FONTS, TOKENS, LIMITS, BREAKPOINTS } from './vocabulary.mjs';
@@ -262,14 +263,8 @@ function checkCss(theme, model, F, state, opts) {
   }
 
   // animated classes (for the count and for the hero)
-  state.animated = new Set(); state.stagger = new Set(); state.revealing = new Set();
-  for (const { r } of rules) {
-    const anim = r.decls.find((d) => d.prop === 'animation' || d.prop === 'animation-name');
-    if (!anim || /^none\b/.test(anim.value)) continue;
-    const cls = r.selectors.flatMap((s) => classesIn(flattenIs(s)).filter((c) => c !== 'g4d-theme'));
-    for (const c of cls) { state.animated.add(c); if (hidingKeyframes.has(anim.value.split(/\s+/)[0])) state.revealing.add(c); }
-    for (const s of r.selectors) for (const m of s.matchAll(/\.([\w-]+)\s*>/g)) state.stagger.add(m[1]);
-  }
+  const sets = motionSets(rules.map((x) => x.r), hidingKeyframes);
+  state.animated = sets.animated; state.stagger = sets.stagger; state.revealing = sets.revealing;
 
   // print
   const print = files.print;
@@ -356,21 +351,7 @@ function analyze(html, where, F, state, category) {
   }
 
   // motion count per section
-  const counts = new Map();
-  const walkSec = (list, sec) => {
-    for (const n of list) {
-      if (n.type !== 'el') continue;
-      const s = n.attrs['data-g4d-section'] ?? sec;
-      const cl = classesOf(n);
-      if (cl.some((c) => state.animated.has(c))) {
-        const kids = n.children.filter((k) => k.type === 'el').length;
-        counts.set(s, (counts.get(s) ?? 0) + 1 + (cl.some((c) => state.stagger.has(c)) ? Math.min(kids, 6) : 0));
-      }
-      walkSec(n.children, s);
-    }
-  };
-  walkSec(nodes, '(page)');
-  for (const [sec, n] of counts) if (n > 12) add('motion-count', `section "${sec}" has ${n} animated elements; the limit is 12`);
+  for (const [sec, n] of countAnimated(nodes, state)) if (n > MAX_ANIMATED_PER_SECTION) add('motion-count', `section "${sec}" has ${n} animated elements; the limit is ${MAX_ANIMATED_PER_SECTION}`);
 
   for (const n of findAll(nodes, (x) => (x.tag === 'a' && 'href' in x.attrs) || ['button', 'summary', 'select', 'textarea'].includes(x.tag) || (x.tag === 'input' && x.attrs.type !== 'hidden'))) state.renderedTags.add(n.tag);
   return nodes;
