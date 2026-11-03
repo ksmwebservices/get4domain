@@ -217,12 +217,12 @@ const EFFECTS = [
   ['Hero effects', 'Slow picture zoom, sheen on the accent word, floating badge, animated underline on the call button.'],
   ['Number counters', 'Years, jobs and rating count up with a registered CSS property (the platform sets --g4d-to).'],
   ['Marquee', 'A strip of trust badges that pauses on hover and focus.'],
-  ['Card hover', 'Lift, picture zoom; keyboard focus matches.'],
+  ['Card hover', 'Lift, picture zoom and an accent line that sweeps along the bottom edge; keyboard focus matches.'],
   ['Image treatments', 'Soft parallax, a reveal mask, and a before/after switch that needs no script (:target).'],
   ['Section dividers', 'Wave, curve, diagonal, notch and speed-line shapes chosen by the layout variant.'],
   ['Page transitions', 'Cross-document fade where the browser supports it; otherwise an instant, fully visible page.'],
   ['Sticky bar and floating button', 'The mobile Call/WhatsApp/Directions bar slides up; the floating button pulses three times and stops (phone frame below).'],
-  ['Menu', 'The phone menu slides in with :target (open it in the phone frame below).'],
+  ['Menu', 'The phone menu slides in with :target and the three-bar button turns into a cross (open it in the phone frame below).'],
 ];
 
 function motionPage(p, themes) {
@@ -231,7 +231,7 @@ function motionPage(p, themes) {
   const css = (themeObj.css.motion ?? '');
   const reducedCss = css.replace(/\(\s*prefers-reduced-motion\s*:\s*no-preference\s*\)/g, 'not all').replace(/\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/g, 'all');
   const labCss = [themeObj.css.tokens, themeObj.css.base, p.reduced ? reducedCss : css].join('\n');
-  const card = (n) => `<li class="card g4d-lift g4d-zoom"><a class="card-link" href="#"><span class="card-title">Service ${n}</span><span class="desc">Sample card for the motion demo.</span><span class="price">Rs 499</span></a></li>`;
+  const card = (n) => `<li class="card g4d-lift g4d-zoom g4d-sweep"><a class="card-link" href="#"><span class="card-title">Service ${n}</span><span class="desc">Sample card for the motion demo.</span><span class="price">Rs 499</span></a></li>`;
   const img = (kind) => `<img src="data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='600' height='300'><rect width='100%' height='100%' fill='${kind === 'b' ? '#e6dcc9' : '#cfe3dc'}'/><text x='50%' y='50%' text-anchor='middle' font-family='sans-serif' font-size='28' fill='#33403c'>${kind === 'b' ? 'before' : 'after'}</text></svg>`)}" alt="" role="presentation" width="600" height="300">`;
   const marqueeItems = ['Licensed', 'Insured', 'On time', 'Clear prices', 'Local team'].map((t) => `<li class="badge" style="margin:0 .5rem">${t}</li>`).join('');
   const lab = `<div class="g4d-theme" data-motion="${esc(motion)}" data-divider="wave" lang="en-IN">
@@ -243,18 +243,19 @@ function motionPage(p, themes) {
 <section class="lab" id="images"><h2>6. ${EFFECTS[5][0]}</h2><p class="note">${EFFECTS[5][1]}</p><div class="g4d-parallax" style="overflow:hidden;max-width:420px">${img('a')}</div><div class="g4d-mask" style="max-width:420px;margin-top:1rem">${img('a')}</div><div class="g4d-ba" id="ba" style="margin-top:1rem">${img('b')}<span class="g4d-ba__after" style="grid-area:1/1">${img('a')}</span></div><p><a href="#ba">Show the after picture</a> | <a href="#images">Reset</a></p></section>
 <section class="lab" id="dividers"><h2>7. ${EFFECTS[6][0]}</h2><p class="note">${EFFECTS[6][1]}</p>${['wave', 'curve', 'diagonal', 'notch', 'speed-line'].map((d) => `<div class="g4d-theme" data-divider="${d}"><div class="g4d-divider labbox">${d}</div></div>`).join('')}</section>
 <section class="lab" id="transitions"><h2>8. ${EFFECTS[7][0]}</h2><p class="note">${EFFECTS[7][1]}</p><p><a href="/render?${new URLSearchParams({ theme: p.theme, category: 'plumber', motion: p.motion ?? 'Rich' })}">Open a themed page (watch the fade between pages)</a></p></section>
-<section class="lab" id="mobile"><h2>9 and 10. ${EFFECTS[8][0]} / ${EFFECTS[9][0]}</h2><p class="note">${EFFECTS[8][1]} ${EFFECTS[9][1]}</p></section></div>`;
+<section class="lab" id="mobile"><h2>9 and 10. ${EFFECTS[8][0]} / ${EFFECTS[9][0]}</h2><p class="note">${EFFECTS[8][1]} ${EFFECTS[9][1]}</p><p><a class="g4d-burger" href="#lab-menu" aria-label="Open the menu" style="display:inline-block;padding:.5rem"><i style="display:block;width:24px;height:2px;margin:5px 0;background:currentColor"></i><i style="display:block;width:24px;height:2px;margin:5px 0;background:currentColor"></i><i style="display:block;width:24px;height:2px;margin:5px 0;background:currentColor"></i></a> <span class="note">Press the three bars: they turn into a cross while the menu is open (#lab-menu).</span></p><div class="g4d-menu" id="lab-menu"><a href="#mobile">Close menu</a></div></section></div>`;
 
   const sets = motionSets((() => { const out = []; eachRule(parseRules(css), (r) => out.push(r)); return out; })());
   const counts = countAnimated(parse(lab), sets);
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
   const worst = Math.max(0, ...counts.values());
   const bytes = Buffer.byteLength(css);
+  const kitBytes = (() => { const a = css.indexOf('/* shared:motion-kit:begin */\n'); const b = css.indexOf('/* shared:motion-kit:end */\n'); return a >= 0 && b > a ? Buffer.byteLength(css.slice(a, b + '/* shared:motion-kit:end */\n'.length)) : 0; })();
   const q = (extra) => new URLSearchParams({ theme: p.theme, ...(p.motion ? { motion: p.motion } : {}), ...extra }).toString();
   const frame = (hash, label) => `<figure style="margin:0"><figcaption>${label}</figcaption><iframe title="${label}" width="360" height="560" src="/render?${esc(new URLSearchParams({ theme: p.theme, category: 'plumber', motion: p.motion ?? 'Rich' }))}${hash}" style="border:1px solid #9aa7a2;background:#fff"></iframe></figure>`;
   const body = `<h1>Motion lab (${esc(p.theme)})</h1>
 <p>Intensity: ${MOTION_INTENSITIES.map((m) => `<a href="/motion?${esc(q({ m, ...(p.reduced ? { reduced: '1' } : {}) }))}">${m}</a>`).join(' | ')} &nbsp; <strong>Reduced motion: ${p.reduced ? 'ON (everything static and fully visible)' : 'OFF'}</strong> - <a href="/motion?${esc(q({ ...(p.motion ? { m: p.motion } : {}), ...(p.reduced ? {} : { reduced: '1' }) }))}">${p.reduced ? 'turn off' : 'switch on (reduced=1)'}</a></p>
-<div class="readout"><div>Animated elements in this lab: <strong>${total}</strong> (busiest section ${worst}; the limit is ${MAX_ANIMATED_PER_SECTION} per section)</div><div>Motion CSS size: <strong>${bytes} bytes</strong> of ${LIMITS.motionCssBytes} (${Math.round((bytes / LIMITS.motionCssBytes) * 100)}%)</div><div>Intensity: <strong>${esc(motion)}</strong></div></div>
+<div class="readout"><div>Animated elements in this lab: <strong>${total}</strong> (busiest section ${worst}; the limit is ${MAX_ANIMATED_PER_SECTION} per section)</div><div>Motion CSS size: <strong>${bytes} bytes</strong> of ${LIMITS.motionCssBytes} (${Math.round((bytes / LIMITS.motionCssBytes) * 100)}%); of which the shared motion kit: <strong>${kitBytes} bytes</strong> of 4096</div><div>Intensity: <strong>${esc(motion)}</strong></div></div>
 <p class="note">Some effects (scroll reveal, parallax, mask) need a browser with scroll-driven animations; others fall back to the plain visible layout. The page itself uses no script.</p>
 <style>${labCss}</style>${lab}
 <div class="frames">${frame('', 'Phone frame: bar slides up, button pulses')}${frame('#g4d-menu', 'Phone frame: menu open')}</div>`;

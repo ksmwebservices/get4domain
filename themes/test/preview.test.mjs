@@ -65,6 +65,8 @@ test('motion lab: all ten effects, a reduced-motion toggle and the two readouts'
   for (const n of ['Scroll reveal', 'Hero effects', 'Number counters', 'Marquee', 'Card hover', 'Image treatments', 'Section dividers', 'Page transitions', 'Sticky bar', 'Menu']) assert.ok(r.body.includes(n), n);
   assert.match(r.body, /Animated elements/);
   assert.match(r.body, /Motion CSS size/);
+  assert.match(r.body, /of which the shared motion kit: <strong>\d+ bytes<\/strong> of 4096/);
+  for (const cls of ['g4d-sweep', 'g4d-burger', 'g4d-reveal', 'g4d-count', 'g4d-marquee', 'g4d-ba', 'g4d-parallax', 'g4d-hero-zoom', 'g4d-shimmer', 'g4d-float', 'g4d-underline']) assert.ok(r.body.includes(cls), `the lab shows ${cls}`);
   assert.match(r.body, /reduced=1/);
   const reduced = await get('/motion?reduced=1');
   assert.match(reduced.body, /Reduced motion: ON/);

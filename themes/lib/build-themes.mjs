@@ -1,6 +1,6 @@
 // The Standard theme build. Each Standard theme is a SELF-CONTAINED package (the package format has no cross-package imports), so the shared parts are
 // COPIED into every theme by this build:
-//   themes/source/shared/        css/core.css, motion.css, print.css and the shared templates (partials start with "_")
+//   themes/source/shared/        css/core.css, motion.css (the Standard extras; the kit itself is themes/shared/motion-kit.css), print.css and the shared templates (partials start with "_")
 //   themes/source/<theme-id>/    theme.mjs (config), theme.css, templates/ (own pages and partials, which beat the shared ones), presets.mjs
 //   themes/library/<theme-id>/   the OUTPUT (committed): theme.json, templates/, css/, presets/
 // `node themes/cli.mjs build-themes` writes the output, `--check` fails when the committed files differ from what the sources produce.
@@ -14,6 +14,15 @@ import { readThemeDir } from './pack.mjs';
 import { LIBRARY_DIR } from './theme.mjs';
 
 export const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'source');
+/** The premium motion kit: one file, copied byte for byte into every theme package (css/motion.css) between these markers. */
+export const MOTION_KIT_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'shared', 'motion-kit.css');
+export const MOTION_KIT_BEGIN = '/* shared:motion-kit:begin */\n';
+export const MOTION_KIT_END = '/* shared:motion-kit:end */\n';
+/** css/motion.css = the kit between markers, followed by whatever the theme adds of its own. */
+export const withMotionKit = (own = '') => {
+  const kit = fs.readFileSync(MOTION_KIT_FILE, 'utf8');
+  return `${MOTION_KIT_BEGIN}${kit}${kit.endsWith('\n') ? '' : '\n'}${MOTION_KIT_END}${own}`;
+};
 const SERIF = new Set(['Playfair Display', 'Lora', 'Merriweather']);
 const MAX_INCLUDE_DEPTH = 6;
 
@@ -104,7 +113,7 @@ export async function buildThemeFiles(id, { root = SOURCE_ROOT } = {}) {
   const core = fs.readFileSync(path.join(root, 'shared/css/core.css'), 'utf8');
   put('css/base.css', `/* shared:core:begin */\n${core}/* shared:core:end */\n${readIf(path.join(root, id, 'theme.css')) ?? ''}`);
   put('css/tokens.css', tokensCss(cfg));
-  put('css/motion.css', fs.readFileSync(path.join(root, 'shared/css/motion.css'), 'utf8'));
+  put('css/motion.css', withMotionKit(`${fs.readFileSync(path.join(root, 'shared/css/motion.css'), 'utf8')}${readIf(path.join(root, id, 'motion.css')) ?? ''}`));
   put('css/print.css', fs.readFileSync(path.join(root, 'shared/css/print.css'), 'utf8'));
 
   const presets = cfg.presets ?? {};

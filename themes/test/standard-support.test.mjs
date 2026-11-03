@@ -10,7 +10,7 @@ import { BINDINGS } from '../lib/vocabulary.mjs';
 import { CATEGORIES } from '../lib/categories.mjs';
 import { sampleContent } from '../fixtures/index.mjs';
 import { minimalManifest } from './helpers/minimal-theme.mjs';
-import { buildTheme, buildThemeFiles, standardThemeIds, checkBuilt, SOURCE_ROOT } from '../lib/build-themes.mjs';
+import { buildTheme, buildThemeFiles, standardThemeIds, checkBuilt, SOURCE_ROOT, withMotionKit } from '../lib/build-themes.mjs';
 import { makePalette } from '../lib/preset-build.mjs';
 import { derivePalette, paletteFindings } from '../lib/preset.mjs';
 
@@ -134,7 +134,7 @@ test('build: every package is self-contained and carries byte-identical shared f
     const out = {};
     for (const id of ['alpha', 'beta']) out[id] = (await buildThemeFiles(id, { root })).files;
     for (const id of ['alpha', 'beta']) {
-      assert.equal(out[id]['css/motion.css'].toString(), shared('motion.css'));
+      assert.equal(out[id]['css/motion.css'].toString(), withMotionKit(shared('motion.css')), 'motion.css = the shared kit between markers, then the shared extras');
       assert.equal(out[id]['css/print.css'].toString(), shared('print.css'));
       assert.ok(out[id]['css/base.css'].toString().startsWith(`/* shared:core:begin */\n${shared('core.css')}/* shared:core:end */\n`), 'base.css starts with the shared core');
       assert.match(out[id]['css/tokens.css'].toString(), /--g4d-accent: var\(--g4d-pal-accent, #[0-9a-f]{6}\)/);

@@ -1,52 +1,59 @@
-/* Motion kit v1 - CSS only. transform/opacity (+clip-path, one registered counter). Hero never hidden; off for reduced motion and for intensity Off. */
-.g4d-theme{--g4d-motion-speed:.6s;--g4d-motion-ease:cubic-bezier(.2,.7,.2,1);--g4d-motion-distance:16px}
-.g4d-theme[data-motion=medium]{--g4d-motion-speed:.5s}
+/* shared:motion-kit:begin */
+.g4d-theme{--g4d-motion-speed:.5s;--g4d-motion-ease:cubic-bezier(.2,.7,.2,1);--g4d-motion-distance:12px;--g4d-tr:var(--g4d-motion-speed) var(--g4d-motion-ease);--g4d-lift:-4px}
+.g4d-theme[data-motion=medium]{--g4d-motion-distance:16px}
 .g4d-theme[data-motion=rich]{--g4d-motion-speed:.8s;--g4d-motion-distance:28px}
+.g4d-theme[data-motion=off]{--g4d-motion-speed:0s;--g4d-lift:0px}
 @property --g4d-num{syntax:'<integer>';inherits:false;initial-value:0}
-@keyframes g4d-rise{from{opacity:0;transform:translateY(var(--g4d-motion-distance))}to{opacity:1;transform:none}}
-@keyframes g4d-zoom{from{transform:scale(1)}to{transform:scale(1.06)}}
-@keyframes g4d-sheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-@keyframes g4d-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes g4d-rise{from{opacity:0;transform:translateY(var(--g4d-motion-distance))}}
+@keyframes g4d-zoom{to{transform:scale(1.06)}}
+@keyframes g4d-shim{50%{filter:brightness(1.35)}}
+@keyframes g4d-float{50%{transform:translateY(-6px) scale(1.04)}}
 @keyframes g4d-count{from{--g4d-num:0}to{--g4d-num:var(--g4d-to,0)}}
-@keyframes g4d-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes g4d-marquee{to{transform:translateX(-50%)}}
 @keyframes g4d-parallax{from{transform:translateY(-5%)}to{transform:translateY(5%)}}
-@keyframes g4d-mask{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
-@keyframes g4d-slideup{from{transform:translateY(100%)}to{transform:none}}
-@keyframes g4d-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes g4d-slideup{from{transform:translateY(100%)}}
+.g4d-theme .g4d-count{counter-reset:g4dn var(--g4d-to,0)}
+.g4d-theme .g4d-count::before{content:counter(g4dn)}
 @media (prefers-reduced-motion:no-preference){
 @supports (animation-timeline:view()){
-.g4d-theme:not([data-motion=off]) .g4d-reveal{animation:g4d-rise linear both;animation-timeline:view();animation-range:entry 0% entry 55%}
-.g4d-theme:not([data-motion=off]) .g4d-reveal>:nth-child(-n+6){animation:g4d-rise linear both;animation-timeline:view();animation-range:entry 5% entry 70%}
-.g4d-theme:not([data-motion=off]) .g4d-reveal>:nth-child(2){animation-range:entry 10% entry 75%}
-.g4d-theme:not([data-motion=off]) .g4d-reveal>:nth-child(3){animation-range:entry 15% entry 80%}
-.g4d-theme[data-motion=rich] .g4d-parallax img{animation:g4d-parallax linear both;animation-timeline:view()}
-.g4d-theme:not([data-motion=off]) .g4d-mask img{animation:g4d-mask linear both;animation-timeline:view();animation-range:entry 0% entry 70%}}
-.g4d-theme:is([data-motion=medium],[data-motion=rich]) .g4d-hero-zoom img{animation:g4d-zoom 20s ease-out both}
-.g4d-theme[data-motion=rich] .g4d-shimmer{position:relative;overflow:hidden}
-.g4d-theme[data-motion=rich] .g4d-shimmer::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);animation:g4d-sheen 3.5s ease-in-out infinite}
-.g4d-theme:not([data-motion=off]) .g4d-float{animation:g4d-float 4s ease-in-out infinite}
-.g4d-theme:not([data-motion=off]) .g4d-underline{position:relative}
-.g4d-theme:not([data-motion=off]) .g4d-underline::after{content:'';position:absolute;inset-inline:0;bottom:0;height:2px;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform var(--g4d-motion-speed) var(--g4d-motion-ease)}
-.g4d-theme:not([data-motion=off]) .g4d-underline:is(:hover,:focus-visible)::after{transform:scaleX(1)}
-.g4d-theme:not([data-motion=off]) .g4d-count{animation:g4d-count 1.6s ease-out both;counter-reset:g4dn var(--g4d-num)}
-.g4d-theme:not([data-motion=off]) .g4d-count::before{content:counter(g4dn)}
+.g4d-theme:not([data-motion=off]) :is(.g4d-reveal,.g4d-reveal>:nth-child(-n+6)){animation:g4d-rise linear both;animation-timeline:view();animation-range:entry}
+.g4d-theme .g4d-reveal>:nth-child(2){animation-range:entry 10%}
+.g4d-theme .g4d-reveal>:nth-child(3){animation-range:entry 20%}
+.g4d-theme[data-motion=rich] .g4d-parallax img{animation:g4d-parallax linear both;animation-timeline:view()}}
+.g4d-theme:is([data-motion=medium],[data-motion=rich]) .g4d-hero-zoom img{animation:g4d-zoom 20s both}
+.g4d-theme[data-motion=rich] .g4d-shimmer{animation:g4d-shim 3s ease infinite}
+.g4d-theme:not([data-motion=off]) :is(.g4d-float,.g4d-slot--whatsapp-float){animation:g4d-float calc(var(--g4d-motion-speed)*8) ease infinite}
+.g4d-theme .g4d-slot--whatsapp-float{animation-iteration-count:3}
+.g4d-theme :is(.g4d-underline,.g4d-sweep){position:relative}
+.g4d-theme :is(.g4d-underline,.g4d-sweep)::after{content:'';position:absolute;inset-inline:0;bottom:0;height:2px;background:var(--g4d-accent,currentColor);transform:scaleX(0);transform-origin:left;transition:transform var(--g4d-tr)}
+.g4d-theme :is(.g4d-underline,.g4d-sweep):is(:hover,:focus-within)::after{transform:scaleX(1)}
+.g4d-theme:not([data-motion=off]) .g4d-count{animation:g4d-count 1.6s both;counter-reset:g4dn var(--g4d-num)}
 .g4d-theme:is([data-motion=medium],[data-motion=rich]) .g4d-marquee__track{display:flex;width:max-content;animation:g4d-marquee 30s linear infinite}
 .g4d-theme .g4d-marquee:is(:hover,:focus-within) .g4d-marquee__track{animation-play-state:paused}
-.g4d-theme:not([data-motion=off]) .g4d-lift{transition:transform var(--g4d-motion-speed) var(--g4d-motion-ease)}
-.g4d-theme:not([data-motion=off]) .g4d-lift:is(:hover,:focus-within){transform:translateY(-4px)}
-.g4d-theme:not([data-motion=off]) .g4d-zoom img{transition:transform var(--g4d-motion-speed) var(--g4d-motion-ease)}
-.g4d-theme:not([data-motion=off]) .g4d-zoom:is(:hover,:focus-within) img{transform:scale(1.05)}
-.g4d-theme .g4d-ba__after{clip-path:inset(0 0 0 50%);transition:clip-path var(--g4d-motion-speed) var(--g4d-motion-ease)}
+.g4d-theme :is(.g4d-lift,.g4d-burger i){transition:transform var(--g4d-tr)}
+.g4d-theme .g4d-lift:is(:hover,:focus-within){transform:translateY(var(--g4d-lift))}
+.g4d-theme .g4d-ba__after{transition:clip-path var(--g4d-tr)}
+.g4d-theme .g4d-slot--bottom-nav{animation:g4d-slideup var(--g4d-tr) both}
+@supports selector(:has(*)){
+.g4d-theme:has(.g4d-menu:target) .g4d-burger i{transform:translateY(7px) rotate(45deg)}
+.g4d-theme:has(.g4d-menu:target) .g4d-burger i:nth-child(2){opacity:0}
+.g4d-theme:has(.g4d-menu:target) .g4d-burger i:last-child{transform:translateY(-7px) rotate(-45deg)}}
+@media (max-width:47.99rem){.g4d-theme .g4d-menu:target{animation:g4d-slideup var(--g4d-tr) both}}
+@view-transition{navigation:auto}}
+.g4d-theme .g4d-divider{clip-path:var(--g4d-cp)}
+.g4d-theme[data-divider=wave]{--g4d-cp:ellipse(75% 100% at 50% 100%)}
+.g4d-theme[data-divider=curve]{--g4d-cp:ellipse(120% 100% at 50% 100%)}
+.g4d-theme[data-divider=diagonal]{--g4d-cp:polygon(0 0,100% 0,100% 80%,0 100%)}
+.g4d-theme[data-divider=notch]{--g4d-cp:polygon(0 0,100% 0,100% 100%,55% 100%,50% 85%,45% 100%,0 100%)}
+.g4d-theme[data-divider=speed-line]{--g4d-cp:polygon(0 0,100% 0,92% 100%,0 100%)}
+.g4d-theme .g4d-ba__after{clip-path:inset(0 0 0 50%)}
 .g4d-theme .g4d-ba:target .g4d-ba__after{clip-path:inset(0)}
-.g4d-theme:not([data-motion=off]) .g4d-slot--bottom-nav{animation:g4d-slideup var(--g4d-motion-speed) var(--g4d-motion-ease) both}
-.g4d-theme:not([data-motion=off]) .g4d-slot--whatsapp-float{animation:g4d-pulse 2s ease-in-out 3}
-@media (max-width:47.99rem){.g4d-theme:not([data-motion=off]) .g4d-menu:target{animation:g4d-slideup var(--g4d-motion-speed) var(--g4d-motion-ease) both}}}
-.g4d-theme[data-divider=wave] .g4d-divider{clip-path:ellipse(75% 100% at 50% 100%)}
-.g4d-theme[data-divider=curve] .g4d-divider{clip-path:ellipse(120% 100% at 50% 100%)}
-.g4d-theme[data-divider=diagonal] .g4d-divider{clip-path:polygon(0 0,100% 0,100% 80%,0 100%)}
-.g4d-theme[data-divider=notch] .g4d-divider{clip-path:polygon(0 0,100% 0,100% 100%,55% 100%,50% 85%,45% 100%,0 100%)}
-.g4d-theme[data-divider=speed-line] .g4d-divider{clip-path:polygon(0 0,100% 0,92% 100%,0 100%)}
-@supports (view-transition-name:none){@view-transition{navigation:auto}}
-@media (prefers-reduced-motion:reduce){
-.g4d-theme *,.g4d-theme *::before,.g4d-theme *::after{animation:none;transition:none}
-.g4d-theme .g4d-reveal,.g4d-theme .g4d-reveal>*{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.g4d-theme *{animation:none;transition:none}}
+/* shared:motion-kit:end */
+@keyframes g4d-mask{from{clip-path:inset(0 100% 0 0)}}
+@media (prefers-reduced-motion:no-preference){
+@supports (animation-timeline:view()){
+.g4d-theme:is([data-motion=medium],[data-motion=rich]) .g4d-mask img{animation:g4d-mask linear both;animation-timeline:view();animation-range:entry 0% entry 70%}}
+.g4d-theme .g4d-zoom img{transition:transform var(--g4d-tr)}
+.g4d-theme[data-motion=off] .g4d-zoom img{transition:none}
+.g4d-theme:not([data-motion=off]) .g4d-zoom:is(:hover,:focus-within) img{transform:scale(1.05)}}
