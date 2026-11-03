@@ -17,6 +17,9 @@ import { JobRunnerService, PROVISIONING_STEPS, ProvisioningAudit, ProvisioningSt
 import { ProvisioningCron } from '../src/provisioning/runner/provisioning-cron';
 import { SiteProvisioner } from '../src/provisioning/site/site-provisioner';
 import { CmsDraftSiteProvisioner } from '../src/provisioning/site/cms-draft-site-provisioner';
+import { DraftSiteBuilder } from '../src/provisioning/site/draft-site-builder';
+import { ModeSiteProvisioner } from '../src/provisioning/site/mode-site-provisioner';
+import { RendererDraftBuilder } from '../src/provisioning/site/renderer-draft-builder';
 import { STEP_ORDER } from '../src/provisioning/core/state-machine';
 import { SandboxEmailAdapter, selectEmailAdapter } from '../src/provisioning/invites/email-adapter';
 
@@ -42,7 +45,10 @@ describe('ProvisioningModule wiring', () => {
     expect(mod.get(ClaimStore)).toBeDefined();
     expect(mod.get(InviteStore)).toBeDefined();
     expect(mod.get(ProvisioningAudit)).toBeDefined();
-    expect(mod.get(SiteProvisioner)).toBeInstanceOf(CmsDraftSiteProvisioner);
+    // slice 5.4: the port is bound to the mode switch; the slice 5.3 adapter is still provided (legacy mode, and the first half of renderer mode)
+    expect(mod.get(SiteProvisioner)).toBeInstanceOf(ModeSiteProvisioner);
+    expect(mod.get(CmsDraftSiteProvisioner)).toBeInstanceOf(CmsDraftSiteProvisioner);
+    expect(mod.get(DraftSiteBuilder)).toBeInstanceOf(RendererDraftBuilder);
     expect(mod.get(ClaimsService)).toBeDefined();
     expect(mod.get(ProvisioningCron)).toBeDefined();
     const steps = mod.get<ProvisioningStep[]>(PROVISIONING_STEPS);

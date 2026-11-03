@@ -12,6 +12,8 @@ export interface ProvisioningSettings {
   claimLinkExpiryDays: number;
   inviteAdapterMode: 'sandbox' | 'live';
   publicAppUrl: string;
+  /** slice 5.4: legacy = the slice 5.3 draft only; renderer = also the site settings and a DRAFT_PREVIEW publication (never published) */
+  siteDraftBuilderMode: 'legacy' | 'renderer';
   inviteSubjectTemplate: string;
   inviteBodyTemplate: string;
 }
@@ -23,6 +25,7 @@ export const DEFAULT_PROVISIONING_SETTINGS: Readonly<ProvisioningSettings> = {
   claimLinkExpiryDays: 14,
   inviteAdapterMode: 'sandbox',
   publicAppUrl: 'https://staging.get4domain.invalid',
+  siteDraftBuilderMode: 'legacy',
   inviteSubjectTemplate: 'Your free Get4Domain page for {{businessName}} is ready to claim',
   inviteBodyTemplate: [
     'Hello,',
@@ -58,6 +61,7 @@ export function provisioningSettingProblem(key: keyof ProvisioningSettings, valu
     case 'provisioningBackoffSeconds': return Array.isArray(value) && value.length >= 1 && value.length <= 10 && value.every((n) => intIn(n, 1, 86_400)) ? null : 'must be a list of 1 to 10 whole numbers of seconds (1 to 86400)';
     case 'claimLinkExpiryDays': return intIn(value, 1, 365) ? null : 'must be a whole number of days from 1 to 365';
     case 'inviteAdapterMode': return value === 'sandbox' || value === 'live' ? null : 'must be "sandbox" or "live"';
+    case 'siteDraftBuilderMode': return value === 'legacy' || value === 'renderer' ? null : 'must be "legacy" or "renderer"';
     case 'publicAppUrl': {
       if (typeof value !== 'string' || value.length > 200) return 'must be a web address';
       try { const u = new URL(value); return (u.protocol === 'https:' || (u.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(u.hostname))) && !u.search && !u.hash ? null : 'must be an https address with no query or fragment'; } catch { return 'must be a web address'; }

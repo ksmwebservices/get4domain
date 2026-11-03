@@ -18,6 +18,7 @@ const MESSAGES: Record<string, string> = {
   DB_BUSY: 'The database was busy. The job will be tried again.',
   LEASE_LOST: 'Another runner took over this job.',
   INVALID_INPUT: 'The business details in this job are not valid.',
+  SITE_BUILD_REFUSED: 'The site draft could not be built from the business details.',
   UNEXPECTED: 'An unexpected error stopped this step. The job will be tried again.',
 };
 

@@ -10,6 +10,9 @@ import { PrismaProvisioningRepository, ProvisioningRepository } from './provisio
 import { JobRunnerService, PROVISIONING_STEPS, ProvisioningAudit, ProvisioningStep } from './runner/job-runner.service';
 import { ProvisioningSettingsService } from './settings/provisioning-settings.service';
 import { CmsDraftSiteProvisioner } from './site/cms-draft-site-provisioner';
+import { DraftSiteBuilder } from './site/draft-site-builder';
+import { ModeSiteProvisioner } from './site/mode-site-provisioner';
+import { RendererDraftBuilder } from './site/renderer-draft-builder';
 import { SiteProvisioner } from './site/site-provisioner';
 import { AssignFreePlanStep } from './steps/assign-free-plan.step';
 import { CreateClaimLinkStep } from './steps/create-claim-link.step';
@@ -25,7 +28,9 @@ import { BusinessVendors, PrismaBusinessVendors } from './vendors/business-vendo
 export const PROVISIONING_PROVIDERS: Provider[] = [
   { provide: ProvisioningRepository, useClass: PrismaProvisioningRepository },
   { provide: BusinessVendors, useClass: PrismaBusinessVendors },
-  { provide: SiteProvisioner, useClass: CmsDraftSiteProvisioner },
+  CmsDraftSiteProvisioner,   // the slice 5.3 adapter, kept as the "legacy" mode and as the first half of "renderer" mode
+  { provide: DraftSiteBuilder, useClass: RendererDraftBuilder },
+  { provide: SiteProvisioner, useClass: ModeSiteProvisioner },
   { provide: ClaimStore, useClass: PrismaClaimStore },
   { provide: InviteStore, useClass: PrismaInviteStore },
   { provide: ProvisioningAudit, useClass: PrismaProvisioningAudit },

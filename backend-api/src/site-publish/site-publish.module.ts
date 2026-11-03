@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PublishService } from './publish/publish.service';
 import { SiteBuildService } from './publish/site-build.service';
+import { SiteRepository } from './publish/site.repository';
 import { SiteSettingsService } from './publish/site-settings.service';
 import { ThemeRenderService } from './renderer/theme-render.service';
 import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from './site-publish.providers';
@@ -14,6 +15,6 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from './site-publish
   imports: [PrismaModule],
   controllers: SITE_PUBLISH_CONTROLLERS,
   providers: SITE_PUBLISH_PROVIDERS,
-  exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService],
+  exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService, SiteRepository],
 })
 export class SitePublishModule {}
