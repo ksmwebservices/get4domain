@@ -51,6 +51,10 @@ model Vendor {
   v3ClaimTokens V3ClaimToken[]
   v3Invites V3Invite[]
   v3ProvisioningJobs V3ProvisioningJob[]
+  v3SiteSettings V3SiteSettings?
+  v3SitePublications V3SitePublication[]
+  v3SitePublicationPages V3SitePublicationPage[]
+  v3SiteEvents V3SiteEvent[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -4250,4 +4254,108 @@ model V3Invite {
   @@index([vendorId, createdAt])
   @@index([claimTokenId])
   @@map("g4d_invites")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 slice 5.4: site settings, versioned publications (rendered HTML snapshots), their pages, and site events. Additive. No relation to any legacy table
+// (the legacy VendorCMS document is READ through a port only). Design: docs/v3/V3_S4_RENDERER_PUBLISH.md
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+enum V3MotionIntensity {
+  OFF
+  LOW
+  MEDIUM
+  RICH
+}
+
+enum V3PublicationStatus {
+  DRAFT_PREVIEW
+  PUBLISHED
+  SUPERSEDED
+  ROLLED_BACK
+}
+
+model V3SiteSettings {
+  id              String            @id @default(cuid())
+  vendorId        String            @unique
+  themeId         String? // null = the category's default Standard theme
+  language        String            @default("en") // en, ta, or "en,ta"
+  variant         String? // the layout variant id: derived from the category, read-only for vendors
+  motionIntensity V3MotionIntensity @default(LOW)
+  forceNoindex    Boolean           @default(false) // staff switch: the site is noindex whatever the indexing rule says
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_site_settings")
+}
+
+model V3SitePublication {
+  id                    String              @id @default(cuid())
+  vendorId              String
+  version               Int // monotonic per vendor
+  status                V3PublicationStatus @default(DRAFT_PREVIEW)
+  themeId               String
+  themeHash             String
+  contentHash           String
+  settingsHash          String              @default("")
+  indexable             Boolean             @default(false)
+  indexHeader           String              @default("noindex, nofollow") // the robots value stored with the snapshot (meta and header)
+  missingFieldsJson     Json                @default("[]")
+  warningsJson          Json                @default("[]")
+  languages             String              @default("en")
+  totalBytes            Int                 @default(0)
+  rolledBackFromVersion Int?
+  createdByType         V3ActorType         @default(SYSTEM)
+  createdById           String?
+  createdAt             DateTime            @default(now())
+  publishedAt           DateTime?
+  // At most one PUBLISHED publication per vendor: equals vendorId while PUBLISHED, NULL otherwise; the unique index does the rest.
+  currentVendorId       String?             @unique
+
+  vendor Vendor                   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pages  V3SitePublicationPage[]
+  events V3SiteEvent[]
+
+  @@unique([vendorId, version])
+  @@index([vendorId, status])
+  @@map("g4d_site_publications")
+}
+
+model V3SitePublicationPage {
+  id            String   @id @default(cuid())
+  publicationId String
+  vendorId      String // denormalised so the tenant guard can scope this table too
+  path          String
+  lang          String
+  html          String // the stored document (or sitemap / robots / stylesheet text for the platform files)
+  seoJson       Json     @default("{}")
+  bytes         Int
+  sha256        String
+  createdAt     DateTime @default(now())
+
+  publication V3SitePublication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  vendor      Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, path, lang])
+  @@index([vendorId])
+  @@map("g4d_site_publication_pages")
+}
+
+model V3SiteEvent {
+  id            String      @id @default(cuid())
+  vendorId      String
+  publicationId String?
+  type          String // BUILT, PUBLISHED, ROLLED_BACK, THEME_CHANGED, NOINDEX_CHANGED
+  actorType     V3ActorType @default(SYSTEM)
+  actorId       String?
+  detailJson    Json        @default("{}") // ids and codes only
+  createdAt     DateTime    @default(now())
+
+  vendor      Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  publication V3SitePublication? @relation(fields: [publicationId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_events")
 }
