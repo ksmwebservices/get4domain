@@ -4,6 +4,8 @@
  *
  *   node scripts/seo-check.mjs [--base http://127.0.0.1:3100] [--group legacy,demo,canon,robots,links,routes,all] [--verbose]
  *
+ * By default it runs only against a LOCAL, FRONTEND-ONLY `next start` (loopback addresses). After a release the owner can add --allow-remote and a
+ * public https base URL; the checks that need the source tree or the demo secret are then listed as SKIP.
  * Run it against a LOCAL, FRONTEND-ONLY `next start`. Build and start with the API variables pointed at an unreachable local address so nothing can
  * reach a real backend, e.g.:
  *   NEXT_PUBLIC_API_URL=http://127.0.0.1:9 INTERNAL_API_URL=http://127.0.0.1:9 DEMO_ACCESS_SECRET=local npm run build
@@ -17,6 +19,7 @@
  * Exit code: 0 all pass, 1 at least one failure, 2 refused or could not run.
  */
 import http from 'node:http';
+import https from 'node:https';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -28,10 +31,15 @@ const arg = (name, fallback) => { const i = argv.indexOf(`--${name}`); return i 
 const VERBOSE = argv.includes('--verbose');
 const GROUPS = (arg('group', 'all')).split(',').map((s) => s.trim());
 const BASE = new URL(arg('base', 'http://127.0.0.1:3100'));
-if (!['127.0.0.1', 'localhost', '::1', '[::1]'].includes(BASE.hostname)) {
-  console.error(`seo-check refuses to run against ${BASE.hostname}: it only talks to a local server. Build and start the frontend locally.`);
+const LOOPBACK = ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(BASE.hostname);
+/** --allow-remote lets the owner point the same checks at the deployed site after a release. Without it the script refuses anything but loopback. */
+const REMOTE = !LOOPBACK;
+if (REMOTE && !argv.includes('--allow-remote')) {
+  console.error(`seo-check refuses to run against ${BASE.hostname}: by default it only talks to a local server. To check a deployed site on purpose, add --allow-remote (read-only GET requests; see docs/v3/SEO0_LOG.md).`);
   process.exit(2);
 }
+/** Checks that need the source tree, a forged Host header or the demo secret can only run against a local build; a remote run lists them as SKIP. */
+const LOCAL_ONLY = /valid pass|every other \/demo|main host: \/site|main host: reserved|vendor host:|vendorCanonical|vendor page metadata|root layout|retired address|createPageMetadata|marketing pages only/;
 
 const SITE = 'get4domain.com';
 const TAGLINE = 'Get4Domain — Your Online Visible Partner';
@@ -46,9 +54,10 @@ const INDUSTRIES = ['restaurant', 'travel', 'realestate', 'clinic', 'education',
 // ── tiny HTTP client: no redirects followed, optional Host header ─────────────────────────────────────────────────────────────────────────────────
 function get(p, { host, ua = BROWSER, cookie } = {}) {
   return new Promise((resolve, reject) => {
-    const req = http.request({
-      hostname: BASE.hostname === '[::1]' ? '::1' : BASE.hostname, port: BASE.port || 80, path: p, method: 'GET',
-      headers: { host: host ?? `${BASE.hostname}:${BASE.port}`, 'user-agent': ua, ...(cookie ? { cookie } : {}) },
+    const client = BASE.protocol === 'https:' ? https : http;
+    const req = client.request({
+      hostname: BASE.hostname === '[::1]' ? '::1' : BASE.hostname, port: BASE.port || (BASE.protocol === 'https:' ? 443 : 80), path: p, method: 'GET',
+      headers: { host: REMOTE ? BASE.host : (host ?? `${BASE.hostname}:${BASE.port}`), 'user-agent': ua, ...(cookie ? { cookie } : {}) },
     }, (res) => {
       let body = ''; res.setEncoding('utf8');
       res.on('data', (c) => { body += c; });
@@ -190,6 +199,11 @@ check('canon', 'main host: /site/<sub>[/rest][?query] answers 301 to https://<su
     ok(sameLocation(r.headers.location, `https://acme.${SITE}/about?x=1`), `Location is ${r.headers.location}`);
     r = await get('/site/acme', { host }); ok(r.status === 301 && sameLocation(r.headers.location, `https://acme.${SITE}`), `${host} /site/acme -> ${r.status} ${r.headers.location}`);
   }
+});
+check('canon', '/site/<sub> on the address you are checking answers 301 to the vendor subdomain (works on a deployed main host; skipped when the base is not get4domain.com)', async () => {
+  if (BASE.hostname !== SITE && BASE.hostname !== `www.${SITE}`) return;
+  const r = await get('/site/zz-seo-check/about?x=1'); ok(r.status === 301, `answered ${r.status}`);
+  ok(sameLocation(r.headers.location, `https://zz-seo-check.${SITE}/about?x=1`), `Location is ${r.headers.location}`);
 });
 check('canon', 'main host: reserved or invalid names are not redirected; a local host is untouched', async () => {
   for (const p of ['/site/www/x', '/site/api', '/site/Bad_Name/x']) { const r = await get(p, { host: SITE }); ok(r.status !== 301, `${p} was redirected`); }
@@ -381,7 +395,8 @@ function printTable() {
 }
 
 // ─────────────────────────────────── run ──────────────────────────────────────────────────────────────────────────────────────────────────────
-const wanted = checks.filter((c) => GROUPS.includes('all') || GROUPS.includes(c.group));
+const wanted = checks.filter((c) => (GROUPS.includes('all') || GROUPS.includes(c.group)) && !(REMOTE && LOCAL_ONLY.test(c.name)));
+const skipped = checks.filter((c) => (GROUPS.includes('all') || GROUPS.includes(c.group)) && REMOTE && LOCAL_ONLY.test(c.name));
 if (!wanted.length) { console.error(`no checks for group(s): ${GROUPS.join(',')}`); process.exit(2); }
 try { const probe = await get('/robots.txt'); if (!probe.status) throw new Error('no answer'); }
 catch (e) { console.error(`cannot reach ${BASE.origin}: ${e.message}. Start the local frontend first (next start).`); process.exit(2); }
@@ -392,5 +407,6 @@ for (const c of wanted) {
   catch (e) { failed++; console.log(`FAIL  [${c.group}] ${c.name}\n        ${String(e.message).replace(/\n/g, ' ').slice(0, VERBOSE ? 2000 : 420)}`); }
 }
 printTable();
-console.log(`\n${wanted.length - failed} passed, ${failed} failed (${wanted.length} checks, groups: ${GROUPS.join(',')}) against ${BASE.origin}`);
+for (const c of skipped) console.log(`SKIP  [${c.group}] ${c.name}  (needs the source tree, a Host header or the demo secret: local build only)`);
+console.log(`\n${wanted.length - failed} passed, ${failed} failed${skipped.length ? `, ${skipped.length} skipped` : ''} (${wanted.length} checks, groups: ${GROUPS.join(',')}) against ${BASE.origin}`);
 process.exit(failed ? 1 : 0);
