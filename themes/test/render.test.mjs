@@ -289,7 +289,7 @@ test('vendor settings: accent, fonts, motion, section order and visibility; layo
   const base = render(theme(), c);
   const good = render(theme(), c, { settings: { accent: '#0a5c3d', fontHeading: 'Poppins', fontBody: 'Inter', motionIntensity: 'Rich' } });
   const w = tags(good.html)[0];
-  assert.match(w.attrs.style, /--g4d-accent:#0a5c3d/);
+  assert.match(w.attrs.style, /--g4d-pal-accent:#0a5c3d/);
   assert.match(w.attrs.style, /--g4d-font-heading:'Poppins'/);
   assert.equal(w.attrs['data-motion'], 'rich');
 

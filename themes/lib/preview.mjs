@@ -8,7 +8,7 @@ import { lintTheme } from './lint.mjs';
 import { loadTheme, listThemeIds } from './theme.mjs';
 import { pageDocument, cssFor } from './document.mjs';
 import { parse, findAll, byTag } from './html.mjs';
-import { parseRules, eachRule } from './css.mjs';
+import { parseRules, eachRule, resolveVarFallback } from './css.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
 import { ratio, parseHex, suggestAccent, AA_TEXT } from './contrast.mjs';
 import { sampleContent, ENTITLEMENTS_ON, ENTITLEMENTS_OFF } from '../fixtures/index.mjs';
@@ -173,8 +173,8 @@ function contrastPage(p, themes) {
     const themeObj = loadTheme(t);
     const light = {}; const dark = {};
     for (const r of parseRules(themeObj.css.tokens ?? '')) {
-      if (r.type === 'rule' && r.selectors.includes('.g4d-theme')) for (const d of r.decls) light[d.prop] = d.value;
-      if (r.type === 'at' && /prefers-color-scheme\s*:\s*dark/.test(r.prelude)) for (const x of r.rules ?? []) for (const d of x.decls ?? []) dark[d.prop] = d.value;
+      if (r.type === 'rule' && r.selectors.includes('.g4d-theme')) for (const d of r.decls) light[d.prop] = resolveVarFallback(d.value);
+      if (r.type === 'at' && /prefers-color-scheme\s*:\s*dark/.test(r.prelude)) for (const x of r.rules ?? []) for (const d of x.decls ?? []) dark[d.prop] = resolveVarFallback(d.value);
     }
     const table = (label, m) => `<h2>${esc(t)} - ${label}</h2><table><tr><th>Text</th><th>On</th><th>Ratio</th><th>AA ${AA_TEXT}:1</th></tr>${pairs.map(([fg, bg]) => { const rt = ratio(m[fg], m[bg]); return `<tr><td>${esc(fg)} <span class="swatch" style="background:${esc(m[fg])}"></span> ${esc(m[fg])}</td><td>${esc(bg)} <span class="swatch" style="background:${esc(m[bg])}"></span> ${esc(m[bg])}</td><td>${rt === null ? 'n/a' : rt.toFixed(2)}</td><td class="cell ${rt !== null && rt >= AA_TEXT ? 'pass' : 'fail'}">${rt !== null && rt >= AA_TEXT ? 'PASS' : 'FAIL'}</td></tr>`; }).join('')}</table>`;
     const lm = { ...light }; const dm = { ...light, ...dark };

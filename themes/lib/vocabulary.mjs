@@ -148,3 +148,8 @@ export const CSS_FILES = ['base', 'tokens', 'motion', 'print'];
 export const RESERVED_SLUGS = ['book', 'enquire', 'order', 'legal', 'p', 'api'];
 export const ALLOWED_URI_SCHEMES = ['http', 'https', 'tel', 'mailto'];
 export const BREAKPOINTS = [360, 414, 768, 1024, 1280, 1536];
+
+/** Hero decoration patterns a category preset may choose (pure CSS, defined by every Standard theme). */
+export const PRESET_PATTERNS = ['dots', 'grid', 'waves', 'rays', 'rings', 'chevrons', 'diagonal', 'blobs'];
+/** What the Free plan allows (the platform enforces these; presets and themes are designed to fit them). */
+export const FREE_LIMITS = { pages: 1, services: 8, gallery: 5, faqs: 6 };

@@ -1,0 +1,338 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://get4domain.com/schemas/preset.schema.json",
+  "title": "Get4Domain category preset (presets/<categoryId>.json), contract version 1",
+  "description": "The default look and starter content of one category inside a theme. The vendor's own settings override it. Validated by themes/lib/preset.mjs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "category",
+    "palette",
+    "fonts",
+    "blocks",
+    "hero",
+    "services",
+    "faqs"
+  ],
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "plumber",
+        "electrician",
+        "carpenter",
+        "painter",
+        "ac-appliance-repair",
+        "pest-control",
+        "home-cleaning",
+        "locksmith",
+        "packers-movers",
+        "mason-contractor",
+        "cctv-security-installer",
+        "auto-mechanic",
+        "car-wash-detailing",
+        "doctor-clinic",
+        "dentist",
+        "physiotherapy",
+        "diagnostics-lab",
+        "lawyer",
+        "ca-tax-consultant",
+        "insurance-advisor",
+        "coaching-centre",
+        "tutor",
+        "music-dance-school",
+        "salon-spa",
+        "gym-yoga",
+        "photographer",
+        "interior-designer-architect",
+        "event-planner",
+        "it-consultant",
+        "restaurant-cafe",
+        "hotel-homestay",
+        "travel-agency",
+        "real-estate-agent",
+        "fashion-apparel",
+        "jewellery",
+        "grocery-kirana",
+        "bakery-sweets",
+        "electronics-mobile",
+        "home-furniture",
+        "gifts-handicrafts",
+        "books-stationery"
+      ]
+    },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "light",
+        "dark"
+      ],
+      "properties": {
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primary",
+            "accent",
+            "background"
+          ],
+          "properties": {
+            "primary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          }
+        },
+        "dark": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "primary",
+            "accent",
+            "background"
+          ],
+          "properties": {
+            "primary": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "background": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          }
+        }
+      }
+    },
+    "fonts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "heading",
+        "body"
+      ],
+      "properties": {
+        "heading": {
+          "type": "string",
+          "enum": [
+            "Inter",
+            "Poppins",
+            "DM Sans",
+            "Manrope",
+            "Nunito",
+            "Work Sans",
+            "Montserrat",
+            "Playfair Display",
+            "Lora",
+            "Merriweather",
+            "Noto Sans Tamil",
+            "Noto Serif Tamil"
+          ]
+        },
+        "body": {
+          "type": "string",
+          "enum": [
+            "Inter",
+            "Poppins",
+            "DM Sans",
+            "Manrope",
+            "Nunito",
+            "Work Sans",
+            "Montserrat",
+            "Playfair Display",
+            "Lora",
+            "Merriweather",
+            "Noto Sans Tamil",
+            "Noto Serif Tamil"
+          ]
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      }
+    },
+    "hero": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pattern"
+      ],
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "dots",
+            "grid",
+            "waves",
+            "rays",
+            "rings",
+            "chevrons",
+            "diagonal",
+            "blobs"
+          ]
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "en",
+        "ta"
+      ],
+      "properties": {
+        "en": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
+          }
+        },
+        "ta": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "description"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
+          }
+        }
+      }
+    },
+    "faqs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "en",
+        "ta"
+      ],
+      "properties": {
+        "en": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "q",
+              "a"
+            ],
+            "properties": {
+              "q": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              "a": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
+          }
+        },
+        "ta": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "q",
+              "a"
+            ],
+            "properties": {
+              "q": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              "a": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              }
+            }
+          }
+        }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "order": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          }
+        },
+        "hidden": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          }
+        }
+      }
+    }
+  }
+}

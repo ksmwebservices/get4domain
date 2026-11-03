@@ -117,3 +117,6 @@ export function toPx(value, resolve = () => null) {
 
 export const classesIn = (selector) => [...selector.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]);
 export const tagsIn = (selector) => [...selector.replace(/\[[^\]]*\]|::?[\w-]+(\([^)]*\))?|"[^"]*"|'[^']*'/g, ' ').matchAll(/(?:^|[\s>+~(,])([a-zA-Z][\w-]*)/g)].map((m) => m[1].toLowerCase());
+
+/** var(--x, #hex) -> #hex (the theme's own default); any other value is returned unchanged. */
+export const resolveVarFallback = (val) => { const m = /^var\(\s*--[\w-]+\s*,\s*(#[0-9a-fA-F]{3,8})\s*\)$/.exec(String(val).trim()); return m ? m[1] : val; };

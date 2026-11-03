@@ -15,6 +15,7 @@
 import { parse, serialize } from './html.mjs';
 import { ENTITLEMENT_KEYS, BINDINGS, REPEATERS, NESTED_LISTS, SLOTS, SLOT_BY_TAG, APPROVED_FONTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, ALLOWED_URI_SCHEMES, MOTION_INTENSITIES } from './vocabulary.mjs';
 import { categoryById, hasCategory, FAMILIES } from './categories.mjs';
+import { validatePreset, presetStyle, applyPresetContent } from './preset.mjs';
 
 // ---------------------------------------------------------------- wording
 const UI = {
@@ -85,7 +86,14 @@ function makeCtx({ theme, page, content, settings, vendor, host, entitlements })
   if (!catId) warn('unknown-category');
   const cat = catId ? categoryById(catId) : null;
   const lang = c.lang === 'ta' ? 'ta' : 'en';
-  return { theme, page: p, ent: normalizeEntitlements(entitlements), c, settings: settings && typeof settings === 'object' ? settings : {}, vendor: vendor ?? {}, host: host ?? {}, warnings, warn, cat, lang, ui: UI[lang], scopes: [], uid: 0, slots: [], variant: cat ? FAMILIES[cat.family].variant : null };
+  // The category preset is the DEFAULT look and starter content; the vendor's own settings and content always win (see applyPresetContent and renderPage).
+  let preset = theme?.presets && cat ? theme.presets[cat.id] ?? null : null;
+  if (preset) {
+    const errs = validatePreset(preset, { manifest: theme.manifest });
+    if (errs.length && errs.every((e) => e.code === 'font-not-in-manifest')) { warn('preset-ignored:fonts'); preset = { ...preset, fonts: null }; }
+    else if (errs.length) { warn('preset-ignored:invalid'); preset = null; }
+  }
+  return { theme, page: p, preset, ent: normalizeEntitlements(entitlements), c: preset ? applyPresetContent(c, preset, lang) : c, settings: settings && typeof settings === 'object' ? settings : {}, vendor: vendor ?? {}, host: host ?? {}, warnings, warn, cat, lang, ui: UI[lang], scopes: [], uid: 0, slots: [], variant: cat ? FAMILIES[cat.family].variant : null };
 }
 
 const getPath = (obj, parts) => parts.reduce((o, k) => (o !== null && o !== undefined && typeof o === 'object' ? o[k] : undefined), obj);
@@ -486,17 +494,23 @@ export function renderPage(input) {
 
   if (page.slug === 'item' && page.item) ctx.scopes.push({ name: 'item', value: page.item });
   let tree = typeof src === 'string' ? renderNodes(ctx, parse(src)) : [];
-  tree = applySections(tree, settings, ctx);
+  tree = applySections(tree, { sectionOrder: settings.sectionOrder ?? ctx.preset?.sections?.order, hiddenSections: settings.hiddenSections ?? ctx.preset?.sections?.hidden }, ctx);
   const body = serialize(tree);
 
   // vendor settings -> wrapper attributes
   const m = theme?.manifest ?? {};
-  const style = [];
-  if (settings.accent !== undefined) { if (HEX.test(settings.accent)) style.push(`--g4d-accent:${settings.accent}`); else ctx.warn('setting-ignored:accent'); }
-  if (settings.accentDark !== undefined) { if (HEX.test(settings.accentDark)) style.push(`--g4d-accent-dark:${settings.accentDark}`); else ctx.warn('setting-ignored:accentDark'); }
+  // Wrapper style variables: the preset's palette and fonts first, then the vendor's settings on top (same variable replaces the preset's).
+  const style = new Map();
+  const fontVar = (name) => `'${name}',var(--g4d-font-fallback,system-ui,sans-serif)`;
+  if (ctx.preset) {
+    for (const kv of presetStyle(ctx.preset).split(';')) { const i = kv.indexOf(':'); style.set(kv.slice(0, i), kv.slice(i + 1)); }
+    if (ctx.preset.fonts) { style.set('--g4d-font-heading', fontVar(ctx.preset.fonts.heading)); style.set('--g4d-font-body', fontVar(ctx.preset.fonts.body)); }
+  }
+  if (settings.accent !== undefined) { if (HEX.test(settings.accent)) style.set('--g4d-pal-accent', settings.accent); else ctx.warn('setting-ignored:accent'); }
+  if (settings.accentDark !== undefined) { if (HEX.test(settings.accentDark)) style.set('--g4d-pal-accent-d', settings.accentDark); else ctx.warn('setting-ignored:accentDark'); }
   for (const k of ['fontHeading', 'fontBody']) {
     if (settings[k] === undefined) continue;
-    if (APPROVED_FONTS.includes(settings[k]) && (m.fonts ?? []).includes(settings[k])) style.push(`--g4d-font-${k === 'fontHeading' ? 'heading' : 'body'}:'${settings[k]}',var(--g4d-font-fallback,system-ui,sans-serif)`);
+    if (APPROVED_FONTS.includes(settings[k]) && (m.fonts ?? []).includes(settings[k])) style.set(`--g4d-font-${k === 'fontHeading' ? 'heading' : 'body'}`, fontVar(settings[k]));
     else ctx.warn(`setting-ignored:${k}`);
   }
   if (settings.layoutVariant !== undefined) ctx.warn('setting-ignored:layoutVariant');
@@ -511,7 +525,8 @@ export function renderPage(input) {
     `class="g4d-theme g4d-theme-${esc(m.id ?? 'theme')}"`, `lang="${lang}"`,
     v ? `data-variant="${esc(v.id)}" data-hero="${esc(v.hero)}" data-header="${esc(v.header)}" data-services="${esc(v.services)}" data-card="${esc(v.card)}" data-divider="${esc(v.divider)}" data-decor="${esc(v.decor)}"` : '',
     `data-motion="${motion.toLowerCase()}"`,
-    style.length ? `style="${style.join(';')}"` : '',
+    ctx.preset?.hero?.pattern ? `data-pattern="${esc(ctx.preset.hero.pattern)}"` : '',
+    style.size ? `style="${[...style].map(([k, val]) => `${k}:${val}`).join(';')}"` : '',
   ].filter(Boolean).join(' ');
   const html = `<div ${attrs}>${body}</div>`;
 

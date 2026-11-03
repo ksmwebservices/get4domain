@@ -15,13 +15,16 @@ export function themeFromFiles(files, dir = null) {
   const templates = {};
   const css = {};
   const assets = {};
+  const presets = {};
+  const presetErrors = [];
   for (const p of Object.keys(files)) {
     let m;
     if ((m = p.match(/^templates\/([a-z0-9-]+)\.html$/))) templates[m[1]] = text(p);
     else if ((m = p.match(/^css\/([a-z]+)\.css$/)) && CSS_FILES.includes(m[1])) css[m[1]] = text(p);
+    else if ((m = p.match(/^presets\/([a-z0-9-]+)\.json$/))) { try { presets[m[1]] = JSON.parse(text(p)); } catch { presetErrors.push({ file: p, message: 'the preset is not valid JSON' }); } }
     else if (p.startsWith('assets/')) assets[p] = files[p];
   }
-  return { manifest, templates, css, assets, dir };
+  return { manifest, templates, css, assets, presets, presetErrors, dir };
 }
 
 export function loadTheme(idOrDir) {

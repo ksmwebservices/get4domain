@@ -32,7 +32,7 @@ export function buildSchema() {
         type: 'object', additionalProperties: false,
         properties: { accent: bool, fonts: bool, logo: bool, sectionOrder: bool, sectionVisibility: bool, motionIntensity: bool },
       },
-      fonts: { type: 'array', uniqueItems: true, maxItems: 4, items: { type: 'string', enum: APPROVED_FONTS } },
+      fonts: { type: 'array', uniqueItems: true, maxItems: 12, items: { type: 'string', enum: APPROVED_FONTS } },
       assets: {
         type: 'array',
         description: 'package only: every file under assets/',

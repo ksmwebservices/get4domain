@@ -42,7 +42,8 @@ my-theme/
   css/tokens.css             required: the design tokens (light, and dark under prefers-color-scheme)
   css/motion.css             required: motion, reduced-motion block (may be tiny; Off intensity must be fully static)
   css/print.css              required: business-card print
-  assets/                    png, jpg, webp, svg (no script), woff2
+  presets/<categoryId>.json   optional: the default look and starter content of one category (Standard themes ship one for every category they list; section 9b)
+$1
 ```
 
 Limits: package 5 MB, one file 1 MB, 400 files, a template under 100 KB, layout CSS under 40 KB, motion CSS under 6 KB. A file path may not contain `..`, a leading `/`, a drive letter or a backslash. No executable file of any kind (by extension or by first bytes).
@@ -61,7 +62,7 @@ Limits: package 5 MB, one file 1 MB, 400 files, a template under 100 KB, layout 
 | `layoutVariantRules` | object | `{ "<familyId>": "<variantId>" }`: the variant is **chosen by the category's family** (section 8); a theme may only restate the table, never override it |
 | `motion` | object | `{ "default": "Off/Low/Medium/Rich", "variantDefaults": {...} }`: defaults used when the vendor has not chosen |
 | `settingsSchema` | object | which vendor settings the theme honours (section 9); must not add others |
-| `fonts` | array | approved names only (12 allowed; the platform self-hosts them); list a Tamil font here if the theme's stacks use one |
+| `fonts` | array | approved names only (12 allowed in the whole list, up to 12 per theme because category presets use different pairs; the platform self-hosts them); list a Tamil font here if the theme's stacks use one |
 | `assets` | array | `{ path, bytes, sha256 }` for every file under `assets/` (filled by `pack`) |
 | `contentHash` | string | sha256 over the package content (filled by `pack`; required in a packaged zip) |
 | `internal` | boolean | true only for the kit's own `_starter` theme; never offered to vendors |
@@ -186,6 +187,32 @@ Where T5 gives no value (for example a divider for home services), the safest va
 
 Nothing else (primary colour, spacing, templates) can be changed by a vendor.
 
+## 9b. Category presets (`presets/<categoryId>.json`)
+
+One layout looks clearly different per category through a **preset**, without becoming a separate hand-built theme. A preset is the **default settings and starter content** for one category inside one theme; the vendor's own settings and content always override it. Machine-readable form: `themes/schema/preset.schema.json`.
+
+| Field | Meaning |
+|---|---|
+| `category` | the category id; must equal the file name and be listed in `theme.json` `categories` |
+| `palette` | `{ light: { primary, accent, background }, dark: { primary, accent, background } }`, each `#rrggbb`. The text, muted-text, surface, border and button-text colours are not chosen by the preset: the surface and border are derived from the background and the button text is white or near-black, whichever reads better on the primary colour (one rule, `derivePalette`, shared by the renderer and the lint) |
+| `fonts` | `{ heading, body }` from the approved list, both listed in `theme.json` `fonts` |
+| `blocks` | the order of the category's extra blocks: every extra block exactly once, **the category's lead block first** |
+| `hero.pattern` | one of `dots grid waves rays rings chevrons diagonal blobs`: a hero decoration the theme draws with CSS (`[data-pattern=...]`); no photos |
+| `services`, `faqs` | invented, generic starter content as `{ en: [...], ta: [...] }`: services `{ name, description }` (1 to 8), FAQs `{ q, a }` (1 to 6), matching the Free plan limits (1 page, 8 services, 5 gallery images, 6 FAQs) |
+| `sections` | optional: `order` (default order of the home sections) and `hidden` (sections hidden by default); hidden sections must exist in the home template, must be optional, and the hero can never be hidden |
+
+How the renderer applies a preset (the category of the content selects it):
+
+- **Palette**: written as wrapper variables `--g4d-pal-primary`, `-primary-contrast`, `-accent`, `-bg`, `-surface`, `-border` (light) and the same with a `-d` suffix (dark). A theme's `tokens.css` consumes them with its own fallback, for example `--g4d-accent: var(--g4d-pal-accent, #0a5f7a);` and, in the dark block, `var(--g4d-pal-accent-d, #63c2e0)`. The vendor's accent replaces `--g4d-pal-accent` and the dark accent replaces `--g4d-pal-accent-d`; both are checked for contrast by `contrast-accent`.
+- **Fonts**: `--g4d-font-heading` and `--g4d-font-body`, with the Tamil-capable fallback stack after them. A vendor font setting replaces the preset's.
+- **Blocks**: `content.blocks` is sorted by the preset's order.
+- **Hero**: `data-pattern="<pattern>"` on the wrapper.
+- **Sections**: the preset's `hidden` and `order` are used when the vendor has not set `hiddenSections` / `sectionOrder` (an empty vendor list means "hide nothing").
+- **Starter content**: when the vendor has no services (or FAQs) the preset's are shown in the visitor's language, without prices; vendor content is never replaced.
+- An unusable preset is ignored with a warning (`preset-ignored:fonts` drops only the fonts; `preset-ignored:invalid` drops the preset).
+
+A package may carry presets only for categories its manifest lists (`preset-category`); each is validated on upload (`preset-invalid`). The lint rule `preset-valid` also requires a complete set: a theme that has any preset must have one for every category it lists. The Standard themes ship all 41 (a test fails if any category has none or a preset fails contrast).
+
 ## 10. The 41 categories
 
 Tracks: **Handyman** (13), **Professional** (20), **Ecommerce** (8). Price class (tier) eligibility: every category accepts both Standard and Premium themes.
@@ -283,7 +310,8 @@ How the rendered rules work: for every category the theme lists (or all 41 with 
 | `html-budget` | see `css-budget-layout` |
 | `category-renders` | the theme renders with sample content for every category it lists, with no warning and with all of the category's extra blocks present |
 $1
-| `entitlements-render` | every category is rendered with all entitlements on and all off (every template); both must render without warnings, with no empty slot box, no section left empty by a missing entitlement, no gated slot drawn when its entitlement is off, and each gated slot the theme places drawn when its entitlement is on |
+$1
+| `preset-valid` | every `presets/<id>.json`: valid against the schema, fonts listed in `theme.json`, the lead block first, AA contrast in light and dark against the theme's own text colours, a hero pattern the theme's CSS defines, only existing and optional sections hidden; and a preset for every category the theme lists (when it has any) |
 
 ## 12. Not in this kit (follow-ups)
 

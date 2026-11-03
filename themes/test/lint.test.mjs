@@ -7,6 +7,7 @@ import { CATEGORY_IDS } from '../lib/categories.mjs';
 import { suggestAccent, ratio } from '../lib/contrast.mjs';
 import { parseRules } from '../lib/css.mjs';
 import { openBrowser } from '../lib/browser.mjs';
+import { goodPreset } from './helpers/preset.mjs';
 
 const starter = () => loadTheme('_starter');
 const clone = (t, over = {}) => ({ ...t, manifest: { ...t.manifest, ...(over.manifest ?? {}) }, templates: { ...t.templates, ...(over.templates ?? {}) }, css: { ...t.css, ...(over.css ?? {}) }, assets: t.assets });
@@ -42,7 +43,7 @@ const bad = (t) => ({
   'css-scoped': { theme: clone(t, { css: { base: `${t.css.base}\nbody { margin: 0; }` } }) },
   'approved-fonts': { theme: clone(t, { css: { tokens: t.css.tokens.replace("'Inter'", "'Comic Sans MS'") } }) },
   'tamil-fonts': { theme: clone(t, { css: { tokens: t.css.tokens.replace(/'Noto Sans Tamil', /g, '') } }) },
-  'tokens-defined': { theme: clone(t, { css: { tokens: t.css.tokens.replace('--g4d-border: #d3dcd9;', '') } }) },
+  'tokens-defined': { theme: clone(t, { css: { tokens: t.css.tokens.replace(/--g4d-border: [^;]*;/, '') } }) },
   'contrast-tokens': { theme: clone(t, { css: { tokens: t.css.tokens.replace('--g4d-muted: #4a5a56;', '--g4d-muted: #bbbbbb;') } }) },
   'contrast-accent': { theme: t, opts: { vendorAccent: '#ffff00' } },
   'one-h1': { theme: clone(t, { templates: { home: t.templates.home.replace('<h1>{{hero.title}}</h1>', '<h1>{{hero.title}}</h1><h1>second</h1>') } }) },
@@ -65,6 +66,7 @@ const bad = (t) => ({
   'slots-reserve-space': { theme: clone(t, { css: { base: t.css.base.replace(/\.g4d-theme \.g4d-slot--map \{[^}]*\}/, '') } }) },
   'bindings-known': { theme: clone(t, { templates: { home: `${t.templates.home}<p>{{foo.bar}}</p><g4d-teleporter></g4d-teleporter>` } }) },
   'entitlements-render': { theme: clone(t, { templates: { home: t.templates.home.replace('</main>', '<section data-g4d-section="vid" data-g4d-optional="true"><div class="wrap"><g4d-video></g4d-video></div></section></main>') } }) },
+  'preset-valid': { theme: { ...t, presets: { plumber: goodPreset('plumber', { fonts: { heading: 'Lora', body: 'Inter' } }) } } },
   'print-stylesheet': { theme: clone(t, { css: { print: '' } }) },
   'category-renders': { theme: clone(t, { templates: { home: t.templates.home.replace('data-block="{{block.key}}"', 'data-x="{{block.key}}"') } }) },
   'category-fit-order': { theme: t, opts: { render: (i) => renderPage({ ...i, content: { ...i.content, blocks: [...(i.content.blocks ?? [])].reverse() } }) } },

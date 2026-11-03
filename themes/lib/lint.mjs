@@ -3,10 +3,11 @@
 // category, in English and Tamil, plus the extreme fixtures. Nothing is executed and nothing is fetched.
 import { Buffer } from 'node:buffer';
 import { parse, byTag, findAll, classesOf, textOf } from './html.mjs';
-import { parseRules, eachRule, eachAt, toPx, classesIn } from './css.mjs';
+import { parseRules, eachRule, eachAt, toPx, classesIn, resolveVarFallback } from './css.mjs';
 import { parseHex, ratio, suggestAccent, AA_TEXT } from './contrast.mjs';
 import { renderPage } from './render.mjs';
-import { validateManifest } from './schema.mjs';
+import { validateManifest, validateAgainst } from './schema.mjs';
+import { validatePreset, paletteFindings, PRESET_SCHEMA } from './preset.mjs';
 import { pageDocument } from './document.mjs';
 import { measureOverflow } from './browser.mjs';
 import { motionSets, countAnimated, MAX_ANIMATED_PER_SECTION } from './motion.mjs';
@@ -18,7 +19,7 @@ export const RULE_IDS = [
   'manifest-valid', 'no-script-tag', 'no-inline-handler', 'no-forbidden-element', 'no-seo-output', 'no-external-request', 'iframe-hosts', 'css-hygiene', 'css-scoped',
   'approved-fonts', 'tamil-fonts', 'tokens-defined', 'contrast-tokens', 'contrast-accent', 'one-h1', 'landmarks', 'skip-link', 'language-attr', 'alt-text', 'form-labels',
   'touch-targets', 'responsive-static', 'responsive-browser', 'text-stretch', 'css-budget-layout', 'css-budget-motion', 'reduced-motion', 'hero-visible', 'motion-properties',
-  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render',
+  'motion-count', 'slots-required', 'slots-reserve-space', 'bindings-known', 'print-stylesheet', 'html-budget', 'category-renders', 'category-fit-order', 'entitlements-render', 'preset-valid',
 ];
 
 const FORBIDDEN = new Set(['iframe', 'object', 'embed', 'form', 'input', 'select', 'textarea', 'style', 'canvas', 'audio', 'dialog', 'base', 'frame', 'frameset', 'applet', 'noscript']);
@@ -74,7 +75,8 @@ function tokenMaps(model) {
       for (const x of r.rules ?? []) if (x.type === 'rule' && x.selectors.includes('.g4d-theme')) for (const d of x.decls) dark[d.prop] = d.value;
     }
   }
-  return { light, dark, hasDark };
+  const resolve = (map) => Object.fromEntries(Object.entries(map).map(([k, val]) => [k, resolveVarFallback(val)]));
+  return { light: resolve(light), dark: resolve(dark), hasDark };
 }
 
 // ------------------------------------------------------------ template (source) checks
@@ -437,6 +439,37 @@ function checkEntitlements(theme, F, state, categories, opts) {
   }
 }
 
+/**
+ * preset-valid: presets/<categoryId>.json files. Each must match the schema, name only fonts the theme lists, keep the category's lead block first, pass AA in light and
+ * dark against the theme's own text colours, use a hero pattern the theme's CSS defines, and only hide sections the home page has and may hide. A theme that has any preset
+ * must have one for every category it lists.
+ */
+function checkPresets(theme, model, F, state) {
+  const presets = theme.presets ?? {};
+  for (const e of theme.presetErrors ?? []) F.add('preset-valid', e.file, e.message);
+  const ids = Object.keys(presets);
+  if (!ids.length) return;
+  const sections = new Map();
+  for (const n of findAll(state.parsed.home ?? [], (x) => 'data-g4d-section' in x.attrs)) sections.set(n.attrs['data-g4d-section'], n.attrs['data-g4d-section'] !== 'hero' && n.attrs['data-g4d-optional'] !== 'false');
+  const { light, dark } = state.model;
+  const tokens = { text: light['--g4d-text'], muted: light['--g4d-muted'], textDark: dark['--g4d-text'] ?? light['--g4d-text'], mutedDark: dark['--g4d-muted'] ?? light['--g4d-muted'] };
+  for (const id of ids) {
+    const where = `presets/${id}.json`;
+    const p = presets[id];
+    for (const e of validatePreset(p, { manifest: theme.manifest, file: where })) F.add('preset-valid', where, `${e.path}: ${e.message}`);
+    if (validateAgainst(PRESET_SCHEMA, p).length) continue;
+    for (const msg of paletteFindings(p.palette, tokens)) F.add('preset-valid', where, msg);
+    const pat = p.hero.pattern;
+    if (!model.rules.some(({ r }) => r.selectors.some((s) => new RegExp(`data-pattern=['"]?${pat}['"]?\\]`).test(s)))) F.add('preset-valid', where, `the hero pattern "${pat}" has no CSS in this theme ([data-pattern=${pat}])`);
+    for (const sid of p.sections?.hidden ?? []) {
+      if (!sections.has(sid)) F.add('preset-valid', where, `hidden section "${sid}" does not exist in the home template`);
+      else if (!sections.get(sid)) F.add('preset-valid', where, `section "${sid}" is not optional and cannot be hidden by default`);
+    }
+    for (const sid of p.sections?.order ?? []) if (!sections.has(sid)) F.add('preset-valid', where, `ordered section "${sid}" does not exist in the home template`);
+  }
+  for (const id of theme.manifest?.categories ?? []) if (hasCategory(id) && !presets[id]) F.add('preset-valid', 'presets/', `the theme lists the category "${id}" but has no preset for it`);
+}
+
 // ------------------------------------------------------------ the entry points
 /**
  * @param {object} theme  see lib/theme.mjs
@@ -453,6 +486,7 @@ export function lintTheme(theme, opts = {}) {
   checkCss(theme, model, F, state, opts);
   checkHero(theme, model, F, state);
   checkSlotsSource(theme, model, F, state, categories);
+  checkPresets(theme, model, F, state);
   checkRendered(theme, F, state, categories, opts);
   checkEntitlements(theme, F, state, categories, opts);
 

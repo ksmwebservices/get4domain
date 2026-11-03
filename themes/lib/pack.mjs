@@ -6,6 +6,8 @@ import path from 'node:path';
 import { writeZip, readZip, isSafePath } from './zip.mjs';
 import { validateManifest } from './schema.mjs';
 import { LIMITS, PAGE_TEMPLATES, CSS_FILES, SLOT_TAGS } from './vocabulary.mjs';
+import { validatePreset } from './preset.mjs';
+import { hasCategory } from './categories.mjs';
 
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
@@ -68,6 +70,7 @@ export function svgProblem(text) {
 }
 
 const isTemplatePath = (p) => /^templates\/[a-z0-9-]+\.html$/.test(p) && PAGE_TEMPLATES.includes(p.slice('templates/'.length, -'.html'.length));
+const isPresetPath = (p) => /^presets\/[a-z0-9-]+\.json$/.test(p);
 const isCssPath = (p) => /^css\/[a-z]+\.css$/.test(p) && CSS_FILES.includes(p.slice(4, -4));
 
 function listAssets(files) {
@@ -132,7 +135,7 @@ export function validatePackage(zipBuf) {
     if (e.size > 10 * 1024 && e.size / Math.max(e.csize, 1) > LIMITS.maxExpansionRatio) { add('expansion-ratio', p, 'expands far more than a normal file (possible zip bomb)'); continue; }
     if (declared > LIMITS.packageBytes * 3) { add('expanded-too-large', '', 'the package would expand to more than three times the size limit'); break; }
 
-    const placed = p === 'theme.json' || isTemplatePath(p) || isCssPath(p) || (p.startsWith('assets/') && ASSET_EXT.includes(ext));
+    const placed = p === 'theme.json' || isTemplatePath(p) || isCssPath(p) || isPresetPath(p) || (p.startsWith('assets/') && ASSET_EXT.includes(ext));
     if (!placed) { add('unknown-file', p, 'this file is not part of the package layout (theme.json, templates/, css/, assets/)'); continue; }
 
     let data;
@@ -169,6 +172,15 @@ export function validatePackage(zipBuf) {
     if (Array.isArray(manifest.assets) && listed !== actual) add('asset-list-mismatch', 'theme.json:assets', 'the asset list in theme.json does not match the files');
     if (typeof manifest.contentHash === 'string' && !errors.some((e) => ['zip-corrupt', 'unknown-file'].includes(e.code))) {
       if (computeContentHash(files) !== manifest.contentHash) add('hash-mismatch', 'theme.json:contentHash', 'the content hash does not match the package content');
+    }
+    for (const [path, data] of Object.entries(files)) {
+      if (!isPresetPath(path)) continue;
+      const category = path.slice('presets/'.length, -'.json'.length);
+      let preset;
+      try { preset = JSON.parse(data.toString('utf8')); } catch { add('preset-invalid', path, 'the preset is not valid JSON'); continue; }
+      if (!hasCategory(category)) { add('preset-invalid', path, `"${category}" is not one of the 41 category ids`); continue; }
+      if (Array.isArray(manifest.categories) && !manifest.categories.includes(category)) add('preset-category', path, `the theme does not list the category ${category}`);
+      for (const e of validatePreset(preset, { manifest, file: path })) add('preset-invalid', path, `${e.path}: ${e.message} (${e.code})`);
     }
   }
   return out(manifest, files);
