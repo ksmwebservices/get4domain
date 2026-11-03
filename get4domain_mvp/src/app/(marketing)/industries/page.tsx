@@ -5,8 +5,8 @@ import { INDUSTRIES } from '@/data/industries-list';
 import CapabilityStrip from '@/components/marketing/CapabilityStrip';
 
 export const metadata: Metadata = {
-  title: '20+ Industry Solutions — Restaurant, Travel, Clinic & More',
-  description: 'Get4Domain serves 20+ industries with industry-specific websites and Workplace dashboards. Your dashboard speaks your business language — Bookings, Orders, Appointments and more.',
+  title: '20+ Industry Solutions for Indian Businesses',
+  description: 'Industry-specific websites and dashboards for 20+ kinds of Indian business, in your own business language.',
   alternates: { canonical: 'https://get4domain.com/industries' },
 };
 

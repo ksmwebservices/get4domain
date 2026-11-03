@@ -4,8 +4,8 @@ import Faq from '@/components/marketing/Faq';
 import ManagedServicesForm from '@/components/marketing/ManagedServicesForm';
 
 export const metadata: Metadata = {
-  title: 'Managed Services — Custom Software & Marketing, Built for You',
-  description: 'Bespoke web and mobile applications, full SME software builds, and ongoing managed marketing — paid ads, content, influencer collaborations and commercial production. Scoped and priced per project.',
+  title: 'Managed Services: Custom Software and Marketing',
+  description: 'Custom web and mobile apps, SME software builds and managed marketing, scoped and priced per project.',
   alternates: { canonical: 'https://get4domain.com/managed-services' },
 };
 

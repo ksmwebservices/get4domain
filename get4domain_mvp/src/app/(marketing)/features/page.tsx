@@ -18,8 +18,8 @@ const FEATURES_FAQ = [
 ];
 
 export const metadata: Metadata = {
-  title: 'Features — CRM, Accounting, HRM, Inventory, AI, SEO & More from ₹999/month',
-  description: 'Every DomainApp feature in detail: CRM & TeleCRM, Communication Hub, accounting & GST, HRM, inventory, AI Studio, SEO/GEO/AEO, Google Business Profile, backlinks, social media management, PWA apps and website customization.',
+  title: 'Features for Your Business Website',
+  description: 'CRM, accounting and GST, inventory, AI content, SEO and social media tools, and website customisation for Indian businesses.',
   alternates: { canonical: 'https://get4domain.com/features' },
 };
 

@@ -52,13 +52,13 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const url = `https://get4domain.com/industries/${id}`;
   // Title template ("%s | Get4Domain") already appends the brand — don't repeat it here
   // (was producing "… | Get4Domain | Get4Domain").
-  const title = `${content.name} Business Website & Software`;
+  const title = `${content.name} Business Website`;
+  const description = `A free business website and directory listing for ${content.name.toLowerCase()} businesses in India.`;
   return {
     title,
-    description: content.fullDesc,
-    keywords: content.seoKeywords,
+    description,
     alternates: { canonical: url },
-    openGraph: { title: `${title} | Get4Domain`, description: content.fullDesc, url, type: 'website', images: [siteConfig.ogImage] },
+    openGraph: { title: `${title} | Get4Domain`, description, url, type: 'website', images: [siteConfig.ogImage] },
   };
 }
 

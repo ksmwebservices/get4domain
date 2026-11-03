@@ -5,7 +5,7 @@ import { createPageMetadata } from '@/lib/metadata';
 
 export const metadata = createPageMetadata({
   title: 'Contact Get4Domain — Chennai, Tamil Nadu',
-  description: 'Get in touch with Get4Domain. Chat with our assistant or request a callback and our team will call you. Email: support@get4domain.com. Address: Tidel Park, Tharamani, Chennai.',
+  description: 'Contact Get4Domain: chat with our assistant or request a callback. Email support@get4domain.com. Tidel Park, Tharamani, Chennai.',
   path: '/contact',
 });
 

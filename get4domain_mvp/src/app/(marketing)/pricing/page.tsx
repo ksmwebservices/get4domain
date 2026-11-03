@@ -13,8 +13,8 @@ import { fetchLivePricing, applyLivePricing } from '@/lib/pricing';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Pricing — LeadSpace, DomainApp, Managed Ads & Managed Services',
-  description: 'All Get4Domain pricing in one place: LeadSpace is a free page where you pay only for each verified customer from a prepaid wallet; DomainApp Workspace ₹11,988/yr or BOS ₹23,988/yr (+ GST), Managed Ads managed ads from ₹2,000/month by ad budget, and custom-quoted Managed Services for bespoke software and marketing.',
+  title: 'Plans and Pricing',
+  description: 'How Get4Domain plans work for Indian businesses: a free business website and directory listing, with paid options when you need more.',
   alternates: { canonical: 'https://get4domain.com/pricing' },
 };
 

@@ -2,7 +2,7 @@
 /**
  * SEO checks for the Get4Domain marketing app (SEO-0, docs/v3/SEO_0_PLAN.md).
  *
- *   node scripts/seo-check.mjs [--base http://127.0.0.1:3100] [--group legacy,demo,canon,robots,links,all] [--verbose]
+ *   node scripts/seo-check.mjs [--base http://127.0.0.1:3100] [--group legacy,demo,canon,robots,links,routes,all] [--verbose]
  *
  * Run it against a LOCAL, FRONTEND-ONLY `next start`. Build and start with the API variables pointed at an unreachable local address so nothing can
  * reach a real backend, e.g.:
@@ -13,6 +13,7 @@
  *
  * Groups: legacy (titles, descriptions, OG/Twitter, keywords, JSON-LD offers, llms.txt)   demo (/visit-demo, /demo/*, sitemap)
  *         canon (redirects, canonicals, JSON-LD by host)   robots (robots.txt)   links (internal links, metadata helper)
+ *         routes (every public route: title and description, canonical, robots, JSON-LD, banned words and prices, one table)
  * Exit code: 0 all pass, 1 at least one failure, 2 refused or could not run.
  */
 import http from 'node:http';
@@ -297,6 +298,62 @@ check('links', 'createPageMetadata requires its path argument (type) and refuses
   ok(!/keywords/.test(src), 'the keywords fallback is still in the metadata helper');
 });
 
+// ─────────────────────────────────── routes (every public route, one table) ───────────────────────────────────────────────────────────────────
+/** Words and prices that must not be in anything a crawler reads from the head of a page, its structured data, llms.txt or the sitemaps. (Page body copy is outside this task: owner decision, plan section 5.) */
+const BANNED = /Workspace|\bBOS\b|LeadSpace|Identity Partner|Online Identity|Business Operating System/i;
+const PRICE = /₹\s?\d|\bRs\.?\s?\d|\bINR\s?\d|\b\d[\d,]*\s?\/\s?(?:mo|month|yr|year)\b|"price"|"priceCurrency"|"Offer"|"offers"/i;
+const PUBLIC_ROUTES = [...STATIC_PAGES, ...INDUSTRIES.map((i) => `/industries/${i}`)];
+const EXPECTED_LD = { '/': ['Organization', 'WebSite', 'SoftwareApplication'] };
+const rows = [];
+async function auditRoute(p) {
+  const r = await get(p); const row = { route: p, status: r.status, title: '-', desc: '-', canon: '-', robots: '-', ld: '-', words: '-', problems: [] };
+  rows.push(row);
+  if (r.status !== 200) { row.problems.push('status ' + r.status); return row; }
+  const titles = [...r.body.matchAll(/<title[^>]*>/gi)].length; const t = title(r.body) ?? '';
+  const descs = tags(r.body, 'meta').filter((a) => a.name?.toLowerCase() === 'description');
+  const d = descs[0]?.content ?? '';
+  row.title = String(t.length); row.desc = String(d.length);
+  if (titles !== 1) row.problems.push(titles + ' <title> tags');
+  if (!t || t.length > 60) row.problems.push('title length ' + t.length + ' (1..60)');
+  if (descs.length !== 1) row.problems.push(descs.length + ' description tags');
+  if (d.length < 50 || d.length > 160) row.problems.push('description length ' + d.length + ' (50..160)');
+  const want = 'https://' + SITE + (p === '/' ? '' : p); const c = canonical(r.body); row.canon = c && c.replace(/\/$/, '') === want ? 'self' : 'BAD';
+  if (row.canon === 'BAD') row.problems.push('canonical ' + c + ' (wanted ' + want + ')');
+  const rb = (metaNamed(r.body, 'robots') ?? '') + ' ' + xrobots(r); row.robots = noindex(rb) ? 'NOINDEX' : 'index';
+  if (row.robots === 'NOINDEX') row.problems.push('a public page is noindex');
+  const ld = jsonLd(r.body); const unparsable = ld.filter((b) => b.__unparsable); const types = ldTypes(ld);
+  row.ld = unparsable.length ? 'BAD' : ld.length + ' ok'; if (unparsable.length) row.problems.push('JSON-LD does not parse');
+  for (const need of EXPECTED_LD[p] ?? []) if (!types.includes(need)) row.problems.push('JSON-LD lacks ' + need);
+  if (p.startsWith('/industries/') && !types.includes('Service')) row.problems.push('JSON-LD lacks Service');
+  if (metaNamed(r.body, 'keywords') !== undefined) row.problems.push('has a keywords meta tag');
+  const strings = metaStrings(r.body); const hit = strings.filter((x) => BANNED.test(x) || PRICE.test(x)); row.words = hit.length ? 'BAD' : 'clean';
+  if (hit.length) row.problems.push('banned word or price in head/JSON-LD: ' + hit.map((h) => h.slice(0, 90)).slice(0, 2).join(' | '));
+  return row;
+}
+for (const p of PUBLIC_ROUTES) check('routes', 'public route ' + p + ': one title and description of sane length, self canonical, indexable, JSON-LD valid, no banned word or price', async () => {
+  const row = await auditRoute(p); ok(!row.problems.length, row.problems.join('; '));
+});
+check('routes', 'llms.txt, sitemap.xml and robots.txt text: no banned word or price', async () => {
+  const bad = [];
+  for (const f of ['/llms.txt', '/sitemap.xml', '/robots.txt']) { const r = await get(f); const lines = r.body.split('\n').filter((l) => !/^\s*(<loc>|Sitemap:|Allow:|Disallow:)/i.test(l) && (BANNED.test(l) || PRICE.test(l))); if (lines.length) bad.push(f + ': ' + lines[0].slice(0, 100)); }
+  ok(!bad.length, bad.join('; '));
+});
+check('routes', '/talk-to-sales (a post-demo page, not in the sitemap) stays noindex', async () => {
+  const r = await get('/talk-to-sales'); ok(r.status === 200 && /noindex/i.test(metaNamed(r.body, 'robots') ?? ''), `status ${r.status}, robots "${metaNamed(r.body, 'robots')}"`);
+});
+check('routes', 'sitemap lists only indexable URLs: every listed page answers 200 and is not noindex', async () => {
+  const r = await get('/sitemap.xml'); const locs = [...r.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(decode(m[1])).pathname); const bad = [];
+  for (const p of locs) { const x = await get(p); if (x.status !== 200 || noindex(xrobots(x) + ' ' + (metaNamed(x.body, 'robots') ?? ''))) bad.push(p + ' (' + x.status + ')'); }
+  ok(!bad.length, 'not indexable: ' + bad.slice(0, 5).join(', '));
+});
+function printTable() {
+  if (!rows.length) return;
+  const cols = ['route', 'status', 'title', 'desc', 'canon', 'robots', 'ld', 'words']; const w = cols.map((c) => Math.max(c.length, ...rows.map((r) => String(r[c]).length)));
+  const line = (r) => cols.map((c, i) => String(r[c]).padEnd(w[i])).join('  ');
+  console.log('\n' + line(Object.fromEntries(cols.map((c) => [c, c])))); console.log(w.map((n) => '-'.repeat(n)).join('  '));
+  for (const r of rows) console.log(line(r) + (r.problems.length ? '   <-- FAIL' : ''));
+}
+
 // ─────────────────────────────────── run ──────────────────────────────────────────────────────────────────────────────────────────────────────
 const wanted = checks.filter((c) => GROUPS.includes('all') || GROUPS.includes(c.group));
 if (!wanted.length) { console.error(`no checks for group(s): ${GROUPS.join(',')}`); process.exit(2); }
@@ -308,5 +365,6 @@ for (const c of wanted) {
   try { await c.fn(); console.log(`PASS  [${c.group}] ${c.name}`); }
   catch (e) { failed++; console.log(`FAIL  [${c.group}] ${c.name}\n        ${String(e.message).replace(/\n/g, ' ').slice(0, VERBOSE ? 2000 : 420)}`); }
 }
+printTable();
 console.log(`\n${wanted.length - failed} passed, ${failed} failed (${wanted.length} checks, groups: ${GROUPS.join(',')}) against ${BASE.origin}`);
 process.exit(failed ? 1 : 0);

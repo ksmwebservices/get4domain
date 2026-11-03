@@ -4,8 +4,8 @@ import { ArrowRight, Check, Smartphone, ShieldCheck, Wallet, BarChart3 } from 'l
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'LeadSpace: your online visible partner | free page, pay only for verified customers',
-  description: 'A free mini web page for your business. Customers ask for you on it and confirm on WhatsApp, and you pay a small amount only for each verified customer, from a prepaid wallet you control.',
+  title: 'Free Business Page for Indian Businesses',
+  description: 'A free mini web page for your business. Customers ask for you on it and confirm on WhatsApp, so you only follow up on verified enquiries.',
   alternates: { canonical: 'https://get4domain.com/leadspace' },
 };
 

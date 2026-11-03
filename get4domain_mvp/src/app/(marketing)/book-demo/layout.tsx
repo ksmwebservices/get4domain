@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { siteConfig } from '@/constants/site';
 
 export const metadata: Metadata = {
-  title: 'Book a Free Demo — Get4Domain | See How It Works in 30 Minutes',
+  title: 'Book a Free Demo',
   description: 'Book a free 30-minute demo with our team. See Get4Domain in action for your industry. No commitment. Our consultant calls within 24 hours.',
   alternates: { canonical: 'https://get4domain.com/book-demo' },
   openGraph: {

@@ -4,8 +4,8 @@ import { Check, ArrowRight } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 
 export const metadata: Metadata = {
-  title: 'DomainApp — Industry Website + Business Workspace + AI Studio',
-  description: 'DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹499 free credit.',
+  title: 'Industry Website and Business Tools',
+  description: 'A professional industry website with business tools for enquiries, invoicing and records, built for Indian businesses.',
   alternates: { canonical: 'https://get4domain.com/domain-app' },
 };
 
