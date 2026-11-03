@@ -1,0 +1,13 @@
+<section class="hero hero--image" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="hero-art g4d-hero-zoom" data-g4d-if="hero.image"><img src="{{hero.image}}" alt="{{hero.imageAlt}}" width="1200" height="600" fetchpriority="high"></div>
+  <div class="wrap hero-over">
+    <div class="hero-copy">
+      <p class="hero-badge" data-g4d-if="hero.badge">{{hero.badge}}</p>
+      <p class="eyebrow" data-g4d-if="site.tagline">{{site.tagline}}</p>
+      <h1>{{hero.title}}</h1>
+      <p class="lead" data-g4d-if="hero.subtitle">{{hero.subtitle}}</p>
+      <div class="actions"><g4d-action class="btn btn-primary"></g4d-action><a class="btn g4d-underline" data-g4d-if="contact.phone" href="{{contact.phoneHref}}" data-track="call">{{ui.call}} {{contact.phone}}</a></div>
+      <g4d-open-now></g4d-open-now>
+    </div>
+  </div>
+</section>
