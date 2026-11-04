@@ -10,3 +10,6 @@ Read `crm`, `admin-crm`, `domainapp/contacts`, the engine action registry, `Tele
 
 ## INV-3 Accounts, billing and wallet
 Compared the five invoice engines (platform, Commercial Engine, Domain App, BOS, V3), their numbering and tax rules, the BOS posting and GST code, the legacy wallet debit hardening and every Razorpay entry point. Finding that matters: `domainapp/invoices.service.ts` creates payment links with the platform Razorpay key, which breaks rule 4 (the same defect as the earlier S9). The legacy wallet has no lots, expiry or refund rule, so the V3 wallet is new. Output: section INV-3 of `docs/v3/V2_INVENTORY.md`.
+
+## INV-4 Messaging
+Read the email, SMS, Fast2SMS WhatsApp, Cloud API gateway, webhook, communication, vendor-comms, campaigns, bot and social code and the schedulers. Findings: two unrelated stacks; no consent, unsubscribe, block list or Do-not-contact for vendor messaging; campaigns charge the wallet on approval and send nothing; prices are hard-coded in code; no queue and no Instagram or Facebook assistant. Output: section INV-4 of `docs/v3/V2_INVENTORY.md`.

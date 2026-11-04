@@ -300,3 +300,44 @@ There are **four separate invoice engines** in V2, plus the V3 one. They share n
 
 Open item for V3: platform Razorpay keys for legacy flows live in the environment; V3 keys are separate and test-only until the owner enables live mode.
 
+## INV-4. Messaging
+
+Two completely separate stacks exist. Neither has consent, opt-out or a Do-not-contact register that fits rules 9 and 10.
+
+| Stack | Purpose | Modules | Provider | Mode |
+|---|---|---|---|---|
+| A. Vendor messaging (V2) | A vendor sends email, SMS or WhatsApp to a contact; the vendor's wallet pays per message | `communication`, `vendor-comms`, `whatsapp`, `sms`, `email`, `campaigns`, `whatsapp-bot`, `growth-hub` | Resend (email, real), Fast2SMS (SMS and WhatsApp via approved template id), one central account set in Admin > Integrations (`platform-settings`) | email real; SMS and WhatsApp mock until the Fast2SMS key resolves |
+| B. Common WhatsApp number (LeadSpace) | Get4Domain sends transactional notices (OTP, new lead, low balance, receipt) to customers and vendors from one number | `messaging/whatsapp` (gateway, Cloud API provider, sandbox provider, webhook), `leadspace` | WhatsApp Cloud API (Meta), selected by `WHATSAPP_PROVIDER=cloud`; default sandbox | sandbox; Meta approval pending |
+
+### 4.1 Component list
+
+| Component | Status | What exists | Proof |
+|---|---|---|---|
+| Email (Resend) | working | Welcome, password reset and change, invoice, receipt, support reply, team and admin invites, generic send with from-name and reply-to; test mode skips the client | `email/email.service.ts` (methods lines 32-217) |
+| SMS (Fast2SMS) | working, mock-first | `bulkV2` endpoint, key from encrypted platform settings; returns `mock` when no key; failures reported as `failed` | `sms/sms.service.ts` (lines 25-69) |
+| WhatsApp via Fast2SMS | working, mock-first | Template and session endpoints; template ids per vendor in `VendorCommsSettings` | `whatsapp/whatsapp.service.ts` (lines 13-42) |
+| WhatsApp Cloud API | working in sandbox | Gateway with 7 rules in code: only AUTHENTICATION and UTILITY templates, no free text, no bulk method, promotional wording refused, unapproved templates refused live, 12 messages per phone per day, inbound dropped, every send logged with masked number | `messaging/whatsapp/whatsapp-gateway.service.ts` (lines 13-90); `cloud-api.provider.ts`; `sandbox.provider.ts` |
+| Webhook | working | GET handshake, POST status with signature check, throttled; inbound messages dropped | `whatsapp-webhook.controller.ts` |
+| Templates | partial | Five LeadSpace templates in code (`leadspace_otp`, `_new_lead`, `_held_leads`, `_low_balance`, `_refill_receipt`) mirrored in `g4d_whatsapp_templates`; approval status `SANDBOX` until Meta approves; none for V3 | `whatsapp-gateway.service.ts` `DEFAULT_TEMPLATES`; `WhatsappTemplate` |
+| Logs | working | `g4d_messages` (vendor to contact, channel, status, provider id), `g4d_whatsapp_message_logs` (number masked, phone hash) | `schema.prisma`; `communication.service.ts` |
+| Wallet charge per message | working | Debit only for real sends, check balance first; rates default in code (50 paise SMS, 100 WhatsApp, 20 email) and overridable through `wallet.getRate` | `communication/communication.service.ts` (lines 12-16, 55-60) |
+| Campaigns | stub | A record with channels, content and an estimated cost (`CHANNEL_COSTS_PAISE` hard-coded: whatsapp 100, sms 50, email 10, facebook 1000, instagram 500, paid ads 20000 paise); approval debits the wallet in one transaction with the status change; **there is no sender**: nothing iterates a contact list and sends, so an approved campaign charges the vendor and delivers nothing | `campaigns/campaigns.service.ts` (lines 9-40) |
+| Broadcast / bulk send | absent | None for vendors. The common gateway deliberately has no bulk method | `whatsapp-gateway.service.ts` rule 2 |
+| Social posting | partial | Accounts with encrypted tokens, posts, jobs, caps, retries, kill switch; sandbox until Meta approval; admin-only routes | `social/` (7 routes `admin/social`); `PostJob`, `SocialAccount` |
+| WhatsApp bot | partial | Inbound webhook, routes the message to a vendor, answers from `KnowledgeBaseEntry` plus vendor products and CMS through the AI service, creates a lead and contact, hands off to a human on keywords (agent, human, call me), notifies the vendor. No guardrail text in the bot for medical, legal, tax or financial advice, no payment refusal beyond the generic AI prompt | `whatsapp-bot/whatsapp-bot.service.ts` (lines 11, 55-70, 172); `knowledge-base.service.ts` |
+| Web chat | partial | `components/ChatBot.tsx` and `DashboardChatBot.tsx` (marketing and in-dashboard assistants) | frontend only |
+| Instagram / Facebook assistants | absent | `meta/` is 56 lines of connector placeholder; `social` publishes, it does not converse | `meta/` |
+| Queue / scheduler | none for messaging | There is no outbound queue, retry or rate shaping. Scheduled jobs in the repo are `@Cron` handlers: BOS recurring (06:30), commercial renewal (06:00), LeadSpace promotion (every 10 min), V3 plan billing (hourly), V3 provisioning (every 30 s). `@nestjs/schedule` only; no Redis, no BullMQ | `grep @Cron` |
+| Consent / opt-out | **absent** | No opt-in capture, no unsubscribe link, no STOP handling in stack A. `g4d_consent_records` (LeadSpace) stores a text version, purpose and phone hash for OTP capture only. `LeadBlockedPhone` blocks LeadSpace leads only | `schema.prisma`; `leadspace/goals.ts` (`CONSENT_TEXT_VERSION`) |
+| Do-not-contact register | absent | none | searched |
+| Quiet hours, frequency caps | partial | The common gateway caps 12 per phone per day; stack A has none | `whatsapp-gateway.service.ts` line 36 |
+| Vendor identity on messages | working | Per-vendor from-name, reply-to, SMS business name, own WhatsApp number and template id | `vendor-comms/vendor-comms.service.ts` |
+
+### 4.2 Findings against owner rules 9 and 10
+
+1. Rule 9 (consent, unsubscribe, block list before every send, Do-not-contact for seeded businesses) has **no implementation to adapt** in stack A. The nearest asset is the Cloud API gateway: its seven rules show the right style (checks in code, not policy), and its per-send log is what an audit needs.
+2. `communication.send` accepts any `to` string and any text. Nothing checks that the recipient is a contact of that vendor or has opted in. It must not be reachable by a V3 vendor until a consent gate sits in front of it.
+3. Hard-coded prices: `CHANNEL_COSTS_PAISE`, `CHANNEL_RATE` fallbacks. Stop-line 6 forbids invented values in V3; V3 messaging must read rates from settings and refuse to enable a channel until staff set them.
+4. The bot (rule 10) answers from stored details, which is right, and hands over on request, which is right. It lacks the explicit refusals (advice, payment) and has no hand-over record other than a lead and a notification.
+5. Vendors will get website chat only (rule 10); the WhatsApp, Instagram and Facebook assistants are Get4Domain's own and do not exist yet (directory search that sends people to business sites).
+
