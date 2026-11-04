@@ -12,10 +12,11 @@ const TENANT_V3 = [
   'V3PlanSubscription', 'V3SubscriptionEvent', 'V3EntitlementOverride', 'V3VendorFlag',   // slice 5.1
   'V3ClaimToken', 'V3Invite',                                                              // slice 5.3
   'V3SiteSettings', 'V3SitePublication', 'V3SitePublicationPage', 'V3SiteEvent',          // slice 5.4
-  'V3Domain', 'V3DomainVerification', 'V3Redirect',                                        // slice 5.6
+  'V3Domain', 'V3DomainVerification', 'V3Redirect',
+  'V3DirectoryBusiness',                                                                   // slice 5.7: vendor routes /v3/me/directory (vendorId is null while unclaimed)                                        // slice 5.6
 ];
 /** carry a vendorId only as a back-reference for staff; no vendor route reads them */
-const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob'];
+const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'];   // the grant is consumed by the set-password endpoint, no vendor route reads it
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

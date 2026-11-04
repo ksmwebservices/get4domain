@@ -22,16 +22,18 @@ export const LEGACY_MODELS = [
 ];
 
 /** Registers the standard additive-migration checks for a slice. */
-export function describeSchemaSlice(label: string, o: { suffix: string; tables: string[]; enums: string[]; fkTargets: string[] }): void {
+export function describeSchemaSlice(label: string, o: { suffix: string; tables: string[]; enums: string[]; fkTargets: string[]; /** statements a slice may add beyond the standard set (for example ALTER TYPE ... ADD VALUE, or a guarded DO block) */ extraAllowed?: RegExp[] }): void {
   const { name, code } = migrationSql(o.suffix);
   describe(`${label}: schema and migration`, () => {
     it.each(o.tables.map((t) => [t]))('%s is a model with a cuid id', (t) => { const b = modelBlock(t); expect(b).not.toBe(''); expect(b).toMatch(/\bid\s+String\s+@id\s+@default\(cuid\(\)\)/); });
     it.each(o.enums.map((e) => [e]))('enum %s exists', (e) => { expect(schemaText).toMatch(new RegExp(`^enum ${e} \{`, 'm')); });
     it('migration folder exists', () => { expect(name).toBeDefined(); expect(code.length).toBeGreaterThan(300); });
     it('is additive: only CREATE TYPE / TABLE / INDEX, ADD CONSTRAINT and ENABLE ROW LEVEL SECURITY (no DROP, RENAME, TRUNCATE, UPDATE, DELETE, ALTER COLUMN)', () => {
-      expect(code).not.toMatch(/\bDROP\b|\bTRUNCATE\b|\bRENAME\b|\bDELETE\s+FROM\b|\bUPDATE\s+"|\bALTER COLUMN\b/i);
-      for (const stmt of code.split(';').map((s) => s.trim()).filter(Boolean)) {
-        expect(stmt).toMatch(/^(CREATE TYPE|CREATE TABLE|CREATE (UNIQUE )?INDEX|CREATE EXTENSION IF NOT EXISTS|ALTER TABLE "g4d_[a-z_]+" (ADD CONSTRAINT|ENABLE ROW LEVEL SECURITY))/);
+      const body = o.extraAllowed?.length ? code.replace(/DO \$\$[\s\S]*?END \$\$;/g, '') : code;   // a guarded DO block is checked on its own below
+      expect(body).not.toMatch(/\bDROP\b|\bTRUNCATE\b|\bRENAME\b|\bDELETE\s+FROM\b|\bUPDATE\s+"|\bALTER COLUMN\b/i);
+      for (const stmt of body.split(';').map((s) => s.trim()).filter(Boolean)) {
+        const ok = /^(CREATE TYPE|CREATE TABLE|CREATE (UNIQUE )?INDEX|CREATE EXTENSION IF NOT EXISTS|ALTER TABLE "g4d_[a-z_]+" (ADD CONSTRAINT|ENABLE ROW LEVEL SECURITY))/.test(stmt) || (o.extraAllowed ?? []).some((r) => r.test(stmt));
+        expect([stmt.slice(0, 80), ok]).toEqual([stmt.slice(0, 80), true]);
       }
     });
     it('creates each table and turns row level security on', () => { for (const t of o.tables) { expect(code).toContain(`CREATE TABLE "${t}"`); expect(code).toContain(`ALTER TABLE "${t}" ENABLE ROW LEVEL SECURITY`); } });
