@@ -31,11 +31,22 @@ export class HostDirectory {
     if (!h) return null;
     const now = this.clock().getTime();
     const hit = this.cache.get(h);
-    if (hit && now - hit.at < CACHE_TTL_MS) return hit.v;
+    if (hit && now - hit.at < CACHE_TTL_MS && (await this.stillSafe(hit.v))) return hit.v;
     const v = await this.resolveUncached(h);
     if (this.cache.size >= CACHE_MAX) this.cache.clear();
     this.cache.set(h, { at: now, v });
     return v;
+  }
+
+  /**
+   * The cache only saves the expensive part (plan, entitlements, redirect plan). The vendor's status is re-read on EVERY request (one primary-key lookup), because the legacy
+   * admin suspends a vendor without telling this module and a refusal must never wait for a timer. Domain-row changes made through this module call invalidate(); a change made by
+   * another server instance is picked up within the 30 second TTL (documented bound).
+   */
+  private async stillSafe(v: ResolvedHost | null): Promise<boolean> {
+    if (!v) return true;   // a cached "no" can never serve anything
+    const vendor = await this.repo.vendorInfo(v.vendorId);
+    return !!vendor && vendor.status !== 'SUSPENDED';
   }
 
   /** The entitlement bridge: true only when the plan allows custom domains AND one is ACTIVE (verified). Closes the slice 5.1 gap in toRenderEntitlements. */

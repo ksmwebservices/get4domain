@@ -32,6 +32,14 @@ describe('resolveHost', () => {
     await w.svc.setSubdomain(A, 'mine', OWNER(A)); w.repo.vendors.get(A)!.status = 'SUSPENDED'; w.dir.invalidate();
     expect(await w.dir.resolveHost(`mine.${BASE}`)).toBeNull();
   });
+  it('a vendor suspended AFTER the host was cached stops being served at once (the vendor status is never cached), by every route to the vendor', async () => {
+    await w.svc.setSubdomain(A, 'mine', OWNER(A)); await w.svc.setSubdomain(A, 'later', OWNER(A));
+    expect(await w.dir.resolveHost(`later.${BASE}`)).toMatchObject({ vendorId: A }); expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });   // both now cached
+    w.repo.vendors.get(A)!.status = 'SUSPENDED';   // no invalidate(): the legacy admin suspends without telling this module
+    expect(await w.dir.resolveHost(`later.${BASE}`)).toBeNull(); expect(await w.dir.resolveHost(`mine.${BASE}`)).toBeNull();
+    w.repo.vendors.get(A)!.status = 'ACTIVE'; advance(w, 61);   // a cached refusal is forgotten after the TTL (restoring a vendor is never urgent; suspending is)
+    expect(await w.dir.resolveHost(`later.${BASE}`)).toMatchObject({ vendorId: A });
+  });
   it('an old subdomain redirects (301) to the new one through the stored redirect; path handling stays with the caller', async () => {
     await w.svc.setSubdomain(A, 'before', OWNER(A)); await w.svc.setSubdomain(A, 'after', OWNER(A));
     expect(await w.dir.resolveHost(`before.${BASE}`)).toEqual({ vendorId: A, host: `before.${BASE}`, primaryHost: `after.${BASE}`, decision: { action: 'REDIRECT', host: `after.${BASE}`, status: 301 } });
