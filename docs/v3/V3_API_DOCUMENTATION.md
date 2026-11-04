@@ -93,3 +93,59 @@ Design and examples: `V3_S4_RENDERER_PUBLISH.md` section 8. Extra error codes (p
 | GET /v3/public/site/by-host?host=&path=&lang= | the PUBLISHED page as html with ETag (the page sha256), 304 on `If-None-Match`, cache and robots headers; one plain 404 for every miss |
 
 15 new routes. Nothing here exposes a site on a real host.
+
+## Batch 2 (branch v3-b2): 65 new routes, staging only, nothing exposed on a real host
+
+Same envelope as above. Design, rules and examples: `V3_S5_BATCH2.md`. "Owner" means the vendor owner (team members are refused); "staff" means AdminGuard plus the role matrix.
+
+### Slice 5.6 Domains (14)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/me/domains | owner | the vendor's hosts with state |
+| PUT /v3/me/domains/subdomain | owner | `{ slug }` set or change the free subdomain (rules, change limit); 409 HOST_UNAVAILABLE for any taken, reserved or blocked name |
+| POST /v3/me/domains/custom | owner | `{ hostname }` add a custom domain (plan feature `customDomain`); returns the DNS TXT instruction |
+| GET /v3/me/domains/:id | owner | one host |
+| POST /v3/me/domains/:id/verify | owner | DNS TXT check (DISABLED while `domainDnsLiveChecks` is off) |
+| POST /v3/me/domains/:id/primary | owner | make a verified custom domain primary |
+| DELETE /v3/me/domains/:id | owner | release a host (soft; a released subdomain is never reused by another vendor) |
+| GET /v3/admin/domains, GET /v3/admin/domains/:id | OPERATIONS, SUPER_ADMIN | list and read |
+| POST /v3/admin/domains/:id/verify, PUT .../state, POST .../primary, POST .../remove | OPERATIONS, SUPER_ADMIN | staff actions, reason required, audited |
+| PUT /v3/admin/vendors/:id/domains/subdomain | OPERATIONS, SUPER_ADMIN | set a vendor's free subdomain |
+
+### Slice 5.7 Directory, claim by OTP, removal (31)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/directory/locations, /categories | public | active trees |
+| GET /v3/directory/businesses | public | search (`q`, `category`, `location`, `page`); sponsored items labelled, page 1 only |
+| GET /v3/directory/businesses/:slug | public | profile; unclaimed shows a limited view; 410 when removed |
+| GET /v3/directory/sitemap-data | public | slugs and dates of indexable profiles |
+| POST /v3/directory/removal-requests | public | uniform 202 |
+| GET /v3/directory/removal-requests/:token, POST .../:token/confirm | public | status and confirmation (token only) |
+| POST /v3/claim/:token/otp/request, POST /v3/claim/:token/otp/verify | public | uniform answers; verify returns the single-use account-setup grant |
+| GET /v3/me/directory, PUT /v3/me/directory | owner | the vendor's own profile |
+| GET/POST/PUT /v3/admin/directory/locations(/:id), /categories(/:id) | staff (reads all; writes OPERATIONS, SUPER_ADMIN) | trees |
+| GET/POST/PUT /v3/admin/directory/businesses(/:id) | staff (MARKETING reads without personal fields) | businesses |
+| POST .../businesses/:id/moderate, .../placements, .../claim-phone-override; GET .../businesses/:id/placements; POST .../placements/:id/revoke | OPERATIONS, SUPER_ADMIN | moderation, sponsored placements, claim-phone override (reason, audited) |
+| GET /v3/admin/directory/removal-requests; POST .../:id/approve, /reject, /execute | OPERATIONS, SUPER_ADMIN | removal queue (contacts masked) |
+
+### Slice 5.1b Plan purchase (9, Razorpay TEST only)
+| Method and path | Who | What |
+|---|---|---|
+| POST /v3/me/billing/orders | owner | `{ planId, termMonths, idempotencyKey }`; amounts in paise from the plan tables |
+| POST /v3/me/billing/orders/:id/confirm | owner | signature plus provider re-check, then the single settlement |
+| GET /v3/me/billing/orders, GET /v3/me/billing/invoices | owner | own orders and invoices |
+| POST /v3/payments/razorpay/webhook | public (signature) | raw-body HMAC; 401 bad signature, 200 for replays |
+| GET /v3/admin/billing/orders, GET .../payment-events | OPERATIONS, SUPER_ADMIN | read (payloads redacted) |
+| POST /v3/admin/billing/orders/:id/mark-paid, POST .../refund | SUPER_ADMIN | recorded with a reason; same settlement path |
+
+### Slice 5.11 AI Studio (11, mock model unless `aiLiveCalls`)
+| Method and path | Who | What |
+|---|---|---|
+| POST /v3/me/ai/generate | owner or website-area member | `{ feature, input, idempotencyKey }`; 403 LIMIT_REACHED when credits are spent |
+| GET /v3/me/ai/usage | same | credits included, granted, used, remaining, recent requests |
+| GET/POST /v3/admin/ai/providers, PUT .../:id, POST .../:id/test | SUPER_ADMIN | the secret is encrypted and never returned |
+| GET/POST /v3/admin/ai/prompts, POST .../prompts/:id/activate | SUPER_ADMIN | versioned instruction templates |
+| POST /v3/admin/ai/credit-grants | SUPER_ADMIN | reason required, audited |
+| GET /v3/admin/ai/usage | OPERATIONS, SUPER_ADMIN | usage without generated text |
+
+Route classification baseline: 839 to 904 routes (public 92, admin 288, authenticated 524); none removed.

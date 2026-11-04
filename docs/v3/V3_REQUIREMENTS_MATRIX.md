@@ -300,3 +300,12 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 5.4 Renderer, SEO layer, publish | `v3-s54` | Built and pushed; staging 310 of 311, the one failure a test timeout, addressed in `c3e9bd4`; re-run pending. Internal read API only: no real host is served. | Instant free site, SEO fundamentals, publish and rollback |
 | SEO-0 | `v3-seo0` | Four commits on the marketing frontend only; not part of the backend batches. | SEO fundamentals on get4domain.com |
 | B2.0 Hygiene | `v3-b2` | Done: plans suites clean up after a failed assertion (`cleanup-guard`); this status block. | Rule 7 (tenant tests) housekeeping |
+
+
+## Status as built (2026-11-04, Batch 2)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.6 Subdomain rules and domain mapping | `v3-b2` | Built; unit tests green; staging suites written, NOT RUN. Live DNS checks off by default; no certificate or server change. | Free subdomain, custom domain mapping, canonical host, redirects |
+| 5.7 Public directory, claim by OTP, removal | `v3-b2` | Built; sandbox SMS only; seed is proposed data awaiting owner review; staging NOT RUN. | Directory search, claim flow, takedown flow |
+| 5.1b Plan purchase and renewal | `v3-b2` | Built with a fake provider in tests; Razorpay TEST adapter only; live refused; staging NOT RUN. | Plan purchase, invoices, renewal reminders |
+| 5.11 AI Studio providers and credits | `v3-b2` | Built with a mock model; live adapters gated off; wallet-bought credits not included (legacy wallet, D1). Staging NOT RUN. | AI suggestions, credits, provider management |
