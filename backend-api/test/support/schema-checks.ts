@@ -22,10 +22,10 @@ export const LEGACY_MODELS = [
 ];
 
 /** Registers the standard additive-migration checks for a slice. */
-export function describeSchemaSlice(label: string, o: { suffix: string; tables: string[]; enums: string[]; fkTargets: string[]; /** statements a slice may add beyond the standard set (for example ALTER TYPE ... ADD VALUE, or a guarded DO block) */ extraAllowed?: RegExp[] }): void {
+export function describeSchemaSlice(label: string, o: { suffix: string; tables: string[]; enums: string[]; fkTargets: string[]; /** tables whose primary key is not a cuid by design (for example a counter keyed by year) */ noCuid?: string[]; /** statements a slice may add beyond the standard set (for example ALTER TYPE ... ADD VALUE, or a guarded DO block) */ extraAllowed?: RegExp[] }): void {
   const { name, code } = migrationSql(o.suffix);
   describe(`${label}: schema and migration`, () => {
-    it.each(o.tables.map((t) => [t]))('%s is a model with a cuid id', (t) => { const b = modelBlock(t); expect(b).not.toBe(''); expect(b).toMatch(/\bid\s+String\s+@id\s+@default\(cuid\(\)\)/); });
+    it.each(o.tables.map((t) => [t]))('%s is a model with a cuid id (or a key chosen on purpose)', (t) => { const b = modelBlock(t); expect(b).not.toBe(''); if (!(o.noCuid ?? []).includes(t)) expect(b).toMatch(/\bid\s+String\s+@id\s+@default\(cuid\(\)\)/); });
     it.each(o.enums.map((e) => [e]))('enum %s exists', (e) => { expect(schemaText).toMatch(new RegExp(`^enum ${e} \{`, 'm')); });
     it('migration folder exists', () => { expect(name).toBeDefined(); expect(code.length).toBeGreaterThan(300); });
     it('is additive: only CREATE TYPE / TABLE / INDEX, ADD CONSTRAINT and ENABLE ROW LEVEL SECURITY (no DROP, RENAME, TRUNCATE, UPDATE, DELETE, ALTER COLUMN)', () => {

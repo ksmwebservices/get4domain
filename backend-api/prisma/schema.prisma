@@ -60,6 +60,8 @@ model Vendor {
   v3Redirects V3Redirect[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
+  v3PlanOrders V3PlanOrder[]
+  v3PlanInvoices V3PlanInvoice[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -3901,6 +3903,7 @@ model V3Plan {
   prices        V3PlanPrice[]
   features      V3PlanFeature[]
   subscriptions V3PlanSubscription[]
+  orders        V3PlanOrder[]
 
   @@unique([track, level])
   @@map("g4d_plans")
@@ -4025,6 +4028,7 @@ model V3PlanSubscription {
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   plan   V3Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  reminders V3ReminderLog[]
 
   @@index([vendorId, status])
   @@index([planId])
@@ -4704,4 +4708,116 @@ model V3AccountSetupGrant {
 
   @@index([vendorId])
   @@map("g4d_account_setup_grants")
+}
+
+// ─── V3 slice 5.1b: plan purchase and renewal (Razorpay TEST mode only; additive). Integer paise end to end; nothing here stores a card, bank or PAN detail. ─────────────────
+
+enum V3PlanOrderStatus {
+  CREATED
+  PENDING_PAYMENT
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+  REVIEW // money and order disagree (amount or currency), or a payment arrived for an expired order: staff decide; never activates by itself
+}
+
+enum V3PlanOrderKind {
+  NEW
+  RENEWAL
+  UPGRADE
+}
+
+model V3PlanOrder {
+  id                  String            @id @default(cuid())
+  vendorId            String
+  planId              String
+  termMonths          Int
+  kind                V3PlanOrderKind   @default(NEW)
+  quoteJson           Json // the priceQuote snapshot (tax and discounts) the amount came from; later price edits never change it
+  amountPaise         Int
+  currency            String            @default("INR")
+  status              V3PlanOrderStatus @default(CREATED)
+  providerOrderId     String?           @unique
+  idempotencyKey      String
+  expiresAt           DateTime
+  createdByType       String            @default("VENDOR") // VENDOR | STAFF
+  createdById         String?
+  paymentId           String? // the provider's payment id once paid
+  paidAmountPaise     Int?
+  paidAt              DateTime?
+  source              String? // SELF (the provider paid it) | STAFF (marked paid offline)
+  reason              String? // staff: why it was marked paid
+  subscriptionId      String? // the subscription this payment created or extended
+  refundRecordedPaise Int? // a RECORD only: no provider refund call is made in this slice
+  refundNote          String?
+  refundRecordedBy    String?
+  refundRecordedAt    DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  vendor  Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  plan    V3Plan          @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoice V3PlanInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, expiresAt])
+  @@map("g4d_plan_orders")
+}
+
+model V3PaymentEvent {
+  id                  String   @id @default(cuid())
+  provider            String   @default("razorpay")
+  providerEventId     String   @unique // replay protection: the same event id is only ever processed once
+  type                String
+  payloadRedactedJson Json // contact, email and card-like fields are removed before storing
+  signatureValid      Boolean
+  orderId             String? // our order, when the event could be matched to one (no foreign key: events outlive anything)
+  processedAt         DateTime?
+  result              String? // PAID | DUPLICATE | IGNORED | REVIEW | NO_ORDER | BAD_SIGNATURE
+  createdAt           DateTime @default(now())
+
+  @@index([orderId])
+  @@map("g4d_payment_events")
+}
+
+model V3PlanInvoice {
+  id               String   @id @default(cuid())
+  vendorId         String
+  orderId          String   @unique
+  invoiceNumber    String   @unique // gap-free per financial year, from g4d_invoice_counters under a lock
+  financialYear    String // for example 2026-27
+  issuedAt         DateTime
+  snapshotJson     Json // seller and buyer details, plan, term, the money
+  taxBreakdownJson Json
+  createdAt        DateTime @default(now())
+
+  vendor Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  order  V3PlanOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_plan_invoices")
+}
+
+model V3InvoiceCounter {
+  financialYear String   @id
+  lastNumber    Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@map("g4d_invoice_counters")
+}
+
+model V3ReminderLog {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  daysBefore     Int
+  endsAt         DateTime
+  kind           String   @default("SENT") // SENT | SKIPPED (a larger offset passed while the cron was down; only the nearest one is sent)
+  sentAt         DateTime @default(now())
+
+  subscription V3PlanSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, daysBefore, endsAt])
+  @@map("g4d_reminder_log")
 }
