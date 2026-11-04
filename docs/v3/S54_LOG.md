@@ -80,7 +80,7 @@ So in the default `legacy` mode the code accounts for **one** extra query per jo
 
 **Results.** Unit 841 of 841 (42 suites); build ok; lint 0 errors; `verify:migrations` 117 ok; `verify:raw-sql` 729 ok; int specs type-check clean. The staging run is NOT RUN here.
 
-**Owner: re-run only the provisioning flow with timings**, from `C:\Get4Domain\get4domain-s54ackend-api`:
+**Owner: re-run only the provisioning flow with timings**, from `C:\Get4Domain\get4domain-s54\backend-api`:
 1. `npx.cmd jest --ci --runInBand --selectProjects int --verbose test/provisioning-flow.int.spec.ts`  (look for the `[timing]` lines: boot, and per-step times of every job)
 2. `npm.cmd run test:cleanup-staging -- --count`  (must be 0)
 To rule out finding 2, check the row first: in the Supabase SQL editor of STAGING, `select key, "valueJson" from g4d_plan_settings where key = 'siteDraftBuilderMode';` (no row or "legacy" is expected unless you switched it).
