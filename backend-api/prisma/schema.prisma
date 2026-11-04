@@ -4580,6 +4580,8 @@ model V3DirectoryBusiness {
   media      V3DirectoryBusinessMedia[]
   placements V3DirectoryPlacement[]
   removals   V3DirectoryRemovalRequest[]
+  visitDays  V3DirectoryVisitDaily[]
+  visitRefs  V3DirectoryVisitRef[]
   overrides  V3DirectoryClaimOverride[]
 
   @@index([status, indexable])
@@ -4982,4 +4984,38 @@ model V3DncRegister {
   addedAt   DateTime @default(now())
 
   @@map("g4d_dnc_register")
+}
+
+// ─── V3 batch 3 slice 5.7b: directory visits (counts only, no personal data) and the short-lived attribution reference (additive) ──────────────────────────────────
+
+/// One row per business per day. `count` = every Visit site click, `searchCount` = the ones that came from a search result. No visitor data of any kind.
+model V3DirectoryVisitDaily {
+  id          String   @id @default(cuid())
+  businessId  String
+  day         String // YYYY-MM-DD, UTC
+  count       Int      @default(0)
+  searchCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, day])
+  @@index([day])
+  @@map("g4d_directory_visit_daily")
+}
+
+/// The opaque reference the Visit link appends (?src=dir&ref=...). Only a hash of it is stored. It expires and can attribute ONE later request.
+model V3DirectoryVisitRef {
+  id         String    @id @default(cuid())
+  refHash    String    @unique
+  businessId String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  business V3DirectoryBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("g4d_directory_visit_refs")
 }
