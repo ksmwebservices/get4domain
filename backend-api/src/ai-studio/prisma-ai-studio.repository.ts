@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { advisoryXactLock } from '../common/db-lock';
+import { KeyedQueue } from '../common/keyed-queue';
 import { Actor, AuditService } from '../plans/admin/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiStudioRepository, AiTx, DuplicateProviderError, DuplicateUsageError, GrantRow, NewProvider, PromptRow, ProviderPatch, ProviderRow, UsageRow, UsageStatus } from './ai-studio.repository';
@@ -18,6 +19,8 @@ const granted = async (db: Db, vendorId: string, period: string): Promise<number
 
 @Injectable()
 export class PrismaAiStudioRepository extends AiStudioRepository {
+  /** Waiting for a vendor's turn happens here, in memory, NOT inside a transaction (see keyed-queue.ts: pool starvation). */
+  private readonly queue = new KeyedQueue();
   constructor(private readonly prisma: PrismaService, private readonly audits: AuditService) { super(); }
 
   async listProviders() { return (await this.prisma.v3AiProvider.findMany({ orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] })).map(toProvider); }
@@ -63,7 +66,7 @@ export class PrismaAiStudioRepository extends AiStudioRepository {
   }
 
   transaction<T>(vendorId: string, fn: (tx: AiTx) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (db) => {
+    return this.queue.run(`ai-credits:${vendorId}`, () => this.prisma.$transaction(async (db) => {
       await advisoryXactLock(db, `ai-credits:${vendorId}`);
       const tx: AiTx = {
         usedCredits: (v, p) => used(db, v, p), grantedCredits: (v, p) => granted(db, v, p),
@@ -71,7 +74,7 @@ export class PrismaAiStudioRepository extends AiStudioRepository {
         insertUsage: async (d) => { try { return toUsage(await db.v3AiUsage.create({ data: { ...d, status: 'RESERVED' } })); } catch (e) { if (isUnique(e)) throw new DuplicateUsageError(); throw e; } },
       };
       return fn(tx);
-    }, { timeout: 20_000 });
+    }, { timeout: 20_000, maxWait: 15_000 }));
   }
 
   async audit(actor: Actor, action: string, entityType: string, entityId: string | null, before: unknown, after: unknown) { await this.prisma.$transaction((tx) => this.audits.record(tx, actor, action, entityType, entityId, before, after)); }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { advisoryXactLock } from '../common/db-lock';
+import { KeyedQueue } from '../common/keyed-queue';
 import { Actor, AuditService } from '../plans/admin/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -75,6 +76,8 @@ class Ops implements DomainTx {
 @Injectable()
 export class PrismaDomainRepository extends DomainRepository {
   private readonly ops: Ops;
+  /** Waiting for a vendor's turn happens here, in memory, NOT inside a transaction (see keyed-queue.ts: pool starvation). */
+  private readonly queue = new KeyedQueue();
   constructor(private readonly prisma: PrismaService, private readonly audits: AuditService) { super(); this.ops = new Ops(prisma); }
 
   findByHostname(h: string) { return this.ops.findByHostname(h); }
@@ -95,9 +98,9 @@ export class PrismaDomainRepository extends DomainRepository {
 
   /** One transaction per vendor at a time (advisory lock); the audit row is written in the same transaction. The DNS lookup is never inside it. */
   transaction<T>(vendorId: string, fn: (tx: DomainTx) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.queue.run(`domains:${vendorId}`, () => this.prisma.$transaction(async (tx) => {
       await advisoryXactLock(tx, `domains:${vendorId}`);
       return fn(new Ops(tx, this.audits, tx));
-    }, { timeout: 20_000 });
+    }, { timeout: 20_000, maxWait: 15_000 }));
   }
 }

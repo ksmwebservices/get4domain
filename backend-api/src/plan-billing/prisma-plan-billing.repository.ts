@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { advisoryXactLock } from '../common/db-lock';
+import { KeyedQueue } from '../common/keyed-queue';
 import { PrismaService } from '../prisma/prisma.service';
 import { Actor, AuditService } from '../plans/admin/audit.service';
 import { SubscriptionsService } from '../plans/subscriptions/subscriptions.service';
@@ -34,6 +35,8 @@ async function currentSubOn(db: Db, vendorId: string): Promise<SubRow | null> {
 
 @Injectable()
 export class PrismaPlanBillingRepository extends PlanBillingRepository {
+  /** Waiting for a vendor's turn happens here, in memory, NOT inside a transaction (see keyed-queue.ts: pool starvation). */
+  private readonly queue = new KeyedQueue();
   constructor(private readonly prisma: PrismaService, private readonly audits: AuditService, private readonly subscriptions: SubscriptionsService) { super(); }
 
   async getPlanByKey(key: string) { const p = await this.prisma.v3Plan.findUnique({ where: { key } }); return p ? toPlan(p) : null; }
@@ -84,7 +87,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
   }
 
   transaction<T>(vendorId: string, fn: (tx: BillingTx) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction(async (db) => {
+    return this.queue.run(`plan-billing:${vendorId}`, () => this.prisma.$transaction(async (db) => {
       await advisoryXactLock(db, `plan-billing:${vendorId}`);
       const tx: BillingTx = {
         getOrder: async (id) => { const o = await db.v3PlanOrder.findUnique({ where: { id } }); return o ? toOrder(o) : null; },
@@ -102,7 +105,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
         audit: (actor: Actor, action, entityId, before, after) => this.audits.record(db, actor, action, 'plan_order', entityId, before, after),
       };
       return fn(tx);
-    }, { timeout: 30_000 });
+    }, { timeout: 30_000, maxWait: 15_000 }));
   }
 
   async dueSubscriptions(now: Date, maxDays: number): Promise<DueSub[]> {
