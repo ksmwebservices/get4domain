@@ -15,6 +15,8 @@ export interface CreateDraftSiteInput {
   language: string;
   city?: string;
   phone?: string;
+  /** The mode the runner already read for this job (slice 5.4). When absent the adapter reads the setting itself. */
+  siteDraftBuilderMode?: 'legacy' | 'renderer';
 }
 
 export abstract class SiteProvisioner {

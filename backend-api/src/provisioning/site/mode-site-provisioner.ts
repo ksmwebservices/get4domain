@@ -15,8 +15,11 @@ export class ModeSiteProvisioner extends SiteProvisioner {
   constructor(private readonly legacy: CmsDraftSiteProvisioner, private readonly settings: ProvisioningSettingsService, private readonly builder: DraftSiteBuilder) { super(); }
 
   async createDraftSite(i: CreateDraftSiteInput): Promise<{ siteId: string }> {
-    const site = await this.legacy.createDraftSite(i);
-    if ((await this.settings.get()).siteDraftBuilderMode === 'renderer') {
+    const { siteDraftBuilderMode: carried, ...legacyInput } = i;
+    const site = await this.legacy.createDraftSite(legacyInput);
+    // the runner read the settings once for the whole job; only a direct caller without the mode pays for a second read
+    const mode = carried ?? (await this.settings.get()).siteDraftBuilderMode;
+    if (mode === 'renderer') {
       await this.builder.prepare({ vendorId: i.vendorId, category: i.category, track: i.track, language: i.language, city: i.city });
     }
     return site;

@@ -58,6 +58,27 @@ describe('ModeSiteProvisioner', () => {
   });
 });
 
+describe('ModeSiteProvisioner: no extra settings query per job (S54 timing fix)', () => {
+  const mk = () => {
+    const legacy = { createDraftSite: jest.fn(async () => ({ siteId: 'cms-1' })) };
+    const builder: DraftSiteBuilder = { prepare: jest.fn(async () => ({ publicationId: 'pub-1' })) };
+    const get = jest.fn(async () => ({ ...DEFAULT_PROVISIONING_SETTINGS, siteDraftBuilderMode: 'renderer' as const }));
+    return { legacy, builder, get, p: new ModeSiteProvisioner(legacy as never, { get } as never, builder) };
+  };
+  it('uses the mode the runner already read (carried in the input): zero settings queries', async () => {
+    const { builder, get, p } = mk();
+    await p.createDraftSite({ ...INPUT, siteDraftBuilderMode: 'legacy' });
+    expect(get).not.toHaveBeenCalled(); expect(builder.prepare).not.toHaveBeenCalled();
+    await p.createDraftSite({ ...INPUT, siteDraftBuilderMode: 'renderer' });
+    expect(get).not.toHaveBeenCalled(); expect(builder.prepare).toHaveBeenCalledTimes(1);
+  });
+  it('still reads the setting when the caller did not pass the mode (the port stays usable on its own)', async () => {
+    const { builder, get, p } = mk();
+    await p.createDraftSite(INPUT);
+    expect(get).toHaveBeenCalledTimes(1); expect(builder.prepare).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('RendererDraftBuilder', () => {
   function build(over: { kind?: 'plumber' | 'dentist' | 'jewellery'; docOver?: Parameters<typeof doc>[1] } = {}) {
     const w = siteWorld({ kind: over.kind ?? 'plumber', doc: over.docOver ? doc(over.kind ?? 'plumber', over.docOver) : undefined });

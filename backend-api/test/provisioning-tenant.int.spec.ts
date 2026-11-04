@@ -13,6 +13,7 @@ import { buildProvisioningTestApp } from './support/provisioning-test-app';
  * the public status route never reveals more than the public business name. Synthetic data only, removed at the end.
  * NOT RUN in the build session that wrote it (no .env.staging there).
  */
+jest.setTimeout(120_000);   // remote database: 30 s was always too tight
 describe('provisioning tenant isolation on staging', () => {
   let app: INestApplication; let prisma: PrismaClient; let A: SeededTenant; let B: SeededTenant; let ops: string; let mkt: string;
   const MARK_B = `BMARK-${RUN_ID}`;

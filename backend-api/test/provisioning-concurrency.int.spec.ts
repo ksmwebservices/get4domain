@@ -18,6 +18,7 @@ import { buildProvisioningTestApp } from './support/provisioning-test-app';
  * S53.8 on STAGING: two or more runners over the real database never execute the same job twice (FOR UPDATE SKIP LOCKED + lease), and a runner that
  * crashed mid-job is taken over once its lease lapses. Synthetic data only, removed at the end. NOT RUN in the build session that wrote it (no .env.staging there).
  */
+jest.setTimeout(120_000);   // remote database: 30 s was always too tight
 describe('provisioning concurrency on staging', () => {
   let app: INestApplication; let prisma: PrismaClient; let ops: string;
   let seq = 0;

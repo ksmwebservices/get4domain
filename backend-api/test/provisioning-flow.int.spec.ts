@@ -12,7 +12,11 @@ import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
 import { StepError } from '../src/provisioning/provisioning.errors';
 import { SiteProvisioner } from '../src/provisioning/site/site-provisioner';
 import { cleanupTenants, newPrisma, seedStaff } from './support/fixtures';
+import { logJobTimings, timed } from './support/job-timing';
 import { buildProvisioningTestApp } from './support/provisioning-test-app';
+
+// each test runs a five-step job against a remote database: 30 s was always too tight
+jest.setTimeout(120_000);
 
 /**
  * S53.8 on STAGING, the whole flow with the real database, the real providers and the sandbox invite adapter (nothing is sent):
@@ -30,7 +34,12 @@ describe('provisioning flow on staging', () => {
   });
   const key = (): string => `v3test-${RUN_ID}-flow-${++seq}`;
   const create = (body: object, k = key()) => request(app.getHttpServer()).post('/v3/admin/provisioning/jobs').set('Authorization', `Bearer ${ops}`).set('Idempotency-Key', k).send(body);
-  const run = (id: string) => request(app.getHttpServer()).post(`/v3/admin/provisioning/jobs/${id}/run`).set('Authorization', `Bearer ${ops}`);
+  const run = async (id: string): Promise<request.Response> => {
+    const t0 = Date.now();
+    const r = await request(app.getHttpServer()).post(`/v3/admin/provisioning/jobs/${id}/run`).set('Authorization', `Bearer ${ops}`);
+    await logJobTimings(prisma, id, Date.now() - t0);
+    return r;
+  };
   const status = (token: string) => request(app.getHttpServer()).get(`/v3/claim/${token}/status`);
   const tokenFromInvite = async (vendorId: string): Promise<string> => {
     const inv = await prisma.v3Invite.findFirstOrThrow({ where: { vendorId }, orderBy: { createdAt: 'desc' } });
@@ -43,11 +52,11 @@ describe('provisioning flow on staging', () => {
     await applySeed(new PrismaSeedStore(prisma), expandSeed(seed), { apply: true });
     ops = await seedStaff(prisma, 'p53ops', RUN_ID, 'OPERATIONS');
     mkt = await seedStaff(prisma, 'p53mkt', RUN_ID, 'MARKETING');
-    app = await buildProvisioningTestApp({
+    app = await timed('nest test app boot', () => buildProvisioningTestApp({
       siteProvisioner: (real): SiteProvisioner => ({
         createDraftSite: async (i) => { siteCalls++; if (failSiteOnce) { failSiteOnce = false; throw new StepError('ADAPTER_TIMEOUT', true); } return real.createDraftSite(i); },
       }),
-    });
+    }));
   }, 180000);
 
   afterAll(async () => {

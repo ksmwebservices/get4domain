@@ -15,6 +15,7 @@ export class CreateFreeSiteDraftStep implements ProvisioningStep {
     const b = parseBusinessInput(ctx.input);
     const { siteId } = await this.site.createDraftSite({
       vendorId: ctx.vendorId, track: b.track, category: b.category, businessName: b.businessName, language: b.language, city: b.city, phone: b.phone,
+      siteDraftBuilderMode: ctx.settings.siteDraftBuilderMode,
     });
     return { outputRef: { siteId } };
   }

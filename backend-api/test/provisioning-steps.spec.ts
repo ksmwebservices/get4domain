@@ -169,7 +169,7 @@ describe('CREATE_FREE_SITE_DRAFT', () => {
   it('calls the SiteProvisioner port with the business and records the site id', async () => {
     const port: SiteProvisioner = { createDraftSite: jest.fn(async () => ({ siteId: 'site-1' })) };
     const r = await new CreateFreeSiteDraftStep(port).run(ctx({ vendorId: 'v1' }));
-    expect(port.createDraftSite).toHaveBeenCalledWith({ vendorId: 'v1', track: 'handyman', category: 'plumber', businessName: 'Sri Ganesh Plumbing', language: 'en', city: 'Chennai', phone: '+919876543210' });
+    expect(port.createDraftSite).toHaveBeenCalledWith({ vendorId: 'v1', track: 'handyman', category: 'plumber', businessName: 'Sri Ganesh Plumbing', language: 'en', city: 'Chennai', phone: '+919876543210', siteDraftBuilderMode: 'legacy' });
     expect(r.outputRef).toEqual({ siteId: 'site-1' });
   });
   it('needs the vendor from the earlier step', async () => {
