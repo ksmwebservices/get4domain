@@ -57,5 +57,5 @@ export class ContentCatalogue extends Catalogue {
   }
 }
 
-/** Checks that the vendor has accepted the current published terms (slice 5.15 binds the real one). Absent = no check, which is what a build without slice 5.15 does. */
-export abstract class AcceptanceGuard { abstract require(vendorId: string, kinds: readonly string[]): Promise<void>; }
+/** Checks that the vendor has accepted the current published terms. Declared in the terms module (slice 5.15), which binds the real one. Absent = no check. */
+export { AcceptanceGuard } from '../terms/terms-ports';

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { generateToken, hashToken } from '../../provisioning/claims/token';
 import { DirectoryAudit } from '../directory-audit';
 import { GRANT_INVALID_MESSAGE, directoryError } from '../directory.errors';
 import { DirectoryRepository } from '../directory.repository';
+import { TermsService } from '../../terms/terms.service';
 
 const invalid = (): NotFoundException => new NotFoundException(directoryError('GRANT_INVALID', GRANT_INVALID_MESSAGE));
 
@@ -13,7 +14,7 @@ const invalid = (): NotFoundException => new NotFoundException(directoryError('G
 @Injectable()
 export class AccountSetupGrantService {
   clock: () => Date = () => new Date();
-  constructor(private readonly repo: DirectoryRepository, private readonly audit: DirectoryAudit) {}
+  constructor(private readonly repo: DirectoryRepository, private readonly audit: DirectoryAudit, @Optional() @Inject(TermsService) private readonly terms?: Pick<TermsService, 'acceptAtClaim'>) {}
 
   async issue(vendorId: string, minutes: number): Promise<{ token: string; expiresAt: Date }> {
     const token = generateToken();
@@ -24,9 +25,11 @@ export class AccountSetupGrantService {
   }
 
   /** Marks the grant used (race safe: exactly one caller wins) and says which vendor it was for. */
-  async consume(rawToken: string): Promise<{ vendorId: string }> {
+  async consume(rawToken: string, opts: { acceptTerms?: boolean; ip?: string | null; userAgent?: string | null } = {}): Promise<{ vendorId: string }> {
     const g = await this.repo.findGrantByHash(hashToken(String(rawToken ?? '').slice(0, 200)));
     if (!g || g.status !== 'ACTIVE' || g.expiresAt.getTime() <= this.clock().getTime()) throw invalid();
+    // Slice 5.15 (c): claim completion needs the vendor terms accepted. Checked BEFORE the grant is spent, so a refusal leaves it usable.
+    if (this.terms) await this.terms.acceptAtClaim(g.vendorId, opts.acceptTerms === true, { ip: opts.ip ?? null, userAgent: opts.userAgent ?? null });
     if (!(await this.repo.consumeGrant(g.id, this.clock()))) throw invalid();
     await this.audit.record({ type: 'SYSTEM', id: null, ip: null }, 'account_setup.grant.consumed', 'account_setup_grant', g.id, null, { vendorId: g.vendorId });
     return { vendorId: g.vendorId };

@@ -9,6 +9,7 @@ import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
 import { Optional } from '@nestjs/common';
 import { RegistrationHook } from '../plans/registration/registration.hook';
+import { TermsSessionFlag } from '../terms/terms-ports';
 
 export interface LoginResult {
   accessToken: string;
@@ -21,6 +22,8 @@ export interface LoginResult {
     businessName: string;
     industry: string | null;
     subdomain: string | null;
+    /** Slice 5.15: true when a newer published version of the vendor terms is waiting to be accepted (the screen arrives with the Next.js port). Absent for staff. */
+    termsAcceptanceRequired?: boolean;
     /** Present for a vendor team-member login. */
     kind?: string;
     memberId?: string;
@@ -36,6 +39,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly vendorsService: VendorsService,
     @Optional() private readonly v3Registration?: RegistrationHook,
+    @Optional() private readonly termsFlag?: TermsSessionFlag,
   ) {}
 
   /**
@@ -92,6 +96,18 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<LoginResult> {
+    return this.withTermsFlag(await this.loginCore(dto));
+  }
+
+  /** Adds the acceptance-required flag to a vendor or vendor-team session. A failure of the flag never blocks a sign-in. */
+  private async withTermsFlag(r: LoginResult): Promise<LoginResult> {
+    if (!this.termsFlag || r.user.role !== 'VENDOR') return r;
+    const claims = this.jwtService.decode(r.accessToken) as { sub?: string } | null;
+    if (!claims?.sub) return r;
+    try { return { ...r, user: { ...r.user, termsAcceptanceRequired: await this.termsFlag.acceptanceRequired(claims.sub) } }; } catch { return r; }
+  }
+
+  private async loginCore(dto: LoginDto): Promise<LoginResult> {
     const vendor = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
 
     if (vendor) {
@@ -221,10 +237,12 @@ export class AuthService {
    * scope a demo pass to the sandbox vendor's OWN industry (never a client-supplied one).
    * Guarded by the JWT guard at the controller, so a forged/expired token can't reach here.
    */
-  async me(vendorId: string): Promise<{ id: string; email: string; industry: string | null; isSandbox: boolean; role: string }> {
+  async me(vendorId: string): Promise<{ id: string; email: string; industry: string | null; isSandbox: boolean; role: string; termsAcceptanceRequired?: boolean }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId } });
     if (!vendor) throw new UnauthorizedException('Account not found');
-    return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role };
+    let termsAcceptanceRequired: boolean | undefined;
+    if (this.termsFlag && vendor.role === 'VENDOR') { try { termsAcceptanceRequired = await this.termsFlag.acceptanceRequired(vendor.id); } catch { termsAcceptanceRequired = undefined; } }
+    return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role, ...(termsAcceptanceRequired === undefined ? {} : { termsAcceptanceRequired }) };
   }
 
   private signToken(payload: {

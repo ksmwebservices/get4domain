@@ -1,4 +1,5 @@
 import { DEFAULT_B3_SETTINGS } from '../../src/b3-settings/b3-settings';
+import { AcceptanceGuard } from '../../src/terms/terms-ports';
 import { hmacHex } from '../../src/requests-orders/core/commerce-core';
 import { MessagingService } from '../../src/requests-orders/messaging.service';
 import { PublicRequestsService, SubmitBody } from '../../src/requests-orders/public-requests.service';
@@ -31,7 +32,7 @@ export const key = (): string => `idem-key-${String(++keyN).padStart(8, '0')}-ab
 export const enquiry = (over: Partial<SubmitBody> = {}): SubmitBody => ({ kind: 'ENQUIRY', name: 'Meena R', phone: '98765 43210', email: 'meena@example.in', payload: { message: 'Do you do geyser repairs?' }, consent: consent(), idempotencyKey: key(), ...over });
 
 /** Two Pro ecommerce vendors (A and B) on two hosts, a Free vendor, everything in memory. */
-export async function requestsWorld() {
+export async function requestsWorld(opts: { acceptance?: AcceptanceGuard } = {}) {
   const dw = await directoryWorld();
   const store = new MemoryRequestsStore(); store.clock = () => new Date(T0);
   const lifecycle = new MemoryLifecycleStore(); lifecycle.clock = () => new Date(T0);
@@ -47,7 +48,7 @@ export async function requestsWorld() {
   const gateway = new OwnGatewayGate(); gateway.env = {};
   const pub = new PublicRequestsService(store, hosts as never, entSvc as never, lifecycle, dw.repo, dw.visits as unknown as DirectoryVisitService, b3svc as never, dw.pepper, messaging, catalogue, gateway, sms, { get: async () => ({ otpResendCooldownSeconds: 30, otpExpiryMinutes: 10, otpMaxAttempts: 5 }) } as never, 'https://app.example.test');
   pub.clock = () => new Date(now.t); pub.random = () => 123456; let sn = 0; pub.salt = () => `salt-${++sn}`;
-  const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never); vendor.clock = () => new Date(now.t);
+  const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never, opts.acceptance); vendor.clock = () => new Date(now.t);
   const webhook = new VendorWebhookService(store, vendor);
   const staff = new StaffRequestsService(store, dw.pepper, { suspend: async (id: string) => { const v = await lifecycle.vendor(id); if (v) v.status = 'SUSPENDED'; lifecycle.vendors.get(id)!.status = 'SUSPENDED'; return { status: 'SUSPENDED', changed: true }; } } as never);
   staff.clock = () => new Date(now.t);

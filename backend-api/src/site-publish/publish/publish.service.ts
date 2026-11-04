@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Inject, Injectable, Optional } from '@nestjs/common';
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
 import { planError } from '../../plans/plans.errors';
@@ -11,6 +11,10 @@ import { MissingField, siteError } from '../site.errors';
 import { BLOCKING_WARNING, PAGE_BUDGET_BYTES } from './site-config';
 import { SiteAudit } from './site-audit';
 import { PublicationRow, SiteRepository } from './site.repository';
+import { AcceptanceGuard } from '../../terms/terms-ports';
+
+/** The documents a vendor has accepted before a published site may carry calls to action (slice 5.15). */
+const CTA_TERMS = ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING'] as const;
 
 const blocked = (missing: MissingField[]): ConflictException => new ConflictException(siteError('PUBLISH_BLOCKED', 'This site cannot be published yet.', { missing }));
 
@@ -29,6 +33,7 @@ export class PublishService {
     private readonly content: ContentSource,
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'resolve'>,
     private readonly audit: SiteAudit,
+    @Optional() @Inject(AcceptanceGuard) private readonly acceptance?: AcceptanceGuard,
   ) {}
 
   /** Re-checks a snapshot against the vendor as they are NOW: hard minimums, renderer warnings, size, the plan (theme and Tamil) and the staff noindex switch. */
@@ -56,6 +61,8 @@ export class PublishService {
   }
 
   async publish(vendorId: string, publicationId: string, actor: Actor): Promise<PublicationRow> {
+    // A Pro vendor's published site carries the call-to-action slots: the current terms must be accepted first. A Free (or lapsed, or suspended) site has none, so nothing is asked.
+    if (this.acceptance && (await this.entitlements.resolve(vendorId)).features['site.cta']?.state === 'ACTIVE') await this.acceptance.require(vendorId, CTA_TERMS);
     return this.repo.publish(vendorId, publicationId, {
       now: this.clock(),
       validate: (p) => this.revalidate(vendorId, p, { forPublish: true }),

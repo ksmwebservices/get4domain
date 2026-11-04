@@ -66,6 +66,7 @@ import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
 import { SeededSitesModule } from './seeded-sites/seeded-sites.module';
 import { RequestsOrdersModule } from './requests-orders/requests-orders.module';
+import { TermsModule } from './terms/terms.module';
 import { SiteLifecycleModule } from './seeded-sites/prisma-site-lifecycle';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
@@ -119,6 +120,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     SiteLifecycleModule,
     SeededSitesModule,
     RequestsOrdersModule,
+    TermsModule,
     PlanBillingModule,
     AiStudioModule,
     VendorsModule,

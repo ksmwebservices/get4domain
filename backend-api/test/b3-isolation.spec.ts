@@ -7,7 +7,7 @@ import { findLegacyUse } from './support/legacy-scan';
  * no rupee price or old product name in generated text; no Redis or BullMQ. Every new Batch 3 module is added to MODULES as its slice lands.
  */
 const src = path.resolve(__dirname, '../src');
-const MODULES = ['b3-settings', 'vendor-lifecycle', 'seeded-sites', 'requests-orders'];
+const MODULES = ['b3-settings', 'vendor-lifecycle', 'seeded-sites', 'requests-orders', 'terms'];
 const tsFiles = (dir: string): string[] => fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? tsFiles(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : [];
 const files = MODULES.flatMap((m) => tsFiles(path.join(src, m)));
 const rel = (f: string): string => path.relative(src, f).replace(/\\/g, '/');

@@ -29,6 +29,8 @@ const SUPER_ONLY_ROUTES = [
   'PUT /v3/admin/vendors/:id/flags/v3_plans',
   // B2 slice 5.11: only SUPER_ADMIN touches AI providers (secrets), prompts and credit grants
   'GET /v3/admin/ai/providers', 'POST /v3/admin/ai/providers', 'PUT /v3/admin/ai/providers/:id', 'POST /v3/admin/ai/providers/:id/test', 'GET /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts/:id/activate', 'POST /v3/admin/ai/credit-grants',
+  // B3 slice 5.15: legal documents are written and published by SUPER_ADMIN only
+  'GET /v3/admin/terms', 'GET /v3/admin/terms/:id', 'POST /v3/admin/terms/kinds/:kind/drafts', 'PUT /v3/admin/terms/:id', 'POST /v3/admin/terms/:id/publish',
   // B3 slice 5.13a: the seeded-site indexing mode
   'PUT /v3/admin/seeded-sites/indexing-mode',
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
@@ -116,7 +118,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(200);
+    expect(oracle).toHaveLength(205);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

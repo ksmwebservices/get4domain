@@ -128,6 +128,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       // B3 validation reasons: plain strings only
       const errs = (exceptionResponse as Record<string, unknown>).errors;
       if (Array.isArray(errs)) extra.errors = errs.filter((e): e is string => typeof e === 'string').slice(0, 20);
+      // TERMS_ACCEPTANCE_REQUIRED: which documents wait, as plain { kind, version } pairs
+      const waiting = (exceptionResponse as Record<string, unknown>).outstanding;
+      if (Array.isArray(waiting)) extra.outstanding = waiting.filter((o): o is { kind: string; version: number } => !!o && typeof (o as { kind?: unknown }).kind === 'string' && typeof (o as { version?: unknown }).version === 'number').map((o) => ({ kind: o.kind, version: o.version }));
       // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
       const missing = (exceptionResponse as Record<string, unknown>).missing;
       if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));

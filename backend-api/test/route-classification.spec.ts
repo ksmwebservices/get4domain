@@ -37,6 +37,8 @@ const OWNER_ONLY_ROUTES = [
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',
   // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only
   'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
+  // B3 slice 5.15: accepting the terms binds the business: owner only (a team member never accepts for it)
+  'GET /v3/me/terms', 'POST /v3/me/terms/accept',
   // B3 slice 5.1d: asking for the whole account to be removed for good is the owner's decision alone
   'POST /v3/me/account/deletion-request',
   // B2 slice 5.7: the owner's directory profile (a team member never edits the business's public face)
