@@ -7,10 +7,10 @@ import { HostDirectory } from './host-directory';
 @Injectable()
 export class DomainHostResolver extends HostResolver {
   constructor(private readonly dir: HostDirectory) { super(); }
-  async resolve(host: string): Promise<{ vendorId: string; redirect?: { host: string; status: 301 | 302 } } | null> {
+  async resolve(host: string): Promise<{ vendorId: string; canonicalHost?: string; redirect?: { host: string; status: 301 | 302 } } | null> {
     const r = await this.dir.resolveHost(host);
     if (!r) return null;
-    return r.decision.action === 'REDIRECT' ? { vendorId: r.vendorId, redirect: { host: r.decision.host, status: r.decision.status } } : { vendorId: r.vendorId };
+    return r.decision.action === 'REDIRECT' ? { vendorId: r.vendorId, canonicalHost: r.primaryHost, redirect: { host: r.decision.host, status: r.decision.status } } : { vendorId: r.vendorId, canonicalHost: r.primaryHost };
   }
 }
 

@@ -31,6 +31,6 @@ import { SubscriptionsService } from './subscriptions/subscriptions.service';
     EntitlementsService, FeatureGuard, AuditService, SubscriptionsService,
     PlansAdminService, FeaturesAdminService, RulesAdminService, VendorPlansAdminService, PublicPlansService, MePlansService, RegistrationHook,
   ],
-  exports: [EntitlementsService, FeatureGuard, PlansRepository, SubscriptionsService, AuditService, RegistrationHook],
+  exports: [EntitlementsService, FeatureGuard, PlansRepository, SubscriptionsService, AuditService, RegistrationHook, VendorPlansAdminService],
 })
 export class PlansModule {}

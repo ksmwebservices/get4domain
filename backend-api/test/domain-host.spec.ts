@@ -1,4 +1,4 @@
-import { advance, BASE, domainWorld, DomainWorld, OWNER, pro } from './support/domain-world';
+import { advance, BASE, domainWorld, DomainWorld, OWNER, pro, withAddon } from './support/domain-world';
 
 /** Slice 5.6: which host belongs to which vendor, which is canonical, and what a request for each host should do. */
 const A = 'vendor-a';
@@ -53,13 +53,37 @@ describe('resolveHost', () => {
     expect(await w.dir.resolveHost(`before.${BASE}`)).toEqual({ vendorId: A, host: `before.${BASE}`, primaryHost: `after.${BASE}`, decision: { action: 'REDIRECT', host: `after.${BASE}`, status: 301 } });
     expect(await w.dir.resolveHost(`after.${BASE}`)).toMatchObject({ decision: { action: 'SERVE' } });
   });
-  it('an ACTIVE primary custom domain is served; the free subdomain now redirects to it', async () => {
+  // B3 slice 5.6b (owner rule 4) supersedes the Batch 2 rule "an ACTIVE custom domain is canonical": the SUBDOMAIN is canonical unless the promotion add-on is active
+  it('verified custom domain WITHOUT the add-on: it serves the same site, the subdomain stays canonical, and nobody is redirected', async () => {
     await makeCustomActive();
+    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ vendorId: A, primaryHost: `mine.${BASE}`, decision: { action: 'SERVE' } });
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A, primaryHost: `mine.${BASE}`, decision: { action: 'SERVE' } });
+  });
+  it('verified custom domain WITH the add-on: the custom domain is canonical and the subdomain redirects to it', async () => {
+    await makeCustomActive(); w.ents.set(A, withAddon(pro())); w.dir.invalidate();
     expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ vendorId: A, primaryHost: 'shop.example.in', decision: { action: 'SERVE' } });
     expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A, decision: { action: 'REDIRECT', host: 'shop.example.in', status: 301 } });
   });
+  it('no custom domain, or one that is not ACTIVE: the add-on changes nothing, the subdomain is canonical', async () => {
+    w.ents.set(A, withAddon(pro())); await w.svc.setSubdomain(A, 'mine', OWNER(A));
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ primaryHost: `mine.${BASE}`, decision: { action: 'SERVE' } });
+    const r = await w.svc.requestCustom(A, 'shop.example.in', OWNER(A));
+    for (const status of ['PENDING', 'VERIFYING', 'FAILED'] as const) { w.repo.rows.get(r.id)!.status = status; w.dir.invalidate(); expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ primaryHost: `mine.${BASE}` }); expect(await w.dir.resolveHost('shop.example.in')).toBeNull(); }
+  });
+  it('the add-on ending (expiry), the domain being removed, or a plan downgrade: the canonical host returns to the subdomain and the custom domain keeps serving; nothing stored changes', async () => {
+    await makeCustomActive(); w.ents.set(A, withAddon(pro())); w.dir.invalidate();
+    expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe('shop.example.in');
+    w.ents.set(A, pro()); w.dir.invalidate();   // the override expired
+    expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe(`mine.${BASE}`);
+    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ primaryHost: `mine.${BASE}`, decision: { action: 'SERVE' } });
+    w.ents.delete(A); w.dir.invalidate();   // and the plan fell to Free as well: the custom domain still serves (owner rule 9)
+    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ vendorId: A, decision: { action: 'SERVE' } });
+    expect([...w.repo.rows.values()].find((r) => r.hostname === 'shop.example.in')).toMatchObject({ status: 'ACTIVE' });
+    w.ents.set(A, withAddon(pro())); const custom = [...w.repo.rows.values()].find((r) => r.hostname === 'shop.example.in')!; custom.status = 'REMOVED'; w.dir.invalidate();
+    expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe(`mine.${BASE}`);
+  });
   it('apex policy: www.<custom> redirects to the custom apex even though no row exists for www; not for a host the vendor does not own', async () => {
-    await makeCustomActive();
+    await makeCustomActive(); w.ents.set(A, withAddon(pro())); w.dir.invalidate();
     expect(await w.dir.resolveHost('www.shop.example.in')).toMatchObject({ vendorId: A, decision: { action: 'REDIRECT', host: 'shop.example.in', status: 301 } });
     expect(await w.dir.resolveHost('www.other.example.in')).toBeNull();
   });
@@ -68,30 +92,24 @@ describe('resolveHost', () => {
     const r = await w.svc.requestCustom(A, 'shop.example.in', OWNER(A));
     for (const status of ['PENDING', 'VERIFYING', 'FAILED', 'REMOVED'] as const) { w.repo.rows.get(r.id)!.status = status; w.dir.invalidate(); expect(await w.dir.resolveHost('shop.example.in')).toBeNull(); }
   });
-  it('downgrade: the custom domain stops being primary, requests for it redirect to the subdomain, and the stored row is untouched', async () => {
-    await makeCustomActive();
-    w.ents.set(A, { ...pro(), features: { ...pro().features, 'site.custom_domain': { state: 'LOCKED_PREVIEW', limit: null, enumValue: null, upsellText: null, overLimit: false, source: 'PLAN' } } });
-    w.dir.invalidate();
-    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ primaryHost: `mine.${BASE}`, decision: { action: 'REDIRECT', host: `mine.${BASE}`, status: 301 } });
-    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ decision: { action: 'SERVE' } });
-    expect([...w.repo.rows.values()].find((r) => r.hostname === 'shop.example.in')).toMatchObject({ status: 'ACTIVE', isPrimary: true });
-  });
   it('one vendor\'s custom host can never resolve to another vendor', async () => {
     await makeCustomActive();
     expect((await w.dir.resolveHost('shop.example.in'))!.vendorId).toBe(A);
   });
 });
 
-describe('hasVerifiedCustomDomain (the entitlement bridge: render customDomain)', () => {
-  it('false with no domain, false while only PENDING, true once ACTIVE and the plan allows it, false again after a downgrade', async () => {
+describe('hasVerifiedCustomDomain (the render fact: the custom domain is the site address)', () => {
+  it('false with no domain, false while only PENDING, false for a verified domain WITHOUT the add-on, true only with the add-on, false again when the add-on ends', async () => {
     w.ents.set(A, pro()); w.repo.addVendor(A);
     expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(false);
     await w.svc.setSubdomain(A, 'mine', OWNER(A)); await w.svc.requestCustom(A, 'shop.example.in', OWNER(A));
-    expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(false);
+    w.ents.set(A, withAddon(pro())); w.dir.invalidate();
+    expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(false);   // the add-on is on but the domain is only PENDING
     await makeCustomActive('other.example.in');
+    expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(false);   // verified, add-on not on
+    w.ents.set(A, withAddon(pro())); w.dir.invalidate();
     expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(true);
-    w.ents.set(A, { ...pro(), features: { ...pro().features, 'site.custom_domain': { state: 'LOCKED_PREVIEW', limit: null, enumValue: null, upsellText: null, overLimit: false, source: 'PLAN' } } });
-    w.dir.invalidate();
+    w.ents.set(A, pro()); w.dir.invalidate();
     expect(await w.dir.hasVerifiedCustomDomain(A)).toBe(false);
   });
 });

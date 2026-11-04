@@ -13,7 +13,7 @@ import { DomainHostResolver, DomainVendorHosts } from '../src/site-domains/site-
 import { SiteDomainsService } from '../src/site-domains/site-domains.service';
 import { PublicSiteController } from '../src/site-publish/api/public-site.controller';
 import { SitePublicService } from '../src/site-publish/publish/site-public.service';
-import { BASE, domainWorld, DomainWorld, OWNER, pro } from './support/domain-world';
+import { BASE, domainWorld, DomainWorld, OWNER, pro, withAddon } from './support/domain-world';
 import { STAFF, siteWorld } from './support/site-world';
 
 /** B2 slice 5.6 over HTTP with the real guards, pipe, filter and interceptor; the services are the real ones over the in-memory repositories. */
@@ -172,17 +172,27 @@ describe('domains API', () => {
       const pending = await byHost('shop.example.in'); const unknown = await byHost('nothing.example.org');
       expect([pending.status, unknown.status]).toEqual([404, 404]); expect(pending.text).toBe(unknown.text);
     });
-    it('once the custom domain is ACTIVE and primary it is served, and the subdomain and the www alias answer 301 to it with the path kept', async () => {
+    // B3 slice 5.6b (owner rule 4): the subdomain is canonical unless the custom-domain promotion add-on is active
+    it('verified custom domain WITHOUT the add-on: both hosts serve (200), neither redirects, and the public read says the canonical host is the subdomain', async () => {
       await send('put', '/v3/me/domains/subdomain', 'owner', { slug: 'sri-ganesh' }); await publish(); await activeCustom();
-      expect((await byHost('shop.example.in')).status).toBe(200);
+      const custom = await byHost('shop.example.in'); const sub = await byHost(`sri-ganesh.${BASE}`);
+      expect([custom.status, sub.status]).toEqual([200, 200]);
+      expect(custom.headers['x-canonical-host']).toBe(`sri-ganesh.${BASE}`); expect(sub.headers['x-canonical-host']).toBe(`sri-ganesh.${BASE}`);
+    });
+    it('WITH the add-on the custom domain is served and canonical, and the subdomain and the www alias answer 301 to it with the path kept', async () => {
+      await send('put', '/v3/me/domains/subdomain', 'owner', { slug: 'sri-ganesh' }); await publish(); await activeCustom();
+      w.ents.set(V, withAddon(pro())); w.dir.invalidate();
+      const served = await byHost('shop.example.in'); expect(served.status).toBe(200); expect(served.headers['x-canonical-host']).toBe('shop.example.in');
       const r1 = await byHost(`sri-ganesh.${BASE}`, '/about'); expect(r1.status).toBe(301); expect(r1.headers.location).toBe('https://shop.example.in/about');
       const r2 = await byHost('www.shop.example.in', '/'); expect(r2.status).toBe(301); expect(r2.headers.location).toBe('https://shop.example.in/');
       expect((await byHost('www.other.example.in')).status).toBe(404);
     });
-    it('after a plan downgrade the custom domain redirects to the subdomain; nothing is deleted', async () => {
+    it('after the add-on ends and the plan falls to Free the custom domain keeps serving and the subdomain is canonical; nothing is deleted', async () => {
       await send('put', '/v3/me/domains/subdomain', 'owner', { slug: 'sri-ganesh' }); await publish(); await activeCustom();
-      w.ents.delete(V); w.dir.invalidate();   // Free again
-      const r = await byHost('shop.example.in', '/contact'); expect(r.status).toBe(301); expect(r.headers.location).toBe(`https://sri-ganesh.${BASE}/contact`);
+      w.ents.set(V, withAddon(pro())); w.dir.invalidate();
+      expect((await byHost(`sri-ganesh.${BASE}`)).status).toBe(301);
+      w.ents.delete(V); w.dir.invalidate();   // the override expired and the plan is Free again
+      const r = await byHost('shop.example.in', '/contact'); expect(r.status).toBe(200); expect(r.headers['x-canonical-host']).toBe(`sri-ganesh.${BASE}`);
       expect((await byHost(`sri-ganesh.${BASE}`)).status).toBe(200);
       expect([...w.repo.rows.values()].find((x) => x.hostname === 'shop.example.in')).toMatchObject({ status: 'ACTIVE', isPrimary: true });
     });
@@ -191,11 +201,14 @@ describe('domains API', () => {
       const r = await byHost(`old-name.${BASE}`, '/services'); expect(r.status).toBe(301); expect(r.headers.location).toBe(`https://new-name.${BASE}/services`);
       expect((await byHost(`new-name.${BASE}`)).status).toBe(200);
     });
-    it('the build uses the primary host for the canonical address and turns the customDomain render entitlement on only with an ACTIVE verified domain', async () => {
+    it('the build uses the canonical host for the canonical address; the custom domain becomes the site address only with the add-on and an ACTIVE verified domain', async () => {
       await send('put', '/v3/me/domains/subdomain', 'owner', { slug: 'sri-ganesh' }); await publish();
       const before = (await sw.repo.currentPublication(V))!;
       expect(JSON.stringify((await sw.repo.getPage(before.id, '/', 'en'))!.seoJson)).toContain(`https://sri-ganesh.${BASE}`);
       await activeCustom();
+      const unchanged = (await sw.build.build(V, { actor: STAFF })).publication;
+      expect(unchanged.id).toBe(before.id);   // a verified custom domain without the add-on changes nothing about the site
+      w.ents.set(V, withAddon(pro())); w.dir.invalidate();
       const second = (await sw.build.build(V, { actor: STAFF })).publication;
       expect(second.id).not.toBe(before.id);   // the host change is a real change to the site
       const home = (await sw.repo.getPage(second.id, '/', 'en'))!;

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { CanonicalSwitchService } from './canonical-switch.service';
 import { HostDirectory } from './host-directory';
 import { SITE_DOMAIN_CONTROLLERS, SITE_DOMAIN_PROVIDERS } from './site-domains.providers';
 import { SiteDomainsService } from './site-domains.service';
@@ -13,6 +14,6 @@ import { DomainHostResolver, DomainVendorHosts } from './site-publish-adapters';
   imports: [PrismaModule],
   controllers: SITE_DOMAIN_CONTROLLERS,
   providers: SITE_DOMAIN_PROVIDERS,
-  exports: [HostDirectory, SiteDomainsService, DomainHostResolver, DomainVendorHosts],
+  exports: [HostDirectory, SiteDomainsService, DomainHostResolver, DomainVendorHosts, CanonicalSwitchService],
 })
 export class SiteDomainsModule {}

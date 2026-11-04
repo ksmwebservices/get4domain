@@ -61,6 +61,8 @@ const MARKETING_DENIED = [
   // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
   'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
   'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
+  // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on
+  'GET /v3/admin/vendors/:id/canonical', 'POST /v3/admin/vendors/:id/custom-domain-addon', 'POST /v3/admin/vendors/:id/custom-domain-addon/end',
   // B3 slice 5.1d: lifecycle actions and the owner deletion queue (a deletion request identifies a business): OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/vendors/:id/lifecycle', 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free', 'POST /v3/admin/vendors/:id/lifecycle/restore-pro', 'POST /v3/admin/vendors/:id/lifecycle/extend-grace', 'POST /v3/admin/vendors/:id/lifecycle/suspend', 'POST /v3/admin/vendors/:id/lifecycle/reinstate', 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing', 'GET /v3/admin/account-deletions', 'GET /v3/admin/account-deletions/:id', 'POST /v3/admin/account-deletions/:id/execute',
   // S53.7: provisioning is onboarding work: OPERATIONS and SUPER_ADMIN read and write, MARKETING refused everywhere (a job holds a phone number and an email)
@@ -104,7 +106,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(173);
+    expect(oracle).toHaveLength(176);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

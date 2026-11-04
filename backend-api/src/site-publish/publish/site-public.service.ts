@@ -8,11 +8,11 @@ import { SiteRepository } from './site.repository';
 /** Finds the vendor behind a host name (slice 5.6: the domain tables; a non-primary host also carries the redirect to the canonical one). */
 export abstract class HostResolver {
   /** null for an unknown host and for a suspended vendor (the caller cannot tell them apart). */
-  abstract resolve(host: string): Promise<{ vendorId: string; redirect?: { host: string; status: 301 | 302 } } | null>;
+  abstract resolve(host: string): Promise<{ vendorId: string; /** the one canonical host of the site (slice 5.6b) */ canonicalHost?: string; redirect?: { host: string; status: 301 | 302 } } | null>;
 }
 
 export interface PublicRedirect { status: 301 | 302; location: string }
-export interface PublicPage { status: 200; html: string; etag: string; robots: string; contentType: string; lang: string }
+export interface PublicPage { status: 200; html: string; etag: string; robots: string; contentType: string; lang: string; /** the canonical host of the site the page belongs to (owner rule 4) */ canonicalHost: string | null }
 
 /**
  * The strictly read-only lookup used by the Next.js app and, later, the host mapper: the PUBLISHED snapshot of the vendor behind a host, one page of it.
@@ -67,6 +67,6 @@ export class SitePublicService {
         if (out !== html) { html = out; etag = `"${sha256(out)}"`; }
       }
     }
-    return { status: 200, html, etag, robots, contentType, lang: l };
+    return { status: 200, html, etag, robots, contentType, lang: l, canonicalHost: vendor.canonicalHost ?? null };
   }
 }

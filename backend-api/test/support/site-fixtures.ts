@@ -46,6 +46,7 @@ export function entitlements(level: 'FREE' | 'PRO', track: 'handyman' | 'profess
       'shop.cart': pro && track === 'ecommerce' ? f('ACTIVE') : f('HIDDEN'),
       'site.language_ta': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Reach more customers with a Tamil site on Pro.'),
       'site.custom_domain': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Use your own web address with Pro.'),
+      'promotion.custom_domain_addon': f('HIDDEN'),   // never part of a plan: only an override turns it on
       'site.revisions': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Go back to an earlier version of your site with Pro.'),
     },
   };

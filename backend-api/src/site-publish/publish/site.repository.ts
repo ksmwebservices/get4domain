@@ -16,7 +16,7 @@ export interface NewPublication {
   missingFieldsJson: MissingField[]; warningsJson: string[]; languages: string; totalBytes: number; createdByType: ActorKind; createdById: string | null;
 }
 export type NewPage = Omit<PageRow, 'publicationId' | 'vendorId'>;
-export interface SiteEventInput { type: 'BUILT' | 'PUBLISHED' | 'ROLLED_BACK' | 'THEME_CHANGED' | 'NOINDEX_CHANGED'; actorType: ActorKind; actorId: string | null; detail: Record<string, unknown> }
+export interface SiteEventInput { type: 'BUILT' | 'PUBLISHED' | 'ROLLED_BACK' | 'THEME_CHANGED' | 'NOINDEX_CHANGED' | 'CANONICAL_SWITCHED'; actorType: ActorKind; actorId: string | null; detail: Record<string, unknown> }
 /** Runs inside the repository's transaction so the audit row and the change are saved together or not at all (Prisma passes its transaction client). */
 export type TxHook = (tx: unknown) => Promise<void>;
 

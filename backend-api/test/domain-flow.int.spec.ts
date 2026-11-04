@@ -11,6 +11,7 @@ import { expandSeed } from '../src/plans/seed/seed-file';
 import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant, vendorToken } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
+import { HostDirectory } from '../src/site-domains/host-directory';
 import { buildProvisioningTestApp } from './support/provisioning-test-app';
 import { makeSiteVendor } from './support/site-staging';
 
@@ -77,10 +78,21 @@ describe('domains on staging', () => {
 
     const built = await api('post', '/v3/me/site/build', tokenA, {}); expect(built.status).toBe(200);
     expect((await api('post', '/v3/me/site/publish', tokenA, { publicationId: built.body.data.publication.id })).status).toBe(200);
-    const served = await byHost(customHost); expect(served.status).toBe(200); expect(served.text).toContain(`https://${customHost}`);
-    const alias = await byHost(`www.${customHost}`); expect(alias.status).toBe(301); expect(alias.headers.location).toBe(`https://${customHost}/`);
+    // B3 slice 5.6b (owner rule 4): without the promotion add-on the SUBDOMAIN is canonical and the custom domain serves the same site
     const sub = await prisma.vendor.findUniqueOrThrow({ where: { id: A.vendorId } });
+    const served = await byHost(customHost); expect(served.status).toBe(200); expect(served.text).toContain(`https://${sub.subdomain}.${base()}`); expect(served.headers['x-canonical-host']).toBe(`${sub.subdomain}.${base()}`);
+    expect((await byHost(`${sub.subdomain}.${base()}`, '/contact')).status).toBe(200);
+    // staff start the add-on (OPERATIONS may; MARKETING may not): the custom domain becomes canonical and the subdomain redirects to it
+    expect((await api('post', `/v3/admin/vendors/${A.vendorId}/custom-domain-addon`, mkt, { reason: 'v3test add-on', endsAt: new Date(Date.now() + 86_400_000).toISOString() })).status).toBe(403);
+    const addon = await api('post', `/v3/admin/vendors/${A.vendorId}/custom-domain-addon`, ops, { reason: 'v3test add-on', endsAt: new Date(Date.now() + 86_400_000).toISOString() });
+    expect(addon.status).toBe(200);
+    expect(await prisma.v3SiteEvent.count({ where: { vendorId: A.vendorId, type: 'CANONICAL_SWITCHED' } })).toBeGreaterThan(0);
+    app.get(HostDirectory).invalidate();
     const viaSub = await byHost(`${sub.subdomain}.${base()}`, '/contact'); expect(viaSub.status).toBe(301); expect(viaSub.headers.location).toBe(`https://${customHost}/contact`);
+    const alias = await byHost(`www.${customHost}`); expect(alias.status).toBe(301); expect(alias.headers.location).toBe(`https://${customHost}/`);
+    const ended = await api('post', `/v3/admin/vendors/${A.vendorId}/custom-domain-addon/end`, ops, { reason: 'v3test add-on ended' });
+    expect(ended.status).toBe(200); app.get(HostDirectory).invalidate();
+    expect((await byHost(`${sub.subdomain}.${base()}`, '/contact')).status).toBe(200);
   });
 
   it('removing the custom domain gives primary back to the free subdomain; the row is kept as REMOVED', async () => {

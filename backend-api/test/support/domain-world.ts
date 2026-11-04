@@ -43,4 +43,6 @@ export function domainWorld(): DomainWorld {
   return { repo, svc, dir, now, settings, ents, gate, invalidated, txt };
 }
 export const pro = (): ResolvedEntitlements => entitlements('PRO');
+/** the custom-domain promotion add-on is on (an entitlement override with an end date, slice 5.6b) */
+export const withAddon = (e: ResolvedEntitlements): ResolvedEntitlements => ({ ...e, features: { ...e.features, 'promotion.custom_domain_addon': { state: 'ACTIVE', limit: null, enumValue: null, upsellText: null, overLimit: false, source: 'OVERRIDE' } } });
 export const advance = (w: DomainWorld, seconds: number): void => { w.now.t = new Date(w.now.t.getTime() + seconds * 1000); };

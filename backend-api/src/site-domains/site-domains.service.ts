@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import { Actor } from '../plans/admin/audit.service';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { planError } from '../plans/plans.errors';
-import { choosePrimary } from './core/canonical';
+import { canonicalHostFor } from './core/canonical';
 import { normaliseHostname, validateSubdomainSlug } from './core/hostname';
 import { challengeName, checkTxt, generateTxtValue, TxtResult } from './core/verification';
 import { DnsGate } from './dns-gate';
@@ -60,12 +60,14 @@ export class SiteDomainsService {
   async overview(vendorId: string) {
     const s = await this.settings.get();
     const [rows, vendor, custom] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.customState(vendorId)]);
-    const primary = choosePrimary(rows, { customAllowed: custom.allowed });
     const legacy = vendor?.subdomain ? `${vendor.subdomain}.${s.baseDomain}` : null;
+    const addonActive = (await this.ents.resolve(vendorId)).features['promotion.custom_domain_addon']?.state === 'ACTIVE';
+    const canonical = canonicalHostFor({ rows, legacyHost: legacy, addonActive });
     const since = new Date(this.clock().getTime() - s.subdomainChangePeriodDays * DAY);
     return {
       baseDomain: s.baseDomain,
-      primaryHost: primary?.hostname ?? legacy,
+      primaryHost: canonical.canonicalHost,   // owner rule 4: the one canonical host (the subdomain unless the custom-domain promotion add-on is active)
+      canonical: { host: canonical.canonicalHost, kind: canonical.canonicalKind, promotionAddonActive: addonActive },
       domains: await Promise.all(rows.filter((r) => r.status !== 'REMOVED').map((r) => this.viewOf(r, s))),
       customDomain: custom,
       subdomain: { changesUsed: await this.repo.countSubdomainChangesSince(vendorId, since), limit: s.subdomainChangeLimitPerPeriod, periodDays: s.subdomainChangePeriodDays },

@@ -28,6 +28,7 @@ export class PublicSiteController {
     if (!page) { res.status(404).set({ 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }).send('Not found'); return; }
     const headers: Record<string, string> = { ETag: page.etag, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120', 'Content-Language': page.lang };
     if (page.robots) headers['X-Robots-Tag'] = page.robots;
+    if (page.canonicalHost) headers['X-Canonical-Host'] = page.canonicalHost;
     if (ifNoneMatch && ifNoneMatch.replace(/^W\//, '') === page.etag) { res.status(304).set(headers).end(); return; }
     res.status(200).set({ ...headers, 'Content-Type': page.contentType }).send(page.html);
   }

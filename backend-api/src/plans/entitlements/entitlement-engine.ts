@@ -175,11 +175,12 @@ export interface RenderEntitlements { video: boolean; cart: boolean; booking: bo
 /**
  * The five booleans the theme kit asks the platform for. Pinned by a test:
  *   video = site.video ACTIVE; cart = shop.cart ACTIVE; booking = site.booking ACTIVE;
- *   customDomain = site.custom_domain ACTIVE and a verified domain exists (a later slice supplies that fact; until then it is false);
+ *   customDomain = (site.custom_domain or promotion.custom_domain_addon ACTIVE) and the custom domain is the site address (the domain slice supplies that fact: true only while the
+ *   promotion add-on is active and a custom domain is ACTIVE, owner rule 4);
  *   callsToAction = site.cta ACTIVE (slice 5.4b: false = a listing-only site with no form, button, call, chat, booking or cart).
  * LIMITED, LOCKED_PREVIEW and HIDDEN are all false.
  */
 export function toRenderEntitlements(resolved: ResolvedEntitlements, hasVerifiedDomain = false): RenderEntitlements {
   const on = (key: string): boolean => resolved.features[key]?.state === 'ACTIVE';
-  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: on('site.custom_domain') && hasVerifiedDomain === true, callsToAction: on('site.cta') };
+  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: (on('site.custom_domain') || on('promotion.custom_domain_addon')) && hasVerifiedDomain === true, callsToAction: on('site.cta') };
 }

@@ -18,6 +18,8 @@ module.exports = {
     {
       ...base,
       displayName: 'unit',
+      // @nestjs/schedule is ESM-only. Specs that exercise a cron class mock it themselves (jest.mock); any other spec that merely loads a module with a cron (canonical switch, slice 5.6b) gets the no-op stand-in.
+      moduleNameMapper: { '^@nestjs/schedule$': '<rootDir>/test/support/schedule-stub.js' },
       roots: ['<rootDir>/test', '<rootDir>/src'],
       testRegex: '(?<!\\.int)\\.spec\\.ts$',
       testPathIgnorePatterns: ['/node_modules/', '/dist/'],

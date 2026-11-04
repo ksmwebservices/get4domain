@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
-import { choosePrimary, planRedirect, RedirectDecision } from './core/canonical';
+import { canonicalHostFor, planRedirect, RedirectDecision } from './core/canonical';
 import { normaliseHostname } from './core/hostname';
 import { DomainRecord, DomainRepository } from './domain.repository';
 import { DomainSettings } from './settings/domain-settings';
@@ -49,9 +49,12 @@ export class HostDirectory {
     return !!vendor && !vendor.removed;
   }
 
-  /** The entitlement bridge: true only when the plan allows custom domains AND one is ACTIVE (verified). Closes the slice 5.1 gap in toRenderEntitlements. */
+  /**
+   * The render fact "the custom domain is the site address" (feeds toRenderEntitlements.customDomain). Owner rule 4: true only while the custom-domain promotion add-on is active
+   * AND a custom domain is ACTIVE (verified); otherwise the subdomain is canonical and the renderer must not use the custom domain as the site address.
+   */
   async hasVerifiedCustomDomain(vendorId: string): Promise<boolean> {
-    if (!(await this.customAllowed(vendorId))) return false;
+    if (!(await this.addonActive(vendorId))) return false;
     return (await this.repo.listForVendor(vendorId)).some((r) => r.kind === 'CUSTOM' && r.status === 'ACTIVE');
   }
 
@@ -63,7 +66,8 @@ export class HostDirectory {
     return { host: p.primaryHost, isCustom: row?.kind === 'CUSTOM' };
   }
 
-  private async customAllowed(vendorId: string): Promise<boolean> { return (await this.ents.resolve(vendorId)).features['site.custom_domain']?.state === 'ACTIVE'; }
+  /** The custom-domain promotion add-on: never in a plan, granted only by an entitlement override with an end date (slice 5.6b). A suspended vendor's overrides are ignored by the engine. */
+  async addonActive(vendorId: string): Promise<boolean> { return (await this.ents.resolve(vendorId)).features['promotion.custom_domain_addon']?.state === 'ACTIVE'; }
 
   private async resolveUncached(h: string): Promise<ResolvedHost | null> {
     const s = await this.settings.get();
@@ -99,14 +103,22 @@ export class HostDirectory {
     return { vendorId: red.vendorId, host: h, primaryHost: toHost, decision: { action: 'REDIRECT', host: toHost, status: red.status === 302 ? 302 : 301 } };
   }
 
-  private async plan(vendorId: string, s: DomainSettings): Promise<{ rows: DomainRecord[]; primaryHost: string | null; owned: string[] }> {
-    const [rows, vendor, allowed] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.customAllowed(vendorId)]);
+  /** The full canonical plan of a vendor (the pure rule applied to the stored rows), for the switch and the staff view. */
+  async canonicalPlan(vendorId: string) {
+    const s = await this.settings.get();
+    const [rows, vendor, addon] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.addonActive(vendorId)]);
+    const legacyHost = vendor?.subdomain ? `${vendor.subdomain}.${s.baseDomain}` : null;
+    return { ...canonicalHostFor({ rows, legacyHost, addonActive: addon }), addonActive: addon };
+  }
+
+  private async plan(vendorId: string, s: DomainSettings): Promise<{ rows: DomainRecord[]; primaryHost: string | null; owned: string[]; serveHosts: string[] }> {
+    const [rows, vendor, addon] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.addonActive(vendorId)]);
     const active = rows.filter((r) => r.status === 'ACTIVE');
     const legacyHost = vendor?.subdomain ? `${vendor.subdomain}.${s.baseDomain}` : null;
     const owned = active.map((r) => r.hostname);
     if (legacyHost && !owned.includes(legacyHost) && !rows.some((r) => r.hostname === legacyHost)) owned.push(legacyHost);
-    const primary = choosePrimary(rows, { customAllowed: allowed });
-    return { rows, primaryHost: primary?.hostname ?? legacyHost, owned };
+    const cp = canonicalHostFor({ rows, legacyHost, addonActive: addon });
+    return { rows, primaryHost: cp.canonicalHost, owned, serveHosts: cp.serveHosts };
   }
 
   private async forVendor(vendorId: string, h: string, s: DomainSettings): Promise<ResolvedHost | null> {
@@ -114,7 +126,7 @@ export class HostDirectory {
     if (!vendor || vendor.removed) return null;
     const p = await this.plan(vendorId, s);
     const primaryHost = p.primaryHost ?? h;
-    const decision = planRedirect({ requestHost: h, primaryHost, ownedHosts: p.owned, wwwPolicy: s.wwwPolicy });
+    const decision = planRedirect({ requestHost: h, primaryHost, ownedHosts: p.owned, wwwPolicy: s.wwwPolicy, serveHosts: p.serveHosts });
     return decision.action === 'UNKNOWN' ? null : { vendorId, host: h, primaryHost, decision };
   }
 }

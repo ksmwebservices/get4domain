@@ -1,4 +1,4 @@
-import { advance, BASE, domainWorld, DomainWorld, OWNER, pro, STAFF } from './support/domain-world';
+import { advance, BASE, domainWorld, DomainWorld, OWNER, pro, STAFF, withAddon } from './support/domain-world';
 
 /** Slice 5.6 service rules over the in-memory repository (the same unique rules as the database). */
 const code = async (p: Promise<unknown>): Promise<{ code?: string; message?: string; status?: number }> => {
@@ -221,9 +221,12 @@ describe('primary, removal and downgrade', () => {
     const sub = rows.find((r) => r.kind === 'SUBDOMAIN')!;
     expect(await code(w.svc.remove(A, sub.id, OWNER(A)))).toMatchObject({ code: 'DOMAIN_STATE_INVALID' });
   });
-  it('plan downgrade: the overview says the subdomain is primary and the custom domain is not served as primary, yet the custom row is neither deleted nor changed', async () => {
+  it('add-on ending or plan downgrade: the overview says the subdomain is canonical, yet the custom row is neither deleted nor changed', async () => {
     const id = await active();
+    expect((await w.svc.overview(A)).primaryHost).toBe(`mine.${BASE}`);   // owner rule 4: the subdomain is canonical without the add-on
+    w.ents.set(A, withAddon(pro())); w.dir.invalidate();
     expect((await w.svc.overview(A)).primaryHost).toBe('shop.example.in');
+    expect((await w.svc.overview(A)).canonical).toMatchObject({ host: 'shop.example.in', kind: 'CUSTOM', promotionAddonActive: true });
     w.ents.set(A, { ...pro(), plan: 'handyman_free', level: 'FREE', features: { ...pro().features, 'site.custom_domain': { state: 'LOCKED_PREVIEW', limit: null, enumValue: null, upsellText: 'Use your own web address with Pro.', overLimit: false, source: 'PLAN' } } });
     w.dir.invalidate();
     const o = await w.svc.overview(A);
