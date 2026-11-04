@@ -20,7 +20,7 @@ export const OWNER = { type: 'VENDOR' as const, id: 'vendor-1', ip: null };
 
 export interface SiteWorld {
   repo: MemorySiteRepo; build: SiteBuildService; publish: PublishService; settings: SiteSettingsService; pub: SitePublicService;
-  state: { doc: SourceDocument | null; ent: ResolvedEntitlements; vendorHosts: Map<string, { vendorId: string; suspended: boolean }> };
+  state: { doc: SourceDocument | null; ent: ResolvedEntitlements; vendorHosts: Map<string, { vendorId: string; removed: boolean }> };
   audit: string[];
 }
 
@@ -37,7 +37,7 @@ export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level
   const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink, o.hosts); build.clock = () => NOW;
   const publish = new PublishService(repo, themes, content as never, ents as never, auditSink); publish.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content as never, ents as never, build, publish, auditSink);
-  const hosts = { resolve: async (host: string) => { const h = state.vendorHosts.get(host); return h && !h.suspended ? { vendorId: h.vendorId } : null; } };
+  const hosts = { resolve: async (host: string) => { const h = state.vendorHosts.get(host); return h && !h.removed ? { vendorId: h.vendorId } : null; } };
   const pub = new SitePublicService(repo, hosts as never);
   return { repo, build, publish, settings, pub, state, audit };
 }

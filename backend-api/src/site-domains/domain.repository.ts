@@ -12,7 +12,8 @@ export interface NewDomain { vendorId: string; hostname: string; kind: DomainKin
 export interface DomainPatch { vendorId?: string; status?: DomainStatus; verifiedAt?: Date | null; sslStatus?: SslStatus; removedAt?: Date | null; createdByType?: string; createdById?: string | null }
 export interface VerificationRecord { domainId: string; vendorId: string; method: string; expectedValue: string; lastCheckedAt: Date | null; attempts: number; result: string }
 export interface RedirectRecord { id: string; vendorId: string; fromHost: string; fromPath: string; toHost: string; toPath: string; status: number; source: string; active: boolean }
-export interface VendorInfo { id: string; status: string; subdomain: string | null }
+/** `removed` is true only for a business whose site was permanently removed (g4d_site_removals). Suspended and pending vendors are NOT removed: their site stays live (owner rule 9). */
+export interface VendorInfo { id: string; status: string; subdomain: string | null; removed?: boolean }
 
 /** Thrown by create/update when the unique rule on the host name (or the one-subdomain / one-primary rule) is hit; the service turns it into HOST_UNAVAILABLE. */
 export class DuplicateHostError extends Error { constructor() { super('duplicate host'); } }

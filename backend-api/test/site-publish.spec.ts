@@ -178,7 +178,7 @@ describe('settings: theme and the staff noindex switch', () => {
 describe('public read by host', () => {
   async function live() {
     const w = siteWorld({ level: 'PRO', claimed: true });
-    w.state.vendorHosts.set('sri-ganesh-plumbing.get4domain.com', { vendorId: V, suspended: false });
+    w.state.vendorHosts.set('sri-ganesh-plumbing.get4domain.com', { vendorId: V, removed: false });
     const p = (await w.build.build(V, { actor: STAFF })).publication; await w.publish.publish(V, p.id, STAFF);
     return w;
   }
@@ -190,13 +190,13 @@ describe('public read by host', () => {
     expect((await w.pub.byHost('sri-ganesh-plumbing.get4domain.com', '/assets/site.css', 'en'))!.contentType).toBe('text/css; charset=utf-8');
     expect((await w.pub.byHost('sri-ganesh-plumbing.get4domain.com', '/sitemap.xml', 'en'))!.contentType).toBe('application/xml; charset=utf-8');
   });
-  it('the same answer (null) for an unknown host, a suspended vendor, an unpublished site and an unknown path', async () => {
+  it('the same answer (null) for an unknown host, a removed business, an unpublished site and an unknown path', async () => {
     const w = await live();
     expect(await w.pub.byHost('nobody.get4domain.com', '/', 'en')).toBeNull();
     expect(await w.pub.byHost('sri-ganesh-plumbing.get4domain.com', '/nope', 'en')).toBeNull();
-    w.state.vendorHosts.get('sri-ganesh-plumbing.get4domain.com')!.suspended = true;
+    w.state.vendorHosts.get('sri-ganesh-plumbing.get4domain.com')!.removed = true;
     expect(await w.pub.byHost('sri-ganesh-plumbing.get4domain.com', '/', 'en')).toBeNull();
-    const draftOnly = siteWorld(); draftOnly.state.vendorHosts.set('x.get4domain.com', { vendorId: V, suspended: false });
+    const draftOnly = siteWorld(); draftOnly.state.vendorHosts.set('x.get4domain.com', { vendorId: V, removed: false });
     await draftOnly.build.build(V, { actor: STAFF });
     expect(await draftOnly.pub.byHost('x.get4domain.com', '/', 'en')).toBeNull();   // a preview is never public
   });
@@ -208,7 +208,7 @@ describe('public read by host', () => {
   });
   it('serves the Tamil page by language and path', async () => {
     const w = siteWorld({ level: 'PRO', claimed: true }); await w.repo.upsertSettings(V, { language: 'en,ta' });
-    w.state.vendorHosts.set('h.get4domain.com', { vendorId: V, suspended: false });
+    w.state.vendorHosts.set('h.get4domain.com', { vendorId: V, removed: false });
     const p = (await w.build.build(V, { actor: STAFF })).publication; await w.publish.publish(V, p.id, STAFF);
     const ta = (await w.pub.byHost('h.get4domain.com', '/ta/about', 'ta'))!;
     expect(ta.html).toContain('<html lang="ta-IN">'); expect(ta.lang).toBe('ta');

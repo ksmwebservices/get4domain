@@ -13,8 +13,8 @@ const CACHE_MAX = 5000;
 
 /**
  * Host name -> vendor, canonical host and redirect decision (slice 5.6). The one truth the public by-host API, the renderer's customDomain flag and (later) the Next.js host
- * router share. Read-only. Decisions are kept in process memory for 30 seconds and forgotten at once after any domain write (invalidate). A suspended vendor, an unknown host
- * and a custom domain that is not ACTIVE all give the same null.
+ * router share. Read-only. Decisions are kept in process memory for 30 seconds and forgotten at once after any domain write (invalidate). A removed business, an unknown host
+ * and a custom domain that is not ACTIVE all give the same null. A vendor that is SUSPENDED, PENDING or on an expired plan is still served (owner rule 9: nothing is hidden); only a REMOVED business (g4d_site_removals) gives the null.
  */
 @Injectable()
 export class HostDirectory {
@@ -40,13 +40,13 @@ export class HostDirectory {
 
   /**
    * The cache only saves the expensive part (plan, entitlements, redirect plan). The vendor's status is re-read on EVERY request (one primary-key lookup), because the legacy
-   * admin suspends a vendor without telling this module and a refusal must never wait for a timer. Domain-row changes made through this module call invalidate(); a change made by
+   * admin and the removal flow change a vendor without telling this module and a refusal must never wait for a timer. Domain-row changes made through this module call invalidate(); a change made by
    * another server instance is picked up within the 30 second TTL (documented bound).
    */
   private async stillSafe(v: ResolvedHost | null): Promise<boolean> {
     if (!v) return true;   // a cached "no" can never serve anything
     const vendor = await this.repo.vendorInfo(v.vendorId);
-    return !!vendor && vendor.status !== 'SUSPENDED';
+    return !!vendor && !vendor.removed;
   }
 
   /** The entitlement bridge: true only when the plan allows custom domains AND one is ACTIVE (verified). Closes the slice 5.1 gap in toRenderEntitlements. */
@@ -93,7 +93,7 @@ export class HostDirectory {
     const red = await this.repo.findRedirect(h, '/');
     if (!red) return null;
     const vendor = await this.repo.vendorInfo(red.vendorId);
-    if (!vendor || vendor.status === 'SUSPENDED') return null;
+    if (!vendor || vendor.removed) return null;
     const plan = await this.plan(red.vendorId, s);
     const toHost = plan.primaryHost ?? red.toHost;
     return { vendorId: red.vendorId, host: h, primaryHost: toHost, decision: { action: 'REDIRECT', host: toHost, status: red.status === 302 ? 302 : 301 } };
@@ -111,7 +111,7 @@ export class HostDirectory {
 
   private async forVendor(vendorId: string, h: string, s: DomainSettings): Promise<ResolvedHost | null> {
     const vendor = await this.repo.vendorInfo(vendorId);
-    if (!vendor || vendor.status === 'SUSPENDED') return null;
+    if (!vendor || vendor.removed) return null;
     const p = await this.plan(vendorId, s);
     const primaryHost = p.primaryHost ?? h;
     const decision = planRedirect({ requestHost: h, primaryHost, ownedHosts: p.owned, wwwPolicy: s.wwwPolicy });

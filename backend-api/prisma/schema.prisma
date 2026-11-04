@@ -58,6 +58,7 @@ model Vendor {
   v3Domains V3Domain[]
   v3DomainVerifications V3DomainVerification[]
   v3Redirects V3Redirect[]
+  v3SiteRemoval V3SiteRemoval?
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
   v3PlanOrders V3PlanOrder[]
@@ -4916,4 +4917,27 @@ model V3AiCreditGrant {
 
   @@index([vendorId, period])
   @@map("g4d_ai_credit_grants")
+}
+
+// ─── V3 batch 3 (B3.0b / slice 5.1d): a business whose site and listing were permanently removed (additive). The ONLY hide state: owner rule 9. ─────────────
+
+enum V3SiteRemovalKind {
+  VENDOR_REQUEST
+  STAFF_EMPTY_LISTING
+  SEEDED_REMOVAL
+}
+
+model V3SiteRemoval {
+  vendorId    String            @id
+  kind        V3SiteRemovalKind
+  reason      String?
+  phoneHash   String? // keyed hash of the phone on file; never the number
+  requestedBy String? // vendor id, staff id or null for a public removal request
+  removedAt   DateTime          @default(now())
+  createdAt   DateTime          @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([removedAt])
+  @@map("g4d_site_removals")
 }

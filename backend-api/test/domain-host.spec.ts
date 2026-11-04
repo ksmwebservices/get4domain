@@ -28,17 +28,25 @@ describe('resolveHost', () => {
     expect(await w.dir.resolveHost(`MINE.${BASE}:443`)).toMatchObject({ vendorId: A });
     for (const h of ['', 'nothing.example.org', `unknown.${BASE}`, '10.0.0.1', 'a b', `${'x'.repeat(300)}.com`, null as never, undefined as never]) expect(await w.dir.resolveHost(h)).toBeNull();
   });
-  it('a suspended vendor is not served, and looks exactly like an unknown host', async () => {
-    await w.svc.setSubdomain(A, 'mine', OWNER(A)); w.repo.vendors.get(A)!.status = 'SUSPENDED'; w.dir.invalidate();
-    expect(await w.dir.resolveHost(`mine.${BASE}`)).toBeNull();
+  // B3.0b (owner rule 9, supersedes Batch 2): a suspended or pending vendor is NOT hidden. Only a removed business is, and it looks exactly like an unknown host.
+  it('a suspended vendor and a pending vendor are still served; only a removed business gives the unknown-host null', async () => {
+    await w.svc.setSubdomain(A, 'mine', OWNER(A)); w.dir.invalidate();
+    w.repo.vendors.get(A)!.status = 'SUSPENDED'; expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });
+    w.repo.vendors.get(A)!.status = 'PENDING'; w.dir.invalidate(); expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });
+    w.repo.vendors.get(A)!.removed = true; w.dir.invalidate();
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toBeNull(); expect(await w.dir.resolveHost(`unknown.${BASE}`)).toBeNull();
   });
-  it('a vendor suspended AFTER the host was cached stops being served at once (the vendor status is never cached), by every route to the vendor', async () => {
+  it('a business removed AFTER the host was cached stops being served at once (removal is never cached), by every route to the vendor', async () => {
     await w.svc.setSubdomain(A, 'mine', OWNER(A)); await w.svc.setSubdomain(A, 'later', OWNER(A));
     expect(await w.dir.resolveHost(`later.${BASE}`)).toMatchObject({ vendorId: A }); expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });   // both now cached
-    w.repo.vendors.get(A)!.status = 'SUSPENDED';   // no invalidate(): the legacy admin suspends without telling this module
+    w.repo.vendors.get(A)!.removed = true;   // no invalidate(): the removal flow does not tell this module
     expect(await w.dir.resolveHost(`later.${BASE}`)).toBeNull(); expect(await w.dir.resolveHost(`mine.${BASE}`)).toBeNull();
-    w.repo.vendors.get(A)!.status = 'ACTIVE'; advance(w, 61);   // a cached refusal is forgotten after the TTL (restoring a vendor is never urgent; suspending is)
-    expect(await w.dir.resolveHost(`later.${BASE}`)).toMatchObject({ vendorId: A });
+  });
+  it('suspension changes nothing about serving, even right after the host was cached', async () => {
+    await w.svc.setSubdomain(A, 'mine', OWNER(A));
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });
+    w.repo.vendors.get(A)!.status = 'SUSPENDED';
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A });
   });
   it('an old subdomain redirects (301) to the new one through the stored redirect; path handling stays with the caller', async () => {
     await w.svc.setSubdomain(A, 'before', OWNER(A)); await w.svc.setSubdomain(A, 'after', OWNER(A));

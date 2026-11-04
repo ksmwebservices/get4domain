@@ -33,7 +33,7 @@ describe('site API', () => {
 
   beforeEach(async () => {
     w = siteWorld({ level: 'PRO', claimed: true });
-    w.state.vendorHosts.set(HOST, { vendorId: V, suspended: false });
+    w.state.vendorHosts.set(HOST, { vendorId: V, removed: false });
     const mod = await Test.createTestingModule({
       imports: [throttlerImport],
       controllers: [MeSiteController, SitesAdminController, PublicSiteController],
@@ -171,15 +171,15 @@ describe('site API', () => {
       const again = await request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host: HOST, path: '/about' }).set('If-None-Match', r.headers.etag);
       expect(again.status).toBe(304);
     });
-    it('one identical 404 for an unknown host, a suspended vendor, nothing published and an unknown path; bad input is the same 404; it needs no login', async () => {
+    it('one identical 404 for an unknown host, a removed business, nothing published and an unknown path; bad input is the same 404; it needs no login', async () => {
       await buildAndPublish();
       const norm = (r: request.Response) => `${r.status}|${r.headers['content-type']}|${r.text}`;
       const unknownHost = norm(await request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host: 'nobody.get4domain.com', path: '/' }));
       const unknownPath = norm(await request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host: HOST, path: '/nope' }));
-      w.state.vendorHosts.get(HOST)!.suspended = true;
-      const suspended = norm(await request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host: HOST, path: '/' }));
+      w.state.vendorHosts.get(HOST)!.removed = true;
+      const removed = norm(await request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host: HOST, path: '/' }));
       const noHost = norm(await request(app.getHttpServer()).get('/v3/public/site/by-host'));
-      for (const x of [unknownPath, suspended, noHost]) expect(x).toBe(unknownHost);
+      for (const x of [unknownPath, removed, noHost]) expect(x).toBe(unknownHost);
       expect(unknownHost.startsWith('404|')).toBe(true);
     });
     it('is rate limited per IP', async () => {

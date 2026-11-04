@@ -30,10 +30,13 @@ describe('SitePublishModule wiring', () => {
     for (const h of ['get4domain.com', 'www.example.com', 'a.b.c.get4domain.com', '-bad.get4domain.com', 'x_y.get4domain.com', 'evil.get4domain.com.attacker.test']) expect(await r.resolve(h)).toBeNull();
   });
 
-  it('a suspended vendor and an unknown subdomain resolve to the same null; an active or pending vendor resolves', async () => {
-    const find = jest.fn(async ({ where }: { where: { subdomain: string } }) => ({ acme: { id: 'v1', status: 'PENDING' }, gone: { id: 'v2', status: 'SUSPENDED' } } as Record<string, { id: string; status: string }>)[where.subdomain] ?? null);
+  it('a removed business and an unknown subdomain resolve to the same null; an active, pending or suspended vendor resolves (B3.0b)', async () => {
+    const rows: Record<string, { id: string; v3SiteRemoval: { vendorId: string } | null }> = {
+      acme: { id: 'v1', v3SiteRemoval: null }, held: { id: 'v3', v3SiteRemoval: null }, gone: { id: 'v2', v3SiteRemoval: { vendorId: 'v2' } },
+    };
+    const find = jest.fn(async ({ where }: { where: { subdomain: string } }) => rows[where.subdomain] ?? null);
     const r = new SubdomainHostResolver({ vendor: { findUnique: find } } as never);
-    expect(await r.resolve('acme.get4domain.com')).toEqual({ vendorId: 'v1' });
+    expect(await r.resolve('acme.get4domain.com')).toEqual({ vendorId: 'v1' }); expect(await r.resolve('held.get4domain.com')).toEqual({ vendorId: 'v3' });
     expect(await r.resolve('gone.get4domain.com')).toBeNull(); expect(await r.resolve('nobody.get4domain.com')).toBeNull();
   });
 });

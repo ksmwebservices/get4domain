@@ -73,15 +73,21 @@ describe('site tenant isolation on staging', () => {
     expect((await api('get', `/v3/admin/vendors/${B.vendorId}/site/preview/${pubB}/${encodeURIComponent('/')}`, mkt)).status).toBe(403);
   });
 
-  it('the public read is one uniform 404 for an unknown host, a suspended vendor and an unpublished site', async () => {
+  // B3.0b: the owner decided that a suspended vendor is NOT hidden (rule 9). This replaces the Batch 2 expectation of a 404 for a suspended vendor; it is a deliberate
+  // owner-approved change, not a weakening. The only hide state is a removed business, which must look exactly like an unknown host.
+  it('the public read serves a suspended vendor, and is one uniform 404 for an unknown host, a REMOVED business and an unpublished site', async () => {
     const get = (host: string) => request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host, path: '/' });
     const unknown = await get('nobody-p54.get4domain.com');
     expect(unknown.status).toBe(404);
     expect((await get(siteB.host)).status).toBe(200);
     await prisma.vendor.update({ where: { id: B.vendorId }, data: { status: 'SUSPENDED' } });
-    const suspended = await get(siteB.host);
-    expect(suspended.status).toBe(404); expect(suspended.text).toBe(unknown.text);
+    expect((await get(siteB.host)).status).toBe(200);   // still served (the listing-only output assertions arrive with slice 5.4b)
     await prisma.vendor.update({ where: { id: B.vendorId }, data: { status: 'ACTIVE' } });
+    await prisma.v3SiteRemoval.create({ data: { vendorId: B.vendorId, kind: 'VENDOR_REQUEST', reason: 'synthetic test' } });
+    try {
+      const removed = await get(siteB.host);
+      expect(removed.status).toBe(404); expect(removed.text).toBe(unknown.text);
+    } finally { await prisma.v3SiteRemoval.deleteMany({ where: { vendorId: B.vendorId } }); }
     const subA = (await prisma.vendor.findUniqueOrThrow({ where: { id: A.vendorId } })).subdomain!;
     const unpublished = await get(`${subA}.get4domain.com`);
     expect(unpublished.status).toBe(404); expect(unpublished.text).toBe(unknown.text);
