@@ -152,7 +152,7 @@ describe('resolve: status rules (downgrade, never delete)', () => {
     const r = resolveEntitlements(baseInput({ subscription: sub('professional_pro', { status: 'CANCELLED' }) }));
     expect(r.subscriptionStatus).toBe('CANCELLED');
     expect(r.level).toBe('FREE');
-    expect(r.features['site.booking'].state).toBe('HIDDEN');
+    expect(r.features['site.booking'].state).toBe('LOCKED_PREVIEW');   // 5.1c: Free shows the booking as a locked preview (was HIDDEN)
   });
 
   it('downgradeBehaviour KEEP_UNTIL_REPLACED keeps the Pro features after expiry (setting, no code change)', () => {
@@ -182,7 +182,8 @@ describe('can and limits', () => {
   it('ACTIVE is allowed, LOCKED_PREVIEW and HIDDEN are not, with different reasons', () => {
     expect(can(r, 'directory.listing')).toMatchObject({ allowed: true, state: 'ACTIVE', reason: null });
     expect(can(r, 'site.video')).toMatchObject({ allowed: false, state: 'LOCKED_PREVIEW', reason: 'FEATURE_LOCKED' });
-    expect(can(r, 'site.booking')).toMatchObject({ allowed: false, state: 'HIDDEN', reason: 'FEATURE_HIDDEN' });
+    expect(can(r, 'site.booking')).toMatchObject({ allowed: false, state: 'LOCKED_PREVIEW', reason: 'FEATURE_LOCKED' });   // 5.1c (was HIDDEN)
+    expect(can(r, 'shop.cart')).toMatchObject({ allowed: false, state: 'HIDDEN', reason: 'FEATURE_HIDDEN' });   // a handyman has no cart at all
   });
 
   it('LIMITED is allowed below the limit and refused at it (LIMIT_REACHED)', () => {

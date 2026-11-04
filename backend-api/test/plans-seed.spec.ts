@@ -89,7 +89,7 @@ describe('the seed file', () => {
     expect(cell('ecommerce_pro', 'site.gallery')).toMatchObject({ limitValue: 40 });
     expect(cell('handyman_free', 'site.video').state).toBe('LOCKED_PREVIEW');
     expect(cell('handyman_pro', 'site.video').state).toBe('ACTIVE');
-    expect(cell('handyman_free', 'site.booking').state).toBe('HIDDEN');
+    expect(cell('handyman_free', 'site.booking').state).toBe('LOCKED_PREVIEW');   // 5.1c: Free has no call to action; it is shown as a locked preview
     expect(cell('professional_pro', 'site.booking').state).toBe('ACTIVE');
     expect(cell('ecommerce_pro', 'site.booking').state).toBe('HIDDEN');
     expect(cell('ecommerce_pro', 'shop.cart').state).toBe('ACTIVE');
