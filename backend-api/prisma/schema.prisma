@@ -62,6 +62,8 @@ model Vendor {
   v3AccountSetupGrants V3AccountSetupGrant[]
   v3PlanOrders V3PlanOrder[]
   v3PlanInvoices V3PlanInvoice[]
+  v3AiUsage V3AiUsage[]
+  v3AiCreditGrants V3AiCreditGrant[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -4820,4 +4822,98 @@ model V3ReminderLog {
 
   @@unique([subscriptionId, daysBefore, endsAt])
   @@map("g4d_reminder_log")
+}
+
+// ─── V3 slice 5.11: AI Studio providers, usage and credits, prompts (additive). No model is called by any test; secrets are encrypted with the existing crypto helper. ─────────────
+
+enum V3AiProviderKind {
+  TEXT_LLM
+}
+
+enum V3AiProviderStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum V3AiUsageStatus {
+  RESERVED
+  DONE
+  FAILED
+  REFUNDED
+}
+
+enum V3AiPromptStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+model V3AiProvider {
+  id                String             @id @default(cuid())
+  key               String             @unique // openai | anthropic: the providers the platform already uses
+  kind              V3AiProviderKind   @default(TEXT_LLM)
+  displayName       String
+  status            V3AiProviderStatus @default(DISABLED)
+  secretCipher      String? // AES-256-GCM, written by the platform settings crypto helper (PLATFORM_SETTINGS_KEY); write-only through the API
+  secretIv          String?
+  secretTag         String?
+  secretLast4       String? // the only part of the secret that is ever shown
+  model             String // the model name the staff member chose (nothing is assumed)
+  settingsJson      Json               @default("{}")
+  createdByStaffId  String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("g4d_ai_providers")
+}
+
+model V3AiUsage {
+  id             String          @id @default(cuid())
+  vendorId       String
+  featureKey     String // site_copy | seo_suggestion | directory_description | review_reply
+  providerKey    String // the provider key, or "mock"
+  credits        Int
+  inputTokens    Int             @default(0)
+  outputTokens   Int             @default(0)
+  idempotencyKey String
+  status         V3AiUsageStatus @default(RESERVED)
+  period         String // the calendar month (India time) the credits count in: 2026-11
+  resultText     String? // the scanned suggestion, kept so a repeated request with the same key returns it instead of charging again
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, period, status])
+  @@map("g4d_ai_usage")
+}
+
+model V3AiPrompt {
+  id               String           @id @default(cuid())
+  key              String // the feature key
+  version          Int
+  template         String // the fixed instruction text; only the placeholders {{feature}}, {{maxChars}}, {{language}} are allowed
+  status           V3AiPromptStatus @default(DRAFT)
+  activeKey        String?          @unique // = key while ACTIVE: the database allows one ACTIVE version per key
+  createdByStaffId String?
+  createdAt        DateTime         @default(now())
+
+  @@unique([key, version])
+  @@map("g4d_ai_prompts")
+}
+
+model V3AiCreditGrant {
+  id               String   @id @default(cuid())
+  vendorId         String
+  credits          Int
+  reason           String
+  grantedByStaffId String
+  period           String // the month the extra credits count in
+  createdAt        DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, period])
+  @@map("g4d_ai_credit_grants")
 }

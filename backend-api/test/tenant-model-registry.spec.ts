@@ -15,6 +15,7 @@ const TENANT_V3 = [
   'V3Domain', 'V3DomainVerification', 'V3Redirect',
   'V3DirectoryBusiness',                                                                   // slice 5.7: vendor routes /v3/me/directory (vendorId is null while unclaimed)                                        // slice 5.6
   'V3PlanOrder', 'V3PlanInvoice',                                                           // slice 5.1b: vendor routes /v3/me/billing/orders and /invoices
+  'V3AiUsage', 'V3AiCreditGrant',                                                          // slice 5.11: vendor routes /v3/me/ai/usage
 ];
 /** carry a vendorId only as a back-reference for staff; no vendor route reads them */
 const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'];   // the grant is consumed by the set-password endpoint, no vendor route reads it
