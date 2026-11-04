@@ -309,3 +309,18 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 5.7 Public directory, claim by OTP, removal | `v3-b2` | Built; sandbox SMS only; seed is proposed data awaiting owner review; staging NOT RUN. | Directory search, claim flow, takedown flow |
 | 5.1b Plan purchase and renewal | `v3-b2` | Built with a fake provider in tests; Razorpay TEST adapter only; live refused; staging NOT RUN. | Plan purchase, invoices, renewal reminders |
 | 5.11 AI Studio providers and credits | `v3-b2` | Built with a mock model; live adapters gated off; wallet-bought credits not included (legacy wallet, D1). Staging NOT RUN. | AI suggestions, credits, provider management |
+
+
+## Status as built (2026-11-05, Batch 3)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.1c Free versus Pro matrix | `v3-b3` | Seed change only (12 cells changed, 36 added, no price touched); unit tests green; seed dry run NOT RUN. | Free is a listing with no call to action; Pro features locked-preview on Free |
+| 5.1d Plan expiry, suspension, deletion | `v3-b3` | Built; unit tests green; staging NOT RUN. Personal-data erasure beyond the retention list is NOT built. | Plan lifecycle, suspension, account deletion |
+| 5.4b Listing-only render and CTA gating | `v3-b3` | Built in the theme kit and the backend; unit and kit tests green; one cosmetic gap in the Standard themes (Bolt). | Free site has no call to action; seeded notice; seeded indexing rule |
+| 5.6b Canonical rule and custom-domain add-on | `v3-b3` | Built; supersedes the Batch 2 "custom domain is primary" rule; staging NOT RUN. | Canonical host, promotion add-on |
+| 5.7b Directory as a search engine | `v3-b3` | Built; the directory has no form or lead endpoint (tested); staging NOT RUN. | Visit-site beacon, `siteUrl`, badges, visit stats |
+| 5.13a Seeded sites | `v3-b3` | Built through the real job runner (SEEDED mode); no live outreach; staging NOT RUN. | Seeded promotion pages, do-not-contact register, claim handover |
+| 5.14 Requests and orders bridge | `v3-b3` | Built; sandbox messaging, fake gateway; no live mode; per-item tax is an open question; staging NOT RUN. | Enquiries, orders, vendor payment methods, vendor invoices, offers, stock, reports |
+| 5.15 Terms and acceptances | `v3-b3` | Built; placeholder text cannot be published; immutability trigger NOT RUN on a database; the claim guard waits for the set-password endpoint. | Terms documents, acceptance guards, session flag |
+
+Gated and not started: 5.5, 5.8, 5.9, 5.10, 5.12, the rest of 5.13, CRM, TeleCRM, booking, Accounts, live messaging, live gateways, registrar and certificate automation, the Pro theme importer, the pricing scheme change.

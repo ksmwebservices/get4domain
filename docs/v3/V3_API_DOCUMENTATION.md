@@ -149,3 +149,88 @@ Same envelope as above. Design, rules and examples: `V3_S5_BATCH2.md`. "Owner" m
 | GET /v3/admin/ai/usage | OPERATIONS, SUPER_ADMIN | usage without generated text |
 
 Route classification baseline: 839 to 904 routes (public 92, admin 288, authenticated 524); none removed.
+
+
+## Batch 3 (branch v3-b3): 74 new routes, staging only, nothing exposed on a real host
+
+Same envelope as above. Design, rules, data dictionary and examples: `V3_S6_BATCH3.md`. "Owner" means the vendor owner (team members are refused); "area" means a vendor route behind the `website` area permission; "OPS" means OPERATIONS and SUPER_ADMIN; "SUPER" means SUPER_ADMIN only; MARKETING is refused on anything with personal data. Every Batch 3 error carries a stable `code` in the body (the exception filter now forwards them; `errors` is a list of plain strings and `outstanding` a list of `{ kind, version }`).
+
+### Slice 5.1d Plan expiry, suspension and deletion (11)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/admin/vendors/:id/lifecycle | OPS | status, plan, grace, removed |
+| POST /v3/admin/vendors/:id/lifecycle/convert-to-free | OPS | reason required |
+| POST /v3/admin/vendors/:id/lifecycle/restore-pro | OPS | reason; optional planKey and termMonths |
+| POST /v3/admin/vendors/:id/lifecycle/extend-grace | OPS | reason, days (1 to the `graceExtendMaxDays` setting) |
+| POST /v3/admin/vendors/:id/lifecycle/suspend, .../reinstate | OPS | reason; the site stays live as a Free listing |
+| POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing | OPS | 409 LIFECYCLE_NOT_EMPTY lists what exists |
+| GET /v3/admin/account-deletions, GET .../:id, POST .../:id/execute | OPS | the owner-requested deletion queue; execution is permanent |
+| POST /v3/me/account/deletion-request | Owner, 10 per hour | three calls: send code, then code, then code with `confirm: true` |
+
+### Slice 5.6b Canonical host and the custom-domain promotion add-on (3)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/admin/vendors/:id/canonical | OPS | canonical host and why |
+| POST /v3/admin/vendors/:id/custom-domain-addon | OPS | reason, endsAt (future); goes through the override service, then switches |
+| POST /v3/admin/vendors/:id/custom-domain-addon/end | OPS | reason |
+
+By-host reads now carry `canonicalHost` and the `X-Canonical-Host` header; the subdomain redirects to the custom domain only while the add-on is active.
+
+### Slice 5.7b Directory as a search engine (3)
+| Method and path | Who | What |
+|---|---|---|
+| POST /v3/directory/businesses/:slug/visit | public, 60 per minute per IP | the Visit-site beacon; returns `{ ref, expiresAt, url }`; no cookie |
+| GET /v3/me/directory/stats?days= | Owner, any plan | zero-filled daily visit counts |
+| GET /v3/admin/directory/visits | OPS | per business totals |
+
+Every directory business now returns `siteUrl` (its subdomain), `siteState` and `badges`. The directory has no form, callback or lead endpoint.
+
+### Slice 5.13a Seeded sites (15, all staff)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/admin/seeded-sites, GET .../:id | OPS, MARKETING (non-personal fields) | list and one |
+| POST /v3/admin/seeded-sites | OPS | create one; the staff checkbox `publicFactsOnly` is required |
+| POST .../batches/dry-run, POST .../batches/apply | OPS | CSV; the dry run creates nothing |
+| GET .../register, POST .../register | OPS | the do-not-contact register (hashed phones) |
+| PUT .../:id/outreach, POST .../:id/calls, PUT .../:id/consent | OPS | outreach status, call log, the owner's agreement to be contacted |
+| POST .../:id/claim-link, POST .../:id/claim-link/revoke | OPS | the link is returned once, never sent or logged |
+| POST .../:id/removal | OPS | permanent; joins the register |
+| GET .../indexing-mode | OPS | OFF or QUALITY |
+| PUT .../indexing-mode | SUPER | reason required; audited |
+
+### Slice 5.14 Requests and orders bridge (33)
+| Method and path | Who | What |
+|---|---|---|
+| POST /v3/public/sites/:host/requests | public, rate limited | enquiry, appointment, quote, product enquiry; uniform 404 unless the site is Pro; consent for the current text required |
+| POST /v3/public/sites/:host/orders | public, rate limited | cart to order or order request; says which payment step applies |
+| GET /v3/public/requests/track/:token | public | status and the business's replies; a wrong and an expired token are the same 404 |
+| POST /v3/public/reports | public | report a business; always the same 202 |
+| POST /v3/payments/vendor/:vendorId/:methodId | public, signature | the vendor's own gateway event; raw-body HMAC with that vendor's secret; duplicates answer 200 |
+| GET /v3/me/requests, GET .../:id, POST .../:id/respond, POST .../:id/link | area | the inbox; the first read marks it seen |
+| GET /v3/me/orders, GET .../:id, PUT .../:id/status | area | orders |
+| PUT /v3/me/stock/:productRef | area | on-hand quantity |
+| GET /v3/me/offers, POST /v3/me/offers, PUT /v3/me/offers/:id | area | banners and coupons |
+| GET/POST /v3/me/payment-methods, PUT/DELETE .../:id, POST .../:id/test | Owner | secrets are write-only; only `last4` is shown |
+| POST /v3/me/orders/:id/refund | Owner | records a refund; no provider call |
+| POST /v3/me/orders/:id/invoice, GET /v3/me/invoices, POST /v3/me/invoices/:id/void | Owner | the vendor's own invoice, gap-free numbers, no PDF |
+| GET /v3/admin/requests, GET .../:id | OPS | no customer e-mail or phone |
+| GET /v3/admin/message-outbox | OPS | sandbox outbox, recipients masked |
+| GET /v3/admin/reports, POST .../reports/:id/handle | OPS | ACTIONED with `suspendVendorId` suspends the vendor |
+| GET/POST /v3/admin/blocklist, DELETE .../:id | OPS | keyed hashes |
+
+A Free vendor gets 403 FEATURE_LOCKED with an upsell on every vendor route above.
+
+### Slice 5.15 Terms documents and acceptances (9)
+| Method and path | Who | What |
+|---|---|---|
+| GET /v3/public/terms/:kind | public | latest PUBLISHED text; a draft or unknown kind is the same 404 |
+| GET /v3/public/terms/:kind/versions | public | published and retired versions, no text |
+| GET /v3/me/terms | Owner | which required documents are accepted or waiting |
+| POST /v3/me/terms/accept | Owner | names each kind and version; a stale version is refused |
+| GET /v3/admin/terms, GET .../:id | SUPER | all documents (the list has no text) |
+| POST /v3/admin/terms/kinds/:kind/drafts, PUT .../:id | SUPER | start a version, change a draft |
+| POST /v3/admin/terms/:id/publish | SUPER | change note required; the placeholder text is refused (422 TERMS_PLACEHOLDER) |
+
+The sign-in `user` object and `GET /me` carry `termsAcceptanceRequired` for vendor sessions.
+
+Route classification baseline: 904 to 978 routes (public 100, admin 330, authenticated 548); none removed. Role-matrix oracle: 163 to 205 entries.
