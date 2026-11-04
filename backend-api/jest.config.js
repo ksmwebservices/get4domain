@@ -25,6 +25,8 @@ module.exports = {
     {
       ...base,
       displayName: 'int',
+      // @nestjs/schedule is ESM-only and Jest cannot parse it; the integration project uses a no-op stand-in (test/support/schedule-stub.js). The unit project mocks it per spec.
+      moduleNameMapper: { '^@nestjs/schedule$': '<rootDir>/test/support/schedule-stub.js' },
       roots: ['<rootDir>/test'],
       testRegex: '\\.int\\.spec\\.ts$',
       testPathIgnorePatterns: ['/node_modules/', '/dist/'],
