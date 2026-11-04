@@ -182,3 +182,56 @@ Models with no service code touching them: VendorTask, KitchenTicket, Appointmen
 | Shared libraries | `components` 77 files, `domainapp` 56 files (per-industry tab views), `engine` 65 files (industry website engine), `bos` 15 files, `data` 8 files (4,291 lines), `lib` 24 files | | |
 | Other sibling apps | `allwin-tours`, `deebiphotography`, `indianambulance`, `stepnrock`, `ksm-quantum` (own Next.js apps, one VM container each) | client sites and the parent company site | their own |
 
+## INV-2. TeleCRM and CRM in detail
+
+**Shape of the data.** There are three separate lists that people call "CRM":
+
+| List | Table | Written by | Read by |
+|---|---|---|---|
+| Vendor call list and pipeline ("leads") | `g4d_campaign_leads` (CampaignLead) + `g4d_call_logs` | `crm` (manual, CSV import), `engine` actions (website enquiry), `widget`, `campaign-pages`, `whatsapp-bot`, LeadSpace capture | `/dashboard/crm` and `/dashboard/telecrm` |
+| Customer / party list ("contacts") | `g4d_contacts` (Contact) | `domainapp/contacts`, `crm` convert, `bos` (new party), `demo`, `whatsapp-bot`, `communication` | Accounts, BOS, invoices, messaging, customer portal |
+| Get4Domain's own sales leads | `g4d_leads` + `g4d_lead_call_logs` | marketing site (book-demo, talk-to-sales), `demo` visits | `/admin/telecrm`, `/admin/leads` |
+
+`CampaignLead` is not linked by a unique key to `Contact`: `convertToCustomer` looks up `Contact` by (vendorId, phone) with `findFirst` and writes the contact id into the lead's `customFields` and `contactId`. `Contact` has **no unique index on (vendorId, phone)**, no consent field, no opt-in record, no unsubscribe flag. The only consent table (`g4d_consent_records`) belongs to LeadSpace and holds a phone hash, text version and purpose.
+
+**TeleCRM telephony.** There is no dialer or telephony integration. "Dialer" in `TeleCrmBoard.tsx` means `window.open('tel:' + phone)` (line 246), then a feedback sheet when the vendor returns to the tab. No Exotel, Twilio, Knowlarity, click-to-call, recording or call-event webhook exists anywhere in `backend-api/src` or `get4domain_mvp/src` (searched).
+
+### 2.1 Feature list
+
+Status: **working** = code path complete and exercised by tests or the script suites; **partial** = works with a stated gap; **stub** = placeholder or mock; **absent** = nothing in the repo.
+
+| Feature | Status | What exists | Proof |
+|---|---|---|---|
+| Call queue | working | Leads with status `new` first, then those whose follow-up is due; oldest first | `crm/crm.service.ts` `telecrmQueue` (line 144); `GET crm/telecrm/queue` |
+| Follow-ups | working | `followUpDate` on the lead; a call log can set it; upcoming list; the board groups Overdue, Today, Upcoming | `crm.service.ts` `telecrmFollowups`; `TeleCrmBoard.tsx` `dayBucket`, `followUpIso` |
+| Reminders | partial | The follow-up is a date only; nothing sends a reminder to the caller (no cron, no push for follow-ups) | no `@Cron` in `crm/`; `notifications` has no follow-up trigger |
+| Call records | working | Outcome, duration, notes, AI summary text, next follow-up; sets the lead status from the outcome (won, lost, else contacted) | `crm.service.ts` `logCall`; `CallLog` model |
+| Call outcomes | working | Interested, Not interested, Callback, Won, No answer, mapped to stages | `TeleCrmBoard.tsx` `OUTCOMES` (line 70) |
+| Pipeline stages | partial | Six fixed stages: new, contacted, interested, quoted, won, lost; Kanban with drag and drop. Stages are hard-coded in the UI; the backend accepts any status string | `TeleCrmBoard.tsx` `PIPELINE` (line 61); `UpdateCrmLeadDto` |
+| Scripts (call scripts) | absent | No script or template field for callers | searched `crm/`, `TeleCrmBoard.tsx` |
+| Dictation / AI summary | partial | Browser speech recognition fills the notes; `aiSummary` is stored when the client sends it. No server-side AI call is made for the summary | `TeleCrmBoard.tsx` (lines 252-259); `LogCallDto.aiSummary` |
+| Team performance | absent | No per-caller counts, talk time or conversion report; `assignedTo` exists but only on the lead | `crm.service.ts` has no aggregate; `analytics` module counts calls in total only |
+| Callers and roles | partial | `assignedTo` string per lead; `calledBy` per call log (the principal id). Team members reach TeleCRM through the `telecrm` area flag. There is no caller role, no queue per caller and no manager view | `crm.controller.ts` `@RequireModule('telecrm')`; `team/team-access.ts` |
+| Import | working | Paste `name,phone` lines; creates call-list leads with source `import`; skips blank rows; **does not de-duplicate** and grants no messaging consent | `crm.service.ts` `importLeads` (line 49); `TeleCrmBoard.tsx` (line 317) |
+| Export | partial | Browser-side CSV of the loaded lead list; no server export, no export of call logs | `app/dashboard/crm/page.tsx` `exportCsv` (line 138) |
+| Tags | partial | `Contact.tags` JSON exists and is saved through `domainapp/contacts`; no tag filter or tag UI in the lead list; `CampaignLead` has no tags | `domainapp/contacts.service.ts` (lines 29, 81) |
+| Segments | absent | No saved filters or lists | searched |
+| Tasks | stub | `VendorTask` model exists and no service touches it | `schema.prisma`; no references in `src` |
+| Enquiry capture | working | Public website enquiry creates a lead (`engine.enquiry`), plus `widget`, `campaign-pages`, WhatsApp bot, LeadSpace OTP capture, real-estate and other per-industry intents. Each also notifies the vendor | `engine/action-registry.ts` (line 59); `widget.service.ts` (line 36); `campaign-pages.service.ts` (line 117); `whatsapp-bot.service.ts` (line 196) |
+| Source tracking | partial | `source` is a free string (`manual`, `import`, `website_enquiry`, ...). No UTM columns, no referrer, no landing page, no campaign link for site enquiries. UTM exists only inside LeadSpace promotion and reports | `CampaignLead` model; `leadspace/promotion.service.ts` |
+| Convert lead to customer | working | One click; idempotent by (vendor, phone); marks the lead won | `crm.service.ts` `convertToCustomer` (line 103) |
+| Lead detail with call history | working | Lead plus call logs, newest first | `crm.service.ts` `findOne` (line 79) |
+| Recent calls | working | Last 15 calls across all leads | `crm.service.ts` `recentCalls` (line 66) |
+| Per-industry contact fields | working | `customFields` JSON, form fields from the industry config | `telecrm/page.tsx` (lines 24-30) |
+| Admin TeleCRM for Get4Domain's own leads | working | Same board over `g4d_leads`; call log, status, notes, follow-up. No create, import or convert-to-vendor action | `admin-crm/admin-crm.controller.ts` (4 routes); `app/admin/telecrm/page.tsx` |
+| Dialer / telephony | absent | `tel:` link only | see above |
+| Call recording / call events | absent | none | searched |
+| Duplicate detection | absent | none on import, create or capture; the only check is convert-to-customer | `crm.service.ts` |
+| Consent and opt-in on contacts | absent | none on `Contact` or `CampaignLead` | `schema.prisma` |
+| Do-not-contact / block list | partial | `g4d_lead_blocked_phones` exists for LeadSpace only | `schema.prisma` `LeadBlockedPhone` |
+| Tenant isolation | working | Every query filters by `vendorId`; `findOne` checks the owner; covered by the route-classification and the cross-tenant suites | `crm.service.ts`; `test/route-classification.spec.ts`, `test/tenant-isolation.int.spec.ts` |
+
+### 2.2 What the Contact table lacks for V3
+
+`g4d_contacts` has: id, vendorId, name, phone, email, type (default `customer`; also supplier and others), address, portalAccess, customFields, tags, notes, gstin, state, shippingAddress, openingBalancePaise. It lacks: phone normalisation, a unique key, consent and opt-in with source and time, unsubscribe and block state, language, a link to the V3 vendor site, soft delete. See INV-7 for the adapter decision.
+
