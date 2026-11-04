@@ -61,6 +61,13 @@ model Vendor {
   v3SiteRemoval V3SiteRemoval?
   v3DeletionRequests V3AccountDeletionRequest[]
   v3SeededSite V3SeededSite?
+  v3Requests V3Request[]
+  v3PaymentMethods V3VendorPaymentMethod[]
+  v3Orders V3Order[]
+  v3Invoices V3VendorInvoice[]
+  v3Offers V3Offer[]
+  v3Counters V3VendorCounter[]
+  v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
   v3PlanOrders V3PlanOrder[]
@@ -5129,4 +5136,430 @@ model V3SeededOutreachLog {
 
   @@index([seededSiteId, at])
   @@map("g4d_seeded_outreach_log")
+}
+
+// ─── V3 batch 3 slice 5.14: requests and orders bridge (additive). Get4Domain passes requests to the vendor; it never receives or holds a customer's money. ──────────
+
+enum V3RequestKind {
+  ENQUIRY
+  APPOINTMENT
+  QUOTE
+  PRODUCT_ENQUIRY
+  ORDER_REQUEST
+  ORDER
+}
+
+enum V3RequestStatus {
+  RECEIVED
+  DELIVERED
+  SEEN
+  RESPONDED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+  EXPIRED
+  SPAM
+}
+
+enum V3RequestSource {
+  DIRECTORY
+  SITE
+  WHATSAPP
+  MANUAL
+}
+
+enum V3RequestActor {
+  CUSTOMER
+  VENDOR
+  STAFF
+  SYSTEM
+}
+
+enum V3PaymentMethodKind {
+  OWN_GATEWAY
+  UPI
+  PAY_ON_DELIVERY
+  PAY_AT_VISIT
+  BANK_TRANSFER
+}
+
+enum V3PaymentMethodStatus {
+  UNVERIFIED
+  ACTIVE
+  DISABLED
+}
+
+enum V3OrderStatus {
+  PLACED
+  AWAITING_PAYMENT
+  PAID
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED_RECORDED
+}
+
+enum V3OrderPaymentMode {
+  ONLINE
+  COD
+  AT_VISIT
+  MANUAL
+}
+
+enum V3VendorInvoiceStatus {
+  ISSUED
+  VOID
+}
+
+enum V3OfferKind {
+  BANNER
+  COUPON
+}
+
+enum V3OfferStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum V3MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum V3MessageStatus {
+  QUEUED
+  SENT_SANDBOX
+  FAILED
+  DELIVERED
+}
+
+enum V3ReportStatus {
+  OPEN
+  REVIEWED
+  ACTIONED
+  REJECTED
+}
+
+enum V3BlockKind {
+  PHONE_HASH
+  IP_HASH
+  EMAIL_HASH
+}
+
+enum V3CounterKind {
+  ORDER
+  INVOICE
+}
+
+model V3Request {
+  id                String          @id @default(cuid())
+  vendorId          String
+  siteHost          String
+  kind              V3RequestKind
+  status            V3RequestStatus @default(RECEIVED)
+  customerName      String
+  customerPhoneE164 String
+  customerEmail     String?
+  payloadJson       Json            @default("{}")
+  sourceKind        V3RequestSource @default(SITE)
+  directoryRefHash  String? // set only when a live Visit reference was consumed for this vendor's business
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  idempotencyKey    String
+  spamScore         Int             @default(0)
+  firstSeenAt       DateTime?
+  firstResponseAt   DateTime?
+  expiresAt         DateTime
+  convertedCustomerId String? // the CRM and booking modules arrive later: this slice only records the link
+  convertedBookingId  String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  vendor   Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  events   V3RequestEvent[]
+  consent  V3RequestConsent?
+  tracking V3RequestTracking?
+  order    V3Order?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([customerPhoneE164])
+  @@map("g4d_requests")
+}
+
+/// Append-only: nothing in the code updates or deletes a row.
+model V3RequestEvent {
+  id             String         @id @default(cuid())
+  requestId      String
+  type           String
+  actorType      V3RequestActor
+  channel        String?
+  deliveryResult String?
+  at             DateTime       @default(now())
+  metaJson       Json           @default("{}")
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, at])
+  @@map("g4d_request_events")
+}
+
+model V3RequestConsent {
+  id                 String   @id @default(cuid())
+  requestId          String   @unique
+  textVersion        Int
+  textHash           String
+  ipHash             String?
+  at                 DateTime @default(now())
+  contactByBusiness  Boolean
+  contactByPlatform  Boolean
+  marketing          Boolean
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_request_consents")
+}
+
+model V3RequestTracking {
+  id        String   @id @default(cuid())
+  requestId String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+
+  request V3Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_request_tracking")
+}
+
+model V3VendorPaymentMethod {
+  id                 String                @id @default(cuid())
+  vendorId           String
+  kind               V3PaymentMethodKind
+  label              String
+  configCipher       String? // sealed with the platform key; write-only, never returned
+  configIv           String?
+  configTag          String?
+  last4              String?
+  webhookSecretCipher String?
+  webhookSecretIv    String?
+  webhookSecretTag   String?
+  status             V3PaymentMethodStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+  @@map("g4d_vendor_payment_methods")
+}
+
+model V3Order {
+  id            String             @id @default(cuid())
+  vendorId      String
+  requestId     String             @unique
+  orderNo       Int
+  status        V3OrderStatus      @default(PLACED)
+  paymentMode   V3OrderPaymentMode
+  methodId      String?
+  amountPaise   Int
+  currency      String             @default("INR")
+  reviewFlag    Boolean            @default(false) // a vendor gateway event whose amount did not match: never marked PAID
+  shippingJson  Json               @default("{}")
+  trackingJson  Json               @default("{}")
+  refundedPaise Int                @default(0) // a recorded fact only; no provider call
+  paidAt        DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  vendor  Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  request V3Request     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  items   V3OrderItem[]
+
+  @@unique([vendorId, orderNo])
+  @@index([vendorId, status, createdAt])
+  @@map("g4d_orders")
+}
+
+model V3OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  productRef String
+  name       String
+  qty        Int
+  unitPaise  Int
+  taxJson    Json   @default("{}")
+
+  order V3Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("g4d_order_items")
+}
+
+/// The webhook inbox of a vendor's own gateway. Append-only.
+model V3VendorPaymentEvent {
+  id              String   @id @default(cuid())
+  vendorId        String
+  methodId        String
+  providerEventId String
+  signatureValid  Boolean
+  payloadJson     Json     @default("{}") // redacted
+  result          String
+  at              DateTime @default(now())
+
+  @@unique([vendorId, providerEventId])
+  @@index([vendorId, at])
+  @@map("g4d_vendor_payment_events")
+}
+
+model V3VendorInvoice {
+  id            String                @id @default(cuid())
+  vendorId      String
+  orderId       String?
+  requestId     String?
+  seq           Int
+  invoiceNumber String
+  issuedAt      DateTime              @default(now())
+  snapshotJson  Json                  @default("{}")
+  status        V3VendorInvoiceStatus @default(ISSUED)
+  voidedAt      DateTime?
+  voidReason    String?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, seq])
+  @@unique([vendorId, invoiceNumber])
+  @@index([vendorId, orderId])
+  @@map("g4d_vendor_invoices")
+}
+
+/// Gap-free per-vendor counters: the next number is taken with one atomic statement, so two parallel requests can never get the same number or leave a gap.
+model V3VendorCounter {
+  id       String        @id @default(cuid())
+  vendorId String
+  kind     V3CounterKind
+  value    Int           @default(0)
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, kind])
+  @@map("g4d_vendor_counters")
+}
+
+model V3StockLevel {
+  id         String   @id @default(cuid())
+  vendorId   String
+  productRef String
+  onHand     Int
+  reserved   Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, productRef])
+  @@map("g4d_stock_levels")
+}
+
+model V3StockReservation {
+  id         String    @id @default(cuid())
+  vendorId   String
+  orderId    String
+  productRef String
+  qty        Int
+  expiresAt  DateTime
+  releasedAt DateTime?
+  committedAt DateTime?
+
+  @@index([orderId])
+  @@index([expiresAt])
+  @@map("g4d_stock_reservations")
+}
+
+model V3Offer {
+  id             String        @id @default(cuid())
+  vendorId       String
+  kind           V3OfferKind
+  title          String
+  code           String?
+  percentOff     Int?
+  flatPaise      Int?
+  minOrderPaise  Int           @default(0)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  usageLimit     Int?
+  usedCount      Int           @default(0)
+  status         V3OfferStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, code])
+  @@index([vendorId, status])
+  @@map("g4d_offers")
+}
+
+model V3MessageOutbox {
+  id                  String           @id @default(cuid())
+  vendorId            String?
+  channel             V3MessageChannel
+  templateKey         String
+  toHash              String
+  toMasked            String
+  payloadRedactedJson Json             @default("{}")
+  senderRoute         String
+  status              V3MessageStatus  @default(QUEUED)
+  attempts            Int              @default(0)
+  relatedRequestId    String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([vendorId, createdAt])
+  @@index([relatedRequestId])
+  @@map("g4d_message_outbox")
+}
+
+/// A recipient who said STOP. Honoured by the message router. Append-only.
+model V3MessageSuppression {
+  id      String           @id @default(cuid())
+  hash    String
+  channel V3MessageChannel
+  at      DateTime         @default(now())
+
+  @@unique([hash, channel])
+  @@map("g4d_message_suppressions")
+}
+
+model V3Report {
+  id                   String         @id @default(cuid())
+  reportedHost         String
+  reasonKind           String
+  text                 String
+  reporterContactMasked String?
+  status               V3ReportStatus @default(OPEN)
+  handledBy            String?
+  handledAt            DateTime?
+  createdAt            DateTime       @default(now())
+
+  @@index([status, createdAt])
+  @@map("g4d_reports")
+}
+
+model V3Blocklist {
+  id      String      @id @default(cuid())
+  kind    V3BlockKind
+  hash    String
+  reason  String
+  addedBy String?
+  at      DateTime    @default(now())
+
+  @@unique([kind, hash])
+  @@map("g4d_blocklist")
 }
