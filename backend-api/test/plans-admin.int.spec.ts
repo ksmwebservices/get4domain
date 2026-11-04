@@ -9,6 +9,7 @@ import request from 'supertest';
 import { applySeed } from '../src/plans/seed/seed-applier';
 import { expandSeed } from '../src/plans/seed/seed-file';
 import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
+import { runCleanup } from './support/cleanup-guard';
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant } from './support/fixtures';
 import { buildPlansTestApp } from './support/plans-test-app';
 
@@ -49,11 +50,12 @@ describe('plans admin API on staging', () => {
   }, 180000);
 
   afterAll(async () => {
-    try {
-      await prisma.v3PlanPrice.deleteMany({ where: { id: { in: createdPrices } } });
-      await prisma.v3AuditLog.deleteMany({ where: { OR: [{ actorId: { in: staffIds } }, { entityId: V?.vendorId }] } });
-      await cleanupTenants(prisma, RUN_ID);
-    } finally { await app?.close(); await prisma?.$disconnect(); }
+    await runCleanup([   // every step runs even if an earlier one (or a failed assertion upstream) threw
+      () => prisma.v3PlanPrice.deleteMany({ where: { id: { in: createdPrices } } }),
+      () => prisma.v3AuditLog.deleteMany({ where: { OR: [{ actorId: { in: staffIds } }, { entityId: V?.vendorId }] } }),
+      () => cleanupTenants(prisma, RUN_ID),
+      () => app?.close(), () => prisma?.$disconnect(),
+    ]);
   }, 120000);
 
   it('roles: MARKETING is refused everywhere, OPERATIONS reads but cannot write, SUPER_ADMIN does both', async () => {

@@ -9,6 +9,7 @@ import { PrismaPlansRepository } from '../src/plans/entitlements/plans.repositor
 import { applySeed } from '../src/plans/seed/seed-applier';
 import { expandSeed } from '../src/plans/seed/seed-file';
 import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
+import { runCleanup } from './support/cleanup-guard';
 import { SeededTenant, cleanupTenants, newPrisma, seedTenant } from './support/fixtures';
 
 /**
@@ -43,8 +44,7 @@ describe('entitlements on staging (real tables)', () => {
   }, 180000);
 
   afterAll(async () => {
-    await cleanupTenants(prisma, RUN_ID);
-    await prisma.$disconnect();
+    await runCleanup([() => cleanupTenants(prisma, RUN_ID), () => prisma?.$disconnect()]);
   }, 120000);
 
   it('a vendor on the handyman Free plan gets the seed\'s Free features', async () => {

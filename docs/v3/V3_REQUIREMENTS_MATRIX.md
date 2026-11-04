@@ -291,3 +291,12 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 8 Migrations / backups | Many migrations are "written, not applied"; ordered VM runbooks exist; backups not in repo. |
 | 10 No fake functionality | Prior Release 1A removed unbuilt claims; mocks (Meta, Google Ads, video) must stay labelled. |
 | 11 Tracker docs | 7 required; this phase creates 4. `V3_API_DOCUMENTATION`, `V3_TEST_REPORT`, `V3_CHANGELOG` start in V3.1. |
+
+## Status as built (2026-11-04, B2.0)
+| Slice | Branch | State | Requirement rows it moves |
+|---|---|---|---|
+| 5.1 Plans and entitlements | `v3-s51` | Built and pushed; staging suites written (`plans-*.int.spec.ts`). | Plan model (D1), entitlement checks, plan admin |
+| 5.3 Provisioning engine | `v3-s53` | Built and pushed; first staging run found and fixed the reissue bug (`041b4b9`). | Free business creation, claim links, invites (sandbox) |
+| 5.4 Renderer, SEO layer, publish | `v3-s54` | Built and pushed; staging 310 of 311, the one failure a test timeout, addressed in `c3e9bd4`; re-run pending. Internal read API only: no real host is served. | Instant free site, SEO fundamentals, publish and rollback |
+| SEO-0 | `v3-seo0` | Four commits on the marketing frontend only; not part of the backend batches. | SEO fundamentals on get4domain.com |
+| B2.0 Hygiene | `v3-b2` | Done: plans suites clean up after a failed assertion (`cleanup-guard`); this status block. | Rule 7 (tenant tests) housekeeping |

@@ -9,6 +9,7 @@ import request from 'supertest';
 import { applySeed } from '../src/plans/seed/seed-applier';
 import { expandSeed } from '../src/plans/seed/seed-file';
 import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
+import { runCleanup } from './support/cleanup-guard';
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant } from './support/fixtures';
 import { buildPlansTestApp } from './support/plans-test-app';
 
@@ -54,10 +55,11 @@ describe('plans: tenant isolation and concurrency (staging database)', () => {
   }, 180000);
 
   afterAll(async () => {
-    try {
-      await prisma.v3AuditLog.deleteMany({ where: { OR: [{ actorId: { in: staffIds } }, { entityId: { in: [A?.vendorId, B?.vendorId].filter(Boolean) as string[] } }] } });
-      await cleanupTenants(prisma, RUN_ID);
-    } finally { await app?.close(); await prisma?.$disconnect(); }
+    await runCleanup([
+      () => prisma.v3AuditLog.deleteMany({ where: { OR: [{ actorId: { in: staffIds } }, { entityId: { in: [A?.vendorId, B?.vendorId].filter(Boolean) as string[] } }] } }),
+      () => cleanupTenants(prisma, RUN_ID),
+      () => app?.close(), () => prisma?.$disconnect(),
+    ]);
   }, 120000);
 
   it('each vendor sees only its own entitlements, subscription and events', async () => {
