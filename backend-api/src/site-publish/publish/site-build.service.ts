@@ -1,7 +1,8 @@
-import { ConflictException, Inject, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
 import { toRenderEntitlements } from '../../plans/entitlements/entitlement-engine';
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
+import { VendorHosts } from './vendor-hosts';
 import { planError } from '../../plans/plans.errors';
 import { categoryFor, limitsFrom, pageArgs, planPages, toRendererInput } from '../content/content-adapter';
 import { ContentSource } from '../content/content-source';
@@ -36,6 +37,7 @@ export class SiteBuildService {
     private readonly content: ContentSource,
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'resolve'>,
     private readonly audit: SiteAudit,
+    @Optional() private readonly hosts?: VendorHosts,
   ) {}
 
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
@@ -61,10 +63,12 @@ export class SiteBuildService {
     notes.push(...langs.notes);
     const motion = kitMotion(clampMotion(settings?.motionIntensity ?? 'LOW', ent.level));
     const limits = limitsFrom(ent);
-    const renderEnt = toRenderEntitlements(ent, false);
+    const primary = this.hosts ? await this.hosts.primary(vendorId) : { host: null, isCustom: false };
+    const renderEnt = toRenderEntitlements(ent, this.hosts ? await this.hosts.hasVerifiedCustomDomain(vendorId) : false);   // slice 5.6: customDomain only with an ACTIVE verified domain
     const year = this.clock().getUTCFullYear();
 
-    const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, limits, motion });
+    const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
+    const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion });
     notes.push(...base.notes.map((n) => n));
     const siteName = String((base.content.site as { name: string }).name);
     const contact = base.content.contact as { address: string; city: string };
@@ -74,7 +78,7 @@ export class SiteBuildService {
     });
 
     // hashes: what the output depends on, so an unchanged site is recognised without rendering
-    const contentHash = sha256(stableJson({ doc, categoryId, year, limits, motion, siteBase: this.siteBase }));
+    const contentHash = sha256(stableJson({ doc, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
     const settingsHash = sha256(stableJson({ themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
     const newest = await this.repo.newestPublication(vendorId);
     if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) return { publication: newest, reused: true };
@@ -87,7 +91,7 @@ export class SiteBuildService {
     const canon = new Map<string, string>();
     const siteUrl = String(base.host.siteUrl);
     for (const lang of langs.languages) {
-      const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, limits, motion });
+      const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion });
       for (const p of planPages(input.content, templates)) {
         const args = pageArgs(input.content, p);
         const rendered = this.themes.render(resolved.themeId, { page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: input.host, entitlements: renderEnt });

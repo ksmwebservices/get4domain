@@ -15,6 +15,7 @@ import { ProvisioningSettingsService } from '../../src/provisioning/settings/pro
 import { PROVISIONING_CONTROLLERS, PROVISIONING_PROVIDERS } from '../../src/provisioning/provisioning.providers';
 import { SiteProvisioner } from '../../src/provisioning/site/site-provisioner';
 import { StarterService } from '../../src/site-doc/starter.service';
+import { SITE_DOMAIN_CONTROLLERS, SITE_DOMAIN_PROVIDERS } from '../../src/site-domains/site-domains.providers';
 import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from '../../src/site-publish/site-publish.providers';
 
 /**
@@ -24,10 +25,10 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from '../../src/site
  * capture mode (EMAIL_MODE=test) and the invite adapter is the sandbox, so nothing is sent.
  */
 export async function buildProvisioningTestApp(opts: { siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner; includeSiteApi?: boolean; /** default: true unless the site API is included */ pinLegacySiteMode?: boolean } = {}): Promise<INestApplication> {
-  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
   const moduleRef = await Test.createTestingModule({
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
-    controllers: opts.includeSiteApi ? [...PROVISIONING_CONTROLLERS, ...SITE_PUBLISH_CONTROLLERS] : PROVISIONING_CONTROLLERS,
+    controllers: opts.includeSiteApi ? [...PROVISIONING_CONTROLLERS, ...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : PROVISIONING_CONTROLLERS,
     providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers],
   }).compile();
   const app = moduleRef.createNestApplication();

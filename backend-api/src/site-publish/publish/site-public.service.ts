@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { contentTypeFor, isPlatformFile } from './site-config';
 import { SiteRepository } from './site.repository';
 
-/** Finds the vendor behind a host name. Today that is the vendor's subdomain; the domain tables arrive in slice 5.6 and replace the implementation. */
+/** Finds the vendor behind a host name (slice 5.6: the domain tables; a non-primary host also carries the redirect to the canonical one). */
 export abstract class HostResolver {
   /** null for an unknown host and for a suspended vendor (the caller cannot tell them apart). */
-  abstract resolve(host: string): Promise<{ vendorId: string } | null>;
+  abstract resolve(host: string): Promise<{ vendorId: string; redirect?: { host: string; status: 301 | 302 } } | null>;
 }
 
+export interface PublicRedirect { status: 301 | 302; location: string }
 export interface PublicPage { status: 200; html: string; etag: string; robots: string; contentType: string; lang: string }
 
 /**
@@ -18,11 +19,23 @@ export interface PublicPage { status: 200; html: string; etag: string; robots: s
 export class SitePublicService {
   constructor(private readonly repo: SiteRepository, private readonly hosts: HostResolver) {}
 
+  /** The page, or null: exactly as before slice 5.6 (a redirect is not a page). */
   async byHost(host: string, path: string, lang: string): Promise<PublicPage | null> {
+    const r = await this.lookup(host, path, lang);
+    return r && r.status === 200 ? r : null;
+  }
+
+  /** A page, a redirect to the vendor's canonical host (the path is kept), or null. */
+  async lookup(host: string, path: string, lang: string): Promise<PublicPage | PublicRedirect | null> {
     const h = String(host ?? '').trim().toLowerCase().split(':')[0];
     if (!h || h.length > 253) return null;
     const vendor = await this.hosts.resolve(h);
     if (!vendor) return null;
+    if (vendor.redirect) {
+      const keep = `/${String(path ?? '/').split('?')[0].replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/';
+      if (keep.length > 300 || keep.includes('..')) return null;
+      return { status: vendor.redirect.status, location: `https://${vendor.redirect.host}${keep === '/' ? '/' : keep}` };
+    }
     const current = await this.repo.currentPublication(vendor.vendorId);
     if (!current) return null;
     let p = `/${String(path ?? '/').split('?')[0].replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/';

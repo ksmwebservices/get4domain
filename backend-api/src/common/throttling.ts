@@ -50,6 +50,8 @@ export const RATE = {
   claimStatus: { reads: { limit: 20, ttl: 60_000 } },
   /** V3 public site read (internal consumers: the Next.js app, one IP): roomy, on the "reads" throttler. THROTTLE_TRUSTED_IPS can exempt the app server entirely. */
   siteRead: { reads: { limit: 300, ttl: 60_000 } },
+  /** V3 domain verification reads DNS: 6 per minute per IP (the service also enforces a minimum interval per domain). */
+  domainVerify: { default: { limit: 6, ttl: 60_000 } },
   /** Provider webhooks: generous (providers retry), but not unlimited. */
   webhook: { default: { limit: 120, ttl: 60_000 } },
   whatsappWebhook: { default: { limit: 300, ttl: 60_000 } },

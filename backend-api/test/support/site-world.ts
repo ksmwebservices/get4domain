@@ -1,5 +1,6 @@
 import { ResolvedEntitlements } from '../../src/plans/entitlements/entitlement-engine';
 import { SiteAudit } from '../../src/site-publish/publish/site-audit';
+import { VendorHosts } from '../../src/site-publish/publish/vendor-hosts';
 import { SiteBuildService } from '../../src/site-publish/publish/site-build.service';
 import { PublishService } from '../../src/site-publish/publish/publish.service';
 import { SiteSettingsService } from '../../src/site-publish/publish/site-settings.service';
@@ -23,7 +24,7 @@ export interface SiteWorld {
   audit: string[];
 }
 
-export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument } = {}): SiteWorld {
+export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument; hosts?: VendorHosts } = {}): SiteWorld {
   const kind = o.kind ?? 'plumber';
   const track = kind === 'jewellery' ? 'ecommerce' : kind === 'dentist' ? 'professional' : 'handyman';
   const state: SiteWorld['state'] = { doc: o.doc ?? makeDoc(kind, { claimed: o.claimed ?? false }), ent: entitlements(o.level ?? 'FREE', track), vendorHosts: new Map() };
@@ -33,7 +34,7 @@ export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level
   const ents = { resolve: async () => state.ent };
   const auditSink: SiteAudit = { hook: (_actor, action) => async () => { audit.push(action); } };
   const themes = themeService();
-  const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink); build.clock = () => NOW;
+  const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink, o.hosts); build.clock = () => NOW;
   const publish = new PublishService(repo, themes, content as never, ents as never, auditSink); publish.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content as never, ents as never, build, publish, auditSink);
   const hosts = { resolve: async (host: string) => { const h = state.vendorHosts.get(host); return h && !h.suspended ? { vendorId: h.vendorId } : null; } };

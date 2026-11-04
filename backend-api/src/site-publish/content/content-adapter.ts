@@ -8,7 +8,7 @@ import { SiteLimits, SourceDocument } from './content-types';
  * the renderer wants structured rows (slice 5.5 supplies them). Platform wording for the visitor (labels, Tamil UI) comes from the renderer itself.
  */
 export interface CategoryMap { packs: Record<string, string[]> }
-export interface AdapterOptions { categoryId: string; lang: 'en' | 'ta'; year: number; siteBase: string; limits?: SiteLimits; motion?: 'Off' | 'Low' | 'Medium' | 'Rich' }
+export interface AdapterOptions { categoryId: string; lang: 'en' | 'ta'; year: number; siteBase: string; /** the vendor's canonical host (slice 5.6); absent = <subdomain>.<siteBase> */ primaryHost?: string; customDomain?: string; limits?: SiteLimits; motion?: 'Off' | 'Low' | 'Medium' | 'Rich' }
 export interface RendererInput {
   content: Record<string, unknown>;
   settings: Record<string, unknown>;
@@ -69,7 +69,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const address = str(cms?.address);
   const { city, pin } = splitAddress(address);
   const ex = cms?.extras ?? {};
-  const siteUrl = doc.vendor.subdomain ? `https://${doc.vendor.subdomain}.${o.siteBase}` : '';
+  const siteUrl = o.primaryHost ? `https://${o.primaryHost}` : doc.vendor.subdomain ? `https://${doc.vendor.subdomain}.${o.siteBase}` : '';
   const waDigits = str(cms?.whatsapp || phone).replace(/\D/g, '');
   const lim = o.limits ?? { pages: null, services: null, gallery: null, faqs: null };
 
@@ -111,7 +111,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     pages,
   };
   const settings: Record<string, unknown> = o.motion ? { motionIntensity: o.motion } : {};
-  return { content, settings, vendor: { id: doc.vendor.id, unclaimed: !doc.claimed }, host: { siteUrl, customDomain: '', allowEmbeds: false }, notes };
+  return { content, settings, vendor: { id: doc.vendor.id, unclaimed: !doc.claimed }, host: { siteUrl, customDomain: o.customDomain ?? '', allowEmbeds: false }, notes };
 }
 
 /** The pages of the site, in a stable order, for the templates the chosen theme has: five standard pages, the vendor's own pages, then one page per item. */

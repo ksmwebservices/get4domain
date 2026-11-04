@@ -60,6 +60,7 @@ import { HealthModule } from './health/health.module';
 import { PlansModule } from './plans/plans.module';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
+import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -103,6 +104,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     PlansModule,
     ProvisioningModule,
     SitePublishModule,
+    SiteDomainsModule,
     VendorsModule,
     SubscriptionsModule,
     InvoicesModule,

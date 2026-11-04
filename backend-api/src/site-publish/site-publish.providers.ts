@@ -4,13 +4,15 @@ import { PublicSiteController } from './api/public-site.controller';
 import { SitesAdminController } from './api/sites-admin.controller';
 import { CmsContentSource, ContentSource } from './content/content-source';
 import { PrismaSiteAudit, SiteAudit } from './publish/site-audit';
-import { PrismaSiteRepository, SubdomainHostResolver } from './publish/prisma-site.repository';
+import { PrismaSiteRepository } from './publish/prisma-site.repository';
 import { PublishService } from './publish/publish.service';
 import { SiteBuildService } from './publish/site-build.service';
 import { HostResolver, SitePublicService } from './publish/site-public.service';
 import { SitePreviewService } from './publish/site-preview.service';
 import { SiteSettingsService } from './publish/site-settings.service';
 import { SiteRepository } from './publish/site.repository';
+import { VendorHosts } from './publish/vendor-hosts';
+import { DomainHostResolver, DomainVendorHosts } from '../site-domains/site-publish-adapters';
 import { ThemeRenderService } from './renderer/theme-render.service';
 
 /**
@@ -19,7 +21,8 @@ import { ThemeRenderService } from './renderer/theme-render.service';
  */
 export const SITE_PUBLISH_PROVIDERS: Provider[] = [
   { provide: SiteRepository, useClass: PrismaSiteRepository },
-  { provide: HostResolver, useClass: SubdomainHostResolver },
+  { provide: HostResolver, useClass: DomainHostResolver },   // slice 5.6: the domain tables (the slice 5.4 SubdomainHostResolver is no longer bound)
+  { provide: VendorHosts, useClass: DomainVendorHosts },
   { provide: ContentSource, useClass: CmsContentSource },
   { provide: SiteAudit, useClass: PrismaSiteAudit },
   ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePreviewService, SitePublicService,

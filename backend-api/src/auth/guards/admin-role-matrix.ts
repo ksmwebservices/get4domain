@@ -84,6 +84,10 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/provisioning/jobs/:id/retry': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/cancel': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/run': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/claim-link/reissue': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/claim-link/revoke': OPS_AND_SUPER, 'GET /v3/admin/invites': OPS_AND_SUPER,
 
+  // ── V3 slice 5.6: vendors' addresses. Reads too are OPERATIONS and SUPER_ADMIN only (a host name can identify a business); MARKETING is refused everywhere.
+  'GET /v3/admin/domains': OPS_AND_SUPER, 'GET /v3/admin/domains/:id': OPS_AND_SUPER, 'POST /v3/admin/domains/:id/verify': OPS_AND_SUPER, 'PUT /v3/admin/domains/:id/state': OPS_AND_SUPER,
+  'POST /v3/admin/domains/:id/primary': OPS_AND_SUPER, 'POST /v3/admin/domains/:id/remove': OPS_AND_SUPER, 'PUT /v3/admin/vendors/:id/domains/subdomain': OPS_AND_SUPER,
+
   // ── V3 slice 5.4: vendors' sites ────────────────────────────────────────────────────────────────────────────────────────
   // Summaries (the list and one site) are open to all staff; MARKETING never sees html. Every write, and the preview that carries html, is OPERATIONS and SUPER_ADMIN.
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,

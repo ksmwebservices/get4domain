@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SiteDomainsModule } from '../site-domains/site-domains.module';
 import { PublishService } from './publish/publish.service';
 import { SiteBuildService } from './publish/site-build.service';
 import { SiteRepository } from './publish/site.repository';
@@ -12,7 +13,7 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from './site-publish
  * service are available without importing it here. Nothing in this module exposes a page on a real host: the public route is an internal, read-only API.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SiteDomainsModule],   // SiteDomainsModule exports the HostDirectory the host resolver and the build use
   controllers: SITE_PUBLISH_CONTROLLERS,
   providers: SITE_PUBLISH_PROVIDERS,
   exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService, SiteRepository],

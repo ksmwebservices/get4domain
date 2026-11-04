@@ -4,6 +4,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { ContentSource, CmsContentSource } from '../src/site-publish/content/content-source';
 import { PrismaSiteAudit, SiteAudit } from '../src/site-publish/publish/site-audit';
 import { PrismaSiteRepository, SubdomainHostResolver } from '../src/site-publish/publish/prisma-site.repository';
+import { DomainHostResolver } from '../src/site-domains/site-publish-adapters';
 import { PublishService } from '../src/site-publish/publish/publish.service';
 import { SiteBuildService } from '../src/site-publish/publish/site-build.service';
 import { HostResolver, SitePublicService } from '../src/site-publish/publish/site-public.service';
@@ -17,7 +18,7 @@ describe('SitePublishModule wiring', () => {
   it('compiles and binds every port to its real implementation', async () => {
     const mod = await Test.createTestingModule({ imports: [PlansModule, SitePublishModule] }).overrideProvider(PrismaService).useValue({}).compile();
     expect(mod.get(SiteRepository)).toBeInstanceOf(PrismaSiteRepository);
-    expect(mod.get(HostResolver)).toBeInstanceOf(SubdomainHostResolver);
+    expect(mod.get(HostResolver)).toBeInstanceOf(DomainHostResolver);   // slice 5.6
     expect(mod.get(ContentSource)).toBeInstanceOf(CmsContentSource);
     expect(mod.get(SiteAudit)).toBeInstanceOf(PrismaSiteAudit);
     for (const c of [ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePublicService]) expect(mod.get(c)).toBeDefined();
