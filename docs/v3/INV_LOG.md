@@ -16,3 +16,6 @@ Read the email, SMS, Fast2SMS WhatsApp, Cloud API gateway, webhook, communicatio
 
 ## INV-5 Sites and others
 Traced the five render paths in the site page, the site document, packs, themes (bytes in the database), the 21 industry modules and their tables, team and staff roles, AI, ResellerClub and domains, the admin and marketing pages. Findings: `ModuleGuard` allows team members on every route without `@RequireModule` (all industry modules); ResellerClub prices are hard-coded; the 41-category list does not exist in the backend; the legacy site renderer, the iframe theme path and the database theme storage are the V3 replacement targets. Output: section INV-5 of `docs/v3/V2_INVENTORY.md`.
+
+## INV-6 Replacement map
+Checked the 22 rows of section 2 and five other statements against the code. Result: 12 CONFIRMED, 3 WRONG (rows 7, 8 and 10 are wrong or understated), plus row 1, 2, 4, 22 partly or wholly wrong, 2 UNKNOWN (row 11, price figures), and several rows stale because Batch 1 and 2 built the V3 piece (plans, provisioning, directory, domains). Row details in section INV-6 of `docs/v3/V2_INVENTORY.md`.
