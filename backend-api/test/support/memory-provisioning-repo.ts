@@ -8,6 +8,8 @@ import { ALL_STEP_ORDER, STEP_ORDER, StepKey, StepStatus } from '../../src/provi
 export class MemoryProvisioningRepo extends ProvisioningRepository {
   jobs = new Map<string, JobRow>();
   steps = new Map<string, StepRow>();
+  /** Tests that fix the runner clock set this too, so a job created now is due at the fixed time (a real-clock createdAt made them fail once the wall clock passed the fixed date). */
+  clock: () => Date = () => new Date();
   private seq = 0;
   /** test hook: called inside finishStep before it writes, to simulate a crash in the middle of a job */
   beforeFinishStep?: (jobId: string, key: StepKey, status: StepStatus) => void;
@@ -16,7 +18,7 @@ export class MemoryProvisioningRepo extends ProvisioningRepository {
 
   async createJob(d: NewJob): Promise<{ job: JobRow; created: boolean }> {
     for (const j of this.jobs.values()) if (j.idempotencyKey === d.idempotencyKey) return { job: { ...j }, created: false };
-    const now = new Date();
+    const now = this.clock();
     const job: JobRow = {
       id: `job${++this.seq}`, kind: 'BUSINESS_FREE_SITE', status: 'QUEUED', idempotencyKey: d.idempotencyKey, vendorId: null, input: d.input, currentStep: null,
       attempt: 0, maxAttempts: d.maxAttempts, nextRunAt: now, lockedBy: null, lockedUntil: null, lastErrorCode: null, lastErrorMessage: null,

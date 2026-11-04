@@ -207,7 +207,7 @@ describe('SEND_INVITE', () => {
 describe('the raw token never reaches job rows, step rows, audit rows, claim rows, invite columns (except the sandbox body) or logs', () => {
   it('a whole job through the real runner and the real steps', async () => {
     const w = world();
-    const repo = new MemoryProvisioningRepo();
+    const repo = new MemoryProvisioningRepo(); repo.clock = () => NOW;
     const audit: unknown[] = [];
     const sink: ProvisioningAudit = { record: async (...a) => { audit.push(a); } };
     const vendorStep: ProvisioningStep = { key: 'CREATE_VENDOR', run: async (): Promise<StepResult> => ({ vendorId: 'v1', outputRef: { vendorId: 'v1' } }) };

@@ -17,7 +17,7 @@ function harness(settings: Partial<ProvisioningSettings> = {}): Harness {
   const repo = new MemoryProvisioningRepo();
   const calls: Record<string, number> = {};
   const audit: Array<{ action: string; after: unknown }> = [];
-  const clock = { now: T0 };
+  const clock = { now: T0 }; repo.clock = () => clock.now;
   const behaviour: Harness['behaviour'] = {};
   const tokens: string[] = [];
   const seenTokens: Array<string | undefined> = [];
