@@ -12,6 +12,7 @@ import { DirectoryAudit, PrismaDirectoryAudit } from '../src/directory/directory
 import { DirectoryRepository } from '../src/directory/directory.repository';
 import { PrismaDirectoryRepository } from '../src/directory/prisma-directory.repository';
 import { ModeSmsAdapter, SmsAdapter } from '../src/directory/sms/sms-adapter';
+import { B3SettingsModule } from '../src/b3-settings/b3-settings.module';
 import { PlansModule } from '../src/plans/plans.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { ClaimOtpService } from '../src/provisioning/claims/claim-otp.service';
@@ -90,7 +91,7 @@ describe('tenant scope, cleanup and wiring', () => {
   });
   it('the real modules compile; ports are bound to their real implementations; the optional step is registered apart from the five steps', async () => {
     process.env.EMAIL_MODE = 'test';
-    const mod = await Test.createTestingModule({ imports: [PlansModule, DirectoryModule, ProvisioningModule] }).overrideModule(SiteDocModule).useModule(StubSiteDocModule).overrideProvider(PrismaService).useValue({}).compile();
+    const mod = await Test.createTestingModule({ imports: [PlansModule, B3SettingsModule, DirectoryModule, ProvisioningModule] }).overrideModule(SiteDocModule).useModule(StubSiteDocModule).overrideProvider(PrismaService).useValue({}).compile();
     expect(mod.get(DirectoryRepository)).toBeInstanceOf(PrismaDirectoryRepository); expect(mod.get(DirectoryAudit)).toBeInstanceOf(PrismaDirectoryAudit); expect(mod.get(SmsAdapter)).toBeInstanceOf(ModeSmsAdapter);
     expect(mod.get(ClaimOtpService)).toBeDefined();
     expect((mod.get(PROVISIONING_STEPS) as Array<{ key: string }>).map((s) => s.key)).not.toContain('CREATE_DIRECTORY_PROFILE');

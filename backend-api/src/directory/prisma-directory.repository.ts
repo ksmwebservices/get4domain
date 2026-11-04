@@ -160,4 +160,39 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     return (await this.prisma.v3DirectoryRemovalRequest.updateMany({ where: { id, status: from }, data: { status: to, ...patch } })).count === 1;
   }
   async countRecentRemovals(businessId: string, since: Date) { return this.prisma.v3DirectoryRemovalRequest.count({ where: { businessId, createdAt: { gte: since } } }); }
+
+  // ── visits (slice 5.7b) ──
+  async incrementVisit(businessId: string, day: string, fromSearch: boolean): Promise<void> {
+    const s = fromSearch ? 1 : 0;
+    // one atomic statement: no read-then-write, so parallel visits never lose a count
+    await this.prisma.$executeRaw`INSERT INTO "g4d_directory_visit_daily" ("id", "businessId", "day", "count", "searchCount", "createdAt", "updatedAt")
+      VALUES (${`vd_${businessId}_${day}`}, ${businessId}, ${day}, 1, ${s}, NOW(), NOW())
+      ON CONFLICT ("businessId", "day") DO UPDATE SET "count" = "g4d_directory_visit_daily"."count" + 1, "searchCount" = "g4d_directory_visit_daily"."searchCount" + ${s}, "updatedAt" = NOW()`;
+  }
+  async visitDays(businessId: string, fromDay: string, toDay: string) {
+    return this.prisma.v3DirectoryVisitDaily.findMany({ where: { businessId, day: { gte: fromDay, lte: toDay } }, orderBy: { day: 'asc' }, select: { day: true, count: true, searchCount: true } });
+  }
+  async visitTotals(fromDay: string, toDay: string, o: { vendorId?: string; skip: number; take: number }) {
+    const where: Prisma.V3DirectoryVisitDailyWhereInput = { day: { gte: fromDay, lte: toDay }, ...(o.vendorId ? { business: { vendorId: o.vendorId } } : {}) };
+    const groups = await this.prisma.v3DirectoryVisitDaily.groupBy({ by: ['businessId'], where, _sum: { count: true, searchCount: true }, orderBy: { _sum: { count: 'desc' } }, skip: o.skip, take: o.take });
+    const total = (await this.prisma.v3DirectoryVisitDaily.groupBy({ by: ['businessId'], where })).length;
+    const biz = await this.prisma.v3DirectoryBusiness.findMany({ where: { id: { in: groups.map((g) => g.businessId) } }, select: { id: true, slug: true, name: true } });
+    const by = new Map(biz.map((b) => [b.id, b]));
+    return { items: groups.map((g) => ({ businessId: g.businessId, slug: by.get(g.businessId)?.slug ?? '', name: by.get(g.businessId)?.name ?? '', count: g._sum.count ?? 0, searchCount: g._sum.searchCount ?? 0 })), total };
+  }
+  async createVisitRef(d: { refHash: string; businessId: string; expiresAt: Date }) { await this.prisma.v3DirectoryVisitRef.create({ data: d }); }
+  async consumeVisitRef(refHash: string, businessId: string, now: Date) {
+    return (await this.prisma.v3DirectoryVisitRef.updateMany({ where: { refHash, businessId, usedAt: null, expiresAt: { gt: now } }, data: { usedAt: now } })).count === 1;
+  }
+  async siteFacts(vendorIds: string[], now: Date) {
+    const out = new Map<string, { subdomain: string | null; proActive: boolean }>();
+    if (!vendorIds.length) return out;
+    const [vendors, subs] = await Promise.all([
+      this.prisma.vendor.findMany({ where: { id: { in: vendorIds } }, select: { id: true, subdomain: true } }),
+      this.prisma.v3PlanSubscription.findMany({ where: { currentVendorId: { in: vendorIds }, plan: { level: 'PRO' } }, select: { currentVendorId: true, endsAt: true } }),
+    ]);
+    const pro = new Set(subs.filter((s) => s.endsAt === null || s.endsAt.getTime() > now.getTime()).map((s) => s.currentVendorId));
+    for (const v of vendors) out.set(v.id, { subdomain: v.subdomain ?? null, proActive: pro.has(v.id) });
+    return out;
+  }
 }

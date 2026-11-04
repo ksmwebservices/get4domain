@@ -61,6 +61,8 @@ const MARKETING_DENIED = [
   // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
   'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
   'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
+  // B3 slice 5.7b: the Visit-site report across vendors
+  'GET /v3/admin/directory/visits',
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on
   'GET /v3/admin/vendors/:id/canonical', 'POST /v3/admin/vendors/:id/custom-domain-addon', 'POST /v3/admin/vendors/:id/custom-domain-addon/end',
   // B3 slice 5.1d: lifecycle actions and the owner deletion queue (a deletion request identifies a business): OPERATIONS and SUPER_ADMIN
@@ -106,7 +108,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(176);
+    expect(oracle).toHaveLength(177);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -7,6 +7,7 @@ import { DirectoryPublicController } from '../src/directory/api/directory-public
 import { MeDirectoryController } from '../src/directory/api/me-directory.controller';
 import { DirectoryAdminService } from '../src/directory/directory-admin.service';
 import { DirectoryReadService } from '../src/directory/directory-read.service';
+import { DirectoryVisitService } from '../src/directory/directory-visit.service';
 import { DirectoryRemovalService } from '../src/directory/directory-removal.service';
 import { MeDirectoryService } from '../src/directory/me-directory.service';
 import { DirectorySettingsService } from '../src/directory/settings/directory-settings.service';
@@ -38,7 +39,7 @@ describe('directory API', () => {
       controllers: [DirectoryPublicController, MeDirectoryController, DirectoryAdminController, ClaimOtpController],
       providers: [
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard },
-        { provide: DirectoryReadService, useValue: w.read }, { provide: DirectoryRemovalService, useValue: w.removal }, { provide: DirectorySettingsService, useValue: settings },
+        { provide: DirectoryReadService, useValue: w.read }, { provide: DirectoryVisitService, useValue: w.visits }, { provide: DirectoryRemovalService, useValue: w.removal }, { provide: DirectorySettingsService, useValue: settings },
         { provide: MeDirectoryService, useValue: w.me }, { provide: DirectoryAdminService, useValue: w.admin }, { provide: ClaimOtpService, useValue: w.otp },
       ],
     }).compile();
@@ -98,6 +99,41 @@ describe('directory API', () => {
       expect((await send('post', `/v3/directory/removal-requests/${token}/confirm`, null)).body.data).toEqual({ confirmed: true });
       const last = await send('post', '/v3/directory/removal-requests', null, { businessSlug: 'live-co' }); const more = await send('post', '/v3/directory/removal-requests', null, { businessSlug: 'live-co' });
       expect([last.status, more.status].includes(429)).toBe(true);
+    });
+  });
+
+  describe('visits (slice 5.7b): the directory has one action, Visit site', () => {
+    const visit = (slug: string, body: object = {}, ip = '203.0.113.9') => request(app.getHttpServer()).post(`/v3/directory/businesses/${slug}/visit`).set('X-Forwarded-For', ip).send(body);
+    it('POST visit: 200 with a reference and the link, no cookie, nothing cached; an unknown business is the plain 404', async () => {
+      const a = await w.biz({ name: 'Visit Co', vendorId: 'va' }); w.repo.sites.set('va', { subdomain: 'visitco', proActive: false });
+      const r = await visit(a.slug, { fromSearch: true });
+      expect(r.status).toBe(200); expect(Object.keys(r.body.data).sort()).toEqual(['expiresAt', 'ref', 'url']); expect(r.body.data.url).toBe(`https://visitco.get4domain.com?src=dir&ref=${r.body.data.ref}`);
+      expect(r.headers['set-cookie']).toBeUndefined(); expect(r.headers['cache-control']).toBe('no-store');
+      const missing = await visit('nobody'); expect(missing.status).toBe(404);
+      expect((await visit('visit-co', { fromSearch: 'yes' })).status).toBe(400);   // the body is validated: only fromSearch, only a boolean
+      expect([...w.repo.visits.values()][0]).toMatchObject({ count: 1, searchCount: 1 });
+    });
+    it('POST visit is rate limited per IP (the 61st in a minute is 429)', async () => {
+      const a = await w.biz({ name: 'Visit Co', vendorId: 'va' }); w.repo.sites.set('va', { subdomain: 'visitco', proActive: false });
+      const codes: number[] = [];
+      for (let i = 0; i < 62; i++) codes.push((await visit(a.slug, {}, '198.51.100.77')).status);
+      expect(codes.slice(0, 60).every((c) => c === 200)).toBe(true); expect(codes.slice(60)).toContain(429);
+    });
+    it('GET /v3/me/directory/stats: the owner sees only their own counts; a team member is refused; no login is 401', async () => {
+      const a = await w.biz({ name: 'A Co', vendorId: 'va' }); const b = await w.biz({ name: 'B Co', vendorId: 'vb' });
+      w.repo.sites.set('va', { subdomain: 'aco', proActive: false }); w.repo.sites.set('vb', { subdomain: 'bco', proActive: true });
+      await visit(a.slug, {}, '10.0.0.1'); await visit(b.slug, {}, '10.0.0.2'); await visit(b.slug, {}, '10.0.0.3');
+      const mine = await get('/v3/me/directory/stats?days=7', 'owner-a'); expect(mine.status).toBe(200); expect(mine.body.data).toMatchObject({ total: 1, hasProfile: true });
+      expect((await get('/v3/me/directory/stats', 'owner-b')).body.data.total).toBe(2);
+      expect((await get('/v3/me/directory/stats', 'member-a')).status).toBe(403);
+      expect((await get('/v3/me/directory/stats')).status).toBe(401);
+      expect((await get('/v3/me/directory/stats?days=500', 'owner-a')).status).toBe(400);
+    });
+    it('GET /v3/admin/directory/visits: OPERATIONS and SUPER_ADMIN see the report; MARKETING is refused', async () => {
+      const a = await w.biz({ name: 'A Co', vendorId: 'va' }); w.repo.sites.set('va', { subdomain: 'aco', proActive: false }); await visit(a.slug);
+      for (const role of ['OPERATIONS', 'SUPER_ADMIN']) { const r = await get('/v3/admin/directory/visits', role); expect(r.status).toBe(200); expect(r.body.data.items[0]).toMatchObject({ slug: 'a-co', count: 1 }); }
+      expect((await get('/v3/admin/directory/visits', 'MARKETING')).status).toBe(403);
+      expect((await get('/v3/admin/directory/visits?from=2027-02-30x', 'OPERATIONS')).status).toBe(400);
     });
   });
 

@@ -6,6 +6,7 @@ jest.mock('@nestjs/schedule', () => ({ Cron: () => () => undefined, CronExpressi
 
 import { SiteDocModule } from '../src/site-doc/site-doc.module';
 import { StarterService } from '../src/site-doc/starter.service';
+import { B3SettingsModule } from '../src/b3-settings/b3-settings.module';
 import { PlansModule } from '../src/plans/plans.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { ClaimStore } from '../src/provisioning/claims/claim-store';
@@ -37,7 +38,7 @@ describe('ProvisioningModule wiring', () => {
   afterAll(() => { if (prevMode === undefined) delete process.env.EMAIL_MODE; else process.env.EMAIL_MODE = prevMode; });
 
   it('compiles, binds every port to its Prisma/real implementation, and gives the runner the five steps in order', async () => {
-    const mod = await Test.createTestingModule({ imports: [PlansModule, ProvisioningModule] })
+    const mod = await Test.createTestingModule({ imports: [PlansModule, B3SettingsModule, ProvisioningModule] })
       .overrideModule(SiteDocModule).useModule(StubSiteDocModule)
       .overrideProvider(PrismaService).useValue({})
       .compile();

@@ -3,6 +3,21 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsObject, IsOp
 
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/** The Visit beacon body: the only thing a visitor sends is whether the click came from a search result. */
+export class VisitDto {
+  @IsOptional() @IsBoolean() fromSearch?: boolean;
+}
+export class VisitStatsDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(90) days?: number;
+}
+export class VisitReportDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) from?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) to?: string;
+  @IsOptional() @IsString() @MaxLength(64) vendorId?: string;
+}
+
 export class PublicListDto {
   @IsOptional() @IsString() @MaxLength(120) location?: string;
   @IsOptional() @IsString() @MaxLength(60) category?: string;

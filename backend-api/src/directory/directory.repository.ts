@@ -94,5 +94,17 @@ export abstract class DirectoryRepository {
   abstract moveRemoval(id: string, from: RemovalStatus, to: RemovalStatus, patch: { handledByStaffId?: string | null; handledAt?: Date; executedAt?: Date; reason?: string | null }): Promise<boolean>;
   abstract countRecentRemovals(businessId: string, since: Date): Promise<number>;
 
+  // visits (slice 5.7b): counts only, no visitor data
+  /** atomic: one statement adds to the day's counters, creating the row on the first visit (safe under any concurrency) */
+  abstract incrementVisit(businessId: string, day: string, fromSearch: boolean): Promise<void>;
+  abstract visitDays(businessId: string, fromDay: string, toDay: string): Promise<Array<{ day: string; count: number; searchCount: number }>>;
+  /** per business totals over a day range (staff report); optional filter by vendor */
+  abstract visitTotals(fromDay: string, toDay: string, o: { vendorId?: string; skip: number; take: number }): Promise<{ items: Array<{ businessId: string; slug: string; name: string; count: number; searchCount: number }>; total: number }>;
+  abstract createVisitRef(d: { refHash: string; businessId: string; expiresAt: Date }): Promise<void>;
+  /** compare-and-set: marks an unexpired, unused reference of THIS business used; false when it is unknown, expired, used or another business reference (all the same answer) */
+  abstract consumeVisitRef(refHash: string, businessId: string, now: Date): Promise<boolean>;
+  /** the facts the public view needs about the own sites of the businesses, for many vendors at once */
+  abstract siteFacts(vendorIds: string[], now: Date): Promise<Map<string, { subdomain: string | null; proActive: boolean }>>;
+
   /** audit rows are written by the caller through DirectoryAudit; the repository itself writes none */
 }

@@ -56,7 +56,7 @@ describe('public read: what is exposed', () => {
   it('NO view ever carries an id, a vendor id, an email, an owner name, a status or a source: the keys are a fixed list', async () => {
     const withVendor = await w.biz({ name: 'Linked Co', vendorId: 'vendor-secret-1' }); await w.repo.updateBusiness(withVendor.id, { emailMasked: 'o•••@example.com' });
     await w.biz({ name: 'Unclaimed Co', status: 'UNCLAIMED' });
-    const keys = ['address', 'category', 'claimed', 'description', 'geo', 'hours', 'indexable', 'location', 'media', 'name', 'phone', 'services', 'slug', 'sponsored', 'updatedAt'];
+    const keys = ['address', 'badges', 'category', 'claimed', 'description', 'geo', 'hours', 'indexable', 'location', 'media', 'name', 'phone', 'services', 'siteState', 'siteUrl', 'slug', 'sponsored', 'updatedAt'];   // 5.7b adds siteUrl, siteState and badges
     const list = await w.read.list({}); for (const i of list.items) expect(Object.keys(i).sort()).toEqual(keys);
     const text = JSON.stringify([list, await w.read.detail('linked-co'), await w.read.sitemapData(1, 10), await w.read.locations(), await w.read.categories()]);
     expect(text).not.toMatch(/vendor-secret|emailMasked|example\.com|vendorId|"id"|"status"|"source"|"ownerName"|"email"/);

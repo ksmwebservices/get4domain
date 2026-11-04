@@ -39,12 +39,14 @@ export function resolveLocation(rows: readonly LocationRow[], input: string): Lo
 }
 export const resolveCategory = (rows: readonly CategoryRow[], slug: string): CategoryRow | null => rows.find((r) => r.slug === String(slug ?? '').trim().toLowerCase()) ?? null;
 
-export interface ViewContext { category: Pick<CategoryRow, 'slug' | 'name'> | null; location: Array<{ slug: string; name: string }>; services: ServiceRow[]; media: MediaRow[] }
+export interface ViewContext { category: Pick<CategoryRow, 'slug' | 'name'> | null; location: Array<{ slug: string; name: string }>; services: ServiceRow[]; media: MediaRow[]; /** the business own site (slice 5.7b) */ site?: { siteUrl: string | null; siteState: 'SEEDED' | 'CLAIMED_FREE' | 'PRO'; badges: string[] } }
 
 export interface PublicBusinessView {
   slug: string; name: string; claimed: boolean; category: { slug: string; name: string } | null; location: { slug: string; name: string; path: Array<{ slug: string; name: string }> } | null;
   description: string; phone: string | null; address: { line1?: string; line2?: string; pin?: string; city?: string }; hours: Record<string, unknown>; geo: { lat: number; lng: number } | null;
   services: Array<{ name: string; description: string }>; media: Array<{ url: string; altText: string }>; indexable: boolean; updatedAt: string; sponsored?: false;
+  /** the business own subdomain site: the ONLY place a visitor is sent (owner rule 1); the directory has no form and delivers no lead */
+  siteUrl: string | null; siteState: 'SEEDED' | 'CLAIMED_FREE' | 'PRO'; badges: string[];
 }
 
 /** An UNCLAIMED business shows only what identifies it in the directory (name, category, area, description). Phone, street address, hours, map position, services and media
@@ -58,6 +60,7 @@ export function publicBusinessView(b: BusinessRow, c: ViewContext): PublicBusine
     phone: claimed ? b.phoneE164 : null, address: claimed ? { ...b.address } : b.address.city ? { city: b.address.city } : {}, hours: claimed ? { ...b.hours } : {}, geo: claimed ? b.geo : null,
     services: claimed ? c.services.map((s) => ({ name: s.name, description: s.description })) : [], media: claimed ? c.media.map((m) => ({ url: m.url, altText: m.altText })) : [],
     indexable: b.indexable, updatedAt: b.updatedAt.toISOString(), sponsored: false,
+    siteUrl: c.site?.siteUrl ?? null, siteState: c.site?.siteState ?? (claimed ? 'CLAIMED_FREE' : 'SEEDED'), badges: c.site?.badges ?? [],
   };
 }
 export type PublicSponsoredItem = Omit<PublicBusinessView, 'sponsored'> & { sponsored: true; label: string };

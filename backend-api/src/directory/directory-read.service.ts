@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { evaluateListingPageIndexing } from './core/indexing';
+import { badgesOf, siteStateOf, siteUrlOf } from './core/visits';
 import { clampPage, mergeSponsored, normaliseQuery } from './core/search';
 import { BusinessRow, CategoryRow, DirectoryRepository, LocationRow } from './directory.repository';
 import {
@@ -35,9 +36,22 @@ export class DirectoryReadService {
   async locations(): Promise<TreeNode[]> { return locationTree((await this.loadTrees()).loc); }
   async categories(): Promise<TreeNode[]> { return categoryTree((await this.loadTrees()).cat); }
 
-  private async context(b: BusinessRow, withExtras: boolean, t: { loc: LocationRow[]; cat: CategoryRow[] }): Promise<ViewContext> {
+  /** The business own site: its subdomain address (never a custom domain: the directory links the subdomain), its state and badges. One query for many businesses. */
+  private async siteContexts(businesses: BusinessRow[]): Promise<Map<string, NonNullable<ViewContext['site']>>> {
+    const out = new Map<string, NonNullable<ViewContext['site']>>();
+    const ids = [...new Set(businesses.map((b) => b.vendorId).filter((x): x is string => !!x))];
+    const facts = await this.repo.siteFacts(ids, this.clock());
+    const base = process.env.SITE_BASE_DOMAIN || 'get4domain.com';
+    for (const b of businesses) {
+      const f = b.vendorId ? facts.get(b.vendorId) ?? null : null;
+      out.set(b.id, { siteUrl: siteUrlOf(f, base), siteState: siteStateOf(b.status, f), badges: badgesOf(b.status, f) });
+    }
+    return out;
+  }
+
+  private async context(b: BusinessRow, withExtras: boolean, t: { loc: LocationRow[]; cat: CategoryRow[] }, site?: ViewContext['site']): Promise<ViewContext> {
     const cat = t.cat.find((c) => c.id === b.categoryId) ?? null;
-    return { category: cat ? { slug: cat.slug, name: cat.name } : null, location: locationPath(t.loc, b.locationId), services: withExtras ? await this.repo.getServices(b.id) : [], media: withExtras ? await this.repo.getMedia(b.id) : [] };
+    return { site, category: cat ? { slug: cat.slug, name: cat.name } : null, location: locationPath(t.loc, b.locationId), services: withExtras ? await this.repo.getServices(b.id) : [], media: withExtras ? await this.repo.getMedia(b.id) : [] };
   }
 
   async list(q: ListQuery): Promise<ListResult> {
@@ -52,14 +66,16 @@ export class DirectoryReadService {
     const scope = { ...(loc ? { locationIds: descendantIds(t.loc, loc.id) } : {}), ...(cat ? { categoryIds: descendantIds(t.cat, cat.id) } : {}) };
     const { items, total } = await this.repo.search({ tokens: norm.tokens, text: norm.text, ...scope, skip, take: pageSize });
     const organic: PublicBusinessView[] = [];
-    for (const b of items) organic.push(publicBusinessView(b, await this.context(b, false, t)));
+    const sitesOf = await this.siteContexts(items);
+    for (const b of items) organic.push(publicBusinessView(b, await this.context(b, false, t, sitesOf.get(b.id))));
     let merged: PublicListItem[] = organic;
     if (page === 1 && organic.length) {
       const wanted = Math.ceil(organic.length / s.directorySponsoredEvery);
       const placements = await this.repo.activePlacements(this.clock(), scope, wanted);
       const onPage = new Set(organic.map((o) => o.slug));
       const sponsored: PublicSponsoredItem[] = [];
-      for (const p of placements) if (!onPage.has(p.business.slug)) sponsored.push(sponsoredItem(publicBusinessView(p.business, await this.context(p.business, false, t)), p.placement));
+      const sponsoredSites = await this.siteContexts(placements.map((p) => p.business));
+      for (const p of placements) if (!onPage.has(p.business.slug)) sponsored.push(sponsoredItem(publicBusinessView(p.business, await this.context(p.business, false, t, sponsoredSites.get(p.business.id))), p.placement));
       const out = mergeSponsored(organic.map((o) => ({ ...o, id: o.slug, sponsored: false as const })), sponsored.map((x) => ({ ...x, id: x.slug, sponsored: true as const })), s.directorySponsoredEvery);
       merged = out.map((x) => { const { id: _id, ...rest } = x; return rest as PublicListItem; });
     }
@@ -76,7 +92,7 @@ export class DirectoryReadService {
     if (b.status === 'REMOVED') return { gone: true };
     if (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED') return null;
     const t = await this.loadTrees();
-    return { gone: false, business: publicBusinessView(b, await this.context(b, b.status === 'CLAIMED', t)) };
+    return { gone: false, business: publicBusinessView(b, await this.context(b, b.status === 'CLAIMED', t, (await this.siteContexts([b])).get(b.id))) };
   }
 
   /** Paged business URLs for the sitemap: indexable and public only (removed, suspended, draft and noindex businesses never appear). */

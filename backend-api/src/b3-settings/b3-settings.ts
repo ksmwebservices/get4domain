@@ -30,6 +30,8 @@ export interface B3Settings {
   // ── 5.7b directory visits ──
   /** How long the visit reference value (?ref=) can be used to attribute a later request to the Directory. */
   directoryVisitRefExpiryMinutes: number;
+  /** A repeat Visit click from the same network on the same business within this many seconds is not counted twice (the visitor still gets a link). 0 = count every click. */
+  directoryVisitDedupeSeconds: number;
   // ── 5.13a seeded sites ──
   seededBatchMaxRows: number;
   // ── 5.14 requests and orders ──
@@ -60,6 +62,7 @@ export const DEFAULT_B3_SETTINGS: Readonly<B3Settings> = {
   accountDeletionWarningText: 'Deleting your account permanently removes your site and your directory listing, and your business will not be listed again. This cannot be undone. Invoices and records the law requires us to keep are retained.',
   graceExtendMaxDays: 30,
   directoryVisitRefExpiryMinutes: 120,
+  directoryVisitDedupeSeconds: 30,
   seededBatchMaxRows: 200,
   nudgeAfterMinutes: 30,
   requestNudgeEnabled: false,
@@ -100,6 +103,7 @@ export function b3SettingProblem(key: keyof B3Settings, value: unknown): string 
     case 'canonicalSwitchTickEnabled': case 'requestNudgeEnabled': return typeof value === 'boolean' ? null : 'must be true or false';
     case 'graceExtendMaxDays': return intIn(value, 1, 365) ? null : 'must be a whole number from 1 to 365';
     case 'directoryVisitRefExpiryMinutes': return intIn(value, 1, 10_080) ? null : 'must be a whole number of minutes from 1 to 10080';
+    case 'directoryVisitDedupeSeconds': return intIn(value, 0, 3600) ? null : 'must be a whole number of seconds from 0 to 3600';
     case 'seededBatchMaxRows': return intIn(value, 1, 2000) ? null : 'must be a whole number from 1 to 2000';
     case 'nudgeAfterMinutes': return intIn(value, 1, 10_080) ? null : 'must be a whole number of minutes from 1 to 10080';
     case 'requestExpiryDays': case 'trackingTokenExpiryDays': return intIn(value, 1, 365) ? null : 'must be a whole number of days from 1 to 365';

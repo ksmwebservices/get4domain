@@ -1,5 +1,7 @@
 import { DirectoryAdminService } from '../../src/directory/directory-admin.service';
 import { DirectoryReadService } from '../../src/directory/directory-read.service';
+import { DirectoryVisitService } from '../../src/directory/directory-visit.service';
+import { DEFAULT_B3_SETTINGS } from '../../src/b3-settings/b3-settings';
 import { DirectoryRemovalService } from '../../src/directory/directory-removal.service';
 import { AccountSetupGrantService } from '../../src/directory/grants/account-setup-grant.service';
 import { MeDirectoryService } from '../../src/directory/me-directory.service';
@@ -30,7 +32,7 @@ export class FakeClaims {
 
 export interface DirectoryWorld {
   repo: MemoryDirectoryRepo; audit: MemoryDirectoryAudit; sms: FakeSms; claims: FakeClaims; now: { t: Date }; settings: { over: Partial<DirectorySettings> };
-  read: DirectoryReadService; admin: DirectoryAdminService; removal: DirectoryRemovalService; me: MeDirectoryService; grants: AccountSetupGrantService; otp: ClaimOtpService; pepper: OtpPepper;
+  visits: DirectoryVisitService; read: DirectoryReadService; admin: DirectoryAdminService; removal: DirectoryRemovalService; me: MeDirectoryService; grants: AccountSetupGrantService; otp: ClaimOtpService; pepper: OtpPepper;
   ids: { tn: string; chennaiDistrict: string; chennaiCity: string; madurai: string; family: string; plumber: string; electrician: string; dentist: string };
   biz(o?: Partial<BusinessRow> & { name?: string }): Promise<BusinessRow>;
 }
@@ -45,6 +47,7 @@ export async function directoryWorld(): Promise<DirectoryWorld> {
   const admin = new DirectoryAdminService(repo, audit, settingsService, read, pepper); admin.clock = () => new Date(now.t);
   const removal = new DirectoryRemovalService(repo, audit, settingsService, sms, read); removal.clock = () => new Date(now.t);
   const me = new MeDirectoryService(repo, admin, audit, read);
+  const visits = new DirectoryVisitService(repo, { get: async () => ({ ...DEFAULT_B3_SETTINGS, directoryVisitDedupeSeconds: 0 }) } as never, pepper); visits.clock = () => new Date(now.t);
   const grants = new AccountSetupGrantService(repo, audit); grants.clock = () => new Date(now.t);
   const otp = new ClaimOtpService(claims as never, repo, settingsService, sms, grants, admin, audit, pepper); otp.clock = () => new Date(now.t);
   otp.random = () => 123456; let n = 0; otp.salt = () => `salt-${++n}`;
@@ -69,6 +72,6 @@ export async function directoryWorld(): Promise<DirectoryWorld> {
       emailMasked: null, hours: o.hours ?? { mon: '9-5' }, geo: o.geo ?? null, descriptionText: draft.descriptionText, status: draft.status, indexable: o.indexable ?? await admin.indexableFor(draft as never), source: o.source ?? 'STAFF', claimedAt: o.claimedAt ?? null,
     });
   };
-  return { repo, audit, sms, claims, now, settings, read, admin, removal, me, grants, otp, pepper, ids: { tn: tn.id, chennaiDistrict: chennaiDistrict.id, chennaiCity: chennaiCity.id, madurai: madurai.id, family: family.id, plumber: plumber.id, electrician: electrician.id, dentist: dentist.id }, biz };
+  return { repo, audit, sms, claims, now, settings, visits, read, admin, removal, me, grants, otp, pepper, ids: { tn: tn.id, chennaiDistrict: chennaiDistrict.id, chennaiCity: chennaiCity.id, madurai: madurai.id, family: family.id, plumber: plumber.id, electrician: electrician.id, dentist: dentist.id }, biz };
 }
 export const advance = (w: DirectoryWorld, seconds: number): void => { w.now.t = new Date(w.now.t.getTime() + seconds * 1000); };

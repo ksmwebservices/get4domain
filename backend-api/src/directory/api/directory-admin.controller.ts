@@ -6,8 +6,9 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { DirectoryAdminService } from '../directory-admin.service';
 import { DirectoryRemovalService } from '../directory-removal.service';
+import { DirectoryVisitService } from '../directory-visit.service';
 import {
-  CategoryCreateDto, CategoryUpdateDto, ClaimOverrideDto, LocationCreateDto, LocationUpdateDto, ModerateDto, PlacementDto, RejectDto, RemovalListDto, StaffBusinessDto, StaffBusinessListDto, StaffBusinessUpdateDto,
+  CategoryCreateDto, CategoryUpdateDto, VisitReportDto, ClaimOverrideDto, LocationCreateDto, LocationUpdateDto, ModerateDto, PlacementDto, RejectDto, RemovalListDto, StaffBusinessDto, StaffBusinessListDto, StaffBusinessUpdateDto,
 } from './dto/directory.dto';
 
 /** MARKETING sees businesses without the personal fields (phone, address, hours, map position, masked email). Everything that writes, and everything with a contact detail, is OPERATIONS and SUPER_ADMIN. */
@@ -18,7 +19,14 @@ const redact = (u: AuthenticatedUser): boolean => u?.adminRole === 'MARKETING';
 @UseGuards(AdminGuard)
 @Controller('v3/admin/directory')
 export class DirectoryAdminController {
-  constructor(private readonly admin: DirectoryAdminService, private readonly removal: DirectoryRemovalService) {}
+  constructor(private readonly admin: DirectoryAdminService, private readonly removal: DirectoryRemovalService, private readonly visits: DirectoryVisitService) {}
+
+  @Get('visits') @ApiOperation({ summary: 'Visit-site counts per business over a date range, busiest first (counts only; OPERATIONS and SUPER_ADMIN)' })
+  async visitReport(@Query() q: VisitReportDto) {
+    const { skip, take, page, pageSize } = pageArgs(q);
+    const r = await this.visits.report({ from: q.from, to: q.to, vendorId: q.vendorId, skip, take });
+    return { ...paged(r.items, r.total, page, pageSize), from: r.from, to: r.to };
+  }
 
   // tree
   @Get('locations') @ApiOperation({ summary: 'All places (active)' }) locations() { return this.admin.listLocations(); }

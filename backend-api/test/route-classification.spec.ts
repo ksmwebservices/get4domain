@@ -38,7 +38,7 @@ const OWNER_ONLY_ROUTES = [
   // B3 slice 5.1d: asking for the whole account to be removed for good is the owner's decision alone
   'POST /v3/me/account/deletion-request',
   // B2 slice 5.7: the owner's directory profile (a team member never edits the business's public face)
-  'GET /v3/me/directory', 'PUT /v3/me/directory',
+  'GET /v3/me/directory', 'PUT /v3/me/directory', 'GET /v3/me/directory/stats',
   // B2 slice 5.6: the vendor's addresses are the business's identity: every route is owner only
   'GET /v3/me/domains', 'PUT /v3/me/domains/subdomain', 'POST /v3/me/domains/custom', 'GET /v3/me/domains/:id', 'POST /v3/me/domains/:id/verify', 'POST /v3/me/domains/:id/primary', 'DELETE /v3/me/domains/:id',
   // already owner-only before S8-A (regression guard)

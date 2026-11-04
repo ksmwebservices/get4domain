@@ -6,10 +6,11 @@ import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { RATE } from '../../common/throttling';
 import { DirectoryReadService } from '../directory-read.service';
+import { DirectoryVisitService } from '../directory-visit.service';
 import { DirectoryRemovalService } from '../directory-removal.service';
 import { directoryError, REMOVAL_ACCEPTED_MESSAGE } from '../directory.errors';
 import { DirectorySettingsService } from '../settings/directory-settings.service';
-import { PublicListDto, RemovalRequestDto, SitemapDto } from './dto/directory.dto';
+import { PublicListDto, RemovalRequestDto, SitemapDto, VisitDto } from './dto/directory.dto';
 
 /**
  * The public directory: read only, rate limited, cacheable with an ETag, and it never exposes an email, an owner name, an internal id, a vendor id, a staff field or an unclaimed
@@ -18,7 +19,7 @@ import { PublicListDto, RemovalRequestDto, SitemapDto } from './dto/directory.dt
 @ApiTags('v3-directory')
 @Controller('v3/directory')
 export class DirectoryPublicController {
-  constructor(private readonly read: DirectoryReadService, private readonly removal: DirectoryRemovalService, private readonly settings: DirectorySettingsService) {}
+  constructor(private readonly read: DirectoryReadService, private readonly removal: DirectoryRemovalService, private readonly settings: DirectorySettingsService, private readonly visits: DirectoryVisitService) {}
 
   /** Sets the cache headers and answers 304 when the caller already has this exact body. */
   private async cached<T>(data: T, res: Response, ifNoneMatch: string | undefined): Promise<T | null> {
@@ -53,6 +54,15 @@ export class DirectoryPublicController {
   @Public() @Throttle(RATE.directoryRead) @Get('sitemap-data')
   @ApiOperation({ summary: 'Paged business URLs with their last modified date: indexable and public only' })
   async sitemap(@Query() q: SitemapDto, @Res({ passthrough: true }) res: Response, @Headers('if-none-match') inm?: string) { return this.cached(await this.read.sitemapData(q.page, q.pageSize), res, inm); }
+
+  @Public() @Throttle(RATE.directoryVisit) @Post('businesses/:slug/visit') @HttpCode(200)
+  @ApiOperation({ summary: 'Count a Visit-site click and return the short-lived reference the link appends (?src=dir&ref=). No personal data, no cookie. One uniform 404 for anything that cannot be visited.' })
+  async visit(@Param('slug') slug: string, @Body() dto: VisitDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    res.set('Cache-Control', 'no-store');
+    const r = await this.visits.visit(String(slug).slice(0, 100), req.ip ?? null, dto?.fromSearch === true);
+    if (!r) throw new NotFoundException(directoryError('DIRECTORY_NOT_FOUND', 'Not found.'));
+    return r;
+  }
 
   @Public() @Throttle(RATE.removalRequest) @Post('removal-requests') @HttpCode(202)
   @ApiOperation({ summary: 'Ask for a business to be removed. The answer is always the same; a confirmation link goes to the phone number on file.' })

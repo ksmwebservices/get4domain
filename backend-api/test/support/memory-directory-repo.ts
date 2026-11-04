@@ -138,6 +138,33 @@ export class MemoryDirectoryRepo extends DirectoryRepository {
     r.status = to; if (patch.handledByStaffId !== undefined) r.handledByStaffId = patch.handledByStaffId; if (patch.handledAt) r.handledAt = patch.handledAt; if (patch.executedAt) r.executedAt = patch.executedAt; if (patch.reason !== undefined) r.reason = patch.reason; return true;
   }
   async countRecentRemovals(businessId: string, since: Date) { return [...this.removals.values()].filter((r) => r.businessId === businessId && r.createdAt >= since).length; }
+
+  // visits (slice 5.7b)
+  visits = new Map<string, { businessId: string; day: string; count: number; searchCount: number }>();
+  visitRefs = new Map<string, { businessId: string; expiresAt: Date; usedAt: Date | null }>();
+  sites = new Map<string, { subdomain: string | null; proActive: boolean }>();
+  async incrementVisit(businessId: string, day: string, fromSearch: boolean) {
+    const k = `${businessId}|${day}`; const cur = this.visits.get(k) ?? { businessId, day, count: 0, searchCount: 0 };
+    cur.count += 1; if (fromSearch) cur.searchCount += 1; this.visits.set(k, cur);
+  }
+  async visitDays(businessId: string, fromDay: string, toDay: string) { return [...this.visits.values()].filter((v) => v.businessId === businessId && v.day >= fromDay && v.day <= toDay).sort((a, b) => (a.day < b.day ? -1 : 1)).map((v) => ({ day: v.day, count: v.count, searchCount: v.searchCount })); }
+  async visitTotals(fromDay: string, toDay: string, o: { vendorId?: string; skip: number; take: number }) {
+    const by = new Map<string, { count: number; searchCount: number }>();
+    for (const v of this.visits.values()) {
+      if (v.day < fromDay || v.day > toDay) continue;
+      if (o.vendorId && this.businesses.get(v.businessId)?.vendorId !== o.vendorId) continue;
+      const c = by.get(v.businessId) ?? { count: 0, searchCount: 0 }; c.count += v.count; c.searchCount += v.searchCount; by.set(v.businessId, c);
+    }
+    const all = [...by.entries()].sort((a, b) => b[1].count - a[1].count).map(([businessId, c]) => ({ businessId, slug: this.businesses.get(businessId)?.slug ?? '', name: this.businesses.get(businessId)?.name ?? '', ...c }));
+    return { items: all.slice(o.skip, o.skip + o.take), total: all.length };
+  }
+  async createVisitRef(d: { refHash: string; businessId: string; expiresAt: Date }) { this.visitRefs.set(d.refHash, { businessId: d.businessId, expiresAt: d.expiresAt, usedAt: null }); }
+  async consumeVisitRef(refHash: string, businessId: string, now: Date) {
+    const r = this.visitRefs.get(refHash);
+    if (!r || r.businessId !== businessId || r.usedAt || r.expiresAt.getTime() <= now.getTime()) return false;
+    r.usedAt = now; return true;
+  }
+  async siteFacts(vendorIds: string[]) { const out = new Map<string, { subdomain: string | null; proActive: boolean }>(); for (const id of vendorIds) { const f = this.sites.get(id); if (f) out.set(id, f); } return out; }
 }
 
 export class MemoryDirectoryAudit extends DirectoryAudit {

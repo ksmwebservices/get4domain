@@ -54,6 +54,8 @@ export const RATE = {
   aiGenerate: { default: { limit: 10, ttl: 60_000 } },
   /** V3 public directory reads: 120 per minute per IP on the reads throttler (the default one skips GET). */
   directoryRead: { reads: { limit: 120, ttl: 60_000 } },
+  /** V3 directory Visit-site beacon (a POST, so the default throttler): 60 per minute per IP. */
+  directoryVisit: { default: { limit: 60, ttl: 60_000 } },
   /** V3 public removal requests and confirmations: 5 per minute per IP. */
   removalRequest: { default: { limit: 5, ttl: 60_000 } },
   /** V3 domain verification reads DNS: 6 per minute per IP (the service also enforces a minimum interval per domain). */

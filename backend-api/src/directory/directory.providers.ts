@@ -11,6 +11,7 @@ import { AccountSetupGrantService } from './grants/account-setup-grant.service';
 import { MeDirectoryService } from './me-directory.service';
 import { OtpPepper } from './pepper';
 import { PrismaDirectoryRepository } from './prisma-directory.repository';
+import { DirectoryVisitService } from './directory-visit.service';
 import { DirectorySettingsService } from './settings/directory-settings.service';
 import { ModeSmsAdapter, SmsAdapter } from './sms/sms-adapter';
 
@@ -19,7 +20,7 @@ export const DIRECTORY_PROVIDERS: Provider[] = [
   { provide: DirectoryRepository, useClass: PrismaDirectoryRepository },
   { provide: DirectoryAudit, useClass: PrismaDirectoryAudit },
   { provide: SmsAdapter, useClass: ModeSmsAdapter },
-  DirectorySettingsService, OtpPepper, DirectoryReadService, DirectoryAdminService, DirectoryRemovalService, MeDirectoryService, AccountSetupGrantService,
+  DirectorySettingsService, OtpPepper, DirectoryReadService, DirectoryAdminService, DirectoryRemovalService, MeDirectoryService, AccountSetupGrantService, DirectoryVisitService,
 ];
 export const DIRECTORY_CONTROLLERS: Type<unknown>[] = [DirectoryPublicController, MeDirectoryController, DirectoryAdminController];
-export const DIRECTORY_EXPORTS = [DirectoryRepository, DirectoryAudit, SmsAdapter, DirectorySettingsService, OtpPepper, DirectoryReadService, DirectoryAdminService, AccountSetupGrantService];
+export const DIRECTORY_EXPORTS = [DirectoryRepository, DirectoryAudit, SmsAdapter, DirectorySettingsService, OtpPepper, DirectoryReadService, DirectoryAdminService, AccountSetupGrantService, DirectoryVisitService];

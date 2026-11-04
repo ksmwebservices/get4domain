@@ -106,6 +106,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
 
   // ── V3 slice 5.4: vendors' sites ────────────────────────────────────────────────────────────────────────────────────────
   // Summaries (the list and one site) are open to all staff; MARKETING never sees html. Every write, and the preview that carries html, is OPERATIONS and SUPER_ADMIN.
+  // B3 slice 5.7b: the Visit-site report across vendors: OPERATIONS and SUPER_ADMIN (MARKETING refused)
+  'GET /v3/admin/directory/visits': OPS_AND_SUPER,
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on: OPERATIONS and SUPER_ADMIN, MARKETING refused
   'GET /v3/admin/vendors/:id/canonical': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/custom-domain-addon': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/custom-domain-addon/end': OPS_AND_SUPER,
   // B3 slice 5.1d: lifecycle actions and the owner deletion queue: OPERATIONS and SUPER_ADMIN, MARKETING refused everywhere (a deletion request identifies a business)
