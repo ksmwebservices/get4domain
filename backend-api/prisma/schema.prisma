@@ -59,6 +59,7 @@ model Vendor {
   v3DomainVerifications V3DomainVerification[]
   v3Redirects V3Redirect[]
   v3SiteRemoval V3SiteRemoval?
+  v3DeletionRequests V3AccountDeletionRequest[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
   v3PlanOrders V3PlanOrder[]
@@ -4940,4 +4941,44 @@ model V3SiteRemoval {
 
   @@index([removedAt])
   @@map("g4d_site_removals")
+}
+
+// ─── V3 batch 3 slice 5.1d: vendor-requested account deletion queue and the do-not-contact / removal register (additive) ───────────────────────────────────
+
+enum V3DeletionRequestStatus {
+  PENDING
+  EXECUTED
+  CANCELLED
+}
+
+model V3AccountDeletionRequest {
+  id              String                  @id @default(cuid())
+  vendorId        String
+  status          V3DeletionRequestStatus @default(PENDING)
+  pendingVendorId String?                 @unique // = vendorId while PENDING, null after: the database allows one open request per vendor
+  requestedById   String? // the signed-in owner
+  verifiedAt      DateTime // the fresh one-time code was entered at this time
+  executedAt      DateTime?
+  executedById    String?
+  note            String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([vendorId])
+  @@map("g4d_account_deletion_requests")
+}
+
+/// Phone hashes of businesses that asked not to be contacted or listed. Rows are never deleted by any code path. Used by removals (5.1d) and seeded sites (5.13a).
+model V3DncRegister {
+  id        String   @id @default(cuid())
+  phoneHash String   @unique // keyed hash of the E.164 number; never the number
+  reason    String
+  source    String   @default("REMOVAL") // REMOVAL | DO_NOT_CONTACT | STAFF
+  addedBy   String?
+  addedAt   DateTime @default(now())
+
+  @@map("g4d_dnc_register")
 }
