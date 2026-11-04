@@ -2,7 +2,9 @@ import { ConflictException, Inject, Injectable, NotFoundException, Optional, Unp
 import { toRenderEntitlements } from '../../plans/entitlements/entitlement-engine';
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
+import { B3SettingsService } from '../../b3-settings/b3-settings.service';
 import { VendorHosts } from './vendor-hosts';
+import { SiteLifecycle } from './site-lifecycle';
 import { planError } from '../../plans/plans.errors';
 import { categoryFor, limitsFrom, pageArgs, planPages, toRendererInput } from '../content/content-adapter';
 import { ContentSource } from '../content/content-source';
@@ -38,6 +40,10 @@ export class SiteBuildService {
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'resolve'>,
     private readonly audit: SiteAudit,
     @Optional() private readonly hosts?: VendorHosts,
+    /** the Batch 3 texts (listing lines, seeded notice, customer disclosure) and the indexing mode; absent = the renderer draws no such lines */
+    @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
+    /** seeded-site lifecycle (slice 5.13a); absent = the site was never seeded */
+    @Optional() private readonly lifecycle?: SiteLifecycle,
   ) {}
 
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
@@ -66,6 +72,14 @@ export class SiteBuildService {
     const primary = this.hosts ? await this.hosts.primary(vendorId) : { host: null, isCustom: false };
     const renderEnt = toRenderEntitlements(ent, this.hosts ? await this.hosts.hasVerifiedCustomDomain(vendorId) : false);   // slice 5.6: customDomain only with an ACTIVE verified domain
     const year = this.clock().getUTCFullYear();
+    // slice 5.4b: the platform's editable texts and the seeded lifecycle go to the renderer as facts about the host; the renderer invents no text
+    const b3 = this.b3 ? await this.b3.get() : null;
+    const seededState = this.lifecycle ? await this.lifecycle.lifecycleOf(vendorId) : null;
+    const isSeeded = seededState === 'SEEDED' || seededState === 'INVITED';
+    const hostExtra = {
+      ...(b3 ? { texts: { listedOn: b3.listedOnLineText, footerBridge: b3.siteFooterBridgeText, seededNotice: b3.seededNoticeText, customerDisclosure: b3.customerDisclosureText } } : {}),
+      ...(seededState ? { lifecycle: seededState } : {}),
+    };
 
     const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
     const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion });
@@ -75,11 +89,12 @@ export class SiteBuildService {
     const indexing = evaluateIndexing({
       businessName: siteName, categoryId, claimed: doc.claimed, verifiedContact: doc.claimed, address: contact.address, serviceAreas: ((base.content.areas as unknown[]) ?? []).length,
       homeContent: homeContentOk(base.content as never), forceNoindex: settings?.forceNoindex ?? false,
+      ...(isSeeded ? { seeded: { mode: b3?.seededSiteIndexingMode ?? 'OFF', qualityOk: this.lifecycle ? await this.lifecycle.qualityOk(vendorId) : false } } : {}),
     });
 
     // hashes: what the output depends on, so an unchanged site is recognised without rendering
     const contentHash = sha256(stableJson({ doc, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
-    const settingsHash = sha256(stableJson({ themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
+    const settingsHash = sha256(stableJson({ themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
     const newest = await this.repo.newestPublication(vendorId);
     if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) return { publication: newest, reused: true };
 
@@ -94,7 +109,7 @@ export class SiteBuildService {
       const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion });
       for (const p of planPages(input.content, templates)) {
         const args = pageArgs(input.content, p);
-        const rendered = this.themes.render(resolved.themeId, { page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: input.host, entitlements: renderEnt });
+        const rendered = this.themes.render(resolved.themeId, { page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: { ...input.host, ...hostExtra }, entitlements: renderEnt });
         for (const w of rendered.warnings) warnings.add(w);
         const seo = buildPageSeo({
           rendered, path: p.path, template: p.template, lang, languages: langs.languages, indexable: indexing.indexable, siteUrl, categoryId, siteName, city: contact.city,

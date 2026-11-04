@@ -1,0 +1,352 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`dentist (professional): Free is a listing-only site the home page of the Free listing is pinned (golden snapshot) 1`] = `
+"<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meenakshi Dental Care | Dentist in Madurai</title>
+<meta name="description" content="Gentle dental care for the whole family. Meenakshi Dental Care has served Madurai families for years.">
+<link rel="canonical" href="https://meenakshi-dental.get4domain.com/">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Meenakshi Dental Care">
+<meta property="og:title" content="Meenakshi Dental Care | Dentist in Madurai">
+<meta property="og:description" content="Gentle dental care for the whole family. Meenakshi Dental Care has served Madurai families for years.">
+<meta property="og:url" content="https://meenakshi-dental.get4domain.com/">
+<meta property="og:locale" content="en_IN">
+<meta property="og:image" content="https://cdn.example.test/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Meenakshi Dental Care | Dentist in Madurai">
+<meta name="twitter:description" content="Gentle dental care for the whole family. Meenakshi Dental Care has served Madurai families for years.">
+<meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dentist","name":"Meenakshi Dental Care","description":"Meenakshi Dental Care has served Madurai families for years.","url":"https://meenakshi-dental.get4domain.com","telephone":"+919876543211","email":"dr@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"4, Temple Street, Madurai 625001","addressLocality":"Madurai","postalCode":"625001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Meenakshi Dental Care","item":"https://meenakshi-dental.get4domain.com/"}]}</script>
+</head>
+<body>
+<div class="g4d-theme g4d-theme-free-practice" lang="en-IN" data-variant="calm-centered" data-hero="centered-statement" data-header="light" data-services="tabbed-list" data-card="soft" data-divider="curve" data-decor="soft-blobs" data-motion="low" data-pattern="rings" style="--g4d-pal-primary:#1d5b72;--g4d-pal-primary-contrast:#ffffff;--g4d-pal-accent:#1f347a;--g4d-pal-bg:#f3f9fc;--g4d-pal-surface:#e9eff2;--g4d-pal-border:#d1d6d9;--g4d-pal-primary-d:#5fbbdd;--g4d-pal-primary-contrast-d:#0b1210;--g4d-pal-accent-d:#859ae0;--g4d-pal-bg-d:#0f171a;--g4d-pal-surface-d:#1b2325;--g4d-pal-border-d:#353c3f;--g4d-font-heading:'Manrope',var(--g4d-font-fallback,system-ui,sans-serif);--g4d-font-body:'Inter',var(--g4d-font-fallback,system-ui,sans-serif)"><a class="skip-link" href="#main">Skip to main content</a>
+<div class="g4d-slot g4d-slot--claim-banner" data-g4d-slot="claim-banner"><p><a href="/claim">Is this your business? Claim this page</a></p></div>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><span class="brand-name">Meenakshi Dental Care</span></a>
+    <span class="head-phone__label">Call</span> <strong>+919876543211</strong>
+    
+    <nav aria-label="Main" class="g4d-slot g4d-slot--header-nav" data-g4d-slot="header-nav"><a class="g4d-menu-open" href="#g4d-menu">Menu</a><div id="g4d-menu" class="g4d-menu"><a class="g4d-menu-close" href="#">Close menu</a><ul><li><a href="/" aria-current="page">Home</a></li><li><a href="/services">Services</a></li><li><a href="/about">About</a></li><li><a href="/gallery">Gallery</a></li><li><a href="/contact">Contact</a></li></ul></div></nav>
+    
+    
+  </div>
+</header>
+<main id="main">
+<section class="hero" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Gentle dental care for the whole family.</p>
+      
+      <h1>Gentle dental care for the whole family.</h1>
+      <p class="lead">Gentle dental care for the whole family.</p>
+      <div class="actions">Call +919876543211</div>
+      <p data-hours="[]" aria-live="polite" class="g4d-slot g4d-slot--open-now" data-g4d-slot="open-now"><span class="g4d-open-now__label">Hours:</span> <span class="g4d-open-now__text">Opening hours</span></p>
+    </div>
+    <div class="hero-art g4d-hero-zoom"><img src="https://cdn.example.test/banner.jpg" alt="Meenakshi Dental Care" width="1200" height="600" fetchpriority="high"></div>
+  </div>
+</section>
+
+<section class="sec about" data-g4d-section="about" data-g4d-label="About" data-g4d-optional="true">
+  <div class="wrap split">
+    <div class="about-copy"><h2 class="sec-title">About Meenakshi Dental Care</h2><div class="rich"><p>Meenakshi Dental Care has served Madurai families for years.</p></div></div>
+    
+  </div>
+</section>
+<section class="sec services" data-g4d-section="services" data-g4d-label="Services" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Services</h2>
+    <div class="cards-box"><ul class="cards g4d-reveal"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/tap-repair-i1"><span class="card-title">Tap repair</span><span class="desc">Fix a leaking tap.</span><span class="price">300</span></a></li><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/pipe-fitting-i2"><span class="card-title">Pipe fitting</span><span class="desc">New pipe work.</span></a></li></ul></div>
+  </div>
+</section>
+
+
+<section class="sec" data-g4d-section="why" data-g4d-label="Why choose us" data-g4d-optional="true">
+  <div class="wrap"><h2 class="sec-title">Why choose us</h2><ul class="why"><li>Licensed and insured</li></ul></div>
+</section>
+
+<section id="gallery" class="sec" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Gallery</h2>
+    <ul class="gallery"><li><figure class="shot" id="photo-1"><a class="shot-close" href="#gallery">Close picture</a><a class="thumb" href="#photo-1"><img src="https://cdn.example.test/g1.jpg" alt="Work 1" width="600" height="400" loading="lazy" decoding="async"></a><figcaption>Work 1</figcaption></figure></li></ul>
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
+  <div class="wrap"><section class="g4d-slot g4d-slot--reviews" data-g4d-slot="reviews"><section class="g4d-reviews__testimonials" aria-label="Customer testimonials"><h2>Customer testimonials</h2><ul class="g4d-reviews__list"><li class="g4d-review"><figure><blockquote>Very good work</blockquote><figcaption>A Customer</figcaption></figure></li></ul></section></section></div>
+</section>
+
+<section class="sec" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true">
+  <div class="wrap narrow">
+    <h2 class="sec-title">Frequently asked questions</h2>
+    <div class="faq"><details><summary>Do you work on Sundays?</summary><p>Yes, by appointment.</p></details></div>
+  </div>
+</section>
+<section id="hours" class="sec alt" data-g4d-section="hours" data-g4d-label="Opening hours" data-g4d-optional="true">
+  <div class="wrap hours-box"><h2 class="sec-title">Opening hours</h2><div class="g4d-slot g4d-slot--hours" data-g4d-slot="hours"><p>Opening hours</p></div></div>
+</section>
+<section id="contact" class="sec" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true">
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h2 class="sec-title">Contact</h2>
+      <address class="addr">4, Temple Street, Madurai 625001</address>
+      <p>+919876543211</p>
+      <p>dr@example.com</p>
+      <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
+      <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">4, Temple Street, Madurai 625001</p></div>
+      
+    </div>
+    
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="share" data-g4d-label="Share" data-g4d-optional="true">
+  <div class="wrap closing"><div class="g4d-slot g4d-slot--listed-on-badge" data-g4d-slot="listed-on-badge"><a class="g4d-badge" href="https://get4domain.com/?ref=badge" rel="noopener">Listed on Get4Domain</a></div></div>
+</section>
+</main>
+
+
+<footer class="g4d-slot g4d-slot--footer g4d-footer--columns" data-g4d-slot="footer"><div class="g4d-footer__inner"><p class="g4d-footer__name">Meenakshi Dental Care</p><address>4, Temple Street, Madurai 625001</address><p>+919876543211</p><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul><p class="g4d-footer__legal"><a href="/legal/privacy">Privacy</a> · <a href="/legal/terms">Terms</a></p><p class="g4d-footer__copy">© 2026 Meenakshi Dental Care</p></div></footer>
+<div class="g4d-listing-note" data-g4d-listing-note><p class="g4d-listed-on" data-g4d-listed-on>Listed on Get4Domain</p><p class="g4d-footer-bridge" data-g4d-footer-bridge>This is an informational listing on Get4Domain. Get4Domain passes enquiries to the business and does not take payments.</p></div></div>
+</body>
+</html>
+"
+`;
+
+exports[`jewellery (ecommerce): Free is a listing-only site the home page of the Free listing is pinned (golden snapshot) 1`] = `
+"<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mangala Gold House | Jewellery in Coimbatore</title>
+<meta name="description" content="Pure gold, honest making charges. Mangala Gold House is a family jeweller in Coimbatore.">
+<link rel="canonical" href="https://mangala-gold.get4domain.com/">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Mangala Gold House">
+<meta property="og:title" content="Mangala Gold House | Jewellery in Coimbatore">
+<meta property="og:description" content="Pure gold, honest making charges. Mangala Gold House is a family jeweller in Coimbatore.">
+<meta property="og:url" content="https://mangala-gold.get4domain.com/">
+<meta property="og:locale" content="en_IN">
+<meta property="og:image" content="https://cdn.example.test/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mangala Gold House | Jewellery in Coimbatore">
+<meta name="twitter:description" content="Pure gold, honest making charges. Mangala Gold House is a family jeweller in Coimbatore.">
+<meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"JewelryStore","name":"Mangala Gold House","description":"Mangala Gold House is a family jeweller in Coimbatore.","url":"https://mangala-gold.get4domain.com","telephone":"+919876543212","email":"shop@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"88, Bazaar Street, Coimbatore 641001","addressLocality":"Coimbatore","postalCode":"641001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Mangala Gold House","item":"https://mangala-gold.get4domain.com/"}]}</script>
+</head>
+<body>
+<div class="g4d-theme g4d-theme-free-shop-lite" lang="en-IN" data-variant="product-first" data-hero="split" data-header="shop" data-services="bento" data-card="product" data-divider="curve" data-decor="tags" data-motion="low" data-pattern="rings" style="--g4d-pal-primary:#795f15;--g4d-pal-primary-contrast:#ffffff;--g4d-pal-accent:#6b7114;--g4d-pal-bg:#fcf9f3;--g4d-pal-surface:#f2efe9;--g4d-pal-border:#d9d6d1;--g4d-pal-primary-d:#e7c055;--g4d-pal-primary-contrast-d:#0b1210;--g4d-pal-accent-d:#e1e87d;--g4d-pal-bg-d:#1a170f;--g4d-pal-surface-d:#25231b;--g4d-pal-border-d:#3f3c35;--g4d-font-heading:'Playfair Display',var(--g4d-font-fallback,system-ui,sans-serif);--g4d-font-body:'DM Sans',var(--g4d-font-fallback,system-ui,sans-serif)"><a class="skip-link" href="#main">Skip to main content</a>
+<div class="g4d-slot g4d-slot--claim-banner" data-g4d-slot="claim-banner"><p><a href="/claim">Is this your business? Claim this page</a></p></div>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><span class="brand-name">Mangala Gold House</span></a>
+    <span class="head-phone__label">Call</span> <strong>+919876543212</strong>
+    
+    <nav aria-label="Main" class="g4d-slot g4d-slot--header-nav" data-g4d-slot="header-nav"><a class="g4d-menu-open" href="#g4d-menu">Menu</a><div id="g4d-menu" class="g4d-menu"><a class="g4d-menu-close" href="#">Close menu</a><ul><li><a href="/" aria-current="page">Home</a></li><li><a href="/services">Products</a></li><li><a href="/about">About</a></li><li><a href="/gallery">Gallery</a></li><li><a href="/contact">Contact</a></li></ul></div></nav>
+    
+    
+  </div>
+</header>
+<main id="main">
+<section class="hero" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Pure gold, honest making charges.</p>
+      <h1>Pure gold, honest making charges.</h1>
+      <p class="lead">Pure gold, honest making charges.</p>
+      <div class="actions"></div>
+      <p data-hours="[]" aria-live="polite" class="g4d-slot g4d-slot--open-now" data-g4d-slot="open-now"><span class="g4d-open-now__label">Hours:</span> <span class="g4d-open-now__text">Opening hours</span></p>
+    </div>
+    <div class="hero-art g4d-hero-zoom"><img src="https://cdn.example.test/banner.jpg" alt="Mangala Gold House" width="1200" height="600" fetchpriority="high"></div>
+  </div>
+</section>
+
+<section class="sec about" data-g4d-section="about" data-g4d-label="About" data-g4d-optional="true">
+  <div class="wrap split">
+    <div class="about-copy"><h2 class="sec-title">About Mangala Gold House</h2><div class="rich"><p>Mangala Gold House is a family jeweller in Coimbatore.</p></div></div>
+    
+  </div>
+</section>
+<section id="catalogue" class="sec catalogue" data-g4d-section="products" data-g4d-label="Products" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Products</h2>
+    
+    <section class="g4d-slot g4d-slot--product-grid" data-g4d-slot="product-grid"><h2>Products</h2><ul class="g4d-products"><li class="g4d-product"><img src="https://cdn.example.test/i1.jpg" alt="Tap repair" width="400" height="300" loading="lazy" decoding="async"><h3>Tap repair</h3><p class="g4d-product__price">300</p>Ask about this</li><li class="g4d-product"><h3>Pipe fitting</h3><p class="g4d-product__price"></p>Ask about this</li></ul></section>
+    <p class="note-line">Delivery and returns: ask before you order and we will confirm the details with you on WhatsApp.</p>
+  </div>
+</section>
+
+<section class="sec" data-g4d-section="why" data-g4d-label="Why choose us" data-g4d-optional="true">
+  <div class="wrap"><h2 class="sec-title">Why choose us</h2><ul class="why"><li>Licensed and insured</li></ul></div>
+</section>
+
+<section id="gallery" class="sec" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Gallery</h2>
+    <ul class="gallery"><li><figure class="shot" id="photo-1"><a class="shot-close" href="#gallery">Close picture</a><a class="thumb" href="#photo-1"><img src="https://cdn.example.test/g1.jpg" alt="Work 1" width="600" height="400" loading="lazy" decoding="async"></a><figcaption>Work 1</figcaption></figure></li></ul>
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
+  <div class="wrap"><section class="g4d-slot g4d-slot--reviews" data-g4d-slot="reviews"><section class="g4d-reviews__testimonials" aria-label="Customer testimonials"><h2>Customer testimonials</h2><ul class="g4d-reviews__list"><li class="g4d-review"><figure><blockquote>Very good work</blockquote><figcaption>A Customer</figcaption></figure></li></ul></section></section></div>
+</section>
+
+<section class="sec" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true">
+  <div class="wrap narrow">
+    <h2 class="sec-title">Frequently asked questions</h2>
+    <div class="faq"><details><summary>Do you work on Sundays?</summary><p>Yes, by appointment.</p></details></div>
+  </div>
+</section>
+<section id="hours" class="sec alt" data-g4d-section="hours" data-g4d-label="Opening hours" data-g4d-optional="true">
+  <div class="wrap hours-box"><h2 class="sec-title">Opening hours</h2><div class="g4d-slot g4d-slot--hours" data-g4d-slot="hours"><p>Opening hours</p></div></div>
+</section>
+<section id="contact" class="sec" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true">
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h2 class="sec-title">Contact</h2>
+      <address class="addr">88, Bazaar Street, Coimbatore 641001</address>
+      <p>+919876543212</p>
+      <p>shop@example.com</p>
+      <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
+      <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">88, Bazaar Street, Coimbatore 641001</p></div>
+      
+    </div>
+    
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="share" data-g4d-label="Share" data-g4d-optional="true">
+  <div class="wrap closing"><div class="g4d-slot g4d-slot--listed-on-badge" data-g4d-slot="listed-on-badge"><a class="g4d-badge" href="https://get4domain.com/?ref=badge" rel="noopener">Listed on Get4Domain</a></div></div>
+</section>
+</main>
+
+
+<footer class="g4d-slot g4d-slot--footer g4d-footer--columns" data-g4d-slot="footer"><div class="g4d-footer__inner"><p class="g4d-footer__name">Mangala Gold House</p><address>88, Bazaar Street, Coimbatore 641001</address><p>+919876543212</p><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul><p class="g4d-footer__legal"><a href="/legal/privacy">Privacy</a> · <a href="/legal/terms">Terms</a></p><p class="g4d-footer__copy">© 2026 Mangala Gold House</p></div></footer>
+<div class="g4d-listing-note" data-g4d-listing-note><p class="g4d-listed-on" data-g4d-listed-on>Listed on Get4Domain</p><p class="g4d-footer-bridge" data-g4d-footer-bridge>This is an informational listing on Get4Domain. Get4Domain passes enquiries to the business and does not take payments.</p></div></div>
+</body>
+</html>
+"
+`;
+
+exports[`plumber (handyman): Free is a listing-only site the home page of the Free listing is pinned (golden snapshot) 1`] = `
+"<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sri Ganesh Plumbing | Plumber in Chennai</title>
+<meta name="description" content="Leaks fixed fast, every time. Sri Ganesh Plumbing serves Chennai. We explain the work before we start.">
+<link rel="canonical" href="https://sri-ganesh-plumbing.get4domain.com/">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sri Ganesh Plumbing">
+<meta property="og:title" content="Sri Ganesh Plumbing | Plumber in Chennai">
+<meta property="og:description" content="Leaks fixed fast, every time. Sri Ganesh Plumbing serves Chennai. We explain the work before we start.">
+<meta property="og:url" content="https://sri-ganesh-plumbing.get4domain.com/">
+<meta property="og:locale" content="en_IN">
+<meta property="og:image" content="https://cdn.example.test/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sri Ganesh Plumbing | Plumber in Chennai">
+<meta name="twitter:description" content="Leaks fixed fast, every time. Sri Ganesh Plumbing serves Chennai. We explain the work before we start.">
+<meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
+<link rel="stylesheet" href="/assets/site.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Plumber","name":"Sri Ganesh Plumbing","description":"Sri Ganesh Plumbing serves Chennai. We explain the work before we start.","url":"https://sri-ganesh-plumbing.get4domain.com","telephone":"+919876543210","email":"ganesh@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"12, Kamaraj Road, Chennai 600001","addressLocality":"Chennai","postalCode":"600001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Sri Ganesh Plumbing","item":"https://sri-ganesh-plumbing.get4domain.com/"}]}</script>
+</head>
+<body>
+<div class="g4d-theme g4d-theme-free-service-pro" lang="en-IN" data-variant="bold-split" data-hero="split" data-header="bold" data-services="icon-grid" data-card="sharp" data-divider="notch" data-decor="badge-shapes" data-motion="low" data-pattern="waves" style="--g4d-pal-primary:#0e5181;--g4d-pal-primary-contrast:#ffffff;--g4d-pal-accent:#0f1e8a;--g4d-pal-bg:#f3f8fc;--g4d-pal-surface:#e9eef2;--g4d-pal-border:#d1d5d9;--g4d-pal-primary-d:#51abec;--g4d-pal-primary-contrast-d:#0b1210;--g4d-pal-accent-d:#7584f0;--g4d-pal-bg-d:#0f151a;--g4d-pal-surface-d:#1b2125;--g4d-pal-border-d:#353a3f;--g4d-font-heading:'Montserrat',var(--g4d-font-fallback,system-ui,sans-serif);--g4d-font-body:'Work Sans',var(--g4d-font-fallback,system-ui,sans-serif)"><a class="skip-link" href="#main">Skip to main content</a>
+<div class="g4d-slot g4d-slot--claim-banner" data-g4d-slot="claim-banner"><p><a href="/claim">Is this your business? Claim this page</a></p></div>
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href="/"><span class="brand-name">Sri Ganesh Plumbing</span></a>
+    <span class="head-phone__label">Call</span> <strong>+919876543210</strong>
+    
+    <nav aria-label="Main" class="g4d-slot g4d-slot--header-nav" data-g4d-slot="header-nav"><a class="g4d-menu-open" href="#g4d-menu">Menu</a><div id="g4d-menu" class="g4d-menu"><a class="g4d-menu-close" href="#">Close menu</a><ul><li><a href="/" aria-current="page">Home</a></li><li><a href="/services">Services</a></li><li><a href="/about">About</a></li><li><a href="/gallery">Gallery</a></li><li><a href="/contact">Contact</a></li></ul></div></nav>
+    
+    
+  </div>
+</header>
+<main id="main">
+<section class="hero" data-g4d-section="hero" data-g4d-label="Hero banner" data-g4d-optional="false">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      
+      <p class="eyebrow">Leaks fixed fast, every time.</p>
+      <h1>Leaks fixed fast, every time.</h1>
+      <p class="lead">Leaks fixed fast, every time.</p>
+      <span>Call</span> <strong>+919876543210</strong>
+      <div class="actions"></div>
+      <p data-hours="[]" aria-live="polite" class="g4d-slot g4d-slot--open-now" data-g4d-slot="open-now"><span class="g4d-open-now__label">Hours:</span> <span class="g4d-open-now__text">Opening hours</span></p>
+    </div>
+    <div class="hero-art g4d-hero-zoom"><img src="https://cdn.example.test/banner.jpg" alt="Sri Ganesh Plumbing" width="1200" height="600" fetchpriority="high"></div>
+  </div>
+</section>
+
+<section class="sec about" data-g4d-section="about" data-g4d-label="About" data-g4d-optional="true">
+  <div class="wrap split">
+    <div class="about-copy"><h2 class="sec-title">About Sri Ganesh Plumbing</h2><div class="rich"><p>Sri Ganesh Plumbing serves Chennai. We explain the work before we start.</p></div></div>
+    
+  </div>
+</section>
+<section class="sec services" data-g4d-section="services" data-g4d-label="Services" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Services</h2>
+    <div class="cards-box"><ul class="cards g4d-reveal"><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/tap-repair-i1"><img src="https://cdn.example.test/i1.jpg" alt="Tap repair" width="400" height="300" loading="lazy" decoding="async"><span class="card-title">Tap repair</span><span class="desc">Fix a leaking tap.</span><span class="price">300</span></a></li><li class="card g4d-lift g4d-zoom"><a class="card-link" href="/services/pipe-fitting-i2"><span class="card-title">Pipe fitting</span><span class="desc">New pipe work.</span></a></li></ul></div>
+  </div>
+</section>
+
+<section class="sec" data-g4d-section="why" data-g4d-label="Why choose us" data-g4d-optional="true">
+  <div class="wrap"><h2 class="sec-title">Why choose us</h2><ul class="why"><li>Licensed and insured</li></ul></div>
+</section>
+
+<section id="gallery" class="sec" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true">
+  <div class="wrap">
+    <h2 class="sec-title">Gallery</h2>
+    <ul class="gallery"><li><figure class="shot" id="photo-1"><a class="shot-close" href="#gallery">Close picture</a><a class="thumb" href="#photo-1"><img src="https://cdn.example.test/g1.jpg" alt="Work 1" width="600" height="400" loading="lazy" decoding="async"></a><figcaption>Work 1</figcaption></figure></li></ul>
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true">
+  <div class="wrap"><section class="g4d-slot g4d-slot--reviews" data-g4d-slot="reviews"><section class="g4d-reviews__testimonials" aria-label="Customer testimonials"><h2>Customer testimonials</h2><ul class="g4d-reviews__list"><li class="g4d-review"><figure><blockquote>Very good work</blockquote><figcaption>A Customer</figcaption></figure></li></ul></section></section></div>
+</section>
+
+<section class="sec" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true">
+  <div class="wrap narrow">
+    <h2 class="sec-title">Frequently asked questions</h2>
+    <div class="faq"><details><summary>Do you work on Sundays?</summary><p>Yes, by appointment.</p></details></div>
+  </div>
+</section>
+<section id="hours" class="sec alt" data-g4d-section="hours" data-g4d-label="Opening hours" data-g4d-optional="true">
+  <div class="wrap hours-box"><h2 class="sec-title">Opening hours</h2><div class="g4d-slot g4d-slot--hours" data-g4d-slot="hours"><p>Opening hours</p></div></div>
+</section>
+<section id="contact" class="sec" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true">
+  <div class="wrap contact-grid">
+    <div class="contact-info">
+      <h2 class="sec-title">Contact</h2>
+      <address class="addr">12, Kamaraj Road, Chennai 600001</address>
+      <p>+919876543210</p>
+      <p>ganesh@example.com</p>
+      <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
+      <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">12, Kamaraj Road, Chennai 600001</p></div>
+      
+    </div>
+    
+  </div>
+</section>
+<section class="sec alt" data-g4d-section="share" data-g4d-label="Share" data-g4d-optional="true">
+  <div class="wrap closing"><div class="g4d-slot g4d-slot--listed-on-badge" data-g4d-slot="listed-on-badge"><a class="g4d-badge" href="https://get4domain.com/?ref=badge" rel="noopener">Listed on Get4Domain</a></div></div>
+</section>
+</main>
+
+
+<footer class="g4d-slot g4d-slot--footer g4d-footer--columns" data-g4d-slot="footer"><div class="g4d-footer__inner"><p class="g4d-footer__name">Sri Ganesh Plumbing</p><address>12, Kamaraj Road, Chennai 600001</address><p>+919876543210</p><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul><p class="g4d-footer__legal"><a href="/legal/privacy">Privacy</a> · <a href="/legal/terms">Terms</a></p><p class="g4d-footer__copy">© 2026 Sri Ganesh Plumbing</p></div></footer>
+<div class="g4d-listing-note" data-g4d-listing-note><p class="g4d-listed-on" data-g4d-listed-on>Listed on Get4Domain</p><p class="g4d-footer-bridge" data-g4d-footer-bridge>This is an informational listing on Get4Domain. Get4Domain passes enquiries to the business and does not take payments.</p></div></div>
+</body>
+</html>
+"
+`;

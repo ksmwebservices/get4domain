@@ -16,7 +16,7 @@ export interface KitTheme { manifest: KitManifest; templates: Record<string, str
 export interface RenderInput {
   theme?: KitTheme; page: string | { slug: string; template?: string; item?: unknown; parent?: string };
   content: Record<string, unknown>; settings?: Record<string, unknown>; vendor?: Record<string, unknown>; host?: Record<string, unknown>;
-  entitlements?: { video?: boolean; cart?: boolean; booking?: boolean; customDomain?: boolean };
+  entitlements?: { video?: boolean; cart?: boolean; booking?: boolean; customDomain?: boolean; callsToAction?: boolean };
 }
 export interface RenderSeo { title: string; description: string; canonical: string; structuredData: Record<string, unknown>; hreflang: Array<{ lang: string; href: string }> }
 export interface RenderResult { html: string; lang: string; seo: RenderSeo; slots: Array<{ name: string; rendered: boolean }>; warnings: string[]; template: string; variant?: { id: string } | null }
@@ -24,6 +24,8 @@ export interface LintResult { ok: boolean; findings: Array<{ rule: string; messa
 
 export interface Kit {
   renderPage(input: RenderInput): RenderResult;
+  /** makes an already rendered page listing-only (strips every call to action, adds the platform lines); used when the plan lapses or the vendor is suspended after publishing */
+  listingOnlyHtml(html: string, texts: Record<string, string>): string;
   loadTheme(idOrDir: string): KitTheme;
   lintTheme(theme: KitTheme, opts?: Record<string, unknown>): LintResult;
   listVendorThemeIds(): string[];
@@ -76,7 +78,7 @@ export function loadKit(): Kit {
   const render = at('lib/render.cjs'); const theme = at('lib/theme.cjs'); const lint = at('lib/lint.cjs'); const pack = at('lib/pack.cjs');
   const cats = at('lib/categories.cjs'); const fixtures = at('fixtures/index.cjs');
   const kit = {
-    renderPage: render.renderPage, loadTheme: theme.loadTheme, listVendorThemeIds: theme.listVendorThemeIds, lintTheme: lint.lintTheme,
+    renderPage: render.renderPage, listingOnlyHtml: render.listingOnlyHtml, loadTheme: theme.loadTheme, listVendorThemeIds: theme.listVendorThemeIds, lintTheme: lint.lintTheme,
     readThemeDir: pack.readThemeDir, computeContentHash: pack.computeContentHash,
     categoryById: cats.categoryById, hasCategory: cats.hasCategory, variantFor: cats.variantFor, CATEGORIES: cats.CATEGORIES, sampleContent: fixtures.sampleContent,
     categoryMap: () => JSON.parse(fs.readFileSync(path.join(dir, 'data', 'category-map.json'), 'utf8')) as { packs: Record<string, string[]> },

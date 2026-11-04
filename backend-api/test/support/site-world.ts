@@ -1,6 +1,8 @@
 import { ResolvedEntitlements } from '../../src/plans/entitlements/entitlement-engine';
 import { SiteAudit } from '../../src/site-publish/publish/site-audit';
 import { VendorHosts } from '../../src/site-publish/publish/vendor-hosts';
+import { SiteLifecycle } from '../../src/site-publish/publish/site-lifecycle';
+import { B3SettingsService } from '../../src/b3-settings/b3-settings.service';
 import { SiteBuildService } from '../../src/site-publish/publish/site-build.service';
 import { PublishService } from '../../src/site-publish/publish/publish.service';
 import { SiteSettingsService } from '../../src/site-publish/publish/site-settings.service';
@@ -24,7 +26,7 @@ export interface SiteWorld {
   audit: string[];
 }
 
-export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument; hosts?: VendorHosts } = {}): SiteWorld {
+export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument; hosts?: VendorHosts; b3?: Pick<B3SettingsService, 'get'>; lifecycle?: SiteLifecycle; /** serve pages through the entitlement filter (slice 5.1d / 5.4b) */ servePolicy?: boolean } = {}): SiteWorld {
   const kind = o.kind ?? 'plumber';
   const track = kind === 'jewellery' ? 'ecommerce' : kind === 'dentist' ? 'professional' : 'handyman';
   const state: SiteWorld['state'] = { doc: o.doc ?? makeDoc(kind, { claimed: o.claimed ?? false }), ent: entitlements(o.level ?? 'FREE', track), vendorHosts: new Map() };
@@ -34,10 +36,10 @@ export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level
   const ents = { resolve: async () => state.ent };
   const auditSink: SiteAudit = { hook: (_actor, action) => async () => { audit.push(action); } };
   const themes = themeService();
-  const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink, o.hosts); build.clock = () => NOW;
+  const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink, o.hosts, o.b3, o.lifecycle); build.clock = () => NOW;
   const publish = new PublishService(repo, themes, content as never, ents as never, auditSink); publish.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content as never, ents as never, build, publish, auditSink);
   const hosts = { resolve: async (host: string) => { const h = state.vendorHosts.get(host); return h && !h.removed ? { vendorId: h.vendorId } : null; } };
-  const pub = new SitePublicService(repo, hosts as never);
+  const pub = new SitePublicService(repo, hosts as never, o.servePolicy ? ents as never : undefined, o.servePolicy ? o.b3 : undefined, o.servePolicy ? themes : undefined);
   return { repo, build, publish, settings, pub, state, audit };
 }

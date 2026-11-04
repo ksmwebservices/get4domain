@@ -231,15 +231,15 @@ describe('renderer bridge (pinned mapping for the theme kit)', () => {
     expect(render('handyman_pro', {}, true).customDomain).toBe(true);
     expect(render('handyman_free', {}, true).customDomain).toBe(false);
   });
-  it('LIMITED, LOCKED_PREVIEW and HIDDEN are all false; the result has exactly the four booleans the theme kit asks for', () => {
+  it('LIMITED, LOCKED_PREVIEW and HIDDEN are all false; the result has exactly the five booleans the theme kit asks for', () => {
     const input = baseInput({ subscription: sub('handyman_pro') });
     input.matrix.get('id_handyman_pro')!.set('site.video', { state: 'LIMITED' as never, limitValue: 3, enumValue: null, upsellText: null });
     expect(toRenderEntitlements(resolveEntitlements(input), true).video).toBe(false);
-    expect(Object.keys(render('handyman_pro')).sort()).toEqual(['booking', 'cart', 'customDomain', 'video']);
+    expect(Object.keys(render('handyman_pro')).sort()).toEqual(['booking', 'callsToAction', 'cart', 'customDomain', 'video']);   // 5.4b: callsToAction = site.cta ACTIVE
     for (const v of Object.values(render('handyman_pro'))) expect(typeof v).toBe('boolean');
   });
-  it('a LEGACY vendor gets all four false', () => {
-    expect(toRenderEntitlements(resolveEntitlements(baseInput({ flagOn: false })), true)).toEqual({ video: false, cart: false, booking: false, customDomain: false });
+  it('a LEGACY vendor gets all five false', () => {
+    expect(toRenderEntitlements(resolveEntitlements(baseInput({ flagOn: false })), true)).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
   });
 });
 

@@ -5,6 +5,7 @@ import * as path from 'path';
 import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
+import { EntitlementsService } from '../src/plans/entitlements/entitlements.service';
 import { forTenant } from '../src/common/tenant/for-tenant';
 import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.service';
 import { applySeed } from '../src/plans/seed/seed-applier';
@@ -81,7 +82,14 @@ describe('site tenant isolation on staging', () => {
     expect(unknown.status).toBe(404);
     expect((await get(siteB.host)).status).toBe(200);
     await prisma.vendor.update({ where: { id: B.vendorId }, data: { status: 'SUSPENDED' } });
-    expect((await get(siteB.host)).status).toBe(200);   // still served (the listing-only output assertions arrive with slice 5.4b)
+    const suspendedPage = await get(siteB.host);
+    expect(suspendedPage.status).toBe(200);
+    // slice 5.4b / 5.1d: the stored Pro page is served as a listing-only page while the vendor is suspended (entitlements are cached up to 30 s, so the engine cache is dropped first)
+    app.get(EntitlementsService).invalidate(B.vendorId);
+    const listing = await get(siteB.host);
+    expect(listing.status).toBe(200);
+    for (const re of [/<form\b/i, /<button\b/i, /href="tel:/i, /href="mailto:/i, /wa\.me/i, /href="\/(?:cart|book|enquire)/i]) expect(re.test(listing.text)).toBe(false);
+    expect(listing.text).toContain('data-g4d-listed-on');
     await prisma.vendor.update({ where: { id: B.vendorId }, data: { status: 'ACTIVE' } });
     await prisma.v3SiteRemoval.create({ data: { vendorId: B.vendorId, kind: 'VENDOR_REQUEST', reason: 'synthetic test' } });
     try {

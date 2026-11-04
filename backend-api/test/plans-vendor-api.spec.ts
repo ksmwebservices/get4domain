@@ -103,12 +103,12 @@ describe('MePlansService (the vendor\'s own routes)', () => {
     return { prisma, svc: new MePlansService(prisma as never, ent) };
   };
 
-  it('entitlements: the resolved features plus the four theme-kit booleans, for the CALLER\'s vendor only', async () => {
+  it('entitlements: the resolved features plus the five theme-kit booleans, for the CALLER\'s vendor only', async () => {
     const { svc } = setup();
     const out = await svc.entitlements('v1');
     expect(out).toMatchObject({ mode: 'V3', plan: 'handyman_free', level: 'FREE', track: 'HANDYMAN', subscriptionStatus: 'ACTIVE', graceWarning: false });
     expect(out.features['site.video']).toEqual({ state: 'LOCKED_PREVIEW', limit: null, enumValue: null, upsellText: 'Add video with Pro.', overLimit: false, source: 'PLAN' });
-    expect(out.render).toEqual({ video: false, cart: false, booking: false, customDomain: false });
+    expect(out.render).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
     expect(JSON.stringify(out)).not.toMatch(/overrideReason|createdByStaffId|reason/);
   });
 

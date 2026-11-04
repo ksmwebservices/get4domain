@@ -95,7 +95,7 @@ describe('EntitlementsService', () => {
   });
 
   it('toRender maps the resolved entitlements for the theme kit', async () => {
-    expect(await svc.renderEntitlements('v1')).toEqual({ video: false, cart: false, booking: false, customDomain: false });
+    expect(await svc.renderEntitlements('v1')).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
     repo.state.v2 = { flagOn: true, subscription: { ...freeSub, planId: 'P', endsAt: new Date(now + 86_400_000), termMonths: 3 }, overrides: [] };
     expect((await svc.renderEntitlements('v2')).video).toBe(true);
   });

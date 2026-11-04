@@ -171,14 +171,15 @@ export function assertWithinLimitResult(resolved: ResolvedEntitlements, key: str
   return { code: r.reason === 'LIMIT_REACHED' ? 'LIMIT_REACHED' : 'FEATURE_LOCKED', upsellText: r.upsellText, state: r.state, limit: r.limit };
 }
 
-export interface RenderEntitlements { video: boolean; cart: boolean; booking: boolean; customDomain: boolean }
+export interface RenderEntitlements { video: boolean; cart: boolean; booking: boolean; customDomain: boolean; callsToAction: boolean }
 /**
- * The four booleans the theme kit asks the platform for. Pinned by a test:
+ * The five booleans the theme kit asks the platform for. Pinned by a test:
  *   video = site.video ACTIVE; cart = shop.cart ACTIVE; booking = site.booking ACTIVE;
- *   customDomain = site.custom_domain ACTIVE and a verified domain exists (a later slice supplies that fact; until then it is false).
+ *   customDomain = site.custom_domain ACTIVE and a verified domain exists (a later slice supplies that fact; until then it is false);
+ *   callsToAction = site.cta ACTIVE (slice 5.4b: false = a listing-only site with no form, button, call, chat, booking or cart).
  * LIMITED, LOCKED_PREVIEW and HIDDEN are all false.
  */
 export function toRenderEntitlements(resolved: ResolvedEntitlements, hasVerifiedDomain = false): RenderEntitlements {
   const on = (key: string): boolean => resolved.features[key]?.state === 'ACTIVE';
-  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: on('site.custom_domain') && hasVerifiedDomain === true };
+  return { video: on('site.video'), cart: on('shop.cart'), booking: on('site.booking'), customDomain: on('site.custom_domain') && hasVerifiedDomain === true, callsToAction: on('site.cta') };
 }
