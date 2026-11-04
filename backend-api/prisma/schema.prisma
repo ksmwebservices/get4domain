@@ -60,6 +60,7 @@ model Vendor {
   v3Redirects V3Redirect[]
   v3SiteRemoval V3SiteRemoval?
   v3DeletionRequests V3AccountDeletionRequest[]
+  v3SeededSite V3SeededSite?
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
   v3PlanOrders V3PlanOrder[]
@@ -4582,6 +4583,7 @@ model V3DirectoryBusiness {
   removals   V3DirectoryRemovalRequest[]
   visitDays  V3DirectoryVisitDaily[]
   visitRefs  V3DirectoryVisitRef[]
+  seededSite V3SeededSite?
   overrides  V3DirectoryClaimOverride[]
 
   @@index([status, indexable])
@@ -5018,4 +5020,113 @@ model V3DirectoryVisitRef {
 
   @@index([expiresAt])
   @@map("g4d_directory_visit_refs")
+}
+
+// ─── V3 batch 3 slice 5.13a: seeded sites (promotion pages made from public facts for businesses that have not signed up) (additive) ───────────────────────────
+
+enum V3SeededLifecycle {
+  SEEDED
+  INVITED
+  CLAIMED_FREE
+  PRO
+  REMOVED
+}
+
+enum V3SeededSourceKind {
+  PUBLIC_LISTING
+  FIELD_VISIT
+  PHONE_CALL
+  REFERRAL
+}
+
+enum V3OutreachStatus {
+  NOT_CONTACTED
+  CALLED
+  INTERESTED
+  CLAIM_LINK_SENT
+  CLAIMED
+  DECLINED
+  DO_NOT_CONTACT
+}
+
+enum V3OutreachKind {
+  CALL
+  NOTE
+  CLAIM_LINK
+  REMOVAL
+}
+
+enum V3SeededBatchMode {
+  DRY_RUN
+  APPLIED
+}
+
+/// One row per seeded business. The vendor is a shell with a placeholder login nobody can use until the owner claims the page; the directory profile is UNCLAIMED.
+model V3SeededSite {
+  id                    String             @id @default(cuid())
+  vendorId              String             @unique
+  directoryBusinessId   String?            @unique
+  lifecycle             V3SeededLifecycle  @default(SEEDED)
+  sourceKind            V3SeededSourceKind
+  sourceNote            String?
+  publicFactsConfirmed  Boolean // the staff checkbox: only public facts, no invented reviews, no copied photos or text. Required on every create.
+  phoneHash             String // keyed hash of the E.164 number
+  emailHash             String? // keyed hash of the public email, for duplicate detection only
+  nameKey               String // normalised name plus city, for duplicate detection
+  outreachStatus        V3OutreachStatus   @default(NOT_CONTACTED)
+  outreachOwnerStaffId  String?
+  lastContactAt         DateTime?
+  nextFollowUpAt        DateTime?
+  ownerAgreedToContact  Boolean            @default(false)
+  ownerAgreedAt         DateTime?
+  ownerAgreedBy         String?
+  createdByStaffId      String?
+  batchId               String?
+  removedAt             DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  vendor   Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  business V3DirectoryBusiness?  @relation(fields: [directoryBusinessId], references: [id], onDelete: SetNull)
+  outreach V3SeededOutreachLog[]
+  batch    V3SeededBatch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([lifecycle])
+  @@index([phoneHash])
+  @@index([emailHash])
+  @@index([nameKey])
+  @@index([batchId])
+  @@map("g4d_seeded_sites")
+}
+
+model V3SeededBatch {
+  id           String            @id @default(cuid())
+  createdBy    String?
+  fileName     String
+  rowsTotal    Int
+  rowsCreated  Int               @default(0)
+  rowsRejected Int               @default(0)
+  mode         V3SeededBatchMode
+  reportJson   Json              @default("{}")
+  createdAt    DateTime          @default(now())
+
+  sites V3SeededSite[]
+
+  @@index([createdAt])
+  @@map("g4d_seeded_batches")
+}
+
+model V3SeededOutreachLog {
+  id           String         @id @default(cuid())
+  seededSiteId String
+  kind         V3OutreachKind
+  at           DateTime       @default(now())
+  staffId      String?
+  outcome      String?
+  note         String?
+
+  site V3SeededSite @relation(fields: [seededSiteId], references: [id], onDelete: Cascade)
+
+  @@index([seededSiteId, at])
+  @@map("g4d_seeded_outreach_log")
 }
