@@ -3,6 +3,7 @@ import { KeyedQueue } from '../src/common/keyed-queue';
 import { PrismaAiStudioRepository } from '../src/ai-studio/prisma-ai-studio.repository';
 import { PrismaPlanBillingRepository } from '../src/plan-billing/prisma-plan-billing.repository';
 import { PrismaDomainRepository } from '../src/site-domains/prisma-domain.repository';
+import { PrismaSiteRepository } from '../src/site-publish/publish/prisma-site.repository';
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -36,7 +37,7 @@ describe('KeyedQueue', () => {
 class FakePool {
   private free: number; private waiters: Array<() => void> = []; private lockTails = new Map<string, Promise<void>>();
   maxConcurrent = 0; inUse = 0; failed = 0; ok = 0;
-  constructor(size: number, private readonly defaultMaxWait: number) { this.free = size; }
+  constructor(size: number, private readonly defaultMaxWait: number, private readonly extras: Record<string, unknown> = {}) { this.free = size; Object.assign(this, extras); }
   private async acquire(maxWait: number): Promise<void> {
     if (this.free > 0) { this.free--; return; }
     await new Promise<void>((resolve, reject) => {
@@ -51,6 +52,7 @@ class FakePool {
     this.inUse++; this.maxConcurrent = Math.max(this.maxConcurrent, this.inUse);
     let releaseLock: () => void = () => undefined; const mine = new Promise<void>((r) => { releaseLock = r; });
     const tx = {
+      ...this.extras,
       $executeRaw: async (_s: TemplateStringsArray, key: string) => { const prev = this.lockTails.get(key) ?? Promise.resolve(); this.lockTails.set(key, prev.then(() => mine)); await prev; return 0; },
     };
     try { const r = await fn(tx); this.ok++; return r; } finally { releaseLock(); this.inUse--; this.release(); }
@@ -78,5 +80,42 @@ describe('pool starvation: many parallel requests for ONE vendor with a small po
   it('domains: all N succeed', async () => {
     const { pool, results } = await run((p) => new PrismaDomainRepository(p as never, audits) as unknown as Repo);
     expect(results.filter((r) => r.status === 'rejected')).toHaveLength(0); expect(pool.failed).toBe(0); expect(pool.maxConcurrent).toBe(1);
+  }, 20_000);
+});
+
+/** B3.0b: the slice 5.4 site build, publish and rollback took the lock inside the transaction. Same simulated small pool, same assertions. */
+describe('pool starvation: site build, publish and rollback for ONE vendor', () => {
+  const N = 20;
+  const draft = { id: 'p1', vendorId: 'vendor-1', version: 1, status: 'DRAFT_PREVIEW', themeId: 't', themeHash: 'h', contentHash: 'c', settingsHash: 's', indexable: false, indexHeader: '', missingFieldsJson: [], warningsJson: [], languages: 'en', totalBytes: 1, rolledBackFromVersion: null, createdByType: 'STAFF', createdById: null, createdAt: new Date(), publishedAt: new Date(), currentVendorId: null };
+  const extras = {
+    v3SitePublication: {
+      aggregate: async () => ({ _max: { version: 1 } }), create: async ({ data }: { data: object }) => ({ ...draft, ...data }), findUnique: async () => draft,
+      findFirst: async () => null, update: async () => ({ ...draft, status: 'PUBLISHED' }),
+    },
+    v3SitePublicationPage: { createMany: async () => ({ count: 0 }), findMany: async () => [] },
+    v3SiteEvent: { create: async () => ({}) },
+  };
+  const ev = { type: 'BUILT' as const, actorType: 'STAFF' as const, actorId: null, detail: {} };
+  const slow = async () => { await sleep(80); };
+  const run = async (call: (r: PrismaSiteRepository) => Promise<unknown>) => {
+    const pool = new FakePool(3, 1000, extras); const repo = new PrismaSiteRepository(pool as never);
+    const results = await Promise.allSettled(Array.from({ length: N }, () => call(repo)));
+    return { pool, results };
+  };
+  const expectClean = ({ pool, results }: { pool: FakePool; results: PromiseSettledResult<unknown>[] }) => {
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(0); expect(pool.failed).toBe(0); expect(pool.maxConcurrent).toBe(1);
+  };
+  const newPub = { vendorId: 'vendor-1', themeId: 't', themeHash: 'h', contentHash: 'c', settingsHash: 's', indexable: false, indexHeader: '', missingFieldsJson: [], warningsJson: [], languages: 'en', totalBytes: 1, createdByType: 'STAFF' as const, createdById: null };
+  it('build (createPublication): all N succeed, one at a time', async () => { expectClean(await run((r) => r.createPublication(newPub, [], ev, slow))); }, 20_000);
+  it('publish: all N succeed, one at a time', async () => {
+    expectClean(await run((r) => r.publish('vendor-1', 'p1', { now: new Date(), validate: async () => undefined, event: ev, audit: slow })));
+  }, 20_000);
+  it('rollback: all N succeed, one at a time', async () => {
+    expectClean(await run((r) => r.rollback('vendor-1', 1, { now: new Date(), validate: async () => undefined, actor: { type: 'STAFF', id: null }, event: () => ev, audit: slow })));
+  }, 20_000);
+  it('build and publish for different vendors still run in parallel', async () => {
+    const pool = new FakePool(6, 1000, extras); const repo = new PrismaSiteRepository(pool as never);
+    await Promise.all(['a', 'b', 'c'].map((v) => repo.createPublication({ ...newPub, vendorId: v }, [], ev, slow)));
+    expect(pool.maxConcurrent).toBe(3);
   }, 20_000);
 });

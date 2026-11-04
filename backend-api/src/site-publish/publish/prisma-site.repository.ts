@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { advisoryXactLock } from '../../common/db-lock';
+import { KeyedQueue } from '../../common/keyed-queue';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MissingField, siteError } from '../site.errors';
 import { HostResolver } from './site-public.service';
@@ -24,6 +25,8 @@ const supersededStatus = (rolledBackFrom: number | null): 'SUPERSEDED' | 'ROLLED
  */
 @Injectable()
 export class PrismaSiteRepository extends SiteRepository {
+  /** Waiting for a vendor's turn happens here, in memory, NOT inside a transaction (see keyed-queue.ts: pool starvation). The advisory lock stays as the guard between processes. */
+  private readonly queue = new KeyedQueue();
   constructor(private readonly prisma: PrismaService) { super(); }
 
   async getSettings(vendorId: string): Promise<SiteSettingsRow | null> { return this.prisma.v3SiteSettings.findUnique({ where: { vendorId } }); }
@@ -40,7 +43,7 @@ export class PrismaSiteRepository extends SiteRepository {
   async getPage(publicationId: string, path: string, lang: string) { const r = await this.prisma.v3SitePublicationPage.findUnique({ where: { publicationId_path_lang: { publicationId, path, lang } } }); return r ? toPage(r) : null; }
 
   async createPublication(data: NewPublication, pages: NewPage[], event: SiteEventInput, audit?: TxHook): Promise<PublicationRow> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.queue.run(`site-build:${data.vendorId}`, () => this.prisma.$transaction(async (tx) => {
       await advisoryXactLock(tx, `site-build:${data.vendorId}`);
       const last = await tx.v3SitePublication.aggregate({ where: { vendorId: data.vendorId }, _max: { version: true } });
       const row = await tx.v3SitePublication.create({
@@ -50,7 +53,7 @@ export class PrismaSiteRepository extends SiteRepository {
       await tx.v3SiteEvent.create({ data: eventData(data.vendorId, row.id, event) });
       if (audit) await audit(tx);
       return toPub(row);
-    }, { timeout: 60_000 });
+    }, { timeout: 60_000, maxWait: 15_000 }));
   }
 
   async publish(vendorId: string, publicationId: string, o: PublishOptions): Promise<PublicationRow> {
@@ -59,7 +62,7 @@ export class PrismaSiteRepository extends SiteRepository {
     if (pre.status === 'PUBLISHED') return toPub(pre);
     if (pre.status !== 'DRAFT_PREVIEW') throw notFound();
     await o.validate(toPub(pre));
-    return this.prisma.$transaction(async (tx) => {
+    return this.queue.run(`site-publish:${vendorId}`, () => this.prisma.$transaction(async (tx) => {
       await advisoryXactLock(tx, `site-publish:${vendorId}`);
       const target = await tx.v3SitePublication.findUnique({ where: { id: publicationId } });
       if (!target || target.vendorId !== vendorId) throw notFound();
@@ -71,7 +74,7 @@ export class PrismaSiteRepository extends SiteRepository {
       await tx.v3SiteEvent.create({ data: eventData(vendorId, publicationId, o.event) });
       if (o.audit) await o.audit(tx);
       return toPub(row);
-    });
+    }, { maxWait: 15_000 }));
   }
 
   async rollback(vendorId: string, toVersion: number, o: RollbackOptions): Promise<PublicationRow> {
@@ -79,7 +82,7 @@ export class PrismaSiteRepository extends SiteRepository {
     if (!src || src.publishedAt === null) throw notFound();
     await o.validate(toPub(src));
     const pages = await this.prisma.v3SitePublicationPage.findMany({ where: { publicationId: src.id } });
-    return this.prisma.$transaction(async (tx) => {
+    return this.queue.run(`site-publish:${vendorId}`, () => this.prisma.$transaction(async (tx) => {
       await advisoryXactLock(tx, `site-publish:${vendorId}`);
       const last = await tx.v3SitePublication.aggregate({ where: { vendorId }, _max: { version: true } });
       const version = (last._max.version ?? 0) + 1;
@@ -96,7 +99,7 @@ export class PrismaSiteRepository extends SiteRepository {
       await tx.v3SiteEvent.create({ data: eventData(vendorId, row.id, o.event(version)) });
       if (o.audit) await o.audit(tx);
       return toPub(row);
-    }, { timeout: 60_000 });
+    }, { timeout: 60_000, maxWait: 15_000 }));
   }
 
   async recordEvent(vendorId: string, publicationId: string | null, event: SiteEventInput, audit?: TxHook): Promise<void> {
@@ -117,7 +120,7 @@ export class PrismaSiteRepository extends SiteRepository {
   }
 }
 
-/** Host name -> vendor, from the vendor's subdomain. A suspended vendor and an unknown name give the same null. */
+/** Host name -> vendor, from the vendor's subdomain. A removed business and an unknown name give the same null; a suspended or pending vendor is served (owner rule 9). */
 @Injectable()
 export class SubdomainHostResolver extends HostResolver {
   constructor(private readonly prisma: PrismaService) { super(); }
@@ -127,7 +130,7 @@ export class SubdomainHostResolver extends HostResolver {
     if (!host.endsWith(`.${base}`)) return null;
     const sub = host.slice(0, -(base.length + 1));
     if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(sub)) return null;
-    const v = await this.prisma.vendor.findUnique({ where: { subdomain: sub }, select: { id: true, status: true } });
-    return v && v.status !== 'SUSPENDED' ? { vendorId: v.id } : null;
+    const v = await this.prisma.vendor.findUnique({ where: { subdomain: sub }, select: { id: true, v3SiteRemoval: { select: { vendorId: true } } } });
+    return v && !v.v3SiteRemoval ? { vendorId: v.id } : null;
   }
 }
