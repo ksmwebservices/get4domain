@@ -4297,6 +4297,7 @@ model V3SiteSettings {
   variant         String? // the layout variant id: derived from the category, read-only for vendors
   motionIntensity V3MotionIntensity @default(LOW)
   forceNoindex    Boolean           @default(false) // staff switch: the site is noindex whatever the indexing rule says
+  canonicalHost   String? // slice 5.6b: the canonical host the published pages and sitemap were last built for; the controlled switch moves it (null = never switched)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
