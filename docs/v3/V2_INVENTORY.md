@@ -692,3 +692,87 @@ The same list applies to each client. The column "V3 target" is where the data g
 3. The legacy-to-track migration tool does not exist (it is a Stage 19 deliverable).
 4. The owner decisions in the table above (design, canonical host, price, wallet balance).
 
+## INV-9. Themes status
+
+**Pro themes are designed in Bolt, not built by Claude Code.** Claude Code built the kit, the renderer, the lint, the fixtures and the five Standard (Free-layout) themes. The nine Premium themes are Bolt's work, using `get4domain-bolt-kit.zip`, and are then checked by the same lint. No Pro theme exists in the repository.
+
+### 9.1 Worktree and branch
+
+| Item | Result |
+|---|---|
+| Worktree `C:\Get4Domain\get4domain-themes` | exists; working tree clean (0 changed files) |
+| Branch `v3-themes` | exists; local and `origin/v3-themes` are both `a587473` (pushed) |
+| Relation to `v3-b2` | `v3-themes` is an ancestor of `v3-b2` (0 commits ahead, `v3-b2` is 50 ahead), so every theme commit is already inside the Batch 2 base; the inventory worktree has the full `themes/` folder |
+
+Last ten commits on `v3-themes` (all 3 November 2026, +05:30):
+
+| Commit | Time | Subject |
+|---|---|---|
+| a587473 | 17:54 | docs(themes): C2.6 README, handover and log for the motion kit, variant hooks and Bolt kit |
+| 0b30097 | 17:51 | feat(themes): C2.5 BOLT_BRIEF.md generated from the code and drift-tested, with the bolt-brief command |
+| 630793c | 17:46 | feat(themes): C2.4 bolt-kit command: self-contained zip of the kit, the starter, the five Standard themes and the motion kit |
+| 8c65318 | 17:41 | feat(themes): C2.3 variant hooks: documented, tested with a Premium fixture, new lint rule variant-coverage |
+| 3d80a25 | 17:27 | feat(themes): C2.2 premium motion kit: one shared CSS file under 4 KB, copied into every theme |
+| 6664a6a | 16:53 | test(themes): C2.1 portability: zero dependencies, Node 18, no external programs, clean-environment run |
+| 2a444be | 16:21 | docs(themes): THEMES-CC-1b log and handover: what the pictures were, the fix, before and after counts |
+| d289ada | 16:20 | feat(themes): THEMES-CC-1b picture budget: one picture per gallery photo, lazy everywhere but the hero, no decorative images, image-budget lint rule |
+| 9e32bb0 | 15:47 | docs(themes): C1.9 README, handover and log for the five Standard themes and the category presets |
+| a7bba6d | 15:42 | feat(themes): C1.8 Coverage, Variant picker and Performance for the five Standard themes; shots by plan with a Tamil sample |
+
+### 9.2 What exists and whether it passes
+
+Run in the inventory worktree (read-only commands that write only ignored report files): `node cli.mjs lint --all` and `node --test "test/*.test.mjs"` in `themes/`.
+
+| Piece | Exists | Evidence | Result |
+|---|---|---|---|
+| Contract `themes/CONTRACT.md` | yes | 17 recorded conflicts with the as-built contract, package layout, manifest, slots, bindings, 41 categories, 9 variants | drift-tested |
+| The one renderer | yes | `themes/lib/render.mjs` `renderPage()`: pure, deterministic, escapes everything, 20 slots | tests pass |
+| Lint | yes | `themes/lib/lint.mjs`, 40 rules plus an optional real-browser check (Playwright) | **PASS for 6 of 6** packages: `kit-starter` (41 categories), `free-hospitality` (4), `free-practice` (11), `free-service-pro` (13), `free-shop-lite` (8), `free-studio` (5), each with 40 rules |
+| 41-category fixtures | yes | `themes/fixtures/` 41 categories, English and Tamil, extreme cases | tests pass |
+| Five Standard themes with presets for all 41 categories | yes | 13 + 11 + 5 + 4 + 8 = 41 preset files, 41 distinct ids, all tier Standard | lint PASS |
+| Premium motion kit | yes | `themes/shared/motion-kit.css`, 4,079 bytes (under 4 KB), `MOTION_KIT.md` | tests pass |
+| `get4domain-bolt-kit.zip` | yes | `C:\Get4Domain\get4domain-themes\themes\dist\get4domain-bolt-kit.zip`, 318,941 bytes, written 17:55 on 3 Nov, 13 seconds after the last commit, so current. `dist/` is git-ignored: the zip exists only on this PC. It holds the kit, a package.json, the motion kit, `BOLT_BRIEF.md`, the five Standard themes and the starter (163 files per the handover) | **I did not unzip or run it** (the command was refused by the permission check and I did not work around it). Its own tests do: `themes/test/bolt-kit.test.mjs` unzips it outside the repo with an empty `node_modules` and runs `npm run lint:all`, `lint`, `pack` and the preview server; all passed in this run |
+| Test suite | yes | 17 test files | **255 tests, 255 pass, 0 fail** (42 s) |
+| Pro themes (`themes/pro`, `themes/pro-incoming`) | **no** | neither folder exists; no theme in `themes/library` is Premium (all five are `Standard`) | n/a |
+| Other theme material | | `theme-uploads/clinic-demo` (a V2 raw-HTML demo), `docs/v3/themes-brief/T0, T1B, T5` briefs | not Pro themes |
+
+### 9.3 THEMES-CC-0, CC-1 and CC-2: what remains
+
+All three tasks are finished at commit level. What remains is owner input and follow-ups; none blocks the stages that follow. `00_STAGES.md` says to skip Stages 03, 04 and 05 if this inventory shows they exist: **they exist, skip all three.**
+
+| Task | State | Remaining | Exact next step |
+|---|---|---|---|
+| THEMES-CC-0 (kit, renderer, lint, preview) and 0b (owner's review fixes) | done, 255 tests | 2 open questions: who reviews the Tamil wording; re-check the category map against real packs when the importer is built | Owner names the Tamil reviewer. The map check belongs to THEMES-CC-3 (Stage 12, theme ZIP import) |
+| THEMES-CC-1 (five Standard themes, 41 presets) and 1b (picture budget) | done, lint PASS | 7 owner questions: palettes of the 41 categories, hospitality booking button split, WhatsApp button in every Free header, where presets are stored, team photos on the home page, the picture budget of 8 gallery images and 3 service pictures, Tamil text in presets | Owner opens the Coverage and Variant picker pages (`node themes/cli.mjs preview`) and answers; changes are small task-level edits |
+| THEMES-CC-2 (portability, motion kit, variant hooks, Bolt kit, brief) | done | 5 owner questions about the Premium kit: lighter shimmer, counters showing the vendor's own numbers, whether each Premium theme must serve all nine variants, whether Bolt may see the five Standard themes' source, how `--browser` is run | Owner answers the five, then takes the zip to Bolt (D4 prompt B0) |
+
+### 9.4 What is missing before Bolt project 1 can start
+
+Bolt project 1 for themes is "Get4Domain Pro Themes" (`DESIGN_D4_PRO_THEMES_BOLT.md`, prompts B0 to B3, then amendments T-A1 to T-D3). It needs:
+
+1. **The zip**, carried out of this PC (`dist/` is not in git). It exists and is current; rebuild with `node themes/cli.mjs bolt-kit` only if the kit changes before the upload.
+2. **Owner answers to the five Premium-kit questions** (9.3). Question 3 (all nine variants or only the categories each theme lists) changes what the lint asks Bolt to deliver.
+3. **A decision on question 4**: Bolt (an outside tool) will see the full source of the five Standard themes. If that is not acceptable, rebuild the zip with the starter only.
+4. **The `--browser` lint cannot run in Bolt** (no Playwright). The platform must run it on import (THEMES-CC-3). Bolt output is checked by the other 40 rules only until then.
+5. **Nothing else blocks it.** The category map is an inference, the Tamil wording is unreviewed, and fonts are not hosted yet (platform job); none stops Bolt designing.
+
+What Claude Code must still build for Pro themes to go live (not before Bolt starts): the importer and ZIP upload with validation (THEMES-CC-3, Stage 12), the backend entitlements `{ video, cart, booking, customDomain }` passed to `renderPage`, Standard-theme assignment for Free vendors, presets storage with the theme package, font hosting, and enforcement of the Free limits (1 page, 8 services, 5 gallery images, 6 FAQs). All ten follow-ups are in `docs/v3/THEMES_KIT_HANDOVER.md`.
+
+## Questions for the owner (all tasks)
+
+1. **Which five clients?** Run query 1c (active paid terms) and 1b (named candidates) and tell me the five. MR Travels may never have launched; Step N Rock is on Workspace half-yearly with GST not charged.
+2. **Prospect data for MARKETING.** `GET /admin/crm/leads` lists prospect names, phones and emails to all three staff roles, while `GET /leads` (the same data source) is SUPER_ADMIN only. Which is intended? The run's protocol says MARKETING is denied on personal data.
+3. **Customer list design (B6.0).** Do you accept the link-not-copy adapter in INV-7.2, with every legacy contact starting at consent NONE?
+4. **Outbound calls.** Rule 9 covers messages. Should TeleCRM calls to imported lists need counsel review (telemarketing registry) before the Pro gate opens?
+5. **Tax by state.** `V3TaxRate` does not yet hold the IGST versus CGST+SGST state rule. Rule 12 sends invoice wording and advance-receipt treatment to the accountant; who supplies Get4Domain's registered state and the rate table?
+6. **Domain App invoice links** use the platform Razorpay key (INV-3). Switch the feature off for legacy vendors now, or rewire it to the vendor's own keys? (This run changed no code.)
+7. **Campaigns charge and send nothing.** `campaigns` approval debits the wallet and delivers nothing. Hide it for legacy vendors now?
+8. **Monthly prices.** The replacement map quotes monthly prices (999, 1,999, 2,999) but rule 3 allows only quarterly, half-yearly and annual terms and no price is seeded. Which approved price book applies?
+9. **Wallet balances.** Legacy balances cannot be refunded or cashed out (rule 7). May they be credited as a V3 top-up with one-year validity?
+10. **Bespoke client designs.** The five client apps are not V3 themes. Re-design each in Bolt as a Pro theme, or keep serving the app as an "own site"?
+11. **Canonical host for custom-domain clients.** Rule 1 makes the subdomain canonical unless the custom-domain promotion add-on is active. Any client on a custom domain today flips unless they buy the add-on: confirm.
+12. **LeadSpace data.** Retire means hide and keep. If query 9 shows live LeadSpace data (purse balances, consent records), what happens to the balances?
+13. **ResellerClub.** Was the client ever run against the live registrar? The repo cannot say.
+14. **Merge order.** `v3-seo0` (SEO-0) is not in `v3-b2`; `v3-themes` is. Merge `v3-seo0` before Stage 18, or carry its fixes into the V3 renderer?
+15. **Premium-kit and Standard-theme questions** in `docs/v3/THEMES_KIT_HANDOVER.md` (5 + 7 + 2), summarised in 9.3.
+
