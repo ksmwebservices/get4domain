@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { loadStagingEnv } = require('./guard');
+const { classifyDrift } = require('./drift-allowlist');
 
 const BACKEND = path.resolve(__dirname, '../..');
 const PRISMA = path.join(BACKEND, 'node_modules/prisma/build/index.js');
@@ -98,10 +99,14 @@ async function main() {
       const r = prisma(['migrate', 'deploy'], env, env.mask);
       if (r.status !== 0) { console.error('migrate deploy failed on staging.'); process.exit(11); }
     } else if (step === 'drift') {
-      // Exit 0 = the live staging structure equals prisma/schema.prisma; exit 2 = they differ (the diff is printed, masked).
-      const r = prisma(['migrate', 'diff', '--from-schema-datasource', 'prisma/schema.prisma', '--to-schema-datamodel', 'prisma/schema.prisma', '--exit-code'], env, env.mask);
-      if (r.status !== 0) { console.error('GATE FAILED: staging structure differs from schema.prisma.'); process.exit(12); }
-      console.log('no drift: staging structure equals schema.prisma');
+      // Exit 0 = the live staging structure equals prisma/schema.prisma, apart from the two intentional items Prisma cannot express
+      // (the pg_trgm index and the generated searchVector column: see drift-allowlist.js). Exit 12 = any other difference (printed, masked).
+      const r = prisma(['migrate', 'diff', '--from-schema-datasource', 'prisma/schema.prisma', '--to-schema-datamodel', 'prisma/schema.prisma', '--script'], env, () => '');
+      if (r.status !== 0) { console.error('ERROR: the drift comparison could not run.'); process.exit(12); }
+      const { allowed, unexpected } = classifyDrift(r.stdout || '');
+      allowed.forEach((x) => console.log(`allowed (documented, intentional): ${env.mask(x)}`));
+      if (unexpected.length) { unexpected.forEach((x) => console.error(`  drift: ${env.mask(x)}`)); console.error('GATE FAILED: staging structure differs from schema.prisma.'); process.exit(12); }
+      console.log('no drift: staging structure equals schema.prisma' + (allowed.length ? ` (apart from ${allowed.length} allowed item(s))` : ''));
     } else if (step === 'status') {
       // `prisma migrate status` exits non-zero when migrations are pending, failed or missing: propagate it (CI gate).
       const r = prisma(['migrate', 'status'], env, env.mask);
