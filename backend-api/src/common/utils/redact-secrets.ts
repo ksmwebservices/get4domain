@@ -18,6 +18,11 @@ export const SENSITIVE_KEYS: ReadonlySet<string> = new Set([
   'refreshToken',
   'razorpayKeySecret',
   'keySecret',
+  // V3 slice 5.11: an AI provider's encrypted secret (ciphertext, iv, tag) and any api key field never leave the API
+  'secretCipher',
+  'secretIv',
+  'secretTag',
+  'apiKey',
   // Commercial Engine v1: the pay-link token hash and the private proof-file reference never leave the API.
   'payTokenHash',
   'payToken',

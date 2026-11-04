@@ -27,6 +27,8 @@ const SUPER_ONLY_ROUTES = [
   'PUT /v3/admin/plan-settings/:key',
   'POST /v3/admin/vendors/:id/subscription', 'POST /v3/admin/vendors/:id/overrides', 'PUT /v3/admin/overrides/:overrideId', 'DELETE /v3/admin/overrides/:overrideId',
   'PUT /v3/admin/vendors/:id/flags/v3_plans',
+  // B2 slice 5.11: only SUPER_ADMIN touches AI providers (secrets), prompts and credit grants
+  'GET /v3/admin/ai/providers', 'POST /v3/admin/ai/providers', 'PUT /v3/admin/ai/providers/:id', 'POST /v3/admin/ai/providers/:id/test', 'GET /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts/:id/activate', 'POST /v3/admin/ai/credit-grants',
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
   'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
 ];
@@ -48,6 +50,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
   'GET /v3/admin/tax-rates', 'GET /v3/admin/discount-rules', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
+  // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/ai/usage',
   // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/billing/orders', 'GET /v3/admin/billing/payment-events',
   // B2 slice 5.7: directory writes, the claim phone override and removal requests (contact details): OPERATIONS and SUPER_ADMIN only
@@ -98,7 +102,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(154);
+    expect(oracle).toHaveLength(163);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

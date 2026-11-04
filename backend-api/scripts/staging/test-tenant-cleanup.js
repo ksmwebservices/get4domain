@@ -28,6 +28,11 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     counts.passwordResets = (await prisma.accountPasswordReset.deleteMany({ where: { accountId: { in: accountIds } } })).count;
     counts.refreshTokens = (await prisma.authRefreshToken.deleteMany({ where: { accountId: { in: accountIds } } })).count;
   }
+  // Slice 5.11: AI providers and prompt versions have no foreign key; the synthetic staff that created them are known here, so they are matched by who created them.
+  if (staffIds.length) {
+    counts.v3AiProvider = (await prisma.v3AiProvider.deleteMany({ where: { createdByStaffId: { in: staffIds } } })).count;
+    counts.v3AiPrompt = (await prisma.v3AiPrompt.deleteMany({ where: { createdByStaffId: { in: staffIds } } })).count;
+  }
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;

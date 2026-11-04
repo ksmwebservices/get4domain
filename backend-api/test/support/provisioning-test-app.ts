@@ -16,6 +16,7 @@ import { PROVISIONING_CONTROLLERS, PROVISIONING_PROVIDERS } from '../../src/prov
 import { SiteProvisioner } from '../../src/provisioning/site/site-provisioner';
 import { StarterService } from '../../src/site-doc/starter.service';
 import { DIRECTORY_CONTROLLERS, DIRECTORY_PROVIDERS } from '../../src/directory/directory.providers';
+import { AI_STUDIO_CONTROLLERS, AI_STUDIO_PROVIDERS } from '../../src/ai-studio/ai-studio.providers';
 import { PLAN_BILLING_CONTROLLERS, PLAN_BILLING_PROVIDERS } from '../../src/plan-billing/plan-billing.providers';
 import { PaymentsGate } from '../../src/plan-billing/razorpay/payments-gate';
 import { BillingSettingsService } from '../../src/plan-billing/settings/billing-settings.service';
@@ -30,11 +31,11 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from '../../src/site
  * the SiteProvisioner (so a test can make the site step fail once). Requires ./staging-env to have been imported first. Mail stays in EmailService's
  * capture mode (EMAIL_MODE=test) and the invite adapter is the sandbox, so nothing is sent.
  */
-export async function buildProvisioningTestApp(opts: { siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner; includeSiteApi?: boolean; includeDirectoryApi?: boolean; /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay }; /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean } = {}): Promise<INestApplication> {
-  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+export async function buildProvisioningTestApp(opts: { siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner; includeSiteApi?: boolean; includeDirectoryApi?: boolean; includeAiApi?: boolean; /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay }; /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean } = {}): Promise<INestApplication> {
+  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
   const moduleRef = await Test.createTestingModule({
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
-    controllers: [...PROVISIONING_CONTROLLERS, ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : [])],
+    controllers: [...PROVISIONING_CONTROLLERS, ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
     providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers],
   }).compile();
   const app = moduleRef.createNestApplication({ rawBody: true });   // the payment webhook is verified over the raw bytes
@@ -46,7 +47,7 @@ export async function buildProvisioningTestApp(opts: { siteProvisioner?: (real: 
   }
   // The provisioning tests must not depend on the shared staging setting siteDraftBuilderMode (a leftover "renderer" would add a full site build to every job).
   // The pin is in this app instance only; nothing is written to the database. The site suites (includeSiteApi) read the real setting.
-  if (opts.pinLegacySiteMode ?? !(opts.includeSiteApi || opts.includeDirectoryApi || opts.billing)) {
+  if (opts.pinLegacySiteMode ?? !(opts.includeSiteApi || opts.includeDirectoryApi || opts.billing || opts.includeAiApi)) {
     const settings = app.get(ProvisioningSettingsService);
     const real = settings.get.bind(settings);
     settings.get = async () => ({ ...(await real()), siteDraftBuilderMode: 'legacy' as const, provisioningDirectoryProfileEnabled: false });   // the slice 5.3 suites must not depend on a leftover staging setting

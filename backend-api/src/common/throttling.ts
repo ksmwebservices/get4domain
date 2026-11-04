@@ -50,6 +50,8 @@ export const RATE = {
   claimStatus: { reads: { limit: 20, ttl: 60_000 } },
   /** V3 public site read (internal consumers: the Next.js app, one IP): roomy, on the "reads" throttler. THROTTLE_TRUSTED_IPS can exempt the app server entirely. */
   siteRead: { reads: { limit: 300, ttl: 60_000 } },
+  /** V3 AI suggestions cost credits and a model call: 10 per minute per IP. */
+  aiGenerate: { default: { limit: 10, ttl: 60_000 } },
   /** V3 public directory reads: 120 per minute per IP on the reads throttler (the default one skips GET). */
   directoryRead: { reads: { limit: 120, ttl: 60_000 } },
   /** V3 public removal requests and confirmations: 5 per minute per IP. */

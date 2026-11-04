@@ -63,6 +63,7 @@ import { SitePublishModule } from './site-publish/site-publish.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { DirectoryModule } from './directory/directory.module';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
+import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
 import { UploadsModule } from './uploads/uploads.module';
@@ -109,6 +110,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     SiteDomainsModule,
     DirectoryModule,
     PlanBillingModule,
+    AiStudioModule,
     VendorsModule,
     SubscriptionsModule,
     InvoicesModule,

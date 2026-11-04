@@ -56,6 +56,7 @@ const OWNER_ONLY_ROUTES = [
 const REQUIRED_MODULE: Record<string, string> = {
   'GET /vendor-payments': 'accounts',
   'GET /v3/me/site': 'website', 'POST /v3/me/site/build': 'website', 'GET /v3/me/site/preview/:publicationId/:path': 'website',   // S54.7
+  'POST /v3/me/ai/generate': 'website', 'GET /v3/me/ai/usage': 'website',   // B2 slice 5.11: the owner, or a team member with the website area
   'GET /website-themes/mine': 'website',       // S8-B: viewing the theme screen is gated by the website area
 };
 /**
