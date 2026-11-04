@@ -55,6 +55,9 @@ model Vendor {
   v3SitePublications V3SitePublication[]
   v3SitePublicationPages V3SitePublicationPage[]
   v3SiteEvents V3SiteEvent[]
+  v3Domains V3Domain[]
+  v3DomainVerifications V3DomainVerification[]
+  v3Redirects V3Redirect[]
   invoices      Invoice[]
   tickets       SupportTicket[]
   cms           VendorCMS?
@@ -4358,4 +4361,88 @@ model V3SiteEvent {
 
   @@index([vendorId, createdAt])
   @@map("g4d_site_events")
+}
+
+// ─── V3 slice 5.6: subdomain rules and domain mapping (additive; no registrar, no real DNS or SSL change) ──────────────────────────────────────────────────
+
+enum V3DomainKind {
+  SUBDOMAIN
+  CUSTOM
+}
+
+enum V3DomainStatus {
+  PENDING
+  VERIFYING
+  ACTIVE
+  FAILED
+  REMOVED
+}
+
+enum V3SslStatus {
+  NONE
+  PENDING
+  ACTIVE
+  FAILED
+}
+
+model V3Domain {
+  id                String         @id @default(cuid())
+  vendorId          String
+  hostname          String         @unique // lowercase, punycode (ASCII) form
+  kind              V3DomainKind
+  status            V3DomainStatus @default(PENDING)
+  isPrimary         Boolean        @default(false)
+  primaryVendorId   String?        @unique // = vendorId while isPrimary: one primary per vendor, enforced by the database
+  subdomainVendorId String?        @unique // = vendorId while this is the vendor's ACTIVE free subdomain: one free subdomain per vendor
+  verifiedAt        DateTime?
+  sslStatus         V3SslStatus    @default(NONE) // recorded only; nothing in this slice issues a certificate
+  createdByType     String         @default("VENDOR") // VENDOR | STAFF | SYSTEM
+  createdById       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  removedAt         DateTime?
+
+  vendor        Vendor                 @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  verifications V3DomainVerification[]
+
+  @@index([vendorId, status])
+  @@map("g4d_domains")
+}
+
+model V3DomainVerification {
+  id            String    @id @default(cuid())
+  domainId      String    @unique
+  vendorId      String
+  method        String    @default("TXT")
+  expectedValue String // public by design: it is what the owner puts in their DNS
+  lastCheckedAt DateTime?
+  attempts      Int       @default(0)
+  result        String    @default("PENDING") // PENDING | MATCHED | NOT_FOUND | MISMATCH | ERROR | DISABLED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  domain V3Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  vendor Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_domain_verifications")
+}
+
+model V3Redirect {
+  id        String   @id @default(cuid())
+  vendorId  String
+  fromHost  String
+  fromPath  String   @default("/")
+  toHost    String
+  toPath    String   @default("/")
+  status    Int      @default(301) // 301 | 302
+  source    String   @default("SYSTEM") // SYSTEM | STAFF
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([fromHost, fromPath])
+  @@index([vendorId])
+  @@map("g4d_redirects")
 }

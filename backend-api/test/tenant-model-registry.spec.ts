@@ -12,6 +12,7 @@ const TENANT_V3 = [
   'V3PlanSubscription', 'V3SubscriptionEvent', 'V3EntitlementOverride', 'V3VendorFlag',   // slice 5.1
   'V3ClaimToken', 'V3Invite',                                                              // slice 5.3
   'V3SiteSettings', 'V3SitePublication', 'V3SitePublicationPage', 'V3SiteEvent',          // slice 5.4
+  'V3Domain', 'V3DomainVerification', 'V3Redirect',                                        // slice 5.6
 ];
 /** carry a vendorId only as a back-reference for staff; no vendor route reads them */
 const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob'];
