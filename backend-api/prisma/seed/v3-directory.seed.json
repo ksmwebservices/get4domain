@@ -1,0 +1,1066 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed",
+  "note": "PROPOSED seed for the public directory (slice 5.7). Every row is marked proposed: the owner reviews and extends it. The category tree is the theme kit's 12 families and 41 categories (themes/data/category-map.json); the locations are Tamil Nadu, its 38 districts and a few major cities, each city under the district that contains it. Anything the author was not certain of is left out and listed in \"missing\".",
+  "missing": [
+    "Taluks, towns and neighbourhoods below the city level (not attempted).",
+    "Cities beyond the 19 listed; the owner extends the list.",
+    "Tamil names of every place and category (not attempted: the table has no translation column in this slice)."
+  ],
+  "locations": [
+    {
+      "key": "tamil-nadu",
+      "parent": null,
+      "kind": "STATE",
+      "name": "Tamil Nadu",
+      "slug": "tamil-nadu",
+      "sortOrder": 0,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/ariyalur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Ariyalur",
+      "slug": "ariyalur",
+      "sortOrder": 0,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/chengalpattu",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Chengalpattu",
+      "slug": "chengalpattu",
+      "sortOrder": 1,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/chennai",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Chennai",
+      "slug": "chennai",
+      "sortOrder": 2,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/coimbatore",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Coimbatore",
+      "slug": "coimbatore",
+      "sortOrder": 3,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/cuddalore",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Cuddalore",
+      "slug": "cuddalore",
+      "sortOrder": 4,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/dharmapuri",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Dharmapuri",
+      "slug": "dharmapuri",
+      "sortOrder": 5,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/dindigul",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Dindigul",
+      "slug": "dindigul",
+      "sortOrder": 6,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/erode",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Erode",
+      "slug": "erode",
+      "sortOrder": 7,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/kallakurichi",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Kallakurichi",
+      "slug": "kallakurichi",
+      "sortOrder": 8,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/kancheepuram",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Kancheepuram",
+      "slug": "kancheepuram",
+      "sortOrder": 9,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/kanyakumari",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Kanyakumari",
+      "slug": "kanyakumari",
+      "sortOrder": 10,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/karur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Karur",
+      "slug": "karur",
+      "sortOrder": 11,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/krishnagiri",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Krishnagiri",
+      "slug": "krishnagiri",
+      "sortOrder": 12,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/madurai",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Madurai",
+      "slug": "madurai",
+      "sortOrder": 13,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/mayiladuthurai",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Mayiladuthurai",
+      "slug": "mayiladuthurai",
+      "sortOrder": 14,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/nagapattinam",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Nagapattinam",
+      "slug": "nagapattinam",
+      "sortOrder": 15,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/namakkal",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Namakkal",
+      "slug": "namakkal",
+      "sortOrder": 16,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/nilgiris",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Nilgiris",
+      "slug": "nilgiris",
+      "sortOrder": 17,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/perambalur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Perambalur",
+      "slug": "perambalur",
+      "sortOrder": 18,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/pudukkottai",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Pudukkottai",
+      "slug": "pudukkottai",
+      "sortOrder": 19,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/ramanathapuram",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Ramanathapuram",
+      "slug": "ramanathapuram",
+      "sortOrder": 20,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/ranipet",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Ranipet",
+      "slug": "ranipet",
+      "sortOrder": 21,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/salem",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Salem",
+      "slug": "salem",
+      "sortOrder": 22,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/sivaganga",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Sivaganga",
+      "slug": "sivaganga",
+      "sortOrder": 23,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tenkasi",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tenkasi",
+      "slug": "tenkasi",
+      "sortOrder": 24,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/thanjavur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Thanjavur",
+      "slug": "thanjavur",
+      "sortOrder": 25,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/theni",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Theni",
+      "slug": "theni",
+      "sortOrder": 26,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/thoothukudi",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Thoothukudi",
+      "slug": "thoothukudi",
+      "sortOrder": 27,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruchirappalli",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tiruchirappalli",
+      "slug": "tiruchirappalli",
+      "sortOrder": 28,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tirunelveli",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tirunelveli",
+      "slug": "tirunelveli",
+      "sortOrder": 29,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tirupathur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tirupathur",
+      "slug": "tirupathur",
+      "sortOrder": 30,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruppur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tiruppur",
+      "slug": "tiruppur",
+      "sortOrder": 31,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruvallur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tiruvallur",
+      "slug": "tiruvallur",
+      "sortOrder": 32,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruvannamalai",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tiruvannamalai",
+      "slug": "tiruvannamalai",
+      "sortOrder": 33,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruvarur",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Tiruvarur",
+      "slug": "tiruvarur",
+      "sortOrder": 34,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/vellore",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Vellore",
+      "slug": "vellore",
+      "sortOrder": 35,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/viluppuram",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Viluppuram",
+      "slug": "viluppuram",
+      "sortOrder": 36,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/virudhunagar",
+      "parent": "tamil-nadu",
+      "kind": "DISTRICT",
+      "name": "Virudhunagar",
+      "slug": "virudhunagar",
+      "sortOrder": 37,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/chennai/chennai",
+      "parent": "tamil-nadu/chennai",
+      "kind": "CITY",
+      "name": "Chennai",
+      "slug": "chennai",
+      "sortOrder": 0,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/coimbatore/coimbatore",
+      "parent": "tamil-nadu/coimbatore",
+      "kind": "CITY",
+      "name": "Coimbatore",
+      "slug": "coimbatore",
+      "sortOrder": 1,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/madurai/madurai",
+      "parent": "tamil-nadu/madurai",
+      "kind": "CITY",
+      "name": "Madurai",
+      "slug": "madurai",
+      "sortOrder": 2,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruchirappalli/tiruchirappalli",
+      "parent": "tamil-nadu/tiruchirappalli",
+      "kind": "CITY",
+      "name": "Tiruchirappalli",
+      "slug": "tiruchirappalli",
+      "sortOrder": 3,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/salem/salem",
+      "parent": "tamil-nadu/salem",
+      "kind": "CITY",
+      "name": "Salem",
+      "slug": "salem",
+      "sortOrder": 4,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tirunelveli/tirunelveli",
+      "parent": "tamil-nadu/tirunelveli",
+      "kind": "CITY",
+      "name": "Tirunelveli",
+      "slug": "tirunelveli",
+      "sortOrder": 5,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/tiruppur/tiruppur",
+      "parent": "tamil-nadu/tiruppur",
+      "kind": "CITY",
+      "name": "Tiruppur",
+      "slug": "tiruppur",
+      "sortOrder": 6,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/erode/erode",
+      "parent": "tamil-nadu/erode",
+      "kind": "CITY",
+      "name": "Erode",
+      "slug": "erode",
+      "sortOrder": 7,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/vellore/vellore",
+      "parent": "tamil-nadu/vellore",
+      "kind": "CITY",
+      "name": "Vellore",
+      "slug": "vellore",
+      "sortOrder": 8,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/thoothukudi/thoothukudi",
+      "parent": "tamil-nadu/thoothukudi",
+      "kind": "CITY",
+      "name": "Thoothukudi",
+      "slug": "thoothukudi",
+      "sortOrder": 9,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/thanjavur/thanjavur",
+      "parent": "tamil-nadu/thanjavur",
+      "kind": "CITY",
+      "name": "Thanjavur",
+      "slug": "thanjavur",
+      "sortOrder": 10,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/dindigul/dindigul",
+      "parent": "tamil-nadu/dindigul",
+      "kind": "CITY",
+      "name": "Dindigul",
+      "slug": "dindigul",
+      "sortOrder": 11,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/krishnagiri/hosur",
+      "parent": "tamil-nadu/krishnagiri",
+      "kind": "CITY",
+      "name": "Hosur",
+      "slug": "hosur",
+      "sortOrder": 12,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/kanyakumari/nagercoil",
+      "parent": "tamil-nadu/kanyakumari",
+      "kind": "CITY",
+      "name": "Nagercoil",
+      "slug": "nagercoil",
+      "sortOrder": 13,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/thanjavur/kumbakonam",
+      "parent": "tamil-nadu/thanjavur",
+      "kind": "CITY",
+      "name": "Kumbakonam",
+      "slug": "kumbakonam",
+      "sortOrder": 14,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/karur/karur",
+      "parent": "tamil-nadu/karur",
+      "kind": "CITY",
+      "name": "Karur",
+      "slug": "karur",
+      "sortOrder": 15,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/cuddalore/cuddalore",
+      "parent": "tamil-nadu/cuddalore",
+      "kind": "CITY",
+      "name": "Cuddalore",
+      "slug": "cuddalore",
+      "sortOrder": 16,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/virudhunagar/sivakasi",
+      "parent": "tamil-nadu/virudhunagar",
+      "kind": "CITY",
+      "name": "Sivakasi",
+      "slug": "sivakasi",
+      "sortOrder": 17,
+      "proposed": true
+    },
+    {
+      "key": "tamil-nadu/coimbatore/pollachi",
+      "parent": "tamil-nadu/coimbatore",
+      "kind": "CITY",
+      "name": "Pollachi",
+      "slug": "pollachi",
+      "sortOrder": 18,
+      "proposed": true
+    }
+  ],
+  "categories": [
+    {
+      "key": "auto-services",
+      "parent": null,
+      "name": "Auto services",
+      "slug": "auto-services",
+      "themeCategoryId": null,
+      "family": "auto-services",
+      "sortOrder": 0,
+      "proposed": true
+    },
+    {
+      "key": "creative-consulting",
+      "parent": null,
+      "name": "Creative and consulting",
+      "slug": "creative-consulting",
+      "themeCategoryId": null,
+      "family": "creative-consulting",
+      "sortOrder": 1,
+      "proposed": true
+    },
+    {
+      "key": "education",
+      "parent": null,
+      "name": "Education",
+      "slug": "education",
+      "themeCategoryId": null,
+      "family": "education",
+      "sortOrder": 2,
+      "proposed": true
+    },
+    {
+      "key": "electronics-home",
+      "parent": null,
+      "name": "Electronics and home",
+      "slug": "electronics-home",
+      "themeCategoryId": null,
+      "family": "electronics-home",
+      "sortOrder": 3,
+      "proposed": true
+    },
+    {
+      "key": "fashion-lifestyle",
+      "parent": null,
+      "name": "Fashion and lifestyle",
+      "slug": "fashion-lifestyle",
+      "themeCategoryId": null,
+      "family": "fashion-lifestyle",
+      "sortOrder": 4,
+      "proposed": true
+    },
+    {
+      "key": "food-grocery",
+      "parent": null,
+      "name": "Food and grocery",
+      "slug": "food-grocery",
+      "themeCategoryId": null,
+      "family": "food-grocery",
+      "sortOrder": 5,
+      "proposed": true
+    },
+    {
+      "key": "gifts-books",
+      "parent": null,
+      "name": "Gifts and books",
+      "slug": "gifts-books",
+      "themeCategoryId": null,
+      "family": "gifts-books",
+      "sortOrder": 6,
+      "proposed": true
+    },
+    {
+      "key": "healthcare",
+      "parent": null,
+      "name": "Healthcare",
+      "slug": "healthcare",
+      "themeCategoryId": null,
+      "family": "healthcare",
+      "sortOrder": 7,
+      "proposed": true
+    },
+    {
+      "key": "home-services",
+      "parent": null,
+      "name": "Home services",
+      "slug": "home-services",
+      "themeCategoryId": null,
+      "family": "home-services",
+      "sortOrder": 8,
+      "proposed": true
+    },
+    {
+      "key": "hospitality-property",
+      "parent": null,
+      "name": "Hospitality and property",
+      "slug": "hospitality-property",
+      "themeCategoryId": null,
+      "family": "hospitality-property",
+      "sortOrder": 9,
+      "proposed": true
+    },
+    {
+      "key": "legal-finance",
+      "parent": null,
+      "name": "Legal and finance",
+      "slug": "legal-finance",
+      "themeCategoryId": null,
+      "family": "legal-finance",
+      "sortOrder": 10,
+      "proposed": true
+    },
+    {
+      "key": "wellness-beauty",
+      "parent": null,
+      "name": "Wellness and beauty",
+      "slug": "wellness-beauty",
+      "themeCategoryId": null,
+      "family": "wellness-beauty",
+      "sortOrder": 11,
+      "proposed": true
+    },
+    {
+      "key": "plumber",
+      "parent": "home-services",
+      "name": "Plumber",
+      "slug": "plumber",
+      "themeCategoryId": "plumber",
+      "family": "home-services",
+      "sortOrder": 0,
+      "proposed": true
+    },
+    {
+      "key": "electrician",
+      "parent": "home-services",
+      "name": "Electrician",
+      "slug": "electrician",
+      "themeCategoryId": "electrician",
+      "family": "home-services",
+      "sortOrder": 1,
+      "proposed": true
+    },
+    {
+      "key": "carpenter",
+      "parent": "home-services",
+      "name": "Carpenter",
+      "slug": "carpenter",
+      "themeCategoryId": "carpenter",
+      "family": "home-services",
+      "sortOrder": 2,
+      "proposed": true
+    },
+    {
+      "key": "painter",
+      "parent": "home-services",
+      "name": "Painter",
+      "slug": "painter",
+      "themeCategoryId": "painter",
+      "family": "home-services",
+      "sortOrder": 3,
+      "proposed": true
+    },
+    {
+      "key": "ac-appliance-repair",
+      "parent": "home-services",
+      "name": "AC and appliance repair",
+      "slug": "ac-appliance-repair",
+      "themeCategoryId": "ac-appliance-repair",
+      "family": "home-services",
+      "sortOrder": 4,
+      "proposed": true
+    },
+    {
+      "key": "pest-control",
+      "parent": "home-services",
+      "name": "Pest control",
+      "slug": "pest-control",
+      "themeCategoryId": "pest-control",
+      "family": "home-services",
+      "sortOrder": 5,
+      "proposed": true
+    },
+    {
+      "key": "home-cleaning",
+      "parent": "home-services",
+      "name": "Home cleaning",
+      "slug": "home-cleaning",
+      "themeCategoryId": "home-cleaning",
+      "family": "home-services",
+      "sortOrder": 6,
+      "proposed": true
+    },
+    {
+      "key": "locksmith",
+      "parent": "home-services",
+      "name": "Locksmith",
+      "slug": "locksmith",
+      "themeCategoryId": "locksmith",
+      "family": "home-services",
+      "sortOrder": 7,
+      "proposed": true
+    },
+    {
+      "key": "packers-movers",
+      "parent": "home-services",
+      "name": "Packers and movers",
+      "slug": "packers-movers",
+      "themeCategoryId": "packers-movers",
+      "family": "home-services",
+      "sortOrder": 8,
+      "proposed": true
+    },
+    {
+      "key": "mason-contractor",
+      "parent": "home-services",
+      "name": "Mason and contractor",
+      "slug": "mason-contractor",
+      "themeCategoryId": "mason-contractor",
+      "family": "home-services",
+      "sortOrder": 9,
+      "proposed": true
+    },
+    {
+      "key": "cctv-security-installer",
+      "parent": "home-services",
+      "name": "CCTV and security installer",
+      "slug": "cctv-security-installer",
+      "themeCategoryId": "cctv-security-installer",
+      "family": "home-services",
+      "sortOrder": 10,
+      "proposed": true
+    },
+    {
+      "key": "auto-mechanic",
+      "parent": "auto-services",
+      "name": "Auto mechanic",
+      "slug": "auto-mechanic",
+      "themeCategoryId": "auto-mechanic",
+      "family": "auto-services",
+      "sortOrder": 11,
+      "proposed": true
+    },
+    {
+      "key": "car-wash-detailing",
+      "parent": "auto-services",
+      "name": "Car wash and detailing",
+      "slug": "car-wash-detailing",
+      "themeCategoryId": "car-wash-detailing",
+      "family": "auto-services",
+      "sortOrder": 12,
+      "proposed": true
+    },
+    {
+      "key": "doctor-clinic",
+      "parent": "healthcare",
+      "name": "Doctor and clinic",
+      "slug": "doctor-clinic",
+      "themeCategoryId": "doctor-clinic",
+      "family": "healthcare",
+      "sortOrder": 13,
+      "proposed": true
+    },
+    {
+      "key": "dentist",
+      "parent": "healthcare",
+      "name": "Dentist",
+      "slug": "dentist",
+      "themeCategoryId": "dentist",
+      "family": "healthcare",
+      "sortOrder": 14,
+      "proposed": true
+    },
+    {
+      "key": "physiotherapy",
+      "parent": "healthcare",
+      "name": "Physiotherapy",
+      "slug": "physiotherapy",
+      "themeCategoryId": "physiotherapy",
+      "family": "healthcare",
+      "sortOrder": 15,
+      "proposed": true
+    },
+    {
+      "key": "diagnostics-lab",
+      "parent": "healthcare",
+      "name": "Diagnostics lab",
+      "slug": "diagnostics-lab",
+      "themeCategoryId": "diagnostics-lab",
+      "family": "healthcare",
+      "sortOrder": 16,
+      "proposed": true
+    },
+    {
+      "key": "lawyer",
+      "parent": "legal-finance",
+      "name": "Lawyer",
+      "slug": "lawyer",
+      "themeCategoryId": "lawyer",
+      "family": "legal-finance",
+      "sortOrder": 17,
+      "proposed": true
+    },
+    {
+      "key": "ca-tax-consultant",
+      "parent": "legal-finance",
+      "name": "CA and tax consultant",
+      "slug": "ca-tax-consultant",
+      "themeCategoryId": "ca-tax-consultant",
+      "family": "legal-finance",
+      "sortOrder": 18,
+      "proposed": true
+    },
+    {
+      "key": "insurance-advisor",
+      "parent": "legal-finance",
+      "name": "Insurance advisor",
+      "slug": "insurance-advisor",
+      "themeCategoryId": "insurance-advisor",
+      "family": "legal-finance",
+      "sortOrder": 19,
+      "proposed": true
+    },
+    {
+      "key": "coaching-centre",
+      "parent": "education",
+      "name": "Coaching centre",
+      "slug": "coaching-centre",
+      "themeCategoryId": "coaching-centre",
+      "family": "education",
+      "sortOrder": 20,
+      "proposed": true
+    },
+    {
+      "key": "tutor",
+      "parent": "education",
+      "name": "Tutor",
+      "slug": "tutor",
+      "themeCategoryId": "tutor",
+      "family": "education",
+      "sortOrder": 21,
+      "proposed": true
+    },
+    {
+      "key": "music-dance-school",
+      "parent": "education",
+      "name": "Music and dance school",
+      "slug": "music-dance-school",
+      "themeCategoryId": "music-dance-school",
+      "family": "education",
+      "sortOrder": 22,
+      "proposed": true
+    },
+    {
+      "key": "salon-spa",
+      "parent": "wellness-beauty",
+      "name": "Salon and spa",
+      "slug": "salon-spa",
+      "themeCategoryId": "salon-spa",
+      "family": "wellness-beauty",
+      "sortOrder": 23,
+      "proposed": true
+    },
+    {
+      "key": "gym-yoga",
+      "parent": "wellness-beauty",
+      "name": "Gym and yoga",
+      "slug": "gym-yoga",
+      "themeCategoryId": "gym-yoga",
+      "family": "wellness-beauty",
+      "sortOrder": 24,
+      "proposed": true
+    },
+    {
+      "key": "photographer",
+      "parent": "creative-consulting",
+      "name": "Photographer",
+      "slug": "photographer",
+      "themeCategoryId": "photographer",
+      "family": "creative-consulting",
+      "sortOrder": 25,
+      "proposed": true
+    },
+    {
+      "key": "interior-designer-architect",
+      "parent": "creative-consulting",
+      "name": "Interior designer and architect",
+      "slug": "interior-designer-architect",
+      "themeCategoryId": "interior-designer-architect",
+      "family": "creative-consulting",
+      "sortOrder": 26,
+      "proposed": true
+    },
+    {
+      "key": "event-planner",
+      "parent": "creative-consulting",
+      "name": "Event planner",
+      "slug": "event-planner",
+      "themeCategoryId": "event-planner",
+      "family": "creative-consulting",
+      "sortOrder": 27,
+      "proposed": true
+    },
+    {
+      "key": "it-consultant",
+      "parent": "creative-consulting",
+      "name": "IT and business consultant",
+      "slug": "it-consultant",
+      "themeCategoryId": "it-consultant",
+      "family": "creative-consulting",
+      "sortOrder": 28,
+      "proposed": true
+    },
+    {
+      "key": "restaurant-cafe",
+      "parent": "hospitality-property",
+      "name": "Restaurant and cafe",
+      "slug": "restaurant-cafe",
+      "themeCategoryId": "restaurant-cafe",
+      "family": "hospitality-property",
+      "sortOrder": 29,
+      "proposed": true
+    },
+    {
+      "key": "hotel-homestay",
+      "parent": "hospitality-property",
+      "name": "Hotel and homestay",
+      "slug": "hotel-homestay",
+      "themeCategoryId": "hotel-homestay",
+      "family": "hospitality-property",
+      "sortOrder": 30,
+      "proposed": true
+    },
+    {
+      "key": "travel-agency",
+      "parent": "hospitality-property",
+      "name": "Travel agency",
+      "slug": "travel-agency",
+      "themeCategoryId": "travel-agency",
+      "family": "hospitality-property",
+      "sortOrder": 31,
+      "proposed": true
+    },
+    {
+      "key": "real-estate-agent",
+      "parent": "hospitality-property",
+      "name": "Real estate agent",
+      "slug": "real-estate-agent",
+      "themeCategoryId": "real-estate-agent",
+      "family": "hospitality-property",
+      "sortOrder": 32,
+      "proposed": true
+    },
+    {
+      "key": "fashion-apparel",
+      "parent": "fashion-lifestyle",
+      "name": "Fashion and apparel",
+      "slug": "fashion-apparel",
+      "themeCategoryId": "fashion-apparel",
+      "family": "fashion-lifestyle",
+      "sortOrder": 33,
+      "proposed": true
+    },
+    {
+      "key": "jewellery",
+      "parent": "fashion-lifestyle",
+      "name": "Jewellery",
+      "slug": "jewellery",
+      "themeCategoryId": "jewellery",
+      "family": "fashion-lifestyle",
+      "sortOrder": 34,
+      "proposed": true
+    },
+    {
+      "key": "grocery-kirana",
+      "parent": "food-grocery",
+      "name": "Grocery and kirana",
+      "slug": "grocery-kirana",
+      "themeCategoryId": "grocery-kirana",
+      "family": "food-grocery",
+      "sortOrder": 35,
+      "proposed": true
+    },
+    {
+      "key": "bakery-sweets",
+      "parent": "food-grocery",
+      "name": "Bakery and sweets",
+      "slug": "bakery-sweets",
+      "themeCategoryId": "bakery-sweets",
+      "family": "food-grocery",
+      "sortOrder": 36,
+      "proposed": true
+    },
+    {
+      "key": "electronics-mobile",
+      "parent": "electronics-home",
+      "name": "Electronics and mobiles",
+      "slug": "electronics-mobile",
+      "themeCategoryId": "electronics-mobile",
+      "family": "electronics-home",
+      "sortOrder": 37,
+      "proposed": true
+    },
+    {
+      "key": "home-furniture",
+      "parent": "electronics-home",
+      "name": "Home and furniture",
+      "slug": "home-furniture",
+      "themeCategoryId": "home-furniture",
+      "family": "electronics-home",
+      "sortOrder": 38,
+      "proposed": true
+    },
+    {
+      "key": "gifts-handicrafts",
+      "parent": "gifts-books",
+      "name": "Gifts and handicrafts",
+      "slug": "gifts-handicrafts",
+      "themeCategoryId": "gifts-handicrafts",
+      "family": "gifts-books",
+      "sortOrder": 39,
+      "proposed": true
+    },
+    {
+      "key": "books-stationery",
+      "parent": "gifts-books",
+      "name": "Books and stationery",
+      "slug": "books-stationery",
+      "themeCategoryId": "books-stationery",
+      "family": "gifts-books",
+      "sortOrder": 40,
+      "proposed": true
+    }
+  ]
+}

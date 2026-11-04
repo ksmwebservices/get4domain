@@ -65,13 +65,36 @@ async function cleanupProvisioning(prisma, vendorIds, runId, counts) {
   const jobIds = jobs.map((j) => j.id);
   const tokens = vendorIds.length ? await prisma.v3ClaimToken.findMany({ where: { vendorId: { in: vendorIds } }, select: { id: true } }) : [];
   const tokenIds = tokens.map((t) => t.id);
-  const entityIds = [...jobIds, ...tokenIds, ...vendorIds];
+  const directoryIds = await cleanupDirectory(prisma, vendorIds, tokenIds, runId, counts);
+  const entityIds = [...jobIds, ...tokenIds, ...vendorIds, ...directoryIds];
   if (entityIds.length) counts.v3AuditLog = (await prisma.v3AuditLog.deleteMany({ where: { entityId: { in: entityIds } } })).count;
   if (vendorIds.length) {
     counts.v3Invite = (await prisma.v3Invite.deleteMany({ where: { vendorId: { in: vendorIds } } })).count;
     counts.v3ClaimToken = (await prisma.v3ClaimToken.deleteMany({ where: { vendorId: { in: vendorIds } } })).count;
   }
   if (jobIds.length) counts.v3ProvisioningJob = (await prisma.v3ProvisioningJob.deleteMany({ where: { id: { in: jobIds } } })).count;
+}
+
+/**
+ * Slice 5.7: the synthetic directory data. Businesses are found by their vendor, or by a V3TEST name carrying the run id (a business made by staff has no vendor). Their services, media,
+ * placements, removal requests and claim overrides cascade. OTP challenges point at claim tokens by id (no foreign key), and tests may add V3TEST places and categories, removed here
+ * deepest first because the tree restricts deletes. Returns the ids whose audit rows must go too. Never touches the seeded (proposed) places and categories.
+ */
+async function cleanupDirectory(prisma, vendorIds, tokenIds, runId, counts) {
+  const nameMatch = { name: { startsWith: TEST_NAME_PREFIX, ...(runId ? { contains: runId } : {}) } };
+  const businesses = await prisma.v3DirectoryBusiness.findMany({ where: { OR: [...(vendorIds.length ? [{ vendorId: { in: vendorIds } }] : []), nameMatch] }, select: { id: true } });
+  const businessIds = businesses.map((b) => b.id);
+  const removals = businessIds.length ? await prisma.v3DirectoryRemovalRequest.findMany({ where: { businessId: { in: businessIds } }, select: { id: true } }) : [];
+  if (tokenIds.length) counts.v3OtpChallenge = (await prisma.v3OtpChallenge.deleteMany({ where: { subjectType: 'CLAIM', subjectId: { in: tokenIds } } })).count;
+  if (businessIds.length) counts.v3DirectoryBusiness = (await prisma.v3DirectoryBusiness.deleteMany({ where: { id: { in: businessIds } } })).count;
+  counts.v3DirectoryCategory = 0; counts.v3DirectoryLocation = 0;
+  for (let pass = 0; pass < 4; pass++) {
+    const c = (await prisma.v3DirectoryCategory.deleteMany({ where: { ...nameMatch, children: { none: {} }, businesses: { none: {} } } })).count;
+    const l = (await prisma.v3DirectoryLocation.deleteMany({ where: { ...nameMatch, children: { none: {} }, businesses: { none: {} } } })).count;
+    counts.v3DirectoryCategory += c; counts.v3DirectoryLocation += l;
+    if (!c && !l) break;
+  }
+  return [...businessIds, ...removals.map((r) => r.id)];
 }
 
 async function countTestTenants(prisma) {

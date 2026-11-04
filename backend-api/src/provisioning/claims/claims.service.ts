@@ -48,6 +48,12 @@ export class ClaimsService {
     return row;
   }
 
+  /** The claim link's identity if it is usable right now, WITHOUT using it up (slice 5.7: the OTP check comes before the link is redeemed). */
+  async peek(rawToken: string): Promise<{ tokenId: string; vendorId: string; businessName: string } | null> {
+    const row = await this.usable(rawToken);
+    return row ? { tokenId: row.id, vendorId: row.vendorId, businessName: row.businessName } : null;
+  }
+
   async status(rawToken: string): Promise<ClaimStatus> {
     const row = await this.usable(rawToken);
     if (!row) throw invalidPublic();

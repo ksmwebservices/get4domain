@@ -14,6 +14,8 @@ export interface ProvisioningSettings {
   publicAppUrl: string;
   /** slice 5.4: legacy = the slice 5.3 draft only; renderer = also the site settings and a DRAFT_PREVIEW publication (never published) */
   siteDraftBuilderMode: 'legacy' | 'renderer';
+  /** slice 5.7: true = a job also runs the optional step CREATE_DIRECTORY_PROFILE (an UNCLAIMED public directory business). false (default) = the five slice 5.3 steps, exactly as before. */
+  provisioningDirectoryProfileEnabled: boolean;
   inviteSubjectTemplate: string;
   inviteBodyTemplate: string;
 }
@@ -26,6 +28,7 @@ export const DEFAULT_PROVISIONING_SETTINGS: Readonly<ProvisioningSettings> = {
   inviteAdapterMode: 'sandbox',
   publicAppUrl: 'https://staging.get4domain.invalid',
   siteDraftBuilderMode: 'legacy',
+  provisioningDirectoryProfileEnabled: false,
   inviteSubjectTemplate: 'Your free Get4Domain page for {{businessName}} is ready to claim',
   inviteBodyTemplate: [
     'Hello,',
@@ -61,6 +64,7 @@ export function provisioningSettingProblem(key: keyof ProvisioningSettings, valu
     case 'provisioningBackoffSeconds': return Array.isArray(value) && value.length >= 1 && value.length <= 10 && value.every((n) => intIn(n, 1, 86_400)) ? null : 'must be a list of 1 to 10 whole numbers of seconds (1 to 86400)';
     case 'claimLinkExpiryDays': return intIn(value, 1, 365) ? null : 'must be a whole number of days from 1 to 365';
     case 'inviteAdapterMode': return value === 'sandbox' || value === 'live' ? null : 'must be "sandbox" or "live"';
+    case 'provisioningDirectoryProfileEnabled': return typeof value === 'boolean' ? null : 'must be true or false';
     case 'siteDraftBuilderMode': return value === 'legacy' || value === 'renderer' ? null : 'must be "legacy" or "renderer"';
     case 'publicAppUrl': {
       if (typeof value !== 'string' || value.length > 200) return 'must be a web address';

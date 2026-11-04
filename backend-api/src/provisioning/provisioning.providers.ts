@@ -6,8 +6,11 @@ import { ClaimStore, PrismaClaimStore } from './claims/claim-store';
 import { ClaimsService } from './claims/claims.service';
 import { InviteStore, PrismaInviteStore } from './invites/invite-store';
 import { PrismaProvisioningAudit } from './provisioning-audit';
+import { ClaimOtpController } from './claims/claim-otp.controller';
+import { ClaimOtpService } from './claims/claim-otp.service';
+import { CreateDirectoryProfileStep } from './steps/create-directory-profile.step';
 import { PrismaProvisioningRepository, ProvisioningRepository } from './provisioning.repository';
-import { JobRunnerService, PROVISIONING_STEPS, ProvisioningAudit, ProvisioningStep } from './runner/job-runner.service';
+import { JobRunnerService, PROVISIONING_OPTIONAL_STEPS, PROVISIONING_STEPS, ProvisioningAudit, ProvisioningStep } from './runner/job-runner.service';
 import { ProvisioningSettingsService } from './settings/provisioning-settings.service';
 import { CmsDraftSiteProvisioner } from './site/cms-draft-site-provisioner';
 import { DraftSiteBuilder } from './site/draft-site-builder';
@@ -41,7 +44,10 @@ export const PROVISIONING_PROVIDERS: Provider[] = [
     useFactory: (a: CreateVendorStep, b: AssignFreePlanStep, c: CreateFreeSiteDraftStep, d: CreateClaimLinkStep, e: SendInviteStep): ProvisioningStep[] => [a, b, c, d, e],
     inject: [CreateVendorStep, AssignFreePlanStep, CreateFreeSiteDraftStep, CreateClaimLinkStep, SendInviteStep],
   },
+  // slice 5.7: the optional directory step lives apart from the five steps above, and the claim OTP completes the slice 5.3 claim link
+  CreateDirectoryProfileStep, { provide: PROVISIONING_OPTIONAL_STEPS, useFactory: (s: CreateDirectoryProfileStep): ProvisioningStep[] => [s], inject: [CreateDirectoryProfileStep] },
+  ClaimOtpService,
   JobRunnerService,
 ];
 
-export const PROVISIONING_CONTROLLERS: Type<unknown>[] = [ProvisioningAdminController, ClaimPublicController];
+export const PROVISIONING_CONTROLLERS: Type<unknown>[] = [ProvisioningAdminController, ClaimPublicController, ClaimOtpController];

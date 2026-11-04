@@ -46,6 +46,10 @@ const MARKETING_DENIED = [
   'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
   'GET /v3/admin/tax-rates', 'GET /v3/admin/discount-rules', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
+  // B2 slice 5.7: directory writes, the claim phone override and removal requests (contact details): OPERATIONS and SUPER_ADMIN only
+  'POST /v3/admin/directory/locations', 'PUT /v3/admin/directory/locations/:id', 'POST /v3/admin/directory/categories', 'PUT /v3/admin/directory/categories/:id', 'POST /v3/admin/directory/businesses', 'PUT /v3/admin/directory/businesses/:id',
+  'POST /v3/admin/directory/businesses/:id/moderate', 'POST /v3/admin/directory/businesses/:id/placements', 'POST /v3/admin/directory/placements/:id/revoke', 'POST /v3/admin/directory/businesses/:id/claim-phone-override',
+  'GET /v3/admin/directory/removal-requests', 'POST /v3/admin/directory/removal-requests/:id/approve', 'POST /v3/admin/directory/removal-requests/:id/reject', 'POST /v3/admin/directory/removal-requests/:id/execute',
   // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
   'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
   'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
@@ -68,6 +72,8 @@ const ALL_STAFF_ROUTES = [
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
+  'GET /v3/admin/directory/locations', 'GET /v3/admin/directory/categories', 'GET /v3/admin/directory/businesses', 'GET /v3/admin/directory/businesses/:id', 'GET /v3/admin/directory/businesses/:id/placements',
 ];
 
 const scanned = scanRoutes(path.resolve(__dirname, '../src')).filter((r) => r.adminGuard === true).map((r) => r.route);
@@ -88,7 +94,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(131);
+    expect(oracle).toHaveLength(150);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

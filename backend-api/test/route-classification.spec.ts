@@ -33,6 +33,8 @@ const OWNER_ONLY_ROUTES = [
   'GET /team/members',
   'PUT /v3/me/site/theme', 'POST /v3/me/site/publish', 'POST /v3/me/site/rollback',   // S54.7: they change what the public sees
   'GET /team/activity',
+  // B2 slice 5.7: the owner's directory profile (a team member never edits the business's public face)
+  'GET /v3/me/directory', 'PUT /v3/me/directory',
   // B2 slice 5.6: the vendor's addresses are the business's identity: every route is owner only
   'GET /v3/me/domains', 'PUT /v3/me/domains/subdomain', 'POST /v3/me/domains/custom', 'GET /v3/me/domains/:id', 'POST /v3/me/domains/:id/verify', 'POST /v3/me/domains/:id/primary', 'DELETE /v3/me/domains/:id',
   // already owner-only before S8-A (regression guard)

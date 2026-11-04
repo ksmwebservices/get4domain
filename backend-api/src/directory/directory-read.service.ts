@@ -1,0 +1,89 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { evaluateListingPageIndexing } from './core/indexing';
+import { clampPage, mergeSponsored, normaliseQuery } from './core/search';
+import { BusinessRow, CategoryRow, DirectoryRepository, LocationRow } from './directory.repository';
+import {
+  categoryTree, descendantIds, locationPath, locationTree, PublicBusinessView, PublicListItem, PublicSponsoredItem, publicBusinessView, resolveCategory, resolveLocation, sponsoredItem, TreeNode, ViewContext,
+} from './directory-views';
+import { DirectorySettings } from './settings/directory-settings';
+import { DirectorySettingsService } from './settings/directory-settings.service';
+
+const TREE_TTL_MS = 60_000;
+
+export interface ListQuery { location?: string; category?: string; q?: string; page?: unknown; pageSize?: unknown }
+export interface ListResult { items: PublicListItem[]; page: number; pageSize: number; total: number; filters: { location: string | null; category: string | null; q: string }; indexable: boolean }
+
+/**
+ * The public, read-only side of the directory. Never exposes an email, an owner name, an internal id, a vendor id or a staff field, and shows an UNCLAIMED business's private data
+ * to nobody (see publicBusinessView). Organic order is relevance, then name; sponsored items are inserted at fixed positions and always carry their label.
+ */
+@Injectable()
+export class DirectoryReadService {
+  clock: () => Date = () => new Date();
+  private trees: { at: number; loc: LocationRow[]; cat: CategoryRow[] } | null = null;
+
+  constructor(private readonly repo: DirectoryRepository, @Inject(DirectorySettingsService) private readonly settings: Pick<DirectorySettingsService, 'get'>) {}
+
+  invalidate(): void { this.trees = null; }
+
+  private async loadTrees(): Promise<{ loc: LocationRow[]; cat: CategoryRow[] }> {
+    const now = this.clock().getTime();
+    if (!this.trees || now - this.trees.at >= TREE_TTL_MS) this.trees = { at: now, loc: await this.repo.listLocations(), cat: await this.repo.listCategories() };
+    return this.trees;
+  }
+
+  async locations(): Promise<TreeNode[]> { return locationTree((await this.loadTrees()).loc); }
+  async categories(): Promise<TreeNode[]> { return categoryTree((await this.loadTrees()).cat); }
+
+  private async context(b: BusinessRow, withExtras: boolean, t: { loc: LocationRow[]; cat: CategoryRow[] }): Promise<ViewContext> {
+    const cat = t.cat.find((c) => c.id === b.categoryId) ?? null;
+    return { category: cat ? { slug: cat.slug, name: cat.name } : null, location: locationPath(t.loc, b.locationId), services: withExtras ? await this.repo.getServices(b.id) : [], media: withExtras ? await this.repo.getMedia(b.id) : [] };
+  }
+
+  async list(q: ListQuery): Promise<ListResult> {
+    const s: DirectorySettings = await this.settings.get();
+    const t = await this.loadTrees();
+    const { page, pageSize, skip } = clampPage(q.page, q.pageSize, s.directoryPageSizeMax, s.directoryPageSizeDefault);
+    const loc = q.location ? resolveLocation(t.loc, String(q.location)) : null;
+    const cat = q.category ? resolveCategory(t.cat, String(q.category)) : null;
+    const norm = normaliseQuery(q.q);
+    const empty = (): ListResult => ({ items: [], page, pageSize, total: 0, filters: { location: q.location ? String(q.location).slice(0, 100) : null, category: q.category ? String(q.category).slice(0, 100) : null, q: norm.text }, indexable: false });
+    if ((q.location && !loc) || (q.category && !cat)) return empty();   // an unknown filter is an empty result, not an error and not "everything"
+    const scope = { ...(loc ? { locationIds: descendantIds(t.loc, loc.id) } : {}), ...(cat ? { categoryIds: descendantIds(t.cat, cat.id) } : {}) };
+    const { items, total } = await this.repo.search({ tokens: norm.tokens, text: norm.text, ...scope, skip, take: pageSize });
+    const organic: PublicBusinessView[] = [];
+    for (const b of items) organic.push(publicBusinessView(b, await this.context(b, false, t)));
+    let merged: PublicListItem[] = organic;
+    if (page === 1 && organic.length) {
+      const wanted = Math.ceil(organic.length / s.directorySponsoredEvery);
+      const placements = await this.repo.activePlacements(this.clock(), scope, wanted);
+      const onPage = new Set(organic.map((o) => o.slug));
+      const sponsored: PublicSponsoredItem[] = [];
+      for (const p of placements) if (!onPage.has(p.business.slug)) sponsored.push(sponsoredItem(publicBusinessView(p.business, await this.context(p.business, false, t)), p.placement));
+      const out = mergeSponsored(organic.map((o) => ({ ...o, id: o.slug, sponsored: false as const })), sponsored.map((x) => ({ ...x, id: x.slug, sponsored: true as const })), s.directorySponsoredEvery);
+      merged = out.map((x) => { const { id: _id, ...rest } = x; return rest as PublicListItem; });
+    }
+    const whole = loc || cat ? await this.repo.countPublic(scope) : total;
+    return { items: merged, page, pageSize, total, filters: { location: loc ? loc.slug : null, category: cat ? cat.slug : null, q: norm.text }, indexable: !norm.text && evaluateListingPageIndexing(whole, s.directoryThinPageMinBusinesses).indexable };
+  }
+
+  /** null = unknown or not public (draft, suspended): the same answer. `gone` = removed: the API answers 410. */
+  async detail(slug: string): Promise<{ gone: true } | { gone: false; business: PublicBusinessView } | null> {
+    const key = String(slug ?? '').trim().toLowerCase().slice(0, 80);
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(key)) return null;
+    const b = await this.repo.getBusinessBySlug(key);
+    if (!b) return null;
+    if (b.status === 'REMOVED') return { gone: true };
+    if (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED') return null;
+    const t = await this.loadTrees();
+    return { gone: false, business: publicBusinessView(b, await this.context(b, b.status === 'CLAIMED', t)) };
+  }
+
+  /** Paged business URLs for the sitemap: indexable and public only (removed, suspended, draft and noindex businesses never appear). */
+  async sitemapData(page: unknown, pageSize: unknown): Promise<{ items: Array<{ slug: string; lastmod: string }>; page: number; pageSize: number; total: number }> {
+    const s = await this.settings.get();
+    const p = clampPage(page, pageSize, Math.max(s.directoryPageSizeMax, 100), 100);
+    const { items, total } = await this.repo.sitemapPage(p.skip, p.pageSize);
+    return { items: items.map((i) => ({ slug: i.slug, lastmod: i.updatedAt.toISOString() })), page: p.page, pageSize: p.pageSize, total };
+  }
+}

@@ -1,5 +1,5 @@
 import { JobFinish, JobListFilter, JobRow, NewJob, ProvisioningRepository, StepRow } from '../../src/provisioning/provisioning.repository';
-import { STEP_ORDER, StepKey, StepStatus } from '../../src/provisioning/core/state-machine';
+import { ALL_STEP_ORDER, STEP_ORDER, StepKey, StepStatus } from '../../src/provisioning/core/state-machine';
 
 /**
  * In-memory twin of PrismaProvisioningRepository for unit tests. It keeps the properties the runner relies on: claim is atomic (synchronous, so two
@@ -34,7 +34,7 @@ export class MemoryProvisioningRepo extends ProvisioningRepository {
     return { items: all.slice(f.skip, f.skip + f.take).map((j) => ({ ...j })), total: all.length };
   }
 
-  async listSteps(jobId: string): Promise<StepRow[]> { return STEP_ORDER.map((k) => ({ ...this.steps.get(this.k(jobId, k))! })); }
+  async listSteps(jobId: string): Promise<StepRow[]> { return ALL_STEP_ORDER.filter((k) => this.steps.has(this.k(jobId, k))).map((k) => ({ ...this.steps.get(this.k(jobId, k))! })); }
 
   async claimNext(runnerId: string, now: Date, leaseMs: number, onlyJobId?: string): Promise<JobRow | null> {
     const due = [...this.jobs.values()]
@@ -55,7 +55,8 @@ export class MemoryProvisioningRepo extends ProvisioningRepository {
   }
 
   async markStepRunning(jobId: string, key: StepKey, now: Date): Promise<void> {
-    const s = this.steps.get(this.k(jobId, key))!;
+    let s = this.steps.get(this.k(jobId, key));
+    if (!s) { s = { jobId, stepKey: key, status: 'PENDING', attempts: 0, startedAt: null, finishedAt: null, outputRef: null, errorCode: null }; this.steps.set(this.k(jobId, key), s); }   // the optional step has no row until it runs
     s.status = 'RUNNING'; s.startedAt = now; s.attempts += 1; s.errorCode = null;
     this.jobs.get(jobId)!.currentStep = key;
   }

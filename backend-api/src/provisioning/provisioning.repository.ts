@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { JobStatus, STEP_ORDER, StepKey, StepStatus } from './core/state-machine';
+import { ALL_STEP_ORDER, JobStatus, STEP_ORDER, StepKey, StepStatus } from './core/state-machine';
 
 export interface JobRow {
   id: string;
@@ -132,7 +132,7 @@ export class PrismaProvisioningRepository extends ProvisioningRepository {
 
   async listSteps(jobId: string): Promise<StepRow[]> {
     const rows = await this.prisma.v3ProvisioningStep.findMany({ where: { jobId } });
-    return rows.map(toStep).sort((a, b) => STEP_ORDER.indexOf(a.stepKey) - STEP_ORDER.indexOf(b.stepKey));
+    return rows.map(toStep).sort((a, b) => ALL_STEP_ORDER.indexOf(a.stepKey) - ALL_STEP_ORDER.indexOf(b.stepKey));
   }
 
   /**
@@ -169,7 +169,12 @@ export class PrismaProvisioningRepository extends ProvisioningRepository {
   }
 
   async markStepRunning(jobId: string, key: StepKey, now: Date): Promise<void> {
-    await this.prisma.v3ProvisioningStep.update({ where: { jobId_stepKey: { jobId, stepKey: key } }, data: { status: 'RUNNING', startedAt: now, attempts: { increment: 1 }, errorCode: null } });
+    // upsert: the optional directory step (slice 5.7) has no row until the first time it runs; the five original steps always have one
+    await this.prisma.v3ProvisioningStep.upsert({
+      where: { jobId_stepKey: { jobId, stepKey: key } },
+      create: { jobId, stepKey: key, status: 'RUNNING', startedAt: now, attempts: 1 },
+      update: { status: 'RUNNING', startedAt: now, attempts: { increment: 1 }, errorCode: null },
+    });
     await this.prisma.v3ProvisioningJob.update({ where: { id: jobId }, data: { currentStep: key } });
   }
 

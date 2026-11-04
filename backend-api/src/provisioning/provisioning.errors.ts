@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   LEASE_LOST: 'Another runner took over this job.',
   INVALID_INPUT: 'The business details in this job are not valid.',
   SITE_BUILD_REFUSED: 'The site draft could not be built from the business details.',
+  DIRECTORY_CATEGORY_MISSING: 'The directory has no category for this business type yet.',
   UNEXPECTED: 'An unexpected error stopped this step. The job will be tried again.',
 };
 

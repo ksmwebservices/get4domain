@@ -84,6 +84,14 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/provisioning/jobs/:id/retry': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/cancel': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/run': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/claim-link/reissue': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/claim-link/revoke': OPS_AND_SUPER, 'GET /v3/admin/invites': OPS_AND_SUPER,
 
+  // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);
+  // every write, the claim phone override and the removal requests (they carry a masked contact) are OPERATIONS and SUPER_ADMIN.
+  'GET /v3/admin/directory/locations': ALL_STAFF, 'GET /v3/admin/directory/categories': ALL_STAFF, 'GET /v3/admin/directory/businesses': ALL_STAFF, 'GET /v3/admin/directory/businesses/:id': ALL_STAFF, 'GET /v3/admin/directory/businesses/:id/placements': ALL_STAFF,
+  'POST /v3/admin/directory/locations': OPS_AND_SUPER, 'PUT /v3/admin/directory/locations/:id': OPS_AND_SUPER, 'POST /v3/admin/directory/categories': OPS_AND_SUPER, 'PUT /v3/admin/directory/categories/:id': OPS_AND_SUPER,
+  'POST /v3/admin/directory/businesses': OPS_AND_SUPER, 'PUT /v3/admin/directory/businesses/:id': OPS_AND_SUPER, 'POST /v3/admin/directory/businesses/:id/moderate': OPS_AND_SUPER, 'POST /v3/admin/directory/businesses/:id/placements': OPS_AND_SUPER,
+  'POST /v3/admin/directory/placements/:id/revoke': OPS_AND_SUPER, 'POST /v3/admin/directory/businesses/:id/claim-phone-override': OPS_AND_SUPER,
+  'GET /v3/admin/directory/removal-requests': OPS_AND_SUPER, 'POST /v3/admin/directory/removal-requests/:id/approve': OPS_AND_SUPER, 'POST /v3/admin/directory/removal-requests/:id/reject': OPS_AND_SUPER, 'POST /v3/admin/directory/removal-requests/:id/execute': OPS_AND_SUPER,
+
   // ── V3 slice 5.6: vendors' addresses. Reads too are OPERATIONS and SUPER_ADMIN only (a host name can identify a business); MARKETING is refused everywhere.
   'GET /v3/admin/domains': OPS_AND_SUPER, 'GET /v3/admin/domains/:id': OPS_AND_SUPER, 'POST /v3/admin/domains/:id/verify': OPS_AND_SUPER, 'PUT /v3/admin/domains/:id/state': OPS_AND_SUPER,
   'POST /v3/admin/domains/:id/primary': OPS_AND_SUPER, 'POST /v3/admin/domains/:id/remove': OPS_AND_SUPER, 'PUT /v3/admin/vendors/:id/domains/subdomain': OPS_AND_SUPER,

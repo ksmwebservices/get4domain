@@ -21,6 +21,8 @@ export interface StepResult { outputRef?: Record<string, string>; vendorId?: str
 export interface ProvisioningStep { readonly key: StepKey; run(ctx: StepContext): Promise<StepResult> }
 export const PROVISIONING_STEPS = Symbol('PROVISIONING_STEPS');
 export const PROVISIONING_RUNNER_ID = Symbol('PROVISIONING_RUNNER_ID');
+/** Steps that only run when a setting enables them (slice 5.7). Kept apart from PROVISIONING_STEPS so the five slice 5.3 steps are untouched. */
+export const PROVISIONING_OPTIONAL_STEPS = Symbol('PROVISIONING_OPTIONAL_STEPS');
 
 /** Writes the audit rows of a run (no secrets, ids only). The Prisma implementation writes g4d_audit_logs; tests record in memory. */
 export abstract class ProvisioningAudit {
@@ -49,6 +51,7 @@ export class JobRunnerService {
     @Inject(ProvisioningSettingsService) private readonly settingsService: Pick<ProvisioningSettingsService, 'get'>,
     private readonly audit: ProvisioningAudit,
     @Optional() @Inject(PROVISIONING_RUNNER_ID) private readonly runnerId: string = newRunnerId(),
+    @Optional() @Inject(PROVISIONING_OPTIONAL_STEPS) private readonly optionalSteps: ProvisioningStep[] = [],
   ) {}
 
   async runOne(opts: { jobId?: string } = {}): Promise<RunReport | null> {
@@ -75,7 +78,7 @@ export class JobRunnerService {
 
     for (let guard = 0; guard < MAX_STEPS_PER_RUN; guard++) {
       const states = await this.repo.listSteps(claimed.id);
-      const decision = decide(states, { hasRawToken: ctx.rawToken !== undefined });
+      const decision = decide(states, { hasRawToken: ctx.rawToken !== undefined, directoryProfile: settings.provisioningDirectoryProfileEnabled === true });
 
       if (decision.action === 'COMPLETE') {
         const ok = await this.repo.finishRun(claimed.id, this.runnerId, { status: 'SUCCEEDED', currentStep: null, lastErrorCode: null, lastErrorMessage: null, finishedAt: this.clock() });
@@ -84,7 +87,7 @@ export class JobRunnerService {
         return { jobId: claimed.id, status: 'SUCCEEDED', stepsRun };
       }
 
-      const step = this.steps.find((s) => s.key === decision.step);
+      const step = this.steps.find((s) => s.key === decision.step) ?? this.optionalSteps.find((s) => s.key === decision.step);
       if (!step) throw new Error(`no implementation registered for step ${decision.step}`);   // a wiring bug, not a runtime condition
       ctx.now = this.clock();
       await this.repo.markStepRunning(claimed.id, step.key, ctx.now);

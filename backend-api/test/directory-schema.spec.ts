@@ -42,7 +42,7 @@ describe('slice 5.7 columns and rules', () => {
   it('removal requests and account setup grants keep only hashes of their tokens', () => {
     expect(modelBlock('g4d_directory_removal_requests')).toMatch(/tokenHash\s+String\s+@unique/);
     expect(modelBlock('g4d_account_setup_grants')).toMatch(/tokenHash\s+String\s+@unique/);
-    expect(missingColumns(modelBlock('g4d_directory_removal_requests'), ['status', 'reason', 'requesterContactMasked', 'handledByStaffId'])).toEqual([]);
+    expect(missingColumns(modelBlock('g4d_directory_removal_requests'), ['status', 'reason', 'requesterContactMasked', 'confirmedAt', 'handledByStaffId'])).toEqual([]);
   });
   it('the pg_trgm extension is created only inside a guarded block, so a role without permission still passes the migration (search then uses full text only)', () => {
     const { code } = migrationSql('_v3_directory');

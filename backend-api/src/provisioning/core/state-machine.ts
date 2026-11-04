@@ -2,14 +2,25 @@
  * The pure core of the provisioning runner: what to do next, how long to wait, who may retry or cancel. No database, no clock, no randomness of its own
  * (the caller passes `now` and `random`), so every rule is unit tested. Diagram and rules: docs/v3/V3_S3_PROVISIONING.md section 4.
  */
-export type StepKey = 'CREATE_VENDOR' | 'ASSIGN_FREE_PLAN' | 'CREATE_FREE_SITE_DRAFT' | 'CREATE_CLAIM_LINK' | 'SEND_INVITE';
+export type StepKey = 'CREATE_VENDOR' | 'ASSIGN_FREE_PLAN' | 'CREATE_FREE_SITE_DRAFT' | 'CREATE_CLAIM_LINK' | 'SEND_INVITE' | 'CREATE_DIRECTORY_PROFILE';
 export type StepStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED' | 'SKIPPED';
 export type JobStatus = 'QUEUED' | 'RUNNING' | 'WAITING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 
 export const STEP_ORDER: readonly StepKey[] = ['CREATE_VENDOR', 'ASSIGN_FREE_PLAN', 'CREATE_FREE_SITE_DRAFT', 'CREATE_CLAIM_LINK', 'SEND_INVITE'];
 
 export interface StepState { stepKey: StepKey; status: StepStatus }
-export interface RunContext { hasRawToken: boolean }
+/** `directoryProfile` (slice 5.7): the plan setting provisioningDirectoryProfileEnabled. Absent or false = the five slice 5.3 steps, exactly as before. */
+export interface RunContext { hasRawToken: boolean; directoryProfile?: boolean }
+
+export const OPTIONAL_DIRECTORY_STEP: StepKey = 'CREATE_DIRECTORY_PROFILE';
+/** The order the runner follows: the five steps, plus the optional directory step right after the site draft when it is enabled. */
+export function effectiveOrder(directoryProfile: boolean): readonly StepKey[] {
+  if (!directoryProfile) return STEP_ORDER;
+  const i = STEP_ORDER.indexOf('CREATE_FREE_SITE_DRAFT') + 1;
+  return [...STEP_ORDER.slice(0, i), OPTIONAL_DIRECTORY_STEP, ...STEP_ORDER.slice(i)];
+}
+/** Every step a job row can hold, in display order (the optional one only has a row after it ran). */
+export const ALL_STEP_ORDER: readonly StepKey[] = effectiveOrder(true);
 export type Decision = { action: 'RUN_STEP'; step: StepKey } | { action: 'COMPLETE' };
 
 /**
@@ -18,7 +29,7 @@ export type Decision = { action: 'RUN_STEP'; step: StepKey } | { action: 'COMPLE
  */
 export function decide(steps: readonly StepState[], ctx: RunContext): Decision {
   const status = new Map(steps.map((s) => [s.stepKey, s.status]));
-  for (const key of STEP_ORDER) {
+  for (const key of effectiveOrder(ctx.directoryProfile === true)) {
     const st = status.get(key) ?? 'PENDING';
     if (st === 'DONE' || st === 'SKIPPED') continue;
     if (key === 'SEND_INVITE' && !ctx.hasRawToken) return { action: 'RUN_STEP', step: 'CREATE_CLAIM_LINK' };
@@ -51,7 +62,8 @@ export function canCancel(job: { status: JobStatus; lockedUntil: Date | null }, 
 
 /** The steps a cancel marks SKIPPED: every step that is not DONE. Completed steps are never touched or rolled back. */
 export function cancelPlan(steps: readonly StepState[]): StepKey[] {
-  return STEP_ORDER.filter((k) => {
+  const keys: readonly StepKey[] = steps.some((s) => s.stepKey === OPTIONAL_DIRECTORY_STEP) ? ALL_STEP_ORDER : STEP_ORDER;   // the optional step only if the job has a row for it
+  return keys.filter((k) => {
     const st = steps.find((s) => s.stepKey === k)?.status ?? 'PENDING';
     return st !== 'DONE' && st !== 'SKIPPED';
   });

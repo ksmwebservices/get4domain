@@ -163,6 +163,7 @@ CREATE TABLE "g4d_directory_removal_requests" (
     "status" "V3DirectoryRemovalStatus" NOT NULL DEFAULT 'REQUESTED',
     "reason" TEXT,
     "requesterContactMasked" TEXT,
+    "confirmedAt" TIMESTAMP(3),
     "handledByStaffId" TEXT,
     "handledAt" TIMESTAMP(3),
     "executedAt" TIMESTAMP(3),

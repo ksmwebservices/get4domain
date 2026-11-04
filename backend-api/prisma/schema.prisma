@@ -4661,6 +4661,7 @@ model V3DirectoryRemovalRequest {
   status                  V3DirectoryRemovalStatus @default(REQUESTED)
   reason                  String?
   requesterContactMasked  String?
+  confirmedAt             DateTime? // set when the link sent to the business contact on file is followed: proves the requester controls it
   handledByStaffId        String?
   handledAt               DateTime?
   executedAt              DateTime?
