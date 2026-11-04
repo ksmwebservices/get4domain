@@ -235,3 +235,68 @@ Status: **working** = code path complete and exercised by tests or the script su
 
 `g4d_contacts` has: id, vendorId, name, phone, email, type (default `customer`; also supplier and others), address, portalAccess, customFields, tags, notes, gstin, state, shippingAddress, openingBalancePaise. It lacks: phone normalisation, a unique key, consent and opt-in with source and time, unsubscribe and block state, language, a link to the V3 vendor site, soft delete. See INV-7 for the adapter decision.
 
+## INV-3. Accounts, billing and wallet
+
+There are **four separate invoice engines** in V2, plus the V3 one. They share no number series, no tax table and no tables.
+
+| # | Engine | Who bills whom | Tables | Numbering | Tax | Module |
+|---|---|---|---|---|---|---|
+| 1 | Platform invoices (original) | Get4Domain to vendor | `Invoice`, `PlatformIncome` | `INV-<year>-<n>`, last row plus one (no lock, can collide under concurrency) | 18% fixed on the amount (`gstAmount` column) | `invoices`, `payments` |
+| 2 | Commercial Engine | Get4Domain to vendor (terms, deals, renewals, special arrangements) | `Invoice` (extended), `BillingTerm`, `BillingDeal`, `PlanChangeRequest`, `PromoCode`, `ManualPaymentSubmission`, `PayeeSettings`, `CommercialAuditLog` | prefix plus last number plus one (`invoice-builder.service.ts` `nextNumber`, line 61) | `GST_PERCENT = 18` constant, `EXCLUSIVE` or `INCLUSIVE` per invoice, GST can be forgone on a special arrangement | `commercial` |
+| 3 | Vendor invoices (Domain App) | vendor to customer | `GenericInvoice` | per vendor, computed in the service (`domainapp/invoices.service.ts` `nextInvoiceNumber`, line 28) | amount fields, no state logic | `domainapp` |
+| 4 | Business Operating System | vendor to customer | `BosDocument`, `BosDocumentLine`, `BosDocSeries`, `BosPayment`, `BosAllocation`, `BosJournalEntry/Line`, `BosAccount`, `BosExpense`, `BosRecurring`, `BosStockLocation`, `BosSettings` | gapless per vendor, document type and financial year, assigned on issue inside one transaction (`bos/core.services.ts` line 84) | `bos/gst.ts`: pure integer-paise math, CGST+SGST or IGST by buyer state, EXCLUSIVE or INCLUSIVE, bill of supply (`NONE`), round-off line, discount shared across lines | `bos` |
+| V3 | Plan invoices | Get4Domain to vendor | `V3PlanInvoice`, `V3PlanOrder`, `V3PaymentEvent`, `V3TaxRate`, `V3InvoiceCounter` | `formatInvoiceNumber(prefix, financialYear, n)` (`plan-billing/core/amounts.ts`), counter table | rate from the `V3TaxRate` table (`selectTaxRate`), effective dated | `plan-billing`, `plans` |
+
+**Shared with V3 plan payments today: nothing.** V3 code is forbidden to read legacy billing tables (decision D1, stop-line 5). What V3 can reuse is code, not data: `bos/gst.ts` (pure, tested, vendor-side GST) is the right base for the vendor's own receipts (rule 12), and its state rule (intra-state versus IGST) is the same rule V3 needs for Get4Domain's own invoices. The V3 tax table already exists (`V3TaxRate`) and does not yet carry the IGST versus CGST+SGST decision by state; that is open (INV-7 question 5).
+
+### 3.1 Feature list
+
+| Area | Status | What exists | Proof |
+|---|---|---|---|
+| Vendor invoices, quotes, credit notes | working | Draft, issue (gapless number, stock out, journal posted), cancel, convert quote to invoice, credit note, share link, email, public pay page, PDF/HTML | `bos/bos.controller.ts` (documents, lines 62-138); `scripts/bos/verify-bos-pure.js` |
+| Counter (POS) billing | working | One-step sale with payment | `bos.controller.ts` `counter/sale` (line 160) |
+| GST (vendor side) | working | Intra/inter state split, bill of supply, inclusive/exclusive, HSN and rate per item, GST summary and HSN summary reports | `bos/gst.ts`; `bos/reports.service.ts`; capability `bos.gst-reports` |
+| GST filing records | stub | `GstFiling` rows the vendor types in; no return preparation or filing | `accounting/accounting.controller.ts` (`gst-filings`) |
+| Books | working | Trial balance, P&L, balance sheet, ledger, day book, item profit, purchase register; double entry from posting rules | `bos/posting-rules.ts`, `bos/chart.ts`; `bos/books` routes (lines 389-410); capability `bos.books` (plan BOS) |
+| CA pack | working | Excel workbook of all registers | `bos/export/ca-pack.service.ts`; `bos.ca-pack` |
+| Period lock | working | Closed months cannot change | `bos` settings lock (line 49); capability `bos.period-lock` |
+| Expenses | working (two systems) | Simple `Expense` rows (`accounting`) and `BosExpense` with heads and journal posting | `accounting.controller.ts` (line 18); `bos.controller.ts` (line 268) |
+| Items and services | working | Item = `VendorProduct` (the website product); HSN, GST rate, purchase price, variants, stock locations; `CatalogItem` is the older Domain App catalogue | `bos/bos-stock.service.ts`; `domainapp/catalog.service.ts`; `docs/v2/UNIVERSAL_CATALOGUE_MODEL.md` (migration written, cutover pending) |
+| Payments (money in / out) | working | Payment records, allocation to documents, partials, overpayment, cancel; legacy `PaymentRecord` also exists | `bos/payments.service.ts`; `accounting.controller.ts` (`payments`) |
+| Customer ledger and statement | working | Party statement (JSON and HTML), outstanding list, reminder text; `Contact.openingBalancePaise` | `bos.controller.ts` (`parties/:id/statement`, `outstanding`, `reminder`) |
+| Purchases and suppliers | working | Purchase bills, stock in, cost update, cancel with reversal | `bos.controller.ts` (`bos/purchases`, line 319) |
+| Recurring invoices | working | Monthly/quarterly/yearly schedule, daily 06:30 job | `bos/more.services.ts` (`@Cron('30 6 * * *')`, line 338) |
+| Reports | partial | BOS summary, today, sales register, books above. `analytics` gives dashboard counts; no scheduled weekly or monthly report | `bos/reports.service.ts`; `analytics/analytics.controller.ts` |
+| Plan gating of the above | working | Capture is never gated; Pro (`BOS` plan) switches views and exports; downgrade deletes nothing | `registry/capabilities.ts`; `docs/v2/FULL_BOS.md` |
+| Collect payments with the vendor's own gateway | working | Vendor stores own Razorpay keys (encrypted); public document page creates an order on the vendor's keys; platform never holds the money | `vendor-payments` (3 routes); `bos` `public/bos/doc/:token/pay-order` (line 473) |
+| Travel/agency books | partial | `accounting/travel-summary` for the travel module | `accounting.controller.ts` (line 48) |
+
+### 3.2 Legacy wallet and its hardened debits
+
+| Item | Status | Detail |
+|---|---|---|
+| Balance and transactions | working | `Wallet` (balance, totalCredited, totalDebited) and `WalletTransaction` per vendor; `balance` and `transactions` routes behind the `wallet` area flag | `wallet/wallet.controller.ts` |
+| Top-up | working | Razorpay order and verify, owner-only (S8-B); credit is idempotent per Razorpay payment (advisory lock plus unique index) | `wallet.service.ts` lines 110-126, 320 |
+| Debits | hardened | One atomic check-and-decrement inside a transaction (`debitIn`), idempotency key, `TX_OPTIONS = { maxWait: 15000, timeout: 30000 }`, pool starvation and every Prisma error classified at the wallet boundary (CI-FIX-2, WALLET_BUSY 503) | `wallet.service.ts` lines 212, 232; `test/wallet-*.spec.ts` |
+| Admin deduct | working | `POST wallet/deduct` for staff | `wallet.controller.ts` (line 54) |
+| Spend points | working | Per-message rates (`sms_message` 50, `whatsapp_message` 100, `email_message` 20 paise as fallbacks in code), AI Studio, reels/video (coming soon, no debit), domain registration, LeadSpace refills (a separate purse) | `communication.service.ts` (lines 12-16); `domains.service.ts` |
+| Refunds | present in legacy | LeadSpace has refund requests and disputes; the main wallet has no refund route | `LeadRefundRequest`; rule 7 forbids refunds in V3 |
+| Validity / expiry of credit | absent | No expiry on credit; rule 7 needs one year from top-up | `Wallet` has no lot or expiry columns |
+
+**For V3.** Rule 7 describes a different wallet (V3's own, active after the first Pro payment, no cash-out, no refunds, one-year validity per top-up, used for services, packs, messages and renewals). The legacy `Wallet` has no lots, no expiry, and mixes into LeadSpace and domain spend. D1 forbids V3 code from reading it. Verdict in INV-7: build the V3 wallet new (Batch 4), reuse the debit pattern (atomic update, idempotency key, KeyedQueue), leave the legacy wallet running for legacy vendors.
+
+### 3.3 How Razorpay is used today
+
+| Use | Where | Keys | Mode |
+|---|---|---|---|
+| Vendor pays Get4Domain invoice | `payments` (create-order, verify, webhook), `commercial/pay.service.ts`, `invoices` payment link | platform key from environment (`RAZORPAY_KEY_ID`) | live-capable |
+| Wallet top-up | `wallet.service.ts` | platform key | live-capable |
+| Special arrangements and manual pay | `commercial` UPI/QR proof submission, staff confirms | none | manual |
+| Vendor collects from own customer (BOS public document, engine checkout) | `bos` `public/bos`, `engine/public-checkout.service.ts` | the vendor's own keys from `VendorPaymentConfig` (encrypted) | vendor-direct (rule 4 compliant) |
+| Vendor invoice payment link (Domain App `GenericInvoice`) | `domainapp/invoices.service.ts` (lines 15-18, 122) | **platform key from the environment**, not the vendor's | **conflicts with rule 4**: the customer's money lands in Get4Domain's Razorpay account; the earlier audit finding S9 (never reconciled) is the same defect. Retire or rewire to `VendorPaymentsService.getKeys` before any V3 vendor can use it |
+| LeadSpace refill | `leadspace/credits.service.ts` | platform key | live-capable |
+| V3 plan purchase | `plan-billing` | `RAZORPAY_TEST_KEY_ID` must start `rzp_test_`; live keys are refused in code; `paymentsMode` default `off` | TEST only |
+| Domain registration | `domains` debits the wallet, then calls ResellerClub | none for Razorpay | wallet |
+
+Open item for V3: platform Razorpay keys for legacy flows live in the environment; V3 keys are separate and test-only until the owner enables live mode.
+

@@ -7,3 +7,6 @@ Scanned `backend-api/src` (92 module folders, 736 non-spec files, 53,942 lines, 
 
 ## INV-2 TeleCRM and CRM
 Read `crm`, `admin-crm`, `domainapp/contacts`, the engine action registry, `TeleCrmBoard.tsx` and the dashboard pages. Findings that matter for V3: TeleCRM works on `g4d_campaign_leads`, not on `g4d_contacts`; there is no telephony beyond a `tel:` link; `Contact` has no unique phone, no consent and no unsubscribe fields; import does not de-duplicate; no scripts, segments, team performance or reminders exist. Output: section INV-2 of `docs/v3/V2_INVENTORY.md`.
+
+## INV-3 Accounts, billing and wallet
+Compared the five invoice engines (platform, Commercial Engine, Domain App, BOS, V3), their numbering and tax rules, the BOS posting and GST code, the legacy wallet debit hardening and every Razorpay entry point. Finding that matters: `domainapp/invoices.service.ts` creates payment links with the platform Razorpay key, which breaks rule 4 (the same defect as the earlier S9). The legacy wallet has no lots, expiry or refund rule, so the V3 wallet is new. Output: section INV-3 of `docs/v3/V2_INVENTORY.md`.
