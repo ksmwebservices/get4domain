@@ -35,6 +35,8 @@ const OWNER_ONLY_ROUTES = [
   'GET /team/activity',
   // B2 slice 5.1b: buying a plan starts a payment: owner only (a team member never starts one)
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',
+  // B3 slice 5.1d: asking for the whole account to be removed for good is the owner's decision alone
+  'POST /v3/me/account/deletion-request',
   // B2 slice 5.7: the owner's directory profile (a team member never edits the business's public face)
   'GET /v3/me/directory', 'PUT /v3/me/directory',
   // B2 slice 5.6: the vendor's addresses are the business's identity: every route is owner only

@@ -62,6 +62,8 @@ import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { DirectoryModule } from './directory/directory.module';
+import { B3SettingsModule } from './b3-settings/b3-settings.module';
+import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
@@ -109,6 +111,8 @@ import { ModuleGuard } from './common/guards/module.guard';
     SitePublishModule,
     SiteDomainsModule,
     DirectoryModule,
+    B3SettingsModule,
+    VendorLifecycleModule,
     PlanBillingModule,
     AiStudioModule,
     VendorsModule,

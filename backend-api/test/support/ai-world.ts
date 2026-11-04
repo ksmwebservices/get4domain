@@ -22,7 +22,7 @@ export interface AiWorld {
   scripted: ScriptedProvider; useScripted(): void; gen(over?: Partial<{ feature: string; input: unknown; idempotencyKey: string }>, vendorId?: string): ReturnType<AiGenerateService['generate']>;
 }
 export const aiEntitlement = (state: string, limit: number | null, upsellText: string | null = null): ResolvedEntitlements => ({
-  mode: 'V3', plan: 'handyman_pro', subscribedPlan: 'handyman_pro', track: 'handyman', level: 'PRO', subscriptionStatus: 'ACTIVE', graceWarning: false,
+  mode: 'V3', plan: 'handyman_pro', subscribedPlan: 'handyman_pro', track: 'handyman', level: 'PRO', subscriptionStatus: 'ACTIVE', graceWarning: false, suspended: false,
   features: { 'ai.credits_included': { state: state as never, limit, enumValue: null, upsellText, overLimit: false, source: 'PLAN' as never } },
 });
 

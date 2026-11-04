@@ -106,6 +106,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
 
   // ── V3 slice 5.4: vendors' sites ────────────────────────────────────────────────────────────────────────────────────────
   // Summaries (the list and one site) are open to all staff; MARKETING never sees html. Every write, and the preview that carries html, is OPERATIONS and SUPER_ADMIN.
+  // B3 slice 5.1d: lifecycle actions and the owner deletion queue: OPERATIONS and SUPER_ADMIN, MARKETING refused everywhere (a deletion request identifies a business)
+  'GET /v3/admin/vendors/:id/lifecycle': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/restore-pro': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/extend-grace': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/suspend': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/reinstate': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing': OPS_AND_SUPER, 'GET /v3/admin/account-deletions': OPS_AND_SUPER, 'GET /v3/admin/account-deletions/:id': OPS_AND_SUPER, 'POST /v3/admin/account-deletions/:id/execute': OPS_AND_SUPER,
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
   'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/site/rollback': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path': OPS_AND_SUPER, 'PUT /v3/admin/vendors/:id/site/noindex': OPS_AND_SUPER,

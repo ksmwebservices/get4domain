@@ -34,6 +34,8 @@ export interface EngineInput {
   settings: EngineSettings;
   /** how many items the vendor currently has per feature key (only needed to flag overLimit) */
   usage?: Record<string, number>;
+  /** owner rule 9: a SUSPENDED vendor gets the track's Free entitlements and no override can switch a Pro feature back on. Nothing is deleted. */
+  vendorSuspended?: boolean;
 }
 
 export interface ResolvedFeature {
@@ -54,6 +56,8 @@ export interface ResolvedEntitlements {
   level: string | null;
   subscriptionStatus: SubscriptionStatusName | null;
   graceWarning: boolean;
+  /** true when the vendor is suspended (the Free entitlements apply; the site and listing stay live) */
+  suspended: boolean;
   features: Record<string, ResolvedFeature>;
 }
 export interface CanResult { allowed: boolean; state: FeatureStateName; limit: number | null; reason: DenyReason | null; upsellText: string | null }
@@ -76,31 +80,46 @@ function finish(cell: { state: FeatureStateName; limitValue: number | null; enum
   return { state: cell.state, limit: cell.limitValue, enumValue: cell.enumValue, upsellText: cell.upsellText, overLimit, source };
 }
 
+export interface EffectivePlanChoice {
+  subscribed: EnginePlan | undefined;
+  /** the plan whose cells apply now */
+  effective: EnginePlan | undefined;
+  status: SubscriptionStatusName | null;
+  /** true when the effective plan is the track's Free plan because Pro lapsed, was cancelled or the vendor is suspended */
+  fellBack: boolean;
+  suspended: boolean;
+}
+
+/**
+ * Which plan applies? The ONE place that decides (slice 5.1d reuses the slice 5.1 grace and expiry arithmetic through effectiveStatus; nothing is duplicated).
+ * ACTIVE gives its plan; GRACE keeps the plan (the caller shows a warning); after the grace period, or when cancelled, the track's Free plan (unless the owner chose
+ * KEEP_UNTIL_REPLACED for expiry); a SUSPENDED vendor always gets the Free plan of their track. Pure: nothing is stored or deleted.
+ */
+export function chooseEffectivePlan(a: { subscription: EngineSubscription | null; plans: EnginePlan[]; settings: EngineSettings; now: Date; vendorSuspended?: boolean }): EffectivePlanChoice {
+  const suspended = a.vendorSuspended === true;
+  if (!a.subscription) return { subscribed: undefined, effective: undefined, status: null, fellBack: false, suspended };
+  const subscribed = a.plans.find((p) => p.id === a.subscription!.planId);
+  const status = effectiveStatus(a.subscription, a.now, a.settings);
+  let effective = subscribed;
+  let fellBack = false;
+  const lapsed = status === 'EXPIRED' || status === 'CANCELLED';
+  const dropForLapse = lapsed && subscribed && subscribed.level !== 'FREE' && (status === 'CANCELLED' || a.settings.downgradeBehaviour !== 'KEEP_UNTIL_REPLACED');
+  const dropForSuspension = suspended && subscribed && subscribed.level !== 'FREE';
+  if (dropForLapse || dropForSuspension) {
+    effective = a.plans.find((p) => p.track === subscribed!.track && p.level === 'FREE');
+    fellBack = true;
+  }
+  return { subscribed, effective, status, fellBack, suspended };
+}
+
 export function resolveEntitlements(input: EngineInput): ResolvedEntitlements {
   const { now, subscription: sub, plans, matrix, featureKeys, overrides, settings, usage } = input;
-  const byId = new Map(plans.map((p) => [p.id, p]));
-  let mode: EntitlementMode = 'V3';
-  let status: SubscriptionStatusName | null = null;
-  let subscribed: EnginePlan | undefined;
-  let effective: EnginePlan | undefined;
-  let fellBack = false;
+  const mode: EntitlementMode = !sub ? (input.flagOn ? 'UNASSIGNED' : 'LEGACY') : 'V3';
+  const { subscribed, effective, status, fellBack, suspended } = chooseEffectivePlan({ subscription: sub, plans, settings, now, vendorSuspended: input.vendorSuspended });
 
-  if (!sub) {
-    mode = input.flagOn ? 'UNASSIGNED' : 'LEGACY';
-  } else {
-    subscribed = byId.get(sub.planId);
-    status = effectiveStatus(sub, now, settings);
-    effective = subscribed;
-    const lapsed = status === 'EXPIRED' || status === 'CANCELLED';
-    if (lapsed && subscribed && subscribed.level !== 'FREE' && (status === 'CANCELLED' || settings.downgradeBehaviour !== 'KEEP_UNTIL_REPLACED')) {
-      effective = plans.find((p) => p.track === subscribed!.track && p.level === 'FREE');
-      fellBack = true;
-    }
-  }
-
-  // newest non-expired override per feature
+  // newest non-expired override per feature (none while suspended: Pro features stop, whatever staff granted)
   const live = new Map<string, EngineOverride>();
-  for (const o of overrides) {
+  for (const o of suspended ? [] : overrides) {
     if (o.expiresAt && o.expiresAt.getTime() <= now.getTime()) continue;
     const cur = live.get(o.featureKey);
     if (!cur || o.createdAt.getTime() > cur.createdAt.getTime()) live.set(o.featureKey, o);
@@ -124,7 +143,8 @@ export function resolveEntitlements(input: EngineInput): ResolvedEntitlements {
     track: (effective ?? subscribed)?.track ?? null,
     level: effective?.level ?? null,
     subscriptionStatus: status,
-    graceWarning: status === 'GRACE',
+    graceWarning: status === 'GRACE' && !suspended,
+    suspended,
     features,
   };
 }

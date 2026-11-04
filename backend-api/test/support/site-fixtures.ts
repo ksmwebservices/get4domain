@@ -36,7 +36,7 @@ const f = (state: ResolvedFeature['state'], limit: number | null = null, enumVal
 export function entitlements(level: 'FREE' | 'PRO', track: 'handyman' | 'professional' | 'ecommerce' = 'handyman'): ResolvedEntitlements {
   const pro = level === 'PRO';
   return {
-    mode: 'V3', plan: `${track}_${level.toLowerCase()}`, subscribedPlan: `${track}_${level.toLowerCase()}`, track, level, subscriptionStatus: 'ACTIVE', graceWarning: false,
+    mode: 'V3', plan: `${track}_${level.toLowerCase()}`, subscribedPlan: `${track}_${level.toLowerCase()}`, track, level, subscriptionStatus: 'ACTIVE', graceWarning: false, suspended: false,
     features: {
       'site.pages': f('LIMITED', pro ? 24 : 1), 'site.services': f('LIMITED', pro ? 24 : 8), 'site.gallery': f('LIMITED', pro ? 40 : 5), 'site.faqs': f('LIMITED', pro ? 12 : 6),
       'site.themes': f('ACTIVE', null, pro ? 'library' : 'assigned', null),
