@@ -61,6 +61,7 @@ model Vendor {
   v3SiteRemoval V3SiteRemoval?
   v3DeletionRequests V3AccountDeletionRequest[]
   v3SeededSite V3SeededSite?
+  v3TermsAcceptances V3TermsAcceptance[]
   v3Requests V3Request[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
@@ -5285,6 +5286,7 @@ model V3Request {
   events   V3RequestEvent[]
   consent  V3RequestConsent?
   tracking V3RequestTracking?
+  termsAcceptances V3TermsAcceptance[]
   order    V3Order?
 
   @@unique([vendorId, idempotencyKey])
@@ -5562,4 +5564,67 @@ model V3Blocklist {
 
   @@unique([kind, hash])
   @@map("g4d_blocklist")
+}
+
+enum V3TermsKind {
+  VENDOR_TERMS
+  ACCEPTABLE_USE
+  DATA_PROCESSING
+  REFUND_POLICY_TEMPLATE
+  GRIEVANCE
+  PRIVACY
+  COOKIE
+  CUSTOMER_TERMS
+}
+
+enum V3TermsStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+/// A legal document, one row per kind and version. Only staff publish; a body that is still the placeholder can never be published.
+model V3TermsDocument {
+  id           String        @id @default(cuid())
+  kind         V3TermsKind
+  version      Int
+  title        String        @default("")
+  status       V3TermsStatus @default(DRAFT)
+  bodyMarkdown String
+  changeNote   String?
+  publishedAt  DateTime?
+  publishedBy  String?
+  createdBy    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  acceptances V3TermsAcceptance[]
+
+  @@unique([kind, version])
+  @@index([kind, status])
+  @@map("g4d_terms_documents")
+}
+
+/// IMMUTABLE: a database trigger refuses every update and every delete (a delete is allowed only as the cascade of a tenant row that is already gone). One of vendorId and customerRequestId is set.
+model V3TermsAcceptance {
+  id                String      @id @default(cuid())
+  vendorId          String?
+  customerRequestId String?
+  userId            String?
+  documentId        String
+  kind              V3TermsKind
+  version           Int
+  acceptedAt        DateTime    @default(now())
+  ipHash            String?
+  userAgentHash     String?
+
+  vendor          Vendor?         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customerRequest V3Request?      @relation(fields: [customerRequestId], references: [id], onDelete: Cascade)
+  document        V3TermsDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, documentId])
+  @@unique([customerRequestId, documentId])
+  @@index([vendorId, kind])
+  @@index([documentId])
+  @@map("g4d_terms_acceptances")
 }
