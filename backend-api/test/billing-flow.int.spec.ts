@@ -10,6 +10,7 @@ import { expandSeed } from '../src/plans/seed/seed-file';
 import { PrismaSeedStore } from '../src/plans/seed/prisma-seed-store';
 import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.service';
 import { RenewalReminderService } from '../src/plan-billing/renewal-reminder.service';
+import { BillingSettingsService } from '../src/plan-billing/settings/billing-settings.service';
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant, vendorToken } from './support/fixtures';
 import { BillingFixture, evId, setUpBilling, tearDownBilling } from './support/billing-staging';
 import { runCleanup } from './support/cleanup-guard';
@@ -91,6 +92,7 @@ describe('plan purchase on staging (fake provider)', () => {
     await prisma.v3PlanSetting.upsert({ where: { key: 'renewalRemindersEnabled' }, create: { key: 'renewalRemindersEnabled', valueJson: true, description: 'v3test' }, update: { valueJson: true } });
     const sub = await prisma.v3PlanSubscription.findFirstOrThrow({ where: { vendorId: A.vendorId, currentVendorId: A.vendorId } });
     await prisma.v3PlanSubscription.update({ where: { id: sub.id }, data: { endsAt: new Date(Date.now() + 5 * 86_400_000) } });
+    app.get(BillingSettingsService).invalidate();   // the flag was written straight to the database; the service keeps its settings for 15 s and the purchase above had already read them (see test/billing-reminders.spec.ts)
     const reminders = app.get(RenewalReminderService);
     const first = await reminders.tick(); expect(first.sent).toBeGreaterThanOrEqual(1); const second = await reminders.tick(); expect(second.sent).toBe(0);
     expect(await prisma.v3ReminderLog.count({ where: { subscriptionId: sub.id, kind: 'SENT' } })).toBe(1);
