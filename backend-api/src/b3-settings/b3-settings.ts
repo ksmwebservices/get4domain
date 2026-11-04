@@ -42,6 +42,13 @@ export interface B3Settings {
   stockReservationMinutes: number;
   /** Shown on the tracking page: what Get4Domain does and does not do. */
   trackingBridgeText: string;
+  /** The text the customer agrees to when sending a request. DRAFT wording, not legal text. Change the version number whenever the text changes: a request must carry the current version. */
+  customerConsentText: string;
+  customerConsentVersion: number;
+  /** The prefix of a vendor's own invoice numbers (their series is gap-free per vendor). */
+  vendorInvoicePrefix: string;
+  /** The same sender sending the same request again inside this many minutes counts as a duplicate. */
+  requestDuplicateWindowMinutes: number;
   /** Spam score at or above which a one-time phone code is asked before the request is accepted. */
   spamScoreOtpThreshold: number;
   /** Spam score at or above which a request is stored as SPAM and not delivered. */
@@ -70,6 +77,10 @@ export const DEFAULT_B3_SETTINGS: Readonly<B3Settings> = {
   trackingTokenExpiryDays: 60,
   stockReservationMinutes: 15,
   trackingBridgeText: 'Get4Domain passes your request to the business. The business answers you and issues any invoice. Get4Domain does not receive or hold your payment.',
+  customerConsentText: 'I agree that the business may contact me about this request, and that Get4Domain may send me messages about it on the business behalf.',
+  customerConsentVersion: 1,
+  vendorInvoicePrefix: 'INV-',
+  requestDuplicateWindowMinutes: 60,
   spamScoreOtpThreshold: 50,
   spamScoreBlockThreshold: 90,
   messageTemplates: {
@@ -108,6 +119,10 @@ export function b3SettingProblem(key: keyof B3Settings, value: unknown): string 
     case 'nudgeAfterMinutes': return intIn(value, 1, 10_080) ? null : 'must be a whole number of minutes from 1 to 10080';
     case 'requestExpiryDays': case 'trackingTokenExpiryDays': return intIn(value, 1, 365) ? null : 'must be a whole number of days from 1 to 365';
     case 'stockReservationMinutes': return intIn(value, 1, 1440) ? null : 'must be a whole number of minutes from 1 to 1440';
+    case 'customerConsentText': return text(value, 10, 600) && !NO_MARKUP.test(value as string) ? null : 'must be plain text of 10 to 600 characters (no < or >)';
+    case 'customerConsentVersion': return intIn(value, 1, 100_000) ? null : 'must be a whole number from 1';
+    case 'vendorInvoicePrefix': return typeof value === 'string' && /^[A-Za-z0-9-]{0,10}$/.test(value) ? null : 'must be up to 10 letters, digits or dashes';
+    case 'requestDuplicateWindowMinutes': return intIn(value, 1, 10_080) ? null : 'must be a whole number of minutes from 1 to 10080';
     case 'spamScoreOtpThreshold': case 'spamScoreBlockThreshold': return intIn(value, 1, 100) ? null : 'must be a whole number from 1 to 100';
     case 'messagingMode': return value === 'sandbox' ? null : 'live messaging is not available in this build; only "sandbox" is accepted';
     case 'messageTemplates': {

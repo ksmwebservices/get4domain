@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { PLAN_ERROR_CODES } from '../../plans/plans.errors';
+import { B3_ERROR_CODES } from '../../b3-settings/b3-errors';
 import { PROVISIONING_API_ERROR_CODES } from '../../provisioning/provisioning.errors';
 import { SITE_ERROR_CODES } from '../../site-publish/site.errors';
 import { DOMAIN_ERROR_CODES } from '../../site-domains/site-domains.errors';
@@ -117,13 +118,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
         if (typeof v === 'string') extra[k] = v;
       }
       const limit = (exceptionResponse as Record<string, unknown>).limit;
       if (typeof limit === 'number') extra.limit = limit;
+      // B3 validation reasons: plain strings only
+      const errs = (exceptionResponse as Record<string, unknown>).errors;
+      if (Array.isArray(errs)) extra.errors = errs.filter((e): e is string => typeof e === 'string').slice(0, 20);
       // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
       const missing = (exceptionResponse as Record<string, unknown>).missing;
       if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));

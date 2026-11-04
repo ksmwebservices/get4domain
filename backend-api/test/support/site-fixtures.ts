@@ -43,10 +43,13 @@ export function entitlements(level: 'FREE' | 'PRO', track: 'handyman' | 'profess
       'site.video': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Show your work on video with Pro.'),
       'site.cta': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Let customers contact, book or order from your site with Pro.'),
       'site.booking': pro && track !== 'ecommerce' ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Let customers book you online with Pro.'),
-      'shop.cart': pro && track === 'ecommerce' ? f('ACTIVE') : f('HIDDEN'),
+      'shop.cart': pro && track === 'ecommerce' ? f('ACTIVE') : track === 'ecommerce' ? f('LOCKED_PREVIEW', null, null, 'Sell online with a shopping cart on Pro.') : f('HIDDEN'),
       'site.language_ta': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Reach more customers with a Tamil site on Pro.'),
       'site.custom_domain': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Use your own web address with Pro.'),
-      'promotion.custom_domain_addon': f('HIDDEN'),   // never part of a plan: only an override turns it on
+      'promotion.custom_domain_addon': f('HIDDEN'),
+      'requests.inbox': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Receive customer requests and orders with Pro.'),
+      'payments.vendor_methods': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Take payments into your own account with Pro.'),
+      'offers.banners': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Run offers and coupons on your site with Pro.'),   // never part of a plan: only an override turns it on
       'site.revisions': pro ? f('ACTIVE') : f('LOCKED_PREVIEW', null, null, 'Go back to an earlier version of your site with Pro.'),
     },
   };

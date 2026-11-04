@@ -63,6 +63,8 @@ const MARKETING_DENIED = [
   // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
   'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
   'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
+  // B3 slice 5.14: requests, the outbox, reports and the blocklist
+  'GET /v3/admin/requests', 'GET /v3/admin/requests/:id', 'GET /v3/admin/message-outbox', 'GET /v3/admin/reports', 'POST /v3/admin/reports/:id/handle', 'GET /v3/admin/blocklist', 'POST /v3/admin/blocklist', 'DELETE /v3/admin/blocklist/:id',
   // B3 slice 5.13a: seeded sites
   'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'GET /v3/admin/seeded-sites/register', 'POST /v3/admin/seeded-sites/register', 'GET /v3/admin/seeded-sites/indexing-mode', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke', 'POST /v3/admin/seeded-sites/:id/removal',
   // B3 slice 5.7b: the Visit-site report across vendors
@@ -114,7 +116,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(192);
+    expect(oracle).toHaveLength(200);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -35,6 +35,8 @@ const OWNER_ONLY_ROUTES = [
   'GET /team/activity',
   // B2 slice 5.1b: buying a plan starts a payment: owner only (a team member never starts one)
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',
+  // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only
+  'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
   // B3 slice 5.1d: asking for the whole account to be removed for good is the owner's decision alone
   'POST /v3/me/account/deletion-request',
   // B2 slice 5.7: the owner's directory profile (a team member never edits the business's public face)
@@ -57,6 +59,7 @@ const OWNER_ONLY_ROUTES = [
 /** Routes that need a named team area (not owner-only): a member WITHOUT the area is refused. */
 const REQUIRED_MODULE: Record<string, string> = {
   'GET /vendor-payments': 'accounts',
+  'GET /v3/me/requests': 'website', 'GET /v3/me/requests/:id': 'website', 'POST /v3/me/requests/:id/respond': 'website', 'POST /v3/me/requests/:id/link': 'website', 'GET /v3/me/orders': 'website', 'GET /v3/me/orders/:id': 'website', 'PUT /v3/me/orders/:id/status': 'website', 'PUT /v3/me/stock/:productRef': 'website', 'GET /v3/me/offers': 'website', 'POST /v3/me/offers': 'website', 'PUT /v3/me/offers/:id': 'website',   // B3 slice 5.14: the inbox, replies, orders, offers and stock need the website area
   'GET /v3/me/site': 'website', 'POST /v3/me/site/build': 'website', 'GET /v3/me/site/preview/:publicationId/:path': 'website',   // S54.7
   'POST /v3/me/ai/generate': 'website', 'GET /v3/me/ai/usage': 'website',   // B2 slice 5.11: the owner, or a team member with the website area
   'GET /website-themes/mine': 'website',       // S8-B: viewing the theme screen is gated by the website area

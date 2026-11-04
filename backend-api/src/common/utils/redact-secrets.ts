@@ -19,7 +19,7 @@ export const SENSITIVE_KEYS: ReadonlySet<string> = new Set([
   'razorpayKeySecret',
   'keySecret',
   // V3 slice 5.11: an AI provider's encrypted secret (ciphertext, iv, tag) and any api key field never leave the API
-  'secretCipher',
+  'secretCipher', 'configCipher', 'configIv', 'configTag', 'webhookSecret', 'webhookSecretCipher', 'webhookSecretIv', 'webhookSecretTag', 'keySecret', 'upiPin',
   'secretIv',
   'secretTag',
   'apiKey',
