@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CATEGORIES, CATEGORY_IDS } from '../lib/categories.mjs';
 import { SEEDS } from '../fixtures/data.mjs';
-import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, LANGS, allSamples, ENTITLEMENTS_ON, ENTITLEMENTS_OFF, sampleEntitlements } from '../fixtures/index.mjs';
+import { sampleContent, extremeContent, stretchContent, EXTREME_KINDS, LANGS, allSamples, ENTITLEMENTS_ON, ENTITLEMENTS_OFF, ENTITLEMENTS_LISTING, sampleEntitlements } from '../fixtures/index.mjs';
 
 const TAMIL = /[஀-௿]/;
 const strings = (v, out = []) => { if (typeof v === 'string') out.push(v); else if (Array.isArray(v)) v.forEach((x) => strings(x, out)); else if (v && typeof v === 'object') Object.values(v).forEach((x) => strings(x, out)); return out; };
@@ -82,10 +82,13 @@ test('stretchContent makes readable text about 1.6x longer and leaves links alon
 });
 
 test('entitlement fixtures: all on, all off, and a realistic set per plan and track', () => {
-  const keys = ['video', 'cart', 'booking', 'customDomain'];
+  const keys = ['video', 'cart', 'booking', 'customDomain', 'callsToAction'];
   assert.deepEqual(Object.keys(ENTITLEMENTS_ON).sort(), [...keys].sort());
-  assert.ok(keys.every((k) => ENTITLEMENTS_ON[k] === true && ENTITLEMENTS_OFF[k] === false));
-  assert.deepEqual(sampleEntitlements('plumber', { pro: false }), ENTITLEMENTS_OFF);
+  assert.ok(keys.every((k) => ENTITLEMENTS_ON[k] === true));
+  assert.ok(['video', 'cart', 'booking', 'customDomain'].every((k) => ENTITLEMENTS_OFF[k] === false && ENTITLEMENTS_LISTING[k] === false));
+  assert.equal(ENTITLEMENTS_OFF.callsToAction, true, 'OFF is a Pro site without the optional extras');
+  assert.equal(ENTITLEMENTS_LISTING.callsToAction, false, 'a Free listing has no call to action');
+  assert.deepEqual(sampleEntitlements('plumber', { pro: false }), ENTITLEMENTS_LISTING);
   const pro = sampleEntitlements('plumber', { pro: true });
   assert.equal(pro.cart, false, 'cart is Ecommerce Pro only');
   assert.equal(pro.booking, true, 'booking is offered on Handyman and Professional');

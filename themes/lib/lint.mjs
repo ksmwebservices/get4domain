@@ -358,7 +358,7 @@ function analyze(html, where, F, state, category) {
 
 function renderOne(render, theme, tpl, content, extra = {}) {
   const page = tpl === 'item' ? { slug: 'item', item: content.items?.[0] ?? { name: 'Item', slug: 'item' } } : { slug: tpl };
-  return render({ theme, page, content, settings: {}, vendor: { id: 'lint', unclaimed: true }, host: { siteUrl: content.host?.siteUrl ?? 'https://lint.example', allowEmbeds: true }, ...extra });
+  return render({ theme, page, content, settings: {}, vendor: { id: 'lint', unclaimed: true }, host: { siteUrl: content.host?.siteUrl ?? 'https://lint.example', allowEmbeds: true }, entitlements: { callsToAction: true }, ...extra });   // the contract is checked on a site that has its calls to action; a Free listing draws none of them
 }
 
 function checkRendered(theme, F, state, categories, opts) {

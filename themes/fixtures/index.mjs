@@ -7,13 +7,16 @@ import { SEEDS } from './data.mjs';
 export const LANGS = ['en', 'ta'];
 
 /** Entitlements for the renderer: everything off (the default) and everything on (the lint renders both). */
-export const ENTITLEMENTS_OFF = Object.freeze({ video: false, cart: false, booking: false, customDomain: false });
-export const ENTITLEMENTS_ON = Object.freeze({ video: true, cart: true, booking: true, customDomain: true });
-/** A realistic set: a Free-plan vendor has none; a Pro-plan vendor has video and a custom domain, booking on Handyman and Professional, the cart on Ecommerce. */
+/** OFF = a Pro site without the optional extras: calls to action are on, video, cart, booking and the custom domain are off. */
+export const ENTITLEMENTS_OFF = Object.freeze({ video: false, cart: false, booking: false, customDomain: false, callsToAction: true });
+export const ENTITLEMENTS_ON = Object.freeze({ video: true, cart: true, booking: true, customDomain: true, callsToAction: true });
+/** A Free site: an informational listing with no call to action of any kind (owner rule 5). */
+export const ENTITLEMENTS_LISTING = Object.freeze({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
+/** A realistic set: a Free-plan vendor is a listing with none (no call to action either); a Pro-plan vendor has calls to action, video and a custom domain, booking on Handyman and Professional, the cart on Ecommerce. */
 export function sampleEntitlements(categoryId, { pro = false } = {}) {
   const cat = categoryById(categoryId);
-  if (!pro) return { ...ENTITLEMENTS_OFF };
-  return { video: true, cart: cat.track === 'ecommerce', booking: cat.track !== 'ecommerce', customDomain: true };
+  if (!pro) return { ...ENTITLEMENTS_LISTING };
+  return { video: true, cart: cat.track === 'ecommerce', booking: cat.track !== 'ecommerce', customDomain: true, callsToAction: true };
 }
 export const EXTREME_KINDS = ['long-name', 'long-list', 'empty', 'no-images', 'long-text'];
 

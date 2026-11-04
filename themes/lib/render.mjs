@@ -13,7 +13,7 @@
 //   entitlements { video, cart, booking, customDomain }   what the vendor's plan has switched on; each defaults to false. The theme tier does NOT decide this.
 //            video, cart and booking draw nothing at all (no empty box) unless their entitlement is exactly true; customDomain lets host.customDomain be the canonical address.
 import { parse, serialize } from './html.mjs';
-import { ENTITLEMENT_KEYS, BINDINGS, REPEATERS, NESTED_LISTS, SLOTS, SLOT_BY_TAG, APPROVED_FONTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, ALLOWED_URI_SCHEMES, MOTION_INTENSITIES } from './vocabulary.mjs';
+import { ENTITLEMENT_KEYS, CTA_SLOTS, BINDINGS, REPEATERS, NESTED_LISTS, SLOTS, SLOT_BY_TAG, APPROVED_FONTS, MAP_EMBED_HOSTS, VIDEO_HOSTS, ALLOWED_URI_SCHEMES, MOTION_INTENSITIES } from './vocabulary.mjs';
 import { categoryById, hasCategory, FAMILIES } from './categories.mjs';
 import { validatePreset, presetStyle, applyPresetContent } from './preset.mjs';
 
@@ -131,6 +131,7 @@ function lookup(ctx, path) {
   if (path === 'page.title') return pageTitleDefault(ctx);
   if (path === 'page.slug') return ctx.page.slug;
   if (path.startsWith('entitlements.')) return ctx.ent[path.slice('entitlements.'.length)];
+  if (!ctx.ent.callsToAction && (path === 'contact.phoneHref' || path === 'contact.whatsappHref' || path === 'cta.href')) return '';   // listing-only: the phone number is plain text, nothing links to a call, a chat or a form
   if (path === 'site.logo' && ctx.settings.logo) return ctx.settings.logo;
   if (path === 'contact.phoneHref' && !ctx.c.contact?.phoneHref && ctx.c.contact?.phone) return `tel:${String(ctx.c.contact.phone).replace(/[^+\d]/g, '')}`;
   return getPath(ctx.c, parts);
@@ -205,7 +206,8 @@ function socialItems(ctx) {
   const names = [['instagram', 'Instagram'], ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['linkedin', 'LinkedIn'], ['x', 'X'], ['whatsappChannel', 'WhatsApp channel'], ['pinterest', 'Pinterest'], ['telegram', 'Telegram']];
   const items = names.map(([k, label]) => [safeUrl(s[k]), label]).filter(([u]) => isHttpOrRelative(u));
   if (isHttpOrRelative(safeUrl(s.custom)) && s.customLabel) items.push([safeUrl(s.custom), String(s.customLabel)]);
-  return items.slice(0, 8);
+  // listing-only: no link that opens a chat (WhatsApp, Telegram)
+  return (ctx.ent.callsToAction ? items : items.filter(([u]) => !MESSAGING_HOSTS.includes(hostOf(u)))).slice(0, 8);
 }
 function socialHtml(ctx) {
   const items = socialItems(ctx);
@@ -218,12 +220,100 @@ function hoursTable(ctx) {
   return `<table class="g4d-hours__table"><caption>${esc(ctx.ui.hoursTitle)}</caption><tbody>${rows.map((r, i) => `<tr data-day="${i}"><th scope="row">${esc(r?.day)}</th><td>${r?.closed || !r?.open ? esc(ctx.ui.closed) : `${esc(r.open)} – ${esc(r.close)}`}</td></tr>`).join('')}</tbody></table>`;
 }
 
+// ---------------------------------------------------------------- listing-only (owner rules 5 and 8)
+const MESSAGING_HOSTS = ['wa.me', 'api.whatsapp.com', 'chat.whatsapp.com', 'whatsapp.com', 'www.whatsapp.com', 't.me', 'telegram.me'];
+/** An href that is a call to action: a call, a text, an email, a chat, or the cart, booking, enquiry and checkout paths. */
+const CTA_HREF = /^(?:tel:|sms:|mailto:|https?:\/\/(?:www\.)?(?:wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com)(?:[/?#]|$)|\/(?:cart|book|enquire|checkout)(?:[/?#]|$))/i;
+/**
+ * Removes every element a call-to-action slot drew (found by data-g4d-slot), whole, with what is inside. Tags are matched by balanced counting of the SAME tag name, so a wrapper
+ * with nested divs goes completely. Used on a page that was rendered WITH calls to action and must now be a listing (a lapsed plan, a suspended vendor).
+ */
+function removeCtaSlotElements(html) {
+  const open = new RegExp(`<([a-zA-Z][a-zA-Z0-9]*)\\b[^>]*\\bdata-g4d-slot="(?:${CTA_SLOTS.join('|')})"[^>]*>`, 'i');
+  let out = String(html);
+  for (let guard = 0; guard < 500; guard++) {
+    const m = open.exec(out);
+    if (!m) break;
+    const tag = m[1].toLowerCase();
+    const re = new RegExp(`<(/?)${tag}\\b[^>]*?(/?)>`, 'gi');
+    re.lastIndex = m.index + m[0].length;
+    let depth = 1; let end = -1; let t;
+    while ((t = re.exec(out))) {
+      if (t[2] === '/') continue;   // a self-closed tag changes nothing
+      depth += t[1] === '/' ? -1 : 1;
+      if (depth === 0) { end = t.index + t[0].length; break; }
+    }
+    if (end === -1) { out = out.slice(0, m.index) + out.slice(m.index + m[0].length); } else out = out.slice(0, m.index) + out.slice(end);
+  }
+  return out;
+}
+/**
+ * Defence in depth for a listing-only page: after the slots are suppressed, any form or button, and any link that is a call to action (also one inside the vendor's own rich
+ * text or a custom theme template), is removed; a link keeps its text. The result has no form, no button, no tel:, sms:, mailto:, wa.me or cart/booking/enquiry link.
+ */
+function stripCtas(html) {
+  return removeCtaSlotElements(html)
+    .replace(/<form\b[\s\S]*?<\/form>/gi, '')
+    .replace(/<button\b[\s\S]*?<\/button>/gi, '')
+    // an anchor that is a tracked call to action, has no destination left (its binding was a phone or chat link), or points at a call to action: its text stays, the link goes
+    .replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (m, attrs, text) => {
+      if (/\bdata-track="(?:cta|call|whatsapp|book|order)"/i.test(attrs)) return text;
+      const h = /\shref(?:="([^"]*)")?(?=[\s>]|$)/i.exec(` ${attrs}`);
+      if (h && (h[1] === undefined || h[1].trim() === '')) return text;
+      return h && CTA_HREF.test(h[1].replace(/&amp;/g, '&').trim()) ? text : m;
+    });
+}
+/** The customer-facing disclosure line (text from the platform's editable setting), drawn beside every form and checkout. */
+function disclosureHtml(ctx) {
+  const t = String(ctx.host.texts?.customerDisclosure ?? '').trim();
+  return t ? `<p class="g4d-disclosure" data-g4d-disclosure>${esc(t)}</p>` : '';
+}
+/**
+ * Lines after the page body: on a listing-only page the "Listed on Get4Domain" line and the footer bridge line; on a SEEDED or INVITED site the seeded notice with working claim
+ * and remove links (/claim and /remove). All texts come from the platform (host.texts); nothing is invented here.
+ */
+function trailerHtml(ctx) {
+  return buildTrailer({ listingOnly: !ctx.ent.callsToAction, texts: ctx.host.texts, lifecycle: ctx.host.lifecycle, claimFallback: ctx.ui.claim });
+}
+function buildTrailer({ listingOnly, texts, lifecycle, claimFallback }) {
+  const t = texts && typeof texts === 'object' ? texts : {};
+  const parts = [];
+  if (listingOnly) {
+    if (String(t.listedOn ?? '').trim()) parts.push(`<p class="g4d-listed-on" data-g4d-listed-on>${esc(t.listedOn)}</p>`);
+    if (String(t.footerBridge ?? '').trim()) parts.push(`<p class="g4d-footer-bridge" data-g4d-footer-bridge>${esc(t.footerBridge)}</p>`);
+  }
+  if ((lifecycle === 'SEEDED' || lifecycle === 'INVITED') && String(t.seededNotice ?? '').trim()) {
+    parts.push(`<p class="g4d-seeded-notice" data-g4d-seeded-notice>${esc(t.seededNotice)} <a href="/claim">${esc(t.claimLabel || claimFallback)}</a> · <a href="/remove">${esc(t.removeLabel || 'Remove this page')}</a></p>`);
+  }
+  return parts.length ? `<div class="g4d-listing-note" data-g4d-listing-note>${parts.join('')}</div>` : '';
+}
+
+/**
+ * Makes an ALREADY RENDERED page listing-only: the same stripping as a listing-only render, plus the platform's two lines. Used when a vendor's plan has lapsed or the vendor is
+ * suspended after the page was published with calls to action: the stored page is not deleted or rebuilt, it is served as a listing from that moment (owner rule 9).
+ * A page that already carries the listing lines is left as it is (idempotent).
+ */
+export function listingOnlyHtml(html, texts) {
+  let out = stripCtas(String(html ?? ''));
+  if (!out.includes('data-g4d-listing-note')) {
+    const note = buildTrailer({ listingOnly: true, texts, lifecycle: null, claimFallback: '' });
+    if (note) {
+      const body = out.lastIndexOf('</body>');
+      const at = out.lastIndexOf('</div>', body >= 0 ? body : out.length);
+      out = at >= 0 ? out.slice(0, at) + note + out.slice(at) : out + note;
+    }
+  }
+  return out;
+}
+
 function renderSlot(ctx, name, attrs, childNodes) {
   const { c, ui, cat, theme } = ctx;
   const site = c.site ?? {};
   const contact = c.contact ?? {};
   const cta = c.cta ?? {};
   const ecommerce = cat?.track === 'ecommerce';
+  const listingOnly = !ctx.ent.callsToAction;
+  if (listingOnly && CTA_SLOTS.includes(name)) { ctx.slots.push({ name, rendered: false }); return ''; }   // owner rule 5: no call to action of any kind on a Free site
   switch (name) {
     case 'header-nav': {
       const label = attrs.label ? String(attrs.label) : ui.mainNav;
@@ -243,8 +333,8 @@ function renderSlot(ctx, name, attrs, childNodes) {
     case 'footer': {
       const variant = ['columns', 'centered', 'minimal'].includes(attrs.variant) ? attrs.variant : 'columns';
       const addr = contact.address ? `<address>${esc(contact.address)}</address>` : '';
-      const tel = contact.phone ? link(contact.phoneHref || `tel:${String(contact.phone).replace(/[^+\d]/g, '')}`, contact.phone) : '';
-      const mail = contact.email ? link(`mailto:${contact.email}`, contact.email) : '';
+      const tel = contact.phone ? (listingOnly ? esc(contact.phone) : link(contact.phoneHref || `tel:${String(contact.phone).replace(/[^+\d]/g, '')}`, contact.phone)) : '';   // listing-only: plain text, no tel: link
+      const mail = contact.email && !listingOnly ? link(`mailto:${contact.email}`, contact.email) : '';
       const html = `<div class="g4d-footer__inner"><p class="g4d-footer__name">${esc(site.name)}</p>${addr}<p>${tel}${tel && mail ? ' · ' : ''}${mail}</p>${socialHtml(ctx)}<p class="g4d-footer__legal"><a href="/legal/privacy">${esc(ui.privacy)}</a> · <a href="/legal/terms">${esc(ui.terms)}</a></p><p class="g4d-footer__copy">© ${esc(site.year ?? '')} ${esc(site.name)}</p></div>`;
       return wrap(ctx, name, 'footer', html, { class: `g4d-footer--${variant} ${attrs.class ?? ''}` });
     }
@@ -295,7 +385,8 @@ function renderSlot(ctx, name, attrs, childNodes) {
     case 'enquiry-form': {
       const id = (k) => nextId(ctx, `e-${k}`);
       const [n, p, m, k] = [id('name'), id('phone'), id('msg'), id('ok')];
-      const html = `<h2>${esc(ui.enquiryTitle)}</h2><form class="g4d-form" method="post" action="/enquire"><p><label for="${n}">${esc(ui.yourName)}</label><input id="${n}" name="name" type="text" autocomplete="name" required></p><p><label for="${p}">${esc(ui.yourPhone)}</label><input id="${p}" name="phone" type="tel" autocomplete="tel" required></p><p><label for="${m}">${esc(ui.message)}</label><textarea id="${m}" name="message" rows="4"></textarea></p><p class="g4d-form__consent"><input id="${k}" name="consent" type="checkbox" required><label for="${k}">${esc(ui.consent)}</label></p><input type="hidden" name="source" value="site"><p><button type="submit" class="g4d-btn">${esc(ui.send)}</button></p></form>`;
+      const disclosure = disclosureHtml(ctx);
+      const html = `<h2>${esc(ui.enquiryTitle)}</h2><form class="g4d-form" method="post" action="/enquire"><p><label for="${n}">${esc(ui.yourName)}</label><input id="${n}" name="name" type="text" autocomplete="name" required></p><p><label for="${p}">${esc(ui.yourPhone)}</label><input id="${p}" name="phone" type="tel" autocomplete="tel" required></p><p><label for="${m}">${esc(ui.message)}</label><textarea id="${m}" name="message" rows="4"></textarea></p><p class="g4d-form__consent"><input id="${k}" name="consent" type="checkbox" required><label for="${k}">${esc(ui.consent)}</label></p><input type="hidden" name="source" value="site">${disclosure}<p><button type="submit" class="g4d-btn">${esc(ui.send)}</button></p></form>`;
       return wrap(ctx, name, 'section', html, attrs);
     }
     case 'whatsapp-float': {
@@ -317,7 +408,7 @@ function renderSlot(ctx, name, attrs, childNodes) {
     }
     case 'cart': {
       if (!ctx.ent.cart) { ctx.slots.push({ name, rendered: false }); return ''; }
-      return wrap(ctx, name, 'div', `<a class="g4d-cart" href="/cart">${esc(attrs.label || ui.cart)}</a>`, attrs);
+      return wrap(ctx, name, 'div', `<a class="g4d-cart" href="/cart">${esc(attrs.label || ui.cart)}</a>${disclosureHtml(ctx)}`, attrs);
     }
     case 'search': {
       const id = nextId(ctx, 'search');
@@ -544,7 +635,8 @@ export function renderPage(input) {
     ctx.preset?.hero?.pattern ? `data-pattern="${esc(ctx.preset.hero.pattern)}"` : '',
     style.size ? `style="${[...style].map(([k, val]) => `${k}:${val}`).join(';')}"` : '',
   ].filter(Boolean).join(' ');
-  const html = `<div ${attrs}>${body}</div>`;
+  const whole = `<div ${attrs}>${body}${trailerHtml(ctx)}</div>`;
+  const html = ctx.ent.callsToAction ? whole : stripCtas(whole);
 
   return { html, lang, seo: buildSeo(ctx), slots: ctx.slots, warnings: ctx.warnings, template: templateName, variant: v };
 }

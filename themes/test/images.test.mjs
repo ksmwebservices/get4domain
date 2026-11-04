@@ -12,7 +12,7 @@ import { minimalManifest } from './helpers/minimal-theme.mjs';
 const THEMES = ['free-service-pro', 'free-practice', 'free-studio', 'free-hospitality', 'free-shop-lite'];
 const imgs = (html) => byTag(parse(html), 'img');
 const theme = (tpl) => ({ manifest: minimalManifest({ categories: ['plumber', 'jewellery'], families: ['home-services', 'fashion-lifestyle'], tracks: ['handyman', 'ecommerce'], layoutVariantRules: { 'home-services': 'bold-split', 'fashion-lifestyle': 'product-first' } }), templates: { home: tpl }, css: {} });
-const render = (t, content, extra = {}) => renderPage({ theme: t, page: { slug: 'home' }, content, settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, ...extra });
+const render = (t, content, extra = {}) => renderPage({ theme: t, page: { slug: 'home' }, content, settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, ...extra, entitlements: { callsToAction: true, ...(extra.entitlements ?? {}) } });   // the share slot is a call to action: drawn only when callsToAction is on
 const home = (id, content, ent) => renderPage({ theme: loadTheme(id), page: { slug: 'home' }, content, settings: {}, vendor: { id: 'v' }, host: { siteUrl: 'https://x.get4domain.com' }, entitlements: ent });
 
 // ---------------------------------------------------------------- the budget and the two content sizes

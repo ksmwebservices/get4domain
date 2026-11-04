@@ -53,7 +53,7 @@ Templates are plain HTML with these additions. The renderer fills them; it never
 - **entitlements**: `{{entitlements.video}}` `{{entitlements.cart}}` `{{entitlements.booking}}` `{{entitlements.customDomain}}`
 - **ui**: `{{ui.skip}}` `{{ui.call}}` `{{ui.whatsapp}}` `{{ui.directions}}` `{{ui.menu}}` `{{ui.readMore}}` `{{ui.viewAll}}` `{{ui.home}}` `{{ui.about}}` `{{ui.gallery}}` `{{ui.contact}}` `{{ui.closeImage}}` `{{ui.faq}}` `{{ui.process}}` `{{ui.why}}` `{{ui.hours}}` `{{ui.orderOnWhatsApp}}` `{{ui.shippingNote}}`
 
-Plan features (true or false): `{{entitlements.video}}` `{{entitlements.cart}}` `{{entitlements.booking}}` `{{entitlements.customDomain}}`. Use them as conditions, for example `<section data-g4d-section="booking" data-g4d-if="entitlements.booking"><g4d-booking></g4d-booking></section>`.
+Plan features (true or false): `{{entitlements.video}}` `{{entitlements.cart}}` `{{entitlements.booking}}` `{{entitlements.customDomain}}` `{{entitlements.callsToAction}}`. Use them as conditions, for example `<section data-g4d-section="booking" data-g4d-if="entitlements.booking"><g4d-booking></g4d-booking></section>`.
 
 ### Lists and their fields
 - `<template data-g4d-each="items">` ... each entry is `item`: `{{item.id}}` `{{item.name}}` `{{item.description}}` `{{item.price}}` `{{item.image}}` `{{item.duration}}` `{{item.badge}}` `{{item.href}}` `{{item.category}}` `{{item.tags}}` `{{item.includes}}` `{{item.location}}` `{{item.area}}` `{{item.bedrooms}}` `{{item.veg}}` `{{item.slug}}` `{{item.n}}` `{{item.featured}}` `{{item.shown}}` `{{item.initial}}`

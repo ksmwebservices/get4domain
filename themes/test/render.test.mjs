@@ -22,7 +22,8 @@ const theme = (over = {}, templates = {}) => ({
   css: { base: '', tokens: '', motion: '', print: '' },
 });
 const HOST = { siteUrl: 'https://kaveri-flow.get4domain.com' };
-const render = (t, content, extra = {}) => renderPage({ theme: t, page: { slug: 'home' }, content, settings: {}, vendor: { id: 'v1' }, host: HOST, ...extra });
+// calls to action are drawn only for a site that has them (callsToAction); these tests are about the slots themselves, so they default it on. The listing-only tests set it off explicitly.
+const render = (t, content, extra = {}) => renderPage({ theme: t, page: { slug: 'home' }, content, settings: {}, vendor: { id: 'v1' }, host: HOST, ...extra, entitlements: { callsToAction: true, ...(extra.entitlements ?? {}) } });
 const plumber = () => sampleContent('plumber');
 const tags = (html) => parse(html);
 

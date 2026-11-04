@@ -111,7 +111,9 @@ export const SLOT_TAGS = Object.keys(SLOT_BY_TAG);
 /** Slots every theme must place. product-grid is also required for Ecommerce categories. video, cart and booking are optional for every theme: the platform draws them only for vendors entitled to them. */
 export const REQUIRED_SLOTS_ALL = ['enquiry-form', 'whatsapp-float', 'bottom-nav', 'map', 'reviews', 'social-links', 'open-now', 'share-qr', 'listed-on-badge', 'action', 'header-nav', 'footer'];
 /** What a vendor's plan can switch on at render time. All default to false. */
-export const ENTITLEMENT_KEYS = ['video', 'cart', 'booking', 'customDomain'];
+export const ENTITLEMENT_KEYS = ['video', 'cart', 'booking', 'customDomain', 'callsToAction'];
+/** Slots that are a call to action (a form, a button, a phone, WhatsApp, booking or cart link). Drawn only when the callsToAction entitlement is true: a Free site is an informational listing with none of them (owner rule 5). */
+export const CTA_SLOTS = ['action', 'bottom-nav', 'enquiry-form', 'whatsapp-float', 'booking', 'cart', 'search', 'share-qr'];
 /** Slots drawn only when the matching entitlement is true (the others are always drawn). */
 export const GATED_SLOTS = { video: 'video', cart: 'cart', booking: 'booking' };
 
