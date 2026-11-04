@@ -645,3 +645,50 @@ Yes, if the adapter is a link and not a copy, and if two preconditions are met.
 | Do-not-contact register, Acceptable Use terms with recorded acceptance, Legal takedown state | Batch 3 and 6 | |
 | Vendor-to-track-and-level migration tool | Stage 19 | |
 
+## INV-8. The five clients
+
+**What the repository can and cannot say.** The repo names these sites. It cannot say which are live Pro clients, what they pay, or what data they hold; that needs production. `docs/v3/OWNER_READONLY_QUERIES.sql` (written, **not run**) lists the clients, their plans, sites, domains, payments and data volumes (queries 1 to 8) and settles which modules are used (query 9). Query 1b finds the candidates below by subdomain and name; query 1c lists every vendor with an active paid term, which is the safe way to name the five.
+
+### 8.1 Candidates named in the repo
+
+| Client | Where in the repo | Industry and shape | Domain (from the repo) | Plan (from the repo) | Notes |
+|---|---|---|---|---|---|
+| Step N Rock | `stepnrock/` (port 3015); `docs/v2/STEPNROCK_HANDOVER.md`, `STEPNROCK_TRACE.md`; `backend-api/scripts/activate-stepnrock.js`, `fix-stepnrock-term.js` | Footwear shop; own Next.js app reading the vendor's products and site document; orders are **order requests** (customer details, shop calls and collects payment) | subdomain `stepnrock` | **Workspace**, half-yearly, total 599,400 paise (5,994 rupees), GST not charged: the agreed terms in `activate-stepnrock-lib.js` (a special arrangement; a half-yearly term is allowed by rule 3) | Order requests become `g4d_pos_sales` (source web) with a stock movement and a CRM lead; no online payment |
+| Deebi Photography | `deebiphotography/` (port 3016, has a Netlify file and an nginx file) | Photography studio; own Next.js app, content read from the site document | subdomain not stated in the repo | not stated | Uses the photography module tables (shoots, deliverables) only if the vendor enters them |
+| Allwin Tours | `allwin-tours/` (port 3010) | Travel agency; own Next.js app; contact form posts into the CRM | subdomain `allwintours` (no hyphen, `WEBSITE_MANAGER_PROGRESS.md` decision 3) | not stated | May use the travel module (trips, vehicles, contracts) |
+| Indian Ambulance | `indianambulance/` (port 3017); `docs/v2/VENDOR_SITE_indianambulance.md` | Ambulance service; a **Bolt export** run as its own app with the vendor resolved from the subdomain; no forms, every enquiry is a `tel:` or `wa.me` link | subdomain `indianambulance` | not stated | Closest to the V3 pattern (static design, content from the backend) |
+| MR Travels | `CLIENT_PROJECTS/TRAVEL/CLIENTS/MR_TRAVELS_001` (separate repo); `docs/LEGACY_MIGRATION_STATUS.md`; `backend-api/scripts/migrate-mrtravels.ts`, `mrtravels-content.ts` | Travel; legacy app on its own Supabase database (ports 3000 and 3001) | `mrtravels.get4domain.com` | none | The Aug 2026 status says the legacy database held only placeholder data and **it was never launched**; a parallel vendor site was built from the public page. It may not be a live client |
+| (not a client) | `ksm-quantum/` (port 3014) | The parent company's own site | | | Listed so nobody counts it |
+
+Ports and containers: `docs/v2/DEPLOYMENT.md` (one VM, one Docker Compose per app, nginx in front, manual deploy). `scripts/existing-clients/` is not on this base (the memory of "connected mode" refers to a branch outside `v3-b2`), so how each app reads the site document is **UNKNOWN here**.
+
+### 8.2 What each client needs to move into V3
+
+The same list applies to each client. The column "V3 target" is where the data goes; "Source" is the V2 table. Rows marked OWNER need a decision.
+
+| Need | Source (V2) | V3 target | Notes |
+|---|---|---|---|
+| Vendor identity, status, industry, subdomain | `"Vendor"` | same row; V3 adds `V3VendorFlag`, `V3SiteSettings`, `V3Domain` | Rule 1: the subdomain stays mandatory and canonical |
+| Category and track | `Vendor.industry` (20 values) | one of 41 categories, then Handyman, Professional or Ecommerce | The category map in the theme kit is an inference; each client needs a manual check |
+| Site content | `"VendorCMS"` (draft, pages, layout, extras, `siteVersion`), `g4d_site_versions` | V3 publication snapshot (`V3SitePublication`, `V3SitePublicationPage`) built by the renderer | Content location differs by client: the five bespoke apps read it at run time; Indian Ambulance and the Bolt-style sites embed their design |
+| Site design | the bespoke app (`stepnrock/`, `deebiphotography/`, `allwin-tours/`, `indianambulance/`) or a built-in theme | a V3 Pro theme (designed in Bolt, imported as a theme package) or kept as an "own site" | **OWNER**: a bespoke app is not a V3 theme; either Bolt re-designs each (cost) or V3 keeps serving the app until it is rebuilt |
+| Pictures and files | `g4d_media_assets`, files in the `/app/uploads` volume | V3 media storage | The files live on the VM volume, not in the database; copy them |
+| Domain | `Vendor.customDomain`, `g4d_domain_registrations` | `V3Domain` + verification + redirect; one canonical host (rule 1) | Custom domain only on Pro; canonical is the subdomain unless the promotion add-on is active. If a client uses a custom domain today without the add-on, the canonical flips to the subdomain: **OWNER** and an SEO redirect plan |
+| Plan record | `g4d_billing_terms` (WORKSPACE or BOS, cycle, status, period), `"Subscription"` | `V3PlanSubscription` (track x level, term quarterly, half-yearly or annual) | Rule 3: no monthly term; consent and notice before any price change; prices from the approved book (none seeded). **OWNER**: which V3 level each client gets, and at what price |
+| Payment records | `"Invoice"` (kind, status, paid), `g4d_platform_income`, `g4d_manual_payment_submissions` | stay as history in the legacy tables (read-only); V3 invoices start from the first V3 payment | D1: V3 never reads legacy billing; the history is kept, not migrated |
+| Wallet balance | `g4d_wallets`, `g4d_wallet_transactions` | the V3 wallet is new (rule 7: no cash-out, no refunds, one-year validity) | **OWNER**: a legacy balance cannot be refunded or converted automatically; decide whether to credit it as a V3 top-up with a one-year life |
+| Customers and leads | `g4d_contacts`, `g4d_campaign_leads`, `g4d_call_logs` | the customer list (INV-7.2) with consent NONE | Counts per client are in query 7; duplicates in query 10 |
+| Accounts | `g4d_bos_*`, `g4d_generic_invoices`, `g4d_expenses`, `g4d_payment_records` | BOS data stays; surfaced by Batch 13 (5.23) | Hiding the old dashboard must not hide the books of a client who uses them: check query 7 |
+| Orders and stock | `g4d_pos_sales`, `g4d_stock_movements`, `"VendorProduct"` | Store track module (5.24) | Step N Rock depends on this |
+| Industry data | the module tables (INV-5.2) | hidden, kept | Run query 9 for each client before hiding anything |
+| Team | `g4d_team_members` | V3 team with presets | Owner-only rules apply |
+| Theme purchases | `g4d_theme_entitlements`, `g4d_vendor_template_unlock` | V3 theme purchase | Keep history |
+| Add-ons | `g4d_vendor_addons` (`site_doc_v2`, `site_connected`, `leadspace`, `nav_v2`, `bos_custom`) | entitlements | Query 5b |
+
+### 8.3 What blocks a move today
+
+1. Free versus Pro behaviour (Batch 3) and the V3 wallet (Batch 4) are not built, so a client could not yet be given a V3 level that behaves as the rules say.
+2. The five apps are bespoke designs; V3 has no Pro theme yet (INV-9).
+3. The legacy-to-track migration tool does not exist (it is a Stage 19 deliverable).
+4. The owner decisions in the table above (design, canonical host, price, wallet balance).
+
