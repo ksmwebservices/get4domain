@@ -66,7 +66,8 @@ async function cleanupProvisioning(prisma, vendorIds, runId, counts) {
   const tokens = vendorIds.length ? await prisma.v3ClaimToken.findMany({ where: { vendorId: { in: vendorIds } }, select: { id: true } }) : [];
   const tokenIds = tokens.map((t) => t.id);
   const directoryIds = await cleanupDirectory(prisma, vendorIds, tokenIds, runId, counts);
-  const entityIds = [...jobIds, ...tokenIds, ...vendorIds, ...directoryIds];
+  const orderIds = await cleanupBilling(prisma, vendorIds, runId, counts);
+  const entityIds = [...jobIds, ...tokenIds, ...vendorIds, ...directoryIds, ...orderIds];
   if (entityIds.length) counts.v3AuditLog = (await prisma.v3AuditLog.deleteMany({ where: { entityId: { in: entityIds } } })).count;
   if (vendorIds.length) {
     counts.v3Invite = (await prisma.v3Invite.deleteMany({ where: { vendorId: { in: vendorIds } } })).count;
@@ -95,6 +96,18 @@ async function cleanupDirectory(prisma, vendorIds, tokenIds, runId, counts) {
     if (!c && !l) break;
   }
   return [...businessIds, ...removals.map((r) => r.id)];
+}
+
+/**
+ * Slice 5.1b: the payment events the tests caused (matched by their order, or by the run id they carry in the event id), and the audit rows of the test orders. The orders, invoices and reminder
+ * log cascade from the vendor. NOTE: the invoice counter of the financial year is NOT rolled back (a gap-free counter must never go backwards); synthetic orders use up numbers on STAGING only.
+ */
+async function cleanupBilling(prisma, vendorIds, runId, counts) {
+  const orders = vendorIds.length ? await prisma.v3PlanOrder.findMany({ where: { vendorId: { in: vendorIds } }, select: { id: true } }) : [];
+  const orderIds = orders.map((o) => o.id);
+  const or = [...(orderIds.length ? [{ orderId: { in: orderIds } }] : []), ...(runId ? [{ providerEventId: { contains: runId } }] : [])];
+  if (or.length) counts.v3PaymentEvent = (await prisma.v3PaymentEvent.deleteMany({ where: { OR: or } })).count;
+  return orderIds;
 }
 
 async function countTestTenants(prisma) {

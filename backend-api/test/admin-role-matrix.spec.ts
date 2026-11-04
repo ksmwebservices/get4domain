@@ -27,6 +27,8 @@ const SUPER_ONLY_ROUTES = [
   'PUT /v3/admin/plan-settings/:key',
   'POST /v3/admin/vendors/:id/subscription', 'POST /v3/admin/vendors/:id/overrides', 'PUT /v3/admin/overrides/:overrideId', 'DELETE /v3/admin/overrides/:overrideId',
   'PUT /v3/admin/vendors/:id/flags/v3_plans',
+  // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
+  'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
 ];
 const MARKETING_DENIED = [
   'POST /addons/vendor/:key/enable', 'POST /addons/vendor/:key/disable', 'POST /modules/vendor/:key/enable', 'POST /modules/vendor/:key/disable',
@@ -46,6 +48,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
   'GET /v3/admin/tax-rates', 'GET /v3/admin/discount-rules', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
+  // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/billing/orders', 'GET /v3/admin/billing/payment-events',
   // B2 slice 5.7: directory writes, the claim phone override and removal requests (contact details): OPERATIONS and SUPER_ADMIN only
   'POST /v3/admin/directory/locations', 'PUT /v3/admin/directory/locations/:id', 'POST /v3/admin/directory/categories', 'PUT /v3/admin/directory/categories/:id', 'POST /v3/admin/directory/businesses', 'PUT /v3/admin/directory/businesses/:id',
   'POST /v3/admin/directory/businesses/:id/moderate', 'POST /v3/admin/directory/businesses/:id/placements', 'POST /v3/admin/directory/placements/:id/revoke', 'POST /v3/admin/directory/businesses/:id/claim-phone-override',
@@ -94,7 +98,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(150);
+    expect(oracle).toHaveLength(154);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

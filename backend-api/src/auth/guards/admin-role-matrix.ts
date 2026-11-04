@@ -84,6 +84,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/provisioning/jobs/:id/retry': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/cancel': OPS_AND_SUPER, 'POST /v3/admin/provisioning/jobs/:id/run': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/claim-link/reissue': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/claim-link/revoke': OPS_AND_SUPER, 'GET /v3/admin/invites': OPS_AND_SUPER,
 
+  // ── V3 slice 5.1b: plan purchases. Orders and the payment inbox are money: OPERATIONS and SUPER_ADMIN read; only SUPER_ADMIN marks an order paid offline or records a refund. MARKETING is refused everywhere.
+  'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
+
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);
   // every write, the claim phone override and the removal requests (they carry a masked contact) are OPERATIONS and SUPER_ADMIN.
   'GET /v3/admin/directory/locations': ALL_STAFF, 'GET /v3/admin/directory/categories': ALL_STAFF, 'GET /v3/admin/directory/businesses': ALL_STAFF, 'GET /v3/admin/directory/businesses/:id': ALL_STAFF, 'GET /v3/admin/directory/businesses/:id/placements': ALL_STAFF,

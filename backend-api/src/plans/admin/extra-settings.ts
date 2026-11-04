@@ -1,4 +1,5 @@
 import { isDirectorySettingKey, validateDirectorySetting } from '../../directory/settings/directory-settings';
+import { isBillingSettingKey, validateBillingSetting } from '../../plan-billing/settings/billing-settings';
 import { isDomainSettingKey, validateDomainSetting } from '../../site-domains/settings/domain-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
@@ -9,6 +10,7 @@ import { validateProvisioningSetting } from '../../provisioning/settings/provisi
 const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, value: unknown) => void }> = [
   { owns: isDomainSettingKey, validate: validateDomainSetting },   // slice 5.6
   { owns: isDirectorySettingKey, validate: validateDirectorySetting },   // slice 5.7
+  { owns: isBillingSettingKey, validate: validateBillingSetting },   // slice 5.1b
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {
