@@ -55,7 +55,7 @@ Columns: module, what it does, tables it touches through Prisma (the first six),
 | auth | Login for vendors, team members and staff; JWT; guards | AdminTeamMember, TeamMember, Vendor, VendorAddon | staff, public routes | core path | 10/716/4/7 |
 | automobile | Industry module: service jobs, job lines, part stock | JobLine, PartStock, ServiceJob | login only | code only, no deploy mention | 4/210/13/0 |
 | bos | Business Operating System: numbered invoices, quotes, credit notes, counter billing, parties, payments and allocations, purchases, stock ledger, double-entry books, GST/HSN reports, CA pack, recurring invoices, public pay page | BillingTerm, BosAccount, BosAllocation, BosDocSeries, BosDocument, BosDocumentLine +17 | area accounts/website, public routes | code only, no deploy mention | 18/3325/78/0 |
-| business-documents | Business document templates and rendering | - | login only | code only, no deploy mention | 5/263/2/0 |
+| business-documents | Printable business documents: letterhead, visiting card, ID card templates rendered to HTML | - | login only | code only, no deploy mention | 5/263/2/0 |
 | campaign-pages | Per-vendor landing pages (LeadSpace/old Campaigns) with lead capture and /go/ public route | CampaignLead, CampaignPage | public routes | code only, no deploy mention | 8/412/10/1 |
 | campaigns | Vendor campaign records (draft, approve, wallet cost) | Campaign | area campaigns, staff | named in deploy/status docs | 4/197/6/1 |
 | clinic | Industry module: doctors and appointments | ClinicAppointment, Doctor | login only | named in deploy/status docs | 4/188/9/0 |
@@ -67,9 +67,9 @@ Columns: module, what it does, tables it touches through Prisma (the first six),
 | config | Environment/config loading and validation | - | n/a | core path | 23/1114/0/0 |
 | construction | Industry module: projects, milestones, materials | ConstructionProject, ProjectMaterial, ProjectMilestone | login only | code only, no deploy mention | 4/229/13/0 |
 | crm | Vendor CRM and TeleCRM: leads (g4d_campaign_leads), call log, queue, follow-ups, CSV import, convert to contact | CallLog, CampaignLead, Contact | area telecrm | core path | 6/371/10/0 |
-| customer | Customer portal (end customers of a vendor): view records and invoices | CatalogItem, Contact, GenericInvoice, Record, Vendor, VendorCMS | public routes | named in deploy/status docs | 3/337/9/0 |
+| customer | Customer portal: end-customer OTP login (mock OTP outside production), session profile, vendor-sent portal invites (mock) | CatalogItem, Contact, GenericInvoice, Record, Vendor, VendorCMS | public routes | named in deploy/status docs | 3/337/9/0 |
 | demo | Demo-catalogue visits, demo booking leads, OTP-gated demo, sample data | CatalogItem, Contact, GenericInvoice, Lead, Record, Subscription +2 | staff, public routes | core path | 5/921/6/0 |
-| design | Design vocabulary endpoint for the site editor | - | login only | named in deploy/status docs | 4/130/1/0 |
+| design | Built-in sample Fabric.js design templates (scene JSON with prefill fields) for the poster/design editor | - | login only | named in deploy/status docs | 4/130/1/0 |
 | diagnostics | Industry module: test orders and items | TestOrder, TestOrderItem | login only | named in deploy/status docs | 4/188/9/0 |
 | directory | V3 directory: categories, locations, businesses, claim by OTP, removal, placements, public search | V3AccountSetupGrant, V3DirectoryBusiness, V3DirectoryBusinessMedia, V3DirectoryBusinessService, V3DirectoryCategory, V3DirectoryClaimOverride +6 | staff, owner-only parts, tenant guard, public routes | V3 staging only | 29/1697/29/10 |
 | domain-campaign | Old DomainCampaign product (fee brackets, invoices) now folded into LeadSpace | Lead, Subscription | staff, public routes | named in deploy/status docs | 7/403/9/0 |
@@ -81,7 +81,7 @@ Columns: module, what it does, tables it touches through Prisma (the first six),
 | events | Industry module: event bookings and vendor assignments | EventBooking, EventVendorAssignment | login only | code only, no deploy mention | 4/184/10/0 |
 | finance | Industry module: finance cases and documents | FinanceCase, FinanceCaseDocument | login only | named in deploy/status docs | 4/201/10/0 |
 | google-ads | Google Ads connector placeholder (mock) | - | n/a | stub / thin | 2/53/0/0 |
-| growth-hub | Growth hub suggestions and campaign shortcuts (mock-first) | Campaign | area campaigns, staff | stub / thin | 4/179/4/0 |
+| growth-hub | Publish approved content to Facebook/Instagram and submit paid-ad requests, through MOCK Meta and ads layers | Campaign | area campaigns, staff | stub / thin | 4/179/4/0 |
 | gym | Industry module: classes and memberships | GymClass, Membership | login only | code only, no deploy mention | 4/152/9/0 |
 | health | Liveness and readiness endpoints | - | public routes | V3 staging only | 2/73/2/1 |
 | hotel | Industry module: rooms and room bookings | Room, RoomBooking | login only | code only, no deploy mention | 4/161/9/0 |
@@ -90,7 +90,7 @@ Columns: module, what it does, tables it touches through Prisma (the first six),
 | leads | Marketing website lead capture (g4d_leads), status updates | Lead | staff, public routes | core path | 7/357/5/1 |
 | leadspace | LeadSpace: free vendor page, OTP-verified enquiries, prepaid lead wallet (purse), pricing rules, disputes, refunds, promotion/social posts, abuse reports, daily stats | AdSpendEntry, BillingTerm, Campaign, CampaignLead, CampaignPage, CommercialAuditLog +25 | area campaigns/wallet/website, owner-only parts, public routes | named in deploy/status docs | 29/3896/93/1 |
 | logistics | Industry module: shipments | Shipment | login only | code only, no deploy mention | 4/133/5/0 |
-| managed-services | Catalogue and requests for done-for-you services sold by the team | Lead, ManagedServiceCatalogItem | staff, public routes | named in deploy/status docs | 5/210/5/0 |
+| managed-services | Public "Get a Custom Quote" enquiry for managed services, plus the admin catalogue of service lines and default rates | Lead, ManagedServiceCatalogItem | staff, public routes | named in deploy/status docs | 5/210/5/0 |
 | messaging | WhatsApp gateway: Cloud API and sandbox providers, templates, send log, webhook | WhatsappMessageLog, WhatsappTemplate | public routes | named in deploy/status docs | 6/312/2/0 |
 | meta | Meta (Facebook/Instagram) connector placeholder | - | n/a | stub / thin | 2/56/0/0 |
 | notifications | In-app notifications and web-push subscriptions | Notification, PushSubscription | staff | core path | 8/402/5/2 |
@@ -133,7 +133,7 @@ Columns: module, what it does, tables it touches through Prisma (the first six),
 | website-themes | Legacy website theme catalogue and per-vendor unlock/purchase | Vendor, VendorTemplateUnlock, WebsiteTheme | area website, staff, owner-only parts, public routes | code only, no deploy mention | 4/326/9/1 |
 | whatsapp | Fast2SMS-based WhatsApp sender (mock until configured) | - | n/a | core path | 2/128/0/0 |
 | whatsapp-bot | Vendor WhatsApp/web assistant answering from knowledge base entries | CampaignLead, Contact, KnowledgeBaseEntry, Message, Vendor, VendorCMS +2 | public routes | code only, no deploy mention | 6/543/5/0 |
-| widget | Embeddable enquiry widget with per-vendor key | CampaignLead, Vendor | public routes | named in deploy/status docs | 4/177/5/0 |
+| widget | Embeddable widget with per-vendor key: public config, lead submit into the CRM pipeline, chat to the Claude assistant | CampaignLead, Vendor | public routes | named in deploy/status docs | 4/177/5/0 |
 
 ### 1.3 Controller groups (route prefixes)
 
@@ -488,4 +488,160 @@ Source: `V3_REPLACEMENT_MAP_AND_WORK_PACKAGES.md` (repo root of the main worktre
 | Section 7, package 9b: "wallet debit and registrar call are one traceable job with retry and refund on failure" | **WRONG** against rule 7 | Rule 7: no refunds of any kind. A failed registration must be handled by not charging until the registrar confirms |
 | Section 4, jobs: "Theme expiry and renewal check", "Domain and SSL watcher" | **PARTLY EXISTS** | `themes/theme-expiry.service.ts` exists for the V2 theme purchase; no SSL watcher |
 | Section 3, package 0: S7, S8-B, S13 | **CONFIRMED done** | Route classification and role-matrix tests exist; password reset and refresh tokens exist in `account-security` |
+
+## INV-7. Verdicts
+
+**Meaning.** KEEP = use as is. ADAPT = same engine, V3 rules and screens. RETIRE = hide for V3 vendors, keep code and data (rule 6 and the map's method: never delete). NEW = nothing in V2 to start from. Verdicts follow the frozen owner rules. The "V3 slice" column uses the slice numbers of the dispatch files in `docs/v3/stages/V3_DISPATCH`; "built" means the V3 module already exists on the `v3-b2` base.
+
+**Totals for the 92 backend modules:** KEEP 25, ADAPT 28, RETIRE 39. The 21 industry modules are all RETIRE. NEW applies to capabilities that have no V2 module (7.3).
+
+### 7.1 One row per backend module
+
+| Module | Verdict | V3 slice | Main risk |
+|---|---|---|---|
+| account-security | KEEP | built (S13) | Browser keeps the JWT in localStorage; token storage is a later frontend job |
+| accounting | RETIRE | 5.23 (Stage 17) | Two expense systems exist (this and BOS); hide this one, archive its rows read-only; GstFiling is hand-typed |
+| addons | ADAPT | 5.1d (Stage 06) | Add-on keys carry plan meaning (`workspace_menu`, `leadspace_only`); map them to entitlements without losing grants |
+| admin-crm | ADAPT | 5.23, 5.18d (Stage 17, 10) | MARKETING may list prospect phone and email here while the same data under `GET /leads` is SUPER_ADMIN only; no consent or Do-not-contact check |
+| admin-team | ADAPT | 5.20 (Stage 08) | Only 3 staff roles against the 8 team routines |
+| agriculture | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| ai | ADAPT | 5.11b (Stage 16) | Guardrails for rule 10 are not in the prompt; model name is hard-coded |
+| ai-studio | KEEP | built (5.11) | Posters, reels and video are not built |
+| ai-templates | ADAPT | 5.11b (Stage 16) | None |
+| analytics | ADAPT | 5.10 (Stage 14) | Counts legacy tables; V3 reports must not read them |
+| auth | KEEP | built | One principal model for owner and team (`sub` is the vendor id); keep it, add the V3 tenant guard on new routes only |
+| automobile | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| bos | ADAPT | 5.23 (Stage 17) | Largest legacy module (78 routes); plan keys Workspace and BOS; the name BOS may not appear in product text (rule 13); tests live in script suites, not Jest |
+| business-documents | KEEP | none | Low value; keep as is, hidden unless a track needs it |
+| campaign-pages | RETIRE | 5.13a, 5.7b | Public lead capture on Free sites is forbidden (rules 2, 5); old landing pages stay served for legacy vendors until moved |
+| campaigns | RETIRE | 5.18c (Stage 10) | Charges the wallet and sends nothing; replace with the consent-gated V3 campaigns |
+| clinic | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| cms | ADAPT | 5.5 (Stage 13) | `VendorCMS` is the single site store for V2; V3 snapshot tables sit beside it; two sources of truth during the move |
+| coaching | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| commercial | RETIRE | 5.1b built; 5.17 (Stage 09) | Legacy billing is out of scope for V3 code (D1); keep running for legacy vendors; GST fixed at 18% in code; monthly and annual terms differ from rule 3 |
+| common | KEEP | built | Shared guards and KeyedQueue; `ModuleGuard` is allow-by-default for undecorated routes |
+| communication | ADAPT | 5.18b (Stage 10) | No consent, opt-out or block list; rates hard-coded; must sit behind a consent gate |
+| config | KEEP | built | None |
+| construction | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| crm | ADAPT | 5.23 (Stage 17) | Works on campaign leads, not contacts; no de-duplication; needs entitlement and consent gates (INV-7.2) |
+| customer | ADAPT | 5.18a (Stage 10) | OTP login is mocked outside production; portal ties to `Contact` |
+| demo | KEEP | SEO-0 | Needs a `noindex` header (on branch `v3-seo0`, not merged); the demo catalogue shows V2 products |
+| design | KEEP | none | Sample Fabric.js templates; part of the poster path |
+| diagnostics | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| directory | KEEP | built (5.7) | Claim and removal flows are built; seeded-site indexing stays OFF |
+| domain-campaign | RETIRE | none | Folded into LeadSpace in V2; hide and keep data |
+| domainapp | ADAPT | 5.23 (Stage 17) | Contacts and catalogue are the base for the customer list; Domain App invoice payment link uses the platform Razorpay key (rule 4) |
+| domains | RETIRE | 5.6c, 5.6d (Stage 15) | Replace by `site-domains`; hard-coded retail prices; wallet debit before the registrar call; no live proof |
+| education | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| email | KEEP | 5.18b (Stage 10) | Templates are inline; needs consent-aware send for campaigns |
+| engine | ADAPT | 5.13a (Stage 06) | Public actions must switch off on Free sites (rule 2); vendor-direct checkout stays for Pro |
+| events | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| finance | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| google-ads | RETIRE | 5.12b (Stage 16) | Mock; remove from navigation |
+| growth-hub | RETIRE | 5.12b (Stage 16) | Mock Meta and ads layers report success they did not achieve (audit S11) |
+| gym | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| health | KEEP | built | None |
+| hotel | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| industries | ADAPT | 5.24 (Stage 17) | 20 industry configs vs 41 categories and three tracks |
+| invoices | RETIRE | 5.17d (Stage 09) | Invoice number is last row plus one without a lock; GST fixed at 18%; replaced by V3 plan invoices |
+| leads | KEEP | none | Get4Domain's own demo leads; SUPER_ADMIN only already |
+| leadspace | RETIRE | 5.7b (Stage 06) | Own wallet purse, refunds and disputes; live data unknown until the owner queries run; hide and keep data |
+| logistics | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| managed-services | ADAPT | 5.16b (Stage 07) | Becomes part of the service catalog and price book; V2 rates are admin data |
+| messaging | ADAPT | 5.18b (Stage 10) | Best asset for rule 9 (checks in code); templates await Meta approval |
+| meta | RETIRE | 5.12 (Stage 16) | Placeholder; the social publisher is the real path |
+| notifications | ADAPT | 5.20 (Stage 08) | Becomes the staff alert path; web push exists |
+| otp | KEEP | built (5.7) | Used by demo and public flows; V3 has its own OTP challenge table |
+| payments | RETIRE | 5.17 (Stage 09) | Legacy Razorpay path with the platform key; V3 uses the gateway ports |
+| photography | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| plan-billing | KEEP | built (5.1b) | Test mode only; live keys refused in code |
+| plans | KEEP | built (5.1) | Existing vendors are not yet mapped to a track and level |
+| platform-settings | KEEP | built | Encrypted keys; V3 settings sit in `V3PlanSetting`; two stores |
+| prisma | KEEP | built | None |
+| professional | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| provisioning | KEEP | built (5.3) | Bulk CSV site creation is Batch 9 |
+| quotes | KEEP | none | Platform quotes to prospects; unrelated to vendor quotes in BOS |
+| realestate | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| reels | RETIRE | 5.11b (Stage 16) | Stub; coming soon |
+| registry | ADAPT | 5.1d (Stage 06) | Menu and plan access by Workspace and BOS; replace by entitlements, then retire |
+| restaurant | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| retail | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| salon | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| site-doc | ADAPT | 5.5 (Stage 13) | Flag-gated per vendor; 23 routes to fold into the V3 website manager |
+| site-domains | KEEP | built (5.6) | Automation in Batch 11 |
+| site-publish | KEEP | built (5.4) | Listing-only renderer and canonical rule in Batch 3 |
+| sms | KEEP | 5.18b (Stage 10) | Mock-first; DLT sender id shared |
+| social | ADAPT | 5.12 (Stage 16) | Sandbox until Meta approval |
+| stationery | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| stock | ADAPT | 5.24 (Stage 17) | Store track module base |
+| storage | KEEP | built | None |
+| subscriptions | RETIRE | 5.1d (Stage 06) | Old Product x Plan subscriptions; keep rows for history |
+| support | KEEP | 5.22 (Stage 08) | Becomes part of Vendor 360 |
+| team | ADAPT | 5.20 (Stage 08) | Add presets and spend caps; `ModuleGuard` default |
+| technology | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| themes | ADAPT | THEMES-CC-3 (Stage 12) | Theme bytes in the database; the package format differs from the V3 theme kit |
+| travel | RETIRE | 5.25 (Stage 17) | Hide for V3 vendors, keep data; first check with the owner queries whether a live client uses it |
+| uploads | KEEP | none | Per-vendor quota still to confirm |
+| vendor-comms | ADAPT | 5.18b (Stage 10) | Per-vendor sender identity; keep |
+| vendor-payments | ADAPT | 5.17a (Stage 09) | Vendor's own keys, encrypted; the right model for rule 4 |
+| vendors | ADAPT | 5.13b (Stage 13) | Staff vendor admin; needs act-on-behalf and activity log |
+| video | RETIRE | 5.11b (Stage 16) | Stub; coming soon |
+| wallet | RETIRE | 5.16a (Stage 07) | Legacy wallet stays for legacy vendors; V3 wallet is new (rule 7) |
+| website-themes | RETIRE | THEMES-CC-3 (Stage 12) | Older catalogue and unlock flow; the V3 theme purchase replaces it |
+| whatsapp | ADAPT | 5.18b (Stage 10) | Fast2SMS sender; mock-first; no consent |
+| whatsapp-bot | RETIRE | 5.19 (Stage 11) | Vendors get website chat only (rule 10); the WhatsApp assistant becomes Get4Domain's own |
+| widget | ADAPT | 5.19a (Stage 11) | Chat part becomes the vendor website chat; the lead-submit part must obey rule 2 |
+
+
+### 7.2 The two questions
+
+**Can the existing CRM contact table (`g4d_contacts`) become the V3 customer list (`g4d_customers`) through an adapter without duplicating data?**
+
+Yes, if the adapter is a link and not a copy, and if two preconditions are met.
+
+| Point | Finding |
+|---|---|
+| What `Contact` already holds | name, phone, email, type, tags, address, GSTIN, state, shipping address, opening balance, custom fields, portal access: every identity field V3 needs |
+| Who already depends on it | BOS parties and documents, Domain App invoices, the customer portal, the WhatsApp bot, CRM convert, demo data. Replacing it would split the books from the customer list |
+| What it lacks | phone in E.164 form, a unique key on (vendor, phone), source, consent per channel, unsubscribe and block state, import attestation, soft delete |
+| Recommended design (for the B6.0 decision) | Keep `Contact` as the single identity record. Create `g4d_customers` as a thin row per customer: `vendorId`, `phoneE164` (unique per vendor), `source`, and a nullable unique `legacyContactId`; consent lives in `g4d_customer_consents`. The adapter reads name, email, tags and address from `Contact` through that link and never copies them. V3 customers created by a request, order or payment get a `Contact` through the adapter only once an ADAPT slice (Batch 13, 5.23) allows the write. Every legacy contact starts with consent **NONE** (not opted in); nothing is inferred |
+| Precondition 1: duplicates | `Contact` has no unique phone, and import and capture never de-duplicate, so duplicates must exist. Query 9 in `OWNER_READONLY_QUERIES.sql` counts duplicate (vendor, phone) groups. The adapter must report collisions and must not merge silently |
+| Precondition 2: legacy screens freeze | The old dashboard writes `Contact` directly. After a vendor moves, those screens are hidden (map, rule: "Old screens are hidden for them"), so there is one writer. Until then both exist: do not enable V3 customers for a vendor who still uses the old screens |
+| Alternative | A one-time additive import at the switch (STAGE 19) with E.164 de-duplication. Cleaner for the five live clients, but BOS would then point at the old table while V3 points at the new one, which is the two-sources-of-truth problem Batch 13 forbids. Not recommended |
+
+**Which TeleCRM features need V3 consent and entitlement gates?**
+
+| Feature | Consent gate | Entitlement gate | Notes |
+|---|---|---|---|
+| Call queue, follow-ups, call records, outcomes | Calls are not messages (rule 9 speaks of messages); outbound calls to imported lists need a regulatory decision (question 4) | Pro only; Free is LOCKED_PREVIEW, and Free receives no requests (rule 2) so the queue is empty anyway | Link each call to a customer; write each call to the activity log (rule 8) |
+| Import | Required: attestation of the source and right to contact (5.18a `g4d_import_batches`); imported rows get consent NONE; must not reach messaging | Pro only; row limit from the plan | Today the import skips blanks only, does not de-duplicate and does not attest |
+| Convert lead to customer | Capture consent state at conversion (opt-in text and channel) | Pro | Idempotent by phone: keep, move to E.164 |
+| Send from TeleCRM (WhatsApp, SMS, email buttons and `communication.send`) | Required: opted in for that channel, not on the block list, unsubscribe route present, checked before every send | Pro; wallet charge for sends (rule 7) | The V2 service has none of these checks |
+| Source attribution | None | Pro | Add UTM and source columns; capture is gated by plan |
+| Enquiry capture (`engine.enquiry`, `widget`, `campaign-pages`) | Consent text at capture | Free: switched off completely (no form, rule 2); Pro: full | Enforced at the action registry, not in the UI |
+| AI summary and dictation | None | AI credits (wallet) | Browser dictation stays client-side |
+| Export | Personal data: audit trail, owner-only | Pro | Today a client-side CSV with no audit |
+| Seeded businesses (first contact) | Do-not-contact register checked; email or SMS only; WhatsApp after they reply | Staff only | Not in V2 |
+| Admin TeleCRM (Get4Domain's own leads) | Same Do-not-contact check for outbound | Staff roles | MARKETING currently sees prospect contact details here (question 2) |
+| Team performance, scripts, segments, tasks | None | Pro | All four are absent today (INV-2): NEW |
+
+### 7.3 Capabilities with no V2 module (NEW)
+
+| Capability | V3 slice | Note |
+|---|---|---|
+| Customer list with consent, blocks and import attestation | 5.18a (Stage 10) | see 7.2 |
+| V3 wallet with lots, one-year validity, no refunds | 5.16a (Stage 07) | the legacy wallet is not reused |
+| Service catalog, price book, service requests, theme switch service | 5.16b-d (Stage 07) | `managed-services` carries the V2 rates only |
+| Activity log, staff alerts, trust and safety, Vendor 360 | 5.20-5.22 (Stage 08) | V2 has `CommercialAuditLog` for billing only |
+| Payment methods, pay pages, gateway adapters, receipts in the vendor's name | 5.17a-d (Stage 09) | |
+| Senders with templates, campaigns, automations, Get4Domain's own campaigns | 5.18b-d (Stage 10) | |
+| Vendor website chat and the directory assistant | 5.19 (Stage 11) | |
+| Theme ZIP upload and Pro theme import | THEMES-CC-3 (Stage 12) | |
+| Website manager APIs on the V3 renderer, act on behalf | 5.5, 5.13b (Stage 13) | |
+| SEO manager and tasks, Google connections, reports and audit crawler | 5.8-5.10 (Stage 14) | |
+| Domain automation and domain sales | 5.6c-d (Stage 15) | |
+| Social share, promotion toolkit | 5.12 (Stage 16) | |
+| Track modules (Jobs, Appointments, Store) | 5.24 (Stage 17) | |
+| Do-not-contact register, Acceptable Use terms with recorded acceptance, Legal takedown state | Batch 3 and 6 | |
+| Vendor-to-track-and-level migration tool | Stage 19 | |
 

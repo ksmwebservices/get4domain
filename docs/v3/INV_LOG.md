@@ -19,3 +19,7 @@ Traced the five render paths in the site page, the site document, packs, themes 
 
 ## INV-6 Replacement map
 Checked the 22 rows of section 2 and five other statements against the code. Result: 12 CONFIRMED, 3 WRONG (rows 7, 8 and 10 are wrong or understated), plus row 1, 2, 4, 22 partly or wholly wrong, 2 UNKNOWN (row 11, price figures), and several rows stale because Batch 1 and 2 built the V3 piece (plans, provisioning, directory, domains). Row details in section INV-6 of `docs/v3/V2_INVENTORY.md`.
+
+## INV-7 Verdicts
+One row per backend module (92): KEEP 25, ADAPT 28, RETIRE 39 (all 21 industry modules RETIRE). Answered the two questions: the contact table can back `g4d_customers` through a link, not a copy, provided duplicates are counted first and the old screens are frozen per vendor; the TeleCRM gate table lists consent and entitlement per feature. While writing, six INV-1 module descriptions that had been written from the module name were corrected after reading the controllers (business-documents, design, customer, widget, growth-hub, managed-services).
+Correction to the INV-6 entry above: the tally there was wrong. The INV-6 table has 14 rows CONFIRMED, 7 rows wrong in whole or part (1, 2, 4 wording, 7, 8, 10, 22), 1 row UNKNOWN (11), and of the five other statements 2 UNKNOWN, 1 WRONG, 1 partly exists, 1 confirmed.
