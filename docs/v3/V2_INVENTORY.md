@@ -341,3 +341,112 @@ Two completely separate stacks exist. Neither has consent, opt-out or a Do-not-c
 4. The bot (rule 10) answers from stored details, which is right, and hands over on request, which is right. It lacks the explicit refusals (advice, payment) and has no hand-over record other than a lead and a notification.
 5. Vendors will get website chat only (rule 10); the WhatsApp, Instagram and Facebook assistants are Get4Domain's own and do not exist yet (directory search that sends people to business sites).
 
+## INV-5. Sites and the other areas
+
+### 5.1 Website renderer and theme packs
+
+**Five render paths** (all in `get4domain_mvp/src/app/site/[subdomain]/[[...rest]]/page.tsx`, checked in order):
+
+| # | Path | Condition | Output | Notes |
+|---|---|---|---|---|
+| 1 | Theme package, new document | `site.docV2 && site.themeRef` | `ThemeSite` (`engine/themepack/site.tsx`) renders a stored `ThemePackage` server-side | Self-canonical; the path D3 wants for HTML themes |
+| 2 | Uploaded raw HTML theme | the vendor has uploaded static pages | `RawThemeFrame` (`engine/raw-theme-frame.tsx`): the HTML inside an iframe `srcDoc` | Content inside an iframe is poor for SEO; SEO-0 item 0.11 retires it |
+| 3 | Selected kit template | `site.theme` row resolves to a kit template and the page is the home page | `renderKitTemplate` | Home only |
+| 4 | Document renderer without a package | `site.docV2` | `KitRenderer` with page models, `/p/<slug>` inner pages | The 13 built-in site themes (`engine/kit/site-themes.json`) |
+| 5 | Legacy renderer | not `docV2` | the older section renderer | Reads `VendorCMS` fields directly |
+
+Flag: `site_doc_v2` ("New Website Manager") is a per-vendor add-on key (`addons.constants.ts`). Vendors without it use path 5.
+
+**What feeds the renderer.**
+
+| Piece | Where | Detail |
+|---|---|---|
+| Site document | `VendorCMS` (one row per vendor: draft JSON, layout JSON, pages JSON, `siteVersion`, `siteStatus`, `packKey`, `themeId`, `designKey`) + `SiteVersion` (snapshot per publish) | module `site-doc` (23 routes), editor `my-website/SiteEditorV2.tsx` |
+| Category packs | 24 pack seeds (`site-doc/seeds/part1-3`) and 8 flow families (`site-doc/families.ts`: shop, booking, enquiry, packages, menu, portfolio, listings, courses); `g4d_category_packs` rows editable in admin | `docs/v2/WEBSITE_MANAGER_PROGRESS.md` calls this 32 starter packs |
+| Themes in the database | `ThemePackage` rows plus `ThemeAsset` rows holding the files as `Bytes` (path, mime, bytes, data); `ThemeEntitlement` per vendor | module `themes` (10 routes) |
+| Older theme catalogue | `WebsiteTheme` and `VendorTemplateUnlock` (unlock/purchase flow) | module `website-themes` (9 routes) |
+| Theme contract | `docs/v2/THEME_CONTRACT.md` (contract v1); as built `docs/v3/THEME_CONTRACT_AS_BUILT.md` | |
+| V3 renderer and publish | `site-publish` (renders to a stored snapshot; tables `V3SitePublication`, `V3SitePublicationPage`, `V3SiteSettings`, `V3SiteEvent`) | 15 routes, 10 spec files, slice 5.4 |
+| Theme kit | `themes/` (see INV-9) | 41 categories, one renderer `renderPage()`, lint, 5 Standard themes |
+
+**Gaps against V3.** The 41-category list does not exist in the backend (24 pack ids, different names; the theme kit's `category-map.json` is marked `"status": "inference"`). Theme files live in database rows. Five render paths exist; D3 and SEO-0 want one server-rendered path.
+
+### 5.2 Per-industry modules (21 backend modules, 20 UI tab folders)
+
+Each module is a controller plus service plus DTOs on its own tables, all behind the vendor JWT. None carries an `@RequireModule` area gate, so the server lets any signed-in team member of the vendor call them; only the sidebar and registry decide who sees the tab. All 21 are **hidden, not deleted** for V3 vendors (replacement map, row "Industry-specific ops").
+
+| Module | Tables | Routes | UI tab folder (`domainapp/`) |
+|---|---|---|---|
+| agriculture | ProduceOrder, ProduceStock | 9 | agriculture |
+| automobile | ServiceJob, JobLine, PartStock | 13 | automobile |
+| clinic | Doctor, ClinicAppointment | 9 | clinic |
+| coaching | CoachingBatch, CoachingEnrollment, CoachingSession | 13 | coaching |
+| construction | ConstructionProject, ProjectMilestone, ProjectMaterial | 13 | construction |
+| diagnostics | TestOrder, TestOrderItem | 9 | diagnostics |
+| education | Batch, StudentEnrollment | 9 | education |
+| events | EventBooking, EventVendorAssignment | 10 | events |
+| finance | FinanceCase, FinanceCaseDocument | 10 | finance |
+| gym | GymClass, Membership | 9 | gym |
+| hotel | Room, RoomBooking | 9 | hotel |
+| logistics | Shipment | 5 | logistics |
+| photography | PhotoShoot, ShootDeliverable | 10 | photography |
+| professional | Engagement, EngagementDocument | 10 | professional |
+| realestate | Listing, Deal, PropertyVisit | 13 | realestate |
+| restaurant | PosTable, RestaurantOrder, RestaurantOrderItem | 15 | restaurant |
+| retail | RetailProduct, PosSale | 9 | retail |
+| salon | Stylist, SalonChair, SalonAppointment | 13 | salon |
+| stationery | StationeryItem | 4 | (dashboard page `stationery`) |
+| technology | TechProject, ProjectTask | 9 | technology |
+| travel | Vehicle, Driver, Trip, VisaApplication, Contract, ContractAssignment | 21 plus 5 contracts | travel |
+
+Related config: `OperationType` and `IndustryExperience` tables, `get4domain_mvp/src/config/industry-experience.ts` (20 industries; the memory index calls this the two-mirror config), `engine/industries` (kit, real-estate, retail website sections). The replacement map lists five of these (agriculture, diagnostics, restaurant, "BOS", "counter/POS") and calls BOS an industry module: that is wrong (see INV-6).
+
+### 5.3 Team and roles
+
+| Item | Detail | Proof |
+|---|---|---|
+| Vendor team | `TeamMember` (email, role label, `modules` JSON of area flags); invited by email; the JWT `sub` is the vendor id for members as well as owners | `team/`, `auth/auth.service.ts` |
+| Areas | eight canonical areas: telecrm, campaigns, communication, accounts, wallet, website, reports, ai_studio; loose labels are normalised | `team/team-access.ts` |
+| Enforcement | `ModuleGuard` restricts a team member only on routes or controllers marked `@RequireModule('<area>')`; **a route without that decorator is allowed for a team member** (header of `module.guard.ts`: "undecorated routes unaffected"). That covers all 21 industry modules and parts of `domainapp`, `bos` and `engine`. Owner-only routes (S8-A: domains, vendor-payments keys, payments, wallet top-up, theme unlock) use `VendorOwnerGuard`, listed in `test/route-classification.spec.ts` | `common/guards/module.guard.ts`, `vendor-owner.guard.ts`, `test/route-classification.spec.ts` |
+| Staff roles | `AdminTeamMember.adminRole` with three values: SUPER_ADMIN, MARKETING, OPERATIONS; deny by default through a matrix, a route with no entry is SUPER_ADMIN only | `auth/guards/admin.guard.ts`, `admin-role-matrix.ts`, `test/admin-role-matrix.spec.ts` |
+| Missing for V3 | the staff role set in the V3 playbook (Vendor Onboarding, Website Developer, SEO Team, Social and Marketing, Customer Support, Finance, Telecalling, Super Admin) is not in the enum; spend caps per member are only planned | `V3_REPLACEMENT_MAP` section 5 |
+
+### 5.4 Enquiries
+
+Covered in INV-2 (capture routes and source). Public capture exists in `engine`, `widget`, `campaign-pages`, `whatsapp-bot`, LeadSpace and the per-industry intents. Free-plan behaviour (rule 2: no forms, no call to action) is not implemented anywhere: capture is not tied to a plan.
+
+### 5.5 AI Studio
+
+| Part | Status | Detail |
+|---|---|---|
+| Text generation | working | `ai` module: OpenAI (`gpt-4o-mini`) and Anthropic keys from Admin > Integrations (`ai/openai_api_key`, `ai/anthropic_api_key`), fallback across providers and accounts, real errors never masked as "not configured", wallet debited only after real content | `ai/ai.service.ts` (lines 171-191, 252) |
+| Vendor screen | working | `app/dashboard/ai-studio` (672 lines): captions, descriptions, replies | |
+| Prompt templates | working | `AiTemplate` rows, admin routes | `ai-templates/` |
+| Posters, reels, video | stub | `reels` (2 routes), `video` (3 routes): provider chain placeholders, marked "coming soon", no wallet debit | `reels/`, `video/`, `docs/v2/STATUS.md` |
+| V3 AI Studio | V3 | provider settings, credit grants, prompts, usage; credit reservation is exactly-once under 27 parallel requests (PUSH-FIX-2) | `ai-studio/`, `test/ai-concurrency.int.spec.ts` |
+| Health check | script | `scripts/ai-health.js` | |
+
+### 5.6 Domains and the ResellerClub code
+
+| Part | Status | Detail |
+|---|---|---|
+| Domain search | working code | `ResellerClubService.checkAvailability` for a base name across TLDs; retail prices **hard-coded** per TLD (`RETAIL_PRICE_PAISE`: .in 599, .com 999, .net 1,099, .shop 1,299, .store 1,499 rupees; default 1,199) | `domains/domains.service.ts` (lines 12-27) |
+| Registration | working code, never run live | debits the legacy wallet, creates the ResellerClub customer and contact, calls `registerDomain`, stores `DomainRegistration`; test host `https://test.httpapi.com/api` is supported; production run status is unknown from the repo, and the memory index records the client as untested | `domains/domains.service.ts` (line 174), `resellerclub.service.ts` (lines 39-204) |
+| Connect own domain | working code | returns A and CNAME targets, DNS check `verifyMapping` using Node `dns` | `domains.service.ts` (lines 264-279) |
+| Vendor fields | | `Vendor.customDomain`, `resellerClubCustomerId`, `resellerClubContactId` | `schema.prisma` |
+| No renewals, expiry alerts, auto DNS, invoice | absent | none of these exist | searched |
+| V3 domains | V3 | `site-domains` (14 routes): subdomain rules, custom-domain records, verification, redirects, a host directory with a cache (suspended vendors refused, PUSH-FIX-1) | `site-domains/` |
+
+### 5.7 Admin dashboard modules (`app/admin`, 35 pages)
+
+| Group | Pages | Backend |
+|---|---|---|
+| Vendors and customers | customers (2), vendor-access, utilization, domains, cms, themes, category-packs | `vendors`, `addons`, `registry`, `domains`, `cms`, `themes`, `site-doc` |
+| Money | commerce (8 pages: deals, invoices, payee, payments, plan-access, plan-changes, promos and the index), invoices, renewals, pricing (2), plans, accounting | `commercial`, `invoices`, `platform-settings`, `subscriptions` |
+| Sales and support | leads, telecrm, send-quote, support, managed-services, library | `leads`, `admin-crm`, `quotes`, `support`, `managed-services`, `ai-templates` |
+| Platform | settings, api-settings, team, ai-studio, campaigns, leadspace | `platform-settings`, `admin-team`, `ai`, `leadspace` |
+
+### 5.8 Public website pages (`app/(marketing)`, 22 pages)
+
+Home, about, features, pricing, how-it-works, industries and `industries/[id]`, portfolio, templates, support, contact, quote, book-demo, talk-to-sales, leadspace, managed-services, domain-app, terms, privacy-policy, refund-policy, cart, checkout. Positioning text on these pages still uses the V2 names (Workspace, BOS, LeadSpace, prices) in `data/content.ts`, `data/platform-features.ts` and `lib/pricing.ts`; SEO-0 (branch `v3-seo0`, not merged into `v3-b2`) fixes the SEO side, rule 13 requires the wording to go.
+

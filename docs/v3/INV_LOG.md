@@ -13,3 +13,6 @@ Compared the five invoice engines (platform, Commercial Engine, Domain App, BOS,
 
 ## INV-4 Messaging
 Read the email, SMS, Fast2SMS WhatsApp, Cloud API gateway, webhook, communication, vendor-comms, campaigns, bot and social code and the schedulers. Findings: two unrelated stacks; no consent, unsubscribe, block list or Do-not-contact for vendor messaging; campaigns charge the wallet on approval and send nothing; prices are hard-coded in code; no queue and no Instagram or Facebook assistant. Output: section INV-4 of `docs/v3/V2_INVENTORY.md`.
+
+## INV-5 Sites and others
+Traced the five render paths in the site page, the site document, packs, themes (bytes in the database), the 21 industry modules and their tables, team and staff roles, AI, ResellerClub and domains, the admin and marketing pages. Findings: `ModuleGuard` allows team members on every route without `@RequireModule` (all industry modules); ResellerClub prices are hard-coded; the 41-category list does not exist in the backend; the legacy site renderer, the iframe theme path and the database theme storage are the V3 replacement targets. Output: section INV-5 of `docs/v3/V2_INVENTORY.md`.
