@@ -64,6 +64,8 @@ import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
+import { SeededSitesModule } from './seeded-sites/seeded-sites.module';
+import { SiteLifecycleModule } from './seeded-sites/prisma-site-lifecycle';
 import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
@@ -113,6 +115,8 @@ import { ModuleGuard } from './common/guards/module.guard';
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,
+    SiteLifecycleModule,
+    SeededSitesModule,
     PlanBillingModule,
     AiStudioModule,
     VendorsModule,

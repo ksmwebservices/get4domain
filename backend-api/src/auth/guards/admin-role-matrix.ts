@@ -106,6 +106,10 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
 
   // ── V3 slice 5.4: vendors' sites ────────────────────────────────────────────────────────────────────────────────────────
   // Summaries (the list and one site) are open to all staff; MARKETING never sees html. Every write, and the preview that carries html, is OPERATIONS and SUPER_ADMIN.
+  // B3 slice 5.13a: seeded sites. MARKETING may only READ the list and one site (non-personal fields; the service redacts). Everything else is OPERATIONS and SUPER_ADMIN; the indexing mode is SUPER_ADMIN only.
+  'GET /v3/admin/seeded-sites': ALL_STAFF, 'GET /v3/admin/seeded-sites/:id': ALL_STAFF,
+  'POST /v3/admin/seeded-sites': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/batches/dry-run': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/batches/apply': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/indexing-mode': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/outreach': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/calls': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/consent': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/claim-link': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/claim-link/revoke': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/removal': OPS_AND_SUPER,
+  'PUT /v3/admin/seeded-sites/indexing-mode': SUPER_ONLY,
   // B3 slice 5.7b: the Visit-site report across vendors: OPERATIONS and SUPER_ADMIN (MARKETING refused)
   'GET /v3/admin/directory/visits': OPS_AND_SUPER,
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on: OPERATIONS and SUPER_ADMIN, MARKETING refused

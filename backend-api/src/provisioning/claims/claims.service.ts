@@ -74,6 +74,22 @@ export class ClaimsService {
     return { revoked };
   }
 
+  /**
+   * Slice 5.13a: a SEEDED business has no owner email, so nothing is emailed. Staff get the claim link ONCE in the response and hand it to the owner themselves (read out on a call, or sent
+   * by the staff member). The link is hashed in the database and is never logged or audited; the old link stops working. The caller has already checked consent and the register.
+   */
+  async issueForHandover(vendorId: string, actor: Actor): Promise<{ claimTokenId: string; expiresAt: string; claimUrl: string }> {
+    const vendor = await this.claims.vendorContact(vendorId);
+    if (!vendor) throw unknownVendor();
+    if (await this.claims.hasUsedToken(vendorId)) throw new ConflictException({ message: 'This business has already been claimed.', code: 'CLAIM_INVALID' });
+    const settings = await this.settings.get();
+    const rawToken = generateToken();
+    const expiresAt = new Date(this.clock().getTime() + settings.claimLinkExpiryDays * 86_400_000);
+    const { id } = await this.claims.issue({ vendorId, tokenHash: hashToken(rawToken), expiresAt, actor });
+    await this.audit.record(actor, 'claim.handover', 'vendor', vendorId, { claimTokenId: id });
+    return { claimTokenId: id, expiresAt: expiresAt.toISOString(), claimUrl: `${settings.publicAppUrl.replace(/\/+$/, '')}/claim/${rawToken}` };
+  }
+
   /** Staff: a new link (the old one stops working) and a new invite to the business's owner email. */
   async reissue(vendorId: string, actor: Actor): Promise<{ claimTokenId: string; inviteId: string; expiresAt: string }> {
     const vendor = await this.claims.vendorContact(vendorId);

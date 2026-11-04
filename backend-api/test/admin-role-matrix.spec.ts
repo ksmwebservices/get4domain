@@ -29,6 +29,8 @@ const SUPER_ONLY_ROUTES = [
   'PUT /v3/admin/vendors/:id/flags/v3_plans',
   // B2 slice 5.11: only SUPER_ADMIN touches AI providers (secrets), prompts and credit grants
   'GET /v3/admin/ai/providers', 'POST /v3/admin/ai/providers', 'PUT /v3/admin/ai/providers/:id', 'POST /v3/admin/ai/providers/:id/test', 'GET /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts', 'POST /v3/admin/ai/prompts/:id/activate', 'POST /v3/admin/ai/credit-grants',
+  // B3 slice 5.13a: the seeded-site indexing mode
+  'PUT /v3/admin/seeded-sites/indexing-mode',
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
   'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
 ];
@@ -61,6 +63,8 @@ const MARKETING_DENIED = [
   // B2 slice 5.6: vendors' addresses. Reads included, because a host name can identify a business: OPERATIONS and SUPER_ADMIN only.
   'GET /v3/admin/domains', 'GET /v3/admin/domains/:id', 'POST /v3/admin/domains/:id/verify', 'PUT /v3/admin/domains/:id/state', 'POST /v3/admin/domains/:id/primary',
   'POST /v3/admin/domains/:id/remove', 'PUT /v3/admin/vendors/:id/domains/subdomain',
+  // B3 slice 5.13a: seeded sites
+  'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'GET /v3/admin/seeded-sites/register', 'POST /v3/admin/seeded-sites/register', 'GET /v3/admin/seeded-sites/indexing-mode', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke', 'POST /v3/admin/seeded-sites/:id/removal',
   // B3 slice 5.7b: the Visit-site report across vendors
   'GET /v3/admin/directory/visits',
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on
@@ -86,6 +90,8 @@ const ALL_STAFF_ROUTES = [
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
+  'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id',
   // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
   'GET /v3/admin/directory/locations', 'GET /v3/admin/directory/categories', 'GET /v3/admin/directory/businesses', 'GET /v3/admin/directory/businesses/:id', 'GET /v3/admin/directory/businesses/:id/placements',
 ];
@@ -108,7 +114,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(177);
+    expect(oracle).toHaveLength(192);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

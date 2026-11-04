@@ -6,6 +6,9 @@ import { SitePublishModule } from '../site-publish/site-publish.module';
 import { DirectoryModule } from '../directory/directory.module';
 import { ProvisioningAdminService } from './admin/provisioning-admin.service';
 import { ClaimsService } from './claims/claims.service';
+import { ClaimStore } from './claims/claim-store';
+import { ProvisioningRepository } from './provisioning.repository';
+import { JobRunnerService } from './runner/job-runner.service';
 import { PROVISIONING_CONTROLLERS, PROVISIONING_PROVIDERS } from './provisioning.providers';
 import { ProvisioningCron } from './runner/provisioning-cron';
 
@@ -18,6 +21,6 @@ import { ProvisioningCron } from './runner/provisioning-cron';
   imports: [PrismaModule, EmailModule, SiteDocModule, SitePublishModule, DirectoryModule],   // SiteDocModule supplies StarterService to the draft-site adapter
   controllers: PROVISIONING_CONTROLLERS,
   providers: [...PROVISIONING_PROVIDERS, ProvisioningCron],
-  exports: [ClaimsService, ProvisioningAdminService],
+  exports: [ClaimsService, ProvisioningAdminService, ProvisioningRepository, JobRunnerService, ClaimStore],   // the last three: seeded sites (slice 5.13a) run SEEDED jobs and hand over claim links
 })
 export class ProvisioningModule {}

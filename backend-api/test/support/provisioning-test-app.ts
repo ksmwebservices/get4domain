@@ -26,10 +26,13 @@ import { SITE_DOMAIN_CONTROLLERS, SITE_DOMAIN_PROVIDERS } from '../../src/site-d
 import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from '../../src/site-publish/site-publish.providers';
 import { B3SettingsService } from '../../src/b3-settings/b3-settings.service';
 import { VENDOR_LIFECYCLE_CONTROLLERS, VENDOR_LIFECYCLE_PROVIDERS } from '../../src/vendor-lifecycle/vendor-lifecycle.providers';
+import { SEEDED_CONTROLLERS, SEEDED_PROVIDERS } from '../../src/seeded-sites/seeded-sites.module';
+import { PrismaSiteLifecycle } from '../../src/seeded-sites/prisma-site-lifecycle';
+import { SiteLifecycle } from '../../src/site-publish/publish/site-lifecycle';
 
 /** Batch 3 pieces, switched on with the b3 option; each slice appends its lists here. */
-const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS];
-const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS];
+const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS, { provide: SiteLifecycle, useClass: PrismaSiteLifecycle }, ...SEEDED_PROVIDERS];
+const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS, ...SEEDED_CONTROLLERS];
 
 /**
  * A slim app for the staging integration tests: the REAL provisioning providers, controllers, JWT strategy, guards, pipe, interceptor and filter, over the

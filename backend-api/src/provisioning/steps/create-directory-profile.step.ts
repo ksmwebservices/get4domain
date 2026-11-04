@@ -32,7 +32,7 @@ export class CreateDirectoryProfileStep implements ProvisioningStep {
     const loc = city ? (locs.find((l) => l.kind === 'CITY' && l.name.toLowerCase() === city) ?? locs.find((l) => l.kind === 'DISTRICT' && l.name.toLowerCase() === city)) : undefined;
     const phone = b.phone ? normalisePhoneE164(b.phone) : null;
 
-    const draft = { status: 'UNCLAIMED' as const, name: b.businessName, categoryId: cat.id, locationId: loc?.id ?? null, phoneE164: phone, address: b.city ? { city: b.city } : {}, descriptionText: '' };
+    const draft = { status: 'UNCLAIMED' as const, name: b.businessName, categoryId: cat.id, locationId: loc?.id ?? null, phoneE164: phone, address: { ...(b.city ? { city: b.city } : {}), ...(b.addressLine ? { line1: b.addressLine } : {}), ...(b.area ? { line2: b.area } : {}) }, descriptionText: b.description ?? '' };
     const indexable = await this.admin.indexableFor(draft);
     const row = await this.admin.createWithSlug(businessSlug(b.businessName, loc?.name ?? b.city), (slug) => this.repo.createBusiness({
       vendorId: ctx.vendorId!, slug, name: b.businessName, categoryId: cat.id, locationId: loc?.id ?? null, address: draft.address, phoneE164: phone,

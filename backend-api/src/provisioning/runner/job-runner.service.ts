@@ -78,7 +78,7 @@ export class JobRunnerService {
 
     for (let guard = 0; guard < MAX_STEPS_PER_RUN; guard++) {
       const states = await this.repo.listSteps(claimed.id);
-      const decision = decide(states, { hasRawToken: ctx.rawToken !== undefined, directoryProfile: settings.provisioningDirectoryProfileEnabled === true });
+      const decision = decide(states, { hasRawToken: ctx.rawToken !== undefined, directoryProfile: settings.provisioningDirectoryProfileEnabled === true, seeded: (claimed.input as { mode?: unknown } | null)?.mode === 'SEEDED' });
 
       if (decision.action === 'COMPLETE') {
         const ok = await this.repo.finishRun(claimed.id, this.runnerId, { status: 'SUCCEEDED', currentStep: null, lastErrorCode: null, lastErrorMessage: null, finishedAt: this.clock() });

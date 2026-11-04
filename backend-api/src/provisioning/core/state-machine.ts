@@ -10,11 +10,12 @@ export const STEP_ORDER: readonly StepKey[] = ['CREATE_VENDOR', 'ASSIGN_FREE_PLA
 
 export interface StepState { stepKey: StepKey; status: StepStatus }
 /** `directoryProfile` (slice 5.7): the plan setting provisioningDirectoryProfileEnabled. Absent or false = the five slice 5.3 steps, exactly as before. */
-export interface RunContext { hasRawToken: boolean; directoryProfile?: boolean }
+export interface RunContext { hasRawToken: boolean; directoryProfile?: boolean; /** slice 5.13a: a SEEDED job has no owner yet, so no claim link and no invite are made; the directory profile is always made */ seeded?: boolean }
 
 export const OPTIONAL_DIRECTORY_STEP: StepKey = 'CREATE_DIRECTORY_PROFILE';
 /** The order the runner follows: the five steps, plus the optional directory step right after the site draft when it is enabled. */
-export function effectiveOrder(directoryProfile: boolean): readonly StepKey[] {
+export function effectiveOrder(directoryProfile: boolean, seeded = false): readonly StepKey[] {
+  if (seeded) return ['CREATE_VENDOR', 'ASSIGN_FREE_PLAN', 'CREATE_FREE_SITE_DRAFT', OPTIONAL_DIRECTORY_STEP];
   if (!directoryProfile) return STEP_ORDER;
   const i = STEP_ORDER.indexOf('CREATE_FREE_SITE_DRAFT') + 1;
   return [...STEP_ORDER.slice(0, i), OPTIONAL_DIRECTORY_STEP, ...STEP_ORDER.slice(i)];
@@ -29,7 +30,7 @@ export type Decision = { action: 'RUN_STEP'; step: StepKey } | { action: 'COMPLE
  */
 export function decide(steps: readonly StepState[], ctx: RunContext): Decision {
   const status = new Map(steps.map((s) => [s.stepKey, s.status]));
-  for (const key of effectiveOrder(ctx.directoryProfile === true)) {
+  for (const key of effectiveOrder(ctx.directoryProfile === true, ctx.seeded === true)) {
     const st = status.get(key) ?? 'PENDING';
     if (st === 'DONE' || st === 'SKIPPED') continue;
     if (key === 'SEND_INVITE' && !ctx.hasRawToken) return { action: 'RUN_STEP', step: 'CREATE_CLAIM_LINK' };

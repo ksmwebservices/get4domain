@@ -10,9 +10,13 @@ export interface BusinessInput {
   ownerName: string;
   phone: string;       // normalised: +91XXXXXXXXXX, or + and 8 to 15 digits for another country
   phoneKey: string;    // the last 10 digits, used to find duplicates whatever way the number was typed
-  email: string;       // lower case
+  email: string;       // lower case (for a SEEDED job: the placeholder login nobody can use until the owner claims the page)
+  /** slice 5.13a: a SEEDED job comes from public facts and has no owner yet */
+  seeded?: boolean;
   city: string;
   language: string;    // for example "en", "ta"; wording per language is a later slice
+  /** SEEDED jobs only: the public address facts the staff recorded */
+  area?: string; addressLine?: string; description?: string;
 }
 
 /** Digits only, then: strip 0091 / 91 / a trunk 0 from an Indian mobile. Anything else with a leading + keeps its country code (8 to 15 digits). */
@@ -61,11 +65,14 @@ export function parseBusinessInput(raw: unknown): BusinessInput {
   const bad = (): never => { throw new StepError('INVALID_INPUT', false); };
   if (typeof raw !== 'object' || raw === null) return bad();
   const r = raw as Record<string, unknown>;
-  const businessName = str(r.businessName, 2, 120); const ownerName = str(r.ownerName, 2, 120); const city = str(r.city, 2, 80);
+  const seeded = r.mode === 'SEEDED';
+  const businessName = str(r.businessName, 2, 120); const ownerName = seeded ? (str(r.ownerName, 2, 120) ?? 'Business owner') : str(r.ownerName, 2, 120); const city = str(r.city, 2, 80);
   const category = str(r.category, 2, 60); const language = typeof r.language === 'string' && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(r.language) ? r.language : null;
   const track = TRACK_NAMES.find((t) => t === r.track);
-  const email = typeof r.email === 'string' ? normaliseEmail(r.email) : null;
+  // a SEEDED job never uses a public email as a login: it carries a placeholder address (made when the job was created) that no mailbox exists for
+  const email = typeof (seeded ? r.placeholderEmail : r.email) === 'string' ? normaliseEmail((seeded ? r.placeholderEmail : r.email) as string) : null;
   const phone = typeof r.phone === 'string' ? normalisePhone(r.phone) : null;
   if (!businessName || !ownerName || !city || !category || !language || !track || !email || !phone) return bad();
-  return { businessName, track, category, ownerName, phone, phoneKey: phoneKey(phone), email, city, language };
+  const extra = seeded ? { seeded: true as const, ...(str(r.area, 2, 80) ? { area: str(r.area, 2, 80)! } : {}), ...(str(r.addressLine, 2, 300) ? { addressLine: str(r.addressLine, 2, 300)! } : {}), ...(str(r.description, 2, 600) ? { description: str(r.description, 2, 600)! } : {}) } : {};
+  return { businessName, track, category, ownerName, phone, phoneKey: phoneKey(phone), email, city, language, ...extra };
 }

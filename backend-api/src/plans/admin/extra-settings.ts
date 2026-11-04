@@ -14,7 +14,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isDirectorySettingKey, validate: validateDirectorySetting },   // slice 5.7
   { owns: isBillingSettingKey, validate: validateBillingSetting },   // slice 5.1b
   { owns: isAiSettingKey, validate: validateAiSetting },   // slice 5.11
-  { owns: isB3SettingKey, validate: validateB3Setting },   // batch 3 (5.1d to 5.14)
+  // batch 3 (5.1d to 5.14). seededSiteIndexingMode is NOT owned here: it can only be changed by its own SUPER_ADMIN route with a required reason (SeededSettingsService)
+  { owns: (k: string) => isB3SettingKey(k) && k !== 'seededSiteIndexingMode', validate: validateB3Setting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {
