@@ -1,7 +1,7 @@
 // GENERATED — do not edit. Source: registry/features.ts (+ types.ts, state.ts). Run `npm run registry:build` after changing the registry.
 // registry-hash: 37dc715c95cbc6de
 // Same registry for the API: provisioning, context endpoint, arrangements.
-/* eslint-disable */
+ 
 // Feature registry types — the ONE vocabulary for Dashboard v2 (KSM, 2026-10-08, Release 1A).
 // Edit registry/features.ts, then run `npm run registry:build` in get4domain_mvp (or backend-api). Never edit *.generated.ts by hand.
 

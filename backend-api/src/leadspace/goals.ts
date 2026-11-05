@@ -6,7 +6,7 @@ export const CONSENT_TEXT_VERSION = 'ls-consent-v1';
 export const CONSENT_TEXT =
   'I agree that this business, and Get4Domain on its behalf, may contact me on this number about my request, and that my name, number and request are shared with this business. I can ask for them to be deleted at any time.';
 
-// eslint-disable-next-line no-control-regex
+ 
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 /** Plain text only: control characters out, angle brackets out (nothing here is ever rendered as HTML), trimmed and capped. */
 export const clean = (v: unknown, max: number): string => String(v ?? '').replace(CONTROL, '').replace(/[<>]/g, '').trim().slice(0, max);

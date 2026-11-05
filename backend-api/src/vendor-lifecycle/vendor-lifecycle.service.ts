@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { b3Error } from '../b3-settings/b3-errors';
 import { B3SettingsService } from '../b3-settings/b3-settings.service';
 import { normalisePhoneE164, hashPhone } from '../directory/core/otp';
@@ -28,8 +28,8 @@ export class VendorLifecycleService {
   clock: () => Date = () => new Date();
 
   constructor(
-    private readonly store: LifecycleStore, private readonly subscriptions: Pick<SubscriptionsService, 'assignPlan'>, private readonly entitlements: Pick<EntitlementsService, 'invalidate'>,
-    private readonly plans: Pick<PlansRepository, 'loadCatalogue'>, private readonly settings: Pick<B3SettingsService, 'get'>, private readonly pepper: Pick<OtpPepper, 'value'>,
+    private readonly store: LifecycleStore, @Inject(SubscriptionsService) private readonly subscriptions: Pick<SubscriptionsService, 'assignPlan'>, @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'invalidate'>,
+    @Inject(PlansRepository) private readonly plans: Pick<PlansRepository, 'loadCatalogue'>, @Inject(B3SettingsService) private readonly settings: Pick<B3SettingsService, 'get'>, @Inject(OtpPepper) private readonly pepper: Pick<OtpPepper, 'value'>,
   ) {}
 
   private async vendorOrThrow(vendorId: string) { const v = await this.store.vendor(vendorId); if (!v) throw unknown(); return v; }

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { b3Error } from '../b3-settings/b3-errors';
 import { hashPhone, normalisePhoneE164 } from '../directory/core/otp';
 import { OtpPepper } from '../directory/pepper';
@@ -12,7 +12,7 @@ import { RequestFilter, ReportRow, RequestsStore } from './requests.store';
 @Injectable()
 export class StaffRequestsService {
   clock: () => Date = () => new Date();
-  constructor(private readonly store: RequestsStore, private readonly pepper: OtpPepper, private readonly lifecycle: Pick<VendorLifecycleService, 'suspend'>) {}
+  constructor(private readonly store: RequestsStore, private readonly pepper: OtpPepper, @Inject(VendorLifecycleService) private readonly lifecycle: Pick<VendorLifecycleService, 'suspend'>) {}
 
   async requests(f: RequestFilter & { vendorId?: string }) {
     const r = await this.store.listRequests(f.vendorId ?? null, f);

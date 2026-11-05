@@ -31,7 +31,7 @@ export class AccountDeletionService {
 
   constructor(
     private readonly store: LifecycleStore, private readonly repo: DirectoryRepository, @Inject(DirectorySettingsService) private readonly dirSettings: Pick<DirectorySettingsService, 'get'>,
-    private readonly b3: Pick<B3SettingsService, 'get'>, private readonly sms: SmsAdapter, private readonly pepper: OtpPepper,
+    @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>, private readonly sms: SmsAdapter, private readonly pepper: OtpPepper,
   ) {}
 
   async request(vendorId: string, userId: string | null, actor: Actor, input: { code?: string; confirm?: boolean }): Promise<DeletionStepResult> {

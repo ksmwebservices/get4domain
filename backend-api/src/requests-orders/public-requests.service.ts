@@ -52,8 +52,8 @@ export class PublicRequestsService {
   salt: () => string = () => Math.random().toString(36).slice(2);
 
   constructor(
-    private readonly store: RequestsStore, private readonly hosts: Pick<HostDirectory, 'resolveHost'>, private readonly ents: Pick<EntitlementsService, 'resolve'>, private readonly lifecycle: LifecycleStore,
-    private readonly directory: DirectoryRepository, private readonly visits: Pick<DirectoryVisitService, 'attribute'>, @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>,
+    private readonly store: RequestsStore, @Inject(HostDirectory) private readonly hosts: Pick<HostDirectory, 'resolveHost'>, @Inject(EntitlementsService) private readonly ents: Pick<EntitlementsService, 'resolve'>, private readonly lifecycle: LifecycleStore,
+    private readonly directory: DirectoryRepository, @Inject(DirectoryVisitService) private readonly visits: Pick<DirectoryVisitService, 'attribute'>, @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>,
     private readonly pepper: OtpPepper, private readonly messaging: MessagingService, private readonly catalogue: Catalogue, private readonly gateway: OwnGatewayGate, private readonly sms: SmsAdapter,
     @Inject(DirectorySettingsService) private readonly dirSettings: Pick<DirectorySettingsService, 'get'>, @Optional() @Inject('PUBLIC_APP_URL') private readonly appUrl: string = 'https://app.get4domain.invalid',
   ) {}
