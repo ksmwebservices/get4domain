@@ -17,8 +17,8 @@ const state = (over: Partial<ServicesWorld['plan']> = {}) => Object.assign(w.pla
 beforeEach(async () => { w = servicesWorld(); await w.seed(); });
 
 describe('the seeded catalogue is words only', () => {
-  it('has the twelve services and no price at all', async () => {
-    expect((await w.services.services()).map((s) => s.key)).toEqual(['THEME_SWITCH', 'CUSTOM_THEME', 'SETUP_HELP', 'DOMAIN_CONNECT_HELP', 'CONTENT_UPDATE', 'POSTER_DESIGN', 'REEL_PRODUCTION', 'DOCUMENT_DESIGN', 'SEO_TASK', 'GBP_SETUP', 'SOCIAL_MANAGEMENT_REQUEST', 'CUSTOM_DOMAIN_PROMOTION']);
+  it('has the twenty-three services and no price at all (the owner prices come from the loader, not from this seed)', async () => {
+    expect((await w.services.services()).map((s) => s.key)).toHaveLength(23);
     expect(await w.services.allServicePrices()).toEqual([]);
   });
 });
@@ -86,7 +86,7 @@ describe('the price book', () => {
   it('the public catalogue shows only visible, active services with a price in force, and nothing internal', async () => {
     await w.price('POSTER_DESIGN', 40_000); await w.price('SEO_TASK', 10_000);
     await w.catalogue.updateService('SEO_TASK', { publicVisible: false }, OPS);
-    await w.price('REEL_PRODUCTION', 20_000); await w.catalogue.updateService('REEL_PRODUCTION', { status: 'RETIRED' }, OPS);
+    await w.price('REEL_SLIDESHOW', 20_000); await w.catalogue.updateService('REEL_SLIDESHOW', { status: 'RETIRED' }, OPS);
     const items = (await w.catalogue.publicCatalogue()).items;
     expect(items.map((i) => i.key)).toEqual(['POSTER_DESIGN']);
     expect(JSON.stringify(items)).not.toMatch(/planStateRule|trackScope|status|createdBy|approvedBy|approvedAt|"id"|note|PROPOSED|sortOrder/);
@@ -103,13 +103,13 @@ describe('the price book', () => {
 
 describe('staff edit the catalogue', () => {
   it('a new service is a DRAFT (vendors do not see it) until it is made ACTIVE; its key is unique and never changes', async () => {
-    await w.catalogue.createService({ key: 'LOGO_DESIGN', name: 'Logo design', shortDescription: 'A logo for your business.', includesText: 'One logo made by our team.', approvalText: 'You approve it or ask for changes.' }, OPS);
+    await w.catalogue.createService({ key: 'FLYER_DESIGN', name: 'Flyer design', shortDescription: 'A flyer for your business.', includesText: 'One flyer made by our team.', approvalText: 'You approve it or ask for changes.' }, OPS);
     await fundWallet('v1', 100_000);
-    expect((await w.catalogue.vendorServices('v1')).items.some((s) => s.key === 'LOGO_DESIGN')).toBe(false);
-    await w.catalogue.updateService('LOGO_DESIGN', { status: 'ACTIVE' }, OPS);
-    expect((await w.catalogue.vendorServices('v1')).items.some((s) => s.key === 'LOGO_DESIGN')).toBe(true);
-    expect((await codeOf(w.catalogue.createService({ key: 'LOGO_DESIGN', name: 'Again', shortDescription: 'Another logo.', includesText: 'Another logo.', approvalText: 'Approve it.' }, OPS))).code).toBe('SERVICE_KEY_TAKEN');
-    expect((await codeOf(w.catalogue.updateService('LOGO_DESIGN', { key: 'OTHER' } as never, OPS))).code).toBe('SERVICE_INVALID');
+    expect((await w.catalogue.vendorServices('v1')).items.some((s) => s.key === 'FLYER_DESIGN')).toBe(false);
+    await w.catalogue.updateService('FLYER_DESIGN', { status: 'ACTIVE' }, OPS);
+    expect((await w.catalogue.vendorServices('v1')).items.some((s) => s.key === 'FLYER_DESIGN')).toBe(true);
+    expect((await codeOf(w.catalogue.createService({ key: 'FLYER_DESIGN', name: 'Again', shortDescription: 'Another flyer.', includesText: 'Another flyer.', approvalText: 'Approve it.' }, OPS))).code).toBe('SERVICE_KEY_TAKEN');
+    expect((await codeOf(w.catalogue.updateService('FLYER_DESIGN', { key: 'OTHER' } as never, OPS))).code).toBe('SERVICE_INVALID');
     expect((await codeOf(w.catalogue.updateService('NOPE', { name: 'A valid name' }, OPS))).code).toBe('SERVICE_NOT_FOUND');
   });
   it('the plan-state rule is editable per service', async () => {

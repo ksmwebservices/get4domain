@@ -62,7 +62,7 @@ describe('making a request', () => {
     await w.vendor('v1', 200_000);
     expect((await codeOf(create('v1', { serviceKey: 'NOPE' }))).code).toBe('SERVICE_NOT_REQUESTABLE');
     await w.catalogue.updateService('SEO_TASK', { doneBy: 'VENDOR' }, OPS); expect((await codeOf(create('v1', { serviceKey: 'SEO_TASK' }))).code).toBe('SERVICE_NOT_REQUESTABLE');
-    expect((await codeOf(create('v1', { serviceKey: 'REEL_PRODUCTION', brief: w.brief() }))).body).toMatchObject({ code: 'SERVICE_NOT_REQUESTABLE', reason: 'PRICE_NOT_SET' });
+    expect((await codeOf(create('v1', { serviceKey: 'REEL_SLIDESHOW', brief: w.brief() }))).body).toMatchObject({ code: 'SERVICE_NOT_REQUESTABLE', reason: 'PRICE_NOT_SET' });
     w.plan.level = 'FREE'; w.plan.subscriptionStatus = 'EXPIRED'; expect((await codeOf(create())).code).toBe('SERVICE_NOT_REQUESTABLE'); w.plan.level = 'PRO'; w.plan.subscriptionStatus = 'ACTIVE';
     w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' }; expect((await codeOf(create())).code).toBe('TAX_NOT_CONFIGURED');
     expect(w.requests.requests).toHaveLength(0); expect(ledger('HOLD')).toHaveLength(0);

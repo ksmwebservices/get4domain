@@ -82,7 +82,7 @@ describe('services API', () => {
   });
 
   describe('staff routes', () => {
-    const svc = (over: object = {}) => ({ key: 'LOGO_DESIGN', name: 'Logo design', shortDescription: 'A logo for your business.', includesText: 'One logo made by our team.', approvalText: 'You approve it or ask for changes.', ...over });
+    const svc = (over: object = {}) => ({ key: 'FLYER_DESIGN', name: 'Flyer design', shortDescription: 'A flyer for your business.', includesText: 'One flyer made by our team.', approvalText: 'You approve it or ask for changes.', ...over });
     it('every staff role reads the catalogue; MARKETING gets no money field, OPERATIONS and SUPER_ADMIN do', async () => {
       await w.price('POSTER_DESIGN', 40_000);
       for (const url of ['/v3/admin/services', '/v3/admin/services/POSTER_DESIGN']) for (const role of ['MARKETING', 'OPERATIONS', 'SUPER_ADMIN']) expect([url, role, (await get(url, role)).status]).toEqual([url, role, 200]);
@@ -95,12 +95,12 @@ describe('services API', () => {
       const writes: Array<['post' | 'put', string, object]> = [['post', '/v3/admin/services', svc()], ['put', '/v3/admin/services/SEO_TASK', { name: 'Renamed task' }], ['post', '/v3/admin/services/SEO_TASK/prices', { amountPaise: 1_000 }],
         ['post', '/v3/admin/packs', { key: 'P_ONE', name: 'Pack one', description: 'A small pack.', items: [{ serviceKey: 'SEO_TASK', count: 1 }] }], ['post', '/v3/admin/services/prices/x/approve', { effectiveFrom: future() }]];
       for (const role of ['MARKETING', 'owner', 'member']) for (const [m, url, body] of writes) expect([role, url, (await send(m, url, role, body)).status]).toEqual([role, url, 403]);
-      expect((await w.services.serviceByKey('LOGO_DESIGN'))).toBeNull();
+      expect((await w.services.serviceByKey('FLYER_DESIGN'))).toBeNull();
     });
     it('OPERATIONS adds and edits services and packs and proposes prices, but only SUPER_ADMIN approves or retires one', async () => {
       expect((await send('post', '/v3/admin/services', 'OPERATIONS', svc())).status).toBe(200);
-      expect((await send('put', '/v3/admin/services/LOGO_DESIGN', 'OPERATIONS', { status: 'ACTIVE', planStateRule: 'ANY' })).body.data).toMatchObject({ status: 'ACTIVE', planStateRule: 'ANY' });
-      const p = await send('post', '/v3/admin/services/LOGO_DESIGN/prices', 'OPERATIONS', { amountPaise: 25_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null, amountPaise: 25_000 });
+      expect((await send('put', '/v3/admin/services/FLYER_DESIGN', 'OPERATIONS', { status: 'ACTIVE', planStateRule: 'ANY' })).body.data).toMatchObject({ status: 'ACTIVE', planStateRule: 'ANY' });
+      const p = await send('post', '/v3/admin/services/FLYER_DESIGN/prices', 'OPERATIONS', { amountPaise: 25_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null, amountPaise: 25_000 });
       expect((await send('put', `/v3/admin/services/prices/${p.body.data.id}`, 'OPERATIONS', { amountPaise: 26_000 })).body.data.amountPaise).toBe(26_000);
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'OPERATIONS', { effectiveFrom: future() })).status).toBe(403);
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/retire`, 'OPERATIONS')).status).toBe(403);
