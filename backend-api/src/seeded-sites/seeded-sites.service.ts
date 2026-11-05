@@ -235,7 +235,7 @@ export class SeededSitesService {
     const r = await this.mustGet(id);
     if (r.lifecycle !== 'REMOVED') {
       await this.lifecycle.executeRemoval({
-        vendorId: r.vendorId, kind: 'SEEDED_REMOVAL', reason, phoneHash: r.phoneHash, requestedBy: null, executedBy: who.actor.id,
+        vendorId: r.vendorId, kind: 'SEEDED_REMOVAL', registerSource: 'DO_NOT_CONTACT', reason, phoneHash: r.phoneHash, requestedBy: null, executedBy: who.actor.id,
         audit: { actor: who.actor, action: 'seeded.remove', entityType: 'seeded_site', entityId: id, before: { lifecycle: r.lifecycle }, after: { lifecycle: 'REMOVED', reason } },
       });
       await this.store.addToRegister(r.phoneHash, reason, 'DO_NOT_CONTACT', who.actor.id);

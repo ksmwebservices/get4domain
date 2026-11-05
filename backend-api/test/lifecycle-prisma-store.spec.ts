@@ -30,6 +30,11 @@ describe('PrismaLifecycleStore.executeRemoval', () => {
     expect(await store.executeRemoval(args)).toEqual({ alreadyRemoved: true });
     expect(f.calls).toEqual(['deletion.update EXECUTED pendingVendorId=null']);
   });
+  it('a seeded removal labels its register row DO_NOT_CONTACT (the service-level register write is an upsert that never overwrites, so the label must be set by the first write)', async () => {
+    const f = fakePrisma(); const store = new PrismaLifecycleStore(f.prisma as never, new AuditService({} as never));
+    await store.executeRemoval({ ...args, kind: 'SEEDED_REMOVAL', registerSource: 'DO_NOT_CONTACT', deletionRequestId: undefined });
+    expect(f.calls).toContain('register.upsert DO_NOT_CONTACT');
+  });
   it('no phone, no register row', async () => {
     const f = fakePrisma(); const store = new PrismaLifecycleStore(f.prisma as never, new AuditService({} as never));
     await store.executeRemoval({ ...args, phoneHash: null, kind: 'STAFF_EMPTY_LISTING', deletionRequestId: undefined });

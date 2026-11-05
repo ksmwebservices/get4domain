@@ -132,7 +132,7 @@ describe('removal is permanent', () => {
     const v = await w.svc.updateOutreach(id, { status: 'DO_NOT_CONTACT' }, ops);
     expect(v).toMatchObject({ lifecycle: 'REMOVED', outreachStatus: 'DO_NOT_CONTACT', removed: true });
     expect(w.store.register.has(phoneHash('+919876543210'))).toBe(true);
-    expect(w.lifecycle.removals.get(vendorId)).toMatchObject({ kind: 'SEEDED_REMOVAL' }); expect(w.lifecycle.directoryRemoved.has(vendorId)).toBe(true);
+    expect(w.lifecycle.removals.get(vendorId)).toMatchObject({ kind: 'SEEDED_REMOVAL' }); expect([...w.lifecycle.register.values()].map((x) => x.source)).toEqual(['DO_NOT_CONTACT']); expect(w.lifecycle.directoryRemoved.has(vendorId)).toBe(true);
     expect(w.store.audits.length).toBeGreaterThan(0); expect([...w.store.rows.values()]).toHaveLength(1);   // nothing deleted
   });
   it('an explicit removal needs a reason, is idempotent, and nothing can move a removed site again (status, consent, calls, claim links)', async () => {

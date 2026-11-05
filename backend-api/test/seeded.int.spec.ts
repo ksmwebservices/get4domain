@@ -31,16 +31,9 @@ describe('seeded sites on staging', () => {
     app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true });
   }, 240000);
 
-  // Seeded vendors have a placeholder login (@sites.get4domain.invalid), so the standard tenant cleanup (test e-mail suffix) does not find them. They are removed here by their V3TEST name.
-  // Their seeded rows, directory profile and site rows cascade from the vendor; the job rows are deleted by vendor. Rows in the do-not-contact register are NEVER deleted (append-only).
-  const removeSeededVendors = async (): Promise<void> => {
-    const ids = (await prisma.vendor.findMany({ where: { businessName: { startsWith: `V3TEST ${RUN_ID}` } }, select: { id: true } })).map((v) => v.id);
-    if (!ids.length) return;
-    await prisma.v3ProvisioningJob.deleteMany({ where: { vendorId: { in: ids } } });
-    await prisma.v3AuditLog.deleteMany({ where: { entityId: { in: ids } } });
-    await prisma.vendor.deleteMany({ where: { id: { in: ids } } });
-  };
-  afterAll(async () => { await runCleanup([removeSeededVendors, () => cleanupTenants(prisma, RUN_ID), () => app?.close(), () => prisma?.$disconnect()]); }, 180000);
+  // Seeded vendors have a placeholder login (@sites.get4domain.invalid) with the run id in their NAME; the shared cleanup finds them by that and deletes children before the vendor (the draft site row restricts the vendor delete).
+  // Rows in the do-not-contact register are NEVER deleted (append-only).
+  afterAll(async () => { await runCleanup([() => cleanupTenants(prisma, RUN_ID), () => app?.close(), () => prisma?.$disconnect()]); }, 180000);
 
   const body = { businessName: `V3TEST ${RUN_ID} seeded plumbing`, category: 'plumber', city: 'Chennai', area: 'Adyar', phone, sourceKind: 'PUBLIC_LISTING', publicFactsOnly: true };
 

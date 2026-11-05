@@ -16,6 +16,8 @@ export interface RemovalArgs {
   phoneHash: string | null;
   requestedBy: string | null;
   deletionRequestId?: string;
+  /** how the phone is labelled on the do-not-contact register when this removal adds it (default REMOVAL) */
+  registerSource?: 'REMOVAL' | 'DO_NOT_CONTACT';
   executedBy: string | null;
   audit: AuditEntry;
 }

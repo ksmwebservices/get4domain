@@ -100,7 +100,7 @@ export class PrismaLifecycleStore extends LifecycleStore {
       if (existing) return { alreadyRemoved: true };
       await tx.v3SiteRemoval.create({ data: { vendorId: a.vendorId, kind: a.kind, reason: a.reason, phoneHash: a.phoneHash, requestedBy: a.requestedBy, removedAt: now } });
       if (a.phoneHash) {
-        await tx.v3DncRegister.upsert({ where: { phoneHash: a.phoneHash }, create: { phoneHash: a.phoneHash, reason: a.reason, source: 'REMOVAL', addedBy: a.executedBy }, update: {} });
+        await tx.v3DncRegister.upsert({ where: { phoneHash: a.phoneHash }, create: { phoneHash: a.phoneHash, reason: a.reason, source: a.registerSource ?? 'REMOVAL', addedBy: a.executedBy }, update: {} });
       }
       // the directory listing is hidden for good (status REMOVED, noindex; the public API answers 410); the row itself is kept as the record
       await tx.v3DirectoryBusiness.updateMany({ where: { vendorId: a.vendorId }, data: { status: 'REMOVED', indexable: false, removedAt: now } });

@@ -8,10 +8,18 @@ const TEST_NAME_PREFIX = 'V3TEST';
 /** Provisioning tests (slice 5.3) key their jobs `v3test-<runId>-...`, so a job whose vendor step never ran is still found. */
 const TEST_JOB_KEY_PREFIX = 'v3test-';
 
+/** Slice 5.13a: a seeded vendor has a placeholder login (site+seed-<hex>@sites.get4domain.invalid), so it carries no run id in its e-mail; the run id is in its name. */
+const SEEDED_EMAIL_SUFFIX = '@sites.get4domain.invalid';
+
+/**
+ * A vendor is a synthetic one only when BOTH markers match: a business name that starts with V3TEST, and either the test e-mail suffix (the run id, when given, in the e-mail) or the
+ * seeded placeholder suffix (the run id, when given, in the name). A real seeded business never starts with V3TEST.
+ */
 async function findTestVendorIds(prisma, runId) {
-  const and = [{ email: { endsWith: TEST_EMAIL_SUFFIX } }, { businessName: { startsWith: TEST_NAME_PREFIX } }];
-  if (runId) and.push({ email: { contains: runId } });
-  const rows = await prisma.vendor.findMany({ where: { AND: and }, select: { id: true } });
+  const named = { businessName: { startsWith: TEST_NAME_PREFIX } };
+  const tenant = { AND: [{ email: { endsWith: TEST_EMAIL_SUFFIX } }, named, ...(runId ? [{ email: { contains: runId } }] : [])] };
+  const seeded = { AND: [{ email: { endsWith: SEEDED_EMAIL_SUFFIX } }, { businessName: { startsWith: TEST_NAME_PREFIX, ...(runId ? { contains: runId } : {}) } }] };
+  const rows = await prisma.vendor.findMany({ where: { OR: [tenant, seeded] }, select: { id: true } });
   return rows.map((r) => r.id);
 }
 
@@ -119,7 +127,7 @@ async function countTestTenants(prisma) {
   return (await findTestVendorIds(prisma)).length;
 }
 
-module.exports = { cleanupTestTenants, countTestTenants, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX, TEST_JOB_KEY_PREFIX };
+module.exports = { cleanupTestTenants, countTestTenants, findTestVendorIds, SEEDED_EMAIL_SUFFIX, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX, TEST_JOB_KEY_PREFIX };
 
 // CLI: node scripts/staging/test-tenant-cleanup.js [--count]   (staging only, via the guard)
 if (require.main === module) {
@@ -130,7 +138,7 @@ if (require.main === module) {
     const { PrismaClient } = require(path.join(__dirname, '../../node_modules/@prisma/client'));
     const prisma = new PrismaClient({ datasourceUrl: env.DATABASE_URL, log: [] });
     try {
-      if (process.argv.includes('--count')) { console.log(`synthetic test tenants on staging: ${await countTestTenants(prisma)}`); return; }
+      if (process.argv.includes('--count')) { console.log(`synthetic test tenants on staging (includes seeded V3TEST vendors): ${await countTestTenants(prisma)}`); return; }
       console.log('deleted:', JSON.stringify(await cleanupTestTenants(prisma)));
     } catch (e) {
       console.error('ERROR:', env.mask(e.message).split('\n').slice(-2).join(' | '));

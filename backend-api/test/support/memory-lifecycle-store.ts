@@ -12,7 +12,7 @@ export class MemoryLifecycleStore extends LifecycleStore {
   subs = new Map<string, LifecycleSubscription[]>();   // newest last
   facts = new Map<string, ListingFacts>();
   removals = new Map<string, { kind: string; reason: string; phoneHash: string | null }>();
-  register = new Map<string, { reason: string; addedBy: string | null }>();
+  register = new Map<string, { reason: string; addedBy: string | null; source?: string }>();
   deletions = new Map<string, DeletionRequestRow>();
   audits: AuditEntry[] = [];
   directoryRemoved = new Set<string>();
@@ -48,7 +48,7 @@ export class MemoryLifecycleStore extends LifecycleStore {
     if (a.deletionRequestId) { const d = this.deletions.get(a.deletionRequestId); if (d && d.status === 'PENDING') { d.status = 'EXECUTED'; d.executedAt = this.clock(); d.executedById = a.executedBy; d.note = a.reason; } }
     if (this.removals.has(a.vendorId)) return { alreadyRemoved: true };
     this.removals.set(a.vendorId, { kind: a.kind, reason: a.reason, phoneHash: a.phoneHash });
-    if (a.phoneHash && !this.register.has(a.phoneHash)) this.register.set(a.phoneHash, { reason: a.reason, addedBy: a.executedBy });
+    if (a.phoneHash && !this.register.has(a.phoneHash)) this.register.set(a.phoneHash, { reason: a.reason, addedBy: a.executedBy, source: a.registerSource ?? 'REMOVAL' });
     this.directoryRemoved.add(a.vendorId); this.audits.push(a.audit);
     return { alreadyRemoved: false };
   }
