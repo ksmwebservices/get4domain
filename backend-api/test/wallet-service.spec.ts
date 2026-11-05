@@ -46,6 +46,17 @@ describe('activation (owner rule 2)', () => {
     expect(await w.svc.onEvidence('v2', { kind: 'SUBSCRIPTION', level: 'PRO', source: 'STAFF', reason: 'plan order o9' }, 'e5')).toBe(true);
   });
 
+  it('a staff Pro grant with no payment does NOT open the wallet, even when anything looks again; the wallet opens only after the first Pro payment (owner 5 November 2026)', async () => {
+    // a Pro plan the staff granted for free leaves no paid evidence: the data-derived check (the one a missed event falls back to) finds nothing
+    expect(await w.svc.syncActivation('v2')).toBeNull(); expect(await w.svc.syncActivation('v2')).toBeNull(); expect(await w.store.wallet('v2')).toBeNull();
+    expect((await w.svc.view('v2'))).toMatchObject({ status: 'INACTIVE', locked: true, lockedReason: 'NO_PAID_PRO_TERM', topup: { enabled: false } });
+    expect((await codeOf(w.svc.createTopup('v2', { amountPaise: 99_900, idempotencyKey: 'granted-no-pay-key' }, V2))).code).toBe('WALLET_NOT_ACTIVE');
+    expect(w.store.audits.filter((a) => a.action === 'wallet.activated')).toHaveLength(0);
+    // the first Pro payment is what opens it
+    w.store.evidence.set('v2', { kind: 'PLAN_ORDER', id: 'order-v2' });
+    expect(await w.svc.syncActivation('v2')).toMatchObject({ status: 'ACTIVE' });
+  });
+
   it('a wallet that is already open is not opened again by later evidence', async () => {
     await w.open('v1'); await w.fund('v1', 50_000);
     await w.svc.syncActivation('v1');
