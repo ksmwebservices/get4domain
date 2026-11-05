@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { ActivityBus } from '../../common/activity-bus';
 import { Prisma, V3PlanSubscription } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { addMonths, validateTerm } from '../admin/admin-validation';
@@ -29,11 +30,15 @@ export type TrackName = (typeof TRACKS)[number];
  */
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly entitlements: EntitlementsService) {}
+  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService, private readonly entitlements: EntitlementsService, @Optional() private readonly bus?: ActivityBus) {}
 
   async assignPlan(args: AssignArgs): Promise<V3PlanSubscription> {
     const sub = await this.prisma.$transaction((tx) => this.assignInTx(tx, args));
     this.entitlements.invalidate(args.vendorId);
+    if (this.bus) {   // Batch 4: tell whoever listens (the wallet opens on a subscription that a payment started); a listener failing never fails the assignment
+      const level = (await this.prisma.v3Plan.findUnique({ where: { id: sub.planId }, select: { level: true } }))?.level ?? null;
+      void this.bus.emit({ type: 'subscription.assigned', vendorId: args.vendorId, at: new Date(), actor: { type: args.actor.type, id: args.actor.id }, data: { subscriptionId: sub.id, level, source: args.source, reason: args.reason } });
+    }
     return sub;
   }
 

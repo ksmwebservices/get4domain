@@ -22,6 +22,9 @@ import { SiteDomainsModule } from '../src/site-domains/site-domains.module';
 import { SitePublishModule } from '../src/site-publish/site-publish.module';
 import { TermsModule } from '../src/terms/terms.module';
 import { VendorLifecycleModule } from '../src/vendor-lifecycle/vendor-lifecycle.module';
+import { ActivityBusModule } from '../src/common/activity-bus';
+import { PlanBillingModule } from '../src/plan-billing/plan-billing.module';
+import { V3WalletModule } from '../src/v3-wallet/wallet.module';
 import { SitePublicService } from '../src/site-publish/publish/site-public.service';
 import { testAppModuleMetadata } from './support/test-app';
 
@@ -49,6 +52,8 @@ const OPTION_SETS: Array<[string, ProvisioningTestOptions]> = [
   ['site + directory + b3', { includeSiteApi: true, includeDirectoryApi: true, b3: true }],
   ['every option at once', { includeSiteApi: true, includeDirectoryApi: true, includeAiApi: true, b3: true, billing: { fake: new FakeRazorpay() } }],
   ['b3 alone', { b3: true }],
+  ['billing + wallet', { billing: { fake: new FakeRazorpay() }, wallet: true }],
+  ['every option at once, with the wallet', { includeSiteApi: true, includeDirectoryApi: true, includeAiApi: true, b3: true, billing: { fake: new FakeRazorpay() }, wallet: true }],
 ];
 
 describe('staging harness: the test apps compile without a database', () => {
@@ -68,12 +73,17 @@ describe('staging harness: the test apps compile without a database', () => {
     await compiles({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, SitePublishModule, SiteDomainsModule, DirectoryModule, VendorLifecycleModule, SiteLifecycleModule, SeededSitesModule, RequestsOrdersModule, TermsModule], controllers: [], providers: [] });
   }, 60000);
 
+  // Batch 4: the real wallet module with plan billing as app.module.ts wires them (the wallet is global; plan billing asks it, optionally, about top-ups and for a place in its transaction).
+  it('the production wallet module resolves with plan billing and the event bus', async () => {
+    await compiles({ imports: [PrismaModule, PlansModule, EmailModule, ActivityBusModule, PlanBillingModule, V3WalletModule], controllers: [], providers: [] });
+  }, 60000);
+
   it('every option key a staging spec passes is covered above', () => {
     const used = new Set<string>();
     for (const f of readdirSync(__dirname).filter((n) => n.endsWith('.int.spec.ts'))) {
       const src = readFileSync(`${__dirname}/${f}`, 'utf8');
       const m = [...src.matchAll(/buildProvisioningTestApp\(\{([^)]*)/g)];
-      for (const x of m) for (const k of ['includeSiteApi', 'includeDirectoryApi', 'includeAiApi', 'b3', 'billing', 'siteProvisioner', 'pinLegacySiteMode']) if (x[1].includes(k)) used.add(k);
+      for (const x of m) for (const k of ['includeSiteApi', 'includeDirectoryApi', 'includeAiApi', 'b3', 'billing', 'wallet', 'siteProvisioner', 'pinLegacySiteMode']) if (x[1].includes(k)) used.add(k);
     }
     const covered = new Set<string>(['siteProvisioner']);   // siteProvisioner is applied after compile
     for (const [, o] of OPTION_SETS) for (const k of Object.keys(o)) covered.add(k);

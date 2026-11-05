@@ -63,6 +63,9 @@ model Vendor {
   v3SeededSite V3SeededSite?
   v3TermsAcceptances V3TermsAcceptance[]
   v3Requests V3Request[]
+  v3Wallet V3Wallet?
+  v3WalletTopups V3WalletTopup[]
+  v3WalletReceipts V3WalletReceipt[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
   v3Invoices V3VendorInvoice[]
@@ -5627,4 +5630,168 @@ model V3TermsAcceptance {
   @@index([vendorId, kind])
   @@index([documentId])
   @@map("g4d_terms_acceptances")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 wallet (slice 5.16a, 5.16a-2): Get4Domain's own wallet and ledger, integer paise, never legacy
+enum V3WalletStatus {
+  INACTIVE
+  ACTIVE
+  FROZEN
+}
+
+enum V3WalletLedgerKind {
+  TOPUP
+  HOLD
+  RELEASE
+  CHARGE
+  REVERSAL
+  EXPIRY
+  ADJUSTMENT
+  PACK_PURCHASE
+  PLAN_RENEWAL
+}
+
+enum V3WalletTopupStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum V3WalletLotStatus {
+  OPEN
+  SPENT
+  EXPIRED
+}
+
+enum V3WalletLotSource {
+  TOPUP
+  ADJUSTMENT
+}
+
+/// One wallet per vendor. The balance and held numbers are a CACHE of the ledger (reconcile checks them); the database refuses a negative balance, a negative held amount and held above balance.
+model V3Wallet {
+  id                 String         @id @default(cuid())
+  vendorId           String         @unique
+  status             V3WalletStatus @default(INACTIVE)
+  balancePaise       Int            @default(0)
+  heldPaise          Int            @default(0)
+  entryCount         Int            @default(0)
+  version            Int            @default(0)
+  activatedAt        DateTime?
+  activatedByEventId String?
+  frozenReason       String?
+  billingStateCode   String? // the vendor's GST state code, used by the tax rule when a service is charged
+  billingGstin       String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  vendor Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  ledger V3WalletLedger[]
+  lots   V3WalletLot[]
+
+  @@map("g4d_v3_wallets")
+}
+
+/// APPEND-ONLY: a database trigger refuses every update and every delete (a delete is allowed only as the cascade of a wallet that is already gone).
+model V3WalletLedger {
+  id                String             @id @default(cuid())
+  walletId          String
+  vendorId          String
+  entryNo           Int
+  kind              V3WalletLedgerKind
+  amountPaise       Int // the effect on the vendor's AVAILABLE money (see wallet-core.ts)
+  balanceDeltaPaise Int
+  heldDeltaPaise    Int
+  balanceAfterPaise Int
+  heldAfterPaise    Int
+  refType           String?
+  refId             String?
+  idempotencyKey    String
+  holdId            String? // set on the RELEASE or CHARGE that settles a HOLD; unique, so a hold is settled once
+  reversesId        String? // set on a REVERSAL; unique, so a charge is reversed once
+  reason            String?
+  actorType         String
+  actorId           String?
+  lotUsesJson       Json               @default("[]")
+  at                DateTime           @default(now())
+
+  wallet V3Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, idempotencyKey])
+  @@unique([walletId, entryNo])
+  @@unique([holdId])
+  @@unique([reversesId])
+  @@index([vendorId, at])
+  @@index([refType, refId])
+  @@map("g4d_wallet_ledger")
+}
+
+model V3WalletTopup {
+  id              String              @id @default(cuid())
+  vendorId        String
+  amountPaise     Int
+  currency        String              @default("INR")
+  status          V3WalletTopupStatus @default(CREATED)
+  providerOrderId String?             @unique
+  idempotencyKey  String
+  paymentId       String?
+  paidAmountPaise Int?
+  paidAt          DateTime?
+  ledgerId        String?
+  receiptId       String?
+  createdByType   String              @default("VENDOR")
+  createdById     String?
+  expiresAt       DateTime
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  vendor  Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  receipt V3WalletReceipt?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, expiresAt])
+  @@map("g4d_wallet_topups")
+}
+
+/// A numbered RECEIPT for a top-up. It is not a tax invoice (the tax treatment of an advance is for counsel).
+model V3WalletReceipt {
+  id            String   @id @default(cuid())
+  vendorId      String
+  topupId       String   @unique
+  receiptNumber String   @unique
+  financialYear String
+  documentType  String   @default("RECEIPT")
+  issuedAt      DateTime
+  snapshotJson  Json
+  createdAt     DateTime @default(now())
+
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  topup  V3WalletTopup @relation(fields: [topupId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_wallet_receipts")
+}
+
+/// One lot per top-up (or positive staff adjustment). Spending takes the lot that expires first; the lots always add up to the balance.
+model V3WalletLot {
+  id             String            @id @default(cuid())
+  walletId       String
+  vendorId       String
+  topupId        String?           @unique
+  source         V3WalletLotSource @default(TOPUP)
+  amountPaise    Int
+  remainingPaise Int
+  expiresAt      DateTime
+  status         V3WalletLotStatus @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  wallet V3Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, status, expiresAt])
+  @@index([status, expiresAt])
+  @@map("g4d_wallet_lots")
 }

@@ -35,6 +35,8 @@ const OWNER_ONLY_ROUTES = [
   'GET /team/activity',
   // B2 slice 5.1b: buying a plan starts a payment: owner only (a team member never starts one)
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',
+  // B4 slice 5.16a: the wallet is money (balance, top-ups, the tax profile): owner only, a team member never sees or starts any of it
+  'GET /v3/me/wallet', 'GET /v3/me/wallet/ledger', 'GET /v3/me/wallet/topups', 'POST /v3/me/wallet/topups', 'POST /v3/me/wallet/topups/:id/confirm', 'PUT /v3/me/wallet/billing-profile',
   // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only
   'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
   // B3 slice 5.15: accepting the terms binds the business: owner only (a team member never accepts for it)

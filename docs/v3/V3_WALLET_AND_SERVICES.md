@@ -20,4 +20,37 @@ This file has two parts. Part 1 is the owner's rules, frozen on 4 November 2026,
 
 Filled in as each slice is built. Every table is additive, has row level security on (no policy: the backend role bypasses it, the same rule as every other public table), and carries its own migration folder.
 
-(Slice sections are added below by the slice commits.)
+### 5.16a and 5.16a-2: the wallet, its ledger, top-ups, receipts and lots
+
+Migration folders, in order: `20261117100000_v3_wallet` (wallet, ledger, top-ups, receipts) then `20261118100000_v3_wallet_lots` (lots). Code: `backend-api/src/v3-wallet/`. The legacy wallet (`src/wallet`, table `g4d_wallets`) is not touched, imported or read: a static test (`b4-isolation.spec.ts`) enforces that.
+
+| Table | Purpose |
+|---|---|
+| `g4d_v3_wallets` | one row per vendor: `status` (INACTIVE, ACTIVE, FROZEN), `balancePaise`, `heldPaise` (a CACHE of the ledger; reconcile checks it), `entryCount`, `version` (last-resort guard against two writers), `activatedAt`, `activatedByEventId`, `frozenReason`, `billingStateCode` and `billingGstin` (the vendor's tax profile). The database itself refuses a negative balance, negative held money and held above balance (`CHECK`). Named `g4d_v3_wallets` because `g4d_wallets` is the legacy table. |
+| `g4d_wallet_ledger` | APPEND-ONLY (a trigger refuses every update and delete; the only delete allowed is the cascade of a wallet already gone). `kind` is one of the nine kinds; `amountPaise` is the effect on AVAILABLE money; `balanceDeltaPaise` and `heldDeltaPaise` are the exact effect on the two stored numbers and are what reconcile replays; `balanceAfterPaise`, `heldAfterPaise`, `entryNo` (1, 2, 3 per wallet), `refType` and `refId`, `idempotencyKey` (unique per wallet), `holdId` (unique: a hold is settled once), `reversesId` (unique: a charge is reversed once), `reason`, `actorType`, `actorId`, `lotUsesJson`, `at`. |
+| `g4d_wallet_topups` | one row per attempt to add credit: `amountPaise`, `status` (CREATED, PENDING, PAID, FAILED, EXPIRED), `providerOrderId` (unique), `idempotencyKey` (unique per vendor), `paymentId`, `paidAmountPaise`, `paidAt`, `ledgerId`, `receiptId`. |
+| `g4d_wallet_receipts` | one numbered RECEIPT per paid top-up (`documentType` RECEIPT, never a tax invoice; its own series `RCT/<financial year>/<number>`, gap-free). |
+| `g4d_wallet_lots` | one lot per top-up (or positive staff adjustment): `amountPaise`, `remainingPaise`, `expiresAt`, `status` (OPEN, SPENT, EXPIRED). The lots always add up to the balance. |
+
+Ledger kinds and the sign of `amountPaise` (the effect on available money): TOPUP +, ADJUSTMENT + or -, HOLD -, RELEASE +, CHARGE -, PACK_PURCHASE -, PLAN_RENEWAL -, REVERSAL +, EXPIRY -. A CHARGE that settles a HOLD moves both stored numbers (`balanceDeltaPaise` and `heldDeltaPaise` both negative) and leaves available unchanged.
+
+Rules built into the code (`core/wallet-core.ts`, pure and tested with a seeded random walk of 6000 steps):
+- Integer paise only; no transition can produce a negative balance, a negative held amount, held above balance, or lots that do not add up to the balance.
+- Spending takes from the lot that expires first, then the one created first, then by id. A reversal puts the money back into the same lots. An EXPIRY entry writes off exactly the open remainder of lots past their date, never money that is held; running it twice changes nothing.
+- The wallet opens (ACTIVE) only after a Pro plan order is PAID or a Pro subscription that a payment started (source SELF, or STAFF with a reason that names a plan order). It is also derived from the data whenever a vendor looks at the wallet or starts a top-up, so a missed event cannot leave a paying vendor without a wallet. Free-only vendors stay without one (locked preview).
+- A top-up is refused until staff set `walletTopupMinPaise` and `walletTopupMaxPaise` (no default). The browser is never trusted: the signature is checked and the payment provider is asked; the amount and currency must match; a payment that arrives after the order expired is still credited; the same payment credits once however it arrives (confirm, webhook, replay, race).
+- `INSUFFICIENT_WALLET` (409) carries `shortfallPaise` and, when the limits are set, `suggestedTopupPaise` (the shortfall, raised to the minimum, never above the maximum), `minTopupPaise`, `maxTopupPaise`.
+- Settings (all in `g4d_plan_settings`, edited by SUPER_ADMIN): `walletTopupMinPaise` and `walletTopupMaxPaise` (no default), `walletCreditValidityDays` (default 365; a change applies to new top-ups only), `walletReceiptPrefix` (default `RCT`), `walletSellerStateCode` (empty until the owner supplies it), `walletExpiryTickEnabled` (default false).
+
+API (all under the `v3` prefix; the envelope is the platform's `{ success, statusCode, message, data, timestamp }`):
+
+| Route | Who |
+|---|---|
+| `GET /v3/me/wallet`, `GET /v3/me/wallet/ledger`, `GET /v3/me/wallet/topups` | Owner (a team member is refused) |
+| `POST /v3/me/wallet/topups` `{ amountPaise, idempotencyKey }`, `POST /v3/me/wallet/topups/:id/confirm` `{ paymentId, signature }`, `PUT /v3/me/wallet/billing-profile` `{ stateCode, gstin }` | Owner |
+| `GET /v3/admin/wallets`, `GET /v3/admin/wallets/reconciliation`, `GET /v3/admin/wallets/:vendorId`, `.../ledger`, `.../reconcile`, `POST /v3/admin/wallets/expiry-run` | OPERATIONS and SUPER_ADMIN (MARKETING refused) |
+| `POST /v3/admin/wallets/:vendorId/adjustments` `{ amountPaise, reason, idempotencyKey }`, `PUT /v3/admin/wallets/:vendorId/frozen` `{ frozen, reason }` | SUPER_ADMIN only |
+
+Top-ups share the existing Razorpay webhook: the dispatch first looks for a plan order (unchanged); only when there is none does it ask the wallet whether the provider order is a top-up (`TopupSettlementHook`). Event results: `TOPUP_CREDITED`, `TOPUP_ALREADY_PAID`, `TOPUP_REVIEW`, `NO_ORDER`.
+
+(Later slices add their sections below.)

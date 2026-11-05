@@ -17,6 +17,7 @@ import { DOMAIN_ERROR_CODES } from '../../site-domains/site-domains.errors';
 import { DIRECTORY_ERROR_CODES } from '../../directory/directory.errors';
 import { BILLING_ERROR_CODES } from '../../plan-billing/plan-billing.errors';
 import { AI_ERROR_CODES } from '../../ai-studio/ai-studio.errors';
+import { WALLET_ERROR_CODES, WALLET_NUMERIC_FIELDS } from '../../v3-wallet/wallet.errors';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -118,11 +119,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
         if (typeof v === 'string') extra[k] = v;
       }
+      // Batch 4: INSUFFICIENT_WALLET and the top-up limits carry whole numbers of paise (the exact shortfall and the top-up that covers it)
+      for (const k of WALLET_NUMERIC_FIELDS) { const n = (exceptionResponse as Record<string, unknown>)[k]; if (typeof n === 'number' && Number.isFinite(n)) extra[k] = n; }
       const limit = (exceptionResponse as Record<string, unknown>).limit;
       if (typeof limit === 'number') extra.limit = limit;
       // B3 validation reasons: plain strings only

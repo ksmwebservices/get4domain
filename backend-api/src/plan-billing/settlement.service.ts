@@ -1,4 +1,5 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { ActivityBus } from '../common/activity-bus';
 import { createHash } from 'crypto';
 import { Actor } from '../plans/admin/audit.service';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
@@ -9,6 +10,7 @@ import { billingError, ORDER_NOT_FOUND_MESSAGE } from './plan-billing.errors';
 import { OrderRow, PlanBillingRepository } from './plan-billing.repository';
 import { PaymentsGate } from './razorpay/payments-gate';
 import { BillingSettingsService } from './settings/billing-settings.service';
+import { TopupSettlementHook } from './topup-hook';
 
 export type SettleOutcome = 'PAID' | 'ALREADY_PAID' | 'REVIEW' | 'IGNORED' | 'NO_ORDER';
 export interface SettleInput { orderId: string; paid: { paymentId: string; amount: number; currency: string }; via: 'CONFIRM' | 'WEBHOOK' | 'STAFF'; actor: Actor; reason: string | null }
@@ -26,12 +28,17 @@ export class PaymentSettlementService {
   constructor(
     private readonly repo: PlanBillingRepository, @Inject(BillingSettingsService) private readonly settings: Pick<BillingSettingsService, 'get'>, @Inject(PaymentsGate) private readonly gate: Pick<PaymentsGate, 'webhookPort'>,
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'invalidate'>,
+    /** Batch 4: the wallet's top-ups are paid through the same webhook; asked only when the provider order is not a plan order. Absent = plan payments only (nothing changes). */
+    @Optional() @Inject(TopupSettlementHook) private readonly topups?: TopupSettlementHook,
+    /** Batch 4: says "a plan order was paid" after the work is committed (the wallet opens on it). Absent = nobody is told. */
+    @Optional() @Inject(ActivityBus) private readonly bus?: Pick<ActivityBus, 'emit'>,
   ) {}
 
   async settle(i: SettleInput): Promise<SettleOutcome> {
     const order = await this.repo.getOrder(i.orderId);
     if (!order) return 'NO_ORDER';
     const s = await this.settings.get();
+    let paidPlanLevel: string | null = null;
     const outcome = await this.repo.transaction(order.vendorId, async (tx) => {
       const o = await tx.getOrder(i.orderId);
       if (!o) return 'NO_ORDER' as const;
@@ -69,9 +76,13 @@ export class PaymentSettlementService {
       const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : 'SELF', reason: i.reason, subscriptionId: sub.id });
       if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
       await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice.invoiceNumber, via: i.via, amountPaise: o.amountPaise });
+      paidPlanLevel = plan.level;
       return 'PAID' as const;
     });
-    if (outcome === 'PAID') this.entitlements.invalidate(order.vendorId);
+    if (outcome === 'PAID') {
+      this.entitlements.invalidate(order.vendorId);
+      void this.bus?.emit({ type: 'plan.order.paid', vendorId: order.vendorId, at: this.clock(), actor: { type: i.actor.type, id: i.actor.id }, data: { orderId: order.id, planLevel: paidPlanLevel, via: i.via } });
+    }
     return outcome;
   }
 
@@ -104,7 +115,14 @@ export class PaymentSettlementService {
       const amount = typeof pay.amount === 'number' ? pay.amount : ord.amount_paid;
       const out = await this.settle({ orderId: known.id, paid: { paymentId: String(pay.id ?? `order-${known.providerOrderId}`), amount: amount as number, currency: String(pay.currency ?? ord.currency ?? '') }, via: 'WEBHOOK', actor: SYSTEM, reason: null });
       result = out;
-    } else if ((type === 'payment.captured' || type === 'order.paid') && !known) result = 'NO_ORDER';
+    } else if ((type === 'payment.captured' || type === 'order.paid') && !known) {
+      result = 'NO_ORDER';
+      if (this.topups && providerOrderId) {   // not a plan order: it may be a wallet top-up (Batch 4). Plan orders above are untouched.
+        const amount = typeof pay.amount === 'number' ? pay.amount : ord.amount_paid;
+        const r = await this.topups.handleCapturedPayment({ providerOrderId, paymentId: String(pay.id ?? `order-${providerOrderId}`), amount: amount as number, currency: String(pay.currency ?? ord.currency ?? '') });
+        if (r) result = r;
+      }
+    }
     await this.repo.finishEvent(eventId, { processedAt: this.clock(), result, orderId: known?.id ?? null });
     return { status: 'OK', result };
   }

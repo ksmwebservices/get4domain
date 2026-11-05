@@ -90,6 +90,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/ai/usage': OPS_AND_SUPER,
 
   // ── V3 slice 5.1b: plan purchases. Orders and the payment inbox are money: OPERATIONS and SUPER_ADMIN read; only SUPER_ADMIN marks an order paid offline or records a refund. MARKETING is refused everywhere.
+  // Batch 4 slice 5.16a: wallets. Reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN (MARKETING refused: a wallet is money). Adjusting credit and freezing are SUPER_ADMIN only.
+  'GET /v3/admin/wallets': OPS_AND_SUPER, 'GET /v3/admin/wallets/reconciliation': OPS_AND_SUPER, 'POST /v3/admin/wallets/expiry-run': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId/ledger': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId/reconcile': OPS_AND_SUPER,
+  'POST /v3/admin/wallets/:vendorId/adjustments': SUPER_ONLY, 'PUT /v3/admin/wallets/:vendorId/frozen': SUPER_ONLY,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);

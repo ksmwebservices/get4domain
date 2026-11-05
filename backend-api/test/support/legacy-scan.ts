@@ -15,7 +15,7 @@ const LEGACY_TABLES = [
   'SpecialArrangement', 'CommercialAuditLog', 'PaymentRecord', 'VendorAddon', 'VendorModule',
 ];
 /** top-level src folders (and one constants file) that belong to the legacy billing / commercial / BOS / menu-gating world */
-const LEGACY_TOP = ['registry', 'commercial', 'addons', 'bos', 'subscriptions', 'invoices', 'payments', 'vendor-payments', 'leadspace', 'domain-campaign'];
+const LEGACY_TOP = ['registry', 'commercial', 'addons', 'bos', 'subscriptions', 'invoices', 'payments', 'vendor-payments', 'leadspace', 'domain-campaign', 'wallet'];
 const DEFAULT_FILE = path.join(SRC, 'plans', 'x', 'y.ts');
 
 export function findLegacyUse(source: string, fromFile: string = DEFAULT_FILE): string[] {

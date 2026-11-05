@@ -33,6 +33,8 @@ const SUPER_ONLY_ROUTES = [
   'GET /v3/admin/terms', 'GET /v3/admin/terms/:id', 'POST /v3/admin/terms/kinds/:kind/drafts', 'PUT /v3/admin/terms/:id', 'POST /v3/admin/terms/:id/publish',
   // B3 slice 5.13a: the seeded-site indexing mode
   'PUT /v3/admin/seeded-sites/indexing-mode',
+  // B4 slice 5.16a: only SUPER_ADMIN adds or removes wallet credit by hand, or freezes a wallet
+  'POST /v3/admin/wallets/:vendorId/adjustments', 'PUT /v3/admin/wallets/:vendorId/frozen',
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
   'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
 ];
@@ -56,6 +58,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
   // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/ai/usage',
+  // B4 slice 5.16a: wallets are money: reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN
+  'GET /v3/admin/wallets', 'GET /v3/admin/wallets/reconciliation', 'POST /v3/admin/wallets/expiry-run', 'GET /v3/admin/wallets/:vendorId', 'GET /v3/admin/wallets/:vendorId/ledger', 'GET /v3/admin/wallets/:vendorId/reconcile',
   // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/billing/orders', 'GET /v3/admin/billing/payment-events',
   // B2 slice 5.7: directory writes, the claim phone override and removal requests (contact details): OPERATIONS and SUPER_ADMIN only
@@ -118,7 +122,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(205);
+    expect(oracle).toHaveLength(213);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
