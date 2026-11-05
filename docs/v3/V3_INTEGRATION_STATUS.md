@@ -47,3 +47,7 @@
 2. Credentials live in `PlatformSetting` (encrypted) with env fallback — standardise so admin entry actually works for Razorpay and Resend (currently env-only).
 3. Retire redundant providers (MSG91, legacy `meta.service.ts`, `google-ads.service.ts` mock) behind the adapter layer rather than extending them.
 4. Approval-gated items (7–14) are built against sandbox providers first; calendar risk is external and should be started by KSM **now** (Meta business verification, WhatsApp number, DLT, Google developer token) because lead times are weeks.
+
+## Batch 4 (wallet and services)
+
+Built on branch v3-b4 (not pushed, not run on staging). See docs/v3/V3_S7_BATCH4.md.
