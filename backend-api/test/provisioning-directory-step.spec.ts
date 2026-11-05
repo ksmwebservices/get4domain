@@ -41,7 +41,7 @@ describe('runner with the optional step', () => {
     const mk = (key: StepKey): ProvisioningStep => ({ key, async run(): Promise<StepResult> { calls.push(key); if (key === 'CREATE_VENDOR') return { vendorId: 'v1', outputRef: { vendorId: 'v1' } }; if (key === 'CREATE_CLAIM_LINK') return { rawToken: 't', outputRef: { id: 'x' } }; return { outputRef: { done: key } }; } });
     const audit: ProvisioningAudit = { record: async () => undefined };
     const r = new JobRunnerService(repo, STEP_ORDER.map(mk), { get: async () => ({ ...DEFAULT_PROVISIONING_SETTINGS, ...settings }) } as never, audit, 'runner-A', withStep ? [mk('CREATE_DIRECTORY_PROFILE')] : []);
-    r.clock = () => T0; r.random = () => 0.5;
+    r.clock = () => T0; repo.clock = () => T0; r.random = () => 0.5;
     return { repo, calls, r };
   }
   it('setting OFF: exactly the five steps run, in the 5.3 order, and the optional step is not called', async () => {
