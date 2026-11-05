@@ -21,7 +21,7 @@ const KEY = /^[A-Za-z0-9_-]{8,80}$/;
 
 /**
  * Buying or renewing a plan with wallet credit (slice 5.16a-2). The payment source is WALLET instead of the payment provider; everything else is the same as the online order: the same
- * quote (PlanOrderService.buildQuote, so the amount is exactly the online amount), the same settlement body (PaymentSettlementService.settleWithin), the same invoice numbering.
+ * quote (PlanOrderService.buildQuote, so the amount is exactly the online amount), the same settlement body (PaymentSettlementService.settleWithin), NO plan invoice (the refill has the one tax invoice). A plan paid directly keeps GST and the invoice.
  *
  * ONE unit of work, in the plan billing transaction: create the order, charge the wallet (PLAN_RENEWAL, key "renew:<order id>"), then settle: PAID, the term, the invoice and the audit row.
  *   - The wallet cannot pay: the unit is abandoned, so no order, no ledger entry, no change. The refusal carries the exact shortfall and the top-up that covers it.
@@ -57,7 +57,7 @@ export class PlanRenewalService {
           return { orderId: prior.id, replay: true, planLevel: null };
         }
         const now = this.clock();
-        const q = await this.orders.buildQuote(vendorId, input, now, s);   // the same coded refusals as the online order, before anything is written
+        const q = await this.orders.buildQuote(vendorId, input, now, s, { withTax: false });   // the same coded refusals as the online order, before anything is written
         return this.repo.transaction(vendorId, async (tx) => {
           if (!tx.walletTx) throw notActive();
           const wtx = await tx.walletTx();

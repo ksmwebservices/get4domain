@@ -109,7 +109,7 @@ export class V3WalletService implements TopupSettlementHook {
     if (bad(q.from) || bad(q.to) || (q.from && q.to && q.from.getTime() > q.to.getTime())) throw new BadRequestException(walletError('WALLET_STATEMENT_PERIOD_INVALID', 'The period must be two dates, the start before the end.'));
     const USE = new Set(['CHARGE', 'PACK_PURCHASE', 'PLAN_RENEWAL', 'REVERSAL']);
     const rows = (await this.store.allLedger(vendorId)).filter((e) => USE.has(e.kind) && (!q.from || e.at >= q.from) && (!q.to || e.at <= q.to)).sort((a, b) => b.entryNo - a.entryNo);
-    const lines = rows.map((e) => ({ id: e.id, entryNo: e.entryNo, at: e.at, kind: e.kind, refType: e.refType, refId: e.refId, amountPaise: Math.abs(e.amountPaise), reason: e.reason, hasInvoice: e.kind === 'PLAN_RENEWAL' }));
+    const lines = rows.map((e) => ({ id: e.id, entryNo: e.entryNo, at: e.at, kind: e.kind, refType: e.refType, refId: e.refId, amountPaise: Math.abs(e.amountPaise), reason: e.reason, hasInvoice: false }));
     const byKind: Record<string, number> = {}; let used = 0; let reversed = 0;
     for (const l of lines) { if (l.kind === 'REVERSAL') reversed += l.amountPaise; else { used += l.amountPaise; byKind[l.kind] = (byKind[l.kind] ?? 0) + l.amountPaise; } }
     return {

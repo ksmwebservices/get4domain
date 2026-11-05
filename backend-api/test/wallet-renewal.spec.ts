@@ -28,29 +28,45 @@ beforeEach(() => {
 });
 
 describe('a renewal paid from the wallet', () => {
-  it('charges the exact plan price once, marks the order PAID with source WALLET, starts the term and writes the invoice, all together', async () => {
+  it('charges the exact plan price once, marks the order PAID with source WALLET, starts the term and writes NO invoice, all together', async () => {
     await fundWallet(500_000);
     const r = await renewal.renew('v1', input(), VENDOR);
-    expect(r).toMatchObject({ status: 'PAID', paidWith: 'WALLET', planKey: 'handyman_pro', termMonths: 3, amountPaise: 354_000, replay: false, wallet: { balancePaise: 146_000, availablePaise: 146_000 } });
-    expect(await ww.store.wallet('v1')).toMatchObject({ balancePaise: 146_000, heldPaise: 0 });
+    expect(r).toMatchObject({ status: 'PAID', paidWith: 'WALLET', planKey: 'handyman_pro', termMonths: 3, amountPaise: 300_000, replay: false, wallet: { balancePaise: 200_000, availablePaise: 200_000 } });
+    expect(await ww.store.wallet('v1')).toMatchObject({ balancePaise: 200_000, heldPaise: 0 });
     const entry = ww.store.ledger.find((e) => e.kind === 'PLAN_RENEWAL')!;
-    expect(entry).toMatchObject({ amountPaise: -354_000, refType: 'plan_order', refId: r.orderId });
+    expect(entry).toMatchObject({ amountPaise: -300_000, refType: 'plan_order', refId: r.orderId });
     const order = bw.repo.orders.get(r.orderId)!;
-    expect(order).toMatchObject({ status: 'PAID', source: 'WALLET', paidAmountPaise: 354_000, paymentId: `wallet:${entry.id}` });
+    expect(order).toMatchObject({ status: 'PAID', source: 'WALLET', paidAmountPaise: 300_000, paymentId: `wallet:${entry.id}` });
     const sub = currentOf(bw); expect(bw.repo.plans.get(sub.planId)!.key).toBe('handyman_pro'); expect(sub).toMatchObject({ source: 'SELF', termMonths: 3 });
-    expect(bw.repo.invoices).toHaveLength(1); expect(bw.repo.invoices[0]).toMatchObject({ orderId: r.orderId, invoiceNumber: 'INV/2026-27/000001' });
-    expect(bw.repo.invoices[0].snapshot).toMatchObject({ order: { via: 'WALLET' }, amountPaise: 354_000 });
+    expect(bw.repo.invoices).toHaveLength(0); expect(r.invoiceNumber).toBeNull();
     expect(await ww.svc.reconcileVendor('v1')).toMatchObject({ ok: true });
     expect(bw.invalidated).toContain('v1');
     await new Promise((res) => setImmediate(res));
     expect(ww.events.some((e) => e.type === 'plan.order.paid')).toBe(true);
   });
 
-  it('charges exactly what the online order would have charged (one shared quote)', async () => {
-    await fundWallet(1_000_000);   // a 6-month term is 637,200 paise with tax
+  it('charges the plan price WITHOUT GST (the refill carried it) while the online order for the same plan keeps GST', async () => {
+    await fundWallet(1_000_000);   // a 6-month term is 637,200 paise with tax online and 540,000 from the wallet
     const online = await bw.buy({ planKey: 'handyman_pro', termMonths: 6 });
     const wallet = await renewal.renew('v1', input({ termMonths: 6 }), VENDOR);
-    expect(wallet.amountPaise).toBe(online.amountPaise);
+    expect(online.amountPaise).toBe(637_200); expect(wallet.amountPaise).toBe(540_000);
+    expect(online.amountPaise - wallet.amountPaise).toBe(97_200);   // exactly the GST
+  });
+  it('issues NO plan invoice and takes no number from the shared series; the order records no tax', async () => {
+    await fundWallet(500_000);
+    const r = await renewal.renew('v1', input(), VENDOR);
+    expect(r.invoiceNumber).toBeNull(); expect(bw.repo.invoices).toHaveLength(0);
+    expect(bw.repo.orders.get(r.orderId)!.quote).toMatchObject({ taxMinor: 0, taxRatePercent: 0, taxInclusive: false });
+  });
+  it('works while the tax rates are not set up (a deduction needs none)', async () => {
+    await fundWallet(500_000); bw.repo.taxes.length = 0;
+    expect((await renewal.renew('v1', input(), VENDOR)).amountPaise).toBe(300_000);
+  });
+  it('a plan paid directly (online path, offline staff path) still gets GST and its invoice', async () => {
+    const online = await bw.buy({ planKey: 'handyman_pro', termMonths: 3 });
+    expect(online.amountPaise).toBe(354_000);
+    await settlement.settle({ orderId: online.id, paid: { paymentId: 'pay_direct_1', amount: 354_000, currency: 'INR' }, via: 'WEBHOOK', actor: { type: 'SYSTEM', id: null, ip: null }, reason: null });
+    expect(bw.repo.invoices).toHaveLength(1); expect(bw.repo.invoices[0]).toMatchObject({ orderId: online.id, invoiceNumber: 'INV/2026-27/000001' });
   });
 
   it('works while online payments are switched off, and after the plan has run out (the balance is kept)', async () => {
@@ -66,7 +82,7 @@ describe('a renewal paid from the wallet', () => {
     await ww.fund('v1', 200_000); ww.now.t = new Date(ww.now.t.getTime() + 86_400_000); bw.now.t = ww.now.t; await ww.fund('v1', 300_000);
     await renewal.renew('v1', input(), VENDOR);
     const lots = (await ww.store.lots('v1')).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    expect(lots.map((l) => l.remainingPaise)).toEqual([0, 146_000]);
+    expect(lots.map((l) => l.remainingPaise)).toEqual([0, 200_000]);
   });
 });
 
@@ -75,7 +91,7 @@ describe('when the wallet cannot pay', () => {
     await fundWallet(100_000);
     const r = await codeOf(renewal.renew('v1', input(), VENDOR));
     expect([r.status, r.code]).toEqual([409, 'INSUFFICIENT_WALLET']);
-    expect(r.body).toMatchObject({ shortfallPaise: 254_000, availablePaise: 100_000, requiredPaise: 354_000, suggestedTopupPaise: 254_000, minTopupPaise: 10_000, maxTopupPaise: 1_000_000 });
+    expect(r.body).toMatchObject({ shortfallPaise: 200_000, availablePaise: 100_000, requiredPaise: 300_000, suggestedTopupPaise: 200_000, minTopupPaise: 10_000, maxTopupPaise: 1_000_000 });
     expect(bw.repo.orders.size).toBe(0); expect(bw.repo.invoices).toHaveLength(0); expect(ww.store.ledger.filter((e) => e.kind === 'PLAN_RENEWAL')).toHaveLength(0);
     expect((await ww.store.wallet('v1'))!.balancePaise).toBe(100_000);
     expect(bw.repo.plans.get(currentOf(bw).planId)!.key).toBe('handyman_free');
@@ -88,8 +104,8 @@ describe('when the wallet cannot pay', () => {
   });
   it('held money is not spendable: a wallet whose balance is held is short', async () => {
     await fundWallet(400_000);
-    await ww.store.unit('v1', (tx) => postEntry(tx, { kind: 'HOLD', amountPaise: 100_000, idempotencyKey: 'hold-for-renew-1', actor: act, now: ww.clock() }));
-    expect((await codeOf(renewal.renew('v1', input(), VENDOR))).body).toMatchObject({ shortfallPaise: 54_000, availablePaise: 300_000 });
+    await ww.store.unit('v1', (tx) => postEntry(tx, { kind: 'HOLD', amountPaise: 150_000, idempotencyKey: 'hold-for-renew-1', actor: act, now: ww.clock() }));
+    expect((await codeOf(renewal.renew('v1', input(), VENDOR))).body).toMatchObject({ shortfallPaise: 50_000, availablePaise: 250_000 });
   });
   it('a vendor with no active wallet (Free so far) and a frozen wallet are refused with their own codes', async () => {
     expect((await codeOf(renewal.renew('v1', input(), VENDOR))).code).toBe('WALLET_NOT_ACTIVE');
@@ -115,18 +131,18 @@ describe('the same rules as buying online', () => {
 });
 
 describe('exactly once', () => {
-  it('the same key twice returns the first result; one charge, one term, one invoice', async () => {
+  it('the same key twice returns the first result; one charge, one term, no invoice', async () => {
     await fundWallet(500_000); const body = input({ idempotencyKey: 'renew-key-once-0001' });
     const a = await renewal.renew('v1', body, VENDOR); const b = await renewal.renew('v1', body, VENDOR);
     expect(b).toMatchObject({ orderId: a.orderId, replay: true, status: 'PAID' });
-    expect(ww.store.ledger.filter((e) => e.kind === 'PLAN_RENEWAL')).toHaveLength(1); expect(bw.repo.invoices).toHaveLength(1);
-    expect((await ww.store.wallet('v1'))!.balancePaise).toBe(146_000);
+    expect(ww.store.ledger.filter((e) => e.kind === 'PLAN_RENEWAL')).toHaveLength(1); expect(bw.repo.invoices).toHaveLength(0);
+    expect((await ww.store.wallet('v1'))!.balancePaise).toBe(200_000);
   });
   it('twelve parallel submits of one key charge once', async () => {
     await fundWallet(500_000); const body = input({ idempotencyKey: 'renew-key-race-0001' });
     const rs = await Promise.all(Array.from({ length: 12 }, () => renewal.renew('v1', body, VENDOR)));
     expect(new Set(rs.map((r) => r.orderId)).size).toBe(1); expect(rs.filter((r) => !r.replay)).toHaveLength(1);
-    expect(ww.store.ledger.filter((e) => e.kind === 'PLAN_RENEWAL')).toHaveLength(1); expect((await ww.store.wallet('v1'))!.balancePaise).toBe(146_000);
+    expect(ww.store.ledger.filter((e) => e.kind === 'PLAN_RENEWAL')).toHaveLength(1); expect((await ww.store.wallet('v1'))!.balancePaise).toBe(200_000);
   });
   it('a key already used for a different plan is refused', async () => {
     await fundWallet(5_000_000); const k = 'renew-key-mixed-0001';
@@ -142,7 +158,7 @@ describe('exactly once', () => {
     await fundWallet(500_000); await ww.open('v2'); await ww.store.unit('v2', (tx) => postEntry(tx, { kind: 'TOPUP', amountPaise: 500_000, idempotencyKey: 'seed-v2-0001', actor: act, now: ww.clock() }));
     const k = 'renew-key-shared-001';
     const a = await renewal.renew('v1', input({ idempotencyKey: k }), VENDOR); const b = await renewal.renew('v2', input({ idempotencyKey: k }), { type: 'VENDOR', id: 'v2', ip: null });
-    expect(a.orderId).not.toBe(b.orderId); expect((await ww.store.wallet('v2'))!.balancePaise).toBe(146_000);
+    expect(a.orderId).not.toBe(b.orderId); expect((await ww.store.wallet('v2'))!.balancePaise).toBe(200_000);
   });
 });
 
@@ -166,7 +182,7 @@ describe('when the term cannot start', () => {
     expect([same.status, same.code]).toEqual([409, 'WALLET_RENEWAL_INVALID']); expect(same.body.message).toMatch(/new request key/i);
     expect((await ww.store.wallet('v1'))!.balancePaise).toBe(500_000);
     const again = await renewal.renew('v1', input({ idempotencyKey: 'renew-key-fail-0002' }), VENDOR); expect(again.status).toBe('PAID');
-    expect((await ww.store.wallet('v1'))!.balancePaise).toBe(146_000);
+    expect((await ww.store.wallet('v1'))!.balancePaise).toBe(200_000);
   });
   it('a crash in the middle of the unit leaves no trace at all (the wallet and the plan are rolled back together)', async () => {
     await fundWallet(500_000); const before = JSON.stringify([await ww.store.wallet('v1'), ww.store.ledger]);

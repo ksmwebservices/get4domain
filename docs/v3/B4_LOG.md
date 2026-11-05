@@ -122,3 +122,13 @@ Source: the OWNER PRICE DECISION ADDENDUM and the OWNER WALLET AND INVOICE ADDEN
 **Merge risk against the 72 modified files in the shared folder.** Compared with `git status` of `C:\Get4Domain\get4domain-site`: none of the 37 files this follow-up changes is among them (0 overlap). `prisma/schema.prisma` and the route baseline are the files most likely to conflict with other branches; both changes are small and additive.
 
 OPEN QUESTIONS and the owner's staging commands for this follow-up are at the end of `docs/v3/V3_S7_BATCH4.md`.
+
+## Owner answers of 6 November 2026 (slice 5.16g and checks)
+
+**Slice 5.16g, plan renewal from the wallet carries no GST and no invoice.** Honest note on the order: the code change (`buildQuote` option `withTax`, the invoice made optional in `settleWithin` through an extracted `issueInvoice`, `PlanRenewalService` asking for no tax) was written before the spec was edited, so there is no recorded red run for this slice; the spec was then changed to the new rule and passes (21 tests, was 18: the price is 300000 not 354000, 540000 for six months against 637200 online, no invoice, no number taken, works with no tax rows, and a direct plan payment still gets GST and invoice number 1). Other changes: the usage statement flag `hasInvoice` is now false for plan lines; the plan renewal case in `wallet.int.spec.ts` updated (300000, no invoice, balance 100000), NOT RUN.
+
+**What running it found.** My first edit of the quote test did not apply (an earlier replace had already changed the text), so one old test still expected the online amount and failed; it was rewritten. A new test used an actor without `ip` and did not compile.
+
+**Answers.** Hire mapping confirmed; `walletTopupMinPaise` stays. `verify:commercial`: the two failing checks (admin nav config, Workspace menu) fail identically in `get4domain-b3` on `v3-b3`, so they pre-date this batch. No staging spec needs a staff setting; each sets and restores its own. Docs updated (`V3_S7_BATCH4.md`, `V3_WALLET_AND_SERVICES.md`); plan renewal open question removed; the owner staging commands are final in the last section of `V3_S7_BATCH4.md` (step 8 removed, no new migration folder).
+
+**Protocol.** unit suite 121 / 2541 passing; lint 0 errors; build ok; `verify:migrations` 151/151; `verify:raw-sql` 931/931. Not run: staging specs, migrations, loaders. No push.

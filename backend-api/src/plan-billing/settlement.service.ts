@@ -78,10 +78,21 @@ export class PaymentSettlementService {
       const base = cur && cur.planId === plan.id && cur.level === 'PRO' ? cur.endsAt : null;   // same plan: extend from the later of now and the end; a different plan starts now
       const endsAt = renewalEnd(base, now, o.termMonths);
       const sub = await tx.assign({ vendorId: o.vendorId, planKey: plan.key, termMonths: o.termMonths, endsAt, source: i.via === 'STAFF' ? 'STAFF' : 'SELF', actor: i.actor, reason: `plan order ${o.id}`, now });
-      const fy = financialYearOf(now);
-      const n = await tx.nextInvoiceNumber(fy);
-      const q = o.quote as { discounts?: unknown; base?: number; taxMinor?: number; taxableMinor?: number; taxName?: string; taxRatePercent?: number; taxInclusive?: boolean; creditPaise?: number };
-      const invoice = await tx.insertInvoice({
+      // A plan paid from the wallet carries no GST and no invoice of its own: the refill already had both (owner, 6 November 2026). Every other way of paying keeps the invoice.
+      const invoice = i.via === 'WALLET' ? null : await this.issueInvoice(tx, o, plan, vendor, i, s, endsAt, now);
+      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id });
+      if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
+      await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice?.invoiceNumber ?? null, via: i.via, amountPaise: o.amountPaise });
+      ctx.planLevel = plan.level;
+      return 'PAID' as const;
+    }
+  }
+
+  private async issueInvoice(tx: BillingTx, o: NonNullable<Awaited<ReturnType<BillingTx['getOrder']>>>, plan: { key: string; name: string }, vendor: { businessName: string | null; name: string | null; email: string | null; phone: string | null }, i: SettleInput, s: BillingSettings, endsAt: Date, now: Date) {
+    const fy = financialYearOf(now);
+    const n = await tx.nextInvoiceNumber(fy);
+    const q = o.quote as { discounts?: unknown; base?: number; taxMinor?: number; taxableMinor?: number; taxName?: string; taxRatePercent?: number; taxInclusive?: boolean; creditPaise?: number };
+    return await tx.insertInvoice({
         vendorId: o.vendorId, orderId: o.id, invoiceNumber: formatInvoiceNumber(s.invoiceNumberPrefix, fy, n), financialYear: fy, issuedAt: now,
         snapshot: {
           seller: { name: s.invoiceSellerName, address: s.invoiceSellerAddress, gstin: s.invoiceSellerGstin, complete: !!(s.invoiceSellerName && s.invoiceSellerAddress) },
@@ -91,12 +102,6 @@ export class PaymentSettlementService {
         },
         taxBreakdown: { name: q.taxName ?? null, ratePercent: q.taxRatePercent ?? null, taxInclusive: q.taxInclusive ?? false, taxableMinor: q.taxableMinor ?? null, taxMinor: q.taxMinor ?? 0, creditPaise: q.creditPaise ?? 0, discounts: q.discounts ?? [] },
       });
-      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id });
-      if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
-      await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice.invoiceNumber, via: i.via, amountPaise: o.amountPaise });
-      ctx.planLevel = plan.level;
-      return 'PAID' as const;
-    }
   }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── webhook
