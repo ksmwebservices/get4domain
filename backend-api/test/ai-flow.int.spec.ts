@@ -12,7 +12,7 @@ import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.s
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant, vendorToken } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
 import { buildProvisioningTestApp } from './support/provisioning-test-app';
-import { makeSiteVendor } from './support/site-staging';
+import { grantTestAiCredits, makeSiteVendor } from './support/site-staging';
 
 /**
  * B2 slice 5.11 on STAGING: AI suggestions with the real database and the built-in MOCK model (aiLiveCalls is forced OFF for the run and put back; no real provider is ever called), credits and
@@ -23,7 +23,7 @@ jest.setTimeout(180_000);
 const GOOD = { section: 'tagline', businessName: 'V3TEST Plumbing', category: 'plumber', keyPoints: 'fast and tidy' };
 
 describe('AI Studio on staging (mock model)', () => {
-  let app: INestApplication; let prisma: PrismaClient; let A: SeededTenant; let B: SeededTenant; let tokenA: string; let tokenB: string; let sup: string; let ops: string; let mkt: string;
+  let app: INestApplication; let prisma: PrismaClient; let A: SeededTenant; let B: SeededTenant; let C: SeededTenant; let tokenA: string; let tokenB: string; let tokenC: string; let sup: string; let ops: string; let mkt: string;
   let prevLive: { existed: boolean; value: unknown } = { existed: false, value: null }; let createdProviderId: string | null = null;
   const api = (method: 'get' | 'post' | 'put', url: string, token: string, body?: object) => { const r = request(app.getHttpServer())[method](url).set('Authorization', `Bearer ${token}`); return body ? r.send(body) : r; };
   const key = (() => { let n = 0; return () => `v3test-${RUN_ID}-ai-${++n}`; })();
@@ -36,6 +36,8 @@ describe('AI Studio on staging (mock model)', () => {
     app = await buildProvisioningTestApp({ includeAiApi: true });
     const subs = app.get(SubscriptionsService);
     A = await seedTenant(prisma, 'p511a', RUN_ID); B = await seedTenant(prisma, 'p511b', RUN_ID); await makeSiteVendor(prisma, subs, A, RUN_ID, {}); await makeSiteVendor(prisma, subs, B, RUN_ID, {});
+    await grantTestAiCredits(prisma, A.vendorId); await grantTestAiCredits(prisma, B.vendorId);
+    C = await seedTenant(prisma, 'p511c', RUN_ID); await makeSiteVendor(prisma, subs, C, RUN_ID, {}); tokenC = vendorToken(C.vendorId, C.email);   // a plain Free vendor, no override
     tokenA = vendorToken(A.vendorId, A.email); tokenB = vendorToken(B.vendorId, B.email);
     sup = await seedStaff(prisma, 'p511sup', RUN_ID, 'SUPER_ADMIN'); ops = await seedStaff(prisma, 'p511ops', RUN_ID, 'OPERATIONS'); mkt = await seedStaff(prisma, 'p511mkt', RUN_ID, 'MARKETING');
   }, 240000);
@@ -48,7 +50,14 @@ describe('AI Studio on staging (mock model)', () => {
     ]);
   }, 180000);
 
-  it('a Free vendor gets the Free plan\'s included credits from the real seed; a suggestion is labelled, scanned, counted and the mock answered (no real call)', async () => {
+  it('owner rule 5: a plain Free vendor has no AI (usage says not allowed; a suggestion is FEATURE_LOCKED with the upsell, nothing is charged)', async () => {
+    const u = await api('get', '/v3/me/ai/usage', tokenC); expect(u.status).toBe(200); expect(u.body.data).toMatchObject({ allowed: false, used: 0 });
+    const r = await api('post', '/v3/me/ai/generate', tokenC, { feature: 'site_copy', input: GOOD, idempotencyKey: key() });
+    expect([r.status, r.body.code]).toEqual([403, 'FEATURE_LOCKED']); expect(r.body.upsellText).toBeTruthy();
+    expect(await prisma.v3AiUsage.count({ where: { vendorId: C.vendorId } })).toBe(0);
+  });
+
+  it('a vendor with an allowance (a staff override standing in for the old Free allowance) gets credits; a suggestion is labelled, scanned, counted and the mock answered (no real call)', async () => {
     const u0 = await api('get', '/v3/me/ai/usage', tokenA); expect(u0.status).toBe(200); expect(u0.body.data).toMatchObject({ allowed: true, used: 0 });
     const r = await api('post', '/v3/me/ai/generate', tokenA, { feature: 'site_copy', input: GOOD, idempotencyKey: key() });
     expect(r.status).toBe(200); expect(r.body.data).toMatchObject({ aiGenerated: true, blocked: false, credits: { cost: 1 } }); expect(r.body.data.text).toMatch(/^Mock suggestion/);

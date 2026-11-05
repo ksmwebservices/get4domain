@@ -35,6 +35,9 @@ describe('vendor lifecycle on staging', () => {
     A = await seedTenant(prisma, 'p51da', RUN_ID);
     siteA = await makeSiteVendor(prisma, app.get(SubscriptionsService), A, RUN_ID, { pro: true });
     tokenA = vendorToken(A.vendorId, A.email);
+    // makeSiteVendor only prepares the draft; the by-host read serves a PUBLISHED site, so build and publish it (as site-tenant does) or every byHost below is the uniform 404.
+    const built = await api('post', '/v3/me/site/build', tokenA, {}); expect(built.status).toBe(200);
+    const published = await api('post', '/v3/me/site/publish', tokenA, { publicationId: built.body.data.publication.id }); expect(published.status).toBe(200);
     // a synthetic, run-unique phone so the register row of this run never collides with another run (register rows are never deleted)
     const phone = `+9199${String(Date.now()).slice(-8)}`;
     await prisma.vendor.update({ where: { id: A.vendorId }, data: { phone } });

@@ -21,6 +21,14 @@ export async function makeSiteVendor(prisma: PrismaClient, subs: SubscriptionsSe
   return { vendorId: t.vendorId, sub, host: siteHost(sub) };
 }
 
+/**
+ * Batch 3 (slice 5.1c, owner rule 5): a Free plan no longer includes AI credits (ai.credits_included is LOCKED_PREVIEW). The AI suites test credit counting, not the plan matrix, so their
+ * vendors get the old Free allowance back as a time-limited staff override (the engine honours overrides; they cascade away with the vendor). The Free rule has its own test in ai-flow.
+ */
+export async function grantTestAiCredits(prisma: PrismaClient, vendorId: string, limit = 20): Promise<void> {
+  await prisma.v3EntitlementOverride.create({ data: { vendorId, featureKey: 'ai.credits_included', state: 'LIMITED', limitValue: limit, reason: 'v3test: AI credit counting needs an allowance', createdByStaffId: 'v3test', expiresAt: new Date(Date.now() + 86_400_000) } });
+}
+
 /** Marks the owner as having claimed the business (a USED claim token with a hash no real token can match). */
 export async function markClaimed(prisma: PrismaClient, vendorId: string): Promise<void> {
   await prisma.v3ClaimToken.create({ data: { vendorId, tokenHash: `v3test-used-${vendorId}`, status: 'USED', usedAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000) } });

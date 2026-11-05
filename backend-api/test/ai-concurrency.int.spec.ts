@@ -12,7 +12,7 @@ import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.s
 import { SeededTenant, cleanupTenants, newPrisma, seedTenant, vendorToken } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
 import { buildProvisioningTestApp } from './support/provisioning-test-app';
-import { makeSiteVendor } from './support/site-staging';
+import { grantTestAiCredits, makeSiteVendor } from './support/site-staging';
 
 /** B2 slice 5.11 on STAGING: with the real per-vendor advisory lock, parallel requests cannot overspend the month's credits and one idempotency key is one charge. Mock model only. NOT RUN in the build session (no .env.staging there). */
 jest.setTimeout(180_000);
@@ -28,7 +28,7 @@ describe('AI credits under concurrency on staging', () => {
     const before = await prisma.v3PlanSetting.findUnique({ where: { key: 'aiLiveCalls' } }); prevLive = { existed: !!before, value: before?.valueJson ?? null };
     await prisma.v3PlanSetting.upsert({ where: { key: 'aiLiveCalls' }, create: { key: 'aiLiveCalls', valueJson: false, description: 'v3test' }, update: { valueJson: false } });
     app = await buildProvisioningTestApp({ includeAiApi: true });
-    A = await seedTenant(prisma, 'p511ca', RUN_ID); await makeSiteVendor(prisma, app.get(SubscriptionsService), A, RUN_ID, {}); token = vendorToken(A.vendorId, A.email);
+    A = await seedTenant(prisma, 'p511ca', RUN_ID); await makeSiteVendor(prisma, app.get(SubscriptionsService), A, RUN_ID, {}); await grantTestAiCredits(prisma, A.vendorId); token = vendorToken(A.vendorId, A.email);
   }, 240000);
 
   afterAll(async () => {
