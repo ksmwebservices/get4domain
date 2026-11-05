@@ -38,6 +38,7 @@ describe('directory visits on staging', () => {
     const counted = results.filter((r) => r.status === 200).length;   // the per-IP limit never trips: each call is one request from one test client
     const row = await prisma.v3DirectoryVisitDaily.findFirstOrThrow({ where: { businessId } });
     expect(row.count).toBeLessThanOrEqual(40); expect(row.count).toBeGreaterThanOrEqual(1);
+    expect(results.filter((r) => r.status !== 200).map((r) => [r.status, r.body?.code ?? r.body?.message])).toEqual([]);   // names the failing status if one ever happens again
     expect(counted).toBe(results.length);
     expect(JSON.stringify(row)).not.toMatch(/198\.51\.100/);
   });

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { RemovalStatus } from './core/removal';
@@ -23,6 +24,12 @@ const toCategory = (c: { id: string; parentId: string | null; parentKey: string;
 function patchData(p: BusinessPatch): Prisma.V3DirectoryBusinessUncheckedUpdateInput {
   const { address, hours, geo, ...rest } = p;
   return { ...rest, ...(address !== undefined ? { addressJson: address as Prisma.InputJsonValue } : {}), ...(hours !== undefined ? { hoursJson: hours as Prisma.InputJsonValue } : {}), ...(geo !== undefined ? { geoJson: geo === null ? Prisma.JsonNull : (geo as Prisma.InputJsonValue) } : {}) };
+}
+
+/** Postgres 23505, as Prisma reports it for a raw statement (P2010 with meta.code) or for a model call (P2002). */
+function isUniqueViolation(e: unknown): boolean {
+  const x = e as { code?: string; meta?: { code?: string }; message?: string } | null;
+  return !!x && (x.code === 'P2002' || (x.code === 'P2010' && x.meta?.code === '23505') || /duplicate key value violates unique constraint/i.test(String(x.message ?? '')));
 }
 
 @Injectable()
@@ -164,10 +171,19 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
   // ── visits (slice 5.7b) ──
   async incrementVisit(businessId: string, day: string, fromSearch: boolean): Promise<void> {
     const s = fromSearch ? 1 : 0;
-    // one atomic statement: no read-then-write, so parallel visits never lose a count
-    await this.prisma.$executeRaw`INSERT INTO "g4d_directory_visit_daily" ("id", "businessId", "day", "count", "searchCount", "createdAt", "updatedAt")
-      VALUES (${`vd_${businessId}_${day}`}, ${businessId}, ${day}, 1, ${s}, NOW(), NOW())
-      ON CONFLICT ("businessId", "day") DO UPDATE SET "count" = "g4d_directory_visit_daily"."count" + 1, "searchCount" = "g4d_directory_visit_daily"."searchCount" + ${s}, "updatedAt" = NOW()`;
+    // One atomic statement: no read-then-write, so parallel visits never lose a count. ON CONFLICT names ONE arbiter, ("businessId","day"); Postgres only arbitrates that index. The id is therefore
+    // random: a deterministic id would make the primary key a SECOND unique index that the same row can violate, and a request that loses the race for the first row of the day would fail with
+    // a unique violation instead of taking the update path (seen on staging as 39 counted of 40). One retry covers any other racing insert; the second attempt always finds the row.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.prisma.$executeRaw`INSERT INTO "g4d_directory_visit_daily" ("id", "businessId", "day", "count", "searchCount", "createdAt", "updatedAt")
+          VALUES (${`vd_${randomUUID()}`}, ${businessId}, ${day}, 1, ${s}, NOW(), NOW())
+          ON CONFLICT ("businessId", "day") DO UPDATE SET "count" = "g4d_directory_visit_daily"."count" + 1, "searchCount" = "g4d_directory_visit_daily"."searchCount" + ${s}, "updatedAt" = NOW()`;
+        return;
+      } catch (e) {
+        if (attempt >= 1 || !isUniqueViolation(e)) throw e;
+      }
+    }
   }
   async visitDays(businessId: string, fromDay: string, toDay: string) {
     return this.prisma.v3DirectoryVisitDaily.findMany({ where: { businessId, day: { gte: fromDay, lte: toDay } }, orderBy: { day: 'asc' }, select: { day: true, count: true, searchCount: true } });
