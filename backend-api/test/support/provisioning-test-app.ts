@@ -20,6 +20,7 @@ import { AI_STUDIO_CONTROLLERS, AI_STUDIO_PROVIDERS } from '../../src/ai-studio/
 import { PLAN_BILLING_CONTROLLERS, PLAN_BILLING_PROVIDERS } from '../../src/plan-billing/plan-billing.providers';
 import { ActivityBus } from '../../src/common/activity-bus';
 import { WALLET_CONTROLLERS, WALLET_PROVIDERS } from '../../src/v3-wallet/wallet.module';
+import { SERVICES_CONTROLLERS, SERVICES_PROVIDERS } from '../../src/v3-services/services.module';
 import { PaymentsGate } from '../../src/plan-billing/razorpay/payments-gate';
 import { BillingSettingsService } from '../../src/plan-billing/settings/billing-settings.service';
 import { FakeGate } from './fake-gate';
@@ -52,16 +53,17 @@ export interface ProvisioningTestOptions {
   /** the Batch 3 API (settings, lifecycle) */ b3?: boolean;
   /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay };
   /** the Batch 4 wallet API (needs billing: it reuses the payment seam) */ wallet?: boolean;
+  /** the Batch 4 service catalogue, price book and packs (needs wallet) */ services?: boolean;
   /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean }
 
 /** The module definition, separate from the boot so a unit test can compile it (with a faked database) and catch a missing provider without staging. */
 export function provisioningTestModuleMetadata(opts: ProvisioningTestOptions = {}) {
   // The Batch 3 PROVIDERS are always present: DIRECTORY_PROVIDERS, the site providers and others list services that inject B3SettingsService, the lifecycle service and the terms guard, whatever the option. Only the b3 API (controllers) is optional.
 
-  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), ...(opts.wallet ? [ActivityBus, ...WALLET_PROVIDERS] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), ...(opts.wallet ? [ActivityBus, ...WALLET_PROVIDERS] : []), ...(opts.services ? SERVICES_PROVIDERS : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
   return {
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
-    controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.wallet ? WALLET_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
+    controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.wallet ? WALLET_CONTROLLERS : []), ...(opts.services ? SERVICES_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
     providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers],
   };
 }
@@ -77,7 +79,7 @@ export async function buildProvisioningTestApp(opts: ProvisioningTestOptions = {
   }
   // The provisioning tests must not depend on the shared staging setting siteDraftBuilderMode (a leftover "renderer" would add a full site build to every job).
   // The pin is in this app instance only; nothing is written to the database. The site suites (includeSiteApi) read the real setting.
-  if (opts.pinLegacySiteMode ?? !(opts.includeSiteApi || opts.includeDirectoryApi || opts.billing || opts.wallet || opts.includeAiApi || opts.b3)) {
+  if (opts.pinLegacySiteMode ?? !(opts.includeSiteApi || opts.includeDirectoryApi || opts.billing || opts.wallet || opts.services || opts.includeAiApi || opts.b3)) {
     const settings = app.get(ProvisioningSettingsService);
     const real = settings.get.bind(settings);
     settings.get = async () => ({ ...(await real()), siteDraftBuilderMode: 'legacy' as const, provisioningDirectoryProfileEnabled: false });   // the slice 5.3 suites must not depend on a leftover staging setting

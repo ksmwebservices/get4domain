@@ -66,6 +66,7 @@ model Vendor {
   v3Wallet V3Wallet?
   v3WalletTopups V3WalletTopup[]
   v3WalletReceipts V3WalletReceipt[]
+  v3PackPurchases V3PackPurchase[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
   v3Invoices V3VendorInvoice[]
@@ -5794,4 +5795,144 @@ model V3WalletLot {
   @@index([walletId, status, expiresAt])
   @@index([status, expiresAt])
   @@map("g4d_wallet_lots")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 services and the price book (slice 5.16b)
+enum V3ServiceDoneBy {
+  VENDOR
+  TEAM
+  EITHER
+}
+
+enum V3ServiceDelivery {
+  INSTANT
+  TEAM_REQUEST
+}
+
+/// When a service can be bought. PRO_ACTIVE_OR_GRACE (default): only while the vendor's Pro plan is ACTIVE or in grace. ANY: in any plan state. Editable by staff per service.
+enum V3ServicePlanRule {
+  PRO_ACTIVE_OR_GRACE
+  ANY
+}
+
+enum V3CatalogStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum V3ServicePriceStatus {
+  PROPOSED
+  APPROVED
+  RETIRED
+}
+
+model V3Service {
+  id               String            @id @default(cuid())
+  key              String            @unique
+  name             String
+  shortDescription String
+  includesText     String // what the service includes, in plain words (shown before the vendor confirms)
+  approvalText     String // how approval works
+  kind             String            @default("GENERAL")
+  doneBy           V3ServiceDoneBy   @default(TEAM)
+  deliveryKind     V3ServiceDelivery @default(TEAM_REQUEST)
+  planStateRule    V3ServicePlanRule @default(PRO_ACTIVE_OR_GRACE)
+  trackScope       String[] // empty = every track
+  publicVisible    Boolean           @default(false)
+  sortOrder        Int               @default(0)
+  status           V3CatalogStatus   @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  prices V3ServicePrice[]
+
+  @@map("g4d_services")
+}
+
+/// A price is never set by code: PROPOSED by staff (or the one seeded row), APPROVED by SUPER_ADMIN with an effective date. The row in force is the APPROVED row with the latest effectiveFrom that has started.
+model V3ServicePrice {
+  id           String        @id @default(cuid())
+  serviceId    String
+  amountPaise  Int
+  currency     String        @default("INR")
+  taxCategory  String        @default("ALL")
+  taxInclusive Boolean       @default(false)
+  effectiveFrom DateTime? // required to approve; an undated PROPOSED row is a proposal only
+  status       V3ServicePriceStatus @default(PROPOSED)
+  note         String?
+  createdBy    String?
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  service V3Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceId, effectiveFrom])
+  @@index([serviceId, status])
+  @@map("g4d_service_prices")
+}
+
+model V3AddonPack {
+  id           String          @id @default(cuid())
+  key          String          @unique
+  name         String
+  description  String
+  itemsJson    Json // [{ "serviceKey": "POSTER_DESIGN", "count": 3 }]
+  validityDays Int? // null = the pack does not expire; a number is set by staff, never by code
+  status       V3CatalogStatus @default(DRAFT)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  prices    V3AddonPackPrice[]
+  purchases V3PackPurchase[]
+
+  @@map("g4d_addon_packs")
+}
+
+model V3AddonPackPrice {
+  id            String        @id @default(cuid())
+  packId        String
+  amountPaise   Int
+  currency      String        @default("INR")
+  taxCategory   String        @default("ALL")
+  taxInclusive  Boolean       @default(false)
+  effectiveFrom DateTime?
+  status        V3ServicePriceStatus @default(PROPOSED)
+  note          String?
+  createdBy     String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  pack V3AddonPack @relation(fields: [packId], references: [id], onDelete: Restrict)
+
+  @@unique([packId, effectiveFrom])
+  @@index([packId, status])
+  @@map("g4d_addon_pack_prices")
+}
+
+/// A pack a vendor bought with wallet credit. `remainingJson` counts down as services use it. The price and tax are copied here so later price edits never change what was bought.
+model V3PackPurchase {
+  id                 String    @id @default(cuid())
+  vendorId           String
+  packId             String
+  idempotencyKey     String
+  remainingJson      Json // { "POSTER_DESIGN": 3 }
+  priceSnapshotPaise Int
+  taxSnapshotJson    Json      @default("{}")
+  purchasedAt        DateTime  @default(now())
+  expiresAt          DateTime?
+  ledgerEntryId      String    @unique
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  vendor Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pack   V3AddonPack @relation(fields: [packId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, purchasedAt])
+  @@map("g4d_pack_purchases")
 }

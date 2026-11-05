@@ -33,6 +33,8 @@ const SUPER_ONLY_ROUTES = [
   'GET /v3/admin/terms', 'GET /v3/admin/terms/:id', 'POST /v3/admin/terms/kinds/:kind/drafts', 'PUT /v3/admin/terms/:id', 'POST /v3/admin/terms/:id/publish',
   // B3 slice 5.13a: the seeded-site indexing mode
   'PUT /v3/admin/seeded-sites/indexing-mode',
+  // B4 slice 5.16b: only SUPER_ADMIN approves or retires a price
+  'POST /v3/admin/services/prices/:id/approve', 'POST /v3/admin/services/prices/:id/retire', 'POST /v3/admin/packs/prices/:id/approve', 'POST /v3/admin/packs/prices/:id/retire',
   // B4 slice 5.16a: only SUPER_ADMIN adds or removes wallet credit by hand, or freezes a wallet
   'POST /v3/admin/wallets/:vendorId/adjustments', 'PUT /v3/admin/wallets/:vendorId/frozen',
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
@@ -58,6 +60,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
   // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/ai/usage',
+  // B4 slice 5.16b: changing the catalogue and proposing or editing a price: OPERATIONS and SUPER_ADMIN
+  'POST /v3/admin/services', 'PUT /v3/admin/services/:key', 'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs', 'PUT /v3/admin/packs/:key', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id',
   // B4 slice 5.16a: wallets are money: reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/wallets', 'GET /v3/admin/wallets/reconciliation', 'POST /v3/admin/wallets/expiry-run', 'GET /v3/admin/wallets/:vendorId', 'GET /v3/admin/wallets/:vendorId/ledger', 'GET /v3/admin/wallets/:vendorId/reconcile',
   // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
@@ -98,6 +102,8 @@ const ALL_STAFF_ROUTES = [
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
+  'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
   'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id',
   // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
@@ -122,7 +128,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(213);
+    expect(oracle).toHaveLength(229);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

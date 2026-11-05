@@ -67,4 +67,34 @@ Top-ups share the existing Razorpay webhook: the dispatch first looks for a plan
 
 **The tax rule** (`core/tax-core.ts`, pure): a buyer in the SAME state as Get4Domain is taxed with CGST plus SGST; a buyer in ANOTHER state with IGST. The rows are recognised by name (IGST, CGST, SGST) in `g4d_tax_rates`, honouring active, the start date and the category (`appliesTo`, the exact category before ALL); nothing in code knows a rate. Without a seller state (`walletSellerStateCode`), a buyer state (the wallet's billing profile) or the needed rows the answer is a plain reason and the caller refuses to sell ("tax not set up"). Integer paise, half up per line; an inclusive price keeps its total and the last line absorbs the rounding, so the lines always add up. The services slices use it for the tax invoice of each charge. Plan renewals from the wallet use the plan quote's own tax (exactly the online amount); whether plan invoices must also be split into IGST or CGST plus SGST is an accountant question (OPEN QUESTIONS).
 
+### 5.16b: the service catalogue, the price book and add-on packs
+
+Migration folder `20261119100000_v3_services`. Code: `backend-api/src/v3-services/`. Seed: `node scripts/seed-v3-services.js` (dry run by default, `--apply`, staging guard).
+
+| Table | Purpose |
+|---|---|
+| `g4d_services` | one row per service: `key` (unique), `name`, `shortDescription`, `includesText` (what it includes), `approvalText` (how approval works), `kind`, `doneBy` (VENDOR, TEAM, EITHER), `deliveryKind` (INSTANT, TEAM_REQUEST), `planStateRule` (PRO_ACTIVE_OR_GRACE, the default, or ANY; editable), `trackScope` (empty = every track), `publicVisible`, `sortOrder`, `status` (DRAFT, ACTIVE, RETIRED). |
+| `g4d_service_prices` | the price book: `amountPaise` (a CHECK keeps it above zero), `currency`, `taxCategory`, `taxInclusive`, `effectiveFrom` (empty while PROPOSED), `status` (PROPOSED, APPROVED, RETIRED), `approvedBy`, `approvedAt`. A CHECK refuses an APPROVED row with no date or no approver. One row per service and start date. |
+| `g4d_addon_packs` | `key`, `name`, `description`, `itemsJson` (`[{ serviceKey, count }]`), `validityDays` (null = does not expire; a number is set by staff), `status` (DRAFT by default). |
+| `g4d_addon_pack_prices` | the same shape as the service prices. |
+| `g4d_pack_purchases` | what a vendor bought: `remainingJson` (counts that run down), `priceSnapshotPaise` and `taxSnapshotJson` (copied, so a later price never changes what was paid), `purchasedAt`, `expiresAt`, `ledgerEntryId` (unique: one purchase per ledger entry), `idempotencyKey` (unique per vendor). |
+
+Rules:
+- **No price is invented.** A price is PROPOSED by staff (OPERATIONS or SUPER_ADMIN), APPROVED by a SUPER_ADMIN with an effective date, and only then in force. The price in force is the APPROVED row with the latest start date that has started. Approval needs a date that is not in the past (a minute of clock difference is forgiven), is later than the price in force, and is not the same instant as another row of that service. A service with no price in force shows "Price not set" and cannot be bought with money. Approving never changes the amount. Retiring the newest price brings the previous approved one back into force.
+- **The seed** creates the twelve services (words only: no price and no length of time appears in any text) and ONE PROPOSED price: THEME_SWITCH, 29900 paise, no start date, `createdBy` "seed". It never writes an APPROVED row (the word is not in its code; a test checks that). It also creates the plan-allowance features `services.included.<KEY>` (kind LIMIT) for the eleven services other than THEME_SWITCH, with no value for any plan: staff set inclusions in the admin tools; until then nothing is included.
+- **Funding order** (owner rule 1): an unused plan allowance, then a pack, then the wallet. An allowance or a pack needs no price and no wallet. The wallet pays only when ACTIVE and its AVAILABLE money covers the whole amount; otherwise the answer is the exact shortfall.
+- **Tax** is worked out by the tax rule of 5.16a-2 from `g4d_tax_rates`, the wallet's billing profile (the vendor's state) and `walletSellerStateCode`; if it cannot be worked out the service says "tax not set up" and is not sold.
+- **Plan state and track.** The default is that a service can be bought only while the Pro plan is ACTIVE or in grace; a service set to ANY can be bought in any plan state; a track scope limits who is offered it. A pack can be bought only if every service in it could be bought now.
+- **Packs** are bought from the wallet in one unit of work with the ledger entry (kind PACK_PURCHASE); the same key returns the same purchase; use takes from the pack that expires first.
+
+API:
+
+| Route | Who |
+|---|---|
+| `GET /v3/public/services` | public, cacheable (`max-age=300`): visible, active services with an approved price in force; nothing internal |
+| `GET /v3/me/services`, `GET /v3/me/packs`, `POST /v3/me/packs/:key/purchase` `{ idempotencyKey }` | Owner |
+| `GET /v3/admin/services`, `GET /v3/admin/services/:key`, `GET /v3/admin/packs`, `GET /v3/admin/packs/:key` | all staff; MARKETING gets no money field |
+| `POST /v3/admin/services`, `PUT /v3/admin/services/:key`, `POST /v3/admin/services/:key/prices`, `PUT /v3/admin/services/prices/:id`, and the same four for `/v3/admin/packs` | OPERATIONS and SUPER_ADMIN |
+| `POST /v3/admin/services/prices/:id/approve` `{ effectiveFrom }`, `POST .../retire`, and the same two for `/v3/admin/packs/prices/:id` | SUPER_ADMIN only |
+
 (Later slices add their sections below.)

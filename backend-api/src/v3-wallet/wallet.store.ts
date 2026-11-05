@@ -36,6 +36,11 @@ export interface Commit { expectedVersion: number; balancePaise: number; heldPai
 /** Everything a wallet change touches, inside ONE unit of work (a database transaction in production). A throw rolls all of it back. */
 export interface WalletTx {
   readonly vendorId: string;
+  /**
+   * The open transaction client of THIS unit of work (Prisma), or the in-memory twin. It lets another module (packs, service requests, theme switches) write its own rows in the SAME unit as a
+   * ledger entry, so "charged but nothing recorded" cannot happen. Nothing outside those modules should touch it.
+   */
+  readonly db: unknown;
   wallet(): Promise<WalletRow | null>;
   /** creates the wallet INACTIVE when there is none; a race with another creator returns the winner's row */
   ensureWallet(): Promise<WalletRow>;

@@ -93,6 +93,12 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Batch 4 slice 5.16a: wallets. Reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN (MARKETING refused: a wallet is money). Adjusting credit and freezing are SUPER_ADMIN only.
   'GET /v3/admin/wallets': OPS_AND_SUPER, 'GET /v3/admin/wallets/reconciliation': OPS_AND_SUPER, 'POST /v3/admin/wallets/expiry-run': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId/ledger': OPS_AND_SUPER, 'GET /v3/admin/wallets/:vendorId/reconcile': OPS_AND_SUPER,
   'POST /v3/admin/wallets/:vendorId/adjustments': SUPER_ONLY, 'PUT /v3/admin/wallets/:vendorId/frozen': SUPER_ONLY,
+  // Batch 4 slice 5.16b: the service catalogue and the price book. Everyone on staff may READ the catalogue (MARKETING sees no money field); changing it and proposing or editing a price is OPERATIONS and SUPER_ADMIN;
+  // APPROVING or RETIRING a price is SUPER_ADMIN only.
+  'GET /v3/admin/services': ALL_STAFF, 'GET /v3/admin/services/:key': ALL_STAFF, 'GET /v3/admin/packs': ALL_STAFF, 'GET /v3/admin/packs/:key': ALL_STAFF,
+  'POST /v3/admin/services': OPS_AND_SUPER, 'PUT /v3/admin/services/:key': OPS_AND_SUPER, 'POST /v3/admin/services/:key/prices': OPS_AND_SUPER, 'PUT /v3/admin/services/prices/:id': OPS_AND_SUPER,
+  'POST /v3/admin/packs': OPS_AND_SUPER, 'PUT /v3/admin/packs/:key': OPS_AND_SUPER, 'POST /v3/admin/packs/:key/prices': OPS_AND_SUPER, 'PUT /v3/admin/packs/prices/:id': OPS_AND_SUPER,
+  'POST /v3/admin/services/prices/:id/approve': SUPER_ONLY, 'POST /v3/admin/services/prices/:id/retire': SUPER_ONLY, 'POST /v3/admin/packs/prices/:id/approve': SUPER_ONLY, 'POST /v3/admin/packs/prices/:id/retire': SUPER_ONLY,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);

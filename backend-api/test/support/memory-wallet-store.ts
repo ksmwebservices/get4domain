@@ -26,13 +26,17 @@ export class MemoryWalletStore extends WalletStore {
   private async acquire(): Promise<void> { if (this.inUse >= this.poolSize) await new Promise<void>((r) => this.waiting.push(r)); this.inUse++; this.maxConnectionsInUse = Math.max(this.maxConnectionsInUse, this.inUse); }
   private release(): void { this.inUse--; this.waiting.shift()?.(); }
 
+  /** other in-memory stores (packs, service requests, theme switches) that must roll back together with a wallet unit */
+  sidecars: Array<{ capture(): () => void }> = [];
   private snapshot() {
+    const sidecarRestores = this.sidecars.map((s) => s.capture());
     return {
+      sidecarRestores,
       wallets: new Map([...this.wallets].map(([k, v]) => [k, { ...v }])), lots: new Map([...this.lotsById].map(([k, v]) => [k, { ...v }])), ledger: [...this.ledger], topups: new Map([...this.topups].map(([k, v]) => [k, { ...v }])),
       receipts: [...this.receipts], counters: new Map(this.counters), audits: this.audits.length,
     };
   }
-  private restore(s: ReturnType<MemoryWalletStore['snapshot']>): void { this.wallets = s.wallets; this.lotsById = s.lots; this.ledger = s.ledger; this.topups = s.topups; this.receipts = s.receipts; this.counters = s.counters; this.audits.length = s.audits; }
+  private restore(s: ReturnType<MemoryWalletStore['snapshot']>): void { for (const r of s.sidecarRestores) r(); this.wallets = s.wallets; this.lotsById = s.lots; this.ledger = s.ledger; this.topups = s.topups; this.receipts = s.receipts; this.counters = s.counters; this.audits.length = s.audits; }
 
   async unit<T>(vendorId: string, fn: (tx: WalletTx) => Promise<T>): Promise<T> {
     return this.queue.run(`wallet:${vendorId}`, async () => {
@@ -57,6 +61,7 @@ export class MemoryWalletStore extends WalletStore {
     const mine = (): WalletRow | undefined => this.wallets.get(vendorId);
     return {
       vendorId,
+      db: this,
       wallet: async () => { const w = mine(); return w ? { ...w } : null; },
       ensureWallet: async () => {
         let w = mine(); const now = this.clock();

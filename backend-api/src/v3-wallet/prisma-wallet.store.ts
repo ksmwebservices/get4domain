@@ -33,6 +33,7 @@ export function prismaWalletTx(db: Prisma.TransactionClient, vendorId: string, a
   const mine = async (): Promise<Prisma.V3WalletGetPayload<Record<string, never>> | null> => db.v3Wallet.findUnique({ where: { vendorId } });
   return {
     vendorId,
+    db,
     wallet: async () => { const w = await mine(); return w ? toWallet(w) : null; },
     ensureWallet: async () => toWallet(await db.v3Wallet.upsert({ where: { vendorId }, create: { vendorId }, update: {} })),
     lots: async () => (await db.v3WalletLot.findMany({ where: { vendorId }, orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }] })).map(toLot),

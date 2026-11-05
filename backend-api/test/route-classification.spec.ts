@@ -36,6 +36,8 @@ const OWNER_ONLY_ROUTES = [
   // B2 slice 5.1b: buying a plan starts a payment: owner only (a team member never starts one)
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',
   // B4 slice 5.16a: the wallet is money (balance, top-ups, the tax profile): owner only, a team member never sees or starts any of it
+  // B4 slice 5.16b: the vendor's service and pack lists show prices and the wallet, and buying a pack spends money: owner only
+  'GET /v3/me/services', 'GET /v3/me/packs', 'POST /v3/me/packs/:key/purchase',
   'POST /v3/me/plan/renew-with-wallet',   // B4 slice 5.16a-2: buying a plan with wallet credit spends money: owner only
   'GET /v3/me/wallet', 'GET /v3/me/wallet/ledger', 'GET /v3/me/wallet/topups', 'POST /v3/me/wallet/topups', 'POST /v3/me/wallet/topups/:id/confirm', 'PUT /v3/me/wallet/billing-profile',
   // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only

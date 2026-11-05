@@ -42,8 +42,28 @@ Decisions:
 3. **Plan renewal tax.** The wallet charges exactly the online amount (one quote). The new IGST / CGST plus SGST rule is used by the services slices; it is not retrofitted to plan invoices, which keep the single-rate breakdown they have today. OPEN QUESTION below.
 4. **Activity events.** The typed bus now carries `plan.order.paid`, `subscription.assigned`, `wallet.activated`, `wallet.topup.credited`, `wallet.adjusted`, `wallet.frozen`, `wallet.unfrozen` and `wallet.expired`; later slices add the service and theme-switch events. No consumer exists yet (slice 5.20), which the dispatch accepts.
 
-OPEN QUESTIONS from this slice (also in the final report):
+OPEN QUESTIONS from slice 5.16a (also in the final report):
 - Whether a staff-granted Pro with no payment (a goodwill grant) should open the wallet. Built: it does not.
 - The tax treatment of an advance (a top-up) and the wording of the receipt are for counsel. The receipt says it is a receipt for credit and not a tax invoice.
 - `walletTopupMinPaise`, `walletTopupMaxPaise` (no defaults), and `walletSellerStateCode` (needed by the tax rule in the services slices) are for staff and the owner to set.
 - **IGST versus CGST plus SGST wording, and the advance-receipt treatment** (accountant): the rule is built and tested; the invoice wording, whether a plan invoice paid from the wallet must be split into the same components, and how an advance (a top-up) is treated for tax are not decided here.
+
+## Slice 5.16b: service catalogue, price book, add-on packs
+Built: `src/v3-services/` (pure core, store port, Prisma store, in-memory twin in `test/support`, service, controllers, seed), migration `20261119100000_v3_services`, `scripts/seed-v3-services.js`, the harness option `services`, 20 routes (route baseline 993 to 1013; role-matrix oracle 213 to 229).
+
+Red first: `services-core.spec.ts` failed with `Cannot find module '../src/v3-services/core/services-core'` before the core existed.
+
+Tests added: `services-core.spec.ts` (30), `services-service.spec.ts` (29: price book, funding order, tax, plan state, packs, 40 parallel buyers, crash rollback, cross-tenant), `services-api.spec.ts` (11: public, owner only, MARKETING without money fields, only SUPER_ADMIN approves), `services-seed.spec.ts` (14: words only, one PROPOSED price, no APPROVED row, idempotent), `services-schema.spec.ts` (21). `services.int.spec.ts` (staging) is written and type-checked, **NOT RUN**.
+
+Decisions:
+1. **Enum name.** `V3PriceStatus` already exists for plan prices, so the service price status enum is `V3ServicePriceStatus`.
+2. **"At most one approved effective price at a time"** is enforced by resolution plus a rule at approval, not by a partial unique index. A partial index is not something Prisma can describe, so it would show up as drift against the schema (the owner expects only the 2 allowed drift items). What is enforced: one row per service and start date (a real unique index), the price in force is always exactly one row (the latest started APPROVED), and approval refuses a date that is not later than the price in force.
+3. **`effectiveFrom` is empty on a PROPOSED row** (a proposal has no date until it is approved). The seeded THEME_SWITCH proposal therefore has no date; approval requires one.
+4. **Public catalogue lists only services that have a price in force.** The dispatch says the catalogue shows approved prices only; a marketing page that says "price not set" looks wrong, so unpriced services are left out of the public list (they still appear to a signed-in vendor as "Price not set").
+5. **MARKETING reads the catalogue** (the dispatch: "read-only on non-money fields") through the same routes as other staff; the controller strips prices, proposals and amounts for that role (tested).
+6. **Vendor routes are owner only.** The list shows the wallet and prices, and a pack purchase spends money.
+7. **Features for allowances** are created by the loader as `services.included.<KEY>` (kind LIMIT) for the eleven non-theme services, with NO plan cell, so every plan resolves them as hidden (nothing included) until staff set values. THEME_SWITCH has none: its one included switch is a rule (5.16d), not a count. The allowance "used" count is read through `ServiceUsagePort`; slice 5.16c provides the real one (until then nothing is used).
+8. **A pack tax invoice** is not issued in this slice. The charge is in the ledger with the tax snapshot on the purchase; 5.16c adds tax invoices for service charges and extends them to pack purchases if the accountant wants one (OPEN QUESTION).
+9. **The filter** now also forwards a `problem` string (for example `EFFECTIVE_DATE_IN_PAST`, `RATES_MISSING`) so a client can tell why a price or a tax refusal happened.
+
+OPEN QUESTIONS from this slice: whether a pack purchase needs its own tax invoice; which plans include how many of which services (staff set the `services.included.*` cells; none are seeded); whether the public catalogue should also list services with no price (built: it does not); the pack validity (`validityDays`) is null (no expiry) until staff set it per pack.
