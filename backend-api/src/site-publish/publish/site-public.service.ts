@@ -25,7 +25,7 @@ export class SitePublicService {
     /** slice 5.1d / 5.4b: when present, a page is served listing-only whenever the vendor's CURRENT entitlements have no site.cta (plan lapsed, suspended), whatever was published */
     @Optional() @Inject(EntitlementsService) private readonly ents?: Pick<EntitlementsService, 'resolve'>,
     @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
-    @Optional() private readonly themes?: Pick<ThemeRenderService, 'kitApi'>,
+    @Optional() @Inject(ThemeRenderService) private readonly themes?: Pick<ThemeRenderService, 'kitApi'>,
   ) {}
 
   /** The page, or null: exactly as before slice 5.6 (a redirect is not a page). */

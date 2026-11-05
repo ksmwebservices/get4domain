@@ -22,6 +22,7 @@ import { SiteDomainsModule } from '../src/site-domains/site-domains.module';
 import { SitePublishModule } from '../src/site-publish/site-publish.module';
 import { TermsModule } from '../src/terms/terms.module';
 import { VendorLifecycleModule } from '../src/vendor-lifecycle/vendor-lifecycle.module';
+import { SitePublicService } from '../src/site-publish/publish/site-public.service';
 import { testAppModuleMetadata } from './support/test-app';
 
 /**
@@ -52,6 +53,13 @@ const OPTION_SETS: Array<[string, ProvisioningTestOptions]> = [
 
 describe('staging harness: the test apps compile without a database', () => {
   it.each(OPTION_SETS)('buildProvisioningTestApp: %s', async (_name, opts) => { await compiles(provisioningTestModuleMetadata(opts)); }, 60000);
+  // SitePublicService takes its entitlement engine and theme renderer as OPTIONAL dependencies. If one is silently undefined the stored Pro page is served WITH its forms to a suspended or lapsed vendor.
+  it('SitePublicService gets every optional dependency it needs to serve a listing-only page', async () => {
+    const moduleRef = await Test.createTestingModule(provisioningTestModuleMetadata({ includeSiteApi: true })).overrideProvider(PrismaService).useValue(fakePrisma).compile();
+    const svc = moduleRef.get(SitePublicService) as unknown as Record<string, unknown>;
+    expect(svc.ents).toBeDefined(); expect(svc.b3).toBeDefined(); expect(svc.themes).toBeDefined();
+    await moduleRef.close();
+  }, 60000);
   it('buildPlansTestApp', async () => { await compiles(plansTestModuleMetadata()); }, 60000);
   it('buildTestApp', async () => { await compiles(testAppModuleMetadata()); }, 60000);
 
