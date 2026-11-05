@@ -142,7 +142,7 @@ describe('what a vendor sees before confirming', () => {
     await w.svc.setBillingProfile('v1', { stateCode: '33' }, V1).catch(() => undefined);
     await fundWallet('v1', 20_000); await w.svc.setBillingProfile('v1', { stateCode: '33' }, V1);
     expect((await poster()).funding).toEqual({ kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: 39_000 });
-    expect((await poster('v2')).funding).toMatchObject({ kind: 'NONE', reason: 'TAX_NOT_SET' });
+    expect((await poster('v2')).funding).toMatchObject({ kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' });   // no wallet at all: that is what the vendor is told, not a tax problem
     await w.svc.setFrozen('v1', { frozen: true, reason: 'chargeback review' }, SUPER);
     expect((await poster()).funding).toMatchObject({ kind: 'NONE' });
   });

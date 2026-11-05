@@ -59,6 +59,11 @@ describe('the funding order: allowance, then pack, then wallet', () => {
     expect(fundingChoice(input({ allowance: { limit: 1, used: 0 }, totalMinor: null, wallet: null }))).toEqual({ kind: 'INCLUDED_ALLOWANCE', remaining: 1 });
     expect(fundingChoice(input({ packCount: 1, totalMinor: null, wallet: wallet(0, 'INACTIVE') }))).toEqual({ kind: 'PACK', remaining: 1 });
   });
+  it('the wallet comes before price and tax: a vendor whose wallet is not open (or is frozen) is told that, whatever else is missing', () => {
+    expect(fundingChoice(input({ totalMinor: null, wallet: null }))).toEqual({ kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' });
+    expect(fundingChoice(input({ totalMinor: null, taxProblem: 'RATES_MISSING', wallet: wallet(0, 'INACTIVE') }))).toEqual({ kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' });
+    expect(fundingChoice(input({ totalMinor: null, wallet: wallet(10, 'FROZEN') }))).toEqual({ kind: 'NONE', reason: 'WALLET_FROZEN' });
+  });
   it('a service with no approved price is not purchasable: price not set', () => { expect(fundingChoice(input({ totalMinor: null }))).toEqual({ kind: 'NONE', reason: 'PRICE_NOT_SET' }); });
   it('a price that cannot be taxed is refused, never guessed', () => { expect(fundingChoice(input({ totalMinor: null, taxProblem: 'RATES_MISSING' }))).toEqual({ kind: 'NONE', reason: 'TAX_NOT_SET', taxProblem: 'RATES_MISSING' }); });
   it('the wallet is used only when ACTIVE and the AVAILABLE money covers the whole amount', () => {

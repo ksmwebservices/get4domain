@@ -67,6 +67,7 @@ model Vendor {
   v3WalletTopups V3WalletTopup[]
   v3WalletReceipts V3WalletReceipt[]
   v3PackPurchases V3PackPurchase[]
+  v3ServiceRequests V3ServiceRequest[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
   v3Invoices V3VendorInvoice[]
@@ -5845,7 +5846,8 @@ model V3Service {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  prices V3ServicePrice[]
+  prices   V3ServicePrice[]
+  requests V3ServiceRequest[]
 
   @@map("g4d_services")
 }
@@ -5935,4 +5937,132 @@ model V3PackPurchase {
   @@unique([vendorId, idempotencyKey])
   @@index([vendorId, purchasedAt])
   @@map("g4d_pack_purchases")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 service requests (slice 5.16c): team work paid by allowance, pack or wallet
+enum V3ServiceRequestStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PRODUCTION
+  READY_FOR_REVIEW
+  REVISION_REQUESTED
+  APPROVED
+  REJECTED_BY_TEAM
+  CANCELLED
+}
+
+enum V3ServiceFunding {
+  INCLUDED_ALLOWANCE
+  PACK
+  WALLET
+}
+
+enum V3ServiceRequestCreator {
+  VENDOR
+  STAFF_ON_BEHALF
+}
+
+enum V3DeliverableKind {
+  TEXT
+  FILE_REF
+  LINK
+}
+
+/// A request for our team to do a service. The money rule: a WALLET request HOLDS the price plus tax when it is made, CHARGES it when the vendor approves the work, and RELEASES it when the vendor cancels or the team rejects. Nothing is charged for work the vendor has not approved.
+model V3ServiceRequest {
+  id                 String                  @id @default(cuid())
+  vendorId           String
+  serviceId          String
+  status             V3ServiceRequestStatus  @default(REQUESTED)
+  briefJson          Json
+  attachmentRefs     Json                    @default("[]")
+  priceSnapshotPaise Int? // price plus tax at the time of the request (null for an allowance or pack, which were paid for earlier)
+  taxSnapshotJson    Json                    @default("{}")
+  fundingKind        V3ServiceFunding
+  holdLedgerId       String?                 @unique
+  chargeLedgerId     String?                 @unique
+  packPurchaseId     String?
+  assignedStaffId    String?
+  slaDueAt           DateTime?
+  slaBreachedAt      DateTime?
+  readyAt            DateTime? // when the work last came to the vendor for review (the auto-approval timer starts here)
+  revisionsUsed      Int                     @default(0)
+  grantEndsAt        DateTime? // CUSTOM_DOMAIN_PROMOTION only: when the add-on ends, set by staff (never by code)
+  grantOverrideId    String? // the entitlement override created on approval (or "PENDING" while it is being made)
+  createdByType      V3ServiceRequestCreator @default(VENDOR)
+  createdById        String?
+  idempotencyKey     String
+  rejectReason       String?
+  approvedAt         DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  vendor       Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  service      V3Service             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  events       V3ServiceRequestEvent[]
+  deliverables V3ServiceDeliverable[]
+  invoice      V3ServiceInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, status, createdAt])
+  @@index([status, slaDueAt])
+  @@index([serviceId, status])
+  @@map("g4d_service_requests")
+}
+
+/// APPEND-ONLY: a trigger refuses every update and delete (a delete is allowed only as the cascade of a request that is already gone).
+model V3ServiceRequestEvent {
+  id         String   @id @default(cuid())
+  requestId  String
+  vendorId   String
+  type       String
+  fromStatus String?
+  toStatus   String?
+  actorType  String
+  actorId    String?
+  note       String?
+  metaJson   Json     @default("{}")
+  at         DateTime @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, at])
+  @@index([vendorId, at])
+  @@map("g4d_service_request_events")
+}
+
+model V3ServiceDeliverable {
+  id        String            @id @default(cuid())
+  requestId String
+  vendorId  String
+  kind      V3DeliverableKind
+  text      String?
+  fileRef   String?
+  createdBy String?
+  createdAt DateTime          @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("g4d_service_deliverables")
+}
+
+/// A tax invoice for a charge, numbered from the SAME gap-free series as plan invoices. APPEND-ONLY (a trigger refuses update and delete). One per request.
+model V3ServiceInvoice {
+  id               String   @id @default(cuid())
+  vendorId         String
+  requestId        String   @unique
+  invoiceNumber    String   @unique
+  financialYear    String
+  issuedAt         DateTime
+  ledgerEntryId    String   @unique
+  snapshotJson     Json
+  taxBreakdownJson Json
+  createdAt        DateTime @default(now())
+
+  request V3ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, issuedAt])
+  @@map("g4d_service_invoices")
 }

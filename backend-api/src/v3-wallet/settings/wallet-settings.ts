@@ -7,6 +7,7 @@ import { BadRequestException } from '@nestjs/common';
  * NOTHING HERE IS INVENTED: a limit or a count that the owner has not decided has NO default (it reads as null) and the feature that needs it refuses to run until staff set it.
  *   walletTopupMinPaise / walletTopupMaxPaise: until both are set no top-up can be made.
  *   serviceMaxRevisions: until it is set no service request can be made.
+ *   serviceAutoApproveAfterDays: auto-approval does nothing until switched on AND this number is set.
  * The only value with a default is the one the owner decided: credit lasts 365 days from the top-up (a change applies to NEW top-ups only).
  */
 export interface WalletSettings {
@@ -20,10 +21,17 @@ export interface WalletSettings {
   walletSellerStateCode: string;
   /** false (default): the expiry cron does nothing (staff can still run it by hand) */
   walletExpiryTickEnabled: boolean;
+  /** how many times a vendor may ask for changes to one piece of work. NO default: until staff set it (0 is a valid answer: no changes) no service request can be made. */
+  serviceMaxRevisions: number | null;
+  /** OFF by default: work waiting for the vendor's approval is never approved for them unless this is switched on */
+  serviceAutoApproveEnabled: boolean;
+  /** with auto-approval on: approve work that has waited this many days in review. NO default. */
+  serviceAutoApproveAfterDays: number | null;
 }
 
 export const DEFAULT_WALLET_SETTINGS: Readonly<WalletSettings> = {
   walletTopupMinPaise: null, walletTopupMaxPaise: null, walletCreditValidityDays: 365, walletReceiptPrefix: 'RCT', walletSellerStateCode: '', walletExpiryTickEnabled: false,
+  serviceMaxRevisions: null, serviceAutoApproveEnabled: false, serviceAutoApproveAfterDays: null,
 };
 export const WALLET_SETTING_KEYS = Object.keys(DEFAULT_WALLET_SETTINGS) as Array<keyof WalletSettings>;
 export const isWalletSettingKey = (key: string): key is keyof WalletSettings => (WALLET_SETTING_KEYS as string[]).includes(key);
@@ -38,7 +46,9 @@ export function walletSettingProblem(key: keyof WalletSettings, value: unknown):
     case 'walletCreditValidityDays': return intIn(value, 1, 3650) ? null : 'must be a whole number of days from 1 to 3650';
     case 'walletReceiptPrefix': return typeof value === 'string' && /^[A-Z0-9]{1,8}$/.test(value) ? null : 'must be 1 to 8 capital letters or digits';
     case 'walletSellerStateCode': return typeof value === 'string' && (value === '' || /^[0-9]{2}$/.test(value)) ? null : 'must be empty or a two-digit state code';
-    case 'walletExpiryTickEnabled': return typeof value === 'boolean' ? null : 'must be true or false';
+    case 'walletExpiryTickEnabled': case 'serviceAutoApproveEnabled': return typeof value === 'boolean' ? null : 'must be true or false';
+    case 'serviceMaxRevisions': return intIn(value, 0, 20) ? null : 'must be a whole number from 0 to 20';
+    case 'serviceAutoApproveAfterDays': return intIn(value, 1, 365) ? null : 'must be a whole number of days from 1 to 365';
   }
 }
 

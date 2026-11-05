@@ -12,7 +12,7 @@ import { SUPER, walletWorld, WalletWorld } from './wallet-world';
  */
 export const OPS = { type: 'STAFF' as const, id: 'ops-1', ip: null };
 export interface ServicesWorld extends WalletWorld {
-  services: MemoryServicesStore; catalogue: ServicesCatalogService;
+  services: MemoryServicesStore; catalogue: ServicesCatalogService; entitlements: EntitlementsService;
   plan: { level: 'PRO' | 'FREE' | null; subscriptionStatus: 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED' | null; suspended: boolean; track: string | null; features: Record<string, { state: string; limit: number | null }> };
   usage: { used: Record<string, number> };
   rates(): TaxRateLite[];
@@ -45,5 +45,5 @@ export function servicesWorld(): ServicesWorld {
     const p = await catalogue.proposePrice('pack', key, { amountPaise }, OPS);
     await catalogue.approvePrice('pack', p.id, { effectiveFrom: new Date(ww.now.t).toISOString() }, SUPER); return p.id;
   };
-  return { ...ww, services: store, catalogue, plan, usage, rates, seed, price, pack };
+  return { ...ww, services: store, catalogue, entitlements, plan, usage, rates, seed, price, pack };
 }

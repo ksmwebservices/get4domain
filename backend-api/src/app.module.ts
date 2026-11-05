@@ -72,6 +72,7 @@ import { PlanBillingModule } from './plan-billing/plan-billing.module';
 import { ActivityBusModule } from './common/activity-bus';
 import { V3WalletModule } from './v3-wallet/wallet.module';
 import { V3ServicesModule } from './v3-services/services.module';
+import { V3ServiceRequestsModule } from './v3-service-requests/service-requests.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
@@ -128,6 +129,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     ActivityBusModule,   // Batch 4: the typed in-process event bus (global)
     V3WalletModule,   // Batch 4 slices 5.16a and 5.16a-2: the V3 wallet (global; never the legacy src/wallet)
     V3ServicesModule,   // Batch 4 slice 5.16b: the service catalogue, the price book and add-on packs
+    V3ServiceRequestsModule,   // Batch 4 slice 5.16c: requests to our team paid by allowance, pack or wallet
     AiStudioModule,
     VendorsModule,
     SubscriptionsModule,

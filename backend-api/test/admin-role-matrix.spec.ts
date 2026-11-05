@@ -60,6 +60,9 @@ const MARKETING_DENIED = [
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
   // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/ai/usage',
+  // B4 slice 5.16c: the service request queue and its work: OPERATIONS and SUPER_ADMIN, MARKETING refused
+  'GET /v3/admin/service-requests', 'POST /v3/admin/service-requests/sla-sweep', 'POST /v3/admin/service-requests/auto-approve-run', 'GET /v3/admin/service-requests/:id', 'POST /v3/admin/service-requests/:id/assign', 'POST /v3/admin/service-requests/:id/status',
+  'POST /v3/admin/service-requests/:id/deliverables', 'POST /v3/admin/service-requests/:id/reject', 'POST /v3/admin/service-requests/:id/retry-grant', 'POST /v3/admin/vendors/:vendorId/service-requests',
   // B4 slice 5.16b: changing the catalogue and proposing or editing a price: OPERATIONS and SUPER_ADMIN
   'POST /v3/admin/services', 'PUT /v3/admin/services/:key', 'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs', 'PUT /v3/admin/packs/:key', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id',
   // B4 slice 5.16a: wallets are money: reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN
@@ -128,7 +131,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(229);
+    expect(oracle).toHaveLength(239);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

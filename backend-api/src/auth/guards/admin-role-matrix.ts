@@ -99,6 +99,10 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/services': OPS_AND_SUPER, 'PUT /v3/admin/services/:key': OPS_AND_SUPER, 'POST /v3/admin/services/:key/prices': OPS_AND_SUPER, 'PUT /v3/admin/services/prices/:id': OPS_AND_SUPER,
   'POST /v3/admin/packs': OPS_AND_SUPER, 'PUT /v3/admin/packs/:key': OPS_AND_SUPER, 'POST /v3/admin/packs/:key/prices': OPS_AND_SUPER, 'PUT /v3/admin/packs/prices/:id': OPS_AND_SUPER,
   'POST /v3/admin/services/prices/:id/approve': SUPER_ONLY, 'POST /v3/admin/services/prices/:id/retire': SUPER_ONLY, 'POST /v3/admin/packs/prices/:id/approve': SUPER_ONLY, 'POST /v3/admin/packs/prices/:id/retire': SUPER_ONLY,
+  // Batch 4 slice 5.16c: the service request queue and its work (a request holds a brief, a business and money): OPERATIONS and SUPER_ADMIN, MARKETING refused
+  'GET /v3/admin/service-requests': OPS_AND_SUPER, 'POST /v3/admin/service-requests/sla-sweep': OPS_AND_SUPER, 'POST /v3/admin/service-requests/auto-approve-run': OPS_AND_SUPER, 'GET /v3/admin/service-requests/:id': OPS_AND_SUPER,
+  'POST /v3/admin/service-requests/:id/assign': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/status': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/deliverables': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/reject': OPS_AND_SUPER,
+  'POST /v3/admin/service-requests/:id/retry-grant': OPS_AND_SUPER, 'POST /v3/admin/vendors/:vendorId/service-requests': OPS_AND_SUPER,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);

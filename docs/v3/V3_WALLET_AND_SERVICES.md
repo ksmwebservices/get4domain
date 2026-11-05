@@ -97,4 +97,33 @@ API:
 | `POST /v3/admin/services`, `PUT /v3/admin/services/:key`, `POST /v3/admin/services/:key/prices`, `PUT /v3/admin/services/prices/:id`, and the same four for `/v3/admin/packs` | OPERATIONS and SUPER_ADMIN |
 | `POST /v3/admin/services/prices/:id/approve` `{ effectiveFrom }`, `POST .../retire`, and the same two for `/v3/admin/packs/prices/:id` | SUPER_ADMIN only |
 
+### 5.16c: service requests (team work paid by allowance, pack or wallet)
+
+Migration folder `20261120100000_v3_service_requests`. Code: `backend-api/src/v3-service-requests/`.
+
+| Table | Purpose |
+|---|---|
+| `g4d_service_requests` | `status` (REQUESTED, ACCEPTED, IN_PRODUCTION, READY_FOR_REVIEW, REVISION_REQUESTED, APPROVED, REJECTED_BY_TEAM, CANCELLED), `briefJson` (checked per service), `attachmentRefs`, `fundingKind` (INCLUDED_ALLOWANCE, PACK, WALLET), `priceSnapshotPaise` and `taxSnapshotJson` (price plus tax at the time of the request), `holdLedgerId` and `chargeLedgerId` (both unique), `packPurchaseId`, `assignedStaffId`, `slaDueAt`, `slaBreachedAt`, `readyAt`, `revisionsUsed`, `grantEndsAt` and `grantOverrideId` (the custom domain promotion only), `createdByType` (VENDOR, STAFF_ON_BEHALF), `idempotencyKey` (unique per vendor). CHECKs: a WALLET request always has its amount and its hold, the others have no hold; the amount is positive. |
+| `g4d_service_request_events` | the history: APPEND-ONLY (a trigger refuses every update and every delete, except the cascade of a request already gone). |
+| `g4d_service_deliverables` | the finished work: `kind` TEXT, FILE_REF or LINK. |
+| `g4d_service_invoices` | one tax invoice per charge, numbered from the SAME gap-free series as plan invoices (`g4d_invoice_counters`, key = the financial year); APPEND-ONLY like the history. |
+
+The money (owner rule 1; nothing is charged for work the vendor has not approved):
+- **Make a request**: funding is chosen in the order allowance, pack, wallet. A WALLET request HOLDS price plus tax in the same unit of work that writes the request (so a short wallet writes nothing and answers `INSUFFICIENT_WALLET` with the shortfall and the top-up that covers it). An allowance or pack unit is set aside by counting the vendor's open requests, so one unit cannot be promised twice.
+- **Approve** (the vendor, or the auto-approval timer): the hold becomes ONE `CHARGE` of exactly that amount, a tax invoice is issued (lines from the tax snapshot), or one pack unit is used (honoured even if the pack's date passed after the request was made), or an allowance unit stays used. Approving again, or twelve times at once, changes nothing.
+- **Cancel** (vendor, before IN_PRODUCTION) and **reject** (the team, with a reason of at least five characters, at any open stage) release the hold. Nothing is charged.
+- **Changes**: the vendor may ask for changes up to `serviceMaxRevisions`; until staff set that number (0 is allowed) no request can be made.
+- **Staff on behalf**: a staff member can raise a request for a vendor with a reason; same funding rules; audited; the vendor sees it in their list ("our team"), its history (with the reason) and the hold in their ledger.
+- **The custom domain promotion**: it cannot go to review without the end date staff set (`grantEndsAt`); on approval the add-on override is created ONCE through the existing audited path (`CanonicalSwitchService.grantAddon`) with that end date. If switching it on fails the request stays APPROVED and charged, the failure is recorded, and the grant is retried by `POST /v3/admin/service-requests/:id/retry-grant` or healed by an approve replay.
+- **Timers**: an SLA breach is marked once per request (route and hourly tick); auto-approval is OFF unless `serviceAutoApproveEnabled` is on AND `serviceAutoApproveAfterDays` is set.
+
+The state machine (pure, `core/request-core.ts`): REQUESTED to ACCEPTED, REJECTED_BY_TEAM (team) or CANCELLED (vendor); ACCEPTED to IN_PRODUCTION, REJECTED_BY_TEAM (team) or CANCELLED (vendor); IN_PRODUCTION to READY_FOR_REVIEW (team, needs a deliverable) or REJECTED_BY_TEAM; READY_FOR_REVIEW to APPROVED (vendor or the timer), REVISION_REQUESTED (vendor, under the limit) or REJECTED_BY_TEAM (team); REVISION_REQUESTED to IN_PRODUCTION or REJECTED_BY_TEAM (team). APPROVED, REJECTED_BY_TEAM and CANCELLED are final. Every other combination of status, target and actor is refused (a test enumerates all 192).
+
+API:
+
+| Route | Who |
+|---|---|
+| `POST /v3/me/service-requests` `{ serviceKey, brief, attachmentRefs?, idempotencyKey }`, `GET /v3/me/service-requests`, `GET /v3/me/service-requests/invoices`, `GET /v3/me/service-requests/:id`, `POST .../:id/cancel`, `POST .../:id/approve`, `POST .../:id/revision` `{ note }` | Owner (another vendor's request answers exactly like one that does not exist) |
+| `GET /v3/admin/service-requests` (filters: serviceKey, status, fundingKind, vendorId, slaBreached), `GET .../:id`, `POST .../:id/assign`, `POST .../:id/status` `{ to: ACCEPTED, IN_PRODUCTION or READY_FOR_REVIEW }`, `POST .../:id/deliverables`, `POST .../:id/reject` `{ reason }`, `POST .../:id/retry-grant`, `POST .../sla-sweep`, `POST .../auto-approve-run`, `POST /v3/admin/vendors/:vendorId/service-requests` (on behalf, with a `reason`) | OPERATIONS and SUPER_ADMIN (MARKETING refused) |
+
 (Later slices add their sections below.)

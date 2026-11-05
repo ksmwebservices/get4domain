@@ -51,9 +51,10 @@ export type FundingChoice =
 export function fundingChoice(i: FundingInput): FundingChoice {
   if (i.allowance && i.allowance.limit !== null && i.allowance.used < i.allowance.limit) return { kind: 'INCLUDED_ALLOWANCE', remaining: i.allowance.limit - i.allowance.used };
   if (i.packCount > 0) return { kind: 'PACK', remaining: i.packCount };
-  if (i.totalMinor === null) return i.taxProblem ? { kind: 'NONE', reason: 'TAX_NOT_SET', taxProblem: i.taxProblem } : { kind: 'NONE', reason: 'PRICE_NOT_SET' };
+  // Money is the only way left, so the wallet's own state comes first: a vendor whose wallet is not open is told that, not that a price or a tax rate is missing.
   if (!i.wallet || i.wallet.status === 'INACTIVE') return { kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' };
   if (i.wallet.status === 'FROZEN') return { kind: 'NONE', reason: 'WALLET_FROZEN' };
+  if (i.totalMinor === null) return i.taxProblem ? { kind: 'NONE', reason: 'TAX_NOT_SET', taxProblem: i.taxProblem } : { kind: 'NONE', reason: 'PRICE_NOT_SET' };
   if (i.wallet.availablePaise < i.totalMinor) return { kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: i.totalMinor - i.wallet.availablePaise };
   return { kind: 'WALLET', amountPaise: i.totalMinor };
 }

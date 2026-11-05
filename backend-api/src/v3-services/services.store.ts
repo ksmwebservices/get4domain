@@ -1,3 +1,4 @@
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Actor } from '../plans/admin/audit.service';
 import { PackItem, PriceStatus, ServicePlanRule } from './core/services-core';
 import { WalletTx } from '../v3-wallet/wallet.store';
@@ -97,3 +98,11 @@ export abstract class ServiceUsagePort {
   abstract allowanceUsed(vendorId: string, serviceKey: string): Promise<number>;
 }
 export class NoServiceUsage extends ServiceUsagePort { async allowanceUsed(): Promise<number> { return 0; } }
+
+/** The token the service requests module (slice 5.16c) provides its real count under. The catalogue asks for it OPTIONALLY, so the two modules never import each other. */
+export const SERVICE_REQUESTS_USAGE = 'SERVICE_REQUESTS_USAGE';
+@Injectable()
+export class DelegatingServiceUsage extends ServiceUsagePort {
+  constructor(@Optional() @Inject(SERVICE_REQUESTS_USAGE) private readonly real?: ServiceUsagePort) { super(); }
+  allowanceUsed(vendorId: string, serviceKey: string): Promise<number> { return this.real ? this.real.allowanceUsed(vendorId, serviceKey) : Promise.resolve(0); }
+}
