@@ -62,7 +62,7 @@ function loadStagingEnv() {
     if (cfg.deniedProjectRefHashes.includes(h)) refuse(`${name} points at a DENIED (production) project.`);
     if (!cfg.allowedProjectRefHashes.includes(h)) refuse(`${name} is not on the staging allow-list.`);
   }
-  return { DATABASE_URL, DIRECT_URL, mask };
+  return { DATABASE_URL, DIRECT_URL, mask, /** optional: the key that seals credentials in tests (staging only; never the production key) */ PLATFORM_SETTINGS_KEY: process.env.STAGING_PLATFORM_SETTINGS_KEY || file.PLATFORM_SETTINGS_KEY };
 }
 
 module.exports = { loadStagingEnv, projectRef, sha, parseEnvFile, secretsOf, maskWith, REPO_ROOT, CONFIG };

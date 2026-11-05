@@ -17,6 +17,8 @@ process.env.DIRECT_URL = staging.DIRECT_URL;
 process.env.NODE_ENV = 'test';
 process.env.EMAIL_MODE = 'test';        // EmailService captures mail in EmailService.outbox instead of calling the provider
 process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+// The key that seals credentials (payment methods, AI providers). Taken from .env.staging (PLATFORM_SETTINGS_KEY=<64 hex characters>) when present; suites skip their sealing step with a [skip] line when it is absent.
+if (staging.PLATFORM_SETTINGS_KEY) process.env.PLATFORM_SETTINGS_KEY = staging.PLATFORM_SETTINGS_KEY;
 
 const PROVIDER_ENV = [
   'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'RESEND_API_KEY',

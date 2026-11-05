@@ -1,8 +1,8 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { b3Error } from '../b3-settings/b3-errors';
 import { B3SettingsService } from '../b3-settings/b3-settings.service';
 import { Actor } from '../plans/admin/audit.service';
-import { openSecret, sealSecret } from '../ai-studio/secret-box';
+import { openSecret, sealSecret, SealedSecret } from '../ai-studio/secret-box';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
 import { MethodKind, MethodStatus, canMoveOrder } from './core/commerce-core';
 import { RequestKind, RequestStatus, summarise, vendorMayMove } from './core/requests-core';
@@ -13,6 +13,18 @@ import { OfferRow, OrderStatus, RequestFilter, RequestsStore } from './requests.
 const REQUIRED_TERMS = ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING'] as const;
 const nf = (code: 'REQUEST_NOT_FOUND' | 'PAYMENT_METHOD_INVALID' | 'ORDER_INVALID' | 'OFFER_INVALID', msg: string): NotFoundException => new NotFoundException(b3Error(code, msg));
 const str = (v: unknown, min: number, max: number): string | null => { if (typeof v !== 'string') return null; const t = v.trim().replace(/\s+/g, ' '); return t.length >= min && t.length <= max ? t : null; };
+
+
+/**
+ * Seals a credential with the platform key. When PLATFORM_SETTINGS_KEY is not configured the helper throws a plain Error, which used to surface as a 500; the answer is now a clear 503
+ * with a stable code, and NOTHING is stored (a secret is never kept unencrypted: there is no fallback path that writes plain text).
+ */
+export function sealOrFail(plain: string): SealedSecret {
+  try { return sealSecret(plain); } catch (e) {
+    if (e instanceof Error && /PLATFORM_SETTINGS_KEY/.test(e.message)) throw new ServiceUnavailableException(b3Error('SECRET_STORE_UNAVAILABLE', 'Payment credentials cannot be saved right now because the platform secret key is not set up. Nothing was stored. Please contact support.'));
+    throw e;
+  }
+}
 
 /**
  * The vendor's side of the bridge: the inbox, responses, payment methods, orders, invoices, offers and stock. The caller has already been checked (owner or a member with the area, and the plan
@@ -97,8 +109,8 @@ export class VendorRequestsService {
     const label = str(b.label, 2, 60); if (!label) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Give the method a name of 2 to 60 characters.'));
     const online = b.kind === 'OWN_GATEWAY' || b.kind === 'UPI';
     if (online && !str(b.details, 4, 300)) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Add the gateway key or the UPI address.'));
-    const config = b.details ? sealSecret(b.details.trim()) : null;
-    const web = b.webhookSecret ? sealSecret(b.webhookSecret.trim()) : null;
+    const config = b.details ? sealOrFail(b.details.trim()) : null;
+    const web = b.webhookSecret ? sealOrFail(b.webhookSecret.trim()) : null;
     const m = await this.store.createMethod({ vendorId, kind: b.kind, label, last4: config?.last4 ?? null, config: { cipher: config?.cipher ?? null, iv: config?.iv ?? null, tag: config?.tag ?? null }, webhook: { cipher: web?.cipher ?? null, iv: web?.iv ?? null, tag: web?.tag ?? null } });
     await this.store.recordAudit(actor, 'payment_method.create', 'payment_method', m.id, null, { kind: m.kind, label: m.label });   // never the details
     return (await this.listMethods(vendorId)).find((x) => x.id === m.id)!;
@@ -109,8 +121,8 @@ export class VendorRequestsService {
     if (!cur) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
     const patch: Parameters<RequestsStore['updateMethod']>[2] = {};
     if (b.label !== undefined) { const l = str(b.label, 2, 60); if (!l) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The name must be 2 to 60 characters.')); patch.label = l; }
-    if (b.details !== undefined) { const d = str(b.details, 4, 300); if (!d) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The details are not valid.')); const sealed = sealSecret(d); patch.config = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; patch.last4 = sealed.last4; patch.verifiedAt = null; if (cur.status === 'ACTIVE') patch.status = 'UNVERIFIED'; }
-    if (b.webhookSecret !== undefined) { const w = str(b.webhookSecret, 8, 300); if (!w) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The webhook secret must be 8 to 300 characters.')); const sealed = sealSecret(w); patch.webhook = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; }
+    if (b.details !== undefined) { const d = str(b.details, 4, 300); if (!d) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The details are not valid.')); const sealed = sealOrFail(d); patch.config = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; patch.last4 = sealed.last4; patch.verifiedAt = null; if (cur.status === 'ACTIVE') patch.status = 'UNVERIFIED'; }
+    if (b.webhookSecret !== undefined) { const w = str(b.webhookSecret, 8, 300); if (!w) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The webhook secret must be 8 to 300 characters.')); const sealed = sealOrFail(w); patch.webhook = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; }
     if (b.status !== undefined) {
       if (b.status === 'ACTIVE') {
         // activation: the terms must be accepted (slice 5.15), and an online method must have passed its test after its details were last changed

@@ -72,6 +72,14 @@ describe('requests and orders on staging', () => {
   it('money and credentials are owner only; secrets are write-only', async () => {
     expect((await api('get', '/v3/me/payment-methods', memberA)).status).toBe(403); expect((await api('post', '/v3/me/orders/x/refund', memberA, { amountPaise: 100 })).status).toBe(403);
     const c = await api('post', '/v3/me/payment-methods', tokenA, { kind: 'OWN_GATEWAY', label: 'V3TEST gateway', details: 'rzp_test_key_5678', webhookSecret: 'whsec-v3test-secret-value' });
+    if (!process.env.PLATFORM_SETTINGS_KEY) {
+      // Without the sealing key the API must refuse clearly (never a 500) and store nothing; the sealed-at-rest and webhook steps below need a stored method, so they are skipped.
+      process.stderr.write('[skip] PLATFORM_SETTINGS_KEY is not set: sealed-at-rest and webhook steps skipped (set it in .env.staging as 64 hex characters)\n');
+      expect(c.status).toBe(503); expect(c.body.code).toBe('SECRET_STORE_UNAVAILABLE');
+      expect(JSON.stringify(c.body)).not.toMatch(/rzp_test_key|whsec-v3test/);
+      expect(await prisma.v3VendorPaymentMethod.count({ where: { vendorId: A.vendorId } })).toBe(0);
+      return;
+    }
     expect(c.status).toBe(200); expect(c.body.data).toMatchObject({ last4: '5678', hasGatewayDetails: true });
     const all = JSON.stringify([c.body, (await api('get', '/v3/me/payment-methods', tokenA)).body]);
     expect(all).not.toMatch(/rzp_test_key|whsec-v3test|cipher/);
