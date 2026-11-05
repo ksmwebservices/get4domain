@@ -5,6 +5,7 @@ import * as path from 'path';
 import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
+import { EntitlementsService } from '../src/plans/entitlements/entitlements.service';
 import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.service';
 import { applySeed } from '../src/plans/seed/seed-applier';
 import { expandSeed } from '../src/plans/seed/seed-file';
@@ -51,13 +52,42 @@ describe('vendor lifecycle on staging', () => {
     }
   });
 
-  it('a suspended vendor is still served; the Free entitlements apply; reinstating restores Pro without a re-purchase', async () => {
-    expect((await byHost(siteA.host)).status).toBe(200);
+  // Whatever a test below does, no later test may start with the vendor suspended (a failing assertion used to leave it suspended and cascade). Staff reinstate is tried in the test's own finally; this is the safety net.
+  afterEach(async () => {
+    await prisma.vendor.updateMany({ where: { id: A.vendorId, status: 'SUSPENDED' }, data: { status: 'ACTIVE' } });
+    app.get(EntitlementsService).invalidate(A.vendorId);
+  });
+
+  // Owner decision (5 Nov 2026): a suspended vendor's SIGN-IN stays blocked (Batch 2 behaviour, deliberate), while the public site stays served as a Free listing-only site; reinstating restores Pro with no re-purchase.
+  it('a suspended vendor cannot use vendor routes (401); the site stays served and listing-only; staff see Free; reinstating restores the token and Pro', async () => {
+    const staffEnts = async () => { const r = await api('get', `/v3/admin/vendors/${A.vendorId}/entitlements`, ops); expect(r.status).toBe(200); return r.body.data as { plan: string | null; level: string | null }; };
+    const before = await byHost(siteA.host);
+    expect(before.status).toBe(200); expect(before.text).not.toContain('data-g4d-listed-on');   // a full Pro page
+    expect((await staffEnts()).level).toBe('PRO');
+    expect((await api('get', '/v3/me/entitlements', tokenA)).status).toBe(200);
+
     expect((await api('post', `/v3/admin/vendors/${A.vendorId}/lifecycle/suspend`, ops, { reason: 'staging check of suspension' })).status).toBe(200);
-    expect((await byHost(siteA.host)).status).toBe(200);
-    const ents = await api('get', '/v3/me/entitlements', tokenA);
-    expect(ents.status).toBe(200); expect(JSON.stringify(ents.body)).toContain('FREE');
-    expect((await api('post', `/v3/admin/vendors/${A.vendorId}/lifecycle/reinstate`, ops, { reason: 'staging check done' })).status).toBe(200);
+    try {
+      // vendor routes are blocked while suspended
+      expect((await api('get', '/v3/me/entitlements', tokenA)).status).toBe(401);
+      expect((await api('post', '/v3/me/site/build', tokenA, {})).status).toBe(401);
+      // the public site is still served, as a listing-only page: no form, button, tel:, mailto:, WhatsApp or cart/book/enquire link
+      const listing = await byHost(siteA.host);
+      expect(listing.status).toBe(200);
+      for (const re of [/<form\b/i, /<button\b/i, /href="tel:/i, /href="mailto:/i, /wa\.me/i, /href="\/(?:cart|book|enquire)/i]) expect(re.test(listing.text)).toBe(false);
+      expect(listing.text).toContain('data-g4d-listed-on');
+      // the Free state, read through the staff route (the vendor cannot sign in to read it)
+      const frozen = await staffEnts(); expect(frozen.level).toBe('FREE'); expect(frozen.plan).not.toBe('handyman_pro');
+    } finally {
+      const back = await api('post', `/v3/admin/vendors/${A.vendorId}/lifecycle/reinstate`, ops, { reason: 'staging check done' });
+      expect(back.status).toBe(200);
+    }
+
+    // reinstated: the same token works again and Pro is back with no purchase
+    expect((await api('get', '/v3/me/entitlements', tokenA)).status).toBe(200);
+    const restored = await staffEnts(); expect(restored.level).toBe('PRO'); expect(restored.plan).toBe('handyman_pro');
+    const after = await byHost(siteA.host);
+    expect(after.status).toBe(200); expect(after.text).not.toContain('data-g4d-listed-on');
   });
 
   it('the owner asks for deletion with a fresh code; staff execute; the site is a uniform 404 and the register holds the phone hash', async () => {
