@@ -240,3 +240,15 @@ Route classification baseline: 904 to 978 routes (public 100, admin 330, authent
 Routes added by Batch 4 (58): wallet and ledger (14), plan renewal from the wallet (`POST /v3/me/plan/renew-with-wallet`), service catalogue, price book and packs (20), service requests (17), theme switch (6). Per-route request and response examples, roles and stable error codes: `docs/v3/V3_WALLET_AND_SERVICES.md`. Summary and decisions: `docs/v3/V3_S7_BATCH4.md`.
 
 Route classification baseline: 978 to 1036 routes; none removed. Role-matrix oracle: 205 to 242 entries.
+
+### Owner follow-up of 5 November 2026 (slices 5.16e and 5.16f)
+
+Two routes added, one retired (baseline 1036 to 1037); the role-matrix oracle is unchanged (all three are vendor-owner routes):
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v3/me/wallet/usage-statement?from&to` | owner only | the credit used (services, packs, theme switches, plan renewals, reversals), newest first, with totals; no invoice per use |
+| `GET /v3/me/wallet/topups/:id/invoice` | owner only | the tax invoice of one refill |
+| ~~`GET /v3/me/service-requests/invoices`~~ | retired | a deduction has no invoice |
+
+Changed behaviour: `POST /v3/me/wallet/topups` takes the credit (amount before GST) and returns `creditPaise`, `taxPaise`, `payablePaise` and the tax lines (the provider order is for `payablePaise`); it answers `409 TAX_NOT_CONFIGURED` with a `problem` when the seller state, the vendor's billing state or the tax rows are missing. A service request's `funding` no longer carries tax fields, `approve` no longer returns an invoice, and a pack, a request hold and a theme switch cost exactly their price. Details and the money model: the follow-up section of `docs/v3/V3_WALLET_AND_SERVICES.md`.
