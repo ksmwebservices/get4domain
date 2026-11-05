@@ -27,7 +27,7 @@ jest.setTimeout(240_000);
 describe('wallet on staging (fake provider)', () => {
   let app: INestApplication; let prisma: PrismaClient; let fx: BillingFixture; const fake = new FakeRazorpay();
   let A: SeededTenant; let B: SeededTenant; let tokenA: string; let tokenB: string; let sup: string; let ops: string; let mkt: string;
-  const savedSettings = new Map<string, { existed: boolean; value: unknown }>();
+  const savedSettings = new Map<string, { existed: boolean; value: unknown }>(); const taxIds: string[] = [];
   const api = (method: 'get' | 'post' | 'put', url: string, token?: string, body?: object) => { const r = request(app.getHttpServer())[method](url); const t = token ? r.set('Authorization', `Bearer ${token}`) : r; return body ? t.send(body) : t; };
   const key = (() => { let n = 0; return () => `v3test-${RUN_ID}-wal-${++n}`; })();
   const setSetting = async (k: string, v: unknown) => { if (!savedSettings.has(k)) { const row = await prisma.v3PlanSetting.findUnique({ where: { key: k } }); savedSettings.set(k, { existed: !!row, value: row?.valueJson ?? null }); } await prisma.v3PlanSetting.upsert({ where: { key: k }, create: { key: k, valueJson: v as never, description: 'v3test' }, update: { valueJson: v as never } }); };
@@ -48,9 +48,13 @@ describe('wallet on staging (fake provider)', () => {
     B = await seedTenant(prisma, 'w16b', RUN_ID); await makeSiteVendor(prisma, app.get(SubscriptionsService), B, RUN_ID, {}); tokenB = vendorToken(B.vendorId, B.email);
     sup = await seedStaff(prisma, 'w16sup', RUN_ID, 'SUPER_ADMIN'); ops = await seedStaff(prisma, 'w16ops', RUN_ID, 'OPERATIONS'); mkt = await seedStaff(prisma, 'w16mkt', RUN_ID, 'MARKETING');
     await dropSetting('walletTopupMinPaise'); await dropSetting('walletTopupMaxPaise'); await setSetting('walletCreditValidityDays', 365);
+    // GST on top of a refill needs Get4Domain's state and the GST rows (test-only rows, started a day ago so the plan billing fixture's newer row still wins its own lookup; removed at the end)
+    const eff = new Date(Date.now() - 86_400_000);
+    for (const [name, rate] of [['IGST', 18], ['CGST', 9], ['SGST', 9]] as const) taxIds.push((await prisma.v3TaxRate.create({ data: { name, ratePercent: rate, appliesTo: 'ALL', active: true, validFrom: new Date(eff.getTime() + taxIds.length) } })).id);
+    await setSetting('walletSellerStateCode', '33');
   }, 300000);
 
-  afterAll(async () => { await runCleanup([() => restoreSettings(), () => cleanupTenants(prisma, RUN_ID), () => tearDownBilling(prisma, fx), () => app?.close(), () => prisma?.$disconnect()]); }, 180000);
+  afterAll(async () => { await runCleanup([() => (taxIds.length ? prisma.v3TaxRate.deleteMany({ where: { id: { in: taxIds } } }) : Promise.resolve()), () => restoreSettings(), () => cleanupTenants(prisma, RUN_ID), () => tearDownBilling(prisma, fx), () => app?.close(), () => prisma?.$disconnect()]); }, 180000);
 
   it('a Free vendor has no wallet: a locked preview, no top-up, no row', async () => {
     const v = await api('get', '/v3/me/wallet', tokenA);
@@ -68,6 +72,7 @@ describe('wallet on staging (fake provider)', () => {
     expect(await prisma.v3AuditLog.count({ where: { action: 'wallet.activated', entityId: A.vendorId } })).toBe(1);
     expect((await api('get', '/v3/me/wallet', tokenA)).body.data).toMatchObject({ status: 'ACTIVE', locked: false });
     expect(await walletOf(B.vendorId)).toBeNull();   // vendor B only has the Free plan
+    expect((await api('put', '/v3/me/wallet/billing-profile', tokenA, { stateCode: '33' })).status).toBe(200);   // the buyer's state: the GST on a refill needs it
   });
 
   it('top-ups are refused until staff set both limits, then judged against them', async () => {
@@ -78,8 +83,9 @@ describe('wallet on staging (fake provider)', () => {
     expect((await api('post', '/v3/me/wallet/topups', tokenA, { amountPaise: 1_000_001, idempotencyKey: key() })).body.code).toBe('WALLET_TOPUP_AMOUNT_INVALID');
   });
 
-  it('a top-up credits exactly once: confirm, a second confirm, and a signed webhook replay; one lot, one receipt, one ledger row', async () => {
+  it('a refill credits the amount before GST exactly once: confirm, a second confirm, and a signed webhook replay; one lot, one TAX INVOICE, one ledger row', async () => {
     const { c, p, ok } = await topUp(tokenA, 50_000);
+    expect(c.body.data).toMatchObject({ creditPaise: 50_000, taxPaise: 9_000, payablePaise: 59_000 });   // GST on top: the vendor pays 59,000, the credit is 50,000
     expect(ok.body.data.status).toBe('PAID');
     const again = await api('post', `/v3/me/wallet/topups/${c.body.data.id}/confirm`, tokenA, { paymentId: p.paymentId, signature: p.signature }); expect(again.status).toBe(200);
     const h = fake.webhook('payment.captured', p.paymentId, { eventId: evId('walwh1') });
@@ -88,7 +94,8 @@ describe('wallet on staging (fake provider)', () => {
     expect(await walletOf(A.vendorId)).toMatchObject({ balancePaise: 50_000 });
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'TOPUP' } })).toBe(1);
     expect(await prisma.v3WalletLot.count({ where: { vendorId: A.vendorId } })).toBe(1);
-    const rc = await prisma.v3WalletReceipt.findFirstOrThrow({ where: { vendorId: A.vendorId } }); expect(rc).toMatchObject({ documentType: 'RECEIPT' }); expect(rc.receiptNumber).toMatch(/^RCT\/\d{4}-\d{2}\/\d{6}$/);
+    const rc = await prisma.v3WalletReceipt.findFirstOrThrow({ where: { vendorId: A.vendorId } }); expect(rc).toMatchObject({ documentType: 'TAX_INVOICE' }); expect(rc.receiptNumber).toMatch(/^[A-Z0-9]+\/\d{4}-\d{2}\/\d{6}$/);
+    expect((await api('get', `/v3/me/wallet/topups/${c.body.data.id}/invoice`, tokenA)).body.data).toMatchObject({ invoiceNumber: rc.receiptNumber, documentType: 'TAX_INVOICE' });
     expect((await api('get', '/v3/me/wallet/ledger', tokenA)).body.data.items[0]).toMatchObject({ kind: 'TOPUP', amountPaise: 50_000 });
   });
 

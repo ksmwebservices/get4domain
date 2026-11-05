@@ -1,6 +1,7 @@
 import { KeyedQueue } from '../common/keyed-queue';
 import { Actor } from '../plans/admin/audit.service';
 import { LedgerKind, LotStatus, LotUse } from './core/wallet-core';
+import { TaxRateLite } from './core/tax-core';
 
 export type WalletStatus = 'INACTIVE' | 'ACTIVE' | 'FROZEN';
 export type TopupStatus = 'CREATED' | 'PENDING' | 'PAID' | 'FAILED' | 'EXPIRED';
@@ -19,10 +20,14 @@ export type NewLedger = Omit<LedgerRow, 'id' | 'walletId' | 'vendorId' | 'entryN
 export interface TopupRow {
   id: string; vendorId: string; amountPaise: number; currency: string; status: TopupStatus; providerOrderId: string | null; idempotencyKey: string; paymentId: string | null; paidAmountPaise: number | null;
   paidAt: Date | null; ledgerId: string | null; receiptId: string | null; createdByType: string; createdById: string | null; expiresAt: Date; createdAt: Date; updatedAt: Date;
+  /** what the vendor pays for this refill: the credit (amountPaise) plus GST. null on a refill made before GST was added on top (it was then exactly the credit). */
+  payablePaise: number | null;
+  /** the tax worked out when the refill was made (lines, rates, states): the invoice is issued from THIS, never from rates read later */
+  taxSnapshot: Record<string, unknown>;
 }
-export type NewTopup = Pick<TopupRow, 'vendorId' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById'>;
+export type NewTopup = Pick<TopupRow, 'vendorId' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById' | 'payablePaise' | 'taxSnapshot'>;
 export type TopupPatch = Partial<Pick<TopupRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'ledgerId' | 'receiptId'>>;
-export interface ReceiptRow { id: string; vendorId: string; topupId: string; receiptNumber: string; financialYear: string; documentType: 'RECEIPT'; issuedAt: Date; snapshot: Record<string, unknown> }
+export interface ReceiptRow { id: string; vendorId: string; topupId: string; receiptNumber: string; financialYear: string; documentType: 'RECEIPT' | 'TAX_INVOICE'; issuedAt: Date; snapshot: Record<string, unknown> }
 
 /** Thrown when (vendorId, idempotencyKey) of a top-up already exists: the caller then returns the existing top-up. */
 export class DuplicateTopupError extends Error { constructor() { super('duplicate topup'); } }
@@ -85,6 +90,8 @@ export abstract class WalletStore {
   abstract findTopupByIdempotency(vendorId: string, key: string): Promise<TopupRow | null>;
   abstract findTopupByProviderOrder(providerOrderId: string): Promise<TopupRow | null>;
   abstract receiptForTopup(vendorId: string, topupId: string): Promise<ReceiptRow | null>;
+  /** the tax-rate rows (g4d_tax_rates): every rate a refill uses comes from here */
+  abstract taxRates(): Promise<TaxRateLite[]>;
   abstract adminWallets(q: { status?: WalletStatus; skip: number; take: number }): Promise<{ items: AdminWalletRow[]; total: number }>;
   /** vendors that have a lot past its date with money left (the expiry job's work list) */
   abstract vendorsWithExpiredLots(now: Date, limit: number): Promise<string[]>;

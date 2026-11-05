@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 const KEY = /^[A-Za-z0-9_:-]+$/;
 const KEY_MSG = 'idempotencyKey may only hold letters, digits, dash, colon and underscore';
@@ -20,6 +20,11 @@ export class BillingProfileDto {
 export class WalletPageDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
+}
+/** A period for the usage statement: two dates (ISO), both optional. The service refuses an end before the start. */
+export class UsageStatementDto {
+  @IsOptional() @IsISO8601() from?: string;
+  @IsOptional() @IsISO8601() to?: string;
 }
 export class AdminWalletsDto extends WalletPageDto {
   @IsOptional() @IsIn(['INACTIVE', 'ACTIVE', 'FROZEN']) status?: 'INACTIVE' | 'ACTIVE' | 'FROZEN';

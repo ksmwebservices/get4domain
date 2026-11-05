@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { KeyedQueue } from '../../src/common/keyed-queue';
 import { Actor } from '../../src/plans/admin/audit.service';
+import { TaxRateLite } from '../../src/v3-wallet/core/tax-core';
 import {
   AdminWalletRow, Commit, DuplicateTopupError, LedgerRow, LotRow, NewTopup, PaidProEvidence, ReceiptRow, TopupPatch, TopupRow, TopupStatus, WalletRow, WalletStatus, WalletStore, WalletTx, WalletVersionError,
 } from '../../src/v3-wallet/wallet.store';
@@ -14,6 +15,9 @@ export class MemoryWalletStore extends WalletStore {
   wallets = new Map<string, WalletRow>(); lotsById = new Map<string, LotRow>(); ledger: LedgerRow[] = []; topups = new Map<string, TopupRow>(); receipts: ReceiptRow[] = [];
   counters = new Map<string, number>(); audits: Array<{ actor: Actor; action: string; entityId: string | null; before: unknown; after: unknown }> = [];
   evidence = new Map<string, PaidProEvidence>(); names = new Map<string, string>();
+  /** the tax-rate rows the refill reads. ZERO rates by default (a refill then costs exactly its amount, so tests that are not about tax stay simple); the tax tests set real-looking ones. */
+  taxes: TaxRateLite[] = ['IGST', 'CGST', 'SGST'].map((name) => ({ name, ratePercent: 0, appliesTo: 'ALL', active: true, validFrom: new Date('2026-01-01T00:00:00Z') }));
+  async taxRates(): Promise<TaxRateLite[]> { return this.taxes.map((t) => ({ ...t })); }
   clock: () => Date = () => new Date();
   /** tests set this to make the NEXT commit throw after validating (a crash in the middle of a unit) */
   failCommitOnce = false;

@@ -5741,6 +5741,10 @@ model V3WalletTopup {
   idempotencyKey  String
   paymentId       String?
   paidAmountPaise Int?
+  /// what the vendor pays: the credit (amountPaise) plus GST. null on a refill made before GST was added on top.
+  payablePaise    Int?
+  /// the tax worked out when the refill was made; the tax invoice is issued from this
+  taxSnapshotJson Json                @default("{}")
   paidAt          DateTime?
   ledgerId        String?
   receiptId       String?
@@ -5759,7 +5763,7 @@ model V3WalletTopup {
   @@map("g4d_wallet_topups")
 }
 
-/// A numbered RECEIPT for a top-up. It is not a tax invoice (the tax treatment of an advance is for counsel).
+/// The numbered document of a refill. Since 5 November 2026 it is a TAX_INVOICE from the shared invoice series (GST on top of the credit); a RECEIPT is a refill made before that. The wording and the treatment of an advance are for the accountant.
 model V3WalletReceipt {
   id            String   @id @default(cuid())
   vendorId      String

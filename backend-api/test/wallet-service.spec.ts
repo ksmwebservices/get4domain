@@ -1,6 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { postEntry } from '../src/v3-wallet/wallet-engine';
-import { advance, advanceDays, SUPER, V1, V2, walletWorld, WalletWorld } from './support/wallet-world';
+import { advance, advanceDays, GST18, SUPER, V1, V2, walletWorld, WalletWorld } from './support/wallet-world';
 
 /**
  * Slice 5.16a and 5.16a-2: the wallet service on the in-memory twin. Every rule below is also enforced by the database (checks, unique keys, the append-only trigger), which the staging
@@ -83,9 +83,9 @@ describe('top-ups', () => {
     expect(w.fake.calls.createOrder).toBe(0);
   });
 
-  it('create then confirm credits the exact amount once, opens one lot, and numbers a receipt that says it is not a tax invoice', async () => {
+  it('create then confirm credits the exact amount once, opens one lot, and issues a numbered tax invoice from the shared series', async () => {
     const t = await w.svc.createTopup('v1', { amountPaise: 25_000, idempotencyKey: 'topup-key-0001' }, V1);
-    expect(t).toMatchObject({ status: 'PENDING', amountPaise: 25_000, keyId: 'rzp_test_fakekey' });
+    expect(t).toMatchObject({ status: 'PENDING', amountPaise: 25_000, creditPaise: 25_000, payablePaise: 25_000, keyId: 'rzp_test_fakekey' });
     const p = w.fake.pay(t.providerOrderId!);
     const done = await w.svc.confirmTopup('v1', t.id, { paymentId: p.paymentId, signature: p.signature }, V1);
     expect(done.status).toBe('PAID');
@@ -94,8 +94,8 @@ describe('top-ups', () => {
     expect(lots[0]).toMatchObject({ remainingPaise: 25_000, status: 'OPEN' });
     expect(lots[0].expiresAt.getTime() - w.clock().getTime()).toBe(365 * 86_400_000);
     const rc = w.store.receipts[0];
-    expect(rc).toMatchObject({ documentType: 'RECEIPT', receiptNumber: 'RCT/2026-27/000001' });
-    expect(JSON.stringify(rc.snapshot)).toMatch(/not a tax invoice/);
+    expect(rc).toMatchObject({ documentType: 'TAX_INVOICE', receiptNumber: 'INV/2026-27/000001' });
+    expect(JSON.stringify(rc.snapshot)).not.toMatch(/not a tax invoice/);
   });
 
   it('a double confirm, a webhook replay and a confirm racing a webhook credit exactly once', async () => {
@@ -163,15 +163,103 @@ describe('top-ups', () => {
     expect(await w.svc.handleCapturedPayment({ providerOrderId: 'order_plan_1', paymentId: 'pay_x', amount: 1, currency: 'INR' })).toBeNull();
   });
 
-  it('receipts are numbered without gaps under concurrency', async () => {
+  it('refill invoices are numbered without gaps under concurrency', async () => {
     const tops = await Promise.all(Array.from({ length: 8 }, (_, i) => w.svc.createTopup(i % 2 ? 'v1' : 'v2', { amountPaise: 20_000, idempotencyKey: `race-topup-key-${i}` }, i % 2 ? V1 : V2)));
     await Promise.all(tops.map((t) => w.svc.handleCapturedPayment({ providerOrderId: t.providerOrderId!, paymentId: w.fake.pay(t.providerOrderId!).paymentId, amount: 20_000, currency: 'INR' })));
-    expect(w.store.receipts.map((r) => r.receiptNumber).sort()).toEqual(Array.from({ length: 8 }, (_, i) => `RCT/2026-27/${String(i + 1).padStart(6, '0')}`));
+    expect(w.store.receipts.map((r) => r.receiptNumber).sort()).toEqual(Array.from({ length: 8 }, (_, i) => `INV/2026-27/${String(i + 1).padStart(6, '0')}`));
   });
 
   it('a frozen wallet cannot start a top-up', async () => {
     await w.svc.setFrozen('v1', { frozen: true, reason: 'chargeback review' }, SUPER);
     expect((await codeOf(w.svc.createTopup('v1', { amountPaise: 20_000, idempotencyKey: 'topup-key-0010' }, V1))).code).toBe('WALLET_FROZEN');
+  });
+});
+
+describe('a refill: GST on top, the credit is the amount before GST, one tax invoice per refill (owner 5 November 2026)', () => {
+  const MIN = 99_900;
+  beforeEach(async () => { w.store.taxes = GST18; w.wsettings.over = { ...w.wsettings.over, walletTopupMinPaise: MIN }; await w.open('v1'); await w.open('v2'); });
+  const pay = async (vendor: string, amount: number, key: string, actor = vendor === 'v1' ? V1 : V2) => {
+    const t = await w.svc.createTopup(vendor, { amountPaise: amount, idempotencyKey: key }, actor); const p = w.fake.pay(t.providerOrderId!);
+    return { t, p, done: await w.svc.confirmTopup(vendor, t.id, { paymentId: p.paymentId, signature: p.signature }, actor) };
+  };
+
+  it('the vendor pays the amount plus GST (CGST and SGST in the same state); the credit is the amount before GST', async () => {
+    const t = await w.svc.createTopup('v1', { amountPaise: 100_000, idempotencyKey: 'refill-key-0001' }, V1);
+    expect(t).toMatchObject({ amountPaise: 100_000, creditPaise: 100_000, taxPaise: 18_000, payablePaise: 118_000, tax: { intraState: true, lines: [{ name: 'CGST', amountMinor: 9_000 }, { name: 'SGST', amountMinor: 9_000 }] } });
+    expect(w.fake.orders.get(t.providerOrderId!)!.amount).toBe(118_000);
+    const p = w.fake.pay(t.providerOrderId!); await w.svc.confirmTopup('v1', t.id, { paymentId: p.paymentId, signature: p.signature }, V1);
+    expect(await w.store.wallet('v1')).toMatchObject({ balancePaise: 100_000, heldPaise: 0 });
+    expect((await w.store.lots('v1'))[0]).toMatchObject({ amountPaise: 100_000, remainingPaise: 100_000 });
+    expect(w.store.ledger.filter((e) => e.kind === 'TOPUP').map((e) => e.amountPaise)).toEqual([100_000]);
+  });
+
+  it('another state is IGST', async () => {
+    await w.store.unit('v2', (tx) => tx.setBillingProfile({ stateCode: '29', gstin: null }));
+    const t = await w.svc.createTopup('v2', { amountPaise: 100_000, idempotencyKey: 'refill-key-0002' }, V2);
+    expect(t).toMatchObject({ taxPaise: 18_000, payablePaise: 118_000, tax: { intraState: false, lines: [{ name: 'IGST', amountMinor: 18_000 }] } });
+  });
+
+  it('each refill issues ONE tax invoice from the shared series, with the seller, the buyer, the credit, the tax lines and the payment; it is not the old receipt', async () => {
+    const { t, p } = await pay('v1', 100_000, 'refill-key-0003');
+    const inv = w.store.receipts[0];
+    expect(inv).toMatchObject({ documentType: 'TAX_INVOICE', receiptNumber: 'INV/2026-27/000001', vendorId: 'v1', topupId: t.id });
+    expect(inv.snapshot).toMatchObject({
+      topupId: t.id, creditPaise: 100_000, paymentId: p.paymentId, seller: { stateCode: '33' }, buyer: { vendorId: 'v1', stateCode: '33' },
+      taxBreakdown: { taxableMinor: 100_000, taxMinor: 18_000, totalMinor: 118_000, intraState: true, lines: [{ name: 'CGST', amountMinor: 9_000 }, { name: 'SGST', amountMinor: 9_000 }] },
+    });
+    expect(JSON.stringify(inv.snapshot)).not.toMatch(/not a tax invoice/);
+    expect([...w.store.counters.keys()].filter((k) => k.startsWith('RECEIPT'))).toEqual([]);   // no separate receipt series any more
+    await pay('v1', 120_000, 'refill-key-0004');
+    expect(w.store.receipts.map((r) => r.receiptNumber)).toEqual(['INV/2026-27/000001', 'INV/2026-27/000002']);
+  });
+
+  it('a double confirm, a webhook replay and a confirm racing a webhook issue exactly one invoice and one credit', async () => {
+    const t = await w.svc.createTopup('v1', { amountPaise: 100_000, idempotencyKey: 'refill-key-0005' }, V1);
+    const p = w.fake.pay(t.providerOrderId!); const body = { paymentId: p.paymentId, signature: p.signature };
+    const hook = () => w.svc.handleCapturedPayment({ providerOrderId: t.providerOrderId!, paymentId: p.paymentId, amount: 118_000, currency: 'INR' });
+    await Promise.all([w.svc.confirmTopup('v1', t.id, body, V1), w.svc.confirmTopup('v1', t.id, body, V1), hook(), hook(), hook()]);
+    expect(w.store.receipts).toHaveLength(1); expect((await w.store.wallet('v1'))!.balancePaise).toBe(100_000); expect(w.store.ledger.filter((e) => e.kind === 'TOPUP')).toHaveLength(1);
+    expect(await hook()).toBe('TOPUP_ALREADY_PAID');
+  });
+
+  it('a payment of the credit amount alone (without the GST) is the wrong amount: it goes to review, nothing is credited and no invoice is issued', async () => {
+    const t = await w.svc.createTopup('v1', { amountPaise: 100_000, idempotencyKey: 'refill-key-0006' }, V1);
+    const p = w.fake.pay(t.providerOrderId!, { amount: 100_000 });
+    expect(await w.svc.handleCapturedPayment({ providerOrderId: t.providerOrderId!, paymentId: p.paymentId, amount: 100_000, currency: 'INR' })).toBe('TOPUP_REVIEW');
+    expect((await w.store.wallet('v1'))!.balancePaise).toBe(0); expect(w.store.receipts).toEqual([]);
+  });
+
+  it('is refused when tax is not set up: no seller state, no buyer state or no rates; no order is made', async () => {
+    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' };
+    const a = await codeOf(w.svc.createTopup('v1', { amountPaise: 100_000, idempotencyKey: 'refill-key-0007' }, V1)); expect([a.status, a.code, a.body.problem]).toEqual([409, 'TAX_NOT_CONFIGURED', 'SELLER_STATE_MISSING']);
+    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '33' };
+    await w.store.unit('v2', (tx) => tx.setBillingProfile({ stateCode: null, gstin: null }));
+    const b = await codeOf(w.svc.createTopup('v2', { amountPaise: 100_000, idempotencyKey: 'refill-key-0008' }, V2)); expect([b.status, b.code, b.body.problem]).toEqual([409, 'TAX_NOT_CONFIGURED', 'BUYER_STATE_MISSING']);
+    w.store.taxes = [];
+    const c = await codeOf(w.svc.createTopup('v1', { amountPaise: 100_000, idempotencyKey: 'refill-key-0009' }, V1)); expect([c.status, c.code, c.body.problem]).toEqual([409, 'TAX_NOT_CONFIGURED', 'RATES_MISSING']);
+    expect(w.fake.calls.createOrder).toBe(0); expect(w.store.topups.size).toBe(0);
+  });
+
+  it('a refill below the minimum is refused (the minimum is measured on the amount before GST); the minimum itself is accepted', async () => {
+    const low = await codeOf(w.svc.createTopup('v1', { amountPaise: MIN - 1, idempotencyKey: 'refill-key-0010' }, V1)); expect([low.status, low.code]).toEqual([400, 'WALLET_TOPUP_AMOUNT_INVALID']);
+    expect(low.body).toMatchObject({ minTopupPaise: MIN });
+    expect(await w.svc.createTopup('v1', { amountPaise: MIN, idempotencyKey: 'refill-key-0011' }, V1)).toMatchObject({ creditPaise: MIN, payablePaise: MIN + 17_982 });   // 18 percent of 99,900 is 17,982
+    expect(w.store.topups.size).toBe(1);
+  });
+
+  it('the vendor sees the tax and the invoice on the refill list, and another vendor never sees them', async () => {
+    const { t } = await pay('v1', 100_000, 'refill-key-0012');
+    const mine = (await w.svc.topups('v1', 1, 10)).items[0];
+    expect(mine).toMatchObject({ id: t.id, creditPaise: 100_000, taxPaise: 18_000, payablePaise: 118_000, status: 'PAID' });
+    expect((await w.svc.topups('v2', 1, 10)).items).toEqual([]);
+    expect(await w.svc.invoiceForTopup('v1', t.id)).toMatchObject({ invoiceNumber: 'INV/2026-27/000001', documentType: 'TAX_INVOICE' });
+    expect((await codeOf(w.svc.invoiceForTopup('v2', t.id))).code).toBe('WALLET_TOPUP_NOT_FOUND');
+  });
+
+  it('the credit lot of a refill is the amount before GST and lasts a year from the refill: the expiry date is on each lot', async () => {
+    await pay('v1', 100_000, 'refill-key-0013');
+    const lot = (await w.store.lots('v1'))[0];
+    expect(lot.amountPaise).toBe(100_000); expect(lot.expiresAt.getTime() - w.clock().getTime()).toBe(365 * 86_400_000);
   });
 });
 
@@ -378,5 +466,46 @@ describe('holds, releases and reversals through the engine', () => {
     expect(big.getResponse()).toMatchObject({ shortfallPaise: 400_000, suggestedTopupPaise: 400_000 });
     const none = walletHttpError(new WalletRuleError('INSUFFICIENT_WALLET', 'x', { shortfallPaise: 3_000 }));
     expect(Object.keys(none.getResponse() as object)).not.toContain('suggestedTopupPaise');
+  });
+});
+
+describe('the usage statement: deductions are ledger lines and a statement, never an invoice (owner 5 November 2026)', () => {
+  const sys = { type: 'SYSTEM' as const, id: null };
+  beforeEach(async () => { await w.open('v1'); await w.open('v2'); await w.fund('v1', 500_000); await w.fund('v2', 100_000); });
+  const spend = (vendor: string, kind: 'CHARGE' | 'PACK_PURCHASE', amount: number, key: string, refType: string) => w.store.unit(vendor, (tx) => postEntry(tx, { kind, amountPaise: amount, idempotencyKey: key, refType, refId: `ref-${key}`, actor: sys, now: w.clock() }));
+
+  it('lists what was used, newest first, with the total by kind; a refill is not a usage line', async () => {
+    await spend('v1', 'CHARGE', 29_900, 'use-key-0001', 'theme_switch'); advanceDays(w, 1);
+    await spend('v1', 'PACK_PURCHASE', 99_900, 'use-key-0002', 'pack'); advanceDays(w, 1);
+    await spend('v1', 'CHARGE', 9_900, 'use-key-0003', 'service_request');
+    const s = await w.svc.usageStatement('v1', {});
+    expect(s.lines.map((l) => [l.kind, l.refType, l.amountPaise])).toEqual([['CHARGE', 'service_request', 9_900], ['PACK_PURCHASE', 'pack', 99_900], ['CHARGE', 'theme_switch', 29_900]]);
+    expect(s.totals).toMatchObject({ usedPaise: 139_700, reversedPaise: 0, netPaise: 139_700, byKind: { CHARGE: 39_800, PACK_PURCHASE: 99_900 } });
+    expect(JSON.stringify(s)).not.toMatch(/invoice number|INV\//i); expect(s.note).toMatch(/only a refill has a tax invoice/i);
+  });
+
+  it('a reversal is shown against the use it reverses and the net follows', async () => {
+    const c = await spend('v1', 'CHARGE', 29_900, 'use-key-0004', 'theme_switch');
+    await w.store.unit('v1', (tx) => postEntry(tx, { kind: 'REVERSAL', amountPaise: 29_900, reversesId: c.entry.id, idempotencyKey: 'use-key-0005', actor: sys, now: w.clock() }));
+    const s = await w.svc.usageStatement('v1', {});
+    expect(s.totals).toMatchObject({ usedPaise: 29_900, reversedPaise: 29_900, netPaise: 0 }); expect(s.lines.map((l) => l.kind)).toEqual(['REVERSAL', 'CHARGE']);
+  });
+
+  it('a period filters the lines and the totals; a deduction creates no invoice anywhere', async () => {
+    await spend('v1', 'CHARGE', 10_000, 'use-key-0006', 'service_request'); advanceDays(w, 40); await spend('v1', 'CHARGE', 20_000, 'use-key-0007', 'service_request');
+    const from = new Date(w.clock().getTime() - 5 * 86_400_000);
+    const s = await w.svc.usageStatement('v1', { from, to: new Date(w.clock().getTime() + 86_400_000) });
+    expect(s.lines.map((l) => l.amountPaise)).toEqual([20_000]); expect(s.totals.usedPaise).toBe(20_000);
+    expect(w.store.receipts).toHaveLength(2);   // only the two refills (500,000 and 100,000) ever got a document
+  });
+
+  it('is the vendor\'s own: another vendor sees none of it', async () => {
+    await spend('v1', 'CHARGE', 10_000, 'use-key-0008', 'service_request');
+    expect((await w.svc.usageStatement('v2', {})).lines).toEqual([]);
+  });
+
+  it('refuses a period that is the wrong way round or not a date', async () => {
+    expect((await codeOf(w.svc.usageStatement('v1', { from: new Date('2026-12-01'), to: new Date('2026-11-01') }))).code).toBe('WALLET_STATEMENT_PERIOD_INVALID');
+    expect((await codeOf(w.svc.usageStatement('v1', { from: new Date('nope') }))).code).toBe('WALLET_STATEMENT_PERIOD_INVALID');
   });
 });

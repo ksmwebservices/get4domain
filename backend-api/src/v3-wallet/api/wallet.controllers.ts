@@ -13,7 +13,7 @@ import { actorOf } from '../../plans/admin/plans-admin.common';
 import { CreateOrderDto } from '../../plan-billing/api/dto/billing.dto';
 import { PlanRenewalService } from '../plan-renewal.service';
 import { V3WalletService } from '../wallet.service';
-import { AdjustWalletDto, AdminWalletsDto, BillingProfileDto, ConfirmTopupDto, CreateTopupDto, FreezeWalletDto, WalletPageDto } from './dto/wallet.dto';
+import { AdjustWalletDto, AdminWalletsDto, BillingProfileDto, ConfirmTopupDto, CreateTopupDto, FreezeWalletDto, UsageStatementDto, WalletPageDto } from './dto/wallet.dto';
 
 const page = (q: WalletPageDto): { page: number; pageSize: number } => ({ page: q.page ?? 1, pageSize: q.pageSize ?? 25 });
 
@@ -36,11 +36,17 @@ export class MeWalletController {
   @Get('ledger') @ApiOperation({ summary: 'My wallet ledger, newest first (own rows only)' })
   ledger(@Tenant() t: TenantContext, @Query() q: WalletPageDto) { const p = page(q); return this.wallet.ledger(t.vendorId, p.page, p.pageSize); }
 
+  @Get('usage-statement') @ApiOperation({ summary: 'What my credit was used for (services, packs, theme switches, messages, campaigns), with totals, for a period. Using credit creates no invoice; only a refill has a tax invoice.' })
+  usageStatement(@Tenant() t: TenantContext, @Query() q: UsageStatementDto) { return this.wallet.usageStatement(t.vendorId, { from: q.from ? new Date(q.from) : undefined, to: q.to ? new Date(q.to) : undefined }); }
+
+  @Get('topups/:id/invoice') @ApiOperation({ summary: 'The tax invoice of one of my refills (GST added on top of the credit)' })
+  topupInvoice(@Tenant() t: TenantContext, @Param('id') id: string) { return this.wallet.invoiceForTopup(t.vendorId, String(id).slice(0, 64)); }
+
   @Get('topups') @ApiOperation({ summary: 'My top-ups, newest first' })
   topups(@Tenant() t: TenantContext, @Query() q: WalletPageDto) { const p = page(q); return this.wallet.topups(t.vendorId, p.page, p.pageSize); }
 
   @Throttle(RATE.payment) @Post('topups') @HttpCode(200)
-  @ApiOperation({ summary: 'Start adding credit (idempotent by key). The wallet must be active and the amount inside the staff limits. Returns the provider order for the checkout.' })
+  @ApiOperation({ summary: 'Start adding credit (idempotent by key). The wallet must be active and the amount inside the staff limits. GST is added on top: the vendor pays the amount plus GST and the credit is the amount. Returns the provider order for the checkout.' })
   createTopup(@Tenant() t: TenantContext, @Body() dto: CreateTopupDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.wallet.createTopup(t.vendorId, dto, this.actor(user, req)); }
 
   @Throttle(RATE.payment) @Post('topups/:id/confirm') @HttpCode(200)

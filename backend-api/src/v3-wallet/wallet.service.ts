@@ -7,9 +7,10 @@ import { PaymentsGate } from '../plan-billing/razorpay/payments-gate';
 import { BillingSettingsService } from '../plan-billing/settings/billing-settings.service';
 import { TopupSettlementHook } from '../plan-billing/topup-hook';
 import { activationDecision, ActivationEvidence, available, reconcile, topupAmountProblem, WalletRuleError } from './core/wallet-core';
+import { computeTax } from './core/tax-core';
 import { expireWallet, postEntry } from './wallet-engine';
 import { frozen, notActive, TopupLimits, walletError, walletHttpError } from './wallet.errors';
-import { DuplicateTopupError, LedgerRow, TopupRow, WalletRow, WalletStore } from './wallet.store';
+import { DuplicateTopupError, LedgerRow, TopupRow, WalletRow, WalletStore, WalletTx } from './wallet.store';
 import { WalletSettingsService } from './settings/wallet-settings.service';
 
 export type SettleTopupOutcome = 'CREDITED' | 'ALREADY_PAID' | 'REVIEW' | 'IGNORED' | 'NO_TOPUP';
@@ -21,8 +22,15 @@ export const ledgerView = (e: LedgerRow) => ({
   id: e.id, entryNo: e.entryNo, kind: e.kind, amountPaise: e.amountPaise, balanceAfterPaise: e.balanceAfterPaise, heldAfterPaise: e.heldAfterPaise,
   refType: e.refType, refId: e.refId, reason: e.reason, by: e.actorType, at: e.at,
 });
+const snapNum = (t: TopupRow, k: string): number => { const v = t.taxSnapshot[k]; return typeof v === 'number' ? v : 0; };
+/**
+ * A refill as the vendor sees it. amountPaise and creditPaise are the same number: the credit added, before GST. The vendor pays payablePaise (the credit plus GST, taxPaise of it tax).
+ * A refill made before GST was added on top has no payablePaise: it was exactly the credit, with no tax.
+ */
 const topupView = (t: TopupRow, keyId: string | null = null) => ({
-  id: t.id, amountPaise: t.amountPaise, currency: t.currency, status: t.status, providerOrderId: t.providerOrderId, keyId, expiresAt: t.expiresAt, paidAt: t.paidAt, receiptId: t.receiptId, createdAt: t.createdAt,
+  id: t.id, amountPaise: t.amountPaise, creditPaise: t.amountPaise, taxPaise: snapNum(t, 'taxMinor'), payablePaise: t.payablePaise ?? t.amountPaise,
+  tax: { intraState: typeof t.taxSnapshot.intraState === 'boolean' ? t.taxSnapshot.intraState : null, lines: Array.isArray(t.taxSnapshot.lines) ? t.taxSnapshot.lines : [] },
+  currency: t.currency, status: t.status, providerOrderId: t.providerOrderId, keyId, expiresAt: t.expiresAt, paidAt: t.paidAt, receiptId: t.receiptId, createdAt: t.createdAt,
 });
 
 /**
@@ -82,7 +90,7 @@ export class V3WalletService implements TopupSettlementHook {
       lockedText: status === 'FROZEN' ? 'This wallet is on hold. Please contact support.' : status === 'INACTIVE' ? LOCKED_TEXT : null,
       currency: 'INR', balancePaise: w?.balancePaise ?? 0, heldPaise: w?.heldPaise ?? 0, availablePaise: w ? available(w) : 0, activatedAt: w?.activatedAt ?? null,
       creditValidityDays: s.walletCreditValidityDays,
-      topup: { enabled: status === 'ACTIVE' && topupsReady, configured: topupsReady, minPaise: s.walletTopupMinPaise, maxPaise: s.walletTopupMaxPaise },
+      topup: { enabled: status === 'ACTIVE' && topupsReady, configured: topupsReady, minPaise: s.walletTopupMinPaise, maxPaise: s.walletTopupMaxPaise, gstAddedOnTop: true },
       billingProfile: { stateCode: w?.billingStateCode ?? null, gstin: w?.billingGstin ?? null },
     };
   }
@@ -91,6 +99,25 @@ export class V3WalletService implements TopupSettlementHook {
     const r = await this.store.ledgerPage(vendorId, (page - 1) * pageSize, pageSize);
     return { items: r.items.map(ledgerView), page, pageSize, total: r.total };
   }
+  /**
+   * The usage statement (owner, 5 November 2026): what the vendor's credit was used for, as ledger lines with a total, for a period (everything when none is given). A use of credit (a service, a pack,
+   * a theme switch, a message, a campaign) writes a ledger line and appears here; it has NO invoice of its own. The only tax invoice the wallet issues is for a refill. A plan paid from the wallet
+   * keeps its plan invoice (flagged below). Holds, releases, refills, expiries and adjustments are not usage.
+   */
+  async usageStatement(vendorId: string, q: { from?: Date; to?: Date }) {
+    const bad = (d: unknown): boolean => d !== undefined && !(d instanceof Date && !Number.isNaN(d.getTime()));
+    if (bad(q.from) || bad(q.to) || (q.from && q.to && q.from.getTime() > q.to.getTime())) throw new BadRequestException(walletError('WALLET_STATEMENT_PERIOD_INVALID', 'The period must be two dates, the start before the end.'));
+    const USE = new Set(['CHARGE', 'PACK_PURCHASE', 'PLAN_RENEWAL', 'REVERSAL']);
+    const rows = (await this.store.allLedger(vendorId)).filter((e) => USE.has(e.kind) && (!q.from || e.at >= q.from) && (!q.to || e.at <= q.to)).sort((a, b) => b.entryNo - a.entryNo);
+    const lines = rows.map((e) => ({ id: e.id, entryNo: e.entryNo, at: e.at, kind: e.kind, refType: e.refType, refId: e.refId, amountPaise: Math.abs(e.amountPaise), reason: e.reason, hasInvoice: e.kind === 'PLAN_RENEWAL' }));
+    const byKind: Record<string, number> = {}; let used = 0; let reversed = 0;
+    for (const l of lines) { if (l.kind === 'REVERSAL') reversed += l.amountPaise; else { used += l.amountPaise; byKind[l.kind] = (byKind[l.kind] ?? 0) + l.amountPaise; } }
+    return {
+      from: q.from ?? null, to: q.to ?? null, currency: 'INR', lines, totals: { usedPaise: used, reversedPaise: reversed, netPaise: used - reversed, byKind },
+      note: 'This is a statement of the credit you used. Only a refill has a tax invoice; using credit does not create one.',
+    };
+  }
+
   async topups(vendorId: string, page: number, pageSize: number) {
     const r = await this.store.topupsPage(vendorId, (page - 1) * pageSize, pageSize);
     return { items: r.items.map((t) => topupView(t)), page, pageSize, total: r.total };
@@ -126,15 +153,19 @@ export class V3WalletService implements TopupSettlementHook {
     if (prior) return this.replay(prior, input.amountPaise);
     const port = await this.gate.port();   // refuses first when payments are off or not set up: no row is created for nothing
     const now = this.clock();
+    // GST is added ON TOP of the refill (owner, 5 November 2026): the vendor pays the amount plus tax, the credit is the amount. Tax that cannot be worked out refuses the refill, never guesses.
+    const tax = computeTax({ amountMinor: input.amountPaise, taxInclusive: false, buyerStateCode: w.billingStateCode, sellerStateCode: s.walletSellerStateCode, rates: await this.store.taxRates(), now, category: 'ALL' });
+    if (!tax.ok) throw new ConflictException(walletError('TAX_NOT_CONFIGURED', tax.problem === 'BUYER_STATE_MISSING' ? 'Add your state in your billing details before adding credit, so the GST can be worked out.' : 'Tax is not set up yet, so a refill cannot be priced.', { problem: tax.problem }));
+    const taxSnapshot = { taxInclusive: false, taxableMinor: tax.taxableMinor, taxMinor: tax.taxMinor, totalMinor: tax.totalMinor, lines: tax.lines, intraState: tax.intraState, buyerStateCode: w.billingStateCode, buyerGstin: w.billingGstin, sellerStateCode: s.walletSellerStateCode };
     let topup: TopupRow;
     try {
-      topup = await this.store.unit(vendorId, (tx) => tx.insertTopup({ vendorId, amountPaise: input.amountPaise, currency: 'INR', idempotencyKey: key, expiresAt: new Date(now.getTime() + b.orderExpiryMinutes * 60_000), createdByType: actor.type, createdById: actor.id }));
+      topup = await this.store.unit(vendorId, (tx) => tx.insertTopup({ vendorId, amountPaise: input.amountPaise, currency: 'INR', idempotencyKey: key, expiresAt: new Date(now.getTime() + b.orderExpiryMinutes * 60_000), createdByType: actor.type, createdById: actor.id, payablePaise: tax.totalMinor, taxSnapshot }));
     } catch (e) {
       if (e instanceof DuplicateTopupError) { const again = await this.store.findTopupByIdempotency(vendorId, key); if (again) return this.replay(again, input.amountPaise); }
       throw e;
     }
     try {
-      const po = await port.createOrder({ amountPaise: topup.amountPaise, currency: topup.currency, receipt: topup.id });
+      const po = await port.createOrder({ amountPaise: topup.payablePaise ?? topup.amountPaise, currency: topup.currency, receipt: topup.id });
       await this.store.unit(vendorId, (tx) => tx.updateTopupCas(topup.id, ['CREATED'], { status: 'PENDING', providerOrderId: po.id }));
     } catch {
       await this.store.unit(vendorId, (tx) => tx.updateTopupCas(topup.id, ['CREATED'], { status: 'FAILED' }));
@@ -179,22 +210,17 @@ export class V3WalletService implements TopupSettlementHook {
       if (!row) return 'NO_TOPUP' as const;
       if (row.status === 'PAID') return 'ALREADY_PAID' as const;
       if (row.status !== 'PENDING' && row.status !== 'EXPIRED') return 'IGNORED' as const;
-      const check = verifyPaidAmount({ amountPaise: row.amountPaise, currency: row.currency }, { amount: paid.amount, currency: paid.currency });
+      const payable = row.payablePaise ?? row.amountPaise;   // what was asked of the vendor: the credit plus GST (a refill from before GST was added on top: the credit)
+      const check = verifyPaidAmount({ amountPaise: payable, currency: row.currency }, { amount: paid.amount, currency: paid.currency });
       const wallet = await tx.wallet();
       if (check !== 'OK' || !wallet || wallet.status === 'INACTIVE') {
-        await tx.audit(actor, 'wallet.topup.review', row.id, { status: row.status }, { reason: check !== 'OK' ? check : 'wallet not active', paymentId: paid.paymentId, topupPaise: row.amountPaise });
+        await tx.audit(actor, 'wallet.topup.review', row.id, { status: row.status }, { reason: check !== 'OK' ? check : 'wallet not active', paymentId: paid.paymentId, topupPaise: row.amountPaise, payablePaise: payable });
         return 'REVIEW' as const;
       }
       const now = this.clock();
       const post = await postEntry(tx, { kind: 'TOPUP', amountPaise: row.amountPaise, idempotencyKey: `topup:${row.id}`, refType: 'topup', refId: row.id, actor: { type: 'SYSTEM', id: null }, now, validityDays: s.walletCreditValidityDays, topupId: row.id });
-      const fy = financialYearOf(now); const n = await tx.nextNumber('RECEIPT', fy);
-      const receipt = await tx.insertReceipt({
-        vendorId: row.vendorId, topupId: row.id, receiptNumber: formatInvoiceNumber(s.walletReceiptPrefix, fy, n), financialYear: fy, documentType: 'RECEIPT', issuedAt: now,
-        snapshot: {
-          seller: { name: b.invoiceSellerName, address: b.invoiceSellerAddress, gstin: b.invoiceSellerGstin }, topupId: row.id, amountPaise: row.amountPaise, currency: row.currency, paymentId: paid.paymentId, via,
-          note: 'This is a receipt for credit added to your wallet. It is not a tax invoice.',
-        },
-      });
+      const fy = financialYearOf(now);
+      const receipt = row.payablePaise === null ? await this.legacyReceipt(tx, row, s.walletReceiptPrefix, b, fy, now, paid.paymentId, via) : await this.refillInvoice(tx, row, payable, b, fy, now, paid.paymentId, via);
       const ok = await tx.updateTopupCas(row.id, ['PENDING', 'EXPIRED'], { status: 'PAID', paymentId: paid.paymentId, paidAmountPaise: paid.amount, paidAt: now, ledgerId: post.entry.id, receiptId: receipt.id });
       if (!ok) throw new Error('the top-up changed during settlement');   // rolls the whole unit back
       await tx.audit(actor, 'wallet.topup.paid', row.id, { status: row.status }, { status: 'PAID', amountPaise: row.amountPaise, receipt: receipt.receiptNumber, via });
@@ -202,6 +228,42 @@ export class V3WalletService implements TopupSettlementHook {
     });
     if (outcome === 'CREDITED') this.emit('wallet.topup.credited', known.vendorId, actor, { topupId: known.id, amountPaise: known.amountPaise });
     return outcome;
+  }
+
+  /**
+   * The tax invoice of a refill (owner, 5 November 2026): ONE per refill, numbered from the shared gap-free invoice series, issued in the same unit of work as the credit, from the tax worked out when
+   * the refill was made. It is the only invoice the wallet issues: a deduction (a service, a pack, a theme switch, a message, a campaign) writes a ledger line and appears in the usage statement only.
+   * The wording and the treatment of an advance are the accountant's (OPEN QUESTIONS in docs/v3/B4_LOG.md).
+   */
+  private async refillInvoice(tx: WalletTx, row: TopupRow, payable: number, b: Awaited<ReturnType<BillingSettingsService['get']>>, fy: string, now: Date, paymentId: string, via: 'CONFIRM' | 'WEBHOOK') {
+    const n = await tx.nextNumber('INVOICE', fy); const t = row.taxSnapshot;
+    return tx.insertReceipt({
+      vendorId: row.vendorId, topupId: row.id, receiptNumber: formatInvoiceNumber(b.invoiceNumberPrefix, fy, n), financialYear: fy, documentType: 'TAX_INVOICE', issuedAt: now,
+      snapshot: {
+        seller: { name: b.invoiceSellerName, address: b.invoiceSellerAddress, gstin: b.invoiceSellerGstin, stateCode: t.sellerStateCode ?? null },
+        buyer: { vendorId: row.vendorId, stateCode: t.buyerStateCode ?? null, gstin: t.buyerGstin ?? null },
+        topupId: row.id, creditPaise: row.amountPaise, currency: row.currency, paymentId, via,
+        taxBreakdown: { taxInclusive: false, taxableMinor: t.taxableMinor ?? row.amountPaise, taxMinor: t.taxMinor ?? 0, lines: t.lines ?? [], intraState: t.intraState ?? null, totalMinor: payable },
+        note: 'Tax invoice for credit added to your wallet. GST is added to the amount of credit.',
+      },
+    });
+  }
+
+  /** A refill made before GST was added on top (no tax was worked out for it): the numbered receipt it always had. Nothing new takes this path. */
+  private async legacyReceipt(tx: WalletTx, row: TopupRow, prefix: string, b: Awaited<ReturnType<BillingSettingsService['get']>>, fy: string, now: Date, paymentId: string, via: 'CONFIRM' | 'WEBHOOK') {
+    const n = await tx.nextNumber('RECEIPT', fy);
+    return tx.insertReceipt({
+      vendorId: row.vendorId, topupId: row.id, receiptNumber: formatInvoiceNumber(prefix, fy, n), financialYear: fy, documentType: 'RECEIPT', issuedAt: now,
+      snapshot: { seller: { name: b.invoiceSellerName, address: b.invoiceSellerAddress, gstin: b.invoiceSellerGstin }, topupId: row.id, amountPaise: row.amountPaise, currency: row.currency, paymentId, via, note: 'This is a receipt for credit added to your wallet. It is not a tax invoice.' },
+    });
+  }
+
+  /** The vendor's own refill invoice. A refill that is not theirs, or has no invoice yet, is "not found". */
+  async invoiceForTopup(vendorId: string, topupId: string) {
+    const t = typeof topupId === 'string' && topupId ? await this.store.getTopupForVendor(vendorId, topupId) : null;
+    const r = t ? await this.store.receiptForTopup(vendorId, t.id) : null;
+    if (!t || !r) throw new NotFoundException(walletError('WALLET_TOPUP_NOT_FOUND', 'That top-up does not exist.'));
+    return { invoiceNumber: r.receiptNumber, documentType: r.documentType, financialYear: r.financialYear, issuedAt: r.issuedAt, snapshot: r.snapshot };
   }
 
   /** The webhook hook (see TopupSettlementHook): a captured payment whose provider order is not a plan order. */
