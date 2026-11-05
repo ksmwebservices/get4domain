@@ -57,12 +57,12 @@ describe('services API', () => {
     beforeEach(async () => { await w.price('POSTER_DESIGN', 50_000); await w.pack('POSTERS3', [{ serviceKey: 'POSTER_DESIGN', count: 3 }], 120_000); await w.open('v1'); await w.store.unit('v1', (tx) => postEntry(tx, { kind: 'TOPUP', amountPaise: 500_000, idempotencyKey: 'seed-api-0001', actor: { type: 'SYSTEM', id: null }, now: w.clock() })); await w.svc.setBillingProfile('v1', { stateCode: '33' }, { type: 'VENDOR', id: 'v1', ip: null }); });
     it('lists services with price, tax and the way it would be paid, and packs', async () => {
       const s = await get('/v3/me/services', 'owner'); expect(s.status).toBe(200);
-      expect(s.body.data.items.find((i: { key: string }) => i.key === 'POSTER_DESIGN')).toMatchObject({ price: { amountPaise: 50_000 }, tax: { totalMinor: 59_000 }, funding: { kind: 'WALLET', amountPaise: 59_000 } });
+      expect(s.body.data.items.find((i: { key: string }) => i.key === 'POSTER_DESIGN')).toMatchObject({ price: { amountPaise: 50_000 }, tax: { totalMinor: 50_000, taxMinor: 0 }, funding: { kind: 'WALLET', amountPaise: 50_000 } });
       expect((await get('/v3/me/packs', 'owner')).body.data.items[0]).toMatchObject({ key: 'POSTERS3', items: [{ serviceKey: 'POSTER_DESIGN', count: 3, name: 'Poster design' }] });
     });
     it('buys a pack once per key', async () => {
       const k = key(); const a = await send('post', '/v3/me/packs/POSTERS3/purchase', 'owner', { idempotencyKey: k }); const b = await send('post', '/v3/me/packs/POSTERS3/purchase', 'owner', { idempotencyKey: k });
-      expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ packKey: 'POSTERS3', paidPaise: 141_600, replay: false }); expect(b.body.data).toMatchObject({ id: a.body.data.id, replay: true });
+      expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ packKey: 'POSTERS3', paidPaise: 120_000, replay: false }); expect(b.body.data).toMatchObject({ id: a.body.data.id, replay: true });
       expect(w.store.ledger.filter((e) => e.kind === 'PACK_PURCHASE')).toHaveLength(1);
     });
     it('a team member and an anonymous caller are refused everywhere and nothing is spent', async () => {

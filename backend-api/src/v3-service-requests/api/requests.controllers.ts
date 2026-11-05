@@ -35,17 +35,14 @@ export class MeServiceRequestsController {
   @Get() @ApiOperation({ summary: 'My requests, newest first' })
   list(@Tenant() t: TenantContext, @Query() q: RequestPageDto) { const p = page(q); return this.requests.list(t.vendorId, p.page, p.pageSize); }
 
-  @Get('invoices') @ApiOperation({ summary: 'The tax invoices for the work I approved, newest first' })
-  invoices(@Tenant() t: TenantContext, @Query() q: RequestPageDto) { const p = page(q); return this.requests.invoices(t.vendorId, p.page, p.pageSize); }
-
-  @Get(':id') @ApiOperation({ summary: 'One request with its history, the finished work (once it is ready) and the invoice' })
+  @Get(':id') @ApiOperation({ summary: 'One request with its history and the finished work (once it is ready)' })
   get(@Tenant() t: TenantContext, @Param('id') id: string) { return this.requests.get(t.vendorId, id); }
 
   @Post(':id/cancel') @HttpCode(200) @ApiOperation({ summary: 'Cancel a request before work starts: the held amount is released and nothing is charged' })
   cancel(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.requests.cancel(t.vendorId, id, this.actor(user, req)); }
 
   @Throttle(RATE.payment) @Post(':id/approve') @HttpCode(200)
-  @ApiOperation({ summary: 'Approve the finished work: the held amount is charged once and a tax invoice is issued (or a pack unit is used)' })
+  @ApiOperation({ summary: 'Approve the finished work: the held amount is charged once as a ledger line (no invoice: the refill has the tax invoice) or a pack unit is used' })
   approve(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.requests.approve(t.vendorId, id, this.actor(user, req)); }
 
   @Post(':id/revision') @HttpCode(200) @ApiOperation({ summary: 'Ask for changes to the finished work (up to the limit staff set)' })

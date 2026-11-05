@@ -7,10 +7,10 @@ import { V1, V2 } from './wallet-world';
 
 /**
  * The services world plus the requests twin joined to it (one unit of work covers the request, the pack and the wallet), a controllable promotion port, and helpers. The price of POSTER_DESIGN is
- * made up by the test (50,000 paise before tax; with the test's own tax rows a buyer in the seller's state pays 59,000).
+ * made up by the test (50,000 paise; using credit carries no tax, so a wallet request holds and charges exactly that).
  */
 export const TEAM = { type: 'STAFF' as const, id: 'team-1', ip: null };
-export const POSTER_TOTAL = 59_000;
+export const POSTER_TOTAL = 50_000;
 export interface RequestsWorld extends ServicesWorld {
   requests: MemoryServiceRequestsStore; svcReq: ServiceRequestsService;
   promo: { calls: Array<{ vendorId: string; endsAt: Date; reason: string }>; fail: boolean };

@@ -10,7 +10,7 @@ export interface TaxRateLite { name: string; ratePercent: number; appliesTo: str
 export type TaxComponent = 'IGST' | 'CGST' | 'SGST';
 export type TaxProblem = 'SELLER_STATE_MISSING' | 'BUYER_STATE_MISSING' | 'RATES_MISSING' | 'AMOUNT_INVALID';
 export interface TaxLine { name: TaxComponent; ratePercent: number; amountMinor: number }
-export interface TaxResult { ok: true; intraState: boolean; taxInclusive: boolean; taxableMinor: number; lines: TaxLine[]; taxMinor: number; totalMinor: number }
+export interface TaxResult { ok: true; intraState: boolean | null; taxInclusive: boolean; taxableMinor: number; lines: TaxLine[]; taxMinor: number; totalMinor: number }
 export type TaxOutcome = TaxResult | { ok: false; problem: TaxProblem };
 
 const COMPONENTS: readonly TaxComponent[] = ['IGST', 'CGST', 'SGST'];
@@ -50,4 +50,13 @@ export function computeTax(i: { amountMinor: number; taxInclusive: boolean; buye
     lines[lines.length - 1].amountMinor += diff;
   }
   return { ok: true, intraState, taxInclusive: i.taxInclusive, taxableMinor, lines, taxMinor: lines.reduce((t, l) => t + l.amountMinor, 0), totalMinor };
+}
+
+/**
+ * What a wallet DEDUCTION costs (owner decision, 5 November 2026): exactly its price. The GST was added on top when the money was added (at the refill, where the tax invoice is issued), so a
+ * service, a pack, a theme switch, a message or a campaign carries no tax of its own and no invoice of its own. The result has the same shape as computeTax so callers read it the same way.
+ */
+export function deductionOutcome(amountMinor: number): TaxOutcome {
+  if (typeof amountMinor !== 'number' || !Number.isSafeInteger(amountMinor) || amountMinor <= 0) return { ok: false, problem: 'AMOUNT_INVALID' };
+  return { ok: true, intraState: null, taxInclusive: false, taxableMinor: amountMinor, lines: [], taxMinor: 0, totalMinor: amountMinor };
 }

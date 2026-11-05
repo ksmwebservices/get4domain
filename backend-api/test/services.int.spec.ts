@@ -82,16 +82,17 @@ describe('services, the price book and packs on staging', () => {
     const pp = await api('post', `/v3/admin/packs/${PK}/prices`, ops, { amountPaise: 100_000 });
     expect((await api('post', `/v3/admin/packs/prices/${pp.body.data.id}/approve`, sup, { effectiveFrom: soon() })).status).toBe(200); await new Promise((r) => setTimeout(r, 2600));
     const k = key(); const a = await api('post', `/v3/me/packs/${PK}/purchase`, tokenA, { idempotencyKey: k }); const b = await api('post', `/v3/me/packs/${PK}/purchase`, tokenA, { idempotencyKey: k });
-    expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ packKey: PK, paidPaise: 118_000, remaining: { [SK]: 3 }, replay: false }); expect(b.body.data).toMatchObject({ id: a.body.data.id, replay: true });
+    expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ packKey: PK, paidPaise: 100_000, remaining: { [SK]: 3 }, replay: false }); expect(b.body.data).toMatchObject({ id: a.body.data.id, replay: true });
     expect(await prisma.v3PackPurchase.count({ where: { vendorId: A.vendorId } })).toBe(1);
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'PACK_PURCHASE' } })).toBe(1);
-    expect(await prisma.v3Wallet.findUnique({ where: { vendorId: A.vendorId } })).toMatchObject({ balancePaise: 282_000 });
+    expect(await prisma.v3Wallet.findUnique({ where: { vendorId: A.vendorId } })).toMatchObject({ balancePaise: 300_000 });
+    expect(await prisma.v3WalletReceipt.count({ where: { vendorId: A.vendorId } })).toBe(0);   // buying a pack makes no invoice: the price carries no GST, the refill has the tax invoice
     expect((await api('get', `/v3/admin/wallets/${A.vendorId}/reconcile`, ops)).body.data.ok).toBe(true);
   });
 
   it('many parallel pack purchases through the real pool can never overspend: 12 parallel buys by a wallet that can afford two more succeed exactly twice', async () => {
     const bal = (await prisma.v3Wallet.findUniqueOrThrow({ where: { vendorId: A.vendorId } })).balancePaise;
-    await api('post', `/v3/admin/wallets/${A.vendorId}/adjustments`, sup, { amountPaise: -(bal - 236_000), reason: 'suite trim', idempotencyKey: key() });
+    await api('post', `/v3/admin/wallets/${A.vendorId}/adjustments`, sup, { amountPaise: -(bal - 200_000), reason: 'suite trim', idempotencyKey: key() });
     const results = await Promise.all(Array.from({ length: 12 }, () => api('post', `/v3/me/packs/${PK}/purchase`, tokenA, { idempotencyKey: key() }).then((r) => r.status)));
     expect(results.filter((s) => s === 200)).toHaveLength(2); expect(results.filter((s) => s === 409)).toHaveLength(10);
     expect(await prisma.v3Wallet.findUnique({ where: { vendorId: A.vendorId } })).toMatchObject({ balancePaise: 0, heldPaise: 0 });

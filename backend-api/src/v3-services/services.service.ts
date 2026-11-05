@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, Optional } from '@n
 import { ActivityBus } from '../common/activity-bus';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { Actor } from '../plans/admin/audit.service';
-import { computeTax, TaxOutcome } from '../v3-wallet/core/tax-core';
+import { deductionOutcome, TaxOutcome } from '../v3-wallet/core/tax-core';
 import { WalletRuleError } from '../v3-wallet/core/wallet-core';
 import { postEntry } from '../v3-wallet/wallet-engine';
 import { WalletSettingsService } from '../v3-wallet/settings/wallet-settings.service';
@@ -47,14 +47,11 @@ export class ServicesCatalogService {
     return { items };
   }
 
-  // ───────────────────────────────────────────────────────────────────────────────────────── the tax context
-  private async taxContext(vendorId: string) {
-    const [w, s, rates] = await Promise.all([this.walletStore.wallet(vendorId), this.walletSettings.get(), this.store.taxRates()]);
-    return { wallet: w, sellerStateCode: s.walletSellerStateCode, buyerStateCode: w?.billingStateCode ?? null, rates };
-  }
-  private quote(p: PriceRow | null, ctx: Awaited<ReturnType<ServicesCatalogService['taxContext']>>, now: Date): TaxOutcome | null {
-    return p ? computeTax({ amountMinor: p.amountPaise, taxInclusive: p.taxInclusive, buyerStateCode: ctx.buyerStateCode, sellerStateCode: ctx.sellerStateCode, rates: ctx.rates, now, category: p.taxCategory }) : null;
-  }
+  // ───────────────────────────────────────────────────────────────────────────────────────── what using credit costs
+  /** The vendor's wallet. (Using credit carries no tax: the GST was added when the credit was added, at the refill.) */
+  private async taxContext(vendorId: string) { return { wallet: await this.walletStore.wallet(vendorId) }; }
+  /** What using credit for this price costs: exactly the price, no tax, no invoice (owner, 5 November 2026). The shape is the tax rule's, so every view reads it the same way. */
+  private quote(p: PriceRow | null, _ctx?: unknown, _now?: Date): TaxOutcome | null { return p ? deductionOutcome(p.amountPaise) : null; }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── vendor
   private async planSnapshot(vendorId: string): Promise<{ snap: PlanSnapshot; track: string | null; features: Record<string, { state: string; limit: number | null }> }> {
@@ -110,12 +107,12 @@ export class ServicesCatalogService {
     const w = await this.wallet.syncActivation(vendorId);
     if (!w || w.status === 'INACTIVE') throw notActive();
     const now = this.clock();
-    const [pack, ctx, plan, services, ws] = await Promise.all([this.store.packByKey(String(packKey).slice(0, 60)), this.taxContext(vendorId), this.planSnapshot(vendorId), this.store.services(), this.walletSettings.get()]);
+    const [pack, plan, services, ws] = await Promise.all([this.store.packByKey(String(packKey).slice(0, 60)), this.planSnapshot(vendorId), this.store.services(), this.walletSettings.get()]);
     if (!pack || pack.status !== 'ACTIVE') throw conflict('PACK_NOT_PURCHASABLE', 'That pack cannot be bought.');
     const price = resolvePrice(await this.store.packPrices(pack.id), now);
     if (!price) throw conflict('SERVICE_PRICE_NOT_SET', 'That pack has no approved price right now.');
-    const tax = this.quote(price, ctx, now)!;
-    if (!tax.ok) throw new ConflictException(walletError('TAX_NOT_CONFIGURED', 'Tax is not set up yet, so this cannot be priced.', { problem: tax.problem }));
+    const tax = this.quote(price)!;
+    if (!tax.ok) throw conflict('SERVICE_PRICE_NOT_SET', 'That pack has no usable price right now.');
     for (const item of pack.items) {
       const svc = services.find((x) => x.key === item.serviceKey);
       if (!svc || svc.status === 'RETIRED') throw conflict('PACK_NOT_PURCHASABLE', 'That pack includes a service that is no longer offered.');
@@ -131,7 +128,7 @@ export class ServicesCatalogService {
         const post = await postEntry(wtx, { kind: 'PACK_PURCHASE', amountPaise: tax.totalMinor, idempotencyKey: `pack:${key}`, refType: 'pack', refId: pack.id, actor: { type: actor.type, id: actor.id }, now });
         const purchase = await stx.insertPurchase({
           vendorId, packId: pack.id, idempotencyKey: key, remaining: Object.fromEntries(pack.items.map((i) => [i.serviceKey, i.count])), priceSnapshotPaise: tax.totalMinor,
-          taxSnapshot: { priceId: price.id, basePaise: price.amountPaise, taxInclusive: price.taxInclusive, taxMinor: tax.taxMinor, taxableMinor: tax.taxableMinor, lines: tax.lines, intraState: tax.intraState },
+          taxSnapshot: { priceId: price.id, basePaise: price.amountPaise, taxMinor: 0, note: 'GST was added when the credit was added; using credit carries no tax and no invoice' },
           purchasedAt: now, expiresAt: pack.validityDays ? new Date(now.getTime() + pack.validityDays * 86_400_000) : null, ledgerEntryId: post.entry.id,
         });
         await stx.audit(actor, 'pack.purchase', purchase.id, null, { packKey: pack.key, paidPaise: tax.totalMinor, ledgerId: post.entry.id });

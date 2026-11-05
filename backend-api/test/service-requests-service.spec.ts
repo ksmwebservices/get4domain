@@ -4,8 +4,8 @@ import { OPS } from './support/services-world';
 import { POSTER_TOTAL, requestsWorld, RequestsWorld, TEAM, vendorActor } from './support/service-requests-world';
 
 /**
- * Slice 5.16c on the in-memory twins (request, services and wallet rows share one unit of work): a wallet request HOLDS price plus tax, CHARGES it only when the vendor approves, RELEASES it on cancel
- * or rejection; allowance first, then pack, then wallet; one charge however often anyone approves; a tax invoice from the shared gap-free series; the same rules for staff acting on behalf.
+ * Slice 5.16c on the in-memory twins (request, services and wallet rows share one unit of work): a wallet request HOLDS the price (no tax: GST was added at the refill), CHARGES it only when the vendor approves, RELEASES it on cancel
+ * or rejection; allowance first, then pack, then wallet; one charge however often anyone approves; NO invoice for a charge (the refill has the tax invoice); the same rules for staff acting on behalf.
  */
 let w: RequestsWorld;
 const codeOf = async (p: Promise<unknown>): Promise<{ status: number; code?: string; body: Record<string, unknown> }> => {
@@ -27,10 +27,11 @@ describe('making a request', () => {
     expect((await create()).status).toBe('REQUESTED');   // zero is an answer: no changes allowed
   });
 
-  it('a wallet request HOLDS the exact price plus tax: the balance is untouched, the available money drops, and nothing is charged', async () => {
+  it('a wallet request HOLDS the exact price (no tax): the balance is untouched, the available money drops, and nothing is charged', async () => {
     await w.vendor('v1', 200_000);
     const r = await create();
-    expect(r).toMatchObject({ status: 'REQUESTED', createdBy: 'YOU', replay: false, funding: { kind: 'WALLET', amountPaise: POSTER_TOTAL, heldPaise: POSTER_TOTAL, basePaise: 50_000, taxPaise: 9_000 } });
+    expect(r).toMatchObject({ status: 'REQUESTED', createdBy: 'YOU', replay: false, funding: { kind: 'WALLET', amountPaise: POSTER_TOTAL, heldPaise: POSTER_TOTAL, basePaise: 50_000 } });
+    expect(JSON.stringify(r)).not.toMatch(/taxPaise|taxLines/);
     expect(await wallet()).toMatchObject({ balancePaise: 200_000, heldPaise: POSTER_TOTAL });
     const hold = ledger('HOLD')[0]; expect(hold).toMatchObject({ amountPaise: -POSTER_TOTAL, refType: 'service_request', refId: r.id }); expect(ledger('CHARGE')).toHaveLength(0);
     expect(w.requests.requests[0]).toMatchObject({ holdLedgerId: hold.id, priceSnapshotPaise: POSTER_TOTAL, fundingKind: 'WALLET' });
@@ -40,7 +41,7 @@ describe('making a request', () => {
   it('a short wallet is INSUFFICIENT_WALLET with the exact shortfall and the top-up that covers it, and nothing at all is written', async () => {
     await w.vendor('v1', 20_000);
     const e = await codeOf(create()); expect([e.status, e.code]).toEqual([409, 'INSUFFICIENT_WALLET']);
-    expect(e.body).toMatchObject({ shortfallPaise: 39_000, availablePaise: 20_000, requiredPaise: POSTER_TOTAL, suggestedTopupPaise: 39_000 });
+    expect(e.body).toMatchObject({ shortfallPaise: 30_000, availablePaise: 20_000, requiredPaise: POSTER_TOTAL, suggestedTopupPaise: 30_000 });
     expect(w.requests.requests).toHaveLength(0); expect(ledger('HOLD')).toHaveLength(0); expect((await wallet()).heldPaise).toBe(0);
   });
 
@@ -58,13 +59,12 @@ describe('making a request', () => {
     expect([x.funding.kind, y.funding.kind].sort()).toEqual(['PACK', 'WALLET']);
   });
 
-  it('refuses what cannot be requested: unknown, retired or vendor-only services, a Free or lapsed plan, a service with no price, tax not set up', async () => {
+  it('refuses what cannot be requested: unknown, retired or vendor-only services, a Free or lapsed plan, a service with no price', async () => {
     await w.vendor('v1', 200_000);
     expect((await codeOf(create('v1', { serviceKey: 'NOPE' }))).code).toBe('SERVICE_NOT_REQUESTABLE');
     await w.catalogue.updateService('SEO_TASK', { doneBy: 'VENDOR' }, OPS); expect((await codeOf(create('v1', { serviceKey: 'SEO_TASK' }))).code).toBe('SERVICE_NOT_REQUESTABLE');
     expect((await codeOf(create('v1', { serviceKey: 'REEL_SLIDESHOW', brief: w.brief() }))).body).toMatchObject({ code: 'SERVICE_NOT_REQUESTABLE', reason: 'PRICE_NOT_SET' });
     w.plan.level = 'FREE'; w.plan.subscriptionStatus = 'EXPIRED'; expect((await codeOf(create())).code).toBe('SERVICE_NOT_REQUESTABLE'); w.plan.level = 'PRO'; w.plan.subscriptionStatus = 'ACTIVE';
-    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' }; expect((await codeOf(create())).code).toBe('TAX_NOT_CONFIGURED');
     expect(w.requests.requests).toHaveLength(0); expect(ledger('HOLD')).toHaveLength(0);
   });
 
@@ -128,20 +128,20 @@ describe('staff acting on behalf of a vendor (never a silent charge)', () => {
 });
 
 describe('the life of a request and the money', () => {
-  it('REQUESTED to APPROVED: the hold becomes ONE charge of exactly that amount, a tax invoice is issued from the shared series, and the books balance', async () => {
+  it('REQUESTED to APPROVED: the hold becomes ONE charge of exactly that amount, NO invoice is issued, and the books balance', async () => {
     await w.vendor('v1', 200_000); const id = await w.ready('v1');
     expect(await wallet()).toMatchObject({ balancePaise: 200_000, heldPaise: POSTER_TOTAL });   // still only held while the work is being done
     const done = await w.svcReq.approve('v1', id, V());
-    expect(done).toMatchObject({ status: 'APPROVED', replay: false, invoice: { invoiceNumber: 'INV/2026-27/000001', taxBreakdown: { totalMinor: POSTER_TOTAL, taxMinor: 9_000, intraState: true } } });
+    expect(done).toMatchObject({ status: 'APPROVED', replay: false }); expect(done).not.toHaveProperty('invoice');
     expect(await wallet()).toMatchObject({ balancePaise: 200_000 - POSTER_TOTAL, heldPaise: 0 });
     expect(ledger('CHARGE')).toHaveLength(1); expect(ledger('CHARGE')[0]).toMatchObject({ amountPaise: -POSTER_TOTAL, holdId: w.requests.requests[0].holdLedgerId, refId: id });
-    expect(w.requests.invoiceRows[0]).toMatchObject({ requestId: id, ledgerEntryId: ledger('CHARGE')[0].id }); expect(w.requests.invoiceRows[0].taxBreakdown).toMatchObject({ lines: [{ name: 'CGST', amountMinor: 4_500 }, { name: 'SGST', amountMinor: 4_500 }] });
+    expect(w.requests.invoiceRows).toHaveLength(0); expect(w.store.receipts).toHaveLength(0);   // a deduction is a ledger line and a usage statement line, never an invoice
     expect(await w.svc.reconcileVendor('v1')).toMatchObject({ ok: true });
   });
-  it('an approval twice, and twelve at once, charge once and issue one invoice', async () => {
+  it('an approval twice, and twelve at once, charge once and issue no invoice', async () => {
     await w.vendor('v1', 200_000); const id = await w.ready('v1');
     const rs = await Promise.all(Array.from({ length: 12 }, () => w.svcReq.approve('v1', id, V())));
-    expect(rs.filter((r) => !r.replay)).toHaveLength(1); expect(ledger('CHARGE')).toHaveLength(1); expect(w.requests.invoiceRows).toHaveLength(1);
+    expect(rs.filter((r) => !r.replay)).toHaveLength(1); expect(ledger('CHARGE')).toHaveLength(1); expect(w.requests.invoiceRows).toHaveLength(0);
     expect((await w.svcReq.approve('v1', id, V())).replay).toBe(true); expect((await wallet()).balancePaise).toBe(200_000 - POSTER_TOTAL);
   });
   it('cancelling before production releases the hold and charges nothing; cancelling again changes nothing; cancelling once production started is refused', async () => {
@@ -198,18 +198,19 @@ describe('the life of a request and the money', () => {
   });
 });
 
-describe('invoices are numbered without gaps under concurrency', () => {
-  it('twelve approvals by two vendors at once get twelve consecutive numbers from the one series, each once', async () => {
+describe('a deduction creates no invoice, only ledger lines and a usage statement (owner 5 November 2026)', () => {
+  it('twelve approvals by two vendors at once make twelve charges, no invoice and no document; each vendor\'s usage statement lists their own six', async () => {
     await w.vendor('v1', 2_000_000); await w.vendor('v2', 2_000_000);
     const ids: Array<[string, string]> = [];
     for (let i = 0; i < 6; i++) { ids.push(['v1', await w.ready('v1')]); ids.push(['v2', await w.ready('v2')]); }
+    const before = w.store.receipts.length;
     await Promise.all(ids.map(([v, id]) => w.svcReq.approve(v, id, V(v))));
-    expect(w.requests.invoiceRows.map((i) => i.invoiceNumber).sort()).toEqual(Array.from({ length: 12 }, (_, i) => `INV/2026-27/${String(i + 1).padStart(6, '0')}`));
+    expect(w.store.ledger.filter((e) => e.kind === 'CHARGE')).toHaveLength(12); expect(w.requests.invoiceRows).toHaveLength(0); expect(w.store.receipts).toHaveLength(before);
+    for (const v of ['v1', 'v2']) { const s = await w.svc.usageStatement(v, {}); expect(s.lines).toHaveLength(6); expect(s.lines.every((l) => l.refType === 'service_request')).toBe(true); expect(s.totals.usedPaise).toBe(6 * POSTER_TOTAL); }
     expect(await w.svc.reconcileVendor('v1')).toMatchObject({ ok: true }); expect(await w.svc.reconcileVendor('v2')).toMatchObject({ ok: true });
   });
-  it('a vendor sees only their own invoices', async () => {
-    await w.vendor('v1', 200_000); await w.vendor('v2', 200_000); await w.svcReq.approve('v1', await w.ready('v1'), V());
-    expect((await w.svcReq.invoices('v1', 1, 50)).total).toBe(1); expect((await w.svcReq.invoices('v2', 1, 50)).total).toBe(0);
+  it('there is no vendor invoice list for requests any more', () => {
+    expect((w.svcReq as unknown as Record<string, unknown>).invoices).toBeUndefined();
   });
 });
 

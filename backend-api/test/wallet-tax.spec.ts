@@ -1,4 +1,4 @@
-import { computeTax, pickComponentRates, TaxRateLite } from '../src/v3-wallet/core/tax-core';
+import { computeTax, deductionOutcome, pickComponentRates, TaxRateLite } from '../src/v3-wallet/core/tax-core';
 
 /**
  * The one tax rule of the wallet and the services (slice 5.16a-2): inter-state is IGST, intra-state is CGST plus SGST, picked by comparing the buyer's state code with Get4Domain's. Every
@@ -76,5 +76,18 @@ describe('integer paise: rounding and a price that already includes tax', () => 
   });
   it('refuses an amount that is not a positive whole number of paise', () => {
     for (const bad of [0, -1, 1.5, NaN, Infinity]) expect(computeTax({ ...base, amountMinor: bad })).toEqual({ ok: false, problem: 'AMOUNT_INVALID' });
+  });
+});
+
+describe('a deduction carries no tax (owner 5 November 2026: GST is added at the refill, never at a deduction)', () => {
+  it('takes exactly its price: no lines, no tax, the total is the price', () => {
+    expect(deductionOutcome(29_900)).toEqual({ ok: true, intraState: null, taxInclusive: false, taxableMinor: 29_900, lines: [], taxMinor: 0, totalMinor: 29_900 });
+    expect(deductionOutcome(10)).toMatchObject({ ok: true, totalMinor: 10, taxMinor: 0 });
+  });
+  it('needs no state and no tax row: it works when tax is not set up at all', () => {
+    expect(deductionOutcome(55)).toMatchObject({ ok: true, totalMinor: 55 });
+  });
+  it('refuses an amount that is not a positive whole number of paise', () => {
+    for (const bad of [0, -1, 1.5, NaN, Infinity]) expect(deductionOutcome(bad)).toEqual({ ok: false, problem: 'AMOUNT_INVALID' });
   });
 });

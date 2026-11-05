@@ -68,7 +68,7 @@ describe('theme switch on staging (fake provider, real site pipeline)', () => {
     const pubs0 = await prisma.v3SitePublication.count({ where: { vendorId: A.vendorId } });
     const a = await api('post', '/v3/me/site/theme/switch', tokenA, { themeId: themes[0], idempotencyKey: key() }); expect(a.status).toBe(200); expect(a.body.data.kind).toBe('FREE_INCLUDED');
     const before = await balance(); const b = await api('post', '/v3/me/site/theme/switch', tokenA, { themeId: themes[1], idempotencyKey: key() });
-    expect(b.status).toBe(200); expect(b.body.data).toMatchObject({ kind: 'PAID', status: 'APPLIED', amountPaise: 35_282 }); expect(await balance()).toBe(before - 35_282);
+    expect(b.status).toBe(200); expect(b.body.data).toMatchObject({ kind: 'PAID', status: 'APPLIED', amountPaise: 29_900 }); expect(await balance()).toBe(before - 29_900);
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'CHARGE', refType: 'theme_switch', refId: b.body.data.id } })).toBe(1);
     expect(await prisma.v3SitePublication.count({ where: { vendorId: A.vendorId } })).toBeGreaterThan(pubs0); expect((await prisma.v3SitePublication.findMany({ where: { vendorId: A.vendorId, status: 'SUPERSEDED' } })).length).toBeGreaterThanOrEqual(1);
     expect((await prisma.v3SitePublication.findFirstOrThrow({ where: { vendorId: A.vendorId, status: 'PUBLISHED' } })).themeId).toBe(themes[1]);
@@ -83,7 +83,7 @@ describe('theme switch on staging (fake provider, real site pipeline)', () => {
   it('the same key twice charges once; a double submit is one switch', async () => {
     const k = key(); const target = themes[0]; const cur = (await api('get', '/v3/me/site', tokenA)).body.data.settings.themeId; const to = target === cur ? themes[1] : target; const before = await balance();
     const rs = await Promise.all(Array.from({ length: 5 }, () => api('post', '/v3/me/site/theme/switch', tokenA, { themeId: to, idempotencyKey: k }).then((r) => r.status)));
-    expect(rs.every((s) => s === 200)).toBe(true); expect(await prisma.v3ThemeSwitch.count({ where: { vendorId: A.vendorId, idempotencyKey: k } })).toBe(1); expect(await balance()).toBe(before - 35_282);
+    expect(rs.every((s) => s === 200)).toBe(true); expect(await prisma.v3ThemeSwitch.count({ where: { vendorId: A.vendorId, idempotencyKey: k } })).toBe(1); expect(await balance()).toBe(before - 29_900);
   });
 
   it('the DATABASE refuses a PAID switch with nothing behind it and a gift with no reason', async () => {

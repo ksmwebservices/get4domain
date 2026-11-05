@@ -69,7 +69,7 @@ export class FakeSitePipeline extends SitePipelinePort {
   }
 }
 
-export const THEME_FEE_BASE = 29_900; export const THEME_FEE_TOTAL = 35_282;   // the test's own price (set below) plus 18 percent from the test's own tax rows, a buyer in the seller's state
+export const THEME_FEE_BASE = 29_900; export const THEME_FEE_TOTAL = 29_900;   // the test's own price (set below); using credit carries no tax (GST was added at the refill), so the charge is exactly the price
 export interface ThemeWorld extends RequestsWorld { themes: ThemeSwitchService; themeStore: MemoryThemeSwitchStore; pipe: FakeSitePipeline; vendorBy(id?: string): { type: 'VENDOR'; actor: Actor; funding: 'WALLET' }; ensureFee(): Promise<void> }
 
 export function themeWorld(): ThemeWorld {

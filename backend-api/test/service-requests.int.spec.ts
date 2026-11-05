@@ -11,8 +11,8 @@ import { buildProvisioningTestApp } from './support/provisioning-test-app';
 import { makeSiteVendor } from './support/site-staging';
 
 /**
- * Batch 4 slice 5.16c on STAGING, with the real database and the FAKE payment provider (nothing is charged, no Razorpay call is made): a request holds the price plus tax, approving charges the hold
- * once and issues a tax invoice from the shared series, cancel and reject release it, the database refuses an edited history or invoice and an unfunded wallet request, tenants cannot reach each
+ * Batch 4 slice 5.16c on STAGING, with the real database and the FAKE payment provider (nothing is charged, no Razorpay call is made): a request holds the price (no tax), approving charges the hold
+ * once and issues NO invoice (owner, 5 November 2026: the refill has the tax invoice), cancel and reject release it, the database refuses an edited history or invoice and an unfunded wallet request, tenants cannot reach each
  * other, and many parallel requests and approvals go through the real connection pool. The suite makes its OWN service (its key carries the run id), tax rows and settings, and removes them at the end.
  * Synthetic data only. NOT RUN in the build session that wrote it (no .env.staging there).
  */
@@ -21,7 +21,7 @@ jest.setTimeout(300_000);
 describe('service requests on staging (fake provider)', () => {
   let app: INestApplication; let prisma: PrismaClient; const fake = new FakeRazorpay();
   let A: SeededTenant; let B: SeededTenant; let tokenA: string; let tokenB: string; let sup: string; let ops: string; let mkt: string;
-  const SK = `V3REQ${RUN_ID.toUpperCase()}`; const TOTAL = 59_000;
+  const SK = `V3REQ${RUN_ID.toUpperCase()}`; const TOTAL = 50_000;
   const taxIds: string[] = []; const saved = new Map<string, { existed: boolean; value: unknown }>();
   const api = (method: 'get' | 'post' | 'put', url: string, token?: string, body?: object) => { const r = request(app.getHttpServer())[method](url); const t = token ? r.set('Authorization', `Bearer ${token}`) : r; return body ? t.send(body) : t; };
   const key = (() => { let n = 0; return () => `v3test-${RUN_ID}-req-${++n}`; })();
@@ -64,28 +64,30 @@ describe('service requests on staging (fake provider)', () => {
     ]);
   }, 240000);
 
-  it('a request holds the exact price plus tax: the balance is untouched and nothing is charged', async () => {
+  it('a request holds the exact price (no tax): the balance is untouched and nothing is charged', async () => {
     const before = await wallet(A.vendorId); const r = await create(); expect(r.status).toBe(200);
-    expect(r.body.data).toMatchObject({ status: 'REQUESTED', funding: { kind: 'WALLET', amountPaise: TOTAL, heldPaise: TOTAL, basePaise: 50_000, taxPaise: 9_000 } });
+    expect(r.body.data).toMatchObject({ status: 'REQUESTED', funding: { kind: 'WALLET', amountPaise: TOTAL, heldPaise: TOTAL, basePaise: 50_000 } });
     const after = await wallet(A.vendorId); expect([after.balancePaise, after.heldPaise]).toEqual([before.balancePaise, before.heldPaise + TOTAL]);
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'HOLD', refId: r.body.data.id } })).toBe(1); expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'CHARGE', refId: r.body.data.id } })).toBe(0);
     await api('post', `/v3/me/service-requests/${r.body.data.id}/cancel`, tokenA);
   });
 
-  it('the whole life: accepted, produced, delivered, approved: ONE charge, one tax invoice, the hold gone, the books balance', async () => {
+  it('the whole life: accepted, produced, delivered, approved: ONE charge, NO invoice, the hold gone, the books balance', async () => {
     const before = await wallet(A.vendorId); const r = await create(); const id = r.body.data.id as string;
     expect((await work(id)).body.data.status).toBe('READY_FOR_REVIEW');
     const results = await Promise.all(Array.from({ length: 5 }, () => api('post', `/v3/me/service-requests/${id}/approve`, tokenA).then((x) => x.status)));
     expect(results.every((s) => s === 200)).toBe(true);
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'CHARGE', refId: id } })).toBe(1);
-    const inv = await prisma.v3ServiceInvoice.findUniqueOrThrow({ where: { requestId: id } }); expect(inv.invoiceNumber).toMatch(/^[A-Z0-9]+\/\d{4}-\d{2}\/\d{6}$/);
+    expect(await prisma.v3ServiceInvoice.count({ where: { requestId: id } })).toBe(0);   // a deduction is a ledger line and a usage statement line, never an invoice
     const after = await wallet(A.vendorId); expect([after.balancePaise, after.heldPaise]).toEqual([before.balancePaise - TOTAL, before.heldPaise]);
     expect((await api('get', `/v3/admin/wallets/${A.vendorId}/reconcile`, ops)).body.data.ok).toBe(true);
   });
 
   it('the DATABASE refuses an edited history, an edited or deleted invoice, and a wallet request with no hold', async () => {
     const req = await prisma.v3ServiceRequest.findFirstOrThrow({ where: { vendorId: A.vendorId, status: 'APPROVED' } });
-    const ev = await prisma.v3ServiceRequestEvent.findFirstOrThrow({ where: { requestId: req.id } }); const inv = await prisma.v3ServiceInvoice.findUniqueOrThrow({ where: { requestId: req.id } });
+    const ev = await prisma.v3ServiceRequestEvent.findFirstOrThrow({ where: { requestId: req.id } });
+    // nothing writes a request invoice any more, but a row from before 5 November 2026 must stay unchangeable: make one by hand to prove the trigger still holds
+    const inv = await prisma.v3ServiceInvoice.create({ data: { vendorId: A.vendorId, requestId: req.id, invoiceNumber: `LEGACY/${RUN_ID}`, financialYear: '2026-27', issuedAt: new Date(), ledgerEntryId: `legacy-${RUN_ID}`, snapshotJson: {}, taxBreakdownJson: {} } });
     await expect(prisma.$executeRaw`UPDATE "g4d_service_request_events" SET "note" = 'changed' WHERE "id" = ${ev.id}`).rejects.toThrow(/cannot be changed/);
     await expect(prisma.$executeRaw`DELETE FROM "g4d_service_request_events" WHERE "id" = ${ev.id}`).rejects.toThrow(/cannot be deleted/);
     await expect(prisma.$executeRaw`UPDATE "g4d_service_invoices" SET "invoiceNumber" = 'X' WHERE "id" = ${inv.id}`).rejects.toThrow(/cannot be changed/);
@@ -102,14 +104,13 @@ describe('service requests on staging (fake provider)', () => {
     expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'RELEASE', refId: { in: [a.body.data.id, b.body.data.id] } } })).toBe(2);
   });
 
-  it('twelve parallel requests by a wallet that can fund three succeed exactly three times; then three parallel approvals get consecutive invoice numbers', async () => {
+  it('twelve parallel requests by a wallet that can fund three succeed exactly three times; then three parallel approvals make three charges and no invoice', async () => {
     const bal = await wallet(B.vendorId); await api('post', `/v3/admin/wallets/${B.vendorId}/adjustments`, sup, { amountPaise: -(bal.balancePaise - bal.heldPaise - TOTAL * 3 - 1_000), reason: 'suite trim', idempotencyKey: key() });
     const rs = await Promise.all(Array.from({ length: 12 }, () => create(tokenB))); const ok = rs.filter((r) => r.status === 200);
     expect(ok).toHaveLength(3); expect(rs.filter((r) => r.status === 409 && r.body.code === 'INSUFFICIENT_WALLET')).toHaveLength(9);
     const ids = ok.map((r) => r.body.data.id as string); for (const id of ids) await work(id);
     await Promise.all(ids.map((id) => api('post', `/v3/me/service-requests/${id}/approve`, tokenB)));
-    const nums = (await prisma.v3ServiceInvoice.findMany({ where: { requestId: { in: ids } } })).map((i) => Number(i.invoiceNumber.split('/').pop())).sort((x, y) => x - y);
-    expect(nums).toHaveLength(3); expect(nums[2] - nums[0]).toBe(2);   // no number skipped between them
+    expect(await prisma.v3ServiceInvoice.count({ where: { requestId: { in: ids } } })).toBe(0); expect(await prisma.v3WalletLedger.count({ where: { vendorId: B.vendorId, kind: 'CHARGE', refId: { in: ids } } })).toBe(3);
     expect((await api('get', `/v3/admin/wallets/${B.vendorId}/reconcile`, ops)).body.data.ok).toBe(true);
   });
 

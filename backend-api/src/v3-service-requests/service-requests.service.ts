@@ -3,11 +3,10 @@ import { randomUUID } from 'crypto';
 import { ActivityBus } from '../common/activity-bus';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { Actor } from '../plans/admin/audit.service';
-import { financialYearOf, formatInvoiceNumber } from '../plan-billing/core/amounts';
 import { BillingSettingsService } from '../plan-billing/settings/billing-settings.service';
 import { consumeFromPurchases, fundingChoice, packRemainingFor, planStateAllows, PlanSnapshot, resolvePrice, trackAllows } from '../v3-services/core/services-core';
 import { ServicesStore, ServicesTx } from '../v3-services/services.store';
-import { computeTax } from '../v3-wallet/core/tax-core';
+import { deductionOutcome } from '../v3-wallet/core/tax-core';
 import { WalletRuleError } from '../v3-wallet/core/wallet-core';
 import { WalletSettingsService } from '../v3-wallet/settings/wallet-settings.service';
 import { postEntry } from '../v3-wallet/wallet-engine';
@@ -17,7 +16,7 @@ import { WalletStore, WalletTx } from '../v3-wallet/wallet.store';
 import { checkTransition, FundingKind, isAutoApprovable, isSlaBreached, moneyEffect, RequestActor, RequestStatus, validateBrief } from './core/request-core';
 import { PromotionGrantPort } from './promotion-grant.port';
 import { requestConflict, requestError, requestInvalid, requestNotFound } from './requests.errors';
-import { Creator, DeliverableKind, DeliverableRow, DuplicateRequestError, EventRow, InvoiceRow, RequestRow, RequestsStore, RequestsTx } from './requests.store';
+import { Creator, DeliverableKind, DeliverableRow, DuplicateRequestError, EventRow, RequestRow, RequestsStore, RequestsTx } from './requests.store';
 
 const KEY = /^[A-Za-z0-9_:-]{8,80}$/;
 const REF = /^[A-Za-z0-9/_.:-]{3,200}$/;
@@ -29,11 +28,11 @@ export interface CreateRequestInput { serviceKey: string; brief: unknown; attach
 /** What a vendor sees of an event: no staff identity. */
 const eventView = (e: EventRow) => ({ type: e.type, from: e.fromStatus, to: e.toStatus, by: e.actorType === 'STAFF' ? 'OUR_TEAM' : e.actorType === 'VENDOR' ? 'YOU' : 'SYSTEM', note: e.note, at: e.at });
 const deliverableView = (d: DeliverableRow) => ({ id: d.id, kind: d.kind, text: d.text, fileRef: d.kind === 'FILE_REF' ? d.fileRef : null, link: d.kind === 'LINK' ? d.fileRef : null, at: d.createdAt });
-const invoiceView = (i: InvoiceRow) => ({ invoiceNumber: i.invoiceNumber, financialYear: i.financialYear, issuedAt: i.issuedAt, snapshot: i.snapshot, taxBreakdown: i.taxBreakdown });
 
 /**
- * Service requests: team work paid by a plan allowance, a pack or the wallet (slice 5.16c, owner rule 1). A WALLET request HOLDS price plus tax when it is made (never a negative balance, never
- * a silent charge), CHARGES the hold when the vendor APPROVES the work and issues a tax invoice from the same gap-free series as plan invoices, and RELEASES it on cancel or rejection. A pack
+ * Service requests: team work paid by a plan allowance, a pack or the wallet (slice 5.16c, owner rule 1). A WALLET request HOLDS the price when it is made (never a negative balance, never
+ * a silent charge), CHARGES the hold when the vendor APPROVES the work, and RELEASES it on cancel or rejection. The price carries no GST and the charge no invoice (owner, 5 November 2026): GST was
+ * added when the credit was added, and that refill has the tax invoice; this charge is a ledger line and a line of the usage statement. A pack
  * unit or an allowance unit is set aside when the request is made and used on approval. Every step is one unit of work shared with the wallet and the services rows: all or nothing.
  * Settings are read BEFORE a unit opens, never inside one.
  */
@@ -52,15 +51,15 @@ export class ServiceRequestsService {
   }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── views
-  private view(req: RequestRow, extra: { events?: EventRow[]; deliverables?: DeliverableRow[]; invoice?: InvoiceRow | null; maxRevisions?: number | null } = {}) {
-    const tax = req.taxSnapshot as { lines?: unknown; taxMinor?: number; basePaise?: number };
+  private view(req: RequestRow, extra: { events?: EventRow[]; deliverables?: DeliverableRow[]; maxRevisions?: number | null } = {}) {
+    const snap = req.taxSnapshot as { basePaise?: number };
     const showWork = req.readyAt !== null;
     return {
       id: req.id, serviceKey: req.serviceKey, status: req.status, brief: req.brief, attachmentRefs: req.attachmentRefs, createdBy: req.createdByType === 'VENDOR' ? 'YOU' : 'OUR_TEAM', createdAt: req.createdAt,
-      funding: { kind: req.fundingKind, amountPaise: req.priceSnapshotPaise, heldPaise: req.fundingKind === 'WALLET' && !req.chargeLedgerId && ['REQUESTED', 'ACCEPTED', 'IN_PRODUCTION', 'READY_FOR_REVIEW', 'REVISION_REQUESTED'].includes(req.status) ? req.priceSnapshotPaise : 0, basePaise: tax.basePaise ?? null, taxPaise: tax.taxMinor ?? null, taxLines: tax.lines ?? null },
+      funding: { kind: req.fundingKind, amountPaise: req.priceSnapshotPaise, heldPaise: req.fundingKind === 'WALLET' && !req.chargeLedgerId && ['REQUESTED', 'ACCEPTED', 'IN_PRODUCTION', 'READY_FOR_REVIEW', 'REVISION_REQUESTED'].includes(req.status) ? req.priceSnapshotPaise : 0, basePaise: snap.basePaise ?? null },
       revisionsUsed: req.revisionsUsed, revisionsLeft: extra.maxRevisions === undefined || extra.maxRevisions === null ? null : Math.max(0, extra.maxRevisions - req.revisionsUsed),
       rejectReason: req.status === 'REJECTED_BY_TEAM' ? req.rejectReason : null, approvedAt: req.approvedAt, cancelledAt: req.cancelledAt,
-      ...(extra.events ? { events: extra.events.map(eventView) } : {}), ...(extra.deliverables ? { deliverables: showWork ? extra.deliverables.map(deliverableView) : [] } : {}), ...(extra.invoice !== undefined ? { invoice: extra.invoice ? invoiceView(extra.invoice) : null } : {}),
+      ...(extra.events ? { events: extra.events.map(eventView) } : {}), ...(extra.deliverables ? { deliverables: showWork ? extra.deliverables.map(deliverableView) : [] } : {}),
     };
   }
   private adminView(req: RequestRow) {
@@ -86,9 +85,8 @@ export class ServiceRequestsService {
     if (creator.type === 'STAFF_ON_BEHALF' && !(typeof creator.reason === 'string' && creator.reason.trim().length >= 5)) throw requestInvalid('SERVICE_REQUEST_INVALID', 'A reason of at least 5 characters is required to raise a request for a vendor.');
 
     await this.wallet.syncActivation(vendorId);
-    const [wRow, prices, rates] = await Promise.all([this.walletStore.wallet(vendorId), this.services.servicePrices(svc.id), this.services.taxRates()]);
-    const price = resolvePrice(prices, this.clock());
-    const tax = price ? computeTax({ amountMinor: price.amountPaise, taxInclusive: price.taxInclusive, buyerStateCode: wRow?.billingStateCode ?? null, sellerStateCode: ws.walletSellerStateCode, rates, now: this.clock(), category: price.taxCategory }) : null;
+    const price = resolvePrice(await this.services.servicePrices(svc.id), this.clock());
+    const tax = price ? deductionOutcome(price.amountPaise) : null;   // using credit costs exactly the price: the GST was added at the refill
     const feat = resolved.features[`services.included.${svc.key}`];
     const allowanceLimit = feat && feat.state === 'LIMITED' && feat.limit !== null ? feat.limit : null;
     const limits = { minPaise: ws.walletTopupMinPaise, maxPaise: ws.walletTopupMaxPaise };
@@ -118,7 +116,7 @@ export class ServiceRequestsService {
         if (choice.kind === 'WALLET' && tax && tax.ok && price) {
           const hold = await postEntry(wtx, { kind: 'HOLD', amountPaise: tax.totalMinor, idempotencyKey: `reqhold:${key}`, refType: 'service_request', refId: id, actor: { type: creator.actor.type, id: creator.actor.id }, now });
           holdLedgerId = hold.entry.id; priceSnapshotPaise = tax.totalMinor;
-          taxSnapshot = { priceId: price.id, basePaise: price.amountPaise, taxInclusive: price.taxInclusive, taxableMinor: tax.taxableMinor, taxMinor: tax.taxMinor, lines: tax.lines, intraState: tax.intraState, buyerStateCode: wRow?.billingStateCode ?? null, sellerStateCode: ws.walletSellerStateCode };
+          taxSnapshot = { priceId: price.id, basePaise: price.amountPaise, taxMinor: 0, note: 'GST was added when the credit was added; using credit carries no tax and no invoice' };
         }
         const req = await r.insertRequest({
           id, vendorId, serviceId: svc.id, status: 'REQUESTED', brief: input.brief as Record<string, unknown>, attachmentRefs: refs, priceSnapshotPaise, taxSnapshot, fundingKind: choice.kind, holdLedgerId, packPurchaseId: null,
@@ -147,7 +145,6 @@ export class ServiceRequestsService {
     const [d, ws] = await Promise.all([this.store.detail(req.id), this.walletSettings.get()]);
     return this.view(req, { ...d, maxRevisions: ws.serviceMaxRevisions });
   }
-  async invoices(vendorId: string, page: number, pageSize: number) { const r = await this.store.invoicesForVendor(vendorId, (page - 1) * pageSize, pageSize); return { items: r.items.map(invoiceView), page, pageSize, total: r.total }; }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── the steps
   private async mine(r: RequestsTx, id: string): Promise<RequestRow> { const req = typeof id === 'string' && id ? await r.getRequest(id) : null; if (!req) throw requestNotFound(); return req; }
@@ -199,27 +196,21 @@ export class ServiceRequestsService {
     return this.view(next, { maxRevisions: ws.serviceMaxRevisions });
   }
 
-  /** The vendor approves the work (or the auto-approval timer does, when staff switched it on): the hold becomes a CHARGE with a tax invoice, a pack unit is used, or an allowance unit stays used. Once. */
+  /** The vendor approves the work (or the auto-approval timer does, when staff switched it on): the hold becomes a CHARGE (a ledger line, no invoice), a pack unit is used, or an allowance unit stays used. Once. */
   async approve(vendorId: string, id: string, actor: Actor, by: 'VENDOR' | 'SYSTEM' = 'VENDOR') {
-    const [ws, b] = await Promise.all([this.walletSettings.get(), this.billing.get()]);
+    const ws = await this.walletSettings.get();
     const out = await this.store.unit(vendorId, async (r, stx, wtx) => {
       const req = await this.mine(r, id);
-      if (req.status === 'APPROVED') return { req, replay: true, invoice: await r.invoiceFor(req.id) };
+      if (req.status === 'APPROVED') return { req, replay: true };
       const now = this.clock();
       if (req.status !== 'READY_FOR_REVIEW') throw requestConflict('SERVICE_REQUEST_STATE', 'This work is not waiting for your approval.');
       const c = checkTransition({ from: req.status, to: 'APPROVED', by, hasDeliverable: true, serviceKey: req.serviceKey, grantEndsAt: req.grantEndsAt, revisionsUsed: req.revisionsUsed, maxRevisions: ws.serviceMaxRevisions, reason: null });
       if (!c.ok) throw requestConflict('SERVICE_REQUEST_STATE', 'That step is not possible from where this request is now.');
-      let chargeLedgerId: string | null = null; let packPurchaseId: string | null = null; let invoice: InvoiceRow | null = null;
+      let chargeLedgerId: string | null = null; let packPurchaseId: string | null = null;
       const effect = moneyEffect(req.fundingKind, 'APPROVED');
       if (effect === 'CHARGE_HOLD') {
         const charge = await postEntry(wtx, { kind: 'CHARGE', amountPaise: req.priceSnapshotPaise!, holdId: req.holdLedgerId!, idempotencyKey: `reqcharge:${req.id}`, refType: 'service_request', refId: req.id, reason: 'the vendor approved the work', actor: { type: actor.type, id: actor.id }, now });
-        chargeLedgerId = charge.entry.id;
-        const fy = financialYearOf(now); const n = await wtx.nextNumber('INVOICE', fy); const w = await wtx.wallet(); const t = req.taxSnapshot as { lines?: unknown; taxMinor?: number; taxableMinor?: number; taxInclusive?: boolean; basePaise?: number; intraState?: boolean };
-        invoice = await r.insertInvoice({
-          vendorId, requestId: req.id, invoiceNumber: formatInvoiceNumber(b.invoiceNumberPrefix, fy, n), financialYear: fy, issuedAt: now, ledgerEntryId: charge.entry.id,
-          snapshot: { seller: { name: b.invoiceSellerName, address: b.invoiceSellerAddress, gstin: b.invoiceSellerGstin, stateCode: ws.walletSellerStateCode }, buyer: { vendorId, stateCode: w?.billingStateCode ?? null, gstin: w?.billingGstin ?? null }, service: { key: req.serviceKey }, requestId: req.id, amountPaise: req.priceSnapshotPaise, currency: 'INR' },
-          taxBreakdown: { taxInclusive: t.taxInclusive ?? false, basePaise: t.basePaise ?? null, taxableMinor: t.taxableMinor ?? null, taxMinor: t.taxMinor ?? 0, lines: t.lines ?? [], intraState: t.intraState ?? null, totalMinor: req.priceSnapshotPaise },
-        });
+        chargeLedgerId = charge.entry.id;   // a ledger line and a line of the usage statement: no invoice (owner, 5 November 2026)
       } else if (effect === 'CONSUME_PACK') {
         // the unit was set aside when the request was made, so it is honoured even if the pack's date has passed since (the epoch makes every pack "not expired")
         const list = (await stx.purchasesFor(vendorId)).map((p) => ({ id: p.id, remaining: p.remaining, purchasedAt: p.purchasedAt, expiresAt: p.expiresAt }));
@@ -231,8 +222,8 @@ export class ServiceRequestsService {
       }
       if (!(await r.updateRequestCas(req.id, ['READY_FOR_REVIEW'], { status: 'APPROVED', approvedAt: now, ...(chargeLedgerId ? { chargeLedgerId } : {}), ...(packPurchaseId ? { packPurchaseId } : {}) }))) throw requestConflict('SERVICE_REQUEST_STATE', 'This request changed; please reload it.');
       await this.event(r, req, 'STATUS', { from: 'READY_FOR_REVIEW', to: 'APPROVED', actor: by === 'SYSTEM' ? SYSTEM : actor, note: by === 'SYSTEM' ? 'Approved automatically after the review time passed.' : null, meta: { charged: chargeLedgerId !== null, packPurchaseId } });
-      await r.audit(by === 'SYSTEM' ? SYSTEM : actor, 'service_request.approve', req.id, { status: 'READY_FOR_REVIEW' }, { status: 'APPROVED', funding: req.fundingKind, amountPaise: chargeLedgerId ? req.priceSnapshotPaise : null, invoice: invoice?.invoiceNumber ?? null, packPurchaseId });
-      return { req: { ...req, status: 'APPROVED' as RequestStatus, approvedAt: now, chargeLedgerId, packPurchaseId }, replay: false, invoice };
+      await r.audit(by === 'SYSTEM' ? SYSTEM : actor, 'service_request.approve', req.id, { status: 'READY_FOR_REVIEW' }, { status: 'APPROVED', funding: req.fundingKind, amountPaise: chargeLedgerId ? req.priceSnapshotPaise : null, packPurchaseId });
+      return { req: { ...req, status: 'APPROVED' as RequestStatus, approvedAt: now, chargeLedgerId, packPurchaseId }, replay: false };
     });
     if (!out.replay) this.emit('service_request.approved', vendorId, actor, { requestId: id, funding: out.req.fundingKind, by });
     await this.grantIfNeeded(vendorId, out.req);   // a replay also heals a grant that failed the first time
@@ -262,7 +253,7 @@ export class ServiceRequestsService {
   async adminGet(id: string) {
     const req = await this.store.adminGet(String(id).slice(0, 64)); if (!req) throw requestNotFound();
     const d = await this.store.detail(req.id);
-    return { ...this.adminView(req), events: d.events.map((e) => ({ type: e.type, from: e.fromStatus, to: e.toStatus, actorType: e.actorType, actorId: e.actorId, note: e.note, meta: e.meta, at: e.at })), deliverables: d.deliverables, invoice: d.invoice ? invoiceView(d.invoice) : null };
+    return { ...this.adminView(req), events: d.events.map((e) => ({ type: e.type, from: e.fromStatus, to: e.toStatus, actorType: e.actorType, actorId: e.actorId, note: e.note, meta: e.meta, at: e.at })), deliverables: d.deliverables };
   }
   private async asTeam<T>(id: string, fn: (r: RequestsTx, stx: ServicesTx, wtx: WalletTx, req: RequestRow, ws: Awaited<ReturnType<WalletSettingsService['get']>>) => Promise<T>): Promise<T> {
     const known = await this.store.adminGet(String(id).slice(0, 64)); if (!known) throw requestNotFound();

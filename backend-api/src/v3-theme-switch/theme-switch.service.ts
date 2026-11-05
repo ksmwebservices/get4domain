@@ -7,7 +7,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { planStateAllows, PlanSnapshot, resolvePrice } from '../v3-services/core/services-core';
 import { conflict as servicesConflict } from '../v3-services/services.errors';
 import { DuplicateError, ServicesStore } from '../v3-services/services.store';
-import { computeTax } from '../v3-wallet/core/tax-core';
+import { deductionOutcome } from '../v3-wallet/core/tax-core';
 import { WalletRuleError } from '../v3-wallet/core/wallet-core';
 import { WalletSettingsService } from '../v3-wallet/settings/wallet-settings.service';
 import { postEntry } from '../v3-wallet/wallet-engine';
@@ -50,14 +50,14 @@ export class ThemeSwitchService {
   private async plan(vendorId: string): Promise<PlanSnapshot> { const r = await this.entitlements.resolve(vendorId); return { level: (r.level as PlanSnapshot['level']) ?? null, subscriptionStatus: r.subscriptionStatus, suspended: r.suspended }; }
   private sign(payload: string): string { return createHmac('sha256', this.pepper.value()).update(`theme-preview:${payload}`).digest('base64url'); }
 
-  /** What the switch would cost, before the vendor confirms: the included switch, or the approved fee with its tax and how it would be paid. A fee with no approved price says so and cannot be bought. */
+  /** What the switch would cost, before the vendor confirms: the included switch, or the approved fee and how it would be paid. The fee carries no GST (it was added when the credit was added) and the charge no invoice (owner, 5 November 2026). A fee with no approved price says so and cannot be bought. */
   private async quote(vendorId: string, kind: SwitchKind) {
     if (kind !== 'PAID') return { kind, free: true as const, amountPaise: 0 };
     const svc = await this.services.serviceByKey('THEME_SWITCH');
     const price = svc ? resolvePrice(await this.services.servicePrices(svc.id), this.clock()) : null;
     if (!svc || !price) return { kind, free: false as const, priceNote: 'Price not set', funding: { kind: 'NONE', reason: 'PRICE_NOT_SET' } };
-    const [w, ws, rates] = await Promise.all([this.walletStore.wallet(vendorId), this.walletSettings.get(), this.services.taxRates()]);
-    const tax = computeTax({ amountMinor: price.amountPaise, taxInclusive: price.taxInclusive, buyerStateCode: w?.billingStateCode ?? null, sellerStateCode: ws.walletSellerStateCode, rates, now: this.clock(), category: price.taxCategory });
+    const w = await this.walletStore.wallet(vendorId);
+    const tax = deductionOutcome(price.amountPaise);
     const available = w ? w.balancePaise - w.heldPaise : 0;
     const funding = !w || w.status === 'INACTIVE' ? { kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' } : w.status === 'FROZEN' ? { kind: 'NONE', reason: 'WALLET_FROZEN' }
       : !tax.ok ? { kind: 'NONE', reason: 'TAX_NOT_SET', taxProblem: tax.problem } : available < tax.totalMinor ? { kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: tax.totalMinor - available } : { kind: 'WALLET', amountPaise: tax.totalMinor };

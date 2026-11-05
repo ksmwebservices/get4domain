@@ -29,7 +29,7 @@ describe('the fee: the first switch is included, every later one is paid', () =>
     expect(charges()).toHaveLength(0); expect((await wallet()).balancePaise).toBe(500_000); expect(w.pipe.vendors.get('v1')).toMatchObject({ stored: 'pro-b', published: 'pro-b' });
     expect(rows()[0]).toMatchObject({ ledgerEntryId: null, status: 'APPLIED' });
   });
-  it('the second switch is charged exactly the approved fee plus tax, once, from the wallet', async () => {
+  it('the second switch is charged exactly the approved fee (no tax, no invoice), once, from the wallet', async () => {
     await sw('pro-b'); const r = await sw('pro-c');
     expect(r).toMatchObject({ kind: 'PAID', status: 'APPLIED', amountPaise: THEME_FEE_TOTAL });
     expect(charges()).toHaveLength(1); expect(charges()[0]).toMatchObject({ amountPaise: -THEME_FEE_TOTAL, refType: 'theme_switch' }); expect((await wallet()).balancePaise).toBe(500_000 - THEME_FEE_TOTAL);
@@ -52,10 +52,10 @@ describe('the preview is free and stores nothing', () => {
     expect(p).toMatchObject({ themeId: 'pro-b', current: 'standard-a', alreadyActive: false, html: expect.stringContaining('pro-b'), css: '.x{}', fee: { kind: 'FREE_INCLUDED', free: true } });
     expect(JSON.stringify([w.themeStore.rows, w.store.ledger, await wallet(), w.themeStore.audits])).toBe(before); expect(w.pipe.calls.apply).toBe(0); expect(w.pipe.vendors.get('v1')!.stored).toBe('standard-a');
   });
-  it('tells the vendor the price before they confirm: the included switch, or the approved fee with tax and how it would be paid', async () => {
+  it('tells the vendor the price before they confirm: the included switch, or the approved fee (no tax) and how it would be paid', async () => {
     await sw('pro-b');
     const p = await w.themes.preview('v1', 'pro-c');
-    expect(p.fee).toMatchObject({ kind: 'PAID', free: false, price: { amountPaise: THEME_FEE_BASE, taxInclusive: false }, tax: { taxPaise: 5_382, totalPaise: THEME_FEE_TOTAL }, amountPaise: THEME_FEE_TOTAL, funding: { kind: 'WALLET', amountPaise: THEME_FEE_TOTAL } });
+    expect(p.fee).toMatchObject({ kind: 'PAID', free: false, price: { amountPaise: THEME_FEE_BASE, taxInclusive: false }, tax: { taxPaise: 0, totalPaise: THEME_FEE_TOTAL }, amountPaise: THEME_FEE_TOTAL, funding: { kind: 'WALLET', amountPaise: THEME_FEE_TOTAL } });
     await w.store.unit('v1', (tx) => postEntry(tx, { kind: 'CHARGE', amountPaise: 480_000, idempotencyKey: 'drain-0001', actor: { type: 'SYSTEM', id: null }, now: new Date(w.now.t) }));
     expect((await w.themes.preview('v1', 'pro-c')).fee).toMatchObject({ funding: { kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: THEME_FEE_TOTAL - (500_000 - THEME_FEE_TOTAL - 480_000) - THEME_FEE_TOTAL } });
   });
@@ -153,12 +153,13 @@ describe('what may be switched to, and by whom', () => {
     w.plan.subscriptionStatus = 'ACTIVE'; expect((await codeOf(sw('pro-b'))).code).toBe('THEME_ALREADY_ACTIVE'); expect((await codeOf(sw('nope-theme'))).code).toBe('THEME_NOT_ALLOWED');
     w.plan.suspended = true; expect((await codeOf(sw('pro-c'))).code).toBe('THEME_SWITCH_PLAN_STATE');
   });
-  it('a paid switch needs an approved price and workable tax', async () => {
+  it('a paid switch needs an approved price; tax is not needed (the GST was added at the refill) and no invoice is made', async () => {
     const x = themeWorld(); await x.seed(); await x.vendor('v1', 500_000); await x.themes.switchTheme('v1', { themeId: 'pro-b', idempotencyKey: key() }, x.vendorBy());
     expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('SERVICE_PRICE_NOT_SET');
-    await x.ensureFee(); x.wsettings.over = { ...x.wsettings.over, walletSellerStateCode: '' };
-    expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('TAX_NOT_CONFIGURED');
     expect(x.themeStore.rows.filter((r) => r.kind === 'PAID')).toEqual([]); expect(x.store.ledger.filter((e) => e.kind === 'CHARGE')).toHaveLength(0);
+    await x.ensureFee(); x.wsettings.over = { ...x.wsettings.over, walletSellerStateCode: '' };   // no seller state: the switch is still sold
+    expect((await x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy())).kind).toBe('PAID');
+    expect(x.store.ledger.filter((e) => e.kind === 'CHARGE')).toHaveLength(1); expect(x.store.receipts).toEqual([]);
   });
   it('the vendor\'s history is theirs alone and shows who did what', async () => {
     await sw('pro-b'); await sw('pro-c'); await sw('pro-b', 'v2');

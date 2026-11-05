@@ -42,23 +42,24 @@ describe('service requests API', () => {
   afterEach(async () => { await app.close(); });
 
   describe('vendor routes (/v3/me/service-requests), owner only', () => {
-    it('create holds the amount; the list and the detail show it; approving charges once and issues the invoice', async () => {
+    it('create holds the amount; the list and the detail show it; approving charges once and issues no invoice', async () => {
       const c = await send('/v3/me/service-requests', 'owner', body()); expect(c.status).toBe(200);
       expect(c.body.data).toMatchObject({ status: 'REQUESTED', funding: { kind: 'WALLET', amountPaise: POSTER_TOTAL, heldPaise: POSTER_TOTAL } }); expect(JSON.stringify(c.body)).not.toMatch(/vendorId|holdLedgerId|idempotency/);
       const id = c.body.data.id as string;
       expect((await get('/v3/me/service-requests', 'owner')).body.data.items).toHaveLength(1);
       await w.svcReq.setStatus(id, { to: 'ACCEPTED' }, { type: 'STAFF', id: 't', ip: null }); await w.svcReq.setStatus(id, { to: 'IN_PRODUCTION' }, { type: 'STAFF', id: 't', ip: null });
       await w.svcReq.addDeliverable(id, { kind: 'TEXT', text: 'Finished work.' }, { type: 'STAFF', id: 't', ip: null }); await w.svcReq.setStatus(id, { to: 'READY_FOR_REVIEW' }, { type: 'STAFF', id: 't', ip: null });
-      const a = await send(`/v3/me/service-requests/${id}/approve`, 'owner'); expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ status: 'APPROVED', invoice: { invoiceNumber: 'INV/2026-27/000001' } });
+      const a = await send(`/v3/me/service-requests/${id}/approve`, 'owner'); expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ status: 'APPROVED' }); expect(a.body.data).not.toHaveProperty('invoice');
       expect((await send(`/v3/me/service-requests/${id}/approve`, 'owner')).body.data.replay).toBe(true);
-      expect((await get('/v3/me/service-requests/invoices', 'owner')).body.data.total).toBe(1); expect((await get(`/v3/me/service-requests/${id}`, 'owner')).body.data.deliverables).toHaveLength(1);
+      expect((await get(`/v3/me/service-requests/${id}`, 'owner')).body.data.deliverables).toHaveLength(1);
+      expect((await get('/v3/me/service-requests/invoices', 'owner')).status).toBe(404);   // there is no invoice list: the refill has the tax invoice (GET /v3/me/wallet/topups/:id/invoice)
     });
     it('cancel releases; a revision needs a note; an unknown request is a 404', async () => {
       const c = await send('/v3/me/service-requests', 'owner', body()); expect((await send(`/v3/me/service-requests/${c.body.data.id}/cancel`, 'owner')).body.data.status).toBe('CANCELLED');
       expect((await send(`/v3/me/service-requests/${c.body.data.id}/revision`, 'owner', { note: 'x' })).status).toBe(400); expect((await get('/v3/me/service-requests/nope', 'owner')).status).toBe(404);
     });
     it('a team member and an anonymous caller are refused on every route and nothing is held', async () => {
-      const routes: Array<['get' | 'post', string]> = [['post', '/v3/me/service-requests'], ['get', '/v3/me/service-requests'], ['get', '/v3/me/service-requests/invoices'], ['get', '/v3/me/service-requests/x'], ['post', '/v3/me/service-requests/x/cancel'], ['post', '/v3/me/service-requests/x/approve'], ['post', '/v3/me/service-requests/x/revision']];
+      const routes: Array<['get' | 'post', string]> = [['post', '/v3/me/service-requests'], ['get', '/v3/me/service-requests'], ['get', '/v3/me/service-requests/x'], ['post', '/v3/me/service-requests/x/cancel'], ['post', '/v3/me/service-requests/x/approve'], ['post', '/v3/me/service-requests/x/revision']];
       for (const [m, url] of routes) {
         const r = m === 'get' ? await get(url, 'member') : await send(url, 'member', body()); expect([url, r.status]).toEqual([url, 403]);
         const a = m === 'get' ? await get(url) : await send(url, null, body()); expect([url, a.status]).toEqual([url, 401]);

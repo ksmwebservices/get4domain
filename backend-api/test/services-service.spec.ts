@@ -123,25 +123,25 @@ describe('what a vendor sees before confirming', () => {
   beforeEach(async () => { await w.price('POSTER_DESIGN', 50_000); });
   const poster = async (vendor = 'v1') => (await w.catalogue.vendorServices(vendor)).items.find((s) => s.key === 'POSTER_DESIGN')!;
 
-  it('what it includes, who does it, how approval works, the price and the tax, and how it would be paid (the wallet)', async () => {
+  it('what it includes, who does it, how approval works, the price (no tax: GST was added at the refill), and how it would be paid (the wallet)', async () => {
     await fundWallet('v1', 200_000); await w.svc.setBillingProfile('v1', { stateCode: '33' }, V1);
     expect(await poster()).toMatchObject({
       key: 'POSTER_DESIGN', name: 'Poster design', doneBy: 'TEAM', deliveryKind: 'TEAM_REQUEST', includesText: expect.stringMatching(/poster/i), approvalText: expect.stringMatching(/approve/i),
-      price: { amountPaise: 50_000, taxInclusive: false }, tax: { ok: true, intraState: true, taxMinor: 9_000, totalMinor: 59_000 }, funding: { kind: 'WALLET', amountPaise: 59_000 }, available: true,
+      price: { amountPaise: 50_000, taxInclusive: false }, tax: { ok: true, intraState: null, taxMinor: 0, lines: [], totalMinor: 50_000 }, funding: { kind: 'WALLET', amountPaise: 50_000 }, available: true,
     });
   });
-  it('another state pays IGST; no state at all, or no seller state, says tax is not set up and the service cannot be bought with money', async () => {
+  it('using credit carries no tax whatever the state: no state, another state, or no seller state all cost exactly the price (the GST was added at the refill)', async () => {
     await fundWallet('v1', 200_000);
-    expect((await poster()).tax).toEqual({ ok: false, problem: 'BUYER_STATE_MISSING' }); expect((await poster()).funding).toMatchObject({ kind: 'NONE', reason: 'TAX_NOT_SET' });
+    expect(await poster()).toMatchObject({ tax: { ok: true, taxMinor: 0, totalMinor: 50_000, lines: [] }, funding: { kind: 'WALLET', amountPaise: 50_000 } });   // no billing state at all
     await w.svc.setBillingProfile('v1', { stateCode: '29' }, V1);
-    expect((await poster()).tax).toMatchObject({ ok: true, intraState: false, lines: [{ name: 'IGST', amountMinor: 9_000 }] });
+    expect(await poster()).toMatchObject({ tax: { ok: true, taxMinor: 0, totalMinor: 50_000 }, funding: { kind: 'WALLET', amountPaise: 50_000 } });
     w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' };
-    expect((await poster()).tax).toEqual({ ok: false, problem: 'SELLER_STATE_MISSING' });
+    expect(await poster()).toMatchObject({ tax: { ok: true, taxMinor: 0, totalMinor: 50_000 }, funding: { kind: 'WALLET', amountPaise: 50_000 } });
   });
   it('a short wallet shows the exact shortfall; a wallet that is not open says so; a frozen one says so', async () => {
     await w.svc.setBillingProfile('v1', { stateCode: '33' }, V1).catch(() => undefined);
     await fundWallet('v1', 20_000); await w.svc.setBillingProfile('v1', { stateCode: '33' }, V1);
-    expect((await poster()).funding).toEqual({ kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: 39_000 });
+    expect((await poster()).funding).toEqual({ kind: 'NONE', reason: 'INSUFFICIENT_WALLET', shortfallPaise: 30_000 });
     expect((await poster('v2')).funding).toMatchObject({ kind: 'NONE', reason: 'WALLET_NOT_ACTIVE' });   // no wallet at all: that is what the vendor is told, not a tax problem
     await w.svc.setFrozen('v1', { frozen: true, reason: 'chargeback review' }, SUPER);
     expect((await poster()).funding).toMatchObject({ kind: 'NONE' });
@@ -193,13 +193,14 @@ describe('packs', () => {
     expect((await codeOf(w.catalogue.createPack({ key: 'POSTERS3', name: 'Again', description: 'The same key again.', items: [{ serviceKey: 'SEO_TASK', count: 1 }] }, OPS))).code).toBe('PACK_KEY_TAKEN');
   });
 
-  it('buying charges the exact price plus tax from the wallet, records the purchase and the ledger entry together, and the pack counts down from the full amount', async () => {
+  it('buying charges the exact price (no tax, no invoice) from the wallet, records the purchase and the ledger entry together, and the pack counts down from the full amount', async () => {
     const r = await buy();
-    expect(r).toMatchObject({ packKey: 'POSTERS3', paidPaise: 141_600, remaining: { POSTER_DESIGN: 3 }, replay: false });
+    expect(r).toMatchObject({ packKey: 'POSTERS3', paidPaise: 120_000, remaining: { POSTER_DESIGN: 3 }, replay: false });
     expect(r.expiresAt!.getTime() - w.clock().getTime()).toBe(90 * 86_400_000);
-    expect(await w.store.wallet('v1')).toMatchObject({ balancePaise: 358_400 });
-    const entry = w.store.ledger.find((e) => e.kind === 'PACK_PURCHASE')!; expect(entry).toMatchObject({ amountPaise: -141_600, refType: 'pack' });
-    const [row] = await w.services.purchasesFor('v1'); expect(row).toMatchObject({ ledgerEntryId: entry.id, priceSnapshotPaise: 141_600, taxSnapshot: { taxMinor: 21_600, basePaise: 120_000 } });
+    expect(await w.store.wallet('v1')).toMatchObject({ balancePaise: 380_000 });
+    const entry = w.store.ledger.find((e) => e.kind === 'PACK_PURCHASE')!; expect(entry).toMatchObject({ amountPaise: -120_000, refType: 'pack' });
+    const [row] = await w.services.purchasesFor('v1'); expect(row).toMatchObject({ ledgerEntryId: entry.id, priceSnapshotPaise: 120_000, taxSnapshot: { taxMinor: 0, basePaise: 120_000 } });
+    expect(w.store.receipts).toEqual([]);   // buying a pack creates no invoice of any kind
     expect(await w.svc.reconcileVendor('v1')).toMatchObject({ ok: true });
   });
   it('the same key returns the same purchase and charges once, even sent thirty times at once; a key used for another pack is refused', async () => {
@@ -212,32 +213,33 @@ describe('packs', () => {
   it('a short wallet is INSUFFICIENT_WALLET with the shortfall and the top-up that covers it, and nothing is written', async () => {
     await fundWallet('v2', 100_000); await w.svc.setBillingProfile('v2', { stateCode: '33' }, V2);
     const r = await codeOf(buy('pack-buy-key-0004', 'POSTERS3', 'v2', V2));
-    expect([r.status, r.code]).toEqual([409, 'INSUFFICIENT_WALLET']); expect(r.body).toMatchObject({ shortfallPaise: 41_600, suggestedTopupPaise: 41_600, minTopupPaise: 10_000 });
+    expect([r.status, r.code]).toEqual([409, 'INSUFFICIENT_WALLET']); expect(r.body).toMatchObject({ shortfallPaise: 20_000, suggestedTopupPaise: 20_000, minTopupPaise: 10_000 });
     expect(await w.services.purchasesFor('v2')).toEqual([]); expect(w.store.ledger.filter((e) => e.vendorId === 'v2' && e.kind === 'PACK_PURCHASE')).toHaveLength(0);
   });
-  it('is refused with its own code when the wallet is not open, the pack has no approved price, the tax is not set up, or an item cannot be bought now', async () => {
+  it('is refused with its own code when the wallet is not open, the pack has no approved price, or an item cannot be bought now (tax is not needed: the GST was added at the refill)', async () => {
     expect((await codeOf(buy('pack-buy-key-0005', 'POSTERS3', 'v3', { type: 'VENDOR', id: 'v3', ip: null }))).code).toBe('WALLET_NOT_ACTIVE');
     await w.pack('NO_PRICE', [{ serviceKey: 'SEO_TASK', count: 1 }], null);
     expect((await codeOf(buy('pack-buy-key-0006', 'NO_PRICE'))).code).toBe('SERVICE_PRICE_NOT_SET');
-    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' };
-    expect((await codeOf(buy('pack-buy-key-0007'))).code).toBe('TAX_NOT_CONFIGURED');
-    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '33' };
     state({ level: 'FREE', subscriptionStatus: 'EXPIRED' });
     expect((await codeOf(buy('pack-buy-key-0008'))).code).toBe('SERVICE_PLAN_STATE');
     state({ level: 'PRO', subscriptionStatus: 'ACTIVE' }); await w.catalogue.updateService('POSTER_DESIGN', { trackScope: ['professional'] }, OPS);
     expect((await codeOf(buy('pack-buy-key-0009'))).code).toBe('SERVICE_TRACK');
     expect(w.store.ledger.filter((e) => e.kind === 'PACK_PURCHASE')).toHaveLength(0);
   });
+  it('a pack is sold even with no seller state and no billing state: tax is not part of using credit', async () => {
+    w.wsettings.over = { ...w.wsettings.over, walletSellerStateCode: '' };
+    expect((await buy('pack-buy-key-0007')).paidPaise).toBe(120_000); expect(w.store.receipts).toEqual([]);
+  });
   it('a price changed after the purchase never changes what was paid (it was copied)', async () => {
     await buy(); const p = await w.catalogue.proposePrice('pack', 'POSTERS3', { amountPaise: 999_999 }, OPS);
     advanceDays(w, 1); await w.catalogue.approvePrice('pack', p.id, { effectiveFrom: new Date(w.clock().getTime() + 60_000).toISOString() }, SUPER);
-    expect((await w.services.purchasesFor('v1'))[0].priceSnapshotPaise).toBe(141_600);
+    expect((await w.services.purchasesFor('v1'))[0].priceSnapshotPaise).toBe(120_000);
   });
   it('forty parallel purchases with different keys by a wallet that can afford three: exactly three succeed and the books balance', async () => {
-    await fundWallet('v2', 430_000); await w.svc.setBillingProfile('v2', { stateCode: '33' }, V2);
+    await fundWallet('v2', 370_000); await w.svc.setBillingProfile('v2', { stateCode: '33' }, V2);
     const rs = await Promise.all(Array.from({ length: 40 }, (_, i) => buy(`pack-par-key-${String(i).padStart(4, '0')}`, 'POSTERS3', 'v2', V2).then(() => 'ok', (e) => (e as HttpException).getResponse() && ((e as HttpException).getResponse() as { code: string }).code)));
     expect(rs.filter((r) => r === 'ok')).toHaveLength(3); expect(rs.filter((r) => r === 'INSUFFICIENT_WALLET')).toHaveLength(37);
-    expect(await w.store.wallet('v2')).toMatchObject({ balancePaise: 430_000 - 3 * 141_600 });
+    expect(await w.store.wallet('v2')).toMatchObject({ balancePaise: 370_000 - 3 * 120_000 });
     expect((await w.services.purchasesFor('v2'))).toHaveLength(3); expect(await w.svc.reconcileVendor('v2')).toMatchObject({ ok: true });
   });
   it('a crash in the middle leaves neither a charge nor a purchase', async () => {
