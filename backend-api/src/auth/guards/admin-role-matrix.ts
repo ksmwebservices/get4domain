@@ -103,6 +103,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/service-requests': OPS_AND_SUPER, 'POST /v3/admin/service-requests/sla-sweep': OPS_AND_SUPER, 'POST /v3/admin/service-requests/auto-approve-run': OPS_AND_SUPER, 'GET /v3/admin/service-requests/:id': OPS_AND_SUPER,
   'POST /v3/admin/service-requests/:id/assign': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/status': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/deliverables': OPS_AND_SUPER, 'POST /v3/admin/service-requests/:id/reject': OPS_AND_SUPER,
   'POST /v3/admin/service-requests/:id/retry-grant': OPS_AND_SUPER, 'POST /v3/admin/vendors/:vendorId/service-requests': OPS_AND_SUPER,
+  // Batch 4 slice 5.16d: switching a vendor's theme for them, reviewing their switches and settling stuck ones: OPERATIONS and SUPER_ADMIN, MARKETING refused
+  'POST /v3/admin/vendors/:vendorId/site/theme/switch': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/site/theme/history': OPS_AND_SUPER, 'POST /v3/admin/theme-switches/recover': OPS_AND_SUPER,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);

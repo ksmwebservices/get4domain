@@ -88,3 +88,15 @@ Decisions:
 8. **`serviceMaxRevisions` is nullable with no default** and 0 is a valid answer; requests are refused while it is unset (the dispatch: "the loader requires staff to set it before enabling requests").
 
 OPEN QUESTIONS from this slice: which plans include how many of which services (staff set the `services.included.*` cells); how many changes (`serviceMaxRevisions`) and whether to switch auto-approval on and after how many days; whether a vendor's team members may see requests (built: owner only); whether a service done by VENDOR only (none seeded) needs any request flow.
+
+## 5.16d theme switch
+
+Tests first: the core, service, API and schema specs were written before the code they exercise and failed on missing modules first. The staging spec `test/theme-switch.int.spec.ts` is written and NOT RUN (no `.env.staging` in this session).
+
+What running the tests found: recovery could overwrite a newer switch (fixed with a conditional revert and per-vendor queueing); the wallet's state must come before price and tax in the error order; the filter now also forwards the `problem` field.
+
+Decisions: preview renders the home page directly and stores nothing; a heuristic hidden-field record replaces the missing editable-fields map (content is never changed; deviation from the dispatch); self-service is wallet only; the first Pro switch is free; gifts and restores do not count as switches.
+
+Protocol results: `lint:ci` 0 errors; `npm run build` ok; `test:ci` 120 suites, 2504 tests passed; `verify:migrations` 149/149; `verify-migrations-additive` 40/40; `verify:raw-sql` 929/929; route baseline 1036; role-matrix oracle 242.
+
+OPEN QUESTIONS: whether a theme switch charge needs its own tax invoice; whether more than the first switch should be included on higher plans; the price (PROPOSED 29900 paise, staff approve it).

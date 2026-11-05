@@ -68,6 +68,7 @@ model Vendor {
   v3WalletReceipts V3WalletReceipt[]
   v3PackPurchases V3PackPurchase[]
   v3ServiceRequests V3ServiceRequest[]
+  v3ThemeSwitches V3ThemeSwitch[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
   v3Invoices V3VendorInvoice[]
@@ -6065,4 +6066,50 @@ model V3ServiceInvoice {
 
   @@index([vendorId, issuedAt])
   @@map("g4d_service_invoices")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────── V3 theme switch service (slice 5.16d)
+enum V3ThemeSwitchKind {
+  FREE_INCLUDED
+  PAID
+  COMPLIMENTARY_STAFF
+  RESTORE
+}
+
+enum V3ThemeSwitchStatus {
+  PENDING
+  APPLIED
+  FAILED
+}
+
+/// One row per theme switch. FREE_INCLUDED is the one switch a Pro plan includes (the first); every later switch is PAID (the Theme Switch Service fee from the price book); COMPLIMENTARY_STAFF is a staff gift with a reason; RESTORE re-applies the stored theme after a lapse and a renewal (no charge, not counted as a switch).
+model V3ThemeSwitch {
+  id                 String              @id @default(cuid())
+  vendorId           String
+  siteId             String? // the vendor's site settings row at the time
+  fromThemeKey       String?
+  toThemeKey         String
+  kind               V3ThemeSwitchKind
+  performedByType    String // VENDOR | STAFF | SYSTEM
+  performedById      String?
+  serviceRequestId   String? // set when the vendor asked our team (slice 5.16c): that request carries the fee
+  ledgerEntryId      String?             @unique // the wallet CHARGE that paid for it
+  packPurchaseId     String? // the pack a unit of which paid for it
+  priceSnapshotPaise Int?
+  taxSnapshotJson    Json                @default("{}")
+  publicationId      String? // the publication snapshot the switch made (rollback to the previous one stays possible)
+  status             V3ThemeSwitchStatus @default(PENDING)
+  idempotencyKey     String
+  reason             String?
+  failureReason      String?
+  hiddenFieldsJson   Json                @default("[]") // content the new theme does not draw: kept, never removed, drawn again if the vendor switches back
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, updatedAt])
+  @@map("g4d_theme_switches")
 }

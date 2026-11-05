@@ -127,3 +127,24 @@ API:
 | `GET /v3/admin/service-requests` (filters: serviceKey, status, fundingKind, vendorId, slaBreached), `GET .../:id`, `POST .../:id/assign`, `POST .../:id/status` `{ to: ACCEPTED, IN_PRODUCTION or READY_FOR_REVIEW }`, `POST .../:id/deliverables`, `POST .../:id/reject` `{ reason }`, `POST .../:id/retry-grant`, `POST .../sla-sweep`, `POST .../auto-approve-run`, `POST /v3/admin/vendors/:vendorId/service-requests` (on behalf, with a `reason`) | OPERATIONS and SUPER_ADMIN (MARKETING refused) |
 
 (Later slices add their sections below.)
+
+## Slice 5.16d: theme switch
+
+Data (`g4d_theme_switches`, model `V3ThemeSwitch`, migration `20261121100000_v3_theme_switch`): vendorId, siteId, fromThemeKey, toThemeKey, kind (`FREE_INCLUDED`, `PAID`, `COMPLIMENTARY_STAFF`, `RESTORE`), performedByType and performedById, serviceRequestId, ledgerEntryId (unique: one switch per charge), packPurchaseId, priceSnapshotPaise, taxSnapshotJson, publicationId (the publication the switch made), status (`PENDING`, `APPLIED`, `FAILED`), idempotencyKey (unique per vendor), reason, failureReason, hiddenFieldsJson. The database refuses: a PAID switch with nothing that paid, a free or restoring switch that carries a charge, a gift with no reason (5 characters or more), and a non-positive price.
+
+Rules:
+1. The first switch on Pro is included (`FREE_INCLUDED`). Later switches are `PAID` at the approved THEME_SWITCH price plus tax, charged from the wallet. A staff gift (`COMPLIMENTARY_STAFF`, reason required) and an automatic restore (`RESTORE`) charge nothing and do not count as a switch.
+2. A preview draws the theme with the vendor's own content and stores nothing (no publication, no switch row, no ledger entry).
+3. A switch is a saga: a PENDING row and the CHARGE are written in one unit, then the site pipeline applies the theme (settings, build, publish as a NEW publication; the previous one is kept so rollback works), then the row becomes APPLIED. If the pipeline fails, the theme setting is put back, the charge is reversed (REVERSAL) and the row becomes FAILED. A stale PENDING row is finished or reversed by recovery.
+4. The wallet's own state (not open, frozen) is reported before a missing price or tax rate.
+5. Content is never modified by a switch. Fields the new theme does not use are recorded in `hiddenFieldsJson` (heuristic) and come back if the vendor switches back.
+6. Self-service is wallet only. Packs are used through a team service request.
+
+API:
+
+| Route | Who |
+|---|---|
+| `POST /v3/me/site/theme/preview` `{ themeId }`, `POST /v3/me/site/theme/switch` `{ themeId, idempotencyKey }`, `GET /v3/me/site/theme/history` | Vendor owner only |
+| `POST /v3/admin/vendors/:vendorId/site/theme/switch` `{ themeId, idempotencyKey, funding: COMPLIMENTARY or WALLET, reason }`, `GET /v3/admin/vendors/:vendorId/site/theme/history`, `POST /v3/admin/theme-switches/recover` `{ olderThanMinutes }` | OPERATIONS and SUPER_ADMIN |
+
+Stable codes: `THEME_ALREADY_ACTIVE`, `THEME_NOT_ALLOWED`, `THEME_SWITCH_PLAN_STATE`, `THEME_SWITCH_FAILED`, `THEME_SWITCH_INVALID`, `THEME_SWITCH_FREE_USE_DIRECT`, `THEME_SWITCH_NOT_FOUND`, plus the wallet codes (`INSUFFICIENT_WALLET` with `shortfallPaise` and `requiredPaise`).
