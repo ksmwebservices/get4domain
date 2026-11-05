@@ -59,6 +59,7 @@ Migration folders, in order (all additive, RLS on, no policy): `20261110100000_v
 ### Rules
 - **Never hide, hold or delete a business.** Only a REMOVED business is hidden (by-host: the uniform 404; directory: 410). A suspended, pending or expired vendor stays live as a Free listing-only site.
 - **Effective plan** (pure, in the entitlement engine): ACTIVE gives its plan; GRACE keeps the plan with `graceWarning`; after grace or when cancelled the track's Free plan (unless `downgradeBehaviour` is KEEP_UNTIL_REPLACED for expiry); a SUSPENDED vendor always gets Free and **overrides are ignored while suspended**.
+- **A suspended vendor cannot sign in (owner decision, 5 November 2026; existing Batch 2 behaviour, deliberate).** Every vendor route answers 401 while the vendor is SUSPENDED, including with a token issued earlier. The public site is still served and listed, as a Free listing-only site. Staff see the Free state through `GET /v3/admin/vendors/:id/entitlements`. Reinstating makes the same token work again and restores Pro with no re-purchase. The app must not be changed to allow sign-in; `lifecycle.int.spec.ts` asserts all of this and reinstates in a `finally` plus an `afterEach` so a failed assertion cannot leave the vendor suspended.
 - Nothing stored is deleted; a renewal restores Pro at once.
 - **Two deletion paths only:** (a) the owner's request with a fresh one-time code and a confirmation; (b) staff deletion of an EMPTY listing (no phone, no address detail, no description, no services, no media) while no paid plan runs.
 - **Retained after a removal:** plan invoices and payment records, terms acceptances, audit rows, the removal record, the hashed phone. Personal-data erasure beyond this is not built.
@@ -81,7 +82,11 @@ Deletion request, three calls to the same route:
 3. `{ "code": "123456", "confirm": true }` creates one open request: `{ "step": "REQUESTED", "warning": "...", "requestId": "...", "status": "PENDING" }`. Asking again while a request is open returns that same request. Every wrong, expired, used or locked code is the same `DELETION_CODE_INVALID`.
 
 ### Decision log
+5 November 2026 (owner): suspension blocks sign-in; the site stays served and listed as Free listing-only; reinstating restores Pro without a re-purchase. Do not allow sign-in for a suspended vendor.
 `chooseEffectivePlan` was extracted from `resolveEntitlements` and reuses the slice 5.1 grace arithmetic. Suspend was added although the dispatch did not name it (5.14 report handling needs it). Restore and convert go through the existing `SubscriptionsService.assignPlan` so the ledger records them. The settings registry (`b3-settings`) was created here.
+
+### OPEN QUESTIONS
+- **Account-deletion request by a suspended vendor.** Because a suspended vendor cannot sign in, they cannot reach `POST /v3/me/account/deletion-request`. Proposed: a support route (the vendor writes to support, staff verify identity and create the request on their behalf). Whether this is allowed, and what identity check it needs, is for counsel to decide. Nothing is built for it.
 
 ### Differences from the dispatch
 The do-not-contact register is created here, one slice earlier than 5.13a lists it, because a removal writes to it; 5.13a reuses it. Added: deletion of an empty listing is refused while a paid Pro plan runs.
