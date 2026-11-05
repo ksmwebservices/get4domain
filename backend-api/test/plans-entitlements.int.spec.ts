@@ -53,7 +53,7 @@ describe('entitlements on staging (real tables)', () => {
     expect(r.plan).toBe('handyman_free');
     expect(r.features['site.video'].state).toBe('LOCKED_PREVIEW');
     expect(r.features['site.pages']).toMatchObject({ state: 'LIMITED', limit: 1 });
-    expect(await svc.renderEntitlements(A.vendorId)).toEqual({ video: false, cart: false, booking: false, customDomain: false });
+    expect(await svc.renderEntitlements(A.vendorId)).toEqual({ video: false, cart: false, booking: false, customDomain: false, callsToAction: false });
   });
 
   it('a vendor with no subscription and the flag off is LEGACY; with the flag on it is UNASSIGNED', async () => {

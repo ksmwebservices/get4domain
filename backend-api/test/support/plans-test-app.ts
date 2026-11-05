@@ -12,11 +12,15 @@ import { PlansModule } from '../../src/plans/plans.module';
 import { PrismaModule } from '../../src/prisma/prisma.module';
 
 /** A slim app with the real PlansModule, the real JWT strategy and the same global guards, pipe, interceptor and filter as main.ts. Requires ./staging-env first. */
-export async function buildPlansTestApp(): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({
+export function plansTestModuleMetadata() {
+  return {
     imports: [PrismaModule, PassportModule, PlansModule],
     providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }],
-  }).compile();
+  };
+}
+
+export async function buildPlansTestApp(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule(plansTestModuleMetadata()).compile();
   const app = moduleRef.createNestApplication();
   app.useGlobalPipes(buildValidationPipe());
   app.useGlobalInterceptors(new TransformInterceptor());

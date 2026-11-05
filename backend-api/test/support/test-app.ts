@@ -20,15 +20,19 @@ import { VendorPaymentsModule } from '../../src/vendor-payments/vendor-payments.
  * same two global guards, pipe, interceptor and filter as main.ts/app.module.ts. Deliberately NOT AppModule and NOT
  * ConfigModule (which would load .env.local = production credentials). Requires ./staging-env to have run first.
  */
-export async function buildTestApp(): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({
+export function testAppModuleMetadata() {
+  return {
     imports: [PrismaModule, PassportModule, CrmModule, DomainAppModule, NotificationsModule, StockModule, VendorPaymentsModule],
     providers: [
       JwtStrategy,
       { provide: APP_GUARD, useClass: JwtAuthGuard },
       { provide: APP_GUARD, useClass: ModuleGuard },
     ],
-  }).compile();
+  };
+}
+
+export async function buildTestApp(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule(testAppModuleMetadata()).compile();
   const app = moduleRef.createNestApplication();
   app.useGlobalPipes(buildValidationPipe());
   app.useGlobalInterceptors(new TransformInterceptor());

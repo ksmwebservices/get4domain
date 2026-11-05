@@ -42,13 +42,29 @@ const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS, ...SEEDED_CONTROLLERS, 
  * the SiteProvisioner (so a test can make the site step fail once). Requires ./staging-env to have been imported first. Mail stays in EmailService's
  * capture mode (EMAIL_MODE=test) and the invite adapter is the sandbox, so nothing is sent.
  */
-export async function buildProvisioningTestApp(opts: { siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner; includeSiteApi?: boolean; includeDirectoryApi?: boolean; includeAiApi?: boolean; /** the Batch 3 API (settings, lifecycle) */ b3?: boolean; /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay }; /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean } = {}): Promise<INestApplication> {
-  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...(opts.b3 ? B3_PROVIDERS : []), ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
-  const moduleRef = await Test.createTestingModule({
+export interface ProvisioningTestOptions {
+  siteProvisioner?: (real: SiteProvisioner) => SiteProvisioner;
+  includeSiteApi?: boolean;
+  includeDirectoryApi?: boolean;
+  includeAiApi?: boolean;
+  /** the Batch 3 API (settings, lifecycle) */ b3?: boolean;
+  /** the plan billing API, with this FAKE provider (the staging suites never use a real one) */ billing?: { fake: FakeRazorpay };
+  /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean }
+
+/** The module definition, separate from the boot so a unit test can compile it (with a faked database) and catch a missing provider without staging. */
+export function provisioningTestModuleMetadata(opts: ProvisioningTestOptions = {}) {
+  // The Batch 3 PROVIDERS are always present: DIRECTORY_PROVIDERS, the site providers and others list services that inject B3SettingsService, the lifecycle service and the terms guard, whatever the option. Only the b3 API (controllers) is optional.
+
+  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+  return {
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
     controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
     providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers],
-  }).compile();
+  };
+}
+
+export async function buildProvisioningTestApp(opts: ProvisioningTestOptions = {}): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule(provisioningTestModuleMetadata(opts)).compile();
   const app = moduleRef.createNestApplication({ rawBody: true });   // the payment webhook is verified over the raw bytes
   if (opts.siteProvisioner) {
     const real = app.get(SiteProvisioner);
