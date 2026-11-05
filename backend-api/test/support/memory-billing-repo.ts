@@ -3,6 +3,7 @@ import {
   AssignArgs, BillingTx, DueSub, DuplicateOrderError, EventRow, InvoiceRow, NewOrder, OrderPatch, OrderRow, PlanBillingRepository, PlanRow, PriceRow, SubRow, VendorRow,
 } from '../../src/plan-billing/plan-billing.repository';
 import { Actor } from '../../src/plans/admin/audit.service';
+import { WalletTx } from '../../src/v3-wallet/wallet.store';
 import { DiscountRuleRow, TaxRateRow } from '../../src/plans/pricing/price-quote';
 
 export interface MemSub { id: string; vendorId: string; planId: string; status: string; startsAt: Date; endsAt: Date | null; graceEndsAt: Date | null; termMonths: number | null; amountPaise: number | null; current: boolean; source: string }
@@ -16,6 +17,9 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   audits: Array<{ actor: Actor; action: string; entityId: string | null; before: unknown; after: unknown }> = [];
   clock: () => Date = () => new Date();
   failAssignOnce = false;
+  /** Batch 4: the wallet's side of a transaction, and how to roll the wallet back with it (set by the wallet world; absent = no wallet) */
+  walletTxFor?: (vendorId: string) => Promise<WalletTx>;
+  walletSnapshot?: () => () => void;
   private n = 0; private chain: Promise<unknown> = Promise.resolve();
   private id(p: string): string { return `${p}-${++this.n}`; }
 
@@ -57,16 +61,18 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   async finishEvent(id: string, patch: { processedAt: Date; result: string; orderId?: string | null }) { const e = this.events.get(id)!; e.processedAt = patch.processedAt; e.result = patch.result; if (patch.orderId !== undefined) e.orderId = patch.orderId; }
   async listEvents(q: { orderId?: string; skip: number; take: number }) { const all = [...this.events.values()].filter((e) => !q.orderId || e.orderId === q.orderId); return { items: all.slice(q.skip, q.skip + q.take).map((e) => ({ ...e })), total: all.length }; }
 
-  async transaction<T>(_vendorId: string, fn: (tx: BillingTx) => Promise<T>): Promise<T> {
-    const run = this.chain.catch(() => undefined).then(() => this.atomic(fn)); this.chain = run.catch(() => undefined); return run;
+  async transaction<T>(vendorId: string, fn: (tx: BillingTx) => Promise<T>): Promise<T> {
+    const run = this.chain.catch(() => undefined).then(() => this.atomic(fn, vendorId)); this.chain = run.catch(() => undefined); return run;
   }
-  private async atomic<T>(fn: (tx: BillingTx) => Promise<T>): Promise<T> {
+  private async atomic<T>(fn: (tx: BillingTx) => Promise<T>, vendorId: string): Promise<T> {
+    const restoreWallet = this.walletSnapshot?.();
     const snap = { orders: new Map([...this.orders].map(([k, v]) => [k, { ...v, quote: { ...v.quote } }])), subs: this.subs.map((s) => ({ ...s })), inv: this.invoices.map((i) => ({ ...i })), cnt: new Map(this.counters), aud: this.audits.length };
-    try { return await fn(this.txObj()); } catch (e) { this.orders = snap.orders; this.subs = snap.subs; this.invoices = snap.inv; this.counters = snap.cnt; this.audits.length = snap.aud; throw e; }
+    try { return await fn(this.txObj(vendorId)); } catch (e) { restoreWallet?.(); this.orders = snap.orders; this.subs = snap.subs; this.invoices = snap.inv; this.counters = snap.cnt; this.audits.length = snap.aud; throw e; }
   }
-  private txObj(): BillingTx {
+  private txObj(vendorId: string): BillingTx {
     return {
-      getOrder: (id) => this.getOrder(id), updateOrderCas: (id, e, p) => this.updateOrderCas(id, e, p), currentSub: (v) => this.currentSub(v), vendor: (v) => this.vendor(v), getPlanById: (id) => this.getPlanById(id),
+      walletTx: this.walletTxFor ? () => this.walletTxFor!(vendorId) : undefined,
+      getOrder: (id) => this.getOrder(id), createOrder: (d) => this.createOrder(d), updateOrderCas: (id, e, p) => this.updateOrderCas(id, e, p), currentSub: (v) => this.currentSub(v), vendor: (v) => this.vendor(v), getPlanById: (id) => this.getPlanById(id),
       assign: async (a: AssignArgs) => {
         if (this.failAssignOnce) { this.failAssignOnce = false; throw new Error('assign failed'); }
         const plan = (await this.getPlanByKey(a.planKey))!; const price = this.prices.filter((p) => p.planId === plan.id && p.termMonths === a.termMonths && p.status === 'APPROVED' && p.effectiveFrom <= a.now)[0];

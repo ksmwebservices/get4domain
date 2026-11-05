@@ -1,5 +1,6 @@
 import { DiscountRuleRow, TaxRateRow } from '../plans/pricing/price-quote';
 import { Actor } from '../plans/admin/audit.service';
+import { WalletTx } from '../v3-wallet/wallet.store';
 import { OrderStatus } from './core/order-state';
 
 export type OrderKind = 'NEW' | 'RENEWAL' | 'UPGRADE';
@@ -30,6 +31,8 @@ export interface AssignArgs { vendorId: string; planKey: string; termMonths: num
 /** The writes that must happen together when a payment is settled: under a per-vendor lock, in one transaction. */
 export interface BillingTx {
   getOrder(id: string): Promise<OrderRow | null>;
+  /** Batch 4: an order made inside the transaction, so a plan renewal from the wallet leaves no order behind when the wallet cannot pay */
+  createOrder(d: NewOrder): Promise<OrderRow>;
   updateOrderCas(id: string, expected: OrderStatus[], patch: OrderPatch): Promise<boolean>;
   currentSub(vendorId: string): Promise<SubRow | null>;
   vendor(vendorId: string): Promise<VendorRow | null>;
@@ -40,6 +43,8 @@ export interface BillingTx {
   nextInvoiceNumber(financialYear: string): Promise<number>;
   insertInvoice(d: Omit<InvoiceRow, 'id'>): Promise<InvoiceRow>;
   audit(actor: Actor, action: string, entityId: string | null, before: unknown, after: unknown): Promise<void>;
+  /** Batch 4: the wallet's side of THIS transaction (plan renewal from the wallet: the charge and the term start commit together). Absent when the wallet module is not installed. */
+  walletTx?(): Promise<WalletTx>;
 }
 
 export abstract class PlanBillingRepository {

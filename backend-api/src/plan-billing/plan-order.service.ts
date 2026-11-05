@@ -7,6 +7,7 @@ import { OrderStatus } from './core/order-state';
 import { billingError, ORDER_NOT_FOUND_MESSAGE } from './plan-billing.errors';
 import { DuplicateOrderError, OrderRow, PlanBillingRepository } from './plan-billing.repository';
 import { PaymentsGate } from './razorpay/payments-gate';
+import { BillingSettings } from './settings/billing-settings';
 import { BillingSettingsService } from './settings/billing-settings.service';
 import { PaymentSettlementService } from './settlement.service';
 
@@ -47,25 +48,7 @@ export class PlanOrderService {
 
     const s = await this.settings.get();
     const port = await this.gate.port();   // refuses first when payments are off or not set up: no order row is created for nothing
-    if (!TERMS.includes(input.termMonths)) throw new BadRequestException(billingError('TERM_NOT_OFFERED', 'Choose a term of 3, 6 or 12 months.'));
-    const plan = await this.repo.getPlanByKey(String(input.planKey ?? ''));
-    if (!plan || plan.status !== 'ACTIVE' || !plan.isPublic || plan.level !== 'PRO') throw new ConflictException(billingError('PLAN_NOT_PURCHASABLE', 'That plan cannot be bought.'));
-    const sub = await this.repo.currentSub(vendorId);
-    if (!sub || sub.track !== plan.track) throw new ConflictException(billingError('PLAN_NOT_PURCHASABLE', 'That plan cannot be bought.'));
-    const price = await this.repo.activePrice(plan.id, input.termMonths, now);
-    if (!price) throw new ConflictException(billingError('PRICE_NOT_AVAILABLE', 'That plan and term has no approved price right now.'));
-    const tax = selectTaxRate(await this.repo.taxRates(), now);
-    if (!tax) throw new ConflictException(billingError('PRICE_NOT_AVAILABLE', 'The tax rate is not set up yet, so this cannot be priced.'));
-
-    const curStatus = effectiveStatus({ status: sub.status as never, endsAt: sub.endsAt, graceEndsAt: sub.graceEndsAt }, now, { graceDays: s.graceDays });
-    const curMonthly = sub.amountPaise !== null && sub.termMonths ? Math.floor(sub.amountPaise / sub.termMonths) : 0;
-    const kind = classifyChange({ planKey: sub.planKey, level: sub.level, monthlyPaise: curMonthly, endsAt: sub.endsAt, status: curStatus as never }, { planKey: plan.key, level: plan.level, monthlyPaise: Math.floor(price.amountPaise / input.termMonths) }, now);
-    if (kind === 'DOWNGRADE') throw new ConflictException(billingError('PLAN_CHANGE_NOT_ALLOWED', 'A cheaper plan can be chosen when your current term ends.'));
-    const credit = kind === 'UPGRADE' ? upgradeCreditPaise(s.upgradeProration, { amountPaise: sub.amountPaise, termMonths: sub.termMonths ?? 0, endsAt: sub.endsAt }, now) : 0;
-
-    const rules = resolveApplicableDiscounts(await this.repo.discountRules(), { now, termMonths: input.termMonths, planKey: plan.key, code: input.promoCode });
-    const quote = priceQuote({ basePaise: Math.max(0, price.amountPaise - credit), taxInclusive: price.taxInclusive, discounts: rules.applicable, taxRatePercent: tax.ratePercent });
-    if (!Number.isInteger(quote.totalMinor) || quote.totalMinor < 100) throw new ConflictException(billingError('ORDER_NOT_PAYABLE', 'This amount cannot be paid online. Please contact support.'));
+    const { plan, price, tax, kind, credit, quote } = await this.buildQuote(vendorId, input, now, s);
 
     let order: OrderRow;
     try {
@@ -86,6 +69,35 @@ export class PlanOrderService {
       throw new ConflictException(billingError('PAYMENT_PROVIDER_ERROR', 'The payment service could not start this order. Please try again.'));
     }
     return this.view((await this.repo.getOrder(order.id))!, port.publicKeyId());
+  }
+
+  /**
+   * The price of a plan purchase, from the plan tables only (never from the request): the plan and the term must be sellable, the current plan decides NEW, RENEWAL or UPGRADE (a
+   * downgrade is refused), the upgrade credit and discounts apply, the tax comes from the tax rates. Shared by the online order (create) and plan renewal from the wallet, so both
+   * charge exactly the same amount. Throws the same coded errors in the same order as before this was extracted.
+   */
+  async buildQuote(vendorId: string, input: { planKey: string; termMonths: number; promoCode?: string }, now: Date, s: BillingSettings) {
+    if (!TERMS.includes(input.termMonths)) throw new BadRequestException(billingError('TERM_NOT_OFFERED', 'Choose a term of 3, 6 or 12 months.'));
+    const plan = await this.repo.getPlanByKey(String(input.planKey ?? ''));
+    if (!plan || plan.status !== 'ACTIVE' || !plan.isPublic || plan.level !== 'PRO') throw new ConflictException(billingError('PLAN_NOT_PURCHASABLE', 'That plan cannot be bought.'));
+    const sub = await this.repo.currentSub(vendorId);
+    if (!sub || sub.track !== plan.track) throw new ConflictException(billingError('PLAN_NOT_PURCHASABLE', 'That plan cannot be bought.'));
+    const price = await this.repo.activePrice(plan.id, input.termMonths, now);
+    if (!price) throw new ConflictException(billingError('PRICE_NOT_AVAILABLE', 'That plan and term has no approved price right now.'));
+    const tax = selectTaxRate(await this.repo.taxRates(), now);
+    if (!tax) throw new ConflictException(billingError('PRICE_NOT_AVAILABLE', 'The tax rate is not set up yet, so this cannot be priced.'));
+
+    const curStatus = effectiveStatus({ status: sub.status as never, endsAt: sub.endsAt, graceEndsAt: sub.graceEndsAt }, now, { graceDays: s.graceDays });
+    const curMonthly = sub.amountPaise !== null && sub.termMonths ? Math.floor(sub.amountPaise / sub.termMonths) : 0;
+    const kind = classifyChange({ planKey: sub.planKey, level: sub.level, monthlyPaise: curMonthly, endsAt: sub.endsAt, status: curStatus as never }, { planKey: plan.key, level: plan.level, monthlyPaise: Math.floor(price.amountPaise / input.termMonths) }, now);
+    if (kind === 'DOWNGRADE') throw new ConflictException(billingError('PLAN_CHANGE_NOT_ALLOWED', 'A cheaper plan can be chosen when your current term ends.'));
+    const credit = kind === 'UPGRADE' ? upgradeCreditPaise(s.upgradeProration, { amountPaise: sub.amountPaise, termMonths: sub.termMonths ?? 0, endsAt: sub.endsAt }, now) : 0;
+
+    const rules = resolveApplicableDiscounts(await this.repo.discountRules(), { now, termMonths: input.termMonths, planKey: plan.key, code: input.promoCode });
+    const quote = priceQuote({ basePaise: Math.max(0, price.amountPaise - credit), taxInclusive: price.taxInclusive, discounts: rules.applicable, taxRatePercent: tax.ratePercent });
+    if (!Number.isInteger(quote.totalMinor) || quote.totalMinor < 100) throw new ConflictException(billingError('ORDER_NOT_PAYABLE', 'This amount cannot be paid online. Please contact support.'));
+
+    return { plan, sub, price, tax, kind, credit, quote };
   }
 
   private async replay(prior: OrderRow, input: { planKey: string; termMonths: number }): Promise<OrderView> {

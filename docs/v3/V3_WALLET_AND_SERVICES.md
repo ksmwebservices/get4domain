@@ -53,4 +53,18 @@ API (all under the `v3` prefix; the envelope is the platform's `{ success, statu
 
 Top-ups share the existing Razorpay webhook: the dispatch first looks for a plan order (unchanged); only when there is none does it ask the wallet whether the provider order is a top-up (`TopupSettlementHook`). Event results: `TOPUP_CREDITED`, `TOPUP_ALREADY_PAID`, `TOPUP_REVIEW`, `NO_ORDER`.
 
+### 5.16a-2 (rest): plan renewal from the wallet, and the tax rule
+
+`POST /v3/me/plan/renew-with-wallet` (Owner only) `{ planKey, termMonths (3, 6 or 12), idempotencyKey, promoCode? }` buys or renews a Pro plan with wallet credit. It extends the slice 5.1b order flow with a payment source WALLET; the online (Razorpay) path and its tests are unchanged.
+
+- **Same price as online.** Both paths use one quote (`PlanOrderService.buildQuote`): the amount comes from the plan tables, never from the request. A cheaper plan mid-term, a plan that cannot be bought and a term that is not offered are refused with the same codes as an online order.
+- **One unit of work** (the plan billing transaction, with the vendor's turn awaited in the in-process queue first): create the order, charge the wallet (ledger kind PLAN_RENEWAL, key `renew:<order id>`), then run the settlement body (`PaymentSettlementService.settleWithin`): order PAID with source WALLET, the term started through the existing subscription service, the plan invoice from the shared gap-free series, the audit row. All together or none of it.
+- **A short wallet** is 409 `INSUFFICIENT_WALLET` with `shortfallPaise`, `availablePaise`, `requiredPaise` and, when the limits are set, `suggestedTopupPaise`, `minTopupPaise`, `maxTopupPaise`. The unit is abandoned: no order, no ledger entry, no change. The same request key works after a top-up.
+- **A term that cannot start after the charge** gives the charge back with a REVERSAL entry (the money never left the wallet: not a refund), closes the order (CANCELLED) and answers 409 `WALLET_RENEWAL_INVALID` ("nothing was charged"). That request key then reports the same failure; a new key starts a new attempt. If the database itself fails the whole transaction rolls back, wallet and plan together.
+- **Exactly once.** The same key returns the first result (`replay: true`); twelve parallel submits charge once; a key used for a different plan, or by an online order, is `IDEMPOTENCY_CONFLICT`.
+- It works while online payments are switched off, and after the plan has run out (the balance is kept; the renewal is then a NEW term).
+- A subscription started this way has source SELF, so the wallet-activation rule treats it like any paid term.
+
+**The tax rule** (`core/tax-core.ts`, pure): a buyer in the SAME state as Get4Domain is taxed with CGST plus SGST; a buyer in ANOTHER state with IGST. The rows are recognised by name (IGST, CGST, SGST) in `g4d_tax_rates`, honouring active, the start date and the category (`appliesTo`, the exact category before ALL); nothing in code knows a rate. Without a seller state (`walletSellerStateCode`), a buyer state (the wallet's billing profile) or the needed rows the answer is a plain reason and the caller refuses to sell ("tax not set up"). Integer paise, half up per line; an inclusive price keeps its total and the last line absorbs the rounding, so the lines always add up. The services slices use it for the tax invoice of each charge. Plan renewals from the wallet use the plan quote's own tax (exactly the online amount); whether plan invoices must also be split into IGST or CGST plus SGST is an accountant question (OPEN QUESTIONS).
+
 (Later slices add their sections below.)

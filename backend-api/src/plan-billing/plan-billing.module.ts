@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PLAN_BILLING_CONTROLLERS, PLAN_BILLING_PROVIDERS } from './plan-billing.providers';
 import { PlanOrderService } from './plan-order.service';
+import { PlanBillingRepository } from './plan-billing.repository';
 import { PaymentsGate } from './razorpay/payments-gate';
 import { BillingSettingsService } from './settings/billing-settings.service';
 import { PaymentSettlementService } from './settlement.service';
@@ -15,6 +16,6 @@ import { PaymentSettlementService } from './settlement.service';
   imports: [PrismaModule],
   controllers: PLAN_BILLING_CONTROLLERS,
   providers: PLAN_BILLING_PROVIDERS,
-  exports: [PlanOrderService, PaymentSettlementService, BillingSettingsService, PaymentsGate],   // the wallet (Batch 4) reuses the payment seam and the order-expiry setting
+  exports: [PlanOrderService, PaymentSettlementService, BillingSettingsService, PaymentsGate, PlanBillingRepository],   // the wallet (Batch 4) reuses the payment seam and the order-expiry setting
 })
 export class PlanBillingModule {}

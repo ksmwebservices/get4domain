@@ -17,6 +17,8 @@ export const SUPER = { type: 'STAFF' as const, id: 'super-1', ip: null };
 export interface WalletWorld {
   store: MemoryWalletStore; fake: FakeRazorpay; gate: FakeGate; now: { t: Date }; wsettings: { over: Partial<WalletSettings> }; bsettings: { over: Partial<BillingSettings> };
   svc: V3WalletService; bus: ActivityBus; events: ActivityEvent[];
+  /** the settings readers the service was built with (the renewal service takes the same ones) */
+  settingsService: WalletSettingsService; billingService: BillingSettingsService;
   /** gives a vendor the evidence of a paid Pro term and opens the wallet */
   open(vendorId?: string): Promise<void>;
   /** top up through the real flow (create, pay, confirm) */
@@ -43,7 +45,7 @@ export function walletWorld(opts: { fake?: FakeRazorpay } = {}): WalletWorld {
     const p = fake.pay(t.providerOrderId!);
     await svc.confirmTopup(vendorId, t.id, { paymentId: p.paymentId, signature: p.signature }, actor);
   };
-  return { store, fake, gate, now, wsettings, bsettings, svc, bus, events, open, fund, clock: () => new Date(now.t) };
+  return { store, fake, gate, now, wsettings, bsettings, svc, bus, events, settingsService: settings, billingService: billing, open, fund, clock: () => new Date(now.t) };
 }
 export const advanceDays = (w: WalletWorld, days: number): void => { w.now.t = new Date(w.now.t.getTime() + days * 86_400_000); };
 export const advance = (w: WalletWorld, seconds: number): void => { w.now.t = new Date(w.now.t.getTime() + seconds * 1000); };

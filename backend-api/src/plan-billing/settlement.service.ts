@@ -7,13 +7,14 @@ import { financialYearOf, formatInvoiceNumber, renewalEnd, verifyPaidAmount } fr
 import { canTransitionOrder, OrderStatus } from './core/order-state';
 import { redactPaymentPayload } from './core/redact';
 import { billingError, ORDER_NOT_FOUND_MESSAGE } from './plan-billing.errors';
-import { OrderRow, PlanBillingRepository } from './plan-billing.repository';
+import { BillingTx, OrderRow, PlanBillingRepository } from './plan-billing.repository';
 import { PaymentsGate } from './razorpay/payments-gate';
+import { BillingSettings } from './settings/billing-settings';
 import { BillingSettingsService } from './settings/billing-settings.service';
 import { TopupSettlementHook } from './topup-hook';
 
 export type SettleOutcome = 'PAID' | 'ALREADY_PAID' | 'REVIEW' | 'IGNORED' | 'NO_ORDER';
-export interface SettleInput { orderId: string; paid: { paymentId: string; amount: number; currency: string }; via: 'CONFIRM' | 'WEBHOOK' | 'STAFF'; actor: Actor; reason: string | null }
+export interface SettleInput { orderId: string; paid: { paymentId: string; amount: number; currency: string }; via: 'CONFIRM' | 'WEBHOOK' | 'STAFF' | 'WALLET'; actor: Actor; reason: string | null }
 const SYSTEM: Actor = { type: 'SYSTEM', id: null, ip: null };
 
 /**
@@ -38,8 +39,25 @@ export class PaymentSettlementService {
     const order = await this.repo.getOrder(i.orderId);
     if (!order) return 'NO_ORDER';
     const s = await this.settings.get();
-    let paidPlanLevel: string | null = null;
-    const outcome = await this.repo.transaction(order.vendorId, async (tx) => {
+    const ctx: { planLevel: string | null } = { planLevel: null };
+    const outcome = await this.repo.transaction(order.vendorId, (tx) => this.settleWithin(tx, i, s, ctx));
+    if (outcome === 'PAID') this.afterPaid(order.vendorId, order.id, ctx.planLevel, i);
+    return outcome;
+  }
+
+  /** What follows a committed payment: the entitlements are forgotten and whoever listens is told (the wallet opens on it). Called by settle() and by plan renewal from the wallet. */
+  afterPaid(vendorId: string, orderId: string, planLevel: string | null, i: Pick<SettleInput, 'via' | 'actor'>): void {
+    this.entitlements.invalidate(vendorId);
+    void this.bus?.emit({ type: 'plan.order.paid', vendorId, at: this.clock(), actor: { type: i.actor.type, id: i.actor.id }, data: { orderId, planLevel, via: i.via } });
+  }
+
+  /**
+   * The body of a settlement, inside a transaction the CALLER opened: the online and offline paths wrap it in their own, plan renewal from the wallet runs it in the same transaction as the
+   * wallet charge so the charge, the paid order, the term and the invoice commit together or not at all. Settings are read by the caller BEFORE the transaction opens.
+   */
+  async settleWithin(tx: BillingTx, i: SettleInput, s: BillingSettings, ctx: { planLevel: string | null } = { planLevel: null }): Promise<SettleOutcome> {
+    {
+
       const o = await tx.getOrder(i.orderId);
       if (!o) return 'NO_ORDER' as const;
       if (o.status === 'PAID') return 'ALREADY_PAID' as const;
@@ -73,17 +91,12 @@ export class PaymentSettlementService {
         },
         taxBreakdown: { name: q.taxName ?? null, ratePercent: q.taxRatePercent ?? null, taxInclusive: q.taxInclusive ?? false, taxableMinor: q.taxableMinor ?? null, taxMinor: q.taxMinor ?? 0, creditPaise: q.creditPaise ?? 0, discounts: q.discounts ?? [] },
       });
-      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : 'SELF', reason: i.reason, subscriptionId: sub.id });
+      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id });
       if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
       await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice.invoiceNumber, via: i.via, amountPaise: o.amountPaise });
-      paidPlanLevel = plan.level;
+      ctx.planLevel = plan.level;
       return 'PAID' as const;
-    });
-    if (outcome === 'PAID') {
-      this.entitlements.invalidate(order.vendorId);
-      void this.bus?.emit({ type: 'plan.order.paid', vendorId: order.vendorId, at: this.clock(), actor: { type: i.actor.type, id: i.actor.id }, data: { orderId: order.id, planLevel: paidPlanLevel, via: i.via } });
     }
-    return outcome;
   }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── webhook

@@ -31,7 +31,19 @@ Tests added: `wallet-core.spec.ts` (45, including a 6000-step seeded random walk
 
 Checks run before the commit: `lint:ci` 0 errors; `npm run build` ok; unit suite **105 suites, 2174 tests, all passing** (was 99 and 2024: +6 suites, +150 tests); `verify:migrations` 143 files ok; `verify-migrations-additive` 37 passed; `verify:raw-sql` ok.
 
+## Slice 5.16a-2 (rest): plan renewal from the wallet, the tax rule
+Built: `PlanRenewalService` and `POST /v3/me/plan/renew-with-wallet`; `PlanOrderService.buildQuote` and `PaymentSettlementService.settleWithin` / `afterPaid` extracted from `create` and `settle` so the wallet path runs the SAME code as the online path (no copy of the quote or the settlement); `BillingTx.createOrder` and `BillingTx.walletTx` (the wallet's side of the billing transaction); `core/tax-core.ts`.
+
+Red first: `wallet-tax.spec.ts` and `wallet-renewal.spec.ts` failed with `Cannot find module` before the code existed. The refactor was checked against the existing suites BEFORE the new code used it: billing settlement, orders, API, core, gate, reminders and flow, 186 tests, all unchanged and passing.
+
+Decisions:
+1. **The unit of work.** The dispatch says the charge and the term start happen "in the same unit of work" and that a failed term start is reversed with a REVERSAL entry. Both are built: one transaction; an application-level failure after the charge writes the REVERSAL inside the same transaction and closes the order; a database-level failure rolls everything back (a REVERSAL cannot be written into an aborted transaction, and none is needed: nothing was committed).
+2. **No order is left behind by a short wallet.** The order is created inside the transaction (`BillingTx.createOrder`), so an INSUFFICIENT_WALLET refusal leaves nothing and the same key works after the top-up. After a failed term start a CANCELLED order remains (it records what happened) and its key reports the failure; a new key starts again.
+3. **Plan renewal tax.** The wallet charges exactly the online amount (one quote). The new IGST / CGST plus SGST rule is used by the services slices; it is not retrofitted to plan invoices, which keep the single-rate breakdown they have today. OPEN QUESTION below.
+4. **Activity events.** The typed bus now carries `plan.order.paid`, `subscription.assigned`, `wallet.activated`, `wallet.topup.credited`, `wallet.adjusted`, `wallet.frozen`, `wallet.unfrozen` and `wallet.expired`; later slices add the service and theme-switch events. No consumer exists yet (slice 5.20), which the dispatch accepts.
+
 OPEN QUESTIONS from this slice (also in the final report):
 - Whether a staff-granted Pro with no payment (a goodwill grant) should open the wallet. Built: it does not.
 - The tax treatment of an advance (a top-up) and the wording of the receipt are for counsel. The receipt says it is a receipt for credit and not a tax invoice.
 - `walletTopupMinPaise`, `walletTopupMaxPaise` (no defaults), and `walletSellerStateCode` (needed by the tax rule in the services slices) are for staff and the owner to set.
+- **IGST versus CGST plus SGST wording, and the advance-receipt treatment** (accountant): the rule is built and tested; the invoice wording, whether a plan invoice paid from the wallet must be split into the same components, and how an advance (a top-up) is treated for tax are not decided here.

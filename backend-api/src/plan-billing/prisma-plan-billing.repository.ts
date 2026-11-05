@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { WalletTxProvider } from '../v3-wallet/wallet.store';
 import { Prisma } from '@prisma/client';
 import { advisoryXactLock } from '../common/db-lock';
 import { KeyedQueue } from '../common/keyed-queue';
@@ -37,7 +38,7 @@ async function currentSubOn(db: Db, vendorId: string): Promise<SubRow | null> {
 export class PrismaPlanBillingRepository extends PlanBillingRepository {
   /** Waiting for a vendor's turn happens here, in memory, NOT inside a transaction (see keyed-queue.ts: pool starvation). */
   private readonly queue = new KeyedQueue();
-  constructor(private readonly prisma: PrismaService, private readonly audits: AuditService, private readonly subscriptions: SubscriptionsService) { super(); }
+  constructor(private readonly prisma: PrismaService, private readonly audits: AuditService, private readonly subscriptions: SubscriptionsService, @Optional() private readonly wallets?: WalletTxProvider) { super(); }
 
   async getPlanByKey(key: string) { const p = await this.prisma.v3Plan.findUnique({ where: { key } }); return p ? toPlan(p) : null; }
   async getPlanById(id: string) { const p = await this.prisma.v3Plan.findUnique({ where: { id } }); return p ? toPlan(p) : null; }
@@ -91,6 +92,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
       await advisoryXactLock(db, `plan-billing:${vendorId}`);
       const tx: BillingTx = {
         getOrder: async (id) => { const o = await db.v3PlanOrder.findUnique({ where: { id } }); return o ? toOrder(o) : null; },
+        createOrder: async (d) => toOrder(await db.v3PlanOrder.create({ data: { vendorId: d.vendorId, planId: d.planId, termMonths: d.termMonths, kind: d.kind, quoteJson: d.quote as Prisma.InputJsonValue, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById } })),
         updateOrderCas: async (id, expected, patch) => (await db.v3PlanOrder.updateMany({ where: { id, status: { in: expected } }, data: patchData(patch) })).count === 1,
         currentSub: (v) => currentSubOn(db, v),
         vendor: async (v) => { const r = await db.vendor.findUnique({ where: { id: v }, select: { id: true, name: true, businessName: true, email: true, phone: true } }); return r ? { ...r, phone: r.phone ?? null } : null; },
@@ -103,6 +105,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
         },
         insertInvoice: async (d) => toInvoice(await db.v3PlanInvoice.create({ data: { vendorId: d.vendorId, orderId: d.orderId, invoiceNumber: d.invoiceNumber, financialYear: d.financialYear, issuedAt: d.issuedAt, snapshotJson: d.snapshot as Prisma.InputJsonValue, taxBreakdownJson: d.taxBreakdown as Prisma.InputJsonValue } })),
         audit: (actor: Actor, action, entityId, before, after) => this.audits.record(db, actor, action, 'plan_order', entityId, before, after),
+        walletTx: this.wallets ? () => this.wallets!.forDb(db, vendorId) : undefined,
       };
       return fn(tx);
     }, { timeout: 30_000, maxWait: 15_000 }));

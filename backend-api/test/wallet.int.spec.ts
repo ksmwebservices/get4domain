@@ -129,6 +129,24 @@ describe('wallet on staging (fake provider)', () => {
     expect((await api('get', `/v3/admin/wallets/${A.vendorId}/reconcile`, t_sup)).body.data.ok).toBe(true);
   });
 
+  it('renewing the plan from the wallet charges, pays the order, extends the term and writes the invoice in one transaction; a short wallet leaves nothing behind', async () => {
+    const before = await prisma.v3PlanOrder.count({ where: { vendorId: A.vendorId } });
+    const short = await api('post', '/v3/me/plan/renew-with-wallet', tokenA, { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: key() });
+    expect([short.status, short.body.code]).toEqual([409, 'INSUFFICIENT_WALLET']); expect(short.body.shortfallPaise).toBeGreaterThan(0);
+    expect(await prisma.v3PlanOrder.count({ where: { vendorId: A.vendorId } })).toBe(before);   // no order was left behind
+    await topUp(tokenA, 400_000);
+    const k = key(); const body = { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: k };
+    const ok = await api('post', '/v3/me/plan/renew-with-wallet', tokenA, body);
+    expect(ok.status).toBe(200); expect(ok.body.data).toMatchObject({ status: 'PAID', paidWith: 'WALLET', amountPaise: 354_000, replay: false });
+    const order = await prisma.v3PlanOrder.findFirstOrThrow({ where: { vendorId: A.vendorId, idempotencyKey: k } }); expect(order).toMatchObject({ status: 'PAID', source: 'WALLET' });
+    expect(await prisma.v3PlanInvoice.count({ where: { orderId: order.id } })).toBe(1);
+    expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'PLAN_RENEWAL', refId: order.id } })).toBe(1);
+    expect(await walletOf(A.vendorId)).toMatchObject({ balancePaise: 46_000, heldPaise: 0 });
+    const again = await api('post', '/v3/me/plan/renew-with-wallet', tokenA, body); expect(again.body.data).toMatchObject({ replay: true, orderId: order.id });
+    expect(await prisma.v3WalletLedger.count({ where: { vendorId: A.vendorId, kind: 'PLAN_RENEWAL' } })).toBe(1);
+    expect((await api('get', `/v3/admin/wallets/${A.vendorId}/reconcile`, ops)).body.data.ok).toBe(true);
+  });
+
   it('credit past its date is written off exactly once by the expiry run, and the reconciliation still agrees', async () => {
     const t_ops = ops;
     await topUp(tokenA, 20_000);

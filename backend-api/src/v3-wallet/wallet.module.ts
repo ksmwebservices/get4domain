@@ -2,7 +2,8 @@ import { Global, Module, Provider, Type } from '@nestjs/common';
 import { PlanBillingModule } from '../plan-billing/plan-billing.module';
 import { TopupSettlementHook } from '../plan-billing/topup-hook';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AdminWalletController, MeWalletController } from './api/wallet.controllers';
+import { AdminWalletController, MePlanRenewController, MeWalletController } from './api/wallet.controllers';
+import { PlanRenewalService } from './plan-renewal.service';
 import { PrismaWalletStore, PrismaWalletTxProvider } from './prisma-wallet.store';
 import { WalletSettingsService } from './settings/wallet-settings.service';
 import { WalletActivationListener } from './wallet-activation.listener';
@@ -13,9 +14,9 @@ import { WalletStore, WalletTxProvider } from './wallet.store';
 /** Every provider and controller of the wallet slices in one list: the module and the HTTP unit tests use it. The services slices (packs, requests, theme switch) have their own modules and spend through WalletStore. */
 export const WALLET_PROVIDERS: Provider[] = [
   { provide: WalletStore, useClass: PrismaWalletStore }, { provide: WalletTxProvider, useClass: PrismaWalletTxProvider },
-  WalletSettingsService, V3WalletService, { provide: TopupSettlementHook, useExisting: V3WalletService }, WalletActivationListener, WalletCron,
+  WalletSettingsService, V3WalletService, { provide: TopupSettlementHook, useExisting: V3WalletService }, PlanRenewalService, WalletActivationListener, WalletCron,
 ];
-export const WALLET_CONTROLLERS: Type<unknown>[] = [MeWalletController, AdminWalletController];
+export const WALLET_CONTROLLERS: Type<unknown>[] = [MeWalletController, MePlanRenewController, AdminWalletController];
 
 /**
  * The V3 wallet (slices 5.16a and 5.16a-2). GLOBAL, like the terms module: plan billing asks it (optionally) about top-up payments and for a place in its transaction, and the services
@@ -27,6 +28,6 @@ export const WALLET_CONTROLLERS: Type<unknown>[] = [MeWalletController, AdminWal
   imports: [PrismaModule, PlanBillingModule],
   controllers: WALLET_CONTROLLERS,
   providers: WALLET_PROVIDERS,
-  exports: [V3WalletService, WalletStore, WalletTxProvider, TopupSettlementHook, WalletSettingsService],
+  exports: [V3WalletService, PlanRenewalService, WalletStore, WalletTxProvider, TopupSettlementHook, WalletSettingsService],
 })
 export class V3WalletModule {}

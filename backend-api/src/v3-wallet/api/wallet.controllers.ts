@@ -10,6 +10,8 @@ import { TenantContext } from '../../common/tenant/tenant.types';
 import { RATE } from '../../common/throttling';
 import { Actor } from '../../plans/admin/audit.service';
 import { actorOf } from '../../plans/admin/plans-admin.common';
+import { CreateOrderDto } from '../../plan-billing/api/dto/billing.dto';
+import { PlanRenewalService } from '../plan-renewal.service';
 import { V3WalletService } from '../wallet.service';
 import { AdjustWalletDto, AdminWalletsDto, BillingProfileDto, ConfirmTopupDto, CreateTopupDto, FreezeWalletDto, WalletPageDto } from './dto/wallet.dto';
 
@@ -47,6 +49,25 @@ export class MeWalletController {
 
   @Put('billing-profile') @ApiOperation({ summary: 'Set the state code and GST number used on tax invoices for services' })
   billingProfile(@Tenant() t: TenantContext, @Body() dto: BillingProfileDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.wallet.setBillingProfile(t.vendorId, dto, this.actor(user, req)); }
+}
+
+/**
+ * Buy or renew a Pro plan with wallet credit instead of the payment provider. OWNER ONLY (it spends money). The vendor is ALWAYS the verified principal's vendor. The amount is the plan price from
+ * the plan tables, never from the request; the answer for a short wallet is 409 INSUFFICIENT_WALLET with the exact shortfall and the top-up that covers it. Idempotent by key.
+ */
+@ApiTags('v3-wallet')
+@ApiBearerAuth()
+@UseTenant()
+@UseGuards(VendorOwnerGuard)
+@Controller('v3/me/plan')
+export class MePlanRenewController {
+  constructor(private readonly renewal: PlanRenewalService) {}
+
+  @Throttle(RATE.payment) @Post('renew-with-wallet') @HttpCode(200)
+  @ApiOperation({ summary: 'Buy or renew a Pro plan for 3, 6 or 12 months from wallet credit. The charge, the paid order, the new term and the invoice happen together or not at all; a term that cannot start gives the charge back.' })
+  renew(@Tenant() t: TenantContext, @Body() dto: CreateOrderDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    return this.renewal.renew(t.vendorId, dto, { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null });
+  }
 }
 
 /**

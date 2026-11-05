@@ -9,7 +9,8 @@ import { buildValidationPipe } from '../src/common/pipes/edit-validation.pipe';
 import { throttlerGuardProvider, throttlerImport } from '../src/common/throttling';
 import { Public } from '../src/common/decorators/public.decorator';
 import { WalletRuleError } from '../src/v3-wallet/core/wallet-core';
-import { AdminWalletController, MeWalletController } from '../src/v3-wallet/api/wallet.controllers';
+import { AdminWalletController, MePlanRenewController, MeWalletController } from '../src/v3-wallet/api/wallet.controllers';
+import { PlanRenewalService } from '../src/v3-wallet/plan-renewal.service';
 import { walletHttpError } from '../src/v3-wallet/wallet.errors';
 import { V3WalletService } from '../src/v3-wallet/wallet.service';
 import { walletWorld, WalletWorld } from './support/wallet-world';
@@ -25,7 +26,7 @@ class ShortfallDoor {
 }
 
 describe('wallet API', () => {
-  let app: INestApplication; let w: WalletWorld;
+  let app: INestApplication; let w: WalletWorld; const renewCalls: Array<{ vendorId: string; input: Record<string, unknown>; actor: Record<string, unknown> }> = [];
   const as = (role: string) => ({ 'x-test-principal': role });
   const get = (url: string, role?: string) => { const r = request(app.getHttpServer()).get(url); return role ? r.set(as(role)) : r; };
   const send = (m: 'post' | 'put', url: string, role: string | null, body: object = {}) => { const r = request(app.getHttpServer())[m](url); return (role ? r.set(as(role)) : r).send(body); };
@@ -34,8 +35,9 @@ describe('wallet API', () => {
   beforeEach(async () => {
     w = walletWorld();
     const mod = await Test.createTestingModule({
-      imports: [throttlerImport], controllers: [MeWalletController, AdminWalletController, ShortfallDoor],
-      providers: [throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, { provide: V3WalletService, useValue: w.svc }],
+      imports: [throttlerImport], controllers: [MeWalletController, MePlanRenewController, AdminWalletController, ShortfallDoor],
+      providers: [throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, { provide: V3WalletService, useValue: w.svc },
+        { provide: PlanRenewalService, useValue: { renew: async (vendorId: string, input: Record<string, unknown>, actor: Record<string, unknown>) => { renewCalls.push({ vendorId, input, actor }); return { orderId: 'o1', status: 'PAID', paidWith: 'WALLET' }; } } }],
     }).compile();
     app = mod.createNestApplication({ rawBody: true });
     app.use((req: { headers: Record<string, string>; user?: unknown }, _res: unknown, next: () => void) => {
@@ -109,6 +111,30 @@ describe('wallet API', () => {
       const missing = await send('post', '/v3/me/wallet/topups/nope/confirm', 'owner-2', { paymentId: p.paymentId, signature: p.signature });
       expect([cross.status, cross.body.code, cross.body.message]).toEqual([missing.status, missing.body.code, missing.body.message]);
       expect(cross.status).toBe(404);
+    });
+  });
+
+  describe('plan renewal from the wallet (/v3/me/plan/renew-with-wallet), owner only', () => {
+    const body = (over: object = {}) => ({ planKey: 'handyman_pro', termMonths: 3, idempotencyKey: key(), ...over });
+    beforeEach(() => { renewCalls.length = 0; });
+    it('the owner is served, and the vendor is the signed-in one, never one named in the body', async () => {
+      const r = await send('post', '/v3/me/plan/renew-with-wallet', 'owner', body());
+      expect(r.status).toBe(200); expect(r.body.data).toMatchObject({ status: 'PAID', paidWith: 'WALLET' });
+      expect(renewCalls).toHaveLength(1); expect(renewCalls[0].vendorId).toBe('v1'); expect(renewCalls[0].actor).toMatchObject({ type: 'VENDOR', id: 'v1' });
+      expect((await send('post', '/v3/me/plan/renew-with-wallet', 'owner', body({ vendorId: 'v2' }))).status).toBe(400);
+      expect(renewCalls).toHaveLength(1);
+    });
+    it('a team member and an anonymous caller are refused and nothing is spent', async () => {
+      expect((await send('post', '/v3/me/plan/renew-with-wallet', 'member', body())).status).toBe(403);
+      expect((await send('post', '/v3/me/plan/renew-with-wallet', null, body())).status).toBe(401);
+      expect((await send('post', '/v3/admin/wallets/expiry-run', 'owner')).status).toBe(403);
+      expect(renewCalls).toHaveLength(0);
+    });
+    it('DTO: a bad term, a short key, a bad plan key and any extra field (amount, price) are 400', async () => {
+      for (const bad of [{ termMonths: 5 }, { termMonths: 1 }, { termMonths: '3x' }, { idempotencyKey: 'short' }, { idempotencyKey: 'has spaces in it!!' }, { planKey: 'Handyman Pro' }, { amountPaise: 1 }, { amount: 1 }, { price: 1 }]) {
+        expect([JSON.stringify(bad), (await send('post', '/v3/me/plan/renew-with-wallet', 'owner', body(bad))).status]).toEqual([JSON.stringify(bad), 400]);
+      }
+      expect(renewCalls).toHaveLength(0);
     });
   });
 

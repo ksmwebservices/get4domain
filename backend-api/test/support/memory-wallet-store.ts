@@ -48,6 +48,11 @@ export class MemoryWalletStore extends WalletStore {
     });
   }
 
+  /** the wallet's side of a unit of work that another store (plan billing) opened: same rows, rolled back together by capture() */
+  txFor(vendorId: string): WalletTx { return this.tx(vendorId); }
+  /** a snapshot of everything; calling the returned function puts it all back */
+  capture(): () => void { const s = this.snapshot(); return () => this.restore(s); }
+
   private tx(vendorId: string): WalletTx {
     const mine = (): WalletRow | undefined => this.wallets.get(vendorId);
     return {
