@@ -13,7 +13,8 @@ import { WalletSettingsService } from '../v3-wallet/settings/wallet-settings.ser
 import { postEntry } from '../v3-wallet/wallet-engine';
 import { frozen, notActive, walletError, walletHttpError } from '../v3-wallet/wallet.errors';
 import { V3WalletService } from '../v3-wallet/wallet.service';
-import { WalletStore, walletKey, walletQueue } from '../v3-wallet/wallet.store';
+import { KeyedQueue } from '../common/keyed-queue';
+import { WalletStore } from '../v3-wallet/wallet.store';
 import { feeDecision, hiddenFields, SwitchKind } from './core/theme-switch-core';
 import { SitePipelinePort } from './site-pipeline.port';
 import { themeConflict, themeError, themeInvalid, themeNotFound } from './theme-switch.errors';
@@ -38,6 +39,13 @@ const b64 = (s: string): string => Buffer.from(s, 'utf8').toString('base64url');
  * theme is put back and the charge is given back with a REVERSAL entry, so a vendor is never left charged for a switch that did not happen. A crash between (1) and (3) leaves a PENDING row that recoverStale
  * settles from the site's real state. Nothing the vendor wrote is ever removed: the theme only changes how the same content is drawn.
  */
+/**
+ * One switch of a vendor at a time, in memory, BEFORE any transaction (a waiting request holds no database connection). It is NOT the wallet queue: the wallet unit of work (store.unit) waits in the
+ * wallet queue itself and takes the database lock, and the queue is not reentrant, so holding the wallet key here and then opening a unit would wait on ourselves for ever (found on staging, 6 November 2026).
+ */
+export const themeQueue = new KeyedQueue();
+export const themeKey = (vendorId: string): string => `themeswitch:${vendorId}`;
+
 @Injectable()
 export class ThemeSwitchService {
   clock: () => Date = () => new Date();
@@ -97,7 +105,7 @@ export class ThemeSwitchService {
     await this.wallet.syncActivation(vendorId);
     const ws = await this.walletSettings.get(); const limits = { minPaise: ws.walletTopupMinPaise, maxPaise: ws.walletTopupMaxPaise };
 
-    const out = await walletQueue.run(walletKey(vendorId), async () => {
+    const out = await themeQueue.run(themeKey(vendorId), async () => {
       const prior = await this.store.findByKey(vendorId, key);
       if (prior) { if (prior.toThemeKey !== themeId) throw new ConflictException(walletError('WALLET_IDEMPOTENCY_CONFLICT', 'That request key was already used for a different theme.')); return { row: prior, replay: true }; }
       const snap = await this.pipeline.snapshot(vendorId);
@@ -124,6 +132,10 @@ export class ThemeSwitchService {
       let row: SwitchRow;
       try {
         row = await this.store.unit(vendorId, async (t, _s, wtx) => {
+          // THE decision, made where the vendor's lock is held: from this vendor's own rows read inside the unit's transaction, never from the earlier read above (which only produced the quote and the early refusals).
+          // Two switches with different keys cannot both be the included one: the second runs after the first has been applied (themeQueue) and decides from its row; if the state changed under us in another process we refuse and the vendor retries.
+          const final = feeDecision(await t.priors(), { restore: false, staffComplimentary: by.funding === 'COMPLIMENTARY' });
+          if (final.kind !== decision.kind) throw themeConflict('THEME_SWITCH_RETRY', 'Your site changed while we were preparing this switch. Nothing was charged. Please try again.');
           if (by.funding === 'SERVICE_REQUEST' && !(await t.requestCarriesFee(by.serviceRequestId!, themeId))) throw themeConflict('THEME_SWITCH_INVALID', 'That service request does not carry this switch (it must be this vendor\'s open theme switch request for this theme).');
           let ledgerEntryId: string | null = null; let priceSnapshotPaise: number | null = null; let taxSnapshot: Record<string, unknown> = {};
           if (decision.kind === 'PAID' && by.funding !== 'SERVICE_REQUEST' && 'amountPaise' in q && q.amountPaise) {
@@ -174,7 +186,7 @@ export class ThemeSwitchService {
     const before = new Date(this.clock().getTime() - olderThanMinutes * 60_000); let applied = 0; let reversed = 0;
     for (const r of await this.store.stalePending(before, 50)) {
       // one vendor at a time, in the same in-process queue a live switch waits in, so recovery cannot race a switch that is happening now
-      await walletQueue.run(walletKey(r.vendorId), async () => {
+      await themeQueue.run(themeKey(r.vendorId), async () => {
         const cur = (await this.store.findByKey(r.vendorId, r.idempotencyKey)); if (!cur || cur.status !== 'PENDING') return;
         const snap = await this.pipeline.snapshot(r.vendorId);
         if (snap.storedThemeId === r.toThemeKey && (snap.publishedThemeId === r.toThemeKey || !snap.hasPublished)) { await this.store.unit(r.vendorId, (t) => t.updateCas(r.id, ['PENDING'], { status: 'APPLIED' })); applied++; }
@@ -188,7 +200,7 @@ export class ThemeSwitchService {
   /** When Pro returns and the stored theme is not the one published (it fell back during the lapse), the stored theme is applied again. No charge, and it is not counted as a switch. */
   async restoreIfNeeded(vendorId: string) {
     if (!planStateAllows('PRO_ACTIVE_OR_GRACE', await this.plan(vendorId))) return null;
-    const res = await walletQueue.run(walletKey(vendorId), () => this.pipeline.restore(vendorId, SYSTEM));
+    const res = await themeQueue.run(themeKey(vendorId), () => this.pipeline.restore(vendorId, SYSTEM));
     if (!res) return null;
     try {
       await this.store.unit(vendorId, async (t) => {
