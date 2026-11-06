@@ -8,7 +8,7 @@ import { findLegacyUse } from './support/legacy-scan';
  * never updated or deleted by hand. Every new Batch 4 module is added to MODULES as its slice lands.
  */
 const src = path.resolve(__dirname, '../src');
-const MODULES = ['v3-wallet', 'v3-services', 'v3-service-requests', 'v3-theme-switch'];
+const MODULES = ['v3-wallet', 'v3-services', 'v3-service-requests', 'v3-theme-switch', 'v3-activity'];
 const tsFiles = (dir: string): string[] => fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? tsFiles(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : [];
 const files = MODULES.flatMap((m) => tsFiles(path.join(src, m)));
 const rel = (f: string): string => path.relative(src, f).replace(/\\/g, '/');

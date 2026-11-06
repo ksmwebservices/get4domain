@@ -6117,3 +6117,92 @@ model V3ThemeSwitch {
   @@index([status, updatedAt])
   @@map("g4d_theme_switches")
 }
+
+// ── Batch 4B slice 5.20: activity log and alerts ─────────────────────────────────────────────────────────────────────
+
+enum V3ActivityActorType {
+  VENDOR_USER
+  STAFF
+  SYSTEM
+}
+
+enum V3AlertLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum V3AlertStatus {
+  NEW
+  LOOKING
+  RESOLVED
+  NOT_AN_ISSUE
+}
+
+/// Append-only record of what a vendor, a staff member or the system did. The summary has secrets removed and personal data masked before it is stored. The vendorId has no foreign key on purpose: the log outlives the row it describes. The database refuses every update, and refuses a delete while the vendor still exists.
+model V3ActivityLog {
+  id          String              @id @default(cuid())
+  vendorId    String?
+  actorType   V3ActivityActorType
+  actorId     String?
+  actionKey   String
+  entityType  String
+  entityId    String?
+  summaryJson Json                @default("{}")
+  ipHash      String?
+  at          DateTime            @default(now())
+
+  @@index([vendorId, at])
+  @@index([actionKey, at])
+  @@map("g4d_activity_log")
+}
+
+/// One row per alert rule. Seeded disabled with no thresholds; staff set the numbers and switch a rule on. The level and the key of a seeded rule are fixed by the owner's table.
+model V3AlertRule {
+  id                String       @id @default(cuid())
+  key               String       @unique
+  level             V3AlertLevel
+  thresholdJson     Json?
+  notifyRoles       String[]     @default([])
+  enabled           Boolean      @default(false)
+  updatedByStaffId  String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("g4d_alert_rules")
+}
+
+/// A notice to staff raised after an event. It never hides, deletes or freezes anything by itself.
+model V3Alert {
+  id           String        @id @default(cuid())
+  vendorId     String
+  ruleKey      String
+  level        V3AlertLevel
+  status       V3AlertStatus @default(NEW)
+  ownerStaffId String?
+  activityIds  String[]      @default([])
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  resolvedAt   DateTime?
+
+  @@index([status, level, createdAt])
+  @@index([vendorId, createdAt])
+  @@index([ownerStaffId, status])
+  @@map("g4d_alerts")
+}
+
+/// (Table name g4d_v3_notifications: g4d_notifications is the legacy Notification table and is not touched.) In-app notification for one staff member (userId) or for every staff member of a role. In-app only: nothing is sent outside.
+model V3Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  role      String?
+  kind      String
+  refId     String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([role, readAt])
+  @@map("g4d_v3_notifications")
+}

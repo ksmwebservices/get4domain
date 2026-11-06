@@ -40,6 +40,8 @@ const OWNER_ONLY_ROUTES = [
   'GET /v3/me/services', 'GET /v3/me/packs', 'POST /v3/me/packs/:key/purchase',
   // B4 slice 5.16d: a theme switch can charge the wallet and changes what the public sees (like PUT /v3/me/site/theme): owner only
   'POST /v3/me/site/theme/preview', 'POST /v3/me/site/theme/switch', 'GET /v3/me/site/theme/history',
+  // B4B slice 5.20: the owner's own activity rows describe money and the business's public face: owner only
+  'GET /v3/me/activity',
   // B4 slice 5.16c: a request holds and then charges the vendor's money and carries the work product: owner only
   'POST /v3/me/service-requests', 'GET /v3/me/service-requests', 'GET /v3/me/service-requests/:id', 'POST /v3/me/service-requests/:id/cancel', 'POST /v3/me/service-requests/:id/approve', 'POST /v3/me/service-requests/:id/revision',
   'POST /v3/me/plan/renew-with-wallet',   // B4 slice 5.16a-2: buying a plan with wallet credit spends money: owner only

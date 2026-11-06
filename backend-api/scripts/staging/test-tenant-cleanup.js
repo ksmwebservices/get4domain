@@ -41,11 +41,17 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     counts.v3AiProvider = (await prisma.v3AiProvider.deleteMany({ where: { createdByStaffId: { in: staffIds } } })).count;
     counts.v3AiPrompt = (await prisma.v3AiPrompt.deleteMany({ where: { createdByStaffId: { in: staffIds } } })).count;
   }
+  // Slice 5.20: activity rows a synthetic staff member wrote about nobody in particular (a rule change) have no vendor; the log refuses a delete only while its vendor exists, so these can go now.
+  if (staffIds.length) counts.v3ActivityLogStaff = (await prisma.v3ActivityLog.deleteMany({ where: { vendorId: null, actorType: 'STAFF', actorId: { in: staffIds } } })).count;
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
+  // Slice 5.20: alerts and their in-app notices have no foreign key; the notices are found through the alerts they point at.
+  const alertIds = (await prisma.v3Alert.findMany({ where: byVendor, select: { id: true } })).map((r) => r.id);
   const steps = [
+    ['v3Notifications', () => (alertIds.length ? prisma.v3Notification.deleteMany({ where: { refId: { in: alertIds } } }) : { count: 0 })],
+    ['v3Alerts', () => prisma.v3Alert.deleteMany({ where: byVendor })],
     ['callLogs', () => prisma.callLog.deleteMany({ where: byVendor })],
     ['campaignLeads', () => prisma.campaignLead.deleteMany({ where: byVendor })],
     ['campaignPages', () => prisma.campaignPage.deleteMany({ where: byVendor })],
@@ -64,6 +70,8 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     // the draft site the provisioning tests create (Vendor -> VendorCMS is RESTRICT, so it goes before the vendor)
     ['vendorCMS', () => prisma.vendorCMS.deleteMany({ where: byVendor })],
     ['vendors', () => prisma.vendor.deleteMany({ where: { id: { in: ids } } })],
+    // the activity log refuses a delete while its vendor exists (append-only trigger), so it goes AFTER the vendors
+    ['v3ActivityLog', () => prisma.v3ActivityLog.deleteMany({ where: byVendor })],
   ];
   for (const [name, run] of steps) counts[name] = (await run()).count;
   return counts;

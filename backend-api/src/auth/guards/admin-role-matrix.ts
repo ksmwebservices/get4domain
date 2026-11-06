@@ -105,6 +105,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/service-requests/:id/retry-grant': OPS_AND_SUPER, 'POST /v3/admin/vendors/:vendorId/service-requests': OPS_AND_SUPER,
   // Batch 4 slice 5.16d: switching a vendor's theme for them, reviewing their switches and settling stuck ones: OPERATIONS and SUPER_ADMIN, MARKETING refused
   'POST /v3/admin/vendors/:vendorId/site/theme/switch': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/site/theme/history': OPS_AND_SUPER, 'POST /v3/admin/theme-switches/recover': OPS_AND_SUPER,
+  // Batch 4B slice 5.20: alerts and the activity log describe money, payment methods and personal data: OPERATIONS and SUPER_ADMIN work them, MARKETING is refused everywhere. The rules themselves are SUPER_ADMIN only.
+  'GET /v3/admin/alerts': OPS_AND_SUPER, 'GET /v3/admin/alerts/:id': OPS_AND_SUPER, 'PATCH /v3/admin/alerts/:id': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/activity': OPS_AND_SUPER, 'GET /v3/admin/attention': OPS_AND_SUPER,
+  'GET /v3/admin/alert-rules': SUPER_ONLY, 'PUT /v3/admin/alert-rules': SUPER_ONLY,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);
