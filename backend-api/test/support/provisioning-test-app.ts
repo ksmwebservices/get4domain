@@ -36,6 +36,8 @@ import { REQUESTS_CONTROLLERS, REQUESTS_PROVIDERS } from '../../src/requests-ord
 import { TERMS_CONTROLLERS, TERMS_PROVIDERS } from '../../src/terms/terms.module';
 import { PrismaSiteLifecycle } from '../../src/seeded-sites/prisma-site-lifecycle';
 import { SiteLifecycle } from '../../src/site-publish/publish/site-lifecycle';
+import { KIT } from '../../src/site-publish/renderer/theme-render.service';
+import { Kit, loadKit } from '../../src/site-publish/renderer/renderer-loader';
 
 /** Batch 3 pieces, switched on with the b3 option; each slice appends its lists here. */
 const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS, { provide: SiteLifecycle, useClass: PrismaSiteLifecycle }, ...SEEDED_PROVIDERS, ...REQUESTS_PROVIDERS, ...TERMS_PROVIDERS];
@@ -58,13 +60,14 @@ export interface ProvisioningTestOptions {
   /** the Batch 4 service catalogue, price book and packs (needs wallet) */ services?: boolean;
   /** the Batch 4 service requests (needs services) */ requests?: boolean;
   /** the Batch 4 theme switch service (needs services; the site providers are always present) */ themeSwitch?: boolean;
+  /** wraps the theme kit this app serves (in memory only; the theme folders and the database are never touched), e.g. to add a synthetic second theme */ themeKit?: (real: Kit) => Kit;
   /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean }
 
 /** The module definition, separate from the boot so a unit test can compile it (with a faked database) and catch a missing provider without staging. */
 export function provisioningTestModuleMetadata(opts: ProvisioningTestOptions = {}) {
   // The Batch 3 PROVIDERS are always present: DIRECTORY_PROVIDERS, the site providers and others list services that inject B3SettingsService, the lifecycle service and the terms guard, whatever the option. Only the b3 API (controllers) is optional.
 
-  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), ...(opts.wallet ? [ActivityBus, ...WALLET_PROVIDERS] : []), ...(opts.services ? SERVICES_PROVIDERS : []), ...(opts.requests ? SERVICE_REQUESTS_PROVIDERS : []), ...(opts.themeSwitch ? THEME_SWITCH_PROVIDERS : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
+  const providers: Provider[] = [...PROVISIONING_PROVIDERS, ...SITE_PUBLISH_PROVIDERS, ...SITE_DOMAIN_PROVIDERS, ...DIRECTORY_PROVIDERS, ...(opts.includeAiApi ? AI_STUDIO_PROVIDERS : []), ...B3_PROVIDERS, ...(opts.billing ? [...PLAN_BILLING_PROVIDERS, { provide: PaymentsGate, useFactory: (s: BillingSettingsService) => new FakeGate(s as never, opts.billing!.fake), inject: [BillingSettingsService] }] : []), ...(opts.wallet ? [ActivityBus, ...WALLET_PROVIDERS] : []), ...(opts.services ? SERVICES_PROVIDERS : []), ...(opts.requests ? SERVICE_REQUESTS_PROVIDERS : []), ...(opts.themeSwitch ? THEME_SWITCH_PROVIDERS : []), ...(opts.themeKit ? [{ provide: KIT, useFactory: () => opts.themeKit!(loadKit()) }] : []), { provide: StarterService, useValue: { seed: async () => ({ filled: [], kept: [], itemsCreated: 0, designKey: 'none' }) } }];
   return {
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
     controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.wallet ? WALLET_CONTROLLERS : []), ...(opts.services ? SERVICES_CONTROLLERS : []), ...(opts.requests ? SERVICE_REQUESTS_CONTROLLERS : []), ...(opts.themeSwitch ? THEME_SWITCH_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],

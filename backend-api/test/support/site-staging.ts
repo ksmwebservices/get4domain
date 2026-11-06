@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { SubscriptionsService } from '../../src/plans/subscriptions/subscriptions.service';
+import { Kit } from '../../src/site-publish/renderer/renderer-loader';
 import { SeededTenant } from './fixtures';
 
 /** Helpers for the site staging suites. Everything created is synthetic (@v3test.invalid, V3TEST names) and removed by the repo's cleanup script. */
@@ -19,6 +20,25 @@ export async function makeSiteVendor(prisma: PrismaClient, subs: SubscriptionsSe
   await subs.provisionFreeSubscription(t.vendorId, 'handyman', 'STAFF');
   if (opts.pro) await subs.assignPlan({ vendorId: t.vendorId, planKey: 'handyman_pro', termMonths: 3, source: 'STAFF', actor: { type: 'STAFF', id: null, ip: null }, reason: 'v3test pro' });
   return { vendorId: t.vendorId, sub, host: siteHost(sub) };
+}
+
+/**
+ * A kit that serves one more theme than the real library: `extraId`, a clone of an existing theme (same files, same tracks and categories, another id). The library has ONE theme per track
+ * (handyman: free-service-pro only), so a suite that needs two themes to switch between must not depend on what is live; it adds its own, in memory only. The real themes keep their order, so the
+ * category default does not change. Nothing is written to the theme folders or the database, so there is nothing to clean up.
+ */
+export function kitWithExtraTheme(real: Kit, extraId: string, cloneOf = 'free-service-pro'): Kit {
+  const clone = () => { const t = real.loadTheme(cloneOf); return { ...t, manifest: { ...t.manifest, id: extraId, name: `V3TEST ${extraId}` } }; };
+  return Object.assign(Object.create(real) as Kit, {
+    listVendorThemeIds: () => [...real.listVendorThemeIds(), extraId],
+    loadTheme: (idOrDir: string) => (idOrDir === extraId ? clone() : real.loadTheme(idOrDir)),
+  });
+}
+
+/** Runs a promise-returning step but gives up after `ms` with a clear message; the timer is always cleared, so it can never keep jest alive. */
+export async function withTimeout<T>(label: string, ms: number, run: () => Promise<T>): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try { return await Promise.race([run(), new Promise<never>((_, rej) => { timer = setTimeout(() => rej(new Error(`${label} did not finish within ${ms} ms`)), ms); })]); } finally { if (timer) clearTimeout(timer); }
 }
 
 /**
