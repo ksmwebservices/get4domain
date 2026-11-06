@@ -132,3 +132,9 @@ OPEN QUESTIONS and the owner's staging commands for this follow-up are at the en
 **Answers.** Hire mapping confirmed; `walletTopupMinPaise` stays. `verify:commercial`: the two failing checks (admin nav config, Workspace menu) fail identically in `get4domain-b3` on `v3-b3`, so they pre-date this batch. No staging spec needs a staff setting; each sets and restores its own. Docs updated (`V3_S7_BATCH4.md`, `V3_WALLET_AND_SERVICES.md`); plan renewal open question removed; the owner staging commands are final in the last section of `V3_S7_BATCH4.md` (step 8 removed, no new migration folder).
 
 **Protocol.** unit suite 121 / 2541 passing; lint 0 errors; build ok; `verify:migrations` 151/151; `verify:raw-sql` 931/931. Not run: staging specs, migrations, loaders. No push.
+
+## Staging result and known limit (owner note of 6 November 2026)
+
+`v3-b4` passed staging on 6 November 2026: the theme-switch suite 7 of 7; the full run 37 of 38 suites, the one failure a database connection drop that passed on rerun; the cleanup count 0. It is pushed to `origin/v3-b4` (`83610cf`).
+
+**Known limit.** The per-vendor queue that serialises theme switches is in-process (`KeyedQueue`). Across separate server processes, a second theme switch can be treated as included while the first is still pending. Within one process the second switch waits and is charged correctly. Recorded here as a known limit of this version; no change was made in Batch 4B. A fix would need a database-level claim on the included switch (for example a unique partial index on the vendor's first applied or pending included switch) and is an OPEN QUESTION for the owner.
