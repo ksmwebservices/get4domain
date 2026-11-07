@@ -24,3 +24,7 @@ Worktree `C:\Get4Domain\get4domain-b4b`, branch `v3-b4b`, from `origin/v3-b4` (`
 **Protocol results.** Unit suite 128 suites / 2662 tests before the role-matrix oracle fix: 127 suites passed, the one failure was `admin-role-matrix.spec.ts` (its own route list needed the 7 new admin routes); fixed, that file now 266 of 266. Before this slice: 121 suites / 2541. Lint (no --fix) on all changed files: 0 errors. `nest build` and renderer build ok. `verify:migrations` 153/153, `verify-migrations-additive` 42/42, `verify:raw-sql` 944/944. Route baseline 1037 to 1045 (8 added: 7 admin, 1 owner-only authenticated; reviewed). Legacy static check (`b4-isolation`) now covers `v3-activity`. Tenant registry: `V3ActivityLog`, `V3Alert` classified.
 
 **NOT RUN:** `activity.int.spec.ts` (staging, no `.env.staging`), the migration SQL, `seed-v3-alert-rules.js` (dry run needs staging), `verify:db-lock`.
+
+## Slice 5.22: vendor 360, search, saved views, bulk actions: DEFERRED TO RELEASE 2
+
+OWNER CUT (7 November 2026): slice 5.22 is skipped in this run and moved to Release 2. Nothing of it is built: no `/v3/admin/vendors/:id/360`, no `/v3/admin/search`, no `g4d_saved_views`, no bulk actions framework. The 5.20 routes `GET /v3/admin/vendors/:vendorId/activity` and `GET /v3/admin/attention` stay as built and are the only staff views of a vendor this batch ships.
