@@ -116,13 +116,13 @@ describe('public views, visits, attribution and stats', () => {
     expect([...w.repo.visits.values()][0]).toMatchObject({ count: 60, searchCount: 20 });
   });
 
-  it('anything that cannot be visited is the same null: unknown, malformed, draft, suspended, removed, no vendor, no site address', async () => {
+  it('anything that cannot be visited is the same null: unknown, malformed, draft, removed, no vendor, no site address', async () => {
     await make();
     const none = await w.biz({ name: 'No Vendor' }); const nosite = await w.biz({ name: 'No Site', vendorId: 'vx' });
     const draft = await w.biz({ name: 'Draft One', vendorId: 'vd', status: 'DRAFT' }); const sus = await w.biz({ name: 'Susp One', vendorId: 'vs', status: 'SUSPENDED' }); const rem = await w.biz({ name: 'Rem One', vendorId: 'vr', status: 'REMOVED' });
     for (const id of ['vd', 'vs', 'vr']) w.repo.sites.set(id, { subdomain: id, proActive: false });
     w.repo.sites.set('vx', { subdomain: null, proActive: false });
-    for (const s of ['nope', 'Bad Slug!', '', '../x', none.slug, nosite.slug, draft.slug, sus.slug, rem.slug]) expect(await visits.visit(s, '1.1.1.1', false)).toBeNull();
+    for (const s of ['nope', 'Bad Slug!', '', '../x', none.slug, nosite.slug, draft.slug, rem.slug]) expect(await visits.visit(s, '1.1.1.1', false)).toBeNull();
     expect(w.repo.visits.size).toBe(0); expect(w.repo.visitRefs.size).toBe(0);
   });
 

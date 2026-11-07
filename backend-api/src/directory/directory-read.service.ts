@@ -11,6 +11,9 @@ import { DirectorySettingsService } from './settings/directory-settings.service'
 
 const TREE_TTL_MS = 60_000;
 
+/** Owner rule 6: a suspended listing is still listed, as the Free listing-only site it has become. Shown as the claimed or unclaimed listing it is; the stored status is not changed. */
+const shownAs = (b: BusinessRow): BusinessRow => (b.status === 'SUSPENDED' ? { ...b, status: b.claimedAt ? 'CLAIMED' : 'UNCLAIMED' } : b);
+
 export interface ListQuery { location?: string; category?: string; q?: string; page?: unknown; pageSize?: unknown }
 export interface ListResult { items: PublicListItem[]; page: number; pageSize: number; total: number; filters: { location: string | null; category: string | null; q: string }; indexable: boolean }
 
@@ -66,8 +69,9 @@ export class DirectoryReadService {
     const scope = { ...(loc ? { locationIds: descendantIds(t.loc, loc.id) } : {}), ...(cat ? { categoryIds: descendantIds(t.cat, cat.id) } : {}) };
     const { items, total } = await this.repo.search({ tokens: norm.tokens, text: norm.text, ...scope, skip, take: pageSize });
     const organic: PublicBusinessView[] = [];
-    const sitesOf = await this.siteContexts(items);
-    for (const b of items) organic.push(publicBusinessView(b, await this.context(b, false, t, sitesOf.get(b.id))));
+    const shownItems = items.map(shownAs);
+    const sitesOf = await this.siteContexts(shownItems);
+    for (const b of shownItems) organic.push(publicBusinessView(b, await this.context(b, false, t, sitesOf.get(b.id))));
     let merged: PublicListItem[] = organic;
     if (page === 1 && organic.length) {
       const wanted = Math.ceil(organic.length / s.directorySponsoredEvery);
@@ -90,9 +94,10 @@ export class DirectoryReadService {
     const b = await this.repo.getBusinessBySlug(key);
     if (!b) return null;
     if (b.status === 'REMOVED') return { gone: true };
-    if (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED') return null;
+    if (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED' && b.status !== 'SUSPENDED') return null;
+    const shown = shownAs(b);
     const t = await this.loadTrees();
-    return { gone: false, business: publicBusinessView(b, await this.context(b, b.status === 'CLAIMED', t, (await this.siteContexts([b])).get(b.id))) };
+    return { gone: false, business: publicBusinessView(shown, await this.context(shown, shown.status === 'CLAIMED', t, (await this.siteContexts([shown])).get(shown.id))) };
   }
 
   /** Paged business URLs for the sitemap: indexable and public only (removed, suspended, draft and noindex businesses never appear). */

@@ -10,7 +10,8 @@ import {
 } from './directory.repository';
 
 type Biz = Prisma.V3DirectoryBusinessGetPayload<Record<string, never>>;
-const VISIBLE = ['CLAIMED', 'UNCLAIMED'] as const;
+/** Owner rule 6: a suspension never hides a listing, so SUSPENDED is listed (as a Free listing-only site). Only REMOVED (and a draft) is out. */
+const VISIBLE = ['CLAIMED', 'UNCLAIMED', 'SUSPENDED'] as const;
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
 const toBusiness = (b: Biz): BusinessRow => ({
@@ -90,7 +91,7 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     }
     const tsq = toPrefixTsQuery(q.tokens);
     const useTrgm = await this.hasTrigram();
-    const conds: Prisma.Sql[] = [Prisma.sql`"status" IN ('CLAIMED', 'UNCLAIMED')`];
+    const conds: Prisma.Sql[] = [Prisma.sql`"status" IN ('CLAIMED', 'UNCLAIMED', 'SUSPENDED')`];
     if (q.categoryIds) conds.push(Prisma.sql`"categoryId" IN (${Prisma.join(q.categoryIds)})`);
     if (q.locationIds) conds.push(Prisma.sql`"locationId" IN (${Prisma.join(q.locationIds)})`);
     const match = useTrgm
@@ -110,7 +111,7 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
   countPublic(scope: { categoryIds?: string[]; locationIds?: string[] }) { return this.prisma.v3DirectoryBusiness.count({ where: this.scopeWhere(scope) }); }
 
   async sitemapPage(skip: number, take: number) {
-    const where: Prisma.V3DirectoryBusinessWhereInput = { status: { in: [...VISIBLE] }, indexable: true };
+    const where: Prisma.V3DirectoryBusinessWhereInput = { status: { in: ['CLAIMED', 'UNCLAIMED'] }, indexable: true };   // a suspended listing stays listed but is never put in the sitemap
     const [rows, total] = await Promise.all([this.prisma.v3DirectoryBusiness.findMany({ where, orderBy: { slug: 'asc' }, skip, take, select: { slug: true, updatedAt: true } }), this.prisma.v3DirectoryBusiness.count({ where })]);
     return { items: rows, total };
   }

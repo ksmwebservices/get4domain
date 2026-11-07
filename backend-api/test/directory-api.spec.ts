@@ -78,7 +78,7 @@ describe('directory API', () => {
       const un = await get('/v3/directory/businesses/unclaimed-co'); expect(un.body.data).toMatchObject({ phone: null, address: { city: 'Chennai' }, hours: {} });
       const gone = await get('/v3/directory/businesses/gone-co'); expect(gone.status).toBe(410); expect(gone.body.code).toBe('DIRECTORY_GONE');
       const unknown = await get('/v3/directory/businesses/nobody'); const susp = await get('/v3/directory/businesses/susp-co');
-      expect([unknown.status, susp.status]).toEqual([404, 404]); expect({ ...susp.body, timestamp: 0 }).toEqual({ ...unknown.body, timestamp: 0 });
+      expect(unknown.status).toBe(404); expect(susp.status).toBe(200); expect(susp.body.data).toMatchObject({ name: 'Susp Co' });   // owner rule 6: a suspended listing stays listed
       expect(JSON.stringify([live.body, un.body])).not.toMatch(/"vendorId"|"id"|"email"|"status"|"source"|\bva\b/);
     });
     it('sitemap data: indexable, public businesses only', async () => {

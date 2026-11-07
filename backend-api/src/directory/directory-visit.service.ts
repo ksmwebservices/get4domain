@@ -28,7 +28,7 @@ export class DirectoryVisitService {
     const key = String(slug ?? '').trim().toLowerCase().slice(0, 80);
     if (!SLUG.test(key)) return null;
     const b = await this.repo.getBusinessBySlug(key);
-    if (!b || (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED') || !b.vendorId) return null;
+    if (!b || (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED' && b.status !== 'SUSPENDED') || !b.vendorId) return null;
     const f = (await this.repo.siteFacts([b.vendorId], this.clock())).get(b.vendorId) ?? null;
     const siteUrl = siteUrlOf(f, process.env.SITE_BASE_DOMAIN || 'get4domain.com');
     return siteUrl ? { business: b, siteUrl } : null;

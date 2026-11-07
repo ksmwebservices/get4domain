@@ -61,10 +61,10 @@ describe('public read: what is exposed', () => {
     const text = JSON.stringify([list, await w.read.detail('linked-co'), await w.read.sitemapData(1, 10), await w.read.locations(), await w.read.categories()]);
     expect(text).not.toMatch(/vendor-secret|emailMasked|example\.com|vendorId|"id"|"status"|"source"|"ownerName"|"email"/);
   });
-  it('draft, suspended, removed and unknown businesses are not in the list; detail is 404 (null) for unknown, draft and suspended and "gone" for removed', async () => {
+  it('draft, removed and unknown businesses are not in the list; a suspended one IS listed (owner rule 6); detail is 404 (null) for unknown and draft and "gone" for removed', async () => {
     await w.biz({ name: 'Live Co' }); await w.biz({ name: 'Draft Co', status: 'DRAFT' }); await w.biz({ name: 'Susp Co', status: 'SUSPENDED' }); await w.biz({ name: 'Gone Co', status: 'REMOVED' });
-    expect((await w.read.list({})).items.map((i) => i.name)).toEqual(['Live Co']);
-    expect(await w.read.detail('draft-co')).toBeNull(); expect(await w.read.detail('susp-co')).toBeNull(); expect(await w.read.detail('nobody')).toBeNull(); expect(await w.read.detail('Bad Slug!!')).toBeNull();
+    expect((await w.read.list({})).items.map((i) => i.name).sort()).toEqual(['Live Co', 'Susp Co']);
+    expect(await w.read.detail('draft-co')).toBeNull(); expect(await w.read.detail('susp-co')).toMatchObject({ gone: false }); expect(await w.read.detail('nobody')).toBeNull(); expect(await w.read.detail('Bad Slug!!')).toBeNull();
     expect(await w.read.detail('gone-co')).toEqual({ gone: true });
   });
   it('sitemap data holds only indexable public businesses, with lastmod, paged', async () => {
@@ -151,10 +151,10 @@ describe('staff admin', () => {
     await w.admin.moderate(a.id, 'REMOVE', 'duplicate listing', STAFF);
     expect(await err(w.admin.updateBusiness(a.id, { name: 'X' }, STAFF))).toMatchObject({ code: 'DIRECTORY_STATE_INVALID', status: 409 });
   });
-  it('moderation: suspend hides it publicly, restore brings it back, remove makes the API answer "gone"; a reason is required; every step is audited', async () => {
+  it('moderation: suspend keeps it listed (never hides, owner rule 6), restore brings it back, remove makes the API answer "gone"; a reason is required; every step is audited', async () => {
     const a = await w.admin.createBusiness(base(), STAFF);
     expect(await err(w.admin.moderate(a.id, 'SUSPEND', '', STAFF))).toMatchObject({ code: 'DIRECTORY_INVALID' });
-    await w.admin.moderate(a.id, 'SUSPEND', 'reported by a customer', STAFF); expect(await w.read.detail(a.slug)).toBeNull();
+    await w.admin.moderate(a.id, 'SUSPEND', 'reported by a customer', STAFF); expect(await w.read.detail(a.slug)).toMatchObject({ gone: false }); expect((await w.read.list({})).items.map((i) => i.slug)).toContain(a.slug);
     expect(await err(w.admin.moderate(a.id, 'RESTORE', 'reviewed and fine', STAFF).then(() => w.admin.moderate(a.id, 'RESTORE', 'again', STAFF)))).toMatchObject({ code: 'DIRECTORY_STATE_INVALID' });
     expect((await w.read.detail(a.slug))).toMatchObject({ gone: false });
     await w.admin.moderate(a.id, 'REMOVE', 'owner requested removal', STAFF); expect(await w.read.detail(a.slug)).toEqual({ gone: true });

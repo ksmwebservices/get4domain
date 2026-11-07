@@ -67,7 +67,7 @@ export class MemoryDirectoryRepo extends DirectoryRepository {
   async replaceServices(id: string, items: Array<{ name: string; description: string }>) { this.services.set(id, items.map((s, i) => ({ id: this.id('svc'), businessId: id, name: s.name, description: s.description, sortOrder: i }))); }
   async replaceMedia(id: string, items: Array<{ url: string; altText: string; kind?: string }>) { this.media.set(id, items.map((m, i) => ({ id: this.id('med'), businessId: id, url: m.url, altText: m.altText, kind: m.kind ?? 'IMAGE', sortOrder: i }))); }
 
-  private visible(b: BusinessRow): boolean { return b.status === 'CLAIMED' || b.status === 'UNCLAIMED'; }
+  private visible(b: BusinessRow): boolean { return b.status === 'CLAIMED' || b.status === 'UNCLAIMED' || b.status === 'SUSPENDED'; }
   private inScope(b: BusinessRow, s: { categoryIds?: string[]; locationIds?: string[] }): boolean {
     return (!s.categoryIds || s.categoryIds.includes(b.categoryId)) && (!s.locationIds || (b.locationId !== null && s.locationIds.includes(b.locationId)));
   }
@@ -79,7 +79,7 @@ export class MemoryDirectoryRepo extends DirectoryRepository {
   }
   async countPublic(scope: { categoryIds?: string[]; locationIds?: string[] }) { return [...this.businesses.values()].filter((b) => this.visible(b) && this.inScope(b, scope)).length; }
   async sitemapPage(skip: number, take: number) {
-    const all = [...this.businesses.values()].filter((b) => this.visible(b) && b.indexable).sort((a, b) => a.slug.localeCompare(b.slug));
+    const all = [...this.businesses.values()].filter((b) => b.status !== 'SUSPENDED' && this.visible(b) && b.indexable).sort((a, b) => a.slug.localeCompare(b.slug));
     return { items: all.slice(skip, skip + take).map((b) => ({ slug: b.slug, updatedAt: b.updatedAt })), total: all.length };
   }
   async listForStaff(q: StaffBusinessQuery) {
