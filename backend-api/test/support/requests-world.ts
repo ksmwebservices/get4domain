@@ -32,7 +32,7 @@ export const key = (): string => `idem-key-${String(++keyN).padStart(8, '0')}-ab
 export const enquiry = (over: Partial<SubmitBody> = {}): SubmitBody => ({ kind: 'ENQUIRY', name: 'Meena R', phone: '98765 43210', email: 'meena@example.in', payload: { message: 'Do you do geyser repairs?' }, consent: consent(), idempotencyKey: key(), ...over });
 
 /** Two Pro ecommerce vendors (A and B) on two hosts, a Free vendor, everything in memory. */
-export async function requestsWorld(opts: { acceptance?: AcceptanceGuard } = {}) {
+export async function requestsWorld(opts: { acceptance?: AcceptanceGuard; takedowns?: { activeForVendor(vendorId: string): Promise<boolean> }; scan?: { scan(vendorId: string, source: 'PUBLISH' | 'REQUEST', texts: readonly string[]): Promise<void> } } = {}) {
   const dw = await directoryWorld();
   const store = new MemoryRequestsStore(); store.clock = () => new Date(T0);
   const lifecycle = new MemoryLifecycleStore(); lifecycle.clock = () => new Date(T0);
@@ -46,7 +46,7 @@ export async function requestsWorld(opts: { acceptance?: AcceptanceGuard } = {})
   const entSvc = { resolve: async (v: string) => ents.get(v) ?? entitlements('FREE', 'ecommerce') };
   const messaging = new MessagingService(store, b3svc as never, dw.pepper); messaging.clock = () => new Date(now.t);
   const gateway = new OwnGatewayGate(); gateway.env = {};
-  const pub = new PublicRequestsService(store, hosts as never, entSvc as never, lifecycle, dw.repo, dw.visits as unknown as DirectoryVisitService, b3svc as never, dw.pepper, messaging, catalogue, gateway, sms, { get: async () => ({ otpResendCooldownSeconds: 30, otpExpiryMinutes: 10, otpMaxAttempts: 5 }) } as never, 'https://app.example.test');
+  const pub = new PublicRequestsService(store, hosts as never, entSvc as never, lifecycle, dw.repo, dw.visits as unknown as DirectoryVisitService, b3svc as never, dw.pepper, messaging, catalogue, gateway, sms, { get: async () => ({ otpResendCooldownSeconds: 30, otpExpiryMinutes: 10, otpMaxAttempts: 5 }) } as never, 'https://app.example.test', opts.takedowns as never, opts.scan as never);
   pub.clock = () => new Date(now.t); pub.random = () => 123456; let sn = 0; pub.salt = () => `salt-${++sn}`;
   const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never, opts.acceptance); vendor.clock = () => new Date(now.t);
   const webhook = new VendorWebhookService(store, vendor);

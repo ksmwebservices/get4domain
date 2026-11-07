@@ -164,9 +164,9 @@ describe('AlertsService: list and change', () => {
 });
 
 describe('AlertsService: the rules', () => {
-  it('lists the ten seeded rules, all off and with no numbers', async () => {
+  it('lists the eleven seeded rules, all off and with no numbers', async () => {
     const r = await w.alerts.rules();
-    expect(r).toHaveLength(10); expect(r.every((x) => !x.enabled && x.thresholdJson === null)).toBe(true);
+    expect(r).toHaveLength(11); expect(r.every((x) => !x.enabled && x.thresholdJson === null)).toBe(true);
   });
   it('a rule with no numbers can be switched on, and the change is audited with the staff member', async () => {
     const r = await w.alerts.updateRule('DOMAIN_CHANGED', staff, { enabled: true, notifyRoles: ['OPERATIONS'] });
@@ -224,23 +224,23 @@ describe('AlertsService: the attention board', () => {
 
 describe('the rule loader', () => {
   const fresh = () => { const s = new MemoryActivityStore(); return { s, port: { existing: async () => (await s.listRules()).map((r) => r.key), create: (rows: Parameters<MemoryActivityStore['createRulesIfMissing']>[0]) => s.createRulesIfMissing(rows) } }; };
-  it('a dry run writes nothing and names the ten rules it would create', async () => {
+  it('a dry run writes nothing and names the eleven rules it would create', async () => {
     const { s, port } = fresh(); const r = await loadAlertRules(port, { apply: false });
-    expect(r.toCreate).toHaveLength(10); expect(r.created).toEqual([]); expect(s.rules).toHaveLength(0);
+    expect(r.toCreate).toHaveLength(11); expect(r.created).toEqual([]); expect(s.rules).toHaveLength(0);
   });
-  it('apply creates the ten rules disabled, with no numbers, at the owner\'s levels, and tells no role for the log-only rule', async () => {
+  it('apply creates the eleven rules disabled, with no numbers, at the owner\'s levels, and tells no role for the log-only rule', async () => {
     const { s, port } = fresh(); await loadAlertRules(port, { apply: true });
-    expect(s.rules).toHaveLength(10);
+    expect(s.rules).toHaveLength(11);
     expect(s.rules.every((x) => !x.enabled && x.thresholdJson === null)).toBe(true);
-    expect(Object.fromEntries(s.rules.map((x) => [x.key, x.level]))).toEqual({ PAYMENT_METHOD_CHANGED: 'HIGH', BUSINESS_IDENTITY_CHANGED: 'HIGH', CAMPAIGN_SPIKE: 'HIGH', PAYMENT_FAILURES: 'HIGH', PROHIBITED_TEXT: 'HIGH', DOMAIN_CHANGED: 'MEDIUM', LARGE_IMPORT: 'MEDIUM', PLAN_STATE_CHANGED: 'MEDIUM', LISTING_DELETION_REQUESTED: 'MEDIUM', THEME_SWITCHED: 'LOW' });
+    expect(Object.fromEntries(s.rules.map((x) => [x.key, x.level]))).toEqual({ PAYMENT_METHOD_CHANGED: 'HIGH', BUSINESS_IDENTITY_CHANGED: 'HIGH', CAMPAIGN_SPIKE: 'HIGH', PAYMENT_FAILURES: 'HIGH', PROHIBITED_TEXT: 'HIGH', DOMAIN_CHANGED: 'MEDIUM', LARGE_IMPORT: 'MEDIUM', PLAN_STATE_CHANGED: 'MEDIUM', LISTING_DELETION_REQUESTED: 'MEDIUM', THEME_SWITCHED: 'LOW', PAYEE_NAME_MISMATCH: 'HIGH' });
     expect(s.rules.find((x) => x.key === 'THEME_SWITCHED')!.notifyRoles).toEqual([]);
   });
   it('run twice, it changes nothing the second time and never overwrites what staff set', async () => {
     const { s, port } = fresh(); await loadAlertRules(port, { apply: true });
     await s.updateRule('LARGE_IMPORT', { enabled: true, thresholdJson: { rows: 99 } }, 'staff');
     const again = await loadAlertRules(port, { apply: true });
-    expect(again.created).toEqual([]); expect(again.alreadyThere).toHaveLength(10);
+    expect(again.created).toEqual([]); expect(again.alreadyThere).toHaveLength(11);
     expect(s.rules.find((x) => x.key === 'LARGE_IMPORT')).toMatchObject({ enabled: true, thresholdJson: { rows: 99 } });
   });
-  it('the seed holds exactly the ten rules and no threshold', () => { expect(ALERT_RULE_SEED).toHaveLength(10); expect(JSON.stringify(ALERT_RULE_SEED)).not.toMatch(/threshold|enabled/i); });
+  it('the seed holds exactly the eleven rules and no threshold', () => { expect(ALERT_RULE_SEED).toHaveLength(11); expect(JSON.stringify(ALERT_RULE_SEED)).not.toMatch(/threshold|enabled/i); });
 });

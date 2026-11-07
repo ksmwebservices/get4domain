@@ -72,6 +72,8 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     ['vendors', () => prisma.vendor.deleteMany({ where: { id: { in: ids } } })],
     // the activity log refuses a delete while its vendor exists (append-only trigger), so it goes AFTER the vendors
     ['v3ActivityLog', () => prisma.v3ActivityLog.deleteMany({ where: byVendor })],
+    // slice 5.21: a takedown refuses a delete while its vendor or listing exists (trigger), so it goes after the vendors; proofs go with the vendor (cascade)
+    ['v3Takedowns', () => prisma.v3Takedown.deleteMany({ where: byVendor })],
   ];
   for (const [name, run] of steps) counts[name] = (await run()).count;
   return counts;

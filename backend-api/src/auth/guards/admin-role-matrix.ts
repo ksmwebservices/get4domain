@@ -108,6 +108,11 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Batch 4B slice 5.20: alerts and the activity log describe money, payment methods and personal data: OPERATIONS and SUPER_ADMIN work them, MARKETING is refused everywhere. The rules themselves are SUPER_ADMIN only.
   'GET /v3/admin/alerts': OPS_AND_SUPER, 'GET /v3/admin/alerts/:id': OPS_AND_SUPER, 'PATCH /v3/admin/alerts/:id': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/activity': OPS_AND_SUPER, 'GET /v3/admin/attention': OPS_AND_SUPER,
   'GET /v3/admin/alert-rules': SUPER_ONLY, 'PUT /v3/admin/alert-rules': SUPER_ONLY,
+  // Batch 4B slice 5.21: reports, proofs and the block list carry personal data: OPERATIONS and SUPER_ADMIN, MARKETING refused. The prohibited phrases and the creating and reversing of a legal takedown are SUPER_ADMIN only.
+  'GET /v3/admin/business-reports': OPS_AND_SUPER, 'PATCH /v3/admin/business-reports/:id': OPS_AND_SUPER, 'GET /v3/admin/trust-blocklist': OPS_AND_SUPER, 'POST /v3/admin/trust-blocklist': OPS_AND_SUPER, 'DELETE /v3/admin/trust-blocklist/:id': OPS_AND_SUPER,
+  'GET /v3/admin/business-proofs': OPS_AND_SUPER, 'PATCH /v3/admin/business-proofs/:id': OPS_AND_SUPER, 'GET /v3/admin/takedowns': OPS_AND_SUPER,
+  'GET /v3/admin/prohibited-terms': SUPER_ONLY, 'POST /v3/admin/prohibited-terms': SUPER_ONLY, 'PUT /v3/admin/prohibited-terms/:id': SUPER_ONLY, 'DELETE /v3/admin/prohibited-terms/:id': SUPER_ONLY,
+  'POST /v3/admin/takedowns': SUPER_ONLY, 'POST /v3/admin/takedowns/:id/reverse': SUPER_ONLY,
   'GET /v3/admin/billing/orders': OPS_AND_SUPER, 'GET /v3/admin/billing/payment-events': OPS_AND_SUPER, 'POST /v3/admin/billing/orders/:id/mark-paid': SUPER_ONLY, 'POST /v3/admin/billing/orders/:id/refund': SUPER_ONLY,
 
   // ── V3 slice 5.7: the public directory. The business reads are open to all staff but MARKETING gets them WITHOUT the personal fields (phone, address, hours, map position, masked email);

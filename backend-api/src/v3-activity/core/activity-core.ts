@@ -13,13 +13,15 @@ export type AlertStatus = 'NEW' | 'LOOKING' | 'RESOLVED' | 'NOT_AN_ISSUE';
 export const ALERT_RULE_KEYS = [
   'PAYMENT_METHOD_CHANGED', 'BUSINESS_IDENTITY_CHANGED', 'CAMPAIGN_SPIKE', 'PAYMENT_FAILURES', 'PROHIBITED_TEXT',
   'DOMAIN_CHANGED', 'LARGE_IMPORT', 'PLAN_STATE_CHANGED', 'LISTING_DELETION_REQUESTED', 'THEME_SWITCHED',
+  /** added by slice 5.21: the payee name on a UPI handle does not match the business or owner name (never blocks) */
+  'PAYEE_NAME_MISMATCH',
 ] as const;
 export type AlertRuleKey = (typeof ALERT_RULE_KEYS)[number];
 
 /** The level each rule is seeded with (owner's alert table). Staff cannot make a rule raise a different kind of event, only enable it and set its numbers. */
 export const DEFAULT_RULE_LEVEL: Readonly<Record<AlertRuleKey, AlertLevel>> = {
   PAYMENT_METHOD_CHANGED: 'HIGH', BUSINESS_IDENTITY_CHANGED: 'HIGH', CAMPAIGN_SPIKE: 'HIGH', PAYMENT_FAILURES: 'HIGH', PROHIBITED_TEXT: 'HIGH',
-  DOMAIN_CHANGED: 'MEDIUM', LARGE_IMPORT: 'MEDIUM', PLAN_STATE_CHANGED: 'MEDIUM', LISTING_DELETION_REQUESTED: 'MEDIUM', THEME_SWITCHED: 'LOW',
+  DOMAIN_CHANGED: 'MEDIUM', LARGE_IMPORT: 'MEDIUM', PLAN_STATE_CHANGED: 'MEDIUM', LISTING_DELETION_REQUESTED: 'MEDIUM', THEME_SWITCHED: 'LOW', PAYEE_NAME_MISMATCH: 'HIGH',
 };
 
 export interface AlertRuleRow { key: string; level: AlertLevel; thresholdJson: Record<string, number> | null; notifyRoles: string[]; enabled: boolean }
@@ -45,6 +47,7 @@ const PREDICATES: Record<AlertRuleKey, (f: ActivityFact, r: AlertRuleRow) => boo
   PLAN_STATE_CHANGED: (f) => f.actionKey === 'plan.state_changed' || f.actionKey === 'subscription.assigned',
   LISTING_DELETION_REQUESTED: (f) => f.actionKey === 'listing.deletion_requested' || f.actionKey === 'account.deletion_requested',
   THEME_SWITCHED: (f) => f.actionKey === 'theme.switched',
+  PAYEE_NAME_MISMATCH: (f) => f.actionKey === 'payee_name.mismatch',
 };
 
 /** Rules whose events are written to the log but never become an alert row. */

@@ -80,10 +80,15 @@ export class PrismaActivityStore extends ActivityStore {
     return out;
   }
   async attention(): Promise<AttentionData> {
-    const [alerts, openRequests] = await Promise.all([
+    const [alerts, openRequests, reportsNew, proofsToCheck, proofsMissing] = await Promise.all([
       this.prisma.v3Alert.groupBy({ by: ['ruleKey', 'level'], where: { status: 'NEW' }, _count: { _all: true } }),
       this.prisma.v3ServiceRequest.count({ where: { status: { in: [...OPEN_FOR_TEAM] } } }),
+      // slice 5.21, read-only counts of rows the trust slice owns
+      this.prisma.v3BusinessReport.count({ where: { status: 'NEW' } }),
+      this.prisma.v3BusinessProof.count({ where: { status: 'SUBMITTED' } }),
+      // a vendor on a current Pro plan with no business proof at all (proof is optional; the missing one is a Medium attention item, never a refusal)
+      this.prisma.vendor.count({ where: { v3BusinessProofs: { none: {} }, v3Subscriptions: { some: { status: { in: ['ACTIVE', 'GRACE'] }, plan: { level: 'PRO' } } } } }),
     ]);
-    return { alertsNew: alerts.map((a) => ({ ruleKey: a.ruleKey, level: a.level, count: a._count._all })), queues: { serviceRequestsOpen: openRequests } };
+    return { alertsNew: alerts.map((a) => ({ ruleKey: a.ruleKey, level: a.level, count: a._count._all })), queues: { serviceRequestsOpen: openRequests, reportsNew, proofsToCheck, proofsMissing } };
   }
 }

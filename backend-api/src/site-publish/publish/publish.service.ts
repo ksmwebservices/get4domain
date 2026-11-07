@@ -12,6 +12,10 @@ import { BLOCKING_WARNING, PAGE_BUDGET_BYTES } from './site-config';
 import { SiteAudit } from './site-audit';
 import { PublicationRow, SiteRepository } from './site.repository';
 import { AcceptanceGuard } from '../../terms/terms-ports';
+import { ProhibitedScanPort } from '../../v3-trust/trust.ports';
+
+/** The readable text of a stored page: tags, scripts and styles removed, entities left as they are (the scan folds punctuation away). */
+const textOfHtml = (html: string): string => html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 /** The documents a vendor has accepted before a published site may carry calls to action (slice 5.15). */
 const CTA_TERMS = ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING'] as const;
@@ -34,6 +38,8 @@ export class PublishService {
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'resolve'>,
     private readonly audit: SiteAudit,
     @Optional() @Inject(AcceptanceGuard) private readonly acceptance?: AcceptanceGuard,
+    /** slice 5.21: looks at what was just published; never blocks and never throws */
+    @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
   ) {}
 
   /** Re-checks a snapshot against the vendor as they are NOW: hard minimums, renderer warnings, size, the plan (theme and Tamil) and the staff noindex switch. */
@@ -63,12 +69,20 @@ export class PublishService {
   async publish(vendorId: string, publicationId: string, actor: Actor): Promise<PublicationRow> {
     // A Pro vendor's published site carries the call-to-action slots: the current terms must be accepted first. A Free (or lapsed, or suspended) site has none, so nothing is asked.
     if (this.acceptance && (await this.entitlements.resolve(vendorId)).features['site.cta']?.state === 'ACTIVE') await this.acceptance.require(vendorId, CTA_TERMS);
-    return this.repo.publish(vendorId, publicationId, {
+    const row = await this.repo.publish(vendorId, publicationId, {
       now: this.clock(),
       validate: (p) => this.revalidate(vendorId, p, { forPublish: true }),
       event: { type: 'PUBLISHED', actorType: actor.type, actorId: actor.id, detail: { publicationId } },
       audit: this.audit.hook(actor, 'site.publish', vendorId, { publicationId }),
     });
+    await this.scanPublished(vendorId, row.id);
+    return row;
+  }
+
+  /** Owner rule 11 and slice 5.21: the published text is looked at for prohibited phrases. A match raises an alert; it never blocks the publish, which has already happened. */
+  private async scanPublished(vendorId: string, publicationId: string): Promise<void> {
+    if (!this.scan) return;
+    try { await this.scan.scan(vendorId, 'PUBLISH', (await this.repo.pagesOf(publicationId)).filter((pg) => pg.html.startsWith('<!doctype html>')).map((pg) => textOfHtml(pg.html))); } catch { /* a scan fault never undoes a publish */ }
   }
 
   /** Republishes an older snapshot as a new version. Needs the plan feature site.revisions. */

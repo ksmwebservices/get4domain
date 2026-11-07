@@ -16,6 +16,8 @@ import { scanRoutes } from './support/route-scan';
  */
 const SUPER_ONLY_ROUTES = [
   'GET /v3/admin/alert-rules', 'PUT /v3/admin/alert-rules',   // Batch 4B slice 5.20: the alert rules are SUPER_ADMIN only
+  'GET /v3/admin/prohibited-terms', 'POST /v3/admin/prohibited-terms', 'PUT /v3/admin/prohibited-terms/:id', 'DELETE /v3/admin/prohibited-terms/:id',   // Batch 4B slice 5.21: the prohibited phrases
+  'POST /v3/admin/takedowns', 'POST /v3/admin/takedowns/:id/reverse',   // Batch 4B slice 5.21: a legal takedown is created and reversed by SUPER_ADMIN only
   'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
@@ -65,6 +67,8 @@ const MARKETING_DENIED = [
   'POST /v3/admin/vendors/:vendorId/site/theme/switch', 'GET /v3/admin/vendors/:vendorId/site/theme/history', 'POST /v3/admin/theme-switches/recover',
   // Batch 4B slice 5.20: alerts, a vendor's activity and the attention board
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
+  // Batch 4B slice 5.21: reports, proofs, the block list and the takedown list
+  'GET /v3/admin/business-reports', 'PATCH /v3/admin/business-reports/:id', 'GET /v3/admin/trust-blocklist', 'POST /v3/admin/trust-blocklist', 'DELETE /v3/admin/trust-blocklist/:id', 'GET /v3/admin/business-proofs', 'PATCH /v3/admin/business-proofs/:id', 'GET /v3/admin/takedowns',
   // B4 slice 5.16c: the service request queue and its work: OPERATIONS and SUPER_ADMIN, MARKETING refused
   'GET /v3/admin/service-requests', 'POST /v3/admin/service-requests/sla-sweep', 'POST /v3/admin/service-requests/auto-approve-run', 'GET /v3/admin/service-requests/:id', 'POST /v3/admin/service-requests/:id/assign', 'POST /v3/admin/service-requests/:id/status',
   'POST /v3/admin/service-requests/:id/deliverables', 'POST /v3/admin/service-requests/:id/reject', 'POST /v3/admin/service-requests/:id/retry-grant', 'POST /v3/admin/vendors/:vendorId/service-requests',
@@ -136,7 +140,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(249);
+    expect(oracle).toHaveLength(263);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

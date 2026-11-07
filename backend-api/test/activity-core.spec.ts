@@ -7,8 +7,8 @@ const keys = (f: ReturnType<typeof fact>, rules: AlertRuleRow[]): string[] => ev
 const all = (o: Partial<AlertRuleRow> = {}): AlertRuleRow[] => ALERT_RULE_KEYS.map((k) => rule(k, { level: DEFAULT_RULE_LEVEL[k], ...o }));
 
 describe('alert engine: which rules exist', () => {
-  it('there are exactly the ten rules of the dispatch', () => {
-    expect([...ALERT_RULE_KEYS].sort()).toEqual(['BUSINESS_IDENTITY_CHANGED', 'CAMPAIGN_SPIKE', 'DOMAIN_CHANGED', 'LARGE_IMPORT', 'LISTING_DELETION_REQUESTED', 'PAYMENT_FAILURES', 'PAYMENT_METHOD_CHANGED', 'PLAN_STATE_CHANGED', 'PROHIBITED_TEXT', 'THEME_SWITCHED']);
+  it('there are exactly the ten rules of the dispatch plus the payee-name rule of slice 5.21', () => {
+    expect([...ALERT_RULE_KEYS].sort()).toEqual(['BUSINESS_IDENTITY_CHANGED', 'CAMPAIGN_SPIKE', 'DOMAIN_CHANGED', 'LARGE_IMPORT', 'LISTING_DELETION_REQUESTED', 'PAYEE_NAME_MISMATCH', 'PAYMENT_FAILURES', 'PAYMENT_METHOD_CHANGED', 'PLAN_STATE_CHANGED', 'PROHIBITED_TEXT', 'THEME_SWITCHED']);
   });
   it('a disabled rule never fires, whatever the event', () => {
     for (const a of ['payment_method.created', 'domain.custom_added', 'theme.switched', 'plan.state_changed', 'prohibited_text.matched']) expect(evaluateAlerts(fact(a), all({ enabled: false }))).toEqual([]);

@@ -4,6 +4,8 @@ import { EntitlementsService } from '../../plans/entitlements/entitlements.servi
 import { ThemeRenderService } from '../renderer/theme-render.service';
 import { contentTypeFor, isPlatformFile, sha256 } from './site-config';
 import { SiteRepository } from './site.repository';
+import { TAKEDOWN_NOTICE_HTML } from '../../v3-trust/core/trust-core';
+import { TakedownPort } from '../../v3-trust/trust.ports';
 
 /** Finds the vendor behind a host name (slice 5.6: the domain tables; a non-primary host also carries the redirect to the canonical one). */
 export abstract class HostResolver {
@@ -12,6 +14,8 @@ export abstract class HostResolver {
 }
 
 export interface PublicRedirect { status: 301 | 302; location: string }
+/** A legal takedown is in force: the plain notice instead of the site (451, never cached). */
+export interface PublicNotice { status: 451; html: string }
 export interface PublicPage { status: 200; html: string; etag: string; robots: string; contentType: string; lang: string; /** the canonical host of the site the page belongs to (owner rule 4) */ canonicalHost: string | null }
 
 /**
@@ -26,6 +30,8 @@ export class SitePublicService {
     @Optional() @Inject(EntitlementsService) private readonly ents?: Pick<EntitlementsService, 'resolve'>,
     @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
     @Optional() @Inject(ThemeRenderService) private readonly themes?: Pick<ThemeRenderService, 'kitApi'>,
+    /** slice 5.21: a Legal takedown (SUPER_ADMIN) is the one way besides the vendor's own request that a site is hidden; it serves a plain notice */
+    @Optional() @Inject(TakedownPort) private readonly takedowns?: TakedownPort,
   ) {}
 
   /** The page, or null: exactly as before slice 5.6 (a redirect is not a page). */
@@ -35,7 +41,7 @@ export class SitePublicService {
   }
 
   /** A page, a redirect to the vendor's canonical host (the path is kept), or null. */
-  async lookup(host: string, path: string, lang: string): Promise<PublicPage | PublicRedirect | null> {
+  async lookup(host: string, path: string, lang: string): Promise<PublicPage | PublicRedirect | PublicNotice | null> {
     const h = String(host ?? '').trim().toLowerCase().split(':')[0];
     if (!h || h.length > 253) return null;
     const vendor = await this.hosts.resolve(h);
@@ -45,6 +51,7 @@ export class SitePublicService {
       if (keep.length > 300 || keep.includes('..')) return null;
       return { status: vendor.redirect.status, location: `https://${vendor.redirect.host}${keep === '/' ? '/' : keep}` };
     }
+    if (this.takedowns && (await this.takedowns.activeForVendor(vendor.vendorId))) return { status: 451, html: TAKEDOWN_NOTICE_HTML };   // read fresh on every request: a takedown never waits for a timer
     const current = await this.repo.currentPublication(vendor.vendorId);
     if (!current) return null;
     let p = `/${String(path ?? '/').split('?')[0].replace(/^\/+/, '')}`.replace(/\/+$/, '') || '/';

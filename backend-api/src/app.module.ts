@@ -75,6 +75,7 @@ import { V3ServicesModule } from './v3-services/services.module';
 import { V3ServiceRequestsModule } from './v3-service-requests/service-requests.module';
 import { V3ThemeSwitchModule } from './v3-theme-switch/theme-switch.module';
 import { V3ActivityModule } from './v3-activity/activity.module';
+import { V3TrustModule } from './v3-trust/trust.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
 import { DemoModule } from './demo/demo.module';
@@ -134,6 +135,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     V3ServiceRequestsModule,   // Batch 4 slice 5.16c: requests to our team paid by allowance, pack or wallet
     V3ThemeSwitchModule,   // Batch 4 slice 5.16d: the Theme Switch Service
     V3ActivityModule,   // Batch 4B slice 5.20: the activity log and alerts (global: every V3 module calls ActivityService.record())
+    V3TrustModule,   // Batch 4B slice 5.21: trust and safety (global: the scan, takedown and payee-check ports)
     AiStudioModule,
     VendorsModule,
     SubscriptionsModule,

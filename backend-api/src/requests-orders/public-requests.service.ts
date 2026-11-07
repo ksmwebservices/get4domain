@@ -11,6 +11,7 @@ import { DirectorySettingsService } from '../directory/settings/directory-settin
 import { SmsAdapter } from '../directory/sms/sms-adapter';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { normaliseEmail } from '../provisioning/steps/business-input';
+import { ProhibitedScanPort, TakedownPort } from '../v3-trust/trust.ports';
 import { HostDirectory } from '../site-domains/host-directory';
 import { normaliseHostname } from '../site-domains/core/hostname';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
@@ -56,6 +57,8 @@ export class PublicRequestsService {
     private readonly directory: DirectoryRepository, @Inject(DirectoryVisitService) private readonly visits: Pick<DirectoryVisitService, 'attribute'>, @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>,
     private readonly pepper: OtpPepper, private readonly messaging: MessagingService, private readonly catalogue: Catalogue, private readonly gateway: OwnGatewayGate, private readonly sms: SmsAdapter,
     @Inject(DirectorySettingsService) private readonly dirSettings: Pick<DirectorySettingsService, 'get'>, @Optional() @Inject('PUBLIC_APP_URL') private readonly appUrl: string = 'https://app.get4domain.invalid',
+    /** slice 5.21: a legal takedown stops forms and checkout at once; the scan looks at what a customer wrote (it never blocks) */
+    @Optional() @Inject(TakedownPort) private readonly takedowns?: TakedownPort, @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
   ) {}
 
   // ── the gate ──
@@ -65,7 +68,8 @@ export class PublicRequestsService {
     const r = await this.hosts.resolveHost(host);
     if (!r) throw nothing();
     const vendor = await this.lifecycle.vendor(r.vendorId);
-    if (!vendor || vendor.status === 'SUSPENDED' || (await this.lifecycle.isRemoved(r.vendorId))) throw nothing();   // read fresh each time: suspension stops forms and checkout AT ONCE
+    if (!vendor || vendor.status === 'SUSPENDED' || (await this.lifecycle.isRemoved(r.vendorId))) throw nothing();
+    if (this.takedowns && (await this.takedowns.activeForVendor(r.vendorId))) throw nothing();   // a legal takedown: the site shows a notice, so nothing can be sent to it   // read fresh each time: suspension stops forms and checkout AT ONCE
     const e = await this.ents.resolve(r.vendorId);
     for (const k of ['site.cta', 'requests.inbox', ...needs]) if (e.features[k]?.state !== 'ACTIVE') throw nothing();
     return { vendorId: r.vendorId, vendor, host };
@@ -166,8 +170,18 @@ export class PublicRequestsService {
     }
     if (blocked) return { accepted: true, reference: row.id, status: 'RECEIVED' };   // looks exactly like an accepted request; nothing is delivered and nothing can be tracked
     await this.deliver(row, g.vendor, token, { name: x.name, phone: x.phone, email: x.email });
+    await this.scanText(g.vendorId, x.name, payload);
     const trackingUrl = `${this.appUrl.replace(/\/+$/, '')}/track/${token}`;
     return { accepted: true, reference: row.id, status: 'DELIVERED', trackingUrl, ...extra } as SubmitResult;
+  }
+
+  /** Owner rule 11: what the customer wrote is looked at for prohibited phrases. A match raises an alert; the request has already been accepted and is never refused for it. */
+  private async scanText(vendorId: string, name: string, payload: Record<string, unknown>): Promise<void> {
+    if (!this.scan) return;
+    const texts: string[] = [name];
+    const walk = (v: unknown, depth: number): void => { if (typeof v === 'string') texts.push(v); else if (depth < 3 && v && typeof v === 'object') for (const x of Object.values(v as Record<string, unknown>)) walk(x, depth + 1); };
+    walk(payload, 0);
+    try { await this.scan.scan(vendorId, 'REQUEST', texts); } catch { /* the request is already stored and delivered; a scan fault never changes the answer */ }
   }
 
   // ── POST /v3/public/sites/:host/orders ──

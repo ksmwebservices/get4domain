@@ -122,11 +122,16 @@ ALTER TABLE "g4d_takedowns" ADD CONSTRAINT "g4d_takedowns_target_chk" CHECK ("ve
 ALTER TABLE "g4d_takedowns" ADD CONSTRAINT "g4d_takedowns_reason_chk" CHECK (length(btrim("reason")) > 0);
 ALTER TABLE "g4d_takedowns" ADD CONSTRAINT "g4d_takedowns_reversal_chk" CHECK (("status" = 'ACTIVE' AND "reversedAt" IS NULL AND "reversedBy" IS NULL AND "reverseReason" IS NULL) OR ("status" = 'REVERSED' AND "reversedAt" IS NOT NULL AND "reversedBy" IS NOT NULL AND length(btrim(coalesce("reverseReason", ''))) > 0));
 
--- A takedown is a legal record: its reason, its decider, its time and its target can never change, and it can never be deleted. Only the status and the reversal columns move, once.
+-- A takedown is a legal record: its reason, its decider, its time and its target can never change, and it can never be deleted by hand. Only the status and the reversal columns move, once.
+-- The only delete allowed is for a record whose vendor and listing are both already gone (a hard-deleted test tenant), the same exception the activity log has.
 CREATE OR REPLACE FUNCTION g4d_takedown_guard() RETURNS trigger AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    RAISE EXCEPTION 'g4d_takedowns rows cannot be deleted';
+    IF (OLD."vendorId" IS NOT NULL AND EXISTS (SELECT 1 FROM "Vendor" WHERE "id" = OLD."vendorId"))
+       OR (OLD."listingId" IS NOT NULL AND EXISTS (SELECT 1 FROM "g4d_directory_businesses" WHERE "id" = OLD."listingId")) THEN
+      RAISE EXCEPTION 'g4d_takedowns rows cannot be deleted';
+    END IF;
+    RETURN OLD;
   END IF;
   IF NEW."reason" IS DISTINCT FROM OLD."reason" OR NEW."decidedBy" IS DISTINCT FROM OLD."decidedBy" OR NEW."at" IS DISTINCT FROM OLD."at"
      OR NEW."vendorId" IS DISTINCT FROM OLD."vendorId" OR NEW."listingId" IS DISTINCT FROM OLD."listingId" OR NEW."documentRef" IS DISTINCT FROM OLD."documentRef" THEN

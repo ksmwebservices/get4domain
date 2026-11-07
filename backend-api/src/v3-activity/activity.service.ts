@@ -139,7 +139,7 @@ export class AlertsService {
   }
 
   /** Counts for the staff board: NEW alerts by level for each role that is told about the rule, unread in-app notices per role, and the queues other slices own. */
-  async attention(): Promise<{ roles: Record<string, { alertsNew: Record<AlertLevel, number>; unreadNotifications: number }>; queues: Record<string, number> }> {
+  async attention(): Promise<{ roles: Record<string, { alertsNew: Record<AlertLevel, number>; unreadNotifications: number }>; queues: Record<string, number>; items: Array<{ key: string; level: AlertLevel; count: number }> }> {
     const [data, rules, unread] = await Promise.all([this.store.attention(), this.store.listRules(), this.store.unreadByRole()]);
     const roles: Record<string, { alertsNew: Record<AlertLevel, number>; unreadNotifications: number }> = {};
     for (const role of STAFF_ROLES) {
@@ -147,6 +147,8 @@ export class AlertsService {
       for (const a of data.alertsNew) if (rules.find((r) => r.key === a.ruleKey)?.notifyRoles.includes(role)) alertsNew[a.level] += a.count;
       roles[role] = { alertsNew, unreadNotifications: unread[role] ?? 0 };
     }
-    return { roles, queues: data.queues };
+    // a missing business proof is a Medium attention item (slice 5.21): it never blocks anything, it only waits on the board
+    const items = [{ key: 'BUSINESS_PROOF_MISSING', level: 'MEDIUM' as AlertLevel, count: data.queues.proofsMissing ?? 0 }];
+    return { roles, queues: data.queues, items };
   }
 }

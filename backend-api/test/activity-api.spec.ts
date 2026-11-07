@@ -118,7 +118,7 @@ describe('activity and alerts API', () => {
       const ok = await call('put', '/v3/admin/alert-rules', 'SUPER_ADMIN', { key: 'LARGE_IMPORT', enabled: true, thresholdJson: { rows: 300 } }); expect(ok.status).toBe(200);
     });
     it('roles must be staff roles of the alert board', async () => { expect((await call('put', '/v3/admin/alert-rules', 'SUPER_ADMIN', { key: 'DOMAIN_CHANGED', notifyRoles: ['MARKETING'] })).status).toBe(400); });
-    it('the rules list shows all ten', async () => { expect((await call('get', '/v3/admin/alert-rules', 'SUPER_ADMIN')).body.data).toHaveLength(10); });
+    it('the rules list shows all eleven', async () => { expect((await call('get', '/v3/admin/alert-rules', 'SUPER_ADMIN')).body.data).toHaveLength(11); });
   });
 
   describe('the attention board over HTTP', () => {
