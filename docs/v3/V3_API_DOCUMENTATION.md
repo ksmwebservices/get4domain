@@ -252,3 +252,33 @@ Two routes added, one retired (baseline 1036 to 1037); the role-matrix oracle is
 | ~~`GET /v3/me/service-requests/invoices`~~ | retired | a deduction has no invoice |
 
 Changed behaviour: `POST /v3/me/wallet/topups` takes the credit (amount before GST) and returns `creditPaise`, `taxPaise`, `payablePaise` and the tax lines (the provider order is for `payablePaise`); it answers `409 TAX_NOT_CONFIGURED` with a `problem` when the seller state, the vendor's billing state or the tax rows are missing. A service request's `funding` no longer carries tax fields, `approve` no longer returns an invoice, and a pack, a request hold and a theme switch cost exactly their price. Details and the money model: the follow-up section of `docs/v3/V3_WALLET_AND_SERVICES.md`.
+
+## Batch 4B (branch v3-b4b): activity, alerts, trust and safety
+
+Slice 5.22 was cut by the owner (Release 2). Full contract, data dictionary, decisions and open questions: `docs/v3/V3_ACTIVITY_AND_TRUST.md`.
+
+### Slice 5.20 Activity log and alerts (8 routes, all new)
+
+| Route | Who | What |
+|---|---|---|
+| `GET /v3/me/activity` | owner only | my own activity, masked, newest first, paged |
+| `GET /v3/admin/alerts`, `GET .../:id` | OPERATIONS, SUPER | alerts filtered by level, status, vendor, owner; detail with the activity rows behind it |
+| `PATCH /v3/admin/alerts/:id` | OPERATIONS, SUPER | status, owner, note; 409 `ALERT_STALE` if it moved |
+| `GET /v3/admin/alert-rules`, `PUT /v3/admin/alert-rules` | SUPER | the rules; a rule that needs numbers cannot be switched on without them |
+| `GET /v3/admin/vendors/:vendorId/activity` | OPERATIONS, SUPER | one vendor's activity |
+| `GET /v3/admin/attention` | OPERATIONS, SUPER | alert counts per role and level, queues, attention items |
+
+Every successful mutating route under `/v3/me` and `/v3/admin` is logged by a global interceptor (field names only, never values); the wallet, services, service requests and theme switch events arrive through the bus listener.
+
+### Slice 5.21 Trust and safety (18 routes, all new)
+
+| Route | Who |
+|---|---|
+| `POST /v3/public/report-business` | public, 5 per minute per address, always 202 |
+| `POST /v3/me/business-proof`, `GET /v3/me/business-proofs`, `GET /v3/me/takedown` | owner only |
+| `GET/PATCH /v3/admin/business-reports(/:id)`, `GET/POST/DELETE /v3/admin/trust-blocklist(/:id)`, `GET /v3/admin/business-proofs`, `PATCH /v3/admin/business-proofs/:id`, `GET /v3/admin/takedowns` | OPERATIONS, SUPER |
+| `GET/POST /v3/admin/prohibited-terms`, `PUT/DELETE .../:id`, `POST /v3/admin/takedowns`, `POST /v3/admin/takedowns/:id/reverse` | SUPER only |
+
+Changed behaviour: a suspended listing stays in the directory (search, detail, Visit link) as a Free listing-only site and stays out of the sitemap; `GET /v3/public/site/by-host` answers 451 with a plain notice for a site under a legal takedown; the public request and order gate answers its usual plain 404 for such a site.
+
+Route classification baseline: 1037 to 1063 routes (public 102, admin 388, authenticated 573); none removed. Role-matrix oracle: 242 to 263 entries.
