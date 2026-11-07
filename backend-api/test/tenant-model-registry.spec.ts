@@ -34,7 +34,9 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   // slice 5.16d: theme switches are reached only through ThemeSwitchStore, which carries the vendor id in the WHERE of every read and write (tested: vendor B cannot see or repeat vendor A's switch)
   'V3ThemeSwitch',
   // slice 5.20 (Batch 4B): the activity log and the alerts are written through ActivityService and read through ActivityStore, which carries the vendor id in the WHERE of every vendor read (tested: vendor B cannot see vendor A's rows); staff read across vendors
-  'V3ActivityLog', 'V3Alert'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  'V3ActivityLog', 'V3Alert',
+  // slice 5.21 (Batch 4B): proofs and takedowns are reached only through TrustStore, which carries the vendor id in the WHERE of every vendor read (tested: vendor B cannot see vendor A's proofs or takedown); staff read across vendors; a takedown has no foreign key because it outlives the vendor row
+  'V3BusinessProof', 'V3Takedown'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

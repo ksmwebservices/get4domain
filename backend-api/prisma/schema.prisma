@@ -59,6 +59,7 @@ model Vendor {
   v3DomainVerifications V3DomainVerification[]
   v3Redirects V3Redirect[]
   v3SiteRemoval V3SiteRemoval?
+  v3BusinessProofs V3BusinessProof[]
   v3DeletionRequests V3AccountDeletionRequest[]
   v3SeededSite V3SeededSite?
   v3TermsAcceptances V3TermsAcceptance[]
@@ -6205,4 +6206,131 @@ model V3Notification {
   @@index([userId, readAt])
   @@index([role, readAt])
   @@map("g4d_v3_notifications")
+}
+
+// ── Batch 4B slice 5.21: trust and safety ────────────────────────────────────────────────────────────────────────────
+
+enum V3ProofKind {
+  GST
+  UDYAM
+  SHOP_LICENCE
+  PROFESSIONAL_REGISTRATION
+  OTHER
+}
+
+enum V3ProofStatus {
+  SUBMITTED
+  CHECKED
+  MISMATCH
+}
+
+enum V3TrustBlockKind {
+  PHONE
+  EMAIL
+  DOMAIN
+  UPI
+  NAME
+}
+
+enum V3ReportSubject {
+  LISTING
+  SITE
+}
+
+enum V3BusinessReportStatus {
+  NEW
+  LOOKING
+  CLOSED
+}
+
+enum V3TakedownStatus {
+  ACTIVE
+  REVERSED
+}
+
+/// A document or registration number a vendor offers to show the business is real. Optional at Pro activation; staff mark it CHECKED or MISMATCH. One row per vendor and kind (a new submission replaces the old one and starts again at SUBMITTED).
+model V3BusinessProof {
+  id          String        @id @default(cuid())
+  vendorId    String
+  kind        V3ProofKind
+  number      String
+  documentRef String?
+  status      V3ProofStatus @default(SUBMITTED)
+  checkedBy   String?
+  checkedAt   DateTime?
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, kind])
+  @@index([status, createdAt])
+  @@map("g4d_business_proofs")
+}
+
+/// (The older g4d_blocklist is the do-not-contact register and is not touched.) A value the trust team refuses to deal with, stored as a keyed hash of its normalised form (never the value itself).
+model V3TrustBlock {
+  id               String      @id @default(cuid())
+  kind             V3TrustBlockKind
+  valueHash        String
+  reason           String
+  createdByStaffId String?
+  at               DateTime    @default(now())
+
+  @@unique([kind, valueHash])
+  @@map("g4d_trust_blocklist")
+}
+
+/// A report from the public about a listing or a site. No personal data is required; a contact is optional.
+model V3BusinessReport {
+  id               String          @id @default(cuid())
+  subjectType      V3ReportSubject
+  subject          String
+  reporterContact  String?
+  reason           String
+  status           V3BusinessReportStatus  @default(NEW)
+  ipHash           String?
+  handledByStaffId String?
+  note             String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, createdAt])
+  @@map("g4d_business_reports")
+}
+
+/// A phrase the scan looks for in published and requested text. The table starts empty: staff (SUPER_ADMIN) add the phrases, the code invents none. Stored lower case with single spaces.
+model V3ProhibitedTerm {
+  id        String   @id @default(cuid())
+  term      String   @unique
+  category  String
+  enabled   Boolean  @default(true)
+  editedBy  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("g4d_prohibited_terms")
+}
+
+/// A Legal takedown (SUPER_ADMIN only, written reason required). While ACTIVE the site serves a plain notice page and the listing is out of the directory. No foreign key on purpose: the record outlives the vendor row. The database refuses any change to the reason, the decider, the time and the target, and refuses a delete.
+model V3Takedown {
+  id                 String           @id @default(cuid())
+  vendorId           String?
+  listingId          String?
+  reason             String
+  documentRef        String?
+  decidedBy          String
+  at                 DateTime         @default(now())
+  status             V3TakedownStatus @default(ACTIVE)
+  priorListingStatus String?
+  priorIndexable     Boolean?
+  reversedBy         String?
+  reversedAt         DateTime?
+  reverseReason      String?
+
+  @@index([vendorId, status])
+  @@index([listingId, status])
+  @@index([status, at])
+  @@map("g4d_takedowns")
 }
