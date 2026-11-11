@@ -4,6 +4,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { RequestsOrdersModule } from '../requests-orders/requests-orders.module';
 import { VendorLifecycleModule } from '../vendor-lifecycle/vendor-lifecycle.module';
 import { MePayRequestsController, PublicPayController } from './api/payments.controllers';
+import { MeDocumentsController, PublicDocController } from './api/documents.controllers';
+import { OtpPepper } from '../directory/pepper';
+import { DocumentsService } from './documents.service';
+import { FakeMessageSender, FakePdf, MessageSenderPort, PdfPort } from './documents.ports';
+import { DocumentsStore } from './documents.store';
+import { PrismaDocumentsStore } from './prisma-documents.store';
 import { PaymentsService } from './payments.service';
 import { PaymentsStore } from './payments.store';
 import { PrismaPaymentsStore } from './prisma-payments.store';
@@ -24,9 +30,11 @@ export class PaymentsCron {
 
 export const PAYMENTS_PROVIDERS = [
   { provide: PaymentsStore, useClass: PrismaPaymentsStore }, { provide: 'PUBLIC_PAY_URL', useFactory: () => `${process.env.PUBLIC_APP_URL || 'https://get4domain.com'}/pay` }, PaymentsService, PaymentsCron,
+  { provide: DocumentsStore, useClass: PrismaDocumentsStore }, { provide: 'PUBLIC_DOC_URL', useFactory: () => `${process.env.PUBLIC_APP_URL || 'https://get4domain.com'}/doc` },
+  { provide: MessageSenderPort, useClass: FakeMessageSender }, { provide: PdfPort, useClass: FakePdf }, OtpPepper, DocumentsService,
 ];
-export const PAYMENTS_CONTROLLERS = [MePayRequestsController, PublicPayController];
+export const PAYMENTS_CONTROLLERS = [MePayRequestsController, PublicPayController, MeDocumentsController, PublicDocController];
 
 /** Pay requests and the payments a vendor confirms (slice 5.17b, UPI only). PlansModule (entitlements, audit), B3SettingsModule, the activity and trust modules are global. */
-@Module({ imports: [PrismaModule, RequestsOrdersModule, VendorLifecycleModule], controllers: PAYMENTS_CONTROLLERS, providers: PAYMENTS_PROVIDERS, exports: [PaymentsService, PaymentsStore] })
+@Module({ imports: [PrismaModule, RequestsOrdersModule, VendorLifecycleModule], controllers: PAYMENTS_CONTROLLERS, providers: PAYMENTS_PROVIDERS, exports: [PaymentsService, PaymentsStore, DocumentsService] })
 export class PayRequestsModule {}

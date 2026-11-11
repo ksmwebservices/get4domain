@@ -13,6 +13,7 @@ import { ActivityService } from '../v3-activity/activity.service';
 import { TakedownPort } from '../v3-trust/trust.ports';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
 import { amountString, buildUpiIntent, isPayCode, normaliseUtr, nextPayStatus, PayStatus, payCodeFrom } from './core/pay-core';
+import { DocumentsService } from './documents.service';
 import { PayCodeTaken, PayRequestRow, PaymentsStore } from './payments.store';
 
 const nf = (): NotFoundException => new NotFoundException(b3Error('PAY_REQUEST_NOT_FOUND', 'That payment request does not exist.'));
@@ -40,6 +41,7 @@ export class PaymentsService {
     private readonly store: PaymentsStore, private readonly requests: RequestsStore, private readonly vendors: VendorRequestsService, private readonly lifecycle: LifecycleStore,
     @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>, private readonly ents: EntitlementsService, private readonly messaging: MessagingService,
     @Inject('PUBLIC_PAY_URL') private readonly payUrl: string, @Optional() private readonly activity?: ActivityService, @Optional() private readonly takedowns?: TakedownPort,
+    @Optional() private readonly documents?: DocumentsService,
   ) {}
 
   private async record(vendorId: string, actor: { type: 'VENDOR' | 'STAFF' | 'SYSTEM' | 'VENDOR_USER'; id: string | null; ip?: string | null }, actionKey: string, id: string, summary: Record<string, unknown>): Promise<void> {
@@ -105,7 +107,10 @@ export class PaymentsService {
       if (r.request.orderId) await this.vendors.recordOrderPaid(vendorId, r.request.orderId);
       await this.record(vendorId, { type: 'VENDOR', id: actor.id }, 'payment.marked_paid', id, { amountPaise: r.payment.amountPaise, level: 1 });
     }
-    return { ...view(r.request, this.payUrl), alreadyPaid: r.alreadyPaid, payment: { amountPaise: r.payment.amountPaise, utr: r.payment.utr, confirmedBy: r.payment.confirmedBy, confirmedAt: r.payment.confirmedAt } };
+    // the receipt or invoice: made once per payment, and asked for again on a repeat call in case the first attempt failed; a fault here never undoes the payment
+    let document: { id: string; number: string; kind: string } | null = null;
+    try { const d = await this.documents?.createForPayment(vendorId, id); if (d?.doc) document = { id: d.doc.id, number: d.doc.number, kind: d.doc.kind }; } catch { /* the payment stands */ }
+    return { ...view(r.request, this.payUrl), alreadyPaid: r.alreadyPaid, document, payment: { amountPaise: r.payment.amountPaise, utr: r.payment.utr, confirmedBy: r.payment.confirmedBy, confirmedAt: r.payment.confirmedAt } };
   }
 
   /** The expiry job: every AWAITING request whose time has passed becomes EXPIRED. Safe to repeat and to run twice at once (each change is compare-and-set). */

@@ -28,4 +28,5 @@ export class MemoryPaymentsStore extends PaymentsStore {
     this.payments.set(id, pay); return { request: { ...r }, payment: { ...pay }, alreadyPaid: false };
   }
   async paymentOf(requestId: string, vendorId: string) { const p = this.payments.get(requestId); return p && p.vendorId === vendorId ? { ...p } : null; }
+  async requestOfPayment(paymentId: string, vendorId: string) { const p = [...this.payments.values()].find((x) => x.id === paymentId && x.vendorId === vendorId); const r = p ? this.rows.get(p.paymentRequestId) : null; return r ? { ...r } : null; }
 }

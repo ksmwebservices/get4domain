@@ -31,4 +31,6 @@ export abstract class PaymentsStore {
    */
   abstract confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date }): Promise<{ request: PayRequestRow; payment: PaymentRow; alreadyPaid: boolean } | null>;
   abstract paymentOf(requestId: string, vendorId: string): Promise<PaymentRow | null>;
+  /** The pay request a payment belongs to, vendor's own only. */
+  abstract requestOfPayment(paymentId: string, vendorId: string): Promise<PayRequestRow | null>;
 }

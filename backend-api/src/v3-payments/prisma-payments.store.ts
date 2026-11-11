@@ -46,4 +46,5 @@ export class PrismaPaymentsStore extends PaymentsStore {
     });
   }
   async paymentOf(requestId: string, vendorId: string): Promise<PaymentRow | null> { const p = await this.prisma.v3Payment.findFirst({ where: { paymentRequestId: requestId, vendorId } }); return p ? toPayment(p) : null; }
+  async requestOfPayment(paymentId: string, vendorId: string): Promise<PayRequestRow | null> { const p = await this.prisma.v3Payment.findFirst({ where: { id: paymentId, vendorId }, include: { request: true } }); return p ? toRow(p.request) : null; }
 }

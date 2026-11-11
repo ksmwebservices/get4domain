@@ -74,6 +74,9 @@ model Vendor {
   v3Orders V3Order[]
   v3PaymentRequests V3PaymentRequest[]
   v3Payments V3Payment[]
+  v3TaxProfile V3VendorTaxProfile?
+  v3InvoiceSeries V3InvoiceSeries[]
+  v3Documents V3VendorDocument[]
   v3Invoices V3VendorInvoice[]
   v3Offers V3Offer[]
   v3Counters V3VendorCounter[]
@@ -6408,9 +6411,107 @@ model V3Payment {
 
   request V3PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
   vendor  Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  document V3VendorDocument?
 
   @@unique([provider, providerPaymentId])
   @@unique([vendorId, idempotencyKey])
   @@index([vendorId, confirmedAt])
   @@map("g4d_payments")
+}
+
+// ── Slice 5.17d (Batch 5): the vendor receipts and invoices ──
+enum V3DocKind {
+  TAX_INVOICE
+  BILL_OF_SUPPLY
+  BILL
+  FEE_RECEIPT
+}
+
+enum V3SendStatus {
+  NONE
+  PENDING
+  SENT_SANDBOX
+  FAILED
+  SKIPPED
+}
+
+model V3VendorTaxProfile {
+  id                String   @id @default(cuid())
+  vendorId          String   @unique
+  gstRegistered     Boolean  @default(false)
+  gstin             String?
+  stateCode         String?
+  legalName         String?
+  address           String?
+  compositionScheme Boolean  @default(false)
+  invoicePrefix     String   @default("INV")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_vendor_tax_profiles")
+}
+
+/// Gap-free numbering: one row per vendor and financial year; the next number is taken in the same transaction that writes the document, so a rollback gives the number back.
+model V3InvoiceSeries {
+  id         String   @id @default(cuid())
+  vendorId   String
+  periodKey  String
+  prefix     String
+  nextNumber Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, periodKey])
+  @@map("g4d_invoice_series")
+}
+
+model V3VendorDocument {
+  id               String       @id @default(cuid())
+  vendorId         String
+  kind             V3DocKind
+  number           String
+  seq              Int
+  periodKey        String
+  paymentId        String       @unique
+  customerSnapshot Json         @default("{}")
+  itemsJson        Json         @default("[]")
+  taxJson          Json         @default("{}")
+  totalPaise       Int
+  pdfRef           String?
+  publicCode       String       @unique
+  whatsappStatus   V3SendStatus @default(NONE)
+  emailStatus      V3SendStatus @default(NONE)
+  resendCount      Int          @default(0)
+  flagsJson        Json         @default("{}")
+  createdAt        DateTime     @default(now())
+
+  vendor  Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payment V3Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([vendorId, number])
+  @@unique([vendorId, periodKey, seq])
+  @@index([vendorId, createdAt])
+  @@map("g4d_vendor_documents")
+}
+
+/// The message outbox of the payment slices. Batch 6 replaces the consumer; here only the fake sender reads it.
+model V3Outbox {
+  id             String   @id @default(cuid())
+  vendorId       String?
+  channel        String
+  templateKey    String
+  toHash         String
+  toMasked       String
+  payloadJson    Json     @default("{}")
+  idempotencyKey String   @unique
+  status         String   @default("PENDING")
+  attempts       Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@map("g4d_outbox")
 }
