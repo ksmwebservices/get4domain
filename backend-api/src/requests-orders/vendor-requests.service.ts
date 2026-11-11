@@ -6,6 +6,9 @@ import { openSecret, sealSecret, SealedSecret } from '../ai-studio/secret-box';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
 import { MethodKind, MethodStatus, canMoveOrder } from './core/commerce-core';
 import { RequestKind, RequestStatus, summarise, vendorMayMove } from './core/requests-core';
+import { ActivityService } from '../v3-activity/activity.service';
+import { PayeeNameCheckPort } from '../v3-trust/trust.ports';
+import { isVendorOfferedKind, normalisePayeeName, normaliseUpiId, upiChangeNeedsConfirm } from '../v3-payments/core/method-core';
 import { MessagingService } from './messaging.service';
 import { AcceptanceGuard, OwnGatewayGate } from './requests-ports';
 import { OfferRow, OrderStatus, RequestFilter, RequestsStore } from './requests.store';
@@ -38,6 +41,7 @@ export class VendorRequestsService {
   constructor(
     private readonly store: RequestsStore, private readonly messaging: MessagingService, private readonly gateway: OwnGatewayGate, private readonly lifecycle: LifecycleStore,
     @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>, @Optional() @Inject(AcceptanceGuard) private readonly acceptance?: AcceptanceGuard,
+    @Optional() private readonly activity?: ActivityService, @Optional() private readonly payee?: PayeeNameCheckPort,
   ) {}
 
   // ── inbox ──
@@ -102,48 +106,103 @@ export class VendorRequestsService {
     return this.view(r);
   }
 
-  // ── payment methods (write-only secrets) ──
-  async listMethods(vendorId: string) { return (await this.store.listMethods(vendorId)).map((m) => ({ id: m.id, kind: m.kind, label: m.label, last4: m.last4, status: m.status, verifiedAt: m.verifiedAt, hasGatewayDetails: m.hasSecret, hasWebhookSecret: m.hasWebhookSecret })); }
+  // ── payment methods (UPI only for vendors; write-only secrets) ──
+  private methodView(m: Awaited<ReturnType<RequestsStore['listMethods']>>[number]) {
+    return { id: m.id, kind: m.kind, label: m.label, last4: m.last4, upiId: m.upiId, payeeName: m.payeeName, isDefault: m.isDefault, showToCustomers: m.showToCustomers, status: m.status, verifiedAt: m.verifiedAt, hasGatewayDetails: m.hasSecret, hasWebhookSecret: m.hasWebhookSecret };
+  }
+  /** A method of this vendor that V3 vendors may use. A gateway row left by an earlier build answers exactly like a row that does not exist. */
+  private async ownMethod(vendorId: string, id: string) {
+    const m = await this.store.getMethod(id, vendorId);
+    if (!m || !isVendorOfferedKind(m.kind)) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
+    return m;
+  }
+  async listMethods(vendorId: string) { return (await this.store.listMethods(vendorId)).filter((m) => isVendorOfferedKind(m.kind)).map((m) => this.methodView(m)); }
 
-  async createMethod(vendorId: string, b: { kind: MethodKind; label: string; details?: string; webhookSecret?: string }, actor: Actor) {
-    const label = str(b.label, 2, 60); if (!label) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Give the method a name of 2 to 60 characters.'));
-    const online = b.kind === 'OWN_GATEWAY' || b.kind === 'UPI';
-    if (online && !str(b.details, 4, 300)) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Add the gateway key or the UPI address.'));
-    const config = b.details ? sealOrFail(b.details.trim()) : null;
-    const web = b.webhookSecret ? sealOrFail(b.webhookSecret.trim()) : null;
-    const m = await this.store.createMethod({ vendorId, kind: b.kind, label, last4: config?.last4 ?? null, config: { cipher: config?.cipher ?? null, iv: config?.iv ?? null, tag: config?.tag ?? null }, webhook: { cipher: web?.cipher ?? null, iv: web?.iv ?? null, tag: web?.tag ?? null } });
-    await this.store.recordAudit(actor, 'payment_method.create', 'payment_method', m.id, null, { kind: m.kind, label: m.label });   // never the details
-    return (await this.listMethods(vendorId)).find((x) => x.id === m.id)!;
+  /** Records the semantic event: WHAT changed (field names), never the value. The alert rule PAYMENT_METHOD_CHANGED reads it. Never throws into the caller. */
+  private async recordChange(vendorId: string, actor: Actor, methodId: string, changed: string[]): Promise<void> {
+    if (!this.activity || !changed.length) return;
+    await this.activity.record({ vendorId, actor: { type: actor.type === 'STAFF' ? 'STAFF' : 'VENDOR', id: actor.id ?? null, ip: actor.ip ?? null }, actionKey: 'payment_method.upi_changed', entityType: 'payment_method', entityId: methodId, summary: { changed } });
+  }
+  /** The payee-name check. A MISMATCH is returned as information and NEVER blocks. */
+  private async checkPayee(vendorId: string, payeeName: string | null): Promise<'MATCH' | 'MISMATCH' | 'UNKNOWN' | null> {
+    if (!this.payee || !payeeName) return null;
+    try { return await this.payee.check(vendorId, payeeName); } catch { return 'UNKNOWN'; }
   }
 
-  async updateMethod(vendorId: string, id: string, b: { label?: string; status?: MethodStatus; details?: string; webhookSecret?: string }, actor: Actor) {
-    const cur = await this.store.getMethod(id, vendorId);
-    if (!cur) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
-    const patch: Parameters<RequestsStore['updateMethod']>[2] = {};
+  async createMethod(vendorId: string, b: { kind: MethodKind; label: string; upiId?: string; payeeName?: string; details?: string; showToCustomers?: boolean }, actor: Actor) {
+    const label = str(b.label, 2, 60); if (!label) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Give the method a name of 2 to 60 characters.'));
+    if (!isVendorOfferedKind(b.kind)) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'That way of being paid is not offered. Use UPI, pay on delivery, pay at the visit or bank transfer.'));
+    let upiId: string | null = null; let payeeName: string | null = null;
+    if (b.kind === 'UPI') {
+      upiId = normaliseUpiId(b.upiId); payeeName = normalisePayeeName(b.payeeName);
+      if (!upiId) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Enter your UPI id, for example name@bank.'));
+      if (!payeeName) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Enter the name your customers will see when they pay, 2 to 99 characters.'));
+    }
+    if (b.kind === 'BANK_TRANSFER' && !str(b.details, 4, 300)) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Add the bank details.'));
+    const config = b.kind === 'BANK_TRANSFER' && b.details ? sealOrFail(b.details.trim()) : null;
+    const m = await this.store.createMethod({ vendorId, kind: b.kind, label, last4: config?.last4 ?? null, config: { cipher: config?.cipher ?? null, iv: config?.iv ?? null, tag: config?.tag ?? null }, webhook: { cipher: null, iv: null, tag: null }, upiId, payeeName, showToCustomers: b.kind === 'BANK_TRANSFER' ? b.showToCustomers === true : false });
+    await this.store.recordAudit(actor, 'payment_method.create', 'payment_method', m.id, null, { kind: m.kind, label: m.label });   // never the details
+    const payeeCheck = await this.checkPayee(vendorId, payeeName);
+    return { ...this.methodView(m), payeeCheck };
+  }
+
+  async updateMethod(vendorId: string, id: string, b: { label?: string; status?: MethodStatus; upiId?: string; payeeName?: string; confirmUpiChange?: boolean; details?: string; showToCustomers?: boolean }, actor: Actor) {
+    const cur = await this.ownMethod(vendorId, id);
+    const patch: Parameters<RequestsStore['updateMethod']>[2] = {}; const changed: string[] = [];
     if (b.label !== undefined) { const l = str(b.label, 2, 60); if (!l) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The name must be 2 to 60 characters.')); patch.label = l; }
-    if (b.details !== undefined) { const d = str(b.details, 4, 300); if (!d) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The details are not valid.')); const sealed = sealOrFail(d); patch.config = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; patch.last4 = sealed.last4; patch.verifiedAt = null; if (cur.status === 'ACTIVE') patch.status = 'UNVERIFIED'; }
-    if (b.webhookSecret !== undefined) { const w = str(b.webhookSecret, 8, 300); if (!w) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The webhook secret must be 8 to 300 characters.')); const sealed = sealOrFail(w); patch.webhook = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; }
+    if (b.upiId !== undefined) {
+      if (cur.kind !== 'UPI') throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Only a UPI method has a UPI id.'));
+      const u = normaliseUpiId(b.upiId); if (!u) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Enter your UPI id, for example name@bank.'));
+      if (upiChangeNeedsConfirm(cur.upiId, u)) {
+        if (b.confirmUpiChange !== true) throw new ConflictException(b3Error('PAYMENT_METHOD_CONFIRM_REQUIRED', 'You are changing the UPI id that customers pay to. Confirm to continue.'));
+        patch.upiId = u; patch.verifiedAt = null; changed.push('upiId'); if (cur.status === 'ACTIVE') patch.status = 'UNVERIFIED'; if (cur.isDefault) patch.isDefault = false;
+      } else if (!cur.upiId) { patch.upiId = u; }
+    }
+    if (b.payeeName !== undefined) {
+      if (cur.kind !== 'UPI') throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Only a UPI method has a payee name.'));
+      const n = normalisePayeeName(b.payeeName); if (!n) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The name must be 2 to 99 characters.'));
+      if (n !== cur.payeeName) { patch.payeeName = n; changed.push('payeeName'); }
+    }
+    if (b.details !== undefined) {
+      if (cur.kind !== 'BANK_TRANSFER') throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Only a bank transfer method has bank details.'));
+      const d = str(b.details, 4, 300); if (!d) throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'The details are not valid.'));
+      const sealed = sealOrFail(d); patch.config = { cipher: sealed.cipher, iv: sealed.iv, tag: sealed.tag }; patch.last4 = sealed.last4; changed.push('bankDetails');
+    }
+    if (b.showToCustomers !== undefined) {
+      if (cur.kind !== 'BANK_TRANSFER') throw new BadRequestException(b3Error('PAYMENT_METHOD_INVALID', 'Only bank details can be shown to customers.'));
+      patch.showToCustomers = b.showToCustomers === true;
+    }
     if (b.status !== undefined) {
       if (b.status === 'ACTIVE') {
-        // activation: the terms must be accepted (slice 5.15), and an online method must have passed its test after its details were last changed
+        // activation: the terms must be accepted (slice 5.15), and a UPI method must have passed its check after its id was last changed
         if (this.acceptance) await this.acceptance.require(vendorId, REQUIRED_TERMS);
-        const online = cur.kind === 'OWN_GATEWAY' || cur.kind === 'UPI';
-        if (online && (patch.verifiedAt === null || !cur.verifiedAt)) throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Test this method first.'));
-        if (online && !cur.hasSecret && !patch.config) throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Add the gateway details first.'));
+        if (cur.kind === 'UPI' && (patch.verifiedAt === null || !cur.verifiedAt)) throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Test this method first.'));
       }
       if (b.status !== 'ACTIVE' || patch.status === undefined) patch.status = b.status;
+      if (patch.status !== 'ACTIVE' && cur.isDefault) patch.isDefault = false;
     }
     const m = await this.store.updateMethod(id, vendorId, patch);
     if (!m) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
     await this.store.recordAudit(actor, 'payment_method.update', 'payment_method', id, { status: cur.status }, { status: m.status, label: m.label });
-    return (await this.listMethods(vendorId)).find((x) => x.id === id)!;
+    await this.recordChange(vendorId, actor, id, changed);
+    return this.methodView(m);
+  }
+
+  /** The method customers are sent to first. Only an ACTIVE method of the vendor can be it; one per vendor. */
+  async setDefaultMethod(vendorId: string, id: string, actor: Actor) {
+    const cur = await this.ownMethod(vendorId, id);
+    if (cur.status !== 'ACTIVE') throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Turn this method on before making it the default.'));
+    const m = await this.store.setDefaultMethod(id, vendorId);
+    if (!m) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
+    await this.store.recordAudit(actor, 'payment_method.default', 'payment_method', id, null, { kind: m.kind });
+    await this.recordChange(vendorId, actor, id, ['default']);
+    return this.methodView(m);
   }
 
   async testMethod(vendorId: string, id: string, actor: Actor) {
-    const m = await this.store.getMethod(id, vendorId);
-    if (!m) throw nf('PAYMENT_METHOD_INVALID', 'That payment method does not exist.');
+    const m = await this.ownMethod(vendorId, id);
     let result;
-    try { result = await this.gateway.get().test({ kind: m.kind, hasSecret: m.hasSecret }); } catch { throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Live gateway checks are not available yet.')); }
+    try { result = await this.gateway.get().test({ kind: m.kind, hasSecret: m.hasSecret, hasUpiId: !!m.upiId }); } catch { throw new ConflictException(b3Error('PAYMENT_METHOD_INVALID', 'Live gateway checks are not available yet.')); }
     if (result.ok) await this.store.updateMethod(id, vendorId, { verifiedAt: this.clock() });
     await this.store.recordAudit(actor, 'payment_method.test', 'payment_method', id, null, { ok: result.ok, mode: result.mode });
     return { ok: result.ok, mode: result.mode, message: result.message };

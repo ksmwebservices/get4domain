@@ -6,14 +6,15 @@ import { MethodKind } from './core/commerce-core';
 export interface CheckoutRequest { orderId: string; orderNo: number; amountPaise: number; currency: string; kind: MethodKind; last4: string | null }
 export interface CheckoutData { providerOrderRef: string; amountPaise: number; currency: string; kind: MethodKind; /** what the Next.js layer needs to open the vendor's own checkout; never a secret */ publicHint: string | null; mode: 'FAKE' }
 export abstract class OwnGatewayPort {
-  abstract test(m: { kind: MethodKind; hasSecret: boolean }): Promise<{ ok: boolean; mode: 'FAKE'; message: string }>;
+  abstract test(m: { kind: MethodKind; hasSecret: boolean; hasUpiId?: boolean }): Promise<{ ok: boolean; mode: 'FAKE'; message: string }>;
   abstract createCheckout(c: CheckoutRequest): Promise<CheckoutData>;
 }
 
 @Injectable()
 export class FakeOwnGateway extends OwnGatewayPort {
-  async test(m: { kind: MethodKind; hasSecret: boolean }) {
-    return m.kind === 'OWN_GATEWAY' || m.kind === 'UPI' ? { ok: m.hasSecret, mode: 'FAKE' as const, message: m.hasSecret ? 'Sandbox check passed. No real gateway was called.' : 'Add the gateway details first.' } : { ok: true, mode: 'FAKE' as const, message: 'Nothing to test for this way of being paid.' };
+  async test(m: { kind: MethodKind; hasSecret: boolean; hasUpiId?: boolean }) {
+    if (m.kind === 'UPI') return m.hasUpiId ? { ok: true, mode: 'FAKE' as const, message: 'The UPI id looks right. No payment was made.' } : { ok: false, mode: 'FAKE' as const, message: 'Add your UPI id first.' };
+    return m.kind === 'OWN_GATEWAY' ? { ok: m.hasSecret, mode: 'FAKE' as const, message: m.hasSecret ? 'Sandbox check passed. No real gateway was called.' : 'Add the gateway details first.' } : { ok: true, mode: 'FAKE' as const, message: 'Nothing to test for this way of being paid.' };
   }
   async createCheckout(c: CheckoutRequest): Promise<CheckoutData> { return { providerOrderRef: c.orderId, amountPaise: c.amountPaise, currency: c.currency, kind: c.kind, publicHint: c.last4 ? `ends ${c.last4}` : null, mode: 'FAKE' }; }
 }

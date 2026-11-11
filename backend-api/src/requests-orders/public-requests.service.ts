@@ -15,6 +15,7 @@ import { ProhibitedScanPort, TakedownPort } from '../v3-trust/trust.ports';
 import { HostDirectory } from '../site-domains/host-directory';
 import { normaliseHostname } from '../site-domains/core/hostname';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
+import { isVendorOfferedKind } from '../v3-payments/core/method-core';
 import { MethodKind, offerProblem, paymentReadiness, priceCart } from './core/commerce-core';
 import { addressHash } from './core/messaging-core';
 import { consentTextHash, consentValid, duplicateKey, expiresAtFor, hashTrackingToken, newTrackingToken, PUBLIC_KINDS, RequestKind, spamDecision, spamScore, validatePayload, looksLikeTrackingToken } from './core/requests-core';
@@ -187,7 +188,7 @@ export class PublicRequestsService {
   // ── POST /v3/public/sites/:host/orders ──
   async order(hostIn: string, body: OrderBody, ip: string | null): Promise<SubmitResult> {
     const g = await this.gate(hostIn, ['shop.cart']);
-    const methods = await this.store.listMethods(g.vendorId);
+    const methods = (await this.store.listMethods(g.vendorId)).filter((m) => isVendorOfferedKind(m.kind));   // gateway rows are never offered (amendment 06)
     const readiness = paymentReadiness(methods);
     if (readiness === 'ENQUIRY_ONLY') throw new ConflictException(b3Error('ORDER_INVALID', 'This shop is not taking orders online. Please send an enquiry instead.', { readiness }));
     const items = Array.isArray(body?.items) ? body.items : [];
@@ -212,7 +213,7 @@ export class PublicRequestsService {
     let mode: PaymentMode; let methodId: string | null = null; let method: (typeof methods)[number] | undefined;
     if (payWith === 'ONLINE') {
       if (readiness !== 'FULL_CHECKOUT') throw new ConflictException(b3Error('ORDER_INVALID', 'Online payment is not available here.', { readiness }));
-      method = methods.find((m) => m.status === 'ACTIVE' && (m.kind === 'OWN_GATEWAY' || m.kind === 'UPI'))!; mode = 'ONLINE'; methodId = method.id;
+      method = methods.find((m) => m.status === 'ACTIVE' && m.kind === 'UPI')!; mode = 'ONLINE'; methodId = method.id;
     } else {
       const want: MethodKind = payWith === 'COD' ? 'PAY_ON_DELIVERY' : payWith === 'AT_VISIT' ? 'PAY_AT_VISIT' : 'BANK_TRANSFER';
       method = methods.find((m) => m.status === 'ACTIVE' && m.kind === want);

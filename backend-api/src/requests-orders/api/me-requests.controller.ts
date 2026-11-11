@@ -85,7 +85,7 @@ export class MeOffersController {
 export class MePaymentsController {
   constructor(private readonly vendor: VendorRequestsService) {}
 
-  @Get('payment-methods') @ApiOperation({ summary: 'My ways of being paid (secrets are never returned; only the last four characters)' })
+  @Get('payment-methods') @ApiOperation({ summary: 'My ways of being paid: UPI, pay on delivery, pay at the visit, bank transfer (secrets are never returned; only the last four characters)' })
   methods(@Tenant() t: TenantContext) { return this.vendor.listMethods(t.vendorId); }
   @Post('payment-methods') @HttpCode(200) @ApiOperation({ summary: 'Add a way of being paid; gateway details and the webhook secret are write-only' })
   create(@Tenant() t: TenantContext, @Body() dto: PaymentMethodDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.vendor.createMethod(t.vendorId, dto, actor(u, req)); }
@@ -93,6 +93,8 @@ export class MePaymentsController {
   update(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: PaymentMethodUpdateDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.vendor.updateMethod(t.vendorId, id, dto, actor(u, req)); }
   @Delete('payment-methods/:id') @HttpCode(200) @ApiOperation({ summary: 'Disable a way of being paid (it is kept, never erased)' })
   disable(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.vendor.updateMethod(t.vendorId, id, { status: 'DISABLED' }, actor(u, req)); }
+  @Post('payment-methods/:id/default') @HttpCode(200) @ApiOperation({ summary: 'Make an active method the one customers are sent to first (one default per business)' })
+  setDefault(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.vendor.setDefaultMethod(t.vendorId, id, actor(u, req)); }
   @Post('payment-methods/:id/test') @HttpCode(200) @ApiOperation({ summary: 'Check a method with the sandbox gateway (no real gateway is called unless live is allowed, which it is not in this build)' })
   test(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.vendor.testMethod(t.vendorId, id, actor(u, req)); }
 

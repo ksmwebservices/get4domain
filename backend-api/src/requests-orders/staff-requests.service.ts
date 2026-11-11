@@ -5,6 +5,7 @@ import { OtpPepper } from '../directory/pepper';
 import { Actor } from '../plans/admin/audit.service';
 import { normaliseEmail } from '../provisioning/steps/business-input';
 import { VendorLifecycleService } from '../vendor-lifecycle/vendor-lifecycle.service';
+import { isVendorOfferedKind, maskUpiId } from '../v3-payments/core/method-core';
 import { addressHash } from './core/messaging-core';
 import { RequestFilter, ReportRow, RequestsStore } from './requests.store';
 
@@ -23,6 +24,10 @@ export class StaffRequestsService {
     const r = await this.store.getRequest(id);
     if (!r) throw new NotFoundException(b3Error('REQUEST_NOT_FOUND', 'That request does not exist.'));
     return { id: r.id, vendorId: r.vendorId, kind: r.kind, status: r.status, siteHost: r.siteHost, source: r.sourceKind, spamScore: r.spamScore, createdAt: r.createdAt, events: (await this.store.events(id)).map((e) => ({ type: e.type, actor: e.actorType, at: e.at, channel: e.channel, result: e.deliveryResult })) };
+  }
+  /** Read only. UPI ids are masked, bank details and secrets are never returned, gateway rows left by an earlier build are hidden. */
+  async vendorMethods(vendorId: string) {
+    return (await this.store.listMethods(vendorId)).filter((m) => isVendorOfferedKind(m.kind)).map((m) => ({ id: m.id, vendorId: m.vendorId, kind: m.kind, label: m.label, status: m.status, isDefault: m.isDefault, upiMasked: maskUpiId(m.upiId), payeeName: m.payeeName, verifiedAt: m.verifiedAt }));
   }
   async outbox(f: { vendorId?: string; requestId?: string; skip: number; take: number }) { return this.store.listOutbox(f); }
 

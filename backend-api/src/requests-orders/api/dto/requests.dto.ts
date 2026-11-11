@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsInt, IsISO8601, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 // ── public ──
 export class UtmDto {
@@ -65,18 +65,27 @@ export class LinkDto {
   @IsOptional() @IsString() @MaxLength(64) bookingId?: string;
 }
 export class PaymentMethodDto {
-  @IsIn(['OWN_GATEWAY', 'UPI', 'PAY_ON_DELIVERY', 'PAY_AT_VISIT', 'BANK_TRANSFER']) kind!: 'OWN_GATEWAY' | 'UPI' | 'PAY_ON_DELIVERY' | 'PAY_AT_VISIT' | 'BANK_TRANSFER';
+  /** The gateway kinds are not offered to V3 vendors: the service rejects them with PAYMENT_METHOD_INVALID. They are accepted by the DTO only so the answer is the same plain message. */
+  @IsIn(['UPI', 'PAY_ON_DELIVERY', 'PAY_AT_VISIT', 'BANK_TRANSFER', 'OWN_GATEWAY', 'GATEWAY_RAZORPAY', 'GATEWAY_CASHFREE', 'GATEWAY_PAYTM']) kind!: 'UPI' | 'PAY_ON_DELIVERY' | 'PAY_AT_VISIT' | 'BANK_TRANSFER';
   @IsString() @MinLength(2) @MaxLength(60) label!: string;
-  /** write-only: the gateway key or the UPI address */
+  /** UPI only: the vendor's own UPI id, for example name@bank */
+  @IsOptional() @IsString() @MaxLength(300) upiId?: string;
+  /** UPI only: the name the customer sees in their UPI app */
+  @IsOptional() @IsString() @MaxLength(120) payeeName?: string;
+  /** bank transfer only, write-only */
   @IsOptional() @IsString() @MaxLength(300) details?: string;
-  /** write-only */
-  @IsOptional() @IsString() @MaxLength(300) webhookSecret?: string;
+  /** bank transfer only: show the bank details to customers (default false) */
+  @IsOptional() @IsBoolean() showToCustomers?: boolean;
 }
 export class PaymentMethodUpdateDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(60) label?: string;
   @IsOptional() @IsIn(['UNVERIFIED', 'ACTIVE', 'DISABLED']) status?: 'UNVERIFIED' | 'ACTIVE' | 'DISABLED';
+  @IsOptional() @IsString() @MaxLength(300) upiId?: string;
+  @IsOptional() @IsString() @MaxLength(120) payeeName?: string;
+  /** required true when upiId differs from the stored one */
+  @IsOptional() @IsBoolean() confirmUpiChange?: boolean;
   @IsOptional() @IsString() @MaxLength(300) details?: string;
-  @IsOptional() @IsString() @MaxLength(300) webhookSecret?: string;
+  @IsOptional() @IsBoolean() showToCustomers?: boolean;
 }
 export class OrderListDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;

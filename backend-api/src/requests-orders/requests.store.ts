@@ -23,7 +23,7 @@ export interface NewRequest {
 }
 export interface RequestFilter { status?: RequestStatus; kind?: RequestKind; q?: string; from?: Date; to?: Date; skip: number; take: number }
 
-export interface MethodRow { id: string; vendorId: string; kind: MethodKind; label: string; last4: string | null; hasSecret: boolean; hasWebhookSecret: boolean; status: MethodStatus; verifiedAt: Date | null; createdAt: Date; updatedAt: Date }
+export interface MethodRow { id: string; vendorId: string; kind: MethodKind; label: string; last4: string | null; upiId: string | null; payeeName: string | null; isDefault: boolean; showToCustomers: boolean; hasSecret: boolean; hasWebhookSecret: boolean; status: MethodStatus; verifiedAt: Date | null; createdAt: Date; updatedAt: Date }
 export interface SealedBox { cipher: string | null; iv: string | null; tag: string | null }
 export interface MethodSecrets { config: SealedBox; webhook: SealedBox }
 
@@ -64,11 +64,13 @@ export abstract class RequestsStore {
   abstract nudgeCandidates(before: Date, limit: number): Promise<RequestRow[]>;
 
   // payment methods (secrets are sealed by the caller; the row views never carry them)
-  abstract createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox }): Promise<MethodRow>;
+  abstract createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean }): Promise<MethodRow>;
   abstract listMethods(vendorId: string): Promise<MethodRow[]>;
   abstract getMethod(id: string, vendorId?: string): Promise<MethodRow | null>;
   abstract methodSecrets(id: string, vendorId: string): Promise<MethodSecrets | null>;
-  abstract updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox }): Promise<MethodRow | null>;
+  abstract updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean; isDefault?: boolean }): Promise<MethodRow | null>;
+  /** Makes ONE method the vendor's default and clears the flag on every other method of that vendor, in one transaction. Null when the method is not this vendor's. */
+  abstract setDefaultMethod(id: string, vendorId: string): Promise<MethodRow | null>;
 
   // orders
   abstract placeOrder(o: NewOrder): Promise<{ order: OrderRow; request: RequestRow; items: OrderItemRow[] }>;

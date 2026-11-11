@@ -71,20 +71,20 @@ describe('requests and orders on staging', () => {
 
   it('money and credentials are owner only; secrets are write-only', async () => {
     expect((await api('get', '/v3/me/payment-methods', memberA)).status).toBe(403); expect((await api('post', '/v3/me/orders/x/refund', memberA, { amountPaise: 100 })).status).toBe(403);
-    const c = await api('post', '/v3/me/payment-methods', tokenA, { kind: 'OWN_GATEWAY', label: 'V3TEST gateway', details: 'rzp_test_key_5678', webhookSecret: 'whsec-v3test-secret-value' });
+    const c = await api('post', '/v3/me/payment-methods', tokenA, { kind: 'BANK_TRANSFER', label: 'V3TEST bank', details: 'bank_test_secret_5678' });
     if (!process.env.PLATFORM_SETTINGS_KEY) {
       // Without the sealing key the API must refuse clearly (never a 500) and store nothing; the sealed-at-rest and webhook steps below need a stored method, so they are skipped.
       process.stderr.write('[skip] PLATFORM_SETTINGS_KEY is not set: sealed-at-rest and webhook steps skipped (set it in .env.staging as 64 hex characters)\n');
       expect(c.status).toBe(503); expect(c.body.code).toBe('SECRET_STORE_UNAVAILABLE');
-      expect(JSON.stringify(c.body)).not.toMatch(/rzp_test_key|whsec-v3test/);
+      expect(JSON.stringify(c.body)).not.toMatch(/bank_test_secret/);
       expect(await prisma.v3VendorPaymentMethod.count({ where: { vendorId: A.vendorId } })).toBe(0);
       return;
     }
     expect(c.status).toBe(200); expect(c.body.data).toMatchObject({ last4: '5678', hasGatewayDetails: true });
     const all = JSON.stringify([c.body, (await api('get', '/v3/me/payment-methods', tokenA)).body]);
-    expect(all).not.toMatch(/rzp_test_key|whsec-v3test|cipher/);
+    expect(all).not.toMatch(/bank_test_secret|cipher/);
     const stored = await prisma.v3VendorPaymentMethod.findFirstOrThrow({ where: { vendorId: A.vendorId } });
-    expect(JSON.stringify(stored)).not.toMatch(/rzp_test_key|whsec-v3test/);   // sealed at rest
+    expect(JSON.stringify(stored)).not.toMatch(/bank_test_secret/);   // sealed at rest
     expect((await api('get', '/v3/me/payment-methods', tokenB)).body.data.items ?? (await api('get', '/v3/me/payment-methods', tokenB)).body.data).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: stored.id })]));
     const hook = (sig: string) => request(app.getHttpServer()).post(`/v3/payments/vendor/${A.vendorId}/${stored.id}`).set('content-type', 'application/json').set('x-g4d-signature', sig).send(JSON.stringify({ id: 'evt_x', type: 'payment.captured', orderRef: 'none', amountPaise: 100, currency: 'INR' }));
     expect((await hook('00'.repeat(32))).status).toBe(401);

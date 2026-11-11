@@ -1,5 +1,6 @@
 import { DEFAULT_B3_SETTINGS } from '../../src/b3-settings/b3-settings';
 import { AcceptanceGuard } from '../../src/terms/terms-ports';
+import { sealSecret } from '../../src/ai-studio/secret-box';
 import { hmacHex } from '../../src/requests-orders/core/commerce-core';
 import { MessagingService } from '../../src/requests-orders/messaging.service';
 import { PublicRequestsService, SubmitBody } from '../../src/requests-orders/public-requests.service';
@@ -48,7 +49,10 @@ export async function requestsWorld(opts: { acceptance?: AcceptanceGuard; takedo
   const gateway = new OwnGatewayGate(); gateway.env = {};
   const pub = new PublicRequestsService(store, hosts as never, entSvc as never, lifecycle, dw.repo, dw.visits as unknown as DirectoryVisitService, b3svc as never, dw.pepper, messaging, catalogue, gateway, sms, { get: async () => ({ otpResendCooldownSeconds: 30, otpExpiryMinutes: 10, otpMaxAttempts: 5 }) } as never, 'https://app.example.test', opts.takedowns as never, opts.scan as never);
   pub.clock = () => new Date(now.t); pub.random = () => 123456; let sn = 0; pub.salt = () => `salt-${++sn}`;
-  const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never, opts.acceptance); vendor.clock = () => new Date(now.t);
+  const activity = { rows: [] as Array<{ vendorId: string | null; actionKey: string; entityType: string; entityId?: string | null; summary?: Record<string, unknown> }>, record: async (r: { vendorId: string | null; actionKey: string; entityType: string; entityId?: string | null; summary?: Record<string, unknown> }) => { activity.rows.push(r); return null; } };
+  const payeeCalls: Array<{ vendorId: string; payeeName: string | null | undefined }> = [];
+  const payee = { check: async (vendorId: string, payeeName: string | null | undefined) => { payeeCalls.push({ vendorId, payeeName }); return 'MISMATCH' as const; } };
+  const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never, opts.acceptance, activity as never, payee as never); vendor.clock = () => new Date(now.t);
   const webhook = new VendorWebhookService(store, vendor);
   const staff = new StaffRequestsService(store, dw.pepper, { suspend: async (id: string) => { const v = await lifecycle.vendor(id); if (v) v.status = 'SUSPENDED'; lifecycle.vendors.get(id)!.status = 'SUSPENDED'; return { status: 'SUSPENDED', changed: true }; } } as never);
   staff.clock = () => new Date(now.t);
@@ -63,14 +67,22 @@ export async function requestsWorld(opts: { acceptance?: AcceptanceGuard; takedo
   catalogue.items.set('va|sku-2', { productRef: 'sku-2', name: 'Bell', unitPaise: 25_000, taxPercent: 0 });
   catalogue.items.set('vb|sku-1', { productRef: 'sku-1', name: 'Other lamp', unitPaise: 100_000, taxPercent: 0 });
 
-  const method = async (vendorId: string, kind: 'OWN_GATEWAY' | 'UPI' | 'PAY_ON_DELIVERY' | 'PAY_AT_VISIT' | 'BANK_TRANSFER', webhookSecret = 'whsec-' + vendorId + '-secret') => {
-    const m = await vendor.createMethod(vendorId, { kind, label: `${kind} method`, details: kind === 'OWN_GATEWAY' || kind === 'UPI' ? 'rzp_vendor_key_1234' : undefined, webhookSecret: kind === 'OWN_GATEWAY' ? webhookSecret : undefined }, OWNER);
+  /** An offered method (UPI, cash, visit, bank), made active through the service. A gateway kind cannot be made through the service any more (amendment 06): use `legacyGateway`. */
+  const method = async (vendorId: string, kind: 'UPI' | 'PAY_ON_DELIVERY' | 'PAY_AT_VISIT' | 'BANK_TRANSFER') => {
+    const m = await vendor.createMethod(vendorId, { kind, label: `${kind} method`, ...(kind === 'UPI' ? { upiId: `${vendorId}.shop@okbank`, payeeName: `Shop ${vendorId}` } : {}), ...(kind === 'BANK_TRANSFER' ? { details: 'Account 000111222 IFSC TEST0000001' } : {}) }, OWNER);
     await vendor.testMethod(vendorId, m.id, OWNER);
     await vendor.updateMethod(vendorId, m.id, { status: 'ACTIVE' }, OWNER);
     return m.id;
   };
+  /** A gateway row as 5.14 could have left it (the service refuses to create one now). Inserted straight into the store; the webhook service still verifies against it. */
+  const legacyGateway = async (vendorId: string, status: 'UNVERIFIED' | 'ACTIVE' = 'UNVERIFIED', webhookSecret = 'whsec-' + vendorId + '-secret') => {
+    const cfg = sealSecret('rzp_vendor_key_1234'); const web = sealSecret(webhookSecret);
+    const m = await store.createMethod({ vendorId, kind: 'OWN_GATEWAY', label: 'Legacy gateway', last4: cfg.last4, config: { cipher: cfg.cipher, iv: cfg.iv, tag: cfg.tag }, webhook: { cipher: web.cipher, iv: web.iv, tag: web.tag } });
+    if (status === 'ACTIVE') await store.updateMethod(m.id, vendorId, { status: 'ACTIVE', verifiedAt: new Date(now.t) });
+    return m;
+  };
   const signed = (secret: string, body: object) => { const raw = Buffer.from(JSON.stringify(body)); return { raw, sig: hmacHex(secret, raw) }; };
   const orderBody = (items: Array<{ productRef: string; qty: number }> = [{ productRef: 'sku-1', qty: 1 }], over: Record<string, unknown> = {}) => ({ ...enquiry({ kind: undefined as never, payload: undefined as never }), items, shipping: { address: '12 Main Road', city: 'Chennai', pincode: '600001' }, ...over });
-  return { dw, store, lifecycle, ents, hostMap, sms, catalogue, now, b3, messaging, pub, vendor, webhook, staff, cron, addVendor, method, signed, orderBody };
+  return { dw, store, lifecycle, ents, hostMap, sms, catalogue, now, b3, messaging, pub, vendor, webhook, staff, cron, addVendor, method, legacyGateway, activity, payeeCalls, signed, orderBody };
 }
 export type RW = Awaited<ReturnType<typeof requestsWorld>>;

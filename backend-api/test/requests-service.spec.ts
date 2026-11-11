@@ -145,20 +145,21 @@ describe('the vendor inbox', () => {
 });
 
 describe('payment methods keep their secrets', () => {
-  it('details and the webhook secret are sealed, write-only, never in a response, an audit row or the store view; only the last four show', async () => {
-    const m = await w.vendor.createMethod('va', { kind: 'OWN_GATEWAY', label: 'My gateway', details: 'rzp_vendor_key_1234', webhookSecret: 'whsec-supersecret-value' }, OWNER);
-    expect(m).toMatchObject({ kind: 'OWN_GATEWAY', status: 'UNVERIFIED', last4: '1234', hasGatewayDetails: true, hasWebhookSecret: true });
+  it('bank details are sealed, write-only, never in a response, an audit row or the store view; only the last four show', async () => {
+    const m = await w.vendor.createMethod('va', { kind: 'BANK_TRANSFER', label: 'My bank', details: 'bank_acct_secret_1234' }, OWNER);
+    expect(m).toMatchObject({ kind: 'BANK_TRANSFER', status: 'UNVERIFIED', last4: '1234', hasGatewayDetails: true, hasWebhookSecret: false });
     const everything = JSON.stringify([m, await w.vendor.listMethods('va'), await w.store.listMethods('va'), w.store.audits, w.store.outbox]);
-    expect(everything).not.toMatch(/rzp_vendor_key|supersecret|cipher|"iv"|"tag"/);
-    const stored = JSON.stringify([...w.store.methods.values()]); expect(stored).not.toContain('rzp_vendor_key'); expect(stored).not.toContain('whsec-supersecret-value');
+    expect(everything).not.toMatch(/bank_acct_secret|cipher|"iv"|"tag"/);
+    const stored = JSON.stringify([...w.store.methods.values()]); expect(stored).not.toContain('bank_acct_secret');
   });
   it('an online method needs its test before it can be ACTIVE; an offline one does not; changing the details drops it back to UNVERIFIED', async () => {
-    const g = await w.vendor.createMethod('va', { kind: 'UPI', label: 'UPI', details: 'shop@upi' }, OWNER);
+    const g = await w.vendor.createMethod('va', { kind: 'UPI', label: 'UPI', upiId: 'shop@upi', payeeName: 'Shop Owner' }, OWNER);
     expect(await code(w.vendor.updateMethod('va', g.id, { status: 'ACTIVE' }, OWNER))).toBe('PAYMENT_METHOD_INVALID');
     expect(await w.vendor.testMethod('va', g.id, OWNER)).toMatchObject({ ok: true, mode: 'FAKE' }); expect((await w.vendor.updateMethod('va', g.id, { status: 'ACTIVE' }, OWNER)).status).toBe('ACTIVE');
-    expect((await w.vendor.updateMethod('va', g.id, { details: 'new@upi' }, OWNER)).status).toBe('UNVERIFIED');
+    expect((await w.vendor.updateMethod('va', g.id, { upiId: 'new@upi', confirmUpiChange: true }, OWNER)).status).toBe('UNVERIFIED');
     const cod = await w.vendor.createMethod('va', { kind: 'PAY_ON_DELIVERY', label: 'Cash on delivery' }, OWNER); expect((await w.vendor.updateMethod('va', cod.id, { status: 'ACTIVE' }, OWNER)).status).toBe('ACTIVE');
-    expect(await code(w.vendor.createMethod('va', { kind: 'OWN_GATEWAY', label: 'No details' }, OWNER))).toBe('PAYMENT_METHOD_INVALID');
+    expect(await code(w.vendor.createMethod('va', { kind: 'BANK_TRANSFER', label: 'No details' }, OWNER))).toBe('PAYMENT_METHOD_INVALID');
+    expect(await code(w.vendor.createMethod('va', { kind: 'UPI', label: 'No id' }, OWNER))).toBe('PAYMENT_METHOD_INVALID');
   });
   it('the terms must be accepted before a method is activated (the slice 5.15 guard)', async () => {
     const v2 = new (w.vendor.constructor as new (...a: unknown[]) => typeof w.vendor)(w.store, w.messaging, (w.vendor as never as { gateway: unknown }).gateway, w.lifecycle, { get: async () => ({}) }, { require: async () => { throw Object.assign(new Error('x'), { response: { code: 'TERMS_ACCEPTANCE_REQUIRED' } }); } });
@@ -166,7 +167,7 @@ describe('payment methods keep their secrets', () => {
     expect(await code(v2.updateMethod('va', cod.id, { status: 'ACTIVE' }, OWNER))).toBe('TERMS_ACCEPTANCE_REQUIRED');
   });
   it('live gateway checks are refused (no real adapter), and no real gateway is ever called', async () => {
-    const g = await w.vendor.createMethod('va', { kind: 'OWN_GATEWAY', label: 'Gate', details: 'key_abcd', webhookSecret: 'whsec-12345678' }, OWNER);
+    const g = await w.vendor.createMethod('va', { kind: 'UPI', label: 'Gate', upiId: 'gate@okbank', payeeName: 'Gate Shop' }, OWNER);
     (w.vendor as never as { gateway: { env: Record<string, string> } }).gateway.env = { VENDOR_GATEWAY_LIVE_ENABLED: 'true' };
     expect(await code(w.vendor.testMethod('va', g.id, OWNER))).toBe('PAYMENT_METHOD_INVALID');
   });
@@ -175,7 +176,7 @@ describe('payment methods keep their secrets', () => {
 describe('orders (the bridge: the customer pays the vendor, never Get4Domain)', () => {
   it('nothing configured: the order route is a plain 409 (enquiry and booking requests only); an unverified or disabled gateway does not count', async () => {
     expect(await code(w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'))).toBe('ORDER_INVALID');
-    await w.vendor.createMethod('va', { kind: 'OWN_GATEWAY', label: 'Gate', details: 'key_abcd', webhookSecret: 'whsec-12345678' }, OWNER);
+    await w.vendor.createMethod('va', { kind: 'UPI', label: 'Gate', upiId: 'gate@okbank', payeeName: 'Gate Shop' }, OWNER);
     expect(await code(w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'))).toBe('ORDER_INVALID');
   });
   it('only a cash-style method: an ORDER REQUEST (pay on delivery); an online choice is refused; the order, items, stock reservation and the first number are stored', async () => {
@@ -187,7 +188,7 @@ describe('orders (the bridge: the customer pays the vendor, never Get4Domain)', 
     expect(await code(w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }], { payWith: 'ONLINE' }), '1.1.1.2'))).toBe('ORDER_INVALID');
   });
   it('a vendor gateway or UPI that is ACTIVE gives the online step with the vendor\'s own checkout reference; nothing from Get4Domain touches money', async () => {
-    await w.method('va', 'OWN_GATEWAY');
+    await w.method('va', 'UPI');
     const r = await w.pub.order(HOST_A, w.orderBody(), '1.1.1.1') as unknown as { paymentStep: { step: string; checkout: { providerOrderRef: string; mode: string; amountPaise: number } }; readiness: string };
     expect(r.readiness).toBe('FULL_CHECKOUT'); expect(r.paymentStep).toMatchObject({ step: 'PAY_ONLINE_WITH_VENDOR_GATEWAY', checkout: { mode: 'FAKE', amountPaise: 150_000 } });
     const o = [...w.store.orders.values()][0]; expect(o).toMatchObject({ status: 'AWAITING_PAYMENT', paymentMode: 'ONLINE' }); expect(r.paymentStep.checkout.providerOrderRef).toBe(o.id);
@@ -232,7 +233,7 @@ describe('orders (the bridge: the customer pays the vendor, never Get4Domain)', 
 
 describe('the vendor gateway webhook', () => {
   const setup = async () => {
-    const mid = await w.method('va', 'OWN_GATEWAY', 'whsec-va-secret-0001'); await w.vendor.setStock('va', 'sku-1', 5);
+    await w.method('va', 'UPI'); const mid = (await w.legacyGateway('va', 'ACTIVE', 'whsec-va-secret-0001')).id; await w.vendor.setStock('va', 'sku-1', 5);
     await w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 2 }]), '1.1.1.1'); const order = [...w.store.orders.values()][0];
     const event = (id: string, over: Record<string, unknown> = {}) => ({ id, type: 'payment.captured', orderRef: order.id, amountPaise: order.amountPaise, currency: 'INR', ...over });
     return { mid, order, event };
@@ -271,7 +272,7 @@ describe('the vendor gateway webhook', () => {
     expect(w.store.orders.get(order.id)).toMatchObject({ status: 'AWAITING_PAYMENT', reviewFlag: true }); expect(w.store.invoices.size).toBe(0); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 5, reserved: 2 });
   });
   it('another vendor\'s order cannot be paid through this vendor\'s webhook; unknown orders and other event types are ignored', async () => {
-    const { mid, event } = await setup(); await w.method('vb', 'OWN_GATEWAY', 'whsec-vb-secret-0002'); await w.pub.order(HOST_B, w.orderBody(), '2.2.2.2'); const bOrder = [...w.store.orders.values()].find((o) => o.vendorId === 'vb')!;
+    const { mid, event } = await setup(); await w.method('vb', 'UPI'); await w.legacyGateway('vb', 'ACTIVE', 'whsec-vb-secret-0002'); await w.pub.order(HOST_B, w.orderBody(), '2.2.2.2'); const bOrder = [...w.store.orders.values()].find((o) => o.vendorId === 'vb')!;
     const cross = w.signed('whsec-va-secret-0001', event('evt_c', { orderRef: bOrder.id, amountPaise: bOrder.amountPaise })); expect(await w.webhook.handle('va', mid, cross.raw, cross.sig)).toEqual({ status: 'IGNORED' });
     expect(w.store.orders.get(bOrder.id)!.status).toBe('AWAITING_PAYMENT');
     const unknown = w.signed('whsec-va-secret-0001', event('evt_u', { orderRef: 'ord-zzz' })); expect(await w.webhook.handle('va', mid, unknown.raw, unknown.sig)).toEqual({ status: 'IGNORED' });

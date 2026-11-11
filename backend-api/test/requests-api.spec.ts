@@ -92,7 +92,7 @@ describe('requests and orders API', () => {
 
   describe('the vendor-gateway webhook (raw body)', () => {
     it('a signed event pays the order once; the same event again is 200 with duplicate; a bad signature is 401', async () => {
-      const mid = await w.method('va', 'OWN_GATEWAY', 'whsec-va-secret-0001');
+      await w.method('va', 'UPI'); const mid = (await w.legacyGateway('va', 'ACTIVE', 'whsec-va-secret-0001')).id;
       await send('post', `/v3/public/sites/${HOST_A}/orders`, null, body({ kind: undefined, payload: undefined, items: [{ productRef: 'sku-1', qty: 1 }] }));
       const order = [...w.store.orders.values()][0]; const { raw, sig } = w.signed('whsec-va-secret-0001', { id: 'evt_1', type: 'payment.captured', orderRef: order.id, amountPaise: order.amountPaise, currency: 'INR' });
       const post = (s: string) => request(app.getHttpServer()).post(`/v3/payments/vendor/va/${mid}`).set('content-type', 'application/json').set('x-g4d-signature', s).send(raw.toString('utf8'));
@@ -122,10 +122,11 @@ describe('requests and orders API', () => {
       }
     });
     it('payment method secrets are write-only over HTTP: not in the create response, the list or an update', async () => {
-      const c = await send('post', '/v3/me/payment-methods', 'owner-a', { kind: 'OWN_GATEWAY', label: 'My gateway', details: 'rzp_vendor_key_1234', webhookSecret: 'whsec-supersecret-value' });
+      const c = await send('post', '/v3/me/payment-methods', 'owner-a', { kind: 'BANK_TRANSFER', label: 'My bank', details: 'bank_acct_secret_1234' });
       expect(c.status).toBe(200); expect(c.body.data).toMatchObject({ last4: '1234', hasGatewayDetails: true });
-      const all = JSON.stringify([c.body, (await get('/v3/me/payment-methods', 'owner-a')).body, (await send('put', `/v3/me/payment-methods/${c.body.data.id}`, 'owner-a', { label: 'Renamed', details: 'rzp_new_key_9999' })).body]);
-      expect(all).not.toMatch(/rzp_vendor_key|rzp_new_key|supersecret|cipher/);
+      const all = JSON.stringify([c.body, (await get('/v3/me/payment-methods', 'owner-a')).body, (await send('put', `/v3/me/payment-methods/${c.body.data.id}`, 'owner-a', { label: 'Renamed', details: 'bank_new_secret_9999' })).body]);
+      expect(all).not.toMatch(/bank_acct_secret|bank_new_secret|cipher/);
+      for (const kind of ['OWN_GATEWAY', 'GATEWAY_RAZORPAY', 'GATEWAY_CASHFREE', 'GATEWAY_PAYTM']) expect((await send('post', '/v3/me/payment-methods', 'owner-a', { kind, label: 'Gate', details: 'key_1234' })).status).toBe(400);
       expect((await send('post', '/v3/me/payment-methods', 'owner-a', { kind: 'NOPE', label: 'x' })).status).toBe(400);
     });
     it('vendor B cannot see, answer or invoice vendor A\'s request or order (the same 404 as an id that does not exist)', async () => {

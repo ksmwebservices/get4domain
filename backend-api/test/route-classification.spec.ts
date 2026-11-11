@@ -49,7 +49,7 @@ const OWNER_ONLY_ROUTES = [
   'POST /v3/me/plan/renew-with-wallet',   // B4 slice 5.16a-2: buying a plan with wallet credit spends money: owner only
   'GET /v3/me/wallet', 'GET /v3/me/wallet/ledger', 'GET /v3/me/wallet/topups', 'GET /v3/me/wallet/topups/:id/invoice', 'GET /v3/me/wallet/usage-statement', 'POST /v3/me/wallet/topups', 'POST /v3/me/wallet/topups/:id/confirm', 'PUT /v3/me/wallet/billing-profile',
   // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only
-  'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
+  'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/payment-methods/:id/default', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
   // B3 slice 5.15: accepting the terms binds the business: owner only (a team member never accepts for it)
   'GET /v3/me/terms', 'POST /v3/me/terms/accept',
   // B3 slice 5.1d: asking for the whole account to be removed for good is the owner's decision alone

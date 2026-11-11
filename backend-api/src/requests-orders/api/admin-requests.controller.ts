@@ -18,6 +18,7 @@ export class AdminRequestsController {
 
   @Get('requests') @ApiOperation({ summary: 'Requests across vendors (no customer e-mail or phone)' })
   async requests(@Query() q: StaffRequestsQueryDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.staff.requests({ vendorId: q.vendorId, status: q.status as RequestStatus, kind: q.kind as RequestKind, skip, take }); return paged(r.items, r.total, page, pageSize); }
+  @Get('vendors/:vendorId/payment-methods') @ApiOperation({ summary: 'The payment methods of one business, read only: the UPI id is masked, no bank details or secrets' }) vendorMethods(@Param('vendorId') vendorId: string) { return this.staff.vendorMethods(vendorId); }
   @Get('requests/:id') @ApiOperation({ summary: 'One request with its events' }) request(@Param('id') id: string) { return this.staff.request(id); }
   @Get('message-outbox') @ApiOperation({ summary: 'The sandbox message outbox (recipients masked)' })
   async outbox(@Query() q: OutboxQueryDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.staff.outbox({ vendorId: q.vendorId, requestId: q.requestId, skip, take }); return paged(r.items, r.total, page, pageSize); }

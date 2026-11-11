@@ -20,7 +20,7 @@ const toReq = (r: Prisma.V3RequestGetPayload<object>): RequestRow => ({
 });
 const toEv = (e: Prisma.V3RequestEventGetPayload<object>): EventRow => ({ id: e.id, requestId: e.requestId, type: e.type, actorType: e.actorType, channel: e.channel, deliveryResult: e.deliveryResult, at: e.at, meta: obj(e.metaJson) });
 const toMethod = (m: Prisma.V3VendorPaymentMethodGetPayload<object>): MethodRow => ({
-  id: m.id, vendorId: m.vendorId, kind: m.kind as MethodKind, label: m.label, last4: m.last4, hasSecret: !!m.configCipher, hasWebhookSecret: !!m.webhookSecretCipher, status: m.status as MethodStatus, verifiedAt: m.verifiedAt, createdAt: m.createdAt, updatedAt: m.updatedAt,
+  id: m.id, vendorId: m.vendorId, kind: m.kind as MethodKind, label: m.label, last4: m.last4, upiId: m.upiId, payeeName: m.payeeName, isDefault: m.isDefault, showToCustomers: m.showToCustomers, hasSecret: !!m.configCipher, hasWebhookSecret: !!m.webhookSecretCipher, status: m.status as MethodStatus, verifiedAt: m.verifiedAt, createdAt: m.createdAt, updatedAt: m.updatedAt,
 });
 const toOrder = (o: Prisma.V3OrderGetPayload<object>): OrderRow => ({
   id: o.id, vendorId: o.vendorId, requestId: o.requestId, orderNo: o.orderNo, status: o.status, paymentMode: o.paymentMode, methodId: o.methodId, amountPaise: o.amountPaise, currency: o.currency, reviewFlag: o.reviewFlag,
@@ -95,8 +95,8 @@ export class PrismaRequestsStore extends RequestsStore {
   async nudgeCandidates(before: Date, limit: number) { return (await this.prisma.v3Request.findMany({ where: { status: { in: ['RECEIVED', 'DELIVERED', 'SEEN'] }, firstResponseAt: null, createdAt: { lte: before } }, orderBy: { createdAt: 'asc' }, take: limit })).map(toReq); }
 
   // ── payment methods ──
-  async createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox }) {
-    return toMethod(await this.prisma.v3VendorPaymentMethod.create({ data: { vendorId: d.vendorId, kind: d.kind, label: d.label, last4: d.last4, configCipher: d.config.cipher, configIv: d.config.iv, configTag: d.config.tag, webhookSecretCipher: d.webhook.cipher, webhookSecretIv: d.webhook.iv, webhookSecretTag: d.webhook.tag } }));
+  async createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean }) {
+    return toMethod(await this.prisma.v3VendorPaymentMethod.create({ data: { vendorId: d.vendorId, kind: d.kind, label: d.label, last4: d.last4, upiId: d.upiId ?? null, payeeName: d.payeeName ?? null, showToCustomers: d.showToCustomers ?? false, configCipher: d.config.cipher, configIv: d.config.iv, configTag: d.config.tag, webhookSecretCipher: d.webhook.cipher, webhookSecretIv: d.webhook.iv, webhookSecretTag: d.webhook.tag } }));
   }
   async listMethods(vendorId: string) { return (await this.prisma.v3VendorPaymentMethod.findMany({ where: { vendorId }, orderBy: { createdAt: 'asc' } })).map(toMethod); }
   async getMethod(id: string, vendorId?: string) { const m = await this.prisma.v3VendorPaymentMethod.findFirst({ where: { id, ...(vendorId ? { vendorId } : {}) } }); return m ? toMethod(m) : null; }
@@ -104,13 +104,22 @@ export class PrismaRequestsStore extends RequestsStore {
     const m = await this.prisma.v3VendorPaymentMethod.findFirst({ where: { id, vendorId } });
     return m ? { config: { cipher: m.configCipher, iv: m.configIv, tag: m.configTag }, webhook: { cipher: m.webhookSecretCipher, iv: m.webhookSecretIv, tag: m.webhookSecretTag } } : null;
   }
-  async updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox }) {
+  async updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean; isDefault?: boolean }) {
     const data: Prisma.V3VendorPaymentMethodUpdateManyMutationInput = {
       ...(p.label !== undefined ? { label: p.label } : {}), ...(p.status !== undefined ? { status: p.status } : {}), ...(p.verifiedAt !== undefined ? { verifiedAt: p.verifiedAt } : {}), ...(p.last4 !== undefined ? { last4: p.last4 } : {}),
+      ...(p.upiId !== undefined ? { upiId: p.upiId } : {}), ...(p.payeeName !== undefined ? { payeeName: p.payeeName } : {}), ...(p.showToCustomers !== undefined ? { showToCustomers: p.showToCustomers } : {}), ...(p.isDefault !== undefined ? { isDefault: p.isDefault } : {}),
       ...(p.config ? { configCipher: p.config.cipher, configIv: p.config.iv, configTag: p.config.tag } : {}), ...(p.webhook ? { webhookSecretCipher: p.webhook.cipher, webhookSecretIv: p.webhook.iv, webhookSecretTag: p.webhook.tag } : {}),
     };
     const res = await this.prisma.v3VendorPaymentMethod.updateMany({ where: { id, vendorId }, data });
     return res.count === 1 ? this.getMethod(id, vendorId) : null;
+  }
+  async setDefaultMethod(id: string, vendorId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      if (!(await tx.v3VendorPaymentMethod.findFirst({ where: { id, vendorId }, select: { id: true } }))) return null;
+      await tx.v3VendorPaymentMethod.updateMany({ where: { vendorId, isDefault: true, NOT: { id } }, data: { isDefault: false } });
+      await tx.v3VendorPaymentMethod.updateMany({ where: { id, vendorId }, data: { isDefault: true } });
+      const m = await tx.v3VendorPaymentMethod.findFirst({ where: { id, vendorId } }); return m ? toMethod(m) : null;
+    });
   }
 
   // ── orders ──

@@ -34,7 +34,7 @@ const changedFields = (s: Record<string, unknown>): string[] => (Array.isArray(s
 
 /** One predicate per rule. Each is given the fact and its own rule row (for the staff thresholds). */
 const PREDICATES: Record<AlertRuleKey, (f: ActivityFact, r: AlertRuleRow) => boolean> = {
-  PAYMENT_METHOD_CHANGED: (f) => /^payment_method\.(created|updated|deleted)$/.test(f.actionKey),
+  PAYMENT_METHOD_CHANGED: (f) => /^payment_method\.(created|updated|deleted|upi_changed)$/.test(f.actionKey),
   BUSINESS_IDENTITY_CHANGED: (f) => f.actionKey === 'business.identity_changed' && changedFields(f.summary).some((c) => c === 'name' || c === 'gstNumber'),
   CAMPAIGN_SPIKE: (f, r) => {
     if (f.actionKey !== 'campaign.metrics') return false;

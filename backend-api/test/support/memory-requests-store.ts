@@ -61,17 +61,24 @@ export class MemoryRequestsStore extends RequestsStore {
   async nudgeCandidates(before: Date, limit: number) { return [...this.requests.values()].filter((r) => ['RECEIVED', 'DELIVERED', 'SEEN'].includes(r.status) && !r.firstResponseAt && r.createdAt <= before).slice(0, limit).map((r) => ({ ...r })); }
 
   private view(m: MethodRow & { secrets: MethodSecrets }): MethodRow { const { secrets: _s, ...v } = m; return { ...v, hasSecret: !!m.secrets.config.cipher, hasWebhookSecret: !!m.secrets.webhook.cipher }; }
-  async createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox }) {
-    const now = this.clock(); const row = { id: this.id('pm'), vendorId: d.vendorId, kind: d.kind, label: d.label, last4: d.last4, hasSecret: false, hasWebhookSecret: false, status: 'UNVERIFIED' as MethodStatus, verifiedAt: null, createdAt: now, updatedAt: now, secrets: { config: d.config, webhook: d.webhook } };
+  async createMethod(d: { vendorId: string; kind: MethodKind; label: string; last4: string | null; config: SealedBox; webhook: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean }) {
+    const now = this.clock(); const row = { id: this.id('pm'), vendorId: d.vendorId, kind: d.kind, label: d.label, last4: d.last4, upiId: d.upiId ?? null, payeeName: d.payeeName ?? null, isDefault: false, showToCustomers: d.showToCustomers ?? false, hasSecret: false, hasWebhookSecret: false, status: 'UNVERIFIED' as MethodStatus, verifiedAt: null, createdAt: now, updatedAt: now, secrets: { config: d.config, webhook: d.webhook } };
     this.methods.set(row.id, row); return this.view(row);
   }
   async listMethods(vendorId: string) { return [...this.methods.values()].filter((m) => m.vendorId === vendorId).map((m) => this.view(m)); }
   async getMethod(id: string, vendorId?: string) { const m = this.methods.get(id); return m && (!vendorId || m.vendorId === vendorId) ? this.view(m) : null; }
   async methodSecrets(id: string, vendorId: string) { const m = this.methods.get(id); return m && m.vendorId === vendorId ? { config: { ...m.secrets.config }, webhook: { ...m.secrets.webhook } } : null; }
-  async updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox }) {
+  async updateMethod(id: string, vendorId: string, p: { label?: string; status?: MethodStatus; verifiedAt?: Date | null; last4?: string | null; config?: SealedBox; webhook?: SealedBox; upiId?: string | null; payeeName?: string | null; showToCustomers?: boolean; isDefault?: boolean }) {
     const m = this.methods.get(id); if (!m || m.vendorId !== vendorId) return null;
     if (p.label !== undefined) m.label = p.label; if (p.status !== undefined) m.status = p.status; if (p.verifiedAt !== undefined) m.verifiedAt = p.verifiedAt; if (p.last4 !== undefined) m.last4 = p.last4;
+    if (p.upiId !== undefined) m.upiId = p.upiId; if (p.payeeName !== undefined) m.payeeName = p.payeeName; if (p.showToCustomers !== undefined) m.showToCustomers = p.showToCustomers; if (p.isDefault !== undefined) m.isDefault = p.isDefault;
     if (p.config) m.secrets.config = p.config; if (p.webhook) m.secrets.webhook = p.webhook; m.updatedAt = this.clock(); return this.view(m);
+  }
+
+  async setDefaultMethod(id: string, vendorId: string) {
+    const m = this.methods.get(id); if (!m || m.vendorId !== vendorId) return null;
+    for (const o of this.methods.values()) if (o.vendorId === vendorId) o.isDefault = o.id === id;
+    return this.view(m);
   }
 
   async placeOrder(o: NewOrder) {

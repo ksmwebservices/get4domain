@@ -5356,6 +5356,10 @@ model V3VendorPaymentMethod {
   configIv           String?
   configTag          String?
   last4              String?
+  upiId              String? // the vendor's own UPI id, lower case; shown to the owner, masked to staff
+  payeeName          String? // the name the customer sees in their UPI app
+  isDefault          Boolean               @default(false) // one per vendor (partial unique index in the 5.17a migration)
+  showToCustomers    Boolean               @default(false) // bank details only
   webhookSecretCipher String?
   webhookSecretIv    String?
   webhookSecretTag   String?
