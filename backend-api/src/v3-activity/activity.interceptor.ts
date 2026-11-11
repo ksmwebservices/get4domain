@@ -6,7 +6,7 @@ import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { ActivityActor, ActivityService } from './activity.service';
 import { actionFor, changedIdentityFields, entityIdOf, vendorOf } from './core/action-table';
 
-interface Req { method: string; route?: { path?: unknown }; params?: Record<string, unknown>; body?: unknown; user?: AuthenticatedUser; ip?: string }
+interface Req { method: string; route?: { path?: unknown }; params?: Record<string, unknown>; body?: unknown; user?: AuthenticatedUser; ip?: string; /** slice 5.13b: set when a staff request runs inside an act-on-behalf session */ actOnBehalf?: { sessionId: string } }
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 /**
@@ -35,7 +35,7 @@ export class ActivityInterceptor implements NestInterceptor {
       const changed = action.actionKey === 'business.identity_changed' ? changedIdentityFields(fields) : undefined;
       await this.activity.record({
         vendorId: vendorOf(pattern, params, staff ? null : user?.sub ?? null), actor, actionKey: action.actionKey, entityType: action.entityType, entityId: entityIdOf(pattern, params),
-        summary: { route: `${req.method.toUpperCase()} ${pattern}`, status: http.getResponse<{ statusCode?: number }>().statusCode ?? null, params: ids, fields, ...(changed ? { changed } : {}) },
+        summary: { route: `${req.method.toUpperCase()} ${pattern}`, status: http.getResponse<{ statusCode?: number }>().statusCode ?? null, params: ids, fields, ...(changed ? { changed } : {}), ...(req.actOnBehalf ? { actOnBehalfSessionId: req.actOnBehalf.sessionId } : {}) },
       });
       return value;
     }));

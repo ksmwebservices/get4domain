@@ -145,6 +145,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/vendors/:id/lifecycle': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/restore-pro': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/extend-grace': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/suspend': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/reinstate': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing': OPS_AND_SUPER, 'GET /v3/admin/account-deletions': OPS_AND_SUPER, 'GET /v3/admin/account-deletions/:id': OPS_AND_SUPER, 'POST /v3/admin/account-deletions/:id/execute': OPS_AND_SUPER,
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
   'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
+  // 5.13b: act on behalf and the onboarding queue (the stage file's Website Developer and Customer Support roles do not exist: OPERATIONS and SUPER_ADMIN; MARKETING never)
+  'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
   // B4: customers' words on a vendor's live site
   'GET /v3/admin/vendors/:id/site/testimonials': OPS_AND_SUPER,
   // B3: the review link of a vendor's live site

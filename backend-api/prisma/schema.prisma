@@ -88,6 +88,7 @@ model Vendor {
   v3SiteLocation V3SiteLocation?
   v3ReviewLink V3ReviewLink?
   v3Testimonials V3Testimonial[]
+  v3ActOnBehalfSessions V3ActOnBehalfSession[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6708,4 +6709,25 @@ model V3Testimonial {
   @@unique([vendorId, position])
   @@index([vendorId])
   @@map("g4d_testimonials")
+}
+
+/// Slice 5.13b: a staff member acting on behalf of a vendor, with a written reason. At most one live session per staff member (the nullable unique `activeStaffId`, equal to staffId while the session is live).
+model V3ActOnBehalfSession {
+  id               String    @id @default(cuid())
+  staffId          String
+  vendorId         String
+  reason           String
+  startedAt        DateTime  @default(now())
+  expiresAt        DateTime
+  endedAt          DateTime?
+  endedBy          String?
+  vendorNotifiedAt DateTime?
+  activeStaffId    String?   @unique
+  createdAt        DateTime  @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, startedAt])
+  @@index([staffId, endedAt])
+  @@map("g4d_act_on_behalf_sessions")
 }

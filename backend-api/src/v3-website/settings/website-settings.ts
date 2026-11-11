@@ -15,9 +15,11 @@ export interface WebsiteSettings {
   mediaMaxPixels: number | null;
   /** slice B4: the most testimonials a site may show; null = testimonials are off until staff set it */
   testimonialMaxCount: number | null;
+  /** slice 5.13b: how long an act-on-behalf session lasts, in minutes; null = acting on behalf is off until staff set it */
+  actOnBehalfMaxMinutes: number | null;
 }
 
-export const DEFAULT_WEBSITE_SETTINGS: Readonly<WebsiteSettings> = { mediaMaxBytes: null, mediaAllowedTypes: null, mediaMaxPixels: null, testimonialMaxCount: null };
+export const DEFAULT_WEBSITE_SETTINGS: Readonly<WebsiteSettings> = { mediaMaxBytes: null, mediaAllowedTypes: null, mediaMaxPixels: null, testimonialMaxCount: null, actOnBehalfMaxMinutes: null };
 export const WEBSITE_SETTING_KEYS = Object.keys(DEFAULT_WEBSITE_SETTINGS) as Array<keyof WebsiteSettings>;
 export const isWebsiteSettingKey = (key: string): key is keyof WebsiteSettings => (WEBSITE_SETTING_KEYS as string[]).includes(key);
 
@@ -25,7 +27,7 @@ const wholeNumber = (v: unknown): v is number => typeof v === 'number' && Number
 
 export function websiteSettingProblem(key: keyof WebsiteSettings, v: unknown): string | null {
   switch (key) {
-    case 'mediaMaxBytes': case 'mediaMaxPixels': case 'testimonialMaxCount': return wholeNumber(v) ? null : 'must be a whole number above zero';
+    case 'mediaMaxBytes': case 'mediaMaxPixels': case 'testimonialMaxCount': case 'actOnBehalfMaxMinutes': return wholeNumber(v) ? null : 'must be a whole number above zero';
     case 'mediaAllowedTypes':
       if (!Array.isArray(v) || v.length === 0 || new Set(v).size !== v.length) return 'must be a list of different image types';
       return v.every((t) => (RASTER_TYPES as readonly string[]).includes(t as string)) ? null : `must only use ${RASTER_TYPES.join(', ')}`;

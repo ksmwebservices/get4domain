@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SitePublishModule } from '../site-publish/site-publish.module';
+import { ActOnBehalfCron, ActOnBehalfService } from './act-on-behalf/act-on-behalf.service';
+import { ActOnBehalfInterceptor } from './act-on-behalf/act-on-behalf.interceptor';
+import { ActOnBehalfStore, PrismaActOnBehalfStore } from './act-on-behalf/act-on-behalf.store';
+import { AdminActOnBehalfController, MeActOnBehalfController } from './api/act-on-behalf.controllers';
+import { OnboardingQueueService } from './onboarding/onboarding-queue.service';
 import { AdminMediaController, MeMediaController } from './api/media.controllers';
 import { AdminReviewController } from './api/review.controllers';
 import { AdminSeoController } from './api/seo.controllers';
@@ -37,9 +43,11 @@ export const WEBSITE_PROVIDERS = [
   { provide: ReviewLinkStore, useClass: PrismaReviewLinkStore }, ReviewLinkProjector, ReviewLinkService,
   // B4 testimonials
   { provide: TestimonialStore, useClass: PrismaTestimonialStore }, TestimonialProjector, TestimonialsService,
+  // 5.13b act on behalf (the interceptor is global like the activity interceptor) and the onboarding queue
+  { provide: ActOnBehalfStore, useClass: PrismaActOnBehalfStore }, ActOnBehalfService, ActOnBehalfCron, { provide: APP_INTERCEPTOR, useClass: ActOnBehalfInterceptor }, OnboardingQueueService,
   { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector, loc: LocationProjector, rl: ReviewLinkProjector, tm: TestimonialProjector) => [seo, loc, rl, tm], inject: [SeoProjector, LocationProjector, ReviewLinkProjector, TestimonialProjector] },
 ];
-export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController];
+export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController, AdminActOnBehalfController, MeActOnBehalfController];
 
 /**
  * The Website manager (slice 5.5): drafts, preview, publish, revisions. It builds and publishes only through the site publish module (SitePublishModule) and reads
