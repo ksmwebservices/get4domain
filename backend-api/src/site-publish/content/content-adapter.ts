@@ -102,7 +102,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     cta: { label: str(ex.ctaLabel) || cat.ctaPrimary, href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '/contact', secondaryLabel: '', secondaryHref: '' },
     ...(kitTerms ? { terms: kitTerms } : {}),
     items, groups: [], team: (ex.team ?? []).map((t) => ({ id: slugify(t.name), name: str(t.name), role: str(t.role), note: str(t.note), image: str(t.image) })),
-    testimonials: (cms?.testimonials ?? []).filter((t) => !t.sample).map((t) => ({ quote: str(t.quote), author: str(t.author), note: str(t.note) })),
+    testimonials: (cms?.testimonials ?? []).filter((t) => !t.sample && !(t.proOnly && o.directions === false)).map((t) => ({ quote: str(t.quote), author: str(t.author), note: str(t.note) })),
     faqs, gallery,
     steps: (ex.steps ?? []).map((s, i) => ({ n: i + 1, title: str(s.title), desc: str(s.desc) })),
     trust: (ex.trust ?? []).map((t) => ({ text: str(t) })),

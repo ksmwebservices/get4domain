@@ -10,6 +10,7 @@ import { Actor } from '../../plans/admin/audit.service';
 import { ReviewService } from '../review/review.service';
 import { LocationService } from '../location/location.service';
 import { ReviewLinkService } from '../review-link/review-link.service';
+import { TestimonialsService } from '../testimonials/testimonials.service';
 import { SeoService } from '../seo/seo.service';
 import { WebsiteService } from '../website.service';
 import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, DraftNavigationDto, DraftSectionsDto, RestoreRevisionDto } from './dto/website.dto';
@@ -25,7 +26,7 @@ import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, Draf
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeWebsiteController {
-  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService, private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService) {}
+  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService, private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService, private readonly testimonials: TestimonialsService) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
@@ -99,6 +100,16 @@ export class MeWebsiteController {
   @ApiOperation({ summary: 'Autosave my Google review link (https, on google.com, g.page, maps.app.goo.gl or search.google.com; Pro only; an empty value removes it)' })
   reviewLinkSave(@Tenant() t: TenantContext, @Body() body: { url?: unknown }, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return this.web.save(t.vendorId, this.actor(user, req), { kind: 'reviewLink', value: body?.url });
+  }
+
+  @Get('testimonials')
+  @ApiOperation({ summary: 'My testimonials as my draft has them, the owner label shown on the site, the staff cap and whether my plan shows them (Pro only)' })
+  testimonialsView(@Tenant() t: TenantContext) { return this.testimonials.view(t.vendorId); }
+
+  @Put('draft/testimonials') @HttpCode(200)
+  @ApiOperation({ summary: 'Autosave my testimonials (first name or initials, up to 300 characters, optional date, and my confirmation that the customer agreed; no ratings; Pro only)' })
+  testimonialsSave(@Tenant() t: TenantContext, @Body() body: { items?: unknown }, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    return this.web.save(t.vendorId, this.actor(user, req), { kind: 'testimonials', items: body?.items });
   }
 
   @Delete('draft') @HttpCode(200)

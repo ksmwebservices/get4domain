@@ -87,6 +87,7 @@ model Vendor {
   v3PageSeo V3PageSeo[]
   v3SiteLocation V3SiteLocation?
   v3ReviewLink V3ReviewLink?
+  v3Testimonials V3Testimonial[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6689,4 +6690,22 @@ model V3ReviewLink {
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("g4d_review_links")
+}
+
+/// Slice B4 (amendment 08): the testimonials of a vendor's LIVE site, in order. Written when a version goes live, for staff; the published content document is the source of truth. No rating of any kind is stored.
+model V3Testimonial {
+  id        String   @id @default(cuid())
+  vendorId  String
+  position  Int
+  name      String
+  text      String
+  date      String?
+  version   Int
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, position])
+  @@index([vendorId])
+  @@map("g4d_testimonials")
 }

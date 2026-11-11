@@ -13,16 +13,18 @@ import { SiteRepository } from '../site-publish/publish/site.repository';
 import { ThemeRenderService } from '../site-publish/renderer/theme-render.service';
 import { ProhibitedScanPort } from '../v3-trust/trust.ports';
 import { MediaStore } from './media/media.store';
+import { WebsiteSettingsService } from './settings/website-settings.service';
+import { validateTestimonials } from './core/testimonial-core';
 import { LIVE_PROJECTORS, LiveProjector } from './projection/live-projector';
 import { isPageKey, SeoWho, validatePageSeo } from './core/seo-core';
 import { deriveEditorMap, EditorMap, navPageKeysOf, sectionIdsOf } from './core/editor-map';
 import {
-  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeReviewUrl, writeSeo,
+  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeReviewUrl, writeSeo, writeTestimonials,
 } from './core/managed-doc';
 import { validateLocation } from './core/location-core';
 import { validateReviewUrl } from './core/review-link-core';
 import { checkWording } from './core/wording-core';
-import { fieldProblem, limitReached, locked, nothingToPublish, reviewRequired, staleDraft, versionNotFound, wordingProblem } from './website.errors';
+import { fieldProblem, limitReached, locked, testimonialsNotConfigured, nothingToPublish, reviewRequired, staleDraft, versionNotFound, wordingProblem } from './website.errors';
 import { SiteCachePort } from './website.ports';
 import { DraftRow, WebsiteStore } from './website.store';
 
@@ -37,11 +39,12 @@ export type Change =
   | { kind: 'navigation'; value: unknown }
   | { kind: 'seo'; pageKey: string; edit: unknown }
   | { kind: 'location'; value: unknown }
-  | { kind: 'reviewLink'; value: unknown };
+  | { kind: 'reviewLink'; value: unknown }
+  | { kind: 'testimonials'; items: unknown };
 
 export interface DraftView { doc: ManagedDoc; rev: number; dirty: boolean; baseVersion: number | null; liveVersion: number | null }
 export interface EditorView { themeId: string; map: EditorMap; fonts: string[]; pro: boolean; limits: Record<string, number | null>; fields: Record<string, { type: string; max: number; label: string; proOnly: boolean }> }
-interface Ctx { ent: ResolvedEntitlements; pro: boolean; themeId: string; map: EditorMap; fonts: string[] }
+interface Ctx { ent: ResolvedEntitlements; pro: boolean; /** the staff setting for the testimonial count; null = not switched on */ testimonialMax: number | null; themeId: string; map: EditorMap; fonts: string[] }
 
 /** A Pro site: the plan has calls to action on (a downgrade or a suspension brings the Free entitlements, so this turns false by itself). */
 export const isPro = (e: ResolvedEntitlements): boolean => e.level === 'PRO' && e.features['site.cta']?.state === 'ACTIVE';
@@ -73,6 +76,8 @@ export class WebsiteService {
     @Optional() @Inject(LIVE_PROJECTORS) private readonly projectors?: LiveProjector[],
     /** the vendor's uploaded pictures (the share picture of a page may be one of them) */
     @Optional() private readonly media?: MediaStore,
+    /** the staff settings (the testimonial count cap) */
+    @Optional() private readonly wsettings?: WebsiteSettingsService,
   ) {}
   private readonly logger = new Logger(WebsiteService.name);
 
@@ -82,7 +87,7 @@ export class WebsiteService {
     const ent = await this.entitlements.resolve(vendorId);
     if (!status.themeId) throw fieldProblem('NO_THEME', 'This site has no theme yet; choose a category first.');
     const loaded = this.themes.getTheme(status.themeId);
-    return { ent, pro: isPro(ent), themeId: status.themeId, map: deriveEditorMap(loaded.theme.templates), fonts: loaded.manifest.fonts ?? [] };
+    return { ent, pro: isPro(ent), testimonialMax: (await this.wsettings?.get())?.testimonialMaxCount ?? null, themeId: status.themeId, map: deriveEditorMap(loaded.theme.templates), fonts: loaded.manifest.fonts ?? [] };
   }
 
   private async liveDoc(vendorId: string): Promise<ManagedDoc> { return (await this.content.load(vendorId))?.managed ?? emptyDoc(); }
@@ -184,6 +189,16 @@ export class WebsiteService {
       case 'sections': { const r = validateSections(change.value, sectionIdsOf(c.map)); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, sections: r.sections }; }
       case 'brand': { const r = validateBrand(change.value, c.fonts); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, brand: r.brand }; }
       case 'navigation': { const r = validateNavigation(change.value, navPageKeysOf(c.map, pageSlugs(doc))); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, navigation: r.navigation }; }
+      case 'testimonials': {
+        if (!c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);   // a Pro-only section (owner rule 2)
+        const r = writeTestimonials(doc, change.items, { maxCount: c.testimonialMax });
+        if (!r.ok) {
+          if (r.code === 'TESTIMONIALS_NOT_CONFIGURED') throw testimonialsNotConfigured();
+          if (r.code === 'LIMIT_REACHED') throw limitReached('testimonials', c.testimonialMax ?? 0);
+          throw r.code === 'WORDING_NOT_ALLOWED' ? wordingProblem(r.field ?? 'testimonials') : fieldProblem(r.code, r.message, r.field);
+        }
+        return r.doc;
+      }
       case 'reviewLink': {
         if (!c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);   // Pro only (owner rule 2): a Free site shows no review button
         const r = writeReviewUrl(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc;
@@ -247,6 +262,11 @@ export class WebsiteService {
       const feature = LIST_PLAN_FEATURE[name as ListName]; const limit = feature ? limitOf(c.ent, feature) : null;
       if (limit !== null && r.items.length > limit) throw limitReached(name, limit);
       for (const [field, text] of this.texts(doc, { kind: 'list', name, items })) if (!checkWording(text, { strict: false }).ok) throw wordingProblem(field);
+    }
+    if (doc.testimonials?.length) {
+      // shape, consent and wording are re-checked; the count cap only for a Pro site (a Free site keeps what it stored, owner rule 6)
+      const r = validateTestimonials(doc.testimonials, { maxCount: c.pro ? c.testimonialMax : Number.MAX_SAFE_INTEGER });
+      if (!r.ok) { if (r.code === 'TESTIMONIALS_NOT_CONFIGURED') throw testimonialsNotConfigured(); if (r.code === 'WORDING_NOT_ALLOWED') throw wordingProblem(r.field); if (r.code === 'LIMIT_REACHED') throw limitReached('testimonials', c.testimonialMax ?? 0); throw fieldProblem(r.code, r.message, r.field); }
     }
     if (doc.reviewUrl) { const r = validateReviewUrl(doc.reviewUrl); if (!r.ok) throw fieldProblem(r.code, 'A saved review link is no longer valid.', 'reviewUrl'); }
     if (doc.location) { const r = validateLocation(doc.location); if (!r.ok) throw fieldProblem(r.code, 'A saved location is no longer valid.', `location.${r.field}`); }

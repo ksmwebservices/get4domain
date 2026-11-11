@@ -5,6 +5,7 @@ import { AdminGuard } from '../../auth/guards/admin.guard';
 import { PageQueryDto, pageArgs } from '../../plans/admin/plans-admin.common';
 import { LocationService } from '../location/location.service';
 import { ReviewLinkService } from '../review-link/review-link.service';
+import { TestimonialsService } from '../testimonials/testimonials.service';
 import { SeoService } from '../seo/seo.service';
 
 export class SeoReportQuery extends PageQueryDto {
@@ -18,11 +19,15 @@ export class SeoReportQuery extends PageQueryDto {
 @UseGuards(AdminGuard)
 @Controller('v3/admin')
 export class AdminSeoController {
-  constructor(private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService) {}
+  constructor(private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService, private readonly testimonials: TestimonialsService) {}
 
   @Get('seo/pages')
   @ApiOperation({ summary: 'Pages with something to fix: still on the default text, sharing a title, or a short description (filter by vendor and issue)' })
   issues(@Query() q: SeoReportQuery) { const { page, pageSize } = pageArgs(q); return this.seo.staffIssues({ vendorId: q.vendorId, issue: q.issue, page, pageSize }); }
+
+  @Get('vendors/:id/site/testimonials')
+  @ApiOperation({ summary: 'The testimonials of one vendor\'s live site (customers\' words: OPERATIONS and SUPER_ADMIN only)' })
+  vendorTestimonials(@Param('id') id: string) { return this.testimonials.staffList(id); }
 
   @Get('vendors/:id/site/review-link')
   @ApiOperation({ summary: 'The Google review link of one vendor\'s live site' })

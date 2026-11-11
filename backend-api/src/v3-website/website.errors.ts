@@ -12,6 +12,8 @@ export const nothingToPublish = (): ConflictException => new ConflictException(w
 export const versionNotFound = (): NotFoundException => new NotFoundException(wmBody('VERSION_NOT_FOUND', 'That version of the site does not exist.'));
 export const reviewRequired = (): ConflictException => new ConflictException(wmBody('REVIEW_REQUIRED', 'Your edits are sent to our team for review before they go live. Use Submit for review.'));
 
+export const testimonialsNotConfigured = (): ConflictException => new ConflictException(wmBody('TESTIMONIALS_NOT_CONFIGURED', 'Testimonials are not switched on yet.'));
+
 /** Media problems carry the HTTP status that fits their code. */
 const MEDIA_STATUS: Readonly<Record<string, number>> = { MEDIA_NOT_CONFIGURED: 409, MEDIA_TOO_LARGE: 413, MEDIA_IN_USE: 409, MEDIA_NOT_FOUND: 404, BANNER_NOT_AVAILABLE: 404 };
 export function mediaProblem(code: string, message: string, field?: string): HttpException {

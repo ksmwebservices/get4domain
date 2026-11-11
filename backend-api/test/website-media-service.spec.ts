@@ -9,7 +9,7 @@ const JPG = (extra = 'a') => Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]
 const file = (buffer: Buffer, mimetype = 'image/png') => ({ buffer, mimetype, size: buffer.length });
 const code = async (p: Promise<unknown>): Promise<string> => { try { await p; return 'OK'; } catch (e) { const r = (e as { response?: { code?: string } }).response; return r?.code ?? `HTTP${(e as { status?: number }).status}`; } };
 let w: WebsiteWorld;
-const configure = () => { w.wsettings.v = { mediaMaxBytes: 10_000, mediaAllowedTypes: ['image/png', 'image/jpeg'], mediaMaxPixels: 5_000_000 }; };
+const configure = () => { w.wsettings.v = { mediaMaxBytes: 10_000, mediaAllowedTypes: ['image/png', 'image/jpeg'], mediaMaxPixels: 5_000_000, testimonialMaxCount: null }; };
 beforeEach(() => { w = websiteWorld({ level: 'PRO' }); });
 
 describe('uploads', () => {

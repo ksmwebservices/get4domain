@@ -11,7 +11,7 @@ import { findLegacyUse } from './support/legacy-scan';
  */
 const src = path.resolve(__dirname, '../src');
 const MODULES = ['v3-website'];
-const NEW_MODELS = ['V3SiteDraft', 'V3SiteSnapshot', 'V3SitePicture', 'V3ContentSubmission', 'V3PageSeo', 'V3SiteLocation', 'V3ReviewLink'];
+const NEW_MODELS = ['V3SiteDraft', 'V3SiteSnapshot', 'V3SitePicture', 'V3ContentSubmission', 'V3PageSeo', 'V3SiteLocation', 'V3ReviewLink', 'V3Testimonial'];
 const tsFiles = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? tsFiles(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
 const files = MODULES.flatMap((m) => tsFiles(path.join(src, m)));
 const rel = (f: string): string => path.relative(src, f).replace(/\\/g, '/');
