@@ -25,7 +25,7 @@ export interface PlannedPage {
   pageContent?: Record<string, unknown>;
 }
 
-const RESERVED_PAGE_SLUGS = new Set(['book', 'enquire', 'order', 'legal', 'p', 'api', 'about', 'services', 'gallery', 'contact', 'home', 'ta']);
+export const RESERVED_PAGE_SLUGS = new Set(['book', 'enquire', 'order', 'legal', 'p', 'api', 'about', 'services', 'gallery', 'contact', 'home', 'ta']);
 const str = (v: unknown): string => (v === null || v === undefined ? '' : String(v));
 const slugify = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'item';
 
@@ -81,7 +81,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const gallery = cut((cms?.portfolio ?? []).map((g) => ({ src: str(g.src), alt: str(g.alt) || name, title: str(g.title) })), lim.gallery, 'gallery', notes);
   const faqs = cut((ex.faq ?? []).map((f) => ({ q: str(f.q), a: str(f.a) })), lim.faqs, 'faqs', notes);
   const extraPages = (cms?.pages ?? []).filter((p) => p.slug && !RESERVED_PAGE_SLUGS.has(slugify(p.slug)));
-  const pages = cut(extraPages, lim.pages, 'pages', notes).map((p) => ({ slug: slugify(p.slug), title: str(p.title), body: str(p.body), href: `/${slugify(p.slug)}` }));
+  const pages = cut(extraPages, lim.pages, 'pages', notes).map((p) => ({ slug: slugify(p.slug), title: str(p.title), body: str(p.body), intro: str(p.intro), href: `/${slugify(p.slug)}` }));
 
   const sample = kit.sampleContent(o.categoryId, { lang: o.lang }) as { terms?: Record<string, string>; site?: { name?: string }; about?: { title?: string } };
   const kitTerms = sample.terms;   // platform wording from the kit, in the page language
@@ -90,8 +90,8 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const content: Record<string, unknown> = {
     category: o.categoryId, lang: o.lang,
     site: { name, tagline: str(cms?.tagline), logo: str(cms?.logo), logoAlt: `${name} logo`, favicon: str(cms?.favicon), year: o.year, url: siteUrl },
-    hero: { title: str(ex.headline) || str(cms?.tagline) || name, badge: str(ex.announcement), subtitle: str(ex.subline) || str(cms?.tagline), image: str(cms?.banner), imageAlt: name, cta: '' },
-    about: { title: aboutTitle, text: str(cms?.about), image: '', imageAlt: '' },
+    hero: { title: str(ex.headline) || str(cms?.tagline) || name, badge: str(ex.announcement), subtitle: str(ex.subline) || str(cms?.tagline), image: str(cms?.banner), imageAlt: str(ex.heroImageAlt) || name, cta: '' },
+    about: { title: aboutTitle, text: str(cms?.about), image: str(ex.aboutImage), imageAlt: str(ex.aboutImage) ? str(ex.aboutImageAlt) || name : '' },
     contact: {
       phone, phoneHref: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '', whatsapp: str(cms?.whatsapp) || phone, whatsappHref: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '',
       email, address, city, area: '', pin, mapUrl: str(cms?.googleMaps),
@@ -106,11 +106,11 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     steps: (ex.steps ?? []).map((s, i) => ({ n: i + 1, title: str(s.title), desc: str(s.desc) })),
     trust: (ex.trust ?? []).map((t) => ({ text: str(t) })),
     stats: (ex.stats ?? []).map((s) => ({ value: str(s.value), label: str(s.label) })),
-    areas: [], credentials: [], blocks: [], videos: [],
+    areas: [], credentials: (ex.credentials ?? []).map((c) => ({ title: str(c.title), detail: str(c.detail) })), blocks: [], videos: [],
     products: cat.track === 'ecommerce' ? items : [],
     pages,
   };
-  const settings: Record<string, unknown> = o.motion ? { motionIntensity: o.motion } : {};
+  const settings: Record<string, unknown> = { ...(doc.rendererSettings ?? {}), ...(o.motion ? { motionIntensity: o.motion } : {}) };
   return { content, settings, vendor: { id: doc.vendor.id, unclaimed: !doc.claimed }, host: { siteUrl, customDomain: o.customDomain ?? '', allowEmbeds: false }, notes };
 }
 
@@ -122,7 +122,7 @@ export function planPages(content: Record<string, unknown>, templates: string[])
     if (has(template)) out.push({ template, path, slug: template });
   }
   if (has('page')) {
-    for (const p of (content.pages as Array<{ slug: string; title: string; body: string }>) ?? []) out.push({ template: 'page', path: `/${p.slug}`, slug: p.slug, pageContent: { title: p.title, intro: '', body: p.body, slug: p.slug } });
+    for (const p of (content.pages as Array<{ slug: string; title: string; body: string; intro?: string }>) ?? []) out.push({ template: 'page', path: `/${p.slug}`, slug: p.slug, pageContent: { title: p.title, intro: p.intro ?? '', body: p.body, slug: p.slug } });
   }
   if (has('item')) {
     for (const i of (content.items as Array<{ slug: string }>) ?? []) out.push({ template: 'item', path: `/services/${i.slug}`, slug: i.slug, item: i as unknown as Record<string, unknown> });

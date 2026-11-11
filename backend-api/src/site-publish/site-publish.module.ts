@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SiteDomainsModule } from '../site-domains/site-domains.module';
 import { ContentSource } from './content/content-source';
+import { SnapshotSink } from './content/snapshot-sink';
 import { PublishService } from './publish/publish.service';
 import { SiteBuildService } from './publish/site-build.service';
 import { SiteRepository } from './publish/site.repository';
@@ -17,6 +18,6 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from './site-publish
   imports: [PrismaModule, SiteDomainsModule],   // SiteDomainsModule exports the HostDirectory the host resolver and the build use
   controllers: SITE_PUBLISH_CONTROLLERS,
   providers: SITE_PUBLISH_PROVIDERS,
-  exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService, SiteRepository, ContentSource],   // ContentSource: the catalogue of requests and orders (slice 5.14) reads the vendor's published items
+  exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService, SiteRepository, ContentSource, SnapshotSink],   // ContentSource: the catalogue of requests and orders (slice 5.14) reads the vendor's published items
 })
 export class SitePublishModule {}

@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { overlayDraft } from '../../site-doc/site-merge';
+import type { ManagedDoc } from '../../v3-website/core/managed-doc';
 import { SourceCms, SourceDocument, SourceExtras, SourceItem } from './content-types';
+
+/** `overlay`: a managed content document to use instead of the live one for this load (draft preview, publish, staff approval). */
+export interface LoadOptions { overlay?: ManagedDoc }
 
 /**
  * The port between the site slice and wherever a vendor's site content lives today. Slice 5.5 replaces the implementation; the mapping to the renderer
@@ -9,7 +13,7 @@ import { SourceCms, SourceDocument, SourceExtras, SourceItem } from './content-t
  */
 export abstract class ContentSource {
   /** The vendor's content as plain data, or null when the vendor does not exist. */
-  abstract load(vendorId: string): Promise<SourceDocument | null>;
+  abstract load(vendorId: string, opts?: LoadOptions): Promise<SourceDocument | null>;
 }
 
 const arr = <T>(v: unknown): T[] | null => (Array.isArray(v) ? (v as T[]) : null);
@@ -24,7 +28,7 @@ const MAX_ITEMS = 200;
 export class CmsContentSource extends ContentSource {
   constructor(private readonly prisma: PrismaService) { super(); }
 
-  async load(vendorId: string): Promise<SourceDocument | null> {
+  async load(vendorId: string, _opts?: LoadOptions): Promise<SourceDocument | null> {
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
       select: { id: true, subdomain: true, businessName: true, name: true, phone: true, email: true, status: true, industry: true },

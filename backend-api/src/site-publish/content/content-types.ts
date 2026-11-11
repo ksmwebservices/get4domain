@@ -16,11 +16,15 @@ export interface SourceItem {
   samplePrice: boolean;
 }
 
+import type { ManagedDoc } from '../../v3-website/core/managed-doc';
+
 export interface SourceExtras {
   headline?: string; subline?: string; ctaLabel?: string; announcement?: string;
   trust?: string[]; faq?: Array<{ q: string; a: string }>; steps?: Array<{ title: string; desc?: string }>;
   stats?: Array<{ value: string; label: string }>; team?: Array<{ name: string; role?: string; note?: string; image?: string }>;
   social?: { x?: string; customLabel?: string; customUrl?: string };
+  /** slice 5.5a: written in the Website manager */
+  heroImageAlt?: string; aboutImage?: string; aboutImageAlt?: string; credentials?: Array<{ title: string; detail?: string }>;
 }
 
 export interface SourceCms {
@@ -29,7 +33,7 @@ export interface SourceCms {
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   portfolio: Array<{ id?: string; src: string; alt?: string; title?: string }> | null;
   testimonials: Array<{ quote: string; author: string; note?: string; sample?: boolean }> | null;
-  pages: Array<{ slug: string; title: string; body: string }> | null;
+  pages: Array<{ slug: string; title: string; body: string; intro?: string }> | null;
   extras: SourceExtras | null;
   packKey: string | null; siteStatus: string; ogImage: string | null; seoTitle: string | null; seoDesc: string | null;
 }
@@ -45,6 +49,10 @@ export interface SourceDocument {
   items: SourceItem[];
   /** the owner has claimed the business (a used claim link exists): the verified contact until phone OTP arrives in slice 5.7 */
   claimed: boolean;
+  /** slice 5.5a: renderer settings from the Website manager (brand tokens, hidden and ordered sections); absent for a site never edited there */
+  rendererSettings?: Record<string, unknown>;
+  /** the managed document that was laid over this source (live, or the overlay of this load); the build records it as the publication's snapshot. Not part of the content hash. */
+  managed?: ManagedDoc;
 }
 
 export interface SiteLimits { pages: number | null; services: number | null; gallery: number | null; faqs: number | null }

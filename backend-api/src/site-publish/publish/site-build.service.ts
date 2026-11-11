@@ -8,6 +8,8 @@ import { SiteLifecycle } from './site-lifecycle';
 import { planError } from '../../plans/plans.errors';
 import { categoryFor, limitsFrom, pageArgs, planPages, toRendererInput } from '../content/content-adapter';
 import { ContentSource } from '../content/content-source';
+import { SnapshotSink } from '../content/snapshot-sink';
+import type { ManagedDoc } from '../../v3-website/core/managed-doc';
 import { resolveTheme } from '../content/theme-resolution';
 import { ThemeRenderService } from '../renderer/theme-render.service';
 import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
@@ -18,7 +20,7 @@ import { CSS_BUDGET_BYTES, DEFAULT_SITE_BASE, PAGE_BUDGET_BYTES, clampMotion, co
 import { SiteAudit } from './site-audit';
 import { NewPage, PublicationRow, SiteRepository } from './site.repository';
 
-export interface BuildOptions { themeId?: string; actor: Actor }
+export interface BuildOptions { themeId?: string; actor: Actor; /** slice 5.5a: build from this managed content document instead of the live one (draft preview, publish, approval) */ overlay?: ManagedDoc }
 export interface BuildResult { publication: PublicationRow; reused: boolean }
 
 /**
@@ -44,10 +46,12 @@ export class SiteBuildService {
     @Optional() @Inject(B3SettingsService) private readonly b3?: Pick<B3SettingsService, 'get'>,
     /** seeded-site lifecycle (slice 5.13a); absent = the site was never seeded */
     @Optional() private readonly lifecycle?: SiteLifecycle,
+    /** slice 5.5a: records the managed document each build used (the live document is the snapshot of the current publication); absent = nothing is recorded */
+    @Optional() @Inject(SnapshotSink) private readonly snapshots?: SnapshotSink,
   ) {}
 
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
-    const doc = await this.content.load(vendorId);
+    const doc = await this.content.load(vendorId, opts.overlay ? { overlay: opts.overlay } : undefined);
     if (!doc) throw new NotFoundException(planError('UNKNOWN_VENDOR', 'That vendor does not exist.'));
     const kit = this.themes.kitApi;
     const categoryId = categoryFor(doc, kit, kit.categoryMap());
@@ -93,10 +97,14 @@ export class SiteBuildService {
     });
 
     // hashes: what the output depends on, so an unchanged site is recognised without rendering
-    const contentHash = sha256(stableJson({ doc, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
+    const { managed, ...hashable } = doc;   // the managed document is recorded, not hashed: two documents that render the same site are the same build
+    const contentHash = sha256(stableJson({ doc: hashable, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
     const settingsHash = sha256(stableJson({ themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
     const newest = await this.repo.newestPublication(vendorId);
-    if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) return { publication: newest, reused: true };
+    if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) {
+      await this.snapshots?.record(vendorId, newest.id, newest.version, managed ?? null);
+      return { publication: newest, reused: true };
+    }
 
     // render every page of every language
     const pages: NewPage[] = [];
@@ -143,6 +151,7 @@ export class SiteBuildService {
       { type: 'BUILT', actorType: opts.actor.type, actorId: opts.actor.id, detail: { themeId: resolved.themeId, pages: pages.length, indexable: indexing.indexable } },
       this.audit.hook(opts.actor, 'site.build', vendorId, { themeId: resolved.themeId, pages: pages.length, indexable: indexing.indexable }),
     );
+    await this.snapshots?.record(vendorId, row.id, row.version, managed ?? null);
     return { publication: row, reused: false };
   }
 }

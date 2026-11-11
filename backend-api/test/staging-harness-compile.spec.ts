@@ -56,6 +56,7 @@ const OPTION_SETS: Array<[string, ProvisioningTestOptions]> = [
   ['every option at once', { includeSiteApi: true, includeDirectoryApi: true, includeAiApi: true, b3: true, billing: { fake: new FakeRazorpay() } }],
   ['b3 alone', { b3: true }],
   ['stage 9: site + directory + b3 + payments + activity', { includeSiteApi: true, includeDirectoryApi: true, b3: true, payments: true, activity: true }],
+  ['stage 13: site + directory + b3 + payments + activity + website', { includeSiteApi: true, includeDirectoryApi: true, b3: true, payments: true, activity: true, website: true }],
   ['billing + wallet', { billing: { fake: new FakeRazorpay() }, wallet: true }],
   ['billing + wallet + services', { billing: { fake: new FakeRazorpay() }, wallet: true, services: true }],
   ['billing + wallet + services + requests', { billing: { fake: new FakeRazorpay() }, wallet: true, services: true, requests: true }],
@@ -90,7 +91,7 @@ describe('staging harness: the test apps compile without a database', () => {
     for (const f of readdirSync(__dirname).filter((n) => n.endsWith('.int.spec.ts'))) {
       const src = readFileSync(`${__dirname}/${f}`, 'utf8');
       const m = [...src.matchAll(/buildProvisioningTestApp\(\{([^)]*)/g)];
-      for (const x of m) for (const k of ['includeSiteApi', 'includeDirectoryApi', 'includeAiApi', 'b3', 'billing', 'wallet', 'services', 'requests', 'themeSwitch', 'payments', 'activity', 'siteProvisioner', 'pinLegacySiteMode']) if (x[1].includes(k)) used.add(k);
+      for (const x of m) for (const k of ['includeSiteApi', 'includeDirectoryApi', 'includeAiApi', 'b3', 'billing', 'wallet', 'services', 'requests', 'themeSwitch', 'payments', 'activity', 'website', 'siteProvisioner', 'pinLegacySiteMode']) if (x[1].includes(k)) used.add(k);
     }
     const covered = new Set<string>(['siteProvisioner']);   // siteProvisioner is applied after compile
     for (const [, o] of OPTION_SETS) for (const k of Object.keys(o)) covered.add(k);

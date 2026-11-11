@@ -32,6 +32,7 @@ const OWNER_ONLY_ROUTES = [
   'POST /domains/verify',
   'GET /team/members',
   'PUT /v3/me/site/theme', 'POST /v3/me/site/publish', 'POST /v3/me/site/rollback',   // S54.7: they change what the public sees
+  'POST /v3/me/site/draft/publish', 'POST /v3/me/site/revisions/restore',   // 5.5a: the Website manager's publish and restore change what the public sees
   'GET /team/activity',
   // B2 slice 5.1b: buying a plan starts a payment: owner only (a team member never starts one)
   'POST /v3/me/billing/orders', 'POST /v3/me/billing/orders/:id/confirm', 'GET /v3/me/billing/orders', 'GET /v3/me/billing/invoices',

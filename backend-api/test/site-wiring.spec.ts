@@ -1,7 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { PlansModule } from '../src/plans/plans.module';
 import { PrismaService } from '../src/prisma/prisma.service';
-import { ContentSource, CmsContentSource } from '../src/site-publish/content/content-source';
+import { ContentSource } from '../src/site-publish/content/content-source';
+import { ManagedContentSource } from '../src/site-publish/content/managed-content-source';
 import { PrismaSiteAudit, SiteAudit } from '../src/site-publish/publish/site-audit';
 import { PrismaSiteRepository, SubdomainHostResolver } from '../src/site-publish/publish/prisma-site.repository';
 import { DomainHostResolver } from '../src/site-domains/site-publish-adapters';
@@ -19,7 +20,7 @@ describe('SitePublishModule wiring', () => {
     const mod = await Test.createTestingModule({ imports: [PlansModule, SitePublishModule] }).overrideProvider(PrismaService).useValue({}).compile();
     expect(mod.get(SiteRepository)).toBeInstanceOf(PrismaSiteRepository);
     expect(mod.get(HostResolver)).toBeInstanceOf(DomainHostResolver);   // slice 5.6
-    expect(mod.get(ContentSource)).toBeInstanceOf(CmsContentSource);
+    expect(mod.get(ContentSource)).toBeInstanceOf(ManagedContentSource);   // slice 5.5a: the legacy source with the managed document laid over it
     expect(mod.get(SiteAudit)).toBeInstanceOf(PrismaSiteAudit);
     for (const c of [ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePublicService]) expect(mod.get(c)).toBeDefined();
     await mod.close();

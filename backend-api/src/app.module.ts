@@ -61,6 +61,7 @@ import { HealthModule } from './health/health.module';
 import { PlansModule } from './plans/plans.module';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
+import { WebsiteModule } from './v3-website/website.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
@@ -121,6 +122,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     PlansModule,
     ProvisioningModule,
     SitePublishModule,
+    WebsiteModule,
     SiteDomainsModule,
     DirectoryModule,
     B3SettingsModule,
