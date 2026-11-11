@@ -282,3 +282,55 @@ Every successful mutating route under `/v3/me` and `/v3/admin` is logged by a gl
 Changed behaviour: a suspended listing stays in the directory (search, detail, Visit link) as a Free listing-only site and stays out of the sitemap; `GET /v3/public/site/by-host` answers 451 with a plain notice for a site under a legal takedown; the public request and order gate answers its usual plain 404 for such a site.
 
 Route classification baseline: 1037 to 1063 routes (public 102, admin 388, authenticated 573); none removed. Role-matrix oracle: 242 to 263 entries.
+
+## Stage 9 (branch v3-b5): UPI payments, pay requests, receipts and invoices
+
+Design and rules: `docs/v3/STAGE_9_DESIGN.md`. Vendors are paid by UPI directly; Get4Domain never holds the money. Mark as paid is the only route to Paid. Slice 5.17c is skipped. Everything is staging only; messages and PDFs go through fake ports.
+
+Common to all owner routes below: JWT, **owner only** (a team member gets 403), plan feature `payments.vendor_methods` (a Free vendor gets 403 (`FEATURE_LOCKED`)), the vendor is always the signed-in principal's, a foreign id answers exactly like a missing one. Money is whole paise. Errors are `{ code, message }` inside the usual envelope.
+
+### Slice 5.17a Payment methods (owner 6, staff 1)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/payment-methods` | none | list of `{ id, kind, label, last4, upiId, payeeName, isDefault, showToCustomers, status, verifiedAt, hasGatewayDetails, hasWebhookSecret }` (gateway rows hidden) | 403 |
+| `POST /v3/me/payment-methods` | `{ kind: UPI\|PAY_ON_DELIVERY\|PAY_AT_VISIT\|BANK_TRANSFER, label (2-60), upiId + payeeName (UPI, required), details (bank, required, write-only), showToCustomers? }` | the method, `status: UNVERIFIED`, `payeeCheck: MATCH\|MISMATCH\|UNKNOWN` (never blocks) | 400 `PAYMENT_METHOD_INVALID` (bad id or name, missing bank details, any gateway kind) |
+| `PUT /v3/me/payment-methods/:id` | `{ label?, status?: UNVERIFIED\|ACTIVE\|DISABLED, upiId?, payeeName?, confirmUpiChange? }` | the method | 409 `PAYMENT_METHOD_CONFIRM_REQUIRED` (new UPI id without `confirmUpiChange: true`; nothing changes), 404 `PAYMENT_METHOD_INVALID` (foreign, missing, or a hidden gateway row), 409 `PAYMENT_METHOD_INVALID` (activate without a passed test) |
+| `DELETE /v3/me/payment-methods/:id` | none | the method, now `DISABLED` (never erased) | 404 |
+| `POST /v3/me/payment-methods/:id/default` | none | the method with `isDefault: true`; the previous default is cleared (one per business, enforced by the database) | 404, 409 (method not ACTIVE) |
+| `POST /v3/me/payment-methods/:id/test` | none | sandbox result; a UPI method passes when it has a UPI id | 404 |
+| `GET /v3/admin/vendors/:vendorId/payment-methods` | none | `{ id, vendorId, kind, label, status, isDefault, upiMasked (pr•••@bank), payeeName, verifiedAt }`; no bank details, no secrets | 403 for MARKETING; **OPERATIONS and SUPER_ADMIN**, read only |
+
+A confirmed UPI change and a default change write the activity entry `payment_method.upi_changed` with field names only.
+
+### Slice 5.17b Pay requests and payments (owner 5, public 2)
+
+States: `AWAITING`, `CUSTOMER_SAYS_PAID`, `PAID`, `EXPIRED`, `CANCELLED`.
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `POST /v3/me/payment-requests` | `{ amountPaise (int >= 1), customerName (2-80), customerPhone?, note? (200), methodId? (default: the default ACTIVE UPI), orderId? (then amount must equal the order total) }` | `{ id, code, payUrl, amountPaise, amountText, note, customerName, customerPhone, source, requestId, orderId, methodId, status: AWAITING, expiresAt, customerSaidAt, customerUtr, createdAt }` | 409 `PAY_LINK_EXPIRY_NOT_SET` (staff have not set `payLinkExpiryHours`), 409 `PAYMENT_METHOD_INVALID` (no ACTIVE UPI method), 400 `PAY_REQUEST_INVALID`, 404 `PAY_REQUEST_NOT_FOUND` (foreign or missing order), 409 `PAY_STATE_INVALID` (order not waiting for payment) |
+| `GET /v3/me/payment-requests?status=&orderId=&page=&pageSize=` | query | paged list of the same shape | 400 |
+| `GET /v3/me/payment-requests/:id` | none | the request plus `payment: { amountPaise, utr, confirmedBy, confirmedAt } \| null` | 404 `PAY_REQUEST_NOT_FOUND` |
+| `POST /v3/me/payment-requests/:id/cancel` | none | the request, `CANCELLED` (the link stops working) | 404, 409 `PAY_STATE_INVALID` (already PAID, EXPIRED or CANCELLED) |
+| `POST /v3/me/payment-requests/:id/mark-paid` | `{ utr? (8-22 letters and digits), idempotencyKey? (8-80 of A-Za-z0-9._-) }` | the request (`PAID`) plus `alreadyPaid`, `payment`, and `document: { id, number, kind } \| null`; idempotent: a repeat returns the same payment, makes no second one | 400 `PAY_REFERENCE_INVALID`, 400 `PAY_REQUEST_INVALID`, 404, 409 `PAY_STATE_INVALID` (CANCELLED). A late payment (EXPIRED) is accepted. |
+| `GET /v3/public/pay/:code` | none (public, rate limited, `no-store`) | `{ state, businessName, payeeName, amountPaise, amountText, note, upiIntent, qrPayload, expiresAt }`; when already paid only `{ state: PAID, businessName, amountText }`. No phone number, no customer name. | 404 plain `Not found` (unknown or malformed code, Free vendor, suspended, removed, Legal takedown), 410 `PAY_LINK_EXPIRED` (cancelled or expired) |
+| `POST /v3/public/pay/:code/i-have-paid` | `{ utr? }` | `{ state: CUSTOMER_SAYS_PAID }` (or the current state if already moved); tells the vendor; **never marks paid**; repeat changes nothing | 400 `PAY_REFERENCE_INVALID`, 404 plain, 410 `PAY_LINK_EXPIRED` |
+
+`POST /v3/payments/vendor/:vendorId/:methodId` (the 5.14 vendor-gateway webhook) answers a plain 401 unless the owner sets `VENDOR_GATEWAY_WEBHOOK_ENABLED=true`. Leave it unset.
+
+### Slice 5.17d Tax profile, receipts and invoices (owner 6, public 1)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/tax-profile` | none | `{ vendorId, gstRegistered, gstin, stateCode, legalName, address, compositionScheme, invoicePrefix }` (defaults when never saved) | 403 |
+| `PUT /v3/me/tax-profile` | any of `gstRegistered, gstin, stateCode, legalName, address, compositionScheme, invoicePrefix (0-6 capitals or digits)`; registered needs a valid GSTIN (format and check character), legal name and address; the state is read from the GSTIN; unregistered clears the number | the saved profile | 400 `PAY_REQUEST_INVALID` |
+| `GET /v3/me/documents?page=&pageSize=` | query | paged list of owner views | 403 |
+| `GET /v3/me/documents/:id` | none | `{ id, kind: TAX_INVOICE\|BILL_OF_SUPPLY\|BILL\|FEE_RECEIPT, number, totalPaise, amountText, items, tax: { taxablePaise, taxPaise, cgstPaise, sgstPaise, igstPaise, supply }, customerName, flags: { assumedIntraState }, whatsappStatus, emailStatus, resendCount, publicUrl, createdAt }` | 404 `PAY_REQUEST_NOT_FOUND` |
+| `POST /v3/me/documents/:id/resend` | none | the owner view, `resendCount` raised; sends the link again by WhatsApp and e-mail (sandbox) | 404 |
+| `GET /v3/me/documents/:id/download` | none | `{ number, pdfRef, mode: FAKE, publicUrl }` (the renderer is a fake in this build) | 404 |
+| `GET /v3/public/doc/:code` | none (public, rate limited, `no-store`) | `{ kind, number, issuedAt, business: { name, legalName, address, gstin }, customerName, items, tax, totalPaise, amountText }`; no phone, no e-mail | 404 plain (unknown code, removed vendor, Legal takedown) |
+
+Documents are made by Mark as paid, one per payment, with a gap-free number per vendor and financial year (for example `INV2627-00001`). A registered vendor's manual payment makes no document (no tax rate to use): the payment stands and `document.needs_tax_rate` is written.
+
+Route classification baseline and the owner-only list were updated for the new owner routes; the role-matrix oracle grew from 263 to 264 (the one staff route).
