@@ -83,6 +83,7 @@ model Vendor {
   v3SiteDrafts V3SiteDraft?
   v3SiteSnapshots V3SiteSnapshot[]
   v3SitePictures V3SitePicture[]
+  v3ContentSubmissions V3ContentSubmission[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6599,4 +6600,37 @@ model V3BannerImage {
   @@unique([categoryId, sha256])
   @@index([categoryId, active])
   @@map("g4d_banner_images")
+}
+
+enum V3SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+/// Slice 5.5c (amendment 06): a Free vendor's edit, waiting for staff. The payload is the whole managed content document as submitted. The live site keeps the last approved content until staff approve.
+model V3ContentSubmission {
+  id            String             @id @default(cuid())
+  vendorId      String
+  scope         String             @default("SITE_CONTENT")
+  payloadJson   Json
+  payloadHash   String
+  changedJson   Json               @default("{}")
+  status        V3SubmissionStatus @default(SUBMITTED)
+  submittedById String?
+  reviewerId    String?
+  reason        String?
+  submittedAt   DateTime           @default(now())
+  decidedAt     DateTime?
+  // At most one SUBMITTED submission per vendor: equals vendorId while SUBMITTED, NULL otherwise; the unique index does the rest (as for publications).
+  openVendorId  String?            @unique
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([status, submittedAt])
+  @@map("g4d_content_submissions")
 }

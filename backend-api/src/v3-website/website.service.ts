@@ -198,13 +198,38 @@ export class WebsiteService {
       const current = await this.repo.currentPublication(vendorId);
       if (current && hashDoc(draft) === hashDoc(live)) return { unchanged: true, publication: summarise(current) };
       if (!current && !row) throw nothingToPublish();
-      this.validateWhole(draft, c);
-      const built = await this.build.build(vendorId, { actor, overlay: draft });
-      const done = await this.publisher.publish(vendorId, built.publication.id, actor);
-      if (row) await this.store.saveDraft(vendorId, draft, { expectedRev: row.rev, baseVersion: done.version, by: actor.id });
-      await this.cache.purge(vendorId);
-      return { unchanged: false, publication: summarise(done) };
+      const r = await this.publishDocLocked(vendorId, actor, draft);
+      if (row) await this.store.saveDraft(vendorId, draft, { expectedRev: row.rev, baseVersion: r.publication?.version ?? null, by: actor.id });
+      return r;
     });
+  }
+
+  // ── pieces the review slice (5.5c) uses; the caller holds the vendor's queue slot ────────────────
+  /** Runs `fn` in the vendor's Website-manager queue slot (never call another queued method inside it). */
+  runLocked<T>(vendorId: string, fn: () => Promise<T>): Promise<T> { return websiteQueue.run(`site-manager:${vendorId}`, fn); }
+
+  /** Whether the vendor's plan is Pro right now. */
+  async isProVendor(vendorId: string): Promise<boolean> { return isPro(await this.entitlements.resolve(vendorId)); }
+
+  /** The vendor's draft (or live) document and the live document, for a submission. */
+  async draftAndLive(vendorId: string): Promise<{ draft: ManagedDoc; live: ManagedDoc; hasCurrent: boolean }> {
+    const live = await this.liveDoc(vendorId);
+    return { draft: (await this.store.getDraft(vendorId))?.doc ?? live, live, hasCurrent: (await this.repo.currentPublication(vendorId)) !== null };
+  }
+
+  /** Re-checks a whole document against the vendor as they are now; throws the field problem, the wording refusal or the plan limit. */
+  async checkDoc(vendorId: string, doc: ManagedDoc): Promise<void> { this.validateWhole(doc, await this.context(vendorId)); }
+
+  /** Validates, builds from `doc`, publishes through the existing pipeline and purges the cache. A document equal to the live one changes nothing. */
+  async publishDocLocked(vendorId: string, actor: Actor, doc: ManagedDoc): Promise<{ unchanged: boolean; publication: PublicationSummary | null }> {
+    const live = await this.liveDoc(vendorId);
+    const current = await this.repo.currentPublication(vendorId);
+    if (current && hashDoc(doc) === hashDoc(live)) return { unchanged: true, publication: summarise(current) };
+    this.validateWhole(doc, await this.context(vendorId));
+    const built = await this.build.build(vendorId, { actor, overlay: doc });
+    const done = await this.publisher.publish(vendorId, built.publication.id, actor);
+    await this.cache.purge(vendorId);
+    return { unchanged: false, publication: summarise(done) };
   }
 
   // ── revisions ─────────────────────────────────────────────────────────────────────────────────

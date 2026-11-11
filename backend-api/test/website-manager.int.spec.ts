@@ -82,10 +82,10 @@ describe('Website manager on staging', () => {
     expect((await api('post', '/v3/me/site/revisions/restore', tokenA, { toVersion: 9999 })).status).toBe(404);
   });
 
-  it('a Free vendor cannot publish and cannot write Pro-only wording; its team has no extra reach', async () => {
+  it('a Free vendor cannot go live (its publish is a submission) and cannot write Pro-only wording; its team has no extra reach', async () => {
     expect((await field(tokenF, 'cta.label', 'V3TEST Book now')).status).toBe(403);
     expect((await field(tokenF, 'hero.title', 'V3TEST Free edit')).status).toBe(200);
-    const p = await api('post', '/v3/me/site/draft/publish', tokenF, {}); expect(p.status).toBe(409); expect(p.body.code).toBe('REVIEW_REQUIRED');
+    const p = await api('post', '/v3/me/site/draft/publish', tokenF, {}); expect(p.status).toBe(200); expect(p.body.data.mode).toBe('SUBMITTED');   // slice 5.5c: Free edits go to review
     expect(await prisma.v3SitePublication.count({ where: { vendorId: F.vendorId, status: 'PUBLISHED' } })).toBe(0);
   });
 });

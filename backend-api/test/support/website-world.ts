@@ -17,6 +17,8 @@ import { BannerLibraryService, MediaService } from '../../src/v3-website/media/m
 import { FakeImagePort, FakeMediaStorage } from '../../src/v3-website/media/media.ports';
 import { BannerRow, MediaStore, NewBanner, NewPicture, PictureRow } from '../../src/v3-website/media/media.store';
 import { DEFAULT_WEBSITE_SETTINGS, WebsiteSettings } from '../../src/v3-website/settings/website-settings';
+import { ReviewNotifier, ReviewService } from '../../src/v3-website/review/review.service';
+import { NewSubmission, ReviewStore, SubmissionFilter, SubmissionRow } from '../../src/v3-website/review/review.store';
 import { MemorySiteRepo } from './memory-site-repo';
 import { doc as makeDoc, entitlements, NOW } from './site-fixtures';
 import { themeService } from './site-world';
@@ -80,6 +82,25 @@ export class MemoryMediaStore extends MediaStore {
   async setBannerActive(id: string, active: boolean) { const b = this.banners.find((x) => x.id === id); if (!b) return null; b.active = active; return { ...b }; }
 }
 
+/** In-memory twin of PrismaReviewStore: one SUBMITTED row per vendor, and a decision only moves a row that is still SUBMITTED (compare and set). */
+export class MemoryReviewStore extends ReviewStore {
+  rows: SubmissionRow[] = []; private n = 0;
+  async create(n: NewSubmission, now: Date) {
+    if (this.rows.some((r) => r.vendorId === n.vendorId && r.status === 'SUBMITTED')) return null;
+    const row: SubmissionRow = { id: `sub${++this.n}`, vendorId: n.vendorId, scope: 'SITE_CONTENT', payload: JSON.parse(JSON.stringify(n.payload)), payloadHash: n.payloadHash, changed: n.changed, status: 'SUBMITTED', submittedById: n.submittedById, reviewerId: null, reason: null, submittedAt: now, decidedAt: null };
+    this.rows.push(row); return { ...row };
+  }
+  async get(id: string) { const r = this.rows.find((x) => x.id === id); return r ? { ...r } : null; }
+  async getForVendor(vendorId: string, id: string) { const r = this.rows.find((x) => x.id === id && x.vendorId === vendorId); return r ? { ...r } : null; }
+  async listForVendor(vendorId: string, take: number) { return this.rows.filter((r) => r.vendorId === vendorId).sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime() || (a.id < b.id ? 1 : -1)).slice(0, take).map((r) => ({ ...r })); }
+  async list(f: SubmissionFilter, skip: number, take: number) { const all = this.rows.filter((r) => (!f.status || r.status === f.status) && (!f.vendorId || r.vendorId === f.vendorId)); return { items: all.slice(skip, skip + take).map((r) => ({ ...r })), total: all.length }; }
+  async decide(id: string, to: 'APPROVED' | 'REJECTED', patch: { reviewerId: string | null; reason: string | null; at: Date }) {
+    const r = this.rows.find((x) => x.id === id && x.status === 'SUBMITTED'); if (!r) return null;
+    Object.assign(r, { status: to, reviewerId: patch.reviewerId, reason: patch.reason, decidedAt: patch.at }); return { ...r };
+  }
+}
+export class RecordingNotifier extends ReviewNotifier { items: Array<{ userId: string | null; role: string | null; kind: string; refId: string }> = []; async notify(n: { userId: string | null; role: string | null; kind: string; refId: string }) { this.items.push(n); } }
+
 export class RecordingCache extends SiteCachePort { purged: string[] = []; async purge(vendorId: string): Promise<void> { this.purged.push(vendorId); } }
 
 export const VENDOR_ID = 'v-plumber';
@@ -89,6 +110,7 @@ export const OWNER_ACTOR: Actor = { type: 'VENDOR', id: 'owner-1', ip: null };
 export interface WebsiteWorld {
   repo: MemorySiteRepo; store: MemoryWebsiteStore; snapshots: MemorySnapshots; cache: RecordingCache; web: WebsiteService; build: SiteBuildService; publisher: PublishService; pub: SitePublicService;
   content: ContentSource; state: { doc: SourceDocument; ent: ResolvedEntitlements }; scans: string[][]; audit: string[];
+  reviews: ReviewService; rstore: MemoryReviewStore; notices: RecordingNotifier['items']; activity: Array<{ vendorId: string | null; actionKey: string }>; scanSources: string[];
   media: MediaService; banners: BannerLibraryService; mstore: MemoryMediaStore; storage: FakeMediaStorage; image: FakeImagePort; wsettings: { v: WebsiteSettings }; vendorId: string;
 }
 
@@ -96,7 +118,7 @@ export interface WebsiteWorld {
 export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'dentist' } = {}): WebsiteWorld {
   const kind = o.kind ?? 'plumber';
   const state = { doc: makeDoc(kind, { claimed: true }), ent: entitlements(o.level ?? 'PRO', kind === 'dentist' ? 'professional' : 'handyman') };
-  const audit: string[] = []; const scans: string[][] = [];
+  const audit: string[] = []; const scans: string[][] = []; const scanSources: string[] = []; const activity: Array<{ vendorId: string | null; actionKey: string }> = [];
   const repo = new MemorySiteRepo(); const store = new MemoryWebsiteStore(); const snapshots = new MemorySnapshots(store, repo);
   const legacy = { load: async () => state.doc };
   const content = new ManagedContentSource(legacy as never, snapshots);
@@ -104,7 +126,7 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const auditSink: SiteAudit = { hook: (_a, action) => async () => { audit.push(action); } };
   const themes = themeService();
   const build = new SiteBuildService(repo, themes, content, ents as never, auditSink, undefined, undefined, undefined, snapshots); build.clock = () => NOW;
-  const scan = { scan: async (_v: string, _s: string, texts: string[]) => { scans.push(texts); } };
+  const scan = { scan: async (_v: string, source: string, texts: string[]) => { scanSources.push(source); scans.push(texts); } };
   const publisher = new PublishService(repo, themes, content, ents as never, auditSink, undefined, scan as never); publisher.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content, ents as never, build, publisher, auditSink);
   const cache = new RecordingCache();
@@ -114,7 +136,9 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const mstore = new MemoryMediaStore(); const storage = new FakeMediaStorage(); const image = new FakeImagePort(); const wsettings = { v: { ...DEFAULT_WEBSITE_SETTINGS } as WebsiteSettings };
   const media = new MediaService(mstore, storage, image, { get: async () => wsettings.v } as never, web); media.clock = () => NOW;
   const banners = new BannerLibraryService(mstore, web);
-  return { repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id };
+  const rstore = new MemoryReviewStore(); const notifier = new RecordingNotifier();
+  const reviews = new ReviewService(rstore, web, notifier, { record: async (i: { vendorId: string | null; actionKey: string }) => { activity.push({ vendorId: i.vendorId, actionKey: i.actionKey }); return null; } } as never, scan as never);
+  return { repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id, reviews, rstore, notices: notifier.items, activity, scanSources };
 }
 
 export type { LoadOptions };

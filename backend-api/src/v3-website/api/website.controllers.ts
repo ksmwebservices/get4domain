@@ -7,6 +7,7 @@ import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
+import { ReviewService } from '../review/review.service';
 import { WebsiteService } from '../website.service';
 import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, DraftNavigationDto, DraftSectionsDto, RestoreRevisionDto } from './dto/website.dto';
 
@@ -21,7 +22,7 @@ import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, Draf
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeWebsiteController {
-  constructor(private readonly web: WebsiteService) {}
+  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
@@ -73,8 +74,16 @@ export class MeWebsiteController {
 
   @UseGuards(VendorOwnerGuard)
   @Post('draft/publish') @HttpCode(200)
-  @ApiOperation({ summary: 'Publish my draft (owner only). Pro goes live at once; Free is sent for review' })
-  publish(@Tenant() t: TenantContext, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.web.publish(t.vendorId, this.actor(user, req)); }
+  @ApiOperation({ summary: 'Publish my draft (owner only). Pro goes live at once; Free is sent to our team for review (mode SUBMITTED)' })
+  publish(@Tenant() t: TenantContext, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.reviews.publishOrSubmit(t.vendorId, this.actor(user, req)); }
+
+  @Get('submissions')
+  @ApiOperation({ summary: 'My submissions for review, newest first, with their decision and the reason when one was rejected' })
+  submissions(@Tenant() t: TenantContext) { return this.reviews.mine(t.vendorId); }
+
+  @Get('submissions/:id')
+  @ApiOperation({ summary: 'One of my submissions' })
+  submission(@Tenant() t: TenantContext, @Param('id') id: string) { return this.reviews.mineOne(t.vendorId, id); }
 
   @Get('revisions')
   @ApiOperation({ summary: 'My earlier versions of the site' })

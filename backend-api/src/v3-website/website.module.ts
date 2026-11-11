@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SitePublishModule } from '../site-publish/site-publish.module';
 import { AdminMediaController, MeMediaController } from './api/media.controllers';
+import { AdminReviewController } from './api/review.controllers';
+import { ActivityReviewNotifier, ReviewNotifier, ReviewService } from './review/review.service';
+import { PrismaReviewStore, ReviewStore } from './review/review.store';
 import { MeWebsiteController } from './api/website.controllers';
 import { FakeMediaStorage, ImagePort, MediaStoragePort, SharpImagePort, UnconfiguredMediaStorage } from './media/media.ports';
 import { BannerLibraryService, MediaService } from './media/media.service';
@@ -17,8 +20,9 @@ const storageProvider = { provide: MediaStoragePort, useFactory: () => (process.
 export const WEBSITE_PROVIDERS = [
   { provide: WebsiteStore, useClass: PrismaWebsiteStore }, { provide: SiteCachePort, useClass: NoopSiteCache }, WebsiteService,
   { provide: MediaStore, useClass: PrismaMediaStore }, storageProvider, { provide: ImagePort, useClass: SharpImagePort }, WebsiteSettingsService, MediaService, BannerLibraryService,
+  { provide: ReviewStore, useClass: PrismaReviewStore }, { provide: ReviewNotifier, useClass: ActivityReviewNotifier }, ReviewService,
 ];
-export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController];
+export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController];
 
 /**
  * The Website manager (slice 5.5): drafts, preview, publish, revisions. It builds and publishes only through the site publish module (SitePublishModule) and reads

@@ -7,7 +7,7 @@ import { PayeeVerdict } from './core/trust-core';
 
 /** Looks at text that was published or requested and, on a match, raises a PROHIBITED_TEXT alert. It NEVER blocks and NEVER throws: the publish or the request has already happened. */
 export abstract class ProhibitedScanPort {
-  abstract scan(vendorId: string, source: 'PUBLISH' | 'REQUEST', texts: readonly string[]): Promise<void>;
+  abstract scan(vendorId: string, source: 'PUBLISH' | 'REQUEST' | 'SUBMIT', texts: readonly string[]): Promise<void>;
 }
 
 /** Whether a Legal takedown is in force for a vendor. Read fresh on every public request. */

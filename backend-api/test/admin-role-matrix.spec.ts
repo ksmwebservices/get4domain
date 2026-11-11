@@ -102,6 +102,8 @@ const MARKETING_DENIED = [
   // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
   'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
+  // 5.5c: review of Free edits
+  'GET /v3/admin/content-reviews', 'GET /v3/admin/content-reviews/:id', 'POST /v3/admin/content-reviews/:id/approve', 'POST /v3/admin/content-reviews/:id/reject',
   // 5.5b: the Banner Library and set-up on a vendor's behalf
   'PUT /v3/admin/banner-library/:id/active', 'GET /v3/admin/vendors/:id/site/banners', 'POST /v3/admin/vendors/:id/site/banner', 'GET /v3/admin/vendors/:id/site/media', 'POST /v3/admin/vendors/:id/site/media',
 ];
@@ -143,7 +145,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(270);
+    expect(oracle).toHaveLength(274);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

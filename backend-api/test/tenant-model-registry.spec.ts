@@ -44,7 +44,9 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   // slice 5.5a (Batch 9): drafts and snapshots are reached only through WebsiteStore (and the snapshot sink / live layer in site-publish), which carry the vendor id in the WHERE of every read and write (tested: vendor B cannot see or change vendor A's draft)
   'V3SiteDraft', 'V3SiteSnapshot',
   // slice 5.5b (Batch 9): pictures are reached only through MediaStore, which names the vendor in every query (tested: vendor B cannot see, reuse or remove vendor A's picture); the Banner Library has no vendor id
-  'V3SitePicture'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  'V3SitePicture',
+  // slice 5.5c (Batch 9): submissions are reached only through ReviewStore, which names the vendor in every vendor read and decides by id with a compare and set (tested: vendor B cannot see or open vendor A's submission)
+  'V3ContentSubmission'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

@@ -123,7 +123,7 @@ export class TrustScanService extends ProhibitedScanPort {
   private readonly logger = new Logger(TrustScanService.name);
   constructor(private readonly store: TrustStore, private readonly activity: ActivityService) { super(); }
 
-  async scan(vendorId: string, source: 'PUBLISH' | 'REQUEST', texts: readonly string[]): Promise<void> {
+  async scan(vendorId: string, source: 'PUBLISH' | 'REQUEST' | 'SUBMIT', texts: readonly string[]): Promise<void> {
     try {
       const matches = matchProhibited(texts, await this.store.listTerms());
       if (!matches.length) return;
