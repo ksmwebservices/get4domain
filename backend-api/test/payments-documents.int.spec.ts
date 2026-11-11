@@ -31,7 +31,7 @@ describe('receipts and invoices on staging', () => {
   beforeAll(async () => {
     prisma = newPrisma();
     await applySeed(new PrismaSeedStore(prisma), expandSeed(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../prisma/seed/v3-plans.seed.json'), 'utf8'))), { apply: true });
-    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true });
+    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true, payments: true, activity: true });
     const subs = app.get(SubscriptionsService);
     A = await seedTenant(prisma, 'p517da', RUN_ID); B = await seedTenant(prisma, 'p517db', RUN_ID); F = await seedTenant(prisma, 'p517df', RUN_ID);
     await makeSiteVendor(prisma, subs, A, RUN_ID, { pro: true }); await makeSiteVendor(prisma, subs, B, RUN_ID, { pro: true }); await makeSiteVendor(prisma, subs, F, RUN_ID, { pro: false });

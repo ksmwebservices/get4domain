@@ -30,7 +30,7 @@ describe('payment methods (UPI only) on staging', () => {
     prisma = newPrisma();
     await applySeed(new PrismaSeedStore(prisma), expandSeed(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../prisma/seed/v3-plans.seed.json'), 'utf8'))), { apply: true });
     mkt = await seedStaff(prisma, 'p517mkt', RUN_ID, 'MARKETING'); ops = await seedStaff(prisma, 'p517ops', RUN_ID, 'OPERATIONS');
-    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true });
+    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true, payments: true, activity: true });
     const subs = app.get(SubscriptionsService);
     A = await seedTenant(prisma, 'p517a', RUN_ID); B = await seedTenant(prisma, 'p517b', RUN_ID); F = await seedTenant(prisma, 'p517f', RUN_ID);
     await makeSiteVendor(prisma, subs, A, RUN_ID, { pro: true }); await makeSiteVendor(prisma, subs, B, RUN_ID, { pro: true }); await makeSiteVendor(prisma, subs, F, RUN_ID, { pro: false });
@@ -68,7 +68,7 @@ describe('payment methods (UPI only) on staging', () => {
 
   it('cross-tenant: vendor B gets the same answer as for a method that does not exist; Free is locked; a team member is refused', async () => {
     const m = await prisma.v3VendorPaymentMethod.findFirstOrThrow({ where: { vendorId: A.vendorId } });
-    const foreign = await api('put', `/v3/me/payment-methods/${m.id}`, tokenB, { label: 'Mine now' }); const missing = await api('put', '/v3/me/payment-methods/does-not-exist', tokenB, { label: 'x' });
+    const foreign = await api('put', `/v3/me/payment-methods/${m.id}`, tokenB, { label: 'Mine now' }); const missing = await api('put', '/v3/me/payment-methods/does-not-exist', tokenB, { label: 'Mine now' });
     expect([foreign.status, missing.status]).toEqual([404, 404]); expect(foreign.body.code).toBe(missing.body.code);
     expect((await api('post', `/v3/me/payment-methods/${m.id}/default`, tokenB)).status).toBe(404);
     expect(((await api('get', '/v3/me/payment-methods', tokenB)).body.data as Array<{ id: string }>).map((x) => x.id)).not.toContain(m.id);
