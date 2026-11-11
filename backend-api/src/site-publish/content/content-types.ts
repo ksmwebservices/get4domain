@@ -53,6 +53,8 @@ export interface SourceDocument {
   rendererSettings?: Record<string, unknown>;
   /** the managed document that was laid over this source (live, or the overlay of this load); the build records it as the publication's snapshot. Not part of the content hash. */
   managed?: ManagedDoc;
+  /** slice B1: the vendor's own SEO text per page key (home, about, page:<slug>, item:<id> ...); the build uses it ahead of the generated text */
+  pageSeo?: Record<string, { seoTitle?: string; seoDescription?: string; shareImageRef?: string }>;
 }
 
 export interface SiteLimits { pages: number | null; services: number | null; gallery: number | null; faqs: number | null }

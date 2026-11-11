@@ -25,6 +25,8 @@ export interface PageSeoArgs {
   /** the vendor's own words, the source of the description */
   tagline: string;
   about: string;
+  /** slice B1: the vendor's own text for this page; used ahead of the generated text, and only when it passes the safety filter */
+  override?: { title?: string; description?: string; image?: string };
 }
 export interface PageSeo {
   title: string; description: string; canonical: string; robots: string; htmlLang: string;
@@ -61,21 +63,22 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
   const label = cat.label;
 
   const pageTitle = home ? '' : String(r.title ?? '').split(' | ')[0];
-  const title = fitTitle(home ? [r.title, `${a.siteName} | ${label}`, a.siteName] : [r.title, `${pageTitle} | ${a.siteName}`, pageTitle || a.siteName, a.siteName]);
+  const title = fitTitle([...(a.override?.title ? [a.override.title] : []), ...(home ? [r.title, `${a.siteName} | ${label}`, a.siteName] : [r.title, `${pageTitle} | ${a.siteName}`, pageTitle || a.siteName, a.siteName])]);
 
   const fallbackDesc = `${a.siteName} - ${label}${a.city ? ` - ${a.city}` : ''}`;
   const itemText = a.template === 'item' ? a.items.find((x) => x.name === a.itemName)?.description ?? '' : '';
   const parts = a.template === 'about' ? [a.about, a.tagline] : a.template === 'item' ? [itemText, a.tagline] : [a.tagline, a.about];
+  const own = a.override?.description && !isUnsafeSeoText(a.override.description) ? a.override.description : '';
   const descCandidates = [composeDescription(parts), cutAtWord(r.description ?? '', 160)];
-  const description = descCandidates.find((c) => c.length >= 50 && !isUnsafeSeoText(c))
+  const description = own || (descCandidates.find((c) => c.length >= 50 && !isUnsafeSeoText(c))
     ?? descCandidates.find((c) => c.length > 0 && !isUnsafeSeoText(c))
-    ?? safeSeoText(fallbackDesc, a.siteName);
+    ?? safeSeoText(fallbackDesc, a.siteName));
 
   const canonical = r.canonical;
   const robots = robotsValue(a.indexable);
   const multi = a.languages.length > 1;
   const hreflang = multi ? r.hreflang.filter((h) => httpUrl(h.href)) : [];
-  const image = httpUrl(a.image);
+  const image = httpUrl(a.override?.image || a.image);
   const og: Record<string, string> = {
     'og:type': 'website', 'og:site_name': a.siteName, 'og:title': title, 'og:description': description, 'og:url': canonical, 'og:locale': a.lang === 'ta' ? 'ta_IN' : 'en_IN',
   };

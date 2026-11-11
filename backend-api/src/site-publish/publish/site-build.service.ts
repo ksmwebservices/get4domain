@@ -6,7 +6,8 @@ import { B3SettingsService } from '../../b3-settings/b3-settings.service';
 import { VendorHosts } from './vendor-hosts';
 import { SiteLifecycle } from './site-lifecycle';
 import { planError } from '../../plans/plans.errors';
-import { categoryFor, limitsFrom, pageArgs, planPages, toRendererInput } from '../content/content-adapter';
+import { categoryFor, limitsFrom, pageArgs, PlannedPage, planPages, toRendererInput } from '../content/content-adapter';
+import type { SourceDocument } from '../content/content-types';
 import { ContentSource } from '../content/content-source';
 import { SnapshotSink } from '../content/snapshot-sink';
 import type { ManagedDoc } from '../../v3-website/core/managed-doc';
@@ -123,6 +124,7 @@ export class SiteBuildService {
           rendered, path: p.path, template: p.template, lang, languages: langs.languages, indexable: indexing.indexable, siteUrl, categoryId, siteName, city: contact.city,
           image: doc.cms?.banner ?? '', itemName: p.item ? String((p.item as { name: string }).name) : '', items: (input.content.items as Array<{ name: string; description: string; image: string }>) ?? [],
           tagline: String(doc.cms?.tagline ?? ''), about: String(doc.cms?.about ?? ''),
+          ...(lang === 'en' ? { override: pageSeoOverride(doc.pageSeo, p) } : {}),   // slice B1: the vendor's own text for this page (English pages only)
         });
         const html = assembleDocument({ seo, bodyHtml: rendered.html, cssHref: '/assets/site.css', favicon: doc.cms?.favicon ?? undefined });
         const bytes = Buffer.byteLength(html);
@@ -154,4 +156,12 @@ export class SiteBuildService {
     await this.snapshots?.record(vendorId, row.id, row.version, managed ?? null);
     return { publication: row, reused: false };
   }
+}
+
+/** The vendor's own SEO text for a planned page, by page key (home, about, page:<slug>, item:<id>), as the shape the SEO layer takes. */
+function pageSeoOverride(pageSeo: SourceDocument['pageSeo'], p: PlannedPage): { title?: string; description?: string; image?: string } | undefined {
+  if (!pageSeo) return undefined;
+  const key = p.template === 'page' ? `page:${p.slug}` : p.template === 'item' ? `item:${String((p.item as { id?: string } | undefined)?.id ?? '')}` : p.template;
+  const e = pageSeo[key];
+  return e ? { title: e.seoTitle, description: e.seoDescription, image: e.shareImageRef } : undefined;
 }

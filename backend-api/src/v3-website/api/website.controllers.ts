@@ -8,6 +8,7 @@ import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
 import { ReviewService } from '../review/review.service';
+import { SeoService } from '../seo/seo.service';
 import { WebsiteService } from '../website.service';
 import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, DraftNavigationDto, DraftSectionsDto, RestoreRevisionDto } from './dto/website.dto';
 
@@ -22,7 +23,7 @@ import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, Draf
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeWebsiteController {
-  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService) {}
+  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService, private readonly seo: SeoService) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
@@ -62,6 +63,16 @@ export class MeWebsiteController {
   @ApiOperation({ summary: 'Header and footer menus: order, wording and show or hide' })
   navigation(@Tenant() t: TenantContext, @Body() dto: DraftNavigationDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return this.web.save(t.vendorId, this.actor(user, req), { kind: 'navigation', value: { header: dto.header, footer: dto.footer } });
+  }
+
+  @Get('seo')
+  @ApiOperation({ summary: 'My pages with their search-result title and description (the default until I write my own), the limits, and the slug of each page' })
+  seoView(@Tenant() t: TenantContext) { return this.seo.view(t.vendorId); }
+
+  @Put('draft/seo/:pageKey') @HttpCode(200)
+  @ApiOperation({ summary: 'Autosave one page\'s search-result title, description and share picture (the slug and every platform-written part are locked)' })
+  seoSave(@Tenant() t: TenantContext, @Param('pageKey') pageKey: string, @Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    return this.web.save(t.vendorId, this.actor(user, req), { kind: 'seo', pageKey, edit: body });
   }
 
   @Delete('draft') @HttpCode(200)

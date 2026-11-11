@@ -147,8 +147,8 @@ describe('comparing and hashing documents', () => {
   });
   it('lists what changed between two documents, by area', () => {
     const a = { ...emptyDoc(), fields: { 'site.tagline': 'A' } }; const b = { ...emptyDoc(), fields: { 'site.tagline': 'B', 'hero.title': 'H' }, lists: { faqs: [{ q: 'q', a: 'a' }] } };
-    expect(diffDocs(a, b)).toEqual({ fields: ['hero.title', 'site.tagline'], lists: ['faqs'], sections: false, brand: false, navigation: false });
-    expect(diffDocs(a, a)).toEqual({ fields: [], lists: [], sections: false, brand: false, navigation: false });
+    expect(diffDocs(a, b)).toEqual({ fields: ['hero.title', 'site.tagline'], lists: ['faqs'], sections: false, brand: false, navigation: false, seo: [] });
+    expect(diffDocs(a, a)).toEqual({ fields: [], lists: [], sections: false, brand: false, navigation: false, seo: [] });
   });
 });
 

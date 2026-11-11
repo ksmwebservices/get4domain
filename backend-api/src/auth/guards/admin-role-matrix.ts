@@ -145,6 +145,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/vendors/:id/lifecycle': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/convert-to-free': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/restore-pro': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/extend-grace': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/suspend': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/reinstate': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/lifecycle/delete-empty-listing': OPS_AND_SUPER, 'GET /v3/admin/account-deletions': OPS_AND_SUPER, 'GET /v3/admin/account-deletions/:id': OPS_AND_SUPER, 'POST /v3/admin/account-deletions/:id/execute': OPS_AND_SUPER,
   'GET /v3/admin/sites': ALL_STAFF, 'GET /v3/admin/vendors/:id/site': ALL_STAFF,
   'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
+  // B1: SEO reports are read only and carry no personal data: all staff roles
+  'GET /v3/admin/seo/pages': ALL_STAFF, 'GET /v3/admin/vendors/:id/site/seo': ALL_STAFF,
   // 5.5c: review of Free edits (the stage file's SUPPORT role does not exist: OPERATIONS and SUPER_ADMIN; MARKETING never sees a vendor's submission)
   'GET /v3/admin/content-reviews': OPS_AND_SUPER, 'GET /v3/admin/content-reviews/:id': OPS_AND_SUPER, 'POST /v3/admin/content-reviews/:id/approve': OPS_AND_SUPER, 'POST /v3/admin/content-reviews/:id/reject': OPS_AND_SUPER,
   // 5.5b: the Banner Library (readable by all staff; every write and every vendor picture is OPERATIONS and SUPER_ADMIN)

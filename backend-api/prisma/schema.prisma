@@ -84,6 +84,7 @@ model Vendor {
   v3SiteSnapshots V3SiteSnapshot[]
   v3SitePictures V3SitePicture[]
   v3ContentSubmissions V3ContentSubmission[]
+  v3PageSeo V3PageSeo[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6633,4 +6634,24 @@ model V3ContentSubmission {
   @@index([vendorId, createdAt])
   @@index([status, submittedAt])
   @@map("g4d_content_submissions")
+}
+
+/// Slice B1 (amendment 08): the effective SEO text of each page of a vendor's LIVE site (the vendor's own text, or the platform default), written when a version goes live. For staff reports only; the source of truth is the published content document.
+model V3PageSeo {
+  id                String   @id @default(cuid())
+  vendorId          String
+  pageKey           String
+  seoTitle          String
+  seoDescription    String
+  shareImageRef     String?
+  customTitle       Boolean  @default(false)
+  customDescription Boolean  @default(false)
+  version           Int
+  updatedAt         DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, pageKey])
+  @@index([vendorId, version])
+  @@map("g4d_page_seo")
 }

@@ -1,6 +1,7 @@
 import { RESERVED_PAGE_SLUGS } from '../../site-publish/content/content-adapter';
 import { SourceCms, SourceDocument, SourceExtras } from '../../site-publish/content/content-types';
 import { sha256, stableJson } from '../../site-publish/publish/site-config';
+import { isPageKey, PageSeoEdit, validatePageSeo } from './seo-core';
 
 /**
  * The managed content document (slice 5.5a), pure. It holds ONLY what a vendor wrote in the Website manager, as typed fields: anything not in it falls back to the
@@ -70,9 +71,11 @@ export interface ManagedDoc {
   sections: SectionsDoc;
   brand: BrandDoc;
   navigation: NavigationDoc;
+  /** slice B1: the vendor's own SEO text per page (a page key such as home or page:warranty); a page with no entry shows the platform default */
+  seo: Record<string, PageSeoEdit>;
 }
 
-export const emptyDoc = (): ManagedDoc => ({ v: MANAGED_DOC_VERSION, fields: {}, lists: {}, sections: { hidden: [], order: [] }, brand: {}, navigation: { header: [], footer: [] } });
+export const emptyDoc = (): ManagedDoc => ({ v: MANAGED_DOC_VERSION, fields: {}, lists: {}, sections: { hidden: [], order: [] }, brand: {}, navigation: { header: [], footer: [] }, seo: {} });
 
 /** A copy of a stored document with every part present (older rows, or a partial patch, never break a reader). */
 export function normaliseDoc(raw: unknown): ManagedDoc {
@@ -86,6 +89,7 @@ export function normaliseDoc(raw: unknown): ManagedDoc {
     sections: { hidden: Array.isArray(r.sections?.hidden) ? [...r.sections.hidden] : [], order: Array.isArray(r.sections?.order) ? [...r.sections.order] : [] },
     brand: r.brand && typeof r.brand === 'object' && !Array.isArray(r.brand) ? { ...r.brand } : {},
     navigation: { header: Array.isArray(r.navigation?.header) ? [...r.navigation.header] : [], footer: Array.isArray(r.navigation?.footer) ? [...r.navigation.footer] : [] },
+    seo: r.seo && typeof r.seo === 'object' && !Array.isArray(r.seo) ? { ...r.seo } : {},
   };
 }
 
@@ -229,6 +233,16 @@ export function validateNavigation(input: unknown, pageKeys: readonly string[]):
   return { ok: true, navigation: { header, footer } };
 }
 
+/** Set one page's SEO text. An empty edit removes the page's entry (the default shows again). */
+export function writeSeo(doc: ManagedDoc, pageKey: string, input: unknown, allowedImages: readonly string[]): Ok<{ doc: ManagedDoc }> | Fail {
+  if (!isPageKey(pageKey)) return fail('FIELD_LOCKED', 'That page does not exist.', pageKey);
+  const r = validatePageSeo(input, allowedImages);
+  if (!r.ok) return r;
+  const seo = { ...doc.seo };
+  if (Object.keys(r.edit).length === 0) delete seo[pageKey]; else seo[pageKey] = r.edit;
+  return { ok: true, doc: { ...doc, seo } };
+}
+
 // ── overlay ────────────────────────────────────────────────────────────────────────────────────────
 
 /** the field key -> where the renderer mapping reads it */
@@ -272,18 +286,19 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
   for (const k of ['accent', 'accentDark', 'fontHeading', 'fontBody', 'logo'] as const) if (d.brand[k]) settings[k] = d.brand[k];
   if (d.sections.hidden.length) settings.hiddenSections = [...d.sections.hidden];
   if (d.sections.order.length) settings.sectionOrder = [...d.sections.order];
-  return { ...src, cms, rendererSettings: { ...(src.rendererSettings ?? {}), ...settings }, managed: d };
+  return { ...src, cms, rendererSettings: { ...(src.rendererSettings ?? {}), ...settings }, ...(Object.keys(d.seo).length ? { pageSeo: d.seo } : {}), managed: d };
 }
 
 // ── hashing and comparing ──────────────────────────────────────────────────────────────────────────
 
 export const hashDoc = (doc: ManagedDoc): string => sha256(stableJson(normaliseDoc(doc)));
 
-export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean }
+export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean; seo: string[] }
 export function diffDocs(a: ManagedDoc, b: ManagedDoc): DocDiff {
   const x = normaliseDoc(a); const y = normaliseDoc(b);
   const same = (p: unknown, q: unknown): boolean => stableJson(p) === stableJson(q);
   const keys = [...new Set([...Object.keys(x.fields), ...Object.keys(y.fields)])].filter((k) => x.fields[k] !== y.fields[k]).sort();
   const lists = [...new Set([...Object.keys(x.lists), ...Object.keys(y.lists)])].filter((k) => !same(x.lists[k as ListName], y.lists[k as ListName])).sort();
-  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation) };
+  const seo = [...new Set([...Object.keys(x.seo), ...Object.keys(y.seo)])].filter((k) => !same(x.seo[k], y.seo[k])).sort();
+  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation), seo };
 }

@@ -119,6 +119,7 @@ const ALL_STAFF_ROUTES = [
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
   'GET /v3/admin/banner-library',   // 5.5b: the library with its licences is readable by all staff
+  'GET /v3/admin/seo/pages', 'GET /v3/admin/vendors/:id/site/seo',   // B1: SEO reports, read only
   // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
@@ -145,7 +146,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(274);
+    expect(oracle).toHaveLength(276);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

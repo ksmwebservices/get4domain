@@ -45,7 +45,7 @@ export function limitsFrom(resolved: ResolvedEntitlements): SiteLimits {
   return { pages: lim('site.pages'), services: lim('site.services'), gallery: lim('site.gallery'), faqs: lim('site.faqs') };
 }
 
-function splitAddress(address: string): { city: string; pin: string } {
+export function splitAddress(address: string): { city: string; pin: string } {
   const pin = /\b(\d{6})\b/.exec(address)?.[1] ?? '';
   const last = address.split(',').pop() ?? '';
   const city = last.replace(/\b\d{6}\b/g, '').trim();

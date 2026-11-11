@@ -1,9 +1,9 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { KeyedQueue } from '../common/keyed-queue';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { ResolvedEntitlements } from '../plans/entitlements/entitlement-engine';
 import { Actor } from '../plans/admin/audit.service';
-import { categoryFor } from '../site-publish/content/content-adapter';
+import { categoryFor, splitAddress } from '../site-publish/content/content-adapter';
 import { ContentSource } from '../site-publish/content/content-source';
 import { SnapshotSink } from '../site-publish/content/snapshot-sink';
 import { PublishService } from '../site-publish/publish/publish.service';
@@ -12,9 +12,12 @@ import { PublicationSummary, SiteSettingsService, summarise } from '../site-publ
 import { SiteRepository } from '../site-publish/publish/site.repository';
 import { ThemeRenderService } from '../site-publish/renderer/theme-render.service';
 import { ProhibitedScanPort } from '../v3-trust/trust.ports';
+import { MediaStore } from './media/media.store';
+import { LIVE_PROJECTORS, LiveProjector } from './projection/live-projector';
+import { isPageKey, SeoWho, validatePageSeo } from './core/seo-core';
 import { deriveEditorMap, EditorMap, navPageKeysOf, sectionIdsOf } from './core/editor-map';
 import {
-  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField,
+  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeSeo,
 } from './core/managed-doc';
 import { checkWording } from './core/wording-core';
 import { fieldProblem, limitReached, locked, nothingToPublish, reviewRequired, staleDraft, versionNotFound, wordingProblem } from './website.errors';
@@ -29,7 +32,8 @@ export type Change =
   | { kind: 'list'; name: string; items: unknown }
   | { kind: 'sections'; value: unknown }
   | { kind: 'brand'; value: unknown }
-  | { kind: 'navigation'; value: unknown };
+  | { kind: 'navigation'; value: unknown }
+  | { kind: 'seo'; pageKey: string; edit: unknown };
 
 export interface DraftView { doc: ManagedDoc; rev: number; dirty: boolean; baseVersion: number | null; liveVersion: number | null }
 export interface EditorView { themeId: string; map: EditorMap; fonts: string[]; pro: boolean; limits: Record<string, number | null>; fields: Record<string, { type: string; max: number; label: string; proOnly: boolean }> }
@@ -38,6 +42,7 @@ interface Ctx { ent: ResolvedEntitlements; pro: boolean; themeId: string; map: E
 /** A Pro site: the plan has calls to action on (a downgrade or a suspension brings the Free entitlements, so this turns false by itself). */
 export const isPro = (e: ResolvedEntitlements): boolean => e.level === 'PRO' && e.features['site.cta']?.state === 'ACTIVE';
 
+const STANDARD_PAGES: readonly string[] = ['home', 'about', 'services', 'gallery', 'contact'];
 const pageSlugs = (d: ManagedDoc): string[] => (d.lists.pages ?? []).filter((p) => p.enabled === true).map((p) => String(p.slug));
 const limitOf = (e: ResolvedEntitlements, key: string): number | null => (e.features[key]?.state === 'LIMITED' || e.features[key]?.state === 'ACTIVE' ? e.features[key].limit : null);
 
@@ -60,7 +65,12 @@ export class WebsiteService {
     private readonly cache: SiteCachePort,
     @Optional() @Inject(SnapshotSink) private readonly snapshots?: SnapshotSink,
     @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
+    /** slice B1 onwards: copies of the live document that staff can query; each runs after a version goes live */
+    @Optional() @Inject(LIVE_PROJECTORS) private readonly projectors?: LiveProjector[],
+    /** the vendor's uploaded pictures (the share picture of a page may be one of them) */
+    @Optional() private readonly media?: MediaStore,
   ) {}
+  private readonly logger = new Logger(WebsiteService.name);
 
   // ── context ───────────────────────────────────────────────────────────────────────────────────
   private async context(vendorId: string): Promise<Ctx> {
@@ -80,6 +90,46 @@ export class WebsiteService {
     const kit = this.themes.kitApi;
     const categoryId = categoryFor(doc, kit, kit.categoryMap());
     return categoryId ? { categoryId, family: kit.categoryById(categoryId).family } : null;
+  }
+
+  // ── what the SEO panel and the projections need ───────────────────────────────────────────────
+  /** The pictures the site already owns and the active item ids, for checking a page's share picture and an item page's key. */
+  private async seoRefs(vendorId: string): Promise<{ images: string[]; items: string[] }> {
+    const src = await this.content.load(vendorId);
+    return {
+      images: [...(src?.cms?.portfolio ?? []).map((g) => g.src), ...((await this.media?.listPictures(vendorId)) ?? []).map((p) => p.url)],
+      items: (src?.items ?? []).filter((i) => i.active).map((i) => i.id),
+    };
+  }
+
+  /** The name, city and category label the defaults are made from, and every page of the site (from `doc`, or from the draft). */
+  private async contextFor(vendorId: string, doc: ManagedDoc): Promise<{ who: SeoWho; pages: Array<{ pageKey: string; label: string; slug: { value: string; editable: boolean } }>; doc: ManagedDoc }> {
+    const c = await this.context(vendorId);
+    const src = await this.content.load(vendorId);
+    const cat = await this.categoryOf(vendorId);
+    const who: SeoWho = { businessName: src?.cms?.businessName || src?.vendor.businessName || '', city: splitAddress(String(src?.cms?.address ?? '')).city, categoryLabel: cat ? this.themes.kitApi.categoryById(cat.categoryId).label : '' };
+    const pages: Array<{ pageKey: string; label: string; slug: { value: string; editable: boolean } }> = [];
+    for (const k of STANDARD_PAGES) if (c.map.pages.some((p) => p.key === k)) pages.push({ pageKey: k, label: k.charAt(0).toUpperCase() + k.slice(1), slug: { value: k === 'home' ? '' : k, editable: false } });
+    for (const p of doc.lists.pages ?? []) if (p.enabled === true) pages.push({ pageKey: `page:${String(p.slug)}`, label: String(p.title), slug: { value: String(p.slug), editable: true } });
+    for (const i of src?.items ?? []) if (i.active) pages.push({ pageKey: `item:${i.id}`, label: i.name, slug: { value: '', editable: false } });
+    return { who, pages, doc };
+  }
+
+  /** For the vendor's SEO panel: the pages as the draft has them. */
+  async seoContext(vendorId: string): Promise<{ who: SeoWho; pages: Array<{ pageKey: string; label: string; slug: { value: string; editable: boolean } }>; doc: ManagedDoc }> {
+    return this.contextFor(vendorId, (await this.store.getDraft(vendorId))?.doc ?? (await this.liveDoc(vendorId)));
+  }
+
+  /** Runs the projectors for the version that just went live. A fault is logged by name and never undoes the publish. */
+  private async project(vendorId: string, version: number, doc: ManagedDoc): Promise<void> {
+    if (!this.projectors?.length) return;
+    try {
+      const c = await this.contextFor(vendorId, doc);
+      for (const p of this.projectors) {
+        try { await p.project({ vendorId, version, doc, who: c.who, pageKeys: c.pages.map((x) => x.pageKey) }); }
+        catch (e) { this.logger.warn(`projection ${p.constructor.name} failed: ${e instanceof Error ? e.name : 'error'}`); }
+      }
+    } catch (e) { this.logger.warn(`projection context failed: ${e instanceof Error ? e.name : 'error'}`); }
   }
 
   /** True when the draft or the live document uses this picture link (a picture in use cannot be removed). */
@@ -110,7 +160,7 @@ export class WebsiteService {
     return [];
   }
 
-  private apply(doc: ManagedDoc, change: Change, c: Ctx): ManagedDoc {
+  private apply(doc: ManagedDoc, change: Change, c: Ctx, x: { images: string[]; items: string[] }): ManagedDoc {
     switch (change.kind) {
       case 'field': {
         if (FIELD_DEFS[change.key]?.proOnly && !c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);
@@ -130,6 +180,15 @@ export class WebsiteService {
       case 'sections': { const r = validateSections(change.value, sectionIdsOf(c.map)); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, sections: r.sections }; }
       case 'brand': { const r = validateBrand(change.value, c.fonts); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, brand: r.brand }; }
       case 'navigation': { const r = validateNavigation(change.value, navPageKeysOf(c.map, pageSlugs(doc))); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, navigation: r.navigation }; }
+      case 'seo': {
+        const exists = isPageKey(change.pageKey) && (STANDARD_PAGES.includes(change.pageKey) ? c.map.pages.some((p) => p.key === change.pageKey)
+          : change.pageKey.startsWith('page:') ? pageSlugs(doc).includes(change.pageKey.slice(5)) : x.items.includes(change.pageKey.slice(5)));
+        if (!exists) throw fieldProblem('FIELD_LOCKED', 'That page does not exist on your site.', String(change.pageKey));
+        const own = [...x.images, ...(doc.lists.gallery ?? []).map((g) => String(g.src)), ...[doc.fields['hero.image'], doc.fields['about.image']].filter((u): u is string => !!u)];
+        const r = writeSeo(doc, change.pageKey, change.edit, own);
+        if (!r.ok) throw r.code === 'WORDING_NOT_ALLOWED' ? wordingProblem(r.field ?? change.pageKey) : fieldProblem(r.code, r.message, r.field);
+        return r.doc;
+      }
     }
   }
 
@@ -138,9 +197,10 @@ export class WebsiteService {
     return websiteQueue.run(`site-manager:${vendorId}`, async () => {
       const c = await this.context(vendorId);
       const live = await this.liveDoc(vendorId);
+      const x = change.kind === 'seo' ? await this.seoRefs(vendorId) : { images: [], items: [] };
       for (let attempt = 0; attempt < 5; attempt++) {
         const row = await this.store.getDraft(vendorId);
-        const next = this.apply(row?.doc ?? live, change, c);
+        const next = this.apply(row?.doc ?? live, change, c, x);
         for (const [field, text] of this.texts(next, change)) if (!checkWording(text, { strict: false }).ok) throw wordingProblem(field);
         const base = row?.baseVersion ?? (await this.repo.currentPublication(vendorId))?.version ?? null;
         const saved = await this.store.saveDraft(vendorId, next, { expectedRev: row?.rev ?? null, baseVersion: base, by: actor.id });
@@ -178,6 +238,10 @@ export class WebsiteService {
       const feature = LIST_PLAN_FEATURE[name as ListName]; const limit = feature ? limitOf(c.ent, feature) : null;
       if (limit !== null && r.items.length > limit) throw limitReached(name, limit);
       for (const [field, text] of this.texts(doc, { kind: 'list', name, items })) if (!checkWording(text, { strict: false }).ok) throw wordingProblem(field);
+    }
+    for (const [key, edit] of Object.entries(doc.seo)) {
+      const r = validatePageSeo(edit, edit.shareImageRef ? [edit.shareImageRef] : []);   // the picture was checked against the site's own pictures when it was written
+      if (!isPageKey(key) || !r.ok) { if (r && !r.ok && r.code === 'WORDING_NOT_ALLOWED') throw wordingProblem(r.field); throw fieldProblem(r && !r.ok ? r.code : 'FIELD_LOCKED', 'A saved page SEO text is no longer valid.', `seo.${key}`); }
     }
     const s = validateSections(doc.sections, sectionIdsOf(c.map)); if (!s.ok) throw fieldProblem(s.code, s.message, s.field);
     const b = validateBrand(doc.brand, c.fonts); if (!b.ok) throw fieldProblem(b.code, b.message, b.field);
@@ -229,6 +293,7 @@ export class WebsiteService {
     const built = await this.build.build(vendorId, { actor, overlay: doc });
     const done = await this.publisher.publish(vendorId, built.publication.id, actor);
     await this.cache.purge(vendorId);
+    await this.project(vendorId, done.version, doc);
     return { unchanged: false, publication: summarise(done) };
   }
 
@@ -262,6 +327,7 @@ export class WebsiteService {
         if (await this.store.saveDraft(vendorId, doc, { expectedRev: cur?.rev ?? null, baseVersion: row.version, by: actor.id })) break;
       }
       await this.cache.purge(vendorId);
+      await this.project(vendorId, row.version, doc);
       return { publication: summarise(row) as PublicationSummary };
     });
   }
