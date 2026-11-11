@@ -41,6 +41,7 @@ import { PAYMENTS_CONTROLLERS, PAYMENTS_PROVIDERS } from '../../src/v3-payments/
 import { ActivityStore } from '../../src/v3-activity/activity.store';
 import { PrismaActivityStore } from '../../src/v3-activity/prisma-activity.store';
 import { ActivityService } from '../../src/v3-activity/activity.service';
+import { ActivityInterceptor } from '../../src/v3-activity/activity.interceptor';
 import { OtpPepper } from '../../src/directory/pepper';
 import { Kit, loadKit } from '../../src/site-publish/renderer/renderer-loader';
 import { WEBSITE_CONTROLLERS, WEBSITE_PROVIDERS } from '../../src/v3-website/website.module';
@@ -69,6 +70,7 @@ export interface ProvisioningTestOptions {
   /** wraps the theme kit this app serves (in memory only; the theme folders and the database are never touched), e.g. to add a synthetic second theme */ themeKit?: (real: Kit) => Kit;
   /** the Stage 9 pay requests, receipts and invoices API (needs b3) */ payments?: boolean;
   /** the Website manager API (slice 5.5; needs the site API and b3) */ website?: boolean;
+  /** also install the route activity interceptor (needs `activity`): the per-route log rows the real app writes */ activityRoutes?: boolean;
   /** the activity service (log only, no routes, no interceptor), so `payment_method.upi_changed` and the like are written */ activity?: boolean;
   /** default: true unless the site API or the directory API is included */ pinLegacySiteMode?: boolean }
 
@@ -102,6 +104,7 @@ export async function buildProvisioningTestApp(opts: ProvisioningTestOptions = {
   }
   app.useGlobalPipes(buildValidationPipe());
   app.useGlobalInterceptors(new TransformInterceptor());
+  if (opts.activityRoutes) app.useGlobalInterceptors(new ActivityInterceptor(app.get(ActivityService)));   // the production APP_INTERCEPTOR: every mutating /v3/me and /v3/admin route is logged
   app.useGlobalFilters(new HttpExceptionFilter());
   await app.init();
   return app;

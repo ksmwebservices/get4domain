@@ -33,7 +33,7 @@ describe('media and the Banner Library on staging', () => {
   beforeAll(async () => {
     prisma = newPrisma();
     await applySeed(new PrismaSeedStore(prisma), expandSeed(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../prisma/seed/v3-plans.seed.json'), 'utf8'))), { apply: true });
-    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true, activity: true, website: true });
+    app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true, activity: true, activityRoutes: true, website: true });
     const subs = app.get(SubscriptionsService);
     A = await seedTenant(prisma, 'p55ma', RUN_ID); B = await seedTenant(prisma, 'p55mb', RUN_ID);
     await makeSiteVendor(prisma, subs, A, RUN_ID, { pro: false }); await makeSiteVendor(prisma, subs, B, RUN_ID, { pro: false });
