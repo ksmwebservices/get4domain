@@ -17,8 +17,9 @@ import { LIVE_PROJECTORS, LiveProjector } from './projection/live-projector';
 import { isPageKey, SeoWho, validatePageSeo } from './core/seo-core';
 import { deriveEditorMap, EditorMap, navPageKeysOf, sectionIdsOf } from './core/editor-map';
 import {
-  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeSeo,
+  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeSeo,
 } from './core/managed-doc';
+import { validateLocation } from './core/location-core';
 import { checkWording } from './core/wording-core';
 import { fieldProblem, limitReached, locked, nothingToPublish, reviewRequired, staleDraft, versionNotFound, wordingProblem } from './website.errors';
 import { SiteCachePort } from './website.ports';
@@ -33,7 +34,8 @@ export type Change =
   | { kind: 'sections'; value: unknown }
   | { kind: 'brand'; value: unknown }
   | { kind: 'navigation'; value: unknown }
-  | { kind: 'seo'; pageKey: string; edit: unknown };
+  | { kind: 'seo'; pageKey: string; edit: unknown }
+  | { kind: 'location'; value: unknown };
 
 export interface DraftView { doc: ManagedDoc; rev: number; dirty: boolean; baseVersion: number | null; liveVersion: number | null }
 export interface EditorView { themeId: string; map: EditorMap; fonts: string[]; pro: boolean; limits: Record<string, number | null>; fields: Record<string, { type: string; max: number; label: string; proOnly: boolean }> }
@@ -180,6 +182,7 @@ export class WebsiteService {
       case 'sections': { const r = validateSections(change.value, sectionIdsOf(c.map)); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, sections: r.sections }; }
       case 'brand': { const r = validateBrand(change.value, c.fonts); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, brand: r.brand }; }
       case 'navigation': { const r = validateNavigation(change.value, navPageKeysOf(c.map, pageSlugs(doc))); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, navigation: r.navigation }; }
+      case 'location': { const r = writeLocation(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc; }
       case 'seo': {
         const exists = isPageKey(change.pageKey) && (STANDARD_PAGES.includes(change.pageKey) ? c.map.pages.some((p) => p.key === change.pageKey)
           : change.pageKey.startsWith('page:') ? pageSlugs(doc).includes(change.pageKey.slice(5)) : x.items.includes(change.pageKey.slice(5)));
@@ -239,6 +242,7 @@ export class WebsiteService {
       if (limit !== null && r.items.length > limit) throw limitReached(name, limit);
       for (const [field, text] of this.texts(doc, { kind: 'list', name, items })) if (!checkWording(text, { strict: false }).ok) throw wordingProblem(field);
     }
+    if (doc.location) { const r = validateLocation(doc.location); if (!r.ok) throw fieldProblem(r.code, 'A saved location is no longer valid.', `location.${r.field}`); }
     for (const [key, edit] of Object.entries(doc.seo)) {
       const r = validatePageSeo(edit, edit.shareImageRef ? [edit.shareImageRef] : []);   // the picture was checked against the site's own pictures when it was written
       if (!isPageKey(key) || !r.ok) { if (r && !r.ok && r.code === 'WORDING_NOT_ALLOWED') throw wordingProblem(r.field); throw fieldProblem(r && !r.ok ? r.code : 'FIELD_LOCKED', 'A saved page SEO text is no longer valid.', `seo.${key}`); }

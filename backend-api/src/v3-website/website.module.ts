@@ -5,6 +5,8 @@ import { AdminMediaController, MeMediaController } from './api/media.controllers
 import { AdminReviewController } from './api/review.controllers';
 import { AdminSeoController } from './api/seo.controllers';
 import { LIVE_PROJECTORS } from './projection/live-projector';
+import { LocationProjector, LocationService } from './location/location.service';
+import { PrismaSiteLocationStore, SiteLocationStore } from './location/site-location.store';
 import { PageSeoStore, PrismaPageSeoStore } from './seo/page-seo.store';
 import { SeoProjector, SeoService } from './seo/seo.service';
 import { ActivityReviewNotifier, ReviewNotifier, ReviewService } from './review/review.service';
@@ -27,7 +29,9 @@ export const WEBSITE_PROVIDERS = [
   { provide: ReviewStore, useClass: PrismaReviewStore }, { provide: ReviewNotifier, useClass: ActivityReviewNotifier }, ReviewService,
   // projections of the live document (one per slice that needs staff to query something): B1 per-page SEO
   { provide: PageSeoStore, useClass: PrismaPageSeoStore }, SeoProjector, SeoService,
-  { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector) => [seo], inject: [SeoProjector] },
+  // B2 location
+  { provide: SiteLocationStore, useClass: PrismaSiteLocationStore }, LocationProjector, LocationService,
+  { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector, loc: LocationProjector) => [seo, loc], inject: [SeoProjector, LocationProjector] },
 ];
 export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController];
 

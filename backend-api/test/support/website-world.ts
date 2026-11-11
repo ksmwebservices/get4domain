@@ -21,6 +21,8 @@ import { ReviewNotifier, ReviewService } from '../../src/v3-website/review/revie
 import { NewSubmission, ReviewStore, SubmissionFilter, SubmissionRow } from '../../src/v3-website/review/review.store';
 import { NewPageSeoRow, PageSeoRow, PageSeoStore } from '../../src/v3-website/seo/page-seo.store';
 import { SeoProjector, SeoService } from '../../src/v3-website/seo/seo.service';
+import { LocationProjector, LocationService } from '../../src/v3-website/location/location.service';
+import { NewSiteLocation, SiteLocationRow, SiteLocationStore } from '../../src/v3-website/location/site-location.store';
 import { MemorySiteRepo } from './memory-site-repo';
 import { doc as makeDoc, entitlements, NOW } from './site-fixtures';
 import { themeService } from './site-world';
@@ -111,6 +113,12 @@ export class MemoryPageSeoStore extends PageSeoStore {
   async listForVendor(vendorId: string) { return this.rows.filter((r) => r.vendorId === vendorId).map((r) => ({ ...r })).sort((a, b) => (a.pageKey < b.pageKey ? -1 : 1)); }
   async listAll(vendorId: string | undefined, take: number) { return this.rows.filter((r) => !vendorId || r.vendorId === vendorId).slice(0, take).map((r) => ({ ...r })); }
 }
+/** In-memory twin of PrismaSiteLocationStore: one row per vendor, removed when the vendor has no location. */
+export class MemorySiteLocationStore extends SiteLocationStore {
+  rows = new Map<string, SiteLocationRow>();
+  async replace(vendorId: string, version: number, row: NewSiteLocation | null) { if (!row) this.rows.delete(vendorId); else this.rows.set(vendorId, { ...row, vendorId, version }); }
+  async get(vendorId: string) { const r = this.rows.get(vendorId); return r ? { ...r } : null; }
+}
 export class RecordingNotifier extends ReviewNotifier { items: Array<{ userId: string | null; role: string | null; kind: string; refId: string }> = []; async notify(n: { userId: string | null; role: string | null; kind: string; refId: string }) { this.items.push(n); } }
 
 export class RecordingCache extends SiteCachePort { purged: string[] = []; async purge(vendorId: string): Promise<void> { this.purged.push(vendorId); } }
@@ -122,7 +130,7 @@ export const OWNER_ACTOR: Actor = { type: 'VENDOR', id: 'owner-1', ip: null };
 export interface WebsiteWorld {
   repo: MemorySiteRepo; store: MemoryWebsiteStore; snapshots: MemorySnapshots; cache: RecordingCache; web: WebsiteService; build: SiteBuildService; publisher: PublishService; pub: SitePublicService;
   content: ContentSource; state: { doc: SourceDocument; ent: ResolvedEntitlements }; scans: string[][]; audit: string[];
-  seo: SeoService; seoStore: MemoryPageSeoStore;
+  seo: SeoService; seoStore: MemoryPageSeoStore; location: LocationService; locStore: MemorySiteLocationStore;
   reviews: ReviewService; rstore: MemoryReviewStore; notices: RecordingNotifier['items']; activity: Array<{ vendorId: string | null; actionKey: string }>; scanSources: string[];
   media: MediaService; banners: BannerLibraryService; mstore: MemoryMediaStore; storage: FakeMediaStorage; image: FakeImagePort; wsettings: { v: WebsiteSettings }; vendorId: string;
 }
@@ -143,9 +151,9 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const publisher = new PublishService(repo, themes, content, ents as never, auditSink, undefined, scan as never); publisher.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content, ents as never, build, publisher, auditSink);
   const cache = new RecordingCache();
-  const seoStore = new MemoryPageSeoStore(); const mstore = new MemoryMediaStore();
-  const web = new WebsiteService(store, repo, themes, settings, build, publisher, ents as never, content, cache, snapshots, scan as never, [new SeoProjector(seoStore)], mstore);
-  const seo = new SeoService(web, seoStore);
+  const seoStore = new MemoryPageSeoStore(); const mstore = new MemoryMediaStore(); const locStore = new MemorySiteLocationStore();
+  const web = new WebsiteService(store, repo, themes, settings, build, publisher, ents as never, content, cache, snapshots, scan as never, [new SeoProjector(seoStore), new LocationProjector(locStore)], mstore);
+  const seo = new SeoService(web, seoStore); const location = new LocationService(web, locStore);
   const hosts = { resolve: async (host: string) => (host === HOST ? { vendorId: state.doc.vendor.id } : null) };
   const pub = new SitePublicService(repo, hosts as never);
   const storage = new FakeMediaStorage(); const image = new FakeImagePort(); const wsettings = { v: { ...DEFAULT_WEBSITE_SETTINGS } as WebsiteSettings };
@@ -153,7 +161,7 @@ export function websiteWorld(o: { level?: 'FREE' | 'PRO'; kind?: 'plumber' | 'de
   const banners = new BannerLibraryService(mstore, web);
   const rstore = new MemoryReviewStore(); const notifier = new RecordingNotifier();
   const reviews = new ReviewService(rstore, web, notifier, { record: async (i: { vendorId: string | null; actionKey: string }) => { activity.push({ vendorId: i.vendorId, actionKey: i.actionKey }); return null; } } as never, scan as never);
-  return { repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id, reviews, rstore, notices: notifier.items, activity, scanSources, seo, seoStore };
+  return { repo, store, snapshots, cache, web, build, publisher, pub, content, state, scans, audit, media, banners, mstore, storage, image, wsettings, vendorId: state.doc.vendor.id, reviews, rstore, notices: notifier.items, activity, scanSources, seo, seoStore, location, locStore };
 }
 
 export type { LoadOptions };

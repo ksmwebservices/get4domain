@@ -1,6 +1,7 @@
 import { RESERVED_PAGE_SLUGS } from '../../site-publish/content/content-adapter';
 import { SourceCms, SourceDocument, SourceExtras } from '../../site-publish/content/content-types';
 import { sha256, stableJson } from '../../site-publish/publish/site-config';
+import { buildDirectionsUrl, composeAddress, Location, parseMapLink, validateLocation } from './location-core';
 import { isPageKey, PageSeoEdit, validatePageSeo } from './seo-core';
 
 /**
@@ -73,6 +74,8 @@ export interface ManagedDoc {
   navigation: NavigationDoc;
   /** slice B1: the vendor's own SEO text per page (a page key such as home or page:warranty); a page with no entry shows the platform default */
   seo: Record<string, PageSeoEdit>;
+  /** slice B2: the business's address lines, city, state, pincode, optional coordinates and the pasted map link; absent = the legacy address text is used */
+  location?: Location;
 }
 
 export const emptyDoc = (): ManagedDoc => ({ v: MANAGED_DOC_VERSION, fields: {}, lists: {}, sections: { hidden: [], order: [] }, brand: {}, navigation: { header: [], footer: [] }, seo: {} });
@@ -90,6 +93,7 @@ export function normaliseDoc(raw: unknown): ManagedDoc {
     brand: r.brand && typeof r.brand === 'object' && !Array.isArray(r.brand) ? { ...r.brand } : {},
     navigation: { header: Array.isArray(r.navigation?.header) ? [...r.navigation.header] : [], footer: Array.isArray(r.navigation?.footer) ? [...r.navigation.footer] : [] },
     seo: r.seo && typeof r.seo === 'object' && !Array.isArray(r.seo) ? { ...r.seo } : {},
+    ...(r.location && typeof r.location === 'object' && !Array.isArray(r.location) ? { location: { ...r.location } } : {}),
   };
 }
 
@@ -233,6 +237,20 @@ export function validateNavigation(input: unknown, pageKeys: readonly string[]):
   return { ok: true, navigation: { header, footer } };
 }
 
+/** Set the location. A full map link supplies coordinates the vendor did not type (typed coordinates win); a short or unreadable link is refused with the reason. An empty location removes it. */
+export function writeLocation(doc: ManagedDoc, input: unknown): Ok<{ doc: ManagedDoc }> | Fail {
+  const r = validateLocation(input);
+  if (!r.ok) return r;
+  const loc: Location = { ...r.location };
+  if (loc.mapLinkInput) {
+    const m = parseMapLink(loc.mapLinkInput);
+    if (!m.ok) return fail(m.code, m.message, 'mapLinkInput');
+    if (loc.latitude === undefined) { loc.latitude = m.coords.latitude; loc.longitude = m.coords.longitude; }
+  }
+  const { location: _old, ...rest } = doc;
+  return { ok: true, doc: Object.keys(loc).length ? { ...rest, location: loc } : (rest as ManagedDoc) };
+}
+
 /** Set one page's SEO text. An empty edit removes the page's entry (the default shows again). */
 export function writeSeo(doc: ManagedDoc, pageKey: string, input: unknown, allowedImages: readonly string[]): Ok<{ doc: ManagedDoc }> | Fail {
   if (!isPageKey(pageKey)) return fail('FIELD_LOCKED', 'That page does not exist.', pageKey);
@@ -280,6 +298,13 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
     if (L.stats) extras.stats = L.stats.map((s) => ({ value: String(s.value), label: String(s.label) }));
     if (L.team) extras.team = L.team.map((t) => ({ name: String(t.name), role: String(t.role ?? ''), note: String(t.note ?? ''), image: String(t.image ?? '') }));
     if (L.credentials) extras.credentials = L.credentials.map((c) => ({ title: String(c.title), detail: String(c.detail ?? '') }));
+    if (d.location) {
+      const l = d.location; const address = composeAddress(l); const maps = buildDirectionsUrl(l);
+      if (address) mutable.address = address;
+      if (l.city) extras.city = l.city;
+      if (l.pincode) extras.pin = l.pincode;
+      if (maps) mutable.googleMaps = maps;
+    }
     if (L.pages) cms.pages = L.pages.filter((p) => p.enabled === true).map((p) => ({ slug: String(p.slug), title: String(p.title), body: String(p.body), intro: String(p.intro ?? '') }));
     cms.extras = extras;
   }
@@ -293,12 +318,12 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
 
 export const hashDoc = (doc: ManagedDoc): string => sha256(stableJson(normaliseDoc(doc)));
 
-export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean; seo: string[] }
+export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean; seo: string[]; location: boolean }
 export function diffDocs(a: ManagedDoc, b: ManagedDoc): DocDiff {
   const x = normaliseDoc(a); const y = normaliseDoc(b);
   const same = (p: unknown, q: unknown): boolean => stableJson(p) === stableJson(q);
   const keys = [...new Set([...Object.keys(x.fields), ...Object.keys(y.fields)])].filter((k) => x.fields[k] !== y.fields[k]).sort();
   const lists = [...new Set([...Object.keys(x.lists), ...Object.keys(y.lists)])].filter((k) => !same(x.lists[k as ListName], y.lists[k as ListName])).sort();
   const seo = [...new Set([...Object.keys(x.seo), ...Object.keys(y.seo)])].filter((k) => !same(x.seo[k], y.seo[k])).sort();
-  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation), seo };
+  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation), seo, location: !same(x.location, y.location) };
 }

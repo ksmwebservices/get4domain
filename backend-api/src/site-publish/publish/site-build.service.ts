@@ -87,7 +87,8 @@ export class SiteBuildService {
     };
 
     const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
-    const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion });
+    const directions = renderEnt.callsToAction !== false;   // slice B2: Free shows the address as plain text, no directions link
+    const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
     notes.push(...base.notes.map((n) => n));
     const siteName = String((base.content.site as { name: string }).name);
     const contact = base.content.contact as { address: string; city: string };
@@ -115,7 +116,7 @@ export class SiteBuildService {
     const canon = new Map<string, string>();
     const siteUrl = String(base.host.siteUrl);
     for (const lang of langs.languages) {
-      const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion });
+      const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
       for (const p of planPages(input.content, templates)) {
         const args = pageArgs(input.content, p);
         const rendered = this.themes.render(resolved.themeId, { page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: { ...input.host, ...hostExtra }, entitlements: renderEnt });

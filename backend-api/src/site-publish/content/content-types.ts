@@ -24,7 +24,7 @@ export interface SourceExtras {
   stats?: Array<{ value: string; label: string }>; team?: Array<{ name: string; role?: string; note?: string; image?: string }>;
   social?: { x?: string; customLabel?: string; customUrl?: string };
   /** slice 5.5a: written in the Website manager */
-  heroImageAlt?: string; aboutImage?: string; aboutImageAlt?: string; credentials?: Array<{ title: string; detail?: string }>;
+  heroImageAlt?: string; aboutImage?: string; aboutImageAlt?: string; city?: string; pin?: string; credentials?: Array<{ title: string; detail?: string }>;
 }
 
 export interface SourceCms {

@@ -85,6 +85,7 @@ model Vendor {
   v3SitePictures V3SitePicture[]
   v3ContentSubmissions V3ContentSubmission[]
   v3PageSeo V3PageSeo[]
+  v3SiteLocation V3SiteLocation?
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6654,4 +6655,24 @@ model V3PageSeo {
   @@unique([vendorId, pageKey])
   @@index([vendorId, version])
   @@map("g4d_page_seo")
+}
+
+/// Slice B2 (amendment 08): the location of a vendor's LIVE site (address lines, city, state, pincode, coordinates, the pasted map link and the directions link built from them). Written when a version goes live, for staff; the published content document is the source of truth.
+model V3SiteLocation {
+  vendorId       String   @id
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  state          String?
+  pincode        String?
+  latitude       Float?
+  longitude      Float?
+  mapLinkInput   String?
+  directionsUrl  String?
+  version        Int
+  updatedAt      DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_site_locations")
 }

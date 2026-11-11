@@ -8,7 +8,7 @@ import { SiteLimits, SourceDocument } from './content-types';
  * the renderer wants structured rows (slice 5.5 supplies them). Platform wording for the visitor (labels, Tamil UI) comes from the renderer itself.
  */
 export interface CategoryMap { packs: Record<string, string[]> }
-export interface AdapterOptions { categoryId: string; lang: 'en' | 'ta'; year: number; siteBase: string; /** the vendor's canonical host (slice 5.6); absent = <subdomain>.<siteBase> */ primaryHost?: string; customDomain?: string; limits?: SiteLimits; motion?: 'Off' | 'Low' | 'Medium' | 'Rich' }
+export interface AdapterOptions { categoryId: string; lang: 'en' | 'ta'; year: number; siteBase: string; /** the vendor's canonical host (slice 5.6); absent = <subdomain>.<siteBase> */ primaryHost?: string; customDomain?: string; limits?: SiteLimits; motion?: 'Off' | 'Low' | 'Medium' | 'Rich'; /** slice B2: false on a plan without calls to action (Free): the address is plain text and no directions link is given to the theme (owner rule 2); default true */ directions?: boolean }
 export interface RendererInput {
   content: Record<string, unknown>;
   settings: Record<string, unknown>;
@@ -67,8 +67,9 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const phone = str(cms?.phone) || str(doc.vendor.phone);
   const email = str(cms?.email) || doc.vendor.email;
   const address = str(cms?.address);
-  const { city, pin } = splitAddress(address);
+  const sp = splitAddress(address);
   const ex = cms?.extras ?? {};
+  const city = str(ex.city) || sp.city; const pin = str(ex.pin) || sp.pin;   // slice B2: a written location names its own city and pincode
   const siteUrl = o.primaryHost ? `https://${o.primaryHost}` : doc.vendor.subdomain ? `https://${doc.vendor.subdomain}.${o.siteBase}` : '';
   const waDigits = str(cms?.whatsapp || phone).replace(/\D/g, '');
   const lim = o.limits ?? { pages: null, services: null, gallery: null, faqs: null };
@@ -94,10 +95,10 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     about: { title: aboutTitle, text: str(cms?.about), image: str(ex.aboutImage), imageAlt: str(ex.aboutImage) ? str(ex.aboutImageAlt) || name : '' },
     contact: {
       phone, phoneHref: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '', whatsapp: str(cms?.whatsapp) || phone, whatsappHref: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '',
-      email, address, city, area: '', pin, mapUrl: str(cms?.googleMaps),
+      email, address, city, area: '', pin, mapUrl: o.directions === false ? '' : str(cms?.googleMaps),
     },
     hours: [],
-    social: { instagram: str(cms?.instagram), facebook: str(cms?.facebook), youtube: str(cms?.youtube), linkedin: str(cms?.linkedin), x: str(ex.social?.x), custom: str(ex.social?.customUrl), customLabel: str(ex.social?.customLabel), maps: str(cms?.googleMaps), whatsapp: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '' },
+    social: { instagram: str(cms?.instagram), facebook: str(cms?.facebook), youtube: str(cms?.youtube), linkedin: str(cms?.linkedin), x: str(ex.social?.x), custom: str(ex.social?.customUrl), customLabel: str(ex.social?.customLabel), maps: o.directions === false ? '' : str(cms?.googleMaps), whatsapp: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '' },
     cta: { label: str(ex.ctaLabel) || cat.ctaPrimary, href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '/contact', secondaryLabel: '', secondaryHref: '' },
     ...(kitTerms ? { terms: kitTerms } : {}),
     items, groups: [], team: (ex.team ?? []).map((t) => ({ id: slugify(t.name), name: str(t.name), role: str(t.role), note: str(t.note), image: str(t.image) })),
