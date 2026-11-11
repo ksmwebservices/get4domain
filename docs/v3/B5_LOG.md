@@ -10,3 +10,7 @@ Amendment 06: vendors are UPI only. No gateway port, adapters or webhook inbox a
 
 ## B5.0 rules document
 `docs/v3/V3_PAYMENTS_AND_RECEIPTS.md`.
+
+## Slice 5.17a: IN PROGRESS (pure core only)
+Red first: `test/payments-method-core.spec.ts` failed with TS2307 (module missing), then went green (7 of 7) with `src/v3-payments/core/method-core.ts`. Baseline before this run: 133 suites / 2762 tests, all green.
+NOT YET BUILT for 5.17a: the additive migration (new columns on `g4d_vendor_payment_methods`), the store and service changes (UPI id and payee name, default method, confirm step, `PAYMENT_METHOD_CHANGED`, gateway kinds rejected and hidden), routes, role matrix, cross-tenant and staging tests.
