@@ -86,6 +86,7 @@ model Vendor {
   v3ContentSubmissions V3ContentSubmission[]
   v3PageSeo V3PageSeo[]
   v3SiteLocation V3SiteLocation?
+  v3ReviewLink V3ReviewLink?
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6675,4 +6676,17 @@ model V3SiteLocation {
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@map("g4d_site_locations")
+}
+
+/// Slice B3 (amendment 08): the Google review link of a vendor's LIVE site. Written when a version goes live, for staff; the published content document is the source of truth.
+model V3ReviewLink {
+  vendorId  String   @id
+  url       String
+  host      String
+  version   Int
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_review_links")
 }

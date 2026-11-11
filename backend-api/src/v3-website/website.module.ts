@@ -7,6 +7,7 @@ import { AdminSeoController } from './api/seo.controllers';
 import { LIVE_PROJECTORS } from './projection/live-projector';
 import { LocationProjector, LocationService } from './location/location.service';
 import { PrismaSiteLocationStore, SiteLocationStore } from './location/site-location.store';
+import { PrismaReviewLinkStore, ReviewLinkProjector, ReviewLinkService, ReviewLinkStore } from './review-link/review-link.service';
 import { PageSeoStore, PrismaPageSeoStore } from './seo/page-seo.store';
 import { SeoProjector, SeoService } from './seo/seo.service';
 import { ActivityReviewNotifier, ReviewNotifier, ReviewService } from './review/review.service';
@@ -31,7 +32,9 @@ export const WEBSITE_PROVIDERS = [
   { provide: PageSeoStore, useClass: PrismaPageSeoStore }, SeoProjector, SeoService,
   // B2 location
   { provide: SiteLocationStore, useClass: PrismaSiteLocationStore }, LocationProjector, LocationService,
-  { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector, loc: LocationProjector) => [seo, loc], inject: [SeoProjector, LocationProjector] },
+  // B3 review link
+  { provide: ReviewLinkStore, useClass: PrismaReviewLinkStore }, ReviewLinkProjector, ReviewLinkService,
+  { provide: LIVE_PROJECTORS, useFactory: (seo: SeoProjector, loc: LocationProjector, rl: ReviewLinkProjector) => [seo, loc, rl], inject: [SeoProjector, LocationProjector, ReviewLinkProjector] },
 ];
 export const WEBSITE_CONTROLLERS = [MeWebsiteController, MeMediaController, AdminMediaController, AdminReviewController, AdminSeoController];
 

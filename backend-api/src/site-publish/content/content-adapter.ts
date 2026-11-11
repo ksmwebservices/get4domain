@@ -110,6 +110,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
     areas: [], credentials: (ex.credentials ?? []).map((c) => ({ title: str(c.title), detail: str(c.detail) })), blocks: [], videos: [],
     products: cat.track === 'ecommerce' ? items : [],
     pages,
+    ...(doc.reviewUrl && o.directions !== false ? { reviews: { writeUrl: doc.reviewUrl } } : {}),   // slice B3: the kit's Write a review button, Pro only
   };
   const settings: Record<string, unknown> = { ...(doc.rendererSettings ?? {}), ...(o.motion ? { motionIntensity: o.motion } : {}) };
   return { content, settings, vendor: { id: doc.vendor.id, unclaimed: !doc.claimed }, host: { siteUrl, customDomain: o.customDomain ?? '', allowEmbeds: false }, notes };

@@ -17,9 +17,10 @@ import { LIVE_PROJECTORS, LiveProjector } from './projection/live-projector';
 import { isPageKey, SeoWho, validatePageSeo } from './core/seo-core';
 import { deriveEditorMap, EditorMap, navPageKeysOf, sectionIdsOf } from './core/editor-map';
 import {
-  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeSeo,
+  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeReviewUrl, writeSeo,
 } from './core/managed-doc';
 import { validateLocation } from './core/location-core';
+import { validateReviewUrl } from './core/review-link-core';
 import { checkWording } from './core/wording-core';
 import { fieldProblem, limitReached, locked, nothingToPublish, reviewRequired, staleDraft, versionNotFound, wordingProblem } from './website.errors';
 import { SiteCachePort } from './website.ports';
@@ -35,7 +36,8 @@ export type Change =
   | { kind: 'brand'; value: unknown }
   | { kind: 'navigation'; value: unknown }
   | { kind: 'seo'; pageKey: string; edit: unknown }
-  | { kind: 'location'; value: unknown };
+  | { kind: 'location'; value: unknown }
+  | { kind: 'reviewLink'; value: unknown };
 
 export interface DraftView { doc: ManagedDoc; rev: number; dirty: boolean; baseVersion: number | null; liveVersion: number | null }
 export interface EditorView { themeId: string; map: EditorMap; fonts: string[]; pro: boolean; limits: Record<string, number | null>; fields: Record<string, { type: string; max: number; label: string; proOnly: boolean }> }
@@ -182,6 +184,10 @@ export class WebsiteService {
       case 'sections': { const r = validateSections(change.value, sectionIdsOf(c.map)); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, sections: r.sections }; }
       case 'brand': { const r = validateBrand(change.value, c.fonts); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, brand: r.brand }; }
       case 'navigation': { const r = validateNavigation(change.value, navPageKeysOf(c.map, pageSlugs(doc))); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return { ...doc, navigation: r.navigation }; }
+      case 'reviewLink': {
+        if (!c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);   // Pro only (owner rule 2): a Free site shows no review button
+        const r = writeReviewUrl(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc;
+      }
       case 'location': { const r = writeLocation(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc; }
       case 'seo': {
         const exists = isPageKey(change.pageKey) && (STANDARD_PAGES.includes(change.pageKey) ? c.map.pages.some((p) => p.key === change.pageKey)
@@ -231,7 +237,7 @@ export class WebsiteService {
   /** Re-checks the whole draft against the vendor as they are now (a plan can change between the edit and the publish). */
   private validateWhole(doc: ManagedDoc, c: Ctx): void {
     for (const [k, v] of Object.entries(doc.fields)) {
-      if (FIELD_DEFS[k]?.proOnly && !c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);
+      // a Pro-only value kept from a Pro period stays in the document after a downgrade (owner rule 6): it is not drawn on a Free site, and it never blocks a Free edit
       if (!writeField(emptyDoc(), k, v).ok) throw fieldProblem('FIELD_INVALID', 'A saved value is no longer valid.', k);
       if (!checkWording(v, { strict: false }).ok) throw wordingProblem(k);
     }
@@ -242,6 +248,7 @@ export class WebsiteService {
       if (limit !== null && r.items.length > limit) throw limitReached(name, limit);
       for (const [field, text] of this.texts(doc, { kind: 'list', name, items })) if (!checkWording(text, { strict: false }).ok) throw wordingProblem(field);
     }
+    if (doc.reviewUrl) { const r = validateReviewUrl(doc.reviewUrl); if (!r.ok) throw fieldProblem(r.code, 'A saved review link is no longer valid.', 'reviewUrl'); }
     if (doc.location) { const r = validateLocation(doc.location); if (!r.ok) throw fieldProblem(r.code, 'A saved location is no longer valid.', `location.${r.field}`); }
     for (const [key, edit] of Object.entries(doc.seo)) {
       const r = validatePageSeo(edit, edit.shareImageRef ? [edit.shareImageRef] : []);   // the picture was checked against the site's own pictures when it was written

@@ -4,6 +4,7 @@ import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { PageQueryDto, pageArgs } from '../../plans/admin/plans-admin.common';
 import { LocationService } from '../location/location.service';
+import { ReviewLinkService } from '../review-link/review-link.service';
 import { SeoService } from '../seo/seo.service';
 
 export class SeoReportQuery extends PageQueryDto {
@@ -17,11 +18,15 @@ export class SeoReportQuery extends PageQueryDto {
 @UseGuards(AdminGuard)
 @Controller('v3/admin')
 export class AdminSeoController {
-  constructor(private readonly seo: SeoService, private readonly location: LocationService) {}
+  constructor(private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService) {}
 
   @Get('seo/pages')
   @ApiOperation({ summary: 'Pages with something to fix: still on the default text, sharing a title, or a short description (filter by vendor and issue)' })
   issues(@Query() q: SeoReportQuery) { const { page, pageSize } = pageArgs(q); return this.seo.staffIssues({ vendorId: q.vendorId, issue: q.issue, page, pageSize }); }
+
+  @Get('vendors/:id/site/review-link')
+  @ApiOperation({ summary: 'The Google review link of one vendor\'s live site' })
+  vendorReviewLink(@Param('id') id: string) { return this.reviewLink.staffGet(id); }
 
   @Get('vendors/:id/site/location')
   @ApiOperation({ summary: 'The location of one vendor\'s live site (an address can be a home address: OPERATIONS and SUPER_ADMIN only)' })

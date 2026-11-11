@@ -2,6 +2,7 @@ import { RESERVED_PAGE_SLUGS } from '../../site-publish/content/content-adapter'
 import { SourceCms, SourceDocument, SourceExtras } from '../../site-publish/content/content-types';
 import { sha256, stableJson } from '../../site-publish/publish/site-config';
 import { buildDirectionsUrl, composeAddress, Location, parseMapLink, validateLocation } from './location-core';
+import { validateReviewUrl } from './review-link-core';
 import { isPageKey, PageSeoEdit, validatePageSeo } from './seo-core';
 
 /**
@@ -76,6 +77,8 @@ export interface ManagedDoc {
   seo: Record<string, PageSeoEdit>;
   /** slice B2: the business's address lines, city, state, pincode, optional coordinates and the pasted map link; absent = the legacy address text is used */
   location?: Location;
+  /** slice B3: the Google review link the vendor entered (Pro sites show the Write a review button; Free sites show nothing); absent = none */
+  reviewUrl?: string;
 }
 
 export const emptyDoc = (): ManagedDoc => ({ v: MANAGED_DOC_VERSION, fields: {}, lists: {}, sections: { hidden: [], order: [] }, brand: {}, navigation: { header: [], footer: [] }, seo: {} });
@@ -94,6 +97,7 @@ export function normaliseDoc(raw: unknown): ManagedDoc {
     navigation: { header: Array.isArray(r.navigation?.header) ? [...r.navigation.header] : [], footer: Array.isArray(r.navigation?.footer) ? [...r.navigation.footer] : [] },
     seo: r.seo && typeof r.seo === 'object' && !Array.isArray(r.seo) ? { ...r.seo } : {},
     ...(r.location && typeof r.location === 'object' && !Array.isArray(r.location) ? { location: { ...r.location } } : {}),
+    ...(typeof r.reviewUrl === 'string' && r.reviewUrl ? { reviewUrl: r.reviewUrl } : {}),
   };
 }
 
@@ -251,6 +255,14 @@ export function writeLocation(doc: ManagedDoc, input: unknown): Ok<{ doc: Manage
   return { ok: true, doc: Object.keys(loc).length ? { ...rest, location: loc } : (rest as ManagedDoc) };
 }
 
+/** Set the Google review link. An empty value removes it. */
+export function writeReviewUrl(doc: ManagedDoc, input: unknown): Ok<{ doc: ManagedDoc }> | Fail {
+  const r = validateReviewUrl(input);
+  if (!r.ok) return fail(r.code, r.message, 'reviewUrl');
+  const { reviewUrl: _old, ...rest } = doc;
+  return { ok: true, doc: r.url ? { ...rest, reviewUrl: r.url } : (rest as ManagedDoc) };
+}
+
 /** Set one page's SEO text. An empty edit removes the page's entry (the default shows again). */
 export function writeSeo(doc: ManagedDoc, pageKey: string, input: unknown, allowedImages: readonly string[]): Ok<{ doc: ManagedDoc }> | Fail {
   if (!isPageKey(pageKey)) return fail('FIELD_LOCKED', 'That page does not exist.', pageKey);
@@ -311,19 +323,19 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
   for (const k of ['accent', 'accentDark', 'fontHeading', 'fontBody', 'logo'] as const) if (d.brand[k]) settings[k] = d.brand[k];
   if (d.sections.hidden.length) settings.hiddenSections = [...d.sections.hidden];
   if (d.sections.order.length) settings.sectionOrder = [...d.sections.order];
-  return { ...src, cms, rendererSettings: { ...(src.rendererSettings ?? {}), ...settings }, ...(Object.keys(d.seo).length ? { pageSeo: d.seo } : {}), managed: d };
+  return { ...src, cms, rendererSettings: { ...(src.rendererSettings ?? {}), ...settings }, ...(Object.keys(d.seo).length ? { pageSeo: d.seo } : {}), ...(d.reviewUrl ? { reviewUrl: d.reviewUrl } : {}), managed: d };
 }
 
 // ── hashing and comparing ──────────────────────────────────────────────────────────────────────────
 
 export const hashDoc = (doc: ManagedDoc): string => sha256(stableJson(normaliseDoc(doc)));
 
-export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean; seo: string[]; location: boolean }
+export interface DocDiff { fields: string[]; lists: string[]; sections: boolean; brand: boolean; navigation: boolean; seo: string[]; location: boolean; reviewLink: boolean }
 export function diffDocs(a: ManagedDoc, b: ManagedDoc): DocDiff {
   const x = normaliseDoc(a); const y = normaliseDoc(b);
   const same = (p: unknown, q: unknown): boolean => stableJson(p) === stableJson(q);
   const keys = [...new Set([...Object.keys(x.fields), ...Object.keys(y.fields)])].filter((k) => x.fields[k] !== y.fields[k]).sort();
   const lists = [...new Set([...Object.keys(x.lists), ...Object.keys(y.lists)])].filter((k) => !same(x.lists[k as ListName], y.lists[k as ListName])).sort();
   const seo = [...new Set([...Object.keys(x.seo), ...Object.keys(y.seo)])].filter((k) => !same(x.seo[k], y.seo[k])).sort();
-  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation), seo, location: !same(x.location, y.location) };
+  return { fields: keys, lists, sections: !same(x.sections, y.sections), brand: !same(x.brand, y.brand), navigation: !same(x.navigation, y.navigation), seo, location: !same(x.location, y.location), reviewLink: x.reviewUrl !== y.reviewUrl };
 }

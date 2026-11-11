@@ -50,7 +50,9 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   // slice B1 (Batch 9): the SEO projection is written by the SeoProjector for one vendor at a time and read by staff reports; no vendor route reads it
   'V3PageSeo',
   // slice B2 (Batch 9): the location projection is written by the LocationProjector for one vendor at a time and read by staff; no vendor route reads it
-  'V3SiteLocation'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  'V3SiteLocation',
+  // slice B3 (Batch 9): the review-link projection is written by the ReviewLinkProjector for one vendor at a time and read by staff; no vendor route reads it
+  'V3ReviewLink'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

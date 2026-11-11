@@ -9,6 +9,7 @@ import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
 import { ReviewService } from '../review/review.service';
 import { LocationService } from '../location/location.service';
+import { ReviewLinkService } from '../review-link/review-link.service';
 import { SeoService } from '../seo/seo.service';
 import { WebsiteService } from '../website.service';
 import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, DraftNavigationDto, DraftSectionsDto, RestoreRevisionDto } from './dto/website.dto';
@@ -24,7 +25,7 @@ import { CompareRevisionsQuery, DraftBrandDto, DraftFieldDto, DraftListDto, Draf
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeWebsiteController {
-  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService, private readonly seo: SeoService, private readonly location: LocationService) {}
+  constructor(private readonly web: WebsiteService, private readonly reviews: ReviewService, private readonly seo: SeoService, private readonly location: LocationService, private readonly reviewLink: ReviewLinkService) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
@@ -88,6 +89,16 @@ export class MeWebsiteController {
   @ApiOperation({ summary: 'Autosave the location: address lines, city, state, pincode, optional coordinates and a pasted full map link' })
   locationSave(@Tenant() t: TenantContext, @Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
     return this.web.save(t.vendorId, this.actor(user, req), { kind: 'location', value: body });
+  }
+
+  @Get('review-link')
+  @ApiOperation({ summary: 'My Google review link as my draft has it, and whether my plan shows the button (Pro only)' })
+  reviewLinkView(@Tenant() t: TenantContext) { return this.reviewLink.view(t.vendorId); }
+
+  @Put('draft/review-link') @HttpCode(200)
+  @ApiOperation({ summary: 'Autosave my Google review link (https, on google.com, g.page, maps.app.goo.gl or search.google.com; Pro only; an empty value removes it)' })
+  reviewLinkSave(@Tenant() t: TenantContext, @Body() body: { url?: unknown }, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    return this.web.save(t.vendorId, this.actor(user, req), { kind: 'reviewLink', value: body?.url });
   }
 
   @Delete('draft') @HttpCode(200)
