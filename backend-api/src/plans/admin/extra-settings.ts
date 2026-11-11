@@ -4,6 +4,7 @@ import { isBillingSettingKey, validateBillingSetting } from '../../plan-billing/
 import { isDomainSettingKey, validateDomainSetting } from '../../site-domains/settings/domain-settings';
 import { isB3SettingKey, validateB3Setting } from '../../b3-settings/b3-settings';
 import { isWalletSettingKey, validateWalletSetting } from '../../v3-wallet/settings/wallet-settings';
+import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/settings/website-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -19,6 +20,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: (k: string) => isB3SettingKey(k) && k !== 'seededSiteIndexingMode', validate: validateB3Setting },
   // batch 4 (5.16a onwards): wallet limits, credit validity and the settings of the services built on it. Editing needs SUPER_ADMIN like every plan setting.
   { owns: isWalletSettingKey, validate: validateWalletSetting },
+  // batch 9 (5.5b onwards): the Website manager's media caps and the limits of the slices built on it; every number starts unset
+  { owns: isWebsiteSettingKey, validate: validateWebsiteSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

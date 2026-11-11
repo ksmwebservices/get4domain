@@ -82,6 +82,7 @@ model Vendor {
   v3Counters V3VendorCounter[]
   v3SiteDrafts V3SiteDraft?
   v3SiteSnapshots V3SiteSnapshot[]
+  v3SitePictures V3SitePicture[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6548,4 +6549,54 @@ model V3SiteSnapshot {
   @@unique([vendorId, version])
   @@index([vendorId, createdAt])
   @@map("g4d_site_snapshots")
+}
+
+/// Slice 5.5b (Website manager): a picture a vendor (or staff on its behalf) uploaded. Re-encoded, sized, with alt text; the file lives under vendors/<vendorId>/ in storage.
+model V3SitePicture {
+  id             String      @id @default(cuid())
+  vendorId       String
+  storagePath    String
+  url            String
+  contentType    String
+  bytes          Int
+  width          Int
+  height         Int
+  altText        String
+  sha256         String
+  uploadedByType V3ActorType @default(SYSTEM)
+  uploadedById   String?
+  createdAt      DateTime    @default(now())
+  deletedAt      DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sha256])
+  @@index([vendorId, createdAt])
+  @@map("g4d_site_pictures")
+}
+
+/// Slice 5.5b: the Banner Library. Platform data (no vendor): reference banners per category, each with its source, author, licence and date obtained.
+model V3BannerImage {
+  id          String   @id @default(cuid())
+  categoryId  String
+  storagePath String
+  url         String
+  contentType String
+  bytes       Int
+  width       Int
+  height      Int
+  altText     String
+  hasPeople   Boolean  @default(false)
+  sourceUrl   String
+  author      String
+  licenceName String
+  obtainedOn  String
+  sha256      String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([categoryId, sha256])
+  @@index([categoryId, active])
+  @@map("g4d_banner_images")
 }

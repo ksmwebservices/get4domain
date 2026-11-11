@@ -3,6 +3,7 @@ import { KeyedQueue } from '../common/keyed-queue';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { ResolvedEntitlements } from '../plans/entitlements/entitlement-engine';
 import { Actor } from '../plans/admin/audit.service';
+import { categoryFor } from '../site-publish/content/content-adapter';
 import { ContentSource } from '../site-publish/content/content-source';
 import { SnapshotSink } from '../site-publish/content/snapshot-sink';
 import { PublishService } from '../site-publish/publish/publish.service';
@@ -71,6 +72,21 @@ export class WebsiteService {
   }
 
   private async liveDoc(vendorId: string): Promise<ManagedDoc> { return (await this.content.load(vendorId))?.managed ?? emptyDoc(); }
+
+  /** The vendor's kit category and family (null when the business has no category yet). */
+  async categoryOf(vendorId: string): Promise<{ categoryId: string; family: string } | null> {
+    const doc = await this.content.load(vendorId);
+    if (!doc) return null;
+    const kit = this.themes.kitApi;
+    const categoryId = categoryFor(doc, kit, kit.categoryMap());
+    return categoryId ? { categoryId, family: kit.categoryById(categoryId).family } : null;
+  }
+
+  /** True when the draft or the live document uses this picture link (a picture in use cannot be removed). */
+  async usesUrl(vendorId: string, url: string): Promise<boolean> {
+    const [d, live] = await Promise.all([this.store.getDraft(vendorId), this.liveDoc(vendorId)]);
+    return JSON.stringify(d?.doc ?? {}).includes(url) || JSON.stringify(live).includes(url);
+  }
 
   async editor(vendorId: string): Promise<EditorView> {
     const c = await this.context(vendorId);
@@ -172,10 +188,10 @@ export class WebsiteService {
    * Publish the draft (Pro): validate, build from the draft, publish through the existing pipeline, remember what was published, purge the cache. The prohibited-term
    * scan runs inside the publish and only raises an alert. Publishing a draft that equals what is already live changes nothing and says so (a double publish is harmless).
    */
-  publish(vendorId: string, actor: Actor): Promise<{ unchanged: boolean; publication: PublicationSummary | null }> {
+  publish(vendorId: string, actor: Actor, o: { staff?: boolean } = {}): Promise<{ unchanged: boolean; publication: PublicationSummary | null }> {
     return websiteQueue.run(`site-manager:${vendorId}`, async () => {
       const c = await this.context(vendorId);
-      if (!c.pro) throw reviewRequired();
+      if (!c.pro && !o.staff) throw reviewRequired();   // a Free vendor's edits are reviewed; staff acting for the vendor are the review
       const live = await this.liveDoc(vendorId);
       const row = await this.store.getDraft(vendorId);
       const draft = row?.doc ?? live;

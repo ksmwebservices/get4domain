@@ -102,6 +102,8 @@ const MARKETING_DENIED = [
   // S54.7: sites. Anything that carries html, and every write, is OPERATIONS and SUPER_ADMIN; MARKETING only reads summaries (the two ALL_STAFF routes below)
   'PUT /v3/admin/vendors/:id/site/theme', 'POST /v3/admin/vendors/:id/site/build', 'POST /v3/admin/vendors/:id/site/publish', 'POST /v3/admin/vendors/:id/site/rollback',
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
+  // 5.5b: the Banner Library and set-up on a vendor's behalf
+  'PUT /v3/admin/banner-library/:id/active', 'GET /v3/admin/vendors/:id/site/banners', 'POST /v3/admin/vendors/:id/site/banner', 'GET /v3/admin/vendors/:id/site/media', 'POST /v3/admin/vendors/:id/site/media',
 ];
 const ALL_STAFF_ROUTES = [
   'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
@@ -114,6 +116,7 @@ const ALL_STAFF_ROUTES = [
   'POST /admin/quotes', 'GET /admin/quotes', 'GET /admin/quotes/:id', 'PUT /admin/quotes/:id/status', 'POST /admin/quotes/proposals', 'GET /admin/quotes/:id/pdf', 'POST /admin/quotes/:id/share',
   'GET /website-themes/all', 'GET /website-themes/:id/unlocks',
   'GET /v3/admin/sites', 'GET /v3/admin/vendors/:id/site',   // S54.7: summaries only, never html
+  'GET /v3/admin/banner-library',   // 5.5b: the library with its licences is readable by all staff
   // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
@@ -140,7 +143,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(264);
+    expect(oracle).toHaveLength(270);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
