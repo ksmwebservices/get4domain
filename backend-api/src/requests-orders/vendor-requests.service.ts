@@ -240,6 +240,14 @@ export class VendorRequestsService {
   }
 
   /** What happens once an order is paid (by the vendor's gateway event or by the vendor): the confirmation message, once. */
+  /** The vendor's Mark as paid on a pay request that belongs to an order: the order becomes PAID once, the stock is taken, the invoice number is allocated, the customer is told. Idempotent. */
+  async recordOrderPaid(vendorId: string, orderId: string): Promise<{ alreadyPaid: boolean } | null> {
+    const cur = await this.store.getOrder(orderId, vendorId); if (!cur) return null;
+    const r = await this.store.markPaid(orderId, vendorId, this.clock());
+    await this.afterPaid(vendorId, r.order.id, r.alreadyPaid);
+    return { alreadyPaid: r.alreadyPaid };
+  }
+
   async afterPaid(vendorId: string, orderId: string, alreadyPaid: boolean): Promise<void> {
     if (alreadyPaid) return;
     const o = await this.store.getOrder(orderId, vendorId); if (!o) return;

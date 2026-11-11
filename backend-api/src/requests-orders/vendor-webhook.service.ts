@@ -15,9 +15,12 @@ export interface WebhookOutcome { status: 'PROCESSED' | 'DUPLICATE' | 'IGNORED' 
  */
 @Injectable()
 export class VendorWebhookService {
+  /** Amendment 06: vendors are paid by UPI and confirm the payment themselves, so this route is OFF unless VENDOR_GATEWAY_WEBHOOK_ENABLED=true (the owner sets it; nothing sets it in this build). Off, it answers the same plain 401 as a bad signature. */
+  env: Record<string, string | undefined> = process.env;
   constructor(private readonly store: RequestsStore, private readonly vendor: VendorRequestsService) {}
 
   async handle(vendorId: string, methodId: string, rawBody: Buffer | undefined, signature: string | undefined): Promise<WebhookOutcome> {
+    if (this.env.VENDOR_GATEWAY_WEBHOOK_ENABLED !== 'true') throw new UnauthorizedException('Unauthorized');
     const method = await this.store.getMethod(methodId, vendorId);
     const sealed = method ? await this.store.methodSecrets(methodId, vendorId) : null;
     const secret = sealed ? openSecret(sealed.webhook) : null;

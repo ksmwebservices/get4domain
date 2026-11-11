@@ -55,6 +55,8 @@ export interface B3Settings {
   spamScoreBlockThreshold: number;
   /** Message templates by key; variables in {{double braces}} are validated against an allow-list. */
   messageTemplates: Record<string, string>;
+  /** Hours a vendor's pay link stays valid. NO default: staff set it, and a pay request cannot be created until they do (5.17b). */
+  payLinkExpiryHours: number | null;
   /** Live sending is guarded off in this batch whatever this says; the sandbox outbox is always used. */
   messagingMode: 'sandbox';
 }
@@ -89,7 +91,9 @@ export const DEFAULT_B3_SETTINGS: Readonly<B3Settings> = {
     request_responded_customer: '{{businessName}} replied to your request {{reference}}. Track it: {{trackingUrl}}',
     request_nudge_vendor: 'Request {{reference}} for {{businessName}} is waiting for your reply.',
     order_confirmed_customer: 'Your order {{orderNo}} with {{businessName}} is confirmed.',
+    payment_said_paid_vendor: 'A customer of {{businessName}} says they paid {{amount}}. Check your own bank app, then mark it paid in your dashboard. Reference {{reference}}.',
   },
+  payLinkExpiryHours: null,
   messagingMode: 'sandbox',
 };
 
@@ -98,7 +102,7 @@ export const isB3SettingKey = (key: string): key is keyof B3Settings => (B3_SETT
 
 /** Template variables a message may use. Anything else is refused at save time. */
 export const TEMPLATE_VARIABLES = ['customerName', 'businessName', 'reference', 'trackingUrl', 'orderNo', 'amount', 'status'] as const;
-export const TEMPLATE_KEYS = ['request_received_customer', 'request_received_vendor', 'request_responded_customer', 'request_nudge_vendor', 'order_confirmed_customer'] as const;
+export const TEMPLATE_KEYS = ['request_received_customer', 'request_received_vendor', 'request_responded_customer', 'request_nudge_vendor', 'order_confirmed_customer', 'payment_said_paid_vendor'] as const;
 
 const intIn = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= min && v <= max;
 const text = (v: unknown, min: number, max: number): v is string => typeof v === 'string' && v.trim().length >= min && v.length <= max;
@@ -124,6 +128,7 @@ export function b3SettingProblem(key: keyof B3Settings, value: unknown): string 
     case 'vendorInvoicePrefix': return typeof value === 'string' && /^[A-Za-z0-9-]{0,10}$/.test(value) ? null : 'must be up to 10 letters, digits or dashes';
     case 'requestDuplicateWindowMinutes': return intIn(value, 1, 10_080) ? null : 'must be a whole number of minutes from 1 to 10080';
     case 'spamScoreOtpThreshold': case 'spamScoreBlockThreshold': return intIn(value, 1, 100) ? null : 'must be a whole number from 1 to 100';
+    case 'payLinkExpiryHours': return intIn(value, 1, 8760) ? null : 'must be a whole number of hours from 1 to 8760';
     case 'messagingMode': return value === 'sandbox' ? null : 'live messaging is not available in this build; only "sandbox" is accepted';
     case 'messageTemplates': {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return 'must be an object of template key to text';

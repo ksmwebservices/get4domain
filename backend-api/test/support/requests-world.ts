@@ -53,7 +53,7 @@ export async function requestsWorld(opts: { acceptance?: AcceptanceGuard; takedo
   const payeeCalls: Array<{ vendorId: string; payeeName: string | null | undefined }> = [];
   const payee = { check: async (vendorId: string, payeeName: string | null | undefined) => { payeeCalls.push({ vendorId, payeeName }); return 'MISMATCH' as const; } };
   const vendor = new VendorRequestsService(store, messaging, gateway, lifecycle, b3svc as never, opts.acceptance, activity as never, payee as never); vendor.clock = () => new Date(now.t);
-  const webhook = new VendorWebhookService(store, vendor);
+  const webhook = new VendorWebhookService(store, vendor); webhook.env = { VENDOR_GATEWAY_WEBHOOK_ENABLED: 'true' };   // the 5.14 webhook tests exercise the legacy route; the default (off) has its own test
   const staff = new StaffRequestsService(store, dw.pepper, { suspend: async (id: string) => { const v = await lifecycle.vendor(id); if (v) v.status = 'SUSPENDED'; lifecycle.vendors.get(id)!.status = 'SUSPENDED'; return { status: 'SUSPENDED', changed: true }; } } as never);
   staff.clock = () => new Date(now.t);
   const cron = new RequestsCron(store, messaging, lifecycle, b3svc as never); cron.clock = () => new Date(now.t);

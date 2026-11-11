@@ -24,6 +24,8 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   'V3Request', 'V3VendorPaymentMethod', 'V3Order', 'V3VendorPaymentEvent', 'V3VendorInvoice', 'V3VendorCounter', 'V3StockLevel', 'V3StockReservation', 'V3Offer', 'V3MessageOutbox',
   // slice 5.15: acceptances are written and read only through TermsStore, which carries the vendor id in the WHERE of every read and write; no tenant-scoped route reads another vendor's rows
   'V3TermsAcceptance',
+  // slice 5.17b (Batch 5): pay requests and payments are reached ONLY through PaymentsStore, which carries the vendor id in the WHERE of every vendor read and write; the public pay page finds the row by its unguessable code (cross-tenant tested)
+  'V3PaymentRequest', 'V3Payment',
   // slice 5.16a (Batch 4): the wallet, its append-only ledger, lots, top-ups and receipts are reached ONLY through WalletStore / prismaWalletTx, which carry the vendor id in the WHERE of every read and
   // write (tested: vendor B cannot read, confirm or spend vendor A's wallet). Moving them to the tenant-scoped client is an OPEN QUESTION in docs/v3/B4_LOG.md.
   'V3Wallet', 'V3WalletLedger', 'V3WalletTopup', 'V3WalletReceipt', 'V3WalletLot',

@@ -6,6 +6,7 @@ import { SitePublishModule } from '../site-publish/site-publish.module';
 import { VendorLifecycleModule } from '../vendor-lifecycle/vendor-lifecycle.module';
 import { REQUESTS_CONTROLLERS, REQUESTS_PROVIDERS } from './requests-orders.providers';
 import { VendorRequestsService } from './vendor-requests.service';
+import { MessagingService } from './messaging.service';
 import { RequestsStore } from './requests.store';
 
 /**
@@ -16,6 +17,6 @@ import { RequestsStore } from './requests.store';
   imports: [PrismaModule, DirectoryModule, SiteDomainsModule, SitePublishModule, VendorLifecycleModule],
   controllers: REQUESTS_CONTROLLERS,
   providers: REQUESTS_PROVIDERS,
-  exports: [RequestsStore, VendorRequestsService],
+  exports: [RequestsStore, VendorRequestsService, MessagingService],
 })
 export class RequestsOrdersModule {}

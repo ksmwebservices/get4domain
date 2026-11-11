@@ -1,3 +1,4 @@
+import { PayRequestsModule } from './v3-payments/payments.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -127,6 +128,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     SiteLifecycleModule,
     SeededSitesModule,
     RequestsOrdersModule,
+    PayRequestsModule,
     TermsModule,
     PlanBillingModule,
     ActivityBusModule,   // Batch 4: the typed in-process event bus (global)

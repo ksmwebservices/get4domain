@@ -72,6 +72,8 @@ model Vendor {
   v3ThemeSwitches V3ThemeSwitch[]
   v3PaymentMethods V3VendorPaymentMethod[]
   v3Orders V3Order[]
+  v3PaymentRequests V3PaymentRequest[]
+  v3Payments V3Payment[]
   v3Invoices V3VendorInvoice[]
   v3Offers V3Offer[]
   v3Counters V3VendorCounter[]
@@ -5369,6 +5371,7 @@ model V3VendorPaymentMethod {
   updatedAt          DateTime              @updatedAt
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  payRequests V3PaymentRequest[]
 
   @@index([vendorId, status])
   @@map("g4d_vendor_payment_methods")
@@ -6337,4 +6340,77 @@ model V3Takedown {
   @@index([listingId, status])
   @@index([status, at])
   @@map("g4d_takedowns")
+}
+
+// ── Slice 5.17b (Batch 5, amendment 06 UPI only): pay requests and the payments a vendor confirms ──
+enum V3PaySource {
+  MANUAL
+  REQUEST
+  ORDER
+}
+
+enum V3PayStatus {
+  AWAITING
+  CUSTOMER_SAYS_PAID
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum V3PaymentConfirmedBy {
+  VENDOR
+  GATEWAY // unused: no gateway is offered to vendors
+}
+
+model V3PaymentRequest {
+  id             String      @id @default(cuid())
+  vendorId       String
+  code           String      @unique // unguessable, in the public pay link
+  amountPaise    Int
+  note           String?
+  customerName   String
+  customerPhone  String?
+  source         V3PaySource @default(MANUAL)
+  requestId      String?
+  orderId        String?
+  methodId       String
+  status         V3PayStatus @default(AWAITING)
+  expiresAt      DateTime
+  customerSaidAt DateTime?
+  customerUtr    String?
+  createdBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  vendor  Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  method  V3VendorPaymentMethod @relation(fields: [methodId], references: [id], onDelete: Restrict)
+  payment V3Payment?
+
+  @@index([vendorId, status, createdAt])
+  @@index([status, expiresAt])
+  @@index([vendorId, orderId])
+  @@map("g4d_payment_requests")
+}
+
+model V3Payment {
+  id                String               @id @default(cuid())
+  paymentRequestId  String               @unique
+  vendorId          String
+  amountPaise       Int
+  level             Int                  @default(1)
+  provider          String               @default("UPI_MANUAL")
+  providerPaymentId String
+  utr               String?
+  confirmedBy       V3PaymentConfirmedBy @default(VENDOR)
+  confirmedAt       DateTime
+  idempotencyKey    String?
+  createdAt         DateTime             @default(now())
+
+  request V3PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  vendor  Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerPaymentId])
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, confirmedAt])
+  @@map("g4d_payments")
 }
