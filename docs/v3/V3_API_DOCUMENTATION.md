@@ -334,3 +334,102 @@ States: `AWAITING`, `CUSTOMER_SAYS_PAID`, `PAID`, `EXPIRED`, `CANCELLED`.
 Documents are made by Mark as paid, one per payment, with a gap-free number per vendor and financial year (for example `INV2627-00001`). A registered vendor's manual payment makes no document (no tax rate to use): the payment stands and `document.needs_tax_rate` is written.
 
 Route classification baseline and the owner-only list were updated for the new owner routes; the role-matrix oracle grew from 263 to 264 (the one staff route).
+
+
+## Batch 9 (branch v3-b9): Website manager, 49 new routes (30 vendor, 19 staff), staging only, nothing exposed on a real host
+
+Responses use the standard envelope. Errors carry a stable `code`, a plain `message` and, for a field problem, the `field` name; the submitted text is never echoed. Vendor routes take the vendor from the signed-in principal (there is no vendor id in any vendor URL, query or body). Editing needs the `website` team area; **publish and restore are owner only**. Staff routes use the role matrix: OPERATIONS and SUPER_ADMIN unless stated; MARKETING is refused on anything with personal, money or customer data. (The stage file names SUPPORT, Website Developer and Customer Support roles that do not exist here: decision D-1.)
+
+### The draft (slice 5.5a), all under `/v3/me/site`
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET editor/map` | none | `{ themeId, map: { pages: [{ key, sections: [{ id, label, optional, fields[], lists[], fromOfferings, visibilityOnly }] }], gaps[] }, fonts[], pro, limits, fields }` derived from the theme's own templates | 409 `NO_THEME` |
+| `GET draft` | none | `{ doc, rev, dirty, baseVersion, liveVersion }` | |
+| `PUT draft/field` | `{ key, value }` (a key of the map, e.g. `hero.title`) | the draft view | 400 `FIELD_LOCKED` (SEO, canonical, markup and every key not in the map), 400 `FIELD_INVALID`, 422 `WORDING_NOT_ALLOWED`, 403 `FEATURE_LOCKED` (Pro-only wording) |
+| `PUT draft/list/:name` | `{ items[] }` for `faqs, gallery, steps, trust, stats, team, credentials, pages` | the draft view | 400 `FIELD_LOCKED`, `FIELD_INVALID`, `ALT_REQUIRED`, `SLUG_INVALID`, `LIST_TOO_LONG`, 409 `LIMIT_REACHED` (plan limit) |
+| `PUT draft/sections` | `{ hidden[], order[] }` | the draft view | 400 `SECTION_REQUIRED` (the top banner cannot be hidden), `SECTION_UNKNOWN` |
+| `PUT draft/brand` | `{ brand: { accent?, accentDark?, fontHeading?, fontBody?, logo? } }` | the draft view | 400 `FONT_NOT_ALLOWED`, `FIELD_LOCKED` (anything else) |
+| `PUT draft/navigation` | `{ header[], footer[] }` of `{ key, label (1-40), visible }` | the draft view | 400 `NAV_INVALID` |
+| `DELETE draft` | none | the draft view, now equal to what is live | |
+| `POST draft/preview` | none | `{ publication, reused }` (a DRAFT_PREVIEW; open it with the 5.4 preview route; never public) | |
+| `POST draft/publish` (owner) | none | Pro: `{ mode: 'LIVE', unchanged, publication }`; Free: `{ mode: 'SUBMITTED', submission }` | 409 `NOTHING_TO_PUBLISH`, `SUBMISSION_PENDING`, 422/400 the same field and wording codes |
+| `GET revisions` | none | publications with `hasContentSnapshot` | |
+| `GET revisions/compare?from=&to=` | versions | `{ content: { fields[], lists[], sections, brand, navigation, seo[], location, reviewLink, testimonials }, pages: { added[], removed[], changed[], unchanged } }` | 404 `VERSION_NOT_FOUND` |
+| `POST revisions/restore` (owner) | `{ toVersion }` | `{ publication }`; the draft becomes that version's content | 403 `FEATURE_LOCKED` (needs version history), 404 |
+
+Example, a Pro publish: `POST /v3/me/site/draft/publish` returns `{ "success": true, "statusCode": 200, "data": { "mode": "LIVE", "unchanged": false, "publication": { "version": 3, "status": "PUBLISHED" } } }`. A second publish with no change returns `"unchanged": true` and creates nothing. Example, a refused field: `PUT draft/field {"key":"seo.canonical","value":"x"}` returns 400 `{ "code": "FIELD_LOCKED", "field": "seo.canonical" }`.
+
+### Free edits go to review (slice 5.5c, amendment 06)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/site/submissions` | none | own submissions, newest first: `{ id, scope, status: SUBMITTED\|APPROVED\|REJECTED, submittedAt, decidedAt, reason, changed }` | |
+| `GET /v3/me/site/submissions/:id` | none | one of them (the rejection reason is here) | 404 `SUBMISSION_NOT_FOUND` |
+| `GET /v3/admin/content-reviews?status=&vendorId=&page=&pageSize=` | query | paged list with `vendorId, reviewerId` | |
+| `GET /v3/admin/content-reviews/:id` | none | the submission with its `payload` document | 404 |
+| `POST /v3/admin/content-reviews/:id/approve` | none | the submission, `APPROVED`; the submitted payload (not a later draft) is built and published | 409 `SUBMISSION_NOT_OPEN`, build errors leave it waiting |
+| `POST /v3/admin/content-reviews/:id/reject` | `{ reason (3-500, plain text) }` | the submission, `REJECTED`; the old content stays live | 422 `REASON_REQUIRED`, 409 `SUBMISSION_NOT_OPEN` |
+
+### Media and the Banner Library (slice 5.5b)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/site/media` | none | `[{ id, url, altText, width, height, contentType, bytes }]` | |
+| `POST /v3/me/site/media` | multipart `file` + `alt` | the picture; re-encoded, metadata dropped, stored under the vendor's own folder; the same picture twice is one row | 409 `MEDIA_NOT_CONFIGURED` (staff caps unset), 422 `ALT_REQUIRED`, `MEDIA_TYPE_NOT_ALLOWED` (SVG never), `MEDIA_TYPE_MISMATCH`, `MEDIA_INVALID`, 413 `MEDIA_TOO_LARGE`, 503 `STORAGE_NOT_CONFIGURED` |
+| `DELETE /v3/me/site/media/:id` | none | `{ removed: true }` | 404 `MEDIA_NOT_FOUND`, 409 `MEDIA_IN_USE` |
+| `GET /v3/me/site/banners` | none | reference banners of my category (no licence data); healthcare and legal-finance see banners without identifiable people | |
+| `POST /v3/me/site/banner` | `{ bannerId }` | `{ banner, published: false }`; writes the hero picture and its description to my draft | 404 `BANNER_NOT_AVAILABLE` |
+| `GET /v3/admin/banner-library?categoryId=` (all staff) | query | every banner with `sourceUrl, author, licenceName, obtainedOn, categoryId, active` | |
+| `PUT /v3/admin/banner-library/:id/active` | `{ active }` | the banner | 404 |
+| `GET /v3/admin/vendors/:id/site/banners` | none | all banners available for that vendor, including pictures with people | |
+| `POST /v3/admin/vendors/:id/site/banner` | `{ bannerId }` | `{ banner, published: true }`; staff acting for the vendor are the review, so it goes live | 404 `BANNER_NOT_AVAILABLE` |
+| `GET` and `POST /v3/admin/vendors/:id/site/media` | as the vendor's, for that vendor | the picture(s); recorded in that vendor's activity with the staff member as the actor | as above |
+
+Plan settings (all unset by default; set with `PUT /v3/admin/plan-settings/:key`, SUPER_ADMIN): `mediaMaxBytes`, `mediaAllowedTypes` (png, jpeg, webp), `mediaMaxPixels`, `testimonialMaxCount`, `actOnBehalfMaxMinutes`.
+
+### Per-page SEO (B1)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/site/seo` | none | `{ pages: [{ pageKey, label, seoTitle, seoDescription, shareImageRef, isCustomTitle, isCustomDescription, slug: { value, editable }, defaults }], limits: { title: 60, description: 160 } }` | |
+| `PUT /v3/me/site/draft/seo/:pageKey` | `{ seoTitle?, seoDescription?, shareImageRef? }` (`home, about, services, gallery, contact, page:<slug>, item:<id>`; an empty value removes the custom text) | the draft view | 400 `FIELD_LOCKED` (slug, canonical, structured data and any other key, or a page the site does not have), `FIELD_INVALID`, `IMAGE_NOT_ALLOWED` (not one of the site's own pictures), 422 `WORDING_NOT_ALLOWED` |
+| `GET /v3/admin/seo/pages?vendorId=&issue=` (all staff) | `issue`: `DEFAULT_TITLE, DEFAULT_DESCRIPTION, DUPLICATE_TITLE, SHORT_DESCRIPTION` | paged `{ vendorId, pageKey, issue }` | |
+| `GET /v3/admin/vendors/:id/site/seo` (all staff) | none | the effective SEO of every page of the live site | |
+
+### Location and directions (B2)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/site/location` | none | `{ location, address, directionsUrl }` (`https://www.google.com/maps/search/?api=1&query=<lat>,<lng>`, or the address text, URL-encoded) | |
+| `GET /v3/me/site/location/parse?url=` | a full Google Maps link | `{ ok: true, coords }` or `{ ok: false, code }`; nothing is fetched; short links (maps.app.goo.gl) are not expanded | |
+| `PUT /v3/me/site/draft/location` | `{ addressLine1?, addressLine2?, city?, state?, pincode? (6 digits), latitude?, longitude? (a pair), mapLinkInput? }` | the draft view; a full link supplies coordinates you did not type | 400 `FIELD_INVALID`, `LOCATION_COORDS_INCOMPLETE`, `SHORT_LINK_NOT_EXPANDED`, `LINK_HOST_NOT_ALLOWED`, `LINK_HAS_NO_COORDINATES` |
+| `GET /v3/admin/vendors/:id/site/location` | none | the live location row or `null` | |
+
+Free sites show the address as plain text and no directions link; Pro sites show the Get directions link.
+
+### Google review link (B3) and testimonials (B4), Pro only
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/site/review-link` | none | `{ url, pro }` | |
+| `PUT /v3/me/site/draft/review-link` | `{ url }` (https on google.com and its subdomains, g.page, maps.app.goo.gl or search.google.com; empty removes it) | the draft view | 403 `FEATURE_LOCKED` (Free), 400 `REVIEW_HOST_NOT_ALLOWED`, `FIELD_INVALID` |
+| `GET /v3/me/site/testimonials` | none | `{ items, label: 'Words shared by the business owner', maxCount, limits: { name: 40, text: 300 }, pro }` | |
+| `PUT /v3/me/site/draft/testimonials` | `{ items: [{ name, text, date?, consent: true }] }`; exactly these four fields | the draft view | 403 `FEATURE_LOCKED`, 409 `TESTIMONIALS_NOT_CONFIGURED`, `LIMIT_REACHED`, 400 `NAME_NOT_ALLOWED`, `CONSENT_REQUIRED`, `FIELD_LOCKED` (rating, stars, score, url and every other key), `FIELD_INVALID`, 422 `WORDING_NOT_ALLOWED` |
+| `GET /v3/admin/vendors/:id/site/review-link` and `/testimonials` | none | the live row(s) | |
+
+No star rating, aggregate rating or review structured data is ever generated.
+
+### Act on behalf and the onboarding queue (5.13b)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `POST /v3/admin/vendors/:id/act-on-behalf` | `{ reason (3-500) }` | `{ id, vendorId, staffId, reason, startedAt, expiresAt, state: ACTIVE }`; the vendor is notified | 409 `ACT_ON_BEHALF_NOT_CONFIGURED`, `SESSION_ACTIVE`, 422 `REASON_REQUIRED`, 404 `ACT_ON_BEHALF_VENDOR_NOT_FOUND` |
+| `POST /v3/admin/act-on-behalf/:sessionId/end` | none | the session, `ENDED` (your own; SUPER_ADMIN may end any) | 403 `ACT_ON_BEHALF_INVALID`, 404 `SESSION_NOT_FOUND` |
+| `GET /v3/admin/act-on-behalf?vendorId=&active=` | query | paged sessions | |
+| `GET /v3/me/act-on-behalf` | none | `[{ id, reason, startedAt, expiresAt, endedAt, endedBy, state }]`, never the staff member | |
+| `GET /v3/admin/onboarding-queue?kind=&page=` | `kind`: `SEEDED, CLAIM, NEW_VENDOR` | `{ items: [{ kind, vendorId, businessName, state, since, detail }], counts, total }`, oldest first, a vendor once | |
+
+Inside a session the staff member sends the header `x-act-on-behalf-session: <id>` on `/v3/admin/vendors/:id/...` routes. The header is refused on any other route (`ACT_ON_BEHALF_WRONG_ROUTE`), for another vendor (`ACT_ON_BEHALF_WRONG_VENDOR`), for another staff member's session (`ACT_ON_BEHALF_INVALID`) and after the session has ended or run out (`ACT_ON_BEHALF_EXPIRED`). A change to a payment method, bank detail, UPI id, payee or password is refused (`ACT_ON_BEHALF_FORBIDDEN`) and the attempt is written to the vendor's activity. Every allowed request is written to the vendor's activity with `actOnBehalfSessionId`. Sessions end by themselves after `actOnBehalfMaxMinutes` (a sweep every minute, and on the next use).
+
+Route classification baseline: 1079 to 1128 routes; owner-only list gained `POST /v3/me/site/draft/publish` and `POST /v3/me/site/revisions/restore`; the role-matrix oracle grew from 264 to 283.

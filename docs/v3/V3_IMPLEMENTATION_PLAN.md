@@ -108,3 +108,5 @@ Detailed plan is in the Step 0 plan presented for approval (not auto-started).
 4. **Integrations behind adapters** with `sandbox | live` mode and Rule 6 status values.
 5. **Identifiers:** the code uses `cuid()` IDs on every model. The platform `CLAUDE.md` said UUID; the correction is proposed separately. V3 keeps `cuid()` and does not rewrite existing IDs.
 6. Each phase ends with the Rule 9 report (objective, reuse, files modified, files added, DB changes, routes, frontend, tests, results, outstanding) and updates the tracker set.
+
+**Batch 9 status (Stage 13, Block 3 Part 1; branch `v3-b9`, worktree `get4domain-b9`, built on `v3-b5` at `8d9ca51`, NOT pushed, staging NOT RUN).** The Website manager (5.5a core, 5.5b media and Banner Library, 5.5c Free edits to review), per-page SEO (B1), location and directions (B2), the Google review link (B3), testimonials (B4) and act on behalf with the onboarding queue (5.13b): 8 slices, 8 additive migrations, 49 routes, 10 tables. Design: `V3_WEBSITE_MANAGER.md`. API: `V3_API_DOCUMENTATION.md`, section Batch 9. Run log: `B9_LOG.md`. Gaps and open questions are in the design document, sections 11 and 16.

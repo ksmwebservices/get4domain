@@ -124,10 +124,10 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 5.3 | Theme security (no arbitrary code, size limits, version, rollback, tenant isolation) | **EW** (design) | Script-free contract, sanitiser, lint CLI, size limits. Rollback via versions. Static review only. |
 | 5.3 | Next.js theme packages with controlled build/preview deployments | **Deferred (D3)** | Out of V3 scope for now. The HTML/CSS contract is the supported format. |
 | 5.4 | Vendor Theme Marketplace (browse, filter, desktop/mobile preview, preview with own content, activate, change, restore) | **EI** | Paid yearly marketplace, unlock/buy, `theme-preview`, theme-change limits (2/4 per year). Per-plan eligibility mapping to V3 plans = **RM**. |
-| 5.5 | Global/page/section managers (all listed components) | **EI** | Website Manager: `VendorCMS` single-row model + `draft` JSON + pack sections. Not a relational Pages/Sections model (§20 wants `WebsitePages`, `WebsiteSections`). |
-| 5.5 | Draft / preview / publish / revision history / restore | **EW** (docs) | `SiteVersion` keeps last 10 versions; signed 30-min preview link. |
+| 5.5 | Global/page/section managers (all listed components) | **EI** | Website Manager: `VendorCMS` single-row model + `draft` JSON + pack sections. Not a relational Pages/Sections model (§20 wants `WebsitePages`, `WebsiteSections`). **Batch 9 (`v3-b9`, built, not pushed, staging NOT RUN):** the Website manager edits every page's typed fields from a map derived from each theme's templates, through a draft overlay and a managed content document (`V3_WEBSITE_MANAGER.md`); landing pages, editable menu labels and opening-hours rows remain gaps. |
+| 5.5 | Draft / preview / publish / revision history / restore | **EW** (docs) | `SiteVersion` keeps last 10 versions; signed 30-min preview link. **Batch 9:** per-field autosave, preview, publish (one snapshot per publication), restore and compare through `/v3/me/site/*`. |
 | 5.5 | Schedule publication | **ND** | Not found. |
-| 5.5 | Employee approval + vendor approval workflow | **ND** | Not found. |
+| 5.5 | Employee approval + vendor approval workflow | **ND** | Not found. **Batch 9:** Free edits go to staff review (submit, approve, reject with a reason); Pro edits go live with the activity log. |
 | 5.5 | Shared content schema reused by directory, website, chatbot, CRM | **EI** | `VendorCMS` is read by site, sitemap, readiness, WhatsApp bot (per doc). Directory/CRM reuse absent. |
 
 ## §6 Hosting and multi-domain
@@ -323,4 +323,4 @@ Wallet rows tagged `ai_studio_bonus`; `ThemeEntitlement` theme-change allowance 
 | 5.14 Requests and orders bridge | `v3-b3` | Built; sandbox messaging, fake gateway; no live mode; per-item tax is an open question; staging NOT RUN. | Enquiries, orders, vendor payment methods, vendor invoices, offers, stock, reports |
 | 5.15 Terms and acceptances | `v3-b3` | Built; placeholder text cannot be published; immutability trigger NOT RUN on a database; the claim guard waits for the set-password endpoint. | Terms documents, acceptance guards, session flag |
 
-Gated and not started: 5.5, 5.8, 5.9, 5.10, 5.12, the rest of 5.13, CRM, TeleCRM, booking, Accounts, live messaging, live gateways, registrar and certificate automation, the Pro theme importer, the pricing scheme change.
+Gated and not started: 5.8, 5.9, 5.10, 5.12, the rest of 5.13, CRM, TeleCRM, booking, Accounts, live messaging, live gateways, registrar and certificate automation, the Pro theme importer, the pricing scheme change.
