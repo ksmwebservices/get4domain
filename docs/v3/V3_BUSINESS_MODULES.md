@@ -1,0 +1,34 @@
+# V3 business modules: rules and design (Batch 13, Stage 17 core run, Block 4a)
+
+Sources: `docs/v3/stages/STAGE_17_BUSINESS_MODULES_BATCH_13.md` (with Amendment 06), `VENDOR_NAVIGATION_FINAL.md`, Amendments 09, 10 and 11 (context), and the **owner overrides of this run**, which win over the stage file. This file is extended at FINISH with the data dictionary, API contract and decision log.
+
+## Owner overrides of this run (in force)
+1. **Gate.** Release 1 skips Stages 10, 11, 12, 14 and 16, so `origin/v3-b12` does not exist. The base is `origin/v3-b11` (Stage 15, pushed, 53 of 53 integration suites green; its log shows the Stage 15 finish `7676aad` and the staging fix `f1403f2`). Branch `v3-b13`, worktree `C:\Get4Domain\get4domain-b13`.
+2. **Slice 5.23 is reduced.** NO TeleCRM, call queues, scripts, callers, CRM pipeline, tasks or segments (Release 2). Only (a) one customer list on `g4d_customers` with source attribution (search, directory, bot, campaign, payment, manual) and the Free LOCKED_PREVIEW gate; V3 code never reads a legacy contact table, so legacy import is Release 2; and (b) Accounts: sales records auto-posted from the Stage 9 5.17d vendor documents (idempotent), expenses, items and services, a GST report that uses the vendor tax profile, Free locked, Items and Services only for Handyman and Professional.
+3. **Slices 5.24 (Jobs, Appointments, Store) and 5.25 (retire per-industry modules) are in scope as written.** Store checkout is UPI only (Stage 9): a vendor with no active UPI method gets an order request, not online checkout.
+4. **Not built (Block 4b):** Stage 17B (team, tasks, documents, notifications), support tickets, cash and offline payment recording, held enquiries, email and SMS sending. Where a feature needs sending or a team member, this run leaves an extension point and a fake.
+5. **Untouched:** frontend, the themes repo, Stage 9, 13 and 15 code except additive wiring. Nothing is pushed.
+
+## Owner rules (frozen 4 November 2026) that this run touches
+2 (Free is informational: no requests, bookings or orders; Pro features LOCKED_PREVIEW), 4 (bridge: we never hold customer money; the vendor's own UPI; receipts in the vendor's name after the vendor confirms), 6 (never hide or delete a site; stored data is kept and returns with Pro), 7 (self-service free within the plan), 9 (promotional messages only to opted-in contacts), 12 (tax: one rule, rates from tables never code; wording and advance receipts go to the accountant), 13 (no timeframes in text; the names Workspace, BOS and LeadSpace never appear in generated product text).
+
+## Module rules (this run)
+- **One customer record per person per business.** Identity is the normalised phone, else the lower-cased email. A second capture of the same person adds an attribution row, never a second customer. The database enforces it (unique on the vendor and the phone key, and on the vendor and the email key).
+- **Source attribution.** `SEARCH, DIRECTORY, BOT, CAMPAIGN, PAYMENT, MANUAL`. The first source is kept on the customer; every capture adds one idempotent attribution row (vendor, customer, source, reference).
+- **Consent is a fact about a customer, not a default.** A new customer is `UNKNOWN`; only an explicit opt-in sets `OPTED_IN`, and an opt-out sets `OPTED_OUT` and always wins. The consent attestation that an import needs (5.18a) does not exist, so import is not built.
+- **No hard delete.** A customer, expense, item, quote, job or appointment is archived (`archivedAt`), never removed; numbers and history stay.
+- **Sales records are a projection of 5.17d documents.** One record per document (unique on the vendor and the document); posting twice stores one row. The record keeps the amounts and the tax split the document carries; nothing is recomputed. Credit documents post as negative records so the books balance.
+- **GST report.** Built only from sales records and expenses, grouped by rate, with the vendor tax profile deciding the heading: not registered gives no GST report, composition scheme says so, registered gives IGST or CGST plus SGST as the documents recorded them. Rates are never in code. It is a summary, not tax advice.
+- **Items and services (the V3 catalogue).** One table, `g4d_catalog_items`, with a kind (`ITEM`, `SERVICE`, `PRODUCT`), a price in whole paise, an HSN or SAC code and a tax rate **reference** to the tax-rate table (never a number in code). Handyman and Professional use `ITEM` and `SERVICE`; Ecommerce uses `PRODUCT`, with variants and stock added in 5.24c. The Stage 9 order path reads it through the existing `Catalogue` port and carries the rate onto order lines.
+- **Jobs (Handyman).** Quote lines; quote states `DRAFT, SENT, ACCEPTED, DECLINED, EXPIRED`; job states `REQUESTED, QUOTED, BOOKED, IN_PROGRESS, DONE, PAID, CANCELLED`. Accepting a quote creates the job once. `PAID` is only ever reached from a payment the vendor confirmed (Stage 9); this module never marks money received.
+- **Appointments (Professional).** Services, providers, working hours, slots; the customer asks, the vendor confirms. Nothing is ever auto-confirmed. Reminders go through a `ReminderPort` (fake here; sending is Block 4b).
+- **Store (Ecommerce).** Checkout is decided by one table: an ACTIVE UPI method gives online checkout (a pay request on the vendor's own UPI); anything else gives an order request. Stock never goes below zero, under concurrency, because the decrement is one conditional statement. Returns and refunds are recorded facts only.
+- **Retired industry modules (5.25).** For a V3 vendor the per-industry module routes answer 404 and the entitlement state is HIDDEN; data is kept; a legacy vendor is untouched until the switch.
+- **Static checks.** `b13-isolation.spec.ts` covers every new module: no legacy table or constant, every store query names the vendor, pure cores have no clock, randomness or database, no console or raw SQL, no timeframe, rupee price or retired product name in any text.
+
+## OPEN QUESTIONS (owner and accountant; none block building)
+1. **The Batch 6 decision (adapter or import of legacy contacts) does not exist.** Release 1 skips Stage 10, so no decision was recorded. This run builds the V3 list only; legacy import is Release 2.
+2. **The 5.18a consent attestation does not exist** (Stage 10 skipped). Because of that, no import, no bulk add and no marketing send is built; manual add and attribution only.
+3. Which GST rates, HSN and SAC codes apply to which items goes to the accountant. No rate is invented: an item without a tax rate reference carries rate 0 and the order line says so.
+4. Quote and job wording that may count as a tax document, and the treatment of advance receipts, go to the accountant (owner rule 12).
+5. The unit of the listed plan prices is still PENDING (Amendment 11 Q1); nothing here prices a plan.
