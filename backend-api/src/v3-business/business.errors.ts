@@ -1,0 +1,7 @@
+import { CUSTOMER_ERROR_CODES } from '../v3-customers/customers.errors';
+
+/**
+ * Every error code the Batch 13 business modules put in an HTTP error body, in one list. The exception filter passes a `code` through only when it is on a registered list (the lesson of the
+ * Stage 13 and Stage 15 staging runs), so each slice adds its list here and `b13-wire.spec.ts` fails if a module throws a code that is not on it.
+ */
+export const BUSINESS_ERROR_CODES: readonly string[] = [...CUSTOMER_ERROR_CODES];

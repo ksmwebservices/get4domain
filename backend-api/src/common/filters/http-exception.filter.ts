@@ -27,6 +27,7 @@ import { WEBSITE_ERROR_CODES } from '../../v3-website/website.errors';
 import { REGISTRAR_ERROR_CODES } from '../../v3-registrar/registrar.service';
 import { IDENTITY_ERROR_CODES } from '../../v3-registrar/identity.service';
 import { CONNECTION_ERROR_CODES } from '../../v3-domain-automation/connection.service';
+import { BUSINESS_ERROR_CODES } from '../../v3-business/business.errors';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -128,7 +129,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       // Batch 4 adds `problem`: the machine reason behind a refusal (for example EFFECTIVE_DATE_IN_PAST, or RATES_MISSING for tax)
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText', 'problem'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];

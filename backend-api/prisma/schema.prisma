@@ -96,6 +96,8 @@ model Vendor {
   v3IdentityAccess V3IdentityAccess[]
   v3RegisteredDomains V3RegisteredDomain[]
   v3DomainOrders V3DomainOrder[]
+  v3Customers V3Customer[]
+  v3CustomerSources V3CustomerSource[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -6971,4 +6973,53 @@ model V3RegistrarRun {
 
   @@index([startedAt])
   @@map("g4d_registrar_runs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.23a: one customer list per business, with where each customer came from.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One person of one business. Identity is the normalised phone, else the lower-cased e-mail (the database refuses a second row for the same person). Never hard deleted: archivedAt.
+model V3Customer {
+  id          String    @id @default(cuid())
+  vendorId    String
+  name        String
+  phone       String?
+  phoneKey    String?
+  email       String?
+  emailKey    String?
+  firstSource String
+  consent     String    @default("UNKNOWN")
+  consentAt   DateTime?
+  notes       String?
+  tags        Json      @default("[]")
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor  Vendor               @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  sources V3CustomerSource[]
+
+  @@unique([vendorId, phoneKey])
+  @@unique([vendorId, emailKey])
+  @@index([vendorId, createdAt])
+  @@map("g4d_customers")
+}
+
+/// Where a customer came from: one row per (customer, source, reference), written idempotently.
+model V3CustomerSource {
+  id         String   @id @default(cuid())
+  vendorId   String
+  customerId String
+  source     String
+  refType    String   @default("")
+  refId      String   @default("")
+  at         DateTime @default(now())
+
+  vendor   Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  customer V3Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, source, refType, refId])
+  @@index([vendorId, source])
+  @@map("g4d_customer_sources")
 }
