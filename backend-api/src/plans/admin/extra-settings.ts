@@ -5,6 +5,7 @@ import { isDomainSettingKey, validateDomainSetting } from '../../site-domains/se
 import { isB3SettingKey, validateB3Setting } from '../../b3-settings/b3-settings';
 import { isWalletSettingKey, validateWalletSetting } from '../../v3-wallet/settings/wallet-settings';
 import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/settings/website-settings';
+import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-domain-automation/settings/automation-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -22,6 +23,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isWalletSettingKey, validate: validateWalletSetting },
   // batch 9 (5.5b onwards): the Website manager's media caps and the limits of the slices built on it; every number starts unset
   { owns: isWebsiteSettingKey, validate: validateWebsiteSetting },
+  // batch 11 (5.6c): own-domain automation; every value starts unset
+  { owns: isAutomationSettingKey, validate: validateAutomationSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

@@ -147,6 +147,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'PUT /v3/admin/vendors/:id/site/theme': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/build': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/publish': OPS_AND_SUPER,
   // 5.13b: act on behalf and the onboarding queue (the stage file's Website Developer and Customer Support roles do not exist: OPERATIONS and SUPER_ADMIN; MARKETING never)
   'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
+  // 5.6c: own-domain automation and the per-vendor domain log (owner answer Q12 names Support; that role does not exist here: OPERATIONS and SUPER_ADMIN, MARKETING denied)
+  'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER,
   // B4: customers' words on a vendor's live site
   'GET /v3/admin/vendors/:id/site/testimonials': OPS_AND_SUPER,
   // B3: the review link of a vendor's live site

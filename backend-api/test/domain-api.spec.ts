@@ -187,12 +187,12 @@ describe('domains API', () => {
       const r2 = await byHost('www.shop.example.in', '/'); expect(r2.status).toBe(301); expect(r2.headers.location).toBe('https://shop.example.in/');
       expect((await byHost('www.other.example.in')).status).toBe(404);
     });
-    it('after the add-on ends and the plan falls to Free the custom domain keeps serving and the subdomain is canonical; nothing is deleted', async () => {
+    it('after the add-on ends and the plan falls to Free the custom domain redirects to the subdomain (owner answer Q11) and the subdomain is canonical; nothing is deleted', async () => {
       await send('put', '/v3/me/domains/subdomain', 'owner', { slug: 'sri-ganesh' }); await publish(); await activeCustom();
       w.ents.set(V, withAddon(pro())); w.dir.invalidate();
       expect((await byHost(`sri-ganesh.${BASE}`)).status).toBe(301);
       w.ents.delete(V); w.dir.invalidate();   // the override expired and the plan is Free again
-      const r = await byHost('shop.example.in', '/contact'); expect(r.status).toBe(200); expect(r.headers['x-canonical-host']).toBe(`sri-ganesh.${BASE}`);
+      const r = await byHost('shop.example.in', '/contact'); expect(r.status).toBe(302); expect(r.headers.location).toBe(`https://sri-ganesh.${BASE}/contact`);   // Q11 replaces "keeps serving": a temporary redirect, because it comes back with Pro
       expect((await byHost(`sri-ganesh.${BASE}`)).status).toBe(200);
       expect([...w.repo.rows.values()].find((x) => x.hostname === 'shop.example.in')).toMatchObject({ status: 'ACTIVE', isPrimary: true });
     });

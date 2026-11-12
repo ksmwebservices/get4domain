@@ -89,6 +89,7 @@ model Vendor {
   v3ReviewLink V3ReviewLink?
   v3Testimonials V3Testimonial[]
   v3ActOnBehalfSessions V3ActOnBehalfSession[]
+  v3DomainConnections V3DomainConnection[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6730,4 +6731,31 @@ model V3ActOnBehalfSession {
   @@index([vendorId, startedAt])
   @@index([staffId, endedAt])
   @@map("g4d_act_on_behalf_sessions")
+}
+
+/// Slice 5.6c: the automatic connection of one custom domain (Cloudflare custom hostname, certificate, connect or forward mode). One row per domain.
+model V3DomainConnection {
+  id            String    @id @default(cuid())
+  vendorId      String
+  domainId      String    @unique
+  hostname      String
+  connectHost   String
+  bareDomain    Boolean   @default(false)
+  mode          String    @default("CONNECT")
+  status        String    @default("PENDING")
+  certStatus    String    @default("NONE")
+  cfHostnameId  String?
+  attempts      Int       @default(0)
+  failureReason String?
+  registrar     String?
+  lastCheckedAt DateTime?
+  activatedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status, lastCheckedAt])
+  @@map("g4d_domain_connections")
 }

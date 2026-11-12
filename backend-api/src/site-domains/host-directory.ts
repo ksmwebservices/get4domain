@@ -67,6 +67,9 @@ export class HostDirectory {
   }
 
   /** The custom-domain promotion add-on: never in a plan, granted only by an entitlement override with an end date (slice 5.6b). A suspended vendor's overrides are ignored by the engine. */
+  /** Owner answer Q11: a custom domain serves only while the plan allows custom domains (Pro, including the grace period). After grace it redirects to the subdomain; the row and the ownership stay. */
+  async customServing(vendorId: string): Promise<boolean> { return (await this.ents.resolve(vendorId)).features['site.custom_domain']?.state === 'ACTIVE'; }
+
   async addonActive(vendorId: string): Promise<boolean> { return (await this.ents.resolve(vendorId)).features['promotion.custom_domain_addon']?.state === 'ACTIVE'; }
 
   private async resolveUncached(h: string): Promise<ResolvedHost | null> {
@@ -106,19 +109,21 @@ export class HostDirectory {
   /** The full canonical plan of a vendor (the pure rule applied to the stored rows), for the switch and the staff view. */
   async canonicalPlan(vendorId: string) {
     const s = await this.settings.get();
-    const [rows, vendor, addon] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.addonActive(vendorId)]);
+    const [rows, vendor, addon, customServing] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.addonActive(vendorId), this.customServing(vendorId)]);
     const legacyHost = vendor?.subdomain ? `${vendor.subdomain}.${s.baseDomain}` : null;
-    return { ...canonicalHostFor({ rows, legacyHost, addonActive: addon }), addonActive: addon };
+    return { ...canonicalHostFor({ rows, legacyHost, addonActive: addon && customServing, customServing }), addonActive: addon && customServing };
   }
 
-  private async plan(vendorId: string, s: DomainSettings): Promise<{ rows: DomainRecord[]; primaryHost: string | null; owned: string[]; serveHosts: string[] }> {
+  private async plan(vendorId: string, s: DomainSettings): Promise<{ rows: DomainRecord[]; primaryHost: string | null; owned: string[]; serveHosts: string[]; temporary: string[] }> {
     const [rows, vendor, addon] = await Promise.all([this.repo.listForVendor(vendorId), this.repo.vendorInfo(vendorId), this.addonActive(vendorId)]);
     const active = rows.filter((r) => r.status === 'ACTIVE');
     const legacyHost = vendor?.subdomain ? `${vendor.subdomain}.${s.baseDomain}` : null;
     const owned = active.map((r) => r.hostname);
     if (legacyHost && !owned.includes(legacyHost) && !rows.some((r) => r.hostname === legacyHost)) owned.push(legacyHost);
-    const cp = canonicalHostFor({ rows, legacyHost, addonActive: addon });
-    return { rows, primaryHost: cp.canonicalHost, owned, serveHosts: cp.serveHosts };
+    const customServing = await this.customServing(vendorId);   // owner answer Q11
+    const cp = canonicalHostFor({ rows, legacyHost, addonActive: addon, customServing });
+    const temporary = customServing ? [] : active.filter((r) => r.kind === 'CUSTOM').map((r) => r.hostname);
+    return { rows, primaryHost: cp.canonicalHost, owned, serveHosts: cp.serveHosts, temporary };
   }
 
   private async forVendor(vendorId: string, h: string, s: DomainSettings): Promise<ResolvedHost | null> {
@@ -126,7 +131,7 @@ export class HostDirectory {
     if (!vendor || vendor.removed) return null;
     const p = await this.plan(vendorId, s);
     const primaryHost = p.primaryHost ?? h;
-    const decision = planRedirect({ requestHost: h, primaryHost, ownedHosts: p.owned, wwwPolicy: s.wwwPolicy, serveHosts: p.serveHosts });
+    const decision = planRedirect({ requestHost: h, primaryHost, ownedHosts: p.owned, wwwPolicy: s.wwwPolicy, serveHosts: p.serveHosts, temporaryHosts: p.temporary });
     return decision.action === 'UNKNOWN' ? null : { vendorId, host: h, primaryHost, decision };
   }
 }

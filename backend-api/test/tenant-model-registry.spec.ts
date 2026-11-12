@@ -56,7 +56,9 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   // slice B4 (Batch 9): the testimonial projection is written by the TestimonialProjector for one vendor at a time and read by staff; no vendor route reads it
   'V3Testimonial',
   // slice 5.13b (Batch 9): sessions are reached only through ActOnBehalfStore (the vendor reads its own through listForVendor, which names the vendor); no tenant-scoped route reads another vendor's rows
-  'V3ActOnBehalfSession'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  'V3ActOnBehalfSession',
+  // slice 5.6c (Batch 11): a connection is reached only through ConnectionStore, whose every query names the vendor; the staff list is read-only and names no vendor on purpose (it lists every vendor's connections)
+  'V3DomainConnection'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

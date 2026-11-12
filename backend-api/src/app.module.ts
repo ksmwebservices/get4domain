@@ -63,6 +63,7 @@ import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
 import { WebsiteModule } from './v3-website/website.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
+import { V3DomainAutomationModule } from './v3-domain-automation/domain-automation.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
@@ -124,6 +125,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     SitePublishModule,
     WebsiteModule,
     SiteDomainsModule,
+    V3DomainAutomationModule,
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,

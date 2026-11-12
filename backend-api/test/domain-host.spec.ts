@@ -70,14 +70,15 @@ describe('resolveHost', () => {
     const r = await w.svc.requestCustom(A, 'shop.example.in', OWNER(A));
     for (const status of ['PENDING', 'VERIFYING', 'FAILED'] as const) { w.repo.rows.get(r.id)!.status = status; w.dir.invalidate(); expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ primaryHost: `mine.${BASE}` }); expect(await w.dir.resolveHost('shop.example.in')).toBeNull(); }
   });
-  it('the add-on ending (expiry), the domain being removed, or a plan downgrade: the canonical host returns to the subdomain and the custom domain keeps serving; nothing stored changes', async () => {
+  it('the add-on ending (expiry), the domain being removed, or a plan downgrade: the canonical host returns to the subdomain; a lapsed plan redirects the custom domain (owner answer Q11); nothing stored changes', async () => {
     await makeCustomActive(); w.ents.set(A, withAddon(pro())); w.dir.invalidate();
     expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe('shop.example.in');
     w.ents.set(A, pro()); w.dir.invalidate();   // the override expired
     expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe(`mine.${BASE}`);
     expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ primaryHost: `mine.${BASE}`, decision: { action: 'SERVE' } });
-    w.ents.delete(A); w.dir.invalidate();   // and the plan fell to Free as well: the custom domain still serves (owner rule 9)
-    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ vendorId: A, decision: { action: 'SERVE' } });
+    w.ents.delete(A); w.dir.invalidate();   // and the plan fell to Free as well: owner answer Q11 replaces "still serves": the custom domain redirects to the subdomain, the site stays viewable there
+    expect(await w.dir.resolveHost('shop.example.in')).toMatchObject({ vendorId: A, primaryHost: `mine.${BASE}`, decision: { action: 'REDIRECT', host: `mine.${BASE}`, status: 302 } });
+    expect(await w.dir.resolveHost(`mine.${BASE}`)).toMatchObject({ vendorId: A, decision: { action: 'SERVE' } });
     expect([...w.repo.rows.values()].find((r) => r.hostname === 'shop.example.in')).toMatchObject({ status: 'ACTIVE' });
     w.ents.set(A, withAddon(pro())); const custom = [...w.repo.rows.values()].find((r) => r.hostname === 'shop.example.in')!; custom.status = 'REMOVED'; w.dir.invalidate();
     expect((await w.dir.canonicalPlan(A)).canonicalHost).toBe(`mine.${BASE}`);
