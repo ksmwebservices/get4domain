@@ -433,3 +433,87 @@ No star rating, aggregate rating or review structured data is ever generated.
 Inside a session the staff member sends the header `x-act-on-behalf-session: <id>` on `/v3/admin/vendors/:id/...` routes. The header is refused on any other route (`ACT_ON_BEHALF_WRONG_ROUTE`), for another vendor (`ACT_ON_BEHALF_WRONG_VENDOR`), for another staff member's session (`ACT_ON_BEHALF_INVALID`) and after the session has ended or run out (`ACT_ON_BEHALF_EXPIRED`). A change to a payment method, bank detail, UPI id, payee or password is refused (`ACT_ON_BEHALF_FORBIDDEN`) and the attempt is written to the vendor's activity. Every allowed request is written to the vendor's activity with `actOnBehalfSessionId`. Sessions end by themselves after `actOnBehalfMaxMinutes` (a sweep every minute, and on the next use).
 
 Route classification baseline: 1079 to 1128 routes; owner-only list gained `POST /v3/me/site/draft/publish` and `POST /v3/me/site/revisions/restore`; the role-matrix oracle grew from 264 to 283.
+
+## Batch 11: own-domain automation (5.6c), domain sales (5.6d) and transfer-in (5.6e)
+
+42 routes (vendor 25, staff 17). Vendor routes are OWNER ONLY, use the verified principal's vendor and take no vendor id. Staff routes are OPERATIONS and SUPER_ADMIN (approving or rejecting a price is SUPER_ADMIN only); MARKETING is denied on all of them. Every error carries a stable `code`. Money is whole paise. Nothing here makes a live call: the registrar flags `REGISTRAR_LIVE_SEARCH` and `REGISTRAR_LIVE_PURCHASE` default OFF.
+
+### Own-domain connection (5.6c)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/domains/connections` | none | `[ConnectionView]` | |
+| `GET /v3/me/domains/:id/connection-guide?registrar=` | `registrar`: GODADDY, NAMECHEAP, HOSTINGER, BIGROCK, OTHER | `{ ownership: VERIFIED or WAITING, records: [{ purpose: OWNERSHIP or CONNECT, type: TXT or CNAME, host, hostLabel, value }], connectNotice, bareDomain: { needsCloudflareOption, text } or null, steps: [text], registrars, connection }` | 404 `CONNECTION_NOT_FOUND` |
+| `GET /v3/me/domains/:id/connection` | none | `ConnectionView` | 404 `CONNECTION_NOT_FOUND` |
+| `POST /v3/me/domains/:id/connection` | `{ mode?: CONNECT or FORWARD, registrar? }` | `ConnectionView` (the same one when called again) | 403 `FEATURE_LOCKED` (Free), 409 `CONNECTION_NOT_READY` (ownership not confirmed, or the connection address not set) |
+| `POST /v3/me/domains/:id/connection/check` | none | `ConnectionView` (rate limited) | 429 `CONNECTION_CHECK_TOO_SOON`, 409 `CONNECTION_PROVIDER_FAILED` |
+| `PUT /v3/me/domains/:id/connection/mode` | `{ mode }` | `ConnectionView` | 400 `CONNECTION_STATE_INVALID` |
+| `POST /v3/me/domains/:id/connection/retry` | none | `ConnectionView` | 409 `CONNECTION_STATE_INVALID` |
+| `DELETE /v3/me/domains/:id/connection` | none | `ConnectionView` (the domain stays the vendor's) | |
+| `GET /v3/admin/domain-connections?status=&page=` | `status`: PENDING, VERIFYING, ACTIVE, NEEDS_ATTENTION, LAPSED | paged `ConnectionView` | |
+| `POST /v3/admin/vendors/:id/domains/:domainId/connection/retry` | none | `ConnectionView` | |
+| `GET /v3/admin/vendors/:id/domain-log?page=` | none | paged `{ id, at, actionKey, actorType, actorId, entityId, summary }`, newest first | |
+
+`ConnectionView`: `{ id, domainId, hostname, connectHost, bareDomain, needsCloudflareOption, mode, status, certStatus, sslStatus: NONE, PENDING, ACTIVE or FAILED, failureReason, lastCheckedAt, activatedAt }`. A bare domain connects through its www host first. After the plan lapses (after grace) `status` is LAPSED and the vendor's host redirects (302) to the Get4Domain subdomain.
+
+### Identity check (5.6d, vendor)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/identity` | none | `{ status, details, emailVerified, phoneVerified, document: { kind, last4, uploadedAt, purged } or null, consentGiven, reviewNote }`; never the document | |
+| `PUT /v3/me/identity/details` | `{ legalName, company, email, phoneCc, phone, addressLine1, city, state, country?, zipcode }` | the same view | 400 `IDENTITY_INVALID`, `IDENTITY_AADHAAR_REFUSED` |
+| `POST /v3/me/identity/otp` | `{ channel: EMAIL or PHONE }` | `{ sent: true, expiresAt }` | 409 `OTP_NOT_AVAILABLE`, `OTP_TOO_SOON`, `OTP_DELIVERY_FAILED` |
+| `POST /v3/me/identity/otp/verify` | `{ channel, code }` | the view | 400 `OTP_INVALID` |
+| `PUT /v3/me/identity/document` | `{ kind: PAN, GST_CERTIFICATE, UDYAM, BUSINESS_REGISTRATION or AADHAAR_MASKED, last4? (only for AADHAAR_MASKED), mime: application/pdf, image/jpeg or image/png, dataBase64 }` | the view (the check goes back to INCOMPLETE) | 400 `IDENTITY_INVALID`, `IDENTITY_DOCUMENT_TOO_LARGE`, 409 `IDENTITY_STORAGE_NOT_CONFIGURED` |
+| `POST /v3/me/identity/submit` | `{ consent: true }` | the view, `IN_REVIEW` | 409 `IDENTITY_STATE_INVALID` |
+
+### Identity check (staff)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/admin/identity-checks?status=&page=` | default `IN_REVIEW` | paged `{ vendorId, status, legalName, company, docKind, emailVerified, phoneVerified, updatedAt }` | |
+| `GET /v3/admin/vendors/:id/identity` | none | the view plus the access log; never the document | 404 `IDENTITY_NOT_FOUND` |
+| `POST /v3/admin/vendors/:id/identity/document` | `{ reason (5-300) }` | `{ kind, mime, last4, dataBase64 }`; the access is logged before this is returned | 400 `IDENTITY_REVIEW_REASON_REQUIRED`, 404 `IDENTITY_DOCUMENT_NOT_SET` |
+| `POST /v3/admin/vendors/:id/identity/approve` | `{ note? }` | the view | 409 `IDENTITY_STATE_INVALID` |
+| `POST /v3/admin/vendors/:id/identity/reject` | `{ reason (5-300) }` | the view; the vendor sees the reason | 400 `IDENTITY_REVIEW_REASON_REQUIRED` |
+
+### Domain sales (5.6d) and transfer-in (5.6e), vendor
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/me/domain-sales/overview` | none | `{ state: ACTIVE or LOCKED_PREVIEW, upsellText, identity, purchasesReady, extensions }` | |
+| `GET /v3/me/domain-sales/search?name=` | a name, with or without an extension | `{ name, results: [{ domain, status: AVAILABLE, TAKEN or UNKNOWN, price: { totalPaise } or null }] }` | 403 `FEATURE_LOCKED`, 503 `REGISTRAR_NOT_LIVE`, `REGISTRAR_UNAVAILABLE` |
+| `POST /v3/me/domain-sales/quote` | `{ domain, years (1-10), privacy? }` | `Quote` | 400 `DOMAIN_INVALID`, 409 `DOMAIN_PRICE_NOT_SET`, `DOMAIN_PRICE_UNAVAILABLE`, `TAX_NOT_CONFIGURED` |
+| `POST /v3/me/domain-sales/purchase` | `{ domain, years, privacy?, idempotencyKey, expectedTotalPaise, consent: true }` | `Order` | 403 `FEATURE_LOCKED`, 409 `IDENTITY_NOT_APPROVED`, `REGISTRAR_NOT_CONFIGURED`, `REGISTRAR_BALANCE_LOW`, `DOMAIN_NOT_AVAILABLE`, `DOMAIN_PRICE_CHANGED` (with the new `totalPaise`), `INSUFFICIENT_WALLET` (with `shortfallPaise`), `WALLET_NOT_ACTIVE`, `WALLET_IDEMPOTENCY_CONFLICT`, 400 `DOMAIN_CONSENT_REQUIRED` |
+| `GET /v3/me/domain-sales/orders`, `GET /v3/me/domain-sales/orders/:id` | page | paged `Order`, or `Order` with `invoice: { number, issuedAt, totalPaise, lines, taxPaise, taxablePaise }` | 404 `DOMAIN_ORDER_NOT_FOUND` |
+| `GET /v3/me/domain-sales/registered` | none | `[{ id, domain, status, expiresAt, privacy, dnsStatus, registeredAt, lastRenewedAt }]` | |
+| `POST /v3/me/domain-sales/registered/:id/renew-quote` | `{ years }` | `Quote` | 404 `DOMAIN_NOT_FOUND` |
+| `POST /v3/me/domain-sales/registered/:id/renew` | `{ years, idempotencyKey, expectedTotalPaise }` | `Order` | 409 `DOMAIN_EXPIRED` (at or after the expiry), `DOMAIN_PRICE_CHANGED`, 404 `DOMAIN_NOT_FOUND` |
+| `POST /v3/me/domain-sales/transfer-quote` | `{ domain, privacy? }` | `Quote` (kind `TRANSFER_IN`) | as for a quote |
+| `POST /v3/me/domain-sales/transfer` | `{ domain, authCode (6-64), privacy?, idempotencyKey, expectedTotalPaise, confirmUnlocked: true, consent: true }` | `Order` in `SUBMITTED` while the registrar works | 400 `TRANSFER_AUTH_INVALID`, `TRANSFER_CONFIRM_REQUIRED`, 409 `TRANSFER_NOT_ELIGIBLE` (with `reason`: LOCKED, RECENTLY_REGISTERED, RECENTLY_TRANSFERRED, NOT_REGISTERED, UNKNOWN), and the purchase errors |
+
+Example quote (a buyer in the seller's state, cost 700.00, margin 20 percent):
+
+```json
+{ "success": true, "statusCode": 200, "data": { "domain": "sriganesh.com", "tld": "com", "years": 1, "kind": "REGISTER", "costPaise": 70000, "marginPaise": 14000, "privacyPaise": 0,
+  "taxablePaise": 84000, "taxPaise": 15120, "totalPaise": 99120,
+  "lines": [ { "name": "CGST", "ratePercent": 9, "amountPaise": 7560 }, { "name": "SGST", "ratePercent": 9, "amountPaise": 7560 } ] } }
+```
+
+Example purchase answer: `{ "id": "...", "kind": "REGISTER", "domain": "sriganesh.com", "years": 1, "status": "COMPLETED", "amountPaise": 99120, "privacy": false, "failureCode": null, "settled": true, "pendingConfirmation": false, "replay": false }`. `status` is COMPLETED, FAILED (the hold was released; `failureCode` says why), or UNKNOWN or SUBMITTED (`pendingConfirmation: true`: the registrar has not confirmed yet; the hold stays and recovery settles it). Sending the same `idempotencyKey` again returns the same order with `replay: true`.
+
+### Domain sales (staff)
+
+| Route | Request | Response | Errors |
+|---|---|---|---|
+| `GET /v3/admin/domain-orders?vendorId=&status=&kind=&page=` | query | paged orders with cost, margin, privacy price, who asked, registrar order id | |
+| `POST /v3/admin/vendors/:id/domains/register` | as `purchase` plus `{ reason (5-300) }` (no `consent`) | `Order`; spends the vendor's own wallet | as for a purchase |
+| `GET /v3/admin/domain-margins` | none | the price book rows | |
+| `POST /v3/admin/domain-margins` | `{ tld (an extension, `privacy`, or `transfer.<extension>`), kind: PERCENT_BP or FIXED_PAISE, value, note? }` | the proposed row | 400 `MARGIN_INVALID` |
+| `POST /v3/admin/domain-margins/:id/approve` (SUPER_ADMIN) | `{ effectiveFrom }` | the approved row | 400 `MARGIN_INVALID`, 404 `MARGIN_NOT_FOUND`, 409 `MARGIN_STATE_INVALID` |
+| `POST /v3/admin/domain-margins/:id/reject` (SUPER_ADMIN) | none | the rejected row | 409 `MARGIN_STATE_INVALID` |
+| `POST /v3/admin/registrar/recover` | `{ olderThanMinutes }` | `{ settled, released, left }` | |
+| `POST /v3/admin/registrar/reconcile` | none | `{ id, checked, settled, mismatches, balanceKnown }` | |
+| `GET /v3/admin/registrar/runs` | none | the latest runs with their mismatches | |
+
+Route classification baseline: 1128 to 1170 routes; the role-matrix oracle grew from 283 to 300.
