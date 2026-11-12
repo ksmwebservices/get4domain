@@ -45,3 +45,14 @@ Decisions:
 - Customer link: a job or accepted quote with a readable phone puts the person on the customer list with source MANUAL (refType job); an unreadable phone leaves the job without a link and does not fail it.
 - Job and quote numbers are per business (max plus one, serialised per business in this process, unique index plus retry for a second instance).
 Staging integration tests extended in `test/b13-stores.int.spec.ts`: NOT RUN (owner-run). Gates: build, eslint, verify:migrations 187, verify:raw-sql 1052, verify:migrations-additive 59, route baseline (1206 routes), route-classification, role matrix, b13 isolation, wire, gates, entitlement, jobs core (40) and service (18).
+
+## Slice 5.24b: appointments (Professional)
+Migration `20261211100000_v3_appointments` (additive: `g4d_appt_services`, `g4d_appt_providers`, `g4d_appt_bookings` (`g4d_appointments` is the old model's name); RLS on). Routes (owner only, plan feature `appointments.manage`: Free LOCKED_PREVIEW, Professional Pro ACTIVE, hidden on the other tracks): `/v3/me/appointments` services, providers, slots, list, request, confirm, decline, cancel, complete, no-show.
+Decisions:
+- Request and confirm: a request is REQUESTED and holds its slot; the only code path that sets CONFIRMED is the business's own `confirm` call. There is no timer, no auto path and no public route; tested (a request never confirms, no reminder is scheduled until confirm, CONFIRMED is reachable only from REQUESTED).
+- Slots: weekly working hours per provider in India time, length grid from each window start, fully inside the window, in the future, not overlapping any REQUESTED or CONFIRMED booking of the provider. Taking a slot runs one at a time per provider (KeyedQueue, before any query); ten parallel requests for one time leave one.
+- Confirm is compare-and-set (one conditional UPDATE) so ten parallel confirms leave one winner and one reminder.
+- Reminders go to a `ReminderPort`; the module binds a FAKE that sends nothing (the automations engine and sending are Stage 17B). The reminder lead time is not decided here (no invented value).
+- A customer-facing request page is not built: the business records the request (phone, walk-in or from an enquiry; `requestId` keeps the link). Every provider can do every service in this version.
+- A readable phone puts the person on the customer list (source MANUAL, refType appointment).
+Gates: build, eslint, verify:migrations 189, verify:raw-sql 1060, verify:migrations-additive 60, route baseline 1225 routes, full unit project 3602 of 3602 green. Staging integration tests extended: NOT RUN (owner-run).

@@ -103,6 +103,9 @@ model Vendor {
   v3Items V3Item[]
   v3Jobs V3Job[]
   v3Quotes V3Quote[]
+  v3ApptServices V3ApptService[]
+  v3ApptProviders V3ApptProvider[]
+  v3ApptBookings V3ApptBooking[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7159,4 +7162,68 @@ model V3Quote {
   @@index([vendorId, status, createdAt])
   @@index([vendorId, jobId])
   @@map("g4d_job_quotes")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24b: appointments for the Professional track (request and confirm).
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Something the business offers by appointment, with its length. Never hard deleted: archivedAt.
+model V3ApptService {
+  id          String    @id @default(cuid())
+  vendorId    String
+  name        String
+  durationMin Int
+  pricePaise  Int?
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_appt_services")
+}
+
+/// A person who takes appointments, with weekly working hours in India time. Never hard deleted: archivedAt.
+model V3ApptProvider {
+  id         String    @id @default(cuid())
+  vendorId   String
+  name       String
+  hoursJson  Json      @default("[]")
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_appt_providers")
+}
+
+/// One request or booking. REQUESTED and CONFIRMED hold the time; only the business moves REQUESTED to CONFIRMED. Never hard deleted.
+model V3ApptBooking {
+  id            String    @id @default(cuid())
+  vendorId      String
+  serviceId     String
+  providerId    String
+  customerId    String?
+  customerName  String
+  customerPhone String?
+  notes         String?
+  startsAt      DateTime
+  endsAt        DateTime
+  status        String    @default("REQUESTED")
+  requestId     String?
+  cancelReason  String?
+  decidedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, startsAt])
+  @@index([vendorId, providerId, startsAt])
+  @@index([vendorId, status, createdAt])
+  @@map("g4d_appt_bookings")
 }

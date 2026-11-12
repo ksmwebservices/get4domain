@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PrismaAccountsStore } from '../src/v3-accounts/prisma-accounts.store';
 import { saleFromDocument } from '../src/v3-accounts/core/accounts-core';
+import { PrismaAppointmentsStore } from '../src/v3-appointments/prisma-appointments.store';
 import { PrismaJobsStore } from '../src/v3-jobs/prisma-jobs.store';
 import { buildQuote } from '../src/v3-jobs/core/jobs-core';
 import { PrismaCustomersStore } from '../src/v3-customers/prisma-customers.store';
@@ -18,12 +19,12 @@ jest.setTimeout(120_000);
 
 describe('Batch 13 stores on staging', () => {
   let prisma: PrismaClient; let A: SeededTenant; let B: SeededTenant;
-  let customers: PrismaCustomersStore; let accounts: PrismaAccountsStore; let jobs: PrismaJobsStore;
+  let customers: PrismaCustomersStore; let accounts: PrismaAccountsStore; let jobs: PrismaJobsStore; let appts: PrismaAppointmentsStore;
 
   beforeAll(async () => {
     prisma = newPrisma();
     const svc = prisma as unknown as PrismaService;
-    customers = new PrismaCustomersStore(svc); accounts = new PrismaAccountsStore(svc); jobs = new PrismaJobsStore(svc);
+    customers = new PrismaCustomersStore(svc); accounts = new PrismaAccountsStore(svc); jobs = new PrismaJobsStore(svc); appts = new PrismaAppointmentsStore(svc);
     A = await seedTenant(prisma, 'b13a', RUN_ID); B = await seedTenant(prisma, 'b13b', RUN_ID);
   }, 240000);
   afterAll(async () => { await runCleanup([() => cleanupTenants(prisma, RUN_ID), () => prisma?.$disconnect()]); }, 180000);
@@ -80,6 +81,20 @@ describe('Batch 13 stores on staging', () => {
       expect(await jobs.getQuote(B.vendorId, q.id)).toBeNull();
       expect(await jobs.moveQuote(A.vendorId, q.id, 'DRAFT', 'SENT', new Date())).not.toBeNull(); expect(await jobs.editDraftQuote(A.vendorId, q.id, { title: 'x' })).toBeNull();
       expect(await jobs.expireQuotes(A.vendorId, '2026-11-12', new Date())).toBe(1); expect(await jobs.expireQuotes(B.vendorId, '2026-11-12', new Date())).toBe(0);
+    });
+  });
+  describe('5.24b appointments', () => {
+    it('ten parallel confirms of one request: exactly one wins; busy shows only held times of the right provider; another business sees and moves nothing', async () => {
+      const s = await appts.addService(A.vendorId, { name: 'Consult', durationMin: 30, pricePaise: null }); const p = await appts.addProvider(A.vendorId, 'Dr Rao', [{ day: 1, start: '09:00', end: '11:00' }]);
+      const start = new Date('2026-11-16T03:30:00Z'); const end = new Date('2026-11-16T04:00:00Z');
+      const b = await appts.createBooking(A.vendorId, { serviceId: s.id, providerId: p.id, customerId: null, customerName: 'Meena', customerPhone: null, notes: null, startsAt: start, endsAt: end, requestId: null });
+      expect(await appts.busy(A.vendorId, p.id, new Date('2026-11-16T00:00:00Z'), new Date('2026-11-17T00:00:00Z'))).toHaveLength(1);
+      const r = await Promise.all(Array.from({ length: 10 }, () => appts.moveBooking(A.vendorId, b.id, 'REQUESTED', 'CONFIRMED', {}, new Date())));
+      expect(r.filter(Boolean)).toHaveLength(1);
+      expect(await appts.getBooking(B.vendorId, b.id)).toBeNull(); expect(await appts.moveBooking(B.vendorId, b.id, 'CONFIRMED', 'CANCELLED', {}, new Date())).toBeNull();
+      expect(await appts.busy(B.vendorId, p.id, new Date('2026-11-16T00:00:00Z'), new Date('2026-11-17T00:00:00Z'))).toHaveLength(0);
+      await appts.moveBooking(A.vendorId, b.id, 'CONFIRMED', 'CANCELLED', { cancelReason: 'x' }, new Date());
+      expect(await appts.busy(A.vendorId, p.id, new Date('2026-11-16T00:00:00Z'), new Date('2026-11-17T00:00:00Z'))).toHaveLength(0);
     });
   });
 });

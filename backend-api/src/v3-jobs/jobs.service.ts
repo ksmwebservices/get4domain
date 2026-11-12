@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { KeyedQueue } from '../common/keyed-queue';
+import { CustomerCapture } from '../v3-business/customer-capture';
 import { TaxRateSource } from '../v3-business/tax-rate-source';
 import { parseRange } from '../v3-accounts/core/accounts-core';
 import { buildQuote, calendarDays, canJobMove, canQuoteMove, checkJobInput, isJobState, JobState, jobStateAfterQuote, QuoteState } from './core/jobs-core';
@@ -8,8 +9,7 @@ import { JobRow, JobsStore, QuoteRow } from './jobs.store';
 
 /** Whether a payment request of this business was confirmed paid (Stage 9), and for how much. Read only; this module never marks money received. */
 export abstract class PaymentFacts { abstract confirmed(vendorId: string, payRequestId: string): Promise<{ amountPaise: number } | null> }
-/** Puts a person on the business's one customer list (slice 5.23a). Returns the customer id, or null when the person cannot be recognised. */
-export abstract class CustomerCapture { abstract capture(vendorId: string, i: { name: string; phone: string; refType: string; refId: string }): Promise<string | null> }
+export { CustomerCapture };
 
 export interface JobInput { title?: unknown; customerName?: unknown; customerPhone?: unknown; address?: unknown; notes?: unknown; assignedTo?: unknown; scheduledAt?: unknown; requestId?: unknown }
 export interface QuoteInput { jobId?: string; title?: unknown; customerName?: unknown; customerPhone?: unknown; validUntil?: unknown; lines?: unknown }

@@ -68,6 +68,7 @@ import { V3RegistrarModule } from './v3-registrar/registrar.module';
 import { V3CustomersModule } from './v3-customers/customers.module';
 import { V3AccountsModule } from './v3-accounts/accounts.module';
 import { V3JobsModule } from './v3-jobs/jobs.module';
+import { V3AppointmentsModule } from './v3-appointments/appointments.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
@@ -134,6 +135,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     V3CustomersModule,
     V3AccountsModule,
     V3JobsModule,
+    V3AppointmentsModule,
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,
