@@ -114,6 +114,7 @@ import { RetailModule } from './retail/retail.module';
 import { EngineModule } from './engine/engine.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ModuleGuard } from './common/guards/module.guard';
+import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
 
 @Module({
   imports: [
@@ -245,6 +246,12 @@ import { ModuleGuard } from './common/guards/module.guard';
       // @RequireModule()-marked AND the caller is a restricted team member.
       provide: APP_GUARD,
       useClass: ModuleGuard,
+    },
+    {
+      // Slice 5.25. Runs after the JWT and module guards. A V3 vendor gets a plain 404 on the routes of the retired
+      // Version 2 industry modules; a legacy vendor, staff and public callers are untouched. Reads and writes no table.
+      provide: APP_GUARD,
+      useClass: RetiredModuleGuard,
     },
   ],
 })
