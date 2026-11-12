@@ -6,6 +6,7 @@ import { isB3SettingKey, validateB3Setting } from '../../b3-settings/b3-settings
 import { isWalletSettingKey, validateWalletSetting } from '../../v3-wallet/settings/wallet-settings';
 import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/settings/website-settings';
 import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-domain-automation/settings/automation-settings';
+import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-registrar/settings/registrar-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -25,6 +26,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isWebsiteSettingKey, validate: validateWebsiteSetting },
   // batch 11 (5.6c): own-domain automation; every value starts unset
   { owns: isAutomationSettingKey, validate: validateAutomationSetting },
+  // batch 11 (5.6d): domain sales; every value starts unset and a feature that needs one stays off until staff set it
+  { owns: isRegistrarSettingKey, validate: validateRegistrarSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

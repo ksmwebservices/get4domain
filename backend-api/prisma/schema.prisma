@@ -90,6 +90,13 @@ model Vendor {
   v3Testimonials V3Testimonial[]
   v3ActOnBehalfSessions V3ActOnBehalfSession[]
   v3DomainConnections V3DomainConnection[]
+  v3RegistrarCustomer V3RegistrarCustomer?
+  v3Registrant V3Registrant?
+  v3IdentityOtps V3IdentityOtp[]
+  v3IdentityAccess V3IdentityAccess[]
+  v3RegisteredDomains V3RegisteredDomain[]
+  v3DomainOrders V3DomainOrder[]
+  v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
   v3AccountSetupGrants V3AccountSetupGrant[]
@@ -6758,4 +6765,210 @@ model V3DomainConnection {
   @@index([vendorId])
   @@index([status, lastCheckedAt])
   @@map("g4d_domain_connections")
+}
+
+// ─── Batch 11 slice 5.6d: domain sales through the registrar (additive). Money is whole paise. A vendor's rows are reached only through RegistrarStore, whose every query names the vendor. ───
+
+/// The price book of domain margins (and of the privacy protection sale price under tld "privacy"). PROPOSED by staff, APPROVED by SUPER_ADMIN with an effective date; the row in force is the APPROVED row with the latest start that has begun.
+model V3DomainMargin {
+  id            String    @id @default(cuid())
+  tld           String
+  kind          String // PERCENT_BP | FIXED_PAISE (for tld "privacy" the value is the yearly sale price in paise)
+  value         Int
+  status        String    @default("PROPOSED") // PROPOSED | APPROVED | REJECTED | RETIRED
+  effectiveFrom DateTime?
+  note          String?
+  createdBy     String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([tld, effectiveFrom])
+  @@index([tld, status])
+  @@map("g4d_domain_margins")
+}
+
+/// The vendor as a registrar customer and contact (created at the first purchase, once).
+model V3RegistrarCustomer {
+  id           String   @id @default(cuid())
+  vendorId     String   @unique
+  rcCustomerId String
+  rcContactId  String
+  createdAt    DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("g4d_registrar_customers")
+}
+
+/// The registrant and the identity checks that come before the first purchase. The document is encrypted at rest (AES-256-GCM); a full Aadhaar number is never stored (only a masked copy and its last four digits).
+model V3Registrant {
+  id              String    @id @default(cuid())
+  vendorId        String    @unique
+  legalName       String
+  company         String
+  email           String
+  phoneCc         String
+  phone           String
+  addressLine1    String
+  city            String
+  state           String
+  country         String    @default("IN")
+  zipcode         String
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  docKind         String?
+  docLast4        String?
+  docCipher       Bytes?
+  docIv           Bytes?
+  docTag          Bytes?
+  docMime         String?
+  docBytes        Int?
+  docUploadedAt   DateTime?
+  docPurgedAt     DateTime?
+  status          String    @default("INCOMPLETE") // INCOMPLETE | IN_REVIEW | APPROVED | REJECTED
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNote      String?
+  consentAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([status, updatedAt])
+  @@map("g4d_registrants")
+}
+
+model V3IdentityOtp {
+  id         String    @id @default(cuid())
+  vendorId   String
+  channel    String // EMAIL | PHONE
+  toHash     String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, channel, createdAt])
+  @@map("g4d_identity_otps")
+}
+
+/// Every time a staff member opens or decides on an identity document. Append only.
+model V3IdentityAccess {
+  id        String   @id @default(cuid())
+  vendorId  String
+  staffId   String?
+  action    String // DOCUMENT_UPLOADED | DOCUMENT_VIEWED | APPROVED | REJECTED | DOCUMENT_PURGED
+  reason    String?
+  at        DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, at])
+  @@map("g4d_identity_access")
+}
+
+/// A domain the vendor holds through us (registered here, or moved in by 5.6e). Renewals act on this row.
+model V3RegisteredDomain {
+  id           String    @id @default(cuid())
+  vendorId     String
+  domain       String    @unique
+  tld          String
+  rcOrderId    String?
+  status       String    @default("ACTIVE") // ACTIVE | EXPIRED
+  expiresAt    DateTime?
+  privacy      Boolean   @default(false)
+  nameServers  Json      @default("[]")
+  dnsStatus    String    @default("PENDING") // PENDING | CONNECTED
+  alertsSent   Json      @default("[]")
+  registeredAt DateTime  @default(now())
+  lastRenewedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([status, expiresAt])
+  @@map("g4d_registered_domains")
+}
+
+/// One purchase, renewal or transfer. The wallet hold and charge are ledger entries; the unique (vendorId, idempotencyKey) is what stops a double purchase.
+model V3DomainOrder {
+  id               String    @id @default(cuid())
+  vendorId         String
+  kind             String // REGISTER | RENEW | TRANSFER_IN
+  domain           String
+  tld              String
+  years            Int
+  status           String    @default("CREATED") // CREATED | HELD | SUBMITTED | COMPLETED | FAILED | UNKNOWN
+  registeredDomainId String?
+  amountPaise      Int // the exact amount held and charged, GST included
+  costPaise        Int
+  marginPaise      Int
+  privacyPaise     Int       @default(0)
+  taxSnapshotJson  Json      @default("{}")
+  holdLedgerId     String?
+  chargeLedgerId   String?
+  releaseLedgerId  String?
+  rcOrderId        String?
+  privacy          Boolean   @default(false)
+  fundedBy         String    @default("WALLET")
+  requestedByType  String    @default("VENDOR") // VENDOR | STAFF
+  requestedById    String?
+  reason           String?
+  idempotencyKey   String
+  /// = the domain name while a REGISTER order is live (CREATED, HELD, SUBMITTED, UNKNOWN or COMPLETED), null once it FAILED: one live purchase per name, enforced by the database
+  openKey          String?   @unique
+  failureCode      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  vendor  Vendor             @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  invoice V3DomainInvoice?
+
+  @@unique([vendorId, idempotencyKey])
+  @@index([vendorId, createdAt])
+  @@index([status, updatedAt])
+  @@map("g4d_domain_orders")
+}
+
+/// The invoice Get4Domain issues for a completed domain order: gap-free numbering, issued in the same unit of work as the charge. Wording and the tax codes wait for the accountant.
+model V3DomainInvoice {
+  id            String   @id @default(cuid())
+  vendorId      String
+  orderId       String   @unique
+  number        String
+  financialYear String
+  snapshotJson  Json
+  totalPaise    Int
+  issuedAt      DateTime @default(now())
+
+  vendor Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  order  V3DomainOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@map("g4d_domain_invoices")
+}
+
+/// A reconciliation of local orders against the registrar (one row per run).
+model V3RegistrarRun {
+  id           String    @id @default(cuid())
+  kind         String    @default("RECONCILE")
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  checked      Int       @default(0)
+  settled      Int       @default(0)
+  mismatches   Json      @default("[]")
+  balancePaise Int?
+  status       String    @default("RUNNING") // RUNNING | DONE | FAILED
+  note         String?
+
+  @@index([startedAt])
+  @@map("g4d_registrar_runs")
 }

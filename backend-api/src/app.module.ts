@@ -64,6 +64,7 @@ import { SitePublishModule } from './site-publish/site-publish.module';
 import { WebsiteModule } from './v3-website/website.module';
 import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { V3DomainAutomationModule } from './v3-domain-automation/domain-automation.module';
+import { V3RegistrarModule } from './v3-registrar/registrar.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
@@ -126,6 +127,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     WebsiteModule,
     SiteDomainsModule,
     V3DomainAutomationModule,
+    V3RegistrarModule,
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,

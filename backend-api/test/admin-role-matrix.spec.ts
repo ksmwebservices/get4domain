@@ -17,6 +17,7 @@ import { scanRoutes } from './support/route-scan';
 const SUPER_ONLY_ROUTES = [
   'GET /v3/admin/alert-rules', 'PUT /v3/admin/alert-rules',   // Batch 4B slice 5.20: the alert rules are SUPER_ADMIN only
   'GET /v3/admin/prohibited-terms', 'POST /v3/admin/prohibited-terms', 'PUT /v3/admin/prohibited-terms/:id', 'DELETE /v3/admin/prohibited-terms/:id',   // Batch 4B slice 5.21: the prohibited phrases
+  'POST /v3/admin/domain-margins/:id/approve', 'POST /v3/admin/domain-margins/:id/reject',   // Batch 11 slice 5.6d: approving or rejecting a domain price is SUPER_ADMIN only
   'POST /v3/admin/takedowns', 'POST /v3/admin/takedowns/:id/reverse',   // Batch 4B slice 5.21: a legal takedown is created and reversed by SUPER_ADMIN only
   'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
@@ -104,6 +105,9 @@ const MARKETING_DENIED = [
   'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path', 'PUT /v3/admin/vendors/:id/site/noindex',
   // 5.13b: act on behalf and the onboarding queue
   'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
+  // 5.6d: domain sales and identity checks
+  'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
+  'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
   // 5.6c: own-domain automation and the domain log
   'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log',
   // B4: customers' words on a vendor's live site
@@ -156,7 +160,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(286);
+    expect(oracle).toHaveLength(300);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

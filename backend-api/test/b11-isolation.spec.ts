@@ -10,8 +10,8 @@ import { findLegacyUse } from './support/legacy-scan';
  * Each Batch 11 module is added to MODULES as its slice lands.
  */
 const src = path.resolve(__dirname, '../src');
-const MODULES = ['v3-domain-automation'];
-const NEW_MODELS = ['V3DomainConnection'];
+const MODULES = ['v3-domain-automation', 'v3-registrar'];
+const NEW_MODELS = ['V3DomainConnection', 'V3RegistrarCustomer', 'V3Registrant', 'V3IdentityOtp', 'V3IdentityAccess', 'V3RegisteredDomain', 'V3DomainOrder', 'V3DomainInvoice'];
 const tsFiles = (dir: string): string[] => (fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? tsFiles(path.join(dir, e.name)) : e.name.endsWith('.ts') ? [path.join(dir, e.name)] : [])) : []);
 const files = MODULES.flatMap((m) => tsFiles(path.join(src, m)));
 const rel = (f: string): string => path.relative(src, f).replace(/\\/g, '/');
@@ -50,7 +50,7 @@ describe('tenant scoping of the Batch 11 tables', () => {
   it('every query in a Prisma store names the vendor (the staff list and the watcher list are the only ones across vendors, and are read only)', () => {
     const stores = files.filter((f) => /\.store\.ts$/.test(f));
     expect(stores.length).toBeGreaterThan(0);
-    const ACROSS = /listForStaff|watchList/;
+    const ACROSS = /listForStaff|watchList|ordersForStaff|unsettledOrders|activeRegistered|reviewQueue|documentsDueForPurge|registeredByName/;
     for (const f of stores) {
       const c = code(f);
       const calls = [...c.matchAll(/this\.prisma\.(\w+)\.(findUnique|findFirst|findMany|updateMany|deleteMany|update|delete|count|createMany|create|upsert)\(([\s\S]*?)\)\s*[;,)\n]/g)];
