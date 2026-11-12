@@ -10,8 +10,8 @@ import { findLegacyUse } from './support/legacy-scan';
  * text. Each Batch 13 module is added to MODULES as its slice lands.
  */
 const src = path.resolve(__dirname, '../src');
-export const MODULES = ['v3-business', 'v3-customers'];
-const NEW_MODELS = ['V3Customer', 'V3CustomerSource'];
+export const MODULES = ['v3-business', 'v3-customers', 'v3-accounts'];
+const NEW_MODELS = ['V3Customer', 'V3CustomerSource', 'V3SaleRecord', 'V3Expense', 'V3Item'];
 const LEGACY_PEOPLE_AND_WORK_DELEGATES = [
   'contact', 'lead', 'leadCallLog', 'campaignLead', 'callLog', 'vendorProduct', 'catalogItem', 'retailProduct', 'posSale', 'posTable', 'bosDocument', 'bosDocumentLine', 'bosExpense', 'bosPayment', 'expense',
   'stockMovement', 'partStock', 'produceStock', 'serviceJob', 'jobLine', 'appointment', 'clinicAppointment', 'salonAppointment', 'roomBooking', 'eventBooking', 'testOrder', 'produceOrder', 'restaurantOrder', 'vendorTask', 'quote',

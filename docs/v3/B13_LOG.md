@@ -20,3 +20,15 @@ Log had only the gate check and reconnaissance; no slice commit existed. Uncommi
 ## Slice 5.23a: one customer list with source attribution (customer core)
 Migration `20261208100000_v3_customers` (additive: `g4d_customers`, `g4d_customer_sources`, unique per vendor on phone key and e-mail key, RLS on). Entitlement keys added additively with Free `LOCKED_PREVIEW`: `crm.customers`, `accounts.books`, `accounts.items`, `jobs.manage`, `appointments.manage`, `store.manage`. Routes: `/v3/me/customers` (owner only, Pro). Owner overrides keep TeleCRM, pipeline, tasks and segments out of this run.
 Checks run: build, eslint on new files, verify:migrations (183 ok), verify:raw-sql (1037 ok), verify:migrations-additive (57 ok), route-classification, admin-role-matrix, b13 isolation/wire/entitlements, customers core and service. Staging integration tests: NOT RUN (staging is owner-run).
+
+## Slice 5.23b: accounts (sales posted from vendor documents, expenses, items and services, GST summary)
+Migration `20261209100000_v3_accounts` (additive: `g4d_sale_records` with a unique index on vendor + source type + source id, `g4d_acct_expenses`, `g4d_items`; RLS on). The table name `g4d_expenses` is taken by the old Expense model, so the new one is `g4d_acct_expenses`; the old model's mapping is untouched (checked in the schema diff: no removed line).
+Routes (owner only): `/v3/me/accounts/{sales,sync,gst-summary,expenses...}` need `accounts.books`; `/v3/me/items...` need `accounts.items` (Handyman and Professional only, hidden on the store track, Free locked per the b13 entitlement table).
+Decisions:
+- Auto-post runs as an idempotent sync (`AccountsService.syncDocuments`) before every sales read and summary, plus an explicit `POST sync`. The 5.17d code is not touched, so there is no coupling and a missed post is caught on the next read. The database unique index makes parallel runs safe.
+- Invoices are the 5.17d vendor documents (tax invoice, bill of supply, bill, fee receipt); no second invoice writer is built. Manual invoice entry is not in this slice.
+- The GST summary reads the 5.17d tax profile; not registered reports no tax; composition claims no input credit; net tax can be negative. It is a working figure, not a return (OPEN QUESTION for the accountant: mapping to GSTR lines, advance receipts, wording).
+- An item tax rate is accepted only when it is in the effective rate table (`g4d_tax_rates`); an empty table means no rate can be set (no invented rate). HSN or SAC code is stored with the item.
+- Customer capture from documents is not done: the document keeps only the customer name, no phone or e-mail, so there is nothing to recognise a person by.
+Staging integration tests added in `test/b13-stores.int.spec.ts`: NOT RUN (owner-run).
+Gates: build, eslint, verify:migrations 185, verify:raw-sql 1044, verify:migrations-additive 58, route baseline regenerated (13 routes added across both slices), route-classification, role matrix, b13 isolation, wire, entitlement, accounts core, service and gates specs.

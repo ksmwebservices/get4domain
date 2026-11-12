@@ -98,6 +98,9 @@ model Vendor {
   v3DomainOrders V3DomainOrder[]
   v3Customers V3Customer[]
   v3CustomerSources V3CustomerSource[]
+  v3SaleRecords V3SaleRecord[]
+  v3Expenses V3Expense[]
+  v3Items V3Item[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7022,4 +7025,72 @@ model V3CustomerSource {
   @@unique([customerId, source, refType, refId])
   @@index([vendorId, source])
   @@map("g4d_customer_sources")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.23b: accounts. Sale records are posted from the vendor's own documents (slice 5.17d), one per document.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One sale of the business, copied from a vendor document. The database refuses a second record for the same source, so posting is idempotent.
+model V3SaleRecord {
+  id           String   @id @default(cuid())
+  vendorId     String
+  sourceType   String
+  sourceId     String
+  number       String
+  kind         String
+  soldAt       DateTime
+  customerName String?
+  taxablePaise Int
+  taxPaise     Int
+  cgstPaise    Int
+  sgstPaise    Int
+  igstPaise    Int
+  totalPaise   Int
+  createdAt    DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sourceType, sourceId])
+  @@index([vendorId, soldAt])
+  @@map("g4d_sale_records")
+}
+
+/// A cost of the business. Never hard deleted: archivedAt.
+model V3Expense {
+  id          String    @id @default(cuid())
+  vendorId    String
+  spentOn     String
+  category    String
+  description String
+  amountPaise Int
+  gstPaise    Int       @default(0)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, spentOn])
+  @@map("g4d_acct_expenses")
+}
+
+/// An item or a service the business sells, with HSN or SAC code and a tax rate that must be in the rate table. Never hard deleted: archivedAt.
+model V3Item {
+  id             String    @id @default(cuid())
+  vendorId       String
+  kind           String
+  name           String
+  hsnSac         String?
+  unit           String?
+  pricePaise     Int?
+  taxRatePercent Decimal?  @db.Decimal(6, 3)
+  archivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_items")
 }

@@ -66,6 +66,7 @@ import { SiteDomainsModule } from './site-domains/site-domains.module';
 import { V3DomainAutomationModule } from './v3-domain-automation/domain-automation.module';
 import { V3RegistrarModule } from './v3-registrar/registrar.module';
 import { V3CustomersModule } from './v3-customers/customers.module';
+import { V3AccountsModule } from './v3-accounts/accounts.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
@@ -130,6 +131,7 @@ import { ModuleGuard } from './common/guards/module.guard';
     V3DomainAutomationModule,
     V3RegistrarModule,
     V3CustomersModule,
+    V3AccountsModule,
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,
