@@ -127,6 +127,24 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
     const list = await api('get', `/v3/admin/domain-orders?vendorId=${A.vendorId}`, ops); expect(list.status).toBe(200); expect(list.body.data.total).toBeGreaterThanOrEqual(3);
   });
 
+  it('a transfer in is held at the start and charged only when it finishes; a failed one gives the hold back; the code is never stored', async () => {
+    const m = await api('post', '/v3/admin/domain-margins', ops, { tld: 'transfer.com', kind: 'PERCENT_BP', value: 1000 }); marginIds.push(m.body.data.id);
+    expect((await api('post', `/v3/admin/domain-margins/${m.body.data.id}/approve`, sup, { effectiveFrom: new Date(Date.now() - 60_000).toISOString() })).status).toBe(200);
+    const d = domain('moved'); const code = 'Auth-Code-v3test-7Zq!'; const before = await balance(A);
+    const q = await api('post', '/v3/me/domain-sales/transfer-quote', tokenA, { domain: d }); expect(q.status).toBe(200); expect(q.body.data).toMatchObject({ kind: 'TRANSFER_IN', totalPaise: 103_840 });
+    const t = await api('post', '/v3/me/domain-sales/transfer', tokenA, { domain: d, authCode: code, idempotencyKey: key(), expectedTotalPaise: 103_840, confirmUnlocked: true, consent: true });
+    expect(t.status).toBe(200); expect(t.body.data).toMatchObject({ kind: 'TRANSFER_IN', status: 'SUBMITTED' }); expect((await balance(A)).heldPaise).toBe(103_840);
+    expect(JSON.stringify(await prisma.v3DomainOrder.findMany({ where: { vendorId: A.vendorId } }))).not.toContain(code);
+    expect(JSON.stringify(await prisma.v3ActivityLog.findMany({ where: { vendorId: A.vendorId } }))).not.toContain(code);
+    port.finishTransfer(d); expect((await api('post', '/v3/admin/registrar/recover', ops, { olderThanMinutes: 0 })).status).toBe(200);
+    const after = await balance(A); expect(after).toMatchObject({ balancePaise: before.balancePaise - 103_840, heldPaise: 0 }); expect(await prisma.v3RegisteredDomain.count({ where: { vendorId: A.vendorId, domain: d } })).toBe(1);
+    const f = domain('movefail'); await must('start', api('post', '/v3/me/domain-sales/transfer', tokenA, { domain: f, authCode: code, idempotencyKey: key(), expectedTotalPaise: 103_840, confirmUnlocked: true, consent: true }));
+    port.failTransfer(f, 'FAILED'); await api('post', '/v3/admin/registrar/recover', ops, { olderThanMinutes: 0 });
+    expect(await prisma.v3DomainOrder.count({ where: { vendorId: A.vendorId, domain: f, status: 'FAILED', openKey: null } })).toBe(1); expect((await balance(A)).heldPaise).toBe(0);
+    port.eligibility.set(domain('locked'), { eligible: false, reason: 'LOCKED' });
+    const nope = await api('post', '/v3/me/domain-sales/transfer', tokenA, { domain: domain('locked'), authCode: code, idempotencyKey: key(), expectedTotalPaise: 103_840, confirmUnlocked: true, consent: true }); expect(nope.status).toBe(409); expect(nope.body.code).toBe('TRANSFER_NOT_ELIGIBLE');
+  });
+
   it('opening an identity document is logged first and never returned to the vendor; staff on behalf spend the vendor\'s own wallet', async () => {
     const view = await api('get', '/v3/me/identity', tokenA); expect(JSON.stringify(view.body)).not.toMatch(/cipher|dataBase64/);
     const doc = await api('post', `/v3/admin/vendors/${A.vendorId}/identity/document`, ops, { reason: 'suite check of the document' }); expect(doc.status).toBe(200);

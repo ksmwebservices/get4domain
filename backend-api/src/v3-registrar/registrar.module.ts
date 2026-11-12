@@ -42,6 +42,7 @@ export class RegistrarCron {
     try { await fn(); } catch (e) { this.logger.warn(`${name} failed: ${e instanceof Error ? e.name : 'error'}`); } finally { this.busy.delete(name); }
   }
   @Cron('*/10 * * * *') recover(): Promise<void> { return this.once('recover', async () => { const m = (await this.settings.get()).registrarRecoverAfterMinutes; if (m !== null) await this.svc.recover(m); }); }
+  @Cron('0 * * * *') transfers(): Promise<void> { return this.once('transfers', () => this.svc.settleTransfers()); }
   @Cron('0 3 * * *') reconcile(): Promise<void> { return this.once('reconcile', async () => { if ((await this.settings.get()).registrarReconcileEnabled) await this.svc.reconcile(); }); }
   @Cron('0 4 * * *') purge(): Promise<void> { return this.once('purge', () => this.identity.purgeDue()); }
   @Cron('0 6 * * *') expiry(): Promise<void> { return this.once('expiry', () => this.svc.expiryTick()); }

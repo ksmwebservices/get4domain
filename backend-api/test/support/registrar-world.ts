@@ -4,7 +4,7 @@ import { ActivityEvent } from '../../src/common/activity-bus';
 import { OrderStatus } from '../../src/v3-registrar/core/registrar-core';
 import { DocCrypto } from '../../src/v3-registrar/doc-crypto';
 import { IdentityOtpSender, IdentityService } from '../../src/v3-registrar/identity.service';
-import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit } from '../../src/v3-registrar/registrar.port';
+import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit, TransferEligibility, TransferRequest, TransferState } from '../../src/v3-registrar/registrar.port';
 import { RegistrarService } from '../../src/v3-registrar/registrar.service';
 import {
   AccessAction, DocBlob, DuplicateOrderError, InvoiceRow, MarginDbRow, NewOrder, NewRegistered, OrderKind, OrderPatch, OrderRow, OtpRow, RegisteredPatch, RegisteredRow, RegistrantFields, RegistrantPatch, RegistrantRow,
@@ -102,7 +102,7 @@ export class MemoryRegistrarStore extends RegistrarStore {
 
 /** The fake registrar of the tests (never in the product): a small catalogue, a reseller balance, scripted failures, and a record of every call. */
 export class FakeRegistrar extends RegistrarPort {
-  calls: string[] = []; taken = new Set<string>(); balanceValue = 5_000_000; costTable: Record<string, CostRow> = { com: { registerPaise: 70_000, renewPaise: 75_000 }, in: { registerPaise: 60_000, renewPaise: 65_000 } };
+  calls: string[] = []; taken = new Set<string>(); balanceValue = 5_000_000; costTable: Record<string, CostRow> = { com: { registerPaise: 70_000, renewPaise: 75_000, transferPaise: 80_000 }, in: { registerPaise: 60_000, renewPaise: 65_000 } };
   registered = new Map<string, { orderId: string; expiresAt: Date; privacy: boolean }>(); customers = 0; contacts = 0; nextOrder = 9000;
   /** the next register call: 'ok', 'refuse' (a definite refusal), 'timeout' (it may have happened: not recorded), 'timeout-but-done' (it happened but we were not told) */
   registerMode: 'ok' | 'refuse' | 'timeout' | 'timeout-but-done' = 'ok'; renewMode: 'ok' | 'refuse' | 'timeout' | 'timeout-but-done' = 'ok'; lookupFails = false; customerFails = false;
@@ -134,6 +134,24 @@ export class FakeRegistrar extends RegistrarPort {
     const r = this.registered.get(domain); return r ? { orderId: r.orderId, status: r.expiresAt.getTime() <= this.now().getTime() ? 'EXPIRED' : 'ACTIVE', expiresAt: r.expiresAt, privacy: r.privacy } : { orderId: null, status: 'NOT_FOUND', expiresAt: null, privacy: null };
   }
   async balance() { this.calls.push('balance'); return this.balanceValue; }
+  // transfer-in (slice 5.6e)
+  eligibility = new Map<string, TransferEligibility>(); transfers = new Map<string, { orderId: string; status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'; expiresAt: Date | null }>();
+  transferMode: 'ok' | 'refuse' | 'timeout' | 'timeout-but-started' = 'ok';
+  async transferEligibility(domain: string): Promise<TransferEligibility> { this.calls.push(`transferEligibility:${domain}`); return this.eligibility.get(domain) ?? { eligible: true, reason: 'OK' }; }
+  async transferIn(r: TransferRequest) {
+    this.calls.push(`transferIn:${r.domain}`);
+    if (this.transferMode === 'refuse') throw new RegistrarError('REGISTRAR_REFUSED', false);
+    if (this.transferMode === 'timeout') throw new RegistrarError('REGISTRAR_UNREACHABLE', false, true);
+    const orderId = String(++this.nextOrder); this.transfers.set(r.domain, { orderId, status: 'PENDING', expiresAt: null });
+    if (this.transferMode === 'timeout-but-started') throw new RegistrarError('REGISTRAR_UNREACHABLE', false, true);
+    return { orderId };
+  }
+  async transferStatus(domain: string, _orderId: string | null): Promise<TransferState> {
+    this.calls.push(`transferStatus:${domain}`); if (this.lookupFails) throw new RegistrarError('REGISTRAR_SERVER_ERROR', true);
+    const t = this.transfers.get(domain); return t ? { status: t.status, orderId: t.orderId, expiresAt: t.expiresAt, reason: null } : { status: 'NOT_FOUND', orderId: null, expiresAt: null, reason: null };
+  }
+  finishTransfer(domain: string): void { const t = this.transfers.get(domain)!; t.status = 'COMPLETED'; t.expiresAt = new Date(this.now().getTime() + 365 * 86_400_000); this.registered.set(domain, { orderId: t.orderId, expiresAt: t.expiresAt, privacy: false }); }
+  failTransfer(domain: string, status: 'FAILED' | 'CANCELLED'): void { this.transfers.get(domain)!.status = status; }
 }
 
 export class RecordingOtpSender extends IdentityOtpSender {

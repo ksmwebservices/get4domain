@@ -61,15 +61,22 @@ export function validNameServers(ns: readonly string[] | null | undefined): bool
 
 // ───────────────────────────────────────────────────────────────────────────── order state machine
 export type OrderStatus = 'CREATED' | 'HELD' | 'SUBMITTED' | 'COMPLETED' | 'FAILED' | 'UNKNOWN';
-export type OrderEvent = 'HOLD_PLACED' | 'SUBMITTED' | 'REGISTRAR_OK' | 'REGISTRAR_REFUSED' | 'REGISTRAR_UNSURE' | 'NOT_SUBMITTED';
+export type OrderEvent = 'HOLD_PLACED' | 'SUBMITTED' | 'REGISTRAR_OK' | 'REGISTRAR_REFUSED' | 'REGISTRAR_UNSURE' | 'NOT_SUBMITTED' | 'REGISTRAR_IN_PROGRESS';
 const MOVES: Record<OrderStatus, Partial<Record<OrderEvent, OrderStatus>>> = {
   CREATED: { HOLD_PLACED: 'HELD', NOT_SUBMITTED: 'FAILED' },
   HELD: { SUBMITTED: 'SUBMITTED', NOT_SUBMITTED: 'FAILED' },
-  SUBMITTED: { REGISTRAR_OK: 'COMPLETED', REGISTRAR_REFUSED: 'FAILED', REGISTRAR_UNSURE: 'UNKNOWN' },
-  UNKNOWN: { REGISTRAR_OK: 'COMPLETED', REGISTRAR_REFUSED: 'FAILED' },
+  /** a transfer in progress stays SUBMITTED while the registrar works on it (slice 5.6e); an unsure initiation that turns out to be under way becomes SUBMITTED again */
+  SUBMITTED: { REGISTRAR_OK: 'COMPLETED', REGISTRAR_REFUSED: 'FAILED', REGISTRAR_UNSURE: 'UNKNOWN', REGISTRAR_IN_PROGRESS: 'SUBMITTED' },
+  UNKNOWN: { REGISTRAR_OK: 'COMPLETED', REGISTRAR_REFUSED: 'FAILED', REGISTRAR_IN_PROGRESS: 'SUBMITTED' },
   COMPLETED: {}, FAILED: {},
 };
 export function nextOrder(from: OrderStatus, ev: OrderEvent): OrderStatus | null { return MOVES[from][ev] ?? null; }
+
+// ───────────────────────────────────────────────────────────────────────────── transfer-in (slice 5.6e)
+/** An authorisation (EPP) code is 6 to 64 printable characters with no spaces. It is used once, sent to the registrar and never stored. */
+export function transferAuthProblem(code: unknown): 'AUTH_CODE_INVALID' | null { return typeof code === 'string' && /^[\x21-\x7e]{6,64}$/.test(code) ? null : 'AUTH_CODE_INVALID'; }
+/** The price book key of a transfer margin: kept apart from the registration margin of the same extension. */
+export const transferMarginKey = (tld: string): string => `transfer.${tld}`;
 
 // ───────────────────────────────────────────────────────────────────────────── live flags and the startup guard
 export type Env = Record<string, string | undefined>;

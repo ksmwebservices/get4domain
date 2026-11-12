@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Env } from './core/registrar-core';
-import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit } from './registrar.port';
+import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit, TransferEligibility, TransferReason, TransferRequest, TransferState } from './registrar.port';
 
 /**
  * The ResellerClub adapter behind RegistrarPort (slice 5.6d, owner override 2).
@@ -50,6 +50,8 @@ export function decimalToPaise(v: unknown): number | null {
   const m = /^(\d{1,9})(?:\.(\d{1,2}))?\d*$/.exec(String(v ?? '').trim());
   return m ? Number(m[1]) * 100 + Number((m[2] ?? '').padEnd(2, '0')) : null;
 }
+/** A safe classification of a refusal from its words (ASSUMED wording, TO VERIFY): used only to explain a transfer that cannot start. */
+const hintOf = (msg: string): TransferReason | null => (/lock/.test(msg) ? 'LOCKED' : /60|sixty|recently registered|just registered/.test(msg) ? 'RECENTLY_REGISTERED' : /recently transferred|transferred recently/.test(msg) ? 'RECENTLY_TRANSFERRED' : /not registered|does not exist|not found/.test(msg) ? 'NOT_REGISTERED' : null);
 const epoch = (v: unknown): Date | null => { const n = Number(v); return Number.isFinite(n) && n > 0 ? new Date(n * 1000) : null; };
 
 /** Built by a factory in the module together with its HTTP port. */
@@ -72,7 +74,7 @@ export class ResellerClubAdapter extends RegistrarPort {
     if (res.status >= 400 || String(b.status ?? '').toLowerCase() === 'error') {
       const msg = String(b.message ?? '').toLowerCase();
       this.logger.warn(`registrar refused ${method} ${path}: status ${res.status}`);
-      throw new RegistrarError(msg.includes('insufficient') || msg.includes('balance') ? 'REGISTRAR_BALANCE_LOW' : msg.includes('not available') || msg.includes('already') ? 'DOMAIN_NOT_AVAILABLE' : 'REGISTRAR_REFUSED', false);
+      throw new RegistrarError(msg.includes('insufficient') || msg.includes('balance') ? 'REGISTRAR_BALANCE_LOW' : msg.includes('not available') || msg.includes('already') ? 'DOMAIN_NOT_AVAILABLE' : 'REGISTRAR_REFUSED', false, false, hintOf(msg));
     }
     return res.body;
   }
@@ -97,7 +99,8 @@ export class ResellerClubAdapter extends RegistrarPort {
     for (const t of tlds) {
       const p = rec(body[PRODUCT_KEYS[t] ?? `dot${t.replace(/\./g, '')}`]);
       const reg = decimalToPaise(rec(p.addnewdomain)['1']); const ren = decimalToPaise(rec(p.renewdomain)['1']);
-      if (reg !== null && ren !== null) out[t] = { registerPaise: reg, renewPaise: ren };
+      const tr = decimalToPaise(rec(p.addtransferdomain)['1']);   // ASSUMED key for the transfer price (TO VERIFY)
+      if (reg !== null && ren !== null) out[t] = { registerPaise: reg, renewPaise: ren, ...(tr !== null ? { transferPaise: tr } : {}) };
     }
     return out;
   }
@@ -161,6 +164,50 @@ export class ResellerClubAdapter extends RegistrarPort {
     const v = decimalToPaise(rec(await this.call('GET', '/billing/reseller-balance.json', [])).sellingcurrencybalance);
     if (v === null) throw new RegistrarError('REGISTRAR_BAD_ANSWER', true);
     return v;
+  }
+
+  /**
+   * TO VERIFY: GET /domains/validate-transfer.json with domain-name. ASSUMED answer: a body with `result` "true" when the registrar would accept the transfer; a refusal (status ERROR) carries a message
+   * and the reason is picked from its words (lock, 60 days, recently, not registered). A refusal we cannot classify is UNKNOWN, which is not eligible.
+   */
+  async transferEligibility(domain: string): Promise<TransferEligibility> {
+    try {
+      const b = rec(await this.call('GET', '/domains/validate-transfer.json', [['domain-name', domain]]));
+      return String(b.result ?? '').toLowerCase() === 'true' ? { eligible: true, reason: 'OK' } : { eligible: false, reason: 'UNKNOWN' };
+    } catch (e) {
+      if (e instanceof RegistrarError && !e.retryable && !e.ambiguous && (e.code === 'REGISTRAR_REFUSED' || e.code === 'DOMAIN_NOT_AVAILABLE')) return { eligible: false, reason: (e.hint as TransferReason | null) ?? 'UNKNOWN' };
+      throw e;
+    }
+  }
+
+  /**
+   * TO VERIFY: POST /domains/transfer.json with domain-name, auth-code, customer-id, reg-contact-id, admin-contact-id, tech-contact-id, billing-contact-id, invoice-option (NoInvoice), purchase-privacy,
+   * protect-privacy and one `ns` per name server; the answer carries `entityid`, the order id of the transfer. The authorisation code is sent once and is never logged or kept.
+   */
+  async transferIn(r: TransferRequest): Promise<{ orderId: string }> {
+    const body = rec(await this.call('POST', '/domains/transfer.json', [
+      ['domain-name', r.domain], ['auth-code', r.authCode], ['customer-id', r.customerId], ['reg-contact-id', r.contactId], ['admin-contact-id', r.contactId], ['tech-contact-id', r.contactId], ['billing-contact-id', r.contactId],
+      ['invoice-option', 'NoInvoice'], ['purchase-privacy', String(r.privacy)], ['protect-privacy', String(r.privacy)], ...r.nameServers.map((n) => ['ns', n] as const),
+    ]));
+    const orderId = String(body.entityid ?? '').trim();
+    if (!/^\d+$/.test(orderId)) throw new RegistrarError('REGISTRAR_BAD_ANSWER', false, true);
+    return { orderId };
+  }
+
+  /**
+   * TO VERIFY: the transfer's progress is read from GET /domains/details.json (order-id, options=OrderDetails): ASSUMED `currentstatus` values Active (done), InActive or Pending or InProcess (under way),
+   * Cancelled or Rejected or Failed (ended). Without an order id the order is first looked up with GET /domains/orderid.json.
+   */
+  async transferStatus(domain: string, orderId: string | null): Promise<TransferState> {
+    let id = orderId;
+    if (!id) {
+      try { const b = await this.call('GET', '/domains/orderid.json', [['domain-name', domain]]); id = String(typeof b === 'object' ? '' : b ?? '').trim(); } catch (e) { if (e instanceof RegistrarError && (e.code === 'REGISTRAR_REFUSED' || e.code === 'DOMAIN_NOT_AVAILABLE')) id = ''; else throw e; }
+      if (!/^\d+$/.test(id)) return { status: 'NOT_FOUND', orderId: null, expiresAt: null, reason: null };
+    }
+    const d = rec(await this.call('GET', '/domains/details.json', [['order-id', id], ['options', 'OrderDetails']]));
+    const cs = String(d.currentstatus ?? '').toLowerCase();
+    const status: TransferState['status'] = cs === 'active' ? 'COMPLETED' : cs === 'cancelled' ? 'CANCELLED' : cs === 'rejected' || cs === 'failed' ? 'FAILED' : 'PENDING';
+    return { status, orderId: id, expiresAt: epoch(d.endtime), reason: null };
   }
 
   private id(body: unknown): string {

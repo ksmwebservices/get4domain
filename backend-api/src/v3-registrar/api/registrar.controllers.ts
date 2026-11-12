@@ -23,6 +23,10 @@ export class QuoteDto { @IsString() @MaxLength(253) domain!: string; @IsInt() @M
 export class PurchaseDto extends QuoteDto {
   @IsString() @MinLength(8) @MaxLength(80) idempotencyKey!: string; @IsInt() @Min(1) expectedTotalPaise!: number; @IsOptional() @IsBoolean() consent?: boolean;
 }
+export class TransferQuoteDto { @IsString() @MaxLength(253) domain!: string; @IsOptional() @IsBoolean() privacy?: boolean; }
+export class TransferDto extends TransferQuoteDto {
+  @IsString() @MinLength(6) @MaxLength(64) authCode!: string; @IsString() @MinLength(8) @MaxLength(80) idempotencyKey!: string; @IsInt() @Min(1) expectedTotalPaise!: number; @IsBoolean() confirmUnlocked!: boolean; @IsOptional() @IsBoolean() consent?: boolean;
+}
 export class RenewDto { @IsInt() @Min(1) @Max(10) years!: number; @IsString() @MinLength(8) @MaxLength(80) idempotencyKey!: string; @IsInt() @Min(1) expectedTotalPaise!: number; }
 export class RenewQuoteDto { @IsInt() @Min(1) @Max(10) years!: number; }
 export class SearchQuery { @IsString() @MaxLength(253) name!: string; }
@@ -72,6 +76,14 @@ export class MeDomainSalesController {
   @Post('purchase') @HttpCode(200)
   @ApiOperation({ summary: 'Register a domain from my wallet (hold, registrar, charge; the hold is released if the registrar fails; the same key never buys twice)' })
   purchase(@Tenant() t: TenantContext, @Body() dto: PurchaseDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.svc.purchase(t.vendorId, dto, { type: 'VENDOR', actor: actor(user, req, 'VENDOR') }); }
+
+  @Post('transfer-quote') @HttpCode(200)
+  @ApiOperation({ summary: 'The exact price of moving a domain I already own into the Get4Domain account: transfer cost plus approved margin, GST as its own line' })
+  transferQuote(@Tenant() t: TenantContext, @Body() dto: TransferQuoteDto) { return this.svc.transferQuote(t.vendorId, dto.domain, dto.privacy === true); }
+
+  @Post('transfer') @HttpCode(200)
+  @ApiOperation({ summary: 'Move a domain in from another registrar (authorisation code, domain unlocked); the price is held from my wallet and charged when the transfer finishes. The code is never stored' })
+  transfer(@Tenant() t: TenantContext, @Body() dto: TransferDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.svc.transferIn(t.vendorId, dto, { type: 'VENDOR', actor: actor(user, req, 'VENDOR') }); }
 
   @Get('orders')
   @ApiOperation({ summary: 'My domain orders, newest first' })

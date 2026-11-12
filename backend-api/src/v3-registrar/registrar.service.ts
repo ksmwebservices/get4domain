@@ -14,14 +14,14 @@ import { postEntry } from '../v3-wallet/wallet-engine';
 import { notActive, walletError, walletHttpError } from '../v3-wallet/wallet.errors';
 import { V3WalletService } from '../v3-wallet/wallet.service';
 import { WalletStore } from '../v3-wallet/wallet.store';
-import { expiryAlertDue, Margin, marginFor, nextOrder, OrderStatus, parseDomain, priceFromCost, renewalAllowed, resolveMargin } from './core/registrar-core';
+import { expiryAlertDue, Margin, marginFor, nextOrder, OrderStatus, parseDomain, priceFromCost, renewalAllowed, resolveMargin, transferAuthProblem, transferMarginKey } from './core/registrar-core';
 import { RegistrantDetails, RegistrarError, RegistrarPort } from './registrar.port';
 import { DuplicateOrderError, MarginDbRow, OrderKind, OrderRow, RegisteredRow, RegistrarStore } from './registrar.store';
 import { RegistrarSettings, RegistrarSettingsService } from './settings/registrar-settings';
 
 export const REGISTRAR_ERROR_CODES = [
   'REGISTRAR_NOT_LIVE', 'REGISTRAR_UNAVAILABLE', 'REGISTRAR_NOT_CONFIGURED', 'REGISTRAR_BALANCE_LOW', 'DOMAIN_INVALID', 'DOMAIN_NOT_AVAILABLE', 'DOMAIN_NOT_FOUND', 'DOMAIN_EXPIRED', 'DOMAIN_PRICE_NOT_SET',
-  'DOMAIN_PRICE_UNAVAILABLE', 'DOMAIN_PRICE_CHANGED', 'DOMAIN_ORDER_NOT_FOUND', 'DOMAIN_ORDER_UNSETTLED', 'IDENTITY_NOT_APPROVED', 'DOMAIN_CONSENT_REQUIRED', 'MARGIN_INVALID', 'MARGIN_NOT_FOUND', 'MARGIN_STATE_INVALID',
+  'TRANSFER_AUTH_INVALID', 'TRANSFER_CONFIRM_REQUIRED', 'TRANSFER_NOT_ELIGIBLE', 'DOMAIN_PRICE_UNAVAILABLE', 'DOMAIN_PRICE_CHANGED', 'DOMAIN_ORDER_NOT_FOUND', 'DOMAIN_ORDER_UNSETTLED', 'IDENTITY_NOT_APPROVED', 'DOMAIN_CONSENT_REQUIRED', 'MARGIN_INVALID', 'MARGIN_NOT_FOUND', 'MARGIN_STATE_INVALID',
 ] as const;
 type RegistrarCode = (typeof REGISTRAR_ERROR_CODES)[number];
 const err = (code: RegistrarCode, message: string, extra: Record<string, unknown> = {}): { message: string; code: RegistrarCode } & Record<string, unknown> => ({ message, code, ...extra });
@@ -39,6 +39,7 @@ export interface Quote {
   taxSnapshot: Record<string, unknown>;
 }
 export interface PurchaseInput { domain: string; years: number; privacy?: boolean; idempotencyKey: string; expectedTotalPaise: number; consent?: boolean }
+export interface TransferInput { domain: string; authCode: string; privacy?: boolean; idempotencyKey: string; expectedTotalPaise: number; confirmUnlocked: boolean; consent?: boolean }
 export interface RenewInput { years: number; idempotencyKey: string; expectedTotalPaise: number }
 export interface PurchaseBy { type: 'VENDOR' | 'STAFF'; actor: Actor; reason?: string }
 
@@ -47,6 +48,8 @@ const orderView = (o: OrderRow) => ({
   settled: o.status === 'COMPLETED' || o.status === 'FAILED', pendingConfirmation: o.status === 'UNKNOWN' || o.status === 'SUBMITTED',
 });
 const registeredView = (r: RegisteredRow) => ({ id: r.id, domain: r.domain, status: r.status, expiresAt: r.expiresAt, privacy: r.privacy, dnsStatus: r.dnsStatus, registeredAt: r.registeredAt, lastRenewedAt: r.lastRenewedAt });
+/** The extensions on sale for registration: those with a margin in force, leaving out the privacy price and the transfer margins. */
+const registrationTlds = (rows: readonly MarginDbRow[], now: Date): string[] => [...new Set(rows.map((r) => r.tld).filter((t) => t !== 'privacy' && !t.startsWith('transfer.')))].filter((t) => resolveMargin(rows, t, now));
 const addYears = (d: Date, y: number): Date => { const x = new Date(d.getTime()); x.setUTCFullYear(x.getUTCFullYear() + y); return x; };
 
 /**
@@ -96,7 +99,7 @@ export class RegistrarService {
   async overview(vendorId: string) {
     const [p, reg, s, rows] = await Promise.all([this.proState(vendorId), this.store.registrant(vendorId), this.settings.get(), this.store.margins()]);
     const now = this.clock();
-    const tlds = [...new Set(rows.filter((r) => r.tld !== 'privacy').map((r) => r.tld))].filter((t) => resolveMargin(rows, t, now));
+    const tlds = registrationTlds(rows, now);
     return {
       state: p.allowed ? 'ACTIVE' : 'LOCKED_PREVIEW', upsellText: p.allowed ? null : p.upsellText, identity: reg?.status ?? 'INCOMPLETE',
       purchasesReady: s.registrarNameServers !== null && s.registrarMinBalancePaise !== null, extensions: p.allowed ? tlds : [],
@@ -110,7 +113,7 @@ export class RegistrarService {
     const sld = raw.includes('.') ? raw.slice(0, raw.indexOf('.')) : raw;
     if (!/^(?!-)[a-z0-9-]{1,63}(?<!-)$/.test(sld)) throw new BadRequestException(err('DOMAIN_INVALID', 'Use letters, digits and hyphens for the name.'));
     const now = this.clock(); const rows = await this.store.margins();
-    const tlds = [...new Set(rows.filter((r) => r.tld !== 'privacy').map((r) => r.tld))].filter((t) => resolveMargin(rows, t, now));
+    const tlds = registrationTlds(rows, now);
     if (tlds.length === 0) return { name: sld, results: [] };
     try {
       const hits = await this.port.search(sld, tlds);
@@ -129,7 +132,7 @@ export class RegistrarService {
   }
 
   private async priceOut(vendorId: string, domain: string, tld: string, years: number, privacy: boolean, kind: OrderKind, yearlyCostPaise: number, rows: readonly MarginDbRow[], now: Date): Promise<Quote> {
-    const m = marginFor(rows, tld, now);
+    const m = marginFor(rows, kind === 'TRANSFER_IN' ? transferMarginKey(tld) : tld, now);
     if (!m) throw new ConflictException(err('DOMAIN_PRICE_NOT_SET', 'That extension has no approved price yet.'));
     const totalCost = yearlyCostPaise * years;
     const margin: Margin = m.kind === 'FIXED_PAISE' ? { kind: 'FIXED_PAISE', value: m.value * years } : m;
@@ -158,8 +161,13 @@ export class RegistrarService {
     let costs; try { costs = await this.port.costs([p.tld]); } catch (e) { throw this.http(e); }
     const c = costs[p.tld];
     if (!c) throw new ConflictException(err('DOMAIN_PRICE_UNAVAILABLE', 'We cannot price that extension right now.'));
-    return this.priceOut(vendorId, p.domain, p.tld, years, input.privacy === true, kind, kind === 'RENEW' ? c.renewPaise : c.registerPaise, await this.store.margins(), this.clock());
+    const yearly = kind === 'RENEW' ? c.renewPaise : kind === 'TRANSFER_IN' ? c.transferPaise : c.registerPaise;
+    if (yearly === undefined) throw new ConflictException(err('DOMAIN_PRICE_UNAVAILABLE', 'We cannot price that extension right now.'));
+    return this.priceOut(vendorId, p.domain, p.tld, years, input.privacy === true, kind, yearly, await this.store.margins(), this.clock());
   }
+
+  /** The exact price of moving a domain in: the registrar's transfer cost plus the approved transfer margin, GST on its own line. A transfer covers one year. */
+  transferQuote(vendorId: string, domain: string, privacy = false): Promise<Quote> { return this.quote(vendorId, { domain, years: 1, privacy }, 'TRANSFER_IN'); }
 
   // ───────────────────────────────────────────────────────────────────────────── purchase
   async purchase(vendorId: string, input: PurchaseInput, by: PurchaseBy) {
@@ -280,16 +288,16 @@ export class RegistrarService {
   /** Charges the hold, records or extends the domain, issues the invoice and adopts the name, in ONE unit. A failure inside it rolls everything back and the order stays as it was (recovery settles it). */
   private async completeOrder(order: OrderRow, rcOrderId: string | null, actor: Actor, expiresOverride: Date | null = null): Promise<OrderRow> {
     let expires: Date | null = expiresOverride;
-    if (order.kind === 'REGISTER' && !expires) { try { expires = (await this.port.orderInfo(order.domain)).expiresAt; } catch { expires = null; } }
+    if (order.kind !== 'RENEW' && !expires) { try { expires = (await this.port.orderInfo(order.domain)).expiresAt; } catch { expires = null; } }
     const s = await this.settings.get(); const now = this.clock(); let domainId: string | null = null;
     const done = await this.store.unit(order.vendorId, async (t, wtx) => {
       const cur = await t.order(order.id);
       if (!cur) return order;
       const to = nextOrder(cur.status, 'REGISTRAR_OK');
       if (!to) return cur;
-      const charge = await postEntry(wtx, { kind: 'CHARGE', amountPaise: cur.amountPaise, holdId: cur.holdLedgerId!, idempotencyKey: `domaincharge:${cur.id}`, refType: 'domain_order', refId: cur.id, reason: cur.kind === 'RENEW' ? 'domain renewed' : 'domain registered', actor: { type: 'SYSTEM', id: null }, now });
+      const charge = await postEntry(wtx, { kind: 'CHARGE', amountPaise: cur.amountPaise, holdId: cur.holdLedgerId!, idempotencyKey: `domaincharge:${cur.id}`, refType: 'domain_order', refId: cur.id, reason: cur.kind === 'RENEW' ? 'domain renewed' : cur.kind === 'TRANSFER_IN' ? 'domain transferred in' : 'domain registered', actor: { type: 'SYSTEM', id: null }, now });
       let regId = cur.registeredDomainId;
-      if (cur.kind === 'REGISTER') {
+      if (cur.kind !== 'RENEW') {
         const row = (await t.registeredByDomain(cur.domain)) ?? (await t.insertRegistered({ vendorId: cur.vendorId, domain: cur.domain, tld: cur.tld, rcOrderId, expiresAt: expires ?? addYears(now, cur.years), privacy: cur.privacy, nameServers: s.registrarNameServers ?? [] }));
         regId = row.id; domainId = await t.adoptDomain(cur.domain, now);
       } else if (regId) {
@@ -303,10 +311,98 @@ export class RegistrarService {
       return updated ?? cur;
     });
     if (done.status === 'COMPLETED') {
-      this.emit(order.kind === 'RENEW' ? 'domain.renewed' : 'domain.registered', done.vendorId, actor, { domain: done.domain, orderId: done.id });
-      if (order.kind === 'REGISTER' && domainId && this.conn) { try { await this.conn.begin(done.vendorId, domainId, { mode: 'CONNECT' }, SYSTEM); } catch (e) { this.logger.warn(`automatic connection not started for ${done.id}: ${e instanceof Error ? e.name : 'error'}`); } }
+      this.emit(order.kind === 'RENEW' ? 'domain.renewed' : order.kind === 'TRANSFER_IN' ? 'domain.transfer_completed' : 'domain.registered', done.vendorId, actor, { domain: done.domain, orderId: done.id });
+      if (order.kind !== 'RENEW' && domainId && this.conn) { try { await this.conn.begin(done.vendorId, domainId, { mode: 'CONNECT' }, SYSTEM); } catch (e) { this.logger.warn(`automatic connection not started for ${done.id}: ${e instanceof Error ? e.name : 'error'}`); } }
     }
     return done;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────── transfer-in (slice 5.6e)
+  /**
+   * Moves an existing domain into the owner's registrar account. Pro only. Same saga as a purchase, but the registrar takes days: the order stays SUBMITTED (the hold stays) until
+   * settleTransfers sees the transfer finish (charge, record, invoice) or fail (release). The authorisation code is passed straight to the registrar and is never stored, logged or audited.
+   */
+  async transferIn(vendorId: string, input: TransferInput, by: PurchaseBy) {
+    const key = String(input.idempotencyKey ?? '');
+    if (!KEY.test(key)) throw new BadRequestException(err('DOMAIN_INVALID', 'The request key must be 8 to 80 letters, digits, dashes, colons or underscores.'));
+    if (transferAuthProblem(input.authCode)) throw new BadRequestException(err('TRANSFER_AUTH_INVALID', 'Please enter the authorisation code from your current registrar.'));
+    if (input.confirmUnlocked !== true) throw new BadRequestException(err('TRANSFER_CONFIRM_REQUIRED', 'Please confirm that the domain is unlocked at your current registrar.'));
+    if (by.type === 'STAFF' && !(typeof by.reason === 'string' && by.reason.trim().length >= 5)) throw new BadRequestException(err('DOMAIN_INVALID', 'A reason of at least 5 characters is required to move a domain in on behalf of a vendor.'));
+    if (by.type === 'VENDOR' && input.consent !== true) throw new BadRequestException(err('DOMAIN_CONSENT_REQUIRED', 'Please confirm that you own this domain and that your registered details are correct.'));
+    const p = parseDomain(input.domain);
+    if (!p.ok) throw new BadRequestException(err('DOMAIN_INVALID', 'That is not a domain name we can move in.'));
+    const prior = await this.store.orderByKey(vendorId, key);
+    if (prior) return this.replay(prior, p.domain, 1);
+    await this.wallet.syncActivation(vendorId);
+    await this.needPro(vendorId);
+    const reg = await this.store.registrant(vendorId);
+    if (!reg || reg.status !== 'APPROVED') throw new ConflictException(err('IDENTITY_NOT_APPROVED', 'Your identity check has to be approved before your first purchase.'));
+    const s = await this.settings.get();
+    if (s.registrarNameServers === null || s.registrarMinBalancePaise === null) throw new ConflictException(err('REGISTRAR_NOT_CONFIGURED', 'Domain buying is not set up yet.'));
+
+    const out = await registrarQueue.run(registrarKey(vendorId), async () => {
+      const again = await this.store.orderByKey(vendorId, key);
+      if (again) return { row: again, replay: true };
+      const w = await this.walletStore.wallet(vendorId);
+      if (!w || w.status === 'INACTIVE') throw notActive();
+      if (await this.store.registeredByName(p.domain)) throw new ConflictException(err('DOMAIN_NOT_AVAILABLE', 'That domain is not available.'));
+      let el; try { el = await this.port.transferEligibility(p.domain); } catch (e) { throw this.http(e); }
+      if (!el.eligible) throw new ConflictException(err('TRANSFER_NOT_ELIGIBLE', 'That domain cannot be moved right now.', { reason: el.reason }));
+      const q = await this.transferQuote(vendorId, p.domain, input.privacy === true);
+      if (input.expectedTotalPaise !== q.totalPaise) throw new ConflictException(err('DOMAIN_PRICE_CHANGED', 'The price changed. Please look at the new price and confirm again.', { totalPaise: q.totalPaise }));
+      await this.needReserve(vendorId, q.costPaise, s);
+      const id = randomUUID(); const now = this.clock(); let row: OrderRow;
+      try {
+        row = await this.store.unit(vendorId, async (t, wtx) => {
+          const created = await t.insertOrder({ id, vendorId, kind: 'TRANSFER_IN', domain: p.domain, tld: p.tld, years: 1, registeredDomainId: null, amountPaise: q.totalPaise, costPaise: q.costPaise, marginPaise: q.marginPaise, privacyPaise: q.privacyPaise, taxSnapshot: q.taxSnapshot, privacy: input.privacy === true, requestedByType: by.type, requestedById: by.actor.id, reason: by.reason?.trim() ?? null, idempotencyKey: key, openKey: p.domain });
+          const hold = await postEntry(wtx, { kind: 'HOLD', amountPaise: q.totalPaise, idempotencyKey: `domainhold:${vendorId}:${key}`, refType: 'domain_order', refId: id, actor: { type: by.actor.type, id: by.actor.id }, now });
+          const held = await t.updateOrder(created.id, ['CREATED'], { status: nextOrder('CREATED', 'HOLD_PLACED')!, holdLedgerId: hold.entry.id });
+          await t.audit(by.actor, 'domain.order.created', id, null, { domain: p.domain, kind: 'TRANSFER_IN', amountPaise: q.totalPaise, by: by.type });   // never the authorisation code
+          return held!;
+        });
+      } catch (e) {
+        if (e instanceof WalletRuleError) throw walletHttpError(e, { minPaise: (await this.walletSettings.get()).walletTopupMinPaise, maxPaise: (await this.walletSettings.get()).walletTopupMaxPaise });
+        if (e instanceof DuplicateOrderError) { if (e.which === 'NAME') throw new ConflictException(err('DOMAIN_NOT_AVAILABLE', 'That domain is not available.')); const dup = await this.store.orderByKey(vendorId, key); if (dup) return { row: dup, replay: true }; }
+        throw e;
+      }
+      return { row: await this.submitTransfer(row, reg, s, by.actor, input.authCode), replay: false };
+    });
+    return { ...orderView(out.row), replay: out.replay };
+  }
+
+  private async submitTransfer(order: OrderRow, reg: NonNullable<Awaited<ReturnType<RegistrarStore['registrant']>>>, s: RegistrarSettings, actor: Actor, authCode: string): Promise<OrderRow> {
+    let customer;
+    try { customer = await this.ensureCustomer(order.vendorId, reg); } catch (e) { return this.failOrder(order, e instanceof RegistrarError ? e.code : 'REGISTRAR_ERROR', actor); }
+    const submitted = await this.store.unit(order.vendorId, (t) => t.updateOrder(order.id, ['HELD'], { status: nextOrder('HELD', 'SUBMITTED')! }));
+    if (!submitted) return (await this.store.order(order.vendorId, order.id)) ?? order;
+    try {
+      const res = await this.port.transferIn({ domain: order.domain, authCode, customerId: customer.rcCustomerId, contactId: customer.rcContactId, nameServers: s.registrarNameServers!, privacy: order.privacy });
+      return (await this.store.unit(order.vendorId, (t) => t.updateOrder(order.id, ['SUBMITTED'], { rcOrderId: res.orderId }))) ?? submitted;   // in progress: the hold stays until the transfer finishes
+    } catch (e) {
+      if (!(e instanceof RegistrarError) || e.ambiguous) return this.markUnknown(submitted, e instanceof RegistrarError ? e.code : 'REGISTRAR_ERROR');
+      return this.failOrder(submitted, e.code, actor);
+    }
+  }
+
+  /** Looks at every transfer in progress: finished ones are charged, recorded and invoiced; ended ones give the hold back; the rest are left. Safe to run again. */
+  async settleTransfers(actor: Actor = SYSTEM): Promise<{ settled: number; failed: number; left: number }> {
+    let settled = 0; let failed = 0; let left = 0;
+    for (const o of (await this.store.ordersForStaff({ status: 'SUBMITTED', kind: 'TRANSFER_IN' }, 0, 200)).items) {
+      const r = await registrarQueue.run(registrarKey(o.vendorId), () => this.settleTransfer(o, actor));
+      if (r === 'COMPLETED') settled++; else if (r === 'FAILED') failed++; else left++;
+    }
+    return { settled, failed, left };
+  }
+
+  private async settleTransfer(o: OrderRow, actor: Actor): Promise<OrderStatus> {
+    const cur = await this.store.order(o.vendorId, o.id);
+    if (!cur || cur.status !== 'SUBMITTED' || cur.kind !== 'TRANSFER_IN') return cur?.status ?? o.status;
+    const status = await this.recoverTransfer(cur, actor);
+    if (status === 'COMPLETED') {
+      const s = await this.settings.get();
+      if (s.registrarNameServers && cur.rcOrderId) { try { await this.port.setNameServers(cur.rcOrderId, s.registrarNameServers); } catch (e) { this.logger.warn(`name servers not set after a transfer: ${e instanceof Error ? e.name : 'error'}`); } }
+    }
+    return status;
   }
 
   // ───────────────────────────────────────────────────────────────────────────── renewal (before expiry only)
@@ -384,7 +480,7 @@ export class RegistrarService {
   async margins() { return (await this.store.margins()).map((m) => ({ id: m.id, tld: m.tld, kind: m.kind, value: m.value, status: m.status, effectiveFrom: m.effectiveFrom, note: m.note, approvedAt: m.approvedAt })); }
   async proposeMargin(input: { tld: string; kind: string; value: number; note?: string }, actor: Actor) {
     const tld = String(input.tld ?? '').trim().toLowerCase();
-    const okTld = tld === 'privacy' || /^[a-z]{2,63}(\.[a-z]{2,63})?$/.test(tld);
+    const okTld = tld === 'privacy' || /^(transfer\.)?[a-z]{2,63}(\.[a-z]{2,63})?$/.test(tld);
     const kindOk = input.kind === 'PERCENT_BP' || input.kind === 'FIXED_PAISE';
     if (!okTld || !kindOk || !Number.isSafeInteger(input.value) || input.value < 0 || (input.kind === 'PERCENT_BP' && input.value > 100_000) || (tld === 'privacy' && input.kind !== 'FIXED_PAISE')) throw new BadRequestException(err('MARGIN_INVALID', 'Check the extension, the kind and the value (basis points for a percentage, whole paise for a fixed amount; privacy protection is a fixed price).'));
     const row = await this.store.insertMargin({ tld, kind: input.kind as 'PERCENT_BP' | 'FIXED_PAISE', value: input.value, note: input.note?.slice(0, 300) ?? null, createdBy: actor.id });
@@ -424,6 +520,7 @@ export class RegistrarService {
     const cur = await this.store.order(o.vendorId, o.id);
     if (!cur || cur.status === 'COMPLETED' || cur.status === 'FAILED') return cur?.status ?? o.status;
     if (cur.status === 'HELD' || cur.status === 'CREATED') return (await this.failOrder(cur, 'NOT_SUBMITTED', actor)).status;
+    if (cur.kind === 'TRANSFER_IN') return this.recoverTransfer(cur, actor);
     let info;
     try { info = await this.port.orderInfo(cur.domain); } catch { return cur.status; }   // the registrar cannot be asked just now: try again next time
     if (cur.kind === 'REGISTER') {
@@ -435,6 +532,19 @@ export class RegistrarService {
     if (!reg || !info.expiresAt) return cur.status;
     if (reg.expiresAt && info.expiresAt.getTime() > reg.expiresAt.getTime()) return (await this.completeOrder(cur, reg.rcOrderId, actor, info.expiresAt)).status;
     return (await this.failOrder(cur, 'NOT_RENEWED_AT_REGISTRAR', actor)).status;
+  }
+
+  /** An unsure or unfinished transfer: ask the registrar how it stands. Under way keeps the hold, done charges it, ended or never started releases it. */
+  private async recoverTransfer(cur: OrderRow, actor: Actor): Promise<OrderStatus> {
+    let st; try { st = await this.port.transferStatus(cur.domain, cur.rcOrderId); } catch { return cur.status; }
+    if (st.status === 'COMPLETED') return (await this.completeOrder(cur, cur.rcOrderId ?? st.orderId, actor, st.expiresAt)).status;
+    if (st.status === 'PENDING') {
+      if (cur.status !== 'UNKNOWN') return cur.status;
+      const next = nextOrder('UNKNOWN', 'REGISTRAR_IN_PROGRESS');
+      return next ? ((await this.store.unit(cur.vendorId, (t) => t.updateOrder(cur.id, ['UNKNOWN'], { status: next, rcOrderId: st.orderId ?? cur.rcOrderId }))) ?? cur).status : cur.status;
+    }
+    if (st.status === 'FAILED' || st.status === 'CANCELLED' || (st.status === 'NOT_FOUND' && !cur.rcOrderId)) return (await this.failOrder(cur, st.status === 'NOT_FOUND' ? 'NOT_FOUND_AT_REGISTRAR' : `TRANSFER_${st.status}`, actor)).status;
+    return cur.status;
   }
 
   /** The daily check of our books against the registrar: settles what recovery can, compares expiry and status, and looks at the reseller balance. A difference is written to the run and raised as an event; nothing is changed silently. */

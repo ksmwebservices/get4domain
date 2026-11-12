@@ -30,7 +30,7 @@ describe('paths, methods and parameters (every one TO VERIFY)', () => {
   });
   it('costs: GET /products/reseller-cost-price.json, decimals become whole paise; an extension the answer lacks is left out', async () => {
     const { http, a } = make(); http.next.push({ status: 200, body: fixture('cost-price.json') });
-    expect(await a.costs(['com', 'in', 'xyz'])).toEqual({ com: { registerPaise: 70_000, renewPaise: 75_050 }, in: { registerPaise: 65_000, renewPaise: 70_000 } });
+    expect(await a.costs(['com', 'in', 'xyz'])).toEqual({ com: { registerPaise: 70_000, renewPaise: 75_050, transferPaise: 80_000 }, in: { registerPaise: 65_000, renewPaise: 70_000 } });
     expect(http.calls[0]).toMatchObject({ method: 'GET', path: '/products/reseller-cost-price.json' });
   });
   it('customer and contact: POST, the id is read from the answer; a non numeric answer is ambiguous', async () => {
@@ -128,14 +128,17 @@ describe('the live flags gate every call (both OFF by default)', () => {
     async search() { this.calls.push('search'); return []; } async costs() { this.calls.push('costs'); return {}; } async createCustomer() { this.calls.push('createCustomer'); return '1'; } async createContact() { this.calls.push('createContact'); return '2'; }
     async register() { this.calls.push('register'); return { orderId: '3' }; } async renew() { this.calls.push('renew'); return { expiresAt: null }; } async setPrivacy() { this.calls.push('setPrivacy'); } async setNameServers() { this.calls.push('setNameServers'); }
     async orderInfo() { this.calls.push('orderInfo'); return { orderId: null, status: 'NOT_FOUND' as const, expiresAt: null, privacy: null }; } async balance() { this.calls.push('balance'); return 1; }
+    async transferEligibility() { this.calls.push('transferEligibility'); return { eligible: true, reason: 'OK' as const }; } async transferIn() { this.calls.push('transferIn'); return { orderId: '4' }; }
+    async transferStatus() { this.calls.push('transferStatus'); return { status: 'PENDING' as const, orderId: null, expiresAt: null, reason: null }; }
   }
   const all = (g: GatedRegistrarPort): Array<[string, () => Promise<unknown>]> => [
     ['search', () => g.search('a', ['com'])], ['costs', () => g.costs(['com'])], ['createCustomer', () => g.createCustomer({} as never)], ['createContact', () => g.createContact('1', {} as never)], ['register', () => g.register({} as never)],
     ['renew', () => g.renew('1', 1, new Date())], ['setPrivacy', () => g.setPrivacy('1', true)], ['setNameServers', () => g.setNameServers('1', [])], ['orderInfo', () => g.orderInfo('a.com')], ['balance', () => g.balance()],
+    ['transferEligibility', () => g.transferEligibility('a.com')], ['transferIn', () => g.transferIn({} as never)], ['transferStatus', () => g.transferStatus('a.com', null)],
   ];
   const outcome = async (g: GatedRegistrarPort): Promise<string[]> => { const ok: string[] = []; for (const [n, f] of all(g)) { try { await f(); ok.push(n); } catch (e) { expect(e).toBeInstanceOf(RegistrarError); expect((e as RegistrarError).code).toBe('REGISTRAR_LIVE_DISABLED'); } } return ok; };
   it('both off: nothing reaches the adapter', async () => { const s = new Spy(); expect(await outcome(new GatedRegistrarPort(s, () => ({})))).toEqual([]); expect(s.calls).toEqual([]); });
-  it('search on, purchase off: only the reads pass', async () => { const s = new Spy(); expect(await outcome(new GatedRegistrarPort(s, () => ({ REGISTRAR_LIVE_SEARCH: 'true' })))).toEqual(['search', 'costs', 'orderInfo', 'balance']); });
-  it('purchase on, search off: the writes pass and the lookups that settle a purchase, but not the public search or the price list', async () => { const s = new Spy(); expect(await outcome(new GatedRegistrarPort(s, () => ({ REGISTRAR_LIVE_PURCHASE: 'true' })))).toEqual(['createCustomer', 'createContact', 'register', 'renew', 'setPrivacy', 'setNameServers', 'orderInfo', 'balance']); });
+  it('search on, purchase off: only the reads pass', async () => { const s = new Spy(); expect(await outcome(new GatedRegistrarPort(s, () => ({ REGISTRAR_LIVE_SEARCH: 'true' })))).toEqual(['search', 'costs', 'orderInfo', 'balance', 'transferEligibility', 'transferStatus']); });
+  it('purchase on, search off: the writes pass and the lookups that settle a purchase, but not the public search or the price list', async () => { const s = new Spy(); expect(await outcome(new GatedRegistrarPort(s, () => ({ REGISTRAR_LIVE_PURCHASE: 'true' })))).toEqual(['createCustomer', 'createContact', 'register', 'renew', 'setPrivacy', 'setNameServers', 'orderInfo', 'balance', 'transferEligibility', 'transferIn', 'transferStatus']); });
   it('the flags are read on every call', async () => { const env: Record<string, string | undefined> = {}; const g = new GatedRegistrarPort(new Spy(), () => env); await expect(g.balance()).rejects.toBeInstanceOf(RegistrarError); env.REGISTRAR_LIVE_SEARCH = 'true'; await expect(g.balance()).resolves.toBe(1); });
 });
