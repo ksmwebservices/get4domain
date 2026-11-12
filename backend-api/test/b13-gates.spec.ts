@@ -4,6 +4,7 @@ import { VendorOwnerGuard } from '../src/common/guards/vendor-owner.guard';
 import { REQUIRES_FEATURE } from '../src/plans/entitlements/requires-feature.decorator';
 import { MeAccountsController, MeItemsController } from '../src/v3-accounts/api/accounts.controllers';
 import { MeAppointmentsController } from '../src/v3-appointments/api/appointments.controllers';
+import { MeStoreController } from '../src/v3-store/api/store.controllers';
 import { MeJobsController, MeQuotesController } from '../src/v3-jobs/api/jobs.controllers';
 
 /**
@@ -26,8 +27,11 @@ describe('accounts routes are gated', () => {
   it('appointments require appointments.manage and the owner', () => {
     expect(Reflect.getMetadata(REQUIRES_FEATURE, MeAppointmentsController)).toEqual({ key: 'appointments.manage' }); expect(guards(MeAppointmentsController)).toContain(VendorOwnerGuard);
   });
+  it('the store requires store.manage and the owner', () => {
+    expect(Reflect.getMetadata(REQUIRES_FEATURE, MeStoreController)).toEqual({ key: 'store.manage' }); expect(guards(MeStoreController)).toContain(VendorOwnerGuard);
+  });
   it('no method opts out of the class gate with its own feature or a public marker', () => {
-    for (const c of [MeAccountsController, MeItemsController, MeJobsController, MeQuotesController, MeAppointmentsController]) for (const name of Object.getOwnPropertyNames(c.prototype).filter((n) => n !== 'constructor')) {
+    for (const c of [MeAccountsController, MeItemsController, MeJobsController, MeQuotesController, MeAppointmentsController, MeStoreController]) for (const name of Object.getOwnPropertyNames(c.prototype).filter((n) => n !== 'constructor')) {
       expect([name, Reflect.getMetadata(REQUIRES_FEATURE, (c.prototype as unknown as Record<string, object>)[name])]).toEqual([name, undefined]);
       expect([name, Reflect.getMetadata('isPublic', (c.prototype as unknown as Record<string, object>)[name])]).toEqual([name, undefined]);
     }

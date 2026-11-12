@@ -198,7 +198,7 @@ export class PublicRequestsService {
       if (seen.has(it.productRef)) throw invalid([`items: ${it.productRef} appears twice`]); seen.add(it.productRef);
       const c = await this.catalogue.find(g.vendorId, it.productRef);
       if (!c) throw invalid([`items: ${it.productRef.slice(0, 40)} is not available`]);
-      lines.push({ productRef: c.productRef, name: c.name, unitPaise: c.unitPaise, qty: it.qty, taxPercent: c.taxPercent });
+      lines.push({ productRef: c.productRef, name: c.name, unitPaise: c.unitPaise, qty: it.qty, taxPercent: c.taxPercent, hsnSac: c.hsnSac ?? null });
     }
     let offer = null; let offerId: string | null = null;
     if (body.couponCode) {
@@ -230,7 +230,7 @@ export class PublicRequestsService {
       try {
         const placed = await this.store.placeOrder({
           request: nr, paymentMode: mode, methodId, amountPaise: cart.totalPaise, currency: 'INR', shipping,
-          items: cart.lines.map((l) => ({ productRef: l.productRef, name: l.name, qty: l.qty, unitPaise: l.unitPaise, tax: { percent: l.taxPercent, taxPaise: l.taxPaise, discountPaise: l.discountPaise } })), offerId,
+          items: cart.lines.map((l) => ({ productRef: l.productRef, name: l.name, qty: l.qty, unitPaise: l.unitPaise, tax: { percent: l.taxPercent, taxPaise: l.taxPaise, discountPaise: l.discountPaise, ...(l.hsnSac ? { hsnSac: l.hsnSac } : {}) } })), offerId,
           reserveUntil: new Date(this.clock().getTime() + s.stockReservationMinutes * 60_000),
         });
         const extra: Record<string, unknown> = { orderNo: placed.order.orderNo, totalPaise: cart.totalPaise, paymentMode: mode, readiness };

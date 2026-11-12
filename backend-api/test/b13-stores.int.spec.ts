@@ -8,6 +8,9 @@ import { PrismaAppointmentsStore } from '../src/v3-appointments/prisma-appointme
 import { PrismaJobsStore } from '../src/v3-jobs/prisma-jobs.store';
 import { buildQuote } from '../src/v3-jobs/core/jobs-core';
 import { PrismaCustomersStore } from '../src/v3-customers/prisma-customers.store';
+import { PrismaStoreStore } from '../src/v3-store/prisma-store.store';
+import { StockInsufficient } from '../src/v3-store/store.store';
+import { StoreService } from '../src/v3-store/store.service';
 import { SeededTenant, cleanupTenants, newPrisma, seedTenant } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
 
@@ -19,12 +22,12 @@ jest.setTimeout(120_000);
 
 describe('Batch 13 stores on staging', () => {
   let prisma: PrismaClient; let A: SeededTenant; let B: SeededTenant;
-  let customers: PrismaCustomersStore; let accounts: PrismaAccountsStore; let jobs: PrismaJobsStore; let appts: PrismaAppointmentsStore;
+  let customers: PrismaCustomersStore; let accounts: PrismaAccountsStore; let jobs: PrismaJobsStore; let appts: PrismaAppointmentsStore; let shop: PrismaStoreStore;
 
   beforeAll(async () => {
     prisma = newPrisma();
     const svc = prisma as unknown as PrismaService;
-    customers = new PrismaCustomersStore(svc); accounts = new PrismaAccountsStore(svc); jobs = new PrismaJobsStore(svc); appts = new PrismaAppointmentsStore(svc);
+    customers = new PrismaCustomersStore(svc); accounts = new PrismaAccountsStore(svc); jobs = new PrismaJobsStore(svc); appts = new PrismaAppointmentsStore(svc); shop = new PrismaStoreStore(svc);
     A = await seedTenant(prisma, 'b13a', RUN_ID); B = await seedTenant(prisma, 'b13b', RUN_ID);
   }, 240000);
   afterAll(async () => { await runCleanup([() => cleanupTenants(prisma, RUN_ID), () => prisma?.$disconnect()]); }, 180000);
@@ -95,6 +98,49 @@ describe('Batch 13 stores on staging', () => {
       expect(await appts.busy(B.vendorId, p.id, new Date('2026-11-16T00:00:00Z'), new Date('2026-11-17T00:00:00Z'))).toHaveLength(0);
       await appts.moveBooking(A.vendorId, b.id, 'CONFIRMED', 'CANCELLED', { cancelReason: 'x' }, new Date());
       expect(await appts.busy(A.vendorId, p.id, new Date('2026-11-16T00:00:00Z'), new Date('2026-11-17T00:00:00Z'))).toHaveLength(0);
+    });
+  });
+
+  describe('5.24c store', () => {
+    const product = (sku: string) => ({ name: 'Pipe', description: null, sku, hsnSac: '7411', pricePaise: 100, taxRatePercent: null, trackStock: true });
+    it('sixty parallel single-unit decreases of ten in stock (real pool): exactly ten win, stock ends at zero, never negative, ledger agrees', async () => {
+      const p = await shop.addProduct(A.vendorId, product(`I-${RUN_ID}-1`));
+      await shop.applyStock(A.vendorId, { productRef: p.id, delta: 10, reason: 'OPENING', key: null, note: null, at: new Date() });
+      const r = await Promise.allSettled(Array.from({ length: 60 }, () => shop.applyStock(A.vendorId, { productRef: p.id, delta: -1, reason: 'ADJUSTMENT', key: null, note: null, at: new Date() })));
+      expect(r.filter((x) => x.status === 'fulfilled')).toHaveLength(10);
+      expect(r.filter((x) => x.status === 'rejected').every((x) => (x as PromiseRejectedResult).reason instanceof StockInsufficient)).toBe(true);
+      expect((await prisma.v3StockLevel.findFirstOrThrow({ where: { vendorId: A.vendorId, productRef: p.id } })).onHand).toBe(0);
+      const moves = await prisma.v3StoreStockMove.findMany({ where: { vendorId: A.vendorId, productRef: p.id } });
+      expect(moves).toHaveLength(11); expect(moves.reduce((a, m) => a + m.delta, 0)).toBe(0); expect(moves.every((m) => m.balanceAfter >= 0)).toBe(true);
+    });
+    it('a refused decrease leaves no level row and no ledger row behind (the transaction rolls back)', async () => {
+      const p = await shop.addProduct(A.vendorId, product(`I-${RUN_ID}-2`));
+      await expect(shop.applyStock(A.vendorId, { productRef: p.id, delta: -1, reason: 'ADJUSTMENT', key: null, note: null, at: new Date() })).rejects.toBeInstanceOf(StockInsufficient);
+      expect(await prisma.v3StockLevel.count({ where: { vendorId: A.vendorId, productRef: p.id } })).toBe(0); expect(await prisma.v3StoreStockMove.count({ where: { vendorId: A.vendorId, productRef: p.id } })).toBe(0);
+    });
+    it('twenty parallel changes with one key change the stock once', async () => {
+      const p = await shop.addProduct(A.vendorId, product(`I-${RUN_ID}-3`));
+      const r = await Promise.all(Array.from({ length: 20 }, () => shop.applyStock(A.vendorId, { productRef: p.id, delta: 5, reason: 'RECEIPT', key: `k-${RUN_ID}`, note: null, at: new Date() })));
+      expect(r.filter((x) => x.applied)).toHaveLength(1); expect((await prisma.v3StockLevel.findFirstOrThrow({ where: { vendorId: A.vendorId, productRef: p.id } })).onHand).toBe(5);
+    });
+    it('a SKU is unique per business across products and variants; another business sees and changes nothing', async () => {
+      const p = await shop.addProduct(A.vendorId, product(`I-${RUN_ID}-4`));
+      await expect(shop.addProduct(A.vendorId, product(`I-${RUN_ID}-4`))).rejects.toThrow('SKU_TAKEN');
+      await expect(shop.addVariant(A.vendorId, p.id, { label: 'L', sku: `I-${RUN_ID}-4`, pricePaise: null })).rejects.toThrow('SKU_TAKEN');
+      expect((await shop.addProduct(B.vendorId, product(`I-${RUN_ID}-4`))).vendorId).toBe(B.vendorId);
+      expect(await shop.getProduct(B.vendorId, p.id)).toBeNull(); expect(await shop.updateProduct(B.vendorId, p.id, { name: 'x' })).toBeNull(); expect(await shop.resolveRef(B.vendorId, p.id)).toBeNull();
+    });
+    it('the stock import is idempotent on the real ledger and its comparison matches; a second run applies nothing', async () => {
+      const svc = new StoreService(shop, { activeRates: async () => [] }, { methods: async () => [] });
+      await shop.addProduct(A.vendorId, product(`IMP-${RUN_ID}`));
+      const rows = [{ sourceId: `o-${RUN_ID}`, sku: `IMP-${RUN_ID}`, kind: 'OPENING', qty: 10 }, { sourceId: `m-${RUN_ID}`, sku: `IMP-${RUN_ID}`, kind: 'MOVEMENT', qty: -4 }];
+      const dry = await svc.importStock(A.vendorId, rows, false); expect(dry).toMatchObject({ mode: 'DRY_RUN', toApply: 2, applied: 0 });
+      const first = await svc.importStock(A.vendorId, rows, true); expect(first).toMatchObject({ applied: 2, comparison: { ok: true } });
+      const again = await svc.importStock(A.vendorId, rows, true); expect(again).toMatchObject({ applied: 0, alreadyApplied: 2, comparison: { ok: true } });
+    });
+    it('a return can only be recorded for an order of the business (a recorded fact; no refund is made)', async () => {
+      expect(await shop.orderExists(A.vendorId, 'no-such-order')).toBe(false);
+      const r = await shop.addReturn(A.vendorId, 'order-x', { reason: 'damaged', amountPaise: 100, note: null }); expect((await shop.listReturns(B.vendorId, 'order-x', { skip: 0, take: 10 })).total).toBe(0); expect(r.vendorId).toBe(A.vendorId);
     });
   });
 });

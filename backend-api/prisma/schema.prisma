@@ -106,6 +106,10 @@ model Vendor {
   v3ApptServices V3ApptService[]
   v3ApptProviders V3ApptProvider[]
   v3ApptBookings V3ApptBooking[]
+  v3StoreProducts V3StoreProduct[]
+  v3StoreVariants V3StoreVariant[]
+  v3StoreStockMoves V3StoreStockMove[]
+  v3OrderReturns V3OrderReturn[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7226,4 +7230,87 @@ model V3ApptBooking {
   @@index([vendorId, providerId, startsAt])
   @@index([vendorId, status, createdAt])
   @@map("g4d_appt_bookings")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24c: the store for the Ecommerce track (catalogue, variants, stock ledger, recorded returns).
+// Stock levels and reservations are the Stage 9 tables (g4d_stock_levels, g4d_stock_reservations); the productRef of a level is a product id, or a variant id when the product has variants.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// A product of the business with its price, HSN or SAC code and a tax rate that must be in the rate table. Never hard deleted: archivedAt.
+model V3StoreProduct {
+  id             String    @id @default(cuid())
+  vendorId       String
+  name           String
+  description    String?
+  sku            String?
+  hsnSac         String?
+  pricePaise     Int
+  taxRatePercent Decimal?  @db.Decimal(6, 3)
+  trackStock     Boolean   @default(true)
+  archivedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  vendor   Vendor           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  variants V3StoreVariant[]
+
+  @@unique([vendorId, sku])
+  @@index([vendorId, createdAt])
+  @@map("g4d_store_products")
+}
+
+/// A size, colour or pack of a product; a missing price means the product price. Never hard deleted: archivedAt.
+model V3StoreVariant {
+  id         String    @id @default(cuid())
+  vendorId   String
+  productId  String
+  label      String
+  sku        String?
+  pricePaise Int?
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  vendor  Vendor         @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  product V3StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, sku])
+  @@index([vendorId, productId])
+  @@map("g4d_store_variants")
+}
+
+/// The stock ledger: one row per change, with the balance after it. The key (unique per business) makes a change idempotent. Append only: nothing updates or deletes a row after it is written.
+model V3StoreStockMove {
+  id           String   @id @default(cuid())
+  vendorId     String
+  productRef   String
+  delta        Int
+  reason       String
+  key          String?
+  balanceAfter Int
+  note         String?
+  at           DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, key])
+  @@index([vendorId, productRef, at])
+  @@map("g4d_store_stock_moves")
+}
+
+/// A return the business recorded for an order. A recorded fact only: no refund is made and no provider is called.
+model V3OrderReturn {
+  id          String   @id @default(cuid())
+  vendorId    String
+  orderId     String
+  reason      String
+  amountPaise Int      @default(0)
+  note        String?
+  createdAt   DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, orderId])
+  @@map("g4d_order_returns")
 }

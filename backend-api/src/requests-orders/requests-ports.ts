@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { ContentSource } from '../site-publish/content/content-source';
 import { MethodKind } from './core/commerce-core';
 
@@ -34,7 +35,7 @@ export class OwnGatewayGate {
 }
 
 /** The catalogue a visitor orders from: the vendor's published items with a real price. */
-export interface CatalogueItem { productRef: string; name: string; unitPaise: number; taxPercent: number }
+export interface CatalogueItem { productRef: string; name: string; unitPaise: number; taxPercent: number; /** the HSN or SAC code of the item, carried onto the order line (slice 5.24c); absent for content items */ hsnSac?: string | null }
 export abstract class Catalogue { abstract find(vendorId: string, productRef: string): Promise<CatalogueItem | null>; }
 
 /** "300", "1,250", "₹ 99.50" are prices; "on request" or an empty price is not. A price with a fraction of a paisa is refused. */
@@ -60,3 +61,32 @@ export class ContentCatalogue extends Catalogue {
 
 /** Checks that the vendor has accepted the current published terms. Declared in the terms module (slice 5.15), which binds the real one. Absent = no check. */
 export { AcceptanceGuard } from '../terms/terms-ports';
+
+/** The store catalogue of slice 5.24c (products and variants of an Ecommerce business). Read only; `find` answers for ONE business. */
+export abstract class StoreProducts { abstract find(vendorId: string, productRef: string): Promise<CatalogueItem | null> }
+
+/**
+ * Reads the store catalogue: a variant (its own price, else the product price) or a product with no variants, live (not archived), with a real price. The tax rate is the one on the product (from the rate
+ * table); the cart prices whole percents only, so a product with a fractional rate is not offered here (OPEN QUESTION in docs/v3/V3_BUSINESS_MODULES.md) and a product with no rate carries 0.
+ */
+@Injectable()
+export class PrismaStoreProducts extends StoreProducts {
+  constructor(private readonly prisma: PrismaService) { super(); }
+  async find(vendorId: string, ref: string): Promise<CatalogueItem | null> {
+    const v = await this.prisma.v3StoreVariant.findFirst({ where: { id: ref, vendorId, archivedAt: null }, include: { product: true } });
+    const p = v ? v.product : await this.prisma.v3StoreProduct.findFirst({ where: { id: ref, vendorId, archivedAt: null }, include: { variants: { where: { archivedAt: null }, select: { id: true } } } });
+    if (!p || p.archivedAt) return null;
+    if (!v && 'variants' in p && (p as { variants: unknown[] }).variants.length > 0) return null;   // a product with variants is ordered through a variant
+    const rate = p.taxRatePercent === null ? 0 : Number(p.taxRatePercent);
+    const unit = v ? v.pricePaise ?? p.pricePaise : p.pricePaise;
+    if (!Number.isInteger(rate) || unit < 1) return null;
+    return { productRef: v ? v.id : p.id, name: v ? `${p.name} ${v.label}` : p.name, unitPaise: unit, taxPercent: rate, hsnSac: p.hsnSac };
+  }
+}
+
+/** The shop catalogue first (an Ecommerce business), then the published content items (every other site). A reference that is in neither is not available. */
+@Injectable()
+export class StoreFirstCatalogue extends Catalogue {
+  constructor(private readonly products: StoreProducts, private readonly content: ContentCatalogue) { super(); }
+  async find(vendorId: string, productRef: string): Promise<CatalogueItem | null> { return (await this.products.find(vendorId, productRef)) ?? this.content.find(vendorId, productRef); }
+}

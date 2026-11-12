@@ -21,7 +21,7 @@ export function paymentReadiness(methods: ReadonlyArray<{ kind: MethodKind; stat
 
 // ── the cart ────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export interface CartLine { productRef: string; name: string; unitPaise: number; qty: number; taxPercent: number }
+export interface CartLine { productRef: string; name: string; unitPaise: number; qty: number; taxPercent: number; hsnSac?: string | null }
 export interface OfferTerms { kind: 'BANNER' | 'COUPON'; code?: string | null; percentOff?: number | null; flatPaise?: number | null; minOrderPaise: number; startsAt: Date | null; endsAt: Date | null; usageLimit: number | null; usedCount: number; status: 'ACTIVE' | 'PAUSED' | 'ENDED' }
 export interface PricedLine extends CartLine { lineSubtotalPaise: number; discountPaise: number; taxPaise: number; lineTotalPaise: number }
 export interface PricedCart { lines: PricedLine[]; subtotalPaise: number; discountPaise: number; taxPaise: number; totalPaise: number; offerCode: string | null }
