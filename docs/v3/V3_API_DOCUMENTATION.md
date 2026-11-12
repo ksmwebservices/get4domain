@@ -517,3 +517,86 @@ Example purchase answer: `{ "id": "...", "kind": "REGISTER", "domain": "sriganes
 | `GET /v3/admin/registrar/runs` | none | the latest runs with their mismatches | |
 
 Route classification baseline: 1128 to 1170 routes; the role-matrix oracle grew from 283 to 300.
+
+## Batch 13 (branch v3-b13): customers, accounts, jobs, appointments, store; 72 new routes, staging only, nothing exposed on a real host
+
+All routes are owner only (a vendor or its team member is NOT enough yet: staff access arrives with Stage 17B), sit behind a plan feature (Free sees LOCKED_PREVIEW, a track that does not have the module does not see it) and answer the standard envelope. Paged lists answer `{ items, total, page, pageSize }`. Stable error codes are listed in `V3_BUSINESS_MODULES.md` (As built) and are passed through by the exception filter.
+
+Slice 5.25 adds no route: for a V3 vendor the routes of the 21 Version 2 industry modules (`/agriculture`, `/automobile`, `/clinic`, `/coaching`, `/construction`, `/diagnostics`, `/education`, `/events`, `/finance`, `/gym`, `/hotel`, `/logistics`, `/photography`, `/professional`, `/realestate`, `/restaurant`, `/retail`, `/salon`, `/stationery`, `/technology`, `/travel`) answer a plain 404; legacy vendors are untouched.
+
+| Route | What it does | Plan feature |
+|---|---|---|
+| `GET /v3/me/customers` | My customers, newest first; filter by source or search by name, phone or e-mail | `crm.customers` |
+| `GET /v3/me/customers/summary` | How many customers, and how many came from each source | `crm.customers` |
+| `GET /v3/me/customers/:id` | One customer with every source that reached them | `crm.customers` |
+| `POST /v3/me/customers` | Add a customer by hand (source MANUAL); a person already on the list is refused with their id | `crm.customers` |
+| `PUT /v3/me/customers/:id` | Change a customer; an opt-out cannot be turned back on by the business | `crm.customers` |
+| `POST /v3/me/customers/:id/archive` | Archive a customer (never deleted) | `crm.customers` |
+| `POST /v3/me/customers/:id/restore` | Bring an archived customer back | `crm.customers` |
+| `GET /v3/me/accounts/sales` | Sale records posted from my invoices and receipts, newest first; optional from and to days | `accounts.books` |
+| `POST /v3/me/accounts/sync` | Post any invoice or receipt that is not in my books yet (safe to repeat) | `accounts.books` |
+| `GET /v3/me/accounts/gst-summary` | GST summary of a period from my sales, my expenses and my tax profile (a working figure, not a return) | `accounts.books` |
+| `GET /v3/me/accounts/expenses` | My expenses, newest first | `accounts.books` |
+| `POST /v3/me/accounts/expenses` | Add an expense | `accounts.books` |
+| `PUT /v3/me/accounts/expenses/:id` | Change an expense | `accounts.books` |
+| `POST /v3/me/accounts/expenses/:id/archive` | Archive an expense (never deleted) | `accounts.books` |
+| `POST /v3/me/accounts/expenses/:id/restore` | Bring an archived expense back | `accounts.books` |
+| `GET /v3/me/items` | My items and services, newest first; filter by kind or search by name | `accounts.items` |
+| `POST /v3/me/items` | Add an item or a service; a tax rate must be one in the rate table | `accounts.items` |
+| `PUT /v3/me/items/:id` | Change an item or a service | `accounts.items` |
+| `POST /v3/me/items/:id/archive` | Archive an item (never deleted) | `accounts.items` |
+| `POST /v3/me/items/:id/restore` | Bring an archived item back | `accounts.items` |
+| `GET /v3/me/jobs` | My jobs, newest first; filter by status or search by title or customer | `jobs.manage` |
+| `GET /v3/me/jobs/calendar` | Scheduled jobs between two days, grouped by day | `jobs.manage` |
+| `GET /v3/me/jobs/:id` | One job | `jobs.manage` |
+| `POST /v3/me/jobs` | Add a job (a request that came by phone or in person) | `jobs.manage` |
+| `PUT /v3/me/jobs/:id` | Change a job: details, assignment, schedule | `jobs.manage` |
+| `POST /v3/me/jobs/:id/status` | Move a job one step along its path (paid is not a step you can set) | `jobs.manage` |
+| `POST /v3/me/jobs/:id/paid` | Mark a finished job paid from a payment request you have confirmed | `jobs.manage` |
+| `POST /v3/me/jobs/:id/archive` | Archive a job (never deleted) | `jobs.manage` |
+| `POST /v3/me/jobs/:id/restore` | Bring an archived job back | `jobs.manage` |
+| `GET /v3/me/quotes` | My quotes, newest first; filter by job or status (overdue ones are marked expired first) | `jobs.manage` |
+| `GET /v3/me/quotes/:id` | One quote with its lines | `jobs.manage` |
+| `POST /v3/me/quotes` | Write a quote; a tax rate on a line must be one in the rate table | `jobs.manage` |
+| `PUT /v3/me/quotes/:id` | Change a draft quote | `jobs.manage` |
+| `POST /v3/me/quotes/:id/send` | Mark a quote as given to the customer (nothing is sent by this build) | `jobs.manage` |
+| `POST /v3/me/quotes/:id/accept` | Record that the customer accepted: books the job (creating it once if there was none) | `jobs.manage` |
+| `POST /v3/me/quotes/:id/decline` | Record that the customer declined | `jobs.manage` |
+| `GET /v3/me/appointments/services` | Services offered by appointment | `appointments.manage` |
+| `POST /v3/me/appointments/services` | Add a service with its length | `appointments.manage` |
+| `PUT /v3/me/appointments/services/:id` | Change a service | `appointments.manage` |
+| `POST /v3/me/appointments/services/:id/archive` | Archive a service (never deleted) | `appointments.manage` |
+| `POST /v3/me/appointments/services/:id/restore` | Bring an archived service back | `appointments.manage` |
+| `GET /v3/me/appointments/providers` | People who take appointments, with their weekly hours | `appointments.manage` |
+| `POST /v3/me/appointments/providers` | Add a provider with working hours (India time) | `appointments.manage` |
+| `PUT /v3/me/appointments/providers/:id` | Change a provider or the working hours | `appointments.manage` |
+| `POST /v3/me/appointments/providers/:id/archive` | Archive a provider (never deleted) | `appointments.manage` |
+| `POST /v3/me/appointments/providers/:id/restore` | Bring an archived provider back | `appointments.manage` |
+| `GET /v3/me/appointments/slots` | Free start times of a provider for a service on a day | `appointments.manage` |
+| `GET /v3/me/appointments` | Requests and appointments in time order; filter by status, provider or days | `appointments.manage` |
+| `GET /v3/me/appointments/:id` | One request or appointment | `appointments.manage` |
+| `POST /v3/me/appointments` | Record a customer request for a free time; it stays REQUESTED until you confirm | `appointments.manage` |
+| `POST /v3/me/appointments/:id/confirm` | Confirm a request (only you can; nothing confirms itself) | `appointments.manage` |
+| `POST /v3/me/appointments/:id/decline` | Decline a request | `appointments.manage` |
+| `POST /v3/me/appointments/:id/cancel` | Cancel a request or an appointment, with a reason | `appointments.manage` |
+| `POST /v3/me/appointments/:id/complete` | Mark a confirmed appointment done | `appointments.manage` |
+| `POST /v3/me/appointments/:id/no-show` | Mark a confirmed appointment as a no-show | `appointments.manage` |
+| `GET /v3/me/store/products` | My products with their variants, newest first | `store.manage` |
+| `GET /v3/me/store/products/:id` | One product with its variants | `store.manage` |
+| `POST /v3/me/store/products` | Add a product; a tax rate must be one in the rate table | `store.manage` |
+| `PUT /v3/me/store/products/:id` | Change a product | `store.manage` |
+| `POST /v3/me/store/products/:id/archive` | Archive a product (never deleted) | `store.manage` |
+| `POST /v3/me/store/products/:id/restore` | Bring an archived product back | `store.manage` |
+| `POST /v3/me/store/products/:id/variants` | Add a variant (size, colour, pack) | `store.manage` |
+| `PUT /v3/me/store/variants/:id` | Change a variant | `store.manage` |
+| `POST /v3/me/store/variants/:id/archive` | Archive a variant (never deleted) | `store.manage` |
+| `POST /v3/me/store/variants/:id/restore` | Bring an archived variant back | `store.manage` |
+| `GET /v3/me/store/inventory` | On hand, held for orders and available, per product and variant | `store.manage` |
+| `POST /v3/me/store/stock/import` | Import legacy stock rows (opening balances and movements); a dry run unless apply is true; safe to run again | `store.manage` |
+| `GET /v3/me/store/stock/:ref/moves` | The ledger of one product or variant, newest first | `store.manage` |
+| `POST /v3/me/store/stock/:ref` | Change the stock of a product or variant; a decrease below zero is refused | `store.manage` |
+| `GET /v3/me/store/checkout` | What my shop does at checkout today: online UPI or an order request | `store.manage` |
+| `GET /v3/me/store/returns` | Returns I have recorded | `store.manage` |
+| `POST /v3/me/store/orders/:orderId/returns` | Record a return for an order (a recorded fact: no refund is made and no provider is called) | `store.manage` |
+
+Examples are in `V3_BUSINESS_MODULES.md` (As built, API contract). Route classification baseline: 1170 to 1242 routes. Generated from the controllers by `backend-api/scripts/b13-route-table.js`.

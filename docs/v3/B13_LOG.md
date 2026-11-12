@@ -80,3 +80,20 @@ No migration. Plan seed (additive, 21 lines added, one existing line gained a co
 Static scan: every controller of an industry folder uses a prefix on the list, and no controller elsewhere uses one of those prefixes.
 Honest note: for this slice the core and guard tests were written together with the code and were not run red first; one test premise was wrong (the guard must ask the engine once to learn the mode) and was corrected, with the guard comment, before the commit.
 Gates: build, eslint, verify:raw-sql 1072, verify:migrations-additive 61, retire core, guard, seed and data specs (62 + 3), b13 isolation (now scanning v3-retire), wire, gates, entitlements, plans-seed, route classification, role matrix.
+
+## FINISH
+Branch `v3-b13`, worktree `C:\Get4Domain\get4domain-b13`, base `origin/v3-b11` at `f1403f2`. Not pushed. Commits: 5.23a `ea5d4d3`, 5.23b `b50f001`, 5.24a `aa355f0`, 5.24b `be4c331`, 5.24c `4adb996`, 5.25 `8457780`, plus this docs commit.
+Totals: 85 files changed in the range. Unit tests: 3446 passing at the first full run (one `website-sharp` timeout under load that passed alone), 3602 of 3602 at the last complete full run (after 5.24b). The final full run was stopped by the harness for memory and was not restarted; every spec of 5.24c and 5.25 and the neighbouring suites were run and pass.
+Secret scan over the whole range: nothing. Workflow check: no `.github` or env file changed.
+Docs: `V3_BUSINESS_MODULES.md` (As built: data dictionary, rules, API contract with examples, decision log, differences, open questions 6 to 11), `V3_API_DOCUMENTATION.md` (Batch 13, 72 routes), `V3_REQUIREMENTS_MATRIX.md`, `V3_IMPLEMENTATION_PLAN.md`.
+
+Owner staging commands, in order (copy `.env.staging` to the worktree root first; run from `backend-api` with `npm.cmd`):
+1. `npm.cmd run db:staging:migrate-deploy`  (applies the 5 migration folders in order)
+2. `npm.cmd run db:staging:migrate-status`
+3. `npm.cmd run db:staging:rls-off`  (checks row-level rules)
+4. `npm.cmd run db:staging:drift`
+5. `npm.cmd run build`
+6. `node scripts/seed-v3-plans.js`  (dry run), then `node scripts/seed-v3-plans.js --apply`  (adds the 6 module features and the 21 `industry.*` rows)
+7. `npm.cmd run test:int`  (includes `b13-stores.int.spec.ts`)
+8. `npm.cmd run test:cleanup-staging -- --count`  (must print 0)
+Stock import (Stage 19, Step N Rock): `node scripts/stock-import.js --vendor <id> --file <rows.json>` (dry run), then add `--apply`.
