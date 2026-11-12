@@ -26,7 +26,7 @@ describe('own-domain connection on staging', () => {
   let app: INestApplication; let prisma: PrismaClient; let ops: string; let mkt: string; const cf = new FakeCloudflare();
   let A: SeededTenant; let B: SeededTenant; let tokenA: string; let tokenB: string; let domainId: string;
   const api = (method: 'get' | 'post' | 'put' | 'delete', url: string, token: string, body?: object) => { const r = request(app.getHttpServer())[method](url).set('Authorization', `Bearer ${token}`); return body ? r.send(body) : r; };
-  const host = `shop-${lc(RUN_ID)}.example.in`;
+  const host = `v3test-${lc(RUN_ID)}.in`;   // a BARE domain: the suite asserts the www connect host and the Cloudflare option, which only a bare domain has (a subdomain connects as itself, see domain-connection-core.spec.ts)
 
   beforeAll(async () => {
     prisma = newPrisma();
@@ -38,6 +38,9 @@ describe('own-domain connection on staging', () => {
     await makeSiteVendor(prisma, app.get(SubscriptionsService), A, RUN_ID, { pro: true });
     await makeSiteVendor(prisma, app.get(SubscriptionsService), B, RUN_ID, { pro: true });
     tokenA = vendorToken(A.vendorId, A.email); tokenB = vendorToken(B.vendorId, B.email);
+    // Every vendor has a mandatory Get4Domain subdomain (V3_DOMAINS_AUTOMATION rule 1) and Forward mode redirects to it. makeSiteVendor only fills the vendor's column, so reserve the row the way a vendor does.
+    const sub = await api('put', '/v3/me/domains/subdomain', tokenA, { slug: `p56c-${lc(RUN_ID)}` });
+    if (sub.status !== 200) throw new Error(`setup step "reserve the subdomain" answered ${sub.status}: ${JSON.stringify(sub.body)}`);
     for (const [key, value] of [['customHostnameTarget', 'edge.example.test']] as const) await prisma.v3PlanSetting.upsert({ where: { key }, update: { valueJson: value }, create: { key, valueJson: value } });
   }, 240000);
 

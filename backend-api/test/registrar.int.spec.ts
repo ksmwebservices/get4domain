@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.service';
+import { EntitlementsService } from '../src/plans/entitlements/entitlements.service';
 import { SeededTenant, cleanupTenants, newPrisma, seedStaff, seedTenant, vendorToken } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
 import { FakeRazorpay } from './support/fake-razorpay';
@@ -52,7 +53,7 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
       await setSetting('walletSellerStateCode', '33'); await setSetting('walletTopupMinPaise', 10_000); await setSetting('walletTopupMaxPaise', 1_000_000);
       await setSetting('registrarNameServers', ['ns1.example.com', 'ns2.example.com']); await setSetting('registrarMinBalancePaise', 100_000);
       await setSetting('identityOtpTtlSeconds', 600); await setSetting('identityOtpMaxAttempts', 3); await setSetting('identityDocMaxBytes', 1_000_000);
-      step = 'open and credit the wallets'; for (const [t, v] of [[tokenA, A], [tokenB, B]] as const) { await must(step, api('get', '/v3/me/wallet', t)); await must('billing profile', api('put', '/v3/me/wallet/billing-profile', t, { stateCode: '33' })); await must(step, api('post', `/v3/admin/wallets/${v.vendorId}/adjustments`, sup, { amountPaise: 500_000, reason: 'suite credit', idempotencyKey: key() })); }
+      step = 'open and credit the wallets'; for (const [t, v] of [[tokenA, A], [tokenB, B]] as const) { await must(step, api('get', '/v3/me/wallet', t)); await must('billing profile', api('put', '/v3/me/wallet/billing-profile', t, { stateCode: '33' })); await must(step, api('post', `/v3/admin/wallets/${v.vendorId}/adjustments`, sup, { amountPaise: 800_000, reason: 'suite credit', idempotencyKey: key() })); }
       step = 'price book'; for (const [tld, kind, value] of [['com', 'PERCENT_BP', 2000]] as const) {
         const p = await must(step, api('post', '/v3/admin/domain-margins', ops, { tld, kind, value })); marginIds.push((p.body as { data: { id: string } }).data.id);
         await must(step, api('post', `/v3/admin/domain-margins/${marginIds[0]}/approve`, sup, { effectiveFrom: new Date(Date.now() - 60_000).toISOString() }));
@@ -119,7 +120,9 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
   });
 
   it('a Free vendor sees a locked preview; the staff routes follow the role matrix', async () => {
-    await prisma.v3PlanSubscription.updateMany({ where: { vendorId: B.vendorId }, data: { status: 'EXPIRED', currentVendorId: null } });
+    // The engine works the status out from the DATES (effectiveStatus), not from the stored column, so a lapsed Pro term is one whose end and grace have both passed. Setting only `status` left the term running (Pro, ACTIVE).
+    await prisma.v3PlanSubscription.updateMany({ where: { vendorId: B.vendorId }, data: { status: 'EXPIRED', endsAt: new Date(Date.now() - 30 * 86_400_000), graceEndsAt: new Date(Date.now() - 20 * 86_400_000) } });
+    app.get(EntitlementsService).invalidate(B.vendorId);
     const o = await api('get', '/v3/me/domain-sales/overview', tokenB); expect(o.status).toBe(200); expect(o.body.data.state).toBe('LOCKED_PREVIEW');
     expect((await buy(tokenB, domain('free'))).status).toBe(403);
     for (const [m, u] of [['get', '/v3/admin/domain-orders'], ['get', '/v3/admin/domain-margins'], ['get', '/v3/admin/identity-checks'], ['get', `/v3/admin/vendors/${A.vendorId}/identity`], ['get', '/v3/admin/registrar/runs']] as const) expect([u, (await api(m, u, mkt)).status]).toEqual([u, 403]);
@@ -152,6 +155,6 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
     const before = await balance(A); const d = domain('behalf');
     const r = await api('post', `/v3/admin/vendors/${A.vendorId}/domains/register`, ops, { domain: d, years: 1, idempotencyKey: key(), expectedTotalPaise: 99_120, reason: 'vendor asked by phone' });
     expect(r.status).toBe(200); expect((await balance(A)).balancePaise).toBe(before.balancePaise - 99_120);
-    expect(await prisma.v3DomainOrder.count({ where: { vendorId: A.vendorId, domain: d, requestedByType: 'STAFF', requestedById: expect.any(String) as never } })).toBe(1);
+    expect(await prisma.v3DomainOrder.count({ where: { vendorId: A.vendorId, domain: d, requestedByType: 'STAFF', requestedById: { not: null } } })).toBe(1);
   });
 });
