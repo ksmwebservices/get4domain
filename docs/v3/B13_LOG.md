@@ -32,3 +32,16 @@ Decisions:
 - Customer capture from documents is not done: the document keeps only the customer name, no phone or e-mail, so there is nothing to recognise a person by.
 Staging integration tests added in `test/b13-stores.int.spec.ts`: NOT RUN (owner-run).
 Gates: build, eslint, verify:migrations 185, verify:raw-sql 1044, verify:migrations-additive 58, route baseline regenerated (13 routes added across both slices), route-classification, role matrix, b13 isolation, wire, entitlement, accounts core, service and gates specs.
+
+## Slice 5.24a: jobs and quotes (Handyman)
+Migration `20261210100000_v3_jobs` (additive: `g4d_jobs`, `g4d_job_quotes` (the name `g4d_quotes` is the old Quote model's), unique per business on number, RLS on). Routes (owner only, plan feature `jobs.manage`: Free LOCKED_PREVIEW, Handyman Pro ACTIVE, hidden on the other tracks): `/v3/me/jobs` (list, calendar, create, update, status, paid, archive, restore), `/v3/me/quotes` (list, create, edit draft, send, accept, decline).
+Decisions:
+- Job states REQUESTED, QUOTED, BOOKED, IN_PROGRESS, DONE, PAID, CANCELLED; quote states DRAFT, SENT, ACCEPTED, DECLINED, EXPIRED; both are tables in the pure core with a test per edge. Every move is compare-and-set (one conditional UPDATE), so of ten parallel moves one wins.
+- PAID has no manual route: `POST /jobs/:id/paid` takes a payment request id and succeeds only when that request belongs to the business, is PAID in Stage 9 and its amount equals the accepted quote total. This module never marks money received.
+- Accepting a quote runs one at a time per quote (KeyedQueue, before any query) and creates the job once; the quote is linked to it; ten parallel accepts leave one job.
+- A quote past its last day becomes EXPIRED lazily on every read and on accept (no timer); accept then answers JOBS_QUOTE_EXPIRED.
+- "Send" only marks the quote as given to the customer; nothing is sent (sending is Block 4b). The customer accepts through the business: a customer-facing accept page is not built here.
+- Assignment is a free label (`assignedTo`); real team members arrive with Stage 17B (extension point).
+- Customer link: a job or accepted quote with a readable phone puts the person on the customer list with source MANUAL (refType job); an unreadable phone leaves the job without a link and does not fail it.
+- Job and quote numbers are per business (max plus one, serialised per business in this process, unique index plus retry for a second instance).
+Staging integration tests extended in `test/b13-stores.int.spec.ts`: NOT RUN (owner-run). Gates: build, eslint, verify:migrations 187, verify:raw-sql 1052, verify:migrations-additive 59, route baseline (1206 routes), route-classification, role matrix, b13 isolation, wire, gates, entitlement, jobs core (40) and service (18).

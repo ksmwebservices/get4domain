@@ -101,6 +101,8 @@ model Vendor {
   v3SaleRecords V3SaleRecord[]
   v3Expenses V3Expense[]
   v3Items V3Item[]
+  v3Jobs V3Job[]
+  v3Quotes V3Quote[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7093,4 +7095,68 @@ model V3Item {
 
   @@index([vendorId, createdAt])
   @@map("g4d_items")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Batch 13, slice 5.24a: jobs and quotes for the Handyman track.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// A piece of work for a customer: request, quote, booking, job, paid. Never hard deleted: archivedAt. PAID is written only by the payment path.
+model V3Job {
+  id           String    @id @default(cuid())
+  vendorId     String
+  number       Int
+  title        String
+  customerName String
+  customerPhone String?
+  customerId   String?
+  address      String?
+  notes        String?
+  status       String    @default("REQUESTED")
+  scheduledAt  DateTime?
+  assignedTo   String?
+  requestId    String?
+  quoteId      String?
+  totalPaise   Int?
+  payRequestId String?
+  paidAt       DateTime?
+  cancelReason String?
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, scheduledAt])
+  @@map("g4d_jobs")
+}
+
+/// A priced offer with lines. Lines are editable only while DRAFT. Never hard deleted.
+model V3Quote {
+  id           String    @id @default(cuid())
+  vendorId     String
+  number       Int
+  jobId        String?
+  title        String
+  customerName String
+  customerPhone String?
+  status       String    @default("DRAFT")
+  validUntil   String?
+  linesJson    Json      @default("[]")
+  taxablePaise Int       @default(0)
+  taxPaise     Int       @default(0)
+  totalPaise   Int       @default(0)
+  sentAt       DateTime?
+  decidedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, number])
+  @@index([vendorId, status, createdAt])
+  @@index([vendorId, jobId])
+  @@map("g4d_job_quotes")
 }
