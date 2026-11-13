@@ -9,6 +9,7 @@ import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-doma
 import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-registrar/settings/registrar-settings';
 import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/settings/storage-settings';
 import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/mail-settings';
+import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -34,6 +35,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isStorageSettingKey, validate: validateStorageSetting },
   // block 4b (Amendment 12 Q3 and Q5): lane 1 sender and the enquiry inbox limits; every value starts unset
   { owns: isMailSettingKey, validate: validateMailSetting },
+  // block 4b (Amendment 12 Q7): DLT entity id, sender id and the registered templates; every value starts unset
+  { owns: isSmsSettingKey, validate: validateSmsSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {
