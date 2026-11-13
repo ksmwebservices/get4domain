@@ -17,8 +17,10 @@ export interface MailSettings {
   inboxRatePerHour: number | null;
   /** a spam score above this marks a message SPAM (kept, not forwarded); null = inbound is refused */
   inboxSpamThreshold: number | null;
+  /** SUPER_ADMIN's switch for HELD enquiries (Amendment 10 Part L): enquiries for a business whose plan is not active are kept and counted. Default OFF. It also needs the published enquiry consent text. */
+  heldEnquiriesEnabled: boolean;
 }
-export const DEFAULT_MAIL_SETTINGS: Readonly<MailSettings> = { mailSystemFromAddress: null, mailSystemFromName: null, inboxMaxBytes: null, inboxRatePerHour: null, inboxSpamThreshold: null };
+export const DEFAULT_MAIL_SETTINGS: Readonly<MailSettings> = { mailSystemFromAddress: null, mailSystemFromName: null, inboxMaxBytes: null, inboxRatePerHour: null, inboxSpamThreshold: null, heldEnquiriesEnabled: false };
 export const MAIL_SETTING_KEYS = Object.keys(DEFAULT_MAIL_SETTINGS) as Array<keyof MailSettings>;
 export const isMailSettingKey = (key: string): key is keyof MailSettings => (MAIL_SETTING_KEYS as string[]).includes(key);
 const whole = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
@@ -27,6 +29,7 @@ export function mailSettingProblem(key: keyof MailSettings, v: unknown): string 
   switch (key) {
     case 'mailSystemFromAddress': return looksLikeEmail(v) ? null : 'must be an email address';
     case 'mailSystemFromName': return typeof v === 'string' && v.trim().length > 0 && v.length <= 80 && !hasLineBreak(v) ? null : 'must be a short name on one line';
+    case 'heldEnquiriesEnabled': return typeof v === 'boolean' ? null : 'must be true or false';
     case 'inboxSpamThreshold': return typeof v === 'number' && Number.isFinite(v) ? null : 'must be a number';
     default: return whole(v) ? null : 'must be a whole number above zero';
   }

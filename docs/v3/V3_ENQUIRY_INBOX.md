@@ -83,3 +83,18 @@ export default {
 ```
 
 Not done here: the Worker is not deployed, no DNS or routing rule is created, no real message has been received or sent. The first live test is: set the settings and secret, switch `EMAIL_LIVE_SEND` and `EMAIL_FORWARD_LIVE` on staging only, send one mail to a test business, check the row and the forward.
+
+## Held enquiries (Block 4b, slice 6; Amendment 10 Part L)
+
+For a business whose plan is **not active**, enquiries can be kept instead of refused. This is OFF by default and needs BOTH:
+
+1. SUPER_ADMIN's setting `heldEnquiriesEnabled` = `true` (default `false`), and
+2. the **Enquiry Consent** policy text published by counsel (`ConsentGate`). Until the policy store (slice 12) binds the real answer, the gate says no, so holding stays off even if the setting is turned on. A placeholder body cannot be published, so the flag cannot be defeated by a draft.
+
+What happens when both are on: the message is stored with state `HELD` and forward status `SKIPPED_PLAN_ENDED`, counted against the same size and rate limits, never forwarded, and never shared with anyone (a test checks the held branch has no send, share or export). A spam-scored message is not held for an unpaid business. The Worker sees `accepted: true, held: true`.
+
+What the business sees: `GET /v3/me/inbox/waiting` returns only `{ count, text }` with text like "3 enquiries waiting" ("1 enquiry waiting"; null when none). No sender, subject or text in the count; the list and read routes still answer `INBOX_PLAN_INACTIVE` while the plan is not active.
+
+Unlock: when the plan is active again, the first call to `waiting`, `list` or `get` releases the business's held messages to `NEW` (event `inbox.held_released`). They are not forwarded after the fact: forwarding happens only when a message arrives while the plan stands.
+
+Not decided here (counsel and the owner): how long held enquiries are kept, and what is said to the sender. No retention number is invented; none is enforced.

@@ -16,5 +16,6 @@ export class MemoryInboxStore extends InboxStore {
   async get(vendorId: string, id: string) { return this.rows.find((r) => r.vendorId === vendorId && r.id === id) ?? null; }
   async setState(vendorId: string, id: string, state: string, at: Date) { const r = await this.get(vendorId, id); if (!r || r.state === 'HELD') return null; r.state = state; if (state === 'READ') r.readAt = at; return r; }
   async setForward(vendorId: string, id: string, status: string, at: Date | null) { const r = await this.get(vendorId, id); if (r) { r.forwardStatus = status; r.forwardedAt = at; } }
+  async releaseHeld(vendorId: string, _at: Date) { const h = this.rows.filter((r) => r.vendorId === vendorId && r.state === 'HELD'); h.forEach((r) => { r.state = 'NEW'; }); return h.length; }
   async countHeld(vendorId: string) { return this.rows.filter((r) => r.vendorId === vendorId && r.state === 'HELD').length; }
 }

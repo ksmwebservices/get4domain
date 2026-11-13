@@ -41,6 +41,8 @@ export class MeInboxController {
 
   @Get() @ApiOperation({ summary: 'My enquiry messages, newest first' })
   async list(@Tenant() t: TenantContext, @Query() q: InboxListDto) { const { page, pageSize } = pageArgs(q); const r = await this.inbox.list(t.vendorId, q.state, page, pageSize); return paged(r.items, r.total, page, pageSize); }
+  @Get('waiting') @ApiOperation({ summary: 'How many enquiries are waiting while the plan is not active (a count only; details unlock when the plan is active)' })
+  waiting(@Tenant() t: TenantContext) { return this.inbox.waiting(t.vendorId); }
   @Get(':id') @ApiOperation({ summary: 'One enquiry message with its full text' })
   get(@Tenant() t: TenantContext, @Param('id') id: string) { return this.inbox.get(t.vendorId, id); }
   @Put(':id/state') @ApiOperation({ summary: 'Mark a message new, read or archived' })

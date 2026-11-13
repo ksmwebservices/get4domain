@@ -1,5 +1,6 @@
 import { ActivityBus } from '../src/common/activity-bus';
 import { signatureHeader } from '../src/v3-mail/core/mail-core';
+import { FakeConsent } from '../src/v3-mail/consent.port';
 import { FakeEmailTransport, GuardedEmailPort } from '../src/v3-mail/email.port';
 import { InboxService } from '../src/v3-mail/inbox.service';
 import { DEFAULT_MAIL_SETTINGS, MailSettings, MailSettingsService } from '../src/v3-mail/settings/mail-settings';
@@ -16,9 +17,10 @@ function make(o: { settings?: Partial<MailSettings>; env?: Record<string, string
   const state = { status: o.status === undefined ? 'ACTIVE' : o.status, mode: o.mode ?? 'V3', suspended: o.suspended ?? false };
   const ent = { resolve: async () => ({ mode: state.mode, suspended: state.suspended, subscriptionStatus: state.status }) };
   const bus = new ActivityBus(); const events: string[] = []; bus.on('*', (e) => { events.push(e.type); });
-  const svc = new InboxService(store, email, settings, ent as never, bus, () => env); svc.clock = () => NOW;
+  const consent = new FakeConsent();
+  const svc = new InboxService(store, email, settings, ent as never, consent, bus, () => env); svc.clock = () => NOW;
   const post = (b: Record<string, unknown>, sig?: string) => { const raw = JSON.stringify(b); return svc.receive(raw, sig ?? signatureHeader(SECRET, raw, Math.floor(NOW.getTime() / 1000)), b); };
-  return { svc, store, transport, post, state, events };
+  return { svc, store, transport, post, state, events, consent };
 }
 
 describe('enquiry inbox: receiving', () => {
@@ -84,11 +86,55 @@ describe('enquiry inbox: reading', () => {
     await expect(svc.get('v2', l.items[0].id)).rejects.toMatchObject({ response: { code: 'INBOX_NOT_FOUND' } });
     state.status = 'EXPIRED'; await expect(svc.list('v1', undefined, 1, 20)).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } });
   });
-  it('state changes: read stamps the time; another business cannot change it; HELD cannot be touched here', async () => {
+  it('state changes: read stamps the time; another business cannot change it; HELD is not a state a business can set', async () => {
     const { post, svc, store } = make(); await post(body()); const id = store.rows[0].id;
     expect((await svc.setState('v1', id, 'READ')).state).toBe('READ'); expect(store.rows[0].readAt).toEqual(NOW);
     await expect(svc.setState('v2', id, 'ARCHIVED')).rejects.toMatchObject({ response: { code: 'INBOX_NOT_FOUND' } });
     await expect(svc.setState('v1', id, 'HELD')).rejects.toMatchObject({ response: { code: 'INBOX_INVALID' } });
-    store.rows[0].state = 'HELD'; await expect(svc.get('v1', id)).rejects.toMatchObject({ response: { code: 'INBOX_NOT_FOUND' } }); expect((await svc.list('v1', undefined, 1, 20)).total).toBe(0);
+    expect(store.rows[0].state).toBe('READ');   // (a held message while the plan is not active is covered under held enquiries below)
+  });
+});
+
+describe('held enquiries (Amendment 10 Part L)', () => {
+  const held = { heldEnquiriesEnabled: true };
+  it('stays OFF by default: with the switch off, or on without the published consent text, a business whose plan ended has nothing stored', async () => {
+    const a = make({ status: 'EXPIRED' }); await expect(a.post(body())).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } }); expect(a.store.rows).toHaveLength(0);
+    const b = make({ status: 'EXPIRED', settings: held }); await expect(b.post(body())).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } }); expect(b.store.rows).toHaveLength(0);
+    const c = make({ status: 'EXPIRED' }); c.consent.published = true; await expect(c.post(body())).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } }); expect(c.store.rows).toHaveLength(0);
+  });
+  it('with the switch on AND the consent text published, the message is HELD: stored, never forwarded, and the sender is accepted', async () => {
+    const { post, store, transport, consent, events } = make({ status: 'EXPIRED', settings: held }); consent.published = true;
+    const r = await post(body()); expect(r).toMatchObject({ accepted: true, held: true, forwardStatus: 'SKIPPED_PLAN_ENDED' });
+    expect(store.rows[0]).toMatchObject({ vendorId: 'v1', state: 'HELD', forwardStatus: 'SKIPPED_PLAN_ENDED' }); expect(transport.sent).toHaveLength(0); expect(events).toEqual(['inbox.message_held']);
+  });
+  it('the business sees only "N enquiries waiting": no sender, subject or text, in the count or in the list', async () => {
+    const { post, svc, consent } = make({ status: 'EXPIRED', settings: held }); consent.published = true;
+    await post(body({ messageId: '<h1@x>' })); await post(body({ messageId: '<h2@x>' }));
+    expect(await svc.waiting('v1')).toEqual({ count: 2, text: '2 enquiries waiting' }); expect(JSON.stringify(await svc.waiting('v1'))).not.toMatch(/customer|Price|two/);
+    await expect(svc.list('v1', undefined, 1, 20)).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } });
+    await expect(svc.get('v1', 'm1')).rejects.toMatchObject({ response: { code: 'INBOX_PLAN_INACTIVE' } });
+    expect((await svc.waiting('v2')).count).toBe(0);
+  });
+  it('one waiting reads "1 enquiry waiting"; none says nothing', async () => {
+    const { post, svc, consent } = make({ status: 'EXPIRED', settings: held }); expect(await svc.waiting('v1')).toEqual({ count: 0, text: null }); consent.published = true; await post(body());
+    expect((await svc.waiting('v1')).text).toBe('1 enquiry waiting');
+  });
+  it('details unlock when the plan is active again: the held messages become NEW, readable, and are not forwarded after the fact', async () => {
+    const { post, svc, state, store, transport, consent, events } = make({ status: 'EXPIRED', settings: held }); consent.published = true; await post(body());
+    state.status = 'ACTIVE'; expect((await svc.waiting('v1')).count).toBe(0);
+    const l = await svc.list('v1', undefined, 1, 20); expect(l.total).toBe(1); expect(l.items[0]).toMatchObject({ from: 'customer@example.com', state: 'NEW', forwardStatus: 'SKIPPED_PLAN_ENDED' });
+    expect(store.rows[0].state).toBe('NEW'); expect(transport.sent).toHaveLength(0); expect(events).toEqual(['inbox.message_held', 'inbox.held_released']);
+  });
+  it('spam is not held for an unpaid business, and the limits still apply', async () => {
+    const a = make({ status: 'EXPIRED', settings: held }); a.consent.published = true; expect(await a.post(body({ spamScore: 9 }))).toMatchObject({ accepted: true, held: false, forwardStatus: 'SKIPPED_SPAM' }); expect(a.store.rows).toHaveLength(0);
+    const b = make({ status: 'EXPIRED', settings: { ...held, inboxRatePerHour: 1 } }); b.consent.published = true; await b.post(body({ messageId: '<r1@x>' }));
+    await expect(b.post(body({ messageId: '<r2@x>' }))).rejects.toMatchObject({ response: { code: 'INBOX_RATE_LIMITED' } });
+  });
+  it('another business never sees these: held counts are per business', async () => {
+    const { post, svc, consent } = make({ status: 'EXPIRED', settings: held }); consent.published = true; await post(body()); expect((await svc.waiting('v2')).count).toBe(0);
+  });
+  it('nothing in the module shares, sells or forwards a held enquiry to another business', async () => {
+    const fs = await import('fs'); const path = await import('path'); const t = fs.readFileSync(path.resolve(__dirname, '../src/v3-mail/inbox.service.ts'), 'utf8');
+    const heldBlock = t.slice(t.indexOf('const holding'), t.indexOf('const verdict')); expect(heldBlock).not.toMatch(/email\.send|forward\(|share|sell|export/i);
   });
 });

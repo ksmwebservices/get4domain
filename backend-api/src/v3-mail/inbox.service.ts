@@ -3,6 +3,7 @@ import { ActivityBus } from '../common/activity-bus';
 import { KeyedQueue } from '../common/keyed-queue';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { Env, InboundInput, checkInbound, forwardSubject, forwardText, planActive, spamVerdict, subdomainOfAddress, underRateLimit, verifySignature } from './core/mail-core';
+import { ConsentGate } from './consent.port';
 import { EmailPort } from './email.port';
 import { InboxRow, InboxStore } from './inbox.store';
 import { mailError } from './mail.errors';
@@ -25,7 +26,7 @@ const view = (r: InboxRow, full: boolean) => ({
 export class InboxService {
   clock: () => Date = () => new Date();
   constructor(
-    private readonly store: InboxStore, private readonly email: EmailPort, private readonly settings: MailSettingsService, private readonly entitlements: EntitlementsService,
+    private readonly store: InboxStore, private readonly email: EmailPort, private readonly settings: MailSettingsService, private readonly entitlements: EntitlementsService, private readonly consent: ConsentGate,
     @Optional() private readonly bus?: ActivityBus, @Optional() private readonly env: () => Env = () => process.env,
   ) {}
 
@@ -40,17 +41,23 @@ export class InboxService {
     const sub = subdomainOfAddress(m.to, this.env().SITE_BASE_DOMAIN || 'get4domain.com');
     const vendor = sub ? await this.store.vendorBySubdomain(sub) : null;
     if (!vendor) throw mailError(404, 'INBOX_VENDOR_UNKNOWN', 'No business owns that address.');
-    if (!planActive(await this.entitlements.resolve(vendor.id))) throw mailError(403, 'INBOX_PLAN_INACTIVE', 'That business cannot receive enquiries right now.');
+    const active = planActive(await this.entitlements.resolve(vendor.id));
+    // Held enquiries (Amendment 10 Part L): a business whose plan is not active has its enquiries KEPT (never forwarded, never shared with anyone) only while SUPER_ADMIN's switch is on AND counsel's
+    // consent text is published. Otherwise nothing is stored and the sender is told the address cannot receive mail.
+    const holding = !active && s.heldEnquiriesEnabled && (await this.consent.enquiryConsentPublished());
+    if (!active && !holding) throw mailError(403, 'INBOX_PLAN_INACTIVE', 'That business cannot receive enquiries right now.');
 
     const verdict = spamVerdict(m.spamScore, s.inboxSpamThreshold);
+    if (holding && verdict === 'SPAM') return { accepted: true, id: null, duplicate: false, held: false, forwardStatus: 'SKIPPED_SPAM' };   // spam is not held for an unpaid business: it is not an enquiry
     const stored = await queue.run(`inbox:${vendor.id}`, async () => {
       if (!underRateLimit(await this.store.countSince(vendor.id, new Date(now.getTime() - HOUR_MS)), s.inboxRatePerHour!)) throw mailError(429, 'INBOX_RATE_LIMITED', 'Too many messages for that business. Try again later.');
-      return this.store.insertIfNew(vendor.id, { toAddress: m.to, fromAddress: m.from, fromName: m.fromName, subject: m.subject, bodyText: m.text, messageIdHdr: m.messageId, sizeBytes: m.sizeBytes, spamScore: m.spamScore, spamVerdict: verdict, state: 'NEW', forwardStatus: 'PENDING' }, now);
+      return this.store.insertIfNew(vendor.id, { toAddress: m.to, fromAddress: m.from, fromName: m.fromName, subject: m.subject, bodyText: m.text, messageIdHdr: m.messageId, sizeBytes: m.sizeBytes, spamScore: m.spamScore, spamVerdict: verdict, state: holding ? 'HELD' : 'NEW', forwardStatus: holding ? 'SKIPPED_PLAN_ENDED' : 'PENDING' }, now);
     });
-    if (!stored.created) return { accepted: true, id: stored.row.id, duplicate: true, forwardStatus: stored.row.forwardStatus };   // the same message id again: nothing is stored or sent twice
-    this.emit('inbox.message_received', vendor.id, stored.row.id, { spam: verdict === 'SPAM' });
+    if (!stored.created) return { accepted: true, id: stored.row.id, duplicate: true, held: stored.row.state === 'HELD', forwardStatus: stored.row.forwardStatus };   // the same message id again: nothing is stored or sent twice
+    this.emit(holding ? 'inbox.message_held' : 'inbox.message_received', vendor.id, stored.row.id, { spam: verdict === 'SPAM' });
+    if (holding) return { accepted: true, id: stored.row.id, duplicate: false, held: true, forwardStatus: 'SKIPPED_PLAN_ENDED' };
     const forwardStatus = await this.forward(vendor, stored.row.id, m, verdict === 'SPAM');
-    return { accepted: true, id: stored.row.id, duplicate: false, forwardStatus };
+    return { accepted: true, id: stored.row.id, duplicate: false, held: false, forwardStatus };
   }
 
   private async forward(vendor: { id: string; email: string }, id: string, m: InboundInput, spam: boolean): Promise<string> {
@@ -67,13 +74,21 @@ export class InboxService {
     return status;
   }
 
+  /** The only thing an unpaid business sees of its held enquiries: how many are waiting. No sender, no subject, no text. When the plan is active again they are released into the inbox first (so the count is 0). */
+  async waiting(vendorId: string) {
+    if (planActive(await this.entitlements.resolve(vendorId))) { await this.release(vendorId); return { count: 0, text: null }; }
+    const count = await this.store.countHeld(vendorId);
+    return { count, text: count === 0 ? null : `${count} ${count === 1 ? 'enquiry' : 'enquiries'} waiting` };
+  }
+  private async release(vendorId: string): Promise<void> { const n = await this.store.releaseHeld(vendorId, this.clock()); if (n > 0) this.emit('inbox.held_released', vendorId, '', { count: n }); }
+
   async list(vendorId: string, state: string | undefined, page: number, pageSize: number) {
-    await this.assertPlan(vendorId);
+    await this.assertPlan(vendorId); await this.release(vendorId);   // details unlock when the plan is active
     const r = await this.store.list(vendorId, { state, excludeHeld: true }, (page - 1) * pageSize, pageSize);
     return { items: r.items.map((x) => view(x, false)), total: r.total };
   }
   async get(vendorId: string, id: string) {
-    await this.assertPlan(vendorId);
+    await this.assertPlan(vendorId); await this.release(vendorId);
     const r = await this.store.get(vendorId, id);
     if (!r || r.state === 'HELD') throw mailError(404, 'INBOX_NOT_FOUND', 'That message was not found.');
     return view(r, true);

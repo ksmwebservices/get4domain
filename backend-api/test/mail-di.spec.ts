@@ -6,6 +6,7 @@ import { EmailPort, GuardedEmailPort } from '../src/v3-mail/email.port';
 import { GuardedSmsPort, SmsPhoneCodeSender, SmsPort, SmsTransport, UnboundSmsTransport } from '../src/v3-mail/sms.port';
 import { SmsSettingsService } from '../src/v3-mail/settings/sms-settings';
 import { ChannelIdentityOtpSender, PhoneCodeSender } from '../src/v3-mail/identity-otp.sender';
+import { ConsentGate, NoConsentYet } from '../src/v3-mail/consent.port';
 import { InboxService } from '../src/v3-mail/inbox.service';
 import { InboxStore } from '../src/v3-mail/inbox.store';
 import { PrismaInboxStore } from '../src/v3-mail/prisma-inbox.store';
@@ -39,7 +40,7 @@ describe('dependency injection of the Block 4b providers', () => {
     expect(m.get(SupportService)).toBeInstanceOf(SupportService);
   });
   it('mail and the inbox resolve, and the identity sender is the channel sender', async () => {
-    const m = await Test.createTestingModule({ providers: [...external, MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, InboxService, SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender }] }).compile();
+    const m = await Test.createTestingModule({ providers: [...external, MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, { provide: ConsentGate, useClass: NoConsentYet }, InboxService, SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender }] }).compile();
     expect(m.get(InboxService)).toBeInstanceOf(InboxService); expect(m.get(IdentityOtpSender)).toBeInstanceOf(ChannelIdentityOtpSender);
   });
 });

@@ -51,6 +51,15 @@ describe('Block 4b stores on staging', () => {
     });
   });
 
+  describe('4b.6 held enquiries', () => {
+    it('releaseHeld turns only the HELD rows of that business into NEW; the other business keeps its own held rows', async () => {
+      const store = new PrismaInboxStore(svc); const at = new Date(); const row = (id: string) => ({ toAddress: 'a@x.get4domain.com', fromAddress: 'c@example.com', fromName: null, subject: 's', bodyText: 'b', messageIdHdr: id, sizeBytes: 10, spamScore: null, spamVerdict: 'CLEAN', state: 'HELD', forwardStatus: 'SKIPPED_PLAN_ENDED' });
+      await store.insertIfNew(A.vendorId, row('<held-a1@x>'), at); await store.insertIfNew(A.vendorId, row('<held-a2@x>'), at); await store.insertIfNew(B.vendorId, row('<held-b1@x>'), at);
+      const beforeA = await store.countHeld(A.vendorId); expect(beforeA).toBeGreaterThanOrEqual(2); expect(await store.countHeld(B.vendorId)).toBeGreaterThanOrEqual(1);
+      expect(await store.releaseHeld(A.vendorId, at)).toBe(beforeA); expect(await store.countHeld(A.vendorId)).toBe(0); expect(await store.countHeld(B.vendorId)).toBeGreaterThanOrEqual(1);
+    });
+  });
+
   describe('4b.4 support tickets', () => {
     const t = (vendorId: string | null, over: Record<string, unknown> = {}) => ({ vendorId, requesterType: 'VENDOR', requesterName: null, requesterEmail: null, subject: 'Question', category: 'GENERAL', body: 'first', attachmentPictureId: null, ...over });
     it('a business reads and replies only on its own tickets; staff queries see all; the status move is one transaction', async () => {

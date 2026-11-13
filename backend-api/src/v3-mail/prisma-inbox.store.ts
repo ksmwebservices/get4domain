@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { InboxRow, InboxStore, InboxVendor, NewInbox } from './inbox.store';
+import { InboxStore, InboxVendor, NewInbox } from './inbox.store';
 
 @Injectable()
 export class PrismaInboxStore extends InboxStore {
@@ -33,4 +33,5 @@ export class PrismaInboxStore extends InboxStore {
   }
   async setForward(vendorId: string, id: string, status: string, at: Date | null) { await this.prisma.v3InboxMessage.updateMany({ where: { vendorId, id }, data: { forwardStatus: status, forwardedAt: at } }); }
   countHeld(vendorId: string) { return this.prisma.v3InboxMessage.count({ where: { vendorId, state: 'HELD' } }); }
+  async releaseHeld(vendorId: string, _at: Date) { return (await this.prisma.v3InboxMessage.updateMany({ where: { vendorId, state: 'HELD' }, data: { state: 'NEW' } })).count; }
 }

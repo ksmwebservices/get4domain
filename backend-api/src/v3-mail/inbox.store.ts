@@ -16,4 +16,6 @@ export abstract class InboxStore {
   abstract setState(vendorId: string, id: string, state: string, at: Date): Promise<InboxRow | null>;
   abstract setForward(vendorId: string, id: string, status: string, at: Date | null): Promise<void>;
   abstract countHeld(vendorId: string): Promise<number>;
+  /** HELD to NEW for this business, in one statement. Returns how many were released. */
+  abstract releaseHeld(vendorId: string, at: Date): Promise<number>;
 }

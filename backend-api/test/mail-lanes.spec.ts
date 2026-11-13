@@ -40,7 +40,7 @@ describe('THE HARD RULE: lane 1 and lane 2 can never send promotion', () => {
   });
   it('no source file of the mail module names a promotional kind or builds a bulk send', () => {
     const dir = path.resolve(__dirname, '../src/v3-mail'); const files: string[] = [];
-    const walk = (d: string): void => { for (const e of fs.readdirSync(d, { withFileTypes: true })) (e.isDirectory() ? walk(path.join(d, e.name)) : files.push(path.join(d, e.name))); }; walk(dir);
+    const walk = (d: string): void => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.isDirectory()) walk(path.join(d, e.name)); else files.push(path.join(d, e.name)); } }; walk(dir);
     for (const f of files.filter((x) => x.endsWith('.ts'))) {
       const t = fs.readFileSync(f, 'utf8').split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
       expect([f, /kind:\s*'(PROMOTION|CAMPAIGN|NEWSLETTER|BULK|MARKETING)'/.test(t)]).toEqual([f, false]);
@@ -99,7 +99,7 @@ describe('pure mail rules', () => {
     expect(assertTransactional({ ...ok })).toBeNull();
   });
   it('settings start unset and validate', () => {
-    expect(Object.values(resolveMailSettings(new Map())).every((v) => v === null)).toBe(true);
+    expect(Object.entries(resolveMailSettings(new Map())).every(([k, v]) => (k === 'heldEnquiriesEnabled' ? v === false : v === null))).toBe(true);
     expect(mailSettingProblem('mailSystemFromAddress', 'nope')).not.toBeNull(); expect(mailSettingProblem('mailSystemFromName', 'A\nB')).not.toBeNull(); expect(mailSettingProblem('inboxMaxBytes', 0)).not.toBeNull(); expect(mailSettingProblem('inboxSpamThreshold', 5.5)).toBeNull();
   });
 });

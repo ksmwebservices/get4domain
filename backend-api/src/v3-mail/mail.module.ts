@@ -6,6 +6,7 @@ import { EmailPort, EmailTransport, GuardedEmailPort, ResendTransport } from './
 import { ChannelIdentityOtpSender, PhoneCodeSender } from './identity-otp.sender';
 import { GuardedSmsPort, SmsPhoneCodeSender, SmsPort, SmsTransport, UnboundSmsTransport } from './sms.port';
 import { SmsSettingsService } from './settings/sms-settings';
+import { ConsentGate, NoConsentYet } from './consent.port';
 import { InboxService } from './inbox.service';
 import { InboxStore } from './inbox.store';
 import { PrismaInboxStore } from './prisma-inbox.store';
@@ -20,7 +21,7 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
   controllers: MAIL_CONTROLLERS,
   providers: [
     MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort },
-    { provide: InboxStore, useClass: PrismaInboxStore }, InboxService,
+    { provide: InboxStore, useClass: PrismaInboxStore }, { provide: ConsentGate, useClass: NoConsentYet }, InboxService,
     SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender },
   ],
   exports: [EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender],
