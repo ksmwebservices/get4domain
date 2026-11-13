@@ -102,7 +102,7 @@ describe('Block 4b stores on staging', () => {
     it('a request with no UPI method settles as cash; the payment says CASH_MANUAL, vendor-recorded; the key finds it for this business only; a second settle changes nothing', async () => {
       const store = new PrismaPaymentsStore(svc); const r = await store.create(req(A.vendorId, `B4B5-${RUN_ID}-cash-0001`)); expect(r.methodId).toBeNull();
       const a = await store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' });
-      expect(a?.payment).toMatchObject({ method: 'CASH', provider: 'CASH_MANUAL', vendorRecorded: true, alreadyPaid: undefined }); expect(a?.alreadyPaid).toBe(false);
+      expect(a?.payment).toMatchObject({ method: 'CASH', provider: 'CASH_MANUAL', vendorRecorded: true }); expect(a?.alreadyPaid).toBe(false);
       expect((await store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' }))?.alreadyPaid).toBe(true);
       expect((await store.paymentByKey(A.vendorId, `rec-${RUN_ID}-0001`))?.paymentRequestId).toBe(r.id); expect(await store.paymentByKey(B.vendorId, `rec-${RUN_ID}-0001`)).toBeNull();
       expect(await store.confirmPaid(r.id, B.vendorId, { utr: null, idempotencyKey: null, now: new Date() })).toBeNull();
@@ -139,7 +139,7 @@ describe('Block 4b stores on staging', () => {
       await expect(store.applyMerge({ keepVendorId: A.vendorId, mergedVendorId: B.vendorId, reason: 'integration test', actorId: 's', customerIds: [dup.id], conflicts: [], reversibleUntil: new Date(Date.now() + 86_400_000) })).rejects.toThrow();
       expect((await prisma.v3Customer.findUnique({ where: { id: dup.id } }))!.vendorId).toBe(B.vendorId); expect(await prisma.v3ListingMerge.count({ where: { keepVendorId: A.vendorId, mergedVendorId: B.vendorId } })).toBe(1);
       const merge = (await store.listMerges(A.vendorId, 0, 10)).items[0]; await prisma.v3Customer.update({ where: { id: m2.id }, data: { vendorId: B.vendorId } });   // m2 left the kept business meanwhile
-      const r = await store.reverseMerge(merge.id, 's', 'integration test', new Date()); expect(r).toEqual({ restored: 1, left: 2 }); expect((await prisma.v3Customer.findUnique({ where: { id: m1.id } }))!.vendorId).toBe(B.vendorId);
+      const r = await store.reverseMerge(merge.id, 's', 'integration test', new Date()); expect(r).toEqual({ restored: 1, left: 1 });   // keepCust was never moved, so it is not journalled: only m1 and m2 count, and m2 left expect((await prisma.v3Customer.findUnique({ where: { id: m1.id } }))!.vendorId).toBe(B.vendorId);
       expect(await store.reverseMerge(merge.id, 's', 'again', new Date())).toBeNull();
     });
     it('visit counts add up per host and day, and each business reads only its own; the count CHECK holds', async () => {

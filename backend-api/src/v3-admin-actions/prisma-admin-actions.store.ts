@@ -42,9 +42,11 @@ export class PrismaAdminActionsStore extends AdminActionsStore {
   async customersOf(vendorId: string) { return this.prisma.v3Customer.findMany({ where: { vendorId }, select: { id: true, phoneKey: true, emailKey: true } }); }
   async applyMerge(d: { keepVendorId: string; mergedVendorId: string; reason: string; actorId: string | null; customerIds: string[]; conflicts: Array<{ id: string; because: string }>; reversibleUntil: Date }) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.v3Customer.updateMany({ where: { id: { in: d.customerIds }, vendorId: d.mergedVendorId }, data: { vendorId: d.keepVendorId } });
-      await tx.v3CustomerSource.updateMany({ where: { customerId: { in: d.customerIds }, vendorId: d.mergedVendorId }, data: { vendorId: d.keepVendorId } });
-      return toMerge(await tx.v3ListingMerge.create({ data: { keepVendorId: d.keepVendorId, mergedVendorId: d.mergedVendorId, reason: d.reason, actorId: d.actorId, movedJson: { customerIds: d.customerIds } as Prisma.InputJsonValue, conflictsJson: d.conflicts as unknown as Prisma.InputJsonValue, reversibleUntil: d.reversibleUntil } }));
+      // Only contacts that really belong to the merged business move, and only those are journalled: a reverse must never send back a contact that was never moved.
+      const moving = (await tx.v3Customer.findMany({ where: { id: { in: d.customerIds }, vendorId: d.mergedVendorId }, select: { id: true } })).map((c) => c.id);
+      await tx.v3Customer.updateMany({ where: { id: { in: moving }, vendorId: d.mergedVendorId }, data: { vendorId: d.keepVendorId } });
+      await tx.v3CustomerSource.updateMany({ where: { customerId: { in: moving }, vendorId: d.mergedVendorId }, data: { vendorId: d.keepVendorId } });
+      return toMerge(await tx.v3ListingMerge.create({ data: { keepVendorId: d.keepVendorId, mergedVendorId: d.mergedVendorId, reason: d.reason, actorId: d.actorId, movedJson: { customerIds: moving } as Prisma.InputJsonValue, conflictsJson: d.conflicts as unknown as Prisma.InputJsonValue, reversibleUntil: d.reversibleUntil } }));
     }, { maxWait: 15_000, timeout: 60_000 });
   }
   async getMerge(id: string) { const m = await this.prisma.v3ListingMerge.findUnique({ where: { id } }); return m ? toMerge(m) : null; }
