@@ -1,11 +1,12 @@
 import { capabilityAnswer, lowestTierFor, NavInput, NavTabDef, resolveNav, tabAccess } from '../src/v3-packs/core/nav-core';
 import { matrixRecords, Tier, TIERS } from '../src/v3-packs/core/pack-core';
+import { readSeedSources } from '../src/v3-packs/seed/seed-files';
 import { realSeed } from './support/pack-fakes';
 
 const seed = realSeed();
 const defs: NavTabDef[] = seed.tabs.map((t) => ({ scope: t.scope, ownerKey: t.ownerKey, key: t.key, label: t.label, route: t.route, minTier: t.minTier, capabilityKey: t.capabilityKey, freeTrial: t.freeTrial, sortOrder: t.sortOrder }));
 const matrix = new Map<Tier, Set<string>>(TIERS.map((t) => [t, new Set(matrixRecords(realSettings()).filter((c) => c.tier === t && c.allowed).map((c) => c.capabilityKey))]));
-function realSettings() { return require('../src/v3-packs/seed/seed-files').readSeedSources().settings; }
+function realSettings() { return readSeedSources().settings; }
 
 const base = (over: Partial<NavInput>): NavInput => ({ mode: 'V3', level: 'PRO', tier: 'PROFESSIONAL', tabs: defs, pack: null, gatedPacksOpen: false, matrix, held: new Set(), ...over });
 const stateOf = (nav: ReturnType<typeof resolveNav>, key: string): string | undefined => nav.find((t) => t.key === key)?.state;

@@ -30,7 +30,7 @@ export function slug(label: string): string {
 export function parseCsv(text: string): Array<Record<string, string>> {
   const rows: string[][] = [];
   let row: string[] = []; let field = ''; let quoted = false;
-  const src = text.replace(/^﻿/, '');
+  const src = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   for (let i = 0; i < src.length; i += 1) {
     const c = src[i];
     if (quoted) {
