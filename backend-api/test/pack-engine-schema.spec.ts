@@ -3,7 +3,7 @@ import { VENDOR_SCOPED_MODELS } from '../src/common/tenant/for-tenant';
 
 describeSchemaSlice('Pack engine (Amendment 13 Part A)', {
   suffix: '_v3_pack_engine',
-  tables: ['g4d_packs', 'g4d_pack_tabs', 'g4d_capabilities', 'g4d_tier_capabilities', 'g4d_pack_categories', 'g4d_vendor_packs', 'g4d_vendor_capabilities'],
+  tables: ['g4d_packs', 'g4d_pack_tabs', 'g4d_capabilities', 'g4d_tier_capabilities', 'g4d_pack_categories', 'g4d_vendor_packs', 'g4d_vendor_capabilities', 'g4d_pack_addons', 'g4d_vendor_pack_addons'],
   enums: [],
   fkTargets: ['Vendor'],
 });

@@ -1,4 +1,4 @@
--- Amendment 13 Part A: the pack engine. Additive only: new tables, no existing object is touched (the Vendor model only gains back-relations, no column).
+-- Amendment 13 Part A (with V3A add-on packs): the pack engine. Additive only: new tables, no existing object is touched (the Vendor model only gains back-relations, no column).
 -- CreateTable
 CREATE TABLE "g4d_packs" (
     "id" TEXT NOT NULL,
@@ -74,7 +74,9 @@ CREATE TABLE "g4d_pack_categories" (
     "optionalCapabilities" JSONB NOT NULL DEFAULT '[]',
     "starterServices" JSONB NOT NULL DEFAULT '[]',
     "fieldHints" JSONB NOT NULL DEFAULT '[]',
+    "addonPacks" JSONB NOT NULL DEFAULT '[]',
     "onlineShopNote" TEXT,
+    "statusNote" TEXT,
     "needsBlueprint" BOOLEAN NOT NULL DEFAULT false,
     "ownerNotes" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
@@ -113,6 +115,38 @@ CREATE TABLE "g4d_vendor_capabilities" (
     CONSTRAINT "g4d_vendor_capabilities_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "g4d_pack_addons" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "grantsCapabilities" JSONB NOT NULL DEFAULT '[]',
+    "priceStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "bundleDiscountStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "config" JSONB NOT NULL DEFAULT '{}',
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "updatedByStaffId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "g4d_pack_addons_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "g4d_vendor_pack_addons" (
+    "id" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "addonKey" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "setByType" TEXT NOT NULL DEFAULT 'STAFF',
+    "setById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "g4d_vendor_pack_addons_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "g4d_packs_key_key" ON "g4d_packs"("key");
 
@@ -149,6 +183,15 @@ CREATE INDEX "g4d_vendor_capabilities_vendorId_idx" ON "g4d_vendor_capabilities"
 -- CreateIndex
 CREATE UNIQUE INDEX "g4d_vendor_capabilities_vendorId_capabilityKey_key" ON "g4d_vendor_capabilities"("vendorId", "capabilityKey");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "g4d_pack_addons_key_key" ON "g4d_pack_addons"("key");
+
+-- CreateIndex
+CREATE INDEX "g4d_vendor_pack_addons_vendorId_idx" ON "g4d_vendor_pack_addons"("vendorId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "g4d_vendor_pack_addons_vendorId_addonKey_key" ON "g4d_vendor_pack_addons"("vendorId", "addonKey");
+
 -- AddForeignKey
 ALTER TABLE "g4d_tier_capabilities" ADD CONSTRAINT "g4d_tier_capabilities_capabilityKey_fkey" FOREIGN KEY ("capabilityKey") REFERENCES "g4d_capabilities"("key") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -167,6 +210,12 @@ ALTER TABLE "g4d_vendor_capabilities" ADD CONSTRAINT "g4d_vendor_capabilities_ve
 -- AddForeignKey
 ALTER TABLE "g4d_vendor_capabilities" ADD CONSTRAINT "g4d_vendor_capabilities_capabilityKey_fkey" FOREIGN KEY ("capabilityKey") REFERENCES "g4d_capabilities"("key") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "g4d_vendor_pack_addons" ADD CONSTRAINT "g4d_vendor_pack_addons_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "g4d_vendor_pack_addons" ADD CONSTRAINT "g4d_vendor_pack_addons_addonKey_fkey" FOREIGN KEY ("addonKey") REFERENCES "g4d_pack_addons"("key") ON DELETE RESTRICT ON UPDATE CASCADE;
+
 
 -- Same rule as every other public table: RLS on, no policy; the backend role bypasses it.
 ALTER TABLE "g4d_packs" ENABLE ROW LEVEL SECURITY;
@@ -176,3 +225,5 @@ ALTER TABLE "g4d_tier_capabilities" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "g4d_pack_categories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "g4d_vendor_packs" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "g4d_vendor_capabilities" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "g4d_pack_addons" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "g4d_vendor_pack_addons" ENABLE ROW LEVEL SECURITY;

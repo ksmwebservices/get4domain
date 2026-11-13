@@ -112,6 +112,7 @@ model Vendor {
   v3OrderReturns V3OrderReturn[]
   v3VendorPack V3VendorPack?
   v3VendorCapabilities V3VendorCapability[]
+  v3VendorPackAddons V3VendorPackAddon[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7412,7 +7413,10 @@ model V3PackCategory {
   optionalCapabilities Json     @default("[]")
   starterServices      Json     @default("[]")
   fieldHints           Json     @default("[]")
+  /// the add-on packs this category may buy ([{ key, bundleDiscount }]), from the owner sheet
+  addonPacks           Json     @default("[]")
   onlineShopNote       String?
+  statusNote           String?
   needsBlueprint       Boolean  @default(false)
   ownerNotes           String?
   active               Boolean  @default(true)
@@ -7462,4 +7466,46 @@ model V3VendorCapability {
   @@unique([vendorId, capabilityKey])
   @@index([vendorId])
   @@map("g4d_vendor_capabilities")
+}
+
+/// An add-on pack: lets a vendor buy ONE capability or workflow above its tier at its own price, so nobody is forced to the next tier (Amendment 13 V3A). Prices are PENDING until the owner sets them
+/// in the price book; this row holds no amount. config carries the rules of the pack (for example the counter only dispenses to the clinic's own patients and sells nothing online).
+model V3PackAddon {
+  id                  String   @id @default(cuid())
+  key                 String   @unique
+  name                String
+  description         String?
+  /// capability keys the pack grants while active (for example SHOP grants STORE)
+  grantsCapabilities  Json     @default("[]")
+  /// PENDING until the owner sets the price; a pending pack cannot be bought, only staff can switch it on for a vendor
+  priceStatus         String   @default("PENDING")
+  bundleDiscountStatus String  @default("PENDING")
+  config              Json     @default("{}")
+  enabled             Boolean  @default(true)
+  updatedByStaffId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  vendors V3VendorPackAddon[]
+
+  @@map("g4d_pack_addons")
+}
+
+/// A vendor's add-on pack. ENDED hides what it gave and keeps every record. Tenant data.
+model V3VendorPackAddon {
+  id               String   @id @default(cuid())
+  vendorId         String
+  addonKey         String
+  status           String   @default("ACTIVE")
+  setByType        String   @default("STAFF")
+  setById          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vendor Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  addon  V3PackAddon  @relation(fields: [addonKey], references: [key], onDelete: Restrict)
+
+  @@unique([vendorId, addonKey])
+  @@index([vendorId])
+  @@map("g4d_vendor_pack_addons")
 }

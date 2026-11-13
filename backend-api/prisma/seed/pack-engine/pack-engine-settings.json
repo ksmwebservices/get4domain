@@ -1,0 +1,361 @@
+{
+  "version": 1,
+  "source": "AMENDMENT_13_PACK_ENGINE_DIRECTORY_ROLES",
+  "note": "PROPOSED rules. Edit the matrix here or, after loading, as SUPER_ADMIN through the admin routes; nothing in code names a capability's tier. A cell marked ASSUMED_FOR_OWNER_REVIEW is not stated in Amendment 13 V3 and needs the owner's decision. Add-on packs (Amendment 13 V3A) hold no price: prices and the bundle discount are PENDING until the owner sets them in the price book.",
+  "capabilities": [
+    {
+      "key": "SERVICES",
+      "name": "Services"
+    },
+    {
+      "key": "APPOINTMENTS",
+      "name": "Appointments"
+    },
+    {
+      "key": "MEMBERSHIPS",
+      "name": "Memberships"
+    },
+    {
+      "key": "LISTINGS",
+      "name": "Listings"
+    },
+    {
+      "key": "BROKERAGE",
+      "name": "Brokerage"
+    },
+    {
+      "key": "RENTALS",
+      "name": "Rentals"
+    },
+    {
+      "key": "MADE_TO_ORDER",
+      "name": "Made to order"
+    },
+    {
+      "key": "DISPATCH",
+      "name": "Dispatch"
+    },
+    {
+      "key": "DELIVERY",
+      "name": "Delivery"
+    },
+    {
+      "key": "PHARMACY",
+      "name": "Pharmacy"
+    },
+    {
+      "key": "LAB",
+      "name": "Lab"
+    },
+    {
+      "key": "FOOD_SERVICE",
+      "name": "Food service"
+    },
+    {
+      "key": "VEHICLE_RENTAL",
+      "name": "Vehicle rental"
+    },
+    {
+      "key": "STORE",
+      "name": "Online store",
+      "description": "Cart, stock and online orders"
+    }
+  ],
+  "tierMatrix": {
+    "HANDYMAN": {
+      "SERVICES": "AMENDMENT_13_V3",
+      "DISPATCH": "ASSUMED_FOR_OWNER_REVIEW"
+    },
+    "PROFESSIONAL": {
+      "SERVICES": "AMENDMENT_13_V3",
+      "APPOINTMENTS": "AMENDMENT_13_V3",
+      "MEMBERSHIPS": "AMENDMENT_13_V3",
+      "LISTINGS": "AMENDMENT_13_V3",
+      "BROKERAGE": "AMENDMENT_13_V3",
+      "RENTALS": "AMENDMENT_13_V3",
+      "MADE_TO_ORDER": "AMENDMENT_13_V3",
+      "DISPATCH": "ASSUMED_FOR_OWNER_REVIEW",
+      "DELIVERY": "ASSUMED_FOR_OWNER_REVIEW",
+      "PHARMACY": "ASSUMED_FOR_OWNER_REVIEW",
+      "LAB": "ASSUMED_FOR_OWNER_REVIEW",
+      "FOOD_SERVICE": "ASSUMED_FOR_OWNER_REVIEW",
+      "VEHICLE_RENTAL": "ASSUMED_FOR_OWNER_REVIEW"
+    },
+    "ECOMMERCE": {
+      "SERVICES": "AMENDMENT_13_V3",
+      "APPOINTMENTS": "AMENDMENT_13_V3",
+      "MEMBERSHIPS": "AMENDMENT_13_V3",
+      "LISTINGS": "AMENDMENT_13_V3",
+      "BROKERAGE": "AMENDMENT_13_V3",
+      "RENTALS": "AMENDMENT_13_V3",
+      "MADE_TO_ORDER": "AMENDMENT_13_V3",
+      "STORE": "AMENDMENT_13_V3",
+      "DISPATCH": "AMENDMENT_13_V3",
+      "DELIVERY": "AMENDMENT_13_V3",
+      "PHARMACY": "AMENDMENT_13_V3",
+      "LAB": "AMENDMENT_13_V3",
+      "FOOD_SERVICE": "AMENDMENT_13_V3",
+      "VEHICLE_RENTAL": "AMENDMENT_13_V3"
+    }
+  },
+  "commonTabs": [
+    {
+      "key": "website",
+      "label": "Website",
+      "route": "/website",
+      "freeTrial": true
+    },
+    {
+      "key": "industry",
+      "label": "Industry management",
+      "route": "/industry",
+      "freeTrial": true
+    },
+    {
+      "key": "promotion",
+      "label": "Promotion",
+      "route": "/promotion"
+    },
+    {
+      "key": "crm",
+      "label": "CRM",
+      "route": "/crm"
+    },
+    {
+      "key": "telecrm",
+      "label": "TeleCRM",
+      "route": "/telecrm"
+    },
+    {
+      "key": "billing",
+      "label": "Billing",
+      "route": "/billing"
+    },
+    {
+      "key": "accounting",
+      "label": "Accounting",
+      "route": "/accounting"
+    },
+    {
+      "key": "social",
+      "label": "Social",
+      "route": "/social"
+    },
+    {
+      "key": "ai_studio",
+      "label": "AI studio",
+      "route": "/ai-studio"
+    },
+    {
+      "key": "domain",
+      "label": "Domain",
+      "route": "/domain"
+    },
+    {
+      "key": "support",
+      "label": "Support",
+      "route": "/support",
+      "freeTrial": true
+    },
+    {
+      "key": "plan",
+      "label": "Plan",
+      "route": "/plan",
+      "freeTrial": true
+    },
+    {
+      "key": "migration",
+      "label": "Migration",
+      "route": "/migration"
+    }
+  ],
+  "capabilityTabs": [
+    {
+      "capability": "SERVICES",
+      "key": "services",
+      "label": "Services",
+      "route": "/services"
+    },
+    {
+      "capability": "APPOINTMENTS",
+      "key": "appointments",
+      "label": "Appointments",
+      "route": "/appointments"
+    },
+    {
+      "capability": "MEMBERSHIPS",
+      "key": "memberships",
+      "label": "Memberships",
+      "route": "/memberships"
+    },
+    {
+      "capability": "LISTINGS",
+      "key": "listings",
+      "label": "Listings",
+      "route": "/listings"
+    },
+    {
+      "capability": "BROKERAGE",
+      "key": "brokerage",
+      "label": "Brokerage",
+      "route": "/brokerage"
+    },
+    {
+      "capability": "RENTALS",
+      "key": "rentals",
+      "label": "Rentals",
+      "route": "/rentals"
+    },
+    {
+      "capability": "MADE_TO_ORDER",
+      "key": "made_to_order",
+      "label": "Made to order",
+      "route": "/made-to-order"
+    },
+    {
+      "capability": "DISPATCH",
+      "key": "dispatch",
+      "label": "Dispatch",
+      "route": "/dispatch"
+    },
+    {
+      "capability": "DELIVERY",
+      "key": "delivery",
+      "label": "Delivery",
+      "route": "/delivery"
+    },
+    {
+      "capability": "PHARMACY",
+      "key": "pharmacy",
+      "label": "Pharmacy",
+      "route": "/pharmacy"
+    },
+    {
+      "capability": "LAB",
+      "key": "lab",
+      "label": "Lab",
+      "route": "/lab"
+    },
+    {
+      "capability": "FOOD_SERVICE",
+      "key": "food_service",
+      "label": "Food service",
+      "route": "/food-service"
+    },
+    {
+      "capability": "VEHICLE_RENTAL",
+      "key": "vehicle_rental",
+      "label": "Vehicle rental",
+      "route": "/vehicle-rental"
+    },
+    {
+      "capability": "STORE",
+      "key": "store",
+      "label": "Online store",
+      "route": "/store"
+    }
+  ],
+  "packMeta": {
+    "CLINIC": {
+      "disclaimerKey": "health",
+      "counselGated": true
+    },
+    "LAB": {
+      "disclaimerKey": "health",
+      "counselGated": true
+    },
+    "PHARMACY": {
+      "disclaimerKey": "health",
+      "counselGated": true,
+      "flags": {
+        "hasStock": true,
+        "hasBatchExpiry": true,
+        "onlineCheckout": false,
+        "drugLicenceRequired": true
+      }
+    },
+    "PRACTICE_LEGAL_FINANCE": {
+      "disclaimerKey": "legal_finance",
+      "counselGated": true,
+      "flags": {
+        "hasCases": true
+      }
+    },
+    "MEMBERSHIP_WELLNESS": {
+      "disclaimerKey": "wellness",
+      "counselGated": false
+    },
+    "RETAIL": {
+      "flags": {
+        "hasStock": true
+      }
+    },
+    "VEHICLE_SERVICE": {
+      "flags": {
+        "hasStock": true
+      }
+    }
+  },
+  "addonPacks": [
+    {
+      "key": "SHOP",
+      "name": "Shop",
+      "description": "Cart, stock and online orders for a category below the Ecommerce tier",
+      "grantsCapabilities": [
+        "STORE"
+      ],
+      "config": {
+        "eligibility": "any category below the Ecommerce tier"
+      }
+    },
+    {
+      "key": "ONLINE_ORDERING_DELIVERY",
+      "name": "Online ordering and delivery",
+      "description": "Online food orders and delivery for juice and snack shops and caterers",
+      "config": {
+        "eligibility": "food categories on the Professional tier"
+      },
+      "tabs": [
+        {
+          "key": "online_ordering",
+          "label": "Online ordering",
+          "route": "/online-ordering"
+        }
+      ]
+    },
+    {
+      "key": "PHARMACY_COUNTER",
+      "name": "Pharmacy counter",
+      "description": "Stock with batches and expiry, and dispensing to the clinic's own patients only. No online sale.",
+      "config": {
+        "dispensing": "OWN_PATIENTS_ONLY",
+        "onlineSale": false,
+        "stockWithBatchExpiry": true,
+        "bundleDiscount": "PENDING",
+        "counselToConfirm": "Tamil Nadu and other states"
+      },
+      "tabs": [
+        {
+          "key": "pharmacy_counter",
+          "label": "Pharmacy counter",
+          "route": "/pharmacy-counter"
+        }
+      ]
+    },
+    {
+      "key": "HOME_SAMPLE_COLLECTION",
+      "name": "Home sample collection",
+      "description": "Sample pickup at the customer's address for labs",
+      "config": {
+        "eligibility": "lab categories"
+      },
+      "tabs": [
+        {
+          "key": "home_collection",
+          "label": "Home sample collection",
+          "route": "/home-collection"
+        }
+      ]
+    }
+  ]
+}
