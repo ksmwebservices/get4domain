@@ -7,6 +7,7 @@ import { isWalletSettingKey, validateWalletSetting } from '../../v3-wallet/setti
 import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/settings/website-settings';
 import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-domain-automation/settings/automation-settings';
 import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-registrar/settings/registrar-settings';
+import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/settings/storage-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -28,6 +29,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isAutomationSettingKey, validate: validateAutomationSetting },
   // batch 11 (5.6d): domain sales; every value starts unset and a feature that needs one stays off until staff set it
   { owns: isRegistrarSettingKey, validate: validateRegistrarSetting },
+  // block 4b (Amendment 12 Q2): storage endpoints, buckets, media domain and limits; keys stay in the environment; every value starts unset
+  { owns: isStorageSettingKey, validate: validateStorageSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

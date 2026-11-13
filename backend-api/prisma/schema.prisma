@@ -7314,3 +7314,19 @@ model V3OrderReturn {
   @@index([vendorId, orderId])
   @@map("g4d_order_returns")
 }
+
+/// Access log of the private object bucket (Amendment 12 Q2): who put, read, signed or deleted which object, and why. Append-only (trigger); no foreign key, like the activity log, so the log outlives a file.
+model V3StorageAccess {
+  id         String   @id @default(cuid())
+  vendorId   String?
+  bucket     String   @default("PRIVATE")
+  objectKey  String
+  action     String // PUT | GET | SIGN | DELETE | DENIED
+  actorType  String
+  actorId    String?
+  purpose    String?
+  createdAt  DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_storage_access")
+}
