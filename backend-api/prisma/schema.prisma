@@ -108,6 +108,7 @@ model Vendor {
   v3ApptBookings V3ApptBooking[]
   v3StoreProducts V3StoreProduct[]
   v3InboxMessages V3InboxMessage[]
+  v3Tickets V3Ticket[]
   v3StoreVariants V3StoreVariant[]
   v3StoreStockMoves V3StoreStockMove[]
   v3OrderReturns V3OrderReturn[]
@@ -7358,4 +7359,45 @@ model V3InboxMessage {
   @@index([vendorId, createdAt])
   @@index([vendorId, state, createdAt])
   @@map("g4d_inbox_messages")
+}
+
+/// A support ticket (Block 4b). Raised by a business (VENDOR) or by a visitor of a business's site (CUSTOMER, public form). Never hard deleted: status RESOLVED.
+model V3Ticket {
+  id                String    @id @default(cuid())
+  vendorId          String?
+  requesterType     String // VENDOR | CUSTOMER
+  requesterName     String?
+  requesterEmail    String?
+  subject           String
+  category          String    @default("GENERAL")
+  status            String    @default("OPEN") // OPEN | IN_PROGRESS | WAITING_VENDOR | RESOLVED
+  assignedToStaffId String?
+  resolvedAt        DateTime?
+  lastMessageAt     DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor   Vendor?           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  messages V3TicketMessage[]
+
+  @@index([vendorId, createdAt])
+  @@index([status, lastMessageAt])
+  @@index([requesterEmail, createdAt])
+  @@map("g4d_v3_tickets")
+}
+
+/// One message of a ticket. Append-only (trigger).
+model V3TicketMessage {
+  id                  String   @id @default(cuid())
+  ticketId            String
+  authorType          String // VENDOR | STAFF | CUSTOMER
+  authorId            String?
+  body                String
+  attachmentPictureId String?
+  createdAt           DateTime @default(now())
+
+  ticket V3Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("g4d_v3_ticket_messages")
 }

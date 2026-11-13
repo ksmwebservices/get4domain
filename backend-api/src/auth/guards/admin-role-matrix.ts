@@ -107,6 +107,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/vendors/:vendorId/site/theme/switch': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/site/theme/history': OPS_AND_SUPER, 'POST /v3/admin/theme-switches/recover': OPS_AND_SUPER,
   // Batch 4B slice 5.20: alerts and the activity log describe money, payment methods and personal data: OPERATIONS and SUPER_ADMIN work them, MARKETING is refused everywhere. The rules themselves are SUPER_ADMIN only.
   'GET /v3/admin/alerts': OPS_AND_SUPER, 'GET /v3/admin/alerts/:id': OPS_AND_SUPER, 'PATCH /v3/admin/alerts/:id': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/activity': OPS_AND_SUPER, 'GET /v3/admin/attention': OPS_AND_SUPER,
+  // Block 4b slice 4: the support desk (OPERATIONS + SUPER_ADMIN; MARKETING refused, tickets carry account details)
+  'GET /v3/admin/tickets': OPS_AND_SUPER, 'GET /v3/admin/tickets/:id': OPS_AND_SUPER, 'PUT /v3/admin/tickets/:id/assignee': OPS_AND_SUPER, 'PUT /v3/admin/tickets/:id/status': OPS_AND_SUPER, 'POST /v3/admin/tickets/:id/messages': OPS_AND_SUPER,
   'GET /v3/admin/alert-rules': SUPER_ONLY, 'PUT /v3/admin/alert-rules': SUPER_ONLY,
   // Batch 4B slice 5.21: reports, proofs and the block list carry personal data: OPERATIONS and SUPER_ADMIN, MARKETING refused. The prohibited phrases and the creating and reversing of a legal takedown are SUPER_ADMIN only.
   'GET /v3/admin/business-reports': OPS_AND_SUPER, 'PATCH /v3/admin/business-reports/:id': OPS_AND_SUPER, 'GET /v3/admin/trust-blocklist': OPS_AND_SUPER, 'POST /v3/admin/trust-blocklist': OPS_AND_SUPER, 'DELETE /v3/admin/trust-blocklist/:id': OPS_AND_SUPER,

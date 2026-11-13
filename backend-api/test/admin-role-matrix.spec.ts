@@ -68,6 +68,8 @@ const MARKETING_DENIED = [
   'POST /v3/admin/vendors/:vendorId/site/theme/switch', 'GET /v3/admin/vendors/:vendorId/site/theme/history', 'POST /v3/admin/theme-switches/recover',
   // Batch 4B slice 5.20: alerts, a vendor's activity and the attention board
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
+  // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
   // Batch 4B slice 5.21: reports, proofs, the block list and the takedown list
   'GET /v3/admin/business-reports', 'PATCH /v3/admin/business-reports/:id', 'GET /v3/admin/trust-blocklist', 'POST /v3/admin/trust-blocklist', 'DELETE /v3/admin/trust-blocklist/:id', 'GET /v3/admin/business-proofs', 'PATCH /v3/admin/business-proofs/:id', 'GET /v3/admin/takedowns',
   // B4 slice 5.16c: the service request queue and its work: OPERATIONS and SUPER_ADMIN, MARKETING refused
@@ -160,7 +162,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(300);
+    expect(oracle).toHaveLength(305);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

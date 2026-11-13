@@ -10,6 +10,7 @@ import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-regist
 import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/settings/storage-settings';
 import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/mail-settings';
 import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-settings';
+import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/settings/support-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -37,6 +38,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isMailSettingKey, validate: validateMailSetting },
   // block 4b (Amendment 12 Q7): DLT entity id, sender id and the registered templates; every value starts unset
   { owns: isSmsSettingKey, validate: validateSmsSetting },
+  // block 4b (Amendment 08 B5): support ticket creation limits; every value starts unset
+  { owns: isSupportSettingKey, validate: validateSupportSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

@@ -19,6 +19,11 @@ import { StorageSettingsService } from '../src/v3-storage/settings/storage-setti
 import { ContentScanPort, NoScanner, PrivateObjectStore, StorageAccessStore } from '../src/v3-storage/storage.ports';
 import { ImagePort, SharpImagePort } from '../src/v3-website/media/media.ports';
 
+import { SupportStore } from '../src/v3-support/support.store';
+import { PrismaSupportStore } from '../src/v3-support/prisma-support.store';
+import { SupportSettingsService } from '../src/v3-support/settings/support-settings';
+import { EmailTicketNotifier, SupportService, TicketNotifier } from '../src/v3-support/support.service';
+
 /**
  * A real Nest dependency resolution of the Block 4b providers, with only PrismaService, the entitlements and the bus stubbed. A constructor parameter Nest cannot resolve (for example a default
  * function parameter without @Optional()) fails here instead of at boot.
@@ -28,6 +33,10 @@ describe('dependency injection of the Block 4b providers', () => {
   it('storage resolves', async () => {
     const m = await Test.createTestingModule({ providers: [...external, StorageSettingsService, S3PrivateStorage, S3PublicStorage, { provide: PrivateObjectStore, useExisting: S3PrivateStorage }, { provide: StorageAccessStore, useClass: PrismaStorageAccessStore }, { provide: ContentScanPort, useClass: NoScanner }, { provide: ImagePort, useClass: SharpImagePort }, PrivateFilesService] }).compile();
     expect(m.get(PrivateFilesService)).toBeInstanceOf(PrivateFilesService);
+  });
+  it('support resolves', async () => {
+    const m = await Test.createTestingModule({ providers: [...external, { provide: EmailPort, useValue: {} }, { provide: SupportStore, useClass: PrismaSupportStore }, SupportSettingsService, { provide: TicketNotifier, useClass: EmailTicketNotifier }, SupportService] }).compile();
+    expect(m.get(SupportService)).toBeInstanceOf(SupportService);
   });
   it('mail and the inbox resolve, and the identity sender is the channel sender', async () => {
     const m = await Test.createTestingModule({ providers: [...external, MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, InboxService, SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender }] }).compile();
