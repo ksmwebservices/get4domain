@@ -97,3 +97,11 @@ Owner staging commands, in order (copy `.env.staging` to the worktree root first
 7. `npm.cmd run test:int`  (includes `b13-stores.int.spec.ts`)
 8. `npm.cmd run test:cleanup-staging -- --count`  (must print 0)
 Stock import (Stage 19, Step N Rock): `node scripts/stock-import.js --vendor <id> --file <rows.json>` (dry run), then add `--apply`.
+
+## Stage 17 core staging fix: store stock concurrency (pool starvation)
+Staging `test:int` gave 53 of 54 suites; `test/b13-stores.int.spec.ts` failed 2 tests (the 60-parallel decrease and the 20-parallel same-key change) with "Unable to start a transaction in the given time", every run, alone too.
+Cause: `PrismaStoreStore.applyStock` opened one interactive transaction per call with no in-process queue. 60 parallel calls for one product opened 60 transactions at once on a small pool, so most waited past `maxWait` for a connection (stop-line 7 pattern). No nested base-client use inside a transaction, no loop of transactions, no reads outside `tx` inside it; the starvation was purely the missing queue.
+Fix (code only): `applyStock` now runs through a module-level `KeyedQueue` keyed `vendorId:productRef`, so calls for one product wait in memory BEFORE a transaction opens; different products still run in parallel. The idempotency pre-check and the unique-index fallback are unchanged and now run inside the queued unit. Pool size, `maxWait`, timeout and all assertions untouched; the spec was not changed.
+Proof: `test:int -- --runTestsByPath test/b13-stores.int.spec.ts` x3: 14 of 14 each time. `test:cleanup-staging -- --count`: 0. `test:ci` 195 suites, 3715 tests passing; lint 0 errors; build ok; `verify:migrations`, `verify:raw-sql` pass.
+Not clean, unrelated to this change: `verify:commercial` fails 3 checks (v3-website `media.controllers.ts` upload-list guard, admin nav MARKETING/Commerce, Workspace menu); `verify:db-lock` needs DATABASE_URL (not run); `tsc -p .` errors only in `remotion/` (no --jsx there; `nest build` passes).
+Same-pattern check, jobs / appointments / accounts / customers: no `$transaction` in any of their stores; jobs numbering and quotes, accept (jobs.service) and appointment slots already wait in a `KeyedQueue`. Nothing changed there.

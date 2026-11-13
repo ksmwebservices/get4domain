@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { KeyedQueue } from '../common/keyed-queue';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImportTotals, ProductFields, VariantFields } from './core/store-core';
 import { ApplyStock, LevelRow, MoveRow, Paging, ProductRow, RefInfo, ReturnRow, SkuTaken, StockInsufficient, StoreStore, VariantRow } from './store.store';
@@ -10,6 +11,9 @@ const variant = (r: DbVariant): VariantRow => ({ id: r.id, vendorId: r.vendorId,
 const product = (r: DbProduct): ProductRow => ({ id: r.id, vendorId: r.vendorId, name: r.name, description: r.description, sku: r.sku, hsnSac: r.hsnSac, pricePaise: r.pricePaise, taxRatePercent: r.taxRatePercent === null ? null : Number(r.taxRatePercent), trackStock: r.trackStock, archivedAt: r.archivedAt, createdAt: r.createdAt, updatedAt: r.updatedAt, variants: r.variants.slice().sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()).map(variant) });
 const isUnique = (e: unknown): boolean => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
 const defined = <T extends object>(o: T): Partial<T> => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
+
+/** Stock changes for one product wait here in memory BEFORE a transaction opens (stop-line 7), so a burst never holds pooled connections while waiting. Different products run in parallel. */
+const stockQueue = new KeyedQueue();
 
 @Injectable()
 export class PrismaStoreStore extends StoreStore {
@@ -64,9 +68,12 @@ export class PrismaStoreStore extends StoreStore {
 
   /**
    * One transaction: make sure the level row exists, move it with ONE conditional statement (a decrease only where on hand is at least the decrease), then write the ledger row with the balance. A repeated
-   * key hits the unique index, the whole transaction rolls back, and the answer is `applied: false`. No lock is taken, so nothing waits inside the transaction.
+   * key hits the unique index, the whole transaction rolls back, and the answer is `applied: false`. Calls for one product are queued in memory first (stockQueue), so nothing waits inside the transaction.
    */
-  async applyStock(vendorId: string, a: ApplyStock): Promise<{ applied: boolean; onHand: number; reserved: number }> {
+  applyStock(vendorId: string, a: ApplyStock): Promise<{ applied: boolean; onHand: number; reserved: number }> {
+    return stockQueue.run(`${vendorId}:${a.productRef}`, () => this.applyStockNow(vendorId, a));
+  }
+  private async applyStockNow(vendorId: string, a: ApplyStock): Promise<{ applied: boolean; onHand: number; reserved: number }> {
     const current = async (): Promise<{ onHand: number; reserved: number }> => { const l = await this.prisma.v3StockLevel.findFirst({ where: { vendorId, productRef: a.productRef }, select: { onHand: true, reserved: true } }); return l ?? { onHand: 0, reserved: 0 }; };
     if (a.key && (await this.prisma.v3StoreStockMove.findFirst({ where: { vendorId, key: a.key }, select: { id: true } }))) return { applied: false, ...(await current()) };
     try {
