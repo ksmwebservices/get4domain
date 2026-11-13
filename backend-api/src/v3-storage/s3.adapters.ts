@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { MediaStoragePort } from '../v3-website/media/media.ports';
 import { Env, STORAGE_ENV, configured, publicUrlFor } from './core/storage-core';
 import { PrivateObjectStore, PrivatePutMeta } from './storage.ports';
@@ -35,7 +35,7 @@ const privateTarget = (s: StorageSettings, env: Env): Target | null =>
 @Injectable()
 export class S3PublicStorage extends MediaStoragePort {
   private readonly clients = new ClientCache();
-  constructor(private readonly settings: StorageSettingsService, private readonly env: () => Env = () => process.env) { super(); }
+  constructor(private readonly settings: StorageSettingsService, @Optional() private readonly env: () => Env = () => process.env) { super(); }
   async put(path: string, bytes: Buffer, contentType: string): Promise<string> {
     const t = publicTarget(await this.settings.get(), this.env()); if (!t) throw notOn();
     try { await this.clients.get(t).send(new PutObjectCommand({ Bucket: t.bucket, Key: path, Body: bytes, ContentType: contentType, CacheControl: 'public, max-age=31536000, immutable' })); } catch { throw failed(); }
@@ -51,7 +51,7 @@ export class S3PublicStorage extends MediaStoragePort {
 @Injectable()
 export class S3PrivateStorage extends PrivateObjectStore {
   private readonly clients = new ClientCache();
-  constructor(private readonly settings: StorageSettingsService, private readonly env: () => Env = () => process.env) { super(); }
+  constructor(private readonly settings: StorageSettingsService, @Optional() private readonly env: () => Env = () => process.env) { super(); }
   private async target(): Promise<Target> { const t = privateTarget(await this.settings.get(), this.env()); if (!t) throw notOn(); return t; }
   async put(key: string, bytes: Buffer, meta: PrivatePutMeta): Promise<void> {
     const t = await this.target();

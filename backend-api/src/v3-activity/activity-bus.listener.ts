@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, Optional } from '@nestjs/common';
 import { ActivityBus, ActivityEvent } from '../common/activity-bus';
 import { ActivityService } from './activity.service';
 
-const ID_FIELDS = ['requestId', 'switchId', 'topupId', 'orderId', 'purchaseId', 'themeId', 'eventId'] as const;
+const ID_FIELDS = ['requestId', 'switchId', 'topupId', 'orderId', 'purchaseId', 'themeId', 'eventId', 'messageId', 'ticketId'] as const;
 
 /** The entity an event is about: the first id the event carries, named by the part of the type before the first dot. */
 export function entityOf(e: ActivityEvent): { entityType: string; entityId: string | null } {

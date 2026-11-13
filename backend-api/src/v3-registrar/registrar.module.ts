@@ -6,7 +6,7 @@ import { V3DomainAutomationModule } from '../v3-domain-automation/domain-automat
 import { AdminRegistrarController, MeDomainSalesController, MeIdentityController } from './api/registrar.controllers';
 import { liveFlags, liveGuardProblems } from './core/registrar-core';
 import { AesGcmDocCrypto, DocCrypto } from './doc-crypto';
-import { IdentityOtpSender, IdentityService, UnavailableOtpSender } from './identity.service';
+import { IdentityService } from './identity.service';
 import { PrismaRegistrarStore } from './prisma-registrar.store';
 import { GatedRegistrarPort, RegistrarPort } from './registrar.port';
 import { RegistrarService } from './registrar.service';
@@ -54,7 +54,7 @@ export const REGISTRAR_PROVIDERS: Provider[] = [
   // The product binding: the gated ResellerClub adapter. With both live flags OFF (the default) every call is refused before the adapter is reached. No fake exists in the product.
   { provide: RegistrarPort, useFactory: (http: RegistrarHttp) => new GatedRegistrarPort(new ResellerClubAdapter(http)), inject: [RegistrarHttp] },
   { provide: DocCrypto, useFactory: () => new AesGcmDocCrypto() },
-  { provide: IdentityOtpSender, useClass: UnavailableOtpSender },   // delivery is connected with the message providers (wiring block); until then a code cannot be sent
+  // IdentityOtpSender comes from the global V3MailModule (Block 4b): email on lane 1 behind EMAIL_LIVE_SEND (default OFF); the phone channel is bound with the SMS port
   OtpPepper, RegistrarSettingsService, IdentityService, RegistrarService, RegistrarCron, RegistrarStartupGuard,
 ];
 export const REGISTRAR_CONTROLLERS: Type<unknown>[] = [MeDomainSalesController, MeIdentityController, AdminRegistrarController];

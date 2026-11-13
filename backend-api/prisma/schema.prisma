@@ -107,6 +107,7 @@ model Vendor {
   v3ApptProviders V3ApptProvider[]
   v3ApptBookings V3ApptBooking[]
   v3StoreProducts V3StoreProduct[]
+  v3InboxMessages V3InboxMessage[]
   v3StoreVariants V3StoreVariant[]
   v3StoreStockMoves V3StoreStockMove[]
   v3OrderReturns V3OrderReturn[]
@@ -7329,4 +7330,32 @@ model V3StorageAccess {
 
   @@index([vendorId, createdAt])
   @@map("g4d_storage_access")
+}
+
+/// One message received at a business's Get4Domain address (the enquiry inbox, Block 4b). Text only (no HTML is kept). Never hard deleted: state ARCHIVED. HELD is used by the held-enquiries slice.
+model V3InboxMessage {
+  id            String    @id @default(cuid())
+  vendorId      String
+  toAddress     String
+  fromAddress   String
+  fromName      String?
+  subject       String
+  bodyText      String
+  messageIdHdr  String?
+  sizeBytes     Int
+  spamScore     Float?
+  spamVerdict   String    @default("CLEAN") // CLEAN | SPAM
+  state         String    @default("NEW") // NEW | READ | ARCHIVED | HELD
+  forwardStatus String    @default("PENDING") // PENDING | FORWARDED | SKIPPED_FLAG_OFF | SKIPPED_SPAM | SKIPPED_PLAN_ENDED | FAILED
+  forwardedAt   DateTime?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, messageIdHdr])
+  @@index([vendorId, createdAt])
+  @@index([vendorId, state, createdAt])
+  @@map("g4d_inbox_messages")
 }

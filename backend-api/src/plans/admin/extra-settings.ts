@@ -8,6 +8,7 @@ import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/se
 import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-domain-automation/settings/automation-settings';
 import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-registrar/settings/registrar-settings';
 import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/settings/storage-settings';
+import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/mail-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -31,6 +32,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isRegistrarSettingKey, validate: validateRegistrarSetting },
   // block 4b (Amendment 12 Q2): storage endpoints, buckets, media domain and limits; keys stay in the environment; every value starts unset
   { owns: isStorageSettingKey, validate: validateStorageSetting },
+  // block 4b (Amendment 12 Q3 and Q5): lane 1 sender and the enquiry inbox limits; every value starts unset
+  { owns: isMailSettingKey, validate: validateMailSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {
