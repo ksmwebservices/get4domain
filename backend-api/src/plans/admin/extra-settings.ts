@@ -12,6 +12,7 @@ import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/ma
 import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-settings';
 import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/settings/support-settings';
 import { isAdminActionsSettingKey, validateAdminActionsSetting } from '../../v3-admin-actions/settings/admin-actions-settings';
+import { isMailRulesSettingKey, validateMailRulesSetting } from '../../v3-mail/mail-rules/mail-rules-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -39,6 +40,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isMailSettingKey, validate: validateMailSetting },
   // block 4b (Amendment 12 Q7): DLT entity id, sender id and the registered templates; every value starts unset
   { owns: isSmsSettingKey, validate: validateSmsSetting },
+  // block 4b (Amendment 12 Q3): promotion limits, warm-up, complaint and bounce pauses and the opt-in proof rules, recorded as data; every value starts unset
+  { owns: isMailRulesSettingKey, validate: validateMailRulesSetting },
   // block 4b (Amendment 08 B5): support ticket creation limits; every value starts unset
   { owns: isSupportSettingKey, validate: validateSupportSetting },
   // block 4b (Amendment 09 A4): merging listings stays off until the undo window is set; unset by default

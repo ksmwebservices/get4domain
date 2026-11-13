@@ -107,6 +107,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/vendors/:vendorId/site/theme/switch': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/site/theme/history': OPS_AND_SUPER, 'POST /v3/admin/theme-switches/recover': OPS_AND_SUPER,
   // Batch 4B slice 5.20: alerts and the activity log describe money, payment methods and personal data: OPERATIONS and SUPER_ADMIN work them, MARKETING is refused everywhere. The rules themselves are SUPER_ADMIN only.
   'GET /v3/admin/alerts': OPS_AND_SUPER, 'GET /v3/admin/alerts/:id': OPS_AND_SUPER, 'PATCH /v3/admin/alerts/:id': OPS_AND_SUPER, 'GET /v3/admin/vendors/:vendorId/activity': OPS_AND_SUPER, 'GET /v3/admin/attention': OPS_AND_SUPER,
+  // Block 4b slice 11: the recorded mail lanes and promotion rules (read: OPERATIONS + SUPER_ADMIN) and confirming a mailbox price (SUPER_ADMIN only)
+  'GET /v3/admin/mail-rules': OPS_AND_SUPER, 'POST /v3/admin/mailbox-prices/:id/confirm': SUPER_ONLY,
   // Block 4b slice 9: staff actions on a business (A1 plan change with a date, A2 business name, the visit report) are OPERATIONS + SUPER_ADMIN; merging listings (A4) is SUPER_ADMIN only
   'PUT /v3/admin/vendors/:id/business-name': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/business-name-history': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/plan-change': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/plan-changes': OPS_AND_SUPER, 'POST /v3/admin/plan-changes/:id/cancel': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/visits': OPS_AND_SUPER,
   'POST /v3/admin/listing-merges/plan': SUPER_ONLY, 'POST /v3/admin/listing-merges': SUPER_ONLY, 'GET /v3/admin/listing-merges': SUPER_ONLY, 'POST /v3/admin/listing-merges/:id/reverse': SUPER_ONLY,

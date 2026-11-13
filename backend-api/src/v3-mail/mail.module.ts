@@ -6,13 +6,16 @@ import { EmailPort, EmailTransport, GuardedEmailPort, ResendTransport } from './
 import { ChannelIdentityOtpSender, PhoneCodeSender } from './identity-otp.sender';
 import { GuardedSmsPort, SmsPhoneCodeSender, SmsPort, SmsTransport, UnboundSmsTransport } from './sms.port';
 import { SmsSettingsService } from './settings/sms-settings';
+import { MailRulesController } from './mail-rules/mail-rules.controllers';
+import { MailRulesService } from './mail-rules/mail-rules.service';
+import { MailRulesSettingsService } from './mail-rules/mail-rules-settings';
 import { ConsentGate, NoConsentYet } from './consent.port';
 import { InboxService } from './inbox.service';
 import { InboxStore } from './inbox.store';
 import { PrismaInboxStore } from './prisma-inbox.store';
 import { MailSettingsService } from './settings/mail-settings';
 
-export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmailController];
+export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmailController, MailRulesController];
 
 /** Lane 1 email, the enquiry inbox and the identity code sender (Block 4b). Global so the registrar can take the OTP sender and later modules can take EmailPort. PlansModule (entitlements) is global. */
 @Global()
@@ -20,7 +23,7 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
   imports: [PrismaModule],
   controllers: MAIL_CONTROLLERS,
   providers: [
-    MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort },
+    MailSettingsService, MailRulesSettingsService, MailRulesService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort },
     { provide: InboxStore, useClass: PrismaInboxStore }, { provide: ConsentGate, useClass: NoConsentYet }, InboxService,
     SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender },
   ],

@@ -7482,3 +7482,35 @@ model V3HostVisitDaily {
   @@index([vendorId, day])
   @@map("g4d_v3_host_visits_daily")
 }
+
+/// The three mail lanes as data (Amendment 12 Q3). Only the system lane may have sending on in this block (a database CHECK); only the promotions lane may allow promotion (a database CHECK).
+model V3MailLane {
+  key              String   @id // SYSTEM | VENDOR_OFFICIAL | PROMOTIONS
+  label            String
+  description      String
+  allowsPromotion  Boolean  @default(false)
+  sendingEnabled   Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("g4d_v3_mail_lanes")
+}
+
+/// A mailbox price (Amendment 12 Q4), per mailbox per month in paise, excluding GST. PENDING until the owner confirms the real cost; only a confirmed (ACTIVE) price may ever be used.
+model V3MailboxPrice {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  kind          String // FORWARDING | INCLUDED | ADD_ON | EXTRA
+  scope         String // ANY | PROFESSIONAL | ECOMMERCE | HANDYMAN
+  label         String
+  pricePaise    Int?
+  includedCount Int?
+  status        String    @default("PENDING") // PENDING | ACTIVE
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  confirmNote   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("g4d_v3_mailbox_prices")
+}

@@ -98,3 +98,15 @@ What the business sees: `GET /v3/me/inbox/waiting` returns only `{ count, text }
 Unlock: when the plan is active again, the first call to `waiting`, `list` or `get` releases the business's held messages to `NEW` (event `inbox.held_released`). They are not forwarded after the fact: forwarding happens only when a message arrives while the plan stands.
 
 Not decided here (counsel and the owner): how long held enquiries are kept, and what is said to the sender. No retention number is invented; none is enforced.
+
+## Mail lanes and promotion rules as data (Block 4b, slice 11; Amendment 12 Q3 and Q4)
+
+Recorded, not executed: **no lane 2 or lane 3 sending code exists**, and a test fails if one appears.
+
+- `g4d_v3_mail_lanes`: the three lanes. Database CHECKs: only the promotions lane may allow promotion; sending may be switched on only for the system lane (lanes 2 and 3 need a later migration). Loaded by `scripts/seed-v3-mail-rules.js` (staging guard, dry run default, `--apply`, never touches an existing row).
+- `g4d_v3_mailbox_prices`: forwarding free; 1 mailbox included (Professional, Ecommerce); Handyman add-on 99; extra mailbox 79 (per mailbox per month, excluding GST, stored in paise). These are the amendment's PROPOSED numbers and load as **PENDING**. `POST /v3/admin/mailbox-prices/:id/confirm` (SUPER_ADMIN, with a note) is the only way to ACTIVE; the database refuses ACTIVE without who, when and a note.
+- Settings (SUPER_ADMIN, all unset): `promoSendLimitPerDay`, `promoSendLimitPerMonth`, `promoWarmupDailyLimits` (day 0 first), `promoComplaintPausePercent`, `promoBouncePausePercent`, `promoOptInProofFields`. Unset means nothing is allowed; no default is built in.
+- Pure evaluators (`mail-rules-core.ts`) answer what the recorded rules say: today's allowance for a new or old business, whether a complaint or bounce rate forces a pause, whether an opt-in proof is complete. Nothing calls them to send.
+- `GET /v3/admin/mail-rules` (OPERATIONS, SUPER_ADMIN) shows all of it.
+
+Not stored here: the opt-in proof rows themselves and the global suppression list (they belong with lane 3 sending, a later release). Lane 3 stays off until counsel approves the Messaging and Anti-Spam text.

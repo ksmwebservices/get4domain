@@ -149,4 +149,17 @@ describe('Block 4b stores on staging', () => {
       await expect(prisma.v3HostVisitDaily.create({ data: { vendorId: A.vendorId, host: `neg-${RUN_ID}.example.test`, day: '2026-11-14', count: -1 } })).rejects.toThrow();
     });
   });
+
+  describe('4b.11 mail lanes and mailbox prices', () => {
+    it('the database refuses promotion on lane 1 or 2, sending on lanes 2 and 3, and an ACTIVE price nobody confirmed', async () => {
+      const k = `TMP_${RUN_ID}`;
+      await expect(prisma.v3MailLane.create({ data: { key: 'SYSTEM', label: 'x', description: 'x', allowsPromotion: true } })).rejects.toThrow();
+      await expect(prisma.v3MailLane.create({ data: { key: 'VENDOR_OFFICIAL', label: 'x', description: 'x', sendingEnabled: true } })).rejects.toThrow();
+      await expect(prisma.v3MailLane.create({ data: { key: 'PROMOTIONS', label: 'x', description: 'x', sendingEnabled: true } })).rejects.toThrow();
+      await expect(prisma.v3MailboxPrice.create({ data: { key: k, kind: 'EXTRA', scope: 'ANY', label: 'x', pricePaise: 100, status: 'ACTIVE' } })).rejects.toThrow();
+      await expect(prisma.v3MailboxPrice.create({ data: { key: `${k}b`, kind: 'EXTRA', scope: 'ANY', label: 'x', pricePaise: -1 } })).rejects.toThrow();
+      const p = await prisma.v3MailboxPrice.create({ data: { key: `${k}c`, kind: 'EXTRA', scope: 'ANY', label: 'x', pricePaise: 100 } }); expect(p.status).toBe('PENDING');
+      await prisma.v3MailboxPrice.delete({ where: { id: p.id } });
+    });
+  });
 });

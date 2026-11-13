@@ -20,6 +20,7 @@ const SUPER_ONLY_ROUTES = [
   'POST /v3/admin/domain-margins/:id/approve', 'POST /v3/admin/domain-margins/:id/reject',   // Batch 11 slice 5.6d: approving or rejecting a domain price is SUPER_ADMIN only
   'POST /v3/admin/takedowns', 'POST /v3/admin/takedowns/:id/reverse',   // Batch 4B slice 5.21: a legal takedown is created and reversed by SUPER_ADMIN only
   'POST /v3/admin/listing-merges/plan', 'POST /v3/admin/listing-merges', 'GET /v3/admin/listing-merges', 'POST /v3/admin/listing-merges/:id/reverse',   // Block 4b slice 9: merging two listings is SUPER_ADMIN only
+  'POST /v3/admin/mailbox-prices/:id/confirm',   // Block 4b slice 11: confirming a mailbox price makes it usable: SUPER_ADMIN only
   'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
@@ -69,6 +70,7 @@ const MARKETING_DENIED = [
   'POST /v3/admin/vendors/:vendorId/site/theme/switch', 'GET /v3/admin/vendors/:vendorId/site/theme/history', 'POST /v3/admin/theme-switches/recover',
   // Batch 4B slice 5.20: alerts, a vendor's activity and the attention board
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
+  'GET /v3/admin/mail-rules',   // Block 4b slice 11: the recorded mail lanes and promotion rules
   // Block 4b slice 9: staff actions on a business: a plan change with a date, the business name and its history, the per-host visit report (OPERATIONS and SUPER_ADMIN; MARKETING refused)
   'PUT /v3/admin/vendors/:id/business-name', 'GET /v3/admin/vendors/:id/business-name-history', 'POST /v3/admin/vendors/:id/plan-change', 'GET /v3/admin/vendors/:id/plan-changes', 'POST /v3/admin/plan-changes/:id/cancel', 'GET /v3/admin/vendors/:id/visits',
   // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
@@ -165,7 +167,7 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(315);
+    expect(oracle).toHaveLength(317);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
