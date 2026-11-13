@@ -107,6 +107,11 @@ model Vendor {
   v3ApptProviders V3ApptProvider[]
   v3ApptBookings V3ApptBooking[]
   v3StoreProducts V3StoreProduct[]
+  v3InboxMessages V3InboxMessage[]
+  v3Tickets V3Ticket[]
+  v3BusinessNameHistory V3BusinessNameHistory[]
+  v3ScheduledPlanChanges V3ScheduledPlanChange[]
+  v3HostVisitDaily V3HostVisitDaily[]
   v3StoreVariants V3StoreVariant[]
   v3StoreStockMoves V3StoreStockMove[]
   v3OrderReturns V3OrderReturn[]
@@ -5626,6 +5631,14 @@ enum V3TermsKind {
   PRIVACY
   COOKIE
   CUSTOMER_TERMS
+  TERMS_OF_SERVICE
+  REFUND_WALLET
+  DOMAIN_TERMS
+  ENQUIRY_CONSENT
+  IDENTITY_NOTICE
+  MESSAGING
+  TESTIMONIAL
+  DIRECTORY
 }
 
 enum V3TermsStatus {
@@ -6410,7 +6423,7 @@ model V3PaymentRequest {
   source         V3PaySource @default(MANUAL)
   requestId      String?
   orderId        String?
-  methodId       String
+  methodId       String? // null for a payment the vendor recorded by hand (cash, bank transfer) with no UPI method
   status         V3PayStatus @default(AWAITING)
   expiresAt      DateTime
   customerSaidAt DateTime?
@@ -6420,7 +6433,7 @@ model V3PaymentRequest {
   updatedAt      DateTime    @updatedAt
 
   vendor  Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  method  V3VendorPaymentMethod @relation(fields: [methodId], references: [id], onDelete: Restrict)
+  method  V3VendorPaymentMethod? @relation(fields: [methodId], references: [id], onDelete: Restrict)
   payment V3Payment?
 
   @@index([vendorId, status, createdAt])
@@ -6441,6 +6454,8 @@ model V3Payment {
   confirmedBy       V3PaymentConfirmedBy @default(VENDOR)
   confirmedAt       DateTime
   idempotencyKey    String?
+  method            String               @default("UPI") // UPI | CASH | BANK_TRANSFER: how the customer paid the business
+  vendorRecorded    Boolean              @default(true) // the business wrote this down; it is the business's money, never Get4Domain's
   createdAt         DateTime             @default(now())
 
   request V3PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
@@ -7508,4 +7523,197 @@ model V3VendorPackAddon {
   @@unique([vendorId, addonKey])
   @@index([vendorId])
   @@map("g4d_vendor_pack_addons")
+}
+
+/// Access log of the private object bucket (Amendment 12 Q2): who put, read, signed or deleted which object, and why. Append-only (trigger); no foreign key, like the activity log, so the log outlives a file.
+model V3StorageAccess {
+  id         String   @id @default(cuid())
+  vendorId   String?
+  bucket     String   @default("PRIVATE")
+  objectKey  String
+  action     String // PUT | GET | SIGN | DELETE | DENIED
+  actorType  String
+  actorId    String?
+  purpose    String?
+  createdAt  DateTime @default(now())
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_storage_access")
+}
+
+/// One message received at a business's Get4Domain address (the enquiry inbox, Block 4b). Text only (no HTML is kept). Never hard deleted: state ARCHIVED. HELD is used by the held-enquiries slice.
+model V3InboxMessage {
+  id            String    @id @default(cuid())
+  vendorId      String
+  toAddress     String
+  fromAddress   String
+  fromName      String?
+  subject       String
+  bodyText      String
+  messageIdHdr  String?
+  sizeBytes     Int
+  spamScore     Float?
+  spamVerdict   String    @default("CLEAN") // CLEAN | SPAM
+  state         String    @default("NEW") // NEW | READ | ARCHIVED | HELD
+  forwardStatus String    @default("PENDING") // PENDING | FORWARDED | SKIPPED_FLAG_OFF | SKIPPED_SPAM | SKIPPED_PLAN_ENDED | FAILED
+  forwardedAt   DateTime?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, messageIdHdr])
+  @@index([vendorId, createdAt])
+  @@index([vendorId, state, createdAt])
+  @@map("g4d_inbox_messages")
+}
+
+/// A support ticket (Block 4b). Raised by a business (VENDOR) or by a visitor of a business's site (CUSTOMER, public form). Never hard deleted: status RESOLVED.
+model V3Ticket {
+  id                String    @id @default(cuid())
+  vendorId          String?
+  requesterType     String // VENDOR | CUSTOMER
+  requesterName     String?
+  requesterEmail    String?
+  subject           String
+  category          String    @default("GENERAL")
+  status            String    @default("OPEN") // OPEN | IN_PROGRESS | WAITING_VENDOR | RESOLVED
+  assignedToStaffId String?
+  resolvedAt        DateTime?
+  lastMessageAt     DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor   Vendor?           @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  messages V3TicketMessage[]
+
+  @@index([vendorId, createdAt])
+  @@index([status, lastMessageAt])
+  @@index([requesterEmail, createdAt])
+  @@map("g4d_v3_tickets")
+}
+
+/// One message of a ticket. Append-only (trigger).
+model V3TicketMessage {
+  id                  String   @id @default(cuid())
+  ticketId            String
+  authorType          String // VENDOR | STAFF | CUSTOMER
+  authorId            String?
+  body                String
+  attachmentPictureId String?
+  createdAt           DateTime @default(now())
+
+  ticket V3Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@map("g4d_v3_ticket_messages")
+}
+
+/// The old business name of a business, kept every time staff change it (Amendment 09 A2). Append-only in practice: nothing edits or deletes a row.
+model V3BusinessNameHistory {
+  id        String   @id @default(cuid())
+  vendorId  String
+  oldName   String
+  newName   String
+  reason    String
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_v3_business_name_history")
+}
+
+/// A plan change staff asked for with an effective date (Amendment 09 A1). PENDING until its time, then applied through the one plan assignment; never edited into another state except by the applier or a cancel.
+model V3ScheduledPlanChange {
+  id          String    @id @default(cuid())
+  vendorId    String
+  planKey     String
+  termMonths  Int?
+  effectiveAt DateTime
+  reason      String
+  requestedBy String?
+  status      String    @default("PENDING") // PENDING | APPLYING | APPLIED | CANCELLED | FAILED
+  appliedAt   DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([status, effectiveAt])
+  @@map("g4d_v3_scheduled_plan_changes")
+}
+
+/// A merge of two listings (Amendment 09 A4): which contacts moved from the merged listing to the kept one, so SUPER_ADMIN can undo it within the window. No foreign key: the record outlives either listing.
+model V3ListingMerge {
+  id              String    @id @default(cuid())
+  keepVendorId    String
+  mergedVendorId  String
+  reason          String
+  actorId         String?
+  status          String    @default("APPLIED") // APPLIED | REVERSED
+  movedJson       Json      @default("{}")
+  conflictsJson   Json      @default("[]")
+  reversibleUntil DateTime
+  reversedAt      DateTime?
+  reversedBy      String?
+  reverseReason   String?
+  createdAt       DateTime  @default(now())
+
+  @@index([keepVendorId, createdAt])
+  @@index([mergedVendorId, createdAt])
+  @@map("g4d_v3_listing_merges")
+}
+
+/// Page visits per host per day (Amendment 11 Q12): a count and nothing else, no visitor data of any kind.
+model V3HostVisitDaily {
+  id        String   @id @default(cuid())
+  vendorId  String
+  host      String
+  day       String // YYYY-MM-DD, UTC
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([host, day])
+  @@index([vendorId, day])
+  @@map("g4d_v3_host_visits_daily")
+}
+
+/// The three mail lanes as data (Amendment 12 Q3). Only the system lane may have sending on in this block (a database CHECK); only the promotions lane may allow promotion (a database CHECK).
+model V3MailLane {
+  key              String   @id // SYSTEM | VENDOR_OFFICIAL | PROMOTIONS
+  label            String
+  description      String
+  allowsPromotion  Boolean  @default(false)
+  sendingEnabled   Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("g4d_v3_mail_lanes")
+}
+
+/// A mailbox price (Amendment 12 Q4), per mailbox per month in paise, excluding GST. PENDING until the owner confirms the real cost; only a confirmed (ACTIVE) price may ever be used.
+model V3MailboxPrice {
+  id            String    @id @default(cuid())
+  key           String    @unique
+  kind          String // FORWARDING | INCLUDED | ADD_ON | EXTRA
+  scope         String // ANY | PROFESSIONAL | ECOMMERCE | HANDYMAN
+  label         String
+  pricePaise    Int?
+  includedCount Int?
+  status        String    @default("PENDING") // PENDING | ACTIVE
+  confirmedAt   DateTime?
+  confirmedBy   String?
+  confirmNote   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("g4d_v3_mailbox_prices")
 }

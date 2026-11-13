@@ -74,7 +74,7 @@ describe('I have paid never confirms; Mark as paid is the only route to PAID', (
   it('the customer tap gives CUSTOMER_SAYS_PAID, stores the optional reference, tells the vendor, and pays nothing', async () => {
     setExpiry(); await upiA(); await w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'); const o = [...w.store.orders.values()][0];
     const r = await pay.create('va', { customerName: 'Meena R', orderId: o.id }, OWNER);
-    expect(await pay.iHavePaid(r.code, { utr: ' ab12cd34ef56 ' })).toEqual({ state: 'CUSTOMER_SAYS_PAID' });
+    expect(await pay.iHavePaid(r.code, { utr: ' ab12cd34ef56 ' })).toEqual({ state: 'CUSTOMER_SAYS_PAID', notice: 'You are paying Shop va directly. Get4Domain does not receive or hold this payment.' });
     expect(ps.rows.get(r.id)).toMatchObject({ status: 'CUSTOMER_SAYS_PAID', customerUtr: 'AB12CD34EF56' });
     expect(ps.payments.size).toBe(0); expect([...w.store.orders.values()][0].status).toBe('AWAITING_PAYMENT'); expect(w.store.invoices.size).toBe(0);
     expect(w.store.outbox.filter((m) => m.templateKey === 'payment_said_paid_vendor')).toHaveLength(1);
@@ -86,13 +86,13 @@ describe('I have paid never confirms; Mark as paid is the only route to PAID', (
     await pay.iHavePaid(r.code, {}); await pay.iHavePaid(r.code, { utr: 'ZZ99ZZ99ZZ99' });
     expect(ps.rows.get(r.id)!.customerUtr).toBeNull(); expect(w.store.outbox.filter((m) => m.templateKey === 'payment_said_paid_vendor')).toHaveLength(1);
   });
-  it('mark-paid makes ONE payment and the order PAID once with ONE invoice; the second call is alreadyPaid and changes nothing', async () => {
+  it('mark-paid makes ONE payment and the order PAID once, with NO old 5.14 invoice (retired; the receipt comes from the payments slice); the second call is alreadyPaid and changes nothing', async () => {
     setExpiry(); await upiA(); await w.vendor.setStock('va', 'sku-1', 5); await w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'); const o = [...w.store.orders.values()][0];
     const r = await pay.create('va', { customerName: 'Meena R', orderId: o.id }, OWNER);
     const a = await pay.markPaid('va', r.id, { utr: 'bank1234ref9', idempotencyKey: 'mark-0001-abcd' }, OWNER);
     expect(a).toMatchObject({ status: 'PAID', alreadyPaid: false, payment: { amountPaise: 150_000, utr: 'BANK1234REF9', confirmedBy: 'VENDOR' } });
     const b = await pay.markPaid('va', r.id, { idempotencyKey: 'mark-0001-abcd' }, OWNER); expect(b).toMatchObject({ status: 'PAID', alreadyPaid: true });
-    expect(ps.payments.size).toBe(1); expect([...w.store.orders.values()][0].status).toBe('PAID'); expect(w.store.invoices.size).toBe(1);
+    expect(ps.payments.size).toBe(1); expect([...w.store.orders.values()][0].status).toBe('PAID'); expect(w.store.invoices.size).toBe(0);
     expect(w.activity.rows.filter((x) => x.actionKey === 'payment.marked_paid')).toHaveLength(1);
   });
   it('two confirmations at once still make one payment', async () => {

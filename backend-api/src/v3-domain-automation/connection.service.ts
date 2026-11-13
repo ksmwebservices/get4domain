@@ -140,7 +140,7 @@ export class DomainConnectionService {
     const patch = { status: final, certStatus: state.certStatus === 'NONE' ? ('PENDING' as const) : state.certStatus, attempts: checks, lastCheckedAt: now, failureReason: final === 'NEEDS_ATTENTION' ? (state.reason ?? (gaveUp ? 'CERTIFICATE_NOT_ISSUED' : 'CERTIFICATE_FAILED')) : null, ...(final === 'ACTIVE' && row.status !== 'ACTIVE' ? { activatedAt: now } : {}) };
     const next = await this.store.update(row.vendorId, row.id, [row.status], patch);
     if (!next) return (await this.store.get(row.vendorId, row.id)) ?? row;
-    if (row.status !== 'ACTIVE' && final === 'ACTIVE') await this.applyMode(next, actor);
+    if (row.status !== 'ACTIVE' && final === 'ACTIVE') { await this.applyMode(next, actor); return (await this.store.get(row.vendorId, row.id)) ?? next; }   // applyMode may have moved it to NEEDS_ATTENTION: answer with what is stored now
     else if (row.status === 'ACTIVE' && final === 'NEEDS_ATTENTION') { await this.dropRedirect(next); await this.afterChange(next, actor, 'connection_lost'); }
     return next;
   }
@@ -161,6 +161,13 @@ export class DomainConnectionService {
   private async applyMode(row: ConnectionRow, actor: Actor): Promise<void> {
     const sub = await this.store.subdomainHost(row.vendorId);
     const plan = sub ? redirectTargetFor(row.mode, row.connectHost, sub) : null;
+    if (row.mode === 'FORWARD' && !sub) {
+      // Block 4b: forwarding needs the Get4Domain subdomain to send visitors to. Without an active one the connection must not look healthy: it needs attention, with the reason, and no redirect is planned.
+      try { await this.cf.removeRedirect(row.connectHost); } catch { /* nothing to remove, or the next check tries again */ }
+      const flagged = await this.store.update(row.vendorId, row.id, ['ACTIVE'], { status: 'NEEDS_ATTENTION', failureReason: 'NO_ACTIVE_SUBDOMAIN' });
+      await this.afterChange(flagged ?? row, actor, 'connection_lost');
+      return;
+    }
     try {
       if (plan) await this.cf.setRedirect(plan.fromHost, plan.toHost, plan.status); else await this.cf.removeRedirect(row.connectHost);
     } catch (e) {

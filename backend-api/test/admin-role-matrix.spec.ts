@@ -19,6 +19,8 @@ const SUPER_ONLY_ROUTES = [
   'GET /v3/admin/prohibited-terms', 'POST /v3/admin/prohibited-terms', 'PUT /v3/admin/prohibited-terms/:id', 'DELETE /v3/admin/prohibited-terms/:id',   // Batch 4B slice 5.21: the prohibited phrases
   'POST /v3/admin/domain-margins/:id/approve', 'POST /v3/admin/domain-margins/:id/reject',   // Batch 11 slice 5.6d: approving or rejecting a domain price is SUPER_ADMIN only
   'POST /v3/admin/takedowns', 'POST /v3/admin/takedowns/:id/reverse',   // Batch 4B slice 5.21: a legal takedown is created and reversed by SUPER_ADMIN only
+  'POST /v3/admin/listing-merges/plan', 'POST /v3/admin/listing-merges', 'GET /v3/admin/listing-merges', 'POST /v3/admin/listing-merges/:id/reverse',   // Block 4b slice 9: merging two listings is SUPER_ADMIN only
+  'POST /v3/admin/mailbox-prices/:id/confirm',   // Block 4b slice 11: confirming a mailbox price makes it usable: SUPER_ADMIN only
   'GET /analytics/platform-accounting',   // accounts: MARKETING refused on all accounts routes, and OPERATIONS matches the admin UI
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
@@ -71,6 +73,11 @@ const MARKETING_DENIED = [
   'POST /v3/admin/vendors/:vendorId/site/theme/switch', 'GET /v3/admin/vendors/:vendorId/site/theme/history', 'POST /v3/admin/theme-switches/recover',
   // Batch 4B slice 5.20: alerts, a vendor's activity and the attention board
   'GET /v3/admin/alerts', 'GET /v3/admin/alerts/:id', 'PATCH /v3/admin/alerts/:id', 'GET /v3/admin/vendors/:vendorId/activity', 'GET /v3/admin/attention',
+  'GET /v3/admin/mail-rules',   // Block 4b slice 11: the recorded mail lanes and promotion rules
+  // Block 4b slice 9: staff actions on a business: a plan change with a date, the business name and its history, the per-host visit report (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'PUT /v3/admin/vendors/:id/business-name', 'GET /v3/admin/vendors/:id/business-name-history', 'POST /v3/admin/vendors/:id/plan-change', 'GET /v3/admin/vendors/:id/plan-changes', 'POST /v3/admin/plan-changes/:id/cancel', 'GET /v3/admin/vendors/:id/visits',
+  // Block 4b slice 4: the support desk (OPERATIONS and SUPER_ADMIN; MARKETING refused)
+  'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
   // Batch 4B slice 5.21: reports, proofs, the block list and the takedown list
   'GET /v3/admin/business-reports', 'PATCH /v3/admin/business-reports/:id', 'GET /v3/admin/trust-blocklist', 'POST /v3/admin/trust-blocklist', 'DELETE /v3/admin/trust-blocklist/:id', 'GET /v3/admin/business-proofs', 'PATCH /v3/admin/business-proofs/:id', 'GET /v3/admin/takedowns',
   // B4 slice 5.16c: the service request queue and its work: OPERATIONS and SUPER_ADMIN, MARKETING refused
@@ -168,7 +175,7 @@ SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENG
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(314);
+    expect(oracle).toHaveLength(331);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -104,8 +104,7 @@ export class MemoryRequestsStore extends RequestsStore {
     if (o.status !== 'PLACED' && o.status !== 'AWAITING_PAYMENT') return { order: { ...o }, alreadyPaid: true, invoice: null };
     o.status = 'PAID'; o.paidAt = now; o.updatedAt = now;
     for (const r of this.reservations.filter((x) => x.orderId === orderId && !x.released && !x.committed)) { const s = this.stock.get(`${vendorId}|${r.productRef}`); if (s) { s.onHand -= r.qty; s.reserved -= r.qty; } r.committed = true; }
-    const invoice = await this.createInvoice({ vendorId, orderId, requestId: o.requestId, snapshot: { orderNo: o.orderNo, amountPaise: o.amountPaise }, prefix: 'INV-', now });
-    return { order: { ...o }, alreadyPaid: false, invoice };
+    return { order: { ...o }, alreadyPaid: false, invoice: null };   // the old 5.14 invoice is retired (Block 4b W5): one order payment, one document, the 5.17d one
   }
   async flagReview(orderId: string, vendorId: string) { const o = this.orders.get(orderId); if (o && o.vendorId === vendorId) o.reviewFlag = true; }
   async recordRefund(orderId: string, vendorId: string, amountPaise: number) {

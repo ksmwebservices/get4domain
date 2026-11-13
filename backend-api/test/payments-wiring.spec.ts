@@ -23,6 +23,8 @@ import { V3ActivityModule } from '../src/v3-activity/activity.module';
 import { ActivityStore } from '../src/v3-activity/activity.store';
 import { ActivityService } from '../src/v3-activity/activity.service';
 import { PayRequestsModule } from '../src/v3-payments/payments.module';
+import { PayLinkBridgeModule } from '../src/v3-payments/pay-link.module';
+import { PublicRequestsService } from '../src/requests-orders/public-requests.service';
 import { PaymentsService } from '../src/v3-payments/payments.service';
 import { DocumentsService } from '../src/v3-payments/documents.service';
 import { MePayRequestsController, PublicPayController } from '../src/v3-payments/api/payments.controllers';
@@ -48,7 +50,7 @@ const routes = (c: new (...a: never[]) => object): string[] => {
 
 beforeAll(async () => {
   activityStore = new MemoryActivityStore();
-  mod = await Test.createTestingModule({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, VendorLifecycleModule, V3ActivityModule, RequestsOrdersModule, PayRequestsModule] })
+  mod = await Test.createTestingModule({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, VendorLifecycleModule, V3ActivityModule, RequestsOrdersModule, PayRequestsModule, PayLinkBridgeModule] })
     .overrideProvider(PrismaService).useValue(fakePrisma).overrideProvider(RequestsStore).useValue(new MemoryRequestsStore())
     .overrideProvider(ActivityStore).useValue(activityStore).overrideProvider(B3SettingsService).useValue({ get: async () => DEFAULT_B3_SETTINGS, invalidate: () => undefined }).compile();
 });
@@ -57,7 +59,7 @@ afterAll(async () => { await mod?.close(); });
 describe('app.module.ts registers the Stage 9 modules', () => {
   it('lists the requests, pay-request and activity modules', () => {
     const src = readFileSync(`${__dirname}/../src/app.module.ts`, 'utf8'); const imports = src.slice(src.indexOf('imports: ['));
-    for (const m of ['RequestsOrdersModule', 'PayRequestsModule', 'V3ActivityModule']) expect(imports).toContain(m);
+    for (const m of ['RequestsOrdersModule', 'PayRequestsModule', 'PayLinkBridgeModule', 'V3ActivityModule']) expect(imports).toContain(m);
   });
   it('the modules declare the payment-method, pay-request and document controllers', () => {
     const declared = (Reflect.getMetadata('controllers', PayRequestsModule) ?? []) as unknown[];
@@ -66,10 +68,16 @@ describe('app.module.ts registers the Stage 9 modules', () => {
   });
   it('the routes exist with the paths the API promises', () => {
     expect(routes(MePaymentsController)).toEqual(expect.arrayContaining(['v3/me/payment-methods', 'v3/me/payment-methods/:id', 'v3/me/payment-methods/:id/default']));
-    expect(routes(MePayRequestsController)).toEqual(expect.arrayContaining(['v3/me/payment-requests/:id/mark-paid', 'v3/me/payment-requests/:id/cancel']));
+    expect(routes(MePayRequestsController)).toEqual(expect.arrayContaining(['v3/me/payment-requests/:id/mark-paid', 'v3/me/payment-requests/:id/cancel', 'v3/me/payment-requests/record-offline']));
     expect(routes(PublicPayController)).toEqual(expect.arrayContaining(['v3/public/pay/:code', 'v3/public/pay/:code/i-have-paid']));
     expect(routes(MeDocumentsController)).toEqual(expect.arrayContaining(['v3/me/tax-profile', 'v3/me/documents', 'v3/me/documents/:id/resend', 'v3/me/documents/:id/download']));
     expect(routes(PublicDocController)).toEqual(['v3/public/doc/:code']);
+  });
+});
+
+describe('checkout makes the pay request itself (Amendment 09 W3), wired in the real app', () => {
+  it('the optional pay-link port of the order route is the real pay requests service (not undefined: an unbound optional port would silently keep the old step)', () => {
+    expect((mod.get(PublicRequestsService, { strict: false }) as unknown as { payLinks?: unknown }).payLinks).toBe(mod.get(PaymentsService, { strict: false }));
   });
 });
 

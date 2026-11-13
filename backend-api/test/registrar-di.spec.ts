@@ -13,6 +13,7 @@ import { REGISTRAR_PROVIDERS, RegistrarCron, RegistrarStartupGuard } from '../sr
 import { RegistrarPort, GatedRegistrarPort } from '../src/v3-registrar/registrar.port';
 import { WalletSettingsService } from '../src/v3-wallet/settings/wallet-settings.service';
 import { V3WalletService } from '../src/v3-wallet/wallet.service';
+import { IdentityOtpSender } from '../src/v3-registrar/identity.service';
 import { WalletStore } from '../src/v3-wallet/wallet.store';
 
 /**
@@ -20,7 +21,7 @@ import { WalletStore } from '../src/v3-wallet/wallet.store';
  * asks for is missing from the lists. (Booting the whole application needs a database: that is the staging integration tests' job.)
  */
 describe('dependency injection of the Batch 11 providers', () => {
-  const external = [PrismaService, WalletStore, V3WalletService, WalletSettingsService, EntitlementsService, CanonicalSwitchService, HostDirectory, AuditService, ActivityBus].map((provide) => ({ provide, useValue: {} }));
+  const external = [PrismaService, WalletStore, V3WalletService, WalletSettingsService, EntitlementsService, CanonicalSwitchService, HostDirectory, AuditService, ActivityBus, IdentityOtpSender].map((provide) => ({ provide, useValue: {} }));
 
   it('every provider of the domain automation and the registrar modules resolves', async () => {
     const m = await Test.createTestingModule({ providers: [...external, ...DOMAIN_AUTOMATION_PROVIDERS, ...REGISTRAR_PROVIDERS.filter((p) => p !== RegistrarStartupGuard)] }).compile();

@@ -1,4 +1,4 @@
-import { PLACEHOLDER_BODY, acceptanceMatches, canEdit, canPublish, isPlaceholder, isTermsKind, outstanding, PublishedRef, TermsKind } from '../src/terms/core/terms-core';
+import { PLACEHOLDER_BODY, TERMS_KINDS, acceptanceMatches, canEdit, canPublish, isPlaceholder, isTermsKind, outstanding, PublishedRef, TermsKind } from '../src/terms/core/terms-core';
 
 describe('terms core', () => {
   describe('isPlaceholder', () => {
@@ -40,7 +40,16 @@ describe('terms core', () => {
     });
   });
 
-  it('knows the eight kinds', () => {
+  it('knows the sixteen kinds, including every document of the legal pack (Block 4b)', () => {
+    for (const k of ['TERMS_OF_SERVICE', 'REFUND_WALLET', 'DOMAIN_TERMS', 'ENQUIRY_CONSENT', 'IDENTITY_NOTICE', 'MESSAGING', 'TESTIMONIAL', 'DIRECTORY']) expect(isTermsKind(k)).toBe(true);
+    expect(TERMS_KINDS).toHaveLength(16);
+  });
+  it('a draft with unfilled square-bracket placeholders is a placeholder and cannot be published; a link or a bare number is not one', () => {
+    expect(isPlaceholder('We, [Company name], agree to the terms below.')).toBe(true); expect(isPlaceholder('Contact [Grievance Officer name] at the address.')).toBe(true);
+    expect(isPlaceholder('Real text with a [link](https://example.com) and a note [1].')).toBe(false); expect(isPlaceholder('Real text with no brackets.')).toBe(false);
+    expect(canPublish({ status: 'DRAFT', bodyMarkdown: 'Text with [a placeholder] left in it.' }, 'Counsel reviewed')).toEqual({ ok: false, reason: 'PLACEHOLDER' }); expect(canPublish({ status: 'DRAFT', bodyMarkdown: 'Finished text.' }, 'Counsel reviewed')).toEqual({ ok: true });
+  });
+  it('knows the eight original kinds', () => {
     for (const k of ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING', 'REFUND_POLICY_TEMPLATE', 'GRIEVANCE', 'PRIVACY', 'COOKIE', 'CUSTOMER_TERMS']) expect(isTermsKind(k)).toBe(true);
     expect([isTermsKind('NOPE'), isTermsKind(undefined), isTermsKind('vendor_terms')]).toEqual([false, false, false]);
   });

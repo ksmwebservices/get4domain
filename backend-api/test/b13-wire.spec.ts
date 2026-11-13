@@ -2,7 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ArgumentsHost, ConflictException } from '@nestjs/common';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { MODULES } from './b13-isolation.spec';
+import { MODULES as B13_MODULES } from './b13-isolation.spec';
+import { BLOCK4B_MODULES } from './block4b-modules';
+
+const MODULES = [...B13_MODULES, ...BLOCK4B_MODULES];
 
 /**
  * The lesson of the Stage 13 and Stage 15 staging runs, applied to this batch before staging: the exception filter passes a body `code` through only when it is on a registered list, and a

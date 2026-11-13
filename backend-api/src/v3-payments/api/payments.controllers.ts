@@ -27,6 +27,19 @@ export class CreatePayRequestDto {
 export class MarkPaidDto {
   @IsOptional() @IsString() @MaxLength(40) utr?: string;
   @IsOptional() @IsString() @MaxLength(80) idempotencyKey?: string;
+  /** how the customer paid the business: UPI (the default), CASH or BANK_TRANSFER */
+  @IsOptional() @IsIn(['UPI', 'CASH', 'BANK_TRANSFER']) method?: string;
+}
+/** A payment the business received outside the pay page, written down against an order or on its own (needs no UPI method). */
+export class RecordOfflineDto {
+  @IsOptional() @IsString() @MaxLength(64) orderId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) amountPaise?: number;
+  @IsOptional() @IsString() @MaxLength(80) customerName?: string;
+  @IsOptional() @IsString() @MaxLength(20) customerPhone?: string;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
+  @IsIn(['UPI', 'CASH', 'BANK_TRANSFER']) method!: string;
+  @IsOptional() @IsString() @MaxLength(40) reference?: string;
+  @IsString() @MaxLength(80) idempotencyKey!: string;
 }
 export class IHavePaidDto { @IsOptional() @IsString() @MaxLength(40) utr?: string }
 export class PayListDto {
@@ -56,6 +69,8 @@ export class MePayRequestsController {
   one(@Tenant() t: TenantContext, @Param('id') id: string) { return this.pay.get(t.vendorId, id); }
   @Post('payment-requests/:id/cancel') @HttpCode(200) @ApiOperation({ summary: 'Cancel a request that is not paid (the link stops working)' })
   cancel(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.pay.cancel(t.vendorId, id, actor(u, req)); }
+  @Post('payment-requests/record-offline') @HttpCode(200) @ApiOperation({ summary: 'Write down a payment you received in cash, by bank transfer or by UPI outside the pay page, against an order or on its own (your money, not Get4Domain money; idempotent)' })
+  recordOffline(@Tenant() t: TenantContext, @Body() dto: RecordOfflineDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.pay.recordOffline(t.vendorId, dto, actor(u, req)); }
   @Post('payment-requests/:id/mark-paid') @HttpCode(200) @ApiOperation({ summary: 'Mark as paid after checking your own bank app: the ONLY way a request or its order becomes paid (idempotent)' })
   markPaid(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: MarkPaidDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.pay.markPaid(t.vendorId, id, dto, actor(u, req)); }
 }

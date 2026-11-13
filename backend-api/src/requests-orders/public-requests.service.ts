@@ -20,7 +20,7 @@ import { MethodKind, offerProblem, paymentReadiness, priceCart } from './core/co
 import { addressHash } from './core/messaging-core';
 import { consentTextHash, consentValid, duplicateKey, expiresAtFor, hashTrackingToken, newTrackingToken, PUBLIC_KINDS, RequestKind, spamDecision, spamScore, validatePayload, looksLikeTrackingToken } from './core/requests-core';
 import { MessagingService } from './messaging.service';
-import { Catalogue, OwnGatewayGate } from './requests-ports';
+import { Catalogue, OwnGatewayGate, PayLinkPort } from './requests-ports';
 import { NewRequest, OfferUsedUp, PaymentMode, RequestRow, RequestsStore, StockUnavailable } from './requests.store';
 
 /** One answer for every host that must reveal nothing: unknown, removed, suspended, Free, seeded, or a site without the features. */
@@ -60,6 +60,8 @@ export class PublicRequestsService {
     @Inject(DirectorySettingsService) private readonly dirSettings: Pick<DirectorySettingsService, 'get'>, @Optional() @Inject('PUBLIC_APP_URL') private readonly appUrl: string = 'https://app.get4domain.invalid',
     /** slice 5.21: a legal takedown stops forms and checkout at once; the scan looks at what a customer wrote (it never blocks) */
     @Optional() @Inject(TakedownPort) private readonly takedowns?: TakedownPort, @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
+    /** Amendment 09 W3 (Block 4b): an online order gets its pay link made by checkout itself */
+    @Optional() @Inject(PayLinkPort) private readonly payLinks?: PayLinkPort,
   ) {}
 
   // ── the gate ──
@@ -189,8 +191,10 @@ export class PublicRequestsService {
   async order(hostIn: string, body: OrderBody, ip: string | null): Promise<SubmitResult> {
     const g = await this.gate(hostIn, ['shop.cart']);
     const methods = (await this.store.listMethods(g.vendorId)).filter((m) => isVendorOfferedKind(m.kind));   // gateway rows are never offered (amendment 06)
-    const readiness = paymentReadiness(methods);
-    if (readiness === 'ENQUIRY_ONLY') throw new ConflictException(b3Error('ORDER_INVALID', 'This shop is not taking orders online. Please send an enquiry instead.', { readiness }));
+    // A shop with no active way to be paid takes ORDER REQUESTS: the order is written down and the business settles it itself; no payment is taken and none is asked for (Block 4b slice 7).
+    const noPayment = paymentReadiness(methods) === 'ENQUIRY_ONLY';
+    const readiness = noPayment ? 'ORDER_REQUEST_ONLY' : paymentReadiness(methods);
+    if (noPayment && body?.payWith !== undefined && body.payWith !== null) throw new ConflictException(b3Error('ORDER_INVALID', 'This shop takes order requests without payment. Send the order without choosing a way to pay.', { readiness }));
     const items = Array.isArray(body?.items) ? body.items : [];
     if (!items.length || items.length > 50 || items.some((i) => !i || typeof i.productRef !== 'string' || !Number.isInteger(i.qty) || i.qty < 1 || i.qty > 1000)) throw invalid(['items: 1 to 50 lines, each with a productRef and a whole quantity']);
     const lines = []; const seen = new Set<string>();
@@ -211,7 +215,8 @@ export class PublicRequestsService {
     const cart = priceCart(lines, offer, this.clock());
     const payWith = body.payWith ?? (readiness === 'FULL_CHECKOUT' ? 'ONLINE' : 'COD');
     let mode: PaymentMode; let methodId: string | null = null; let method: (typeof methods)[number] | undefined;
-    if (payWith === 'ONLINE') {
+    if (noPayment) { mode = 'MANUAL'; }   // settled by the business outside the site, recorded afterwards (Mark as paid or Record a payment)
+    else if (payWith === 'ONLINE') {
       if (readiness !== 'FULL_CHECKOUT') throw new ConflictException(b3Error('ORDER_INVALID', 'Online payment is not available here.', { readiness }));
       method = methods.find((m) => m.status === 'ACTIVE' && m.kind === 'UPI')!; mode = 'ONLINE'; methodId = method.id;
     } else {
@@ -233,8 +238,8 @@ export class PublicRequestsService {
           items: cart.lines.map((l) => ({ productRef: l.productRef, name: l.name, qty: l.qty, unitPaise: l.unitPaise, tax: { percent: l.taxPercent, taxPaise: l.taxPaise, discountPaise: l.discountPaise, ...(l.hsnSac ? { hsnSac: l.hsnSac } : {}) } })), offerId,
           reserveUntil: new Date(this.clock().getTime() + s.stockReservationMinutes * 60_000),
         });
-        const extra: Record<string, unknown> = { orderNo: placed.order.orderNo, totalPaise: cart.totalPaise, paymentMode: mode, readiness };
-        extra.paymentStep = mode === 'ONLINE' ? { step: 'PAY_ONLINE_WITH_VENDOR_GATEWAY', checkout: await this.gateway.get().createCheckout({ orderId: placed.order.id, orderNo: placed.order.orderNo, amountPaise: cart.totalPaise, currency: 'INR', kind: method!.kind, last4: method!.last4 }) } : { step: mode === 'COD' ? 'PAY_ON_DELIVERY' : mode === 'AT_VISIT' ? 'PAY_AT_THE_VISIT' : 'PAY_AS_THE_BUSINESS_ARRANGES' };
+        const extra: Record<string, unknown> = { orderNo: placed.order.orderNo, totalPaise: cart.totalPaise, paymentMode: mode, readiness, paymentTaken: false, ...(noPayment ? { orderRequest: true } : {}) };
+        extra.paymentStep = mode === 'ONLINE' && this.payLinks ? await this.payLinkStep(g.vendorId, placed.order.id) : mode === 'ONLINE' ? { step: 'PAY_ONLINE_WITH_VENDOR_GATEWAY', checkout: await this.gateway.get().createCheckout({ orderId: placed.order.id, orderNo: placed.order.orderNo, amountPaise: cart.totalPaise, currency: 'INR', kind: method!.kind, last4: method!.last4 }) } : { step: noPayment ? 'NO_PAYMENT_TAKEN' : mode === 'COD' ? 'PAY_ON_DELIVERY' : mode === 'AT_VISIT' ? 'PAY_AT_THE_VISIT' : 'PAY_AS_THE_BUSINESS_ARRANGES' };
         return { request: placed.request, extra };
       } catch (e) {
         if (e instanceof StockUnavailable) throw new ConflictException(b3Error('STOCK_UNAVAILABLE', 'One of the items is out of stock.', { productRef: e.productRef }));
@@ -243,6 +248,14 @@ export class PublicRequestsService {
       }
     };
     return this.create(g, body, mode === 'ONLINE' ? 'ORDER' : 'ORDER_REQUEST', payload, prep.p, ip, { make });
+  }
+
+  /** The order is already stored; its pay link is made now, once (the same call twice returns the same link). If a link cannot be made the order stands and the business makes one by hand. */
+  private async payLinkStep(vendorId: string, orderId: string): Promise<Record<string, unknown>> {
+    try {
+      const l = await this.payLinks!.createForOrder(vendorId, orderId);
+      return l ? { step: 'PAY_WITH_UPI_LINK', payUrl: l.payUrl, expiresAt: l.expiresAt, notice: l.notice } : { step: 'PAY_LINK_PENDING' };
+    } catch { return { step: 'PAY_LINK_PENDING' }; }
   }
 
   // ── GET /v3/public/requests/track/:token ──

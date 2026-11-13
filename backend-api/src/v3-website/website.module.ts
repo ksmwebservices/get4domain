@@ -20,7 +20,9 @@ import { SeoProjector, SeoService } from './seo/seo.service';
 import { ActivityReviewNotifier, ReviewNotifier, ReviewService } from './review/review.service';
 import { PrismaReviewStore, ReviewStore } from './review/review.store';
 import { MeWebsiteController } from './api/website.controllers';
-import { FakeMediaStorage, ImagePort, MediaStoragePort, SharpImagePort, UnconfiguredMediaStorage } from './media/media.ports';
+import { FakeMediaStorage, ImagePort, MediaStoragePort, SharpImagePort } from './media/media.ports';
+import { S3PublicStorage } from '../v3-storage/s3.adapters';
+import { StorageSettingsService } from '../v3-storage/settings/storage-settings';
 import { BannerLibraryService, MediaService } from './media/media.service';
 import { MediaStore, PrismaMediaStore } from './media/media.store';
 import { WebsiteSettingsService } from './settings/website-settings.service';
@@ -29,11 +31,11 @@ import { WebsiteService } from './website.service';
 import { PrismaWebsiteStore, WebsiteStore } from './website.store';
 
 /** Every provider and controller of the Website manager, in one list (the staging integration tests assemble the same list into a slim app). */
-/** Picture storage: only MEDIA_STORAGE_MODE=fake binds the fake (staging tests); otherwise uploads are refused (STORAGE_NOT_CONFIGURED) until a real adapter is bound in a later release. */
-const storageProvider = { provide: MediaStoragePort, useFactory: () => (process.env.MEDIA_STORAGE_MODE === 'fake' ? new FakeMediaStorage() : new UnconfiguredMediaStorage()) };
+/** Picture storage: MEDIA_STORAGE_MODE=fake binds the fake (staging tests); otherwise the R2 adapter (Block 4b), which refuses with STORAGE_NOT_CONFIGURED until its settings and keys are set. */
+const storageProvider = { provide: MediaStoragePort, useFactory: (settings: StorageSettingsService) => (process.env.MEDIA_STORAGE_MODE === 'fake' ? new FakeMediaStorage() : new S3PublicStorage(settings)), inject: [StorageSettingsService] };
 export const WEBSITE_PROVIDERS = [
   { provide: WebsiteStore, useClass: PrismaWebsiteStore }, { provide: SiteCachePort, useClass: NoopSiteCache }, WebsiteService,
-  { provide: MediaStore, useClass: PrismaMediaStore }, storageProvider, { provide: ImagePort, useClass: SharpImagePort }, WebsiteSettingsService, MediaService, BannerLibraryService,
+  { provide: MediaStore, useClass: PrismaMediaStore }, StorageSettingsService, storageProvider, { provide: ImagePort, useClass: SharpImagePort }, WebsiteSettingsService, MediaService, BannerLibraryService,
   { provide: ReviewStore, useClass: PrismaReviewStore }, { provide: ReviewNotifier, useClass: ActivityReviewNotifier }, ReviewService,
   // projections of the live document (one per slice that needs staff to query something): B1 per-page SEO
   { provide: PageSeoStore, useClass: PrismaPageSeoStore }, SeoProjector, SeoService,

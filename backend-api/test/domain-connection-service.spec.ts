@@ -89,6 +89,18 @@ describe('forward versus connect', () => {
   });
 });
 
+describe('forward mode with no active subdomain (Block 4b)', () => {
+  it('goes to NEEDS_ATTENTION with the reason instead of looking healthy, plans no redirect, and a later retry works once a subdomain exists', async () => {
+    const w = connectionWorld(); w.store.subdomains.delete('v1'); await w.svc.begin('v1', 'd1', { mode: 'FORWARD' }, V1); const cfId = [...w.cf.hostnames.keys()][0];
+    w.cf.setCert(cfId, 'ACTIVE'); const v = await w.svc.check('v1', 'd1', V1);
+    expect(v).toMatchObject({ status: 'NEEDS_ATTENTION', failureReason: 'NO_ACTIVE_SUBDOMAIN' }); expect(w.cf.redirects.size).toBe(0);
+  });
+  it('a connect-mode connection without a subdomain is unaffected', async () => {
+    const w = connectionWorld(); w.store.subdomains.delete('v1'); await w.svc.begin('v1', 'd1', { mode: 'CONNECT' }, V1); const cfId = [...w.cf.hostnames.keys()][0];
+    w.cf.setCert(cfId, 'ACTIVE'); expect((await w.svc.check('v1', 'd1', V1)).status).toBe('ACTIVE');
+  });
+});
+
 describe('fake Cloudflare failures are retried', () => {
   it('a temporary failure is tried again and then succeeds', async () => {
     const w = connectionWorld(); w.cf.createFailures.push(new CloudflareError('TIMEOUT', true), new CloudflareError('TIMEOUT', true));

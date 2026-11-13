@@ -29,3 +29,7 @@ Frozen owner rules of 4 November 2026 that this run touches, plus Amendment 07 (
 - Cloudflare custom hostnames are fake only in this run and never live.
 - Flow: add domain, TXT verification, create the custom hostname (www first; the bare domain is flagged as needing the Cloudflare option), watch the certificate, then Connect mode (mapped) or Forward mode (redirect to the subdomain).
 - The canonical switch is a controlled, recorded switch in both directions, only through the service.
+
+## Forward mode with no active subdomain (Block 4b, slice 10)
+
+Forward mode sends visitors of the business's own host to its Get4Domain subdomain. If the business has no ACTIVE subdomain, there is nowhere to send them. The connection used to go ACTIVE with no redirect and no warning (noted in `B11_LOG.md`). It now lands in `NEEDS_ATTENTION` with `failureReason = NO_ACTIVE_SUBDOMAIN`, no redirect is planned, and the existing `connection_lost` notice and activity row are raised. Connect mode is unaffected. Fixing it is the existing retry once the business has a subdomain. The check also now answers with the stored row after the mode is applied, so a `REDIRECT_NOT_APPLIED` result is no longer hidden behind a stale ACTIVE answer.

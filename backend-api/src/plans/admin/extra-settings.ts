@@ -7,6 +7,12 @@ import { isWalletSettingKey, validateWalletSetting } from '../../v3-wallet/setti
 import { isWebsiteSettingKey, validateWebsiteSetting } from '../../v3-website/settings/website-settings';
 import { isAutomationSettingKey, validateAutomationSetting } from '../../v3-domain-automation/settings/automation-settings';
 import { isRegistrarSettingKey, validateRegistrarSetting } from '../../v3-registrar/settings/registrar-settings';
+import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/settings/storage-settings';
+import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/mail-settings';
+import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-settings';
+import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/settings/support-settings';
+import { isAdminActionsSettingKey, validateAdminActionsSetting } from '../../v3-admin-actions/settings/admin-actions-settings';
+import { isMailRulesSettingKey, validateMailRulesSetting } from '../../v3-mail/mail-rules/mail-rules-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -28,6 +34,18 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isAutomationSettingKey, validate: validateAutomationSetting },
   // batch 11 (5.6d): domain sales; every value starts unset and a feature that needs one stays off until staff set it
   { owns: isRegistrarSettingKey, validate: validateRegistrarSetting },
+  // block 4b (Amendment 12 Q2): storage endpoints, buckets, media domain and limits; keys stay in the environment; every value starts unset
+  { owns: isStorageSettingKey, validate: validateStorageSetting },
+  // block 4b (Amendment 12 Q3 and Q5): lane 1 sender and the enquiry inbox limits; every value starts unset
+  { owns: isMailSettingKey, validate: validateMailSetting },
+  // block 4b (Amendment 12 Q7): DLT entity id, sender id and the registered templates; every value starts unset
+  { owns: isSmsSettingKey, validate: validateSmsSetting },
+  // block 4b (Amendment 12 Q3): promotion limits, warm-up, complaint and bounce pauses and the opt-in proof rules, recorded as data; every value starts unset
+  { owns: isMailRulesSettingKey, validate: validateMailRulesSetting },
+  // block 4b (Amendment 08 B5): support ticket creation limits; every value starts unset
+  { owns: isSupportSettingKey, validate: validateSupportSetting },
+  // block 4b (Amendment 09 A4): merging listings stays off until the undo window is set; unset by default
+  { owns: isAdminActionsSettingKey, validate: validateAdminActionsSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

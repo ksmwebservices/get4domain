@@ -20,13 +20,14 @@ export class MemoryPaymentsStore extends PaymentsStore {
   async cancel(id: string, vendorId: string) { const r = this.rows.get(id); if (!r || r.vendorId !== vendorId || !['AWAITING', 'CUSTOMER_SAYS_PAID'].includes(r.status)) return null; r.status = 'CANCELLED'; return { ...r }; }
   async expire(id: string, now: Date) { const r = this.rows.get(id); if (!r || r.status !== 'AWAITING' || r.expiresAt > now) return false; r.status = 'EXPIRED'; return true; }
   async expirable(now: Date, limit: number) { return [...this.rows.values()].filter((r) => r.status === 'AWAITING' && r.expiresAt <= now).slice(0, limit).map((r) => ({ ...r })); }
-  async confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date }) {
+  async confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date; method?: string; provider?: string }) {
     const r = this.rows.get(id); if (!r || r.vendorId !== vendorId || r.status === 'CANCELLED') return null;
     if (r.status === 'PAID') { const ex = this.payments.get(id); return ex ? { request: { ...r }, payment: { ...ex }, alreadyPaid: true } : null; }
     r.status = 'PAID';
-    const pay: PaymentRow = { id: `pay${++this.n}`, paymentRequestId: id, vendorId, amountPaise: r.amountPaise, level: 1, provider: 'UPI_MANUAL', providerPaymentId: id, utr: p.utr ?? r.customerUtr, confirmedBy: 'VENDOR', confirmedAt: p.now, idempotencyKey: p.idempotencyKey };
+    const pay: PaymentRow = { id: `pay${++this.n}`, paymentRequestId: id, vendorId, amountPaise: r.amountPaise, level: 1, provider: p.provider ?? 'UPI_MANUAL', providerPaymentId: id, utr: p.utr ?? r.customerUtr, confirmedBy: 'VENDOR', confirmedAt: p.now, idempotencyKey: p.idempotencyKey, method: p.method ?? 'UPI', vendorRecorded: true };
     this.payments.set(id, pay); return { request: { ...r }, payment: { ...pay }, alreadyPaid: false };
   }
+  async paymentByKey(vendorId: string, key: string) { const p = [...this.payments.values()].find((x) => x.vendorId === vendorId && x.idempotencyKey === key); return p ? { ...p } : null; }
   async paymentOf(requestId: string, vendorId: string) { const p = this.payments.get(requestId); return p && p.vendorId === vendorId ? { ...p } : null; }
   async requestOfPayment(paymentId: string, vendorId: string) { const p = [...this.payments.values()].find((x) => x.id === paymentId && x.vendorId === vendorId); const r = p ? this.rows.get(p.paymentRequestId) : null; return r ? { ...r } : null; }
 }

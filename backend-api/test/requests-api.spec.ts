@@ -81,9 +81,14 @@ describe('requests and orders API', () => {
       const r1 = await send('post', '/v3/public/reports', null, { host: HOST_A, reasonKind: 'SCAM', text: 'took my money' }); const r2 = await send('post', '/v3/public/reports', null, { host: 'nothing.example' });
       expect([r1.status, r2.status]).toEqual([202, 202]); expect(r1.body.data).toEqual(r2.body.data);
     });
-    it('POST orders: nothing configured is a 409; with cash on delivery an order request with the number and the payment step', async () => {
+    it('POST orders: nothing configured is an order request with no payment taken (Block 4b)', async () => {
       const lines = { items: [{ productRef: 'sku-1', qty: 1 }] };
-      expect((await send('post', `/v3/public/sites/${HOST_A}/orders`, null, body({ kind: undefined, payload: undefined, ...lines }))).status).toBe(409);
+      const r = await send('post', `/v3/public/sites/${HOST_A}/orders`, null, body({ kind: undefined, payload: undefined, ...lines }));
+      expect(r.status).toBe(200); expect(r.body.data).toMatchObject({ orderNo: 1, totalPaise: 150_000, paymentTaken: false, orderRequest: true, paymentStep: { step: 'NO_PAYMENT_TAKEN' } });
+      expect((await send('post', `/v3/public/sites/${HOST_A}/orders`, null, body({ kind: undefined, payload: undefined, ...lines, payWith: 'ONLINE' }))).status).toBe(409);
+    });
+    it('POST orders: with cash on delivery an order request with the number and the payment step', async () => {
+      const lines = { items: [{ productRef: 'sku-1', qty: 1 }] };
       await w.method('va', 'PAY_ON_DELIVERY');
       const r = await send('post', `/v3/public/sites/${HOST_A}/orders`, null, body({ kind: undefined, payload: undefined, ...lines }));
       expect(r.status).toBe(200); expect(r.body.data).toMatchObject({ orderNo: 1, totalPaise: 150_000, paymentStep: { step: 'PAY_ON_DELIVERY' } });

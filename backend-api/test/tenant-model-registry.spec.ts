@@ -72,7 +72,14 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   // slice 5.24c (Batch 13): reached only through StoreStore, whose every query names the vendor (tested: vendor B cannot read or change vendor A's products, variants, stock ledger or returns)
   'V3StoreProduct', 'V3StoreVariant', 'V3StoreStockMove', 'V3OrderReturn',
   'V3VendorPack', 'V3VendorCapability', 'V3VendorPackAddon',   // pack engine (Amendment 13 Part A): reached only through the pack engine store, whose every query names the vendor
-  ];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
+  // block 4b slice 1: the private-bucket access log, reached only through StorageAccessStore, whose list names the vendor; append-only (trigger), no foreign key
+  'V3StorageAccess',
+  // block 4b slice 2: the enquiry inbox, reached only through InboxStore, whose every query names the vendor (tested: vendor B cannot read or change vendor A's messages)
+  'V3InboxMessage',
+  // block 4b slice 4: tickets, reached only through SupportStore: a business's own queries name the vendor (tested: vendor B cannot read or change vendor A's tickets); staff queries take no vendor on purpose
+  'V3Ticket',
+  // block 4b slice 9: staff-side tables reached only through AdminActionsStore from /v3/admin routes (never from a business's own routes); the host visit counts are written by the page counter
+  'V3BusinessNameHistory', 'V3ScheduledPlanChange', 'V3HostVisitDaily'];   // the grant is consumed by the set-password endpoint, no vendor route reads it; a removal row is written by staff and the removal flow and read only by the public host lookup (a removed business must look unknown); the deletion request is created for the signed-in owner by the service and read by staff across vendors
 
 const v3WithVendorId = Prisma.dmmf.datamodel.models.filter((m) => /^V3/.test(m.name) && m.fields.some((f) => f.name === 'vendorId' && f.kind === 'scalar')).map((m) => m.name);
 

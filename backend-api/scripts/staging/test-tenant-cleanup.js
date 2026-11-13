@@ -72,6 +72,10 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     ['vendors', () => prisma.vendor.deleteMany({ where: { id: { in: ids } } })],
     // the activity log refuses a delete while its vendor exists (append-only trigger), so it goes AFTER the vendors
     ['v3ActivityLog', () => prisma.v3ActivityLog.deleteMany({ where: byVendor })],
+    // block 4b: the private-bucket access log is append-only while its vendor exists, so it goes after the vendors too
+    ['v3StorageAccess', () => prisma.v3StorageAccess.deleteMany({ where: byVendor })],
+    // block 4b slice 9: a merge record names two businesses and has no foreign key, so it goes by either side
+    ['v3ListingMerges', () => prisma.v3ListingMerge.deleteMany({ where: { OR: [{ keepVendorId: { in: ids } }, { mergedVendorId: { in: ids } }] } })],
     // slice 5.21: a takedown refuses a delete while its vendor or listing exists (trigger), so it goes after the vendors; proofs go with the vendor (cascade)
     ['v3Takedowns', () => prisma.v3Takedown.deleteMany({ where: byVendor })],
   ];

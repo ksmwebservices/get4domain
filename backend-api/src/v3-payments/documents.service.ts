@@ -10,7 +10,7 @@ import { ActivityService } from '../v3-activity/activity.service';
 import { TakedownPort } from '../v3-trust/trust.ports';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
 import { buildDocument, chooseSupply, decideDocumentKind, DocLineIn, docMessageText, financialYearKey, isStateCode, normaliseInvoicePrefix, stateCodeOfGstin, validateGstin } from './core/doc-core';
-import { amountString, isPayCode, payCodeFrom } from './core/pay-core';
+import { amountString, isPayCode, methodLabel, payCodeFrom } from './core/pay-core';
 import { DocCodeTaken, DocumentRow, DocumentsStore, TaxProfileRow } from './documents.store';
 import { MessageSenderPort, PdfPort } from './documents.ports';
 import { PaymentsStore } from './payments.store';
@@ -91,7 +91,7 @@ export class DocumentsService {
     if (!built || (kind === 'TAX_INVOICE' && !order)) { await this.record(vendorId, 'document.needs_tax_rate', null, { paymentId: payment.id }); return { doc: null, created: false, reason: 'NEEDS_TAX_RATE' }; }
     const vendor = await this.lifecycle.vendor(vendorId);
     const snapshot = { customerName: pr.customerName, stateCode: customerState, vendor: { businessName: vendor?.businessName ?? '', legalName: profile.legalName, address: profile.address, gstin: profile.gstin, stateCode: profile.stateCode } };
-    const flags = { assumedIntraState: kind === 'TAX_INVOICE' && supply.assumed };
+    const flags = { assumedIntraState: kind === 'TAX_INVOICE' && supply.assumed, paymentMethod: payment.method, vendorRecorded: payment.vendorRecorded };
     const tax = { taxablePaise: built.taxablePaise, taxPaise: built.taxPaise, cgstPaise: built.cgstPaise, sgstPaise: built.sgstPaise, igstPaise: built.igstPaise, supply: supply.type };
     let r: { doc: DocumentRow; created: boolean } | null = null;
     for (let i = 0; i < 3 && !r; i++) {
@@ -142,7 +142,7 @@ export class DocumentsService {
     return this.ownerView(doc);
   }
   private ownerView(d: DocumentRow) {
-    return { id: d.id, kind: d.kind, number: d.number, totalPaise: d.totalPaise, amountText: amountString(d.totalPaise), items: d.items, tax: d.tax, customerName: d.customerSnapshot.customerName ?? null, flags: d.flags, whatsappStatus: d.whatsappStatus, emailStatus: d.emailStatus, resendCount: d.resendCount, publicUrl: `${this.docUrl}/${d.publicCode}`, createdAt: d.createdAt };
+    return { id: d.id, kind: d.kind, number: d.number, totalPaise: d.totalPaise, amountText: amountString(d.totalPaise), items: d.items, tax: d.tax, customerName: d.customerSnapshot.customerName ?? null, paymentMethod: methodLabel(typeof d.flags.paymentMethod === 'string' ? d.flags.paymentMethod : 'UPI'), flags: d.flags, whatsappStatus: d.whatsappStatus, emailStatus: d.emailStatus, resendCount: d.resendCount, publicUrl: `${this.docUrl}/${d.publicCode}`, createdAt: d.createdAt };
   }
 
   // ── the public document page ──
@@ -154,6 +154,6 @@ export class DocumentsService {
     if (!vendor || (await this.lifecycle.isRemoved(d.vendorId))) throw plain404();
     if (this.takedowns && (await this.takedowns.activeForVendor(d.vendorId))) throw plain404();
     const v = (d.customerSnapshot.vendor ?? {}) as { businessName?: string; legalName?: string | null; address?: string | null; gstin?: string | null };
-    return { kind: d.kind, number: d.number, issuedAt: d.createdAt, business: { name: v.businessName ?? vendor.businessName, legalName: v.legalName ?? null, address: v.address ?? null, gstin: d.kind === 'TAX_INVOICE' || d.kind === 'BILL_OF_SUPPLY' ? v.gstin ?? null : null }, customerName: d.customerSnapshot.customerName ?? null, items: d.items, tax: d.tax, totalPaise: d.totalPaise, amountText: amountString(d.totalPaise), assumedIntraState: d.flags.assumedIntraState === true };
+    return { kind: d.kind, number: d.number, issuedAt: d.createdAt, business: { name: v.businessName ?? vendor.businessName, legalName: v.legalName ?? null, address: v.address ?? null, gstin: d.kind === 'TAX_INVOICE' || d.kind === 'BILL_OF_SUPPLY' ? v.gstin ?? null : null }, customerName: d.customerSnapshot.customerName ?? null, paymentMethod: methodLabel(typeof d.flags.paymentMethod === 'string' ? d.flags.paymentMethod : 'UPI'), items: d.items, tax: d.tax, totalPaise: d.totalPaise, amountText: amountString(d.totalPaise), assumedIntraState: d.flags.assumedIntraState === true };
   }
 }

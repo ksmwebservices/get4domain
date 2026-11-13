@@ -21,9 +21,9 @@ describe('terms: the loader', () => {
     const applied = await seedTermsDrafts(w.store, { apply: true });
     expect(applied.created).toEqual([...TERMS_KINDS]);
     const rows = await w.store.listDocuments({});
-    expect(rows).toHaveLength(8); expect(rows.every((r) => r.status === 'DRAFT' && r.version === 1 && r.bodyMarkdown === 'To be supplied by counsel' && r.publishedAt === null)).toBe(true);
+    expect(rows).toHaveLength(16); expect(rows.every((r) => r.status === 'DRAFT' && r.version === 1 && r.bodyMarkdown === 'To be supplied by counsel' && r.publishedAt === null)).toBe(true);
     const again = await seedTermsDrafts(w.store, { apply: true });
-    expect(again.created).toEqual([]); expect(w.store.docs.size).toBe(8);
+    expect(again.created).toEqual([]); expect(w.store.docs.size).toBe(16);
   });
   it('a kind that already has a row (even a published one) is left exactly as it is', async () => {
     const w = await termsWorld(); await w.publish('PRIVACY');

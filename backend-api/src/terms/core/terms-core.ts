@@ -1,6 +1,8 @@
 /** Pure rules of slice 5.15. No clock, database or randomness here: callers pass them in. */
 
-export const TERMS_KINDS = ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING', 'REFUND_POLICY_TEMPLATE', 'GRIEVANCE', 'PRIVACY', 'COOKIE', 'CUSTOMER_TERMS'] as const;
+export const TERMS_KINDS = ['VENDOR_TERMS', 'ACCEPTABLE_USE', 'DATA_PROCESSING', 'REFUND_POLICY_TEMPLATE', 'GRIEVANCE', 'PRIVACY', 'COOKIE', 'CUSTOMER_TERMS',
+  // Block 4b (Amendment 12 Q6): the rest of the legal pack. VENDOR_TERMS is the vendor agreement; REFUND_WALLET is the refund and wallet policy; REFUND_POLICY_TEMPLATE stays the per-business template.
+  'TERMS_OF_SERVICE', 'REFUND_WALLET', 'DOMAIN_TERMS', 'ENQUIRY_CONSENT', 'IDENTITY_NOTICE', 'MESSAGING', 'TESTIMONIAL', 'DIRECTORY'] as const;
 export type TermsKind = (typeof TERMS_KINDS)[number];
 export type TermsStatus = 'DRAFT' | 'PUBLISHED' | 'RETIRED';
 
@@ -16,7 +18,11 @@ const PLACEHOLDER_KEY = PLACEHOLDER_BODY.toLowerCase();
 export const isTermsKind = (k: unknown): k is TermsKind => typeof k === 'string' && (TERMS_KINDS as readonly string[]).includes(k);
 
 /** A body is a placeholder when it is empty, or after dropping markdown marks, punctuation and case it is the placeholder sentence (alone or inside a heading or a list item). */
+/** Square-bracket placeholders left in a draft, such as [Company name]. A markdown link [text](url) and a bare number such as [1] are not placeholders. */
+export const hasBracketPlaceholders = (body: string): boolean => /\[(?![0-9]+\])[^\]\n[]{1,120}\](?!\()/.test(String(body ?? ''));
+
 export function isPlaceholder(body: string): boolean {
+  if (hasBracketPlaceholders(body)) return true;   // counsel's drafts carry [placeholders] until they are filled in: such a body can never be published
   const flat = String(body ?? '').toLowerCase().replace(/[#*_>`~\-•]/g, ' ').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
   return flat === '' || flat.includes(PLACEHOLDER_KEY);
 }

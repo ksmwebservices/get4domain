@@ -5,7 +5,7 @@ import { PayStatus } from './core/pay-core';
 import { NewPayRequest, PayCodeTaken, PayRequestRow, PaymentRow, PaymentsStore } from './payments.store';
 
 const toRow = (r: Prisma.V3PaymentRequestGetPayload<object>): PayRequestRow => ({ ...r, status: r.status as PayStatus });
-const toPayment = (p: Prisma.V3PaymentGetPayload<object>): PaymentRow => ({ id: p.id, paymentRequestId: p.paymentRequestId, vendorId: p.vendorId, amountPaise: p.amountPaise, level: p.level, provider: p.provider, providerPaymentId: p.providerPaymentId, utr: p.utr, confirmedBy: p.confirmedBy as 'VENDOR' | 'GATEWAY', confirmedAt: p.confirmedAt, idempotencyKey: p.idempotencyKey });
+const toPayment = (p: Prisma.V3PaymentGetPayload<object>): PaymentRow => ({ id: p.id, paymentRequestId: p.paymentRequestId, vendorId: p.vendorId, amountPaise: p.amountPaise, level: p.level, provider: p.provider, providerPaymentId: p.providerPaymentId, utr: p.utr, confirmedBy: p.confirmedBy as 'VENDOR' | 'GATEWAY', confirmedAt: p.confirmedAt, idempotencyKey: p.idempotencyKey, method: p.method, vendorRecorded: p.vendorRecorded });
 
 @Injectable()
 export class PrismaPaymentsStore extends PaymentsStore {
@@ -32,7 +32,7 @@ export class PrismaPaymentsStore extends PaymentsStore {
   }
   async expire(id: string, now: Date): Promise<boolean> { return (await this.prisma.v3PaymentRequest.updateMany({ where: { id, status: 'AWAITING', expiresAt: { lte: now } }, data: { status: 'EXPIRED' } })).count === 1; }
   async expirable(now: Date, limit: number): Promise<PayRequestRow[]> { return (await this.prisma.v3PaymentRequest.findMany({ where: { status: 'AWAITING', expiresAt: { lte: now } }, orderBy: { expiresAt: 'asc' }, take: limit })).map(toRow); }
-  async confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date }): Promise<{ request: PayRequestRow; payment: PaymentRow; alreadyPaid: boolean } | null> {
+  async confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date; method?: string; provider?: string }): Promise<{ request: PayRequestRow; payment: PaymentRow; alreadyPaid: boolean } | null> {
     return this.prisma.$transaction(async (tx) => {
       const cur = await tx.v3PaymentRequest.findFirst({ where: { id, vendorId } });
       if (!cur || cur.status === 'CANCELLED') return null;
@@ -41,10 +41,11 @@ export class PrismaPaymentsStore extends PaymentsStore {
         const existing = await tx.v3Payment.findUnique({ where: { paymentRequestId: id } });
         return existing ? { request: toRow(cur), payment: toPayment(existing), alreadyPaid: true } : null;
       }
-      const payment = await tx.v3Payment.create({ data: { paymentRequestId: id, vendorId, amountPaise: cur.amountPaise, level: 1, provider: 'UPI_MANUAL', providerPaymentId: id, utr: p.utr ?? cur.customerUtr, confirmedBy: 'VENDOR', confirmedAt: p.now, idempotencyKey: p.idempotencyKey } });
+      const payment = await tx.v3Payment.create({ data: { paymentRequestId: id, vendorId, amountPaise: cur.amountPaise, level: 1, provider: p.provider ?? 'UPI_MANUAL', providerPaymentId: id, utr: p.utr ?? cur.customerUtr, confirmedBy: 'VENDOR', confirmedAt: p.now, idempotencyKey: p.idempotencyKey, method: p.method ?? 'UPI', vendorRecorded: true } });
       return { request: toRow(await tx.v3PaymentRequest.findUniqueOrThrow({ where: { id } })), payment: toPayment(payment), alreadyPaid: false };
     });
   }
+  async paymentByKey(vendorId: string, key: string): Promise<PaymentRow | null> { const p = await this.prisma.v3Payment.findFirst({ where: { vendorId, idempotencyKey: key } }); return p ? toPayment(p) : null; }
   async paymentOf(requestId: string, vendorId: string): Promise<PaymentRow | null> { const p = await this.prisma.v3Payment.findFirst({ where: { paymentRequestId: requestId, vendorId } }); return p ? toPayment(p) : null; }
   async requestOfPayment(paymentId: string, vendorId: string): Promise<PayRequestRow | null> { const p = await this.prisma.v3Payment.findFirst({ where: { id: paymentId, vendorId }, include: { request: true } }); return p ? toRow(p.request) : null; }
 }

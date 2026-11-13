@@ -1,4 +1,5 @@
 import { PayRequestsModule } from './v3-payments/payments.module';
+import { PayLinkBridgeModule } from './v3-payments/pay-link.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -68,6 +69,10 @@ import { V3RegistrarModule } from './v3-registrar/registrar.module';
 import { V3CustomersModule } from './v3-customers/customers.module';
 import { V3AccountsModule } from './v3-accounts/accounts.module';
 import { V3JobsModule } from './v3-jobs/jobs.module';
+import { V3StorageModule } from './v3-storage/storage.module';
+import { V3MailModule } from './v3-mail/mail.module';
+import { V3SupportModule } from './v3-support/support.module';
+import { V3AdminActionsModule } from './v3-admin-actions/admin-actions.module';
 import { V3AppointmentsModule } from './v3-appointments/appointments.module';
 import { V3StoreModule } from './v3-store/store.module';
 import { V3PacksModule } from './v3-packs/packs.module';
@@ -139,6 +144,10 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3AccountsModule,
     V3JobsModule,
     V3AppointmentsModule,
+    V3StorageModule,
+    V3MailModule,
+    V3SupportModule,
+    V3AdminActionsModule,
     V3StoreModule,
     V3PacksModule,
     DirectoryModule,
@@ -148,6 +157,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     SeededSitesModule,
     RequestsOrdersModule,
     PayRequestsModule,
+    PayLinkBridgeModule,
     TermsModule,
     PlanBillingModule,
     ActivityBusModule,   // Batch 4: the typed in-process event bus (global)
