@@ -58,3 +58,13 @@ export function payCodeFrom(bytes: Uint8Array): string {
   return out;
 }
 export const isPayCode = (v: unknown): v is string => typeof v === 'string' && v.length === CODE_LENGTH && [...v].every((c) => PAY_CODE_ALPHABET.includes(c));
+
+/** How a customer paid the BUSINESS (Amendment 09 C1). The business records it; the money is the business's and never passes through Get4Domain. UPI is the default. */
+export const PAY_METHODS = ['UPI', 'CASH', 'BANK_TRANSFER'] as const;
+export type PayMethod = (typeof PAY_METHODS)[number];
+export function normaliseMethod(v: unknown): PayMethod | null { if (v === undefined || v === null || v === '') return 'UPI'; return typeof v === 'string' && (PAY_METHODS as readonly string[]).includes(v) ? (v as PayMethod) : null; }
+/** The provider label stored with the payment: where the business saw the money. All three are `*_MANUAL`: the business confirmed it, no gateway did. */
+export const providerFor = (m: PayMethod): string => (m === 'CASH' ? 'CASH_MANUAL' : m === 'BANK_TRANSFER' ? 'BANK_MANUAL' : 'UPI_MANUAL');
+/** A bank or UPI reference is optional; cash has none. A reference with cash is refused (it would be a made-up proof). */
+export const referenceAllowed = (m: PayMethod, utr: string | null): boolean => m !== 'CASH' || utr === null;
+export const methodLabel = (m: string): string => (m === 'CASH' ? 'Cash' : m === 'BANK_TRANSFER' ? 'Bank transfer' : 'UPI');

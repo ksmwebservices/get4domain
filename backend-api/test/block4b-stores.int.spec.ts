@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PrismaInboxStore } from '../src/v3-mail/prisma-inbox.store';
 import { PrismaStorageAccessStore } from '../src/v3-storage/prisma-storage.store';
+import { PrismaPaymentsStore } from '../src/v3-payments/prisma-payments.store';
 import { PrismaSupportStore } from '../src/v3-support/prisma-support.store';
 import { SeededTenant, cleanupTenants, newPrisma, seedTenant } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
@@ -83,6 +84,24 @@ describe('Block 4b stores on staging', () => {
       const store = new PrismaSupportStore(svc); const c = await store.createTicket(t(C.id), new Date());
       await prisma.vendor.delete({ where: { id: C.id } });
       expect(await prisma.v3Ticket.count({ where: { id: c.ticket.id } })).toBe(0); expect(await prisma.v3TicketMessage.count({ where: { ticketId: c.ticket.id } })).toBe(0);
+    });
+  });
+
+  describe('4b.5 payments recorded by the business', () => {
+    const req = (vendorId: string, code: string) => ({ vendorId, code, amountPaise: 75_000, note: null, customerName: 'Meena', customerPhone: null, source: 'MANUAL' as const, requestId: null, orderId: null, methodId: null, expiresAt: new Date(), createdBy: null });
+    it('a request with no UPI method settles as cash; the payment says CASH_MANUAL, vendor-recorded; the key finds it for this business only; a second settle changes nothing', async () => {
+      const store = new PrismaPaymentsStore(svc); const r = await store.create(req(A.vendorId, `B4B5-${RUN_ID}-cash-0001`)); expect(r.methodId).toBeNull();
+      const a = await store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' });
+      expect(a?.payment).toMatchObject({ method: 'CASH', provider: 'CASH_MANUAL', vendorRecorded: true, alreadyPaid: undefined }); expect(a?.alreadyPaid).toBe(false);
+      expect((await store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' }))?.alreadyPaid).toBe(true);
+      expect((await store.paymentByKey(A.vendorId, `rec-${RUN_ID}-0001`))?.paymentRequestId).toBe(r.id); expect(await store.paymentByKey(B.vendorId, `rec-${RUN_ID}-0001`)).toBeNull();
+      expect(await store.confirmPaid(r.id, B.vendorId, { utr: null, idempotencyKey: null, now: new Date() })).toBeNull();
+    });
+    it('the method CHECK holds, and the same key cannot make two payments for one business', async () => {
+      const store = new PrismaPaymentsStore(svc); const r = await store.create(req(A.vendorId, `B4B5-${RUN_ID}-chk-0002`));
+      await expect(store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: null, now: new Date(), method: 'CHEQUE', provider: 'X' })).rejects.toThrow();
+      const r2 = await store.create(req(A.vendorId, `B4B5-${RUN_ID}-dup-0003`));
+      await expect(store.confirmPaid(r2.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' })).rejects.toThrow();
     });
   });
 });

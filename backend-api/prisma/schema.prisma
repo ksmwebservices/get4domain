@@ -6409,7 +6409,7 @@ model V3PaymentRequest {
   source         V3PaySource @default(MANUAL)
   requestId      String?
   orderId        String?
-  methodId       String
+  methodId       String? // null for a payment the vendor recorded by hand (cash, bank transfer) with no UPI method
   status         V3PayStatus @default(AWAITING)
   expiresAt      DateTime
   customerSaidAt DateTime?
@@ -6419,7 +6419,7 @@ model V3PaymentRequest {
   updatedAt      DateTime    @updatedAt
 
   vendor  Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  method  V3VendorPaymentMethod @relation(fields: [methodId], references: [id], onDelete: Restrict)
+  method  V3VendorPaymentMethod? @relation(fields: [methodId], references: [id], onDelete: Restrict)
   payment V3Payment?
 
   @@index([vendorId, status, createdAt])
@@ -6440,6 +6440,8 @@ model V3Payment {
   confirmedBy       V3PaymentConfirmedBy @default(VENDOR)
   confirmedAt       DateTime
   idempotencyKey    String?
+  method            String               @default("UPI") // UPI | CASH | BANK_TRANSFER: how the customer paid the business
+  vendorRecorded    Boolean              @default(true) // the business wrote this down; it is the business's money, never Get4Domain's
   createdAt         DateTime             @default(now())
 
   request V3PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)

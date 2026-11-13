@@ -12,7 +12,7 @@ import { VendorRequestsService } from '../requests-orders/vendor-requests.servic
 import { ActivityService } from '../v3-activity/activity.service';
 import { TakedownPort } from '../v3-trust/trust.ports';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
-import { amountString, buildUpiIntent, isPayCode, normaliseUtr, nextPayStatus, PayStatus, payCodeFrom } from './core/pay-core';
+import { amountString, buildUpiIntent, isPayCode, normaliseMethod, normaliseUtr, nextPayStatus, PayMethod, PayStatus, payCodeFrom, providerFor, referenceAllowed } from './core/pay-core';
 import { DocumentsService } from './documents.service';
 import { PayCodeTaken, PayRequestRow, PaymentsStore } from './payments.store';
 
@@ -94,23 +94,77 @@ export class PaymentsService {
     return view(r, this.payUrl);
   }
 
-  /** Mark as paid: the only way a request, and the order behind it, becomes PAID. Idempotent: the second call returns the same payment and changes nothing. */
-  async markPaid(vendorId: string, id: string, b: { utr?: unknown; idempotencyKey?: unknown }, actor: Actor) {
+  /**
+   * Mark as paid: the only way a request, and the order behind it, becomes PAID. Idempotent: the second call returns the same payment and changes nothing. The business says HOW the customer paid
+   * (UPI by default, cash, or bank transfer; Amendment 09 C1). The payment is flagged vendor-recorded: it is the business's money and is never counted as Get4Domain's.
+   */
+  async markPaid(vendorId: string, id: string, b: { utr?: unknown; idempotencyKey?: unknown; method?: unknown }, actor: Actor) {
+    const method = normaliseMethod(b.method); if (!method) throw bad('method: UPI, CASH or BANK_TRANSFER');
     const utr = normaliseUtr(b.utr); if (!utr.ok) throw new BadRequestException(b3Error('PAY_REFERENCE_INVALID', 'The UPI reference must be 8 to 22 letters and digits, or left empty.'));
+    if (!referenceAllowed(method, utr.utr)) throw new BadRequestException(b3Error('PAY_REFERENCE_INVALID', 'A cash payment has no reference. Leave it empty.'));
     const key = b.idempotencyKey === undefined || b.idempotencyKey === null ? null : (typeof b.idempotencyKey === 'string' && /^[A-Za-z0-9._-]{8,80}$/.test(b.idempotencyKey) ? b.idempotencyKey : undefined);
     if (key === undefined) throw bad('idempotencyKey: 8 to 80 letters, digits, dots, dashes or underscores');
     const cur = await this.store.byId(id, vendorId); if (!cur) throw nf();
     if (nextPayStatus(cur.status, 'VENDOR_MARKS_PAID') === null) throw new ConflictException(b3Error('PAY_STATE_INVALID', 'A cancelled request cannot be marked paid.'));
-    const r = await payQueue.run(`pay:${vendorId}`, () => this.store.confirmPaid(id, vendorId, { utr: utr.utr, idempotencyKey: key, now: this.clock() }));
+    return this.settle(vendorId, id, { utr: utr.utr, key, method }, actor, 'payment.marked_paid');
+  }
+
+  /**
+   * The business writes down a payment it received outside the pay page (Amendment 09 C1, Block 4b): cash in hand, a bank transfer, or a UPI payment made another way, against an order or on its own.
+   * It needs no UPI method on file. It makes a pay request that is settled at once and then goes through the same single door as Mark as paid, so there is still exactly one route to PAID, one
+   * payment, one receipt. The key makes a repeated call a no-op. The payment is flagged vendor-recorded and is never Get4Domain money; nothing here touches the wallet.
+   */
+  async recordOffline(vendorId: string, b: { orderId?: unknown; amountPaise?: unknown; customerName?: unknown; customerPhone?: unknown; note?: unknown; method?: unknown; reference?: unknown; idempotencyKey?: unknown }, actor: Actor) {
+    // one at a time per business, BEFORE any transaction opens: the key lookup, the request and the payment cannot interleave with a second call carrying the same key
+    return payQueue.run(`pay:${vendorId}`, () => this.recordOfflineNow(vendorId, b, actor));
+  }
+  private async recordOfflineNow(vendorId: string, b: { orderId?: unknown; amountPaise?: unknown; customerName?: unknown; customerPhone?: unknown; note?: unknown; method?: unknown; reference?: unknown; idempotencyKey?: unknown }, actor: Actor) {
+    const method = normaliseMethod(b.method); if (!method) throw bad('method: UPI, CASH or BANK_TRANSFER');
+    const key = typeof b.idempotencyKey === 'string' && /^[A-Za-z0-9._-]{8,80}$/.test(b.idempotencyKey) ? b.idempotencyKey : null; if (!key) throw bad('idempotencyKey: 8 to 80 letters, digits, dots, dashes or underscores');
+    const utr = normaliseUtr(b.reference); if (!utr.ok) throw new BadRequestException(b3Error('PAY_REFERENCE_INVALID', 'The reference must be 8 to 22 letters and digits, or left empty.'));
+    if (!referenceAllowed(method, utr.utr)) throw new BadRequestException(b3Error('PAY_REFERENCE_INVALID', 'A cash payment has no reference. Leave it empty.'));
+    const again = await this.store.paymentByKey(vendorId, key);
+    if (again) { const r = await this.store.byId(again.paymentRequestId, vendorId); if (r) return { ...view(r, this.payUrl), alreadyPaid: true, document: null, payment: { amountPaise: again.amountPaise, utr: again.utr, method: again.method, vendorRecorded: again.vendorRecorded, confirmedBy: again.confirmedBy, confirmedAt: again.confirmedAt } }; }
+    const note = b.note === undefined || b.note === null || b.note === '' ? null : str(b.note, 1, 200); if (b.note !== undefined && b.note !== null && b.note !== '' && !note) throw bad('note: up to 200 characters');
+    let customerPhone: string | null = null; if (typeof b.customerPhone === 'string' && b.customerPhone.trim()) { customerPhone = normalisePhoneE164(b.customerPhone); if (!customerPhone) throw bad('customerPhone: not a valid mobile number'); }
+    let amountPaise = b.amountPaise; let orderId: string | null = null; let requestId: string | null = null; let source: 'MANUAL' | 'ORDER' = 'MANUAL'; let customerName = str(b.customerName, 2, 80);
+    let existingId: string | null = null;
+    if (b.orderId !== undefined && b.orderId !== null && b.orderId !== '') {
+      const o = typeof b.orderId === 'string' ? await this.requests.getOrder(b.orderId, vendorId) : null;
+      if (!o) throw nf();
+      if (o.order.status !== 'AWAITING_PAYMENT' && o.order.status !== 'PLACED') throw new ConflictException(b3Error('PAY_STATE_INVALID', 'This order is not waiting for payment.'));
+      if (amountPaise !== undefined && amountPaise !== o.order.amountPaise) throw bad('amountPaise: must equal the order total');
+      amountPaise = o.order.amountPaise; orderId = o.order.id; requestId = o.order.requestId; source = 'ORDER';
+      customerName ??= str((await this.requests.getRequest(o.order.requestId, vendorId))?.customerName, 2, 80);
+      const open = (await this.store.list(vendorId, { orderId, skip: 0, take: 20 })).items.find((r) => r.status === 'AWAITING' || r.status === 'CUSTOMER_SAYS_PAID' || r.status === 'EXPIRED');
+      existingId = open?.id ?? null;   // the order already has a pay link: settle that one instead of making a second request
+    }
+    if (amountString(amountPaise) === null) throw bad('amountPaise: a whole number of paise greater than zero');
+    if (!existingId) {
+      if (!customerName) throw bad('customerName: 2 to 80 characters');
+      const now = this.clock(); let row: PayRequestRow | null = null;
+      for (let i = 0; i < 3 && !row; i++) {
+        try { row = await this.store.create({ vendorId, code: payCodeFrom(this.random()), amountPaise: amountPaise as number, note, customerName, customerPhone, source, requestId, orderId, methodId: null, expiresAt: now, createdBy: actor.id }); } catch (e) { if (!(e instanceof PayCodeTaken)) throw e; }
+      }
+      if (!row) throw new ConflictException(b3Error('PAY_REQUEST_INVALID', 'Try again.'));
+      existingId = row.id;
+    }
+    return this.settle(vendorId, existingId, { utr: utr.utr, key, method }, actor, 'payment.recorded_offline', true);
+  }
+
+  /** The one door to PAID, shared by Mark as paid and Record a payment. Never touches the wallet or any Get4Domain ledger. */
+  private async settle(vendorId: string, id: string, p: { utr: string | null; key: string | null; method: PayMethod }, actor: Actor, actionKey: string, alreadyQueued = false) {
+    const confirm = () => this.store.confirmPaid(id, vendorId, { utr: p.utr, idempotencyKey: p.key, now: this.clock(), method: p.method, provider: providerFor(p.method) });
+    const r = await (alreadyQueued ? confirm() : payQueue.run(`pay:${vendorId}`, confirm));   // the record path already holds the business's turn: queueing again would wait on itself
     if (!r) throw new ConflictException(b3Error('PAY_STATE_INVALID', 'This request cannot be marked paid.'));
     if (!r.alreadyPaid) {
       if (r.request.orderId) await this.vendors.recordOrderPaid(vendorId, r.request.orderId);
-      await this.record(vendorId, { type: 'VENDOR', id: actor.id }, 'payment.marked_paid', id, { amountPaise: r.payment.amountPaise, level: 1 });
+      await this.record(vendorId, { type: 'VENDOR', id: actor.id }, actionKey, id, { amountPaise: r.payment.amountPaise, level: 1, method: p.method, vendorRecorded: true, ...(r.request.methodId !== null && r.request.expiresAt <= r.payment.confirmedAt ? { late: true } : {}) });
     }
     // the receipt or invoice: made once per payment, and asked for again on a repeat call in case the first attempt failed; a fault here never undoes the payment
     let document: { id: string; number: string; kind: string } | null = null;
     try { const d = await this.documents?.createForPayment(vendorId, id); if (d?.doc) document = { id: d.doc.id, number: d.doc.number, kind: d.doc.kind }; } catch { /* the payment stands */ }
-    return { ...view(r.request, this.payUrl), alreadyPaid: r.alreadyPaid, document, payment: { amountPaise: r.payment.amountPaise, utr: r.payment.utr, confirmedBy: r.payment.confirmedBy, confirmedAt: r.payment.confirmedAt } };
+    return { ...view(r.request, this.payUrl), alreadyPaid: r.alreadyPaid, document, payment: { amountPaise: r.payment.amountPaise, utr: r.payment.utr, method: r.payment.method, vendorRecorded: r.payment.vendorRecorded, confirmedBy: r.payment.confirmedBy, confirmedAt: r.payment.confirmedAt } };
   }
 
   /** The expiry job: every AWAITING request whose time has passed becomes EXPIRED. Safe to repeat and to run twice at once (each change is compare-and-set). */

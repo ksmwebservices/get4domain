@@ -100,3 +100,14 @@ describe('sending and the public page', () => {
     await upiA(); await paid(); const d = [...ds.docs.values()][0]; expect(await docs.download('va', d.id)).toMatchObject({ mode: 'FAKE', pdfRef: `fake-pdf/va/${d.number}.pdf` }); expect(await code(docs.download('vb', d.id))).toBe('PAY_REQUEST_NOT_FOUND');
   });
 });
+
+describe('the receipt names how the customer paid (Block 4b, Amendment 09 C1)', () => {
+  it('cash, bank transfer and UPI each show on the owner view, the public page and the stored flags; the payment is flagged vendor-recorded', async () => {
+    await upiA();
+    for (const [method, label] of [['CASH', 'Cash'], ['BANK_TRANSFER', 'Bank transfer'], ['UPI', 'UPI']] as const) {
+      const r = await pay.create('va', { amountPaise: 50_000, customerName: 'Meena R' }, OWNER); const m = await pay.markPaid('va', r.id, { method }, OWNER);
+      const d = [...ds.docs.values()].find((x) => x.id === m.document!.id)!;
+      expect(d.flags).toMatchObject({ paymentMethod: method, vendorRecorded: true }); expect(await docs.get('va', d.id)).toMatchObject({ paymentMethod: label }); expect(await docs.publicView(d.publicCode)).toMatchObject({ paymentMethod: label });
+    }
+  });
+});

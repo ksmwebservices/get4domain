@@ -3,9 +3,9 @@ import { PayStatus } from './core/pay-core';
 export type PaySource = 'MANUAL' | 'REQUEST' | 'ORDER';
 export interface PayRequestRow {
   id: string; vendorId: string; code: string; amountPaise: number; note: string | null; customerName: string; customerPhone: string | null; source: PaySource; requestId: string | null; orderId: string | null;
-  methodId: string; status: PayStatus; expiresAt: Date; customerSaidAt: Date | null; customerUtr: string | null; createdBy: string | null; createdAt: Date; updatedAt: Date;
+  methodId: string | null; status: PayStatus; expiresAt: Date; customerSaidAt: Date | null; customerUtr: string | null; createdBy: string | null; createdAt: Date; updatedAt: Date;
 }
-export interface PaymentRow { id: string; paymentRequestId: string; vendorId: string; amountPaise: number; level: number; provider: string; providerPaymentId: string; utr: string | null; confirmedBy: 'VENDOR' | 'GATEWAY'; confirmedAt: Date; idempotencyKey: string | null }
+export interface PaymentRow { id: string; paymentRequestId: string; vendorId: string; amountPaise: number; level: number; provider: string; providerPaymentId: string; utr: string | null; confirmedBy: 'VENDOR' | 'GATEWAY'; confirmedAt: Date; idempotencyKey: string | null; method: string; vendorRecorded: boolean }
 export type NewPayRequest = Pick<PayRequestRow, 'vendorId' | 'code' | 'amountPaise' | 'note' | 'customerName' | 'customerPhone' | 'source' | 'requestId' | 'orderId' | 'methodId' | 'expiresAt' | 'createdBy'>;
 export class PayCodeTaken extends Error {}
 
@@ -29,8 +29,10 @@ export abstract class PaymentsStore {
    * The vendor's "Mark as paid", in ONE transaction: the request goes to PAID from AWAITING, CUSTOMER_SAYS_PAID or EXPIRED and its single payment row is written. Called again, it changes nothing and
    * returns alreadyPaid. Null when the request is not this vendor's or is CANCELLED.
    */
-  abstract confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date }): Promise<{ request: PayRequestRow; payment: PaymentRow; alreadyPaid: boolean } | null>;
+  abstract confirmPaid(id: string, vendorId: string, p: { utr: string | null; idempotencyKey: string | null; now: Date; method?: string; provider?: string }): Promise<{ request: PayRequestRow; payment: PaymentRow; alreadyPaid: boolean } | null>;
   abstract paymentOf(requestId: string, vendorId: string): Promise<PaymentRow | null>;
+  /** The payment this business recorded under that idempotency key, if any (so a repeated record call finds it instead of making a second request). */
+  abstract paymentByKey(vendorId: string, key: string): Promise<PaymentRow | null>;
   /** The pay request a payment belongs to, vendor's own only. */
   abstract requestOfPayment(paymentId: string, vendorId: string): Promise<PayRequestRow | null>;
 }

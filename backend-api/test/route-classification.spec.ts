@@ -52,7 +52,7 @@ const OWNER_ONLY_ROUTES = [
   // B3 slice 5.14: payment methods (credentials), refunds and the vendor's own invoices are money: owner only
   'GET /v3/me/payment-methods', 'POST /v3/me/payment-methods', 'PUT /v3/me/payment-methods/:id', 'DELETE /v3/me/payment-methods/:id', 'POST /v3/me/payment-methods/:id/test', 'POST /v3/me/payment-methods/:id/default', 'POST /v3/me/orders/:id/refund', 'POST /v3/me/orders/:id/invoice', 'GET /v3/me/invoices', 'POST /v3/me/invoices/:id/void',
   // B5 slice 5.17b: pay requests and Mark as paid are money: owner only
-  'POST /v3/me/payment-requests', 'GET /v3/me/payment-requests', 'GET /v3/me/payment-requests/:id', 'POST /v3/me/payment-requests/:id/cancel', 'POST /v3/me/payment-requests/:id/mark-paid',
+  'POST /v3/me/payment-requests', 'POST /v3/me/payment-requests/record-offline', 'GET /v3/me/payment-requests', 'GET /v3/me/payment-requests/:id', 'POST /v3/me/payment-requests/:id/cancel', 'POST /v3/me/payment-requests/:id/mark-paid',
   // B5 slice 5.17d: the tax profile and the vendor's own receipts and invoices carry tax details and money: owner only
   'GET /v3/me/tax-profile', 'PUT /v3/me/tax-profile', 'GET /v3/me/documents', 'GET /v3/me/documents/:id', 'POST /v3/me/documents/:id/resend', 'GET /v3/me/documents/:id/download',
   // B3 slice 5.15: accepting the terms binds the business: owner only (a team member never accepts for it)
