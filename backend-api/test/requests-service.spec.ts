@@ -174,10 +174,27 @@ describe('payment methods keep their secrets', () => {
 });
 
 describe('orders (the bridge: the customer pays the vendor, never Get4Domain)', () => {
-  it('nothing configured: the order route is a plain 409 (enquiry and booking requests only); an unverified or disabled gateway does not count', async () => {
-    expect(await code(w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'))).toBe('ORDER_INVALID');
-    await w.vendor.createMethod('va', { kind: 'UPI', label: 'Gate', upiId: 'gate@okbank', payeeName: 'Gate Shop' }, OWNER);
-    expect(await code(w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'))).toBe('ORDER_INVALID');
+  it('nothing configured (Block 4b, order-request mode): the checkout becomes an ORDER REQUEST with no payment taken; an unverified gateway counts for nothing, so it is still an order request', async () => {
+    await w.vendor.setStock('va', 'sku-1', 5);
+    const r = await w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }]), '1.1.1.1');
+    expect(r).toMatchObject({ accepted: true, orderNo: 1, paymentMode: 'MANUAL', readiness: 'ORDER_REQUEST_ONLY', paymentTaken: false, orderRequest: true, paymentStep: { step: 'NO_PAYMENT_TAKEN' } });
+    const o = [...w.store.orders.values()][0]; expect(o).toMatchObject({ vendorId: 'va', status: 'PLACED', paymentMode: 'MANUAL', methodId: null }); expect([...w.store.requests.values()][0].kind).toBe('ORDER_REQUEST');
+    expect(w.store.invoices.size).toBe(0); expect(r).not.toHaveProperty('paymentStep.checkout');
+  });
+  it('an unverified gateway counts for nothing: the shop is still in order-request mode', async () => {
+    await w.vendor.setStock('va', 'sku-1', 5);
+    await w.vendor.createMethod('va', { kind: 'UPI', label: 'Gate', upiId: 'gate@okbank', payeeName: 'Gate Shop' }, OWNER);   // unverified: no payment method is ACTIVE
+    expect(await w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }]), '1.1.1.2')).toMatchObject({ paymentMode: 'MANUAL', paymentTaken: false, orderRequest: true });
+  });
+  it('an order request takes no way of paying: choosing one is refused, and nothing is stored for the refused attempt', async () => {
+    await w.vendor.setStock('va', 'sku-1', 5); const before = w.store.orders.size;
+    for (const payWith of ['ONLINE', 'COD', 'AT_VISIT', 'BANK'] as const) expect(await code(w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }], { payWith } as never), '1.1.1.3'))).toBe('ORDER_INVALID');
+    expect(w.store.orders.size).toBe(before);
+  });
+  it('an order request keeps the other order rules: stock is reserved, an unknown product is refused, and another business is not touched', async () => {
+    await w.vendor.setStock('va', 'sku-1', 2); await w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 2 }]), '1.1.1.1');
+    expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 2, reserved: 2 }); expect(await code(w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }]), '1.1.1.4'))).toBe('STOCK_UNAVAILABLE');
+    expect(await code(w.pub.order(HOST_A, w.orderBody([{ productRef: 'nope', qty: 1 }]), '1.1.1.5'))).toBe('REQUEST_INVALID');
   });
   it('only a cash-style method: an ORDER REQUEST (pay on delivery); an online choice is refused; the order, items, stock reservation and the first number are stored', async () => {
     await w.method('va', 'PAY_ON_DELIVERY'); await w.vendor.setStock('va', 'sku-1', 5);

@@ -25,7 +25,9 @@ describe('gateway kinds are not offered to vendors', () => {
   });
   it('a gateway row does not make the shop ready for online checkout', async () => {
     await w.legacyGateway('va', 'ACTIVE');
-    expect(await code(w.pub.order('shop-a.get4domain.com', w.orderBody(), '1.1.1.1'))).toBe('ORDER_INVALID');
+    // the gateway row counts for nothing, so the shop has no way to be paid: it takes an ORDER REQUEST with no payment (Block 4b), never an online checkout
+    expect(await w.pub.order('shop-a.get4domain.com', w.orderBody(), '1.1.1.1')).toMatchObject({ paymentMode: 'MANUAL', readiness: 'ORDER_REQUEST_ONLY', paymentTaken: false, paymentStep: { step: 'NO_PAYMENT_TAKEN' } });
+    expect(await code(w.pub.order('shop-a.get4domain.com', w.orderBody(undefined, { payWith: 'ONLINE' }), '1.1.1.2'))).toBe('ORDER_INVALID');
   });
 });
 

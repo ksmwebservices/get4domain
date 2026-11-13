@@ -85,6 +85,12 @@ describe('Record a payment (no UPI method needed)', () => {
     const o = await placeOrder(); const link = await pay.create('va', { customerName: 'Meena R', orderId: o.id }, OWNER);
     const r = await rec({ orderId: o.id, amountPaise: undefined, idempotencyKey: KEY('o4') }); expect(r.id).toBe(link.id); expect(ps.rows.size).toBe(1); expect(ps.payments.get(link.id)).toMatchObject({ method: 'CASH' });
   });
+  it('an order request from a shop with NO payment method is settled by recording the cash: the whole path needs no UPI method at any step', async () => {
+    await w.vendor.setStock('va', 'sku-1', 5); await w.pub.order(HOST_A, w.orderBody(), '1.1.1.1'); const o = [...w.store.orders.values()][0];
+    expect(o).toMatchObject({ status: 'PLACED', paymentMode: 'MANUAL', methodId: null }); expect(ps.rows.size).toBe(0);
+    const r = await rec({ orderId: o.id, amountPaise: undefined, customerName: undefined, idempotencyKey: KEY('req') });
+    expect(r).toMatchObject({ status: 'PAID', source: 'ORDER', orderId: o.id, amountPaise: 150_000, payment: { method: 'CASH', vendorRecorded: true } }); expect([...w.store.orders.values()][0].status).toBe('PAID');
+  });
   it('another business cannot record against this business\'s order', async () => {
     const o = await placeOrder(); expect(await code(pay.recordOffline('vb', { orderId: o.id, customerName: 'Meena R', method: 'CASH', idempotencyKey: KEY('x') }, OWNER))).toBe('PAY_REQUEST_NOT_FOUND'); expect(ps.rows.size).toBe(0);
     expect(w.activity.rows.filter((x) => x.actionKey === 'payment.recorded_offline')).toHaveLength(0);
