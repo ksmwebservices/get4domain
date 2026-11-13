@@ -72,6 +72,7 @@ import { V3JobsModule } from './v3-jobs/jobs.module';
 import { V3StorageModule } from './v3-storage/storage.module';
 import { V3MailModule } from './v3-mail/mail.module';
 import { V3SupportModule } from './v3-support/support.module';
+import { V3AdminActionsModule } from './v3-admin-actions/admin-actions.module';
 import { V3AppointmentsModule } from './v3-appointments/appointments.module';
 import { V3StoreModule } from './v3-store/store.module';
 import { DirectoryModule } from './directory/directory.module';
@@ -145,6 +146,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3StorageModule,
     V3MailModule,
     V3SupportModule,
+    V3AdminActionsModule,
     V3StoreModule,
     DirectoryModule,
     B3SettingsModule,

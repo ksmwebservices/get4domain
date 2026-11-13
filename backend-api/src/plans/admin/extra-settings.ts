@@ -11,6 +11,7 @@ import { isStorageSettingKey, validateStorageSetting } from '../../v3-storage/se
 import { isMailSettingKey, validateMailSetting } from '../../v3-mail/settings/mail-settings';
 import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-settings';
 import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/settings/support-settings';
+import { isAdminActionsSettingKey, validateAdminActionsSetting } from '../../v3-admin-actions/settings/admin-actions-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -40,6 +41,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isSmsSettingKey, validate: validateSmsSetting },
   // block 4b (Amendment 08 B5): support ticket creation limits; every value starts unset
   { owns: isSupportSettingKey, validate: validateSupportSetting },
+  // block 4b (Amendment 09 A4): merging listings stays off until the undo window is set; unset by default
+  { owns: isAdminActionsSettingKey, validate: validateAdminActionsSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

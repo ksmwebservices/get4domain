@@ -1,10 +1,11 @@
-import { Controller, Get, Headers, Query, Res } from '@nestjs/common';
+import { Controller, Get, Headers, Optional, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { RATE } from '../../common/throttling';
 import { SitePublicService } from '../publish/site-public.service';
+import { VisitCounterPort } from '../publish/visit-counter.port';
 
 const str = (v: unknown, max: number): string => (typeof v === 'string' && v.length <= max ? v : '');
 
@@ -16,7 +17,7 @@ const str = (v: unknown, max: number): string => (typeof v === 'string' && v.len
 @ApiTags('v3-site-public')
 @Controller('v3/public/site')
 export class PublicSiteController {
-  constructor(private readonly sites: SitePublicService) {}
+  constructor(private readonly sites: SitePublicService, @Optional() private readonly visits?: VisitCounterPort) {}
 
   @Public()
   @Throttle(RATE.siteRead)
@@ -30,6 +31,7 @@ export class PublicSiteController {
     const headers: Record<string, string> = { ETag: page.etag, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=120', 'Content-Language': page.lang };
     if (page.robots) headers['X-Robots-Tag'] = page.robots;
     if (page.canonicalHost) headers['X-Canonical-Host'] = page.canonicalHost;
+    this.visits?.record(str(host, 253));   // a page served on this host (200 or 304): a count, nothing about the visitor
     if (ifNoneMatch && ifNoneMatch.replace(/^W\//, '') === page.etag) { res.status(304).set(headers).end(); return; }
     res.status(200).set({ ...headers, 'Content-Type': page.contentType }).send(page.html);
   }

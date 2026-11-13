@@ -109,6 +109,9 @@ model Vendor {
   v3StoreProducts V3StoreProduct[]
   v3InboxMessages V3InboxMessage[]
   v3Tickets V3Ticket[]
+  v3BusinessNameHistory V3BusinessNameHistory[]
+  v3ScheduledPlanChanges V3ScheduledPlanChange[]
+  v3HostVisitDaily V3HostVisitDaily[]
   v3StoreVariants V3StoreVariant[]
   v3StoreStockMoves V3StoreStockMove[]
   v3OrderReturns V3OrderReturn[]
@@ -7402,4 +7405,80 @@ model V3TicketMessage {
 
   @@index([ticketId, createdAt])
   @@map("g4d_v3_ticket_messages")
+}
+
+/// The old business name of a business, kept every time staff change it (Amendment 09 A2). Append-only in practice: nothing edits or deletes a row.
+model V3BusinessNameHistory {
+  id        String   @id @default(cuid())
+  vendorId  String
+  oldName   String
+  newName   String
+  reason    String
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_v3_business_name_history")
+}
+
+/// A plan change staff asked for with an effective date (Amendment 09 A1). PENDING until its time, then applied through the one plan assignment; never edited into another state except by the applier or a cancel.
+model V3ScheduledPlanChange {
+  id          String    @id @default(cuid())
+  vendorId    String
+  planKey     String
+  termMonths  Int?
+  effectiveAt DateTime
+  reason      String
+  requestedBy String?
+  status      String    @default("PENDING") // PENDING | APPLYING | APPLIED | CANCELLED | FAILED
+  appliedAt   DateTime?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@index([status, effectiveAt])
+  @@map("g4d_v3_scheduled_plan_changes")
+}
+
+/// A merge of two listings (Amendment 09 A4): which contacts moved from the merged listing to the kept one, so SUPER_ADMIN can undo it within the window. No foreign key: the record outlives either listing.
+model V3ListingMerge {
+  id              String    @id @default(cuid())
+  keepVendorId    String
+  mergedVendorId  String
+  reason          String
+  actorId         String?
+  status          String    @default("APPLIED") // APPLIED | REVERSED
+  movedJson       Json      @default("{}")
+  conflictsJson   Json      @default("[]")
+  reversibleUntil DateTime
+  reversedAt      DateTime?
+  reversedBy      String?
+  reverseReason   String?
+  createdAt       DateTime  @default(now())
+
+  @@index([keepVendorId, createdAt])
+  @@index([mergedVendorId, createdAt])
+  @@map("g4d_v3_listing_merges")
+}
+
+/// Page visits per host per day (Amendment 11 Q12): a count and nothing else, no visitor data of any kind.
+model V3HostVisitDaily {
+  id        String   @id @default(cuid())
+  vendorId  String
+  host      String
+  day       String // YYYY-MM-DD, UTC
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([host, day])
+  @@index([vendorId, day])
+  @@map("g4d_v3_host_visits_daily")
 }

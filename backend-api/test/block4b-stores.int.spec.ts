@@ -5,6 +5,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { PrismaInboxStore } from '../src/v3-mail/prisma-inbox.store';
 import { PrismaStorageAccessStore } from '../src/v3-storage/prisma-storage.store';
 import { PrismaPaymentsStore } from '../src/v3-payments/prisma-payments.store';
+import { PrismaAdminActionsStore } from '../src/v3-admin-actions/prisma-admin-actions.store';
 import { PrismaSupportStore } from '../src/v3-support/prisma-support.store';
 import { SeededTenant, cleanupTenants, newPrisma, seedTenant } from './support/fixtures';
 import { runCleanup } from './support/cleanup-guard';
@@ -111,6 +112,41 @@ describe('Block 4b stores on staging', () => {
       await expect(store.confirmPaid(r.id, A.vendorId, { utr: null, idempotencyKey: null, now: new Date(), method: 'CHEQUE', provider: 'X' })).rejects.toThrow();
       const r2 = await store.create(req(A.vendorId, `B4B5-${RUN_ID}-dup-0003`));
       await expect(store.confirmPaid(r2.id, A.vendorId, { utr: null, idempotencyKey: `rec-${RUN_ID}-0001`, now: new Date(), method: 'CASH', provider: 'CASH_MANUAL' })).rejects.toThrow();
+    });
+  });
+
+  describe('4b.9 staff actions and visit counts', () => {
+    it('a rename writes the history row and the new name together; each business reads only its own history', async () => {
+      const store = new PrismaAdminActionsStore(svc); const before = (await store.vendor(A.vendorId))!.businessName;
+      await store.rename(A.vendorId, before, `${before} renamed`, 'integration test', 'staff-1', new Date());
+      expect((await store.vendor(A.vendorId))!.businessName).toBe(`${before} renamed`); expect((await store.nameHistory(A.vendorId, 0, 10)).items[0]).toMatchObject({ oldName: before, newName: `${before} renamed` }); expect((await store.nameHistory(B.vendorId, 0, 10)).total).toBe(0);
+    });
+    it('a pending plan change is claimed by one applier only, and cannot be cancelled once claimed; the status CHECK holds', async () => {
+      const store = new PrismaAdminActionsStore(svc); const c = await store.createPlanChange({ vendorId: A.vendorId, planKey: 'x_plan', termMonths: null, effectiveAt: new Date(Date.now() - 1000), reason: 'integration test', requestedBy: 's', status: 'PENDING', appliedAt: null });
+      expect((await store.duePlanChanges(new Date(), 50)).some((x) => x.id === c.id)).toBe(true);
+      const claims = await Promise.all([store.claimPlanChange(c.id), store.claimPlanChange(c.id), store.claimPlanChange(c.id)]); expect(claims.filter(Boolean)).toHaveLength(1);
+      expect(await store.cancelPlanChange(c.id)).toBe(false); await store.finishPlanChange(c.id, 'APPLIED', new Date(), null); expect((await store.getPlanChange(c.id))!.status).toBe('APPLIED');
+      await expect(prisma.v3ScheduledPlanChange.create({ data: { vendorId: A.vendorId, planKey: 'x', effectiveAt: new Date(), reason: 'r', status: 'WEIRD' } })).rejects.toThrow();
+    });
+    it('a merge moves the contacts and their sources to the kept business in one unit; a unique clash moves nothing; undo sends back only what is still there', async () => {
+      const store = new PrismaAdminActionsStore(svc); const mk = (vendorId: string, phoneKey: string) => prisma.v3Customer.create({ data: { vendorId, name: 'Merge Test', phone: phoneKey, phoneKey, firstSource: 'MANUAL' } as never });
+      const keepCust = await mk(A.vendorId, '919000000091'); const m1 = await mk(B.vendorId, '919000000092'); const m2 = await mk(B.vendorId, '919000000093');
+      await prisma.v3CustomerSource.create({ data: { vendorId: B.vendorId, customerId: m1.id, source: 'MANUAL', refType: 't', refId: '1' } as never });
+      await expect(store.applyMerge({ keepVendorId: A.vendorId, mergedVendorId: B.vendorId, reason: 'integration test', actorId: 's', customerIds: [m1.id, m2.id, keepCust.id], conflicts: [], reversibleUntil: new Date(Date.now() + 86_400_000) })).resolves.toBeDefined();
+      // keepCust (already A's) is not a mover: its vendor must be unchanged by the filter on the merged business
+      expect((await prisma.v3Customer.findUnique({ where: { id: m1.id } }))!.vendorId).toBe(A.vendorId); expect((await prisma.v3CustomerSource.findFirst({ where: { customerId: m1.id } }))!.vendorId).toBe(A.vendorId);
+      const dup = await mk(B.vendorId, '919000000091');   // the same phone as keepCust: moving it must clash on the kept business
+      await expect(store.applyMerge({ keepVendorId: A.vendorId, mergedVendorId: B.vendorId, reason: 'integration test', actorId: 's', customerIds: [dup.id], conflicts: [], reversibleUntil: new Date(Date.now() + 86_400_000) })).rejects.toThrow();
+      expect((await prisma.v3Customer.findUnique({ where: { id: dup.id } }))!.vendorId).toBe(B.vendorId); expect(await prisma.v3ListingMerge.count({ where: { keepVendorId: A.vendorId, mergedVendorId: B.vendorId } })).toBe(1);
+      const merge = (await store.listMerges(A.vendorId, 0, 10)).items[0]; await prisma.v3Customer.update({ where: { id: m2.id }, data: { vendorId: B.vendorId } });   // m2 left the kept business meanwhile
+      const r = await store.reverseMerge(merge.id, 's', 'integration test', new Date()); expect(r).toEqual({ restored: 1, left: 2 }); expect((await prisma.v3Customer.findUnique({ where: { id: m1.id } }))!.vendorId).toBe(B.vendorId);
+      expect(await store.reverseMerge(merge.id, 's', 'again', new Date())).toBeNull();
+    });
+    it('visit counts add up per host and day, and each business reads only its own; the count CHECK holds', async () => {
+      const store = new PrismaAdminActionsStore(svc); const host = `b4b9-${RUN_ID}.example.test`;
+      await Promise.all([store.addVisits(A.vendorId, [{ host, day: '2026-11-14', count: 3 }]), store.addVisits(A.vendorId, [{ host, day: '2026-11-14', count: 4 }])]);
+      expect(await store.visitsOf(A.vendorId, '2026-11-01', '2026-11-30')).toEqual([{ host, day: '2026-11-14', count: 7 }]); expect(await store.visitsOf(B.vendorId, '2026-11-01', '2026-11-30')).toEqual([]);
+      await expect(prisma.v3HostVisitDaily.create({ data: { vendorId: A.vendorId, host: `neg-${RUN_ID}.example.test`, day: '2026-11-14', count: -1 } })).rejects.toThrow();
     });
   });
 });
