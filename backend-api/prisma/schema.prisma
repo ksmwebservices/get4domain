@@ -110,6 +110,8 @@ model Vendor {
   v3StoreVariants V3StoreVariant[]
   v3StoreStockMoves V3StoreStockMove[]
   v3OrderReturns V3OrderReturn[]
+  v3VendorPack V3VendorPack?
+  v3VendorCapabilities V3VendorCapability[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7313,4 +7315,151 @@ model V3OrderReturn {
 
   @@index([vendorId, orderId])
   @@map("g4d_order_returns")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// V3 pack engine (Amendment 13, Part A). Additive. A PACK is the main industry workflow of a vendor (16 of them), a CAPABILITY is an extra thing a vendor also does, the TIER is the plan track.
+// Everything here is DATA loaded by idempotent loaders and edited by staff; nothing names a price. Design: docs/v3/V3_PACK_ENGINE.md
+// The V2 model CategoryPack (site generation) is unrelated and untouched.
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// One record per pack. config holds entities, workflows, crmPipelines, telecrm, taskTemplates, reportSet, siteSections, fieldHints and flags (see pack-core.ts). Reference data: no vendorId.
+model V3Pack {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  enabled        Boolean  @default(true)
+  /// the fixed notice a health, legal or finance pack must show (null for the others)
+  disclaimerKey  String?
+  /// DRAFT until the owner corrects and approves the first draft
+  reviewStatus   String   @default("DRAFT")
+  config         Json     @default("{}")
+  updatedByStaffId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  categories  V3PackCategory[]
+  vendorPacks V3VendorPack[]
+
+  @@map("g4d_packs")
+}
+
+/// A navigation tab. scope COMMON (every vendor, ownerKey COMMON), PACK (ownerKey = pack key) or CAPABILITY (ownerKey = capability key). freeTrial = ACTIVE even on a Free trial.
+model V3PackTab {
+  id            String   @id @default(cuid())
+  scope         String
+  ownerKey      String
+  key           String
+  label         String
+  route         String
+  /// the lowest tier (HANDYMAN, PROFESSIONAL, ECOMMERCE) that opens this tab, or null for any paid plan
+  minTier       String?
+  /// a capability the tier must allow for this tab to open
+  capabilityKey String?
+  freeTrial     Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  active        Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([scope, ownerKey, key])
+  @@index([scope, ownerKey, sortOrder])
+  @@map("g4d_pack_tabs")
+}
+
+model V3Capability {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tiers   V3TierCapability[]
+  vendors V3VendorCapability[]
+
+  @@map("g4d_capabilities")
+}
+
+/// The tier to capability matrix (PROPOSED rules, Amendment 13 V3). Editable by SUPER_ADMIN; changing the matrix, not code, changes what a tier allows. basis says where a cell came from.
+model V3TierCapability {
+  id            String   @id @default(cuid())
+  tier          String
+  capabilityKey String
+  allowed       Boolean  @default(false)
+  basis         String   @default("AMENDMENT_13_V3")
+  updatedByStaffId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  capability V3Capability @relation(fields: [capabilityKey], references: [key], onDelete: Restrict)
+
+  @@unique([tier, capabilityKey])
+  @@map("g4d_tier_capabilities")
+}
+
+/// The category to pack map merged with the category master (minimum tier, optional capabilities, starter services). Reference data. A category with no starter services is needsBlueprint.
+model V3PackCategory {
+  id                   String   @id @default(cuid())
+  categoryKey          String   @unique
+  name                 String
+  family               String
+  packKey              String
+  minTier              String
+  optionalCapabilities Json     @default("[]")
+  starterServices      Json     @default("[]")
+  fieldHints           Json     @default("[]")
+  onlineShopNote       String?
+  needsBlueprint       Boolean  @default(false)
+  ownerNotes           String?
+  active               Boolean  @default(true)
+  updatedByStaffId     String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  pack V3Pack @relation(fields: [packKey], references: [key], onDelete: Restrict)
+
+  @@index([packKey])
+  @@index([family])
+  @@map("g4d_pack_categories")
+}
+
+/// A vendor's ONE primary pack (set at registration from the category; it never changes with the tier) and the starter services the vendor picked. Tenant data.
+model V3VendorPack {
+  id            String   @id @default(cuid())
+  vendorId      String   @unique
+  packKey       String
+  categoryKey   String
+  starterPicks  Json     @default("[]")
+  setByType     String   @default("VENDOR")
+  setById       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pack   V3Pack @relation(fields: [packKey], references: [key], onDelete: Restrict)
+
+  @@index([packKey])
+  @@map("g4d_vendor_packs")
+}
+
+/// A capability a vendor also does. Switching one off, or a downgrade, hides the tab and keeps every record. Tenant data.
+model V3VendorCapability {
+  id            String   @id @default(cuid())
+  vendorId      String
+  capabilityKey String
+  enabled       Boolean  @default(true)
+  source        String   @default("VENDOR")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor     Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  capability V3Capability @relation(fields: [capabilityKey], references: [key], onDelete: Restrict)
+
+  @@unique([vendorId, capabilityKey])
+  @@index([vendorId])
+  @@map("g4d_vendor_capabilities")
 }
