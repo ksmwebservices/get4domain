@@ -1,4 +1,5 @@
 import { PayRequestsModule } from './v3-payments/payments.module';
+import { PayLinkBridgeModule } from './v3-payments/pay-link.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -152,6 +153,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     SeededSitesModule,
     RequestsOrdersModule,
     PayRequestsModule,
+    PayLinkBridgeModule,
     TermsModule,
     PlanBillingModule,
     ActivityBusModule,   // Batch 4: the typed in-process event bus (global)

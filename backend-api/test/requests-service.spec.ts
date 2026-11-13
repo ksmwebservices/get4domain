@@ -255,23 +255,23 @@ describe('the vendor gateway webhook', () => {
     const event = (id: string, over: Record<string, unknown> = {}) => ({ id, type: 'payment.captured', orderRef: order.id, amountPaise: order.amountPaise, currency: 'INR', ...over });
     return { mid, order, event };
   };
-  it('a good signature marks the order PAID once, reduces the stock once, takes invoice number 1 and queues the confirmation', async () => {
+  it('a good signature marks the order PAID once, reduces the stock once, takes NO old invoice number (5.14 invoice retired) and queues the confirmation', async () => {
     const { mid, order, event } = await setup(); const { raw, sig } = w.signed('whsec-va-secret-0001', event('evt_1'));
     expect(await w.webhook.handle('va', mid, raw, sig)).toEqual({ status: 'PROCESSED' });
     expect(w.store.orders.get(order.id)).toMatchObject({ status: 'PAID' }); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 });
-    expect([...w.store.invoices.values()].map((i) => i.invoiceNumber)).toEqual(['INV-000001']); expect(w.store.outbox.at(-1)).toMatchObject({ templateKey: 'order_confirmed_customer' });
+    expect([...w.store.invoices.values()]).toEqual([]); expect(w.store.outbox.at(-1)).toMatchObject({ templateKey: 'order_confirmed_customer' });
   });
   it('replay-safe: the same event again is DUPLICATE (200), changes nothing; the event inbox holds one row', async () => {
     const { mid, event } = await setup(); const { raw, sig } = w.signed('whsec-va-secret-0001', event('evt_1'));
     await w.webhook.handle('va', mid, raw, sig); expect(await w.webhook.handle('va', mid, raw, sig)).toEqual({ status: 'DUPLICATE' });
-    expect(w.store.paymentEvents.size).toBe(1); expect(w.store.invoices.size).toBe(1); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 });
+    expect(w.store.paymentEvents.size).toBe(1); expect(w.store.invoices.size).toBe(0); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 });
   });
-  it('double delivery under concurrency (the same event, then two different events for one order): exactly one PAID, one stock reduction, one invoice', async () => {
+  it('double delivery under concurrency (the same event, then two different events for one order): exactly one PAID, one stock reduction, no old invoice', async () => {
     const { mid, order, event } = await setup();
     const a = w.signed('whsec-va-secret-0001', event('evt_A')); const b = w.signed('whsec-va-secret-0001', event('evt_B'));
     const rs = await Promise.all([...Array.from({ length: 5 }, () => w.webhook.handle('va', mid, a.raw, a.sig)), ...Array.from({ length: 5 }, () => w.webhook.handle('va', mid, b.raw, b.sig))]);
     expect(rs.filter((r) => r.status === 'PROCESSED')).toHaveLength(1); expect(w.store.orders.get(order.id)!.status).toBe('PAID');
-    expect(w.store.invoices.size).toBe(1); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 }); expect(w.store.outbox.filter((m) => m.templateKey === 'order_confirmed_customer')).toHaveLength(1);
+    expect(w.store.invoices.size).toBe(0); expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 }); expect(w.store.outbox.filter((m) => m.templateKey === 'order_confirmed_customer')).toHaveLength(1);
   });
   it('a bad signature, a wrong secret, another vendor\'s secret, no signature, an unknown vendor or method: the SAME 401, and nothing changes', async () => {
     const { mid, order, event } = await setup(); const good = w.signed('whsec-va-secret-0001', event('evt_9'));
@@ -307,10 +307,10 @@ describe('the vendor gateway webhook', () => {
 
 describe('offline orders, invoices and order status', () => {
   const placed = async () => { await w.method('va', 'PAY_ON_DELIVERY'); await w.vendor.setStock('va', 'sku-1', 4); await w.pub.order(HOST_A, w.orderBody([{ productRef: 'sku-1', qty: 1 }]), '1.1.1.1'); return [...w.store.orders.values()][0]; };
-  it('the vendor records cash received: PAID once, stock reduced once, one invoice, the customer is told; again changes nothing', async () => {
+  it('the vendor records cash received: PAID once, stock reduced once, no old invoice, the customer is told; again changes nothing', async () => {
     const o = await placed();
     expect((await w.vendor.updateOrder('va', o.id, { status: 'PAID' }, OWNER)).status).toBe('PAID'); await w.vendor.updateOrder('va', o.id, { status: 'PAID' }, OWNER);
-    expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 }); expect(w.store.invoices.size).toBe(1); expect(w.store.outbox.filter((m) => m.templateKey === 'order_confirmed_customer')).toHaveLength(1);
+    expect(await w.store.getStock('va', 'sku-1')).toEqual({ onHand: 3, reserved: 0 }); expect(w.store.invoices.size).toBe(0); expect(w.store.outbox.filter((m) => m.templateKey === 'order_confirmed_customer')).toHaveLength(1);
   });
   it('packed, shipped with tracking, delivered: allowed moves only; a bad move is refused; a non-https tracking link is dropped', async () => {
     const o = await placed(); await w.vendor.updateOrder('va', o.id, { status: 'PAID' }, OWNER);
@@ -321,14 +321,16 @@ describe('offline orders, invoices and order status', () => {
     expect((await w.vendor.updateOrder('va', o.id, { status: 'DELIVERED' }, OWNER)).status).toBe('DELIVERED'); expect(await code(w.vendor.updateOrder('va', o.id, { status: 'PLACED' }, OWNER))).toBe('ORDER_INVALID');
     expect(JSON.stringify(await w.pub.track(String([...w.store.tracking.entries()].length ? '' : '')).catch(() => ({})))).toBeDefined();
   });
-  it('invoices: numbers are gap-free per vendor under concurrency; one live invoice per order; void keeps the number and the row; a number is never reused', async () => {
+  it('old invoices (5.14, retired in Block 4b): the store still numbers rows gap-free per vendor; an issued row stays readable and is returned for its order; void keeps the number and the row; no new one is made', async () => {
     const results = await Promise.all(Array.from({ length: 20 }, () => w.store.createInvoice({ vendorId: 'va', orderId: null, requestId: null, snapshot: {}, prefix: 'INV-', now: w.now.t })));
     expect(results.map((i) => i.seq).sort((a, b) => a - b)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1)); expect(new Set(results.map((i) => i.invoiceNumber)).size).toBe(20);
     expect((await w.store.createInvoice({ vendorId: 'vb', orderId: null, requestId: null, snapshot: {}, prefix: 'INV-', now: w.now.t })).invoiceNumber).toBe('INV-000001');
-    const o = await placed(); const a = await w.vendor.invoiceFor('va', o.id, OWNER); const b = await w.vendor.invoiceFor('va', o.id, OWNER);
+    const o = await placed(); expect(await code(w.vendor.invoiceFor('va', o.id, OWNER))).toBe('ORDER_INVOICE_RETIRED');   // nothing is made for an order any more
+    await w.store.createInvoice({ vendorId: 'va', orderId: o.id, requestId: o.requestId, snapshot: {}, prefix: 'INV-', now: w.now.t });   // a row from before the retirement
+    const a = await w.vendor.invoiceFor('va', o.id, OWNER); const b = await w.vendor.invoiceFor('va', o.id, OWNER);
     expect(b.id).toBe(a.id); expect(a.invoiceNumber).toBe('INV-000021');
     expect((await w.vendor.voidInvoice('va', a.id, 'issued to the wrong order', OWNER)).status).toBe('VOID'); expect(await code(w.vendor.voidInvoice('va', a.id, 'no', OWNER))).toBe('LIFECYCLE_REASON_REQUIRED');
-    expect((await w.vendor.invoiceFor('va', o.id, OWNER)).invoiceNumber).toBe('INV-000022'); expect((await w.vendor.invoices('va', 0, 100)).total).toBe(22);
+    expect(await code(w.vendor.invoiceFor('va', o.id, OWNER))).toBe('ORDER_INVOICE_RETIRED'); expect((await w.vendor.invoices('va', 0, 100)).total).toBe(21);   // the voided row stays; no replacement number is taken
   });
 });
 

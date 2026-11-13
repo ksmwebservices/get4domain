@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ConflictException, GoneException, Inject, Injectable, NotFoundException, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { b3Error } from '../b3-settings/b3-errors';
 import { B3SettingsService } from '../b3-settings/b3-settings.service';
 import { Actor } from '../plans/admin/audit.service';
@@ -265,15 +265,15 @@ export class VendorRequestsService {
     return o;
   }
 
-  async invoiceFor(vendorId: string, orderId: string, actor: Actor) {
-    const cur = await this.order(vendorId, orderId);
+  /**
+   * RETIRED (Block 4b, Amendment 09 W5). The old order invoice is no longer made: one order payment produces one document, the receipt or invoice the payments slice makes when the payment is recorded
+   * (Mark as paid or Record a payment). An invoice that was already issued for the order is still returned (old rows stay readable); otherwise this answers 410 and points to the payments.
+   */
+  async invoiceFor(vendorId: string, orderId: string, _actor: Actor) {
+    await this.order(vendorId, orderId);
     const existing = (await this.store.listInvoices(vendorId, 0, 500)).items.find((i) => i.orderId === orderId && i.status === 'ISSUED');
-    if (existing) return existing;   // one live invoice per order
-    const v = await this.lifecycle.vendor(vendorId); const s = await this.b3.get();
-    const snapshot = { seller: { businessName: v?.businessName ?? '', note: 'The seller details (legal name, GSTIN, address and tax lines) come from the vendor profile at issue time.' }, orderNo: cur.order.orderNo, currency: cur.order.currency, amountPaise: cur.order.amountPaise, lines: cur.items.map((i) => ({ name: i.name, qty: i.qty, unitPaise: i.unitPaise, tax: i.tax })) };
-    const inv = await this.store.createInvoice({ vendorId, orderId, requestId: cur.order.requestId, snapshot, prefix: s.vendorInvoicePrefix, now: this.clock() });
-    await this.store.recordAudit(actor, 'invoice.issue', 'invoice', inv.id, null, { invoiceNumber: inv.invoiceNumber, orderId });
-    return inv;
+    if (existing) return existing;
+    throw new GoneException(b3Error('ORDER_INVOICE_RETIRED', 'Order invoices are now made as receipts and invoices when the payment is recorded. Open Payments to see it.'));
   }
   async invoices(vendorId: string, skip: number, take: number) { return this.store.listInvoices(vendorId, skip, take); }
   async voidInvoice(vendorId: string, id: string, reason: string, actor: Actor) {

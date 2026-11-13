@@ -68,3 +68,6 @@ export const providerFor = (m: PayMethod): string => (m === 'CASH' ? 'CASH_MANUA
 /** A bank or UPI reference is optional; cash has none. A reference with cash is refused (it would be a made-up proof). */
 export const referenceAllowed = (m: PayMethod, utr: string | null): boolean => m !== 'CASH' || utr === null;
 export const methodLabel = (m: string): string => (m === 'CASH' ? 'Cash' : m === 'BANK_TRANSFER' ? 'Bank transfer' : 'UPI');
+
+/** The ONE fixed notice every pay-request response carries (Amendment 09 W1). Pages and themes show it as it is; they cannot reword or leave it out. Counsel's wording is open; the text here is the owner's. */
+export const payNotice = (businessName: string): string => `You are paying ${businessName} directly. Get4Domain does not receive or hold this payment.`;

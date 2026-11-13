@@ -96,7 +96,7 @@ describe('Record a payment (no UPI method needed)', () => {
     expect(w.activity.rows.filter((x) => x.actionKey === 'payment.recorded_offline')).toHaveLength(0);
   });
   it('a recorded payment shows on the pay page only as PAID with the business name and amount, like any paid request', async () => {
-    await upiA(); const r = await rec(); expect(await pay.publicView(r.code)).toEqual({ state: 'PAID', businessName: 'Shop va', amountText: '750.00' });
+    await upiA(); const r = await rec(); expect(await pay.publicView(r.code)).toEqual({ state: 'PAID', notice: 'You are paying Shop va directly. Get4Domain does not receive or hold this payment.', businessName: 'Shop va', amountText: '750.00' });
   });
 });
 

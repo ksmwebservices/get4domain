@@ -20,7 +20,7 @@ import { MethodKind, offerProblem, paymentReadiness, priceCart } from './core/co
 import { addressHash } from './core/messaging-core';
 import { consentTextHash, consentValid, duplicateKey, expiresAtFor, hashTrackingToken, newTrackingToken, PUBLIC_KINDS, RequestKind, spamDecision, spamScore, validatePayload, looksLikeTrackingToken } from './core/requests-core';
 import { MessagingService } from './messaging.service';
-import { Catalogue, OwnGatewayGate } from './requests-ports';
+import { Catalogue, OwnGatewayGate, PayLinkPort } from './requests-ports';
 import { NewRequest, OfferUsedUp, PaymentMode, RequestRow, RequestsStore, StockUnavailable } from './requests.store';
 
 /** One answer for every host that must reveal nothing: unknown, removed, suspended, Free, seeded, or a site without the features. */
@@ -60,6 +60,8 @@ export class PublicRequestsService {
     @Inject(DirectorySettingsService) private readonly dirSettings: Pick<DirectorySettingsService, 'get'>, @Optional() @Inject('PUBLIC_APP_URL') private readonly appUrl: string = 'https://app.get4domain.invalid',
     /** slice 5.21: a legal takedown stops forms and checkout at once; the scan looks at what a customer wrote (it never blocks) */
     @Optional() @Inject(TakedownPort) private readonly takedowns?: TakedownPort, @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
+    /** Amendment 09 W3 (Block 4b): an online order gets its pay link made by checkout itself */
+    @Optional() @Inject(PayLinkPort) private readonly payLinks?: PayLinkPort,
   ) {}
 
   // ── the gate ──
@@ -237,7 +239,7 @@ export class PublicRequestsService {
           reserveUntil: new Date(this.clock().getTime() + s.stockReservationMinutes * 60_000),
         });
         const extra: Record<string, unknown> = { orderNo: placed.order.orderNo, totalPaise: cart.totalPaise, paymentMode: mode, readiness, paymentTaken: false, ...(noPayment ? { orderRequest: true } : {}) };
-        extra.paymentStep = mode === 'ONLINE' ? { step: 'PAY_ONLINE_WITH_VENDOR_GATEWAY', checkout: await this.gateway.get().createCheckout({ orderId: placed.order.id, orderNo: placed.order.orderNo, amountPaise: cart.totalPaise, currency: 'INR', kind: method!.kind, last4: method!.last4 }) } : { step: noPayment ? 'NO_PAYMENT_TAKEN' : mode === 'COD' ? 'PAY_ON_DELIVERY' : mode === 'AT_VISIT' ? 'PAY_AT_THE_VISIT' : 'PAY_AS_THE_BUSINESS_ARRANGES' };
+        extra.paymentStep = mode === 'ONLINE' && this.payLinks ? await this.payLinkStep(g.vendorId, placed.order.id) : mode === 'ONLINE' ? { step: 'PAY_ONLINE_WITH_VENDOR_GATEWAY', checkout: await this.gateway.get().createCheckout({ orderId: placed.order.id, orderNo: placed.order.orderNo, amountPaise: cart.totalPaise, currency: 'INR', kind: method!.kind, last4: method!.last4 }) } : { step: noPayment ? 'NO_PAYMENT_TAKEN' : mode === 'COD' ? 'PAY_ON_DELIVERY' : mode === 'AT_VISIT' ? 'PAY_AT_THE_VISIT' : 'PAY_AS_THE_BUSINESS_ARRANGES' };
         return { request: placed.request, extra };
       } catch (e) {
         if (e instanceof StockUnavailable) throw new ConflictException(b3Error('STOCK_UNAVAILABLE', 'One of the items is out of stock.', { productRef: e.productRef }));
@@ -246,6 +248,14 @@ export class PublicRequestsService {
       }
     };
     return this.create(g, body, mode === 'ONLINE' ? 'ORDER' : 'ORDER_REQUEST', payload, prep.p, ip, { make });
+  }
+
+  /** The order is already stored; its pay link is made now, once (the same call twice returns the same link). If a link cannot be made the order stands and the business makes one by hand. */
+  private async payLinkStep(vendorId: string, orderId: string): Promise<Record<string, unknown>> {
+    try {
+      const l = await this.payLinks!.createForOrder(vendorId, orderId);
+      return l ? { step: 'PAY_WITH_UPI_LINK', payUrl: l.payUrl, expiresAt: l.expiresAt, notice: l.notice } : { step: 'PAY_LINK_PENDING' };
+    } catch { return { step: 'PAY_LINK_PENDING' }; }
   }
 
   // ── GET /v3/public/requests/track/:token ──

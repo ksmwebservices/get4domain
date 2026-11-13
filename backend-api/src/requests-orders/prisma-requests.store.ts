@@ -171,9 +171,9 @@ export class PrismaRequestsStore extends RequestsStore {
         await tx.$executeRaw`UPDATE "g4d_stock_levels" SET "onHand" = "onHand" - ${r.qty}, "reserved" = "reserved" - ${r.qty}, "updatedAt" = NOW() WHERE "vendorId" = ${vendorId} AND "productRef" = ${r.productRef}`;
         await tx.v3StockReservation.update({ where: { id: r.id }, data: { committedAt: now } });
       }
-      const seq = await this.nextNumber(tx, vendorId, 'INVOICE');
-      const inv = await tx.v3VendorInvoice.create({ data: { vendorId, orderId, requestId: order.requestId, seq, invoiceNumber: formatInvoiceNumber('INV-', seq), issuedAt: now, snapshotJson: { orderNo: order.orderNo, amountPaise: order.amountPaise, currency: order.currency } } });
-      return { order: toOrder(order), alreadyPaid: false, invoice: toInv(inv) };
+      // Block 4b (Amendment 09 W5): the old 5.14 order invoice is retired. One order payment produces ONE document, the receipt or invoice of the payments slice (5.17d), made when the payment is recorded.
+      // No invoice number is taken here any more; the rows already issued stay readable (GET /v3/me/invoices) and nothing is deleted.
+      return { order: toOrder(order), alreadyPaid: false, invoice: null };
     }, { maxWait: 15_000 }));
   }
   async flagReview(orderId: string, vendorId: string) { await this.prisma.v3Order.updateMany({ where: { id: orderId, vendorId }, data: { reviewFlag: true } }); }

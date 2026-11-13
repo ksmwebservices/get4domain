@@ -90,3 +90,11 @@ export class StoreFirstCatalogue extends Catalogue {
   constructor(private readonly products: StoreProducts, private readonly content: ContentCatalogue) { super(); }
   async find(vendorId: string, productRef: string): Promise<CatalogueItem | null> { return (await this.products.find(vendorId, productRef)) ?? this.content.find(vendorId, productRef); }
 }
+
+/**
+ * Checkout makes the pay request itself (Amendment 09 W3): one order, one pay link. The pay requests module binds this (it owns pay requests); here it is only a port so the order route does not
+ * import the payments module. Returns null when no link can be made (no UPI method, or staff have not set how long a link stays valid): the order still stands and the vendor makes the link by hand.
+ */
+export abstract class PayLinkPort {
+  abstract createForOrder(vendorId: string, orderId: string): Promise<{ payUrl: string; code: string; expiresAt: Date; notice: string; requestId: string } | null>;
+}
