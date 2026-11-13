@@ -9,7 +9,6 @@ import { SmsSettingsService } from './settings/sms-settings';
 import { MailRulesController } from './mail-rules/mail-rules.controllers';
 import { MailRulesService } from './mail-rules/mail-rules.service';
 import { MailRulesSettingsService } from './mail-rules/mail-rules-settings';
-import { ConsentGate, NoConsentYet } from './consent.port';
 import { InboxService } from './inbox.service';
 import { InboxStore } from './inbox.store';
 import { PrismaInboxStore } from './prisma-inbox.store';
@@ -24,7 +23,7 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
   controllers: MAIL_CONTROLLERS,
   providers: [
     MailSettingsService, MailRulesSettingsService, MailRulesService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort },
-    { provide: InboxStore, useClass: PrismaInboxStore }, { provide: ConsentGate, useClass: NoConsentYet }, InboxService,
+    { provide: InboxStore, useClass: PrismaInboxStore }, InboxService,
     SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender },
   ],
   exports: [EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender],

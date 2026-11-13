@@ -162,4 +162,12 @@ describe('Block 4b stores on staging', () => {
       await prisma.v3MailboxPrice.delete({ where: { id: p.id } });
     });
   });
+
+  describe('4b.12 policy kinds', () => {
+    it('the eight new kinds exist on the enum, so a placeholder draft can be stored for each (nothing is published)', async () => {
+      const kinds = ['TERMS_OF_SERVICE', 'REFUND_WALLET', 'DOMAIN_TERMS', 'ENQUIRY_CONSENT', 'IDENTITY_NOTICE', 'MESSAGING', 'TESTIMONIAL', 'DIRECTORY'] as const;
+      const made = await prisma.$transaction(kinds.map((kind, i) => prisma.v3TermsDocument.create({ data: { kind, version: 9000 + i, title: `b4b12-${RUN_ID}`, bodyMarkdown: 'To be supplied by counsel' } })));
+      expect(made.every((d) => d.status === 'DRAFT')).toBe(true); await prisma.v3TermsDocument.deleteMany({ where: { id: { in: made.map((d) => d.id) } } });
+    });
+  });
 });

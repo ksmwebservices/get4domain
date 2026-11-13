@@ -84,7 +84,7 @@ describe('terms API', () => {
       }
     });
     it('the full path: list, read, change a draft, publish with a note; the placeholder is a 422 with its code; a missing note is a 400', async () => {
-      const list = await get('/v3/admin/terms', 'SUPER_ADMIN'); expect(list.status).toBe(200); expect(list.body.data.items).toHaveLength(8); expect(list.body.data.items[0].placeholder).toBe(true); expect(JSON.stringify(list.body)).not.toContain('bodyMarkdown');
+      const list = await get('/v3/admin/terms', 'SUPER_ADMIN'); expect(list.status).toBe(200); expect(list.body.data.items).toHaveLength(16); expect(list.body.data.items[0].placeholder).toBe(true); expect(JSON.stringify(list.body)).not.toContain('bodyMarkdown');
       const d = await w.draftOf('VENDOR_TERMS');
       const one = await get(`/v3/admin/terms/${d.id}`, 'SUPER_ADMIN'); expect(one.body.data.bodyMarkdown).toBe('To be supplied by counsel');
       const blocked = await send('post', `/v3/admin/terms/${d.id}/publish`, 'SUPER_ADMIN', { changeNote: 'First version' }); expect(blocked.status).toBe(422); expect(blocked.body.code).toBe('TERMS_PLACEHOLDER');
