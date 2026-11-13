@@ -70,6 +70,7 @@ import { V3AccountsModule } from './v3-accounts/accounts.module';
 import { V3JobsModule } from './v3-jobs/jobs.module';
 import { V3AppointmentsModule } from './v3-appointments/appointments.module';
 import { V3StoreModule } from './v3-store/store.module';
+import { V3PacksModule } from './v3-packs/packs.module';
 import { DirectoryModule } from './directory/directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
@@ -139,6 +140,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3JobsModule,
     V3AppointmentsModule,
     V3StoreModule,
+    V3PacksModule,
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,

@@ -44,6 +44,9 @@ const SUPER_ONLY_ROUTES = [
   // B2 slice 5.1b: only SUPER_ADMIN marks a plan order paid offline or records a refund
   'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/orders/:id/refund',
 ];
+// Amendment 13 Part A: pack engine writes are SUPER_ADMIN only (tier matrix, switches, add-ons, packs, tabs, categories)
+const PACK_ENGINE_WRITES = ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'PUT /v3/admin/pack-engine/settings/:name'];
+
 const MARKETING_DENIED = [
   'POST /addons/vendor/:key/enable', 'POST /addons/vendor/:key/disable', 'POST /modules/vendor/:key/enable', 'POST /modules/vendor/:key/disable',
   'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
@@ -121,6 +124,9 @@ const MARKETING_DENIED = [
   // 5.5b: the Banner Library and set-up on a vendor's behalf
   'PUT /v3/admin/banner-library/:id/active', 'GET /v3/admin/vendors/:id/site/banners', 'POST /v3/admin/vendors/:id/site/banner', 'GET /v3/admin/vendors/:id/site/media', 'POST /v3/admin/vendors/:id/site/media',
 ];
+// Amendment 13 Part A: the pack engine reads are OPERATIONS and SUPER_ADMIN (MARKETING refused)
+const PACK_ENGINE_READS = ['GET /v3/admin/pack-engine/packs', 'GET /v3/admin/pack-engine/packs/:key', 'GET /v3/admin/pack-engine/tabs', 'GET /v3/admin/pack-engine/categories', 'GET /v3/admin/pack-engine/tier-matrix', 'GET /v3/admin/pack-engine/addons', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation'];
+
 const ALL_STAFF_ROUTES = [
   'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
   'GET /admin-team/me',
@@ -157,10 +163,12 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
   try { return new AdminGuard().canActivate(ctx(user, routeKey)); } catch (e) { if (e instanceof ForbiddenException) return false; throw e; }
 };
 
+SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS);
+
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(300);
+    expect(oracle).toHaveLength(314);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

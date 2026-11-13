@@ -300,3 +300,41 @@ export function stableJson(v: unknown): string {
   if (v && typeof v === 'object') return `{${Object.keys(v as object).sort().map((k) => `${JSON.stringify(k)}:${stableJson((v as Record<string, unknown>)[k])}`).join(',')}}`;
   return JSON.stringify(v ?? null);
 }
+
+// ── staff edits ─────────────────────────────────────────────────────────────────────────────────────
+
+export interface TabInput { scope: string; ownerKey: string; key: string; label: string; route: string; minTier?: string | null; capabilityKey?: string | null; freeTrial?: boolean; sortOrder?: number }
+/** Problems in a tab a staff member is saving (empty = fine). `known` is what already exists: the pack keys, capability keys and add-on keys the tab may belong to. */
+export function checkTab(t: TabInput, known: { packs: ReadonlySet<string>; capabilities: ReadonlySet<string>; addons: ReadonlySet<string> }): string[] {
+  const p: string[] = [];
+  if (!(TAB_SCOPES as readonly string[]).includes(t.scope)) p.push('scope must be COMMON, PACK, CAPABILITY or ADDON');
+  if (!isLowerKey(t.key)) p.push('key must be lower_snake (letters, digits and underscores)');
+  if (!t.label?.trim() || t.label.length > 60) p.push('label is required and at most 60 characters');
+  if (!/^\/[a-z0-9\-_/]{0,80}$/.test(t.route ?? '')) p.push('route must start with / and use lower-case letters, digits, - and _');
+  if (t.minTier && !isTier(t.minTier)) p.push('minimum tier is not one of the three tiers');
+  if (t.scope === 'COMMON' && t.ownerKey !== 'COMMON') p.push('a common tab belongs to COMMON');
+  if (t.scope === 'PACK' && !known.packs.has(t.ownerKey)) p.push('that pack does not exist');
+  if (t.scope === 'CAPABILITY' && !known.capabilities.has(t.ownerKey)) p.push('that capability does not exist');
+  if (t.scope === 'ADDON' && !known.addons.has(t.ownerKey)) p.push('that add-on pack does not exist');
+  if (t.capabilityKey && !known.capabilities.has(t.capabilityKey)) p.push('the capability the tab needs does not exist');
+  for (const issue of copyIssues(t.label ?? '')) p.push(`label ${issue}`);
+  return p;
+}
+
+const stageLists = (v: unknown): boolean => Array.isArray(v) && v.every((x) => x && typeof (x as NamedStages).name === 'string' && Array.isArray((x as NamedStages).stages) && (x as NamedStages).stages.every((s) => typeof s === 'string'));
+const labelledList = (v: unknown): boolean => Array.isArray(v) && v.every((x) => x && typeof (x as Labelled).key === 'string' && typeof (x as Labelled).label === 'string');
+/** Problems in a pack config a staff member is saving. The shape is checked, every text is run through the copy rules, and no price key may appear. */
+export function checkPackConfig(c: unknown): string[] {
+  const p: string[] = [];
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return ['config must be an object'];
+  const o = c as Record<string, unknown>;
+  for (const k of ['entities', 'reportSet', 'fieldHints']) if (o[k] !== undefined && !Array.isArray(o[k])) p.push(`${k} must be a list`);
+  for (const k of ['workflows', 'crmPipelines']) if (o[k] !== undefined && !stageLists(o[k])) p.push(`${k} must be a list of { name, stages[] }`);
+  for (const k of ['telecrm', 'taskTemplates', 'siteSections']) if (o[k] !== undefined && !labelledList(o[k])) p.push(`${k} must be a list of { key, label }`);
+  if (o.flags !== undefined && (typeof o.flags !== 'object' || o.flags === null || Object.values(o.flags as object).some((v) => typeof v !== 'boolean' && v !== null))) p.push('flags must be yes or no values');
+  const text = JSON.stringify(c);
+  if (/"(price|pricePaise|amount|amountPaise|rate)"\s*:/i.test(text)) p.push('a pack carries no price');
+  for (const issue of copyIssues(text)) p.push(`text ${issue}`);
+  if (/\bleads?\b/i.test(text)) p.push('text says "leads"; write "enquiries"');
+  return p;
+}

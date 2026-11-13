@@ -167,6 +167,11 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/banner-library': ALL_STAFF, 'PUT /v3/admin/banner-library/:id/active': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/site/banners': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/banner': OPS_AND_SUPER,
   'GET /v3/admin/vendors/:id/site/media': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/site/media': OPS_AND_SUPER,
   'POST /v3/admin/vendors/:id/site/rollback': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/site/preview/:publicationId/:path': OPS_AND_SUPER, 'PUT /v3/admin/vendors/:id/site/noindex': OPS_AND_SUPER,
+  // Amendment 13 Part A, the pack engine: reads OPERATIONS and SUPER_ADMIN; every change is SUPER_ADMIN only (the staff ADMIN role arrives with Part B); the tier matrix and the two switches stay SUPER_ADMIN only
+  'GET /v3/admin/pack-engine/packs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/packs/:key': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tabs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/categories': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tier-matrix': OPS_AND_SUPER,
+  'GET /v3/admin/pack-engine/addons': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/settings': OPS_AND_SUPER,
+  'PUT /v3/admin/pack-engine/packs/:key': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tabs': SUPER_ONLY, 'PUT /v3/admin/pack-engine/categories/:categoryKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey': SUPER_ONLY,
+  'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/settings/:name': SUPER_ONLY,
 };
 
 /**
