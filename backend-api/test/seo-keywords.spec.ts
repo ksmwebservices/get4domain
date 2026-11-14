@@ -38,6 +38,28 @@ describe('category keyword derivation', () => {
   });
 });
 
+describe('names that are not pluralised', () => {
+  const plural = (name: string): string => deriveKeywordSet({ id: 'x', name, specialisations: [] }).plural;
+  it('leaves the plural empty (and keeps the singular) for " and ", a last word ending in "ing", or more than three words', () => {
+    expect(plural('Motivational speaker and trainer')).toBe('');
+    expect(plural('Pumps and motors supplier')).toBe('');
+    expect(plural('Interior decorating')).toBe('');
+    expect(plural('Car accessories fitting')).toBe('');
+    expect(plural('Agricultural machinery dealer shop')).toBe('');
+    expect(deriveKeywordSet({ id: 'x', name: 'Interior decorating', specialisations: [] }).singular).toBe('interior decorating');
+  });
+  it('still pluralises ordinary names, including exactly three words', () => {
+    expect(plural('Plumber')).toBe('plumbers'); expect(plural('Driving school')).toBe('driving schools'); expect(plural('Agricultural machinery dealer')).toBe('agricultural machinery dealers');
+  });
+  it('the loader stores the empty plural and does not call it a change on the second run', async () => {
+    const store = new MemoryKeywordStore(); const svc = new SeoKeywordService(store, { record: async () => undefined });
+    const csv = 'id,name\nspeaker,Motivational speaker and trainer\n';
+    await svc.load(csv, { apply: true });
+    expect(store.rows.get('speaker')).toMatchObject({ singular: 'motivational speaker and trainer', plural: '' });
+    expect((await svc.load(csv, { apply: true })).unchanged).toBe(1);
+  });
+});
+
 describe('csv and sheet', () => {
   it('parses quotes, commas, doubled quotes and line breaks inside quotes', () => { expect(parseCsv('a,b\n"x, y","he said ""hi""\nthere"\r\n')).toEqual([['a', 'b'], ['x, y', 'he said "hi"\nthere']]); });
   it('reports bad rows instead of guessing', () => {
@@ -82,7 +104,7 @@ describe('the loader plan', () => {
   (sheet ? it : it.skip)('the real catalog sheet loads: 196 categories, no problems, no synonyms invented', () => {
     const plan = planKeywordLoad(readFileSync(sheet!, 'utf8'), new Map());
     expect(plan.problems).toEqual([]); expect(plan.total).toBe(196); expect(plan.create).toHaveLength(196);
-    expect(plan.create.every((c) => c.synonyms.length === 0 && c.singular && c.plural)).toBe(true);
+    expect(plan.create.every((c) => c.synonyms.length === 0 && c.singular)).toBe(true);
   });
 });
 

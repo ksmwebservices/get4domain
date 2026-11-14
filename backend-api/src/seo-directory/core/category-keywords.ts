@@ -29,9 +29,18 @@ export function pluraliseName(name: string): string {
   return words.join(' ');
 }
 
+/**
+ * Names the plural rule must not guess at: more than three words, a name with " and " (which word is the head?), or a last word ending in "ing" ("driving", "cleaning": a
+ * gerund is not made plural). Their plural stays EMPTY for staff to fill; the singular is still stored.
+ */
+export function pluralIsAmbiguous(singular: string): boolean {
+  const words = singular.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return words.length > 3 || words.includes('and') || /ing$/.test(words[words.length - 1] ?? '');
+}
+
 export function deriveKeywordSet(c: SheetCategory): KeywordSet {
   const singular = c.name.trim().toLowerCase().replace(/\s+/g, ' ');
-  return { categorySlug: c.id.trim().toLowerCase(), name: c.name.trim(), singular, plural: pluraliseName(singular), synonyms: [], specialisations: [...new Set(c.specialisations.map((s) => s.trim()).filter(Boolean))] };
+  return { categorySlug: c.id.trim().toLowerCase(), name: c.name.trim(), singular, plural: pluralIsAmbiguous(singular) ? '' : pluraliseName(singular), synonyms: [], specialisations: [...new Set(c.specialisations.map((s) => s.trim()).filter(Boolean))] };
 }
 
 /** RFC 4180 parsing: quoted fields, doubled quotes, commas and line breaks inside quotes. */
