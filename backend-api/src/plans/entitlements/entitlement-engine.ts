@@ -4,6 +4,7 @@
  */
 export type FeatureStateName = 'ACTIVE' | 'LIMITED' | 'LOCKED_PREVIEW' | 'HIDDEN';
 export type SubscriptionStatusName = 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED';
+export type PlanState = SubscriptionStatusName | 'PAUSED' | null;
 export type EntitlementSource = 'PLAN' | 'OVERRIDE' | 'STATUS';
 export type EntitlementMode = 'LEGACY' | 'V3' | 'UNASSIGNED';
 export type DenyReason = 'FEATURE_LOCKED' | 'FEATURE_HIDDEN' | 'LIMIT_REACHED';
@@ -36,6 +37,8 @@ export interface EngineInput {
   usage?: Record<string, number>;
   /** owner rule 9: a SUSPENDED vendor gets the track's Free entitlements and no override can switch a Pro feature back on. Nothing is deleted. */
   vendorSuspended?: boolean;
+  /** Amendment 13 B13: staff paused the paid plan. Like a suspension for the plan that applies (the track's Free plan), reported as its own state; the subscription row, the term and every record are untouched. */
+  vendorPaused?: boolean;
 }
 
 export interface ResolvedFeature {
@@ -58,6 +61,10 @@ export interface ResolvedEntitlements {
   graceWarning: boolean;
   /** true when the vendor is suspended (the Free entitlements apply; the site and listing stay live) */
   suspended: boolean;
+  /** true while the paid plan is paused (the Free entitlements apply, every record is kept) */
+  paused?: boolean;
+  /** the one word a screen switches on: PAUSED while paused, otherwise the subscription status (null when there is none). The engine always sets both; a hand-built value in a test may leave them out. */
+  planState?: PlanState;
   features: Record<string, ResolvedFeature>;
 }
 export interface CanResult { allowed: boolean; state: FeatureStateName; limit: number | null; reason: DenyReason | null; upsellText: string | null }
@@ -95,8 +102,9 @@ export interface EffectivePlanChoice {
  * ACTIVE gives its plan; GRACE keeps the plan (the caller shows a warning); after the grace period, or when cancelled, the track's Free plan (unless the owner chose
  * KEEP_UNTIL_REPLACED for expiry); a SUSPENDED vendor always gets the Free plan of their track. Pure: nothing is stored or deleted.
  */
-export function chooseEffectivePlan(a: { subscription: EngineSubscription | null; plans: EnginePlan[]; settings: EngineSettings; now: Date; vendorSuspended?: boolean }): EffectivePlanChoice {
+export function chooseEffectivePlan(a: { subscription: EngineSubscription | null; plans: EnginePlan[]; settings: EngineSettings; now: Date; vendorSuspended?: boolean; vendorPaused?: boolean }): EffectivePlanChoice {
   const suspended = a.vendorSuspended === true;
+  const paused = a.vendorPaused === true;
   if (!a.subscription) return { subscribed: undefined, effective: undefined, status: null, fellBack: false, suspended };
   const subscribed = a.plans.find((p) => p.id === a.subscription!.planId);
   const status = effectiveStatus(a.subscription, a.now, a.settings);
@@ -104,7 +112,7 @@ export function chooseEffectivePlan(a: { subscription: EngineSubscription | null
   let fellBack = false;
   const lapsed = status === 'EXPIRED' || status === 'CANCELLED';
   const dropForLapse = lapsed && subscribed && subscribed.level !== 'FREE' && (status === 'CANCELLED' || a.settings.downgradeBehaviour !== 'KEEP_UNTIL_REPLACED');
-  const dropForSuspension = suspended && subscribed && subscribed.level !== 'FREE';
+  const dropForSuspension = (suspended || paused) && subscribed && subscribed.level !== 'FREE';
   if (dropForLapse || dropForSuspension) {
     effective = a.plans.find((p) => p.track === subscribed!.track && p.level === 'FREE');
     fellBack = true;
@@ -115,7 +123,7 @@ export function chooseEffectivePlan(a: { subscription: EngineSubscription | null
 export function resolveEntitlements(input: EngineInput): ResolvedEntitlements {
   const { now, subscription: sub, plans, matrix, featureKeys, overrides, settings, usage } = input;
   const mode: EntitlementMode = !sub ? (input.flagOn ? 'UNASSIGNED' : 'LEGACY') : 'V3';
-  const { subscribed, effective, status, fellBack, suspended } = chooseEffectivePlan({ subscription: sub, plans, settings, now, vendorSuspended: input.vendorSuspended });
+  const { subscribed, effective, status, fellBack, suspended } = chooseEffectivePlan({ subscription: sub, plans, settings, now, vendorSuspended: input.vendorSuspended, vendorPaused: input.vendorPaused });
 
   // newest non-expired override per feature (none while suspended: Pro features stop, whatever staff granted)
   const live = new Map<string, EngineOverride>();
@@ -145,6 +153,8 @@ export function resolveEntitlements(input: EngineInput): ResolvedEntitlements {
     subscriptionStatus: status,
     graceWarning: status === 'GRACE' && !suspended,
     suspended,
+    paused: input.vendorPaused === true && !!subscribed && subscribed.level !== 'FREE',
+    planState: input.vendorPaused === true && !!subscribed && subscribed.level !== 'FREE' ? 'PAUSED' : status,
     features,
   };
 }

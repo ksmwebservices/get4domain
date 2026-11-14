@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddonRecord, CapabilityRecord, CategoryRecord, MatrixRecord, PackRecord, TabRecord, Tier } from './core/pack-core';
 import {
-  PackReferenceStore, PackVendorStore, StoredAddon, StoredCapability, StoredCategory, StoredMatrixCell, StoredPack, StoredTab, StoredVendorAddon, StoredVendorCapability, StoredVendorPack,
+  PackReferenceStore, PackVendorStore, StoredAddon, StoredCapability, StoredCategory, StoredMatrixCell, StoredPack, StoredPause, StoredTab, StoredVendorAddon, StoredVendorCapability, StoredVendorPack,
 } from './pack-engine.store';
 
 const json = (v: unknown): Prisma.InputJsonValue => v as Prisma.InputJsonValue;
@@ -122,5 +122,23 @@ export class PrismaPackVendorStore extends PackVendorStore {
   async setVendorCapability(vendorId: string, capabilityKey: string, enabled: boolean, source: string): Promise<StoredVendorCapability> {
     const r = await this.prisma.v3VendorCapability.upsert({ where: { vendorId_capabilityKey: { vendorId, capabilityKey } }, update: { enabled, source }, create: { vendorId, capabilityKey, enabled, source } });
     return { vendorId: r.vendorId, capabilityKey: r.capabilityKey, enabled: r.enabled, source: r.source };
+  }
+
+  async getOpenPause(vendorId: string): Promise<StoredPause | null> {
+    const r = await this.prisma.v3PlanPause.findFirst({ where: { vendorId, openVendorId: vendorId } });
+    return r ? { vendorId: r.vendorId, reason: r.reason, pausedAt: r.pausedAt } : null;
+  }
+  async openPause(vendorId: string, reason: string, by: { type: string; id: string | null }): Promise<StoredPause | null> {
+    try {
+      const r = await this.prisma.v3PlanPause.create({ data: { vendorId, openVendorId: vendorId, reason, pausedByType: by.type, pausedById: by.id } });
+      return { vendorId: r.vendorId, reason: r.reason, pausedAt: r.pausedAt };
+    } catch (e) {
+      if ((e as { code?: string }).code === 'P2002') return null;   // one open pause per vendor: someone else won
+      throw e;
+    }
+  }
+  async closePause(vendorId: string, by: { type: string; id: string | null }): Promise<boolean> {
+    const r = await this.prisma.v3PlanPause.updateMany({ where: { vendorId, openVendorId: vendorId }, data: { openVendorId: null, resumedAt: new Date(), resumedByType: by.type, resumedById: by.id } });
+    return r.count === 1;
   }
 }

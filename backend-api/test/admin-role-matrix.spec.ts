@@ -172,12 +172,14 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
   try { return new AdminGuard().canActivate(ctx(user, routeKey)); } catch (e) { if (e instanceof ForbiddenException) return false; throw e; }
 };
 
-SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS);
+// Part B (B13): pausing and resuming a paid plan is OPERATIONS and SUPER_ADMIN (MARKETING refused; ADMIN inherits OPERATIONS and SUPPORT is refused: see staff-roles.spec.ts)
+const PLAN_PAUSE_ROUTES = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
+SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS, ...PLAN_PAUSE_ROUTES);
 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(331);
+    expect(oracle).toHaveLength(333);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

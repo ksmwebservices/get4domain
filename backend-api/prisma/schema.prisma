@@ -118,6 +118,7 @@ model Vendor {
   v3VendorPack V3VendorPack?
   v3VendorCapabilities V3VendorCapability[]
   v3VendorPackAddons V3VendorPackAddon[]
+  v3PlanPauses V3PlanPause[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
   v3DirectoryBusiness V3DirectoryBusiness?
@@ -7450,6 +7451,27 @@ model V3PackCategory {
 }
 
 /// A vendor's ONE primary pack (set at registration from the category; it never changes with the tier) and the starter services the vendor picked. Tenant data.
+/// A pause of a vendor's paid plan (Amendment 13 B13). Staff pause and resume it; while a row is open the vendor sees the Free trial tabs (the rest locked, reason PLAN_PAUSED) and every record is kept. openVendorId equals vendorId while the pause is open and is NULL after, so the unique index allows one open pause per vendor and any number of past ones. Tenant data.
+model V3PlanPause {
+  id            String    @id @default(cuid())
+  vendorId      String
+  openVendorId  String?   @unique
+  reason        String
+  pausedAt      DateTime  @default(now())
+  resumedAt     DateTime?
+  pausedByType  String    @default("STAFF")
+  pausedById    String?
+  resumedByType String?
+  resumedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, pausedAt])
+  @@map("g4d_plan_pauses")
+}
+
 model V3VendorPack {
   id            String   @id @default(cuid())
   vendorId      String   @unique

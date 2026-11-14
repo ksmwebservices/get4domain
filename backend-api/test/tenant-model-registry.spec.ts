@@ -71,7 +71,7 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant'
   'V3ApptService', 'V3ApptProvider', 'V3ApptBooking',
   // slice 5.24c (Batch 13): reached only through StoreStore, whose every query names the vendor (tested: vendor B cannot read or change vendor A's products, variants, stock ledger or returns)
   'V3StoreProduct', 'V3StoreVariant', 'V3StoreStockMove', 'V3OrderReturn',
-  'V3VendorPack', 'V3VendorCapability', 'V3VendorPackAddon',   // pack engine (Amendment 13 Part A): reached only through the pack engine store, whose every query names the vendor
+  'V3VendorPack', 'V3VendorCapability', 'V3VendorPackAddon', 'V3PlanPause',   // pack engine (Amendment 13 Part A): reached only through the pack engine store, whose every query names the vendor
   // block 4b slice 1: the private-bucket access log, reached only through StorageAccessStore, whose list names the vendor; append-only (trigger), no foreign key
   'V3StorageAccess',
   // block 4b slice 2: the enquiry inbox, reached only through InboxStore, whose every query names the vendor (tested: vendor B cannot read or change vendor A's messages)

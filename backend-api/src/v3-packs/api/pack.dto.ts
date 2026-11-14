@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { TAB_SCOPES, TIERS } from '../core/pack-core';
 
 const KEY = /^[a-z0-9][a-z0-9-]{1,80}$/;
@@ -37,6 +37,7 @@ export class EditCategoryDto {
   @IsOptional() @IsBoolean() active?: boolean;
   @IsOptional() @IsString() @MaxLength(500) ownerNotes?: string | null;
 }
+export class PausePlanDto { @IsString() @MinLength(3) @MaxLength(300) reason!: string }
 export class MatrixCellDto { @IsBoolean() allowed!: boolean }
 export class PackSettingDto { @IsBoolean() value!: boolean }
 export class VendorAddonDto { @IsIn(['ACTIVE', 'ENDED']) status!: 'ACTIVE' | 'ENDED' }

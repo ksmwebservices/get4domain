@@ -3,7 +3,7 @@ import { readSeedSources } from '../../src/v3-packs/seed/seed-files';
 import { AddonRecord, CapabilityRecord, CategoryRecord, MatrixRecord, PackRecord, TabRecord, Tier } from '../../src/v3-packs/core/pack-core';
 import { EntitlementsService } from '../../src/plans/entitlements/entitlements.service';
 import {
-  PackReferenceStore, PackVendorStore, StoredAddon, StoredCapability, StoredCategory, StoredMatrixCell, StoredPack, StoredTab, StoredVendorAddon, StoredVendorCapability, StoredVendorPack,
+  PackReferenceStore, PackVendorStore, StoredAddon, StoredCapability, StoredCategory, StoredMatrixCell, StoredPack, StoredPause, StoredTab, StoredVendorAddon, StoredVendorCapability, StoredVendorPack,
 } from '../../src/v3-packs/pack-engine.store';
 import { PackEngineService } from '../../src/v3-packs/pack-engine.service';
 
@@ -66,15 +66,25 @@ export class MemoryVendorStore extends PackVendorStore {
   async setVendorAddon(vendorId: string, addonKey: string, status: 'ACTIVE' | 'ENDED'): Promise<StoredVendorAddon> { const r = { vendorId, addonKey, status }; this.addons.set(`${vendorId}|${addonKey}`, r); return r; }
   async listVendorCapabilities(vendorId: string): Promise<StoredVendorCapability[]> { return [...this.caps.values()].filter((c) => c.vendorId === vendorId); }
   async setVendorCapability(vendorId: string, capabilityKey: string, enabled: boolean, source: string): Promise<StoredVendorCapability> { const r = { vendorId, capabilityKey, enabled, source }; this.caps.set(`${vendorId}|${capabilityKey}`, r); return r; }
+  /** open pauses by vendor (one per vendor, like the unique key) and the closed ones kept as history */
+  pauses = new Map<string, StoredPause>(); pauseHistory: StoredPause[] = [];
+  async getOpenPause(vendorId: string): Promise<StoredPause | null> { return this.pauses.get(vendorId) ?? null; }
+  async openPause(vendorId: string, reason: string): Promise<StoredPause | null> { if (this.pauses.has(vendorId)) return null; const p = { vendorId, reason, pausedAt: new Date(0) }; this.pauses.set(vendorId, p); return p; }
+  async closePause(vendorId: string): Promise<boolean> { const p = this.pauses.get(vendorId); if (!p) return false; this.pauses.delete(vendorId); this.pauseHistory.push(p); return true; }
 }
 
-export interface PlanState { mode: 'LEGACY' | 'V3' | 'UNASSIGNED'; level: 'FREE' | 'PRO' | null; track: Tier | null }
+export interface PlanState { mode: 'LEGACY' | 'V3' | 'UNASSIGNED'; level: 'FREE' | 'PRO' | null; track: Tier | null; paused?: boolean }
 /** A stand-in for the Stage 5.1 entitlement service: tests set what the plan engine would have resolved for each vendor. */
 export class FakeEntitlements {
   states = new Map<string, PlanState>();
-  async resolve(vendorId: string): Promise<{ mode: string; level: string | null; track: string | null; plan: string | null }> {
+  /** a paused paid plan: the real engine falls to the track's Free plan and reports paused (see entitlement-engine.ts); this stand-in does the same */
+  invalidated: string[] = [];
+  invalidate(vendorId: string): void { this.invalidated.push(vendorId); }
+  async resolve(vendorId: string): Promise<{ mode: string; level: string | null; track: string | null; plan: string | null; paused: boolean; planState: string | null; subscriptionStatus: string | null }> {
     const s = this.states.get(vendorId) ?? { mode: 'UNASSIGNED' as const, level: null, track: null };
-    return { mode: s.mode, level: s.level, track: s.track, plan: s.track ? `${s.track.toLowerCase()}_${(s.level ?? 'free').toLowerCase()}` : null };
+    const paused = s.paused === true && s.level === 'PRO';
+    const level = paused ? 'FREE' : s.level;
+    return { mode: s.mode, level, track: s.track, plan: s.track ? `${s.track.toLowerCase()}_${(level ?? 'free').toLowerCase()}` : null, paused, planState: paused ? 'PAUSED' : s.level ? 'ACTIVE' : null, subscriptionStatus: s.level ? 'ACTIVE' : null };
   }
 }
 

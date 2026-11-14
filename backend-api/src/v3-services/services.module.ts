@@ -1,5 +1,6 @@
 import { Module, Provider, Type } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { V3PacksModule } from '../v3-packs/packs.module';
 import { AdminPacksController, AdminServicesController, MeServicesController, PublicServicesController } from './api/services.controllers';
 import { PrismaServicesStore } from './prisma-services.store';
 import { ServicesCatalogService } from './services.service';
@@ -13,5 +14,5 @@ export const SERVICES_CONTROLLERS: Type<unknown>[] = [PublicServicesController, 
  * Services, the price book and add-on packs (slice 5.16b). The wallet module (global) supplies the wallet store and settings; PlansModule (global) supplies entitlements and audit.
  * Nothing here touches the legacy billing, wallet, add-on or module code (decision D1).
  */
-@Module({ imports: [PrismaModule], controllers: SERVICES_CONTROLLERS, providers: SERVICES_PROVIDERS, exports: [ServicesStore, ServicesCatalogService, ServiceUsagePort] })
+@Module({ imports: [PrismaModule, V3PacksModule], controllers: SERVICES_CONTROLLERS, providers: SERVICES_PROVIDERS, exports: [ServicesStore, ServicesCatalogService, ServiceUsagePort] })
 export class V3ServicesModule {}

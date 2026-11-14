@@ -80,6 +80,11 @@ export class InboxService {
     const count = await this.store.countHeld(vendorId);
     return { count, text: count === 0 ? null : `${count} ${count === 1 ? 'enquiry' : 'enquiries'} waiting` };
   }
+  /** What the vendor app's tab badge needs and nothing else: the held count (plan not active) and how many messages are new (plan active). No sender, subject or text. */
+  async badge(vendorId: string): Promise<{ waiting: number; unread: number }> {
+    if (planActive(await this.entitlements.resolve(vendorId))) { await this.release(vendorId); return { waiting: 0, unread: (await this.store.list(vendorId, { state: 'NEW', excludeHeld: true }, 0, 1)).total }; }
+    return { waiting: await this.store.countHeld(vendorId), unread: 0 };
+  }
   private async release(vendorId: string): Promise<void> { const n = await this.store.releaseHeld(vendorId, this.clock()); if (n > 0) this.emit('inbox.held_released', vendorId, '', { count: n }); }
 
   async list(vendorId: string, state: string | undefined, page: number, pageSize: number) {

@@ -3,12 +3,14 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DomainRegistration } from '@prisma/client';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
+import { RequiresTab } from '../v3-packs/requires-tab';
 import { DomainsService, DomainSearchResult } from './domains.service';
 import { RegisterDomainDto } from './dto/register-domain.dto';
 import { ConnectDomainDto } from './dto/connect-domain.dto';
 
 @ApiTags('domains')
 @ApiBearerAuth()
+@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11); Version 2 vendors are never restricted
 @Controller('domains')
 export class DomainsController {
   constructor(private readonly service: DomainsService) {}

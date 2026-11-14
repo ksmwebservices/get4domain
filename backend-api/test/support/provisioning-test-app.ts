@@ -28,6 +28,7 @@ import { DocCrypto } from '../../src/v3-registrar/doc-crypto';
 import { DomainSettingsService } from '../../src/site-domains/settings/domain-settings.service';
 import { WALLET_CONTROLLERS, WALLET_PROVIDERS } from '../../src/v3-wallet/wallet.module';
 import { SERVICES_CONTROLLERS, SERVICES_PROVIDERS } from '../../src/v3-services/services.module';
+import { PACK_PROVIDERS } from '../../src/v3-packs/packs.module';
 import { SERVICE_REQUESTS_CONTROLLERS, SERVICE_REQUESTS_PROVIDERS } from '../../src/v3-service-requests/service-requests.module';
 import { THEME_SWITCH_CONTROLLERS, THEME_SWITCH_PROVIDERS } from '../../src/v3-theme-switch/theme-switch.module';
 import { PaymentsGate } from '../../src/plan-billing/razorpay/payments-gate';
@@ -91,7 +92,7 @@ export function provisioningTestModuleMetadata(opts: ProvisioningTestOptions = {
   return {
     imports: [PrismaModule, PassportModule, PlansModule, EmailModule],
     controllers: [...PROVISIONING_CONTROLLERS, ...(opts.b3 ? B3_CONTROLLERS : []), ...(opts.includeSiteApi ? [...SITE_PUBLISH_CONTROLLERS, ...SITE_DOMAIN_CONTROLLERS] : []), ...(opts.includeDirectoryApi ? DIRECTORY_CONTROLLERS : []), ...(opts.billing ? PLAN_BILLING_CONTROLLERS : []), ...(opts.wallet ? WALLET_CONTROLLERS : []), ...(opts.services ? SERVICES_CONTROLLERS : []), ...(opts.requests ? SERVICE_REQUESTS_CONTROLLERS : []), ...(opts.themeSwitch ? THEME_SWITCH_CONTROLLERS : []), ...(opts.payments ? PAYMENTS_CONTROLLERS : []), ...(opts.website ? WEBSITE_CONTROLLERS : []), ...(opts.domainAutomation ? DOMAIN_AUTOMATION_CONTROLLERS : []), ...(opts.registrar ? REGISTRAR_CONTROLLERS : []), ...(opts.includeAiApi ? AI_STUDIO_CONTROLLERS : [])],
-    providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers],
+    providers: [JwtStrategy, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ModuleGuard }, ...providers, ...PACK_PROVIDERS],   // the pack engine: the domain and services controllers use @RequiresTab and the add-on list
   };
 }
 

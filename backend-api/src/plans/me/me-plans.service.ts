@@ -6,6 +6,8 @@ import { EntitlementsService } from '../entitlements/entitlements.service';
 
 export interface MyEntitlements {
   mode: string; plan: string | null; track: string | null; level: string | null; subscriptionStatus: string | null; graceWarning: boolean;
+  /** Amendment 13 B13: PAUSED while staff have paused the paid plan, otherwise the subscription status. A paused plan shows the Free trial tabs, locked ones say PLAN_PAUSED, and every record is kept. */
+  planState: string | null; paused: boolean;
   features: Record<string, ResolvedFeature>;
   render: RenderEntitlements;
 }
@@ -18,7 +20,7 @@ export class MePlansService {
   async entitlements(vendorId: string): Promise<MyEntitlements> {
     const r = await this.engine.resolve(vendorId);
     return {
-      mode: r.mode, plan: r.plan, track: r.track, level: r.level, subscriptionStatus: r.subscriptionStatus, graceWarning: r.graceWarning,
+      mode: r.mode, plan: r.plan, track: r.track, level: r.level, subscriptionStatus: r.subscriptionStatus, graceWarning: r.graceWarning, planState: r.planState ?? r.subscriptionStatus, paused: r.paused === true,
       features: r.features, render: toRenderEntitlements(r),
     };
   }

@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
+import { RequiresTab } from '../../v3-packs/requires-tab';
 import { RATE } from '../../common/throttling';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
@@ -57,6 +58,7 @@ export class IdentityQueueQuery extends PageQueryDto { @IsOptional() @IsIn(['INC
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
+@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11)
 @Controller('v3/me/domain-sales')
 export class MeDomainSalesController {
   constructor(private readonly svc: RegistrarService) {}

@@ -11,6 +11,7 @@ import { TenantContext } from '../../common/tenant/tenant.types';
 import { RATE } from '../../common/throttling';
 import { actorOf } from '../../plans/admin/plans-admin.common';
 import { Actor } from '../../plans/admin/audit.service';
+import { PackEngineService } from '../../v3-packs/pack-engine.service';
 import { ServicesCatalogService } from '../services.service';
 import { ApprovePriceDto, CreatePackDto, CreateServiceDto, EditPriceDto, ProposePriceDto, PurchasePackDto, UpdatePackDto, UpdateServiceDto } from './dto/services.dto';
 
@@ -32,18 +33,21 @@ export class PublicServicesController {
 @UseGuards(VendorOwnerGuard)
 @Controller('v3/me')
 export class MeServicesController {
-  constructor(private readonly services: ServicesCatalogService) {}
+  constructor(private readonly services: ServicesCatalogService, private readonly engine: PackEngineService) {}
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
   @Get('services') @ApiOperation({ summary: 'Every service with what it includes, who does it, how approval works, its price and tax, what my plan and packs still cover, and how it would be paid' })
   list(@Tenant() t: TenantContext) { return this.services.vendorServices(t.vendorId); }
 
   @Get('packs') @ApiOperation({ summary: 'Add-on packs I can buy, with their approved prices, and the packs I have bought' })
-  packs(@Tenant() t: TenantContext) { return this.services.vendorPacks(t.vendorId); }
+  async packs(@Tenant() t: TenantContext) { return { ...(await this.services.vendorPacks(t.vendorId)), addonPacks: await this.engine.myAddons(t.vendorId) }; }
 
   @Throttle(RATE.payment) @Post('packs/:key/purchase') @HttpCode(200)
   @ApiOperation({ summary: 'Buy a pack with wallet credit (idempotent by key). The charge and the purchase are recorded together.' })
-  purchase(@Tenant() t: TenantContext, @Param('key') key: string, @Body() dto: PurchasePackDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.services.purchasePack(t.vendorId, key, dto.idempotencyKey, this.actor(user, req)); }
+  async purchase(@Tenant() t: TenantContext, @Param('key') key: string, @Body() dto: PurchasePackDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    if (await this.engine.isAddonKey(key)) return this.engine.refuseAddonPurchase(t.vendorId, key);   // SHOP, ONLINE_ORDERING_DELIVERY, PHARMACY_COUNTER, HOME_SAMPLE_COLLECTION: price PENDING, nothing is sold
+    return this.services.purchasePack(t.vendorId, key, dto.idempotencyKey, this.actor(user, req));
+  }
 }
 
 const noPrices = (u: AuthenticatedUser): boolean => u?.adminRole === 'MARKETING';

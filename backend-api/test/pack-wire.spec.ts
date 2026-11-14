@@ -45,7 +45,7 @@ describe('the pack engine and the legacy world', () => {
   });
   it('the pure cores have no clock, randomness, network, file system or database', () => {
     const cores = files.filter((x) => /\/core\//.test(x.replace(/\\/g, '/')));
-    expect(cores.length).toBe(2);
+    expect(cores.length).toBe(3);
     for (const f of cores) expect(code(f)).not.toMatch(/Date\.now|new Date\(|Math\.random|randomBytes|randomUUID|fetch\(|https?\.request|from 'fs'|require\(|prisma|PrismaService|process\.env/);
   });
   it('every tenant query in the Prisma store names the vendor, and the reference queries never do', () => {
@@ -87,13 +87,15 @@ describe('the HTTP layer', () => {
 describe('the staff routes follow the role rules', () => {
   const READS = ['GET /v3/admin/pack-engine/packs', 'GET /v3/admin/pack-engine/packs/:key', 'GET /v3/admin/pack-engine/tabs', 'GET /v3/admin/pack-engine/categories', 'GET /v3/admin/pack-engine/tier-matrix', 'GET /v3/admin/pack-engine/addons', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation'];
   const WRITES = ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'PUT /v3/admin/pack-engine/settings/:name'];
+  const PAUSE = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
+  it('pausing and resuming a paid plan (Part B): OPERATIONS and SUPER_ADMIN, never MARKETING', () => { for (const k of PAUSE) expect([k, [...rolesFor(k)]]).toEqual([k, ['SUPER_ADMIN', 'OPERATIONS']]); });
   it('reads: OPERATIONS and SUPER_ADMIN, never MARKETING', () => { for (const k of READS) expect([k, [...rolesFor(k)]]).toEqual([k, ['SUPER_ADMIN', 'OPERATIONS']]); });
   it('every change, the tier matrix and the two switches are SUPER_ADMIN only (the staff ADMIN role arrives with Part B)', () => { for (const k of WRITES) expect([k, [...rolesFor(k)]]).toEqual([k, ['SUPER_ADMIN']]); });
   it('every route of the controller has a matrix entry, and every entry is a real route', () => {
     const c = fs.readFileSync(path.join(src, 'v3-packs/api/pack.controllers.ts'), 'utf8');
     const admin = c.slice(c.indexOf("@Controller('v3/admin/pack-engine')"));
     const found = [...admin.matchAll(/@(Get|Put|Post)\('([^']*)'\)/g)].map((m) => `${m[1].toUpperCase()} /v3/admin/pack-engine/${m[2]}`.replace(/\/$/, ''));
-    expect(found.sort()).toEqual([...READS, ...WRITES].sort());
+    expect(found.sort()).toEqual([...READS, ...WRITES, ...PAUSE].sort());
     for (const k of found) expect(Object.keys(ADMIN_ROLE_MATRIX)).toContain(k);
   });
 });

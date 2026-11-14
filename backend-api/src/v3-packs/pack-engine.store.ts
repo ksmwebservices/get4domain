@@ -8,6 +8,7 @@ export interface StoredCategory extends CategoryRecord { id: string; active: boo
 export interface StoredAddon extends AddonRecord { id: string; enabled: boolean }
 export interface StoredVendorAddon { vendorId: string; addonKey: string; status: string }
 export interface StoredVendorPack { vendorId: string; packKey: string; categoryKey: string; starterPicks: string[] }
+export interface StoredPause { vendorId: string; reason: string; pausedAt: Date }
 export interface StoredVendorCapability { vendorId: string; capabilityKey: string; enabled: boolean; source: string }
 
 /** Reference data (packs, tabs, capabilities, matrix, category map): read and written by loaders and staff. No vendor id. */
@@ -49,4 +50,11 @@ export abstract class PackVendorStore {
   abstract setVendorAddon(vendorId: string, addonKey: string, status: 'ACTIVE' | 'ENDED', setBy: { type: string; id: string | null }): Promise<StoredVendorAddon>;
   abstract listVendorCapabilities(vendorId: string): Promise<StoredVendorCapability[]>;
   abstract setVendorCapability(vendorId: string, capabilityKey: string, enabled: boolean, source: string): Promise<StoredVendorCapability>;
+
+  /** The open pause of the vendor's paid plan, if any (Amendment 13 B13). */
+  abstract getOpenPause(vendorId: string): Promise<StoredPause | null>;
+  /** Opens a pause; null when one is already open (the unique key decides, so two staff members cannot both open one). */
+  abstract openPause(vendorId: string, reason: string, by: { type: string; id: string | null }): Promise<StoredPause | null>;
+  /** Closes the open pause (compare-and-set); false when none was open. The row is kept as history. */
+  abstract closePause(vendorId: string, by: { type: string; id: string | null }): Promise<boolean>;
 }

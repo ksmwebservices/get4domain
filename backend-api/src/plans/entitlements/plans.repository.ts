@@ -15,6 +15,8 @@ export interface VendorState {
   overrides: EngineOverride[];
   /** the vendor row's status is SUSPENDED (owner rule 9: Free entitlements, site stays live) */
   suspended?: boolean;
+  /** a pause of the paid plan is open (Amendment 13 B13) */
+  paused?: boolean;
 }
 
 export const V3_PLANS_FLAG = 'v3_plans';
@@ -56,17 +58,20 @@ export class PrismaPlansRepository extends PlansRepository {
   }
 
   async loadVendorState(vendorId: string): Promise<VendorState> {
-    const [flag, current, overrides, vendor] = await Promise.all([
+    const [flag, current, overrides, vendor, pause] = await Promise.all([
+
       this.prisma.v3VendorFlag.findUnique({ where: { vendorId_key: { vendorId, key: V3_PLANS_FLAG } }, select: { enabled: true } }),
       this.prisma.v3PlanSubscription.findUnique({ where: { currentVendorId: vendorId } }),
       this.prisma.v3EntitlementOverride.findMany({ where: { vendorId } }),
       this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { status: true } }),
+      this.prisma.v3PlanPause.findUnique({ where: { openVendorId: vendorId }, select: { id: true } }),
     ]);
     // no current row: the most recent one (cancelled or ended) still tells us the track, so the vendor falls to that track's Free plan
     const sub = current ?? (await this.prisma.v3PlanSubscription.findFirst({ where: { vendorId }, orderBy: { createdAt: 'desc' } }));
     return {
       flagOn: flag?.enabled === true,
       suspended: vendor?.status === 'SUSPENDED',
+      paused: pause !== null,
       subscription: sub && { id: sub.id, planId: sub.planId, status: sub.status, termMonths: sub.termMonths, startsAt: sub.startsAt, endsAt: sub.endsAt, graceEndsAt: sub.graceEndsAt },
       overrides: overrides.map((o) => ({ id: o.id, featureKey: o.featureKey, state: o.state, limitValue: o.limitValue, enumValue: o.enumValue, reason: o.reason, expiresAt: o.expiresAt, createdAt: o.createdAt })),
     };

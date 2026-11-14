@@ -13,6 +13,7 @@ import { DomainHostResolver, DomainVendorHosts } from '../src/site-domains/site-
 import { SiteDomainsService } from '../src/site-domains/site-domains.service';
 import { PublicSiteController } from '../src/site-publish/api/public-site.controller';
 import { SitePublicService } from '../src/site-publish/publish/site-public.service';
+import { TabGuard } from '../src/v3-packs/requires-tab';
 import { BASE, domainWorld, DomainWorld, OWNER, pro, withAddon } from './support/domain-world';
 import { STAFF, siteWorld } from './support/site-world';
 
@@ -38,7 +39,8 @@ describe('domains API', () => {
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard },
         { provide: SiteDomainsService, useValue: w.svc }, { provide: SitePublicService, useValue: new SitePublicService(sw.repo, new DomainHostResolver(dir)) },
       ],
-    }).compile();
+    }).overrideGuard(TabGuard).useValue({ canActivate: () => true })   // the tab lock (B11) is tested in pack-part-b.spec.ts; here the service's own plan rules are under test
+      .compile();
     app = mod.createNestApplication();
     app.use((req: { headers: Record<string, string>; user?: unknown }, _res: unknown, next: () => void) => {
       const p = req.headers['x-test-principal'];

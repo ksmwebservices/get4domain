@@ -1,3 +1,4 @@
+import { V3PacksModule } from '../v3-packs/packs.module';
 import { Injectable, Logger, Module, OnModuleInit, Provider, Type } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { OtpPepper } from '../directory/pepper';
@@ -60,5 +61,5 @@ export const REGISTRAR_PROVIDERS: Provider[] = [
 export const REGISTRAR_CONTROLLERS: Type<unknown>[] = [MeDomainSalesController, MeIdentityController, AdminRegistrarController];
 
 /** Domain sales (slice 5.6d). It spends through the V3 wallet (global) and reads the plan through the entitlements (global). Nothing here touches the old ResellerClub service or any legacy table. */
-@Module({ imports: [PrismaModule, V3DomainAutomationModule], controllers: REGISTRAR_CONTROLLERS, providers: REGISTRAR_PROVIDERS, exports: [RegistrarService, IdentityService, RegistrarStore] })
+@Module({ imports: [PrismaModule, V3DomainAutomationModule, V3PacksModule], controllers: REGISTRAR_CONTROLLERS, providers: REGISTRAR_PROVIDERS, exports: [RegistrarService, IdentityService, RegistrarStore] })
 export class V3RegistrarModule {}

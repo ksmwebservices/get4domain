@@ -40,7 +40,7 @@ export class EntitlementsService {
     const [cat, state] = await Promise.all([this.loadCatalogue(now.getTime()), this.loadVendor(vendorId, now.getTime())]);
     return resolveEntitlements({
       now, flagOn: state.flagOn, subscription: state.subscription, plans: cat.plans, matrix: cat.matrix, featureKeys: cat.featureKeys,
-      overrides: state.overrides, settings: cat.settings, usage: opts.usage, vendorSuspended: state.suspended === true,
+      overrides: state.overrides, settings: cat.settings, usage: opts.usage, vendorSuspended: state.suspended === true, vendorPaused: state.paused === true,
     });
   }
 

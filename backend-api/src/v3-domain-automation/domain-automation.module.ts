@@ -1,3 +1,4 @@
+import { V3PacksModule } from '../v3-packs/packs.module';
 import { Injectable, Logger, Module, Provider, Type } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -33,5 +34,5 @@ export const DOMAIN_AUTOMATION_PROVIDERS: Provider[] = [
 export const DOMAIN_AUTOMATION_CONTROLLERS: Type<unknown>[] = [MeConnectionController, AdminConnectionController];
 
 /** Own-domain automation (slice 5.6c). Fake Cloudflare in tests only; production binds the unavailable port. */
-@Module({ imports: [PrismaModule, SiteDomainsModule], controllers: DOMAIN_AUTOMATION_CONTROLLERS, providers: DOMAIN_AUTOMATION_PROVIDERS, exports: [DomainConnectionService, DomainLogService] })
+@Module({ imports: [PrismaModule, SiteDomainsModule, V3PacksModule], controllers: DOMAIN_AUTOMATION_CONTROLLERS, providers: DOMAIN_AUTOMATION_PROVIDERS, exports: [DomainConnectionService, DomainLogService] })
 export class V3DomainAutomationModule {}

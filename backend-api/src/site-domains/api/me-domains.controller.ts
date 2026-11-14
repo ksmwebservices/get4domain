@@ -8,6 +8,7 @@ import { RATE } from '../../common/throttling';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
+import { RequiresTab } from '../../v3-packs/requires-tab';
 import { SiteDomainsService } from '../site-domains.service';
 import { CustomDomainDto, SubdomainDto } from './dto/domain.dto';
 
@@ -20,6 +21,7 @@ import { CustomDomainDto, SubdomainDto } from './dto/domain.dto';
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
+@RequiresTab('domain')   // Amendment 11 Q2 and Amendment 13 B11: the domain screen is closed on a Free trial (TAB_LOCKED); a vendor still on the Version 2 rules is never restricted
 @Controller('v3/me/domains')
 export class MeDomainsController {
   constructor(private readonly domains: SiteDomainsService) {}

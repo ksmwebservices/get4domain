@@ -26,6 +26,6 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
     { provide: InboxStore, useClass: PrismaInboxStore }, InboxService,
     SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender },
   ],
-  exports: [EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender],
+  exports: [EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender, InboxService],
 })
 export class V3MailModule {}

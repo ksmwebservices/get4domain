@@ -7,6 +7,7 @@ import { ModuleGuard } from '../src/common/guards/module.guard';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { buildValidationPipe } from '../src/common/pipes/edit-validation.pipe';
 import { throttlerGuardProvider, throttlerImport } from '../src/common/throttling';
+import { PackEngineService } from '../src/v3-packs/pack-engine.service';
 import { AdminPacksController, AdminServicesController, MeServicesController, PublicServicesController } from '../src/v3-services/api/services.controllers';
 import { ServicesCatalogService } from '../src/v3-services/services.service';
 import { postEntry } from '../src/v3-wallet/wallet-engine';
@@ -27,7 +28,7 @@ describe('services API', () => {
     w = servicesWorld(); await w.seed();
     const mod = await Test.createTestingModule({
       imports: [throttlerImport], controllers: [PublicServicesController, MeServicesController, AdminServicesController, AdminPacksController],
-      providers: [throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, { provide: ServicesCatalogService, useValue: w.catalogue }],
+      providers: [throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, { provide: ServicesCatalogService, useValue: w.catalogue }, { provide: PackEngineService, useValue: { myAddons: async () => [], isAddonKey: async () => false } }],
     }).compile();
     app = mod.createNestApplication({ rawBody: true });
     app.use((req: { headers: Record<string, string>; user?: unknown }, _res: unknown, next: () => void) => {

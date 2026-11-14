@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
+import { RequiresTab } from '../../v3-packs/requires-tab';
 import { RATE } from '../../common/throttling';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
@@ -30,6 +31,7 @@ const actor = (user: AuthenticatedUser, req: Request, type: 'VENDOR' | 'STAFF'):
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
+@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11)
 @Controller('v3/me/domains')
 export class MeConnectionController {
   constructor(private readonly svc: DomainConnectionService) {}

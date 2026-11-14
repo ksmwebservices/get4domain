@@ -27,6 +27,8 @@ interface Reference {
 
 export interface NavigationResult {
   mode: NavInput['mode']; level: 'FREE' | 'PRO' | null; tier: Tier | null; plan: string | null;
+  /** PAUSED while staff have paused the paid plan, otherwise the subscription status (Amendment 13 B13) */
+  planState: string | null; paused: boolean;
   pack: { key: string; name: string; disclaimerKey: string | null } | null;
   /** ON only when SUPER_ADMIN has switched it on; OFF by default */
   flags: { onlineMedicineCheckout: boolean };
@@ -89,20 +91,74 @@ export class PackEngineService {
       mode: resolved.mode, level, tier, tabs: defs,
       pack: pack ? { key: pack.key, counselGated: (pack.config as { flags?: { counselGated?: boolean } } | null)?.flags?.counselGated === true } : null,
       gatedPacksOpen: r.gatedPacksOpen, matrix: this.matrixOf(r), held: new Set(vcaps.filter((c) => c.enabled).map((c) => c.capabilityKey)),
-      addons: activeAddons, addonGrants: grants,
+      addons: activeAddons, addonGrants: grants, paused: resolved.paused === true,
     });
     return {
-      mode: resolved.mode, level, tier, plan: resolved.plan,
+      mode: resolved.mode, level, tier, plan: resolved.plan, planState: resolved.planState ?? resolved.subscriptionStatus ?? null, paused: resolved.paused === true,
       pack: pack ? { key: pack.key, name: pack.name, disclaimerKey: pack.disclaimerKey } : null,
       flags: { onlineMedicineCheckout: pack?.key === 'PHARMACY' && r.onlineMedicineCheckout },
       tabs,
     };
   }
 
+  // ── the paused plan state (Amendment 13 B13) ───────────────────────────────────────────────────
+
+  /**
+   * Staff pause a vendor's PAID plan. While paused the vendor sees the Free trial tabs ACTIVE and every other tab locked (reason PLAN_PAUSED); nothing is deleted, and the subscription row and its term are
+   * not touched (whether a pause stops or extends the paid term is the owner's rule, not built here). Only a paid plan that applies now can be paused.
+   */
+  async pausePlan(vendorId: string, reason: string, actor: PackActor): Promise<{ paused: true; pausedAt: Date }> {
+    return this.queue.run(`pack:${vendorId}`, async () => {
+      const resolved = await this.entitlements.resolve(vendorId);
+      if (resolved.paused === true) throw packError(409, 'PLAN_ALREADY_PAUSED', 'This plan is already paused.');
+      if (resolved.mode !== 'V3' || resolved.level !== 'PRO') throw packError(409, 'PLAN_NOT_PAUSABLE', 'Only a paid plan that is running can be paused.');
+      const row = await this.vendors.openPause(vendorId, reason.trim(), { type: actor.type, id: actor.id });
+      if (!row) throw packError(409, 'PLAN_ALREADY_PAUSED', 'This plan is already paused.');
+      this.entitlements.invalidate(vendorId);
+      await this.record(actor, vendorId, 'plan.paused', 'PlanPause', vendorId, { reason: reason.trim() });
+      return { paused: true, pausedAt: row.pausedAt };
+    });
+  }
+  async resumePlan(vendorId: string, actor: PackActor): Promise<{ paused: false }> {
+    return this.queue.run(`pack:${vendorId}`, async () => {
+      if (!(await this.vendors.closePause(vendorId, { type: actor.type, id: actor.id }))) throw packError(409, 'PLAN_NOT_PAUSED', 'This plan is not paused.');
+      this.entitlements.invalidate(vendorId);
+      await this.record(actor, vendorId, 'plan.resumed', 'PlanPause', vendorId, {});
+      return { paused: false };
+    });
+  }
+
   /** The server-side answer behind every locked tab: may this vendor use the routes of this tab? (Memoised per request by the guard.) */
   async access(vendorId: string, tabKey: string): Promise<TabAccess> {
     const n = await this.navigation(vendorId);
     return tabAccess(n.mode, n.tabs, tabKey);
+  }
+
+  // ── add-on packs a vendor can see (Amendment 13 V3A, B10) ────────────────────────────────────────
+
+  /**
+   * Every enabled add-on pack with whether it is on for this vendor and whether the vendor's category offers it. The price is ALWAYS reported as PENDING with no number until the owner sets it in the
+   * price book (an add-on has no price column), so a screen shows "price not set" and never a figure.
+   */
+  async myAddons(vendorId: string): Promise<Array<{ key: string; name: string; description: string | null; grantsCapabilities: string[]; active: boolean; offered: boolean; bundleDiscount: boolean; priceStatus: 'PENDING'; price: null; priceNote: string }>> {
+    const [r, vp, vaddons] = await Promise.all([this.reference(), this.vendors.getVendorPack(vendorId), this.vendors.listVendorAddons(vendorId)]);
+    const cat = vp ? r.categories.find((c) => c.categoryKey === vp.categoryKey) : undefined;
+    const offered = new Map((cat?.addonPacks ?? []).map((a) => [a.key, a.bundleDiscount] as const));
+    const on = new Set(vaddons.filter((a) => a.status === 'ACTIVE').map((a) => a.addonKey));
+    return r.addons.filter((a) => a.enabled).map((a) => ({
+      key: a.key, name: a.name, description: a.description, grantsCapabilities: a.grantsCapabilities, active: on.has(a.key), offered: offered.has(a.key), bundleDiscount: offered.get(a.key) === true,
+      priceStatus: 'PENDING' as const, price: null, priceNote: 'Price not set',
+    }));
+  }
+
+  /** Is this key one of the engine's add-on packs (as opposed to a wallet usage pack of the price book)? */
+  async isAddonKey(key: string): Promise<boolean> { return (await this.reference()).addons.some((a) => a.key === key && a.enabled); }
+
+  /** Buying an add-on pack: while its price is PENDING nothing is sold and no number is shown. A pack the vendor's category does not offer is not found. */
+  async refuseAddonPurchase(vendorId: string, key: string): Promise<never> {
+    const mine = (await this.myAddons(vendorId)).find((a) => a.key === key);
+    if (!mine || (!mine.offered && !mine.active)) throw packError(404, 'PACK_NOT_FOUND', 'That add-on pack is not available for your kind of business.');
+    throw packError(409, 'ADDON_PRICE_PENDING', 'This add-on pack cannot be bought yet. Its price has not been set.', { addon: key, priceStatus: 'PENDING' });
   }
 
   // ── registration and capabilities (A5) ──────────────────────────────────────────────────────────

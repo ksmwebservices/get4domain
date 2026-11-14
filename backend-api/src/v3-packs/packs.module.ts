@@ -1,5 +1,6 @@
 import { Module, Provider, Type } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AppShellService } from './app-shell.service';
 import { AdminPackController, MePackController, PublicPackController } from './api/pack.controllers';
 import { PackEngineService } from './pack-engine.service';
 import { PackReferenceStore, PackVendorStore } from './pack-engine.store';
@@ -7,7 +8,7 @@ import { PrismaPackReferenceStore, PrismaPackVendorStore } from './prisma-pack-e
 import { TabGuard } from './requires-tab';
 
 export const PACK_PROVIDERS: Provider[] = [
-  { provide: PackReferenceStore, useClass: PrismaPackReferenceStore }, { provide: PackVendorStore, useClass: PrismaPackVendorStore }, PackEngineService, TabGuard,
+  { provide: PackReferenceStore, useClass: PrismaPackReferenceStore }, { provide: PackVendorStore, useClass: PrismaPackVendorStore }, PackEngineService, AppShellService, TabGuard,
 ];
 export const PACK_CONTROLLERS: Type<unknown>[] = [PublicPackController, MePackController, AdminPackController];
 

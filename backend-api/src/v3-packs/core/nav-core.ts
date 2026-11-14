@@ -11,10 +11,27 @@ import { Tier, TIERS, tierRank } from './pack-core';
  * Nothing is ever deleted. A downgrade or an expiry only changes a state, and the state comes back with the plan.
  */
 export type TabState = 'ACTIVE' | 'LOCKED_PREVIEW' | 'HIDDEN';
-export type TabReason = 'FREE_TRIAL' | 'NEEDS_TIER' | 'TIER_DOWNGRADE' | 'GATED_PACK' | null;
+export type TabReason = 'FREE_TRIAL' | 'NEEDS_TIER' | 'TIER_DOWNGRADE' | 'GATED_PACK' | 'PLAN_PAUSED' | null;
+
+/** The groups of the tab list, in the order the vendor app draws them (common tabs, pack tabs, capability tabs, add-on tabs). A tab's group is its scope. */
+export const NAV_GROUPS = ['COMMON', 'PACK', 'CAPABILITY', 'ADDON'] as const;
+export type NavGroup = (typeof NAV_GROUPS)[number];
+
+const TIER_LABEL: Record<Tier, string> = { HANDYMAN: 'Handyman', PROFESSIONAL: 'Professional', ECOMMERCE: 'Ecommerce' };
+/** The sentence under a locked or hidden tab. No timeframe, no price (prices are the owner's and live in the price book), and no internal product word. */
+export function upsellText(reason: TabReason, needsTier: Tier | null): string | null {
+  const plan = needsTier ? TIER_LABEL[needsTier] : null;
+  switch (reason) {
+    case 'FREE_TRIAL': return plan ? `Open this with a paid plan, from the ${plan} plan.` : 'Open this with a paid plan.';
+    case 'NEEDS_TIER': return plan ? `This needs the ${plan} plan.` : 'This needs a higher plan.';
+    case 'TIER_DOWNGRADE': return plan ? `Hidden on your current plan. Your records are kept. It returns with the ${plan} plan.` : 'Hidden on your current plan. Your records are kept.';
+    case 'PLAN_PAUSED': return 'Your plan is paused. Your records are kept and this opens again when the plan resumes.';
+    default: return null;
+  }
+}
 
 export interface NavTabDef { scope: 'COMMON' | 'PACK' | 'CAPABILITY' | 'ADDON'; ownerKey: string; key: string; label: string; route: string; minTier: Tier | null; capabilityKey: string | null; freeTrial: boolean; sortOrder: number }
-export interface NavTab { key: string; label: string; route: string; scope: NavTabDef['scope']; ownerKey: string; state: TabState; reason: TabReason; needsTier: Tier | null; capabilityKey: string | null }
+export interface NavTab { key: string; label: string; route: string; scope: NavTabDef['scope']; group: NavGroup; ownerKey: string; state: TabState; reason: TabReason; needsTier: Tier | null; upsellText: string | null; capabilityKey: string | null }
 
 export interface NavInput {
   mode: 'LEGACY' | 'V3' | 'UNASSIGNED';
@@ -34,6 +51,8 @@ export interface NavInput {
   /** add-on packs active for the vendor (V3A): each adds its own tabs and the capabilities it grants, whatever the tier row says */
   addons?: ReadonlySet<string>;
   addonGrants?: ReadonlySet<string>;
+  /** the paid plan is paused (Amendment 13 B13): the Free trial tabs stay ACTIVE, the rest are LOCKED_PREVIEW (capability tabs HIDDEN) with the reason PLAN_PAUSED, and every record is kept */
+  paused?: boolean;
 }
 
 /** The lowest tier whose row allows the capability, or null when no tier does. */
@@ -45,7 +64,7 @@ export function tierAllows(tier: Tier | null, capability: string, matrix: NavInp
   return grants?.has(capability) === true || (tier !== null && matrix.get(tier)?.has(capability) === true);
 }
 
-const tab = (d: NavTabDef, state: TabState, reason: TabReason = null, needsTier: Tier | null = null): NavTab => ({ key: d.key, label: d.label, route: d.route, scope: d.scope, ownerKey: d.ownerKey, state, reason, needsTier, capabilityKey: d.capabilityKey });
+const tab = (d: NavTabDef, state: TabState, reason: TabReason = null, needsTier: Tier | null = null): NavTab => ({ key: d.key, label: d.label, route: d.route, scope: d.scope, group: d.scope, ownerKey: d.ownerKey, state, reason, needsTier, upsellText: upsellText(reason, needsTier), capabilityKey: d.capabilityKey });
 
 export function resolveNav(i: NavInput): NavTab[] {
   const order: Record<NavTabDef['scope'], number> = { COMMON: 0, PACK: 1, CAPABILITY: 2, ADDON: 3 };
@@ -58,6 +77,7 @@ export function resolveNav(i: NavInput): NavTab[] {
     if (i.mode === 'LEGACY') { out.push(tab(d, 'ACTIVE')); continue; }
     if (d.scope === 'PACK' && i.pack?.counselGated && !i.gatedPacksOpen) { out.push(tab(d, 'HIDDEN', 'GATED_PACK')); continue; }
     if (d.freeTrial) { out.push(tab(d, 'ACTIVE')); continue; }
+    if (i.paused === true) { out.push(d.scope === 'CAPABILITY' ? tab(d, 'HIDDEN', 'PLAN_PAUSED') : tab(d, 'LOCKED_PREVIEW', 'PLAN_PAUSED')); continue; }
     if (!paid) { out.push(tab(d, 'LOCKED_PREVIEW', 'FREE_TRIAL', d.capabilityKey ? lowestTierFor(d.capabilityKey, i.matrix) : d.minTier)); continue; }
     if (d.scope === 'CAPABILITY') {
       out.push(tierAllows(i.tier, d.ownerKey, i.matrix, i.addonGrants) ? tab(d, 'ACTIVE') : tab(d, 'HIDDEN', 'TIER_DOWNGRADE', lowestTierFor(d.ownerKey, i.matrix)));

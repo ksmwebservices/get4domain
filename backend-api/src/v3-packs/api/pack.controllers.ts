@@ -7,8 +7,9 @@ import { Public } from '../../common/decorators/public.decorator';
 import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
+import { AppShellService } from '../app-shell.service';
 import { PackActor, PackEngineService, PACK_SETTING_KEYS } from '../pack-engine.service';
-import { EditCategoryDto, EditPackDto, MatrixCellDto, PackSettingDto, RegisterPackDto, SaveTabDto, SetCapabilityDto, VendorAddonDto } from './pack.dto';
+import { EditCategoryDto, EditPackDto, MatrixCellDto, PackSettingDto, PausePlanDto, RegisterPackDto, SaveTabDto, SetCapabilityDto, VendorAddonDto } from './pack.dto';
 
 const staff = (u: AuthenticatedUser, req: Request): PackActor => ({ type: 'STAFF', id: u?.sub ?? null, ip: req?.ip ?? null });
 const owner = (t: TenantContext, req: Request): PackActor => ({ type: 'VENDOR', id: t.memberId ?? t.vendorId, ip: req?.ip ?? null });
@@ -32,7 +33,10 @@ export class PublicPackController {
 @UseTenant()
 @Controller('v3/me')
 export class MePackController {
-  constructor(private readonly packs: PackEngineService) {}
+  constructor(private readonly packs: PackEngineService, private readonly shell: AppShellService) {}
+
+  @Get('app-shell') @ApiOperation({ summary: 'Everything the vendor app needs to draw its menu, read only, for the owner and for a team member: the tab list, the plan state words, the packs on and a message count. Cut by the permission matrix; never a price, an order, an invoice, a term date or a setting' })
+  appShell(@Tenant() t: TenantContext, @CurrentUser() u: AuthenticatedUser) { return this.shell.get(t.vendorId, { kind: u?.kind, modules: u?.modules }); }
 
   @Get('navigation') @ApiOperation({ summary: 'The dashboard tab list: common, pack, capability and add-on tabs, each ACTIVE, LOCKED_PREVIEW or HIDDEN' })
   navigation(@Tenant() t: TenantContext) { return this.packs.navigation(t.vendorId); }
@@ -86,6 +90,11 @@ export class AdminPackController {
   setVendorAddon(@Param('vendorId') vendorId: string, @Param('addonKey') addon: string, @Body() dto: VendorAddonDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.packs.setVendorAddon(vendorId, addon, dto.status, staff(u, req)); }
   @Get('vendors/:vendorId/navigation') @ApiOperation({ summary: 'The tab list one vendor sees (for support)' })
   vendorNav(@Param('vendorId') vendorId: string) { return this.packs.navigation(vendorId); }
+
+  @Post('vendors/:vendorId/plan-pause') @HttpCode(200) @ApiOperation({ summary: 'Pause a vendor\'s paid plan: the Free trial tabs stay open, the rest are locked with the reason PLAN_PAUSED, every record is kept' })
+  pausePlan(@Param('vendorId') vendorId: string, @Body() dto: PausePlanDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.packs.pausePlan(vendorId, dto.reason, staff(u, req)); }
+  @Post('vendors/:vendorId/plan-resume') @HttpCode(200) @ApiOperation({ summary: 'Resume a paused plan: every tab returns with the plan' })
+  resumePlan(@Param('vendorId') vendorId: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.packs.resumePlan(vendorId, staff(u, req)); }
 
   @Get('settings') @ApiOperation({ summary: 'The two pack switches (both default OFF)' })
   settings() { return this.packs.adminSettings(); }
