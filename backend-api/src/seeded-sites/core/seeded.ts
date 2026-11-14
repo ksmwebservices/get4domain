@@ -145,6 +145,23 @@ export function canIssueClaimLink(i: { ownerAgreedToContact: boolean; phoneOnReg
 /** DO_NOT_CONTACT is final; REMOVED is final until a SUPER_ADMIN overrides it. Everything else may move freely (staff know the conversation). */
 export function canMoveOutreach(from: OutreachStatus, to: OutreachStatus): boolean { return from !== 'DO_NOT_CONTACT' || to === 'DO_NOT_CONTACT'; }
 
+/**
+ * The four states of Amendment 13 V8, as the team and the claim screens speak of them. Derived from the lifecycle and from the one fact the lifecycle does not hold (is a version of the site published now?).
+ *   UNCLAIMED_LISTING  public business details only, labelled unclaimed (SEEDED or INVITED)
+ *   DRAFT_SITE         the site was made on the business's behalf and nothing of it is published yet
+ *   CLAIMED            the owner has claimed it and set up the account; the site is not yet approved and published
+ *   LIVE               a version of the site is published on the subdomain (a claimed business that approved it, or a paid plan)
+ * REMOVED is reported as its own word: a removal is permanent and is never shown as one of the four.
+ * A business not yet claimed stays UNCLAIMED_LISTING while its page is published (the existing seeded pages are public by design, Amendment 10); DRAFT_SITE is a site nobody can see yet.
+ */
+export type ListingState = 'UNCLAIMED_LISTING' | 'DRAFT_SITE' | 'CLAIMED' | 'LIVE' | 'REMOVED';
+export function listingStateOf(i: { lifecycle: SeededLifecycle; sitePublished: boolean }): ListingState {
+  if (i.lifecycle === 'REMOVED') return 'REMOVED';
+  if (i.lifecycle === 'PRO') return 'LIVE';
+  if (i.lifecycle === 'CLAIMED_FREE') return i.sitePublished ? 'LIVE' : 'CLAIMED';
+  return i.sitePublished ? 'UNCLAIMED_LISTING' : 'DRAFT_SITE';
+}
+
 /** The lifecycle as it stands now, from the stored value and the facts: a removal wins; a claimed profile is CLAIMED_FREE or PRO by the running paid plan (the plan logic stays in the plans slice). */
 export function deriveLifecycle(i: { stored: SeededLifecycle; businessStatus: string | null; proActive: boolean }): SeededLifecycle {
   if (i.stored === 'REMOVED' || i.businessStatus === 'REMOVED') return 'REMOVED';

@@ -18,7 +18,7 @@ export abstract class ClaimHandover {
 }
 
 /** What the quality check and the views need about the business behind a seeded site. */
-export interface BusinessFacts { name: string; categoryKnown: boolean; city: string | null; area: string | null; phoneE164: string | null; businessStatus: string; proActive: boolean }
+export interface BusinessFacts { name: string; categoryKnown: boolean; city: string | null; area: string | null; phoneE164: string | null; businessStatus: string; proActive: boolean; /** a version of the vendor's site is published now (Part B, B1) */ sitePublished?: boolean }
 export abstract class SeededFacts {
   abstract factsOf(vendorId: string): Promise<BusinessFacts | null>;
   abstract categoryExists(id: string): boolean;

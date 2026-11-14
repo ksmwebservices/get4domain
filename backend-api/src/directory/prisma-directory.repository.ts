@@ -134,7 +134,7 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
   }
 
   // OTP
-  private toChallenge(c: { id: string; subjectType: string; subjectId: string; channel: 'SMS'; phoneHash: string; codeHash: string; salt: string; attempts: number; maxAttempts: number; expiresAt: Date; usedAt: Date | null; requestIpHash: string | null; status: OtpStatus; sandboxBody: string | null; createdAt: Date }): ChallengeRow { return { ...c }; }
+  private toChallenge(c: { id: string; subjectType: string; subjectId: string; channel: 'SMS' | 'EMAIL'; phoneHash: string; codeHash: string; salt: string; attempts: number; maxAttempts: number; expiresAt: Date; usedAt: Date | null; requestIpHash: string | null; status: OtpStatus; sandboxBody: string | null; createdAt: Date }): ChallengeRow { return { ...c }; }
   async createChallenge(d: Omit<ChallengeRow, 'id' | 'createdAt' | 'attempts' | 'usedAt' | 'status'>) { return this.toChallenge(await this.prisma.v3OtpChallenge.create({ data: { ...d } })); }
   async latestChallenge(subjectType: string, subjectId: string) { const c = await this.prisma.v3OtpChallenge.findFirst({ where: { subjectType, subjectId }, orderBy: { createdAt: 'desc' } }); return c ? this.toChallenge(c) : null; }
   async countChallengesSince(by: { phoneHash?: string; ipHash?: string }, since: Date) {
@@ -150,6 +150,7 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
   async latestOverride(businessId: string): Promise<OverrideRow | null> { return this.prisma.v3DirectoryClaimOverride.findFirst({ where: { businessId, revokedAt: null }, orderBy: { createdAt: 'desc' } }); }
   async addOverride(d: { businessId: string; phoneE164: string; phoneHash: string; reason: string; approvedByStaffId: string }): Promise<OverrideRow> { return this.prisma.v3DirectoryClaimOverride.create({ data: d }); }
   async vendorBasics(vendorId: string) { const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true, name: true, phone: true, email: true } }); return v ? { id: v.id, name: v.name, phone: v.phone ?? null, email: v.email } : null; }
+  async hasPublishedSite(vendorId: string): Promise<boolean> { return (await this.prisma.v3SitePublication.count({ where: { vendorId, currentVendorId: vendorId } })) > 0; }
   async createGrant(d: { vendorId: string; tokenHash: string; expiresAt: Date }): Promise<GrantRow> { return this.prisma.v3AccountSetupGrant.create({ data: d }); }
   async findGrantByHash(tokenHash: string): Promise<GrantRow | null> { return this.prisma.v3AccountSetupGrant.findUnique({ where: { tokenHash } }); }
   async consumeGrant(id: string, now: Date) { return (await this.prisma.v3AccountSetupGrant.updateMany({ where: { id, status: 'ACTIVE', expiresAt: { gt: now } }, data: { status: 'USED', usedAt: now } })).count === 1; }

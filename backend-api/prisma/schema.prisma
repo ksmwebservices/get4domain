@@ -4545,6 +4545,8 @@ enum V3DirectoryPlacementKind {
 
 enum V3OtpChannel {
   SMS
+  // Part B (B7): the claim code can also go by email on the system mail lane. phoneHash then holds the keyed hash of the email address (same column, same rate limits).
+  EMAIL
 }
 
 enum V3OtpStatus {

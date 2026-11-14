@@ -51,3 +51,10 @@ describe('Staff roles migration (Amendment 13 V9)', () => {
     expect(sql.replace(/ALTER TYPE "AdminRole" ADD VALUE IF NOT EXISTS '(SUPPORT|ADMIN)';/g, '').trim()).toBe('');
   });
 });
+
+describe('Claim email channel migration (Amendment 13 B7)', () => {
+  const sql = fs.readFileSync(path.resolve(__dirname, '../prisma/migrations/20261215120000_v3_claim_email_channel/migration.sql'), 'utf8').replace(/^--.*$/gm, '');
+  it('adds one value to the existing channel enum and changes nothing else', () => {
+    expect(sql.trim()).toBe(`ALTER TYPE "V3OtpChannel" ADD VALUE IF NOT EXISTS 'EMAIL';`);
+  });
+});

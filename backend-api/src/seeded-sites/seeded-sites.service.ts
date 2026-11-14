@@ -9,7 +9,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { cleanReason } from '../vendor-lifecycle/core/lifecycle-core';
 import { LifecycleStore } from '../vendor-lifecycle/lifecycle.store';
 import {
-  canIssueClaimLink, canMoveOutreach, csvToRows, deriveLifecycle, DupKeys, findDuplicates, nameKey, OUTREACH_STATUSES, OutreachStatus, seededSiteQuality, SeedInput, SeededLifecycle, validateSeedRow,
+  canIssueClaimLink, canMoveOutreach, csvToRows, deriveLifecycle, DupKeys, findDuplicates, listingStateOf, nameKey, OUTREACH_STATUSES, OutreachStatus, seededSiteQuality, SeedInput, SeededLifecycle, validateSeedRow,
 } from './core/seeded';
 import { ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
 import { SeededRow, SeededStore } from './seeded.store';
@@ -52,7 +52,7 @@ export class SeededSitesService {
     const lifecycle = deriveLifecycle({ stored: r.lifecycle, businessStatus: f?.businessStatus ?? null, proActive: f?.proActive === true });
     if (lifecycle !== r.lifecycle) await this.store.update(r.id, { lifecycle });   // write-through: the stored value follows the facts (claim, upgrade, removal)
     const base = {
-      id: r.id, lifecycle, sourceKind: r.sourceKind, outreachStatus: r.outreachStatus, batchId: r.batchId, createdAt: r.createdAt, removed: lifecycle === 'REMOVED',
+      id: r.id, lifecycle, listingState: listingStateOf({ lifecycle, sitePublished: f?.sitePublished === true }), sourceKind: r.sourceKind, outreachStatus: r.outreachStatus, batchId: r.batchId, createdAt: r.createdAt, removed: lifecycle === 'REMOVED',
       business: f ? { name: f.name, city: f.city, area: f.area } : null,
     };
     if (role === 'MARKETING') return base;

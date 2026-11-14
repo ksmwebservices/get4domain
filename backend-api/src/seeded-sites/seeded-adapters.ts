@@ -73,6 +73,6 @@ export class DirectorySeededFacts extends SeededFacts {
     const b = await this.directory.getBusinessByVendor(vendorId);
     if (!b) return null;
     const site = (await this.directory.siteFacts([vendorId], new Date())).get(vendorId);
-    return { name: b.name, categoryKnown: !!b.categoryId, city: b.address.city ?? null, area: b.address.line2 ?? null, phoneE164: b.phoneE164, businessStatus: b.status, proActive: site?.proActive === true };
+    return { name: b.name, categoryKnown: !!b.categoryId, city: b.address.city ?? null, area: b.address.line2 ?? null, phoneE164: b.phoneE164, businessStatus: b.status, proActive: site?.proActive === true, sitePublished: await this.directory.hasPublishedSite(vendorId) };
   }
 }

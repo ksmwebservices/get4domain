@@ -60,6 +60,7 @@ import { CustomerModule } from './customer/customer.module';
 import { OtpModule } from './otp/otp.module';
 import { HealthModule } from './health/health.module';
 import { PlansModule } from './plans/plans.module';
+import { ClaimSetupModule } from './claim-setup/claim-setup.module';
 import { ProvisioningModule } from './provisioning/provisioning.module';
 import { SitePublishModule } from './site-publish/site-publish.module';
 import { WebsiteModule } from './v3-website/website.module';
@@ -150,6 +151,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3AdminActionsModule,
     V3StoreModule,
     V3PacksModule,
+    ClaimSetupModule,   // Part B (B7): account setup after the claim code and the owner's approval that puts the site live
     DirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,

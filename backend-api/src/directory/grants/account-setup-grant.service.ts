@@ -24,6 +24,13 @@ export class AccountSetupGrantService {
     return { token, expiresAt };
   }
 
+  /** Part B (B7): which vendor a usable grant is for, WITHOUT spending it (the caller checks its own input first). Every bad token is the same 404 as `consume`. */
+  async peek(rawToken: string): Promise<{ vendorId: string }> {
+    const g = await this.repo.findGrantByHash(hashToken(String(rawToken ?? '').slice(0, 200)));
+    if (!g || g.status !== 'ACTIVE' || g.expiresAt.getTime() <= this.clock().getTime()) throw invalid();
+    return { vendorId: g.vendorId };
+  }
+
   /** Marks the grant used (race safe: exactly one caller wins) and says which vendor it was for. */
   async consume(rawToken: string, opts: { acceptTerms?: boolean; ip?: string | null; userAgent?: string | null } = {}): Promise<{ vendorId: string }> {
     const g = await this.repo.findGrantByHash(hashToken(String(rawToken ?? '').slice(0, 200)));

@@ -119,6 +119,8 @@ export class MemoryDirectoryRepo extends DirectoryRepository {
   // claim helpers
   async latestOverride(businessId: string) { const l = this.overrides.filter((o) => o.businessId === businessId && !o.revokedAt); return l.length ? { ...l[l.length - 1] } : null; }
   async addOverride(d: { businessId: string; phoneE164: string; phoneHash: string; reason: string; approvedByStaffId: string }) { const r: OverrideRow = { ...d, id: this.id('ovr'), revokedAt: null, createdAt: this.clock() }; this.overrides.push(r); return { ...r }; }
+  published = new Set<string>();
+  async hasPublishedSite(vendorId: string): Promise<boolean> { return this.published.has(vendorId); }
   async vendorBasics(vendorId: string) { const v = this.vendors.get(vendorId); return v ? { ...v } : null; }
   async createGrant(d: { vendorId: string; tokenHash: string; expiresAt: Date }) { const r: GrantRow = { ...d, id: this.id('grant'), status: 'ACTIVE', usedAt: null, createdAt: this.clock() }; this.grants.set(r.id, r); return { ...r }; }
   async findGrantByHash(h: string) { const g = [...this.grants.values()].find((x) => x.tokenHash === h); return g ? { ...g } : null; }

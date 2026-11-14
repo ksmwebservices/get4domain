@@ -1,10 +1,12 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Optional } from '@nestjs/common';
 import { randomBytes, randomInt } from 'crypto';
 import { canResend, evaluateAttempt, generateOtp, hashCode, hashPhone, normalisePhoneE164, verifyCodeHash } from '../../directory/core/otp';
 import { maskPhone } from '../../directory/core/masking';
 import { DirectoryAdminService } from '../../directory/directory-admin.service';
 import { DirectoryAudit } from '../../directory/directory-audit';
-import { directoryError, OTP_INVALID_MESSAGE, OTP_SENT_MESSAGE } from '../../directory/directory.errors';
+import { directoryError, OTP_INVALID_MESSAGE, OTP_SENT_EMAIL_MESSAGE, OTP_SENT_MESSAGE } from '../../directory/directory.errors';
+import { EmailPort } from '../../v3-mail/email.port';
+import { isPlaceholderOwnerEmail } from './claims.service';
 import { DirectoryRepository } from '../../directory/directory.repository';
 import { AccountSetupGrantService } from '../../directory/grants/account-setup-grant.service';
 import { OtpPepper } from '../../directory/pepper';
@@ -31,9 +33,12 @@ export class ClaimOtpService {
   constructor(
     private readonly claims: ClaimsService, private readonly repo: DirectoryRepository, @Inject(DirectorySettingsService) private readonly settings: Pick<DirectorySettingsService, 'get'>, private readonly sms: SmsAdapter,
     private readonly grants: AccountSetupGrantService, @Inject(DirectoryAdminService) private readonly admin: Pick<DirectoryAdminService, 'indexableFor'>, private readonly audit: DirectoryAudit, private readonly pepper: OtpPepper,
+    /** Part B (B7): the claim code by email, on the system mail lane (kind OTP). The lane's own switch (EMAIL_LIVE_SEND) is OFF by default, so a code that cannot be sent leaves the challenge revoked. */
+    @Optional() @Inject(EmailPort) private readonly email?: EmailPort,
   ) {}
 
   private readonly sent: OtpRequestResult = { sent: true, message: OTP_SENT_MESSAGE };
+  private readonly sentByEmail: OtpRequestResult = { sent: true, message: OTP_SENT_EMAIL_MESSAGE };
 
   /** The phone the code goes to: a staff override if there is one, else the business record, else the vendor's registered phone. */
   private async targetPhone(vendorId: string): Promise<{ phone: string | null; businessId: string | null }> {
@@ -47,30 +52,41 @@ export class ClaimOtpService {
     return { phone: v?.phone ? normalisePhoneE164(v.phone) : null, businessId: biz?.id ?? null };
   }
 
-  async request(rawToken: string, ip: string | null): Promise<OtpRequestResult> {
+  /** The email the code goes to: the owner's login email on the vendor record, never a placeholder and never an address the caller chooses. */
+  private async targetEmail(vendorId: string): Promise<string | null> {
+    const v = await this.repo.vendorBasics(vendorId);
+    return v && v.email && !isPlaceholderOwnerEmail(v.email) ? v.email.trim().toLowerCase() : null;
+  }
+
+  async request(rawToken: string, ip: string | null, channel: 'SMS' | 'EMAIL' = 'SMS'): Promise<OtpRequestResult> {
+    const answer = channel === 'EMAIL' ? this.sentByEmail : this.sent;
     const claim = await this.claims.peek(rawToken);
-    if (!claim) { hashCode('000000', 'x', this.pepper.value()); return this.sent; }   // a bad link costs about the same as a good one
-    const { phone } = await this.targetPhone(claim.vendorId);
-    if (!phone) return this.sent;
+    if (!claim) { hashCode('000000', 'x', this.pepper.value()); return answer; }   // a bad link costs about the same as a good one
+    const to = channel === 'EMAIL' ? await this.targetEmail(claim.vendorId) : (await this.targetPhone(claim.vendorId)).phone;
+    if (!to || (channel === 'EMAIL' && !this.email)) return answer;
+    const phone = to;
     const s = await this.settings.get(); const now = this.clock(); const pepper = this.pepper.value();
-    const phoneHash = hashPhone(phone, pepper); const ipHash = this.pepper.hashIp(ip);
+    const phoneHash = hashPhone(channel === 'EMAIL' ? `email:${phone}` : phone, pepper); const ipHash = this.pepper.hashIp(ip);   // for the email channel the recipient hash is of the address (same column, same limits)
     const hourAgo = new Date(now.getTime() - 3_600_000);
     const last = await this.repo.latestChallenge('CLAIM', claim.tokenId);
-    if (last && !canResend(last.createdAt, now, s.otpResendCooldownSeconds)) return this.sent;
-    if ((await this.repo.countChallengesSince({ phoneHash }, hourAgo)) >= s.otpMaxPerPhonePerHour) return this.sent;
-    if (ipHash && (await this.repo.countChallengesSince({ ipHash }, hourAgo)) >= s.otpMaxPerIpPerHour) return this.sent;
+    if (last && !canResend(last.createdAt, now, s.otpResendCooldownSeconds)) return answer;
+    if ((await this.repo.countChallengesSince({ phoneHash }, hourAgo)) >= s.otpMaxPerPhonePerHour) return answer;
+    if (ipHash && (await this.repo.countChallengesSince({ ipHash }, hourAgo)) >= s.otpMaxPerIpPerHour) return answer;
 
     const code = generateOtp(this.random); const salt = this.salt();
-    const sandbox = await this.sms.isSandbox();
+    const sandbox = channel === 'EMAIL' ? false : await this.sms.isSandbox();
     const body = `Your Get4Domain code is ${code}. It expires in ${s.otpExpiryMinutes} minutes. Do not share it.`;
     await this.repo.revokePendingChallenges('CLAIM', claim.tokenId);
     const ch = await this.repo.createChallenge({
-      subjectType: 'CLAIM', subjectId: claim.tokenId, channel: 'SMS', phoneHash, codeHash: hashCode(code, salt, pepper), salt, maxAttempts: s.otpMaxAttempts,
+      subjectType: 'CLAIM', subjectId: claim.tokenId, channel, phoneHash, codeHash: hashCode(code, salt, pepper), salt, maxAttempts: s.otpMaxAttempts,
       expiresAt: new Date(now.getTime() + s.otpExpiryMinutes * 60_000), requestIpHash: ipHash, sandboxBody: sandbox ? body : null,
     });
-    try { await this.sms.send(phone, body); } catch { await this.repo.applyAttempt(ch.id, 0, { attempts: 0, status: 'REVOKED', usedAt: null }); }
-    await this.audit.record({ type: 'SYSTEM', id: null, ip }, 'claim.otp.requested', 'otp_challenge', ch.id, null, { vendorId: claim.vendorId, phone: maskPhone(phone), sandbox });
-    return this.sent;
+    try {
+      if (channel === 'EMAIL') await this.email!.send({ lane: 'SYSTEM', kind: 'OTP', to: phone, subject: 'Your Get4Domain claim code', text: `${body}\n\nIf you did not ask for it, you can ignore this message.` });
+      else await this.sms.send(phone, body);
+    } catch { await this.repo.applyAttempt(ch.id, 0, { attempts: 0, status: 'REVOKED', usedAt: null }); }
+    await this.audit.record({ type: 'SYSTEM', id: null, ip }, 'claim.otp.requested', 'otp_challenge', ch.id, null, { vendorId: claim.vendorId, channel, ...(channel === 'EMAIL' ? {} : { phone: maskPhone(phone) }), sandbox });
+    return answer;
   }
 
   async verify(rawToken: string, code: string, ip: string | null): Promise<OtpVerifyResult> {

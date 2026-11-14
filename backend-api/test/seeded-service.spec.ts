@@ -156,7 +156,7 @@ describe('roles, the register and the indexing setting', () => {
   it('MARKETING sees only non-personal fields: no vendor id, no consent, no notes, no quality, no source note; OPERATIONS sees everything', async () => {
     await w.svc.create(row(), ops);
     const list = await w.svc.list({ skip: 0, take: 10 }, 'MARKETING');
-    expect(Object.keys(list.items[0]).sort()).toEqual(['batchId', 'business', 'createdAt', 'id', 'lifecycle', 'outreachStatus', 'removed', 'sourceKind']);
+    expect(Object.keys(list.items[0]).sort()).toEqual(['batchId', 'business', 'createdAt', 'id', 'lifecycle', 'listingState', 'outreachStatus', 'removed', 'sourceKind']);
     expect(JSON.stringify(list)).not.toMatch(/phone|ownerAgreed|sourceNote|vendorId|Seen on the shop board/);
     const full = await w.svc.get(list.items[0].id, 'OPERATIONS'); expect(full).toHaveProperty('vendorId'); expect(full).toHaveProperty('ownerAgreedToContact');
     expect(Object.keys(await w.svc.get(list.items[0].id, mkt.role))).not.toContain('log');

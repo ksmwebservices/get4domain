@@ -16,7 +16,7 @@ export interface ServiceRow { id: string; businessId: string; name: string; desc
 export interface MediaRow { id: string; businessId: string; url: string; kind: string; altText: string; sortOrder: number }
 export interface PlacementRow { id: string; businessId: string; kind: 'SPONSORED'; startsAt: Date; endsAt: Date; label: string; createdByStaffId: string | null; revokedAt: Date | null; createdAt: Date }
 export interface ChallengeRow {
-  id: string; subjectType: string; subjectId: string; channel: 'SMS'; phoneHash: string; codeHash: string; salt: string; attempts: number; maxAttempts: number; expiresAt: Date;
+  id: string; subjectType: string; subjectId: string; channel: 'SMS' | 'EMAIL'; phoneHash: string; codeHash: string; salt: string; attempts: number; maxAttempts: number; expiresAt: Date;
   usedAt: Date | null; requestIpHash: string | null; status: OtpStatus; sandboxBody: string | null; createdAt: Date;
 }
 export interface RemovalRow {
@@ -79,6 +79,9 @@ export abstract class DirectoryRepository {
   abstract latestOverride(businessId: string): Promise<OverrideRow | null>;
   abstract addOverride(d: { businessId: string; phoneE164: string; phoneHash: string; reason: string; approvedByStaffId: string }): Promise<OverrideRow>;
   abstract vendorBasics(vendorId: string): Promise<{ id: string; name: string; phone: string | null; email: string } | null>;
+  /** Part B (B7): the vendor owning this login email, if any, and the credentials set after a claim (a null email keeps the one on file). */
+  /** Part B (B1): is a version of the vendor's site published now? */
+  abstract hasPublishedSite(vendorId: string): Promise<boolean>;
   abstract createGrant(d: { vendorId: string; tokenHash: string; expiresAt: Date }): Promise<GrantRow>;
   abstract findGrantByHash(tokenHash: string): Promise<GrantRow | null>;
   /** marks an ACTIVE, unexpired grant USED; false if another request used it first */
