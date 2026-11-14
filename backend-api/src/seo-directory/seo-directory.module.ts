@@ -3,6 +3,7 @@ import { DirectoryModule } from '../directory/directory.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ClickOutController } from './api/click-out.controller';
 import { DirectoryPagesController } from './api/directory-pages.controller';
+import { SitemapController } from './api/sitemap.controller';
 import { ClickOutService } from './click-out/click-out.service';
 import { PrismaSeoClickStore, SeoClickStore } from './click-out/click-store';
 import { SeoAdminController } from './api/seo-admin.controller';
@@ -12,6 +13,7 @@ import { PrismaSeoAudit, SeoAudit } from './seo-audit';
 import { NoPageOverrides, SeoPageOverrides, SeoPageService } from './pages/seo-page.service';
 import { PrismaSeoDirectoryData, SeoDirectoryData } from './pages/seo-directory.data';
 import { SeoSettingsService } from './settings/seo-settings.service';
+import { SeoSitemapService } from './sitemaps/seo-sitemap.service';
 
 /** Every provider and controller of the SEO block in one list: the module uses it and the staging integration tests assemble the same list into a slim app. */
 export const SEO_PROVIDERS: Provider[] = [
@@ -20,10 +22,10 @@ export const SEO_PROVIDERS: Provider[] = [
   { provide: SeoDirectoryData, useClass: PrismaSeoDirectoryData },
   { provide: SeoPageOverrides, useClass: NoPageOverrides },
   { provide: SeoClickStore, useClass: PrismaSeoClickStore },
-  SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService,
+  SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService, SeoSitemapService,
 ];
-export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, DirectoryPagesController, ClickOutController];
-export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService];
+export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, DirectoryPagesController, ClickOutController, SitemapController];
+export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService, SeoSitemapService];
 
 /**
  * The SEO block (docs/v3/V3_SEO_DIRECTORY.md): keyword sets per category, page templates as data, and (in later slices) directory page models, the click-out, sitemaps, keyword targets.

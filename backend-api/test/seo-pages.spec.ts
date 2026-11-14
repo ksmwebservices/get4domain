@@ -32,6 +32,10 @@ class MemData extends SeoDirectoryData {
     return f;
   }
   async businessBySlug(slug: string) { return this.rows.find((b) => b.slug === slug) ?? null; }
+  async groupStats() { return []; }
+  async indexableBusinesses() { return []; }
+  async indexableBusinessMeta() { return { total: 0, newest: null }; }
+  async publishedIndexableSites() { return { items: [], total: 0 }; }
 }
 class MemKeywords extends SeoKeywordStore {
   async list() { return { items: [], total: 0 }; }

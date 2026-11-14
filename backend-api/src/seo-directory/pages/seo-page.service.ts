@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { evaluateListingPageIndexing } from '../../directory/core/indexing';
 import { clampPage } from '../../directory/core/search';
 import { badgesOf, siteUrlOf } from '../../directory/core/visits';
-import { CategoryRow, DirectoryRepository, LocationRow } from '../../directory/directory.repository';
+import { DirectoryRepository, LocationRow } from '../../directory/directory.repository';
 import { descendantIds } from '../../directory/directory-views';
 import { DirectorySettings } from '../../directory/settings/directory-settings';
 import { DirectorySettingsService } from '../../directory/settings/directory-settings.service';
@@ -12,8 +12,9 @@ import {
   BusinessFacts, Card, CLAIM_ANSWER, Crumb, Facet, FaqItem, Link, listNames, NoindexReason, PageModel, paginate, ROBOTS_INDEX, ROBOTS_NOINDEX, breadcrumbList, collectionJsonLd, hoursTextOf, localBusinessJsonLd,
   plural as pluralFn, shortDescription, takeLinks,
 } from '../core/page-model';
-import { buildDescription, buildH1, buildTitle, SeoVars, titleCase } from '../core/template-engine';
-import { PageSpec, buildPath, canonicalOrigin, clickOutUrl, parsePath, slugify, splitTail, withPageNumber } from '../core/url-scheme';
+import { buildDescription, buildH1, buildTitle, SeoVars } from '../core/template-engine';
+import { PageSpec, buildPath, canonicalOrigin, clickOutUrl, parsePath, splitTail, withPageNumber } from '../core/url-scheme';
+import { loadPlaces, Places, CatInfo } from './places';
 import { FacetCounts, ListedBusiness, Scope, SeoDirectoryData } from './seo-directory.data';
 
 export type PageResult = { kind: 'ok'; model: PageModel } | { kind: 'gone' } | { kind: 'notFound' };
@@ -25,8 +26,6 @@ const TTL_MS = 60_000;
 const FACET_MAX = 50;
 const LINK_MAX = 8;
 
-interface CatInfo { row: CategoryRow; singular: string; plural: string; pluralSlug: string; singularSlug: string }
-interface Places { locs: LocationRow[]; cats: CategoryRow[]; catInfo: Map<string, CatInfo> }
 
 /** Each place with the number of listed businesses in it and below it. Pure. */
 export function rollUp(locs: readonly LocationRow[], byLocation: ReadonlyMap<string, number>): Map<string, number> {
@@ -54,17 +53,7 @@ export class SeoPageService {
   private async places(): Promise<Places> {
     const now = this.clock();
     if (this.cache && now - this.cache.at < TTL_MS) return this.cache.v;
-    const [locs, cats, kws] = await Promise.all([this.repo.listLocations(), this.repo.listCategories(), this.keywords.all()]);
-    const kw = new Map(kws.map((k) => [k.categorySlug, k]));
-    const catInfo = new Map<string, CatInfo>();
-    for (const c of cats.filter((x) => x.active)) {
-      const k = kw.get(c.slug);
-      const singular = (k?.singular || c.name).trim().toLowerCase();
-      // an empty plural (the loader leaves it for staff when the name is ambiguous) falls back to the singular form: honest, never a guessed plural
-      const pl = (k?.plural || '').trim().toLowerCase();
-      catInfo.set(c.id, { row: c, singular: titleCase(singular), plural: titleCase(pl || singular), pluralSlug: slugify(pl || singular), singularSlug: slugify(singular) });
-    }
-    const v = { locs: locs.filter((l) => l.active), cats: cats.filter((c) => c.active), catInfo };
+    const v = await loadPlaces(this.repo, this.keywords);
     this.cache = { at: now, v };
     return v;
   }

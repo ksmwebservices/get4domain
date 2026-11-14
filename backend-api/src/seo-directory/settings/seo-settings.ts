@@ -43,3 +43,27 @@ export function resolveSeoTemplates(stored: unknown): SeoTemplates {
   for (const t of SEO_PAGE_TYPES) out[t] = { ...DEFAULT_SEO_TEMPLATES[t], ...(ok[t] ?? {}) } as PageTemplate;
   return out;
 }
+
+// ─── the crawler list (SEO block slice 4; the vendor site robots.txt of slice 6 reads it too) ────────────────────────────────────────────────────────
+export const SEO_CRAWLERS_KEY = 'seoCrawlerAgents';
+export const MAX_CRAWLERS = 60;
+/** Search and AI crawlers named explicitly, each with Allow: /. Editable by SUPER_ADMIN only. */
+export const DEFAULT_SEO_CRAWLERS: readonly string[] = [
+  'Googlebot', 'Bingbot', 'DuckDuckBot', 'Applebot', 'YandexBot', 'Baiduspider', 'facebookexternalhit', 'Twitterbot', 'LinkedInBot', 'WhatsApp', 'Slackbot', 'GPTBot', 'OAI-SearchBot', 'ChatGPT-User',
+  'ClaudeBot', 'Claude-SearchBot', 'Claude-User', 'PerplexityBot', 'Perplexity-User', 'Google-Extended', 'Applebot-Extended', 'CCBot', 'Amazonbot', 'Meta-ExternalAgent', 'DuckAssistBot', 'cohere-ai',
+];
+const AGENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
+
+export function seoCrawlersProblem(value: unknown): string | null {
+  if (!Array.isArray(value) || value.length < 1 || value.length > MAX_CRAWLERS) return `must be a list of 1 to ${MAX_CRAWLERS} crawler names`;
+  const seen = new Set<string>();
+  for (const v of value) {
+    if (typeof v !== 'string' || !AGENT.test(v)) return `"${String(v).slice(0, 40)}" is not a crawler name (letters, digits, dot, dash, underscore; up to 40)`;
+    if (v === '*') return 'the catch-all group is always written; do not list it';
+    if (seen.has(v.toLowerCase())) return `"${v}" is listed twice`;
+    seen.add(v.toLowerCase());
+  }
+  return null;
+}
+/** The stored list when it passes validation, else the default list (a bad stored value is ignored whole). */
+export const resolveSeoCrawlers = (stored: unknown): string[] => (stored !== undefined && stored !== null && seoCrawlersProblem(stored) === null ? [...(stored as string[])] : [...DEFAULT_SEO_CRAWLERS]);

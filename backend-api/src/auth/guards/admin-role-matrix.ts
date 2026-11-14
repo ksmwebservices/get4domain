@@ -38,10 +38,13 @@ export const SEO_READ_ROLES: readonly StaffRole[] = ['SUPER_ADMIN', 'MARKETING']
 export const SEO_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = {
   'GET /v3/admin/seo-directory/category-keywords': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/category-keywords/:slug': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/category-keywords/:slug': SUPER_ONLY,
   'GET /v3/admin/seo-directory/templates': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/templates': SUPER_ONLY,
+  'GET /v3/admin/seo-directory/crawlers': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/vendor-sites': SEO_READ_ROLES,
 };
+/** The crawler list names the bots robots.txt lets in: SUPER_ADMIN only to change (ADMIN is not added to this one). */
+export const SEO_SUPER_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = { 'PUT /v3/admin/seo-directory/crawlers': SUPER_ONLY };
 
 export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> = {
-  ...SEO_ROUTES,
+  ...SEO_ROUTES, ...SEO_SUPER_ROUTES,
   // ── Operations + super admin only (MARKETING refused) ────────────────────────────────────────────────
   // vendors: create, read, edit, delete, suspend, activate
   'GET /vendors': OPS_AND_SUPER, 'POST /vendors': OPS_AND_SUPER, 'GET /vendors/:id': OPS_AND_SUPER, 'PUT /vendors/:id': OPS_AND_SUPER,

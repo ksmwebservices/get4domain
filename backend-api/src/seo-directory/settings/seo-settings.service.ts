@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SeoTemplates } from '../core/default-templates';
 import { SeoAudit } from '../seo-audit';
 import { seoError } from '../seo-directory.errors';
-import { resolveSeoTemplates, SEO_TEMPLATES_KEY, seoTemplatesProblem } from './seo-settings';
+import { resolveSeoCrawlers, resolveSeoTemplates, SEO_CRAWLERS_KEY, SEO_TEMPLATES_KEY, seoCrawlersProblem, seoTemplatesProblem } from './seo-settings';
 
 const TTL_MS = 30_000;
 
@@ -39,5 +39,21 @@ export class SeoSettingsService {
     await this.audit.record(actor, 'seo.templates.update', 'seo_templates', SEO_TEMPLATES_KEY, before, value);
     this.invalidate();
     return this.templates();
+  }
+
+  /** The crawlers named in robots.txt (defaults when staff never changed them). */
+  async crawlers(): Promise<string[]> {
+    const row = await this.prisma.v3PlanSetting.findUnique({ where: { key: SEO_CRAWLERS_KEY } });
+    return resolveSeoCrawlers(row?.valueJson);
+  }
+
+  async saveCrawlers(value: unknown, actor: Actor): Promise<string[]> {
+    const problem = seoCrawlersProblem(value);
+    if (problem) throw new BadRequestException(seoError('SEO_INVALID', `crawlers: ${problem}`));
+    const before = await this.crawlers();
+    const json = value as Prisma.InputJsonValue;
+    await this.prisma.v3PlanSetting.upsert({ where: { key: SEO_CRAWLERS_KEY }, create: { key: SEO_CRAWLERS_KEY, valueJson: json, description: 'Crawlers named in robots.txt, each with Allow: /' }, update: { valueJson: json } });
+    await this.audit.record(actor, 'seo.crawlers.update', 'seo_crawlers', SEO_CRAWLERS_KEY, before, value);
+    return this.crawlers();
   }
 }

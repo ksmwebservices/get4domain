@@ -6,9 +6,11 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { DEFAULT_SEO_TEMPLATES, SEO_PAGE_TYPES } from '../core/default-templates';
 import { SEO_PLACEHOLDERS } from '../core/template-engine';
+import { DEFAULT_SEO_CRAWLERS } from '../settings/seo-settings';
 import { SeoKeywordService } from '../keywords/seo-keyword.service';
+import { SeoSitemapService } from '../sitemaps/seo-sitemap.service';
 import { SeoSettingsService } from '../settings/seo-settings.service';
-import { KeywordListDto, KeywordUpdateDto, TemplatesUpdateDto } from './dto/seo-admin.dto';
+import { CrawlersUpdateDto, KeywordListDto, KeywordUpdateDto, TemplatesUpdateDto, VendorSitesQueryDto } from './dto/seo-admin.dto';
 
 /**
  * Staff routes of the SEO block (platform-level data, no tenant). Reading: SUPER_ADMIN, ADMIN and SALES (the MARKETING role). Writing the keyword sets and the page templates: ADMIN and
@@ -19,7 +21,7 @@ import { KeywordListDto, KeywordUpdateDto, TemplatesUpdateDto } from './dto/seo-
 @UseGuards(AdminGuard)
 @Controller('v3/admin/seo-directory')
 export class SeoAdminController {
-  constructor(private readonly keywords: SeoKeywordService, private readonly settings: SeoSettingsService) {}
+  constructor(private readonly keywords: SeoKeywordService, private readonly settings: SeoSettingsService, private readonly sitemaps: SeoSitemapService) {}
 
   @Get('category-keywords') @ApiOperation({ summary: 'The keyword sets (singular, plural, synonyms, specialisations) of the categories' })
   async list(@Query() q: KeywordListDto) {
@@ -41,4 +43,13 @@ export class SeoAdminController {
 
   @Put('templates') @HttpCode(200) @ApiOperation({ summary: 'Change the templates of one or more page types (checked: placeholders, no markup, no price)' })
   async saveTemplates(@Body() dto: TemplatesUpdateDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return { templates: await this.settings.saveTemplates(dto.templates, actorOf(u, req)) }; }
+
+  @Get('crawlers') @ApiOperation({ summary: 'The crawlers robots.txt names, and the default list' })
+  async crawlers() { return { crawlers: await this.settings.crawlers(), defaults: DEFAULT_SEO_CRAWLERS }; }
+
+  @Put('crawlers') @HttpCode(200) @ApiOperation({ summary: 'Replace the list of crawlers robots.txt names (SUPER_ADMIN only)' })
+  async saveCrawlers(@Body() dto: CrawlersUpdateDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return { crawlers: await this.settings.saveCrawlers(dto.crawlers, actorOf(u, req)) }; }
+
+  @Get('vendor-sites') @ApiOperation({ summary: 'Live, indexable vendor subdomain home URLs, for monitoring (staff only; each site keeps its own sitemap)' })
+  async vendorSites(@Query() q: VendorSitesQueryDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.sitemaps.vendorSites(skip, take); return paged(r.items, r.total, page, pageSize); }
 }

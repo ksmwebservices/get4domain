@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { Stat } from '../core/sitemap';
 
 /** A directory business as the page models need it. Read only. Private fields (email, owner) are not here at all. */
 export interface ListedBusiness {
@@ -20,9 +21,18 @@ export abstract class SeoDirectoryData {
   abstract facets(scope: Scope): Promise<FacetCounts>;
   /** by slug, any status (a removed one answers 410) */
   abstract businessBySlug(slug: string): Promise<ListedBusiness | null>;
+  /** sitemaps: the grouped counts of listed businesses (location, category, pincode) with the newest change in each group */
+  abstract groupStats(): Promise<Stat[]>;
+  /** sitemaps: business profiles that are indexable (CLAIMED or UNCLAIMED, flagged indexable), by slug */
+  abstract indexableBusinesses(skip: number, take: number): Promise<Array<{ slug: string; updatedAt: Date }>>;
+  abstract indexableBusinessMeta(): Promise<{ total: number; newest: Date | null }>;
+  /** monitoring: vendor sites that are published and indexable, with their subdomain */
+  abstract publishedIndexableSites(skip: number, take: number): Promise<{ items: Array<{ subdomain: string; publishedAt: Date | null }>; total: number }>;
 }
 
 const LISTED = ['CLAIMED', 'UNCLAIMED', 'SUSPENDED'] as const;
+/** the same rule as the directory's own sitemap data: a suspended listing stays listed but is never put in a sitemap */
+const INDEXABLE: Prisma.V3DirectoryBusinessWhereInput = { status: { in: ['CLAIMED', 'UNCLAIMED'] }, indexable: true };
 const where = (s: Scope): Prisma.V3DirectoryBusinessWhereInput => ({ status: { in: [...LISTED] }, ...(s.locationIds ? { locationId: { in: s.locationIds } } : {}), ...(s.categoryIds ? { categoryId: { in: s.categoryIds } } : {}), ...(s.pincode ? { pincode: s.pincode } : {}) });
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
@@ -62,6 +72,28 @@ export class PrismaSeoDirectoryData extends SeoDirectoryData {
       byCategory: new Map(cat.map((r) => [r.categoryId, r._count._all])),
       byPincode: new Map(pin.filter((r) => r.pincode).map((r) => [r.pincode as string, r._count._all])),
     };
+  }
+
+  async groupStats(): Promise<Stat[]> {
+    const rows = await this.prisma.v3DirectoryBusiness.groupBy({ by: ['locationId', 'categoryId', 'pincode'], where: where({}), _count: { _all: true }, _max: { updatedAt: true } });
+    return rows.map((r) => ({ locationId: r.locationId, categoryId: r.categoryId, pincode: r.pincode, count: r._count._all, lastmod: r._max.updatedAt ?? new Date(0) }));
+  }
+
+  async indexableBusinesses(skip: number, take: number) {
+    return this.prisma.v3DirectoryBusiness.findMany({ where: INDEXABLE, orderBy: { slug: 'asc' }, skip, take, select: { slug: true, updatedAt: true } });
+  }
+  async indexableBusinessMeta() {
+    const [total, newest] = await Promise.all([this.prisma.v3DirectoryBusiness.count({ where: INDEXABLE }), this.prisma.v3DirectoryBusiness.aggregate({ where: INDEXABLE, _max: { updatedAt: true } })]);
+    return { total, newest: newest._max.updatedAt ?? null };
+  }
+
+  async publishedIndexableSites(skip: number, take: number) {
+    const w: Prisma.V3SitePublicationWhereInput = { status: 'PUBLISHED', indexable: true, vendor: { subdomain: { not: null } } };
+    const [rows, total] = await Promise.all([
+      this.prisma.v3SitePublication.findMany({ where: w, orderBy: { vendor: { subdomain: 'asc' } }, skip, take, select: { publishedAt: true, vendor: { select: { subdomain: true } } } }),
+      this.prisma.v3SitePublication.count({ where: w }),
+    ]);
+    return { items: rows.filter((r) => !!r.vendor.subdomain).map((r) => ({ subdomain: r.vendor.subdomain as string, publishedAt: r.publishedAt })), total };
   }
 
   async businessBySlug(slug: string): Promise<ListedBusiness | null> {
