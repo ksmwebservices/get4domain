@@ -8,7 +8,8 @@ describe('directory settings', () => {
   it('defaults match the dispatch: sandbox SMS, 10 minute expiry, 5 attempts, unclaimed pages noindex, a hard page-size cap', () => {
     expect(DEFAULT_DIRECTORY_SETTINGS).toMatchObject({ smsAdapterMode: 'sandbox', otpExpiryMinutes: 10, otpMaxAttempts: 5, directoryIndexUnclaimed: false, directoryPageSizeMax: 50 });
     expect(DEFAULT_DIRECTORY_SETTINGS.directoryPageSizeDefault).toBeLessThanOrEqual(DEFAULT_DIRECTORY_SETTINGS.directoryPageSizeMax);
-    expect(DIRECTORY_SETTING_KEYS).toHaveLength(15);
+    expect(DIRECTORY_SETTING_KEYS).toHaveLength(16);   // 15 + directoryPagesIndexable (SEO block, default OFF)
+    expect(DEFAULT_DIRECTORY_SETTINGS.directoryPagesIndexable).toBe(false);
   });
   it.each([
     ['directoryPageSizeMax', 50, true], ['directoryPageSizeMax', 101, false], ['directoryPageSizeMax', 0, false], ['directorySponsoredEvery', 5, true], ['directorySponsoredEvery', 0, false],

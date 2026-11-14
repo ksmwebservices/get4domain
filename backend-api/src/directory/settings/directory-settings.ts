@@ -13,6 +13,8 @@ export interface DirectorySettings {
   directoryIndexUnclaimed: boolean;
   /** a location or category page with fewer businesses than this is noindex (thin) */
   directoryThinPageMinBusinesses: number;
+  /** SEO block: false (default) = EVERY directory page model says noindex and the sitemaps are empty, until counsel approves the wording and staff switch it on */
+  directoryPagesIndexable: boolean;
   /** public read cache lifetime in seconds (ETag revalidation always works) */
   directoryCacheSeconds: number;
   otpExpiryMinutes: number;
@@ -34,6 +36,7 @@ export const DEFAULT_DIRECTORY_SETTINGS: Readonly<DirectorySettings> = {
   directoryMinDescriptionChars: 40,
   directoryIndexUnclaimed: false,
   directoryThinPageMinBusinesses: 3,
+  directoryPagesIndexable: false,
   directoryCacheSeconds: 300,
   otpExpiryMinutes: 10,
   otpMaxAttempts: 5,
@@ -58,6 +61,7 @@ export function directorySettingProblem(key: keyof DirectorySettings, value: unk
     case 'directoryMinDescriptionChars': return intIn(value, 0, 2000) ? null : 'must be a whole number from 0 to 2000';
     case 'directoryIndexUnclaimed': return typeof value === 'boolean' ? null : 'must be true or false';
     case 'directoryThinPageMinBusinesses': return intIn(value, 0, 1000) ? null : 'must be a whole number from 0 to 1000';
+    case 'directoryPagesIndexable': return typeof value === 'boolean' ? null : 'must be true or false';
     case 'directoryCacheSeconds': return intIn(value, 0, 86_400) ? null : 'must be a whole number of seconds from 0 to 86400';
     case 'otpExpiryMinutes': return intIn(value, 1, 60) ? null : 'must be a whole number of minutes from 1 to 60';
     case 'otpMaxAttempts': return intIn(value, 1, 10) ? null : 'must be a whole number from 1 to 10';
