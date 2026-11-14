@@ -6,7 +6,7 @@ import { chooseEffectivePlan, resolveEntitlements } from '../src/plans/entitleme
 import { NAV_GROUPS, NavTabDef, resolveNav, upsellText } from '../src/v3-packs/core/nav-core';
 import { SHELL_MATRIX, shellSections, tabsFor, TEAM_TAB_AREA } from '../src/v3-packs/core/shell-access';
 import { AppShellService } from '../src/v3-packs/app-shell.service';
-import { REQUIRES_TAB, TabGuard } from '../src/v3-packs/requires-tab';
+import { REQUIRES_TAB, TAB_OPEN, TabGuard } from '../src/v3-packs/requires-tab';
 import { makeEngine } from './support/pack-fakes';
 import { MeDomainsController } from '../src/site-domains/api/me-domains.controller';
 import { MeConnectionController } from '../src/v3-domain-automation/api/connection.controllers';
@@ -228,15 +228,34 @@ describe('B12 the app shell and the permission matrix', () => {
 describe('B11 the domain screen routes', () => {
   const sources = ['site-domains/api/me-domains.controller.ts', 'v3-domain-automation/api/connection.controllers.ts', 'v3-registrar/api/registrar.controllers.ts', 'domains/domains.controller.ts'];
   it('every vendor controller of the domain screen is behind @RequiresTab(\'domain\')', () => {
-    for (const f of sources) expect([f, /@RequiresTab\('domain'\)/.test(fs.readFileSync(path.join(src, f), 'utf8'))]).toEqual([f, true]);
+    for (const f of sources) expect([f, /@RequiresTab\('domain'(, \{ previewReads: true \})?\)/.test(fs.readFileSync(path.join(src, f), 'utf8'))]).toEqual([f, true]);
   });
   it('the metadata is on the classes themselves, so every route of them is covered', () => {
-    for (const c of [MeDomainsController, MeConnectionController, MeDomainSalesController, DomainsController]) expect([c.name, Reflect.getMetadata(REQUIRES_TAB, c)]).toEqual([c.name, { key: 'domain' }]);
+    for (const c of [MeDomainsController, MeConnectionController, MeDomainSalesController]) expect([c.name, Reflect.getMetadata(REQUIRES_TAB, c)]).toEqual([c.name, { key: 'domain', previewReads: true }]);
+    expect(Reflect.getMetadata(REQUIRES_TAB, DomainsController)).toEqual({ key: 'domain' });   // the older Version 2 controller keeps refusing every route: its search calls the registrar directly
+  });
+  it('only the free subdomain route is marked open', () => {
+    expect(Reflect.getMetadata(TAB_OPEN, MeDomainsController.prototype.subdomain)).toBe(true);
+    for (const k of ['custom', 'verify', 'primary', 'remove'] as const) expect([k, Reflect.getMetadata(TAB_OPEN, MeDomainsController.prototype[k])]).toEqual([k, undefined]);
   });
   const ctxFor = (vendorId: string): ExecutionContext => ({
     getHandler: () => function h() {}, getClass: () => { class C {} Reflect.defineMetadata(REQUIRES_TAB, { key: 'domain' }, C); return C; },
     switchToHttp: () => ({ getRequest: () => ({ user: { sub: vendorId, role: 'VENDOR', email: 'v@x.invalid' } }) }),
   }) as unknown as ExecutionContext;
+  it('with previewReads a locked tab answers GET and refuses every write; @TabOpen routes stay open', async () => {
+    const { svc, plans: p } = await makeEngine();
+    p.states.set('free', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' }); p.states.set('paused', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL', paused: true });
+    const guard = new TabGuard(new Reflector(), svc);
+    const ctx = (vendorId: string, method: string, open = false): ExecutionContext => ({
+      getHandler: () => { function h() {} if (open) Reflect.defineMetadata(TAB_OPEN, true, h); return h; }, getClass: () => { class C {} Reflect.defineMetadata(REQUIRES_TAB, { key: 'domain', previewReads: true }, C); return C; },
+      switchToHttp: () => ({ getRequest: () => ({ method, user: { sub: vendorId, role: 'VENDOR', email: 'v@x.invalid' } }) }),
+    }) as unknown as ExecutionContext;
+    for (const v of ['free', 'paused']) {
+      await expect(guard.canActivate(ctx(v, 'GET'))).resolves.toBe(true);
+      for (const m of ['POST', 'PUT', 'DELETE', 'PATCH']) expect([v, m, ((await guard.canActivate(ctx(v, m)).catch((e) => e)) as ForbiddenException).getResponse()]).toEqual([v, m, expect.objectContaining({ code: 'TAB_LOCKED' })]);
+      await expect(guard.canActivate(ctx(v, 'PUT', true))).resolves.toBe(true);
+    }
+  });
   it('a Free trial vendor is refused with TAB_LOCKED; a paid vendor passes; a vendor on the Version 2 rules passes; a paused vendor is refused', async () => {
     const { svc, plans: p } = await makeEngine();
     p.states.set('free', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' }); p.states.set('paid', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });

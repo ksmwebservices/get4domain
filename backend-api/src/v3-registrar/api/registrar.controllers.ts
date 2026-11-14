@@ -58,7 +58,7 @@ export class IdentityQueueQuery extends PageQueryDto { @IsOptional() @IsIn(['INC
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
-@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11)
+@RequiresTab('domain', { previewReads: true })   // a Free or paused vendor keeps a locked PREVIEW: reads answer 200 with a locked flag; buying, renewing and transfers are refused with TAB_LOCKED (Amendment 11 Q2, Amendment 13 B11)
 @Controller('v3/me/domain-sales')
 export class MeDomainSalesController {
   constructor(private readonly svc: RegistrarService) {}
@@ -69,7 +69,7 @@ export class MeDomainSalesController {
 
   @Throttle(RATE.domainVerify) @Get('search')
   @ApiOperation({ summary: 'Search a name across the extensions on sale: availability and price from the registrar (a real read-only call, off until staff switch it on)' })
-  search(@Tenant() t: TenantContext, @Query() q: SearchQuery) { return this.svc.search(t.vendorId, q.name); }
+  search(@Tenant() t: TenantContext, @Query() q: SearchQuery) { return this.svc.searchOrLocked(t.vendorId, q.name); }
 
   @Post('quote') @HttpCode(200)
   @ApiOperation({ summary: 'The exact price of registering a name: cost plus approved margin, GST as its own line, the total that would be held and charged' })

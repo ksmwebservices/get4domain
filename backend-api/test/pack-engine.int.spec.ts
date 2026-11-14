@@ -95,7 +95,12 @@ describe('pack engine tables on staging', () => {
     });
     it('an add-on pack holds no price column at all', async () => {
       const cols = await prisma.$queryRaw<Array<{ column_name: string }>>`SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'g4d_pack_addons'`;
-      expect(cols.map((c) => c.column_name).filter((c) => /price|amount|paise/i.test(c.replace(/Status$/, '')))).toEqual([]);
+      // No column may hold a price figure. The ONLY price-like column is the marker `priceStatus` (text, default 'PENDING'): it says "not set yet" and holds no number. The old check stripped a trailing "Status" from the name, which turned `priceStatus` into `price` and flagged the marker itself.
+      const names = cols.map((c) => c.column_name);
+      expect(names.filter((c) => /price|amount|paise|rupee|cost|fee/i.test(c) && c !== 'priceStatus')).toEqual([]);
+      const marker = await prisma.$queryRaw<Array<{ data_type: string; column_default: string | null }>>`SELECT data_type, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'g4d_pack_addons' AND column_name = 'priceStatus'`;
+      expect(marker).toHaveLength(1); expect(marker[0].data_type).toBe('text'); expect(marker[0].column_default).toContain('PENDING');
+      expect(await prisma.v3PackAddon.count({ where: { NOT: { priceStatus: 'PENDING' } } })).toBe(0);   // every add-on is still PENDING
     });
   });
 

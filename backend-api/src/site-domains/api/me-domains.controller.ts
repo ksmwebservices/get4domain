@@ -8,7 +8,7 @@ import { RATE } from '../../common/throttling';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
-import { RequiresTab } from '../../v3-packs/requires-tab';
+import { RequiresTab, TabOpen } from '../../v3-packs/requires-tab';
 import { SiteDomainsService } from '../site-domains.service';
 import { CustomDomainDto, SubdomainDto } from './dto/domain.dto';
 
@@ -21,7 +21,7 @@ import { CustomDomainDto, SubdomainDto } from './dto/domain.dto';
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
-@RequiresTab('domain')   // Amendment 11 Q2 and Amendment 13 B11: the domain screen is closed on a Free trial (TAB_LOCKED); a vendor still on the Version 2 rules is never restricted
+@RequiresTab('domain', { previewReads: true })   // Amendment 11 Q2 and Amendment 13 B11: on a Free trial reads keep a locked preview and own-domain writes are refused (TAB_LOCKED); the free subdomain stays open; a vendor on the Version 2 rules is never restricted
 @Controller('v3/me/domains')
 export class MeDomainsController {
   constructor(private readonly domains: SiteDomainsService) {}
@@ -32,7 +32,7 @@ export class MeDomainsController {
   @ApiOperation({ summary: 'My addresses: the free subdomain, custom domains, the main address, and whether my plan allows my own domain' })
   overview(@Tenant() t: TenantContext) { return this.domains.overview(t.vendorId); }
 
-  @Put('subdomain') @HttpCode(200)
+  @Put('subdomain') @HttpCode(200) @TabOpen()
   @ApiOperation({ summary: 'Reserve or change my free subdomain (rules, reserved names and a change limit apply)' })
   subdomain(@Tenant() t: TenantContext, @Body() dto: SubdomainDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.domains.setSubdomain(t.vendorId, dto.slug, this.actor(user, req)); }
 

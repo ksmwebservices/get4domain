@@ -31,7 +31,7 @@ const actor = (user: AuthenticatedUser, req: Request, type: 'VENDOR' | 'STAFF'):
 @ApiBearerAuth()
 @UseTenant()
 @UseGuards(VendorOwnerGuard)
-@RequiresTab('domain')   // closed on a Free trial (Amendment 11 Q2, Amendment 13 B11)
+@RequiresTab('domain', { previewReads: true })   // reads keep a locked preview; connect, check, mode, retry and remove are refused with TAB_LOCKED on a Free or paused plan (Amendment 11 Q2, Amendment 13 B11)
 @Controller('v3/me/domains')
 export class MeConnectionController {
   constructor(private readonly svc: DomainConnectionService) {}

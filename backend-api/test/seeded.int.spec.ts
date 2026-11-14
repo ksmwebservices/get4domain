@@ -19,7 +19,7 @@ import { buildProvisioningTestApp } from './support/provisioning-test-app';
 jest.setTimeout(180_000);
 
 describe('seeded sites on staging', () => {
-  let app: INestApplication; let prisma: PrismaClient; let ops: string; let mkt: string; let sup: string;
+  let app: INestApplication; let prisma: PrismaClient; let ops: string; let mkt: string; let sup: string; let sup2: string; let adm: string;
   const phone = `98${String(Date.now()).slice(-8)}`;
   const api = (method: 'get' | 'post' | 'put', url: string, token: string, body?: object) => { const r = request(app.getHttpServer())[method](url).set('Authorization', `Bearer ${token}`); return body ? r.send(body) : r; };
   const byHost = (host: string) => request(app.getHttpServer()).get('/v3/public/site/by-host').query({ host, path: '/' });
@@ -28,6 +28,7 @@ describe('seeded sites on staging', () => {
     prisma = newPrisma();
     await applySeed(new PrismaSeedStore(prisma), expandSeed(JSON.parse(fs.readFileSync(path.resolve(__dirname, '../prisma/seed/v3-plans.seed.json'), 'utf8'))), { apply: true });
     ops = await seedStaff(prisma, 'p513ops', RUN_ID, 'OPERATIONS'); mkt = await seedStaff(prisma, 'p513mkt', RUN_ID, 'MARKETING'); sup = await seedStaff(prisma, 'p513sup', RUN_ID, 'SUPER_ADMIN');
+    sup2 = await seedStaff(prisma, 'p513support', RUN_ID, 'SUPPORT'); adm = await seedStaff(prisma, 'p513adm', RUN_ID, 'ADMIN');
     app = await buildProvisioningTestApp({ includeSiteApi: true, includeDirectoryApi: true, b3: true });
   }, 240000);
 
@@ -37,8 +38,13 @@ describe('seeded sites on staging', () => {
 
   const body = { businessName: `V3TEST ${RUN_ID} seeded plumbing`, category: 'plumber', city: 'Chennai', area: 'Adyar', phone, sourceKind: 'PUBLIC_LISTING', publicFactsOnly: true };
 
-  it('MARKETING cannot create; the checkbox is required; a dry run creates nothing', async () => {
-    expect((await api('post', '/v3/admin/seeded-sites', mkt, body)).status).toBe(403);
+  it('SALES (MARKETING) and ADMIN may create, SUPPORT may not; the checkbox is required; a dry run creates nothing', async () => {
+    // Amendment 13 V9: SALES (the MARKETING value) and ADMIN create seeded sites; SUPPORT is not on the route's allow list. Each create has its own phone and name so none is a duplicate of another.
+    const other = (n: string, ph: string) => ({ ...body, businessName: `V3TEST ${RUN_ID} seeded ${n}`, phone: ph });
+    const suffix = String(Date.now()).slice(-7);
+    expect((await api('post', '/v3/admin/seeded-sites', sup2, other('support', `96${suffix}1`))).status).toBe(403);
+    const bySales = await api('post', '/v3/admin/seeded-sites', mkt, other('sales', `96${suffix}2`)); expect(bySales.status).toBe(200); expect(bySales.body.data).toMatchObject({ lifecycle: 'SEEDED' });
+    const byAdmin = await api('post', '/v3/admin/seeded-sites', adm, other('admin', `96${suffix}3`)); expect(byAdmin.status).toBe(200); expect(byAdmin.body.data).toMatchObject({ lifecycle: 'SEEDED' });
     expect((await api('post', '/v3/admin/seeded-sites', ops, { ...body, publicFactsOnly: false })).status).toBe(400);
     const csv = `businessName,category,city,area,phone,sourceKind,publicFactsOnly\n"${body.businessName}",plumber,Chennai,Adyar,${phone},PUBLIC_LISTING,yes\n`;
     const dry = await api('post', '/v3/admin/seeded-sites/batches/dry-run', ops, { csv, fileName: 'p513.csv' });

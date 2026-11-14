@@ -101,12 +101,19 @@ export class RegistrarService {
     const now = this.clock();
     const tlds = registrationTlds(rows, now);
     return {
-      state: p.allowed ? 'ACTIVE' : 'LOCKED_PREVIEW', upsellText: p.allowed ? null : p.upsellText, identity: reg?.status ?? 'INCOMPLETE',
+      state: p.allowed ? 'ACTIVE' : 'LOCKED_PREVIEW', locked: !p.allowed, upsellText: p.allowed ? null : p.upsellText, identity: reg?.status ?? 'INCOMPLETE',
       purchasesReady: s.registrarNameServers !== null && s.registrarMinBalancePaise !== null, extensions: p.allowed ? tlds : [],
     };
   }
 
   // ───────────────────────────────────────────────────────────────────────────── search and price
+  /** The screen's search: a vendor without the Pro plan gets a locked preview (200, locked, no results) and nothing is asked of the registrar. */
+  async searchOrLocked(vendorId: string, nameIn: string): Promise<{ locked: true; upsellText: string | null; name: string; results: [] } | ({ locked: false } & Awaited<ReturnType<RegistrarService['search']>>)> {
+    const p = await this.proState(vendorId);
+    if (!p.allowed) return { locked: true, upsellText: p.upsellText, name: String(nameIn ?? '').trim().toLowerCase(), results: [] };
+    return { locked: false, ...(await this.search(vendorId, nameIn)) };
+  }
+
   async search(vendorId: string, nameIn: string) {
     await this.needPro(vendorId);
     const raw = String(nameIn ?? '').trim().toLowerCase();

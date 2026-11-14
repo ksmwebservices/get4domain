@@ -123,8 +123,14 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
     // The engine works the status out from the DATES (effectiveStatus), not from the stored column, so a lapsed Pro term is one whose end and grace have both passed. Setting only `status` left the term running (Pro, ACTIVE).
     await prisma.v3PlanSubscription.updateMany({ where: { vendorId: B.vendorId }, data: { status: 'EXPIRED', endsAt: new Date(Date.now() - 30 * 86_400_000), graceEndsAt: new Date(Date.now() - 20 * 86_400_000) } });
     app.get(EntitlementsService).invalidate(B.vendorId);
-    const o = await api('get', '/v3/me/domain-sales/overview', tokenB); expect(o.status).toBe(200); expect(o.body.data.state).toBe('LOCKED_PREVIEW');
-    expect((await buy(tokenB, domain('free'))).status).toBe(403);
+    const o = await api('get', '/v3/me/domain-sales/overview', tokenB); expect(o.status).toBe(200); expect(o.body.data.state).toBe('LOCKED_PREVIEW'); expect(o.body.data.locked).toBe(true);
+    // Amendment 11 Q2: reads keep a locked preview (200, locked, nothing asked of the registrar); only writes are refused with TAB_LOCKED; the free subdomain stays open.
+    const s = await api('get', `/v3/me/domain-sales/search?name=${encodeURIComponent(domain('free').split('.')[0])}`, tokenB); expect(s.status).toBe(200); expect(s.body.data).toMatchObject({ locked: true, results: [] });
+    expect((await api('get', '/v3/me/domain-sales/orders', tokenB)).status).toBe(200);
+    expect((await api('get', '/v3/me/domains', tokenB)).status).toBe(200);
+    const bought = await buy(tokenB, domain('free')); expect(bought.status).toBe(403); expect(JSON.stringify(bought.body)).toContain('TAB_LOCKED');
+    const custom = await api('post', '/v3/me/domains/custom', tokenB, { hostname: `www.${domain('free')}` }); expect(custom.status).toBe(403); expect(JSON.stringify(custom.body)).toContain('TAB_LOCKED');
+    const sub = await api('put', '/v3/me/domains/subdomain', tokenB, { slug: `v3t-${RUN_ID.toLowerCase().replace(/[^a-z0-9]/g, '').slice(-8)}` }); expect(JSON.stringify(sub.body)).not.toContain('TAB_LOCKED');
     for (const [m, u] of [['get', '/v3/admin/domain-orders'], ['get', '/v3/admin/domain-margins'], ['get', '/v3/admin/identity-checks'], ['get', `/v3/admin/vendors/${A.vendorId}/identity`], ['get', '/v3/admin/registrar/runs']] as const) expect([u, (await api(m, u, mkt)).status]).toEqual([u, 403]);
     expect((await api('post', `/v3/admin/domain-margins/${marginIds[0]}/approve`, ops, { effectiveFrom: new Date().toISOString() })).status).toBe(403);   // SUPER_ADMIN only
     const list = await api('get', `/v3/admin/domain-orders?vendorId=${A.vendorId}`, ops); expect(list.status).toBe(200); expect(list.body.data.total).toBeGreaterThanOrEqual(3);

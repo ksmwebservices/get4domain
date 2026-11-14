@@ -70,7 +70,7 @@ export async function seedMember(prisma: PrismaClient, vendorId: string, label: 
 }
 
 /** A synthetic Get4Domain STAFF member with the given role (status 'active'). Returns the JWT JwtStrategy accepts for `kind: 'admin_member'`. */
-export async function seedStaff(prisma: PrismaClient, label: string, runId: string, role: 'SUPER_ADMIN' | 'OPERATIONS' | 'MARKETING', status = 'active'): Promise<string> {
+export async function seedStaff(prisma: PrismaClient, label: string, runId: string, role: 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING', status = 'active'): Promise<string> {
   const email = `staff-${label}-${runId}@v3test.invalid`;
   const m = await prisma.adminTeamMember.create({ data: { name: 'V3TEST staff', email, role, status } });
   return sign({ sub: m.id, email, role: 'ADMIN', kind: 'admin_member' });

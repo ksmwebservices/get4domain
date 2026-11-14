@@ -126,14 +126,15 @@ describe('pack engine, Part B, over HTTP', () => {
   });
 
   describe('the domain screen on a Free trial (B11)', () => {
-    it('a Free trial vendor is refused with TAB_LOCKED; a paid vendor is served; vendor B\'s answer never carries vendor A\'s data', async () => {
+    it('a Free trial vendor keeps a locked preview of the reads; a paid vendor is served; vendor B\'s answer never carries vendor A\'s data', async () => {
       const free = await get('/v3/me/domains', 'owner-b');
-      expect(free.status).toBe(403); expect(JSON.stringify(free.body)).toContain('TAB_LOCKED');
+      expect(free.status).toBe(200); expect(JSON.stringify(free.body)).not.toContain('TAB_LOCKED'); expect(JSON.stringify(free.body)).not.toContain('"vendor":"a"');
       const paid = await get('/v3/me/domains', 'owner-a');
       expect(paid.status).toBe(200); expect(paid.body.data).toEqual({ vendor: 'a' });
     });
-    it('every route of the screen is refused on a Free trial, not only the list', async () => {
-      for (const [m, u] of [['put', '/v3/me/domains/subdomain'], ['post', '/v3/me/domains/custom'], ['post', '/v3/me/domains/x/verify'], ['post', '/v3/me/domains/x/primary']] as const) {
+    it('every WRITE route of the screen is refused on a Free trial; the free subdomain stays open', async () => {
+      const open = await send('put', '/v3/me/domains/subdomain', 'owner-b', { slug: 'abc' }); expect(JSON.stringify(open.body)).not.toContain('TAB_LOCKED');
+      for (const [m, u] of [['post', '/v3/me/domains/custom'], ['post', '/v3/me/domains/x/verify'], ['post', '/v3/me/domains/x/primary']] as const) {
         const r = await send(m, u, 'owner-b', { subdomain: 'abc', host: 'abc.example.com' });
         expect([u, r.status, JSON.stringify(r.body).includes('TAB_LOCKED')]).toEqual([u, 403, true]);
       }
@@ -142,7 +143,9 @@ describe('pack engine, Part B, over HTTP', () => {
       await send('post', '/v3/admin/pack-engine/vendors/a/plan-pause', 'OPERATIONS', { reason: 'owner asked' });
       plans.states.set('a', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL', paused: true });
       const paused = await get('/v3/me/domains', 'owner-a');
-      expect(paused.status).toBe(403); expect(JSON.stringify(paused.body)).toContain('TAB_LOCKED');   // the wire carries the code; the reason PLAN_PAUSED is in the navigation answer (next test) and in the guard's own answer (pack-part-b.spec.ts)
+      expect(paused.status).toBe(200);   // a paused plan keeps the locked preview of the reads
+      const pausedWrite = await send('post', '/v3/me/domains/custom', 'owner-a', { host: 'abc.example.com' });
+      expect(pausedWrite.status).toBe(403); expect(JSON.stringify(pausedWrite.body)).toContain('TAB_LOCKED');   // the wire carries the code; the reason PLAN_PAUSED is in the navigation answer (next test) and in the guard's own answer (pack-part-b.spec.ts)
       await send('post', '/v3/admin/pack-engine/vendors/a/plan-resume', 'OPERATIONS');
       plans.states.set('a', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
       expect((await get('/v3/me/domains', 'owner-a')).status).toBe(200);
