@@ -42,7 +42,7 @@ export class DirectoryAdminService {
   async createLocation(d: { parentId?: string | null; kind: LocationKind; name: string; slug?: string; sortOrder?: number }, actor: Actor): Promise<LocationRow> {
     const parent = d.parentId ? await this.repo.getLocation(d.parentId) : null;
     if (d.parentId && !parent) throw bad('The parent place does not exist.');
-    const want: Record<LocationKind, LocationKind | null> = { STATE: null, DISTRICT: 'STATE', CITY: 'DISTRICT' };
+    const want: Record<LocationKind, LocationKind | null> = { STATE: null, DISTRICT: 'STATE', CITY: 'DISTRICT', LOCALITY: 'CITY' };
     if ((parent?.kind ?? null) !== want[d.kind]) throw bad(`A ${d.kind.toLowerCase()} must sit under ${want[d.kind] ? `a ${want[d.kind]!.toLowerCase()}` : 'nothing (it is a top-level place)'}.`);
     const name = String(d.name ?? '').trim(); if (!name || name.length > 120) throw bad('The name must be 1 to 120 characters.');
     const slug = slugify(d.slug || name);

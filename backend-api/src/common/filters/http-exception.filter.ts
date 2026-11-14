@@ -15,6 +15,7 @@ import { PROVISIONING_API_ERROR_CODES } from '../../provisioning/provisioning.er
 import { SITE_ERROR_CODES } from '../../site-publish/site.errors';
 import { DOMAIN_ERROR_CODES } from '../../site-domains/site-domains.errors';
 import { DIRECTORY_ERROR_CODES } from '../../directory/directory.errors';
+import { SEO_ERROR_CODES } from '../../seo-directory/seo-directory.errors';
 import { BILLING_ERROR_CODES } from '../../plan-billing/plan-billing.errors';
 import { AI_ERROR_CODES } from '../../ai-studio/ai-studio.errors';
 import { WALLET_ERROR_CODES, WALLET_NUMERIC_FIELDS } from '../../v3-wallet/wallet.errors';
@@ -129,7 +130,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...SEO_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       // Batch 4 adds `problem`: the machine reason behind a refusal (for example EFFECTIVE_DATE_IN_PAST, or RATES_MISSING for tax)
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText', 'problem'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];

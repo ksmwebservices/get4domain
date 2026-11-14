@@ -78,6 +78,7 @@ import { V3AppointmentsModule } from './v3-appointments/appointments.module';
 import { V3StoreModule } from './v3-store/store.module';
 import { V3PacksModule } from './v3-packs/packs.module';
 import { DirectoryModule } from './directory/directory.module';
+import { SeoDirectoryModule } from './seo-directory/seo-directory.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
 import { SeededSitesModule } from './seeded-sites/seeded-sites.module';
@@ -153,6 +154,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3PacksModule,
     ClaimSetupModule,   // Part B (B7): account setup after the claim code and the owner's approval that puts the site live
     DirectoryModule,
+    SeoDirectoryModule,
     B3SettingsModule,
     VendorLifecycleModule,
     SiteLifecycleModule,

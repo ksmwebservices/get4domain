@@ -33,7 +33,15 @@ export const ALL_STAFF: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS', 'MA
 export const OPS_AND_SUPER: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS'];
 export const SUPER_ONLY: readonly StaffRole[] = ['SUPER_ADMIN'];
 
+/** SEO block (docs/v3/V3_SEO_DIRECTORY.md): SALES (MARKETING) reads, ADMIN and SUPER_ADMIN write; OPERATIONS and SUPPORT have no access. ADMIN does not inherit here (the base lists no OPERATIONS), so it is added in STAFF_ROLE_EXTENSIONS.ADMIN.allow from this list. */
+export const SEO_READ_ROLES: readonly StaffRole[] = ['SUPER_ADMIN', 'MARKETING'];
+export const SEO_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = {
+  'GET /v3/admin/seo-directory/category-keywords': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/category-keywords/:slug': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/category-keywords/:slug': SUPER_ONLY,
+  'GET /v3/admin/seo-directory/templates': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/templates': SUPER_ONLY,
+};
+
 export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> = {
+  ...SEO_ROUTES,
   // ── Operations + super admin only (MARKETING refused) ────────────────────────────────────────────────
   // vendors: create, read, edit, delete, suspend, activate
   'GET /vendors': OPS_AND_SUPER, 'POST /vendors': OPS_AND_SUPER, 'GET /vendors/:id': OPS_AND_SUPER, 'PUT /vendors/:id': OPS_AND_SUPER,
@@ -242,7 +250,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey'],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],

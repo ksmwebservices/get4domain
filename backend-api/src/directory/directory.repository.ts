@@ -2,7 +2,7 @@ import { RemovalStatus } from './core/removal';
 
 export type BusinessStatus = 'DRAFT' | 'UNCLAIMED' | 'CLAIMED' | 'SUSPENDED' | 'REMOVED';
 export type OtpStatus = 'PENDING' | 'VERIFIED' | 'EXPIRED' | 'LOCKED' | 'REVOKED';
-export type LocationKind = 'STATE' | 'DISTRICT' | 'CITY';
+export type LocationKind = 'STATE' | 'DISTRICT' | 'CITY' | 'LOCALITY';
 
 export interface LocationRow { id: string; parentId: string | null; parentKey: string; kind: LocationKind; name: string; slug: string; sortOrder: number; proposed: boolean; active: boolean }
 export interface CategoryRow { id: string; parentId: string | null; parentKey: string; name: string; slug: string; themeCategoryId: string | null; family: string | null; sortOrder: number; proposed: boolean; active: boolean }

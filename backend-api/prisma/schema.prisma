@@ -4529,6 +4529,7 @@ enum V3DirectoryLocationKind {
   STATE
   DISTRICT
   CITY
+  LOCALITY // SEO block: a neighbourhood under a city (additive)
 }
 
 enum V3DirectoryBusinessStatus {
@@ -4624,6 +4625,7 @@ model V3DirectoryBusiness {
   name            String
   categoryId      String
   locationId      String?
+  pincode         String? // SEO block: six digit postal code for pincode pages (additive); null when unknown
   addressJson     Json                      @default("{}")
   phoneE164       String?
   emailMasked     String? // only a masked form is ever stored here; the clear address lives on the vendor
@@ -4654,6 +4656,7 @@ model V3DirectoryBusiness {
   @@index([status, indexable])
   @@index([categoryId])
   @@index([locationId])
+  @@index([pincode])
   @@index([searchVector], type: Gin)
   @@map("g4d_directory_businesses")
 }
@@ -7743,4 +7746,23 @@ model V3MailboxPrice {
   updatedAt     DateTime  @updatedAt
 
   @@map("g4d_v3_mailbox_prices")
+}
+
+// ─── SEO block slice 1: keyword set per category (platform-level, staff only) (additive) ──────────────────────────────────────────────────────────────
+/// The words a category is known by, used in directory page titles and H1. PLATFORM-LEVEL: one row per category slug (the catalog sheet id), no tenant column, staff only (RLS on, no policy).
+/// Keyed by slug and not by a directory category id because the catalog sheet has 196 categories and the directory tree is smaller; a row matches a directory category by slug.
+model V3SeoCategoryKeyword {
+  id                String   @id @default(cuid())
+  categorySlug      String   @unique
+  name              String
+  singular          String
+  plural            String
+  synonyms          Json     @default("[]") // staff-entered; the loader never invents any
+  specialisations   Json     @default("[]") // from the catalog sheet column services_seed_from_specialisations
+  source            String   @default("DERIVED") // DERIVED (loader) | STAFF (edited by staff: the loader never overwrites it)
+  updatedByStaffId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("g4d_seo_category_keywords")
 }

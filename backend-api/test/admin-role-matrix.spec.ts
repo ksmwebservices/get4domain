@@ -176,10 +176,16 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 const PLAN_PAUSE_ROUTES = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
 SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS, ...PLAN_PAUSE_ROUTES);
 
+// SEO block: the keyword sets and page templates. The base table says SUPER_ADMIN for the writes and SUPER_ADMIN + MARKETING (SALES) for the reads; ADMIN is added for all five by
+// STAFF_ROLE_EXTENSIONS.ADMIN.allow and OPERATIONS and SUPPORT have no access (tested in seo-keywords.spec.ts).
+const SEO_WRITES = ['PUT /v3/admin/seo-directory/category-keywords/:slug', 'PUT /v3/admin/seo-directory/templates'];
+const SEO_READS = ['GET /v3/admin/seo-directory/category-keywords', 'GET /v3/admin/seo-directory/category-keywords/:slug', 'GET /v3/admin/seo-directory/templates'];
+SUPER_ONLY_ROUTES.push(...SEO_WRITES);
+
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
-    const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES];
-    expect(oracle).toHaveLength(333);
+    const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
+    expect(oracle).toHaveLength(338);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
@@ -200,6 +206,9 @@ describe('admin-role-matrix (the implementation must reproduce the oracle)', () 
   });
   it.each(ALL_STAFF_ROUTES.map((r) => [r]))('all three staff roles are allowed on %s', (route) => {
     expect([...rolesFor(route)].sort()).toEqual(['MARKETING', 'OPERATIONS', 'SUPER_ADMIN']);
+  });
+  it.each(SEO_READS.map((r) => [r]))('SUPER_ADMIN and MARKETING (SALES) only, in the base table, on %s', (route) => {
+    expect([...rolesFor(route)].sort()).toEqual(['MARKETING', 'SUPER_ADMIN']);
   });
   it('an unlisted route is SUPER_ADMIN only', () => {
     expect([...rolesFor('GET /not/in/the/matrix')]).toEqual(['SUPER_ADMIN']);

@@ -111,7 +111,7 @@ export class RemovalListDto {
 }
 export class LocationCreateDto {
   @IsOptional() @IsString() @MaxLength(64) parentId?: string | null;
-  @IsIn(['STATE', 'DISTRICT', 'CITY']) kind!: 'STATE' | 'DISTRICT' | 'CITY';
+  @IsIn(['STATE', 'DISTRICT', 'CITY', 'LOCALITY']) kind!: 'STATE' | 'DISTRICT' | 'CITY' | 'LOCALITY';
   @IsString() @MinLength(1) @MaxLength(120) name!: string;
   @IsOptional() @IsString() @MaxLength(60) @Matches(SLUG) slug?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100000) sortOrder?: number;
