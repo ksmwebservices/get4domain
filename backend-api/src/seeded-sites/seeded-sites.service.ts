@@ -14,7 +14,7 @@ import {
 import { ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
 import { SeededRow, SeededStore } from './seeded.store';
 
-export type StaffRole = 'SUPER_ADMIN' | 'OPERATIONS' | 'MARKETING';
+export type StaffRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING';
 /** A staff view of one seeded site. The fields depend on the role (MARKETING gets the non-personal ones only). */
 export interface SeededView { id: string; lifecycle: SeededLifecycle; outreachStatus: OutreachStatus; [field: string]: unknown }
 export interface Who { actor: Actor; role: StaffRole }

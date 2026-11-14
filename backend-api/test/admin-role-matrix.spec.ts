@@ -99,7 +99,7 @@ const MARKETING_DENIED = [
   // B3 slice 5.14: requests, the outbox, reports and the blocklist
   'GET /v3/admin/requests', 'GET /v3/admin/requests/:id', 'GET /v3/admin/vendors/:vendorId/payment-methods', 'GET /v3/admin/message-outbox', 'GET /v3/admin/reports', 'POST /v3/admin/reports/:id/handle', 'GET /v3/admin/blocklist', 'POST /v3/admin/blocklist', 'DELETE /v3/admin/blocklist/:id',
   // B3 slice 5.13a: seeded sites
-  'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'GET /v3/admin/seeded-sites/register', 'POST /v3/admin/seeded-sites/register', 'GET /v3/admin/seeded-sites/indexing-mode', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke', 'POST /v3/admin/seeded-sites/:id/removal',
+  'GET /v3/admin/seeded-sites/register', 'POST /v3/admin/seeded-sites/register', 'GET /v3/admin/seeded-sites/indexing-mode', 'POST /v3/admin/seeded-sites/:id/removal',
   // B3 slice 5.7b: the Visit-site report across vendors
   'GET /v3/admin/directory/visits',
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on
@@ -151,6 +151,8 @@ const ALL_STAFF_ROUTES = [
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
   'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id',
+  // Part B (B2): SALES (the MARKETING value) creates on behalf, imports a CSV, follows up and issues the claim link
+  'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke',
   // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
   'GET /v3/admin/directory/locations', 'GET /v3/admin/directory/categories', 'GET /v3/admin/directory/businesses', 'GET /v3/admin/directory/businesses/:id', 'GET /v3/admin/directory/businesses/:id/placements',
 ];

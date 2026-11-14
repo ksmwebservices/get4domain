@@ -18,7 +18,16 @@
  * Not changed here (they have their own guards): the commerce / LeadSpace / money admin controllers (CommercialAdminGuard, MoneyAdminGuard,
  * LeadspaceStaffGuard) and SuperAdminGuard routes.
  */
-export type StaffRole = 'SUPER_ADMIN' | 'OPERATIONS' | 'MARKETING';
+export type StaffRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING';
+
+/**
+ * Amendment 13 V9 (Part B). The document's SALES role is the existing MARKETING value: every rule written for MARKETING is the rule for SALES, and no role value is renamed or removed.
+ * ADMIN and SUPPORT are added without touching an owner-approved entry: the tables below stay the base (OPERATIONS, MARKETING and SUPER_ADMIN), and the two new roles are expressed as DATA
+ * on top of it (STAFF_ROLE_EXTENSIONS), read by effectiveRolesFor / effectiveStaffRolesFor, which is what AdminGuard asks:
+ *   ADMIN   = everything OPERATIONS may do, except the routes in `deny` (system settings and the price book), plus the routes in `allow` (pack, tab and category content). Never a SUPER_ADMIN-only route.
+ *   SUPPORT = only the routes in `allow` (tickets, calls, the vendor's tab list for the desk). Billing, settings, domains and every money route are refused by default.
+ */
+export const SALES_ROLE: StaffRole = 'MARKETING';
 
 export const ALL_STAFF: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS', 'MARKETING'];
 export const OPS_AND_SUPER: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS'];
@@ -142,7 +151,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/terms': SUPER_ONLY, 'GET /v3/admin/terms/:id': SUPER_ONLY, 'POST /v3/admin/terms/kinds/:kind/drafts': SUPER_ONLY, 'PUT /v3/admin/terms/:id': SUPER_ONLY, 'POST /v3/admin/terms/:id/publish': SUPER_ONLY,
   // B3 slice 5.13a: seeded sites. MARKETING may only READ the list and one site (non-personal fields; the service redacts). Everything else is OPERATIONS and SUPER_ADMIN; the indexing mode is SUPER_ADMIN only.
   'GET /v3/admin/seeded-sites': ALL_STAFF, 'GET /v3/admin/seeded-sites/:id': ALL_STAFF,
-  'POST /v3/admin/seeded-sites': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/batches/dry-run': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/batches/apply': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/indexing-mode': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/outreach': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/calls': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/consent': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/claim-link': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/claim-link/revoke': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/removal': OPS_AND_SUPER,
+  // Part B (B2, Amendment 13 V9): SALES (the MARKETING value) creates listings and draft sites on behalf, imports a CSV (dry run first), follows up and issues the claim link. The register, the indexing mode and removals stay OPERATIONS and SUPER_ADMIN.
+  'POST /v3/admin/seeded-sites': ALL_STAFF, 'POST /v3/admin/seeded-sites/batches/dry-run': ALL_STAFF, 'POST /v3/admin/seeded-sites/batches/apply': ALL_STAFF, 'GET /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/indexing-mode': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/outreach': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/calls': ALL_STAFF, 'PUT /v3/admin/seeded-sites/:id/consent': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/claim-link': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/claim-link/revoke': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/removal': OPS_AND_SUPER,
   'PUT /v3/admin/seeded-sites/indexing-mode': SUPER_ONLY,
   // B3 slice 5.7b: the Visit-site report across vendors: OPERATIONS and SUPER_ADMIN (MARKETING refused)
   'GET /v3/admin/directory/visits': OPS_AND_SUPER,
@@ -210,7 +220,50 @@ export function staffRolesFor(routeKey: string): readonly StaffRole[] {
   return STAFF_VENDOR_ACCESS_MATRIX[routeKey] ?? SUPER_ONLY;
 }
 
-/** Roles allowed on a route; a route with no entry is SUPER_ADMIN only (deny by default). */
+/** Roles allowed on a route by the BASE table; a route with no entry is SUPER_ADMIN only (deny by default). */
 export function rolesFor(routeKey: string): readonly StaffRole[] {
   return ADMIN_ROLE_MATRIX[routeKey] ?? SUPER_ONLY;
 }
+
+// ── Part B: ADMIN and SUPPORT, as data on top of the base tables ─────────────────────────────────────────────────────────────────────────────────────
+
+export interface RoleExtension { inherits?: StaffRole; deny: readonly string[]; allow: readonly string[] }
+
+export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExtension>> = {
+  ADMIN: {
+    inherits: 'OPERATIONS',
+    // no system settings and no price book (Amendment 13 V9): reading the settings, proposing a price or a margin, and the platform content and demo switches
+    deny: [
+      'GET /v3/admin/plan-settings', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/seeded-sites/indexing-mode', 'GET /v3/admin/mail-rules',
+      'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins',
+      'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id',
+      'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
+    ],
+    // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey'],
+  },
+  SUPPORT: {
+    deny: [],
+    // tickets (alongside OPERATIONS), calls and escalations, and the tab list a vendor sees. Nothing that holds money, a price, a setting or a domain.
+    allow: [
+      'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
+      'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve', 'GET /support/tickets/vendor/:vendorId',
+      'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
+      'GET /admin-team/me', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation',
+    ],
+  },
+};
+
+function extend(base: readonly StaffRole[], routeKey: string): readonly StaffRole[] {
+  const out = new Set<StaffRole>(base);
+  const a = STAFF_ROLE_EXTENSIONS.ADMIN;
+  const superOnly = base.length === 1 && base[0] === 'SUPER_ADMIN';
+  if (a.allow.includes(routeKey) || (!superOnly && a.inherits !== undefined && base.includes(a.inherits) && !a.deny.includes(routeKey))) out.add('ADMIN');
+  if (STAFF_ROLE_EXTENSIONS.SUPPORT.allow.includes(routeKey)) out.add('SUPPORT');
+  return [...out];
+}
+
+/** What AdminGuard asks: the base table plus the ADMIN and SUPPORT extensions. A route nobody listed is still SUPER_ADMIN only. */
+export function effectiveRolesFor(routeKey: string): readonly StaffRole[] { return extend(rolesFor(routeKey), routeKey); }
+/** The same for the vendor-data routes staff may also use (S7-B). */
+export function effectiveStaffRolesFor(routeKey: string): readonly StaffRole[] { return extend(staffRolesFor(routeKey), routeKey); }

@@ -12,6 +12,7 @@ export class LeadspaceStaffGuard implements CanActivate {
     if (!user) throw new ForbiddenException('Staff access required');
     const staff = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     if (!staff || user.kind === 'team_member' || user.kind === 'sandbox') throw new ForbiddenException('Staff access required');
+    if (user.adminRole === 'SUPPORT') throw new ForbiddenException('Staff access required');   // Part B: the support desk has no LeadSpace work
     return true;
   }
 }

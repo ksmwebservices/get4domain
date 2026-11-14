@@ -36,7 +36,8 @@ export class CommercialAdminGuard implements CanActivate {
     const isStaffRole = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     const isBadKind = user.kind === 'team_member' || user.kind === 'sandbox';
     if (!isStaffRole || isBadKind) throw new ForbiddenException('Admin access required');
-    if (user.adminRole === 'MARKETING') throw new ForbiddenException('Your staff role cannot access commerce');
+    // Part B: a whitelist, so a staff role added later (ADMIN, SUPPORT) is closed here by default. SUPER_ADMIN, OPERATIONS and the seeded admin row (no adminRole) pass.
+    if (user.adminRole !== undefined && user.adminRole !== 'SUPER_ADMIN' && user.adminRole !== 'OPERATIONS') throw new ForbiddenException('Your staff role cannot access commerce');
     return true;
   }
 }
@@ -47,7 +48,7 @@ export class MoneyAdminGuard extends CommercialAdminGuard {
     super.canActivate(context);
     const user = context.switchToHttp().getRequest<{ user: AuthenticatedUser }>().user;
     // Redundant with the base guard on purpose: money routes must stay closed to MARKETING even if the base rule is relaxed.
-    if (user.adminRole === 'MARKETING') throw new ForbiddenException('Your staff role cannot perform payment or billing-term actions');
+    if (user.adminRole !== undefined && user.adminRole !== 'SUPER_ADMIN' && user.adminRole !== 'OPERATIONS') throw new ForbiddenException('Your staff role cannot perform payment or billing-term actions');
     return true;
   }
 }

@@ -1098,6 +1098,9 @@ enum AdminRole {
   SUPER_ADMIN
   MARKETING
   OPERATIONS
+  // Amendment 13 V9, added additively: ADMIN (manage vendors, teams and content; no system settings) and SUPPORT (tickets, calls, escalations). The document's SALES role is MARKETING; no value is renamed or removed.
+  SUPPORT
+  ADMIN
 }
 
 // Internal Get4Domain team members (marketing / operations staff). Mirrors the

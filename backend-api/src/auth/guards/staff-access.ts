@@ -1,8 +1,8 @@
 import { ForbiddenException } from '@nestjs/common';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
-import { StaffRole, staffRolesFor } from './admin-role-matrix';
+import { effectiveStaffRolesFor, StaffRole } from './admin-role-matrix';
 
-const STAFF_ROLES: ReadonlySet<string> = new Set<StaffRole>(['SUPER_ADMIN', 'OPERATIONS', 'MARKETING']);
+const STAFF_ROLES: ReadonlySet<string> = new Set<StaffRole>(['SUPER_ADMIN', 'ADMIN', 'OPERATIONS', 'SUPPORT', 'MARKETING']);
 
 /** The one definition of "is Get4Domain staff" (a staff member, or the seeded admin vendor row). Replaces the `role === 'ADMIN' || ...` copies. */
 export function isStaffPrincipal(user: AuthenticatedUser): boolean {
@@ -30,7 +30,7 @@ export function routeKeyOf(request: { method?: string; route?: { path?: string }
 export function staffMayUse(user: AuthenticatedUser, routeKey: string): boolean {
   if (!isStaffPrincipal(user)) return false;
   const role = staffRoleOf(user);
-  return role !== undefined && staffRolesFor(routeKey).includes(role);
+  return role !== undefined && effectiveStaffRolesFor(routeKey).includes(role);
 }
 
 /** Passes for the vendor's own principal, or for staff the matrix allows on this route. Everything else gets `message` with a 403. */

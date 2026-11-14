@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { AuthenticatedUser } from '../../common/decorators/current-user.decorator';
-import { rolesFor } from './admin-role-matrix';
+import { effectiveRolesFor } from './admin-role-matrix';
 import { isStaffPrincipal, routeKeyOf, staffRoleOf } from './staff-access';
 
 /**
@@ -18,7 +18,7 @@ export class AdminGuard implements CanActivate {
     }
 
     const staffRole = staffRoleOf(user);
-    if (!staffRole || !rolesFor(routeKeyOf(request)).includes(staffRole)) {
+    if (!staffRole || !effectiveRolesFor(routeKeyOf(request)).includes(staffRole)) {
       throw new ForbiddenException('Your staff role does not allow this action');
     }
 
