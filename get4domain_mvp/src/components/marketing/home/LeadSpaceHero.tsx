@@ -27,7 +27,7 @@ export default function LeadSpaceHero() {
         <div className="text-center lg:text-left">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">
             <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-pulse-ring rounded-full bg-primary-400 opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-400" /></span>
-            Your online visible partner
+            Your Online Business Visibility Partner
           </span>
           <h1 className="mt-4 text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
             Get found online. <span className="text-gradient-hero">Pay only for real customers.</span>

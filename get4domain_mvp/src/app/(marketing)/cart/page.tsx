@@ -9,6 +9,7 @@ export const metadata: Metadata = createPageMetadata({
   title: 'Cart',
   description: 'Review your selected services before proceeding to checkout.',
   path: '/cart',
+  noindex: true,
 });
 
 const cartItems = [

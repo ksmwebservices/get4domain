@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Check, Smartphone, ShieldCheck, Wallet, BarChart3 } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
-  title: 'LeadSpace: your online visible partner | free page, pay only for verified customers',
+export const metadata: Metadata = createPageMetadata({
+  title: 'LeadSpace: Free Page, Pay Per Verified Customer',
   description: 'A free mini web page for your business. Customers ask for you on it and confirm on WhatsApp, and you pay a small amount only for each verified customer, from a prepaid wallet you control.',
-  alternates: { canonical: 'https://get4domain.com/leadspace' },
-};
+  path: '/leadspace',
+});
 
 const HOW: { title: string; blurb: string }[] = [
   { title: 'Make your free page', blurb: 'Tell us your trade and city. We write the page for you in minutes: your name, what you offer with pictures and prices, why people trust you and answers to common questions.' },
@@ -49,7 +50,7 @@ export default function LeadSpacePage() {
       {/* HERO */}
       <section className="relative mx-auto max-w-3xl px-4 pb-6 pt-16 text-center sm:px-6 md:pt-24">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/60 px-3.5 py-1.5 text-xs font-medium text-primary-300 backdrop-blur-xl">
-          LeadSpace · Your online visible partner
+          LeadSpace · Your Online Business Visibility Partner
         </span>
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
           A free page for your business. <span className="text-gradient-hero">Pay only for customers who verify.</span>

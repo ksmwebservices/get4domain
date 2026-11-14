@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
-  title: 'DomainApp — Industry Website + Business Workspace + AI Studio',
+export const metadata: Metadata = createPageMetadata({
+  title: 'DomainApp: Industry Website + Workspace',
   description: 'DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually — a professional industry website, business workspace (CRM, invoicing, records), campaigns and AI Studio with ₹499 free credit.',
-  alternates: { canonical: 'https://get4domain.com/domain-app' },
-};
+  path: '/domain-app',
+});
 
 const FEATURES = [
   { icon: '👥', title: 'Contacts & CRM', desc: 'Every customer, lead and vendor in one place — labelled for your industry.' },

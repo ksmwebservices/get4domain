@@ -6,6 +6,7 @@ import DashboardPreview from '@/components/marketing/home/DashboardPreview';
 import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 import Faq from '@/components/marketing/Faq';
+import { createPageMetadata } from '@/lib/metadata';
 import { CAPABILITIES } from '@/data/platform-features';
 import { CAPABILITY_ICONS } from '@/components/marketing/capability-icons';
 
@@ -17,11 +18,11 @@ const FEATURES_FAQ = [
   { q: 'Do the features adapt to my industry?', a: 'Yes. Records, contacts, forms and workflows relabel to your industry — a clinic gets appointments and patients, a restaurant gets menu and orders, real estate gets properties and site visits — across all 20 supported industries.' },
 ];
 
-export const metadata: Metadata = {
-  title: 'Features — CRM, Accounting, HRM, Inventory, AI, SEO & More from ₹999/month',
+export const metadata: Metadata = createPageMetadata({
+  title: 'Features: CRM, Accounting, HRM, AI & SEO',
   description: 'Every DomainApp feature in detail: CRM & TeleCRM, Communication Hub, accounting & GST, HRM, inventory, AI Studio, SEO/GEO/AEO, Google Business Profile, backlinks, social media management, PWA apps and website customization.',
-  alternates: { canonical: 'https://get4domain.com/features' },
-};
+  path: '/features',
+});
 
 type Tag = 'Included' | 'Pay-per-use' | 'Included + pay-per-use';
 

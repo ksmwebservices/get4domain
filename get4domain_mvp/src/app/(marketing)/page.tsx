@@ -11,13 +11,15 @@ import CommunicationHub from '@/components/marketing/home/CommunicationHub';
 import AIStudio from '@/components/marketing/home/AIStudio';
 import HomePricing from '@/components/marketing/home/HomePricing';
 import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
+import { createPageMetadata } from '@/lib/metadata';
+import { BRAND_TITLE, BRAND_DESCRIPTION } from '@/constants/site';
 
-export const metadata: Metadata = {
-  title: 'Get4Domain — Your Online Visible Partner | Free LeadSpace page',
-  description:
-    "Get4Domain is your online visible partner. LeadSpace gives your business a free page where customers verify on WhatsApp and you pay only per verified customer. For bigger businesses, DomainApp (Essentials from ₹999/month, Pro from ₹1,999/month, billed annually) adds your industry website, CRM, invoicing and AI Studio.",
-  alternates: { canonical: 'https://get4domain.com' },
-};
+export const metadata: Metadata = createPageMetadata({
+  // BRAND_TITLE is 52 characters; adding " | Get4Domain" would pass 60, so the helper leaves it bare.
+  title: BRAND_TITLE,
+  description: BRAND_DESCRIPTION,
+  path: '',
+});
 
 const INDUSTRIES = [
   { icon: '🚗', label: 'Travel & Tours', href: '/industries/travel' },

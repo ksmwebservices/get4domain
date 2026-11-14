@@ -43,6 +43,14 @@ export const siteConfig = {
   },
 };
 
+// Brand wording used by the home page, the root layout metadata and the JSON-LD. Change it here only.
+export const BRAND_TAGLINE = 'Your Online Business Visibility Partner';
+// 52 characters; the brand is already first, so no " | Get4Domain" suffix.
+export const BRAND_TITLE = `Get4Domain – ${BRAND_TAGLINE}`;
+// 121 characters (limit 160).
+export const BRAND_DESCRIPTION =
+  'Get4Domain (get4domain.com) helps Indian businesses get a website, a domain and a directory listing, and be found online.';
+
 export const navLinks = [
   { label: 'Products', href: '/products' },
   { label: 'Industries', href: '/industries' },

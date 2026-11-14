@@ -6,7 +6,8 @@ import { industryContent } from '@/data/industry-content';
 import { industries } from '@/data/content';
 import { INDUSTRIES } from '@/data/industries-list';
 import { getSubcategories } from '@/data/demo-site';
-import { siteConfig } from '@/constants/site';
+import { createPageMetadata } from '@/lib/metadata';
+import { breadcrumbJsonLd } from '@/lib/structured-data';
 import PageHero from '@/components/PageHero';
 import CTABanner from '@/components/CTABanner';
 import CapabilityStrip from '@/components/marketing/CapabilityStrip';
@@ -49,17 +50,13 @@ export async function generateMetadata(props: { params: Promise<{ id: string }> 
   const { id } = await props.params;
   const content = industryContent.find((i) => i.id === id);
   if (!content) return {};
-  const url = `https://get4domain.com/industries/${id}`;
-  // Title template ("%s | Get4Domain") already appends the brand — don't repeat it here
-  // (was producing "… | Get4Domain | Get4Domain").
-  const title = `${content.name} Business Website & Software`;
-  return {
-    title,
+  // The helper appends " | Get4Domain" only when the result fits in 60 characters.
+  return createPageMetadata({
+    title: `${content.name} Business Website & Software`,
     description: content.fullDesc,
     keywords: content.seoKeywords,
-    alternates: { canonical: url },
-    openGraph: { title: `${title} | Get4Domain`, description: content.fullDesc, url, type: 'website', images: [siteConfig.ogImage] },
-  };
+    path: `/industries/${id}`,
+  });
 }
 
 export default async function IndustryDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -89,15 +86,10 @@ export default async function IndustryDetailPage(props: { params: Promise<{ id: 
       offers: { '@type': 'Offer', price: '999', priceCurrency: 'INR', url: pageUrl },
       url: pageUrl,
     },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://get4domain.com' },
-        { '@type': 'ListItem', position: 2, name: 'Industries', item: 'https://get4domain.com/industries' },
-        { '@type': 'ListItem', position: 3, name: content.name, item: pageUrl },
-      ],
-    },
+    breadcrumbJsonLd([
+      { name: 'Industries', path: '/industries' },
+      { name: content.name, path: `/industries/${id}` },
+    ]),
   ];
 
   return (

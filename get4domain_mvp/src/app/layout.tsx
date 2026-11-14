@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/lib/auth-context';
-import { siteConfig } from '@/constants/site';
+import { siteConfig, BRAND_TAGLINE, BRAND_TITLE, BRAND_DESCRIPTION } from '@/constants/site';
+import { organizationSameAs } from '@/lib/structured-data';
+import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
 import './globals.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://get4domain.com'),
   title: {
-    default: 'Get4Domain — Your Online Identity Partner | From ₹999/month',
+    default: BRAND_TITLE,
     template: '%s | Get4Domain',
   },
-  description: "Get4Domain is India's complete online identity platform. DomainApp from ₹999/month (Workspace) or ₹1,999/month (BOS), billed annually: industry website, business workspace, CRM, campaigns and AI Studio. Plus Managed Ads managed ads from ₹2,000/month and custom-quoted Managed Services.",
+  description: BRAND_DESCRIPTION,
   keywords: [
     'business website India',
     'online identity platform India',
@@ -60,19 +62,21 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Brand-level defaults. There is deliberately NO url here (a fixed home url would be stamped on any page that sets no
+  // openGraph of its own). Every page that sets its own openGraph / twitter replaces these wholesale, so they never
+  // override page values; every marketing page goes through createPageMetadata.
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://get4domain.com',
     siteName: 'Get4Domain',
-    title: 'Get4Domain — Your Online Identity Partner',
-    description: "India's complete online identity platform for SMBs. Website + Business Operations + Marketing. Starting ₹999.",
+    title: BRAND_TITLE,
+    description: BRAND_DESCRIPTION,
     images: [siteConfig.ogImage],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Get4Domain — Your Online Identity Partner',
-    description: "India's complete digital business platform for SMBs.",
+    title: BRAND_TITLE,
+    description: BRAND_DESCRIPTION,
     images: [siteConfig.ogImage.url],
   },
   // Search Console is already verified (the sitemap discovered 715 URLs). The old
@@ -98,9 +102,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@type': 'Organization',
               name: 'Get4Domain',
               legalName: 'KSM Quantum Technologies',
+              alternateName: ['Get4Domain.com', 'Get4 Domain'],
               url: 'https://get4domain.com',
               logo: 'https://get4domain.com/logo.png',
-              description: "India's complete digital business platform for SMBs",
+              description: BRAND_DESCRIPTION,
+              slogan: BRAND_TAGLINE,
               address: {
                 '@type': 'PostalAddress',
                 streetAddress: 'Tidel Park, 1st Floor D Block',
@@ -116,7 +122,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 availableLanguage: ['English', 'Tamil'],
                 hoursAvailable: 'Mo-Sa 09:00-20:00',
               },
-              sameAs: [],
+              // From siteConfig.social; "#" and empty placeholders are skipped, so this is [] until real profile URLs are filled in.
+              sameAs: organizationSameAs(),
               foundingDate: '2026',
             }),
           }}
@@ -128,6 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@context': 'https://schema.org',
               '@type': 'SoftwareApplication',
               name: 'Get4Domain',
+              description: BRAND_DESCRIPTION,
               applicationCategory: 'BusinessApplication',
               operatingSystem: 'Web',
               offers: [
@@ -163,13 +171,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@type': 'WebSite',
               name: 'Get4Domain',
               url: 'https://get4domain.com',
+              description: BRAND_DESCRIPTION,
               inLanguage: 'en-IN',
               publisher: { '@type': 'Organization', name: 'Get4Domain' },
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: { '@type': 'EntryPoint', urlTemplate: 'https://get4domain.com/industries?q={search_term_string}' },
-                'query-input': 'required name=search_term_string',
-              },
+              // SearchAction removed: its target (/industries?q=) is not a real search. The industries page ignores ?q.
             }),
           }}
         />
@@ -178,6 +183,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
         </AuthProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   );

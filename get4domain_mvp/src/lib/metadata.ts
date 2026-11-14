@@ -5,7 +5,18 @@ interface PageMetadataOptions {
   title: string;
   description?: string;
   keywords?: string[];
+  /** Path of the page, e.g. '/about'. Used for the self canonical and og:url. */
   path?: string;
+  /** Keep the page out of the index (cart, checkout and similar). */
+  noindex?: boolean;
+}
+
+const TITLE_LIMIT = 60;
+
+/** "<title> | Get4Domain" when that fits in 60 characters, otherwise the bare title (never truncated). */
+export function brandedTitle(title: string): string {
+  const withBrand = `${title} | ${siteConfig.name}`;
+  return withBrand.length <= TITLE_LIMIT ? withBrand : title;
 }
 
 export function createPageMetadata({
@@ -13,9 +24,10 @@ export function createPageMetadata({
   description,
   keywords,
   path = '',
+  noindex = false,
 }: PageMetadataOptions): Metadata {
   const url = `${siteConfig.url}${path}`;
-  const fullTitle = `${title} | ${siteConfig.name}`;
+  const fullTitle = brandedTitle(title);
 
   return {
     // `absolute` bypasses the root layout's "%s | Get4Domain" template so the brand
@@ -43,9 +55,6 @@ export function createPageMetadata({
       description,
       images: [siteConfig.ogImage.url],
     },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    robots: noindex ? { index: false, follow: false } : { index: true, follow: true },
   };
 }

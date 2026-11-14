@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import { ArrowRight, Code2, Smartphone, Database, Target, Share2, Film, Users2, Clapperboard, type LucideIcon } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
 import ManagedServicesForm from '@/components/marketing/ManagedServicesForm';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
-  title: 'Managed Services — Custom Software & Marketing, Built for You',
+export const metadata: Metadata = createPageMetadata({
+  title: 'Managed Services: Custom Software & Marketing',
   description: 'Bespoke web and mobile applications, full SME software builds, and ongoing managed marketing — paid ads, content, influencer collaborations and commercial production. Scoped and priced per project.',
-  alternates: { canonical: 'https://get4domain.com/managed-services' },
-};
+  path: '/managed-services',
+});
 
 const MANAGED_SERVICES_FAQ = [
   { q: 'How is this different from a DomainApp plan (Workspace from ₹999/month, BOS from ₹1,999/month)?', a: 'DomainApp is a subscription product — an industry website and business workspace on our shared platform. Managed Services is custom work beyond what any subscription tier covers: a bespoke mobile app, a full CRM/ERP build, or an ongoing managed marketing engagement. It\'s scoped, built and priced per client, not a fixed monthly plan.' },

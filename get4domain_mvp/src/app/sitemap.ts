@@ -1,59 +1,24 @@
 import type { MetadataRoute } from 'next';
-import { allDemoPaths } from '@/data/demo-site';
+import { SEO_ROUTES, INDUSTRY_IDS, INDUSTRY_PAGE } from '@/config/seo-routes';
 
 const BASE = 'https://get4domain.com';
 
-const pages = [
-  { path: '/',                 priority: 1.0,  changeFreq: 'weekly' as const },
-  { path: '/leadspace',        priority: 0.95, changeFreq: 'monthly' as const },
-  { path: '/managed-services', priority: 0.9,  changeFreq: 'monthly' as const },
-  { path: '/domain-app',       priority: 0.95, changeFreq: 'monthly' as const },
-  { path: '/pricing',          priority: 0.9,  changeFreq: 'monthly' as const },
-  { path: '/industries',       priority: 0.9,  changeFreq: 'monthly' as const },
-  { path: '/features',         priority: 0.9,  changeFreq: 'monthly' as const },
-  { path: '/how-it-works',     priority: 0.85, changeFreq: 'monthly' as const },
-  { path: '/book-demo',        priority: 0.9,  changeFreq: 'monthly' as const },
-  { path: '/portfolio',        priority: 0.7,  changeFreq: 'monthly' as const },
-  { path: '/templates',        priority: 0.6,  changeFreq: 'monthly' as const },
-  { path: '/contact',          priority: 0.75, changeFreq: 'monthly' as const },
-  { path: '/support',          priority: 0.7,  changeFreq: 'monthly' as const },
-  { path: '/about',            priority: 0.7,  changeFreq: 'monthly' as const },
-  { path: '/terms',            priority: 0.3,  changeFreq: 'yearly' as const },
-  { path: '/privacy-policy',   priority: 0.3,  changeFreq: 'yearly' as const },
-  { path: '/refund-policy',    priority: 0.3,  changeFreq: 'yearly' as const },
-];
-
-const industries = [
-  'restaurant', 'travel', 'realestate', 'clinic', 'education',
-  'construction', 'retail', 'salon', 'gym', 'professional',
-  'events', 'finance', 'automobile', 'logistics', 'diagnostics',
-  'hotel', 'photography', 'technology', 'agriculture', 'coaching',
-];
-
+// Demo-site URLs (/demo/...) are deliberately NOT listed: they sit behind the OTP gate and are noindex.
+// `lastModified` comes from src/config/seo-routes.ts (a content-updated date), never from the build time.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
-  const staticPages = pages.map(({ path, priority, changeFreq }) => ({
-    url: `${BASE}${path}`,
-    lastModified: now,
-    changeFrequency: changeFreq,
-    priority,
+  const staticPages = Object.entries(SEO_ROUTES).map(([path, r]) => ({
+    url: path === '/' ? BASE : `${BASE}${path}`,
+    lastModified: new Date(`${r.updated}T00:00:00Z`),
+    changeFrequency: r.changeFrequency,
+    priority: r.priority,
   }));
 
-  const industryPages = industries.map((id) => ({
+  const industryPages = INDUSTRY_IDS.map((id) => ({
     url: `${BASE}/industries/${id}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.85,
+    lastModified: new Date(`${INDUSTRY_PAGE.updated}T00:00:00Z`),
+    changeFrequency: INDUSTRY_PAGE.changeFrequency,
+    priority: INDUSTRY_PAGE.priority,
   }));
 
-  // All demo-site pages (category homes + subcategory homes + section routes).
-  const demoPages = allDemoPaths().map((path) => ({
-    url: `${BASE}${path}`,
-    lastModified: now,
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }));
-
-  return [...staticPages, ...industryPages, ...demoPages];
+  return [...staticPages, ...industryPages];
 }

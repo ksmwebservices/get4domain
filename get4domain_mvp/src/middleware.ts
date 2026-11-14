@@ -69,7 +69,11 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const entry = req.nextUrl.clone();
   entry.pathname = '/visit-demo';
   entry.search = `?to=${encodeURIComponent(pathname)}`;
-  return NextResponse.redirect(entry, 307);
+  const gated = NextResponse.redirect(entry, 307);
+  // Tell crawlers this gate redirect is not indexable. /demo/ is intentionally NOT disallowed in robots.txt
+  // yet, so Google can fetch these URLs and see this header and the page-level noindex.
+  gated.headers.set('X-Robots-Tag', 'noindex');
+  return gated;
 }
 
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths

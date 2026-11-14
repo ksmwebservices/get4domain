@@ -1,4 +1,8 @@
-# Get4Domain
+# Get4Domain (get4domain.com): Your Online Business Visibility Partner.
+
+Get4Domain (get4domain.com) is an India-based software platform from KSM Quantum Technologies, Chennai. It gives small and medium businesses an online presence and the tools to run it: LeadSpace (a free landing page where you pay only for customers who verify on WhatsApp), DomainApp (an industry website plus business workspace, annual plans) and Managed Services (custom software and managed marketing, quoted per project).
+
+Main pages: [Home](https://get4domain.com/) · [LeadSpace](https://get4domain.com/leadspace) · [DomainApp](https://get4domain.com/domain-app) · [Pricing](https://get4domain.com/pricing) · [Industries](https://get4domain.com/industries) · [Managed Services](https://get4domain.com/managed-services) · [Book a demo](https://get4domain.com/book-demo)
 
 > Get4Domain is India's all-in-one online identity and business platform for small and medium businesses (SMBs). "DomainApp" gives a business an industry-specific website plus a complete business workspace (CRM, GST invoicing, appointments/bookings/orders, campaigns, WhatsApp and an AI content studio) from ₹999/month, billed annually. Get4Domain also offers "DomainCampaign" (managed Meta and Google ads and growth) and custom-quoted "Managed Services" (bespoke software and managed marketing). Built by KSM Quantum Technologies, Chennai, India.
 
@@ -23,7 +27,8 @@ Indian small and medium businesses that want a professional website and the soft
 ## Key pages
 - Home: https://get4domain.com/
 - Pricing (DomainApp, DomainCampaign, Managed Services): https://get4domain.com/pricing
-- DomainCampaign: https://get4domain.com/domain-campaign
+- LeadSpace (free page, pay per verified customer):https://get4domain.com/leadspace
+- DomainApp: https://get4domain.com/domain-app
 - Managed Services: https://get4domain.com/managed-services
 - Industries (all 20): https://get4domain.com/industries
 - Features: https://get4domain.com/features

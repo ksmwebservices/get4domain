@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
 import { INDUSTRIES } from '@/data/industries-list';
 import CapabilityStrip from '@/components/marketing/CapabilityStrip';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
-  title: '20+ Industry Solutions — Restaurant, Travel, Clinic & More',
+export const metadata: Metadata = createPageMetadata({
+  title: '20+ Industry Solutions for Indian Businesses',
   description: 'Get4Domain serves 20+ industries with industry-specific websites and Workplace dashboards. Your dashboard speaks your business language — Bookings, Orders, Appointments and more.',
-  alternates: { canonical: 'https://get4domain.com/industries' },
-};
+  path: '/industries',
+});
 
 // Categories with the richest live demo content (full sub-category demo sites).
 const RICH_DEMO = new Set(['clinic', 'salon', 'gym', 'restaurant', 'retail', 'professional', 'travel', 'realestate', 'education']);

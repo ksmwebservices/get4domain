@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/domain-campaign', destination: '/leadspace', permanent: true },
       { source: '/domain-campaign/:path*', destination: '/leadspace/:path*', permanent: true },
+      // Both used to be page-level redirect() calls, which answer 307 (temporary). They moved for good, so 308.
+      { source: '/products', destination: '/features', permanent: true },
+      { source: '/digital-growth', destination: '/leadspace', permanent: true },
     ];
   },
   async rewrites() {

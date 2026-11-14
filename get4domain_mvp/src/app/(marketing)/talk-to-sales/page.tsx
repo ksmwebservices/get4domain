@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, CalendarClock, Rocket, CheckCircle2 } from 'lucide-react';
 import { getCategory } from '@/data/demo-site';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "You're ready to build",
   description: 'You have explored the demos — let us turn one into your own live website with payments, bookings and enquiries.',
-  robots: { index: false },
-};
+  path: '/talk-to-sales',
+  noindex: true,
+});
 
 /**
  * Warm-lead conversion page. A visitor reaches here after using their 3 demo views

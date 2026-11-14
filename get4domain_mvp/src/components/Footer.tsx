@@ -51,7 +51,7 @@ export default function Footer() {
                 style={{ filter: 'brightness(0) invert(1)' }}
               />
             </Link>
-            <p className="mt-4 text-sm font-semibold text-white">Your Online Identity Partner</p>
+            <p className="mt-4 text-sm font-semibold text-white">Your Online Business Visibility Partner</p>
             <p className="mt-2 max-w-xs text-sm leading-relaxed">
               Build, manage and grow your complete online business identity.
             </p>

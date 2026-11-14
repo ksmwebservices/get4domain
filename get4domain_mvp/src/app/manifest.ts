@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
+import { BRAND_TITLE } from '@/constants/site';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Get4Domain — Your Online Identity Partner',
+    name: BRAND_TITLE,
     short_name: 'Get4Domain',
     description: "India's SaaS platform for professional business websites and digital marketing.",
     start_url: '/',

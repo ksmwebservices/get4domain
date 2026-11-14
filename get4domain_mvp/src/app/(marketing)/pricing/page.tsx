@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Layers, Megaphone, Code2, Wallet } from 'lucide-react';
 import Faq from '@/components/marketing/Faq';
+import { createPageMetadata } from '@/lib/metadata';
 import PlanComparison from '@/components/marketing/pricing/PlanComparison';
 import ProductComparison from '@/components/marketing/pricing/ProductComparison';
 import WhyGet4Domain from '@/components/marketing/WhyGet4Domain';
@@ -12,11 +13,11 @@ import { fetchLivePricing, applyLivePricing } from '@/lib/pricing';
 // Revalidate every 5 min so admin Pricing Manager edits reflect without a redeploy.
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: 'Pricing — LeadSpace, DomainApp, Managed Ads & Managed Services',
+export const metadata: Metadata = createPageMetadata({
+  title: 'Pricing: LeadSpace, DomainApp & Managed Services',
   description: 'All Get4Domain pricing in one place: LeadSpace is a free page where you pay only for each verified customer from a prepaid wallet; DomainApp Workspace ₹11,988/yr or BOS ₹23,988/yr (+ GST), Managed Ads managed ads from ₹2,000/month by ad budget, and custom-quoted Managed Services for bespoke software and marketing.',
-  alternates: { canonical: 'https://get4domain.com/pricing' },
-};
+  path: '/pricing',
+});
 
 // Wallet pay-per-use — real starting rates (admin-adjustable).
 const TOPUPS = [

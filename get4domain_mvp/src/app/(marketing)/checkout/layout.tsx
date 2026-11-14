@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { createPageMetadata } from '@/lib/metadata';
 
-// Checkout is a transactional page — keep it out of the index (and off the homepage
-// canonical it would otherwise inherit from the root layout).
-export const metadata: Metadata = {
+// Checkout is a transactional page — keep it out of the index. The helper gives it a self canonical
+// (so it never inherits the homepage's) plus its own openGraph and twitter.
+export const metadata: Metadata = createPageMetadata({
   title: 'Checkout',
-  robots: { index: false, follow: false },
-  alternates: { canonical: 'https://get4domain.com/checkout' },
-};
+  path: '/checkout',
+  noindex: true,
+});
 
 export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
   return children;
