@@ -7766,3 +7766,23 @@ model V3SeoCategoryKeyword {
 
   @@map("g4d_seo_category_keywords")
 }
+
+// ─── SEO block slice 3: daily click-out aggregate (platform-level, staff only) (additive) ───────────────────────────────────────────────────────────
+/// One row per day and page context: how many Visit-site click-outs happened. No IP, no user agent, no business id, no visitor data of any kind. PLATFORM-LEVEL: no tenant column, staff only
+/// (RLS on, no policy). The key columns are never NULL (an empty string means "none") so the unique index can arbitrate the atomic increment.
+model V3SeoClickDaily {
+  id           String   @id @default(cuid())
+  day          String // YYYY-MM-DD, UTC
+  pageType     String
+  categoryKey  String   @default("")
+  locationKey  String   @default("")
+  keywordKey   String   @default("") // the keyword target id, when the link carried one (no foreign key: the target may be deleted)
+  count        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([day, pageType, categoryKey, locationKey, keywordKey], map: "g4d_seo_click_daily_key")
+  @@index([day])
+  @@index([keywordKey])
+  @@map("g4d_seo_click_daily")
+}

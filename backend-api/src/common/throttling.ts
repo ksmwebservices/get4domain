@@ -54,6 +54,8 @@ export const RATE = {
   aiGenerate: { default: { limit: 10, ttl: 60_000 } },
   /** V3 public directory reads: 120 per minute per IP on the reads throttler (the default one skips GET). */
   directoryRead: { reads: { limit: 120, ttl: 60_000 } },
+  /** SEO block click-out (a GET that redirects): 60 per minute per IP on the reads throttler. */
+  directoryGo: { reads: { limit: 60, ttl: 60_000 } },
   /** V3 directory Visit-site beacon (a POST, so the default throttler): 60 per minute per IP. */
   directoryVisit: { default: { limit: 60, ttl: 60_000 } },
   /** V3 public requests and orders (slice 5.14): 10 per minute per IP. */

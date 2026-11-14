@@ -1,7 +1,10 @@
 import { Module, Provider, Type } from '@nestjs/common';
 import { DirectoryModule } from '../directory/directory.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { ClickOutController } from './api/click-out.controller';
 import { DirectoryPagesController } from './api/directory-pages.controller';
+import { ClickOutService } from './click-out/click-out.service';
+import { PrismaSeoClickStore, SeoClickStore } from './click-out/click-store';
 import { SeoAdminController } from './api/seo-admin.controller';
 import { SeoKeywordService } from './keywords/seo-keyword.service';
 import { PrismaSeoKeywordStore, SeoKeywordStore } from './keywords/seo-keyword.store';
@@ -16,10 +19,11 @@ export const SEO_PROVIDERS: Provider[] = [
   { provide: SeoAudit, useClass: PrismaSeoAudit },
   { provide: SeoDirectoryData, useClass: PrismaSeoDirectoryData },
   { provide: SeoPageOverrides, useClass: NoPageOverrides },
-  SeoSettingsService, SeoKeywordService, SeoPageService,
+  { provide: SeoClickStore, useClass: PrismaSeoClickStore },
+  SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService,
 ];
-export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, DirectoryPagesController];
-export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides];
+export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, DirectoryPagesController, ClickOutController];
+export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService];
 
 /**
  * The SEO block (docs/v3/V3_SEO_DIRECTORY.md): keyword sets per category, page templates as data, and (in later slices) directory page models, the click-out, sitemaps, keyword targets.

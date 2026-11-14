@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { b3Error } from '../b3-settings/b3-errors';
 import { B3SettingsService } from '../b3-settings/b3-settings.service';
 import { dayOf, daysBetween, dedupeKey, fillDays, hashVisitRef, looksLikeVisitRef, newVisitRef, siteUrlOf, visitUrl } from './core/visits';
-import { DirectoryRepository } from './directory.repository';
+import { BusinessRow, DirectoryRepository } from './directory.repository';
 import { OtpPepper } from './pepper';
 
 export interface VisitResult { ref: string; expiresAt: string; url: string }
@@ -37,6 +37,22 @@ export class DirectoryVisitService {
   async visit(slug: string, ip: string | null, fromSearch: boolean): Promise<VisitResult | null> {
     const t = await this.target(slug);
     if (!t) return null;
+    return this.count(t, ip, fromSearch);
+  }
+
+  /** SEO block (section 3): the same count and reference for the click-out route, which knows the business by id. null = the same uniform "cannot be visited". */
+  async visitById(id: string, ip: string | null): Promise<(VisitResult & { business: BusinessRow; siteUrl: string }) | null> {
+    const key = String(id ?? '').trim().slice(0, 64);
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(key)) return null;
+    const b = await this.repo.getBusiness(key);
+    if (!b || (b.status !== 'CLAIMED' && b.status !== 'UNCLAIMED' && b.status !== 'SUSPENDED') || !b.vendorId) return null;
+    const f = (await this.repo.siteFacts([b.vendorId], this.clock())).get(b.vendorId) ?? null;
+    const siteUrl = siteUrlOf(f, process.env.SITE_BASE_DOMAIN || 'get4domain.com');
+    if (!siteUrl) return null;
+    return { ...(await this.count({ business: b, siteUrl }, ip, false)), business: b, siteUrl };
+  }
+
+  private async count(t: { business: BusinessRow; siteUrl: string }, ip: string | null, fromSearch: boolean): Promise<VisitResult> {
     const s = await this.b3.get(); const now = this.clock();
     const day = dayOf(now); const key = dedupeKey(this.pepper.hashIp(ip), t.business.id, day);
     const until = this.seen.get(key);
