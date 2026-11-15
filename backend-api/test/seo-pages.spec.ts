@@ -268,6 +268,13 @@ describe('overrides, roll-up and the setting', () => {
     const m = await ok(w.svc, '/chennai/plumbers-in-perambur/page/2');
     expect(m.meta.title.length).toBeLessThanOrEqual(60); expect(m.meta.title).toMatch(/ - Page 2 \| Get4Domain$/); expect(m.meta.description.length).toBeLessThanOrEqual(160); expect(m.h1).toBe('Plumbers around Perambur - Page 2');
   });
+  it('the keyword target of a page rides on every card click-out (kw=), on page 2 as well, and a page with no target adds nothing', async () => {
+    const w = world({ directoryPageSizeMax: 2, directoryPageSizeDefault: 2 }); fiveInPerambur(w.data); for (const b of w.data.rows) w.sites.set(b.vendorId!, { subdomain: b.slug, proActive: false });
+    w.overrides.v = { keywordTargetId: 'kt_1' };
+    const p1 = await ok(w.svc, '/chennai/plumbers-in-perambur'); const p2 = await ok(w.svc, '/chennai/plumbers-in-perambur/page/2');
+    for (const c of [...p1.cards, ...p2.cards]) expect(c.visitUrl).toMatch(/\?src=localityCategory&kw=kt_1$/);
+    w.overrides.v = null; expect((await ok(w.svc, '/chennai/plumbers-in-perambur')).cards[0].visitUrl).toMatch(/\?src=localityCategory$/);
+  });
   it('the default overrides provider returns nothing', async () => { expect(await new NoPageOverrides().forPath()).toBeNull(); });
   it('rolls counts up to every ancestor', () => {
     const r = rollUp(LOCS, new Map([['per', 5], ['ady', 1], ['mdu', 2]]));

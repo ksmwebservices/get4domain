@@ -7786,3 +7786,49 @@ model V3SeoClickDaily {
   @@index([keywordKey])
   @@map("g4d_seo_click_daily")
 }
+
+// ─── SEO block slice 5: keyword targets and the daily UTM aggregate (platform-level, staff only) (additive) ────────────────────────────────────────
+/// A keyword staff want a directory page to rank for. One row per keyword and page path. An ACTIVE row may carry its own title, description and H1 for that page (still capped and checked); the
+/// lowest priority number wins when several ACTIVE rows name the same path. PLATFORM-LEVEL: no tenant column, staff only (RLS on, no policy). The path is a directory path at page 1.
+model V3SeoKeywordTarget {
+  id                  String   @id @default(cuid())
+  keyword             String
+  path                String
+  pageType            String
+  status              String   @default("PLANNED") // PLANNED | ACTIVE | PAUSED
+  priority            Int      @default(2) // 1 = most important, 3 = least
+  titleOverride       String?
+  descriptionOverride String?
+  h1Override          String?
+  notes               String?
+  source              String   @default("STAFF") // STAFF (typed or CSV) | PLAN (the generated keyword plan, imported)
+  createdByStaffId    String?
+  updatedByStaffId    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([keyword, path], map: "g4d_seo_keyword_targets_key")
+  @@index([path, status])
+  @@index([status])
+  @@map("g4d_seo_keyword_targets")
+}
+
+/// One row per day and campaign context: how many directory page visits arrived with UTM parameters. No IP, no user agent, no referrer URL, no visitor id, no business id. PLATFORM-LEVEL, staff only
+/// (RLS on, no policy). The key columns are never NULL (an empty string means "none") so the unique index can arbitrate the atomic increment.
+model V3SeoUtmDaily {
+  id          String   @id @default(cuid())
+  day         String // YYYY-MM-DD, UTC
+  pageType    String
+  source      String   @default("")
+  medium      String   @default("")
+  campaign    String   @default("")
+  keywordKey  String   @default("") // the keyword target id from the link, when it carried one (no foreign key: the target may be deleted)
+  count       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([day, pageType, source, medium, campaign, keywordKey], map: "g4d_seo_utm_daily_key")
+  @@index([day])
+  @@index([keywordKey])
+  @@map("g4d_seo_utm_daily")
+}

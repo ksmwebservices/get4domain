@@ -11,7 +11,9 @@ export const SITEMAP_CHUNK = 10_000;
 /** One row of the grouped counts of listed businesses: how many, and when the newest changed. */
 export interface Stat { locationId: string | null; categoryId: string; pincode: string | null; count: number; lastmod: Date }
 export interface SitemapEntry { loc: string; lastmod: Date }
-export interface ListingPath { path: string; lastmod: Date }
+/** Where a listing page sits, so the keyword plan can name it without parsing the path again. Only the pieces that apply to the page type are set. */
+export interface ListingContext { type: 'state' | 'city' | 'category' | 'cityCategory' | 'localityCategory' | 'pincodeCategory'; cityName?: string; localityName?: string; cat?: CatInfo; cityId?: string; localityId?: string; catId?: string }
+export interface ListingPath { path: string; lastmod: Date; ctx: ListingContext; count: number }
 
 const by = <T extends { id: string }>(rows: readonly T[]): Map<string, T> => new Map(rows.map((r) => [r.id, r]));
 
@@ -19,8 +21,8 @@ export function enumerateListingPaths(places: Places, stats: readonly Stat[], mi
   const min = Math.max(1, minBusinesses);
   const locs = by(places.locs); const cats = by(places.cats);
   const chainOf = <T extends { id: string; parentId: string | null }>(m: Map<string, T>, id: string | null): T[] => { const out: T[] = []; let cur = id ? m.get(id) : undefined; let g = 0; while (cur && g++ < 10) { out.push(cur); cur = cur.parentId ? m.get(cur.parentId) : undefined; } return out; };
-  const acc = new Map<string, { n: number; last: Date; path: string }>();
-  const add = (key: string, path: string, n: number, last: Date): void => { const r = acc.get(key); if (r) { r.n += n; if (last > r.last) r.last = last; } else acc.set(key, { n, last, path }); };
+  const acc = new Map<string, { n: number; last: Date; path: string; ctx: ListingContext }>();
+  const add = (key: string, path: string, n: number, last: Date, ctx: ListingContext): void => { const r = acc.get(key); if (r) { r.n += n; if (last > r.last) r.last = last; } else acc.set(key, { n, last, path, ctx }); };
 
   // the one place or category a slug or plural term resolves to (the same choice the page resolver makes), so a page is never listed with another place's counts
   const order = <T extends { sortOrder: number; name: string }>(a: T, b: T): number => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
@@ -35,24 +37,24 @@ export function enumerateListingPaths(places: Places, stats: readonly Stat[], mi
   for (const s of stats) {
     const locChain: LocationRow[] = chainOf(locs, s.locationId); const catChain: CatInfo[] = chainOf(cats, s.categoryId).map((c) => places.catInfo.get(c.id)).filter((c): c is CatInfo => !!c);
     for (const l of locChain) {
-      if (l.kind === 'STATE') add(`s|${l.id}`, buildPath({ type: 'state', state: l.slug, page: 1 }), s.count, s.lastmod);
+      if (l.kind === 'STATE') add(`s|${l.id}`, buildPath({ type: 'state', state: l.slug, page: 1 }), s.count, s.lastmod, { type: 'state' });
       if (l.kind === 'CITY' && placeOwner.get(l.slug) === l.id) {
-        add(`c|${l.id}`, buildPath({ type: 'city', city: l.slug, page: 1 }), s.count, s.lastmod);
-        for (const c of catChain) if (termOwner.get(c.pluralSlug) === c.row.id) add(`cc|${l.id}|${c.row.id}`, buildPath({ type: 'cityCategory', city: l.slug, term: c.pluralSlug, page: 1 }), s.count, s.lastmod);
+        add(`c|${l.id}`, buildPath({ type: 'city', city: l.slug, page: 1 }), s.count, s.lastmod, { type: 'city', cityName: l.name, cityId: l.id });
+        for (const c of catChain) if (termOwner.get(c.pluralSlug) === c.row.id) add(`cc|${l.id}|${c.row.id}`, buildPath({ type: 'cityCategory', city: l.slug, term: c.pluralSlug, page: 1 }), s.count, s.lastmod, { type: 'cityCategory', cityName: l.name, cityId: l.id, cat: c, catId: c.row.id });
       }
     }
     const city = locChain.find((l) => l.kind === 'CITY' && placeOwner.get(l.slug) === l.id);
     const loc = locChain[0];
     if (city && loc && loc.kind === 'LOCALITY') {
       const key = `${city.id}|${loc.slug}`; if (!localityOwner.has(key)) localityOwner.set(key, [...places.locs].filter((x) => x.kind === 'LOCALITY' && x.slug === loc.slug && chainOf(locs, x.id).some((a) => a.id === city.id)).sort(order)[0]?.id ?? loc.id);
-      if (localityOwner.get(key) === loc.id) for (const c of catChain) if (termOwner.get(c.pluralSlug) === c.row.id) add(`lc|${loc.id}|${c.row.id}`, buildPath({ type: 'localityCategory', city: city.slug, locality: loc.slug, term: c.pluralSlug, page: 1 }), s.count, s.lastmod);
+      if (localityOwner.get(key) === loc.id) for (const c of catChain) if (termOwner.get(c.pluralSlug) === c.row.id) add(`lc|${loc.id}|${c.row.id}`, buildPath({ type: 'localityCategory', city: city.slug, locality: loc.slug, term: c.pluralSlug, page: 1 }), s.count, s.lastmod, { type: 'localityCategory', cityName: city.name, cityId: city.id, localityName: loc.name, localityId: loc.id, cat: c, catId: c.row.id });
     }
     for (const c of catChain) {
-      if (catOwner.get(c.row.slug) === c.row.id) add(`k|${c.row.id}`, buildPath({ type: 'category', category: c.row.slug, page: 1 }), s.count, s.lastmod);
-      if (s.pincode && catOwner.get(c.row.slug) === c.row.id) add(`p|${s.pincode}|${c.row.id}`, buildPath({ type: 'pincodeCategory', pincode: s.pincode, category: c.row.slug, page: 1 }), s.count, s.lastmod);
+      if (catOwner.get(c.row.slug) === c.row.id) add(`k|${c.row.id}`, buildPath({ type: 'category', category: c.row.slug, page: 1 }), s.count, s.lastmod, { type: 'category', cat: c, catId: c.row.id });
+      if (s.pincode && catOwner.get(c.row.slug) === c.row.id) add(`p|${s.pincode}|${c.row.id}`, buildPath({ type: 'pincodeCategory', pincode: s.pincode, category: c.row.slug, page: 1 }), s.count, s.lastmod, { type: 'pincodeCategory', cat: c });
     }
   }
-  return [...acc.values()].filter((r) => r.n >= min).map((r) => ({ path: r.path, lastmod: r.last })).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return [...acc.values()].filter((r) => r.n >= min).map((r) => ({ path: r.path, lastmod: r.last, ctx: r.ctx, count: r.n })).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 
 const xml = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');

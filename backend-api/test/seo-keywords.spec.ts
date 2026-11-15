@@ -133,7 +133,7 @@ describe('role matrix for the SEO routes', () => {
       const roles = effectiveRolesFor(key);
       expect(roles).toContain('SUPER_ADMIN'); expect(roles).toContain('ADMIN');
       expect(roles).not.toContain('OPERATIONS'); expect(roles).not.toContain('SUPPORT');
-      expect(roles.includes('MARKETING')).toBe(key.startsWith('GET '));
+      expect(roles.includes('MARKETING')).toBe(key.startsWith('GET ') || key === 'POST /v3/admin/seo-directory/links');   // the link builder is a POST that only calculates: SALES builds campaign links
     }
   });
 });

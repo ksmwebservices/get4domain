@@ -39,6 +39,11 @@ export const SEO_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = {
   'GET /v3/admin/seo-directory/category-keywords': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/category-keywords/:slug': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/category-keywords/:slug': SUPER_ONLY,
   'GET /v3/admin/seo-directory/templates': SEO_READ_ROLES, 'PUT /v3/admin/seo-directory/templates': SUPER_ONLY,
   'GET /v3/admin/seo-directory/crawlers': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/vendor-sites': SEO_READ_ROLES,
+  // slice 5: keyword targets. Reading, the plan, the link builder (a pure calculation) and the campaign report: SALES reads. Adding, editing and importing targets: SUPER_ADMIN, and ADMIN by the extension.
+  'GET /v3/admin/seo-directory/keyword-targets': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/keyword-targets/export.csv': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/keyword-targets/:id': SEO_READ_ROLES,
+  'POST /v3/admin/seo-directory/keyword-targets': SUPER_ONLY, 'PUT /v3/admin/seo-directory/keyword-targets/:id': SUPER_ONLY, 'POST /v3/admin/seo-directory/keyword-targets/import': SUPER_ONLY,
+  'GET /v3/admin/seo-directory/keyword-plan': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/keyword-plan/export.csv': SEO_READ_ROLES,
+  'POST /v3/admin/seo-directory/links': SEO_READ_ROLES, 'GET /v3/admin/seo-directory/utm-report': SEO_READ_ROLES,
 };
 /** The crawler list names the bots robots.txt lets in: SUPER_ADMIN only to change (ADMIN is not added to this one). */
 export const SEO_SUPER_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = { 'PUT /v3/admin/seo-directory/crawlers': SUPER_ONLY };

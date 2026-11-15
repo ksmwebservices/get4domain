@@ -1,21 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Actor } from '../../plans/admin/audit.service';
-import { isUnsafeSeoText } from '../../site-publish/seo/seo-text';
 import { planKeywordLoad, KeywordLoadPlan } from '../core/category-keywords';
+import { cleanKeyword, MAX_KEYWORD_CHARS } from '../core/keyword-text';
 import { seoError } from '../seo-directory.errors';
 import { SeoAudit } from '../seo-audit';
 import { KeywordRow, SeoKeywordStore } from './seo-keyword.store';
 
+export { cleanKeyword, MAX_KEYWORD_CHARS };
 export const MAX_SYNONYMS = 30;
-export const MAX_KEYWORD_CHARS = 80;
 const bad = (m: string): BadRequestException => new BadRequestException(seoError('SEO_INVALID', m));
-
-/** One keyword: lower case, single spaces, letters, digits, spaces, hyphens, ampersands and apostrophes only; no price, no markup. Returns null when it is not acceptable. */
-export function cleanKeyword(v: unknown): string | null {
-  const t = String(v ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
-  if (!t || t.length > MAX_KEYWORD_CHARS || !/^[\p{L}\p{N}][\p{L}\p{N} '&-]*$/u.test(t) || isUnsafeSeoText(t)) return null;
-  return t;
-}
 
 @Injectable()
 export class SeoKeywordService {

@@ -136,9 +136,9 @@ export class SeoPageService {
     return out;
   }
 
-  private async finish(spec: PageSpec, ctx: Ctx, m: Omit<PageModel, 'meta' | 'h1' | 'path' | 'type' | 'page' | 'jsonLd'> & { vars: SeoVars; templateType: keyof Ctx['tpl']; total: number; indexing: { indexable: boolean; reason: NoindexReason | null }; jsonLdExtra?: Array<Record<string, unknown>>; collection?: boolean; paged?: boolean }): Promise<PageResult> {
+  private async finish(spec: PageSpec, ctx: Ctx, m: Omit<PageModel, 'meta' | 'h1' | 'path' | 'type' | 'page' | 'jsonLd'> & { over?: PageOverride | null; vars: SeoVars; templateType: keyof Ctx['tpl']; total: number; indexing: { indexable: boolean; reason: NoindexReason | null }; jsonLdExtra?: Array<Record<string, unknown>>; collection?: boolean; paged?: boolean }): Promise<PageResult> {
     const t = ctx.tpl[m.templateType]; const n = ctx.page;
-    const over = await this.overrides.forPath(buildPath(withPageNumber(spec, 1)));
+    const over = m.over !== undefined ? m.over : await this.overrides.forPath(buildPath(withPageNumber(spec, 1)));
     const descCands = (over?.description ? [over.description] : t.description).map((c) => (n >= 2 ? `${c.replace(/[.\s]+$/u, '')}. Page ${n}.` : c));
     const title = over?.title ? buildTitle([over.title], {}, { page: n }) : buildTitle(t.title, m.vars, { page: n });
     const description = buildDescription(descCands, m.vars);
@@ -150,7 +150,7 @@ export class SeoPageService {
       ...(m.collection ? [collectionJsonLd({ name: h1, description, url: canonical, origin: ctx.origin, cards: m.cards, firstPosition: ctx.skip + 1 })] : []),
       ...(m.jsonLdExtra ?? []), breadcrumbList(m.breadcrumbs),
     ];
-    const { vars: _v, templateType: _t, total: _tot, indexing, jsonLdExtra: _j, collection: _c, paged: _p, ...rest } = m;
+    const { over: _o, vars: _v, templateType: _t, total: _tot, indexing, jsonLdExtra: _j, collection: _c, paged: _p, ...rest } = m;
     return { kind: 'ok', model: { type: spec.type, path: ctx.path, page: pagination, meta: { title, description, canonical, robots: this.robots(indexing.indexable), indexable: indexing.indexable, noindexReason: indexing.reason, hreflang: [] }, h1, jsonLd, ...rest } };
   }
 
@@ -206,9 +206,10 @@ export class SeoPageService {
     const built = this.buildFacets(spec, ctx, { city, cat, locality, state, facets, scope, cityWide });
     const crumbs = this.crumbs(spec, ctx, { city, cat, locality, state, cityName });
     const indexing = this.listingIndexing(ctx.s, total);
-    const kw: string | null = null;
+    const over = await this.overrides.forPath(buildPath(withPageNumber(spec, 1)));
+    const kw: string | null = over?.keywordTargetId ?? null;   // slice 5: the click-out of a card names the keyword target of this page
     return this.finish(spec, ctx, {
-      vars, templateType: spec.type, total, indexing,
+      over, vars, templateType: spec.type, total, indexing,
       intro: this.intro(spec, { total, cat, locality, city, state, pincode, built }), breadcrumbs: crumbs, cards: await this.cards(items, ctx, spec.type, kw), facets: built.facets,
       related: { nearbyLocalities: built.nearby, relatedCategories: built.relatedCats, parents: crumbs.slice(0, -1).map((c) => ({ name: c.name, path: c.path })) },
       faq: this.listingFaq(spec, { total, cat, locality, city, state, pincode, built }), collection: true, paged: true,
@@ -331,6 +332,6 @@ export class SeoPageService {
 
 interface Ctx { s: DirectorySettings; tpl: Awaited<ReturnType<SeoSettingsService['templates']>>; pl: Places; origin: string; page: number; pageSize: number; skip: number; path: string }
 
-/** The default: no staff override. Slice 5 (keyword targets) replaces this provider. */
+/** No staff override at all: what the page tests (and any build without the keyword target tables) use. The module provides DbPageOverrides. */
 @Injectable()
 export class NoPageOverrides extends SeoPageOverrides { async forPath(): Promise<PageOverride | null> { return null; } }

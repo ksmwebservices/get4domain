@@ -18,23 +18,26 @@ const TTL_MS = 300_000;
 @Injectable()
 export class SeoSitemapService {
   clock: () => number = () => Date.now();
-  private listing: { at: number; v: ListingPath[] } | null = null;
+  private listingCache: { at: number; v: ListingPath[] } | null = null;
 
   constructor(
     private readonly data: SeoDirectoryData, private readonly repo: DirectoryRepository, private readonly keywords: SeoKeywordStore, private readonly settings: DirectorySettingsService,
     private readonly seo: SeoSettingsService,
   ) {}
 
-  invalidate(): void { this.listing = null; }
+  invalidate(): void { this.listingCache = null; }
 
   private async listingPaths(min: number): Promise<ListingPath[]> {
     const now = this.clock();
-    if (this.listing && now - this.listing.at < TTL_MS) return this.listing.v;
+    if (this.listingCache && now - this.listingCache.at < TTL_MS) return this.listingCache.v;
     const [places, stats] = await Promise.all([loadPlaces(this.repo, this.keywords), this.data.groupStats()]);
     const v = enumerateListingPaths(places, stats, min);
-    this.listing = { at: now, v };
+    this.listingCache = { at: now, v };
     return v;
   }
+
+  /** The listing pages that qualify for the sitemap (not thin, not empty), whether or not the directory pages are switched on: the keyword plan and the backlink block read this list. */
+  async listing(): Promise<ListingPath[]> { return this.listingPaths((await this.settings.get()).directoryThinPageMinBusinesses); }
 
   private async origin(): Promise<string> { return canonicalOrigin(await this.settings.readPublicAppUrl()); }
 
