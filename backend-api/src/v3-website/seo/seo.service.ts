@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { defaultPageSeo, SEO_DESCRIPTION_MAX, SEO_TITLE_MAX, seoIssues, SeoIssue } from '../core/seo-core';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { VendorDirectoryFactsPort } from '../../site-publish/seo/vendor-directory-facts';
+import { defaultPageSeo, SEO_DESCRIPTION_MAX, SEO_TITLE_MAX, seoIssues, SeoIssue, SeoIssueCode } from '../core/seo-core';
 import { LiveProjector, ProjectionCtx } from '../projection/live-projector';
 import { WebsiteService } from '../website.service';
 import { NewPageSeoRow, PageSeoRow, PageSeoStore } from './page-seo.store';
@@ -25,7 +26,8 @@ export interface SeoPageView {
 /** The vendor's SEO panel (from the draft) and the staff reports (from the live projection). */
 @Injectable()
 export class SeoService {
-  constructor(private readonly web: WebsiteService, private readonly store: PageSeoStore) {}
+  /** the directory facts port is optional: without it (a build without the SEO block) the place and keyword issues are simply not reported */
+  constructor(private readonly web: WebsiteService, private readonly store: PageSeoStore, @Optional() @Inject(VendorDirectoryFactsPort) private readonly facts?: VendorDirectoryFactsPort) {}
 
   async view(vendorId: string): Promise<{ pages: SeoPageView[]; limits: { title: number; description: number } }> {
     const c = await this.web.seoContext(vendorId);
@@ -40,11 +42,12 @@ export class SeoService {
   staffRows(vendorId: string): Promise<PageSeoRow[]> { return this.store.listForVendor(vendorId); }
 
   /** Pages with something to fix, across vendors or for one (staff). Duplicates are judged within one vendor's site. */
-  async staffIssues(f: { vendorId?: string; issue?: SeoIssue['issue']; page: number; pageSize: number }): Promise<{ items: Array<SeoIssue & { vendorId: string }>; page: number; pageSize: number; total: number }> {
+  async staffIssues(f: { vendorId?: string; issue?: SeoIssueCode; page: number; pageSize: number }): Promise<{ items: Array<SeoIssue & { vendorId: string }>; page: number; pageSize: number; total: number }> {
     const rows = await this.store.listAll(f.vendorId, 5000);
     const byVendor = new Map<string, PageSeoRow[]>();
     for (const r of rows) byVendor.set(r.vendorId, [...(byVendor.get(r.vendorId) ?? []), r]);
-    const all = [...byVendor.entries()].flatMap(([vendorId, rs]) => seoIssues(rs).map((i) => ({ vendorId, ...i }))).filter((i) => !f.issue || i.issue === f.issue);
+    const known = this.facts ? await this.facts.forVendors([...byVendor.keys()]) : new Map<string, { locality: string | null; keywords: string[] }>();
+    const all = [...byVendor.entries()].flatMap(([vendorId, rs]) => seoIssues(rs, known.get(vendorId) ?? null).map((i) => ({ vendorId, ...i }))).filter((i) => !f.issue || i.issue === f.issue);
     return { items: all.slice((f.page - 1) * f.pageSize, f.page * f.pageSize), page: f.page, pageSize: f.pageSize, total: all.length };
   }
 }

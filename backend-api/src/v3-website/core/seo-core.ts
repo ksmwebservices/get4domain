@@ -74,17 +74,33 @@ export function defaultPageSeo(pageKey: string, w: SeoWho): { seoTitle: string; 
 }
 
 export interface SeoRow { pageKey: string; seoTitle: string; seoDescription: string; customTitle: boolean; customDescription: boolean }
-export interface SeoIssue { pageKey: string; issue: 'DEFAULT_TITLE' | 'DEFAULT_DESCRIPTION' | 'DUPLICATE_TITLE' | 'SHORT_DESCRIPTION' }
+export const SEO_ISSUES = ['DEFAULT_TITLE', 'DEFAULT_DESCRIPTION', 'DUPLICATE_TITLE', 'SHORT_DESCRIPTION', 'MISSING_LOCALITY', 'TITLE_NO_KEYWORD', 'DUPLICATE_DESCRIPTION'] as const;
+export type SeoIssueCode = (typeof SEO_ISSUES)[number];
+export interface SeoIssue { pageKey: string; issue: SeoIssueCode }
+/**
+ * What the report knows about a vendor's directory listing (Stage 14 additions, prompt 6e). Absent = the vendor has no listing, so the place and the keyword cannot be judged and nothing is
+ * reported for them (the report never guesses). `locality` null = the listing has no neighbourhood; `keywords` are the category's own words (name, singular, plural, staff synonyms), lower case.
+ */
+export interface SeoListingContext { locality: string | null; keywords: readonly string[] }
+/** the pages that are meant to carry the business type in their title: the home page and the services page */
+export const KEYWORD_PAGES: readonly string[] = ['home', 'services'];
 
-/** For staff reports: pages still on a default, pages that share a title, and descriptions below the floor. */
-export function seoIssues(rows: readonly SeoRow[]): SeoIssue[] {
-  const out: SeoIssue[] = []; const byTitle = new Map<string, number>();
-  for (const r of rows) byTitle.set(r.seoTitle.toLowerCase(), (byTitle.get(r.seoTitle.toLowerCase()) ?? 0) + 1);
+/**
+ * For staff reports: pages still on a default, pages that share a title or a description, descriptions below the floor and, when the vendor's listing is known, a site with no locality
+ * (reported once, on the home page) and a home or services title that holds none of the category's words.
+ */
+export function seoIssues(rows: readonly SeoRow[], listing?: SeoListingContext | null): SeoIssue[] {
+  const out: SeoIssue[] = []; const byTitle = new Map<string, number>(); const byDesc = new Map<string, number>();
+  const norm = (s: string): string => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  for (const r of rows) { byTitle.set(r.seoTitle.toLowerCase(), (byTitle.get(r.seoTitle.toLowerCase()) ?? 0) + 1); byDesc.set(norm(r.seoDescription), (byDesc.get(norm(r.seoDescription)) ?? 0) + 1); }
   for (const r of rows) {
     if (!r.customTitle) out.push({ pageKey: r.pageKey, issue: 'DEFAULT_TITLE' });
     if (!r.customDescription) out.push({ pageKey: r.pageKey, issue: 'DEFAULT_DESCRIPTION' });
     if ((byTitle.get(r.seoTitle.toLowerCase()) ?? 0) > 1) out.push({ pageKey: r.pageKey, issue: 'DUPLICATE_TITLE' });
     if (r.seoDescription.length < SEO_DESCRIPTION_FLOOR) out.push({ pageKey: r.pageKey, issue: 'SHORT_DESCRIPTION' });
+    if (r.seoDescription.trim() && (byDesc.get(norm(r.seoDescription)) ?? 0) > 1) out.push({ pageKey: r.pageKey, issue: 'DUPLICATE_DESCRIPTION' });
+    if (listing && listing.keywords.length && KEYWORD_PAGES.includes(r.pageKey) && !listing.keywords.some((k) => k && r.seoTitle.toLowerCase().includes(k))) out.push({ pageKey: r.pageKey, issue: 'TITLE_NO_KEYWORD' });
   }
+  if (listing && !listing.locality?.trim() && rows.length) out.push({ pageKey: rows.some((r) => r.pageKey === 'home') ? 'home' : rows[0].pageKey, issue: 'MISSING_LOCALITY' });
   return out;
 }

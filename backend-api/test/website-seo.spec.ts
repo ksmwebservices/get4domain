@@ -1,3 +1,4 @@
+import { SeoService } from '../src/v3-website/seo/seo.service';
 import { HOST, OWNER_ACTOR, WebsiteWorld, websiteWorld } from './support/website-world';
 
 /** Slice B1: per-page SEO through the real build and publish pipeline over memory twins: draft, publish, the page head, the staff projection and reports, Free review, locked fields. */
@@ -92,6 +93,19 @@ describe('the staff projection and reports', () => {
     expect(kinds).toEqual(expect.arrayContaining(['about:SHORT_DESCRIPTION', 'about:DUPLICATE_TITLE', 'contact:DUPLICATE_TITLE', 'home:DEFAULT_TITLE']));
     const only = await w.seo.staffIssues({ issue: 'DUPLICATE_TITLE', page: 1, pageSize: 100 }); expect(only.items.every((i) => i.issue === 'DUPLICATE_TITLE')).toBe(true); expect(only.items.every((i) => i.vendorId === w.vendorId)).toBe(true);
     expect((await w.seo.staffIssues({ vendorId: 'v-other', page: 1, pageSize: 100 })).items).toEqual([]);
+  });
+  it('with the directory facts port the report also names a site with no locality, a title with none of the category words, and a repeated description; without it those are not reported', async () => {
+    await publishWith({ seoTitle: 'About us', seoDescription: 'Same words on two pages of this one site, long enough to count.' }); await seo(w, 'contact', { seoDescription: 'Same words on two pages of this one site, long enough to count.' }); await seo(w, 'home', { seoTitle: 'Sri Ganesh | Chennai' }); await publishWith(null);
+    const port = (locality: string | null) => ({ forVendors: async () => new Map([[w.vendorId, { locality, city: 'Chennai', pincode: null, keywords: ['plumber', 'plumbers'] }]]), forVendor: async () => null });
+    const withPort = new SeoService(w.web, w.seoStore, port(null) as never);
+    const kinds = (await withPort.staffIssues({ page: 1, pageSize: 200 })).items.map((i) => `${i.pageKey}:${i.issue}`);
+    expect(kinds).toEqual(expect.arrayContaining(['home:MISSING_LOCALITY', 'home:TITLE_NO_KEYWORD', 'about:DUPLICATE_DESCRIPTION', 'contact:DUPLICATE_DESCRIPTION']));
+    expect((await withPort.staffIssues({ issue: 'MISSING_LOCALITY', page: 1, pageSize: 50 })).items).toEqual([{ vendorId: w.vendorId, pageKey: 'home', issue: 'MISSING_LOCALITY' }]);
+    const located = new SeoService(w.web, w.seoStore, port('Perambur') as never);
+    expect((await located.staffIssues({ page: 1, pageSize: 200 })).items.some((i) => i.issue === 'MISSING_LOCALITY')).toBe(false);
+    const none = new SeoService(w.web, w.seoStore, { forVendors: async () => new Map(), forVendor: async () => null } as never);   // the vendor has no listing: not judged
+    const noneKinds = (await none.staffIssues({ page: 1, pageSize: 200 })).items.map((i) => i.issue); expect(noneKinds).not.toContain('MISSING_LOCALITY'); expect(noneKinds).not.toContain('TITLE_NO_KEYWORD'); expect(noneKinds).toContain('DUPLICATE_DESCRIPTION');
+    const without = (await w.seo.staffIssues({ page: 1, pageSize: 200 })).items.map((i) => i.issue); expect(without).not.toContain('MISSING_LOCALITY'); expect(without).not.toContain('TITLE_NO_KEYWORD');
   });
   it('another vendor has no rows, and replacing one vendor\'s rows leaves another\'s alone', async () => {
     await publishWith({ seoTitle: 'Mine' });

@@ -1,4 +1,4 @@
-import { defaultPageSeo, isPageKey, seoIssues, validatePageSeo } from '../src/v3-website/core/seo-core';
+import { defaultPageSeo, isPageKey, SEO_ISSUES, seoIssues, validatePageSeo } from '../src/v3-website/core/seo-core';
 import { applyToSource, diffDocs, emptyDoc, normaliseDoc, writeSeo } from '../src/v3-website/core/managed-doc';
 import { SourceDocument } from '../src/site-publish/content/content-types';
 
@@ -68,5 +68,36 @@ describe('what staff reports flag', () => {
     const rows = [row('home'), row('about', { customTitle: false }), row('services', { seoTitle: 'T home' }), row('gallery', { seoDescription: 'short', customDescription: true }), row('contact', { customDescription: false })];
     expect(seoIssues(rows)).toEqual(expect.arrayContaining([{ pageKey: 'about', issue: 'DEFAULT_TITLE' }, { pageKey: 'contact', issue: 'DEFAULT_DESCRIPTION' }, { pageKey: 'services', issue: 'DUPLICATE_TITLE' }, { pageKey: 'home', issue: 'DUPLICATE_TITLE' }, { pageKey: 'gallery', issue: 'SHORT_DESCRIPTION' }]));
     expect(seoIssues([row('home')])).toEqual([]);
+  });
+});
+
+describe('the three issues added to the Stage 14 report (prompt 6e)', () => {
+  const row = (pageKey: string, over: Record<string, unknown> = {}) => ({ pageKey, seoTitle: `Title of ${pageKey} | Plumber`, seoDescription: `Description of ${pageKey}. `.padEnd(80, 'x'), customTitle: true, customDescription: true, ...over });
+  const L = { locality: 'Perambur', keywords: ['plumber', 'plumbers', 'pipe fitter'] };
+  it('the old issues are all still there, and the new ones are listed', () => {
+    expect([...SEO_ISSUES]).toEqual(['DEFAULT_TITLE', 'DEFAULT_DESCRIPTION', 'DUPLICATE_TITLE', 'SHORT_DESCRIPTION', 'MISSING_LOCALITY', 'TITLE_NO_KEYWORD', 'DUPLICATE_DESCRIPTION']);
+  });
+  it('DUPLICATE_DESCRIPTION: pages of one site that share a description (case and spacing ignored); a blank one is the short-description issue, not this one', () => {
+    const rows = [row('home', { seoDescription: 'We fix leaks   in Chennai and nearby areas, quickly.' }), row('about', { seoDescription: 'we fix leaks in chennai and nearby areas, quickly.' }), row('services')];
+    expect(seoIssues(rows).filter((i) => i.issue === 'DUPLICATE_DESCRIPTION')).toEqual([{ pageKey: 'home', issue: 'DUPLICATE_DESCRIPTION' }, { pageKey: 'about', issue: 'DUPLICATE_DESCRIPTION' }]);
+    expect(seoIssues([row('home', { seoDescription: '' }), row('about', { seoDescription: '' })]).some((i) => i.issue === 'DUPLICATE_DESCRIPTION')).toBe(false);
+    expect(seoIssues([row('home'), row('about')]).some((i) => i.issue === 'DUPLICATE_DESCRIPTION')).toBe(false);
+  });
+  it('MISSING_LOCALITY: reported once, on the home page, only when the listing is known and has no neighbourhood', () => {
+    const rows = [row('about'), row('home'), row('contact')];
+    expect(seoIssues(rows, { locality: null, keywords: [] }).filter((i) => i.issue === 'MISSING_LOCALITY')).toEqual([{ pageKey: 'home', issue: 'MISSING_LOCALITY' }]);
+    expect(seoIssues(rows, { locality: '  ', keywords: [] }).filter((i) => i.issue === 'MISSING_LOCALITY')).toHaveLength(1);
+    expect(seoIssues(rows, L).some((i) => i.issue === 'MISSING_LOCALITY')).toBe(false);
+    expect(seoIssues(rows, null).some((i) => i.issue === 'MISSING_LOCALITY')).toBe(false);   // no listing: not judged
+    expect(seoIssues(rows).some((i) => i.issue === 'MISSING_LOCALITY')).toBe(false);
+    expect(seoIssues([row('about')], { locality: null, keywords: [] }).filter((i) => i.issue === 'MISSING_LOCALITY')).toEqual([{ pageKey: 'about', issue: 'MISSING_LOCALITY' }]);   // no home row: the first page
+    expect(seoIssues([], { locality: null, keywords: [] })).toEqual([]);
+  });
+  it('TITLE_NO_KEYWORD: the home and services titles must hold one of the category words; other pages are not judged; no keywords means no judgement', () => {
+    const rows = [row('home', { seoTitle: 'Sri Ganesh | Chennai' }), row('services', { seoTitle: 'Our Services' }), row('about', { seoTitle: 'About us' }), row('contact', { seoTitle: 'Contact | Plumber' })];
+    expect(seoIssues(rows, L).filter((i) => i.issue === 'TITLE_NO_KEYWORD')).toEqual([{ pageKey: 'home', issue: 'TITLE_NO_KEYWORD' }, { pageKey: 'services', issue: 'TITLE_NO_KEYWORD' }]);
+    expect(seoIssues([row('home', { seoTitle: 'Ganesh PLUMBERS in Chennai' })], L).some((i) => i.issue === 'TITLE_NO_KEYWORD')).toBe(false);   // case-insensitive; the plural contains the word
+    expect(seoIssues([row('home', { seoTitle: 'Sri Ganesh' })], { locality: 'x', keywords: [] }).some((i) => i.issue === 'TITLE_NO_KEYWORD')).toBe(false);
+    expect(seoIssues([row('home', { seoTitle: 'Sri Ganesh' })], null).some((i) => i.issue === 'TITLE_NO_KEYWORD')).toBe(false);
   });
 });
