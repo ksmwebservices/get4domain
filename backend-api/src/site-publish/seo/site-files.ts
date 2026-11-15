@@ -14,6 +14,8 @@ export function buildSitemap(entries: SitemapEntry[], indexable: boolean): strin
  * robots.txt: everything stays crawlable on purpose. A noindex page that crawlers are told not to fetch can never show its noindex tag (the lesson of SEO-0),
  * so noindex is expressed in the page and header, not here. The Sitemap line appears only when the site is indexable.
  */
-export function buildRobotsTxt(indexable: boolean, sitemapUrl: string): string {
-  return `User-agent: *\nAllow: /\n${indexable ? `\nSitemap: ${sitemapUrl}\n` : ''}`;
+export function buildRobotsTxt(indexable: boolean, sitemapUrl: string, crawlers: readonly string[] = []): string {
+  // slice 6: every crawler staff named gets its own group with Allow: / (a crawler with its own group ignores the catch-all one, so each says the same thing)
+  const named = crawlers.length ? `${crawlers.map((c) => `User-agent: ${c}`).join('\n')}\nAllow: /\n\n` : '';
+  return `${named}User-agent: *\nAllow: /\n${indexable ? `\nSitemap: ${sitemapUrl}\n` : ''}`;
 }

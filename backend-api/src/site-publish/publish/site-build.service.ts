@@ -16,6 +16,7 @@ import { ThemeRenderService } from '../renderer/theme-render.service';
 import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
 import { assembleDocument, buildPageSeo } from '../seo/page-seo';
 import { buildRobotsTxt, buildSitemap, SitemapEntry } from '../seo/site-files';
+import { VendorSeoSettings } from '../seo/vendor-seo-settings';
 import { siteError } from '../site.errors';
 import { CSS_BUDGET_BYTES, DEFAULT_SITE_BASE, PAGE_BUDGET_BYTES, clampMotion, contentTypeFor, kitMotion, parseLanguages, sha256, stableJson } from './site-config';
 import { SiteAudit } from './site-audit';
@@ -49,6 +50,8 @@ export class SiteBuildService {
     @Optional() private readonly lifecycle?: SiteLifecycle,
     /** slice 5.5a: records the managed document each build used (the live document is the snapshot of the current publication); absent = nothing is recorded */
     @Optional() @Inject(SnapshotSink) private readonly snapshots?: SnapshotSink,
+    /** slice 6: the staff-editable vendor SEO templates and the crawler list; absent = titles, descriptions and robots.txt are written as before */
+    @Optional() @Inject(VendorSeoSettings) private readonly seoSettings?: VendorSeoSettings,
   ) {}
 
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
@@ -86,6 +89,8 @@ export class SiteBuildService {
       ...(seededState ? { lifecycle: seededState } : {}),
     };
 
+    const vseo = this.seoSettings ? await this.seoSettings.get() : null;
+    const brandSuffix = !primary.isCustom;   // a get4domain subdomain carries the brand suffix; a custom domain is the vendor's own
     const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
     const directions = renderEnt.callsToAction !== false;   // slice B2: Free shows the address as plain text, no directions link
     const base = toRendererInput(doc, { categoryId, lang: 'en', year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
@@ -101,7 +106,7 @@ export class SiteBuildService {
     // hashes: what the output depends on, so an unchanged site is recognised without rendering
     const { managed, ...hashable } = doc;   // the managed document is recorded, not hashed: two documents that render the same site are the same build
     const contentHash = sha256(stableJson({ doc: hashable, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
-    const settingsHash = sha256(stableJson({ themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
+    const settingsHash = sha256(stableJson({ ...(vseo ? { vendorSeo: { home: vseo.vendorHome, page: vseo.vendorPage, crawlers: vseo.crawlers, brandSuffix } } : {}), themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
     const newest = await this.repo.newestPublication(vendorId);
     if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) {
       await this.snapshots?.record(vendorId, newest.id, newest.version, managed ?? null);
@@ -125,6 +130,7 @@ export class SiteBuildService {
           rendered, path: p.path, template: p.template, lang, languages: langs.languages, indexable: indexing.indexable, siteUrl, categoryId, siteName, city: contact.city,
           image: doc.cms?.banner ?? '', itemName: p.item ? String((p.item as { name: string }).name) : '', items: (input.content.items as Array<{ name: string; description: string; image: string }>) ?? [],
           tagline: String(doc.cms?.tagline ?? ''), about: String(doc.cms?.about ?? ''),
+          ...(vseo ? { vendorTemplates: { vendorHome: vseo.vendorHome, vendorPage: vseo.vendorPage }, locality: String((contact as { area?: string }).area ?? ''), brandSuffix } : {}),   // slice 6
           ...(lang === 'en' ? { override: pageSeoOverride(doc.pageSeo, p) } : {}),   // slice B1: the vendor's own text for this page (English pages only)
         });
         const html = assembleDocument({ seo, bodyHtml: rendered.html, cssHref: '/assets/site.css', favicon: doc.cms?.favicon ?? undefined });
@@ -142,7 +148,7 @@ export class SiteBuildService {
     }
     const css = [theme.theme.css.tokens, theme.theme.css.base, theme.theme.css.motion, theme.theme.css.print].filter(Boolean).join('\n');
     if (Buffer.byteLength(css) > this.budgets.css) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', 'The theme stylesheet is over the allowed size.'));
-    const files: Array<[string, string]> = [['/assets/site.css', css], ['/sitemap.xml', buildSitemap(sitemap, indexing.indexable)], ['/robots.txt', buildRobotsTxt(indexing.indexable, `${siteUrl}/sitemap.xml`)]];
+    const files: Array<[string, string]> = [['/assets/site.css', css], ['/sitemap.xml', buildSitemap(sitemap, indexing.indexable)], ['/robots.txt', buildRobotsTxt(indexing.indexable, `${siteUrl}/sitemap.xml`, vseo?.crawlers)]];
     for (const [path, text] of files) pages.push({ path, lang: 'en', html: text, seoJson: { contentType: contentTypeFor(path) }, bytes: Buffer.byteLength(text), sha256: sha256(text) });
 
     const row = await this.repo.createPublication(

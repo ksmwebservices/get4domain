@@ -5,6 +5,7 @@ import { SitesAdminController } from './api/sites-admin.controller';
 import { CmsContentSource, ContentSource } from './content/content-source';
 import { ManagedContentSource, ManagedLayerPort, PrismaManagedLayer } from './content/managed-content-source';
 import { PrismaSnapshotSink, SnapshotSink } from './content/snapshot-sink';
+import { PrismaVendorSeoSettings, VendorSeoSettings } from './seo/vendor-seo-settings';
 import { PrismaSiteAudit, SiteAudit } from './publish/site-audit';
 import { PrismaSiteRepository } from './publish/prisma-site.repository';
 import { PublishService } from './publish/publish.service';
@@ -29,6 +30,7 @@ export const SITE_PUBLISH_PROVIDERS: Provider[] = [
   { provide: ManagedLayerPort, useClass: PrismaManagedLayer },   // slice 5.5a: the live managed document is the snapshot of the current publication
   { provide: ContentSource, useClass: ManagedContentSource },
   { provide: SnapshotSink, useClass: PrismaSnapshotSink },
+  { provide: VendorSeoSettings, useClass: PrismaVendorSeoSettings },   // slice 6: the SEO templates and crawler list the build reads
   { provide: SiteAudit, useClass: PrismaSiteAudit },
   ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePreviewService, SitePublicService,
 ];

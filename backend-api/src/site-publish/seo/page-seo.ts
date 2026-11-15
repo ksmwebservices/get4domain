@@ -1,6 +1,8 @@
 import { RenderResult } from '../renderer/renderer-loader';
 import { loadKit } from '../renderer/renderer-loader';
 import { composeDescription, cutAtWord, fitTitle, isUnsafeSeoText, safeSeoText } from './seo-text';
+import type { PageTemplate } from '../../seo-directory/core/default-templates';
+import { buildDescription, buildTitle, titleCase } from '../../seo-directory/core/template-engine';
 
 /**
  * The platform SEO layer for one page (docs/v3/V3_S4_RENDERER_PUBLISH.md section 4). The theme never writes SEO; the renderer returns inputs and this
@@ -27,6 +29,15 @@ export interface PageSeoArgs {
   about: string;
   /** slice B1: the vendor's own text for this page; used ahead of the generated text, and only when it passes the safety filter */
   override?: { title?: string; description?: string; image?: string };
+  /**
+   * Slice 6: the staff-editable vendor templates (vendorHome for the home page, vendorPage for the others). When given, they write the generated title and fall back to the generated
+   * description; the vendor's own override still wins and so do the vendor's own sentences. Absent = the previous behaviour, unchanged.
+   */
+  vendorTemplates?: { vendorHome: PageTemplate; vendorPage: PageTemplate };
+  /** the neighbourhood, when the site states one (contact.area); empty = the template falls back to the city form */
+  locality?: string;
+  /** false when the canonical host is the vendor's own custom domain: the " | Get4Domain" suffix is then not forced. Default true (a get4domain subdomain). */
+  brandSuffix?: boolean;
 }
 export interface PageSeo {
   title: string; description: string; canonical: string; robots: string; htmlLang: string;
@@ -63,14 +74,21 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
   const label = cat.label;
 
   const pageTitle = home ? '' : String(r.title ?? '').split(' | ')[0];
-  const title = fitTitle([...(a.override?.title ? [a.override.title] : []), ...(home ? [r.title, `${a.siteName} | ${label}`, a.siteName] : [r.title, `${pageTitle} | ${a.siteName}`, pageTitle || a.siteName, a.siteName])]);
+  const tpl = a.vendorTemplates ? (home ? a.vendorTemplates.vendorHome : a.vendorTemplates.vendorPage) : null;
+  const tplVars = { vendorName: a.siteName, category: titleCase(label), locality: a.locality ?? '', city: a.city, pageName: home ? '' : (a.itemName || pageTitle) };
+  const ownTitle = a.override?.title && !isUnsafeSeoText(a.override.title) && a.override.title.trim().length <= 60 ? a.override.title.trim() : '';
+  const title = ownTitle ? ownTitle
+    : tpl ? buildTitle(tpl.title, tplVars, { brand: a.brandSuffix !== false })
+    : fitTitle([...(a.override?.title ? [a.override.title] : []), ...(home ? [r.title, `${a.siteName} | ${label}`, a.siteName] : [r.title, `${pageTitle} | ${a.siteName}`, pageTitle || a.siteName, a.siteName])]);
 
   const fallbackDesc = `${a.siteName} - ${label}${a.city ? ` - ${a.city}` : ''}`;
   const itemText = a.template === 'item' ? a.items.find((x) => x.name === a.itemName)?.description ?? '' : '';
   const parts = a.template === 'about' ? [a.about, a.tagline] : a.template === 'item' ? [itemText, a.tagline] : [a.tagline, a.about];
-  const own = a.override?.description && !isUnsafeSeoText(a.override.description) ? a.override.description : '';
+  const ownDesc = a.override?.description && !isUnsafeSeoText(a.override.description) ? a.override.description : '';
   const descCandidates = [composeDescription(parts), cutAtWord(r.description ?? '', 160)];
-  const description = own || (descCandidates.find((c) => c.length >= 50 && !isUnsafeSeoText(c))
+  const tplDesc = tpl ? buildDescription(tpl.description, tplVars) : '';
+  const description = ownDesc || (descCandidates.find((c) => c.length >= 50 && !isUnsafeSeoText(c))
+    ?? (tplDesc && !tplDesc.startsWith('Find local businesses') ? tplDesc : undefined)
     ?? descCandidates.find((c) => c.length > 0 && !isUnsafeSeoText(c))
     ?? safeSeoText(fallbackDesc, a.siteName));
 
@@ -90,8 +108,13 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
   // JSON-LD: the renderer's category subtype, cleaned; sameAs only http(s) profile URLs; then breadcrumbs; then the page's own items
   const biz = cleanLd({ ...(r.structuredData as Record<string, unknown>) }) as Record<string, unknown>;
   if (Array.isArray(biz.sameAs)) { const same = [...new Set((biz.sameAs as unknown[]).map(httpUrl).filter(Boolean))]; if (same.length) biz.sameAs = same; else delete biz.sameAs; }
-  const jsonLd: Array<Record<string, unknown>> = [biz];
   const base = a.siteUrl.replace(/\/+$/, '');
+  if (a.vendorTemplates) {
+    // slice 6: facts the vendor's own site already states, added only when the theme's block lacks them; nothing invented, no offer, no rating
+    const extra = cleanLd({ url: `${base}/`, ...(a.city ? { areaServed: { '@type': 'City', name: a.city }, address: { '@type': 'PostalAddress', addressLocality: a.city, addressCountry: 'IN' } } : {}) }) as Record<string, unknown>;
+    for (const [k, v] of Object.entries(extra)) if (biz[k] === undefined) biz[k] = v;
+  }
+  const jsonLd: Array<Record<string, unknown>> = [biz];
   const crumbs: Array<{ name: string; item: string }> = [{ name: a.siteName, item: `${base}${a.lang === 'ta' ? '/ta' : '/'}`.replace(/\/\/$/, '/') }];
   if (!home) {
     if (a.template === 'item') crumbs.push({ name: label.length ? safeSeoText(pageTitle || label, label) : label, item: `${base}${a.lang === 'ta' ? '/ta' : ''}/services` });
