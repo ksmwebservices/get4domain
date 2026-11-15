@@ -73,6 +73,17 @@ export class ThemeSwitchService {
   }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── preview (free, stores nothing)
+  /**
+   * B1: the Theme Switch Service fee, for the vendor's screen. A number only when the owner has approved a price in the price book; a PENDING price answers null and never a number. The fee is before GST
+   * (the tax is added when it is charged, see quote). Nothing about the vendor is read: the fee is the same for everyone.
+   */
+  async fee(): Promise<{ pricePaise: number | null; priceStatus: 'SET' | 'PENDING'; taxNote: 'Before GST'; priceNote?: string }> {
+    const svc = await this.services.serviceByKey('THEME_SWITCH');
+    const price = svc ? resolvePrice(await this.services.servicePrices(svc.id), this.clock()) : null;
+    if (!svc || !price) return { pricePaise: null, priceStatus: 'PENDING', taxNote: 'Before GST', priceNote: 'Price not set' };
+    return { pricePaise: price.amountPaise, priceStatus: 'SET', taxNote: 'Before GST' };
+  }
+
   async preview(vendorId: string, themeId: string) {
     if (typeof themeId !== 'string' || !THEME_ID.test(themeId)) throw themeInvalid('Choose a theme.');
     const snap = await this.pipeline.snapshot(vendorId);

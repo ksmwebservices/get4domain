@@ -1,7 +1,7 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
 import { RATE } from '../../common/throttling';
@@ -37,4 +37,11 @@ export class MeBillingController {
 
   @Get('invoices') @ApiOperation({ summary: 'My plan invoices, newest first' })
   async invoices(@Tenant() t: TenantContext, @Query() q: PageDto) { const page = q.page ?? 1; const pageSize = q.pageSize ?? 25; const r = await this.orders.invoicesMine(t.vendorId, page, pageSize); return { items: r.items, page, pageSize, total: r.total }; }
+
+  @Get('invoices/:id/download') @ApiOperation({ summary: 'One of my plan invoices as a page to save or print (HTML, built from the stored invoice). An invoice id that is not yours answers like one that does not exist.' })
+  async download(@Tenant() t: TenantContext, @Param('id') id: string, @Res({ passthrough: true }) res: Response): Promise<string> {
+    const p = await this.orders.invoicePage(t.vendorId, id);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.setHeader('Content-Disposition', `attachment; filename="${p.fileName}"`); res.setHeader('Cache-Control', 'private, no-store');
+    return p.html;
+  }
 }

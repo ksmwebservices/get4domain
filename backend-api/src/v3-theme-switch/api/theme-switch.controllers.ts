@@ -36,6 +36,9 @@ export class MeThemeSwitchController {
     return this.themes.switchTheme(t.vendorId, dto, { type: 'VENDOR', actor: { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }, funding: 'WALLET' });
   }
 
+  @Get('fee') @ApiOperation({ summary: 'What changing the theme costs once the included switch is used: the approved fee in paise before GST, or null while the price is not set (never a number then)' })
+  fee() { return this.themes.fee(); }
+
   @Get('history') @ApiOperation({ summary: 'My theme switches, newest first' })
   history(@Tenant() t: TenantContext, @Query() q: HistoryPageDto) { const p = page(q); return this.themes.history(t.vendorId, p.page, p.pageSize); }
 }

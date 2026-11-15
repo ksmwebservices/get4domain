@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Actor } from '../plans/admin/audit.service';
+import { renderInvoiceHtml } from '../v3-vendor-gaps/core/gaps-core';
+import { gapError } from '../v3-vendor-gaps/vendor-gaps.errors';
 import { effectiveStatus } from '../plans/entitlements/entitlement-engine';
 import { priceQuote, resolveApplicableDiscounts, selectTaxRate } from '../plans/pricing/price-quote';
 import { classifyChange, upgradeCreditPaise } from './core/amounts';
@@ -140,6 +142,14 @@ export class PlanOrderService {
   }
   async invoicesMine(vendorId: string, page: number, pageSize: number) {
     const { items, total } = await this.repo.listInvoicesForVendor(vendorId, (page - 1) * pageSize, pageSize);
-    return { items: items.map((i) => ({ id: i.id, invoiceNumber: i.invoiceNumber, financialYear: i.financialYear, issuedAt: i.issuedAt, orderId: i.orderId, snapshot: i.snapshot, taxBreakdown: i.taxBreakdown })), total };
+    // totalPaise is the amount paid (the snapshot's amountPaise), added to the snapshot for the list screen; the stored snapshot is never changed
+    return { items: items.map((i) => ({ id: i.id, invoiceNumber: i.invoiceNumber, financialYear: i.financialYear, issuedAt: i.issuedAt, orderId: i.orderId, snapshot: { ...i.snapshot, ...(typeof i.snapshot.amountPaise === 'number' ? { totalPaise: i.snapshot.amountPaise } : {}) }, taxBreakdown: i.taxBreakdown })), total };
+  }
+
+  /** One of my plan invoices as a self-contained HTML page, from the stored snapshot only. Another vendor's invoice id answers like one that does not exist. */
+  async invoicePage(vendorId: string, id: string): Promise<{ fileName: string; html: string }> {
+    const inv = await this.repo.getInvoiceForVendor(vendorId, id);
+    if (!inv) throw gapError(404, 'PLAN_INVOICE_NOT_FOUND', 'That invoice was not found.');
+    return { fileName: `invoice-${inv.invoiceNumber.replace(/[^A-Za-z0-9._-]/g, '-')}.html`, html: renderInvoiceHtml(inv) };
   }
 }

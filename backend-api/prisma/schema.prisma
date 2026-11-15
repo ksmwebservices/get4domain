@@ -119,6 +119,8 @@ model Vendor {
   v3VendorCapabilities V3VendorCapability[]
   v3VendorPackAddons V3VendorPackAddon[]
   v3PackRecords V3PackRecord[]
+  v3MigrationRequests V3MigrationRequest[]
+  v3PromoDrafts V3PromoDraft[]
   v3PlanPauses V3PlanPause[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
@@ -7885,4 +7887,46 @@ model V3PackRecord {
   @@index([vendorId, packKey, tabKey, deletedAt, createdAt])
   @@index([vendorId, packKey, tabKey, status])
   @@map("g4d_pack_records")
+}
+
+// ── Wave 2 Part B: vendor gap tables ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Tenant data: a vendor's request to have an existing site moved to Get4Domain. RECORD ONLY: nothing is cut over by this row; staff pick it up. openVendorId equals vendorId while the request is open (RECEIVED or IN_PROGRESS) and is NULL after, so the database allows one open request per vendor.
+model V3MigrationRequest {
+  id            String   @id @default(cuid())
+  vendorId      String
+  openVendorId  String?  @unique
+  siteUrl       String
+  status        String   @default("RECEIVED")
+  staffNote     String?
+  createdByType String
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_migration_requests")
+}
+
+/// Tenant data: a promotion or social post a vendor has written. DRAFTS ONLY: nothing is ever posted, scheduled or sent from this table. kind PROMOTION or SOCIAL; archive is the only removal.
+model V3PromoDraft {
+  id            String    @id @default(cuid())
+  vendorId      String
+  kind          String
+  channel       String
+  title         String
+  body          String
+  status        String    @default("DRAFT")
+  createdByType String
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  archivedAt    DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, kind, status, createdAt])
+  @@map("g4d_promo_drafts")
 }

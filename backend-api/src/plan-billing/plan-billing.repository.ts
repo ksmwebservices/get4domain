@@ -67,6 +67,8 @@ export abstract class PlanBillingRepository {
   abstract expireStale(now: Date): Promise<number>;
 
   abstract listInvoicesForVendor(vendorId: string, skip: number, take: number): Promise<{ items: InvoiceRow[]; total: number }>;
+  /** One of THIS vendor's invoices; null for another vendor's id or one that does not exist. */
+  abstract getInvoiceForVendor(vendorId: string, id: string): Promise<InvoiceRow | null>;
 
   /** inserts the event, or returns the existing row when the provider event id was seen before */
   abstract insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }): Promise<{ created: boolean; row: EventRow }>;

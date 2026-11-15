@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { InboxService } from '../v3-mail/inbox.service';
 import { NavTab } from './core/nav-core';
 import { isTeamMember, ShellPrincipal, shellSections, ShellSection, tabsFor } from './core/shell-access';
+import { NextStepsService } from './next-steps.service';
 import { PackEngineService } from './pack-engine.service';
 
 export interface AppShell {
@@ -13,6 +14,8 @@ export interface AppShell {
   packs: { primary: { key: string; name: string } | null; addons: Array<{ key: string; name: string; active: boolean }> } | null;
   /** a count only */
   inbox: { waiting: number; unread: number } | null;
+  /** what to do next, from real state; never a number or a price */
+  nextSteps: Array<{ id: string; text: string; route: string }> | null;
 }
 
 /**
@@ -22,15 +25,16 @@ export interface AppShell {
 @Injectable()
 export class AppShellService {
   /** The inbox comes from the global mail module; where it is not loaded (a unit test of one module) the shell simply carries no count. */
-  constructor(private readonly packs: PackEngineService, @Optional() private readonly inbox?: InboxService) {}
+  constructor(private readonly packs: PackEngineService, @Optional() private readonly inbox?: InboxService, @Optional() private readonly steps?: NextStepsService) {}
 
   async get(vendorId: string, who: ShellPrincipal): Promise<AppShell> {
     const sections = shellSections(who); const has = (s: ShellSection): boolean => sections.includes(s);
     const needNav = has('navigation') || has('plan') || has('packs');
-    const [nav, addons, badge] = await Promise.all([
+    const [nav, addons, badge, nextSteps] = await Promise.all([
       needNav ? this.packs.navigation(vendorId) : null,
       has('packs') ? this.packs.myAddons(vendorId) : null,
       has('inbox') && this.inbox ? this.inbox.badge(vendorId) : null,
+      has('nextSteps') && this.steps ? this.steps.forCaller(vendorId, who) : null,
     ]);
     return {
       actor: isTeamMember(who) ? 'TEAM_MEMBER' : 'OWNER',
@@ -39,6 +43,7 @@ export class AppShellService {
       plan: nav && has('plan') ? { mode: nav.mode, level: nav.level, tier: nav.tier, planState: nav.planState, paused: nav.paused } : null,
       packs: nav && addons ? { primary: nav.pack ? { key: nav.pack.key, name: nav.pack.name } : null, addons: addons.filter((a) => a.active || a.offered).map((a) => ({ key: a.key, name: a.name, active: a.active })) } : null,
       inbox: badge,
+      nextSteps,
     };
   }
 }

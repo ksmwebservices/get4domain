@@ -28,7 +28,7 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 export type FieldErrors = Record<string, string>;
 
-function cleanText(v: unknown, max: number, multiline: boolean): { ok: true; value: string } | { ok: false; error: string } {
+export function cleanText(v: unknown, max: number, multiline: boolean): { ok: true; value: string } | { ok: false; error: string } {
   if (typeof v !== 'string') return { ok: false, error: 'Enter text.' };
   const t = (multiline ? v.replace(/\r\n?/g, '\n') : v.replace(/\s+/g, ' ')).trim();
   if (CONTROL.test(t)) return { ok: false, error: 'This has characters that are not allowed.' };

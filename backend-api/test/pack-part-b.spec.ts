@@ -84,9 +84,10 @@ describe('B9 the navigation contract: key, label, route, group, state and upsell
   it('every tab carries exactly the contract fields', () => {
     for (const t of tabs) expect(Object.keys(t).sort()).toEqual(['capabilityKey', 'group', 'key', 'label', 'needsTier', 'ownerKey', 'reason', 'route', 'scope', 'state', 'upsellText']);
   });
-  it('the groups are COMMON, PACK, CAPABILITY and ADDON, drawn in that order, and a tab\'s group is one of them', () => {
+  it('the scopes are COMMON, PACK, CAPABILITY and ADDON, drawn in that order, and a tab\'s group is one of the five bar groups (Wave 2 B4, Amendment 14 F3)', () => {
     expect([...NAV_GROUPS]).toEqual(['COMMON', 'PACK', 'CAPABILITY', 'ADDON']);
-    const seen = tabs.map((t) => NAV_GROUPS.indexOf(t.group));
+    for (const t of tabs) expect(['home', 'business', 'grow', 'money', 'more']).toContain(t.group);
+    const seen = tabs.map((t) => NAV_GROUPS.indexOf(t.scope));
     expect(seen.every((g) => g >= 0)).toBe(true);
     expect([...seen].sort((a, b) => a - b)).toEqual(seen);
   });
@@ -173,14 +174,14 @@ describe('B10 add-on packs', () => {
 describe('B12 the app shell and the permission matrix', () => {
   const owner1 = {}; const member = (modules: string[]) => ({ kind: 'team_member', modules });
   it('the owner is given every section; a member without a message area gets no inbox; a member with one gets it', () => {
-    expect(shellSections(owner1).sort()).toEqual(['inbox', 'navigation', 'packs', 'plan']);
-    expect(shellSections(member([])).sort()).toEqual(['navigation', 'packs', 'plan']);
-    expect(shellSections(member(['communication'])).sort()).toEqual(['inbox', 'navigation', 'packs', 'plan']);
+    expect(shellSections(owner1).sort()).toEqual(['inbox', 'navigation', 'nextSteps', 'packs', 'plan']);
+    expect(shellSections(member([])).sort()).toEqual(['navigation', 'nextSteps', 'packs', 'plan']);
+    expect(shellSections(member(['communication'])).sort()).toEqual(['inbox', 'navigation', 'nextSteps', 'packs', 'plan']);
     expect(shellSections(member(['telecrm'])).includes('inbox')).toBe(true);
     expect(shellSections(member(['wallet', 'accounts'])).includes('inbox')).toBe(false);
   });
   it('the matrix is data: it names no price, order, invoice or setting section', () => {
-    expect(Object.keys(SHELL_MATRIX).sort()).toEqual(['inbox', 'navigation', 'packs', 'plan']);
+    expect(Object.keys(SHELL_MATRIX).sort()).toEqual(['inbox', 'navigation', 'nextSteps', 'packs', 'plan']);
   });
   it('a team member\'s tab list never holds billing, plan, domain or migration, and common tabs need the member\'s area', async () => {
     const { svc, plans: p } = await makeEngine(); p.states.set('v1', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
@@ -206,7 +207,7 @@ describe('B12 the app shell and the permission matrix', () => {
     const shell = new AppShellService(svc, inbox as never);
     const m = await shell.get('v1', member(['communication']));
     expect(m.actor).toBe('TEAM_MEMBER'); expect(m.inbox).toEqual({ waiting: 2, unread: 1 });
-    expect(Object.keys(m).sort()).toEqual(['actor', 'inbox', 'navigation', 'packs', 'plan', 'sections']);
+    expect(Object.keys(m).sort()).toEqual(['actor', 'inbox', 'navigation', 'nextSteps', 'packs', 'plan', 'sections']);
     expect(Object.keys(m.plan!).sort()).toEqual(['level', 'mode', 'paused', 'planState', 'tier']);
     expect(JSON.stringify(m)).not.toMatch(/priceStatus|paise|amount|invoice|endsAt|startsAt|graceEndsAt|termMonths|disclaimer|setting/i);
     const noMsg = await shell.get('v1', member([]));

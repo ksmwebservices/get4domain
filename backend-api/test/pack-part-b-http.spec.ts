@@ -65,7 +65,7 @@ describe('pack engine, Part B, over HTTP', () => {
       expect(r.status).toBe(200);
       const tabs = r.body.data.tabs as Array<Record<string, unknown>>;
       for (const t of tabs) expect(Object.keys(t)).toEqual(expect.arrayContaining(['key', 'label', 'route', 'group', 'state', 'upsellText']));
-      expect(['COMMON', 'PACK', 'CAPABILITY', 'ADDON']).toEqual(expect.arrayContaining([...new Set(tabs.map((t) => t.group))]));
+      expect(['home', 'business', 'grow', 'money', 'more']).toEqual(expect.arrayContaining([...new Set(tabs.map((t) => t.group))]));   // Wave 2 B4: the five bar groups; the scope stays beside it
       const crm = tabs.find((t) => t.key === 'crm')!; expect([crm.state, crm.reason]).toEqual(['LOCKED_PREVIEW', 'FREE_TRIAL']); expect(typeof crm.upsellText).toBe('string');
       expect(tabs.find((t) => t.key === 'website')!.state).toBe('ACTIVE');
     });
@@ -82,7 +82,7 @@ describe('pack engine, Part B, over HTTP', () => {
   describe('GET /v3/me/app-shell (B12)', () => {
     it('the owner gets every section; the counts are numbers only', async () => {
       const r = await get('/v3/me/app-shell', 'owner-a');
-      expect(r.status).toBe(200); expect(r.body.data.actor).toBe('OWNER'); expect(r.body.data.sections.sort()).toEqual(['inbox', 'navigation', 'packs', 'plan']);
+      expect(r.status).toBe(200); expect(r.body.data.actor).toBe('OWNER'); expect(r.body.data.sections.sort()).toEqual(['inbox', 'navigation', 'nextSteps', 'packs', 'plan']);
       expect(r.body.data.inbox).toEqual({ waiting: 3, unread: 1 });
     });
     it('a team member without a message area gets the menu and no count; with one, the count only', async () => {

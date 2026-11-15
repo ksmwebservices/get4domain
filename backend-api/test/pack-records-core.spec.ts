@@ -135,7 +135,7 @@ describe('pack records: the field seed', () => {
 });
 
 describe('tab access by owner (tab keys repeat across scopes)', () => {
-  const t = (scope: NavTab['scope'], ownerKey: string, key: string, state: NavTab['state']): NavTab => ({ key, label: key, route: '/' + key, scope, group: scope, ownerKey, state, reason: state === 'ACTIVE' ? null : 'FREE_TRIAL', needsTier: null, upsellText: null, capabilityKey: null });
+  const t = (scope: NavTab['scope'], ownerKey: string, key: string, state: NavTab['state']): NavTab => ({ key, label: key, route: '/' + key, scope, group: 'business', ownerKey, state, reason: state === 'ACTIVE' ? null : 'FREE_TRIAL', needsTier: null, upsellText: null, capabilityKey: null });
   const nav = [t('COMMON', 'COMMON', 'billing', 'LOCKED_PREVIEW'), t('PACK', 'CLINIC', 'billing', 'ACTIVE')];
   it('answers for the tab of that owner, not whichever comes first', () => {
     expect(tabAccess('V3', nav, 'billing').allowed).toBe(false);   // the old lookup finds the COMMON tab first

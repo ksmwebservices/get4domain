@@ -119,7 +119,7 @@ const MARKETING_DENIED = [
   'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
   'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
   // 5.6c: own-domain automation and the domain log
-  'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log',
+  'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log', 'GET /v3/admin/vendors/:id/subdomain-log',
   // B4: customers' words on a vendor's live site
   'GET /v3/admin/vendors/:id/site/testimonials',
   // B3: the review link of a vendor's live site
@@ -186,7 +186,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(358);
+    expect(oracle).toHaveLength(359);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

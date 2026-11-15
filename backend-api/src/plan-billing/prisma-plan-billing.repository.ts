@@ -76,6 +76,11 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     return { items: rows.map(toInvoice), total };
   }
 
+  async getInvoiceForVendor(vendorId: string, id: string) {
+    const r = await this.prisma.v3PlanInvoice.findFirst({ where: { id, vendorId } });
+    return r ? toInvoice(r) : null;
+  }
+
   async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }) {
     try { return { created: true, row: toEvent(await this.prisma.v3PaymentEvent.create({ data: { providerEventId: d.providerEventId, type: d.type, payloadRedactedJson: d.payloadRedacted as Prisma.InputJsonValue, signatureValid: d.signatureValid, orderId: d.orderId } })) }; }
     catch (e) { if (isUnique(e)) return { created: false, row: toEvent(await this.prisma.v3PaymentEvent.findUniqueOrThrow({ where: { providerEventId: d.providerEventId } })) }; throw e; }

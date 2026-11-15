@@ -100,7 +100,7 @@ export class InboxService {
   }
   async setState(vendorId: string, id: string, state: string) {
     await this.assertPlan(vendorId);
-    if (!['READ', 'ARCHIVED', 'NEW'].includes(state)) throw mailError(400, 'INBOX_INVALID', 'Choose read, archived or new.');
+    if (!['READ', 'ARCHIVED', 'NEW', 'HANDLED'].includes(state)) throw mailError(400, 'INBOX_INVALID', 'Choose new, read, handled or archived.');
     const r = await this.store.setState(vendorId, id, state, this.clock());
     if (!r) throw mailError(404, 'INBOX_NOT_FOUND', 'That message was not found.');
     return view(r, true);

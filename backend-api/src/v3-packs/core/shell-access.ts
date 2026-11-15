@@ -7,7 +7,7 @@ import { NavTab } from './nav-core';
  * The owner sees every section. A team member sees the sections their row allows and a tab list cut down by TEAM_TAB_AREA: the tabs that belong to money (billing, plan, domain, migration) are never in a
  * team member's list at all (not locked, absent), the rest need the area the member was given. Nothing here carries a price, an order, an invoice, a term date or a setting: those stay on the owner-only routes.
  */
-export type ShellSection = 'navigation' | 'plan' | 'packs' | 'inbox';
+export type ShellSection = 'navigation' | 'plan' | 'packs' | 'inbox' | 'nextSteps';
 export interface ShellRule { owner: boolean; team: 'ANY' | readonly TeamArea[] | 'NONE' }
 
 export const SHELL_MATRIX: Readonly<Record<ShellSection, ShellRule>> = {
@@ -18,6 +18,8 @@ export const SHELL_MATRIX: Readonly<Record<ShellSection, ShellRule>> = {
   packs: { owner: true, team: 'ANY' },
   /** a count only (waiting and unread), never a sender, a subject or a text */
   inbox: { owner: true, team: ['communication', 'telecrm'] },
+  /** short sentences built from real state (no number, no price); a team member gets only the steps of an area they hold, cut in NextStepsService */
+  nextSteps: { owner: true, team: 'ANY' },
 };
 
 export type TabAudience = 'ANY' | 'OWNER_ONLY' | TeamArea;

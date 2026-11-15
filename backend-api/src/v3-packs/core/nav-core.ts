@@ -1,3 +1,4 @@
+import { BarGroup, barGroupOf } from '../../v3-vendor-gaps/core/gaps-core';
 import { Tier, TIERS, tierRank } from './pack-core';
 
 /**
@@ -13,9 +14,9 @@ import { Tier, TIERS, tierRank } from './pack-core';
 export type TabState = 'ACTIVE' | 'LOCKED_PREVIEW' | 'HIDDEN';
 export type TabReason = 'FREE_TRIAL' | 'NEEDS_TIER' | 'TIER_DOWNGRADE' | 'GATED_PACK' | 'PLAN_PAUSED' | null;
 
-/** The groups of the tab list, in the order the vendor app draws them (common tabs, pack tabs, capability tabs, add-on tabs). A tab's group is its scope. */
+/** The order the vendor app draws the tab scopes in (common tabs, pack tabs, capability tabs, add-on tabs). A tab's SCOPE is where it comes from; its GROUP (one of the five bar groups) is where the app puts it. */
 export const NAV_GROUPS = ['COMMON', 'PACK', 'CAPABILITY', 'ADDON'] as const;
-export type NavGroup = (typeof NAV_GROUPS)[number];
+export type NavGroup = BarGroup;
 
 const TIER_LABEL: Record<Tier, string> = { HANDYMAN: 'Handyman', PROFESSIONAL: 'Professional', ECOMMERCE: 'Ecommerce' };
 /** The sentence under a locked or hidden tab. No timeframe, no price (prices are the owner's and live in the price book), and no internal product word. */
@@ -64,7 +65,7 @@ export function tierAllows(tier: Tier | null, capability: string, matrix: NavInp
   return grants?.has(capability) === true || (tier !== null && matrix.get(tier)?.has(capability) === true);
 }
 
-const tab = (d: NavTabDef, state: TabState, reason: TabReason = null, needsTier: Tier | null = null): NavTab => ({ key: d.key, label: d.label, route: d.route, scope: d.scope, group: d.scope, ownerKey: d.ownerKey, state, reason, needsTier, upsellText: upsellText(reason, needsTier), capabilityKey: d.capabilityKey });
+const tab = (d: NavTabDef, state: TabState, reason: TabReason = null, needsTier: Tier | null = null): NavTab => ({ key: d.key, label: d.label, route: d.route, scope: d.scope, group: barGroupOf(d.scope, d.key), ownerKey: d.ownerKey, state, reason, needsTier, upsellText: upsellText(reason, needsTier), capabilityKey: d.capabilityKey });
 
 export function resolveNav(i: NavInput): NavTab[] {
   const order: Record<NavTabDef['scope'], number> = { COMMON: 0, PACK: 1, CAPABILITY: 2, ADDON: 3 };

@@ -15,9 +15,9 @@ import { InboxService } from '../inbox.service';
 export class InboxListDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
-  @IsOptional() @IsIn(['NEW', 'READ', 'ARCHIVED']) state?: string;
+  @IsOptional() @IsIn(['NEW', 'READ', 'HANDLED', 'ARCHIVED']) state?: string;
 }
-export class InboxStateDto { @IsIn(['NEW', 'READ', 'ARCHIVED']) state!: string }
+export class InboxStateDto { @IsIn(['NEW', 'READ', 'HANDLED', 'ARCHIVED']) state!: string }
 /** The shape the Worker posts. Every field is checked again by the pure core; the decorators are what the whitelist needs to let them through. */
 export class InboundEmailDto {
   @IsString() @MaxLength(254) to!: string;
@@ -45,7 +45,7 @@ export class MeInboxController {
   waiting(@Tenant() t: TenantContext) { return this.inbox.waiting(t.vendorId); }
   @Get(':id') @ApiOperation({ summary: 'One enquiry message with its full text' })
   get(@Tenant() t: TenantContext, @Param('id') id: string) { return this.inbox.get(t.vendorId, id); }
-  @Put(':id/state') @ApiOperation({ summary: 'Mark a message new, read or archived' })
+  @Put(':id/state') @ApiOperation({ summary: 'Mark a message new, read, handled or archived' })
   setState(@Tenant() t: TenantContext, @Param('id') id: string, @Body() b: InboxStateDto) { return this.inbox.setState(t.vendorId, id, b.state); }
 }
 

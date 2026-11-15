@@ -34,7 +34,11 @@ const actor = (user: AuthenticatedUser, req: Request, type: 'VENDOR' | 'STAFF'):
 @RequiresTab('domain', { previewReads: true })   // reads keep a locked preview; connect, check, mode, retry and remove are refused with TAB_LOCKED on a Free or paused plan (Amendment 11 Q2, Amendment 13 B11)
 @Controller('v3/me/domains')
 export class MeConnectionController {
-  constructor(private readonly svc: DomainConnectionService) {}
+  constructor(private readonly svc: DomainConnectionService, private readonly log: DomainLogService) {}
+
+  @Get(':id/log')
+  @ApiOperation({ summary: 'The log of one of my domains: when, what the check found and how many tries, newest first' })
+  async domainLog(@Tenant() t: TenantContext, @Param('id') id: string, @Query() q: PageQueryDto) { await this.svc.get(t.vendorId, id); const p = pageArgs(q); return this.log.forDomainMine(t.vendorId, id, p.page, p.pageSize); }
 
   @Get('connections')
   @ApiOperation({ summary: 'My automatic connections, with status, certificate state and mode' })
@@ -89,4 +93,8 @@ export class AdminConnectionController {
   @Get('vendors/:id/domain-log')
   @ApiOperation({ summary: 'The domain log of one vendor: domain events with time and actor, newest first' })
   domainLog(@Param('id') id: string, @Query() q: PageQueryDto) { const p = pageArgs(q); return this.log.forVendor(id, p.page, p.pageSize); }
+
+  @Get('vendors/:id/subdomain-log')
+  @ApiOperation({ summary: 'The subdomain log of one vendor: only the subdomain events, with time and actor, newest first' })
+  subdomainLog(@Param('id') id: string, @Query() q: PageQueryDto) { const p = pageArgs(q); return this.log.subdomainsForVendor(id, p.page, p.pageSize); }
 }

@@ -184,7 +184,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // 5.13b: act on behalf and the onboarding queue (the stage file's Website Developer and Customer Support roles do not exist: OPERATIONS and SUPER_ADMIN; MARKETING never)
   'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
   // 5.6c: own-domain automation and the per-vendor domain log (owner answer Q12 names Support; that role does not exist here: OPERATIONS and SUPER_ADMIN, MARKETING denied)
-  'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER,
+  'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subdomain-log': OPS_AND_SUPER,
   // 5.6d: domain sales and identity checks (MARKETING denied on all: personal data and money; approving or rejecting a price is SUPER_ADMIN only)
   'GET /v3/admin/domain-orders': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/register': OPS_AND_SUPER, 'GET /v3/admin/domain-margins': OPS_AND_SUPER, 'POST /v3/admin/domain-margins': OPS_AND_SUPER,
   'POST /v3/admin/domain-margins/:id/approve': SUPER_ONLY, 'POST /v3/admin/domain-margins/:id/reject': SUPER_ONLY, 'POST /v3/admin/registrar/recover': OPS_AND_SUPER, 'POST /v3/admin/registrar/reconcile': OPS_AND_SUPER, 'GET /v3/admin/registrar/runs': OPS_AND_SUPER,

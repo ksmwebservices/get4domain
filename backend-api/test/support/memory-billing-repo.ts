@@ -53,6 +53,8 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   async expireStale(now: Date) { let n = 0; for (const o of this.orders.values()) if ((o.status === 'CREATED' || o.status === 'PENDING_PAYMENT') && o.expiresAt < now) { o.status = 'EXPIRED'; n++; } return n; }
   async listInvoicesForVendor(v: string, skip: number, take: number) { const all = this.invoices.filter((i) => i.vendorId === v); return { items: all.slice(skip, skip + take).map((i) => ({ ...i })), total: all.length }; }
 
+  async getInvoiceForVendor(v: string, id: string) { const i = this.invoices.find((x) => x.vendorId === v && x.id === id); return i ? { ...i } : null; }
+
   async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }) {
     const ex = this.events.get(d.providerEventId); if (ex) return { created: false, row: { ...ex } };
     const row: EventRow = { id: this.id('evt'), provider: 'razorpay', providerEventId: d.providerEventId, type: d.type, payloadRedacted: d.payloadRedacted, signatureValid: d.signatureValid, orderId: d.orderId, processedAt: null, result: null, createdAt: this.clock() };
