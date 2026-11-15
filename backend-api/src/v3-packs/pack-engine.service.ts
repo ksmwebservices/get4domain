@@ -2,7 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { ActivityService } from '../v3-activity/activity.service';
 import { KeyedQueue } from '../common/keyed-queue';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
-import { capabilityAnswer, CapabilityAnswer, NavInput, NavTab, NavTabDef, resolveNav, tabAccess, TabAccess } from './core/nav-core';
+import { capabilityAnswer, CapabilityAnswer, NavInput, NavTab, NavTabDef, resolveNav, tabAccess, tabAccessOf, TabAccess } from './core/nav-core';
 import { checkPackConfig, checkTab, isTier, TabInput, Tier, TIERS } from './core/pack-core';
 import { packError } from './pack.errors';
 import {
@@ -132,6 +132,12 @@ export class PackEngineService {
   async access(vendorId: string, tabKey: string): Promise<TabAccess> {
     const n = await this.navigation(vendorId);
     return tabAccess(n.mode, n.tabs, tabKey);
+  }
+
+  /** Like access(), for the tab of one owner (a pack, capability or add-on key); the two never collide on a shared tab key. */
+  async accessOf(vendorId: string, ownerKey: string, tabKey: string): Promise<TabAccess> {
+    const n = await this.navigation(vendorId);
+    return tabAccessOf(n.mode, n.tabs, ownerKey, tabKey);
   }
 
   // ── add-on packs a vendor can see (Amendment 13 V3A, B10) ────────────────────────────────────────

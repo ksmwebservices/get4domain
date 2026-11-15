@@ -99,6 +99,17 @@ export function tabAccess(mode: NavInput['mode'], nav: readonly NavTab[], key: s
   return t.state === 'ACTIVE' ? { allowed: true } : { allowed: false, state: t.state, reason: t.reason, needsTier: t.needsTier };
 }
 
+/**
+ * The same answer for ONE tab named by its owner too. Tab keys repeat across scopes (the Clinic pack and the Appointments capability both have an "appointments" tab, and two packs have "billing"),
+ * so a route that names the owner (/v3/me/packs/:packKey/tabs/:tabKey/records) must not be answered by whichever tab comes first. A COMMON tab is named with the owner COMMON.
+ */
+export function tabAccessOf(mode: NavInput['mode'], nav: readonly NavTab[], ownerKey: string, key: string): TabAccess {
+  if (mode === 'LEGACY') return { allowed: true };
+  const t = nav.find((x) => x.key === key && x.ownerKey === ownerKey);
+  if (!t) return { allowed: false, state: 'UNKNOWN', reason: null, needsTier: null };
+  return t.state === 'ACTIVE' ? { allowed: true } : { allowed: false, state: t.state, reason: t.reason, needsTier: t.needsTier };
+}
+
 export type CapabilityAnswer =
   | { ok: true }
   | { ok: false; code: 'NEEDS_TIER'; needsTier: Tier | null }

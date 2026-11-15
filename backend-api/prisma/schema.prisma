@@ -118,6 +118,7 @@ model Vendor {
   v3VendorPack V3VendorPack?
   v3VendorCapabilities V3VendorCapability[]
   v3VendorPackAddons V3VendorPackAddon[]
+  v3PackRecords V3PackRecord[]
   v3PlanPauses V3PlanPause[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
@@ -7834,4 +7835,54 @@ model V3SeoUtmDaily {
   @@index([day])
   @@index([keywordKey])
   @@map("g4d_seo_utm_daily")
+}
+
+// ── Wave 2 Part A: pack records (a generic, schema-driven record store per vendor per pack tab) ───────────────────────────────────────────────────────
+
+/// Platform data (staff-editable, no vendor id): one row per field of a pack tab's record form. ownerKey is the tab's owner (a pack, capability or add-on key), tabKey the tab. type is one of
+/// text, longtext, number, money, date, datetime, select, multiselect, bool, phone, email, url, image, status. money is stored in minor units and never GST-inclusive.
+model V3PackTabField {
+  id               String   @id @default(cuid())
+  ownerKey         String
+  tabKey           String
+  fieldKey         String
+  label            String
+  type             String
+  required         Boolean  @default(false)
+  options          Json     @default("[]")
+  sortOrder        Int      @default(0)
+  listColumn       Boolean  @default(false)
+  searchable       Boolean  @default(false)
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([ownerKey, tabKey, fieldKey])
+  @@index([ownerKey, tabKey, sortOrder])
+  @@map("g4d_pack_tab_fields")
+}
+
+/// Tenant data: one record of a vendor's pack tab. data is validated against the tab's fields before every write. Soft delete only (deletedAt); status is a fixed set (OPEN, IN_PROGRESS, DONE, CANCELLED).
+model V3PackRecord {
+  id            String    @id @default(cuid())
+  vendorId      String
+  packKey       String
+  tabKey        String
+  data          Json      @default("{}")
+  /// the searchable fields joined and lower-cased, so a search is one indexed column
+  searchText    String    @default("")
+  status        String    @default("OPEN")
+  createdByType String
+  createdById   String?
+  updatedById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, packKey, tabKey, deletedAt, createdAt])
+  @@index([vendorId, packKey, tabKey, status])
+  @@map("g4d_pack_records")
 }
