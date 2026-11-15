@@ -7802,6 +7802,8 @@ model V3SeoKeywordTarget {
   h1Override          String?
   notes               String?
   source              String   @default("STAFF") // STAFF (typed or CSV) | PLAN (the generated keyword plan, imported)
+  volume              Int? // average monthly searches, from an imported Keyword Planner CSV only; null = unknown
+  competition         String? // LOW | MEDIUM | HIGH, from the same CSV only
   createdByStaffId    String?
   updatedByStaffId    String?
   createdAt           DateTime @default(now())
@@ -7810,6 +7812,7 @@ model V3SeoKeywordTarget {
   @@unique([keyword, path], map: "g4d_seo_keyword_targets_key")
   @@index([path, status])
   @@index([status])
+  @@index([volume])
   @@map("g4d_seo_keyword_targets")
 }
 

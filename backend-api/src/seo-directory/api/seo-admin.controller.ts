@@ -6,10 +6,11 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { DEFAULT_SEO_TEMPLATES, SEO_PAGE_TYPES } from '../core/default-templates';
 import { SEO_PLACEHOLDERS } from '../core/template-engine';
-import { DEFAULT_SEO_CRAWLERS } from '../settings/seo-settings';
+import { DEFAULT_SEO_CRAWLERS, DEFAULT_SEO_MODIFIERS } from '../settings/seo-settings';
 import { SeoKeywordService } from '../keywords/seo-keyword.service';
 import { SeoSitemapService } from '../sitemaps/seo-sitemap.service';
 import { SeoSettingsService } from '../settings/seo-settings.service';
+import { ModifiersUpdateDto } from './dto/seo-targets.dto';
 import { CrawlersUpdateDto, KeywordListDto, KeywordUpdateDto, TemplatesUpdateDto, VendorSitesQueryDto } from './dto/seo-admin.dto';
 
 /**
@@ -52,4 +53,10 @@ export class SeoAdminController {
 
   @Get('vendor-sites') @ApiOperation({ summary: 'Live, indexable vendor subdomain home URLs, for monitoring (staff only; each site keeps its own sitemap)' })
   async vendorSites(@Query() q: VendorSitesQueryDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.sitemaps.vendorSites(skip, take); return paged(r.items, r.total, page, pageSize); }
+
+  @Get('modifiers') @ApiOperation({ summary: 'The keyword research modifiers (best, top, near me, 24 hours, in {locality}, services) and the defaults. Research only: never written into a page' })
+  async modifiers() { return { modifiers: await this.settings.modifiers(), defaults: DEFAULT_SEO_MODIFIERS }; }
+
+  @Put('modifiers') @HttpCode(200) @ApiOperation({ summary: 'Replace the list of research modifiers (checked: lower case words, only the {locality} placeholder, no price)' })
+  async saveModifiers(@Body() dto: ModifiersUpdateDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return { modifiers: await this.settings.saveModifiers(dto.modifiers, actorOf(u, req)) }; }
 }

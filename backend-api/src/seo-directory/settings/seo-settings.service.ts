@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { SeoTemplates } from '../core/default-templates';
 import { SeoAudit } from '../seo-audit';
 import { seoError } from '../seo-directory.errors';
-import { resolveSeoCrawlers, resolveSeoTemplates, SEO_CRAWLERS_KEY, SEO_TEMPLATES_KEY, seoCrawlersProblem, seoTemplatesProblem } from './seo-settings';
+import { DEFAULT_SEO_MODIFIERS, resolveSeoCrawlers, resolveSeoModifiers, resolveSeoTemplates, SEO_CRAWLERS_KEY, SEO_MODIFIERS_KEY, SEO_TEMPLATES_KEY, seoCrawlersProblem, seoModifiersProblem, seoTemplatesProblem } from './seo-settings';
 
 const TTL_MS = 30_000;
 
@@ -56,4 +56,22 @@ export class SeoSettingsService {
     await this.audit.record(actor, 'seo.crawlers.update', 'seo_crawlers', SEO_CRAWLERS_KEY, before, value);
     return this.crawlers();
   }
+
+  /** The research modifiers (defaults when staff never changed them). Research only: never written into a page. */
+  async modifiers(): Promise<string[]> {
+    const row = await this.prisma.v3PlanSetting.findUnique({ where: { key: SEO_MODIFIERS_KEY } });
+    return resolveSeoModifiers(row?.valueJson);
+  }
+
+  async saveModifiers(value: unknown, actor: Actor): Promise<string[]> {
+    const problem = seoModifiersProblem(value);
+    if (problem) throw new BadRequestException(seoError('SEO_INVALID', `modifiers: ${problem}`));
+    const before = await this.modifiers();
+    const json = value as Prisma.InputJsonValue;
+    await this.prisma.v3PlanSetting.upsert({ where: { key: SEO_MODIFIERS_KEY }, create: { key: SEO_MODIFIERS_KEY, valueJson: json, description: 'Keyword research modifiers (research only, never written into a page)' }, update: { valueJson: json } });
+    await this.audit.record(actor, 'seo.modifiers.update', 'seo_modifiers', SEO_MODIFIERS_KEY, before, value);
+    return this.modifiers();
+  }
+
+  readonly defaultModifiers: readonly string[] = DEFAULT_SEO_MODIFIERS;
 }

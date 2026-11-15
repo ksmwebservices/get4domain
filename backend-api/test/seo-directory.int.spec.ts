@@ -37,7 +37,7 @@ describe('the SEO block on staging', () => {
     try {
       step = 'settings and app'; prisma = newPrisma();
       // set BEFORE the app serves anything, so no cache holds the old value: the directory pages are indexable for this run, the thin-page minimum is the default 3
-      for (const k of ['seoPageTemplates', 'seoCrawlerAgents']) await remember(k);   // the templates and crawler tests change these through the staff routes
+      for (const k of ['seoPageTemplates', 'seoCrawlerAgents', 'seoKeywordModifiers']) await remember(k);   // the templates and crawler tests change these through the staff routes
       await setSetting('directoryPagesIndexable', true); await setSetting('directoryThinPageMinBusinesses', 3);
       app = await buildProvisioningTestApp({ includeDirectoryApi: true, includeSeoApi: true, includeSiteApi: true, b3: true });
       step = 'staff'; sup = await seedStaff(prisma, 'seosup', RUN_ID, 'SUPER_ADMIN'); adm = await seedStaff(prisma, 'seoadm', RUN_ID, 'ADMIN'); mkt = await seedStaff(prisma, 'seomkt', RUN_ID, 'MARKETING'); ops = await seedStaff(prisma, 'seoops', RUN_ID, 'OPERATIONS');
@@ -89,6 +89,15 @@ describe('the SEO block on staging', () => {
     await prisma.v3SeoKeywordTarget.delete({ where: { id: ok.id } });
   });
 
+  it('the volume migration objects exist: the nullable columns, the checks that refuse a negative volume or an unknown competition, and the volume index', async () => {
+    const cols = await prisma.$queryRaw<Array<{ column_name: string; is_nullable: string }>>`SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = 'g4d_seo_keyword_targets' AND column_name IN ('volume', 'competition')`;
+    expect(cols.map((c) => [c.column_name, c.is_nullable]).sort()).toEqual([['competition', 'YES'], ['volume', 'YES']]);
+    const idx = await prisma.$queryRaw<Array<{ indexname: string }>>`SELECT indexname FROM pg_indexes WHERE indexname = 'g4d_seo_keyword_targets_volume_idx'`; expect(idx).toHaveLength(1);
+    const row = (volume: number | null, competition: string | null, p: string) => prisma.v3SeoKeywordTarget.create({ data: { keyword: `v3t ${tag}`, path: p, pageType: 'city', volume, competition } });
+    await expect(row(-1, null, `/${citySlug}/v1`)).rejects.toThrow(); await expect(row(10, 'EXTREME', `/${citySlug}/v2`)).rejects.toThrow();
+    const ok = await row(1300, 'LOW', `/${citySlug}/v3`); expect(ok.volume).toBe(1300); await prisma.v3SeoKeywordTarget.delete({ where: { id: ok.id } });
+  });
+
   // ─── roles over HTTP ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   it('roles: SALES (MARKETING) reads and builds links but cannot write; OPERATIONS has no access; ADMIN and SUPER_ADMIN write; no token is 401', async () => {
     expect((await get(`${base}/keyword-targets`)).status).toBe(401);
@@ -124,6 +133,32 @@ describe('the SEO block on staging', () => {
     const again = await send('post', `${base}/keyword-targets/import`, sup, { csv, apply: true }); expect(again.body.data).toMatchObject({ applied: false, unchanged: 2 });
     const ex = await get(`${base}/keyword-targets/export.csv`, mkt); expect(ex.status).toBe(200); expect(ex.headers['content-type']).toMatch(/text\/csv/); expect(ex.headers['content-disposition']).toMatch(/attachment/);
     const back = await send('post', `${base}/keyword-targets/import`, sup, { csv: ex.text }); expect(back.body.data.problems).toEqual([]); expect(back.body.data.create).toEqual([]); expect(back.body.data.update).toEqual([]);
+  });
+
+  it('the Keyword Planner import over HTTP: a dry run writes nothing, apply stores the volume on the target, a range is skipped, a stranger is unmatched, SALES cannot import', async () => {
+    const kw = `v3t ${tag} plumbers`; const csv = `Keyword Stats
+Keyword,Avg. monthly searches,Competition
+${kw},"1,300",Medium
+v3t ${tag} range,1K - 10K,Low
+v3t ${tag} stranger,50,Low
+`;
+    expect((await send('post', `${base}/keyword-targets/import-volumes`, mkt, { csv })).status).toBe(403);
+    const dry = await send('post', `${base}/keyword-targets/import-volumes`, sup, { csv }); expect(dry.status).toBe(200);
+    expect(dry.body.data).toMatchObject({ applied: false, updated: 1, skippedCount: 1, unmatchedCount: 1 }); expect((await prisma.v3SeoKeywordTarget.findFirstOrThrow({ where: { keyword: kw } })).volume).toBeNull();
+    const done = await send('post', `${base}/keyword-targets/import-volumes`, sup, { csv, apply: true }); expect(done.body.data).toMatchObject({ applied: true, updated: 1 });
+    expect(await prisma.v3SeoKeywordTarget.findFirstOrThrow({ where: { keyword: kw } })).toMatchObject({ volume: 1300, competition: 'MEDIUM' });
+    expect((await send('post', `${base}/keyword-targets/import-volumes`, sup, { csv, apply: true })).body.data).toMatchObject({ applied: false, updated: 0, unchanged: 1 });
+    const sorted = await get(`${base}/keyword-targets?sort=volume`, mkt); expect(sorted.status).toBe(200); expect(sorted.body.data.items[0].volume).toBe(1300);
+  });
+
+  it('the research list: counts for SALES, a Planner upload file, the modifiers setting (ADMIN may change it, a ranking word is allowed there), and the page text never gains a modifier', async () => {
+    const counts = await get(`${base}/keyword-plan/research`, mkt); expect(counts.status).toBe(200); expect(counts.body.data.total).toBeGreaterThan(0); expect(counts.body.data.counts.place).toBeGreaterThan(0);
+    const up = await get(`${base}/keyword-plan/planner.csv`, mkt); expect(up.status).toBe(200); expect(up.text.split(String.fromCharCode(10))[0]).toBe('Keyword'); expect(up.text).toContain(`${pluralSlug.replace(/\d/g, '')} in `);
+    expect((await get(`${base}/keyword-plan/research`, ops)).status).toBe(403);
+    expect((await send('put', `${base}/modifiers`, mkt, { modifiers: ['best'] })).status).toBe(403);
+    expect((await send('put', `${base}/modifiers`, adm, { modifiers: ['best', 'near me', 'in {locality}'] })).status).toBe(200);
+    expect((await send('put', `${base}/modifiers`, adm, { modifiers: ['{city} plumbers'] })).status).toBe(400);
+    const page = await get(`/v3/directory/pages/resolve?path=${encodeURIComponent(cityCatPath())}`); expect(page.body.data.meta.title).not.toMatch(/best|near me/i);
   });
 
   // ─── override reaches the page model and the click-out ───────────────────────────────────────────────────────────────────────────────────────
@@ -180,7 +215,7 @@ describe('the SEO block on staging', () => {
     const plan = await get(`${base}/keyword-plan`, mkt); expect(plan.status).toBe(200);
     const mine = (plan.body.data.rows as Array<{ path: string; keyword: string; status: string; source: string }>).filter((r) => r.path.startsWith(`/${citySlug}`));
     expect(mine.length).toBeGreaterThanOrEqual(2); expect(mine.every((r) => r.status === 'PLANNED' && r.source === 'PLAN')).toBe(true);
-    const csv = await get(`${base}/keyword-plan/export.csv`, mkt); expect(csv.status).toBe(200); expect(csv.headers['content-type']).toMatch(/text\/csv/); expect(csv.text.split('\n')[0]).toBe('keyword,path,status,priority,title,description,h1,notes,source');
+    const csv = await get(`${base}/keyword-plan/export.csv`, mkt); expect(csv.status).toBe(200); expect(csv.headers['content-type']).toMatch(/text\/csv/); expect(csv.text.split('\n')[0]).toBe('keyword,path,status,priority,title,description,h1,notes,source,volume,competition');
   });
 
   // ─── backlink block and badge ────────────────────────────────────────────────────────────────────────────────────────────────────────────────

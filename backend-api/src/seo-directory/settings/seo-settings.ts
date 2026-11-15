@@ -69,3 +69,26 @@ export function seoCrawlersProblem(value: unknown): string | null {
 }
 /** The stored list when it passes validation, else the default list (a bad stored value is ignored whole). */
 export const resolveSeoCrawlers = (stored: unknown): string[] => (stored !== undefined && stored !== null && seoCrawlersProblem(stored) === null ? [...(stored as string[])] : [...DEFAULT_SEO_CRAWLERS]);
+
+// ─── research modifiers (prompt 8d) ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+export const SEO_MODIFIERS_KEY = 'seoKeywordModifiers';
+export const MAX_MODIFIERS = 20;
+/** The words and phrases the keyword research combines with a keyword and a place. RESEARCH ONLY: they are never written into a page title or description. "best" is allowed here and nowhere else. */
+export const DEFAULT_SEO_MODIFIERS: readonly string[] = ['best', 'top', 'near me', '24 hours', 'in {locality}', 'services'];
+const MODIFIER = /^[a-z0-9][a-z0-9 '&{}-]{0,39}$/;
+
+export function seoModifiersProblem(value: unknown): string | null {
+  if (!Array.isArray(value) || value.length > MAX_MODIFIERS) return `must be a list of at most ${MAX_MODIFIERS} modifiers`;
+  const seen = new Set<string>();
+  for (const v of value) {
+    if (typeof v !== 'string' || !MODIFIER.test(v)) return `"${String(v).slice(0, 40)}" is not a modifier (lower case letters, digits, spaces, hyphen, ampersand, apostrophe; up to 40)`;
+    const braces = v.match(/\{[^}]*\}|[{}]/g) ?? [];
+    if (braces.some((b) => b !== '{locality}')) return `"${v}": the only placeholder allowed is {locality}`;
+    if (isUnsafeSeoText(v)) return `"${v}": a modifier cannot carry a price or a retired product name`;
+    if (seen.has(v)) return `"${v}" is listed twice`;
+    seen.add(v);
+  }
+  return null;
+}
+/** The stored list when it passes validation (an empty list is valid: no modifiers), else the defaults; a bad stored value is ignored whole. */
+export const resolveSeoModifiers = (stored: unknown): string[] => (stored !== undefined && stored !== null && seoModifiersProblem(stored) === null ? [...(stored as string[])] : [...DEFAULT_SEO_MODIFIERS]);

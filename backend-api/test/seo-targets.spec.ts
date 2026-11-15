@@ -82,7 +82,7 @@ describe('checking one target', () => {
   const ok = { keyword: 'Plumbers  in Chennai', path: '/chennai/plumbers' };
   it('takes the defaults: PLANNED, priority 2, source STAFF, no texts', () => {
     const r = checkTarget(ok); expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value).toEqual({ keyword: 'plumbers in chennai', path: '/chennai/plumbers', pageType: 'cityCategory', status: 'PLANNED', priority: 2, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'STAFF' });
+    if (r.ok) expect(r.value).toEqual({ keyword: 'plumbers in chennai', path: '/chennai/plumbers', pageType: 'cityCategory', status: 'PLANNED', priority: 2, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'STAFF', volume: null, competition: null });
   });
   it.each([
     [{ ...ok, keyword: '' }, /keyword/], [{ ...ok, keyword: 'plumbers <b>' }, /keyword/], [{ ...ok, keyword: 'plumbers from ₹499' }, /keyword/],
@@ -112,7 +112,7 @@ describe('CSV import', () => {
   const head = 'keyword,path,status,priority,title,description,h1,notes,source\n';
   const none = new Map<string, TargetRow>();
   const existing = (rows: TargetRow[]) => new Map(rows.map((r) => [targetKey(r.keyword, r.path), r]));
-  const row = (o: Partial<TargetRow> = {}): TargetRow => ({ id: 't1', keyword: 'plumbers in chennai', path: '/chennai/plumbers', pageType: 'cityCategory', status: 'PLANNED', priority: 2, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'STAFF', createdAt: new Date(0), updatedAt: new Date(0), ...o });
+  const row = (o: Partial<TargetRow> = {}): TargetRow => ({ id: 't1', keyword: 'plumbers in chennai', path: '/chennai/plumbers', pageType: 'cityCategory', status: 'PLANNED', priority: 2, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'STAFF', volume: null, competition: null, createdAt: new Date(0), updatedAt: new Date(0), ...o });
 
   it('creates rows, and the minimum file has only keyword and path', () => {
     const p = planTargetImport('keyword,path\nPlumbers in Chennai,/chennai/plumbers\nplumber in adyar,/chennai/plumbers-in-adyar\n', none);
@@ -238,7 +238,7 @@ describe('the keyword plan generator', () => {
   it('stops at the cap and says so', async () => { const plan = generateKeywordPlan(await listingOf(stats), { max: 4 }); expect(plan.rows).toHaveLength(4); expect(plan.truncated).toBe(true); });
   it('the exported plan imports as PLANNED rows with no problems, and importing it twice changes nothing', async () => {
     const { svc, store } = service(await listingOf(stats));
-    const plan = await svc.plan(); expect(plan.csv.split('\n')[0]).toBe('keyword,path,status,priority,title,description,h1,notes,source');
+    const plan = await svc.plan(); expect(plan.csv.split('\n')[0]).toBe('keyword,path,status,priority,title,description,h1,notes,source,volume,competition');
     const first = await svc.importCsv(plan.csv, { apply: true }, actor); expect(first.problems).toEqual([]); expect(store.rows.size).toBe(plan.rows.length);
     expect([...store.rows.values()].every((r) => r.status === 'PLANNED' && r.source === 'PLAN')).toBe(true);
     const second = await svc.importCsv(plan.csv, { apply: true }, actor); expect(second.applied).toBe(false); expect(second.unchanged).toBe(plan.rows.length);

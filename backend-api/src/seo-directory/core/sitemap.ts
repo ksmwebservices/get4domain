@@ -12,7 +12,7 @@ export const SITEMAP_CHUNK = 10_000;
 export interface Stat { locationId: string | null; categoryId: string; pincode: string | null; count: number; lastmod: Date }
 export interface SitemapEntry { loc: string; lastmod: Date }
 /** Where a listing page sits, so the keyword plan can name it without parsing the path again. Only the pieces that apply to the page type are set. */
-export interface ListingContext { type: 'state' | 'city' | 'category' | 'cityCategory' | 'localityCategory' | 'pincodeCategory'; cityName?: string; localityName?: string; cat?: CatInfo; cityId?: string; localityId?: string; catId?: string }
+export interface ListingContext { type: 'state' | 'city' | 'category' | 'cityCategory' | 'localityCategory' | 'pincodeCategory'; cityName?: string; localityName?: string; cat?: CatInfo; cityId?: string; localityId?: string; catId?: string; pincode?: string }
 export interface ListingPath { path: string; lastmod: Date; ctx: ListingContext; count: number }
 
 const by = <T extends { id: string }>(rows: readonly T[]): Map<string, T> => new Map(rows.map((r) => [r.id, r]));
@@ -51,7 +51,7 @@ export function enumerateListingPaths(places: Places, stats: readonly Stat[], mi
     }
     for (const c of catChain) {
       if (catOwner.get(c.row.slug) === c.row.id) add(`k|${c.row.id}`, buildPath({ type: 'category', category: c.row.slug, page: 1 }), s.count, s.lastmod, { type: 'category', cat: c, catId: c.row.id });
-      if (s.pincode && catOwner.get(c.row.slug) === c.row.id) add(`p|${s.pincode}|${c.row.id}`, buildPath({ type: 'pincodeCategory', pincode: s.pincode, category: c.row.slug, page: 1 }), s.count, s.lastmod, { type: 'pincodeCategory', cat: c });
+      if (s.pincode && catOwner.get(c.row.slug) === c.row.id) add(`p|${s.pincode}|${c.row.id}`, buildPath({ type: 'pincodeCategory', pincode: s.pincode, category: c.row.slug, page: 1 }), s.count, s.lastmod, { type: 'pincodeCategory', cat: c, catId: c.row.id, pincode: s.pincode });
     }
   }
   return [...acc.values()].filter((r) => r.n >= min).map((r) => ({ path: r.path, lastmod: r.last, ctx: r.ctx, count: r.n })).sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));

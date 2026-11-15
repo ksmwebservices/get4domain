@@ -14,7 +14,7 @@ import { SeoKeywordTargetStore, TargetListQuery } from './seo-keyword-target.sto
 const OVERRIDE_TTL_MS = 60_000;
 const OVERRIDE_CACHE_MAX = 5000;
 const bad = (m: string): BadRequestException => new BadRequestException(seoError('SEO_INVALID', m));
-const auditView = (r: TargetRow | null): unknown => (r ? { keyword: r.keyword, path: r.path, status: r.status, priority: r.priority, titleOverride: r.titleOverride, descriptionOverride: r.descriptionOverride, h1Override: r.h1Override } : null);
+const auditView = (r: TargetRow | null): unknown => (r ? { keyword: r.keyword, path: r.path, status: r.status, priority: r.priority, titleOverride: r.titleOverride, descriptionOverride: r.descriptionOverride, h1Override: r.h1Override, volume: r.volume, competition: r.competition } : null);
 
 /** The page service reads staff overrides here: the ACTIVE targets of the exact page, the best one wins. Cached for a minute (and dropped by every write) so a page render adds no query. */
 @Injectable()
@@ -67,11 +67,11 @@ export class SeoKeywordTargetService {
   async update(id: string, raw: Record<string, unknown>, actor: Actor): Promise<TargetRow> {
     const before = await this.get(id);
     for (const k of ['keyword', 'path'] as const) if (raw[k] !== undefined && String(raw[k]) !== before[k]) throw bad(`${k}: cannot change; create a new target instead`);
-    const merged: Record<string, unknown> = { keyword: before.keyword, path: before.path, status: before.status, priority: before.priority, titleOverride: before.titleOverride, descriptionOverride: before.descriptionOverride, h1Override: before.h1Override, notes: before.notes, source: before.source };
-    for (const k of ['status', 'priority', 'titleOverride', 'descriptionOverride', 'h1Override', 'notes'] as const) if (raw[k] !== undefined) merged[k] = raw[k];
+    const merged: Record<string, unknown> = { keyword: before.keyword, path: before.path, status: before.status, priority: before.priority, titleOverride: before.titleOverride, descriptionOverride: before.descriptionOverride, h1Override: before.h1Override, notes: before.notes, source: before.source, volume: before.volume, competition: before.competition };
+    for (const k of ['status', 'priority', 'titleOverride', 'descriptionOverride', 'h1Override', 'notes', 'volume', 'competition'] as const) if (raw[k] !== undefined) merged[k] = raw[k];
     const c = checkTarget(merged);
     if (!c.ok) throw bad(c.problem);
-    const patch: Partial<TargetInput> = { status: c.value.status, priority: c.value.priority, titleOverride: c.value.titleOverride, descriptionOverride: c.value.descriptionOverride, h1Override: c.value.h1Override, notes: c.value.notes };
+    const patch: Partial<TargetInput> = { status: c.value.status, priority: c.value.priority, titleOverride: c.value.titleOverride, descriptionOverride: c.value.descriptionOverride, h1Override: c.value.h1Override, notes: c.value.notes, volume: c.value.volume, competition: c.value.competition };
     const after = await this.store.update(before.id, patch, actor.id);
     if (!after) throw new NotFoundException(seoError('SEO_NOT_FOUND', 'That keyword target does not exist.'));
     await this.audit.record(actor, 'seo.keyword_target.update', 'seo_keyword_target', after.id, auditView(before), auditView(after));

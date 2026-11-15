@@ -29,7 +29,7 @@ export function generateKeywordPlan(listing: readonly ListingPath[], o: PlanOpti
       if (seen.has(key)) continue;
       if (rows.length >= max) { truncated = true; break; }
       seen.add(key);
-      rows.push({ keyword, path: l.path, pageType: l.ctx.type, status: 'PLANNED', priority, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'PLAN' });
+      rows.push({ keyword, path: l.path, pageType: l.ctx.type, status: 'PLANNED', priority, titleOverride: null, descriptionOverride: null, h1Override: null, notes: null, source: 'PLAN', volume: null, competition: null });
     }
     if (truncated) break;
   }

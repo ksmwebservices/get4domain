@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsArray } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 /** Field limits here are the outer bound; the exact rules (page path, status, priority, text safety) are checked by checkTarget and answered as SEO_INVALID with the reason. */
 export class TargetListDto {
@@ -8,6 +9,8 @@ export class TargetListDto {
   @IsOptional() @IsString() @MaxLength(80) q?: string;
   @IsOptional() @IsString() @MaxLength(10) status?: string;
   @IsOptional() @IsString() @MaxLength(300) path?: string;
+  /** volume = most searched first */
+  @IsOptional() @IsIn(['priority', 'volume']) sort?: 'priority' | 'volume';
 }
 
 export class TargetCreateDto {
@@ -19,6 +22,8 @@ export class TargetCreateDto {
   @IsOptional() @IsString() @MaxLength(400) descriptionOverride?: string;
   @IsOptional() @IsString() @MaxLength(200) h1Override?: string;
   @IsOptional() @IsString() @MaxLength(400) notes?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(2_000_000_000) volume?: number;
+  @IsOptional() @IsString() @MaxLength(10) competition?: string;
 }
 
 export class TargetUpdateDto {
@@ -28,6 +33,8 @@ export class TargetUpdateDto {
   @IsOptional() @IsString() @MaxLength(400) descriptionOverride?: string;
   @IsOptional() @IsString() @MaxLength(200) h1Override?: string;
   @IsOptional() @IsString() @MaxLength(400) notes?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(2_000_000_000) volume?: number;
+  @IsOptional() @IsString() @MaxLength(10) competition?: string;
 }
 
 export class TargetImportDto {
@@ -61,4 +68,16 @@ export class PageVisitDto {
   @IsOptional() @IsString() @MaxLength(60) utm_medium?: string;
   @IsOptional() @IsString() @MaxLength(60) utm_campaign?: string;
   @IsOptional() @IsString() @MaxLength(40) kw?: string;
+}
+
+export class VolumeImportDto {
+  /** a Keyword Planner export saved as CSV (comma separated, UTF-8): a keyword column, a monthly searches column and optionally competition */
+  @IsString() @MaxLength(8_000_000) csv!: string;
+  /** false or absent = a DRY RUN that writes nothing */
+  @IsOptional() @IsBoolean() apply?: boolean;
+}
+
+export class ModifiersUpdateDto {
+  /** research modifiers such as "best", "near me", "24 hours", "in {locality}", "services"; checked by seoModifiersProblem */
+  @IsArray() @IsString({ each: true }) @MaxLength(40, { each: true }) modifiers!: string[];
 }

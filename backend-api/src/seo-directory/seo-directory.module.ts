@@ -15,6 +15,7 @@ import { SeoVendorDirectoryFacts } from './backlinks/seo-vendor-facts.service';
 import { VendorDirectoryFactsPort } from '../site-publish/seo/vendor-directory-facts';
 import { PrismaSeoUtmStore, SeoUtmStore } from './campaigns/seo-utm.store';
 import { SeoUtmService } from './campaigns/seo-utm.service';
+import { SeoKeywordResearchService } from './keywords/seo-keyword-research.service';
 import { DbPageOverrides, SeoKeywordTargetService } from './keywords/seo-keyword-target.service';
 import { PrismaSeoKeywordTargetStore, SeoKeywordTargetStore } from './keywords/seo-keyword-target.store';
 import { SeoKeywordService } from './keywords/seo-keyword.service';
@@ -35,11 +36,11 @@ export const SEO_PROVIDERS: Provider[] = [
   DbPageOverrides,
   { provide: SeoPageOverrides, useExisting: DbPageOverrides },   // slice 5: staff overrides of ACTIVE keyword targets
   { provide: SeoClickStore, useClass: PrismaSeoClickStore },
-  SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService, SeoSitemapService, SeoKeywordTargetService, SeoUtmService, SeoBacklinkService,
+  SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService, SeoSitemapService, SeoKeywordTargetService, SeoKeywordResearchService, SeoUtmService, SeoBacklinkService,
   { provide: VendorDirectoryFactsPort, useClass: SeoVendorDirectoryFacts },   // read by the site build and the staff SEO report
 ];
 export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, SeoTargetsAdminController, DirectoryPagesController, ClickOutController, SitemapController, SeoPublicController, SeoMeController];
-export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService, SeoSitemapService, SeoKeywordTargetStore, SeoKeywordTargetService, SeoUtmStore, SeoUtmService, SeoBacklinkService, DbPageOverrides];
+export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService, SeoSitemapService, SeoKeywordTargetStore, SeoKeywordTargetService, SeoKeywordResearchService, SeoUtmStore, SeoUtmService, SeoBacklinkService, DbPageOverrides];
 
 /**
  * The SEO block (docs/v3/V3_SEO_DIRECTORY.md): keyword sets per category, page templates as data, directory page models, the click-out, sitemaps, keyword targets, the keyword plan, UTM capture, the backlink block and the badge.
