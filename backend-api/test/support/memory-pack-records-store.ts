@@ -6,9 +6,11 @@ import { buildFieldSeed, SeedField } from '../../src/v3-pack-records/seed/tab-fi
 export class MemoryFieldStore extends PackTabFieldStore {
   rows = new Map<string, SeedField>();
   async listFields(ownerKey: string, tabKey: string): Promise<FieldDef[]> {
-    return [...this.rows.values()].filter((r) => r.ownerKey === ownerKey && r.tabKey === tabKey).sort((a, b) => a.sortOrder - b.sortOrder)
+    return [...this.rows.values()].filter((r) => r.ownerKey === ownerKey && r.tabKey === tabKey && (r as { active?: boolean }).active !== false).sort((a, b) => a.sortOrder - b.sortOrder)
       .map((r) => ({ key: r.fieldKey, label: r.label, type: r.type, required: r.required, options: r.options, sortOrder: r.sortOrder, listColumn: r.listColumn, searchable: r.searchable }));
   }
+  async listForTab(ownerKey: string, tabKey: string) { return [...this.rows.values()].filter((r) => r.ownerKey === ownerKey && r.tabKey === tabKey).sort((a, b) => a.sortOrder - b.sortOrder).map((r) => ({ key: r.fieldKey, label: r.label, type: r.type, required: r.required, options: r.options, sortOrder: r.sortOrder, listColumn: r.listColumn, searchable: r.searchable, active: (r as { active?: boolean }).active !== false })); }
+  async upsertField(row: SeedField & { active: boolean }) { this.rows.set(`${row.ownerKey}|${row.tabKey}|${row.fieldKey}`, row as never); }
   async listAll(): Promise<Array<{ ownerKey: string; tabKey: string; fieldKey: string }>> { return [...this.rows.values()].map((r) => ({ ownerKey: r.ownerKey, tabKey: r.tabKey, fieldKey: r.fieldKey })); }
   async createFields(rows: SeedField[]): Promise<void> { for (const r of rows) { const k = `${r.ownerKey}|${r.tabKey}|${r.fieldKey}`; if (!this.rows.has(k)) this.rows.set(k, r); } }
 }
@@ -28,6 +30,7 @@ export class MemoryRecordStore extends PackRecordStore {
       && (!q.q || JSON.stringify(r.data).toLowerCase().includes(q.q))).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id));
     return { items: all.slice(q.skip, q.skip + q.take), total: all.length };
   }
+  async countInTab(packKey: string, tabKey: string) { return [...this.rows.values()].filter((r) => r.packKey === packKey && r.tabKey === tabKey).length; }
   async get(vendorId: string, packKey: string, tabKey: string, id: string): Promise<StoredRecord | null> {
     const r = this.rows.get(id); return r && r.vendorId === vendorId && r.packKey === packKey && r.tabKey === tabKey ? r : null;
   }

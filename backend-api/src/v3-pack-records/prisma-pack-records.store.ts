@@ -16,6 +16,14 @@ export class PrismaPackTabFieldStore extends PackTabFieldStore {
     const rows = await this.prisma.v3PackTabField.findMany({ where: { ownerKey, tabKey, active: true }, orderBy: [{ sortOrder: 'asc' }, { fieldKey: 'asc' }] });
     return rows.filter((r) => isFieldType(r.type)).map((r) => ({ key: r.fieldKey, label: r.label, type: r.type as FieldDef['type'], required: r.required, options: strings(r.options), sortOrder: r.sortOrder, listColumn: r.listColumn, searchable: r.searchable }));
   }
+  async listForTab(ownerKey: string, tabKey: string): Promise<Array<FieldDef & { active: boolean }>> {
+    const rows = await this.prisma.v3PackTabField.findMany({ where: { ownerKey, tabKey }, orderBy: [{ sortOrder: 'asc' }, { fieldKey: 'asc' }] });
+    return rows.filter((r) => isFieldType(r.type)).map((r) => ({ key: r.fieldKey, label: r.label, type: r.type as FieldDef['type'], required: r.required, options: strings(r.options), sortOrder: r.sortOrder, listColumn: r.listColumn, searchable: r.searchable, active: r.active }));
+  }
+  async upsertField(row: SeedField & { active: boolean }, staffId: string | null): Promise<void> {
+    const data = { label: row.label, type: row.type, required: row.required, options: row.options as Prisma.InputJsonValue, sortOrder: row.sortOrder, listColumn: row.listColumn, searchable: row.searchable, active: row.active, updatedByStaffId: staffId };
+    await this.prisma.v3PackTabField.upsert({ where: { ownerKey_tabKey_fieldKey: { ownerKey: row.ownerKey, tabKey: row.tabKey, fieldKey: row.fieldKey } }, update: data, create: { ownerKey: row.ownerKey, tabKey: row.tabKey, fieldKey: row.fieldKey, ...data } });
+  }
   async listAll(): Promise<Array<{ ownerKey: string; tabKey: string; fieldKey: string }>> {
     return this.prisma.v3PackTabField.findMany({ select: { ownerKey: true, tabKey: true, fieldKey: true } });
   }
@@ -52,6 +60,7 @@ export class PrismaPackRecordStore extends PackRecordStore {
     const r = await this.prisma.v3PackRecord.findFirst({ where: { id, vendorId, packKey, tabKey } });
     return r ? shape(r) : null;
   }
+  async countInTab(packKey: string, tabKey: string): Promise<number> { return this.prisma.v3PackRecord.count({ where: { packKey, tabKey } }); }
   async create(vendorId: string, packKey: string, tabKey: string, row: { data: Record<string, unknown>; searchText: string; status: RecordStatus }, by: WhoWrote): Promise<StoredRecord> {
     return shape(await this.prisma.v3PackRecord.create({
       data: { vendorId, packKey, tabKey, data: row.data as Prisma.InputJsonValue, searchText: row.searchText, status: row.status, createdByType: by.type, createdById: by.id, updatedById: by.id },

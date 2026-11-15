@@ -189,7 +189,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/vendors': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/held-count': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/notes': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/notes': OPS_AND_SUPER,
   'GET /v3/admin/permission-matrix': ALL_STAFF,
   // Wave 2 Part D (C11): every staff role that creates listings on behalf (SALES included) uploads for a listing or keeps a draft upload of their own; SUPPORT has no access
-  'GET /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media/attach': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId': ALL_STAFF,
+  'GET /v3/admin/seeded-sites/:id/media': ALL_STAFF,
+  // Wave 2 Part G: the record fields of a pack tab: read is OPERATIONS and SUPER_ADMIN, edit is SUPER_ADMIN and, by the extension, ADMIN
+  'GET /v3/admin/pack-engine/tab-fields': OPS_AND_SUPER, 'PUT /v3/admin/pack-engine/tab-fields': SUPER_ONLY, 'POST /v3/admin/seeded-sites/:id/media/attach': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId': ALL_STAFF,
   'GET /v3/admin/media/drafts': ALL_STAFF,
   // Wave 2 Part E: every staff role that creates listings on behalf reads a category's profile schema and fills a listing's profile; reading the field sets is OPERATIONS and SUPER_ADMIN; editing them is SUPER_ADMIN and, by the extension, ADMIN
   'GET /v3/admin/seeded-sites/imports/template': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/dry-run': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/apply': ALL_STAFF,
@@ -270,7 +272,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],
