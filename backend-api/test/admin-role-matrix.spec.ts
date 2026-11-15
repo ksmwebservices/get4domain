@@ -153,6 +153,9 @@ const ALL_STAFF_ROUTES = [
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
   'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id',
+  'GET /v3/admin/seeded-sites/:id/media', 'POST /v3/admin/seeded-sites/:id/media', 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId', 'GET /v3/admin/media/drafts', 'POST /v3/admin/media/drafts', 'DELETE /v3/admin/media/drafts/:mediaId',   // Wave 2 D: C11
+  'GET /v3/admin/seeded-sites/imports/template', 'POST /v3/admin/seeded-sites/imports/dry-run', 'POST /v3/admin/seeded-sites/imports/apply',   // Wave 2 Part D: the listing import, every staff role that creates on behalf
+  'GET /v3/admin/categories/:slug/profile-schema', 'GET /v3/admin/seeded-sites/:id/profile', 'PUT /v3/admin/seeded-sites/:id/profile',   // Wave 2 Part E: every staff role that creates on behalf
   'GET /v3/admin/permission-matrix',   // Wave 2 C1: every staff role reads the matrix (SUPPORT through STAFF_ROLE_EXTENSIONS.SUPPORT.allow)
   // Part B (B2): SALES (the MARKETING value) creates on behalf, imports a CSV, follows up and issues the claim link
   'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke',
@@ -178,6 +181,8 @@ const allowed = (user: AuthenticatedUser | undefined, routeKey: string | null): 
 // Part B (B13): pausing and resuming a paid plan is OPERATIONS and SUPER_ADMIN (MARKETING refused; ADMIN inherits OPERATIONS and SUPPORT is refused: see staff-roles.spec.ts)
 const PLAN_PAUSE_ROUTES = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
 SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENGINE_READS, ...PLAN_PAUSE_ROUTES);
+// Wave 2 Part E: reading the profile field sets is OPERATIONS and SUPER_ADMIN, editing them SUPER_ADMIN (ADMIN by STAFF_ROLE_EXTENSIONS.ADMIN.allow)
+SUPER_ONLY_ROUTES.push('PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map'); MARKETING_DENIED.push('GET /v3/admin/profile-fields');
 
 // SEO block: the keyword sets and page templates. The base table says SUPER_ADMIN for the writes and SUPER_ADMIN + MARKETING (SALES) for the reads; ADMIN is added for all five by
 // STAFF_ROLE_EXTENSIONS.ADMIN.allow and OPERATIONS and SUPPORT have no access (tested in seo-keywords.spec.ts).
@@ -189,7 +194,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(366);
+    expect(oracle).toHaveLength(381);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

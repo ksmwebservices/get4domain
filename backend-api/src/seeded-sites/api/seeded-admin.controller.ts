@@ -1,4 +1,6 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+import { ProfileFieldsService } from '../../v3-profile-fields/profile.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
@@ -19,7 +21,9 @@ const role = (u: AuthenticatedUser): StaffRole => (u?.adminRole as StaffRole) ??
 @UseGuards(AdminGuard)
 @Controller('v3/admin/seeded-sites')
 export class SeededAdminController {
-  constructor(private readonly seeded: SeededSitesService, private readonly settings: SeededSettingsService) {}
+  constructor(private readonly seeded: SeededSitesService, private readonly settings: SeededSettingsService, private readonly modules: ModuleRef) {}
+  /** The profile service is found when it is needed, so this module does not import the profile and website modules at start (the same way the publisher is found). Absent where the profile module is not loaded. */
+  private profiles(): ProfileFieldsService | null { try { return this.modules.get(ProfileFieldsService, { strict: false }); } catch { return null; } }
   private who(u: AuthenticatedUser, req: Request) { return { actor: actorOf(u, req), role: role(u) }; }
 
   @Get() @ApiOperation({ summary: 'Seeded sites, newest first (MARKETING: non-personal fields only)' })
@@ -30,7 +34,15 @@ export class SeededAdminController {
   }
 
   @Post() @HttpCode(200) @ApiOperation({ summary: 'Create one seeded Free site from public facts (the staff checkbox is required)' })
-  create(@Body() dto: CreateSeededDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { const { overrideReason, ...raw } = dto; return this.seeded.create(raw as unknown as Record<string, unknown>, this.who(user, req), { overrideReason }); }
+  async create(@Body() dto: CreateSeededDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
+    const { overrideReason, profile, ...raw } = dto; const who = this.who(user, req);
+    // Wave 2 C9: the profile details are checked against the category BEFORE anything is created, so a bad detail leaves no half-made listing
+    const profiles = profile !== undefined ? this.profiles() : null;
+    if (profiles) await profiles.validateForCategory(String(raw.category), profile);
+    const view = await this.seeded.create(raw as unknown as Record<string, unknown>, who, { overrideReason });
+    if (profiles) return { ...view, profile: await profiles.saveForListing(view.id, who.actor, profile) };
+    return view;
+  }
 
   @Post('batches/dry-run') @HttpCode(200) @ApiOperation({ summary: 'Validate a CSV batch and report duplicates; creates NO site' })
   dryRun(@Body() dto: BatchDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.seeded.batch(dto.csv, dto.fileName ?? 'batch.csv', 'DRY_RUN', this.who(user, req), dto.overrideReason); }

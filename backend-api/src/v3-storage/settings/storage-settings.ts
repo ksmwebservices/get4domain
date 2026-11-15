@@ -24,16 +24,24 @@ export interface StorageSettings {
   storagePrivateMaxBytes: number | null;
   /** the most pixels an image kept in the private store may have; null = private image uploads are refused */
   storagePrivateMaxPixels: number | null;
+  /** Wave 2 Part D, uploads of pictures and documents: the biggest file in bytes; null = uploads are refused */
+  mediaUploadMaxBytes: number | null;
+  /** the most pixels a picture may have; null = picture uploads are refused */
+  mediaUploadMaxPixels: number | null;
+  /** the types an upload may be, from image/jpeg, image/png, image/webp, image/svg+xml and application/pdf; null = uploads are refused */
+  mediaUploadAllowedTypes: string[] | null;
 }
 export const DEFAULT_STORAGE_SETTINGS: Readonly<StorageSettings> = {
   storagePublicEndpoint: null, storagePublicBucket: null, storagePublicBaseUrl: null, storagePublicRegion: null, storagePrivateEndpoint: null, storagePrivateBucket: null, storagePrivateRegion: null,
-  storageSignedUrlSeconds: null, storagePrivateMaxBytes: null, storagePrivateMaxPixels: null,
+  storageSignedUrlSeconds: null, storagePrivateMaxBytes: null, storagePrivateMaxPixels: null, mediaUploadMaxBytes: null, mediaUploadMaxPixels: null, mediaUploadAllowedTypes: null,
 };
 export const STORAGE_SETTING_KEYS = Object.keys(DEFAULT_STORAGE_SETTINGS) as Array<keyof StorageSettings>;
 export const isStorageSettingKey = (key: string): key is keyof StorageSettings => (STORAGE_SETTING_KEYS as string[]).includes(key);
 const whole = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
 /** A signed link may not outlive an hour: short-lived links are on the Amendment 12 checklist. */
 export const MAX_SIGNED_URL_SECONDS = 3600;
+/** The only file types the generic upload knows. A type is accepted only when it is on this list AND staff switched it on in mediaUploadAllowedTypes. */
+export const UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'application/pdf'] as const;
 
 export function storageSettingProblem(key: keyof StorageSettings, v: unknown): string | null {
   switch (key) {
@@ -41,6 +49,9 @@ export function storageSettingProblem(key: keyof StorageSettings, v: unknown): s
     case 'storagePublicBaseUrl': return typeof v === 'string' && isSafeMediaBaseUrl(v) ? null : 'must be an https custom media domain (not an r2.dev address)';
     case 'storagePublicBucket': case 'storagePrivateBucket': case 'storagePublicRegion': case 'storagePrivateRegion': return typeof v === 'string' && isSafeName(v) ? null : 'must be letters, digits, dots and hyphens';
     case 'storageSignedUrlSeconds': return whole(v) && v <= MAX_SIGNED_URL_SECONDS ? null : `must be a whole number of seconds, at most ${MAX_SIGNED_URL_SECONDS}`;
+    case 'mediaUploadAllowedTypes':
+      if (!Array.isArray(v) || v.length === 0 || new Set(v).size !== v.length) return 'must be a list of different file types';
+      return v.every((t) => typeof t === 'string' && (UPLOAD_TYPES as readonly string[]).includes(t)) ? null : `must only use ${UPLOAD_TYPES.join(', ')}`;
     default: return whole(v) ? null : 'must be a whole number above zero';
   }
 }

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsObject, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { OUTREACH_STATUSES, SOURCE_KINDS } from '../../core/seeded';
 
 export class CreateSeededDto {
@@ -17,6 +17,8 @@ export class CreateSeededDto {
   @IsBoolean() publicFactsOnly!: boolean;
   /** SUPER_ADMIN only: create again a business that was removed before */
   @IsOptional() @IsString() @MaxLength(300) overrideReason?: string;
+  /** Wave 2 C9: the profile details of the category (state, pincode, services, hours, social links and the industry fields), keyed by the field keys of GET /v3/admin/categories/:slug/profile-schema. Checked BEFORE anything is created. */
+  @IsOptional() @IsObject() profile?: Record<string, unknown>;
 }
 export class BatchDto {
   @IsString() @MaxLength(1_000_000) csv!: string;

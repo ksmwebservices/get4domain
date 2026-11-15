@@ -71,6 +71,8 @@ const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3VendorNote' /* Wave 2 C5: staff notes, 
   'V3ApptService', 'V3ApptProvider', 'V3ApptBooking',
   // slice 5.24c (Batch 13): reached only through StoreStore, whose every query names the vendor (tested: vendor B cannot read or change vendor A's products, variants, stock ledger or returns)
   'V3StoreProduct', 'V3StoreVariant', 'V3StoreStockMove', 'V3OrderReturn',
+  'V3VendorProfileValue',   // Wave 2 Part E: reached only through the profile value store, whose every query names the vendor
+  'V3Media',   // Wave 2 Part D: reached only through the media upload store, whose every query names the scope (vendor:<id> or draft:<staffId>)
   'V3MigrationRequest', 'V3PromoDraft',   // Wave 2 Part B: reached only through the vendor gaps store, whose every query names the vendor
   'V3PackRecord',   // Wave 2 Part A: pack records, reached only through the pack record store, whose every query names the vendor
   'V3VendorPack', 'V3VendorCapability', 'V3VendorPackAddon', 'V3PlanPause',   // pack engine (Amendment 13 Part A): reached only through the pack engine store, whose every query names the vendor

@@ -122,6 +122,8 @@ model Vendor {
   v3MigrationRequests V3MigrationRequest[]
   v3PromoDrafts V3PromoDraft[]
   v3VendorNotes V3VendorNote[]
+  v3MediaFiles V3Media[]
+  v3ProfileValues V3VendorProfileValue[]
   v3PlanPauses V3PlanPause[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
@@ -7952,4 +7954,98 @@ model V3VendorNote {
 
   @@index([vendorId, createdAt])
   @@map("g4d_vendor_notes")
+}
+
+// ── Wave 2 Part D: uploaded files (pictures and documents) ──────────────────────────────────────────────────────────────────────────────────────────
+
+/// A file a vendor or a staff member uploaded: a picture (jpeg, png, webp, or an svg that carries nothing active) or a pdf. vendorId is NULL for a staff DRAFT upload made before the listing or its vendor account exists; scopeKey is
+/// vendor:<id> or draft:<staffId> and, with the content hash, makes the same file one row. The key is built by the server from ids and the hash, never from a name the user sent. Soft removal only.
+model V3Media {
+  id             String    @id @default(cuid())
+  vendorId       String?
+  scopeKey       String
+  ownerKind      String
+  kind           String
+  contentType    String
+  bytes          Int
+  sha256         String
+  width          Int?
+  height         Int?
+  key            String    @unique
+  url            String
+  altText        String?
+  status         String    @default("ACTIVE")
+  uploadedByType String
+  uploadedById   String?
+  createdAt      DateTime  @default(now())
+  removedAt      DateTime?
+
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([scopeKey, sha256])
+  @@index([vendorId, status, createdAt])
+  @@index([scopeKey, status, createdAt])
+  @@map("g4d_media")
+}
+
+// ── Wave 2 Part E: industry profile fields ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Platform data (staff edit it; ADMIN and SUPER_ADMIN, audited): one field of the profile a business fills in. packKey is one of the 16 packs; categorySlug is EMPTY for a field that every category of the pack inherits and a
+/// category key for an override or an addition only that category has. type is a record field type or one of textlist, servicelist, imagelist. siteSection names the part of the site the value feeds.
+model V3CategoryProfileField {
+  id               String   @id @default(cuid())
+  packKey          String
+  categorySlug     String   @default("")
+  fieldKey         String
+  label            String
+  type             String
+  required         Boolean  @default(false)
+  options          Json     @default("[]")
+  sortOrder        Int      @default(0)
+  siteSection      String   @default("details")
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([packKey, categorySlug, fieldKey])
+  @@index([packKey, categorySlug, sortOrder])
+  @@map("g4d_category_profile_fields")
+}
+
+/// Platform data: where a profile value goes in the vendor site content (the managed document). The most specific row wins (category, then pack, then every pack: both scope columns EMPTY). targetKind FIELD writes one field
+/// (targetKey is a site field such as about.text, itemMap.compose joins several profile fields into it); LIST adds an item to a list (targetKey is the list, itemMap says which item field gets the label and which the value);
+/// NONE keeps the value on the profile only. Nothing about an industry is written in code: a new field needs a row here, not a branch.
+model V3ProfileSiteMap {
+  id               String   @id @default(cuid())
+  packKey          String   @default("")
+  categorySlug     String   @default("")
+  fieldKey         String
+  targetKind       String
+  targetKey        String   @default("")
+  itemMap          Json     @default("{}")
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([packKey, categorySlug, fieldKey])
+  @@map("g4d_profile_site_map")
+}
+
+/// Tenant data: the checked values a business gave for its profile fields, kept as given beside the site content they were mapped into. One row per business and field.
+model V3VendorProfileValue {
+  id            String   @id @default(cuid())
+  vendorId      String
+  fieldKey      String
+  valueJson     Json
+  updatedByType String
+  updatedById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, fieldKey])
+  @@map("g4d_vendor_profile_values")
 }

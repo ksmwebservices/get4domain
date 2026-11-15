@@ -120,6 +120,30 @@ export class SeededSitesService {
     return row;
   }
 
+  /**
+   * The same row checks a batch makes (the public facts and the staff tick, the category, a duplicate of an existing site, the do-not-contact register), per row and WITHOUT creating anything. The listing import
+   * (Wave 2 Part D) uses it so a dry run and an apply judge a row exactly as a batch does. `duplicates` also names a row repeated earlier in the same file.
+   */
+  async classify(rows: ReadonlyArray<{ line: number; cells: Record<string, string> }>, override = false): Promise<Array<{ line: number; status: RowStatus; input?: SeedInput; errors?: string[]; duplicates?: BatchLine['duplicates'] }>> {
+    const out: Array<{ line: number; status: RowStatus; input?: SeedInput; errors?: string[]; duplicates?: BatchLine['duplicates'] }> = []; const ok: Array<{ line: number; input: SeedInput; keys: DupKeys }> = [];
+    for (const r of rows) {
+      const v = validateSeedRow(r.cells, { categoryExists: (id) => this.facts.categoryExists(id) });
+      if (!v.ok) { out.push({ line: r.line, status: 'REJECTED', errors: v.errors }); continue; }
+      ok.push({ line: r.line, input: v.input, keys: this.keysOf(v.input) });
+    }
+    const dups = await this.duplicatesOf(ok.map((x) => ({ ...x.keys, line: x.line })));
+    const onRegister = await this.store.registerHashesAmong(ok.map((x) => x.keys.phoneHash));
+    for (const x of ok) {
+      const d = dups.get(x.line);
+      if (d?.length) out.push({ line: x.line, status: 'DUPLICATE', input: x.input, duplicates: d });
+      else if (onRegister.has(x.keys.phoneHash) && !override) out.push({ line: x.line, status: 'ON_REGISTER', input: x.input, errors: ['The phone is on the do-not-contact register: no site is made.'] });
+      else out.push({ line: x.line, status: 'OK', input: x.input });
+    }
+    return out.sort((a, b) => a.line - b.line);
+  }
+  /** The most rows one import may hold (the same staff setting as a batch). */
+  async importMaxRows(): Promise<number> { return (await this.b3.get()).seededBatchMaxRows; }
+
   // ── batches ──
   /** DRY RUN: validation and duplicates report; no site is created. APPLY: creates the rows that passed (a failure on one row is recorded and the batch goes on). */
   async batch(csv: string, fileName: string, mode: 'DRY_RUN' | 'APPLIED', who: Who, overrideReason?: string) {

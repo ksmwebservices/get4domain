@@ -328,6 +328,12 @@ export class PackEngineService {
   }
   async adminAddons(): Promise<StoredAddon[]> { return (await this.reference()).addons; }
 
+  /** Is this pack one of the counsel-gated ones (health, legal and finance), and has SUPER_ADMIN opened them? A gated pack that is not open serves and accepts nothing from its industry fields. Read only. */
+  async packGate(packKey: string): Promise<{ counselGated: boolean; open: boolean }> {
+    const r = await this.reference();
+    const pack = r.packs.find((p) => p.key === packKey);
+    return { counselGated: (pack?.config as { flags?: { counselGated?: boolean } } | null)?.flags?.counselGated === true, open: r.gatedPacksOpen };
+  }
   async adminSettings(): Promise<{ gatedPacksOpen: boolean; onlineMedicineCheckout: boolean }> { const r = await this.reference(); return { gatedPacksOpen: r.gatedPacksOpen, onlineMedicineCheckout: r.onlineMedicineCheckout }; }
   async setSetting(name: keyof typeof PACK_SETTING_KEYS, value: boolean, actor: PackActor): Promise<void> {
     await this.refs.setSettingBool(PACK_SETTING_KEYS[name], value);

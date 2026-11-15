@@ -187,7 +187,13 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subdomain-log': OPS_AND_SUPER,
   // Wave 2 Part C: the vendors list, the held count and the notes are OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SALES and SUPPORT refused); the permission matrix is for every staff role; the invoice list and the go-live follow the plan orders and the seeded sites
   'GET /v3/admin/vendors': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/held-count': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/notes': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/notes': OPS_AND_SUPER,
-  'GET /v3/admin/permission-matrix': ALL_STAFF, 'GET /v3/admin/invoices': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/go-live': OPS_AND_SUPER,
+  'GET /v3/admin/permission-matrix': ALL_STAFF,
+  // Wave 2 Part D (C11): every staff role that creates listings on behalf (SALES included) uploads for a listing or keeps a draft upload of their own; SUPPORT has no access
+  'GET /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId': ALL_STAFF,
+  'GET /v3/admin/media/drafts': ALL_STAFF,
+  // Wave 2 Part E: every staff role that creates listings on behalf reads a category's profile schema and fills a listing's profile; reading the field sets is OPERATIONS and SUPER_ADMIN; editing them is SUPER_ADMIN and, by the extension, ADMIN
+  'GET /v3/admin/seeded-sites/imports/template': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/dry-run': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/apply': ALL_STAFF,
+  'GET /v3/admin/categories/:slug/profile-schema': ALL_STAFF, 'GET /v3/admin/seeded-sites/:id/profile': ALL_STAFF, 'PUT /v3/admin/seeded-sites/:id/profile': ALL_STAFF, 'GET /v3/admin/profile-fields': OPS_AND_SUPER, 'PUT /v3/admin/profile-fields': SUPER_ONLY, 'PUT /v3/admin/profile-fields/map': SUPER_ONLY, 'POST /v3/admin/media/drafts': ALL_STAFF, 'DELETE /v3/admin/media/drafts/:mediaId': ALL_STAFF, 'GET /v3/admin/invoices': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/go-live': OPS_AND_SUPER,
   // 5.6d: domain sales and identity checks (MARKETING denied on all: personal data and money; approving or rejecting a price is SUPER_ADMIN only)
   'GET /v3/admin/domain-orders': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/register': OPS_AND_SUPER, 'GET /v3/admin/domain-margins': OPS_AND_SUPER, 'POST /v3/admin/domain-margins': OPS_AND_SUPER,
   'POST /v3/admin/domain-margins/:id/approve': SUPER_ONLY, 'POST /v3/admin/domain-margins/:id/reject': SUPER_ONLY, 'POST /v3/admin/registrar/recover': OPS_AND_SUPER, 'POST /v3/admin/registrar/reconcile': OPS_AND_SUPER, 'GET /v3/admin/registrar/runs': OPS_AND_SUPER,
@@ -264,7 +270,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],
