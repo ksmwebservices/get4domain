@@ -43,7 +43,10 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
   }
   // Slice 5.20: activity rows a synthetic staff member wrote about nobody in particular (a rule change) have no vendor; the log refuses a delete only while its vendor exists, so these can go now.
   if (staffIds.length) counts.v3ActivityLogStaff = (await prisma.v3ActivityLog.deleteMany({ where: { vendorId: null, actorType: 'STAFF', actorId: { in: staffIds } } })).count;
+  // Wave 2 Part D: a staff DRAFT upload has no vendor (scope draft:<staffId>), so it is found by the synthetic staff member who made it
+  if (staffIds.length) counts.v3MediaDrafts = (await prisma.v3Media.deleteMany({ where: { vendorId: null, uploadedById: { in: staffIds } } })).count;
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
+  await cleanupWave2Platform(prisma, runId, counts);
   await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
@@ -72,6 +75,8 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
     ['vendors', () => prisma.vendor.deleteMany({ where: { id: { in: ids } } })],
     // the activity log refuses a delete while its vendor exists (append-only trigger), so it goes AFTER the vendors
     ['v3ActivityLog', () => prisma.v3ActivityLog.deleteMany({ where: byVendor })],
+    // Wave 2 Part C: staff notes are append only while their vendor exists (trigger, no foreign key), so they go after the vendors too
+    ['v3VendorNotes', () => prisma.v3VendorNote.deleteMany({ where: byVendor })],
     // block 4b: the private-bucket access log is append-only while its vendor exists, so it goes after the vendors too
     ['v3StorageAccess', () => prisma.v3StorageAccess.deleteMany({ where: byVendor })],
     // block 4b slice 9: a merge record names two businesses and has no foreign key, so it goes by either side
@@ -135,6 +140,17 @@ async function cleanupBilling(prisma, vendorIds, runId, counts) {
   const or = [...(orderIds.length ? [{ orderId: { in: orderIds } }] : []), ...(runId ? [{ providerEventId: { contains: runId } }] : [])];
   if (or.length) counts.v3PaymentEvent = (await prisma.v3PaymentEvent.deleteMany({ where: { OR: or } })).count;
   return orderIds;
+}
+
+/**
+ * Wave 2: the platform rows a test makes (pack tab fields, profile fields and their site map) carry a pack or owner key that starts with `vtest-` and the run id. They have no vendor, so they are matched by that key.
+ * Pack records, move requests, drafts, uploads and profile values belong to a vendor and cascade with it.
+ */
+async function cleanupWave2Platform(prisma, runId, counts) {
+  const key = { startsWith: `vtest-${(runId ?? '').toLowerCase()}` };
+  counts.v3PackTabFields = (await prisma.v3PackTabField.deleteMany({ where: { ownerKey: key } })).count;
+  counts.v3CategoryProfileFields = (await prisma.v3CategoryProfileField.deleteMany({ where: { packKey: key } })).count;
+  counts.v3ProfileSiteMap = (await prisma.v3ProfileSiteMap.deleteMany({ where: { packKey: key } })).count;
 }
 
 async function countTestTenants(prisma) {

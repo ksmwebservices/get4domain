@@ -121,7 +121,6 @@ model Vendor {
   v3PackRecords V3PackRecord[]
   v3MigrationRequests V3MigrationRequest[]
   v3PromoDrafts V3PromoDraft[]
-  v3VendorNotes V3VendorNote[]
   v3MediaFiles V3Media[]
   v3ProfileValues V3VendorProfileValue[]
   v3PlanPauses V3PlanPause[]
@@ -7941,7 +7940,7 @@ model V3PromoDraft {
 
 // ── Wave 2 Part C: staff notes on a vendor ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/// Staff only (no vendor route reads it): a note a Get4Domain team member leaves on a vendor. Append only: a note is never edited or deleted. byName is kept as written so the note still reads right if the staff member is removed.
+/// Staff only (no vendor route reads it): a note a Get4Domain team member leaves on a vendor. Append only: a note is never edited or deleted. No foreign key, like the activity log: the trigger lets a note go only once its vendor is gone. byName is kept as written so the note still reads right if the staff member is removed.
 model V3VendorNote {
   id         String   @id @default(cuid())
   vendorId   String
@@ -7949,8 +7948,6 @@ model V3VendorNote {
   byStaffId  String?
   byName     String
   createdAt  DateTime @default(now())
-
-  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@index([vendorId, createdAt])
   @@map("g4d_vendor_notes")

@@ -22,8 +22,7 @@ CREATE TABLE "g4d_vendor_notes" (
 -- CreateIndex
 CREATE INDEX "g4d_vendor_notes_vendorId_createdAt_idx" ON "g4d_vendor_notes"("vendorId", "createdAt");
 
--- AddForeignKey
-ALTER TABLE "g4d_vendor_notes" ADD CONSTRAINT "g4d_vendor_notes_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- No foreign key on the notes, like the activity log: the immutability trigger below lets a note go only once its vendor is gone.
 
 -- Checks (Prisma does not model them): a recorded amount is never negative, a note is never empty
 ALTER TABLE "g4d_plan_orders" ADD CONSTRAINT "g4d_plan_orders_settled_amount_check" CHECK ("settledAmountPaise" IS NULL OR "settledAmountPaise" >= 0);
