@@ -7976,10 +7976,13 @@ model V3Media {
   uploadedById   String?
   createdAt      DateTime  @default(now())
   removedAt      DateTime?
+  /// Wave 2 Part G: the upload group a staff draft upload was made under; when the listing is made with the same token the drafts of that staff member move to it (the token alone never moves anything)
+  groupToken     String?
 
   vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   @@unique([scopeKey, sha256])
+  @@index([uploadedById, groupToken])
   @@index([vendorId, status, createdAt])
   @@index([scopeKey, status, createdAt])
   @@map("g4d_media")

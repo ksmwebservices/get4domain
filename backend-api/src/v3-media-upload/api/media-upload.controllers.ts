@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -18,6 +18,7 @@ import { MediaUploadService, UploadedFile as UploadedFileShape } from '../media-
 
 /** multer's own limit is a transport ceiling only; the real caps are the staff settings mediaUploadMaxBytes and mediaUploadMaxPixels, checked by the service. */
 const TRANSPORT_LIMIT = 16 * 1024 * 1024;
+class AttachDto { @IsString() @MaxLength(80) group!: string }
 class PageDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
@@ -77,10 +78,13 @@ export class AdminMediaUploadController {
   drafts(@CurrentUser() u: AuthenticatedUser, @Query() q: PageDto) { return this.media.list({ kind: 'DRAFT', staffId: staffId(u) }, q.page, q.pageSize); }
 
   @Throttle(RATE.recordWrite) @Post('media/drafts') @HttpCode(200) @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload a picture or a pdf before the listing exists (a draft upload; only the person who made it sees it; audited)' })
+  @ApiOperation({ summary: 'Upload a picture or a pdf before the listing exists (a draft upload; only the person who made it sees it; audited). An optional `group` token lets the create form attach it to the listing when it is made.' })
   @UseFilters(UploadTooLargeFilter)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: TRANSPORT_LIMIT, files: 1 } }))
-  uploadDraft(@UploadedFile() file: UploadedFileShape | undefined, @Body('alt') alt: unknown, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.media.upload({ kind: 'DRAFT', staffId: staffId(u) }, staffActor(u, req), file, alt); }
+  uploadDraft(@UploadedFile() file: UploadedFileShape | undefined, @Body('alt') alt: unknown, @Body('group') group: unknown, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.media.upload({ kind: 'DRAFT', staffId: staffId(u) }, staffActor(u, req), file, alt, group); }
+
+  @Throttle(RATE.recordWrite) @Post('seeded-sites/:id/media/attach') @HttpCode(200) @ApiOperation({ summary: 'Attach the draft uploads I made under an upload group to this listing (idempotent: a second call moves nothing; only my own drafts move; audited)' })
+  attach(@Param('id') id: string, @Body() dto: AttachDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.media.attachGroup(dto.group, staffActor(u, req), { seededSiteId: id }); }
 
   @Throttle(RATE.recordWrite) @Delete('media/drafts/:mediaId') @HttpCode(200) @ApiOperation({ summary: 'Remove one of my draft uploads (audited)' })
   removeDraft(@Param('mediaId') mediaId: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.media.remove({ kind: 'DRAFT', staffId: staffId(u) }, mediaId, staffActor(u, req)); }

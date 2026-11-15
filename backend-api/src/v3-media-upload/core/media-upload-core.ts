@@ -45,6 +45,10 @@ export function checkUpload(caps: UploadCaps, file: { bytes: Buffer; declared: s
   return { ok: true, detected: d };
 }
 
+/** The upload group token a staff draft upload is made under: opaque, 16 to 64 letters, digits, dash or underscore, chosen by the screen once per create form. */
+export const GROUP_TOKEN = /^[A-Za-z0-9_-]{16,64}$/;
+export const isGroupToken = (v: unknown): v is string => typeof v === 'string' && GROUP_TOKEN.test(v);
+
 export type Scope = { kind: 'VENDOR'; vendorId: string } | { kind: 'DRAFT'; staffId: string };
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 export const scopeKeyOf = (s: Scope): string => (s.kind === 'VENDOR' ? `vendor:${s.vendorId}` : `draft:${s.staffId}`);

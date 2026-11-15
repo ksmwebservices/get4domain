@@ -19,6 +19,8 @@ export class CreateSeededDto {
   @IsOptional() @IsString() @MaxLength(300) overrideReason?: string;
   /** Wave 2 C9: the profile details of the category (state, pincode, services, hours, social links and the industry fields), keyed by the field keys of GET /v3/admin/categories/:slug/profile-schema. Checked BEFORE anything is created. */
   @IsOptional() @IsObject() profile?: Record<string, unknown>;
+  /** Wave 2 Part G: the upload group the create form used for its draft uploads (POST /v3/admin/media/drafts with the same `group`); they are attached to the new listing, idempotently, and only the caller's own drafts move */
+  @IsOptional() @IsString() @Matches(/^[A-Za-z0-9_-]{16,64}$/, { message: 'uploadGroup must be 16 to 64 letters, digits, dashes or underscores' }) uploadGroup?: string;
 }
 export class BatchDto {
   @IsString() @MaxLength(1_000_000) csv!: string;

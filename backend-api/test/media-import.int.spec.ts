@@ -72,6 +72,18 @@ describe('media upload on staging', () => {
     await svc.remove({ kind: 'VENDOR', vendorId: A.vendorId }, id, actor(A.vendorId)); expect(await prisma.v3Media.findUnique({ where: { id } })).toMatchObject({ status: 'REMOVED' }); expect((await svc.list({ kind: 'VENDOR', vendorId: A.vendorId })).items.some((m) => m.id === id)).toBe(false);
   });
 
+  it('Part G: attachDrafts moves only this staff member\'s drafts of one group into the business, once (the token column and its check exist)', async () => {
+    const group = `grp-${RUN_ID}-aaaaaaaaaaaa`.slice(0, 40); const C = await seedBareVendor(prisma, 'mue', RUN_ID);
+    const b1 = await png(11, 11, '#112233'); const b2 = await png(12, 12, '#223344');
+    await svc.upload({ kind: 'DRAFT', staffId }, { type: 'STAFF', id: staffId, ip: null }, { buffer: b1, mimetype: 'image/png', size: b1.length }, 'One', group);
+    await svc.upload({ kind: 'DRAFT', staffId }, { type: 'STAFF', id: staffId, ip: null }, { buffer: b2, mimetype: 'image/png', size: b2.length }, 'Two');   // no group: stays a draft
+    await expect(prisma.v3Media.updateMany({ where: { uploadedById: staffId, groupToken: group }, data: { groupToken: 'bad token with spaces' } })).rejects.toBeDefined();
+    const none = await store.attachDrafts('someone-else', group, C.vendorId, new Date()); expect(none.attached).toHaveLength(0);
+    const first = await store.attachDrafts(staffId, group, C.vendorId, new Date()); expect(first.attached).toHaveLength(1); expect(first.attached[0]).toMatchObject({ vendorId: C.vendorId, scopeKey: `vendor:${C.vendorId}`, ownerKind: 'VENDOR_SITE' });
+    const again = await store.attachDrafts(staffId, group, C.vendorId, new Date()); expect(again).toMatchObject({ attached: [], alreadyAttached: 1 });
+    expect((await svc.list({ kind: 'DRAFT', staffId })).items.some((m) => m.altText === 'Two')).toBe(true);
+  });
+
   it('deleting a vendor removes its uploads (the cleanup the staging script relies on)', async () => {
     const gone = await seedBareVendor(prisma, 'mud', RUN_ID); const bytes = await png(8, 8, '#33aa33');
     await svc.upload({ kind: 'VENDOR', vendorId: gone.vendorId }, actor(gone.vendorId), { buffer: bytes, mimetype: 'image/png', size: bytes.length }, 'Temp');

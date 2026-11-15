@@ -3,7 +3,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { ActivityService } from '../v3-activity/activity.service';
 import { StorageSettingsService } from '../v3-storage/settings/storage-settings';
 import { ImagePort, MediaStoragePort, sha256Hex } from '../v3-website/media/media.ports';
-import { checkUpload, checkUploadAlt, Scope, scopeKeyOf, uploadKeyFor } from './core/media-upload-core';
+import { checkUpload, checkUploadAlt, isGroupToken, Scope, scopeKeyOf, uploadKeyFor } from './core/media-upload-core';
 import { uploadError } from './media-upload.errors';
 import { MediaRow, MediaUploadStore } from './media-upload.store';
 
@@ -28,7 +28,9 @@ export class MediaUploadService {
     if (actor.type === 'STAFF') await this.activity?.record({ vendorId, actor: { type: actor.type, id: actor.id, ip: actor.ip ?? null }, actionKey, entityType: 'media', entityId: id, summary });
   }
 
-  async upload(scope: Scope, actor: Actor, file: UploadedFile | undefined, alt: unknown): Promise<MediaView> {
+  async upload(scope: Scope, actor: Actor, file: UploadedFile | undefined, alt: unknown, group?: unknown): Promise<MediaView> {
+    if (group !== undefined && group !== null && group !== '' && (scope.kind !== 'DRAFT' || !isGroupToken(group))) throw uploadError('UPLOAD_INVALID', 'The upload group is 16 to 64 letters, digits, dashes or underscores, and only a draft upload has one.', { fields: { group: 'Not a valid upload group.' } });
+    const groupToken = typeof group === 'string' && group !== '' ? group : null;
     const s = await this.settings.get();
     const bytes = file?.buffer ?? Buffer.alloc(0);
     const c = checkUpload(s, { bytes, declared: String(file?.mimetype ?? '') });
@@ -44,12 +46,12 @@ export class MediaUploadService {
     const scopeKey = scopeKeyOf(scope); const sha = sha256Hex(body);
     const key = uploadKeyFor(scope, sha, c.detected.ext);
     const have = await this.store.findBySha(scopeKey, sha);
-    if (have && have.status === 'ACTIVE') return view(have);
+    if (have && have.status === 'ACTIVE') { if (groupToken && have.groupToken !== groupToken) { await this.store.setGroup(scopeKey, have.id, groupToken); return view({ ...have, groupToken }); } return view(have); }
     const url = await this.storage.put(key, body, contentType);   // a removed file is put back; the same key and the same bytes
-    if (have) { const revived = await this.store.revive(scopeKey, have.id, a.alt); if (revived) { await this.record(actor, revived.vendorId, 'media.uploaded', revived.id, { kind: revived.kind, contentType: revived.contentType, bytes: revived.bytes, revived: true }); return view(revived); } }
+    if (have) { const revived = await this.store.revive(scopeKey, have.id, a.alt); if (revived) { if (groupToken) await this.store.setGroup(scopeKey, revived.id, groupToken); await this.record(actor, revived.vendorId, 'media.uploaded', revived.id, { kind: revived.kind, contentType: revived.contentType, bytes: revived.bytes, revived: true }); return view(revived); } }
     const row = await this.store.create({
       vendorId: scope.kind === 'VENDOR' ? scope.vendorId : null, scopeKey, ownerKind: scope.kind === 'VENDOR' ? 'VENDOR_SITE' : 'LISTING_DRAFT', kind: c.detected.kind, contentType, bytes: body.length, sha256: sha, width, height, key, url, altText: a.alt,
-      uploadedByType: actor.type, uploadedById: actor.id,
+      uploadedByType: actor.type, uploadedById: actor.id, groupToken,
     });
     await this.record(actor, row.vendorId, 'media.uploaded', row.id, { kind: row.kind, contentType: row.contentType, bytes: row.bytes });
     return view(row);
@@ -60,6 +62,21 @@ export class MediaUploadService {
     const vendorId = await this.store.vendorOfListing(String(seededSiteId).slice(0, 64));
     if (!vendorId) throw uploadError('UPLOAD_LISTING_NOT_FOUND', 'That listing was not found.');
     return this.upload({ kind: 'VENDOR', vendorId }, actor, file, alt);
+  }
+
+  /**
+   * Attaches the staff member's draft uploads of one upload group to a listing (or a business). IDEMPOTENT, and tenant safe on both sides: only drafts THIS staff member made under THIS token move, only into a business
+   * that is a live listing, and a second call moves nothing and says what is already there. Storage is not touched (the object keeps its key); a draft the business already has is dropped as a duplicate.
+   */
+  async attachGroup(group: unknown, actor: Actor, target: { seededSiteId?: string; vendorId?: string }): Promise<{ attached: number; skipped: number; alreadyAttached: number; items: MediaView[] }> {
+    if (!isGroupToken(group)) throw uploadError('UPLOAD_INVALID', 'The upload group is not valid.', { fields: { group: 'Not a valid upload group.' } });
+    if (actor.type !== 'STAFF' || !actor.id) throw uploadError('UPLOAD_NOT_FOUND', 'That file was not found.');
+    const vendorId = target.vendorId ?? (target.seededSiteId ? await this.store.vendorOfListing(String(target.seededSiteId).slice(0, 64)) : null);
+    if (!vendorId) throw uploadError('UPLOAD_LISTING_NOT_FOUND', 'That listing was not found.');
+    const r = await this.store.attachDrafts(actor.id, group, vendorId, this.clock());
+    for (const m of r.skipped) await this.storage.remove(m.key).catch(() => undefined);   // a duplicate draft object is no longer needed
+    if (r.attached.length || r.skipped.length) await this.record(actor, vendorId, 'media.attached', vendorId, { attached: r.attached.length, skipped: r.skipped.length });
+    return { attached: r.attached.length, skipped: r.skipped.length, alreadyAttached: r.alreadyAttached, items: r.attached.map(view) };
   }
 
   async list(scope: Scope, page = 1, pageSize = 25): Promise<{ items: MediaView[]; total: number; page: number; pageSize: number }> {
