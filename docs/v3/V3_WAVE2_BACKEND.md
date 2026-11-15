@@ -2,7 +2,7 @@
 
 Branch `v3-w2` (worktree `C:\Get4Domain\get4domain-w2`, branched from `v3-seo1`). Source of the work: `WAVE2_BACKEND_PROMPT.md`, the front-end gap files `FRONTEND_GAPS.md`, `API_CONTRACT_SLICE2.md` and `API_CONTRACT_ADMIN.md`, and Amendments 10 to 14.
 
-**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The five migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order.
+**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The seven migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order.
 
 Product text rules held everywhere: no timeframes, "enquiries" not "leads", never the words workspace, BOS or LeadSpace, prices exclude GST, a PENDING price is never a number. No real provider is called: storage is the existing R2 adapter, selected only by environment and settings and OFF by default; tests use the in-memory store.
 
@@ -14,7 +14,10 @@ Product text rules held everywhere: no timeframes, "enquiries" not "leads", neve
 | B vendor gap routes (+ C8) | `2be6a3b` | `20261219110000_v3_wave2_vendor_gaps` |
 | C admin gap routes | `d321791` | `20261219120000_v3_wave2_admin_gaps` |
 | D media and import, E profile fields (one commit: they share the schema, the error list, the role matrix and the module wiring) | `bc525f4` | `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields` |
-| F tests and this document | the commit after this file | none |
+| F tests and this document | `e3c9dea` | none |
+| G1 the profile feeds the site (services, hours, location) | `3bcf816` | `20261219150000_v3_wave2_site_mapping` (two CHECKs widened; no table, no column) |
+| G2 draft uploads follow the listing by an upload group token | `fdf437b` | `20261219160000_v3_wave2_upload_groups` (one nullable column, one index, one check) |
+| G3 staff edit the record fields of a pack tab | `28dfdee` | none |
 
 All five migrations are additive: new tables, new nullable columns, and one widened CHECK (the enquiry state gains HANDLED; no value is removed or renamed). Every new table has row level security on and no policy, the same rule as the earlier migrations. Table names use the repo's `g4d_` prefix (the brief wrote `v3_`).
 
@@ -31,7 +34,7 @@ All five migrations are additive: new tables, new nullable columns, and one wide
 | `g4d_profile_site_map` | `V3ProfileSiteMap` | where a profile value goes in the site content (FIELD, LIST or NONE), most specific row wins | platform, staff editable |
 | `g4d_vendor_profile_values` | `V3VendorProfileValue` | the checked values a business gave | tenant |
 
-## 2. Routes (52 new)
+## 2. Routes (55 new)
 
 Vendor routes are all behind `@UseTenant()`; the vendor is always the verified principal's. "Who" for staff routes is data in `src/auth/guards/admin-role-matrix.ts` (a route with no entry is SUPER_ADMIN only); SALES is the existing MARKETING value. The route baseline and the role oracle were regenerated; their diff is only these routes.
 
@@ -100,6 +103,16 @@ Tab rules: ACTIVE opens it; LOCKED_PREVIEW (Free trial, plan too low, paused pla
 | `PUT /v3/admin/profile-fields`, `PUT /v3/admin/profile-fields/map` | SUPER_ADMIN, ADMIN | edit a field or a map row; audited |
 | `POST /v3/admin/seeded-sites` (existing) | unchanged roles | now takes an optional `profile` object, checked BEFORE anything is created |
 
+**Part G (the profile reaches the site, uploads follow the listing, staff edit tab fields).**
+
+| Route | Who | Notes |
+|---|---|---|
+| `POST /v3/admin/seeded-sites/:id/media/attach` | SUPER_ADMIN, ADMIN, OPERATIONS, SALES | body `{ group }`: attaches the draft uploads I made under that upload group to the listing; idempotent |
+| `GET /v3/admin/pack-engine/tab-fields?ownerKey=&tabKey=` | SUPER_ADMIN, ADMIN, OPERATIONS | every record field of one tab, hidden ones too, with the types on offer |
+| `PUT /v3/admin/pack-engine/tab-fields` | SUPER_ADMIN, ADMIN | add or change one record field; audited; nothing deleted |
+| `POST /v3/admin/media/drafts` (existing) | same as before | now also takes an optional multipart field `group` (the upload group token) |
+| `POST /v3/admin/seeded-sites` (existing) | same as before | now also takes `uploadGroup`; the answer then carries `uploads: { attached, skipped, alreadyAttached }` |
+
 ## 3. Which route closes which front-end gap (for slice 5)
 
 | Gap | Closed by | The shape the screen gets |
@@ -122,19 +135,19 @@ Tab rules: ACTIVE opens it; LOCKED_PREVIEW (Free trial, plan too low, paused pla
 | Admin C6 | `mark-paid` | `reason` is still required |
 | Admin C7 | `GET /v3/admin/invoices` | |
 | Admin C8 | `GET /v3/admin/vendors/:id/subdomain-log` | the domain log's row shape |
-| Admin C9 | `POST /v3/admin/seeded-sites` with `profile`, and the schema route | keyed by the schema's field keys: `state`, `pincode`, `services` (list of `{ name, description? }`), `opening_hours`, `social_*`, plus the industry fields; not `packKey`, `hours` or `social: []` |
+| Admin C9 | `POST /v3/admin/seeded-sites` with `profile`, and the schema route | what staff enter now appears on the draft site (services in the Offerings, hours as rows, address parts in the location; section 7 G); keyed by the schema's field keys: `state`, `pincode`, `services` (list of `{ name, description? }`), `opening_hours`, `social_*`, plus the industry fields; not `packKey`, `hours` or `social: []` |
 | Admin C10 | the import routes | the template lists the columns; `state`, `pincode` and `services` are read |
-| Admin C11 | the upload routes | |
+| Admin C11 | the upload routes, and `uploadGroup` on `POST /v3/admin/seeded-sites` or `POST .../media/attach` | draft uploads made before the listing existed are attached to it when it is made |
 | Admin C12 | `POST /v3/admin/seeded-sites/:id/go-live` | `{ alreadyLive, ...the listing }` |
 | Admin C13 | nothing to do | already valid |
 
 ## 4. Role matrix (as data)
 
-New entries in `ADMIN_ROLE_MATRIX` (OPS_AND_SUPER means SUPER_ADMIN and OPERATIONS; ADMIN inherits OPERATIONS; SUPPORT is refused unless listed): permission matrix, ALL staff and SUPPORT (added to `STAFF_ROLE_EXTENSIONS.SUPPORT.allow`); vendors list, held count, notes, invoices list, subdomain log, go-live, profile-fields read: OPS_AND_SUPER; upload, import, schema and on-behalf profile routes: ALL staff (SALES included, SUPPORT refused); `PUT /v3/admin/profile-fields` and `.../map`: SUPER_ADMIN, and ADMIN through `STAFF_ROLE_EXTENSIONS.ADMIN.allow`. Pinned by `test/admin-role-matrix.spec.ts` (oracle now 381 routes) and the new specs.
+New entries in `ADMIN_ROLE_MATRIX` (OPS_AND_SUPER means SUPER_ADMIN and OPERATIONS; ADMIN inherits OPERATIONS; SUPPORT is refused unless listed): permission matrix, ALL staff and SUPPORT (added to `STAFF_ROLE_EXTENSIONS.SUPPORT.allow`); vendors list, held count, notes, invoices list, subdomain log, go-live, profile-fields read: OPS_AND_SUPER; upload, import, schema and on-behalf profile routes: ALL staff (SALES included, SUPPORT refused); `PUT /v3/admin/profile-fields` and `.../map`: SUPER_ADMIN, and ADMIN through `STAFF_ROLE_EXTENSIONS.ADMIN.allow`. Pinned by `test/admin-role-matrix.spec.ts` (oracle now 381 routes) and the new specs. Part G adds the attach route (every staff role that creates on behalf, SUPPORT refused) and the tab-fields routes (read: SUPER_ADMIN, ADMIN, OPERATIONS; edit: SUPER_ADMIN, and ADMIN through the extension). The oracle is now 384 routes.
 
 ## 5. Error codes (all registered through `BUSINESS_ERROR_CODES`)
 
-Part A `PACK_RECORD_INVALID`, `PACK_RECORD_NOT_FOUND`, `PACK_TAB_NO_RECORDS`, `PACK_TAB_OWNER_ONLY` (and `TAB_LOCKED`, existing). Part B `VENDOR_GAP_INVALID`, `MIGRATION_REQUEST_OPEN`, `PROMO_DRAFT_NOT_FOUND`, `TEAM_MEMBER_NOT_FOUND`, `TEAM_MEMBER_EXISTS`, `PLAN_INVOICE_NOT_FOUND`. Part C `ADMIN_GAP_INVALID`, `ADMIN_VENDOR_NOT_FOUND`, `OFFLINE_AMOUNT_MISMATCH`, `GO_LIVE_BLOCKED` (details.reason DO_NOT_CONTACT or TERMS_REQUIRED). Part D `UPLOAD_NOT_CONFIGURED`, `UPLOAD_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_TYPE_NOT_ALLOWED`, `UPLOAD_TYPE_MISMATCH`, `UPLOAD_UNSAFE`, `UPLOAD_INVALID`, `UPLOAD_ALT_INVALID`, `UPLOAD_NOT_FOUND`, `UPLOAD_LISTING_NOT_FOUND`, `IMPORT_INVALID`, `IMPORT_BLOCKED` (details.report holds every row). Part E `PROFILE_INVALID`, `PROFILE_CATEGORY_UNKNOWN`, `PROFILE_NO_CATEGORY`, `PROFILE_GATED`, `PROFILE_LISTING_NOT_FOUND`, `PROFILE_FIELD_INVALID`. Per-field problems travel in the error's `data.fields` (the filter passes `details` through; it drops other extra keys).
+Part A `PACK_RECORD_INVALID`, `PACK_RECORD_NOT_FOUND`, `PACK_TAB_NO_RECORDS`, `PACK_TAB_OWNER_ONLY` (and `TAB_LOCKED`, existing). Part B `VENDOR_GAP_INVALID`, `MIGRATION_REQUEST_OPEN`, `PROMO_DRAFT_NOT_FOUND`, `TEAM_MEMBER_NOT_FOUND`, `TEAM_MEMBER_EXISTS`, `PLAN_INVOICE_NOT_FOUND`. Part C `ADMIN_GAP_INVALID`, `ADMIN_VENDOR_NOT_FOUND`, `OFFLINE_AMOUNT_MISMATCH`, `GO_LIVE_BLOCKED` (details.reason DO_NOT_CONTACT or TERMS_REQUIRED). Part D `UPLOAD_NOT_CONFIGURED`, `UPLOAD_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_TYPE_NOT_ALLOWED`, `UPLOAD_TYPE_MISMATCH`, `UPLOAD_UNSAFE`, `UPLOAD_INVALID`, `UPLOAD_ALT_INVALID`, `UPLOAD_NOT_FOUND`, `UPLOAD_LISTING_NOT_FOUND`, `IMPORT_INVALID`, `IMPORT_BLOCKED` (details.report holds every row). Part E `PROFILE_INVALID`, `PROFILE_CATEGORY_UNKNOWN`, `PROFILE_NO_CATEGORY`, `PROFILE_GATED`, `PROFILE_LISTING_NOT_FOUND`, `PROFILE_FIELD_INVALID`. Per-field problems travel in the error's `data.fields` (the filter passes `details` through; it drops other extra keys). Part G `PACK_FIELD_INVALID` (per-field problems in `data.fields`), `PACK_FIELD_IN_USE`, `PACK_TAB_UNKNOWN`.
 
 ## 6. Settings, flags and environment
 
@@ -152,6 +165,8 @@ New plan settings (all null = OFF until staff set them, validated like the other
 
 **E.** 16 packs, each with the 21 common fields plus its own industry fields (the common set: business name, tagline, about, services with short descriptions, opening hours, address with locality and pincode, contact, social links, banner image and its description, gallery images), and a category field only where the catalog gave that category field hints (143 of 196 categories; the other 53 inherit). Seed (offline dry run): 1263 fields, 948 map rows, 0 problems. Values are checked (plain text only, no ranking claim by the same wording filter as the SEO text, no price: "prices are set in the price list, before GST"), kept as given in `g4d_vendor_profile_values`, and written into the site draft through the map: FIELD rows set one site field (the address is composed from its parts), LIST rows add items (all industry and category fields go to ONE `credentials` list, because a list write replaces the list; the gallery goes to `gallery`), NONE rows keep the value on the profile only. A site write the plan does not allow is reported in `site.skipped`, never silent, and does not undo the saved profile. Loader: `node scripts/seed-v3-profile-fields.js`.
 
+**G. The profile reaches the site; uploads follow the listing; staff edit tab fields.** (1) The map kinds are now FIELD, LIST, LOCATION, HOURS, OFFERINGS and NONE, and only `business_name` is NONE. *Services* go to the business's Offerings (the catalogue the site already reads): each service becomes an active item with its short description and NO price; the port is tenant scoped, idempotent (the same list again changes nothing), retires but never deletes a service no longer named, and never touches a service the vendor made themselves. *Opening hours* are a profile type `hours` (the compact text `Mon-Sat 09:00-18:00; Sun closed`, or day rows) kept in a new optional `hours` list of the managed site document, because the theme renderer already draws day rows but nothing stored them (the older one-line `businessHours` is kept in step for the search file and the chat bot); no table or column was needed. *Address line, locality, city, state and pincode* go into the document's location, merged over what the owner already has (a map link, coordinates), and the location projects into `g4d_site_locations` when a version goes live; the pincode must be six digits. Every value is checked by the same text filters as before, and no text may carry a `tel:`, `mailto:` or `wa.me` link or a price, so a Free site stays informational. A site write the plan does not allow is reported in `site.skipped`, never silent. (2) A draft upload takes an optional `group` token; creating the listing with the same `uploadGroup` (or `POST /v3/admin/seeded-sites/:id/media/attach`) moves ONLY the calling staff member's drafts of that group into the business's library, once; the stored object keeps its key; a file the business already has is dropped as a duplicate; every move is audited; a token never moves a file already attached to another listing. (3) Staff edit the record fields of a tab: only a real record tab; a type cannot change once any business has records on the tab (hide the field and add a new one); one status field and at most forty fields a tab; `active: false` hides, nothing is deleted.
+
 ## 8. Choices to check, what was skipped, known limits
 
 Choices:
@@ -168,12 +183,12 @@ Choices:
 11. C12: "one transaction" is the existing publish transaction plus a per-business in-process queue; the audit row is written after it. Two server instances at once would rely on the publish's own uniqueness, which makes the second a no-op.
 12. C3: the listing-state filter uses the stored lifecycle, which the staff seeded-site views write through when facts change, so a lifecycle that has not been viewed since a claim can lag. The row's own `listingState` is computed from the stored lifecycle and whether a site is published.
 13. C13 needed no change.
-14. Uploads: no virus scanner is bound, so a PDF is accepted only by the structural checks above. The vendor's `/v3/me/media` library is separate from the older website library `/v3/me/site/media` (still working); a staff upload for a listing lands in the vendor's new library. A draft upload (no listing) is not auto-attached when the listing is later made; the staff member passes the returned URL into the site content.
+14. Uploads: no virus scanner is bound, so a PDF is accepted only by the structural checks above. The vendor's `/v3/me/media` library is separate from the older website library `/v3/me/site/media` (still working); a staff upload for a listing lands in the vendor's new library. A draft upload is attached to its listing by an upload group token (Part G).
 15. Import: the two staff tick columns stay required (the "only public facts" tick is a compliance gate, not a convenience); `pincode` is required; the duplicate rule is the seeded-site rule (same phone, email, or name in the same city), a superset of the key (phone or email, name, pincode); a business removed before is skipped, never made again; the file is limited by the existing `seededBatchMaxRows` setting; picture lists cannot be given in a file; no row is written to the seeded batch table (the activity log records the import).
-16. Profile: the category fields from the catalog's hints are plain text fields (the catalog gives names only). Services, opening hours, locality, city, state and pincode are kept on the profile and are not drawn on the site yet (the site has no structured hours and its services come from Offerings): their map rows are NONE until you decide. Create-on-behalf takes a `profile` object instead of the screens' ad-hoc `hours`, `social[]` and `packKey`.
+16. Profile: the category fields from the catalog's hints are plain text fields (the catalog gives names only). Part G maps services, opening hours and the address parts into the site, so the map rows that were NONE are now OFFERINGS, HOURS and LOCATION; a service written from a profile is an Offerings item with no price, and a profile that stops naming a service retires it (it is hidden, not deleted). Create-on-behalf takes a `profile` object instead of the screens' ad-hoc `hours`, `social[]` and `packKey`. Opening hours are drawn as day rows, not free text.
 17. Vendor notes have no foreign key and are deleted after their vendors (the same pattern as the activity log), which the staging cleanup does.
 
-Skipped (nothing invented): a staff route to edit a pack tab's record fields (the loader and the table are there; the SQL or the seed script edits them for now); a stored copy and link for the invoice; services written to the Offerings through profile import; attaching a draft upload to a listing automatically; anything that posts, schedules or sends (drafts and invites are records).
+Skipped (nothing invented): a stored copy and link for the invoice (said not to build it); a virus scanner for PDFs; anything that posts, schedules or sends (drafts and invites are records).
 
 Pre-existing, not touched: `test/seo-int-guards.spec.ts` ("the read-only staging checker: the syntax is valid") fails in `npm.cmd run test:ci` on the starting commit too; it is the only failing unit test.
 
@@ -181,17 +196,16 @@ Pre-existing, not touched: `test/seo-int-guards.spec.ts` ("the read-only staging
 
 1. Seat limits for the v3 team (needs a v3 plan feature).
 2. Whether a pause stops, extends or ignores the paid term (from Part B of the pack engine, still open).
-3. Whether the owner wants structured opening hours on the site, and services written to Offerings, so those map rows can stop being NONE.
-4. Whether to merge the two vendor picture libraries into one.
-5. A virus scanner for PDFs, and how long unattached draft uploads are kept.
-6. Whether a SUPPORT person should read a business's held count and notes (today OPERATIONS and above only).
+3. Whether to merge the two vendor picture libraries into one.
+4. A virus scanner for PDFs, and how long unattached draft uploads are kept.
+5. Whether a SUPPORT person should read a business's held count and notes (today OPERATIONS and above only).
 
 ## 10. Owner commands for staging, in order
 
 `npm.cmd`, from `C:\Get4Domain\get4domain-w2\backend-api` unless stated. **Nothing below has been run.**
 
 1. `.env.staging` was copied into `C:\Get4Domain\get4domain-w2\` (not in git). Then `npm.cmd ci` is done; run `npx.cmd prisma generate` if the client is stale.
-2. `npm.cmd run db:staging:migrate-status`. Expect the five folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media` and `20261219140000_v3_wave2_profile_fields` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
+2. `npm.cmd run db:staging:migrate-status`. Expect the seven folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` and `20261219160000_v3_wave2_upload_groups` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
 3. `npm.cmd run db:staging:rls-off` (expect `0` tables without row level security), then `npm.cmd run db:staging:drift` (the 2 documented allowed items only; the new CHECKs and the notes trigger are not part of the schema diff).
 4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green except the one pre-existing failure named in section 8.
 5. Seed scripts, each a **dry run** first (read the counts and the problems), then `--apply`, then the dry run again (nothing to create):
@@ -204,4 +218,4 @@ Pre-existing, not touched: `test/seo-int-guards.spec.ts` ("the read-only staging
 
 ## 11. Tests added
 
-Unit: `pack-records-core`, `pack-records-http`, `wave2-vendor-gaps-core`, `wave2-vendor-gaps-http`, `wave2-vendor-gaps-services`, `wave2-admin-gaps`, `wave2-media-upload`, `wave2-profile-fields`, `wave2-listing-import`. Changed to follow the contract: `pack-part-b`, `pack-part-b-http` (the group and the shell section), `admin-role-matrix`, `tenant-model-registry`, the route baseline. Integration, written and NOT run: `pack-records.int.spec.ts`, `vendor-gaps.int.spec.ts`, `admin-gaps.int.spec.ts`, `media-import.int.spec.ts`, `profile-fields.int.spec.ts`.
+Unit: `pack-records-core`, `pack-records-http`, `wave2-vendor-gaps-core`, `wave2-vendor-gaps-http`, `wave2-vendor-gaps-services`, `wave2-admin-gaps`, `wave2-media-upload`, `wave2-profile-fields`, `wave2-listing-import`, and for Part G `wave2-site-mapping`, `wave2-upload-groups` and `wave2-pack-tab-fields`. Changed to follow the contract: `pack-part-b`, `pack-part-b-http` (the group and the shell section), `admin-role-matrix`, `tenant-model-registry`, the route baseline. Integration, written and NOT run: `pack-records.int.spec.ts`, `vendor-gaps.int.spec.ts`, `admin-gaps.int.spec.ts`, `media-import.int.spec.ts`, `profile-fields.int.spec.ts`.
