@@ -8,6 +8,8 @@ import { PrismaVendorSeoSettings, VendorSeoSettings, VendorSeoSettingsValue } fr
 import { loadKit } from '../src/site-publish/renderer/renderer-loader';
 import { toRendererInput, pageArgs, planPages } from '../src/site-publish/content/content-adapter';
 import { doc, YEAR } from './support/site-fixtures';
+import { VendorDirectoryFactsPort } from '../src/site-publish/seo/vendor-directory-facts';
+import { seoTemplatesProblem } from '../src/seo-directory/settings/seo-settings';
 import { STAFF, siteWorld } from './support/site-world';
 
 /** Slice 6: vendor-site SEO. The staff-editable vendorHome and vendorPage templates, the brand suffix rule, the crawler list in robots.txt, and the rebuild when staff change them. */
@@ -128,5 +130,83 @@ describe('through the real build', () => {
     const w = siteWorld({ kind: 'plumber', level: 'PRO', claimed: true, hosts: hosts as never }); Object.assign(w.build, { seoSettings: settings() });
     const { publication } = await w.build.build('v-plumber', { actor: STAFF });
     const home = (await w.repo.pagesOf(publication.id)).find((p) => p.path === '/')!.html; expect(home).toMatch(/<title>Sri Ganesh Plumbing \| [^<|]+<\/title>/); expect(home).not.toMatch(/<title>[^<]*Get4Domain/);
+  });
+});
+
+const types = (s: PageSeo): string[] => s.jsonLd.map((j) => String(j['@type']));
+const FAQS = [{ q: 'Do you work on Sundays?', a: 'Yes, by appointment.' }, { q: 'How much does it cost?', a: 'From Rs 499 per visit.' }, { q: 'Do you cover Adyar?', a: 'Yes, we cover Adyar and Perambur.' }];
+
+describe('Organization, WebSite and FAQPage (prompt 6b)', () => {
+  it('the home page gets an Organization (name, url, logo, sameAs) and a WebSite; no other page does', () => {
+    const home = seo('home', { vendorTemplates: TPL, logo: 'https://cdn.example.test/logo.png' });
+    expect(types(home)).toEqual(expect.arrayContaining(['Organization', 'WebSite']));
+    const org = home.jsonLd.find((j) => j['@type'] === 'Organization')!; const site = home.jsonLd.find((j) => j['@type'] === 'WebSite')!;
+    expect(org).toMatchObject({ '@context': 'https://schema.org', name: 'Ranjith Plumber', logo: 'https://cdn.example.test/logo.png' }); expect(String(org.url)).toMatch(/^https:\/\/.+\/$/);
+    expect(site).toMatchObject({ name: 'Ranjith Plumber', inLanguage: 'en-IN' }); expect(JSON.stringify(site)).not.toContain('SearchAction');
+    expect((org.sameAs as string[]).every((u) => /^https?:\/\//.test(u))).toBe(true);   // the vendor's own profile links, from the theme block
+    for (const page of ['about', 'services', 'contact']) expect(types(seo(page, { vendorTemplates: TPL }))).not.toEqual(expect.arrayContaining(['Organization']));
+    expect(types(seo('home'))).not.toEqual(expect.arrayContaining(['Organization', 'WebSite', 'FAQPage']));   // off without templates
+  });
+  it('a logo that is not an http(s) link is left out, and no offers, prices or ratings appear in any block', () => {
+    const home = seo('home', { vendorTemplates: TPL, logo: 'javascript:alert(1)' });
+    expect(home.jsonLd.find((j) => j['@type'] === 'Organization')).not.toHaveProperty('logo'); expect(JSON.stringify(home.jsonLd)).not.toMatch(/offers|priceRange|aggregateRating|₹/);
+  });
+  it('FAQPage only from the questions the vendor entered; an item with a price is left out; none entered means no block', () => {
+    const withFaq = seo('home', { vendorTemplates: TPL, faqs: FAQS }); const f = withFaq.jsonLd.find((j) => j['@type'] === 'FAQPage') as { mainEntity: Array<{ name: string; acceptedAnswer: { text: string } }> };
+    expect(f.mainEntity.map((q) => q.name)).toEqual(['Do you work on Sundays?', 'Do you cover Adyar?']); expect(f.mainEntity[0].acceptedAnswer.text).toBe('Yes, by appointment.');
+    expect(types(seo('home', { vendorTemplates: TPL, faqs: [] }))).not.toContain('FAQPage'); expect(types(seo('home', { vendorTemplates: TPL }))).not.toContain('FAQPage');
+    expect(types(seo('home', { vendorTemplates: TPL, faqs: [{ q: 'Price?', a: 'Rs 499' }] }))).not.toContain('FAQPage');
+    expect(types(seo('about', { vendorTemplates: TPL, faqs: FAQS }))).not.toContain('FAQPage');
+  });
+  it('areaServed names the locality and the city; the theme own address is kept as it is', () => {
+    const biz = seo('home', { vendorTemplates: TPL, locality: 'Perambur', pincode: '600011' }).jsonLd[0] as Record<string, unknown>;
+    expect(biz.areaServed).toEqual([{ '@type': 'Place', name: 'Perambur' }, { '@type': 'City', name: 'Chennai' }]); expect(biz.address).toMatchObject({ addressLocality: 'Chennai', postalCode: '600001', addressCountry: 'IN' });   // the theme's own address (from the vendor's text) is never overwritten by the listing's pincode
+      });
+});
+
+describe('services in the fallback description (prompt 6a)', () => {
+  const bare = doc('plumber', { cms: { tagline: '', about: '' } });
+  it('when the vendor left the fields empty, the locality, city and top three services appear', () => {
+    const s = seo('home', { vendorTemplates: TPL, locality: 'Perambur', services: ['Tap repair', 'Pipe fitting', 'Leak detection', 'Drain cleaning'] }, bare);
+    expect(s.description).toBe(`Ranjith Plumber, ${LABEL} in Perambur, Chennai. Services include Tap repair, Pipe fitting, Leak detection.`);
+    expect(s.description.length).toBeLessThanOrEqual(160);
+  });
+  it('without a locality it uses the city; without services it uses the older sentence', () => {
+    expect(seo('home', { vendorTemplates: TPL, services: ['Tap repair'] }, bare).description).toBe(`Ranjith Plumber, ${LABEL} in Chennai. Services include Tap repair.`);
+    expect(seo('home', { vendorTemplates: TPL, locality: 'Perambur' }, bare).description).toBe(`Ranjith Plumber, ${LABEL} in Perambur, Chennai. Read about the business and the services it offers.`);
+  });
+  it("the vendor's own sentences still come first, and a service with a price in its name is never used", () => {
+    expect(seo('home', { vendorTemplates: TPL, services: ['Tap repair'] }).description).toContain('Leaks fixed fast');
+    expect(seo('home', { vendorTemplates: TPL, services: ['Tap repair from Rs 99', 'Pipe fitting'] }, bare).description).toContain('Services include Pipe fitting.');
+  });
+  it('{services} is a placeholder staff may use in a template', () => { expect(seoTemplatesProblem({ vendorHome: { description: ['{vendorName}: {services}'] } })).toBeNull(); });
+});
+
+describe('through the build: the directory listing gives the locality, and the backlink block is data (prompt 6a, 8e)', () => {
+  const links = { brand: { href: 'https://get4domain.com/', text: 'Get4Domain' }, links: [{ href: 'https://get4domain.com/chennai/plumbers-in-perambur', text: 'Plumbers in Perambur, Chennai' }] };
+  const facts = (over: Partial<{ locality: string | null }> = {}): VendorDirectoryFactsPort => ({ forVendor: async () => ({ locality: 'Perambur', city: 'Chennai', pincode: '600011', keywords: ['plumber', 'plumbers'], directoryLinks: links, ...over }), forVendors: async () => new Map() });
+  const world = (f: VendorDirectoryFactsPort) => { const w = siteWorld({ kind: 'plumber', level: 'PRO', claimed: true }); Object.assign(w.build, { seoSettings: { get: async () => ({ ...TPL, crawlers: ['Googlebot'] }) }, dirFacts: f }); return w; };
+  it('the home title and the structured data carry the locality, the pincode and the vendor FAQ', async () => {
+    const w = world(facts()); const { publication } = await w.build.build('v-plumber', { actor: STAFF });
+    const home = (await w.repo.pagesOf(publication.id)).find((p) => p.path === '/')!.html;
+    // "Sri Ganesh Plumbing | Plumber in Perambur, Chennai | Get4Domain" is 62 characters: over the cap, so the template falls back to the city form (the locality still reaches areaServed below)
+    expect(home).toMatch(/<title>Sri Ganesh Plumbing \| Plumber in Chennai \| Get4Domain<\/title>/);
+    const blocks = [...home.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map((m) => JSON.parse(m[1].replace(/\\u003c/g, '<').replace(/\\u003e/g, '>').replace(/\\u0026/g, '&')));
+    expect(blocks.map((b) => b['@type'])).toEqual(expect.arrayContaining(['Organization', 'WebSite', 'FAQPage', 'BreadcrumbList']));
+    const biz = blocks[0]; expect(biz.areaServed).toEqual([{ '@type': 'Place', name: 'Perambur' }, { '@type': 'City', name: expect.any(String) }]); expect(biz.address.postalCode).toBe('600001');
+    expect(blocks.find((b) => b['@type'] === 'FAQPage').mainEntity[0].name).toBe('Do you work on Sundays?');
+  });
+  it('a change of locality or of the directory facts rebuilds an unchanged site; the same facts reuse the build', async () => {
+    let cur = facts(); const w = world({ forVendor: (v) => cur.forVendor(v), forVendors: (v) => cur.forVendors(v) });
+    const a = await w.build.build('v-plumber', { actor: STAFF }); expect((await w.build.build('v-plumber', { actor: STAFF })).reused).toBe(true);
+    cur = facts({ locality: 'Adyar' }); const c = await w.build.build('v-plumber', { actor: STAFF }); expect(c.reused).toBe(false); expect(c.publication.version).toBe(a.publication.version + 1);
+  });
+  it('a vendor with no directory listing builds exactly as before the facts existed (the contact area, or the city)', async () => {
+    const w = world({ forVendor: async () => null, forVendors: async () => new Map() }); const { publication } = await w.build.build('v-plumber', { actor: STAFF });
+    expect((await w.repo.pagesOf(publication.id)).find((p) => p.path === '/')!.html).toMatch(/<title>Sri Ganesh Plumbing \| [^<|]+ in Chennai \| Get4Domain<\/title>/);
+  });
+  it('the rendered pages stay inside the size budget with the directory links attached (the renderer accepts the extra host data)', async () => {
+    const w = world(facts()); const { publication } = await w.build.build('v-plumber', { actor: STAFF });
+    expect((await w.repo.pagesOf(publication.id)).length).toBeGreaterThan(5);
   });
 });

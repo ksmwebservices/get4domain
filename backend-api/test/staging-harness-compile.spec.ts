@@ -29,6 +29,10 @@ import { V3ServicesModule } from '../src/v3-services/services.module';
 import { V3ServiceRequestsModule } from '../src/v3-service-requests/service-requests.module';
 import { V3ThemeSwitchModule } from '../src/v3-theme-switch/theme-switch.module';
 import { SitePublicService } from '../src/site-publish/publish/site-public.service';
+import { SeoDirectoryModule } from '../src/seo-directory/seo-directory.module';
+import { SeoVendorFactsModule } from '../src/seo-directory/seo-vendor-facts.module';
+import { SeoVendorDirectoryFacts } from '../src/seo-directory/backlinks/seo-vendor-facts.service';
+import { SiteBuildService } from '../src/site-publish/publish/site-build.service';
 import { testAppModuleMetadata } from './support/test-app';
 
 /**
@@ -81,6 +85,13 @@ describe('staging harness: the test apps compile without a database', () => {
   // The real Batch 3 modules, as app.module.ts wires them: a constructor parameter typed as Pick<...> or an interface compiles to Object and needs @Inject.
   it('the production Batch 3 modules resolve together', async () => {
     await compiles({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, SitePublishModule, SiteDomainsModule, DirectoryModule, VendorLifecycleModule, SiteLifecycleModule, SeededSitesModule, RequestsOrdersModule, TermsModule], controllers: [], providers: [] });
+  }, 60000);
+
+  // The SEO block as app.module.ts wires it: the global facts module hands the site build the vendor's directory facts WITHOUT site-publish importing the directory.
+  it('the production SEO modules resolve with the site build, which then holds the directory facts port', async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, SitePublishModule, SiteDomainsModule, DirectoryModule, SeoDirectoryModule, SeoVendorFactsModule], controllers: [], providers: [] } as never).overrideProvider(PrismaService).useValue(fakePrisma).compile();
+    expect((moduleRef.get(SiteBuildService) as unknown as { dirFacts: unknown }).dirFacts).toBeInstanceOf(SeoVendorDirectoryFacts);
+    await moduleRef.close();
   }, 60000);
 
   // Batch 4: the real wallet module with plan billing as app.module.ts wires them (the wallet is global; plan billing asks it, optionally, about top-ups and for a place in its transaction).

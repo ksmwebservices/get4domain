@@ -34,8 +34,16 @@ export interface PageSeoArgs {
    * description; the vendor's own override still wins and so do the vendor's own sentences. Absent = the previous behaviour, unchanged.
    */
   vendorTemplates?: { vendorHome: PageTemplate; vendorPage: PageTemplate };
-  /** the neighbourhood, when the site states one (contact.area); empty = the template falls back to the city form */
+  /** the neighbourhood: from the vendor's directory listing (the site has no field of its own); empty = the template falls back to the city form */
   locality?: string;
+  /** the listing's postal code, when stored */
+  pincode?: string;
+  /** the names of the vendor's own services (not the platform's samples), for the fallback description; at most three are used */
+  services?: string[];
+  /** the vendor's logo link, for the Organization block */
+  logo?: string;
+  /** the FAQ items the VENDOR entered (already cut to the plan limit). FAQPage structured data is written only from these, never invented */
+  faqs?: Array<{ q: string; a: string }>;
   /** false when the canonical host is the vendor's own custom domain: the " | Get4Domain" suffix is then not forced. Default true (a get4domain subdomain). */
   brandSuffix?: boolean;
 }
@@ -75,7 +83,8 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
 
   const pageTitle = home ? '' : String(r.title ?? '').split(' | ')[0];
   const tpl = a.vendorTemplates ? (home ? a.vendorTemplates.vendorHome : a.vendorTemplates.vendorPage) : null;
-  const tplVars = { vendorName: a.siteName, category: titleCase(label), locality: a.locality ?? '', city: a.city, pageName: home ? '' : (a.itemName || pageTitle) };
+  const topServices = [...new Set((a.services ?? []).map((n) => String(n ?? '').replace(/\s+/g, ' ').trim()).filter((n) => n && !isUnsafeSeoText(n)))].slice(0, 3);
+  const tplVars = { vendorName: a.siteName, category: titleCase(label), locality: a.locality ?? '', city: a.city, services: topServices.join(', '), pageName: home ? '' : (a.itemName || pageTitle) };
   const ownTitle = a.override?.title && !isUnsafeSeoText(a.override.title) && a.override.title.trim().length <= 60 ? a.override.title.trim() : '';
   const title = ownTitle ? ownTitle
     : tpl ? buildTitle(tpl.title, tplVars, { brand: a.brandSuffix !== false })
@@ -111,7 +120,11 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
   const base = a.siteUrl.replace(/\/+$/, '');
   if (a.vendorTemplates) {
     // slice 6: facts the vendor's own site already states, added only when the theme's block lacks them; nothing invented, no offer, no rating
-    const extra = cleanLd({ url: `${base}/`, ...(a.city ? { areaServed: { '@type': 'City', name: a.city }, address: { '@type': 'PostalAddress', addressLocality: a.city, addressCountry: 'IN' } } : {}) }) as Record<string, unknown>;
+    const where = [...(a.locality ? [{ '@type': 'Place', name: a.locality }] : []), ...(a.city ? [{ '@type': 'City', name: a.city }] : [])];
+    const extra = cleanLd({
+      url: `${base}/`, ...(where.length ? { areaServed: where.length === 1 ? where[0] : where } : {}),
+      ...(a.city ? { address: { '@type': 'PostalAddress', addressLocality: a.city, ...(a.pincode ? { postalCode: a.pincode } : {}), addressCountry: 'IN' } } : {}),
+    }) as Record<string, unknown>;
     for (const [k, v] of Object.entries(extra)) if (biz[k] === undefined) biz[k] = v;
   }
   const jsonLd: Array<Record<string, unknown>> = [biz];
@@ -122,6 +135,16 @@ export function buildPageSeo(a: PageSeoArgs): PageSeo {
     jsonLd.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: c.item })) });
   } else {
     jsonLd.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: a.siteName, item: crumbs[0].item }] });
+  }
+  if (a.vendorTemplates && home) {
+    // Organization (name, url, logo, sameAs) and WebSite for the vendor's own site, on its home page only; sameAs only from the profile links the vendor supplied
+    const homeUrl = `${base}${a.lang === 'ta' ? '/ta' : '/'}`.replace(/\/\/$/, '/');
+    const logo = httpUrl(a.logo);
+    jsonLd.push(cleanLd({ '@context': 'https://schema.org', '@type': 'Organization', name: a.siteName, url: homeUrl, ...(logo ? { logo } : {}), ...(Array.isArray(biz.sameAs) ? { sameAs: biz.sameAs } : {}) }) as Record<string, unknown>);
+    jsonLd.push(cleanLd({ '@context': 'https://schema.org', '@type': 'WebSite', name: a.siteName, url: homeUrl, inLanguage: a.lang === 'ta' ? 'ta-IN' : 'en-IN' }) as Record<string, unknown>);
+    // FAQPage ONLY from the questions the vendor entered; an item whose question or answer carries a price or a banned word is left out, and no items means no block
+    const faq = (a.faqs ?? []).map((f) => ({ q: String(f?.q ?? '').replace(/\s+/g, ' ').trim(), a: String(f?.a ?? '').replace(/\s+/g, ' ').trim() })).filter((f) => f.q && f.a && !isUnsafeSeoText(f.q) && !isUnsafeSeoText(f.a));
+    if (faq.length) jsonLd.push({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) });
   }
   const itemType = cat.track === 'ecommerce' ? 'Product' : 'Service';
   if (a.template === 'services' && a.items.length) {

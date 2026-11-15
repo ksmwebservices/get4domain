@@ -11,6 +11,8 @@ import { SeoMeController } from './api/seo-me.controller';
 import { SeoPublicController } from './api/seo-public.controller';
 import { SeoTargetsAdminController } from './api/seo-targets-admin.controller';
 import { SeoBacklinkService } from './backlinks/seo-backlink.service';
+import { SeoVendorDirectoryFacts } from './backlinks/seo-vendor-facts.service';
+import { VendorDirectoryFactsPort } from '../site-publish/seo/vendor-directory-facts';
 import { PrismaSeoUtmStore, SeoUtmStore } from './campaigns/seo-utm.store';
 import { SeoUtmService } from './campaigns/seo-utm.service';
 import { DbPageOverrides, SeoKeywordTargetService } from './keywords/seo-keyword-target.service';
@@ -34,6 +36,7 @@ export const SEO_PROVIDERS: Provider[] = [
   { provide: SeoPageOverrides, useExisting: DbPageOverrides },   // slice 5: staff overrides of ACTIVE keyword targets
   { provide: SeoClickStore, useClass: PrismaSeoClickStore },
   SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService, SeoSitemapService, SeoKeywordTargetService, SeoUtmService, SeoBacklinkService,
+  { provide: VendorDirectoryFactsPort, useClass: SeoVendorDirectoryFacts },   // read by the site build and the staff SEO report
 ];
 export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, SeoTargetsAdminController, DirectoryPagesController, ClickOutController, SitemapController, SeoPublicController, SeoMeController];
 export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService, SeoSitemapService, SeoKeywordTargetStore, SeoKeywordTargetService, SeoUtmStore, SeoUtmService, SeoBacklinkService, DbPageOverrides];

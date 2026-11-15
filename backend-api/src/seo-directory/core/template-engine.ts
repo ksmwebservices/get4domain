@@ -11,7 +11,7 @@ export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 160;
 export const H1_MAX = 120;
 
-export const SEO_PLACEHOLDERS = ['category', 'categoryPlural', 'locality', 'city', 'state', 'pincode', 'count', 'vendorName', 'pageName'] as const;
+export const SEO_PLACEHOLDERS = ['category', 'categoryPlural', 'locality', 'city', 'state', 'pincode', 'count', 'vendorName', 'pageName', 'services'] as const;
 export type SeoPlaceholder = (typeof SEO_PLACEHOLDERS)[number];
 export type SeoVars = Partial<Record<SeoPlaceholder, string | number | null | undefined>>;
 

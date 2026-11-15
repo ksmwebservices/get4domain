@@ -54,7 +54,7 @@ export const DEFAULT_SEO_TEMPLATES: Readonly<SeoTemplates> = {
   },
   vendorHome: {
     title: ['{vendorName} | {category} in {locality}, {city}', '{vendorName} | {category} in {city}', '{vendorName} | {category}', '{vendorName}'],
-    description: ['{vendorName}, {category} in {locality}, {city}. Read about the business and the services it offers.', '{vendorName}, {category} in {city}. Read about the business and the services it offers.', '{vendorName}, {category}. Read about the business and the services it offers.'],
+    description: ['{vendorName}, {category} in {locality}, {city}. Services include {services}.', '{vendorName}, {category} in {city}. Services include {services}.', '{vendorName}, {category} in {locality}, {city}. Read about the business and the services it offers.', '{vendorName}, {category} in {city}. Read about the business and the services it offers.', '{vendorName}, {category}. Read about the business and the services it offers.'],
     h1: ['{vendorName}'],
   },
   vendorPage: {

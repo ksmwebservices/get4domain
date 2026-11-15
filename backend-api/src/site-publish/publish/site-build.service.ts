@@ -17,6 +17,7 @@ import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
 import { assembleDocument, buildPageSeo } from '../seo/page-seo';
 import { buildRobotsTxt, buildSitemap, SitemapEntry } from '../seo/site-files';
 import { VendorSeoSettings } from '../seo/vendor-seo-settings';
+import { VendorDirectoryFactsPort } from '../seo/vendor-directory-facts';
 import { siteError } from '../site.errors';
 import { CSS_BUDGET_BYTES, DEFAULT_SITE_BASE, PAGE_BUDGET_BYTES, clampMotion, contentTypeFor, kitMotion, parseLanguages, sha256, stableJson } from './site-config';
 import { SiteAudit } from './site-audit';
@@ -52,6 +53,8 @@ export class SiteBuildService {
     @Optional() @Inject(SnapshotSink) private readonly snapshots?: SnapshotSink,
     /** slice 6: the staff-editable vendor SEO templates and the crawler list; absent = titles, descriptions and robots.txt are written as before */
     @Optional() @Inject(VendorSeoSettings) private readonly seoSettings?: VendorSeoSettings,
+    /** the vendor's directory listing: locality, city, pincode and the backlink block as data (prompt 6a, 6b, 8e); absent or no listing = none of it */
+    @Optional() @Inject(VendorDirectoryFactsPort) private readonly dirFacts?: VendorDirectoryFactsPort,
   ) {}
 
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
@@ -84,12 +87,14 @@ export class SiteBuildService {
     const b3 = this.b3 ? await this.b3.get() : null;
     const seededState = this.lifecycle ? await this.lifecycle.lifecycleOf(vendorId) : null;
     const isSeeded = seededState === 'SEEDED' || seededState === 'INVITED';
+    const vseo = this.seoSettings ? await this.seoSettings.get() : null;
+    const dfacts = this.dirFacts && vseo ? await this.dirFacts.forVendor(vendorId) : null;
     const hostExtra = {
       ...(b3 ? { texts: { listedOn: b3.listedOnLineText, footerBridge: b3.siteFooterBridgeText, seededNotice: b3.seededNoticeText, customerDisclosure: b3.customerDisclosureText } } : {}),
       ...(seededState ? { lifecycle: seededState } : {}),
+      ...(dfacts?.directoryLinks ? { directoryLinks: dfacts.directoryLinks } : {}),   // prompt 8e: the brand link and up to four directory links, as data; drawing them is a theme task
     };
 
-    const vseo = this.seoSettings ? await this.seoSettings.get() : null;
     const brandSuffix = !primary.isCustom;   // a get4domain subdomain carries the brand suffix; a custom domain is the vendor's own
     const hostOpts = { primaryHost: primary.host ?? undefined, customDomain: primary.isCustom && primary.host ? primary.host : undefined };
     const directions = renderEnt.callsToAction !== false;   // slice B2: Free shows the address as plain text, no directions link
@@ -106,7 +111,7 @@ export class SiteBuildService {
     // hashes: what the output depends on, so an unchanged site is recognised without rendering
     const { managed, ...hashable } = doc;   // the managed document is recorded, not hashed: two documents that render the same site are the same build
     const contentHash = sha256(stableJson({ doc: hashable, categoryId, year, limits, motion, siteBase: this.siteBase, ...(primary.host ? { primaryHost: primary.host } : {}) }));
-    const settingsHash = sha256(stableJson({ ...(vseo ? { vendorSeo: { home: vseo.vendorHome, page: vseo.vendorPage, crawlers: vseo.crawlers, brandSuffix } } : {}), themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
+    const settingsHash = sha256(stableJson({ ...(vseo ? { vendorSeo: { home: vseo.vendorHome, page: vseo.vendorPage, crawlers: vseo.crawlers, brandSuffix } } : {}), ...(dfacts ? { dirFacts: { locality: dfacts.locality, city: dfacts.city, pincode: dfacts.pincode } } : {}), themeId: resolved.themeId, languages: langs.languages, motion, renderEnt, hostExtra, indexable: indexing.indexable, missing: indexing.missing.map((m) => m.code) }));
     const newest = await this.repo.newestPublication(vendorId);
     if (newest && newest.themeHash === theme.hash && newest.contentHash === contentHash && newest.settingsHash === settingsHash && newest.themeId === resolved.themeId) {
       await this.snapshots?.record(vendorId, newest.id, newest.version, managed ?? null);
@@ -130,7 +135,8 @@ export class SiteBuildService {
           rendered, path: p.path, template: p.template, lang, languages: langs.languages, indexable: indexing.indexable, siteUrl, categoryId, siteName, city: contact.city,
           image: doc.cms?.banner ?? '', itemName: p.item ? String((p.item as { name: string }).name) : '', items: (input.content.items as Array<{ name: string; description: string; image: string }>) ?? [],
           tagline: String(doc.cms?.tagline ?? ''), about: String(doc.cms?.about ?? ''),
-          ...(vseo ? { vendorTemplates: { vendorHome: vseo.vendorHome, vendorPage: vseo.vendorPage }, locality: String((contact as { area?: string }).area ?? ''), brandSuffix } : {}),   // slice 6
+          ...(vseo ? { vendorTemplates: { vendorHome: vseo.vendorHome, vendorPage: vseo.vendorPage }, locality: dfacts?.locality ?? String((contact as { area?: string }).area ?? ''), ...(dfacts?.pincode ? { pincode: dfacts.pincode } : {}), brandSuffix,
+            services: doc.items.filter((i) => i.active && !i.sample).map((i) => i.name), logo: doc.cms?.logo ?? '', faqs: (input.content.faqs as Array<{ q: string; a: string }>) ?? [] } : {}),   // slice 6 and prompt 6a, 6b
           ...(lang === 'en' ? { override: pageSeoOverride(doc.pageSeo, p) } : {}),   // slice B1: the vendor's own text for this page (English pages only)
         });
         const html = assembleDocument({ seo, bodyHtml: rendered.html, cssHref: '/assets/site.css', favicon: doc.cms?.favicon ?? undefined });
