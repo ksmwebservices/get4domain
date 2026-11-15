@@ -25,6 +25,8 @@ describe('the SEO block on staging', () => {
   let stateId = ''; let cityId = ''; let locId = ''; let catId = ''; const bizIds: string[] = []; let clickBiz = ''; const targetIds: string[] = [];
   const saved = new Map<string, { existed: boolean; value: unknown }>();
   const get = (url: string, token?: string) => { const r = request(app.getHttpServer()).get(url).timeout({ response: 60_000, deadline: 90_000 }); return token ? r.set('Authorization', `Bearer ${token}`) : r; };
+  /** A GET whose body is read as TEXT whatever its content type: supertest only fills `res.text` for text types, so an image/svg+xml or xml answer would otherwise give a Buffer and no text. */
+  const getText = (url: string, token?: string) => get(url, token).buffer(true).parse((res, cb) => { let d = ''; res.setEncoding('utf8'); res.on('data', (c: string) => { d += c; }); res.on('end', () => cb(null, d)); });
   const send = (method: 'post' | 'put', url: string, token: string, body: object) => request(app.getHttpServer())[method](url).timeout({ response: 60_000, deadline: 90_000 }).set('Authorization', `Bearer ${token}`).send(body);
   const base = '/v3/admin/seo-directory';
   /** remembers what a setting was BEFORE the suite touches it (a staff route counts as touching it), so afterAll can put it back exactly */
@@ -208,9 +210,9 @@ v3t ${tag} stranger,50,Low
 
   // ─── sitemap and plan read the real rows ─────────────────────────────────────────────────────────────────────────────────────────────────────
   it('the sitemap lists this suite\'s pages, and the keyword plan proposes the keywords for them', async () => {
-    const idx = await get('/v3/directory/sitemaps/index.xml'); expect(idx.status).toBe(200); expect(idx.headers['content-type']).toMatch(/xml/);
-    const chunk = await get('/v3/directory/sitemaps/directory-1.xml'); expect(chunk.status).toBe(200);
-    const all = [chunk.text]; for (let n = 2; n <= 5 && !all.join('').includes(`/${citySlug}/`); n++) { const c = await get(`/v3/directory/sitemaps/directory-${n}.xml`); if (c.status !== 200) break; all.push(c.text); }
+    const idx = await getText('/v3/directory/sitemaps/index.xml'); expect(idx.status).toBe(200); expect(idx.headers['content-type']).toMatch(/xml/);
+    const chunk = await getText('/v3/directory/sitemaps/directory-1.xml'); expect(chunk.status).toBe(200);
+    const all = [String(chunk.body)]; for (let n = 2; n <= 5 && !all.join('').includes(`/${citySlug}/`); n++) { const c = await getText(`/v3/directory/sitemaps/directory-${n}.xml`); if (c.status !== 200) break; all.push(String(c.body)); }
     expect(all.join('')).toContain(`/${citySlug}/${pluralSlug.replace(/\d/g, '')}`);
     const plan = await get(`${base}/keyword-plan`, mkt); expect(plan.status).toBe(200);
     const mine = (plan.body.data.rows as Array<{ path: string; keyword: string; status: string; source: string }>).filter((r) => r.path.startsWith(`/${citySlug}`));
@@ -223,8 +225,8 @@ v3t ${tag} stranger,50,Low
     const b = await get(`/v3/directory/backlink-block/${clickBiz}`); expect(b.status).toBe(200);
     expect(b.body.data.brand.text).toBe('Get4Domain'); expect(b.body.data.links.length).toBeGreaterThanOrEqual(1); expect(b.body.data.links.length).toBeLessThanOrEqual(4);
     expect(b.body.data.links.map((l: { href: string }) => l.href).join(' ')).toContain(`/${citySlug}`); expect(b.body.data.html).toMatch(/^<p class="g4d-backlinks">/);
-    const badge = await get(`/v3/directory/badge/${clickBiz}.svg`); expect(badge.status).toBe(200); expect(badge.headers['content-type']).toMatch(/image\/svg\+xml/); expect(badge.headers['content-security-policy']).toContain("default-src 'none'"); expect(badge.headers['x-content-type-options']).toBe('nosniff');
-    expect(badge.text).toContain('Listed on Get4Domain'); expect(badge.text).not.toContain(tag);
+    const badge = await getText(`/v3/directory/badge/${clickBiz}.svg`); expect(badge.status).toBe(200); expect(badge.headers['content-type']).toMatch(/image\/svg\+xml/); expect(badge.headers['content-security-policy']).toContain("default-src 'none'"); expect(badge.headers['x-content-type-options']).toBe('nosniff');
+    const svg = String(badge.body); expect(typeof badge.body).toBe('string'); expect(svg).toContain('Listed on Get4Domain'); expect(svg).toMatch(/^<svg /); expect(svg).not.toContain(tag);
     const embed = await get(`/v3/directory/badge-embed/${clickBiz}`); expect(embed.status).toBe(200); expect(embed.body.data.html).toContain(`/business/v3t-${tag}-b0`);
     const gone = bizIds[2]; await prisma.v3DirectoryBusiness.update({ where: { id: gone }, data: { status: 'REMOVED', removedAt: new Date() } });
     for (const u of [`/v3/directory/backlink-block/${gone}`, `/v3/directory/badge/${gone}.svg`, `/v3/directory/badge-embed/${gone}`, '/v3/directory/badge/nope.png', '/v3/directory/badge/..%2Fx.svg']) expect([u, (await get(u)).status]).toEqual([u, 404]);
