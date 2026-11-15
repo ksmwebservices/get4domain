@@ -12,7 +12,7 @@ import {
   BusinessFacts, Card, CLAIM_ANSWER, Crumb, Facet, FaqItem, Link, listNames, NoindexReason, PageModel, paginate, ROBOTS_INDEX, ROBOTS_NOINDEX, breadcrumbList, collectionJsonLd, hoursTextOf, localBusinessJsonLd,
   plural as pluralFn, shortDescription, takeLinks,
 } from '../core/page-model';
-import { buildDescription, buildH1, buildTitle, SeoVars } from '../core/template-engine';
+import { buildDescription, buildH1, buildTitle, cutWords, H1_MAX, SeoVars } from '../core/template-engine';
 import { PageSpec, buildPath, canonicalOrigin, clickOutUrl, parsePath, splitTail, withPageNumber } from '../core/url-scheme';
 import { loadPlaces, Places, CatInfo } from './places';
 import { FacetCounts, ListedBusiness, Scope, SeoDirectoryData } from './seo-directory.data';
@@ -143,7 +143,7 @@ export class SeoPageService {
     const title = over?.title ? buildTitle([over.title], {}, { page: n }) : buildTitle(t.title, m.vars, { page: n });
     const description = buildDescription(descCands, m.vars);
     const h1Base = over?.h1 ? buildH1([over.h1], {}) : buildH1(t.h1, m.vars);
-    const h1 = n >= 2 ? `${h1Base} - Page ${n}` : h1Base;
+    const h1 = n >= 2 ? `${cutWords(h1Base, H1_MAX - ` - Page ${n}`.length)} - Page ${n}` : h1Base;   // the page marker always fits inside the H1 cap
     const canonical = `${ctx.origin}${ctx.path}`;
     const pagination = m.paged ? paginate(spec, m.total, ctx.pageSize, n, ctx.origin) : null;
     const jsonLd: Array<Record<string, unknown>> = [

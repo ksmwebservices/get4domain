@@ -1,6 +1,7 @@
 import { DEFAULT_SEO_TEMPLATES, PageTemplate, SEO_PAGE_TYPES, SeoPageType, SeoTemplates } from '../core/default-templates';
 import { SEO_PLACEHOLDERS, placeholdersIn } from '../core/template-engine';
 import { isUnsafeSeoText } from '../../site-publish/seo/seo-text';
+import { hasRankingClaim } from '../core/ranking-claims';
 
 /**
  * Editable SEO settings (stored in g4d_plan_settings). They are NOT registered with the generic plan-settings API (that one is SUPER_ADMIN only); staff edit them through the
@@ -30,6 +31,7 @@ export function seoTemplatesProblem(value: unknown): string | null {
         const bad = placeholdersIn(t).find((p) => !allowed.has(p));
         if (bad) return `${type}.${field}: {${bad}} is not a placeholder (${SEO_PLACEHOLDERS.join(', ')})`;
         if (isUnsafeSeoText(t)) return `${type}.${field}: a template cannot carry a price or a retired product name`;
+        if (hasRankingClaim(t)) return `${type}.${field}: a template cannot claim a rank or a result (best, top, first, guaranteed, rank)`;
       }
     }
   }

@@ -107,8 +107,8 @@ describe('default templates', () => {
 
 describe('stored templates', () => {
   it('overlay the defaults one field at a time', () => {
-    const r = resolveSeoTemplates({ cityCategory: { title: ['Best {categoryPlural} in {city}'] } });
-    expect(r.cityCategory.title).toEqual(['Best {categoryPlural} in {city}']);
+    const r = resolveSeoTemplates({ cityCategory: { title: ['Local {categoryPlural} in {city}'] } });
+    expect(r.cityCategory.title).toEqual(['Local {categoryPlural} in {city}']);
     expect(r.cityCategory.description).toEqual(T.cityCategory.description);
     expect(r.home).toEqual(T.home);
   });
@@ -126,6 +126,6 @@ describe('stored templates', () => {
     expect(seoTemplatesProblem({ home: { title: ['From ₹999 {city}'] } })).toMatch(/price/);
     expect(seoTemplatesProblem({ home: { title: ['x'.repeat(201)] } })).toMatch(/200/);
     expect(seoTemplatesProblem({ home: { heading: ['x'] } })).toMatch(/title, description or h1/);
-    expect(seoTemplatesProblem({ home: { title: ['Best {category} in {city}'] } })).toBeNull();
+    expect(seoTemplatesProblem({ home: { title: ['Local {category} in {city}'] } })).toBeNull();
   });
 });
