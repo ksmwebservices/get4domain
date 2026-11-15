@@ -43,4 +43,12 @@ export class SitemapController {
   @Public() @Throttle(RATE.directoryRead) @Get('robots.txt')
   @ApiOperation({ summary: 'The robots.txt text of the main site: allow all, disallow the click-out, internal search and sort or filter URLs, the Sitemap line only when indexable' })
   async robots(@Res() res: Response, @Headers('if-none-match') inm?: string): Promise<void> { await this.send(await this.sitemaps.robots(), 'text/plain; charset=utf-8', res, inm); }
+
+  @Public() @Throttle(RATE.directoryRead) @Get('llms.txt')
+  @ApiOperation({ summary: 'The global llms.txt of the directory: what it is, the categories and cities that have a page, the sitemap link. 404 while the directory pages are not indexable' })
+  async llms(@Res() res: Response, @Headers('if-none-match') inm?: string): Promise<void> {
+    const body = await this.sitemaps.llms();
+    if (body === null) throw new NotFoundException(seoError('SEO_NOT_FOUND', 'Not found.'));
+    await this.send(body, 'text/plain; charset=utf-8', res, inm);
+  }
 }

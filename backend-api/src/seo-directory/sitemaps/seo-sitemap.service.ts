@@ -3,6 +3,7 @@ import { DirectoryRepository } from '../../directory/directory.repository';
 import { DirectorySettingsService } from '../../directory/settings/directory-settings.service';
 import { SeoKeywordStore } from '../keywords/seo-keyword.store';
 import { buildDirectoryRobots } from '../core/robots';
+import { buildDirectoryLlms } from '../core/llms-directory';
 import { buildSitemapIndex, buildUrlset, chunkCount, chunkFile, enumerateListingPaths, ListingPath, SITEMAP_CHUNK, SitemapEntry } from '../core/sitemap';
 import { canonicalOrigin } from '../core/url-scheme';
 import { SeoSettingsService } from '../settings/seo-settings.service';
@@ -73,6 +74,18 @@ export class SeoSitemapService {
   async robots(): Promise<string> {
     const [s, crawlers, origin] = await Promise.all([this.settings.get(), this.seo.crawlers(), this.origin()]);
     return buildDirectoryRobots({ crawlers, indexable: s.directoryPagesIndexable, sitemapUrl: origin ? `${origin}/sitemap.xml` : '' });
+  }
+
+  /** The global llms.txt: what the directory is, the categories and cities that have a page, the sitemap link. null (404) while the directory pages are not indexable. */
+  async llms(): Promise<string | null> {
+    const s = await this.settings.get();
+    if (!s.directoryPagesIndexable) return null;
+    const [paths, origin] = await Promise.all([this.listingPaths(s.directoryThinPageMinBusinesses), this.origin()]);
+    const top = (type: 'category' | 'city') => paths.filter((p) => p.ctx.type === type).sort((a, b) => b.count - a.count || (a.path < b.path ? -1 : 1));
+    return buildDirectoryLlms({
+      origin, sitemapUrl: origin ? `${origin}/sitemap.xml` : '',
+      categories: top('category').map((p) => ({ name: p.ctx.cat?.plural ?? '', path: p.path })), cities: top('city').map((p) => ({ name: p.ctx.cityName ?? '', path: p.path })),
+    });
   }
 
   /** Staff monitoring: the live, indexable vendor subdomain home URLs. */

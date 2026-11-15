@@ -15,6 +15,7 @@ import { resolveTheme } from '../content/theme-resolution';
 import { ThemeRenderService } from '../renderer/theme-render.service';
 import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
 import { assembleDocument, buildPageSeo } from '../seo/page-seo';
+import { buildLlmsTxt } from '../seo/llms-txt';
 import { buildRobotsTxt, buildSitemap, SitemapEntry } from '../seo/site-files';
 import { VendorSeoSettings } from '../seo/vendor-seo-settings';
 import { VendorDirectoryFactsPort } from '../seo/vendor-directory-facts';
@@ -124,6 +125,7 @@ export class SiteBuildService {
     const templates = Object.keys(theme.theme.templates);
     const sitemap: SitemapEntry[] = [];
     const canon = new Map<string, string>();
+    const llmsPages: Array<{ title: string; description: string; url: string }> = [];   // the English pages, for llms.txt
     const siteUrl = String(base.host.siteUrl);
     for (const lang of langs.languages) {
       const input = lang === 'en' ? base : toRendererInput(doc, { categoryId, lang, year, siteBase: this.siteBase, ...hostOpts, limits, motion, directions });
@@ -145,6 +147,7 @@ export class SiteBuildService {
         if (bytes > this.budgets.page) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', `The page ${path} is ${Math.round(bytes / 1024)} KB, over the ${Math.round(this.budgets.page / 1024)} KB limit. Shorten its text or remove photos.`));
         pages.push({ path, lang, html, seoJson: { title: seo.title, description: seo.description, canonical: seo.canonical, robots: seo.robots, template: p.template }, bytes, sha256: sha256(html) });
         canon.set(`${lang}:${p.path}`, seo.canonical);
+        if (lang === 'en') llmsPages.push({ title: seo.title.replace(/ \| Get4Domain$/, ''), description: seo.description, url: seo.canonical });
       }
     }
     for (const p of planPages(base.content, templates)) {
@@ -155,6 +158,15 @@ export class SiteBuildService {
     const css = [theme.theme.css.tokens, theme.theme.css.base, theme.theme.css.motion, theme.theme.css.print].filter(Boolean).join('\n');
     if (Buffer.byteLength(css) > this.budgets.css) throw new UnprocessableEntityException(siteError('SITE_BUDGET_EXCEEDED', 'The theme stylesheet is over the allowed size.'));
     const files: Array<[string, string]> = [['/assets/site.css', css], ['/sitemap.xml', buildSitemap(sitemap, indexing.indexable)], ['/robots.txt', buildRobotsTxt(indexing.indexable, `${siteUrl}/sitemap.xml`, vseo?.crawlers)]];
+    if (vseo && indexing.indexable) {
+      // prompt 6d: llms.txt from stored public facts only; a site that is not indexable gets none. Phone, email and hours only where the plan lets the site show them (Pro).
+      const c = base.content.contact as { address: string; city: string; phone?: string; email?: string };
+      files.push(['/llms.txt', buildLlmsTxt({
+        siteName, categoryLabel: cat.label, tagline: String(doc.cms?.tagline ?? ''), city: c.city, locality: dfacts?.locality ?? '', address: c.address,
+        contactVisible: renderEnt.callsToAction !== false, phone: c.phone, email: c.email, hours: String(doc.cms?.businessHours ?? ''),
+        services: doc.items.filter((i) => i.active && !i.sample).map((i) => ({ name: i.name, description: i.description ?? undefined })), pages: llmsPages, siteUrl, sitemapUrl: `${siteUrl}/sitemap.xml`,
+      })]);
+    }
     for (const [path, text] of files) pages.push({ path, lang: 'en', html: text, seoJson: { contentType: contentTypeFor(path) }, bytes: Buffer.byteLength(text), sha256: sha256(text) });
 
     const row = await this.repo.createPublication(
