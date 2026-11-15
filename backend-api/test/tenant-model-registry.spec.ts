@@ -18,7 +18,7 @@ const TENANT_V3 = [
   'V3AiUsage', 'V3AiCreditGrant',                                                          // slice 5.11: vendor routes /v3/me/ai/usage
 ];
 /** carry a vendorId only as a back-reference for staff; no vendor route reads them */
-const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3ProvisioningJob', 'V3AccountSetupGrant', 'V3SiteRemoval', 'V3AccountDeletionRequest', 'V3SeededSite',
+const PLATFORM_ONLY_WITH_VENDOR_ID = ['V3VendorNote' /* Wave 2 C5: staff notes, append only, no vendor route reads them */, 'V3ProvisioningJob', 'V3AccountSetupGrant', 'V3SiteRemoval', 'V3AccountDeletionRequest', 'V3SeededSite',
   // slice 5.14: reached ONLY through RequestsStore, which carries the vendor id in the WHERE of every vendor read and write (tested: vendor B cannot read, change or invoice vendor A's rows);
   // the public routes find the vendor from the HOST, where no signed-in tenant exists. Moving them to the tenant-scoped client is an OPEN QUESTION in docs/v3/B3_LOG.md.
   'V3Request', 'V3VendorPaymentMethod', 'V3Order', 'V3VendorPaymentEvent', 'V3VendorInvoice', 'V3VendorCounter', 'V3StockLevel', 'V3StockReservation', 'V3Offer', 'V3MessageOutbox',

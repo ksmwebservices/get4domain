@@ -65,6 +65,9 @@ export class SeededAdminController {
   @Post(':id/claim-link') @HttpCode(200) @ApiOperation({ summary: 'Issue a claim link (consent required, not on the register). Shown once; nothing is sent.' })
   issue(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.seeded.issueClaimLink(id, this.who(user, req)); }
 
+  @Post(':id/go-live') @HttpCode(200) @ApiOperation({ summary: 'Approve a seeded or claimed listing and put its site live on behalf of the owner. Idempotent; refused for a removed or do-not-contact business and for a claimed one whose owner has not accepted the Terms. OPERATIONS and SUPER_ADMIN.' })
+  goLive(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.seeded.goLive(id, this.who(user, req)); }
+
   @Post(':id/claim-link/revoke') @HttpCode(200) @ApiOperation({ summary: 'Revoke the active claim link' })
   revoke(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.seeded.revokeClaimLink(id, this.who(user, req)); }
 

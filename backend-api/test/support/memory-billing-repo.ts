@@ -44,7 +44,7 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   async createOrder(d: NewOrder) {
     if ([...this.orders.values()].some((o) => o.vendorId === d.vendorId && o.idempotencyKey === d.idempotencyKey)) throw new DuplicateOrderError();
     const now = this.clock();
-    const o: OrderRow = { ...d, id: this.id('ord'), status: 'CREATED', providerOrderId: null, paymentId: null, paidAmountPaise: null, paidAt: null, source: null, reason: null, subscriptionId: null, refundRecordedPaise: null, refundNote: null, refundRecordedBy: null, refundRecordedAt: null, createdAt: now, updatedAt: now };
+    const o: OrderRow = { ...d, id: this.id('ord'), status: 'CREATED', providerOrderId: null, paymentId: null, paidAmountPaise: null, paidAt: null, source: null, reason: null, subscriptionId: null, refundRecordedPaise: null, refundNote: null, refundRecordedBy: null, refundRecordedAt: null, settledReference: null, settledOn: null, settledAmountPaise: null, settledByName: null, createdAt: now, updatedAt: now };
     this.orders.set(o.id, o); return this.cp(o)!;
   }
   async updateOrderCas(id: string, expected: OrderStatus[], patch: OrderPatch) { const o = this.orders.get(id); if (!o || !expected.includes(o.status)) return false; if (patch.providerOrderId && [...this.orders.values()].some((x) => x.id !== id && x.providerOrderId === patch.providerOrderId)) throw new Error('duplicate provider order'); Object.assign(o, patch, { updatedAt: this.clock() }); return true; }
@@ -53,6 +53,11 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   async expireStale(now: Date) { let n = 0; for (const o of this.orders.values()) if ((o.status === 'CREATED' || o.status === 'PENDING_PAYMENT') && o.expiresAt < now) { o.status = 'EXPIRED'; n++; } return n; }
   async listInvoicesForVendor(v: string, skip: number, take: number) { const all = this.invoices.filter((i) => i.vendorId === v); return { items: all.slice(skip, skip + take).map((i) => ({ ...i })), total: all.length }; }
 
+  async listInvoicesForStaff(q: { vendorId?: string; status?: 'PAID' | 'REFUND_RECORDED'; skip: number; take: number }) {
+    const word = (i: { orderId: string }): 'PAID' | 'REFUND_RECORDED' => ((this.orders.get(i.orderId)?.refundRecordedPaise ?? 0) > 0 ? 'REFUND_RECORDED' : 'PAID');
+    const all = this.invoices.filter((i) => (!q.vendorId || i.vendorId === q.vendorId) && (!q.status || word(i) === q.status)).sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime());
+    return { items: all.slice(q.skip, q.skip + q.take).map((i) => ({ ...i, paidAmountPaise: this.orders.get(i.orderId)?.paidAmountPaise ?? null, refundRecordedPaise: this.orders.get(i.orderId)?.refundRecordedPaise ?? null })), total: all.length };
+  }
   async getInvoiceForVendor(v: string, id: string) { const i = this.invoices.find((x) => x.vendorId === v && x.id === id); return i ? { ...i } : null; }
 
   async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }) {

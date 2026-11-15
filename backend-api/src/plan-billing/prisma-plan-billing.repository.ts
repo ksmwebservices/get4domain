@@ -20,7 +20,7 @@ const toOrder = (o: Prisma.V3PlanOrderGetPayload<Record<string, never>>): OrderR
   id: o.id, vendorId: o.vendorId, planId: o.planId, termMonths: o.termMonths, kind: o.kind, quote: obj(o.quoteJson), amountPaise: o.amountPaise, currency: o.currency, status: o.status,
   providerOrderId: o.providerOrderId, idempotencyKey: o.idempotencyKey, expiresAt: o.expiresAt, createdByType: o.createdByType, createdById: o.createdById, paymentId: o.paymentId,
   paidAmountPaise: o.paidAmountPaise, paidAt: o.paidAt, source: o.source, reason: o.reason, subscriptionId: o.subscriptionId, refundRecordedPaise: o.refundRecordedPaise, refundNote: o.refundNote,
-  refundRecordedBy: o.refundRecordedBy, refundRecordedAt: o.refundRecordedAt, createdAt: o.createdAt, updatedAt: o.updatedAt,
+  refundRecordedBy: o.refundRecordedBy, refundRecordedAt: o.refundRecordedAt, settledReference: o.settledReference, settledOn: o.settledOn, settledAmountPaise: o.settledAmountPaise, settledByName: o.settledByName, createdAt: o.createdAt, updatedAt: o.updatedAt,
 });
 const toInvoice = (i: Prisma.V3PlanInvoiceGetPayload<Record<string, never>>): InvoiceRow => ({ id: i.id, vendorId: i.vendorId, orderId: i.orderId, invoiceNumber: i.invoiceNumber, financialYear: i.financialYear, issuedAt: i.issuedAt, snapshot: obj(i.snapshotJson), taxBreakdown: obj(i.taxBreakdownJson) });
 const toEvent = (e: Prisma.V3PaymentEventGetPayload<Record<string, never>>): EventRow => ({ id: e.id, provider: e.provider, providerEventId: e.providerEventId, type: e.type, payloadRedacted: obj(e.payloadRedactedJson), signatureValid: e.signatureValid, orderId: e.orderId, processedAt: e.processedAt, result: e.result, createdAt: e.createdAt });
@@ -74,6 +74,17 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
   async listInvoicesForVendor(vendorId: string, skip: number, take: number) {
     const [rows, total] = await Promise.all([this.prisma.v3PlanInvoice.findMany({ where: { vendorId }, orderBy: [{ issuedAt: 'desc' }, { id: 'asc' }], skip, take }), this.prisma.v3PlanInvoice.count({ where: { vendorId } })]);
     return { items: rows.map(toInvoice), total };
+  }
+
+  async listInvoicesForStaff(q: { vendorId?: string; status?: 'PAID' | 'REFUND_RECORDED'; skip: number; take: number }) {
+    // the status is what has since been recorded as given back on the invoice's order: nothing recorded = PAID, any refund recorded = REFUND_RECORDED (the amounts ride on the row)
+    const order: Prisma.V3PlanOrderWhereInput = q.status === 'PAID' ? { OR: [{ refundRecordedPaise: null }, { refundRecordedPaise: 0 }] } : q.status === 'REFUND_RECORDED' ? { refundRecordedPaise: { gt: 0 } } : {};
+    const where: Prisma.V3PlanInvoiceWhereInput = { ...(q.vendorId ? { vendorId: q.vendorId } : {}), ...(q.status ? { order } : {}) };
+    const [rows, total] = await Promise.all([
+      this.prisma.v3PlanInvoice.findMany({ where, orderBy: [{ issuedAt: 'desc' }, { id: 'asc' }], skip: q.skip, take: q.take, include: { order: { select: { paidAmountPaise: true, refundRecordedPaise: true } } } }),
+      this.prisma.v3PlanInvoice.count({ where }),
+    ]);
+    return { items: rows.map((r) => ({ ...toInvoice(r), paidAmountPaise: r.order.paidAmountPaise, refundRecordedPaise: r.order.refundRecordedPaise })), total };
   }
 
   async getInvoiceForVendor(vendorId: string, id: string) {

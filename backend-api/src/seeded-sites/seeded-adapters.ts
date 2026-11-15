@@ -9,6 +9,7 @@ import { JobRunnerService } from '../provisioning/runner/job-runner.service';
 import { PublishService } from '../site-publish/publish/publish.service';
 import { SiteBuildService } from '../site-publish/publish/site-build.service';
 import { ThemeRenderService } from '../site-publish/renderer/theme-render.service';
+import { TermsService } from '../terms/terms.service';
 import { b3Error } from '../b3-settings/b3-errors';
 import { SeedInput } from './core/seeded';
 import { BusinessFacts, ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
@@ -49,6 +50,10 @@ export class ModuleSeededPublisher extends SeededPublisher {
     if (publication.status === 'PUBLISHED') return { published: true };
     await publish.publish(vendorId, publication.id, actor);
     return { published: true };
+  }
+  async ownerTermsAccepted(vendorId: string): Promise<boolean> {
+    const terms = this.modules.get(TermsService, { strict: false });
+    return !(await terms.acceptanceRequired(vendorId));
   }
 }
 

@@ -9,6 +9,11 @@ export abstract class SeedProvisioner {
 /** Builds and publishes the listing-only Free site. The indexing decision (noindex unless the quality rule and the setting allow) is made by the site build itself. */
 export abstract class SeededPublisher {
   abstract publish(vendorId: string, actor: Actor): Promise<{ published: boolean }>;
+  /**
+   * C12: has the owner of a CLAIMED business accepted the current Terms and policies? Staff can approve a site on the owner's behalf, but they can never accept the Terms for the owner, so a claimed
+   * business whose owner has not accepted is refused. The default says yes (a unit test and a build without the terms module have nothing to ask); the real adapter asks the terms module.
+   */
+  async ownerTermsAccepted(_vendorId: string): Promise<boolean> { return true; }
 }
 
 /** The claim link for a seeded business: given to staff ONCE (nothing is emailed or sent), and revoked on request. */

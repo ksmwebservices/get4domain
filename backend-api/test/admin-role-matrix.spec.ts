@@ -120,6 +120,8 @@ const MARKETING_DENIED = [
   'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
   // 5.6c: own-domain automation and the domain log
   'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log', 'GET /v3/admin/vendors/:id/subdomain-log',
+  // Wave 2 Part C
+  'GET /v3/admin/vendors', 'GET /v3/admin/vendors/:id/held-count', 'GET /v3/admin/vendors/:id/notes', 'POST /v3/admin/vendors/:id/notes', 'GET /v3/admin/invoices', 'POST /v3/admin/seeded-sites/:id/go-live',
   // B4: customers' words on a vendor's live site
   'GET /v3/admin/vendors/:id/site/testimonials',
   // B3: the review link of a vendor's live site
@@ -151,6 +153,7 @@ const ALL_STAFF_ROUTES = [
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
   'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id',
+  'GET /v3/admin/permission-matrix',   // Wave 2 C1: every staff role reads the matrix (SUPPORT through STAFF_ROLE_EXTENSIONS.SUPPORT.allow)
   // Part B (B2): SALES (the MARKETING value) creates on behalf, imports a CSV, follows up and issues the claim link
   'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke',
   // B2 slice 5.7: business reads (MARKETING gets them without personal fields: tested in directory-api.spec.ts), tree reads, placements read
@@ -186,7 +189,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(359);
+    expect(oracle).toHaveLength(366);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

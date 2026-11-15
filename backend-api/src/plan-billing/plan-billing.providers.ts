@@ -1,5 +1,5 @@
 import { Provider, Type } from '@nestjs/common';
-import { BillingAdminController } from './api/billing-admin.controller';
+import { AdminInvoicesController, BillingAdminController } from './api/billing-admin.controller';
 import { MeBillingController } from './api/me-billing.controller';
 import { PaymentsWebhookController } from './api/payments-webhook.controller';
 import { PlanOrderService } from './plan-order.service';
@@ -17,4 +17,4 @@ export const PLAN_BILLING_PROVIDERS: Provider[] = [
   { provide: ReminderMailer, useClass: SandboxReminderMailer },
   BillingSettingsService, PaymentsGate, PaymentSettlementService, PlanOrderService, RenewalReminderService, PlanBillingCron,
 ];
-export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, BillingAdminController];
+export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, BillingAdminController, AdminInvoicesController];

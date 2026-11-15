@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { createHmac } from 'crypto';
+import { KeyedQueue } from '../common/keyed-queue';
+import { adminGapError } from '../v3-admin-gaps/admin-gaps.errors';
 import { SUPER_ONLY } from '../auth/guards/admin-role-matrix';
 import { b3Error } from '../b3-settings/b3-errors';
 import { B3SettingsService } from '../b3-settings/b3-settings.service';
@@ -35,6 +37,7 @@ const notFound = (): NotFoundException => new NotFoundException(b3Error('SEEDED_
 @Injectable()
 export class SeededSitesService {
   clock: () => Date = () => new Date();
+  private readonly queue = new KeyedQueue();
 
   constructor(
     private readonly store: SeededStore, private readonly provisioner: SeedProvisioner, private readonly publisher: SeededPublisher, private readonly handover: ClaimHandover,
@@ -223,6 +226,27 @@ export class SeededSitesService {
     if (r.lifecycle === 'INVITED') await this.store.update(id, { lifecycle: 'SEEDED' });
     await this.store.addLog({ seededSiteId: id, kind: 'CLAIM_LINK', staffId: who.actor.id, outcome: 'REVOKED', note: null }, this.clock());
     return { revoked };
+  }
+
+  // ── C12: approve and go live, on the owner's behalf ──
+  /**
+   * Staff approve a seeded or claimed listing and put its site live. IDEMPOTENT: a site that is already live answers `alreadyLive` and changes nothing, and two clicks at once are serialised per business so the
+   * site is built and published once. Refused for a removed business, for a phone on the do-not-contact register, and for a CLAIMED business whose owner has not accepted the current Terms (staff can approve
+   * a site for an owner, but never accept the Terms for them). The build and the publish are the existing site-publish transactions; the audit row follows them.
+   */
+  async goLive(id: string, who: Who) {
+    return this.queue.run(`seeded-go-live:${id}`, async () => {
+      const r = await this.mustGet(id);
+      const f = await this.facts.factsOf(r.vendorId);
+      const lifecycle = deriveLifecycle({ stored: r.lifecycle, businessStatus: f?.businessStatus ?? null, proActive: f?.proActive === true });
+      if (lifecycle === 'REMOVED') throw new ConflictException(b3Error('SEEDED_REMOVED', 'This site was removed.'));
+      if (await this.store.onRegister(r.phoneHash)) throw adminGapError(409, 'GO_LIVE_BLOCKED', 'This business asked not to be contacted, so its site cannot be put live.', { reason: 'DO_NOT_CONTACT' });
+      if (f?.businessStatus === 'CLAIMED' && !(await this.publisher.ownerTermsAccepted(r.vendorId))) throw adminGapError(409, 'GO_LIVE_BLOCKED', 'The owner has not accepted the current Terms and policies yet, so the site cannot be put live for them.', { reason: 'TERMS_REQUIRED' });
+      if (f?.sitePublished === true) return { alreadyLive: true, ...(await this.view(r, who.role, false)) };
+      await this.publisher.publish(r.vendorId, who.actor);
+      await this.store.recordAudit(who.actor, 'seeded.go_live', 'seeded_site', id, { listingState: listingStateOf({ lifecycle, sitePublished: false }) }, { onBehalf: true });
+      return { alreadyLive: false, ...(await this.view((await this.store.get(id)) ?? r, who.role, false)) };
+    });
   }
 
   // ── removal ──

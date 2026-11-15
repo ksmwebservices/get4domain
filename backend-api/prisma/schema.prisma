@@ -121,6 +121,7 @@ model Vendor {
   v3PackRecords V3PackRecord[]
   v3MigrationRequests V3MigrationRequest[]
   v3PromoDrafts V3PromoDraft[]
+  v3VendorNotes V3VendorNote[]
   v3PlanPauses V3PlanPause[]
   v3DomainInvoices V3DomainInvoice[]
   v3StockLevels V3StockLevel[]
@@ -4833,6 +4834,11 @@ model V3PlanOrder {
   refundNote          String?
   refundRecordedBy    String?
   refundRecordedAt    DateTime?
+  /// Wave 2 C6: what staff recorded when they marked the order paid offline: the bank or cash reference, the day the money was received, the amount received and who recorded it
+  settledReference    String?
+  settledOn           DateTime?         @db.Date
+  settledAmountPaise  Int?
+  settledByName       String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
@@ -7929,4 +7935,21 @@ model V3PromoDraft {
 
   @@index([vendorId, kind, status, createdAt])
   @@map("g4d_promo_drafts")
+}
+
+// ── Wave 2 Part C: staff notes on a vendor ──────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/// Staff only (no vendor route reads it): a note a Get4Domain team member leaves on a vendor. Append only: a note is never edited or deleted. byName is kept as written so the note still reads right if the staff member is removed.
+model V3VendorNote {
+  id         String   @id @default(cuid())
+  vendorId   String
+  body       String
+  byStaffId  String?
+  byName     String
+  createdAt  DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, createdAt])
+  @@map("g4d_vendor_notes")
 }

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import { ActivityBus } from '../common/activity-bus';
 import { createHash } from 'crypto';
 import { Actor } from '../plans/admin/audit.service';
+import { adminGapError } from '../v3-admin-gaps/admin-gaps.errors';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { financialYearOf, formatInvoiceNumber, renewalEnd, verifyPaidAmount } from './core/amounts';
 import { canTransitionOrder, OrderStatus } from './core/order-state';
@@ -14,7 +15,9 @@ import { BillingSettingsService } from './settings/billing-settings.service';
 import { TopupSettlementHook } from './topup-hook';
 
 export type SettleOutcome = 'PAID' | 'ALREADY_PAID' | 'REVIEW' | 'IGNORED' | 'NO_ORDER';
-export interface SettleInput { orderId: string; paid: { paymentId: string; amount: number; currency: string }; via: 'CONFIRM' | 'WEBHOOK' | 'STAFF' | 'WALLET'; actor: Actor; reason: string | null }
+/** C6: what staff recorded when they marked an order paid offline, stored on the order in the same transaction as the payment */
+export interface OfflineSettle { reference: string | null; receivedOn: Date | null; amountPaise: number | null; byName: string }
+export interface SettleInput { orderId: string; paid: { paymentId: string; amount: number; currency: string }; via: 'CONFIRM' | 'WEBHOOK' | 'STAFF' | 'WALLET'; actor: Actor; reason: string | null; offline?: OfflineSettle }
 const SYSTEM: Actor = { type: 'SYSTEM', id: null, ip: null };
 
 /**
@@ -80,7 +83,7 @@ export class PaymentSettlementService {
       const sub = await tx.assign({ vendorId: o.vendorId, planKey: plan.key, termMonths: o.termMonths, endsAt, source: i.via === 'STAFF' ? 'STAFF' : 'SELF', actor: i.actor, reason: `plan order ${o.id}`, now });
       // A plan paid from the wallet carries no GST and no invoice of its own: the refill already had both (owner, 6 November 2026). Every other way of paying keeps the invoice.
       const invoice = i.via === 'WALLET' ? null : await this.issueInvoice(tx, o, plan, vendor, i, s, endsAt, now);
-      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id });
+      const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id, ...(i.offline ? { settledReference: i.offline.reference, settledOn: i.offline.receivedOn, settledAmountPaise: i.offline.amountPaise, settledByName: i.offline.byName } : {}) });
       if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
       await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice?.invoiceNumber ?? null, via: i.via, amountPaise: o.amountPaise });
       ctx.planLevel = plan.level;
@@ -153,12 +156,14 @@ export class PaymentSettlementService {
   }
 
   /** SUPER_ADMIN: an offline payment (bank transfer, cash). The same settlement path as an online payment; the subscription source is STAFF; a reason is required and audited. */
-  async markPaid(orderId: string, reason: string, actor: Actor): Promise<{ status: OrderStatus; outcome: SettleOutcome }> {
+  async markPaid(orderId: string, reason: string, actor: Actor, offline?: OfflineSettle): Promise<{ status: OrderStatus; outcome: SettleOutcome }> {
     if (typeof reason !== 'string' || reason.trim().length < 3) throw new BadRequestException('A reason of at least 3 characters is required.');
     const o = await this.load(orderId);
     if (o.status === 'PAID') return { status: 'PAID', outcome: 'ALREADY_PAID' };
     if (o.status !== 'PENDING_PAYMENT' && o.status !== 'REVIEW') throw new ConflictException(billingError('ORDER_STATE_INVALID', 'Only an order that is waiting for payment, or under review, can be marked paid.'));
-    const outcome = await this.settle({ orderId, paid: { paymentId: `offline:${o.id}`, amount: o.amountPaise, currency: o.currency }, via: 'STAFF', actor, reason: reason.trim() });
+    // C6: the money that arrived is never more or less than the order. A different amount is not a payment of this order, so it is refused: staff correct the number, or settle it another way.
+    if (offline && offline.amountPaise !== null && offline.amountPaise !== o.amountPaise) throw adminGapError(409, 'OFFLINE_AMOUNT_MISMATCH', 'The amount received is not the amount of the order, so it cannot be marked paid.');
+    const outcome = await this.settle({ orderId, paid: { paymentId: `offline:${o.id}`, amount: o.amountPaise, currency: o.currency }, via: 'STAFF', actor, reason: reason.trim(), ...(offline ? { offline } : {}) });
     return { status: (await this.load(orderId)).status, outcome };
   }
 

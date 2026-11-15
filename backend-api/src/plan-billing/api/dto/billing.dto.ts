@@ -24,6 +24,10 @@ export class AdminEventsDto extends PageDto {
 }
 export class MarkPaidDto {
   @IsString() @MinLength(3) @MaxLength(300) reason!: string;
+  /** C6: where the money came from (a bank or cash reference), the day it was received (YYYY-MM-DD) and the amount received in paise. All optional; checked by checkOffline, which names each field to fix. */
+  @IsOptional() @IsString() @MaxLength(200) reference?: string;
+  @IsOptional() @IsString() @MaxLength(20) receivedOn?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) amountPaise?: number;
 }
 export class RefundDto {
   @Type(() => Number) @IsInt() @Min(1) amountPaise!: number;

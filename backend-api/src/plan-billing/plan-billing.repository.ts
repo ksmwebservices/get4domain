@@ -15,10 +15,12 @@ export interface OrderRow {
   id: string; vendorId: string; planId: string; termMonths: number; kind: OrderKind; quote: Record<string, unknown>; amountPaise: number; currency: string; status: OrderStatus;
   providerOrderId: string | null; idempotencyKey: string; expiresAt: Date; createdByType: string; createdById: string | null; paymentId: string | null; paidAmountPaise: number | null;
   paidAt: Date | null; source: string | null; reason: string | null; subscriptionId: string | null; refundRecordedPaise: number | null; refundNote: string | null; refundRecordedBy: string | null; refundRecordedAt: Date | null;
+  /** Wave 2 C6: what staff recorded when they marked the order paid offline */
+  settledReference: string | null; settledOn: Date | null; settledAmountPaise: number | null; settledByName: string | null;
   createdAt: Date; updatedAt: Date;
 }
 export type NewOrder = Pick<OrderRow, 'vendorId' | 'planId' | 'termMonths' | 'kind' | 'quote' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById'>;
-export type OrderPatch = Partial<Pick<OrderRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'source' | 'reason' | 'subscriptionId' | 'refundRecordedPaise' | 'refundNote' | 'refundRecordedBy' | 'refundRecordedAt'>>;
+export type OrderPatch = Partial<Pick<OrderRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'source' | 'reason' | 'subscriptionId' | 'refundRecordedPaise' | 'refundNote' | 'refundRecordedBy' | 'refundRecordedAt' | 'settledReference' | 'settledOn' | 'settledAmountPaise' | 'settledByName'>>;
 export interface InvoiceRow { id: string; vendorId: string; orderId: string; invoiceNumber: string; financialYear: string; issuedAt: Date; snapshot: Record<string, unknown>; taxBreakdown: Record<string, unknown> }
 export interface EventRow { id: string; provider: string; providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; processedAt: Date | null; result: string | null; createdAt: Date }
 export interface DueSub { id: string; vendorId: string; endsAt: Date; status: string; email: string; businessName: string }
@@ -67,6 +69,8 @@ export abstract class PlanBillingRepository {
   abstract expireStale(now: Date): Promise<number>;
 
   abstract listInvoicesForVendor(vendorId: string, skip: number, take: number): Promise<{ items: InvoiceRow[]; total: number }>;
+  /** Staff (C7): every vendor's plan invoices, newest first, paged, by vendor and by status (PAID, or REFUND_RECORDED once a refund was recorded on the order). */
+  abstract listInvoicesForStaff(q: { vendorId?: string; status?: 'PAID' | 'REFUND_RECORDED'; skip: number; take: number }): Promise<{ items: Array<InvoiceRow & { paidAmountPaise: number | null; refundRecordedPaise: number | null }>; total: number }>;
   /** One of THIS vendor's invoices; null for another vendor's id or one that does not exist. */
   abstract getInvoiceForVendor(vendorId: string, id: string): Promise<InvoiceRow | null>;
 

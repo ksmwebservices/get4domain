@@ -79,6 +79,7 @@ import { V3StoreModule } from './v3-store/store.module';
 import { V3PacksModule } from './v3-packs/packs.module';
 import { V3PackRecordsModule } from './v3-pack-records/pack-records.module';
 import { V3VendorGapsModule } from './v3-vendor-gaps/vendor-gaps.module';
+import { V3AdminGapsModule } from './v3-admin-gaps/admin-gaps.module';
 import { DirectoryModule } from './directory/directory.module';
 import { SeoDirectoryModule } from './seo-directory/seo-directory.module';
 import { SeoVendorFactsModule } from './seo-directory/seo-vendor-facts.module';
@@ -157,6 +158,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3PacksModule,
     V3PackRecordsModule,
     V3VendorGapsModule,
+    V3AdminGapsModule,
     ClaimSetupModule,   // Part B (B7): account setup after the claim code and the owner's approval that puts the site live
     DirectoryModule,
     SeoDirectoryModule,

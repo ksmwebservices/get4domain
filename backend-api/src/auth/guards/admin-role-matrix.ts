@@ -185,6 +185,9 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/vendors/:id/act-on-behalf': OPS_AND_SUPER, 'POST /v3/admin/act-on-behalf/:sessionId/end': OPS_AND_SUPER, 'GET /v3/admin/act-on-behalf': OPS_AND_SUPER, 'GET /v3/admin/onboarding-queue': OPS_AND_SUPER,
   // 5.6c: own-domain automation and the per-vendor domain log (owner answer Q12 names Support; that role does not exist here: OPERATIONS and SUPER_ADMIN, MARKETING denied)
   'GET /v3/admin/domain-connections': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/domain-log': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subdomain-log': OPS_AND_SUPER,
+  // Wave 2 Part C: the vendors list, the held count and the notes are OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SALES and SUPPORT refused); the permission matrix is for every staff role; the invoice list and the go-live follow the plan orders and the seeded sites
+  'GET /v3/admin/vendors': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/held-count': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/notes': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/notes': OPS_AND_SUPER,
+  'GET /v3/admin/permission-matrix': ALL_STAFF, 'GET /v3/admin/invoices': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/:id/go-live': OPS_AND_SUPER,
   // 5.6d: domain sales and identity checks (MARKETING denied on all: personal data and money; approving or rejecting a price is SUPER_ADMIN only)
   'GET /v3/admin/domain-orders': OPS_AND_SUPER, 'POST /v3/admin/vendors/:id/domains/register': OPS_AND_SUPER, 'GET /v3/admin/domain-margins': OPS_AND_SUPER, 'POST /v3/admin/domain-margins': OPS_AND_SUPER,
   'POST /v3/admin/domain-margins/:id/approve': SUPER_ONLY, 'POST /v3/admin/domain-margins/:id/reject': SUPER_ONLY, 'POST /v3/admin/registrar/recover': OPS_AND_SUPER, 'POST /v3/admin/registrar/reconcile': OPS_AND_SUPER, 'GET /v3/admin/registrar/runs': OPS_AND_SUPER,
@@ -270,7 +273,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'GET /v3/admin/tickets', 'GET /v3/admin/tickets/:id', 'PUT /v3/admin/tickets/:id/assignee', 'PUT /v3/admin/tickets/:id/status', 'POST /v3/admin/tickets/:id/messages',
       'GET /support/tickets', 'PUT /support/tickets/:id/reply', 'PUT /support/tickets/:id/resolve', 'GET /support/tickets/vendor/:vendorId',
       'GET /admin/crm/leads', 'GET /admin/crm/leads/:id', 'PUT /admin/crm/leads/:id', 'POST /admin/crm/leads/:id/call',
-      'GET /admin-team/me', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation',
+      'GET /admin-team/me', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation', 'GET /v3/admin/permission-matrix',
     ],
   },
 };
