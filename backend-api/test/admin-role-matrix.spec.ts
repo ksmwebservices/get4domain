@@ -180,13 +180,13 @@ SUPER_ONLY_ROUTES.push(...PACK_ENGINE_WRITES); MARKETING_DENIED.push(...PACK_ENG
 // STAFF_ROLE_EXTENSIONS.ADMIN.allow and OPERATIONS and SUPPORT have no access (tested in seo-keywords.spec.ts).
 const SEO_WRITES = ['PUT /v3/admin/seo-directory/category-keywords/:slug', 'PUT /v3/admin/seo-directory/templates', 'PUT /v3/admin/seo-directory/crawlers', 'POST /v3/admin/seo-directory/keyword-targets', 'PUT /v3/admin/seo-directory/keyword-targets/:id', 'POST /v3/admin/seo-directory/keyword-targets/import'];
 const SEO_READS = ['GET /v3/admin/seo-directory/category-keywords', 'GET /v3/admin/seo-directory/category-keywords/:slug', 'GET /v3/admin/seo-directory/templates', 'GET /v3/admin/seo-directory/crawlers', 'GET /v3/admin/seo-directory/vendor-sites',
-  'GET /v3/admin/seo-directory/keyword-targets', 'GET /v3/admin/seo-directory/keyword-targets/export.csv', 'GET /v3/admin/seo-directory/keyword-targets/:id', 'GET /v3/admin/seo-directory/keyword-plan', 'GET /v3/admin/seo-directory/keyword-plan/export.csv', 'POST /v3/admin/seo-directory/links', 'GET /v3/admin/seo-directory/utm-report'];
+  'GET /v3/admin/seo-directory/keyword-targets', 'GET /v3/admin/seo-directory/keyword-targets/export.csv', 'GET /v3/admin/seo-directory/keyword-targets/:id', 'GET /v3/admin/seo-directory/keyword-plan', 'GET /v3/admin/seo-directory/keyword-plan/export.csv', 'POST /v3/admin/seo-directory/links', 'GET /v3/admin/seo-directory/utm-report', 'GET /v3/admin/seo-directory/businesses/:id/badge'];
 SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(351);
+    expect(oracle).toHaveLength(352);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -1,9 +1,11 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, NotFoundException, Param, Post, Put, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
+import { SeoBacklinkService } from '../backlinks/seo-backlink.service';
+import { seoError } from '../seo-directory.errors';
 import { SeoUtmService } from '../campaigns/seo-utm.service';
 import { SeoKeywordTargetService } from '../keywords/seo-keyword-target.service';
 import { LinkBuildDto, TargetCreateDto, TargetExportQueryDto, TargetImportDto, TargetListDto, TargetUpdateDto, UtmReportQueryDto } from './dto/seo-targets.dto';
@@ -18,7 +20,7 @@ import { LinkBuildDto, TargetCreateDto, TargetExportQueryDto, TargetImportDto, T
 @UseGuards(AdminGuard)
 @Controller('v3/admin/seo-directory')
 export class SeoTargetsAdminController {
-  constructor(private readonly targets: SeoKeywordTargetService, private readonly utm: SeoUtmService) {}
+  constructor(private readonly targets: SeoKeywordTargetService, private readonly utm: SeoUtmService, private readonly backlinks: SeoBacklinkService) {}
 
   private csv(res: Response, body: string, name: string): void {
     res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
@@ -54,4 +56,7 @@ export class SeoTargetsAdminController {
 
   @Get('utm-report') @ApiOperation({ summary: 'Page visits that arrived with campaign parameters, per day, page type, source, medium, campaign and keyword target (counts only)' })
   async utmReport(@Query() q: UtmReportQueryDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.utm.report({ from: q.from, to: q.to, skip, take }); return paged(r.items, r.total, page, pageSize); }
+
+  @Get('businesses/:id/badge') @ApiOperation({ summary: 'The badge snippet and the plain text link of one listed business (for a vendor with their own site, Google profile or social bio)' })
+  async badge(@Param('id') id: string) { const e = await this.backlinks.embed(id); if (!e) throw new NotFoundException(seoError('SEO_NOT_FOUND', 'Not found.')); return e; }
 }

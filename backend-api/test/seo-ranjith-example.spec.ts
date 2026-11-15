@@ -122,6 +122,6 @@ describe('no ranking promises, anywhere the platform writes', () => {
       pages: [{ kind: 'cityCategory', path: '/chennai/plumbers', place: 'Chennai', plural: 'Plumbers', singular: 'Plumber' }, { kind: 'localityCategory', path: '/chennai/plumbers-in-perambur', place: 'Perambur', city: 'Chennai', plural: 'Plumbers', singular: 'Plumber' }, { kind: 'category', path: '/category/plumber', plural: 'Plumbers', singular: 'Plumber' }, { kind: 'city', path: '/chennai', place: 'Chennai' }],
     });
     expect(b.links).toHaveLength(4); for (const l of b.links) claimFree(l.text); claimFree(badgeSvg().replace(/<[^>]+>/g, ' '));
-    expect(b.links.map((l) => l.text).join(' ')).toMatch(/Chennai/); expect(b.links[1].text).toMatch(/Perambur/);
+    expect(b.links.map((l) => l.text).join(' ')).toMatch(/Chennai/); expect(b.links[0].text).toMatch(/Perambur/);
   });
 });

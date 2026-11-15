@@ -313,18 +313,29 @@ describe('the backlink block', () => {
     { kind: 'category', path: '/category/plumber', plural: 'Plumbers', singular: 'Plumber' },
     { kind: 'localityCategory', path: '/chennai/plumbers-in-perambur', place: 'Perambur', city: 'Chennai', plural: 'Plumbers', singular: 'Plumber' },
     { kind: 'cityCategory', path: '/chennai/plumbers', place: 'Chennai', plural: 'Plumbers', singular: 'Plumber' },
+    { kind: 'nearbyLocality', path: '/chennai/plumbers-in-adyar', place: 'Adyar', city: 'Chennai', plural: 'Plumbers', singular: 'Plumber' },
   ];
   const build = (seed: string, over: Partial<Parameters<typeof buildBacklinkBlock>[0]> = {}) => buildBacklinkBlock({ origin: 'https://get4domain.com', seed, pages, listed: null, indexable: true, ...over });
 
-  it('has one brand link and up to four directory links, in the order city+category, locality+category, category, city', () => {
+  it('has one brand link and up to four directory links: the locality page, the city page, a nearby locality, the city; the bare category page only with room left', () => {
     const b = build('biz-1');
     expect(b.brand).toEqual({ href: 'https://get4domain.com/', text: 'Get4Domain' });
-    expect(b.links.map((l) => l.href)).toEqual(['https://get4domain.com/chennai/plumbers', 'https://get4domain.com/chennai/plumbers-in-perambur', 'https://get4domain.com/category/plumber', 'https://get4domain.com/chennai']);
+    expect(b.links.map((l) => l.href)).toEqual(['https://get4domain.com/chennai/plumbers-in-perambur', 'https://get4domain.com/chennai/plumbers', 'https://get4domain.com/chennai/plumbers-in-adyar', 'https://get4domain.com/chennai']);
+    expect(build('biz-1', { pages: pages.filter((p) => p.kind !== 'nearbyLocality') }).links.map((l) => l.href)).toEqual(['https://get4domain.com/chennai/plumbers-in-perambur', 'https://get4domain.com/chennai/plumbers', 'https://get4domain.com/chennai', 'https://get4domain.com/category/plumber']);
     expect(MAX_DIRECTORY_LINKS).toBe(4);
   });
-  it('never has more than four directory links, however many pages qualify', () => {
+  it('never has more than four directory links, however many pages qualify, and the links are plain follow links', () => {
     const many: BacklinkPage[] = [...pages, { kind: 'cityCategory', path: '/madurai/plumbers', place: 'Madurai', plural: 'Plumbers', singular: 'Plumber' }, { kind: 'category', path: '/category/other', plural: 'Others', singular: 'Other' }];
-    expect(build('x', { pages: many }).links).toHaveLength(4);
+    const b = build('x', { pages: many }); expect(b.links).toHaveLength(4); expect(b.html).not.toMatch(/nofollow|sponsored|ugc/i);
+  });
+  it('different businesses get a different nearby neighbour, so thousands of sites do not all link the same one', () => {
+    const extra: BacklinkPage[] = [{ kind: 'nearbyLocality', path: '/chennai/plumbers-in-anna-nagar', place: 'Anna Nagar', city: 'Chennai', plural: 'Plumbers', singular: 'Plumber' }, { kind: 'nearbyLocality', path: '/chennai/plumbers-in-t-nagar', place: 'T Nagar', city: 'Chennai', plural: 'Plumbers', singular: 'Plumber' }];
+    const near = (i: number) => build(`b${i}`, { pages: [...pages, ...extra] }).links.map((l) => l.href).find((h) => /in-(adyar|anna-nagar|t-nagar)$/.test(h));
+    expect(new Set(Array.from({ length: 40 }, (_v, i) => near(i))).size).toBe(3);
+  });
+  it('the anchor wordings include the ones the owner asked for', () => {
+    const texts = new Set(Array.from({ length: 80 }, (_v, i) => build(`b${i}`).links.map((l) => l.text)).flat());
+    expect(texts.has('Plumbers in Perambur, Chennai')).toBe(true); expect(texts.has('Find more Plumbers in Chennai on Get4Domain')).toBe(true); expect(texts.has('Perambur Plumber directory')).toBe(true);
   });
   it('the anchor is stable for one business and rotates across businesses', () => {
     expect(build('biz-1').links).toEqual(build('biz-1').links);
@@ -375,22 +386,28 @@ describe('the backlink service', () => {
     const listing = await listingOf([stat('per', 'plm', 4, '600011'), stat('ady', 'plm', 3, '600020'), stat('mdu', 'plm', 5)]);
     const business = over.business === undefined ? biz() : over.business;
     const svc = new SeoBacklinkService(
-      { getBusiness: async (id: string) => (business && business.id === id ? business : null), listLocations: async () => LOCS, listCategories: async () => CATS } as never,
+      { getBusiness: async (id: string) => (business && business.id === id ? business : null), getBusinessByVendor: async (v: string) => (business && v === 'v1' ? business : null), listLocations: async () => LOCS, listCategories: async () => CATS } as never,
       { get: async () => ({ ...DEFAULT_DIRECTORY_SETTINGS, directoryPagesIndexable: over.indexable ?? true }), readPublicAppUrl: async () => 'https://www.get4domain.com' } as never,
       { listing: async () => listing } as never, new Kw(),
     );
     return svc;
   }
-  it('links a business to ITS city, locality and category pages and no other city or locality', async () => {
+  it('links a business to ITS locality and city pages, a neighbour in the same city, and no other city', async () => {
     const b = await (await setup()).block('b1');
     const hrefs = b!.links.map((l) => l.href);
-    expect(hrefs).toEqual(['https://get4domain.com/chennai/plumbers', 'https://get4domain.com/chennai/plumbers-in-perambur', 'https://get4domain.com/category/plumber', 'https://get4domain.com/chennai']);
-    expect(hrefs.some((h) => /madurai|adyar/.test(h))).toBe(false);
+    expect(hrefs).toEqual(['https://get4domain.com/chennai/plumbers-in-perambur', 'https://get4domain.com/chennai/plumbers', 'https://get4domain.com/chennai/plumbers-in-adyar', 'https://get4domain.com/chennai']);   // its own locality, its city, a neighbouring locality of the SAME city, the city
+    expect(hrefs.some((h) => /madurai/.test(h))).toBe(false);
   });
   it('gives the brand link only while the directory pages are not indexable', async () => { const b = await (await setup({ indexable: false })).block('b1'); expect(b!.links).toEqual([]); expect(b!.brand.href).toBe('https://get4domain.com/'); });
   it('is a 404 (null) for an unknown, removed or draft business and for a malformed id, on the block, the badge and the embed', async () => {
     for (const status of ['REMOVED', 'DRAFT']) { const s = await setup({ business: biz({ status }) }); expect(await s.block('b1')).toBeNull(); expect(await s.badge('b1')).toBeNull(); expect(await s.embed('b1')).toBeNull(); }
     const s = await setup(); for (const id of ['nope', '', 'a b', '../x', 'x'.repeat(65)]) { expect(await s.block(id)).toBeNull(); expect(await s.badge(id)).toBeNull(); }
+  });
+  it('the embed also carries the plain text link "Find {name} on Get4Domain" to the profile, escaped, and the vendor reaches only their own', async () => {
+    const s = await setup({ business: { ...biz(), name: 'Ranjith <b>Plumber</b> & Sons' } as never });
+    const e = (await s.embed('b1'))!;
+    expect(e.text).toEqual({ label: 'Find Ranjith bPlumber/b & Sons on Get4Domain', url: 'https://get4domain.com/business/ranjith-plumber', plain: 'Find Ranjith bPlumber/b & Sons on Get4Domain: https://get4domain.com/business/ranjith-plumber', html: '<a href="https://get4domain.com/business/ranjith-plumber" rel="noopener">Find Ranjith bPlumber/b &amp; Sons on Get4Domain</a>' });
+    expect(await s.listedOfVendor('v1')).toMatchObject({ id: 'b1' }); expect(await s.listedOfVendor('someone-else')).toBeNull();
   });
   it('serves the badge and the embed for a listed business, an unclaimed and a suspended one included', async () => {
     for (const status of ['CLAIMED', 'UNCLAIMED', 'SUSPENDED']) { const s = await setup({ business: biz({ status }) }); expect(await s.badge('b1')).toContain('<svg'); expect((await s.embed('b1'))!.profileUrl).toBe('https://get4domain.com/business/ranjith-plumber'); }
@@ -406,6 +423,10 @@ describe('the routes', () => {
     expect(src).toMatch(/@Public\(\) @Throttle\(RATE\.directoryRead\) @Get\('badge\/:file'\)/); expect(src).toMatch(/@Public\(\) @Throttle\(RATE\.directoryRead\) @Get\('badge-embed\/:businessId'\)/);
     expect(src).toContain("'Content-Security-Policy': \"default-src 'none'"); expect(src).toContain("'X-Content-Type-Options': 'nosniff'"); expect(src).toContain("'X-Robots-Tag': 'noindex'");
     expect(src).not.toMatch(/req\.(ip|headers)|@Req|@Headers/);   // the beacon reads no address and no header: nothing about the visitor can be stored
+  });
+  it("the vendor's badge route is owner-only and takes the vendor from the principal, never from the request", () => {
+    const src = read('seo-me.controller.ts');
+    expect(src).toMatch(/@UseTenant\(\)/); expect(src).toMatch(/@UseGuards\(VendorOwnerGuard\)/); expect(src).toContain("@Controller('v3/me/directory')"); expect(src).not.toMatch(/@Param|@Query|@Body|req\./);
   });
   it('the staff controller is behind AdminGuard and has no delete route', () => {
     const src = read('seo-targets-admin.controller.ts');

@@ -7,6 +7,7 @@ import { SitemapController } from './api/sitemap.controller';
 import { ClickOutService } from './click-out/click-out.service';
 import { PrismaSeoClickStore, SeoClickStore } from './click-out/click-store';
 import { SeoAdminController } from './api/seo-admin.controller';
+import { SeoMeController } from './api/seo-me.controller';
 import { SeoPublicController } from './api/seo-public.controller';
 import { SeoTargetsAdminController } from './api/seo-targets-admin.controller';
 import { SeoBacklinkService } from './backlinks/seo-backlink.service';
@@ -34,7 +35,7 @@ export const SEO_PROVIDERS: Provider[] = [
   { provide: SeoClickStore, useClass: PrismaSeoClickStore },
   SeoSettingsService, SeoKeywordService, SeoPageService, ClickOutService, SeoSitemapService, SeoKeywordTargetService, SeoUtmService, SeoBacklinkService,
 ];
-export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, SeoTargetsAdminController, DirectoryPagesController, ClickOutController, SitemapController, SeoPublicController];
+export const SEO_CONTROLLERS: Type<unknown>[] = [SeoAdminController, SeoTargetsAdminController, DirectoryPagesController, ClickOutController, SitemapController, SeoPublicController, SeoMeController];
 export const SEO_EXPORTS = [SeoKeywordStore, SeoAudit, SeoSettingsService, SeoKeywordService, SeoPageService, SeoDirectoryData, SeoPageOverrides, SeoClickStore, ClickOutService, SeoSitemapService, SeoKeywordTargetStore, SeoKeywordTargetService, SeoUtmStore, SeoUtmService, SeoBacklinkService, DbPageOverrides];
 
 /**

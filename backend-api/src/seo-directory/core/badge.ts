@@ -17,3 +17,10 @@ export function badgeEmbedHtml(o: { origin: string; apiBase: string; businessId:
   const img = `${o.apiBase.replace(/\/+$/, '')}/v3/directory/badge/${encodeURIComponent(o.businessId)}.svg`;
   return `<a href="${esc(`${o.origin}/business/${o.slug}`)}" rel="noopener"><img src="${esc(img)}" alt="${BADGE_TEXT}" width="${BADGE_WIDTH}" height="${BADGE_HEIGHT}"></a>`;
 }
+
+/** The plain text link for a bio or a profile that cannot hold an image: "Find {name} on Get4Domain" and the profile address. The name is stored text: cut, one line, escaped in the HTML form. */
+export function badgeTextLink(o: { origin: string; slug: string; name: string }): { label: string; url: string; plain: string; html: string } {
+  const name = String(o.name ?? '').replace(/\s+/g, ' ').replace(/[<>]/g, '').trim().slice(0, 80);
+  const url = `${o.origin}/business/${o.slug}`; const label = `Find ${name} on Get4Domain`;
+  return { label, url, plain: `${label}: ${url}`, html: `<a href="${esc(url)}" rel="noopener">${esc(label)}</a>` };
+}
