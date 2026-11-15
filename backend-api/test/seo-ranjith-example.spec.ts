@@ -125,3 +125,43 @@ describe('no ranking promises, anywhere the platform writes', () => {
     expect(b.links.map((l) => l.text).join(' ')).toMatch(/Chennai/); expect(b.links[0].text).toMatch(/Perambur/);
   });
 });
+
+// ─── prompt 8c: the four titles and descriptions of the example, together ───────────────────────────────────────────────────────────────────────
+import { loadKit } from '../src/site-publish/renderer/renderer-loader';
+import { pageArgs, planPages, toRendererInput } from '../src/site-publish/content/content-adapter';
+import { buildPageSeo } from '../src/site-publish/seo/page-seo';
+import { doc, YEAR } from './support/site-fixtures';
+
+describe('Ranjith Plumber: vendor home, vendor services page, directory page 1 and page 2', () => {
+  const kit = loadKit();
+  const vendorSeo = (page: 'home' | 'services') => {
+    const d = doc('plumber', { cms: { tagline: '', about: '' } });
+    const input = toRendererInput(d, { categoryId: 'plumber', lang: 'en', year: YEAR, siteBase: 'get4domain.com' });
+    const planned = planPages(input.content, ['home', 'about', 'services', 'gallery', 'contact', 'page', 'item']).find((p) => p.template === page)!;
+    const args = pageArgs(input.content, planned);
+    const rendered = kit.renderPage({ theme: kit.loadTheme('free-service-pro'), page: args.page, content: args.content, settings: input.settings, vendor: input.vendor, host: input.host, entitlements: { video: false, cart: false, booking: false, customDomain: false } });
+    return buildPageSeo({
+      rendered, path: planned.path, template: planned.template, lang: 'en', languages: ['en'], indexable: true, tagline: '', about: '', siteUrl: input.host.siteUrl, categoryId: 'plumber', siteName: 'Ranjith Plumber', city: 'Chennai', locality: 'Perambur',
+      image: '', itemName: '', items: [], services: ['Tap repair', 'Pipe fitting', 'Leak detection'], vendorTemplates: { vendorHome: DEFAULT_SEO_TEMPLATES.vendorHome, vendorPage: DEFAULT_SEO_TEMPLATES.vendorPage },
+    });
+  };
+  const LABEL = kit.categoryById('plumber').label;
+  it('the four match the documented patterns, are unique, stay within 60 and 160, and carry the brand', async () => {
+    const w = world({ directoryPageSizeMax: 2, directoryPageSizeDefault: 2 });
+    const d1 = await ok(w.svc, '/chennai/plumbers-in-perambur'); const d2 = await ok(w.svc, '/chennai/plumbers-in-perambur/page/2');
+    const home = vendorSeo('home'); const services = vendorSeo('services');
+    expect(home.title).toBe(`Ranjith Plumber | ${LABEL} in Perambur, Chennai | Get4Domain`);
+    expect(services.title).toMatch(/^Services \| Ranjith Plumber, .+ \| Get4Domain$/);
+    expect(d1.meta.title).toBe('Plumbers in Perambur, Chennai | Get4Domain'); expect(d2.meta.title).toBe('Plumbers in Perambur, Chennai - Page 2 | Get4Domain');
+    expect(home.description).toBe(`Ranjith Plumber, ${LABEL} in Perambur, Chennai. Services include Tap repair, Pipe fitting, Leak detection.`);
+    expect(d1.meta.description).toBe('Find 5 Plumbers in Perambur, Chennai: addresses, services and websites.');
+    const all = [{ t: home.title, d: home.description }, { t: services.title, d: services.description }, { t: d1.meta.title, d: d1.meta.description }, { t: d2.meta.title, d: d2.meta.description }];
+    expect(new Set(all.map((x) => x.t)).size).toBe(4); expect(new Set(all.map((x) => x.d)).size).toBe(4);
+    for (const x of all) { expect(x.t.length).toBeLessThanOrEqual(60); expect(x.t.endsWith(' | Get4Domain')).toBe(true); expect(x.d.length).toBeLessThanOrEqual(160); expect(x.d.length).toBeGreaterThan(30); claimFree(x.t); claimFree(x.d); }
+  });
+  it('the home page and directory descriptions name get4domain.com or the brand, as the owner asked', async () => {
+    const home = await ok(world().svc, '/'); expect(home.meta.description).toContain('get4domain.com'); expect(home.meta.title).toContain('Get4Domain');
+    expect((await ok(world().svc, '/chennai/plumbers')).meta.description).toContain('get4domain.com');
+  });
+});
+function claimFree(s: string): void { expect(hasRankingClaim(s)).toBe(false); expect(isUnsafeSeoText(s)).toBe(false); }
