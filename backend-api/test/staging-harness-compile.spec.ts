@@ -52,6 +52,8 @@ const OPTION_SETS: Array<[string, ProvisioningTestOptions]> = [
   ['ai api', { includeAiApi: true }],
   ['billing', { billing: { fake: new FakeRazorpay() } }],
   ['directory + b3', { includeDirectoryApi: true, b3: true }],
+  ['SEO block: directory + b3 + seo api', { includeDirectoryApi: true, b3: true, includeSeoApi: true }],
+  ['SEO block with the site API', { includeSiteApi: true, includeDirectoryApi: true, b3: true, includeSeoApi: true }],
   ['site + directory + b3', { includeSiteApi: true, includeDirectoryApi: true, b3: true }],
   ['every option at once', { includeSiteApi: true, includeDirectoryApi: true, includeAiApi: true, b3: true, billing: { fake: new FakeRazorpay() } }],
   ['b3 alone', { b3: true }],
