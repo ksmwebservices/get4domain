@@ -30,6 +30,8 @@ export interface SourceExtras {
 export interface SourceCms {
   businessName: string | null; tagline: string | null; about: string | null; logo: string | null; banner: string | null; favicon: string | null;
   phone: string | null; email: string | null; address: string | null; businessHours: string | null; whatsapp: string | null;
+  /** Wave 2 Part G: opening hours as rows, from the managed document; absent = none drawn (the one-line text above stays for the search file and the chat bot) */
+  hours?: Array<{ day: string; open: string; close: string; closed: boolean }>;
   facebook: string | null; instagram: string | null; linkedin: string | null; youtube: string | null; googleMaps: string | null;
   portfolio: Array<{ id?: string; src: string; alt?: string; title?: string }> | null;
   testimonials: Array<{ quote: string; author: string; note?: string; sample?: boolean; /** slice B4: written in the Website manager; drawn only on a plan with calls to action */ proOnly?: boolean }> | null;

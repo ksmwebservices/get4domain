@@ -4,9 +4,9 @@ import { ActivityService } from '../v3-activity/activity.service';
 import { PackEngineService } from '../v3-packs/pack-engine.service';
 import { checkFieldDefs, isFieldKey } from '../v3-pack-records/core/record-core';
 import { WebsiteService } from '../v3-website/website.service';
-import { checkProfile, isProfileType, ProfileField, resolveSchema, SiteMapRow, SITE_SECTIONS, toSiteOps } from './core/profile-core';
+import { checkProfile, isProfileType, LOCATION_PARTS, MAP_KINDS, ProfileField, resolveSchema, SiteMapRow, SITE_SECTIONS, toSiteOps } from './core/profile-core';
 import { profileError } from './profile.errors';
-import { CategoryRef, ProfileFieldStore, ProfileValueStore } from './profile.store';
+import { CategoryRef, OfferingsPort, ProfileFieldStore, ProfileValueStore } from './profile.store';
 
 export interface SchemaView { category: string; pack: string; gated: boolean; fields: Array<{ key: string; label: string; type: string; required: boolean; options: string[]; siteSection: string; inherited: boolean }> }
 export interface SaveResult { saved: true; fields: string[]; site: { written: string[]; skipped: Array<{ target: string; reason: string }> } }
@@ -19,7 +19,7 @@ export interface SaveResult { saved: true; fields: string[]; site: { written: st
 export class ProfileFieldsService {
   constructor(
     private readonly fields: ProfileFieldStore, private readonly values: ProfileValueStore, private readonly packs: PackEngineService,
-    @Optional() private readonly website?: WebsiteService, @Optional() private readonly activity?: ActivityService,
+    @Optional() private readonly website?: WebsiteService, @Optional() private readonly activity?: ActivityService, @Optional() private readonly offerings?: OfferingsPort,
   ) {}
 
   private async category(slug: string): Promise<CategoryRef> {
@@ -67,12 +67,25 @@ export class ProfileFieldsService {
     await this.values.replace(vendorId, value, { type: actor.type, id: actor.id });
     const { schema, maps } = await this.resolved(c);
     const sent = new Set(Object.keys((input ?? {}) as Record<string, unknown>));
-    const ops = toSiteOps(schema, maps, value, c.packKey, c.categoryKey).filter((op) => op.kind === 'list' || sent.size > 0);
+    const ops = toSiteOps(schema, maps, value, c.packKey, c.categoryKey);
     const written: string[] = []; const skipped: Array<{ target: string; reason: string }> = [];
     for (const op of ops) {
-      const target = op.kind === 'field' ? op.key : `list:${op.name}`;
-      if (!this.website) { skipped.push({ target, reason: 'WEBSITE_NOT_AVAILABLE' }); continue; }
-      try { await this.website.save(vendorId, actor, op.kind === 'field' ? { kind: 'field', key: op.key, value: op.value } : { kind: 'list', name: op.name, items: op.items }); written.push(target); }
+      const target = op.kind === 'field' ? op.key : op.kind === 'list' ? `list:${op.name}` : op.kind;
+      try {
+        if (op.kind === 'offerings') {
+          // the business's Offerings (tenant scoped, the services the profile named); a service the vendor made themselves is left alone
+          if (!this.offerings) { skipped.push({ target, reason: 'OFFERINGS_NOT_AVAILABLE' }); continue; }
+          await this.offerings.sync(vendorId, op.items); written.push(target); continue;
+        }
+        if (!this.website) { skipped.push({ target, reason: 'WEBSITE_NOT_AVAILABLE' }); continue; }
+        if (op.kind === 'location') {
+          // the location is one object: keep what the owner already has (a map link, coordinates) and lay the given parts over it
+          const have = (await this.website.seoContext(vendorId).catch(() => null))?.doc.location ?? {};
+          await this.website.save(vendorId, actor, { kind: 'location', value: { ...have, ...op.value } });
+        } else if (op.kind === 'hours') await this.website.save(vendorId, actor, { kind: 'hours', value: op.rows });
+        else await this.website.save(vendorId, actor, op.kind === 'field' ? { kind: 'field', key: op.key, value: op.value } : { kind: 'list', name: op.name, items: op.items });
+        written.push(target);
+      }
       catch (e) { skipped.push({ target, reason: String((e as { getResponse?: () => { code?: string } }).getResponse?.()?.code ?? 'REFUSED') }); }
     }
     if (actor.type === 'STAFF') await this.activity?.record({ vendorId, actor: { type: actor.type, id: actor.id, ip: actor.ip ?? null }, actionKey: 'profile.saved_on_behalf', entityType: 'profile', entityId: vendorId, summary: { fields: sent.size, written: written.length, skipped: skipped.length } });
@@ -118,11 +131,12 @@ export class ProfileFieldsService {
     if (packKey !== '' && !(await this.knownPack(packKey))) errors.packKey = 'Pick one of the packs.';
     if (categorySlug !== '' && packKey === '') errors.categorySlug = 'A category row also needs its pack.';
     if (!isFieldKey(input.fieldKey)) errors.fieldKey = 'Use lower case letters, digits and underscores.';
-    if (input.targetKind !== 'FIELD' && input.targetKind !== 'LIST' && input.targetKind !== 'NONE') errors.targetKind = 'Pick FIELD, LIST or NONE.';
+    if (!MAP_KINDS.includes(input.targetKind as never)) errors.targetKind = 'Pick FIELD, LIST, LOCATION, HOURS, OFFERINGS or NONE.';
+    if (input.targetKind === 'LOCATION' && !(LOCATION_PARTS as readonly string[]).includes(String(input.targetKey ?? ''))) errors.targetKey = 'Name a part of the location: addressLine1, addressLine2, city, state or pincode.';
     if (input.targetKind === 'FIELD' && !/^[a-z]+\.[A-Za-z]+$/.test(String(input.targetKey ?? ''))) errors.targetKey = 'Name a site field such as about.text.';
     if (input.targetKind === 'LIST' && !['faqs', 'gallery', 'steps', 'trust', 'stats', 'team', 'credentials'].includes(String(input.targetKey ?? ''))) errors.targetKey = 'Name a site list such as credentials.';
     if (Object.keys(errors).length) throw profileError('PROFILE_FIELD_INVALID', 'The map row needs fixing.', { fields: errors });
-    const row: SiteMapRow = { packKey, categorySlug, fieldKey: input.fieldKey as string, targetKind: input.targetKind as SiteMapRow['targetKind'], targetKey: input.targetKind === 'NONE' ? '' : String(input.targetKey), itemMap: input.itemMap && typeof input.itemMap === 'object' && !Array.isArray(input.itemMap) ? input.itemMap : {}, active: input.active !== false };
+    const row: SiteMapRow = { packKey, categorySlug, fieldKey: input.fieldKey as string, targetKind: input.targetKind as SiteMapRow['targetKind'], targetKey: input.targetKind === 'NONE' || input.targetKind === 'HOURS' || input.targetKind === 'OFFERINGS' ? '' : String(input.targetKey), itemMap: input.itemMap && typeof input.itemMap === 'object' && !Array.isArray(input.itemMap) ? input.itemMap : {}, active: input.active !== false };
     await this.fields.upsertMap(row, staff.id);
     await this.activity?.record({ vendorId: null, actor: { type: 'STAFF', id: staff.id, ip: staff.ip }, actionKey: 'profile.map_edited', entityType: 'profile_map', entityId: `${packKey}:${categorySlug}:${row.fieldKey}`, summary: { kind: row.targetKind, target: row.targetKey } });
     return row;

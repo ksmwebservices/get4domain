@@ -1,4 +1,5 @@
 import { checkValue, cleanText, FieldDef, FIELD_TYPES, isFieldKey, LIMITS } from '../../v3-pack-records/core/record-core';
+import { HoursRow, parseHoursText, validateHours } from '../../v3-website/core/hours-core';
 import { checkWording } from '../../v3-website/core/wording-core';
 
 /**
@@ -6,13 +7,17 @@ import { checkWording } from '../../v3-website/core/wording-core';
  * so (its field hints). The values a business gives are checked against the resolved set, then mapped into the vendor site content through DATA rows (the map), never through a branch on an industry.
  * Rules that never bend: unknown fields are refused, every text is plain (no markup), no text may promise a result or a ranking (the same filter as the SEO text), and no price is written here: prices live in the price list, before GST.
  */
-export const PROFILE_TYPES = [...FIELD_TYPES, 'textlist', 'servicelist', 'imagelist'] as const;
+export const PROFILE_TYPES = [...FIELD_TYPES, 'textlist', 'servicelist', 'imagelist', 'hours'] as const;
 export type ProfileType = (typeof PROFILE_TYPES)[number];
 export const isProfileType = (v: unknown): v is ProfileType => typeof v === 'string' && (PROFILE_TYPES as readonly string[]).includes(v);
 export const SITE_SECTIONS = ['hero', 'about', 'services', 'hours', 'contact', 'social', 'gallery', 'details'] as const;
 
 export interface ProfileField { packKey: string; categorySlug: string; fieldKey: string; label: string; type: ProfileType; required: boolean; options: string[]; sortOrder: number; siteSection: string; active: boolean }
-export interface SiteMapRow { packKey: string; categorySlug: string; fieldKey: string; targetKind: 'FIELD' | 'LIST' | 'NONE'; targetKey: string; itemMap: Record<string, unknown>; active: boolean }
+/** FIELD one site field; LIST items in a site list; LOCATION a part of the site location (addressLine1, addressLine2, city, state, pincode); HOURS the opening hours rows; OFFERINGS the business's services in its Offerings; NONE kept on the profile only. */
+export type MapKind = 'FIELD' | 'LIST' | 'LOCATION' | 'HOURS' | 'OFFERINGS' | 'NONE';
+export const MAP_KINDS: readonly MapKind[] = ['FIELD', 'LIST', 'LOCATION', 'HOURS', 'OFFERINGS', 'NONE'];
+export const LOCATION_PARTS = ['addressLine1', 'addressLine2', 'city', 'state', 'pincode'] as const;
+export interface SiteMapRow { packKey: string; categorySlug: string; fieldKey: string; targetKind: MapKind; targetKey: string; itemMap: Record<string, unknown>; active: boolean }
 
 /** [key, label, type, flags (r required), siteSection, options] */
 type Spec = readonly [string, string, ProfileType, string, string, string[]?];
@@ -21,7 +26,7 @@ const t = (k: string, l: string, ty: ProfileType, f = '', s = 'details', o?: str
 /** The common set every business has, in this order. Addresses carry the locality and the pincode; services carry a short description each. */
 export const COMMON_FIELDS: readonly Spec[] = [
   t('business_name', 'Business name', 'text', 'r', 'hero'), t('tagline', 'Tagline', 'text', '', 'hero'), t('about', 'About the business', 'longtext', '', 'about'),
-  t('services', 'Services', 'servicelist', '', 'services'), t('opening_hours', 'Opening hours', 'text', '', 'hours'),
+  t('services', 'Services', 'servicelist', '', 'services'), t('opening_hours', 'Opening hours', 'hours', '', 'hours'),
   t('address_line', 'Address', 'text', '', 'contact'), t('locality', 'Locality', 'text', '', 'contact'), t('city', 'City', 'text', '', 'contact'), t('state', 'State', 'text', '', 'contact'), t('pincode', 'Pincode', 'text', '', 'contact'),
   t('phone', 'Phone', 'phone', '', 'contact'), t('email', 'Email', 'email', '', 'contact'), t('whatsapp', 'WhatsApp number', 'phone', '', 'contact'),
   t('social_instagram', 'Instagram link', 'url', '', 'social'), t('social_facebook', 'Facebook link', 'url', '', 'social'), t('social_youtube', 'YouTube link', 'url', '', 'social'), t('social_linkedin', 'LinkedIn link', 'url', '', 'social'), t('social_x', 'X link', 'url', '', 'social'),
@@ -51,10 +56,11 @@ export const PROFILE_PACKS: readonly string[] = Object.keys(PACK_FIELDS);
 
 /** Where the common fields go in the site content. A row with the pack and the category EMPTY applies to every business. */
 const F = (fieldKey: string, targetKey: string): Omit<SiteMapRow, 'packKey' | 'categorySlug'> => ({ fieldKey, targetKind: 'FIELD', targetKey, itemMap: {}, active: true });
+const K = (fieldKey: string, targetKind: MapKind, targetKey = ''): Omit<SiteMapRow, 'packKey' | 'categorySlug'> => ({ fieldKey, targetKind, targetKey, itemMap: {}, active: true });
 const NONE = (fieldKey: string): Omit<SiteMapRow, 'packKey' | 'categorySlug'> => ({ fieldKey, targetKind: 'NONE', targetKey: '', itemMap: {}, active: true });
 export const COMMON_MAP: ReadonlyArray<Omit<SiteMapRow, 'packKey' | 'categorySlug'>> = [
-  NONE('business_name'), F('tagline', 'site.tagline'), F('about', 'about.text'), NONE('services'), NONE('opening_hours'),
-  { ...F('address_line', 'contact.address'), itemMap: { compose: ['address_line', 'locality', 'city', 'state', 'pincode'] } }, NONE('locality'), NONE('city'), NONE('state'), NONE('pincode'),
+  NONE('business_name'), F('tagline', 'site.tagline'), F('about', 'about.text'), K('services', 'OFFERINGS'), K('opening_hours', 'HOURS'),
+  K('address_line', 'LOCATION', 'addressLine1'), K('locality', 'LOCATION', 'addressLine2'), K('city', 'LOCATION', 'city'), K('state', 'LOCATION', 'state'), K('pincode', 'LOCATION', 'pincode'),
   F('phone', 'contact.phone'), F('email', 'contact.email'), F('whatsapp', 'contact.whatsapp'),
   F('social_instagram', 'social.instagram'), F('social_facebook', 'social.facebook'), F('social_youtube', 'social.youtube'), F('social_linkedin', 'social.linkedin'), F('social_x', 'social.x'),
   F('banner_image', 'hero.image'), F('banner_image_alt', 'hero.imageAlt'),
@@ -106,6 +112,7 @@ export function resolveMap(maps: readonly SiteMapRow[], packKey: string, categor
 }
 
 // ── checking values ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+const CONTACT_LINK = /(?:\bwa\.me\b|\bmailto:|\btel:|\bapi\.whatsapp\.com\b)/i;   // a Free site is informational: no tel, mailto or wa.me link is ever written into its text
 const PRICE = /(?:₹|\brs\.?\s*\d|\binr\s*\d|\brupees?\s*\d)/i;
 export const LIST_MAX = 30;
 type Result = { ok: true; value: unknown } | { ok: false; error: string };
@@ -114,13 +121,15 @@ function text(v: unknown, max: number, multiline = false): Result {
   const c = cleanText(v, max, multiline);
   if (!c.ok) return { ok: false, error: c.error };
   if (c.value.length === 0) return { ok: false, error: 'This is required.' };
+  if (CONTACT_LINK.test(c.value)) return { ok: false, error: 'Leave contact links out of the text: the phone and email have their own fields.' };
   if (PRICE.test(c.value)) return { ok: false, error: 'Leave prices out here: prices are set in the price list, before GST.' };
   if (!checkWording(c.value, { strict: false }).ok) return { ok: false, error: 'That wording promises a result or a ranking. Describe what you do instead.' };
   return { ok: true, value: c.value };
 }
-const asField = (f: ProfileField): FieldDef => ({ key: f.fieldKey, label: f.label, type: (f.type === 'textlist' || f.type === 'servicelist' || f.type === 'imagelist' ? 'text' : f.type) as FieldDef['type'], required: f.required, options: f.options, sortOrder: f.sortOrder, listColumn: false, searchable: false });
+const asField = (f: ProfileField): FieldDef => ({ key: f.fieldKey, label: f.label, type: (f.type === 'textlist' || f.type === 'servicelist' || f.type === 'imagelist' || f.type === 'hours' ? 'text' : f.type) as FieldDef['type'], required: f.required, options: f.options, sortOrder: f.sortOrder, listColumn: false, searchable: false });
 
 export function checkProfileValue(f: ProfileField, v: unknown): Result {
+  if (f.fieldKey === 'pincode') { const t = text(v, 6); if (!t.ok) return t; return /^[1-9][0-9]{5}$/.test(t.value as string) ? t : { ok: false, error: 'The pincode is six digits, not starting with 0.' }; }
   if (f.type === 'text' || f.type === 'longtext') return text(v, f.type === 'text' ? LIMITS.text : LIMITS.longtext, f.type === 'longtext');
   if (f.type === 'textlist') {
     if (!Array.isArray(v) || v.length === 0 || v.length > LIST_MAX) return { ok: false, error: `Give between 1 and ${LIST_MAX} items.` };
@@ -151,6 +160,11 @@ export function checkProfileValue(f: ProfileField, v: unknown): Result {
     }
     return { ok: true, value: out };
   }
+  if (f.type === 'hours') {
+    const r = typeof v === 'string' ? parseHoursText(v) : validateHours(v);
+    if (!r.ok) return { ok: false, error: r.message };
+    return r.rows.length ? { ok: true, value: r.rows } : { ok: false, error: 'Give at least one day.' };
+  }
   return checkValue(asField(f), v);
 }
 
@@ -172,7 +186,12 @@ export function checkProfile(schema: readonly ProfileField[], input: unknown, ex
 }
 
 // ── mapping into the site content ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-export type SiteOp = { kind: 'field'; key: string; value: string } | { kind: 'list'; name: string; items: Array<Record<string, string>> };
+export type SiteOp =
+  | { kind: 'field'; key: string; value: string }
+  | { kind: 'list'; name: string; items: Array<Record<string, string>> }
+  | { kind: 'location'; value: Record<string, string> }
+  | { kind: 'hours'; rows: HoursRow[] }
+  | { kind: 'offerings'; items: Array<{ name: string; description?: string }> };
 const asText = (v: unknown): string => (Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : '')).filter(Boolean).join(', ') : typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '');
 
 /**
@@ -181,9 +200,13 @@ const asText = (v: unknown): string => (Array.isArray(v) ? v.map((x) => (typeof 
  */
 export function toSiteOps(schema: readonly ProfileField[], maps: readonly SiteMapRow[], values: Record<string, unknown>, packKey: string, categorySlug: string): SiteOp[] {
   const fields: SiteOp[] = []; const lists = new Map<string, Array<Record<string, string>>>(); const done = new Set<string>();
+  const loc: Record<string, string> = {}; const extra: SiteOp[] = [];
   for (const f of schema) {
     const v = values[f.fieldKey]; if (v === undefined) continue;
     const m = resolveMap(maps, packKey, categorySlug, f.fieldKey); if (!m || m.targetKind === 'NONE') continue;
+    if (m.targetKind === 'LOCATION') { const o = asText(v); if (o && (LOCATION_PARTS as readonly string[]).includes(m.targetKey)) loc[m.targetKey] = o; continue; }
+    if (m.targetKind === 'HOURS') { if (Array.isArray(v) && v.length) extra.push({ kind: 'hours', rows: v as HoursRow[] }); continue; }
+    if (m.targetKind === 'OFFERINGS') { if (Array.isArray(v) && v.length) extra.push({ kind: 'offerings', items: (v as Array<{ name: string; description?: string }>).map((x) => ({ name: x.name, ...(x.description ? { description: x.description } : {}) })) }); continue; }
     if (m.targetKind === 'FIELD') {
       if (done.has(m.targetKey)) continue; done.add(m.targetKey);
       const compose = Array.isArray(m.itemMap.compose) ? (m.itemMap.compose as string[]) : null;
@@ -203,5 +226,5 @@ export function toSiteOps(schema: readonly ProfileField[], maps: readonly SiteMa
       lists.set(m.targetKey, items);
     }
   }
-  return [...fields, ...[...lists.entries()].filter(([, items]) => items.length > 0).map(([name, items]): SiteOp => ({ kind: 'list', name, items }))];
+  return [...fields, ...(Object.keys(loc).length ? [{ kind: 'location', value: loc } as SiteOp] : []), ...extra, ...[...lists.entries()].filter(([, items]) => items.length > 0).map(([name, items]): SiteOp => ({ kind: 'list', name, items }))];
 }

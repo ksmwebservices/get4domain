@@ -19,8 +19,9 @@ import { LIVE_PROJECTORS, LiveProjector } from './projection/live-projector';
 import { isPageKey, SeoWho, validatePageSeo } from './core/seo-core';
 import { deriveEditorMap, EditorMap, navPageKeysOf, sectionIdsOf } from './core/editor-map';
 import {
-  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeLocation, writeReviewUrl, writeSeo, writeTestimonials,
+  DocDiff, diffDocs, emptyDoc, FIELD_DEFS, hashDoc, LIST_DEFS, LIST_PLAN_FEATURE, ListName, ManagedDoc, validateBrand, validateList, validateNavigation, validateSections, writeField, writeHours, writeLocation, writeReviewUrl, writeSeo, writeTestimonials,
 } from './core/managed-doc';
+import { validateHours } from './core/hours-core';
 import { validateLocation } from './core/location-core';
 import { validateReviewUrl } from './core/review-link-core';
 import { checkWording } from './core/wording-core';
@@ -39,6 +40,7 @@ export type Change =
   | { kind: 'navigation'; value: unknown }
   | { kind: 'seo'; pageKey: string; edit: unknown }
   | { kind: 'location'; value: unknown }
+  | { kind: 'hours'; value: unknown }
   | { kind: 'reviewLink'; value: unknown }
   | { kind: 'testimonials'; items: unknown };
 
@@ -203,6 +205,7 @@ export class WebsiteService {
         if (!c.pro) throw locked('site.cta', c.ent.features['site.cta']?.upsellText ?? null);   // Pro only (owner rule 2): a Free site shows no review button
         const r = writeReviewUrl(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc;
       }
+      case 'hours': { const r = writeHours(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc; }
       case 'location': { const r = writeLocation(doc, change.value); if (!r.ok) throw fieldProblem(r.code, r.message, r.field); return r.doc; }
       case 'seo': {
         const exists = isPageKey(change.pageKey) && (STANDARD_PAGES.includes(change.pageKey) ? c.map.pages.some((p) => p.key === change.pageKey)
@@ -269,6 +272,7 @@ export class WebsiteService {
       if (!r.ok) { if (r.code === 'TESTIMONIALS_NOT_CONFIGURED') throw testimonialsNotConfigured(); if (r.code === 'WORDING_NOT_ALLOWED') throw wordingProblem(r.field); if (r.code === 'LIMIT_REACHED') throw limitReached('testimonials', c.testimonialMax ?? 0); throw fieldProblem(r.code, r.message, r.field); }
     }
     if (doc.reviewUrl) { const r = validateReviewUrl(doc.reviewUrl); if (!r.ok) throw fieldProblem(r.code, 'A saved review link is no longer valid.', 'reviewUrl'); }
+    if (doc.hours) { const r = validateHours(doc.hours); if (!r.ok) throw fieldProblem(r.code, 'Saved opening hours are no longer valid.', 'hours'); }
     if (doc.location) { const r = validateLocation(doc.location); if (!r.ok) throw fieldProblem(r.code, 'A saved location is no longer valid.', `location.${r.field}`); }
     for (const [key, edit] of Object.entries(doc.seo)) {
       const r = validatePageSeo(edit, edit.shareImageRef ? [edit.shareImageRef] : []);   // the picture was checked against the site's own pictures when it was written

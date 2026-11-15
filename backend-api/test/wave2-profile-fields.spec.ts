@@ -96,12 +96,14 @@ describe('checking values', () => {
 
 describe('mapping into the site content', () => {
   const seed = buildProfileSeed(cats); const schema = resolveSchema(seed.fields, 'FIELD_SERVICE', 'plumber');
-  const values = { business_name: 'Ranjith Plumber', tagline: 'Plumbing for homes', about: 'We fix taps.', address_line: '12 Lake Road', locality: 'Aluva', city: 'Kochi', state: 'Kerala', pincode: '683101', phone: '+919876543210', social_instagram: 'https://instagram.com/r', banner_image: 'https://cdn.example/b.jpg', banner_image_alt: 'Our van', service_areas: ['Aluva', 'Kakkanad'], callout_note: 'Call-out charge is set per visit', gallery_images: [{ src: 'https://cdn.example/a.jpg', alt: 'Bathroom' }], opening_hours: 'Mon to Sat 9 to 6', services: [{ name: 'Leak repair' }] };
+  const values = { business_name: 'Ranjith Plumber', tagline: 'Plumbing for homes', about: 'We fix taps.', address_line: '12 Lake Road', locality: 'Aluva', city: 'Kochi', state: 'Kerala', pincode: '683101', phone: '+919876543210', social_instagram: 'https://instagram.com/r', banner_image: 'https://cdn.example/b.jpg', banner_image_alt: 'Our van', service_areas: ['Aluva', 'Kakkanad'], callout_note: 'Call-out charge is set per visit', gallery_images: [{ src: 'https://cdn.example/a.jpg', alt: 'Bathroom' }], opening_hours: [{ day: 'Mon', open: '09:00', close: '18:00', closed: false }], services: [{ name: 'Leak repair' }] };
   const ops = toSiteOps(schema, seed.maps, values, 'FIELD_SERVICE', 'plumber');
-  it('writes the mapped fields, composes the address from its parts, and leaves the unmapped ones on the profile only', () => {
+  it('writes the mapped fields; the address parts, the hours and the services go to the location, the hours and the Offerings (Part G), not to a field', () => {
     const f = Object.fromEntries(ops.filter((o) => o.kind === 'field').map((o) => [(o as { key: string }).key, (o as { value: string }).value]));
-    expect(f).toMatchObject({ 'site.tagline': 'Plumbing for homes', 'about.text': 'We fix taps.', 'contact.address': '12 Lake Road, Aluva, Kochi, Kerala, 683101', 'contact.phone': '+919876543210', 'social.instagram': 'https://instagram.com/r', 'hero.image': 'https://cdn.example/b.jpg', 'hero.imageAlt': 'Our van' });
-    expect(Object.keys(f)).not.toContain('contact.city'); expect(JSON.stringify(ops)).not.toContain('Mon to Sat');   // opening hours: free text only on the site today, so they stay on the profile
+    expect(f).toMatchObject({ 'site.tagline': 'Plumbing for homes', 'about.text': 'We fix taps.', 'contact.phone': '+919876543210', 'social.instagram': 'https://instagram.com/r', 'hero.image': 'https://cdn.example/b.jpg', 'hero.imageAlt': 'Our van' });
+    expect(Object.keys(f)).not.toContain('contact.address');
+    expect(ops.find((o) => o.kind === 'location')).toEqual({ kind: 'location', value: { addressLine1: '12 Lake Road', addressLine2: 'Aluva', city: 'Kochi', state: 'Kerala', pincode: '683101' } });
+    expect(ops.find((o) => o.kind === 'hours')).toEqual({ kind: 'hours', rows: [{ day: 'Mon', open: '09:00', close: '18:00', closed: false }] }); expect(ops.find((o) => o.kind === 'offerings')).toEqual({ kind: 'offerings', items: [{ name: 'Leak repair' }] });
   });
   it('adds every industry field to ONE credentials list (a list write replaces the list) and the gallery to the gallery list', () => {
     const lists = ops.filter((o) => o.kind === 'list') as Array<{ name: string; items: Array<Record<string, string>> }>;

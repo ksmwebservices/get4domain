@@ -97,7 +97,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
       phone, phoneHref: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '', whatsapp: str(cms?.whatsapp) || phone, whatsappHref: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '',
       email, address, city, area: '', pin, mapUrl: o.directions === false ? '' : str(cms?.googleMaps),
     },
-    hours: [],
+    hours: (cms?.hours ?? []).map((h) => ({ day: str(h.day), open: str(h.open), close: str(h.close), closed: h.closed === true })),
     social: { instagram: str(cms?.instagram), facebook: str(cms?.facebook), youtube: str(cms?.youtube), linkedin: str(cms?.linkedin), x: str(ex.social?.x), custom: str(ex.social?.customUrl), customLabel: str(ex.social?.customLabel), maps: o.directions === false ? '' : str(cms?.googleMaps), whatsapp: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : '' },
     cta: { label: str(ex.ctaLabel) || cat.ctaPrimary, href: phone ? `tel:${phone.replace(/[^\d+]/g, '')}` : '/contact', secondaryLabel: '', secondaryHref: '' },
     ...(kitTerms ? { terms: kitTerms } : {}),

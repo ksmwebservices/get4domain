@@ -1,6 +1,7 @@
 import { RESERVED_PAGE_SLUGS } from '../../site-publish/content/content-adapter';
 import { SourceCms, SourceDocument, SourceExtras } from '../../site-publish/content/content-types';
 import { sha256, stableJson } from '../../site-publish/publish/site-config';
+import { HoursRow, hoursText, validateHours } from './hours-core';
 import { buildDirectionsUrl, composeAddress, Location, parseMapLink, validateLocation } from './location-core';
 import { validateReviewUrl } from './review-link-core';
 import { TESTIMONIAL_LABEL, Testimonial, validateTestimonials } from './testimonial-core';
@@ -78,6 +79,8 @@ export interface ManagedDoc {
   seo: Record<string, PageSeoEdit>;
   /** slice B2: the business's address lines, city, state, pincode, optional coordinates and the pasted map link; absent = the legacy address text is used */
   location?: Location;
+  /** Wave 2 Part G: the opening hours, one row per day as the theme renderer draws them; absent = the older one-line text is used */
+  hours?: HoursRow[];
   /** slice B3: the Google review link the vendor entered (Pro sites show the Write a review button; Free sites show nothing); absent = none */
   reviewUrl?: string;
   /** slice B4: testimonials the vendor chose to show (Pro only); absent = the older legacy list is used */
@@ -100,6 +103,7 @@ export function normaliseDoc(raw: unknown): ManagedDoc {
     navigation: { header: Array.isArray(r.navigation?.header) ? [...r.navigation.header] : [], footer: Array.isArray(r.navigation?.footer) ? [...r.navigation.footer] : [] },
     seo: r.seo && typeof r.seo === 'object' && !Array.isArray(r.seo) ? { ...r.seo } : {},
     ...(r.location && typeof r.location === 'object' && !Array.isArray(r.location) ? { location: { ...r.location } } : {}),
+    ...(Array.isArray(r.hours) ? { hours: r.hours.map((h) => ({ ...h })) } : {}),
     ...(typeof r.reviewUrl === 'string' && r.reviewUrl ? { reviewUrl: r.reviewUrl } : {}),
     ...(Array.isArray(r.testimonials) ? { testimonials: r.testimonials.map((t) => ({ ...t })) } : {}),
   };
@@ -259,6 +263,14 @@ export function writeLocation(doc: ManagedDoc, input: unknown): Ok<{ doc: Manage
   return { ok: true, doc: Object.keys(loc).length ? { ...rest, location: loc } : (rest as ManagedDoc) };
 }
 
+/** Set the opening hours (Wave 2 Part G). An empty list removes them. */
+export function writeHours(doc: ManagedDoc, input: unknown): Ok<{ doc: ManagedDoc }> | Fail {
+  const r = validateHours(input);
+  if (!r.ok) return r;
+  const { hours: _old, ...rest } = doc;
+  return { ok: true, doc: r.rows.length ? { ...rest, hours: r.rows } : (rest as ManagedDoc) };
+}
+
 /** Set the Google review link. An empty value removes it. */
 export function writeReviewUrl(doc: ManagedDoc, input: unknown): Ok<{ doc: ManagedDoc }> | Fail {
   const r = validateReviewUrl(input);
@@ -329,6 +341,7 @@ export function applyToSource(src: SourceDocument, doc: ManagedDoc): SourceDocum
       if (l.pincode) extras.pin = l.pincode;
       if (maps) mutable.googleMaps = maps;
     }
+    if (d.hours) { cms.hours = d.hours.map((h) => ({ ...h })); if (d.hours.length) mutable.businessHours = hoursText(d.hours); }
     if (d.testimonials) cms.testimonials = d.testimonials.map((t) => ({ quote: t.text, author: t.name, note: `${TESTIMONIAL_LABEL}${t.date ? ` (${t.date})` : ''}`, proOnly: true }));
     if (L.pages) cms.pages = L.pages.filter((p) => p.enabled === true).map((p) => ({ slug: String(p.slug), title: String(p.title), body: String(p.body), intro: String(p.intro ?? '') }));
     cms.extras = extras;

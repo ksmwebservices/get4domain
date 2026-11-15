@@ -18,6 +18,14 @@ export abstract class ProfileFieldStore {
   abstract categoryOfVendor(vendorId: string): Promise<CategoryRef | null>;
 }
 
+/**
+ * The business's Offerings (the services a site lists), as the profile fills them. Tenant scoped: every call names the vendor. A service the profile created is kept in sync (description changed, a service no longer named is
+ * retired, never deleted); a service the vendor made themselves is never touched. Prices are never written (a service made here has none).
+ */
+export abstract class OfferingsPort {
+  abstract sync(vendorId: string, items: ReadonlyArray<{ name: string; description?: string }>): Promise<{ created: number; updated: number; retired: number }>;
+}
+
 /** Tenant data: what a business gave for its profile fields. Every method names the vendor. */
 export abstract class ProfileValueStore {
   abstract get(vendorId: string): Promise<Record<string, unknown>>;
