@@ -238,6 +238,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause': OPS_AND_SUPER, 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume': OPS_AND_SUPER,
   // Wave 3 Part A: referral partners. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; creating and editing is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and every label are refused.
   'GET /v3/admin/partners': OPS_AND_SUPER, 'GET /v3/admin/partners/:id': OPS_AND_SUPER, 'POST /v3/admin/partners': SUPER_ONLY, 'PUT /v3/admin/partners/:id': SUPER_ONLY,
+  // Wave 3 Part C: the payment gateway setting. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; choosing the gateway and its mode is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
+  'GET /v3/admin/payment-gateway': OPS_AND_SUPER, 'PUT /v3/admin/payment-gateway': SUPER_ONLY,
 };
 
 /**
@@ -289,7 +291,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],

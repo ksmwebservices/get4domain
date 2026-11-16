@@ -17,10 +17,12 @@ export interface OrderRow {
   paidAt: Date | null; source: string | null; reason: string | null; subscriptionId: string | null; refundRecordedPaise: number | null; refundNote: string | null; refundRecordedBy: string | null; refundRecordedAt: Date | null;
   /** Wave 2 C6: what staff recorded when they marked the order paid offline */
   settledReference: string | null; settledOn: Date | null; settledAmountPaise: number | null; settledByName: string | null;
+  /** Wave 3 Part C: the gateway the order was started on (razorpay when absent: every order before Wave 3) and the browser checkout's session token where the gateway has one (Cashfree) */
+  gateway?: string; gatewayClientToken?: string | null;
   createdAt: Date; updatedAt: Date;
 }
-export type NewOrder = Pick<OrderRow, 'vendorId' | 'planId' | 'termMonths' | 'kind' | 'quote' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById'>;
-export type OrderPatch = Partial<Pick<OrderRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'source' | 'reason' | 'subscriptionId' | 'refundRecordedPaise' | 'refundNote' | 'refundRecordedBy' | 'refundRecordedAt' | 'settledReference' | 'settledOn' | 'settledAmountPaise' | 'settledByName'>>;
+export type NewOrder = Pick<OrderRow, 'vendorId' | 'planId' | 'termMonths' | 'kind' | 'quote' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById'> & Partial<Pick<OrderRow, 'gateway'>>;
+export type OrderPatch = Partial<Pick<OrderRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'source' | 'reason' | 'subscriptionId' | 'refundRecordedPaise' | 'refundNote' | 'refundRecordedBy' | 'refundRecordedAt' | 'settledReference' | 'settledOn' | 'settledAmountPaise' | 'settledByName' | 'gatewayClientToken'>>;
 export interface InvoiceRow { id: string; vendorId: string; orderId: string; invoiceNumber: string; financialYear: string; issuedAt: Date; snapshot: Record<string, unknown>; taxBreakdown: Record<string, unknown> }
 export interface EventRow { id: string; provider: string; providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; processedAt: Date | null; result: string | null; createdAt: Date }
 export interface DueSub { id: string; vendorId: string; endsAt: Date; status: string; email: string; businessName: string }
@@ -75,7 +77,7 @@ export abstract class PlanBillingRepository {
   abstract getInvoiceForVendor(vendorId: string, id: string): Promise<InvoiceRow | null>;
 
   /** inserts the event, or returns the existing row when the provider event id was seen before */
-  abstract insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }): Promise<{ created: boolean; row: EventRow }>;
+  abstract insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; provider?: string }): Promise<{ created: boolean; row: EventRow }>;
   abstract finishEvent(providerEventId: string, patch: { processedAt: Date; result: string; orderId?: string | null }): Promise<void>;
   abstract listEvents(q: { orderId?: string; skip: number; take: number }): Promise<{ items: EventRow[]; total: number }>;
 

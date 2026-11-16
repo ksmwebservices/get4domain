@@ -60,9 +60,9 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   }
   async getInvoiceForVendor(v: string, id: string) { const i = this.invoices.find((x) => x.vendorId === v && x.id === id); return i ? { ...i } : null; }
 
-  async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }) {
+  async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; provider?: string }) {
     const ex = this.events.get(d.providerEventId); if (ex) return { created: false, row: { ...ex } };
-    const row: EventRow = { id: this.id('evt'), provider: 'razorpay', providerEventId: d.providerEventId, type: d.type, payloadRedacted: d.payloadRedacted, signatureValid: d.signatureValid, orderId: d.orderId, processedAt: null, result: null, createdAt: this.clock() };
+    const row: EventRow = { id: this.id('evt'), provider: d.provider ?? 'razorpay', providerEventId: d.providerEventId, type: d.type, payloadRedacted: d.payloadRedacted, signatureValid: d.signatureValid, orderId: d.orderId, processedAt: null, result: null, createdAt: this.clock() };
     this.events.set(d.providerEventId, row); return { created: true, row: { ...row } };
   }
   async finishEvent(id: string, patch: { processedAt: Date; result: string; orderId?: string | null }) { const e = this.events.get(id)!; e.processedAt = patch.processedAt; e.result = patch.result; if (patch.orderId !== undefined) e.orderId = patch.orderId; }

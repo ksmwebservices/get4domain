@@ -32,6 +32,10 @@ export class MeBillingController {
   @ApiOperation({ summary: 'Tell us the checkout finished. The signature is checked and the payment provider is asked; the plan is activated only if it really paid the exact amount.' })
   confirm(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: ConfirmOrderDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.orders.confirm(t.vendorId, id, dto, this.actor(user, req)); }
 
+  @Throttle(RATE.payment) @Post('orders/:id/cancel') @HttpCode(200)
+  @ApiOperation({ summary: 'Give up an order that has not been paid (a paid, held or closed order cannot be cancelled)' })
+  cancel(@Tenant() t: TenantContext, @Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.orders.cancel(t.vendorId, id, this.actor(user, req)); }
+
   @Get('orders') @ApiOperation({ summary: 'My orders, newest first' })
   async list(@Tenant() t: TenantContext, @Query() q: PageDto) { const page = q.page ?? 1; const pageSize = q.pageSize ?? 25; const r = await this.orders.listMine(t.vendorId, page, pageSize); return { items: r.items, page, pageSize, total: r.total }; }
 

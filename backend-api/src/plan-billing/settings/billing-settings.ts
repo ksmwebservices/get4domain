@@ -4,6 +4,8 @@ import { BadRequestException } from '@nestjs/common';
 export interface BillingOwnSettings {
   /** off (default): no order can be created. test: the Razorpay TEST adapter is used, and only if test keys are in the environment. live: refused unless the owner sets the environment flag later (and no live adapter exists in this slice). */
   paymentsMode: 'off' | 'test' | 'live';
+  /** Wave 3 Part C: which gateway checkout uses: razorpay (default) or cashfree. Changed by ADMIN or SUPER_ADMIN through /v3/admin/payment-gateway. Webhooks of either gateway are still accepted for orders already started on it. */
+  paymentGateway: 'razorpay' | 'cashfree';
   /** how long an order stays payable */
   orderExpiryMinutes: number;
   /** false (default): the reminder cron does nothing */
@@ -18,7 +20,7 @@ export interface BillingOwnSettings {
 export interface BillingSettings extends BillingOwnSettings { graceDays: number; upgradeProration: 'NONE' | 'PRORATE'; renewalReminderDays: number[] }
 
 export const DEFAULT_BILLING_SETTINGS: Readonly<BillingOwnSettings> = {
-  paymentsMode: 'off', orderExpiryMinutes: 30, renewalRemindersEnabled: false, invoiceNumberPrefix: 'INV', invoiceSellerName: '', invoiceSellerAddress: '', invoiceSellerGstin: '',
+  paymentsMode: 'off', paymentGateway: 'razorpay', orderExpiryMinutes: 30, renewalRemindersEnabled: false, invoiceNumberPrefix: 'INV', invoiceSellerName: '', invoiceSellerAddress: '', invoiceSellerGstin: '',
 };
 export const BILLING_SETTING_KEYS = Object.keys(DEFAULT_BILLING_SETTINGS) as Array<keyof BillingOwnSettings>;
 export const isBillingSettingKey = (key: string): key is keyof BillingOwnSettings => (BILLING_SETTING_KEYS as string[]).includes(key);
@@ -29,6 +31,7 @@ const text = (v: unknown, max: number): boolean => typeof v === 'string' && v.le
 export function billingSettingProblem(key: keyof BillingOwnSettings, value: unknown): string | null {
   switch (key) {
     case 'paymentsMode': return value === 'off' || value === 'test' || value === 'live' ? null : 'must be "off", "test" or "live"';
+    case 'paymentGateway': return value === 'razorpay' || value === 'cashfree' ? null : 'must be "razorpay" or "cashfree"';
     case 'orderExpiryMinutes': return intIn(value, 5, 1440) ? null : 'must be a whole number of minutes from 5 to 1440';
     case 'renewalRemindersEnabled': return typeof value === 'boolean' ? null : 'must be true or false';
     case 'invoiceNumberPrefix': return typeof value === 'string' && /^[A-Z0-9]{1,8}$/.test(value) ? null : 'must be 1 to 8 capital letters or digits';

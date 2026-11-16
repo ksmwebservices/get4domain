@@ -9,6 +9,8 @@ import { canTransitionOrder, OrderStatus } from './core/order-state';
 import { redactPaymentPayload } from './core/redact';
 import { billingError, ORDER_NOT_FOUND_MESSAGE } from './plan-billing.errors';
 import { BillingTx, OrderRow, PlanBillingRepository } from './plan-billing.repository';
+import { GatewayName, isGatewayName } from './gateway/gateway-core';
+import { GatewayHeaders } from './gateway/gateway.port';
 import { PaymentsGate } from './razorpay/payments-gate';
 import { BillingSettings } from './settings/billing-settings';
 import { BillingSettingsService } from './settings/billing-settings.service';
@@ -30,7 +32,7 @@ const SYSTEM: Actor = { type: 'SYSTEM', id: null, ip: null };
 export class PaymentSettlementService {
   clock: () => Date = () => new Date();
   constructor(
-    private readonly repo: PlanBillingRepository, @Inject(BillingSettingsService) private readonly settings: Pick<BillingSettingsService, 'get'>, @Inject(PaymentsGate) private readonly gate: Pick<PaymentsGate, 'webhookPort'>,
+    private readonly repo: PlanBillingRepository, @Inject(BillingSettingsService) private readonly settings: Pick<BillingSettingsService, 'get'>, @Inject(PaymentsGate) private readonly gate: Pick<PaymentsGate, 'webhookPort'> & Partial<Pick<PaymentsGate, 'webhookGatewayPort'>>,
     @Inject(EntitlementsService) private readonly entitlements: Pick<EntitlementsService, 'invalidate'>,
     /** Batch 4: the wallet's top-ups are paid through the same webhook; asked only when the provider order is not a plan order. Absent = plan payments only (nothing changes). */
     @Optional() @Inject(TopupSettlementHook) private readonly topups?: TopupSettlementHook,
@@ -108,6 +110,42 @@ export class PaymentSettlementService {
   }
 
   // ───────────────────────────────────────────────────────────────────────────────────────── webhook
+  /**
+   * A signed webhook of ANY gateway (Wave 3 Part C), through the payment port. In order: the adapter of that gateway verifies the signature over the RAW body (a bad one is stored as unverified and answered 401);
+   * the event is stored once by its event id (a repeat is a 200 that changes nothing); the order is found by the gateway's order id; a successful payment is settled, and the settlement checks the amount and
+   * the currency against the order and HOLDS a mismatch for review (never activates). An event for an order that was started on the OTHER gateway, an unknown order, a failed attempt and any other event
+   * activate nothing. Always resolves with a small answer the controller turns into 200 or 401.
+   */
+  async handleGatewayWebhook(gateway: GatewayName, rawBody: Buffer | string | undefined, headers: GatewayHeaders): Promise<{ status: 'OK' | 'BAD_SIGNATURE' | 'IGNORED'; duplicate?: boolean; result?: string }> {
+    const port = typeof this.gate.webhookGatewayPort === 'function' ? await this.gate.webhookGatewayPort(gateway) : null;
+    if (!port) return { status: 'IGNORED' };   // payments are off, or this gateway has no keys: nothing to verify against, nothing to do
+    const raw = rawBody ?? '';
+    const digest = createHash('sha256').update(raw).digest('hex');
+    if (!port.verifyWebhook(raw, headers, this.clock())) {
+      await this.repo.insertEvent({ providerEventId: `bad-${digest.slice(0, 40)}`, type: 'unverified', payloadRedacted: {}, signatureValid: false, orderId: null, provider: gateway }).catch(() => undefined);
+      return { status: 'BAD_SIGNATURE' };
+    }
+    const ev = port.parseWebhook(raw, headers);
+    if (!ev) {   // signed but unreadable: recorded once and ignored
+      const { created } = await this.repo.insertEvent({ providerEventId: `unreadable-${digest.slice(0, 40)}`, type: 'unreadable', payloadRedacted: {}, signatureValid: true, orderId: null, provider: gateway });
+      return { status: 'OK', ...(created ? {} : { duplicate: true }), result: 'IGNORED' };
+    }
+    const known = ev.providerOrderId ? await this.repo.findOrderByProviderId(ev.providerOrderId) : null;
+    const { created, row } = await this.repo.insertEvent({ providerEventId: ev.eventId, type: ev.type, payloadRedacted: ev.redacted, signatureValid: true, orderId: known?.id ?? null, provider: gateway });
+    if (!created && row.processedAt) return { status: 'OK', duplicate: true, result: row.result ?? 'DUPLICATE' };   // seen and finished: replay-safe, still a 200
+
+    let result = 'IGNORED';
+    if (ev.kind === 'PAID') {
+      if (!known) result = 'NO_ORDER';
+      else if ((isGatewayName(known.gateway) ? known.gateway : 'razorpay') !== gateway) result = 'GATEWAY_MISMATCH';   // money reported by a gateway the order was never started on
+      else result = await this.settle({ orderId: known.id, paid: { paymentId: String(ev.paymentId ?? `order-${known.providerOrderId}`), amount: ev.amountMinor as number, currency: String(ev.currency ?? '') }, via: 'WEBHOOK', actor: SYSTEM, reason: null });
+    } else if (ev.kind === 'FAILED' && known) {
+      result = 'FAILED_ATTEMPT';   // a failed ATTEMPT does not end an order: it stays payable until it expires
+    }
+    await this.repo.finishEvent(ev.eventId, { processedAt: this.clock(), result, orderId: known?.id ?? null });
+    return { status: 'OK', result };
+  }
+
   /** Always resolves with a small answer the controller turns into 200 (duplicates included) or 401 (bad signature). */
   async handleWebhook(rawBody: Buffer | string | undefined, signature: string | undefined, eventIdHeader: string | undefined): Promise<{ status: 'OK' | 'BAD_SIGNATURE' | 'IGNORED'; duplicate?: boolean; result?: string }> {
     const port = await this.gate.webhookPort();

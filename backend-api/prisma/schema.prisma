@@ -4859,6 +4859,9 @@ model V3PlanOrder {
   settledOn           DateTime?         @db.Date
   settledAmountPaise  Int?
   settledByName       String?
+  /// Wave 3 Part C: the gateway the order was started on (razorpay or cashfree) and the browser checkout's session token where the gateway has one
+  gateway             String            @default("razorpay")
+  gatewayClientToken  String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 

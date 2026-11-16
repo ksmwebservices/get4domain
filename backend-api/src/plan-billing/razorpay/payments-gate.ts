@@ -1,6 +1,11 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { billingError } from '../plan-billing.errors';
 import { BillingSettingsService } from '../settings/billing-settings.service';
+import { CashfreeGateway } from '../gateway/cashfree.gateway';
+import { GatewayName } from '../gateway/gateway-core';
+import { buildLiveGateway } from '../gateway/live-gateway.factory';
+import { PaymentGatewayPort } from '../gateway/gateway.port';
+import { RazorpayGateway } from '../gateway/razorpay.gateway';
 import { RazorpayPort, RazorpayTestAdapter } from './razorpay.port';
 
 /**
@@ -33,6 +38,57 @@ export class PaymentsGate {
     const p = this.build();
     if (!p) throw new ConflictException(billingError('PAYMENTS_NOT_CONFIGURED', 'Online payment is not set up yet.'));
     return p;
+  }
+
+  // ───────────── Wave 3 Part C: the payment port over both gateways ─────────────
+  // The methods below are what the plan checkout and the new webhooks use. port() and webhookPort() above stay exactly as they were (the wallet still uses them until its top-up moves to the port).
+  //  - paymentsMode "off" (default): no gateway. "test": the TEST keys of the chosen gateway. "live": needs PLAN_PAYMENTS_LIVE_ENABLED=true AND that gateway's LIVE keys; otherwise refused.
+  private gateways = new Map<string, PaymentGatewayPort>();
+
+  private liveEnabled(): boolean { return this.env.PLAN_PAYMENTS_LIVE_ENABLED === 'true'; }
+
+  /** Builds the adapter of one gateway for one mode from the environment, or null when its keys are missing (or live is not enabled). Key values are never logged or returned. */
+  protected buildGateway(name: GatewayName, mode: 'test' | 'live'): PaymentGatewayPort | null {
+    const cacheKey = `${name}:${mode}`;
+    const hit = this.gateways.get(cacheKey);
+    if (hit) return hit;
+    let g: PaymentGatewayPort | null = null;
+    if (mode === 'live') g = buildLiveGateway(name, this.env);   // every live adapter is made in live-gateway.factory.ts, behind the live flag
+    else if (name === 'razorpay') {
+      const adapter = this.build();   // the one place the Razorpay TEST adapter is made (a test double overrides it)
+      if (adapter) g = new RazorpayGateway(adapter, 'test');
+    } else {
+      const appId = this.env.CASHFREE_TEST_APP_ID; const secretKey = this.env.CASHFREE_TEST_SECRET_KEY;
+      if (appId && secretKey) g = new CashfreeGateway({ appId, secretKey }, 'test');
+    }
+    if (g) this.gateways.set(cacheKey, g);
+    return g;
+  }
+
+  /** The gateway checkout uses right now (the plan setting paymentGateway), or a plain refusal. Nothing is created for nothing: this is asked BEFORE an order row is written. */
+  async gatewayPort(): Promise<PaymentGatewayPort> {
+    const s = await this.settings.get();
+    if (s.paymentsMode === 'off') throw new ConflictException(billingError('PAYMENTS_DISABLED', 'Online payment is not switched on yet.'));
+    if (s.paymentsMode === 'live' && !this.liveEnabled()) throw new ConflictException(billingError('PAYMENTS_NOT_CONFIGURED', 'Live payments are not enabled.'));
+    const g = this.buildGateway(s.paymentGateway, s.paymentsMode);
+    if (!g) throw new ConflictException(billingError('PAYMENTS_NOT_CONFIGURED', 'Online payment is not set up yet.'));
+    return g;
+  }
+
+  /** The adapter that can verify a webhook of the named gateway, whichever gateway is chosen now (an order started on one keeps being settled after the switch). Null when payments are off or that gateway has no keys. */
+  async webhookGatewayPort(name: GatewayName): Promise<PaymentGatewayPort | null> {
+    const mode = (await this.settings.get()).paymentsMode;
+    return mode === 'off' ? null : this.buildGateway(name, mode);
+  }
+
+  /** The gateway an EXISTING order was started on, to confirm it or cancel it (settings may have moved on since). */
+  async portFor(name: GatewayName): Promise<PaymentGatewayPort> {
+    const mode = (await this.settings.get()).paymentsMode;
+    if (mode === 'off') throw new ConflictException(billingError('PAYMENTS_DISABLED', 'Online payment is not switched on yet.'));
+    if (mode === 'live' && !this.liveEnabled()) throw new ConflictException(billingError('PAYMENTS_NOT_CONFIGURED', 'Live payments are not enabled.'));
+    const g = this.buildGateway(name, mode);
+    if (!g) throw new ConflictException(billingError('PAYMENTS_NOT_CONFIGURED', 'Online payment is not set up yet.'));
+    return g;
   }
 
   /** For the webhook: null when payments are off or not set up, so the route can say "nothing to do" without an error the provider would retry. */

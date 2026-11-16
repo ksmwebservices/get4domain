@@ -20,7 +20,7 @@ const toOrder = (o: Prisma.V3PlanOrderGetPayload<Record<string, never>>): OrderR
   id: o.id, vendorId: o.vendorId, planId: o.planId, termMonths: o.termMonths, kind: o.kind, quote: obj(o.quoteJson), amountPaise: o.amountPaise, currency: o.currency, status: o.status,
   providerOrderId: o.providerOrderId, idempotencyKey: o.idempotencyKey, expiresAt: o.expiresAt, createdByType: o.createdByType, createdById: o.createdById, paymentId: o.paymentId,
   paidAmountPaise: o.paidAmountPaise, paidAt: o.paidAt, source: o.source, reason: o.reason, subscriptionId: o.subscriptionId, refundRecordedPaise: o.refundRecordedPaise, refundNote: o.refundNote,
-  refundRecordedBy: o.refundRecordedBy, refundRecordedAt: o.refundRecordedAt, settledReference: o.settledReference, settledOn: o.settledOn, settledAmountPaise: o.settledAmountPaise, settledByName: o.settledByName, createdAt: o.createdAt, updatedAt: o.updatedAt,
+  refundRecordedBy: o.refundRecordedBy, refundRecordedAt: o.refundRecordedAt, settledReference: o.settledReference, settledOn: o.settledOn, settledAmountPaise: o.settledAmountPaise, settledByName: o.settledByName, gateway: o.gateway, gatewayClientToken: o.gatewayClientToken, createdAt: o.createdAt, updatedAt: o.updatedAt,
 });
 const toInvoice = (i: Prisma.V3PlanInvoiceGetPayload<Record<string, never>>): InvoiceRow => ({ id: i.id, vendorId: i.vendorId, orderId: i.orderId, invoiceNumber: i.invoiceNumber, financialYear: i.financialYear, issuedAt: i.issuedAt, snapshot: obj(i.snapshotJson), taxBreakdown: obj(i.taxBreakdownJson) });
 const toEvent = (e: Prisma.V3PaymentEventGetPayload<Record<string, never>>): EventRow => ({ id: e.id, provider: e.provider, providerEventId: e.providerEventId, type: e.type, payloadRedacted: obj(e.payloadRedactedJson), signatureValid: e.signatureValid, orderId: e.orderId, processedAt: e.processedAt, result: e.result, createdAt: e.createdAt });
@@ -57,7 +57,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
   async findOrderByProviderId(providerOrderId: string) { const o = await this.prisma.v3PlanOrder.findUnique({ where: { providerOrderId } }); return o ? toOrder(o) : null; }
   async findOrderByIdempotency(vendorId: string, key: string) { const o = await this.prisma.v3PlanOrder.findUnique({ where: { vendorId_idempotencyKey: { vendorId, idempotencyKey: key } } }); return o ? toOrder(o) : null; }
   async createOrder(d: NewOrder): Promise<OrderRow> {
-    try { return toOrder(await this.prisma.v3PlanOrder.create({ data: { vendorId: d.vendorId, planId: d.planId, termMonths: d.termMonths, kind: d.kind, quoteJson: d.quote as Prisma.InputJsonValue, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById } })); } catch (e) { if (isUnique(e)) throw new DuplicateOrderError(); throw e; }
+    try { return toOrder(await this.prisma.v3PlanOrder.create({ data: { vendorId: d.vendorId, planId: d.planId, termMonths: d.termMonths, kind: d.kind, quoteJson: d.quote as Prisma.InputJsonValue, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById, ...(d.gateway ? { gateway: d.gateway } : {}) } })); } catch (e) { if (isUnique(e)) throw new DuplicateOrderError(); throw e; }
   }
   async updateOrderCas(id: string, expected: OrderStatus[], patch: OrderPatch) { return (await this.prisma.v3PlanOrder.updateMany({ where: { id, status: { in: expected } }, data: patchData(patch) })).count === 1; }
   async listOrdersForVendor(vendorId: string, skip: number, take: number) {
@@ -92,8 +92,8 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     return r ? toInvoice(r) : null;
   }
 
-  async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null }) {
-    try { return { created: true, row: toEvent(await this.prisma.v3PaymentEvent.create({ data: { providerEventId: d.providerEventId, type: d.type, payloadRedactedJson: d.payloadRedacted as Prisma.InputJsonValue, signatureValid: d.signatureValid, orderId: d.orderId } })) }; }
+  async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; provider?: string }) {
+    try { return { created: true, row: toEvent(await this.prisma.v3PaymentEvent.create({ data: { ...(d.provider ? { provider: d.provider } : {}), providerEventId: d.providerEventId, type: d.type, payloadRedactedJson: d.payloadRedacted as Prisma.InputJsonValue, signatureValid: d.signatureValid, orderId: d.orderId } })) }; }
     catch (e) { if (isUnique(e)) return { created: false, row: toEvent(await this.prisma.v3PaymentEvent.findUniqueOrThrow({ where: { providerEventId: d.providerEventId } })) }; throw e; }
   }
   async finishEvent(providerEventId: string, patch: { processedAt: Date; result: string; orderId?: string | null }) { await this.prisma.v3PaymentEvent.update({ where: { providerEventId }, data: { processedAt: patch.processedAt, result: patch.result, ...(patch.orderId !== undefined ? { orderId: patch.orderId } : {}) } }); }
@@ -108,7 +108,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
       await advisoryXactLock(db, `plan-billing:${vendorId}`);
       const tx: BillingTx = {
         getOrder: async (id) => { const o = await db.v3PlanOrder.findUnique({ where: { id } }); return o ? toOrder(o) : null; },
-        createOrder: async (d) => toOrder(await db.v3PlanOrder.create({ data: { vendorId: d.vendorId, planId: d.planId, termMonths: d.termMonths, kind: d.kind, quoteJson: d.quote as Prisma.InputJsonValue, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById } })),
+        createOrder: async (d) => toOrder(await db.v3PlanOrder.create({ data: { vendorId: d.vendorId, planId: d.planId, termMonths: d.termMonths, kind: d.kind, quoteJson: d.quote as Prisma.InputJsonValue, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById, ...(d.gateway ? { gateway: d.gateway } : {}) } })),
         updateOrderCas: async (id, expected, patch) => (await db.v3PlanOrder.updateMany({ where: { id, status: { in: expected } }, data: patchData(patch) })).count === 1,
         currentSub: (v) => currentSubOn(db, v),
         vendor: async (v) => { const r = await db.vendor.findUnique({ where: { id: v }, select: { id: true, name: true, businessName: true, email: true, phone: true } }); return r ? { ...r, phone: r.phone ?? null } : null; },

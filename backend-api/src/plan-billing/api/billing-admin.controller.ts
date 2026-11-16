@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Optional, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Optional, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,7 +12,8 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { PlanBillingRepository } from '../plan-billing.repository';
 import { PaymentSettlementService } from '../settlement.service';
-import { AdminEventsDto, AdminOrdersDto, MarkPaidDto, RefundDto } from './dto/billing.dto';
+import { PaymentGatewaySettingsService } from '../gateway/gateway-settings.service';
+import { AdminEventsDto, AdminOrdersDto, MarkPaidDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
 
 /** Staff side of plan purchases. Reads: OPERATIONS and SUPER_ADMIN. Marking an order paid offline and recording a refund: SUPER_ADMIN only. MARKETING is refused everywhere. All writes are audited. */
 @ApiTags('v3-billing-admin')
@@ -79,4 +80,22 @@ export class AdminInvoicesController {
       refundRecordedPaise: i.refundRecordedPaise, issuedAt: i.issuedAt, financialYear: i.financialYear, orderId: i.orderId,
     })), r.total, page, pageSize);
   }
+}
+
+/**
+ * The payment gateway setting (Wave 3 Part C). Reading: OPERATIONS, ADMIN and SUPER_ADMIN. Changing the gateway or its mode: ADMIN and SUPER_ADMIN, audited. It starts OFF; test and live are accepted only when the
+ * server has that gateway's keys (and, for live, the live flag). Only whether keys exist is shown, never a key.
+ */
+@ApiTags('v3-billing-admin')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('v3/admin/payment-gateway')
+export class AdminPaymentGatewayController {
+  constructor(private readonly gateways: PaymentGatewaySettingsService) {}
+
+  @Get() @ApiOperation({ summary: 'Which payment gateway checkout uses, its mode (off, test or live), and which gateways have keys on this server' })
+  get() { return this.gateways.get(); }
+
+  @Put() @HttpCode(200) @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited: choose the gateway (razorpay or cashfree) and its mode. Refused unless the server has that gateway keys; live also needs the live flag.' })
+  update(@Body() dto: UpdateGatewayDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.gateways.update(dto, { id: u?.sub ?? null, ip: req?.ip ?? null }); }
 }

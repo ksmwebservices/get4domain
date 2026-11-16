@@ -7,9 +7,14 @@ export class CreateOrderDto {
   @IsString() @MinLength(8) @MaxLength(80) @Matches(/^[A-Za-z0-9_-]+$/, { message: 'idempotencyKey may only hold letters, digits, dash and underscore' }) idempotencyKey!: string;
   @IsOptional() @IsString() @MaxLength(40) promoCode?: string;
 }
+/** Razorpay hands the browser a payment id and a signature, and both are required for it (the service refuses a missing one with PAYMENT_SIGNATURE_INVALID). Cashfree signs no return: the body may be empty and the server asks the gateway. */
 export class ConfirmOrderDto {
-  @IsString() @MaxLength(60) @Matches(/^pay_[A-Za-z0-9]+$/, { message: 'paymentId must be a payment id' }) paymentId!: string;
-  @IsString() @MaxLength(200) @Matches(/^[0-9a-f]{64}$/, { message: 'signature must be the 64 character signature from the payment' }) signature!: string;
+  @IsOptional() @IsString() @MaxLength(60) @Matches(/^pay_[A-Za-z0-9]+$/, { message: 'paymentId must be a payment id' }) paymentId?: string;
+  @IsOptional() @IsString() @MaxLength(200) @Matches(/^[0-9a-f]{64}$/, { message: 'signature must be the 64 character signature from the payment' }) signature?: string;
+}
+export class UpdateGatewayDto {
+  @IsOptional() @IsIn(['razorpay', 'cashfree']) gateway?: 'razorpay' | 'cashfree';
+  @IsOptional() @IsIn(['off', 'test', 'live']) mode?: 'off' | 'test' | 'live';
 }
 export class PageDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;

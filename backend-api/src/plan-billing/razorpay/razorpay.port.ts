@@ -27,11 +27,15 @@ export function safeHexEqual(a: string, b: string): boolean {
 export interface RazorpayKeys { keyId: string; keySecret: string; webhookSecret: string }
 type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; json(): Promise<unknown> }>;
 
-/** Talks to api.razorpay.com with TEST keys only (the key id must start with rzp_test_). */
+/**
+ * Talks to api.razorpay.com. By default with TEST keys only (the key id must start with rzp_test_). Wave 3 Part C: the third argument `kind` may be 'live' (key id rzp_live_), used ONLY by the payment gateway
+ * registry, and only when the plan setting says live AND PLAN_PAYMENTS_LIVE_ENABLED=true. The default stays 'test', so the legacy gate behaves exactly as before.
+ */
 export class RazorpayTestAdapter extends RazorpayPort {
-  constructor(private readonly keys: RazorpayKeys, private readonly fetchFn: FetchLike = (u, i) => fetch(u, i) as never) {
+  constructor(private readonly keys: RazorpayKeys, private readonly fetchFn: FetchLike = (u, i) => fetch(u, i) as never, kind: 'test' | 'live' = 'test') {
     super();
-    if (!/^rzp_test_[A-Za-z0-9]+$/.test(keys.keyId)) throw new Error('the Razorpay adapter only accepts TEST keys');
+    if (kind === 'test' && !/^rzp_test_[A-Za-z0-9]+$/.test(keys.keyId)) throw new Error('the Razorpay adapter only accepts TEST keys');
+    if (kind === 'live' && !/^rzp_live_[A-Za-z0-9]+$/.test(keys.keyId)) throw new Error('a live Razorpay adapter needs live keys');
   }
   publicKeyId(): string { return this.keys.keyId; }
   private auth(): Record<string, string> { return { Authorization: `Basic ${Buffer.from(`${this.keys.keyId}:${this.keys.keySecret}`).toString('base64')}`, 'Content-Type': 'application/json' }; }

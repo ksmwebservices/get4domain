@@ -159,7 +159,7 @@ describe('confirming a payment (the browser is never trusted)', () => {
   });
   it('the vendor sees only their own orders and invoices, newest first, with no refund or staff fields', async () => {
     const a = await w.buy(); await paid(w, a); await w.buy({ termMonths: 6 }, 'v2');
-    const mine = await w.orders.listMine('v1', 1, 25); expect(mine.total).toBe(1); expect(Object.keys(mine.items[0]).sort()).toEqual(['amountPaise', 'createdAt', 'currency', 'expiresAt', 'id', 'keyId', 'kind', 'paidAt', 'planKey', 'providerOrderId', 'quote', 'status', 'termMonths']);
+    const mine = await w.orders.listMine('v1', 1, 25); expect(mine.total).toBe(1); expect(Object.keys(mine.items[0]).sort()).toEqual(['amountPaise', 'clientToken', 'createdAt', 'currency', 'expiresAt', 'gateway', 'id', 'keyId', 'kind', 'paidAt', 'planKey', 'providerOrderId', 'quote', 'status', 'termMonths']);   // Wave 3 Part C added gateway and clientToken: neither is a refund or a staff field
     expect((await w.orders.invoicesMine('v1', 1, 25)).total).toBe(1); expect((await w.orders.invoicesMine('v2', 1, 25)).total).toBe(0);
   });
 });
