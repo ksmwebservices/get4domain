@@ -137,3 +137,16 @@ Segments to reserve in the catch-all against a city named like a live page: it c
 ## 6. Step plan (unchanged from the prompt)
 
 Foundation, directory pages, business profile, sitemaps and robots, claim, login and register, legal, tests, docs. Commits after each step, path-only, no push.
+
+## 7. As built: where the final design differs from section 5
+
+Written after the build. These replace the statements above where they differ.
+
+- **No root catch-all route.** A `(directory)/[...path]` page at the root was built first. With the live site's root `loading.tsx` it turned every unknown address, even with the flag off, from a 404 into a 200 (verified against a build without the page). It was replaced by: no root route, a `next.config.ts` `fallback` rewrite to `/directory-pages/[...path]` that applies only to a request carrying the header `x-v3-public: 1`, set by the middleware only while the flag is on. Flag off: byte-for-byte the old behaviour (unknown address: real 404).
+- **Fixed routes under the flag.** The middleware answers a plain 404 for the fixed V3 paths while the flag is off, because a page-level `notFound()` is sent as HTTP 200 under the live `loading.tsx` (gap G9). With the flag on, an unknown directory address is therefore a 200 with `noindex` until that file is changed.
+- **ISR was tried and dropped** for the directory page: it did not fix the status and it would have served a cached directory page after the flag was turned off.
+- **Click-out proxy.** `/go/{id}` is rewritten by the middleware to `/directory-go/{id}` for uuid and cuid segments only (and fixture ids in sample mode).
+- **Claim and sign-in go through same-origin proxies** (`/directory-api/...`), so the browser never needs the API address, CORS or the API's sentences. Rate limiting by visitor relies on `X-Forwarded-For` (G15).
+- **Directory home** is `/directory` (G11).
+- **Sitemap index** is served at `/sitemaps/directory-index.xml` (not `/sitemap.xml`, which stays the existing one); robots is served by a handler the middleware rewrites `/robots.txt` to, only while the flag is on.
+- Sign-in uses the safer `POST /auth/session/login`; sign-up uses `POST /auth/register`; reset request uses `POST /auth/password/forgot`.
