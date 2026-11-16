@@ -1,4 +1,4 @@
-import { classifyHost, type HostClass, type HostConfig, normalizeHost, readHostConfig } from './hostnames';
+import { classifyHost, type HostClass, type HostConfig, originFor, readHostConfig } from './hostnames';
 import { isV3PublicEnabled } from './flag';
 import { LIVE_SEGMENTS } from './routes';
 
@@ -26,8 +26,6 @@ export interface HostRequest {
   host: string | null | undefined;
   pathname: string;
   search?: string;
-  /** 'https' unless the request says otherwise (x-forwarded-proto). */
-  proto?: string;
   /** Tells a business id from a campaign slug in `/go/{segment}` (the live campaign page owns the slugs). */
   isBusinessId?: (segment: string) => boolean;
 }
@@ -59,8 +57,6 @@ export function stripDirectoryPrefix(pathname: string): string | null {
   return pathname.startsWith(`${DIRECTORY_HOME_ROUTE}/`) ? pathname.slice(DIRECTORY_HOME_ROUTE.length) : null;
 }
 
-const origin = (proto: string | undefined, host: string): string => `${proto === 'http' ? 'http' : 'https'}://${host}`;
-
 /** The decision for one request, or null when the host layer is not active. */
 export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(), env: Record<string, string | undefined> = process.env): HostDecision | null {
   if (!hostRoutingActive(cfg, env)) return null;
@@ -71,16 +67,16 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
   switch (cls.kind) {
     case 'main': {
       const base = cfg.main!.replace(/^www\./, '');
-      if (!cls.canonical) return { action: 'redirect', to: `${origin(req.proto, base)}${pathname}${search}`, status: 308 };
+      if (!cls.canonical) return { action: 'redirect', to: `${originFor(base)}${pathname}${search}`, status: 308 };
       const rest = stripDirectoryPrefix(pathname);
-      if (rest !== null && cfg.directory) return { action: 'redirect', to: `${origin(req.proto, cfg.directory)}${rest}${search}`, status: 308 };
+      if (rest !== null && cfg.directory) return { action: 'redirect', to: `${originFor(cfg.directory)}${rest}${search}`, status: 308 };
       // The directory sitemaps list directory-host addresses, so they are answered on the directory host only.
       if (firstSegment(pathname) === 'sitemaps') return { action: 'not-found', host: 'main' };
       return { action: 'pass', host: 'main' };
     }
     case 'directory': {
       const rest = stripDirectoryPrefix(pathname);
-      if (rest !== null) return { action: 'redirect', to: `${origin(req.proto, normalizeHost(req.host))}${rest}${search}`, status: 308 };
+      if (rest !== null) return { action: 'redirect', to: `${originFor(cfg.directory!)}${rest}${search}`, status: 308 };
       if (pathname === '/') return { action: 'rewrite', pathname: DIRECTORY_HOME_ROUTE };
       // The directory's own sitemap: /sitemap.xml here is the directory index (the backend's robots text names /sitemap.xml). The main host's /sitemap.xml is untouched.
       if (pathname === '/sitemap.xml') return { action: 'rewrite', pathname: DIRECTORY_SITEMAP_ROUTE };

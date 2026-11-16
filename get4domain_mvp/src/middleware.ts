@@ -98,7 +98,7 @@ const plainNotFound = (): NextResponse => new NextResponse('Not found', { status
 function hostLayer(req: NextRequest): { done: NextResponse } | { host: string } | null {
   const d = decideHost({
     host: req.headers.get('host'), pathname: req.nextUrl.pathname, search: req.nextUrl.search,
-    proto: req.headers.get('x-forwarded-proto') ?? undefined, isBusinessId: (s) => looksLikeBusinessId(s, useMocks()),
+    isBusinessId: (s) => looksLikeBusinessId(s, useMocks()),
   });
   if (!d) return null;
   if (d.action === 'not-found') return { done: plainNotFound() };
@@ -128,11 +128,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
       return NextResponse.rewrite(url);
     }
   }
-  // /llms.txt and /assets/ reach this function only because of the widened matcher, for a V3 vendor host. For anything else they are served exactly as before (no middleware).
+  // /llms.txt and /assets/ reach this function only because of the widened matcher, and a V3 vendor host has already been answered above. Everything else is served exactly as before
+  // (the middleware did not run for these paths until the matcher was widened).
   if (isVendorPlatformFilePath(req.nextUrl.pathname)) return NextResponse.next();
   // Host layer on: only a vendor host reaches the vendor-site rewrite (the directory host must never become /site/directory).
   const rewritten = hostKind === null || hostKind === 'vendor-site' ? vendorHostRewrite(req) : null;
   if (rewritten) return rewritten;
+  // A vendor host that V3 does not know and the V2 renderer does not take (its own base domain differs, or the path is one the V2 rewrite leaves alone) is a plain 404, never the marketing page.
+  if (hostKind === 'vendor-site' && !v3Owns) return plainNotFound();
   const { pathname } = req.nextUrl;
   if (!isV3PublicEnabled() && isV3PublicPath(pathname)) {
     // Flag off: the fixed V3 public addresses do not exist. A plain 404 here, before any page renders, is a real HTTP 404.

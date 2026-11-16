@@ -1,6 +1,7 @@
 // Smoke checks of the V3 public site against real built servers (run `npm run build` first).
 // One server with the flag off (the live behaviour, must not change) and one with the flag on and sample data. No database, no backend, no network beyond localhost.
 import { spawn } from 'node:child_process';
+import http from 'node:http';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const next = path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next');
 const OFF = 3061;
 const ON = 3062;
+const HOST = 3063;
 
 let failures = 0;
 let checks = 0;
@@ -42,6 +44,18 @@ const get = async (port, p, init = {}) => {
   const r = await fetch(`http://localhost:${port}${p}`, { redirect: 'manual', ...init });
   return { status: r.status, headers: r.headers, text: await r.text() };
 };
+// A request with a chosen Host header (fetch does not allow one). Used for the one-domain host layer.
+const getHost = (port, host, p, init = {}) => new Promise((resolve, reject) => {
+  const req = http.request({ host: '127.0.0.1', port, path: p, method: init.method ?? 'GET', headers: { host, ...(init.headers ?? {}) } }, (res) => {
+    let text = '';
+    res.setEncoding('utf8');
+    res.on('data', (c) => { text += c; });
+    res.on('end', () => resolve({ status: res.statusCode ?? 0, headers: new Headers(Object.entries(res.headers).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : String(v)])), text }));
+  });
+  req.on('error', reject);
+  req.setTimeout(15000, () => req.destroy(new Error(`timeout ${host}${p}`)));
+  req.end();
+});
 const count = (s, re) => (s.match(re) ?? []).length;
 const h1s = (html) => count(html, /<h1[\s>]/g);
 
@@ -74,6 +88,128 @@ async function flagOff() {
   ok(/Sitemap: https:\/\/get4domain\.com\/sitemap\.xml/.test(robots.text), 'flag off: robots.txt keeps its existing sitemap line');
   const sm = await get(OFF, '/sitemap.xml');
   ok(sm.status === 200 && !/directory|business\//.test(sm.text), 'flag off: sitemap.xml has no directory urls');
+}
+
+const M = 'main.example.invalid';
+const D = `directory.${M}`;
+const CONTACT = /tel:|mailto:|wa\.me|<form|<button|<input/i;
+const SITEMAP_LOC = (xml) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+// Flag on, sample data, the six host names set: every host class, on a real server.
+async function hostLayer() {
+  const H = (host, p, init) => getHost(HOST, host, p, init);
+
+  // main host: marketing stays, /directory goes to the directory host, www goes to the main host, directory sitemaps are not here
+  const home = await H(M, '/');
+  ok(home.status === 200 && /Get4Domain/.test(home.text), `hosts: main host home answers 200 (${home.status})`);
+  ok((await H(M, '/pricing')).status === 200, 'hosts: main host keeps /pricing');
+  for (const [from, to] of [['/directory', `https://${D}/`], ['/directory/chennai/plumbers?utm_source=x', `https://${D}/chennai/plumbers?utm_source=x`]]) {
+    const r = await H(M, from);
+    ok(r.status === 308 && r.headers.get('location') === to, `hosts: main ${from} is a 308 to ${to} (${r.status} ${r.headers.get('location')})`);
+  }
+  const www = await H(`www.${M}`, '/pricing?a=1');
+  ok(www.status === 308 && www.headers.get('location') === `https://${M}/pricing?a=1`, `hosts: www is a 308 to the canonical host (${www.status} ${www.headers.get('location')})`);
+  ok((await H(M, '/sitemaps/directory-index.xml')).status === 404, 'hosts: the directory sitemap is not answered on the main host');
+  const mainRobots = await H(M, '/robots.txt');
+  ok(mainRobots.status === 200 && /Sitemap: https:\/\/get4domain\.com\/sitemap\.xml/.test(mainRobots.text) && !/directory|\/go\/|v3\/go/.test(mainRobots.text), 'hosts: main robots.txt is the existing rules and sitemaps, no directory lines');
+  const mainSitemap = await H(M, '/sitemap.xml');
+  ok(mainSitemap.status === 200 && !/directory|business\//.test(mainSitemap.text), 'hosts: main sitemap.xml has no directory urls');
+  ok((await H(M, '/vendor-site/sample-pro')).status === 404, 'hosts: the internal vendor handler is not reachable by address');
+
+  // directory host: no prefix, its own robots and sitemap, never marketing
+  const dhome = await H(D, '/');
+  ok(dhome.status === 200 && h1s(dhome.text) === 1 && !/SoftwareApplication/.test(dhome.text), `hosts: directory host home is the directory home, one h1 (${dhome.status})`);
+  for (const p of ['/chennai', '/chennai/plumbers', '/chennai/plumbers/page/2', '/business/anand-electricals', '/state/tamil-nadu', '/category/plumbers']) {
+    const r = await H(D, p);
+    ok(r.status === 200 && h1s(r.text) === 1, `hosts: directory host ${p} answers 200 with one h1 (${r.status})`);
+    ok(!/tel:|mailto:|wa\.me/i.test(r.text), `hosts: directory host ${p} has no contact links`);
+  }
+  const dm = await H(D, '/business/anand-electricals');
+  // the header and footer links are ours; the breadcrumbs are the page model's (the sample model still carries the old /directory crumb until the backend change ships, and it redirects)
+  const hdr = /<header[\s\S]*?<\/header>/.exec(dm.text)?.[0] ?? '';
+  ok(hdr.length > 0 && !/href="\/directory"/.test(hdr) && /href="\/"/.test(hdr), 'hosts: the directory header links to / and not to the old /directory prefix');
+  for (const p of ['/pricing', '/about', '/industries/travel', '/demo/clinic', '/dashboard', '/login', '/terms']) {
+    const r = await H(D, p);
+    ok(r.status === 404 && r.text === 'Not found', `hosts: directory host ${p} is a real 404, never marketing (${r.status})`);
+  }
+  const old = await H(D, '/directory/chennai?x=1');
+  ok(old.status === 308 && old.headers.get('location') === `https://${D}/chennai?x=1`, `hosts: directory host /directory/... redirects to the same address without the prefix (${old.headers.get('location')})`);
+  ok((await H(D, '/zzz-nothing')).status === 404, 'hosts: an unknown directory address is a real 404');
+  const drobots = await H(D, '/robots.txt');
+  ok(drobots.status === 200 && drobots.text.includes(`Sitemap: https://${D}/sitemaps/directory-index.xml`) && !/directory\.example\.invalid|get4domain\.com/.test(drobots.text), 'hosts: directory robots.txt names only the directory host sitemap');
+  ok((drobots.text.match(/^Sitemap:/gim) ?? []).length === 1 && /Disallow: \/go\//.test(drobots.text), 'hosts: directory robots.txt has one sitemap line and keeps the backend rules');
+  const dsm = await H(D, '/sitemap.xml');
+  ok(dsm.status === 200 && /<sitemapindex|<urlset/.test(dsm.text), `hosts: directory /sitemap.xml is the directory index (${dsm.status})`);
+  ok((await H(D, '/sitemaps/directory-index.xml')).status === 200, 'hosts: directory /sitemaps/directory-index.xml answers');
+  const click = await H(D, '/go/b-1001?src=city');
+  ok(click.status === 302, `hosts: click-out works on the directory host (${click.status})`);
+  ok((await H(D, '/go/summer-sale')).status === 404, 'hosts: a campaign slug is not served on the directory host');
+
+  // reserved and unknown hosts: never handled here, never marketing
+  for (const h of [`api.${M}`, `app.${M}`, `admin.${M}`, `media.${M}`, `gapi.${M}`, `send.${M}`, `mrtravels.${M}`, `s2travels.${M}`]) {
+    const r = await H(h, '/');
+    ok(r.status === 404 && r.text === 'Not found' && (r.headers.get('x-robots-tag') ?? '').includes('noindex'), `hosts: ${h} is a plain 404 (${r.status})`);
+  }
+  for (const h of ['other.invalid', 'localhost', `a.b.${M}`, 'evilmain.example.invalid']) {
+    const r = await H(h, '/pricing');
+    ok(r.status === 404 && r.text === 'Not found', `hosts: unknown host ${h} is a real 404, not the marketing page (${r.status})`);
+  }
+
+  // vendor sites (sample sites, mock layer)
+  const V = (label) => `${label}.${M}`;
+  const pro = await H(V('sample-pro'), '/');
+  ok(pro.status === 200 && /<h1>Sample Pro Plumbing<\/h1>/.test(pro.text) && pro.headers.get('x-robots-tag') === 'index, follow', `vendor: a published site answers its stored page, indexable (${pro.status})`);
+  ok(new RegExp(`<link rel="canonical" href="https://${V('sample-pro')}/">`).test(pro.text), 'vendor: the canonical is on its own host');
+  ok(!!pro.headers.get('etag') && /max-age=60/.test(pro.headers.get('cache-control') ?? ''), 'vendor: ETag and cache headers are relayed');
+  ok(/href="https:\/\/main\.example\.invalid\/"/.test(pro.text), 'vendor: the page links back to the main domain');
+  ok((await H(V('sample-pro'), '/services')).status === 200 && (await H(V('sample-pro'), '/contact')).status === 200, 'vendor: inner pages answer');
+  ok((await H(V('sample-pro'), '/nope')).status === 404, 'vendor: an unknown page is a 404');
+  const again = await H(V('sample-pro'), '/', { headers: { 'if-none-match': pro.headers.get('etag') } });
+  ok(again.status === 304, `vendor: a matching ETag is a 304 (${again.status})`);
+  const sm = await H(V('sample-pro'), '/sitemap.xml');
+  ok(sm.status === 200 && SITEMAP_LOC(sm.text).length >= 3 && SITEMAP_LOC(sm.text).every((l) => l.startsWith(`https://${V('sample-pro')}/`)), 'vendor: its own sitemap.xml lists its own host only');
+  const vr = await H(V('sample-pro'), '/robots.txt');
+  ok(vr.status === 200 && vr.text.includes(`Sitemap: https://${V('sample-pro')}/sitemap.xml`) && !/get4domain\.com/.test(vr.text), 'vendor: its own robots.txt, not the main one');
+  const vl = await H(V('sample-pro'), '/llms.txt');
+  ok(vl.status === 200 && vl.text.startsWith('# Sample Pro Plumbing'), `vendor: its own llms.txt, not the main one (${vl.status})`);
+  const draft = await H(V('sample-draft'), '/');
+  ok(draft.status === 200 && draft.headers.get('x-robots-tag') === 'noindex, nofollow' && /<meta name="robots" content="noindex, nofollow">/.test(draft.text), 'vendor: a draft site is noindex in the header and the page');
+  ok(!/<url>/.test((await H(V('sample-draft'), '/sitemap.xml')).text), 'vendor: a draft site lists nothing in its sitemap');
+  for (const [label, p] of [['sample-free', '/'], ['sample-free', '/services'], ['sample-draft', '/'], ['sample-hostile', '/']]) {
+    ok(!CONTACT.test((await H(V(label), p)).text), `vendor: Free site ${label}${p} has no tel, mailto, wa.me, form or button`);
+  }
+  ok(CONTACT.test((await H(V('sample-pro'), '/contact')).text), 'vendor: the Pro contact page has its calls to action (the Free check above is meaningful)');
+  const hostile = await H(V('sample-hostile'), '/');
+  const blocks = [...hostile.text.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  ok(blocks.length === 3 && blocks.every((b) => { try { return typeof JSON.parse(b[1]) === 'object' && !/[<>]/.test(b[1]); } catch { return false; } }), 'vendor: JSON-LD is escaped and parses for a hostile name');
+  const moved = await H(V('sample-moved'), '/services');
+  ok(moved.status === 301 && moved.headers.get('location') === `https://${V('sample-pro')}/services`, `vendor: a moved site is a 301 to its canonical host (${moved.status})`);
+  const gone = await H(V('sample-takedown'), '/');
+  ok(gone.status === 451 && (gone.headers.get('x-robots-tag') ?? '').includes('noindex') && gone.headers.get('cache-control') === 'no-store', `vendor: a takedown is a 451, noindex, never cached (${gone.status})`);
+  const down = await H(V('sample-down'), '/');
+  ok(down.status === 503 && (down.headers.get('x-robots-tag') ?? '').includes('noindex') && !CONTACT.test(down.text) && /not available/i.test(down.text), `vendor: an unavailable backend shows the kind not-available page, 503, noindex (${down.status})`);
+  const head = await H(V('sample-pro'), '/', { method: 'HEAD' });
+  ok(head.status === 200 && head.text === '', 'vendor: HEAD has no body');
+  // a host V3 does not know goes on to the V2 renderer (its own 404 here: no V2 site exists for the name)
+  const v2 = await H(V('some-v2-client'), '/');
+  // (the V2 renderer's own not-found answers 200 today: the live root loading.tsx sends the status first, gap G9; what matters here is where the request went)
+  ok(v2.headers.get('x-middleware-rewrite')?.endsWith('/site/some-v2-client') && !/Sample/.test(v2.text), `vendor: a host the backend does not know goes to the V2 renderer (/site/<name>), not to a V3 page (${v2.status})`);
+  const v2robots = await H(V('some-v2-client'), '/robots.txt');
+  ok(v2robots.status === 200 && /Disallow: \//.test(v2robots.text) && !/sample/i.test(v2robots.text), `vendor: V2 robots.txt (closed while the V2 site is unknown) (${v2robots.status})`);
+}
+
+// The widened matcher (/llms.txt, /assets/) must change nothing while the flag is off, or on a host that is not a V3 vendor host.
+async function matcherRegression() {
+  const a = await get(OFF, '/llms.txt');
+  ok(a.status === 200 && a.text.length > 0, `flag off: /llms.txt still answers from the static file (${a.status})`);
+  const viaHost = await getHost(OFF, 'any-name.get4domain.com', '/llms.txt');
+  ok(viaHost.status === 200 && viaHost.text === a.text, 'flag off: /llms.txt on a vendor-style host is still the static file');
+  const on = await getHost(ON, 'localhost', '/llms.txt');
+  ok(on.status === 200 && on.text === a.text, 'flag on, no host names: /llms.txt is the same static file');
+  const asset = await get(OFF, '/assets/site.css');
+  ok(asset.status === 404, `flag off: /assets/site.css is the same 404 as before (${asset.status})`);
+  const mainLlms = await getHost(HOST, M, '/llms.txt');
+  ok(mainLlms.status === 200 && mainLlms.text === a.text, 'hosts: the main host keeps its llms.txt');
 }
 
 function pageChecks(name, r) {
@@ -143,6 +279,9 @@ async function flagOn() {
   const gone = await get(ON, '/business/removed-shop');
   ok(gone.status === 410 && /no longer listed/.test(gone.text) && (gone.headers.get('x-robots-tag') ?? '').includes('noindex'), `flag on: a removed business is a real 410 (${gone.status})`);
   ok((await get(ON, '/zzz', { method: 'HEAD' })).status === 404, 'flag on: HEAD of an unknown address is 404');
+  // each server is asked once to warm the route first: the first request after a start can answer differently from later ones, on either server, flag or no flag
+  await get(ON, '/demo/zzz');
+  await get(OFF, '/demo/zzz');
   ok((await get(ON, '/demo/zzz')).status === (await get(OFF, '/demo/zzz')).status, 'flag on: an unknown /demo address behaves as with the flag off');
   ok((await get(ON, '/pricing/nothing')).status === (await get(OFF, '/pricing/nothing')).status, 'flag on: an unknown address under a live route behaves as with the flag off');
 
@@ -246,11 +385,20 @@ function noConsole() {
   }
 }
 
-const servers = [start(OFF, {}), start(ON, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_SITE_ORIGIN: 'https://www.staging.example.invalid', NEXT_PUBLIC_VENDOR_APP_URL: 'https://vendor.example.invalid' })];
+const HOSTS_ENV = { MAIN_HOST: 'main.example.invalid', DIRECTORY_HOST: 'directory.main.example.invalid', APP_HOST: 'app.main.example.invalid', ADMIN_HOST: 'admin.main.example.invalid', API_HOST: 'api.main.example.invalid', MEDIA_HOST: 'media.main.example.invalid' };
+const servers = [
+  // flag off, with the host names set: they must change nothing
+  start(OFF, { ...HOSTS_ENV }),
+  start(ON, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_SITE_ORIGIN: 'https://www.staging.example.invalid', NEXT_PUBLIC_VENDOR_APP_URL: 'https://vendor.example.invalid' }),
+  // the V2 API address is refused at once, so a V2 fallthrough answers its own 404 without any network
+  start(HOST, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
+];
 try {
-  await Promise.all([waitFor(OFF), waitFor(ON)]);
+  await Promise.all([waitFor(OFF), waitFor(ON), waitFor(HOST)]);
   await flagOff();
   await flagOn();
+  await hostLayer();
+  await matcherRegression();
   noConsole();
 } finally {
   for (const s of servers) s.kill();

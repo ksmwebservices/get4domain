@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { assertV3Public } from '@/lib/v3-public/guard';
+import { directoryHomeHref } from '@/lib/v3-public/host-routing';
 import { S } from '@/lib/v3-public/strings';
 
 /** The shell of every V3 public page: its own header and footer (no chatbot, no demo gate, no contact details). */
@@ -10,9 +11,9 @@ export default function DirectoryLayout({ children }: { children: React.ReactNod
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2">{S.skipToContent}</a>
       <header className="border-b border-slate-200">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/directory" className="text-lg font-bold text-slate-900">{S.brand}</Link>
+          <Link href={directoryHomeHref()} className="text-lg font-bold text-slate-900">{S.brand}</Link>
           <nav aria-label={S.nav.label} className="flex flex-wrap gap-4 text-sm">
-            <Link href="/directory" className="hover:underline">{S.nav.directory}</Link>
+            <Link href={directoryHomeHref()} className="hover:underline">{S.nav.directory}</Link>
             <Link href="/claim" className="hover:underline">{S.nav.claim}</Link>
             <Link href="/account/login" className="hover:underline">{S.nav.login}</Link>
           </nav>

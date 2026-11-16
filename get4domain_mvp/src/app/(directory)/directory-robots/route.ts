@@ -3,7 +3,7 @@ import robots from '@/app/robots';
 import { fetchText } from '@/lib/v3-public/api';
 import { siteOrigin } from '@/lib/v3-public/config';
 import { hostRoutingActive } from '@/lib/v3-public/host-routing';
-import { classifyHost, readHostConfig } from '@/lib/v3-public/hostnames';
+import { classifyHost, originFor, readHostConfig } from '@/lib/v3-public/hostnames';
 import { guardResponse } from '@/lib/v3-public/proxy';
 import { directoryHostRobots, parseDirectoryRobots, robotsToText, type RobotsInput } from '@/lib/v3-public/robots';
 
@@ -30,8 +30,7 @@ export async function GET(): Promise<Response> {
       const backend = await fetchText('/v3/directory/robots.txt');
       // No backend answer: a 503 (crawlers pause and retry) is safer than guessing rules for a host that is meant to be indexed.
       if (!backend || backend.status !== 200) return text('Unavailable', 503);
-      const proto = h.get('x-forwarded-proto') === 'http' ? 'http' : 'https';
-      return text(directoryHostRobots(backend.body, `${proto}://${cfg.directory}`));
+      return text(directoryHostRobots(backend.body, originFor(cfg.directory!)));
     }
     if (cls.kind === 'main') return text(robotsToText(robots() as unknown as RobotsInput, { indexable: false, disallow: [] }, null));
     return text('Not found', 404);

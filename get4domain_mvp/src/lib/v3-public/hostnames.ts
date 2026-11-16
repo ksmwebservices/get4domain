@@ -86,3 +86,12 @@ export function classifyHost(host: string | null | undefined, cfg: HostConfig = 
   if (RESERVED_NAMES.has(label)) return { kind: 'reserved', role: 'name' };
   return { kind: 'vendor-site', label };
 }
+
+/**
+ * The origin to put in a redirect or a sitemap line for a configured host: always https, except for localhost (development).
+ * The request's own scheme is not used: behind the proxy chain it can read http for a visitor who came over https.
+ */
+export function originFor(host: string): string {
+  const h = normalizeHost(host);
+  return `${h === 'localhost' || h.endsWith('.localhost') ? 'http' : 'https'}://${h}`;
+}

@@ -48,7 +48,10 @@ describe('main host', () => {
   });
   test('www goes permanently to the canonical host, path and query kept', () => {
     assert.deepEqual(run('www.main.example.invalid', '/pricing', { search: '?a=1' }), { action: 'redirect', to: 'https://main.example.invalid/pricing?a=1', status: 308 });
-    assert.deepEqual(run('www.main.example.invalid', '/', { proto: 'http' }), { action: 'redirect', to: 'http://main.example.invalid/', status: 308 });
+    // the scheme of the request is never trusted: a redirect to a configured host is https (localhost, in development, is http)
+    assert.deepEqual(run('www.main.example.invalid', '/'), { action: 'redirect', to: 'https://main.example.invalid/', status: 308 });
+    const dev = readHostConfig({ MAIN_HOST: 'www.localhost', DIRECTORY_HOST: 'directory.localhost' });
+    assert.deepEqual(decideHost({ host: 'www.localhost', pathname: '/x' }, dev, ON), { action: 'redirect', to: 'http://localhost/x', status: 308 });
   });
 });
 

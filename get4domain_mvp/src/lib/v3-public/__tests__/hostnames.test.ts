@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { RESERVED_NAMES, RESERVED_PLATFORM_NAMES, RESERVED_V2_CLIENT_NAMES, baseDomain, classifyHost, isReservedName, isVendorLabel, normalizeHost, readHostConfig } from '../hostnames';
+import { originFor, RESERVED_NAMES, RESERVED_PLATFORM_NAMES, RESERVED_V2_CLIENT_NAMES, baseDomain, classifyHost, isReservedName, isVendorLabel, normalizeHost, readHostConfig } from '../hostnames';
 
 // Sample names only (.invalid never resolves); the module has no host of its own.
 const ENV = {
@@ -94,5 +94,14 @@ describe('classifyHost', () => {
     const w = readHostConfig({ ...ENV, MAIN_HOST: 'www.main.example.invalid' });
     assert.deepEqual(classifyHost('main.example.invalid', w), { kind: 'main', canonical: true });
     assert.deepEqual(classifyHost('www.main.example.invalid', w), { kind: 'main', canonical: false });
+  });
+});
+
+describe('originFor', () => {
+  test('https for every configured host, http only for localhost', () => {
+    assert.equal(originFor('Directory.Main.Example.Invalid'), 'https://directory.main.example.invalid');
+    assert.equal(originFor('localhost'), 'http://localhost');
+    assert.equal(originFor('directory.localhost'), 'http://directory.localhost');
+    assert.equal(originFor('notlocalhost.example.invalid'), 'https://notlocalhost.example.invalid');
   });
 });
