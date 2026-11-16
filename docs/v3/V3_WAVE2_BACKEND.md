@@ -2,7 +2,7 @@
 
 Branch `v3-w2` (worktree `C:\Get4Domain\get4domain-w2`, branched from `v3-seo1`). Source of the work: `WAVE2_BACKEND_PROMPT.md`, the front-end gap files `FRONTEND_GAPS.md`, `API_CONTRACT_SLICE2.md` and `API_CONTRACT_ADMIN.md`, and Amendments 10 to 14.
 
-**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The nine migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order. Part H (H1 to H3) is described in sections 1, 2 and 7, with its choices in section 8.
+**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The ten migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order. Part H (H1 to H3) and Part P (the public site gaps, from `PUBLIC_GAPS.md`) are described in sections 1, 2 and 7, with their choices in section 8.
 
 Product text rules held everywhere: no timeframes, "enquiries" not "leads", never the words workspace, BOS or LeadSpace, prices exclude GST, a PENDING price is never a number. No real provider is called: storage is the existing R2 adapter, selected only by environment and settings and OFF by default; tests use the in-memory store.
 
@@ -21,6 +21,12 @@ Product text rules held everywhere: no timeframes, "enquiries" not "leads", neve
 | H1 the staging checker test uses `node --check` | `5bf801e` | none |
 | H2 add-on eligibility as data | `e718abd`, follow-up `426a963` | `20261219170000_v3_wave2_addon_eligibility` (one table, a CHECK, the seed rows) |
 | H3 firm identity as data | `0a33bc8` | `20261219180000_v3_wave2_firm_profile` (one table, one row, CHECKs) |
+| P1 public site G1 and G12: `POST /v3/claim/start`, `MAIL_DISABLED` | `8044feb` | none |
+| P2 G3 and G7: the click-out id format, reserved segments | `cf04fcf` | none |
+| P3 G4, G5 and G11: listing state, business id, services, the home at `/directory` | `89c165f` | none |
+| P4 G2 and G13: the login handoff and the approval redirect | `8dc4045` | `20261219190000_v3_wave2_login_handoff` (one table, row level security, two CHECKs) |
+| P5 G14: reset password for the public site | `4318d4d` | none |
+| P6 G15: `TRUSTED_PROXIES` | `8c72ce4` | none |
 
 All five migrations are additive: new tables, new nullable columns, and one widened CHECK (the enquiry state gains HANDLED; no value is removed or renamed). Every new table has row level security on and no policy, the same rule as the earlier migrations. Table names use the repo's `g4d_` prefix (the brief wrote `v3_`).
 
@@ -138,7 +144,7 @@ Tab rules: ACTIVE opens it; LOCKED_PREVIEW (Free trial, plan too low, paused pla
 | `POST /v3/claim/start` | everyone, throttled like the code request (3 a minute per address) | G1: body `{ businessSlug, channel? }` (EMAIL by default, or SMS). Finds the listing, issues the claim link, sends the code to the owner address ON THE RECORD (never one the caller types) through the mail port and answers `{ token, channel, message }`; the token then drives `GET /v3/claim/:token/status`, `POST .../otp/request` and `POST .../otp/verify`. Anything that cannot be claimed (unknown, malformed, draft, suspended, removed, already claimed, no business record) is the SAME 409 `DIRECTORY_STATE_INVALID`. |
 | `POST /v3/claim/:token/otp/request` (existing) | everyone | G12: with `channel: EMAIL` and the mail switch OFF it now answers 503 `MAIL_DISABLED`, the same for every token (decided before the token is looked at). The SMS channel is unchanged. |
 | `GET /v3/directory/businesses/:slug` and the list (existing) | everyone | G4: each business carries `listingState` (`UNCLAIMED_LISTING`, `CLAIMED` or `LIVE`) |
-| `GET /v3/directory/pages` business page model (existing) | everyone | G4 and G5: `business` now also carries `listingState`, `businessId` and `services: [{ name, description }]` |
+| `GET /v3/directory/pages/resolve?path=/business/{slug}` business page model (existing) | everyone | G4 and G5: `business` now also carries `listingState`, `businessId` and `services: [{ name, description }]` |
 | the directory home page model (existing) | everyone | G11: asking for `/` or `/directory` answers the same model, whose `path` is `/directory` and whose `meta.canonical` is `<origin>/directory` |
 | `POST /v3/auth/handoff` | a signed-in vendor OWNER (bearer token) | G2: answers `{ code, expiresAt, ttlSeconds }`. The code lives 60 seconds (`LOGIN_HANDOFF_TTL_SECONDS`, 15 to 300) and works once; asking again ends every older unused code. A team member, staff member or sandbox session is 403 `HANDOFF_NOT_ALLOWED`. |
 | `POST /v3/auth/handoff/redeem` | everyone, throttled like a login | G2: body `{ code }`, answers `{ accessToken, refreshToken }` like a session refresh. Every failure is the same 401 `HANDOFF_INVALID`. |
@@ -260,7 +266,7 @@ Choices:
 
 Skipped (nothing invented): a stored copy and link for the invoice (said not to build it); a virus scanner for PDFs; anything that posts, schedules or sends (drafts and invites are records).
 
-Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (245 suites).
+Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (251 suites with the public site gaps).
 
 ## 9. Open questions
 
@@ -272,21 +278,26 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
 6. The second HOME_SAMPLE_COLLECTION case the owner called "direct" (not defined; one row once it is).
 7. The GSTIN, PAN, registered email and phone (empty until the owner supplies them).
 8. Whether SHOP stays on the goods list for RETAIL and B2B_DEALER, whose shop is already included.
+9. Whether the public site has a reset screen at `/account/reset-password` (choice 36), and whether its server's address is what `TRUSTED_PROXIES` should hold (choice 39).
+10. The vendor app (a separate repository) has two small changes to make: read `#handoff=` and call `POST /v3/auth/handoff/redeem` (choice 32), and navigate to `redirectTo` after a successful approve (choice 34).
+11. Not done, as the gaps file says: G16 (stop sending `phone` on the public business list, optional), G17 to G21 (owner and live-site matters). G6 (the firm identity) is Part H3. G8 to G10 were already resolved on the live site.
 
 ## 10. Owner commands for staging, in order
 
 `npm.cmd`, from `C:\Get4Domain\get4domain-w2\backend-api` unless stated. **Nothing below has been run.**
 
 1. `.env.staging` was copied into `C:\Get4Domain\get4domain-w2\` (not in git). Then `npm.cmd ci` is done; run `npx.cmd prisma generate` if the client is stale.
-2. `npm.cmd run db:staging:migrate-status`. Expect the nine folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` `20261219160000_v3_wave2_upload_groups`, `20261219170000_v3_wave2_addon_eligibility` and `20261219180000_v3_wave2_firm_profile` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
+2. `npm.cmd run db:staging:migrate-status`. Expect the ten folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` `20261219160000_v3_wave2_upload_groups`, `20261219170000_v3_wave2_addon_eligibility` and `20261219180000_v3_wave2_firm_profile` and `20261219190000_v3_wave2_login_handoff` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
 3. `npm.cmd run db:staging:rls-off` (expect `0` tables without row level security), then `npm.cmd run db:staging:drift` (the 2 documented allowed items only; the new CHECKs and the notes trigger are not part of the schema diff).
-4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (245 suites).
+4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (251 suites).
 5. Seed scripts, each a **dry run** first (read the counts and the problems), then `--apply`, then the dry run again (nothing to create):
    - `node scripts/seed-v3-pack-tab-fields.js` (expect 96 tabs, 434 fields), then `node scripts/seed-v3-pack-tab-fields.js --apply`.
    - `node scripts/seed-v3-profile-fields.js` (expect 16 packs, 143 categories with fields of their own, 1263 fields, 948 map rows), then `node scripts/seed-v3-profile-fields.js --apply`.
 6. Each integration file alone, the output saved: `npx.cmd jest --ci --runInBand test/pack-records.int.spec.ts --selectProjects int 2>&1 | Tee-Object -FilePath .\pack-records.int.log`, then the same for `test/vendor-gaps.int.spec.ts`, `test/admin-gaps.int.spec.ts`, `test/media-import.int.spec.ts` and `test/profile-fields.int.spec.ts`. Then the full `npm.cmd run test:int 2>&1 | Tee-Object -FilePath .\test-int.log`. They never apply a seed and never call real storage; platform rows they make carry `vtest-<run id>` and are removed in `afterAll`. Then, for Part H: `npx.cmd jest --ci --runInBand test/wave2-h.int.spec.ts --selectProjects int 2>&1 | Tee-Object -FilePath .\wave2-h.int.log` (it puts back the firm row and every eligibility pairing it touched).
    - Part H: after the migrations, `node scripts/seed-v3-pack-engine.js` (a dry run first) then `--apply` creates any eligibility pair the migration could not (when the packs were loaded after it); it never changes a row staff edited. Then read `GET /v3/admin/pack-engine/addon-eligibility` as SUPER_ADMIN: expect 12 rows (10 goods pairs, PHARMACY_COUNTER for PHARMACY, HOME_SAMPLE_COLLECTION for LAB).
    - Firm identity: nothing to seed (the migration inserts the one row with the name and the address). When the owner has them, `PUT /v3/admin/firm-profile` as SUPER_ADMIN with the GSTIN, PAN, email and phone; until then no document shows a GSTIN.
+   - Public site gaps (Part P), after the migrations: set `TRUSTED_PROXIES` in the API's environment on the VM (choice 39) and restart the API; the startup log then says `only from <the list>`. `LOGIN_HANDOFF_TTL_SECONDS` is optional (default 60). Leave `EMAIL_LIVE_SEND` as it is: with it off the email routes answer `MAIL_DISABLED`, which is the designed state until the mail sender is set up.
+   - Read-only checks on staging with `curl.exe` (each is a plain request, nothing to clean up): `POST /v3/claim/start` with email off answers 503 `MAIL_DISABLED` for ANY slug (the switch is checked before the listing is looked up); with `{ "businessSlug": "no-such-listing", "channel": "SMS" }` it answers 409 `DIRECTORY_STATE_INVALID` (and with a real unclaimed listing it would send an SMS, so use the unknown slug); `POST /v3/account/password/reset/request` with email off answers 503 `MAIL_DISABLED`; `GET /v3/directory/pages/resolve?path=/` (the page model route) answers `path: "/directory"`; `POST /v3/auth/handoff/redeem` with a made-up code answers 401 `HANDOFF_INVALID`.
 7. `npm.cmd run test:cleanup-staging -- --count` (must print 0). The cleanup script now also removes staff draft uploads, the vendor notes (after their vendors) and the tagged platform rows.
 8. To use uploads on staging later: set `mediaUploadMaxBytes`, `mediaUploadMaxPixels` and `mediaUploadAllowedTypes` through `PUT /v3/admin/plan-settings/:key`, and the public storage settings and keys described in `V3_STORAGE.md`.
 9. **Do not push without asking**: a push creates a Vercel Preview deploy. When ready: `git push origin v3-w2`.
