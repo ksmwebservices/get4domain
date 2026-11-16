@@ -45,6 +45,38 @@ export function checkUpload(caps: UploadCaps, file: { bytes: Buffer; declared: s
   return { ok: true, detected: d };
 }
 
+/** The most one request body may carry, whatever the staff setting says (the multipart reader stops here). Both upload controllers use it. */
+export const UPLOAD_TRANSPORT_LIMIT = 16 * 1024 * 1024;
+export const UPLOAD_ALT_MAX = 160;
+
+export interface UploadLimitsView {
+  /** false until staff set all three caps: every upload then answers 503 UPLOAD_NOT_CONFIGURED */
+  configured: boolean;
+  /** the most bytes a file may have: the staff cap, never above the transport limit; null while not configured */
+  maxBytes: number | null;
+  /** the staff cap on its own (it also applies to a picture after it is re-encoded) */
+  settingMaxBytes: number | null;
+  maxPixels: number | null;
+  allowedTypes: string[];
+  images: string[];
+  documents: string[];
+  transportLimitBytes: number;
+  /** a picture needs a description (1 to altMaxLength plain characters); a document may have one */
+  altRequiredForImages: true;
+  altMaxLength: number;
+}
+
+/** What the screen needs to check a file BEFORE it is sent: the same caps the upload route enforces, from the same settings. The route still checks again, by the file's bytes. */
+export function uploadLimitsView(caps: UploadCaps): UploadLimitsView {
+  const configured = caps.mediaUploadMaxBytes !== null && caps.mediaUploadMaxPixels !== null && caps.mediaUploadAllowedTypes !== null && caps.mediaUploadAllowedTypes.length > 0;
+  const types = configured ? [...(caps.mediaUploadAllowedTypes as string[])] : [];
+  return {
+    configured, maxBytes: configured ? Math.min(caps.mediaUploadMaxBytes as number, UPLOAD_TRANSPORT_LIMIT) : null, settingMaxBytes: configured ? (caps.mediaUploadMaxBytes as number) : null,
+    maxPixels: configured ? (caps.mediaUploadMaxPixels as number) : null, allowedTypes: types, images: types.filter((t) => t.startsWith('image/')), documents: types.filter((t) => !t.startsWith('image/')),
+    transportLimitBytes: UPLOAD_TRANSPORT_LIMIT, altRequiredForImages: true, altMaxLength: UPLOAD_ALT_MAX,
+  };
+}
+
 /** The upload group token a staff draft upload is made under: opaque, 16 to 64 letters, digits, dash or underscore, chosen by the screen once per create form. */
 export const GROUP_TOKEN = /^[A-Za-z0-9_-]{16,64}$/;
 export const isGroupToken = (v: unknown): v is string => typeof v === 'string' && GROUP_TOKEN.test(v);

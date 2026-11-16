@@ -3,7 +3,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { ActivityService } from '../v3-activity/activity.service';
 import { StorageSettingsService } from '../v3-storage/settings/storage-settings';
 import { ImagePort, MediaStoragePort, sha256Hex } from '../v3-website/media/media.ports';
-import { checkUpload, checkUploadAlt, isGroupToken, Scope, scopeKeyOf, uploadKeyFor } from './core/media-upload-core';
+import { checkUpload, checkUploadAlt, isGroupToken, Scope, scopeKeyOf, UploadLimitsView, uploadKeyFor, uploadLimitsView } from './core/media-upload-core';
 import { uploadError } from './media-upload.errors';
 import { MediaRow, MediaUploadStore } from './media-upload.store';
 
@@ -27,6 +27,9 @@ export class MediaUploadService {
   private async record(actor: Actor, vendorId: string | null, actionKey: string, id: string, summary: Record<string, unknown>): Promise<void> {
     if (actor.type === 'STAFF') await this.activity?.record({ vendorId, actor: { type: actor.type, id: actor.id, ip: actor.ip ?? null }, actionKey, entityType: 'media', entityId: id, summary });
   }
+
+  /** K2: the caps a screen checks a file against before sending it (staff settings, the same ones `upload` enforces). Read only. */
+  async limits(): Promise<UploadLimitsView> { return uploadLimitsView(await this.settings.get()); }
 
   async upload(scope: Scope, actor: Actor, file: UploadedFile | undefined, alt: unknown, group?: unknown): Promise<MediaView> {
     if (group !== undefined && group !== null && group !== '' && (scope.kind !== 'DRAFT' || !isGroupToken(group))) throw uploadError('UPLOAD_INVALID', 'The upload group is 16 to 64 letters, digits, dashes or underscores, and only a draft upload has one.', { fields: { group: 'Not a valid upload group.' } });

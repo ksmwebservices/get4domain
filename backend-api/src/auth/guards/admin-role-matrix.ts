@@ -191,7 +191,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Wave 2 Part D (C11): every staff role that creates listings on behalf (SALES included) uploads for a listing or keeps a draft upload of their own; SUPPORT has no access
   'GET /v3/admin/seeded-sites/:id/media': ALL_STAFF,
   // Wave 2 Part G: the record fields of a pack tab: read is OPERATIONS and SUPER_ADMIN, edit is SUPER_ADMIN and, by the extension, ADMIN
-  'GET /v3/admin/pack-engine/tab-fields': OPS_AND_SUPER, 'PUT /v3/admin/pack-engine/tab-fields': SUPER_ONLY, 'POST /v3/admin/seeded-sites/:id/media/attach': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId': ALL_STAFF,
+  'GET /v3/admin/pack-engine/tab-fields': OPS_AND_SUPER, 'PUT /v3/admin/pack-engine/tab-fields': SUPER_ONLY, 'POST /v3/admin/seeded-sites/:id/media/attach': ALL_STAFF, 'GET /v3/admin/media/limits': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/media': ALL_STAFF, 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId': ALL_STAFF,
   'GET /v3/admin/media/drafts': ALL_STAFF,
   // Wave 2 Part E: every staff role that creates listings on behalf reads a category's profile schema and fills a listing's profile; reading the field sets is OPERATIONS and SUPER_ADMIN; editing them is SUPER_ADMIN and, by the extension, ADMIN
   'GET /v3/admin/seeded-sites/imports/template': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/dry-run': ALL_STAFF, 'POST /v3/admin/seeded-sites/imports/apply': ALL_STAFF,

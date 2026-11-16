@@ -1,7 +1,9 @@
 import { HttpException, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { APP_GUARD } from '@nestjs/core';
 import { AdminGuard } from '../src/auth/guards/admin.guard';
+import { ModuleGuard } from '../src/common/guards/module.guard';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { buildValidationPipe } from '../src/common/pipes/edit-validation.pipe';
@@ -175,5 +177,69 @@ describe('the routes over HTTP', () => {
     expect((await up('SUPPORT', '/v3/admin/seeded-sites/seed1/media')).status).toBe(403); expect((await up('SUPPORT', '/v3/admin/media/drafts')).status).toBe(403);
     expect((await up('owner-1', '/v3/admin/seeded-sites/seed1/media')).status).toBe(403);
     expect((await request(app.getHttpServer()).get('/v3/admin/media/drafts').set(as('MARKETING'))).body.data.total).toBe(1); expect((await request(app.getHttpServer()).get('/v3/admin/media/drafts').set(as('OPERATIONS'))).body.data.total).toBe(0);
+  });
+});
+
+describe('K2: the upload limits a screen checks before sending a file', () => {
+  const { uploadLimitsView, UPLOAD_TRANSPORT_LIMIT } = jest.requireActual('../src/v3-media-upload/core/media-upload-core') as typeof import('../src/v3-media-upload/core/media-upload-core');
+  it('the pure view: not configured until all three caps are set, with nothing invented', () => {
+    for (const c of [caps({ mediaUploadMaxBytes: null }), caps({ mediaUploadMaxPixels: null }), caps({ mediaUploadAllowedTypes: null }), caps({ mediaUploadAllowedTypes: [] })]) expect(uploadLimitsView(c)).toMatchObject({ configured: false, maxBytes: null, settingMaxBytes: null, maxPixels: null, allowedTypes: [], images: [], documents: [] });
+    expect(uploadLimitsView(caps({ mediaUploadMaxBytes: null })).transportLimitBytes).toBe(16 * 1024 * 1024);
+  });
+  it('the pure view: the caps as the upload enforces them, types split into pictures and documents, the byte limit never above what one request can carry', () => {
+    expect(uploadLimitsView(caps())).toEqual({ configured: true, maxBytes: 5000, settingMaxBytes: 5000, maxPixels: 4_000_000, allowedTypes: [...UPLOAD_TYPES], images: ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'], documents: ['application/pdf'], transportLimitBytes: UPLOAD_TRANSPORT_LIMIT, altRequiredForImages: true, altMaxLength: 160 });
+    expect(uploadLimitsView(caps({ mediaUploadMaxBytes: 50 * 1024 * 1024 }))).toMatchObject({ maxBytes: UPLOAD_TRANSPORT_LIMIT, settingMaxBytes: 50 * 1024 * 1024 });
+    expect(uploadLimitsView(caps({ mediaUploadAllowedTypes: ['image/png'] }))).toMatchObject({ allowedTypes: ['image/png'], images: ['image/png'], documents: [] });
+  });
+  it('what the view says is what the upload does: a file of exactly maxBytes passes the size check and one byte more is refused; a type not listed is refused', () => {
+    const c = caps({ mediaUploadMaxBytes: 200, mediaUploadAllowedTypes: ['image/png'] }); const v = uploadLimitsView(c);
+    expect(checkUpload(c, { bytes: PNG(v.maxBytes! - 8), declared: 'image/png' }).ok).toBe(true); expect(checkUpload(c, { bytes: PNG(v.maxBytes! - 7), declared: 'image/png' })).toMatchObject({ ok: false, code: 'UPLOAD_TOO_LARGE' });
+    expect(checkUpload(c, { bytes: PDF(), declared: 'application/pdf' })).toMatchObject({ ok: false, code: 'UPLOAD_TYPE_NOT_ALLOWED' }); expect(v.allowedTypes).not.toContain('application/pdf');
+  });
+
+  describe('over HTTP', () => {
+    let app: INestApplication; let current: UploadCaps;
+    const as = (p: string) => ({ 'x-test-principal': p });
+    beforeEach(async () => {
+      current = caps({ mediaUploadMaxBytes: 2_000_000, mediaUploadMaxPixels: 12_000_000, mediaUploadAllowedTypes: ['image/jpeg', 'image/png', 'application/pdf'] });
+      const mod = await Test.createTestingModule({
+        imports: [throttlerImport], controllers: [MeMediaUploadController, AdminMediaUploadController],
+        providers: [throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, AdminGuard, { provide: MediaUploadStore, useValue: new MemoryMediaUploadStore() }, { provide: MediaStoragePort, useValue: new FakeMediaStorage() }, { provide: ImagePort, useValue: new FakeImagePort() }, { provide: StorageSettingsService, useValue: { get: async () => current } }, MediaUploadService],
+      }).compile();
+      app = mod.createNestApplication();
+      app.use((req: { headers: Record<string, string>; user?: unknown }, _res: unknown, next: () => void) => {
+        const p = req.headers['x-test-principal'];
+        if (p === 'owner-1') req.user = { sub: 'v1', email: 'a@x.invalid', role: 'VENDOR' };
+        else if (p === 'member-web') req.user = { sub: 'v1', email: 'm@x.invalid', role: 'VENDOR', kind: 'team_member', memberId: 'm1', modules: ['website'] };
+        else if (p === 'member-none') req.user = { sub: 'v1', email: 'm@x.invalid', role: 'VENDOR', kind: 'team_member', memberId: 'm2', modules: ['communication'] };
+        else if (p) req.user = { sub: `staff-${p}`, email: 's@x.invalid', role: 'ADMIN', kind: 'admin_member', adminRole: p };
+        next();
+      });
+      app.useGlobalPipes(buildValidationPipe()); app.useGlobalInterceptors(new TransformInterceptor()); app.useGlobalFilters(new HttpExceptionFilter()); await app.init();
+    });
+    afterEach(async () => { await app.close(); });
+    const expected = { configured: true, maxBytes: 2_000_000, settingMaxBytes: 2_000_000, maxPixels: 12_000_000, allowedTypes: ['image/jpeg', 'image/png', 'application/pdf'], images: ['image/jpeg', 'image/png'], documents: ['application/pdf'], altMaxLength: 160 };
+    it('a vendor owner and a team member with the website area read the limits; one without it is refused', async () => {
+      for (const p of ['owner-1', 'member-web']) { const r = await request(app.getHttpServer()).get('/v3/me/media/limits').set(as(p)); expect(r.status).toBe(200); expect(r.body.data).toMatchObject(expected); }
+      expect((await request(app.getHttpServer()).get('/v3/me/media/limits').set(as('member-none'))).status).toBe(403);
+      expect([401, 403]).toContain((await request(app.getHttpServer()).get('/v3/me/media/limits')).status);
+    });
+    it('every staff role that may upload reads the same limits; SUPPORT and nobody signed in are refused', async () => {
+      for (const p of ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS', 'MARKETING']) { const r = await request(app.getHttpServer()).get('/v3/admin/media/limits').set(as(p)); expect([p, r.status]).toEqual([p, 200]); expect(r.body.data).toMatchObject(expected); }
+      expect((await request(app.getHttpServer()).get('/v3/admin/media/limits').set(as('SUPPORT'))).status).toBe(403); expect([401, 403]).toContain((await request(app.getHttpServer()).get('/v3/admin/media/limits')).status);
+    });
+    it('while uploads are not switched on the answer is 200 with configured false (the screen says so before anyone picks a file), and the upload itself still answers 503 UPLOAD_NOT_CONFIGURED', async () => {
+      current = caps({ mediaUploadMaxBytes: null, mediaUploadMaxPixels: null, mediaUploadAllowedTypes: null });
+      const r = await request(app.getHttpServer()).get('/v3/me/media/limits').set(as('owner-1')); expect(r.status).toBe(200); expect(r.body.data).toMatchObject({ configured: false, maxBytes: null, allowedTypes: [] });
+      const up = await request(app.getHttpServer()).post('/v3/me/media').set(as('owner-1')).field('alt', 'x').attach('file', PNG(), { filename: 'a.png', contentType: 'image/png' }); expect(up.status).toBe(503); expect(JSON.stringify(up.body)).toContain('UPLOAD_NOT_CONFIGURED');
+    });
+    it('a change of a staff setting shows at once, and the answer carries no storage address, key or price', async () => {
+      current = caps({ mediaUploadMaxBytes: 1234, mediaUploadMaxPixels: 99, mediaUploadAllowedTypes: ['image/webp'] });
+      const r = await request(app.getHttpServer()).get('/v3/me/media/limits').set(as('owner-1')); expect(r.body.data).toMatchObject({ maxBytes: 1234, maxPixels: 99, allowedTypes: ['image/webp'], images: ['image/webp'], documents: [] });
+      expect(JSON.stringify(r.body.data)).not.toMatch(/bucket|endpoint|secret|₹|paise|https?:/i);
+    });
+    it('the limits route does not swallow the id routes: DELETE /v3/me/media/limits is still an upload id (not found)', async () => {
+      expect((await request(app.getHttpServer()).delete('/v3/me/media/limits').set(as('owner-1'))).status).toBe(404);
+    });
   });
 });

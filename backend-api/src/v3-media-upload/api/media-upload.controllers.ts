@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
+import { UPLOAD_TRANSPORT_LIMIT } from '../core/media-upload-core';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -17,7 +18,7 @@ import { uploadError } from '../media-upload.errors';
 import { MediaUploadService, UploadedFile as UploadedFileShape } from '../media-upload.service';
 
 /** multer's own limit is a transport ceiling only; the real caps are the staff settings mediaUploadMaxBytes and mediaUploadMaxPixels, checked by the service. */
-const TRANSPORT_LIMIT = 16 * 1024 * 1024;
+const TRANSPORT_LIMIT = UPLOAD_TRANSPORT_LIMIT;
 class AttachDto { @IsString() @MaxLength(80) group!: string }
 class PageDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
@@ -35,6 +36,9 @@ const staffId = (u: AuthenticatedUser): string => { if (!u?.sub) throw uploadErr
 @Controller('v3/me/media')
 export class MeMediaUploadController {
   constructor(private readonly media: MediaUploadService) {}
+
+  @Get('limits') @ApiOperation({ summary: 'The upload limits (largest file, largest picture in pixels, accepted types, alt text rule) so the screen can check a file before sending it' })
+  limits() { return this.media.limits(); }
 
   @Get() @ApiOperation({ summary: 'My uploaded pictures and documents, newest first' })
   list(@Tenant() t: TenantContext, @Query() q: PageDto) { return this.media.list({ kind: 'VENDOR', vendorId: t.vendorId }, q.page, q.pageSize); }
@@ -61,6 +65,9 @@ export class MeMediaUploadController {
 @Controller('v3/admin')
 export class AdminMediaUploadController {
   constructor(private readonly media: MediaUploadService) {}
+
+  @Get('media/limits') @ApiOperation({ summary: 'The upload limits (largest file, largest picture in pixels, accepted types, alt text rule) so the screen can check a file before sending it' })
+  limits() { return this.media.limits(); }
 
   @Get('seeded-sites/:id/media') @ApiOperation({ summary: 'The uploads of the business behind a listing made on behalf' })
   listing(@Param('id') id: string, @Query() q: PageDto) { return this.media.listForListing(id, q.page, q.pageSize); }

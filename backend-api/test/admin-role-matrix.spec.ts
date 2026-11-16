@@ -152,7 +152,7 @@ const ALL_STAFF_ROUTES = [
   // B4 slice 5.16b: all staff read the catalogue; MARKETING gets no money field (tested in services-api.spec.ts)
   'GET /v3/admin/services', 'GET /v3/admin/services/:key', 'GET /v3/admin/packs', 'GET /v3/admin/packs/:key',
   // B3 slice 5.13a: MARKETING reads the seeded list and one site, non-personal fields only
-  'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id', 'GET /v3/admin/seeded-sites/categories',
+  'GET /v3/admin/seeded-sites', 'GET /v3/admin/seeded-sites/:id', 'GET /v3/admin/seeded-sites/categories', 'GET /v3/admin/media/limits',
   'POST /v3/admin/seeded-sites/:id/media/attach',   // Wave 2 Part G: attach a staff member's draft uploads to the listing
   'GET /v3/admin/seeded-sites/:id/media', 'POST /v3/admin/seeded-sites/:id/media', 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId', 'GET /v3/admin/media/drafts', 'POST /v3/admin/media/drafts', 'DELETE /v3/admin/media/drafts/:mediaId',   // Wave 2 D: C11
   'GET /v3/admin/seeded-sites/imports/template', 'POST /v3/admin/seeded-sites/imports/dry-run', 'POST /v3/admin/seeded-sites/imports/apply',   // Wave 2 Part D: the listing import, every staff role that creates on behalf
@@ -201,7 +201,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(389);
+    expect(oracle).toHaveLength(390);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
