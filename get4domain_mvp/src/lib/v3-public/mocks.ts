@@ -1,4 +1,4 @@
-import type { BusinessFacts, Card, Crumb, Facet, Link, PageModel, PageType } from './types';
+import type { BacklinkBlock, BusinessFacts, Card, Crumb, Facet, Link, PageModel, PageType } from './types';
 
 /**
  * Fixtures for reviewing the public site without the API (V3_PUBLIC_USE_MOCKS=true, the default).
@@ -191,3 +191,16 @@ export function mockSearch(name: string, city: string): Array<{ slug: string; na
 }
 
 export const MOCK_BUSINESS_IDS: readonly string[] = BIZ.map((b) => b.id);
+
+/** A backlink block for one claimed fixture business, so that the block can be reviewed. */
+export function mockBacklinkBlock(businessId: string): BacklinkBlock | null {
+  if (businessId !== 'b-1002') return null;
+  return {
+    brand: { href: MOCK_ORIGIN, text: 'Listed in the Get4Domain directory' },
+    links: [
+      { href: abs('/chennai/electricians'), text: 'Electricians in Chennai' },
+      { href: abs('/chennai'), text: 'Businesses in Chennai' },
+    ],
+    html: '',
+  };
+}

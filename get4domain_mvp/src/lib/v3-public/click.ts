@@ -3,6 +3,18 @@
  */
 const GO = /\/v3\/go\/([A-Za-z0-9_-]{1,64})(?:\?([^#]*))?$/;
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CUID = /^c[a-z0-9]{20,30}$/;
+const MOCK_ID = /^b-\d{3,6}$/;
+
+/**
+ * Does a /go/{segment} look like a business id rather than the live campaign slug that already owns /go/[slug]?
+ * The backend does not document the id format (gap G3), so this accepts a uuid or a cuid, and the fixture ids only in mock mode.
+ */
+export function looksLikeBusinessId(segment: string, mocks: boolean): boolean {
+  return UUID.test(segment) || CUID.test(segment) || (mocks && MOCK_ID.test(segment));
+}
+
 export interface ClickOut { id: string; src: string | null; kw: string | null }
 
 export function parseVisitUrl(visitUrl: string | null | undefined): ClickOut | null {

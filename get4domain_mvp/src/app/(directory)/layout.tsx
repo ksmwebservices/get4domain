@@ -2,9 +2,6 @@ import Link from 'next/link';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { S } from '@/lib/v3-public/strings';
 
-// The flag is read on every request (no rebuild to switch it); backend data is cached by fetch revalidate.
-export const dynamic = 'force-dynamic';
-
 /** The shell of every V3 public page: its own header and footer (no chatbot, no demo gate, no contact details). */
 export default function DirectoryLayout({ children }: { children: React.ReactNode }) {
   assertV3Public();

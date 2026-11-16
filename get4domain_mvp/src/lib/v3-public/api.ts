@@ -1,7 +1,7 @@
 import { apiBase, defaultRevalidate } from './config';
 import { useMocks } from './flag';
-import { mockPage } from './mocks';
-import type { Fetched, PageModel } from './types';
+import { mockBacklinkBlock, mockPage } from './mocks';
+import type { BacklinkBlock, Fetched, PageModel } from './types';
 
 /**
  * The typed server-side client of the directory API. Mock mode (the default) returns fixtures and never touches the network; real mode calls the API unchanged.
@@ -80,4 +80,14 @@ export async function fetchText(route: string): Promise<{ status: number; body: 
   } catch {
     return null;
   }
+}
+
+/** The backlink block of a listed business, or null when there is none (or in any failure: the block is optional, the page never waits on it). */
+export async function fetchBacklinkBlock(businessId: string): Promise<BacklinkBlock | null> {
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(businessId)) return null;
+  if (useMocks()) return mockBacklinkBlock(businessId);
+  const base = apiBase();
+  if (!base) return null;
+  const r = await getJson<BacklinkBlock>(`${base}/v3/directory/backlink-block/${encodeURIComponent(businessId)}`, defaultRevalidate());
+  return r.kind === 'ok' ? r.data : null;
 }
