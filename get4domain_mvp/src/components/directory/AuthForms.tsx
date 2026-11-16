@@ -17,6 +17,8 @@ async function call(action: string, body: Record<string, unknown>): Promise<Clai
   }
 }
 
+const RESET_TOKEN_MIN = 20;
+const resetStrong = (p: string): boolean => p.length >= 8 && p.length <= 72 && /[A-Z]/.test(p) && /\d/.test(p);
 const strong = (p: string): boolean => p.length >= 8 && p.length <= 128 && /[A-Z]/.test(p) && /\d/.test(p);
 
 function Alert({ text }: { text: string | null }) {
@@ -217,7 +219,8 @@ export function ResetForm({ token }: { token: string | null }) {
   const [done, setDone] = useState(false);
   const [invalidLink, setInvalidLink] = useState(false);
 
-  if (!token || invalidLink) {
+  const tokenShort = !!token && token.length < RESET_TOKEN_MIN;
+  if (!token || tokenShort || invalidLink) {
     return (
       <section role="status" aria-labelledby="reset-invalid" className="rounded-xl border border-amber-300 bg-amber-50 p-6">
         <h2 id="reset-invalid" className="font-semibold text-slate-900">{S.auth.reset.linkInvalidTitle}</h2>
@@ -238,16 +241,16 @@ export function ResetForm({ token }: { token: string | null }) {
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     setError(null);
-    if (!strong(password)) { setError(S.auth.errors.passwordWeak); return; }
+    if (!resetStrong(password)) { setError(S.auth.reset.passwordWeak); return; }
     if (password !== repeat) { setError(S.auth.reset.mismatch); return; }
     setBusy(true);
-    const r = await call('reset', { token, password });
+    const r = await call('reset', { token, newPassword: password });
     setBusy(false);
     setPassword('');
     setRepeat('');
     if (r.ok) { setDone(true); return; }
     // A link that is spent, expired or unknown is one screen; a registered code gets its plain message; anything else is the generic one.
-    if (r.code === 'GRANT_INVALID' || r.status === 401 || r.status === 404 || r.status === 410) { setInvalidLink(true); return; }
+    if (r.code === 'GRANT_INVALID' || (r.status === 400 && !r.code) || r.status === 401 || r.status === 404 || r.status === 410) { setInvalidLink(true); return; }
     setError(failureText(r, r.code && r.code !== 'GRANT_INVALID' ? messageForCode(r.code, r.status) : S.auth.errors.fieldsInvalid));
   }
 
@@ -255,7 +258,7 @@ export function ResetForm({ token }: { token: string | null }) {
     <form onSubmit={submit} noValidate aria-labelledby="reset-title">
       <h2 id="reset-title" className="sr-only">{S.auth.reset.title}</h2>
       <Alert text={error} />
-      <Field id="reset-password" label={S.auth.reset.passwordLabel} hint={S.auth.fields.passwordRules}>
+      <Field id="reset-password" label={S.auth.reset.passwordLabel} hint={S.auth.reset.passwordRules}>
         <input id="reset-password" name="password" type="password" autoComplete="new-password" aria-describedby="reset-password-hint" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT} />
       </Field>
       <Field id="reset-repeat" label={S.auth.reset.confirmLabel}>

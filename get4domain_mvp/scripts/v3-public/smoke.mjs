@@ -181,8 +181,13 @@ async function flagOn() {
   const reset = await get(ON, '/account/reset-password?token=mock-reset-token-000000000');
   ok(/Choose a new password/.test(reset.text) && /Save the new password/.test(reset.text) && /no-referrer/.test(reset.text) && /noindex/.test(reset.text), 'reset page shows the form, no referrer, noindex');
   ok(/This reset link is not valid/.test((await get(ON, '/account/reset-password')).text), 'reset page without a token says the link is not valid');
-  const resetApi = await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'mock-reset-token-000000000', password: 'Newpass123' }) });
+  const resetApi = await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'mock-reset-token-000000000', newPassword: 'Newpass123' }) });
   ok((await resetApi.json()).ok === true, 'reset confirm answers ok in sample mode');
+  ok(/This reset link is not valid/.test((await get(ON, '/account/reset-password?token=short-token')).text), 'reset page with a token under 20 characters says the link is not valid');
+  const shortApi = await (await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'short-token', newPassword: 'Newpass123' }) })).json();
+  ok(shortApi.ok === false && shortApi.code === 'GRANT_INVALID', 'reset confirm with a short token answers link-not-valid');
+  const oldNameApi = await (await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'mock-reset-token-000000000', password: 'Newpass123' }) })).json();
+  ok(oldNameApi.ok === false, 'reset confirm rejects the old field name "password"');
   const post = async (route, payload) => (await fetch(`http://localhost:${ON}${route}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })).json();
   const loginOk = await post('/directory-api/auth/login', { email: 'owner@example.invalid', password: 'Password1' });
   ok(loginOk.ok === true && loginOk.data?.handoff === 'mock-handoff-code-0000', 'sign-in in sample mode answers with a handoff code');

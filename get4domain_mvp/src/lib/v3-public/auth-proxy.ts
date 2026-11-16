@@ -22,8 +22,11 @@ export const MOCK_MAIL_OFF_EMAIL = 'mailoff@example.invalid';
 export const MOCK_RESET_TOKEN = 'mock-reset-token-000000000';
 export const MOCK_RESET_EXPIRED = 'mock-reset-expired-0000000';
 
-/** A reset token is opaque to this site: only its shape is checked (letters, digits and . _ ~ -), never its meaning. */
-export const RESET_TOKEN = /^[A-Za-z0-9._~-]{16,512}$/;
+/** A reset token is opaque to this site: only its shape is checked (letters, digits and . _ ~ -, at least 20 characters as the API demands), never its meaning. */
+export const RESET_TOKEN_MIN = 20;
+export const RESET_TOKEN = /^[A-Za-z0-9._~-]{20,512}$/;
+/** The API's rule for a new password on reset: 8 to 72 characters, a capital letter and a digit. */
+export const resetPasswordOk = (p: string): boolean => p.length >= 8 && p.length <= 72 && /[A-Z]/.test(p) && /\d/.test(p);
 
 const res = (ok: boolean, status: number, code: string | null, message: string | null = null): ClaimCallResult => ({ ok, status, code, message, data: ok ? { ok: true } : null });
 const invalid = (): ClaimCallResult => res(false, 400, 'DIRECTORY_INVALID');
@@ -73,17 +76,18 @@ export async function handleAuth(req: Request, action: AuthAction, body: Record<
     }
     case 'reset': {
       const token = text(body.token, 512);
-      const password = text(body.password, 128);
-      if (!token || !RESET_TOKEN.test(token) || !password || !registerPasswordOk(password)) return invalid();
-      if (useMocks()) {
-        if (token === MOCK_RESET_EXPIRED) return res(false, 400, 'GRANT_INVALID');
-        return token === MOCK_RESET_TOKEN ? res(true, 200, null) : res(false, 400, 'GRANT_INVALID');
-      }
-      // Assumed body (gap G14): { token, password }.
-      const r = await callApi(req, '/v3/account/password/reset/confirm', { method: 'POST', body: { token, password } });
+      const newPassword = text(body.newPassword, 72);
+      if (!newPassword || !resetPasswordOk(newPassword)) return invalid();
+      // A token that is too short can never be a real one: the same "link is not valid" answer, and the API is not called.
+      if (!token || token.length < RESET_TOKEN_MIN) return res(false, 400, 'GRANT_INVALID');
+      if (!RESET_TOKEN.test(token)) return invalid();
+      if (useMocks()) return token === MOCK_RESET_TOKEN ? res(true, 200, null) : res(false, 400, 'GRANT_INVALID');
+      const r = await callApi(req, '/v3/account/password/reset/confirm', { method: 'POST', body: { token, newPassword } });
       if (!r) return res(false, 0, null);
       if (r.ok) return res(true, 200, null);
       const e = errorOf(r.json);
+      // The API answers an invalid, used or expired token with a 400 and no code: that is the "link is not valid" screen.
+      if (r.status === 400 && !e.code) return res(false, 400, 'GRANT_INVALID');
       return res(false, r.status, e.code, r.status === 429 ? e.message : null);
     }
   }
