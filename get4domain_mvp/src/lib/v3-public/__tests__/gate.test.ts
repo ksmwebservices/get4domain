@@ -22,7 +22,7 @@ function liveFolders(dir: string, out: string[] = []): string[] {
 
 describe('the live routes the directory gate never touches', () => {
   test('every live top-level folder of src/app is on the list (add new live routes to LIVE_SEGMENTS)', () => {
-    const ours = new Set(['directory', 'claim', 'legal', 'account', 'sitemaps', 'directory-go', 'directory-api', 'directory-pages', 'directory-robots']);
+    const ours = new Set(['directory', 'claim', 'legal', 'account', 'sitemaps', 'directory-go', 'directory-api', 'directory-pages', 'directory-robots', 'v3-site']);
     const missing = liveFolders(app).filter((f) => !LIVE_SEGMENTS.has(f) && !ours.has(f));
     assert.deepEqual(missing, []);
   });

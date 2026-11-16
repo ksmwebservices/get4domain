@@ -33,6 +33,23 @@ export interface HostRequest {
 /** The internal page that renders the directory home (reached on the directory host by a rewrite from `/`). */
 export const DIRECTORY_HOME_ROUTE = '/directory';
 
+/**
+ * The commercial public pages that replace live pages on the main host while the host layer is on. The live pages are not edited: these exact addresses are rewritten to the
+ * pages under /v3-site (and /login to the Slice 4 sign-in). Sub-paths (/industries/travel and the rest) and every other live address are untouched.
+ */
+const MAIN_PAGES: Readonly<Record<string, string>> = {
+  '/': '/v3-site', '/pricing': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
+  '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login',
+};
+const REFERRAL_PATH = /^\/r\/([A-Za-z0-9_-]{1,64})\/?$/;
+
+export function mainPageTarget(pathname: string): string | null {
+  const key = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (Object.prototype.hasOwnProperty.call(MAIN_PAGES, key)) return MAIN_PAGES[key];
+  const m = REFERRAL_PATH.exec(pathname);
+  return m ? `/v3-site/r/${m[1]}` : null;
+}
+
 /** The internal address of the directory sitemap index (served by the sitemaps handler). */
 export const DIRECTORY_SITEMAP_ROUTE = '/sitemaps/directory-index.xml';
 
@@ -72,6 +89,8 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
       if (rest !== null && cfg.directory) return { action: 'redirect', to: `${originFor(cfg.directory)}${rest}${search}`, status: 308 };
       // The directory sitemaps list directory-host addresses, so they are answered on the directory host only.
       if (firstSegment(pathname) === 'sitemaps') return { action: 'not-found', host: 'main' };
+      const page = mainPageTarget(pathname);
+      if (page) return { action: 'rewrite', pathname: page };
       return { action: 'pass', host: 'main' };
     }
     case 'directory': {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { decideHost, directoryHomeHref, hostRoutingActive, stripDirectoryPrefix, type HostRequest } from '../host-routing';
+import { decideHost, directoryHomeHref, hostRoutingActive, mainPageTarget, stripDirectoryPrefix, type HostRequest } from '../host-routing';
 import { readHostConfig } from '../hostnames';
 
 const HOSTS = {
@@ -31,8 +31,24 @@ describe('the host layer is active only with the flag and a main host', () => {
 });
 
 describe('main host', () => {
-  test('marketing stays', () => {
-    for (const p of ['/', '/pricing', '/industries/travel', '/claim', '/legal', '/account/login']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
+  test('live marketing sub-pages and the V3 routes pass untouched', () => {
+    for (const p of ['/industries/travel', '/claim', '/legal', '/account/login', '/terms', '/demo/clinic', '/leadspace', '/pricing/extra', '/r', '/r/a/b']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
+  });
+  test('the commercial pages replace their live twins only here, by an internal rewrite', () => {
+    const want: Record<string, string> = {
+      '/': '/v3-site', '/pricing': '/v3-site/pricing', '/pricing/': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
+      '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/r/ABC-123_x': '/v3-site/r/ABC-123_x',
+    };
+    for (const [from, to] of Object.entries(want)) assert.deepEqual(run('main.example.invalid', from), { action: 'rewrite', pathname: to }, from);
+    assert.equal(mainPageTarget('/constructor'), null);
+    assert.equal(mainPageTarget('/__proto__'), null);
+    assert.equal(mainPageTarget(`/r/${'a'.repeat(65)}`), null);
+  });
+  test('no replacement without the flag, without MAIN_HOST, or on any other host', () => {
+    assert.equal(run('main.example.invalid', '/pricing', {}, HOSTS), null);
+    assert.equal(decideHost({ host: 'main.example.invalid', pathname: '/pricing' }, readHostConfig({}), { V3_PUBLIC_ENABLED: 'true' }), null);
+    assert.deepEqual(run('directory.main.example.invalid', '/pricing'), { action: 'not-found', host: 'directory' });
+    assert.deepEqual(run('sri-murugan.main.example.invalid', '/pricing'), { action: 'pass', host: 'vendor-site' });
   });
   test('/directory and below go permanently to the directory host without the prefix', () => {
     assert.deepEqual(run('main.example.invalid', '/directory'), { action: 'redirect', to: 'https://directory.main.example.invalid/', status: 308 });

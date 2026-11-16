@@ -15,9 +15,13 @@ export const V3_ROBOTS_ROUTE = '/directory-robots';
 /** The internal handler that relays a V3 vendor website (reached only by the middleware rewrite from a vendor host). */
 export const V3_VENDOR_SITE_ROOT = '/vendor-site';
 
+/** The internal root of the commercial public pages (home, pricing, register, referral, marketing). Reached only by the main-host rewrite. */
+export const V3_SITE_ROOT = '/v3-site';
+
 /** Paths that exist only as rewrite targets: a visitor typing them gets a 404 (the rewrite runs after the middleware, so it is not affected). */
 export function isInternalOnlyPath(pathname: string): boolean {
-  return pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`) || pathname === V3_ROBOTS_ROUTE || pathname === V3_VENDOR_SITE_ROOT || pathname.startsWith(`${V3_VENDOR_SITE_ROOT}/`);
+  return pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`) || pathname === V3_ROBOTS_ROUTE || pathname === V3_VENDOR_SITE_ROOT || pathname.startsWith(`${V3_VENDOR_SITE_ROOT}/`)
+    || pathname === V3_SITE_ROOT || pathname.startsWith(`${V3_SITE_ROOT}/`);
 }
 
 /** Files a vendor's own host answers from its stored site, although the main matcher skips dotted paths: /llms.txt and the site's /assets/. Handled only for a V3 vendor host. */

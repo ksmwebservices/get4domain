@@ -33,7 +33,7 @@ export function revalidateFrom(cacheControl: string | null, fallback: number): n
   return Number.isFinite(n) && n >= 1 ? n : fallback;
 }
 
-async function getJson<T>(url: string, revalidate: number): Promise<Fetched<T>> {
+export async function getJson<T>(url: string, revalidate: number): Promise<Fetched<T>> {
   const known = etags.get(url);
   const call = (conditional: boolean): Promise<Response> =>
     fetch(url, {
