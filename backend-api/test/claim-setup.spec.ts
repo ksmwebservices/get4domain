@@ -126,7 +126,7 @@ describe('B7 approval: the site goes live', () => {
     expect(await failure(svc.approve('v1', actor))).toEqual({ status: 409, code: 'CLAIM_TERMS_REQUIRED' });
     setTerms(false);
     const first = await svc.approve('v1', actor);
-    expect(first).toEqual({ state: 'LIVE', alreadyLive: false, publicationId: 'pub-v1', version: 1 });
+    expect(first).toEqual({ state: 'LIVE', alreadyLive: false, publicationId: 'pub-v1', version: 1, redirectTo: null });   // no public address given: no redirect
     const second = await svc.approve('v1', actor);
     expect(second.alreadyLive).toBe(true); expect(site.calls).toEqual(['v1']);
     expect(w.audit.rows.filter((a) => a.action === 'claim.approved')).toHaveLength(1);
@@ -159,5 +159,29 @@ describe('B4 indexing control', () => {
     expect(evaluateBusinessIndexing(unclaimed, { indexUnclaimed: false, minDescriptionChars: 0 }).indexable).toBe(false);
     expect(evaluateBusinessIndexing(unclaimed, { indexUnclaimed: true, minDescriptionChars: 0 }).indexable).toBe(true);
     expect(evaluateBusinessIndexing({ ...unclaimed, status: 'CLAIMED' }, { indexUnclaimed: false, minDescriptionChars: 0 }).indexable).toBe(true);
+  });
+});
+
+describe('G13 the redirect target after approval', () => {
+  async function claimed(url: () => Promise<string>) {
+    const s = await setup(); await s.otp.request(TOKEN, null); await s.otp.verify(TOKEN, '123456', null);
+    const svc = new ClaimSetupService(s.w.grants, s.w.repo, s.w.audit, s.site, s.accounts, { acceptanceRequired: async () => false } as never, url);
+    svc.clock = () => new Date(s.w.now.t); return { ...s, svc };
+  }
+  const actor = { type: 'VENDOR' as const, id: 'v1', ip: null };
+  it('a successful approval answers the public site\'s go-live page on the canonical host (www is dropped), and repeating it answers the same', async () => {
+    const { svc } = await claimed(async () => 'https://www.get4domain.com');
+    const first = await svc.approve('v1', actor); expect(first).toMatchObject({ state: 'LIVE', alreadyLive: false, redirectTo: 'https://get4domain.com/claim/live' });
+    expect(await svc.approve('v1', actor)).toMatchObject({ alreadyLive: true, redirectTo: 'https://get4domain.com/claim/live' });
+  });
+  it('the address comes only from the setting: a trailing path, a port and a different scheme are handled, and nothing the caller sends is used', async () => {
+    expect((await (await claimed(async () => 'http://localhost:3000/some/path')).svc.approve('v1', actor)).redirectTo).toBe('http://localhost:3000/claim/live');
+  });
+  it('an unusable setting (empty, not a URL, or failing to load) gives no redirect and never fails the approval', async () => {
+    for (const url of [async () => '', async () => 'not a url', async () => { throw new Error('db down'); }]) expect((await (await claimed(url)).svc.approve('v1', actor)).redirectTo).toBeNull();
+  });
+  it('a failed approval carries no redirect (it throws)', async () => {
+    const { svc, site } = await claimed(async () => 'https://get4domain.com'); site.fail = true;
+    expect(await failure(svc.approve('v1', actor))).toEqual({ status: 409, code: 'CLAIM_GO_LIVE_UNAVAILABLE' });
   });
 });

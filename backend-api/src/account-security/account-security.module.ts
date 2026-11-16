@@ -4,16 +4,18 @@ import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
 import { AccountDirectory } from './account-directory.service';
 import { AccountSecurityController } from './account-security.controller';
+import { LoginHandoffController } from './login-handoff.controller';
+import { LoginHandoffService } from './login-handoff.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
 
 /** Everything the controller needs apart from AuthService / EmailService / JwtService (the integration tests mount exactly this list). */
-export const ACCOUNT_SECURITY_PROVIDERS = [AccountDirectory, SessionService, PasswordService];
+export const ACCOUNT_SECURITY_PROVIDERS = [AccountDirectory, SessionService, PasswordService, LoginHandoffService];
 
 /** S13: password reset / change and rotating refresh tokens. Additive: it does not change AuthModule, AuthService or the existing /auth routes. */
 @Module({
   imports: [AuthModule, EmailModule, JwtModule.register({ secret: process.env.JWT_SECRET })],
-  controllers: [AccountSecurityController],
+  controllers: [AccountSecurityController, LoginHandoffController],
   providers: ACCOUNT_SECURITY_PROVIDERS,
   exports: [SessionService],
 })

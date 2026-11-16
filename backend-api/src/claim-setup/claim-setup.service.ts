@@ -6,6 +6,7 @@ import { DirectoryRepository } from '../directory/directory.repository';
 import { AccountSetupGrantService } from '../directory/grants/account-setup-grant.service';
 import { isPlaceholderOwnerEmail } from '../provisioning/claims/claims.service';
 import { normaliseEmail } from '../provisioning/steps/business-input';
+import { canonicalOrigin } from '../seo-directory/core/url-scheme';
 import { TermsService } from '../terms/terms.service';
 import { ClaimAccountStore } from './claim-account.store';
 import { SiteGoLivePort } from './site-go-live.port';
@@ -13,7 +14,13 @@ import { SiteGoLivePort } from './site-go-live.port';
 export interface SetupInput { setupToken: string; password: string; acceptTerms: boolean; email?: string }
 export interface SetupContext { ip: string | null; userAgent: string | null }
 export interface SetupResult { vendorId: string; loginEmail: string; passwordSet: true; termsAccepted: true; next: 'LOGIN' }
-export interface ApproveResult { state: 'LIVE'; alreadyLive: boolean; publicationId: string; version: number }
+/** G13: `redirectTo` is where the vendor app sends the owner after a successful approval (the public site's go-live page), or null when the public address is not set. */
+export interface ApproveResult { state: 'LIVE'; alreadyLive: boolean; publicationId: string; version: number; redirectTo: string | null }
+
+/** The public site's base address (Directory Settings, Provisioning). Provided by the module; a build without it answers no redirect. */
+export const CLAIM_PUBLIC_URL = Symbol('CLAIM_PUBLIC_URL');
+export type ClaimPublicUrl = () => Promise<string>;
+export const CLAIM_LIVE_PATH = '/claim/live';
 
 /**
  * The two steps after a claim code is verified (Amendment 13 B3 and B7):
@@ -28,7 +35,16 @@ export class ClaimSetupService {
   constructor(
     private readonly grants: AccountSetupGrantService, private readonly repo: DirectoryRepository, private readonly audit: DirectoryAudit, private readonly site: SiteGoLivePort, private readonly accounts: ClaimAccountStore,
     @Optional() @Inject(TermsService) private readonly terms?: Pick<TermsService, 'acceptanceRequired'>,
+    @Optional() @Inject(CLAIM_PUBLIC_URL) private readonly publicUrl?: ClaimPublicUrl,
   ) {}
+
+  /** The go-live page on the one canonical public host (www is not canonical), or null when no public address is set. Never built from anything the caller sent. */
+  private async redirectTarget(): Promise<string | null> {
+    if (!this.publicUrl) return null;
+    let origin = '';
+    try { origin = canonicalOrigin(await this.publicUrl()); } catch { origin = ''; }
+    return origin ? `${origin}${CLAIM_LIVE_PATH}` : null;
+  }
 
   async setup(i: SetupInput, ctx: SetupContext): Promise<SetupResult> {
     const token = String(i.setupToken ?? '').slice(0, 200);
@@ -58,11 +74,11 @@ export class ClaimSetupService {
     if (!biz || biz.status !== 'CLAIMED') throw new ConflictException(directoryError('CLAIM_NOT_CLAIMED', 'This business has not been claimed yet.'));
     if (this.terms && (await this.terms.acceptanceRequired(vendorId))) throw new ConflictException(directoryError('CLAIM_TERMS_REQUIRED', 'Please accept the current Terms and policies first.'));
     const live = await this.site.current(vendorId);
-    if (live) return { state: 'LIVE', alreadyLive: true, publicationId: live.publicationId, version: live.version };
+    if (live) return { state: 'LIVE', alreadyLive: true, publicationId: live.publicationId, version: live.version, redirectTo: await this.redirectTarget() };
     let published: { publicationId: string; version: number };
     try { published = await this.site.buildAndPublish(vendorId, actor); }
     catch (e) { if ((e as { getStatus?: () => number }).getStatus) throw e; throw new ConflictException(directoryError('CLAIM_GO_LIVE_UNAVAILABLE', 'The site could not be published right now. Please try again.')); }
     await this.audit.record({ type: 'VENDOR', id: actor.id, ip: actor.ip }, 'claim.approved', 'vendor', vendorId, null, { publicationId: published.publicationId, version: published.version });
-    return { state: 'LIVE', alreadyLive: false, ...published };
+    return { state: 'LIVE', alreadyLive: false, ...published, redirectTo: await this.redirectTarget() };
   }
 }

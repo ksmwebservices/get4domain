@@ -1147,6 +1147,21 @@ model AccountPasswordReset {
   @@map("g4d_password_resets")
 }
 
+/// Wave 2 (public site gap G2): a one-time, short-lived code that hands a vendor owner who just signed in on the public site to the vendor app. Only the SHA-256 is stored; a use sets usedAt; rows are kept.
+model V3LoginHandoff {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  accountType String
+  accountId   String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  issuedIp    String?
+  createdAt   DateTime  @default(now())
+
+  @@index([accountType, accountId, createdAt])
+  @@map("g4d_login_handoffs")
+}
+
 /// S13: a rotating refresh token. Only the SHA-256 is stored. Every use marks the row used and issues the next one in the same family;
 /// presenting a used token again (theft/replay) revokes the whole family. Same append-only ledger rule as AccountPasswordReset.
 model AuthRefreshToken {

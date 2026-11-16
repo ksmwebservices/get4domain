@@ -21,6 +21,8 @@ export interface SecurityConfig {
   loginMaxFailures: number;
   loginWindowMinutes: number;
   frontendUrl: string;
+  /** Wave 2 (G2): how long a login handoff code works, in seconds. Clamped to 15 to 300. */
+  handoffTtlSeconds: number;
 }
 
 export function securityConfig(): SecurityConfig {
@@ -32,6 +34,7 @@ export function securityConfig(): SecurityConfig {
     minFailureMs: positive('AUTH_MIN_FAILURE_MS', 300),
     loginMaxFailures: positive('LOGIN_MAX_FAILURES', 10),
     loginWindowMinutes: positive('LOGIN_FAILURE_WINDOW_MINUTES', 15),
+    handoffTtlSeconds: Math.min(300, Math.max(15, Math.floor(positive('LOGIN_HANDOFF_TTL_SECONDS', 60)))),
     frontendUrl: (process.env.FRONTEND_URL ?? 'https://get4domain.com').replace(/\/+$/, ''),
   };
 }
