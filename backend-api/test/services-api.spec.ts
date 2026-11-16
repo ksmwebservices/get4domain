@@ -98,11 +98,13 @@ describe('services API', () => {
       for (const role of ['MARKETING', 'owner', 'member']) for (const [m, url, body] of writes) expect([role, url, (await send(m, url, role, body)).status]).toEqual([role, url, 403]);
       expect((await w.services.serviceByKey('FLYER_DESIGN'))).toBeNull();
     });
-    it('OPERATIONS adds and edits services and packs and proposes prices, but only SUPER_ADMIN approves or retires one', async () => {
+    it('OPERATIONS adds and edits services and packs, but ONLY SUPER_ADMIN proposes, edits, approves or retires a price (Wave 3 Part F)', async () => {
       expect((await send('post', '/v3/admin/services', 'OPERATIONS', svc())).status).toBe(200);
       expect((await send('put', '/v3/admin/services/FLYER_DESIGN', 'OPERATIONS', { status: 'ACTIVE', planStateRule: 'ANY' })).body.data).toMatchObject({ status: 'ACTIVE', planStateRule: 'ANY' });
-      const p = await send('post', '/v3/admin/services/FLYER_DESIGN/prices', 'OPERATIONS', { amountPaise: 25_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null, amountPaise: 25_000 });
-      expect((await send('put', `/v3/admin/services/prices/${p.body.data.id}`, 'OPERATIONS', { amountPaise: 26_000 })).body.data.amountPaise).toBe(26_000);
+      for (const role of ['OPERATIONS', 'ADMIN']) expect((await send('post', '/v3/admin/services/FLYER_DESIGN/prices', role, { amountPaise: 25_000 })).status).toBe(403);
+      const p = await send('post', '/v3/admin/services/FLYER_DESIGN/prices', 'SUPER_ADMIN', { amountPaise: 25_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null, amountPaise: 25_000 });
+      expect((await send('put', `/v3/admin/services/prices/${p.body.data.id}`, 'OPERATIONS', { amountPaise: 26_000 })).status).toBe(403);
+      expect((await send('put', `/v3/admin/services/prices/${p.body.data.id}`, 'SUPER_ADMIN', { amountPaise: 26_000 })).body.data.amountPaise).toBe(26_000);
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'OPERATIONS', { effectiveFrom: future() })).status).toBe(403);
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/retire`, 'OPERATIONS')).status).toBe(403);
       const ok = await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'SUPER_ADMIN', { effectiveFrom: future() });
@@ -113,20 +115,21 @@ describe('services API', () => {
       const c = await send('post', '/v3/admin/packs', 'OPERATIONS', { key: 'SEO_PACK', name: 'Search pack', description: 'Three search tasks.', items: [{ serviceKey: 'SEO_TASK', count: 3 }], validityDays: 60 });
       expect(c.status).toBe(200); expect(c.body.data).toMatchObject({ status: 'DRAFT', validityDays: 60 });
       expect((await send('post', '/v3/admin/packs', 'OPERATIONS', { key: 'BAD_PACK', name: 'Bad', description: 'Bad pack.', items: [{ serviceKey: 'NOPE', count: 1 }] })).body.code).toBe('PACK_INVALID');
-      const p = await send('post', '/v3/admin/packs/SEO_PACK/prices', 'OPERATIONS', { amountPaise: 20_000 });
+      expect((await send('post', '/v3/admin/packs/SEO_PACK/prices', 'OPERATIONS', { amountPaise: 20_000 })).status).toBe(403);
+      const p = await send('post', '/v3/admin/packs/SEO_PACK/prices', 'SUPER_ADMIN', { amountPaise: 20_000 });
       expect((await send('post', `/v3/admin/packs/prices/${p.body.data.id}/approve`, 'OPERATIONS', { effectiveFrom: future() })).status).toBe(403);
       expect((await send('post', `/v3/admin/packs/prices/${p.body.data.id}/approve`, 'SUPER_ADMIN', { effectiveFrom: future() })).body.data.status).toBe('APPROVED');
       expect((await get('/v3/admin/packs/SEO_PACK', 'MARKETING')).body.data.prices).toBeUndefined();
     });
     it('approval needs a real future date; a bad body, an unknown key and an extra field are refused with plain codes', async () => {
-      const p = await send('post', '/v3/admin/services/SEO_TASK/prices', 'OPERATIONS', { amountPaise: 9_000 });
+      const p = await send('post', '/v3/admin/services/SEO_TASK/prices', 'SUPER_ADMIN', { amountPaise: 9_000 });
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'SUPER_ADMIN', {})).status).toBe(400);
       expect((await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'SUPER_ADMIN', { effectiveFrom: 'next week' })).status).toBe(400);
       const past = await send('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, 'SUPER_ADMIN', { effectiveFrom: new Date(w.clock().getTime() - 3_600_000).toISOString() });
       expect([past.status, past.body.code, past.body.problem]).toEqual([409, 'SERVICE_PRICE_STATE', 'EFFECTIVE_DATE_IN_PAST']);
-      expect((await send('post', '/v3/admin/services/NOPE/prices', 'OPERATIONS', { amountPaise: 1_000 })).status).toBe(404);
-      expect((await send('post', '/v3/admin/services/SEO_TASK/prices', 'OPERATIONS', { amountPaise: 1_000, status: 'APPROVED' })).status).toBe(400);   // a price cannot be created already approved
-      expect((await send('post', '/v3/admin/services/SEO_TASK/prices', 'OPERATIONS', { amountPaise: 0 })).status).toBe(400);
+      expect((await send('post', '/v3/admin/services/NOPE/prices', 'SUPER_ADMIN', { amountPaise: 1_000 })).status).toBe(404);
+      expect((await send('post', '/v3/admin/services/SEO_TASK/prices', 'SUPER_ADMIN', { amountPaise: 1_000, status: 'APPROVED' })).status).toBe(400);   // a price cannot be created already approved
+      expect((await send('post', '/v3/admin/services/SEO_TASK/prices', 'SUPER_ADMIN', { amountPaise: 0 })).status).toBe(400);
       expect((await send('post', '/v3/admin/services', 'OPERATIONS', svc({ key: 'bad key' }))).body.code).toBe('SERVICE_INVALID');
     });
   });

@@ -55,7 +55,7 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
       await setSetting('identityOtpTtlSeconds', 600); await setSetting('identityOtpMaxAttempts', 3); await setSetting('identityDocMaxBytes', 1_000_000);
       step = 'open and credit the wallets'; for (const [t, v] of [[tokenA, A], [tokenB, B]] as const) { await must(step, api('get', '/v3/me/wallet', t)); await must('billing profile', api('put', '/v3/me/wallet/billing-profile', t, { stateCode: '33' })); await must(step, api('post', `/v3/admin/wallets/${v.vendorId}/adjustments`, sup, { amountPaise: 800_000, reason: 'suite credit', idempotencyKey: key() })); }
       step = 'price book'; for (const [tld, kind, value] of [['com', 'PERCENT_BP', 2000]] as const) {
-        const p = await must(step, api('post', '/v3/admin/domain-margins', ops, { tld, kind, value })); marginIds.push((p.body as { data: { id: string } }).data.id);
+        const p = await must(step, api('post', '/v3/admin/domain-margins', sup, { tld, kind, value })); marginIds.push((p.body as { data: { id: string } }).data.id);
         await must(step, api('post', `/v3/admin/domain-margins/${marginIds[0]}/approve`, sup, { effectiveFrom: new Date(Date.now() - 60_000).toISOString() }));
       }
       step = 'identity checks'; await identity(tokenA, A, ops); await identity(tokenB, B, ops);
@@ -137,7 +137,7 @@ describe('domain sales on staging (fake registrar, real database and wallet)', (
   });
 
   it('a transfer in is held at the start and charged only when it finishes; a failed one gives the hold back; the code is never stored', async () => {
-    const m = await api('post', '/v3/admin/domain-margins', ops, { tld: 'transfer.com', kind: 'PERCENT_BP', value: 1000 }); marginIds.push(m.body.data.id);
+    const m = await api('post', '/v3/admin/domain-margins', sup, { tld: 'transfer.com', kind: 'PERCENT_BP', value: 1000 }); marginIds.push(m.body.data.id);
     expect((await api('post', `/v3/admin/domain-margins/${m.body.data.id}/approve`, sup, { effectiveFrom: new Date(Date.now() - 60_000).toISOString() })).status).toBe(200);
     const d = domain('moved'); const code = 'Auth-Code-v3test-7Zq!'; const before = await balance(A);
     const q = await api('post', '/v3/me/domain-sales/transfer-quote', tokenA, { domain: d }); expect(q.status).toBe(200); expect(q.body.data).toMatchObject({ kind: 'TRANSFER_IN', totalPaise: 103_840 });

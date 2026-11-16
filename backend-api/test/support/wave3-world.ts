@@ -22,7 +22,8 @@ export class TestGate extends PaymentsGate {
 export function flow(chosen: GatewayName = 'razorpay') {
   const w = billingWorld();
   w.settings.over = { paymentsMode: 'test', paymentGateway: chosen };
-  const settings = { get: async (): Promise<BillingSettings> => ({ ...DEFAULT_BILLING_SETTINGS, graceDays: 7, upgradeProration: 'NONE', renewalReminderDays: [14, 7, 1], ...w.settings.over }) } as never;
+  const settingsObj = { get: async (): Promise<BillingSettings> => ({ ...DEFAULT_BILLING_SETTINGS, graceDays: 7, upgradeProration: 'NONE', renewalReminderDays: [14, 7, 1], ...w.settings.over }) };
+  const settings = settingsObj as never;
   const gate = new TestGate(settings);
   const gws = { razorpay: new InMemoryGateway('razorpay', { signing: secret(), webhook: secret() }), cashfree: new InMemoryGateway('cashfree', { signing: secret(), webhook: secret() }) };
   gate.gws.set('razorpay', gws.razorpay); gate.gws.set('cashfree', gws.cashfree);
@@ -33,7 +34,7 @@ export function flow(chosen: GatewayName = 'razorpay') {
   let k = 0;
   const buy = (over: Partial<{ planKey: string; termMonths: number }> = {}, vendorId = 'v1') => orders.create(vendorId, { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: `wave3-key-${++k}-abcdef`, ...over }, VENDOR);
   const invoices = () => w.repo.invoices.length;
-  return { w, gate, gws, settings, settlement, orders, buy, invoices, queued, gw: gws[chosen], set: (over: Partial<BillingSettings>) => { w.settings.over = { ...w.settings.over, ...over }; } };
+  return { w, gate, gws, settings: settingsObj, settlement, orders, buy, invoices, queued, gw: gws[chosen], set: (over: Partial<BillingSettings>) => { w.settings.over = { ...w.settings.over, ...over }; } };
 }
 export type Flow = ReturnType<typeof flow>;
 

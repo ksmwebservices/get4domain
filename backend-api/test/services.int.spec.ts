@@ -50,7 +50,7 @@ describe('services, the price book and packs on staging', () => {
   it('staff build a service and a price: OPERATIONS proposes, only SUPER_ADMIN approves, and a proposal is never public', async () => {
     const c = await api('post', '/v3/admin/services', ops, { key: SK, name: 'Test poster service', shortDescription: 'A test service for the suite.', includesText: 'Nothing real is included.', approvalText: 'Nothing real is approved.', status: 'ACTIVE', publicVisible: true });
     expect(c.status).toBe(200);
-    const p = await api('post', `/v3/admin/services/${SK}/prices`, ops, { amountPaise: 50_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null });
+    const p = await api('post', `/v3/admin/services/${SK}/prices`, sup, { amountPaise: 50_000 }); expect(p.body.data).toMatchObject({ status: 'PROPOSED', effectiveFrom: null });
     expect((await api('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, ops, { effectiveFrom: soon() })).status).toBe(403);
     expect((await api('get', '/v3/public/services')).body.data.items.some((i: { key: string }) => i.key === SK)).toBe(false);
     expect((await api('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, sup, { effectiveFrom: soon() })).body.data.status).toBe('APPROVED');
@@ -79,7 +79,7 @@ describe('services, the price book and packs on staging', () => {
     await api('put', '/v3/me/wallet/billing-profile', tokenA, { stateCode: '33' });
     expect((await api('post', `/v3/admin/wallets/${A.vendorId}/adjustments`, sup, { amountPaise: 400_000, reason: 'suite credit', idempotencyKey: key() })).status).toBe(200);
     expect((await api('post', '/v3/admin/packs', ops, { key: PK, name: 'Test pack', description: 'A test pack for the suite.', items: [{ serviceKey: SK, count: 3 }], validityDays: 30, status: 'ACTIVE' })).status).toBe(200);
-    const pp = await api('post', `/v3/admin/packs/${PK}/prices`, ops, { amountPaise: 100_000 });
+    const pp = await api('post', `/v3/admin/packs/${PK}/prices`, sup, { amountPaise: 100_000 });
     expect((await api('post', `/v3/admin/packs/prices/${pp.body.data.id}/approve`, sup, { effectiveFrom: soon() })).status).toBe(200); await new Promise((r) => setTimeout(r, 2600));
     const k = key(); const a = await api('post', `/v3/me/packs/${PK}/purchase`, tokenA, { idempotencyKey: k }); const b = await api('post', `/v3/me/packs/${PK}/purchase`, tokenA, { idempotencyKey: k });
     expect(a.status).toBe(200); expect(a.body.data).toMatchObject({ packKey: PK, paidPaise: 100_000, remaining: { [SK]: 3 }, replay: false }); expect(b.body.data).toMatchObject({ id: a.body.data.id, replay: true });

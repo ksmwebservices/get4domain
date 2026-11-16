@@ -5,7 +5,6 @@ export class CreateOrderDto {
   @IsString() @MaxLength(60) @Matches(/^[a-z][a-z0-9_]*$/, { message: 'planKey must be a plan key such as handyman_pro' }) planKey!: string;
   @Type(() => Number) @IsInt() @IsIn([3, 6, 12]) termMonths!: number;
   @IsString() @MinLength(8) @MaxLength(80) @Matches(/^[A-Za-z0-9_-]+$/, { message: 'idempotencyKey may only hold letters, digits, dash and underscore' }) idempotencyKey!: string;
-  @IsOptional() @IsString() @MaxLength(40) promoCode?: string;
 }
 /** Razorpay hands the browser a payment id and a signature, and both are required for it (the service refuses a missing one with PAYMENT_SIGNATURE_INVALID). Cashfree signs no return: the body may be empty and the server asks the gateway. */
 export class ConfirmOrderDto {

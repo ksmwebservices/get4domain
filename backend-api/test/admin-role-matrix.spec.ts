@@ -84,7 +84,7 @@ const MARKETING_DENIED = [
   'GET /v3/admin/service-requests', 'POST /v3/admin/service-requests/sla-sweep', 'POST /v3/admin/service-requests/auto-approve-run', 'GET /v3/admin/service-requests/:id', 'POST /v3/admin/service-requests/:id/assign', 'POST /v3/admin/service-requests/:id/status',
   'POST /v3/admin/service-requests/:id/deliverables', 'POST /v3/admin/service-requests/:id/reject', 'POST /v3/admin/service-requests/:id/retry-grant', 'POST /v3/admin/vendors/:vendorId/service-requests',
   // B4 slice 5.16b: changing the catalogue and proposing or editing a price: OPERATIONS and SUPER_ADMIN
-  'POST /v3/admin/services', 'PUT /v3/admin/services/:key', 'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs', 'PUT /v3/admin/packs/:key', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id',
+  'POST /v3/admin/services', 'PUT /v3/admin/services/:key', 'POST /v3/admin/packs', 'PUT /v3/admin/packs/:key',   // the catalogue; the PRICE writes moved to SUPER_ADMIN only in Wave 3 Part F (see below)
   // B4 slice 5.16a: wallets are money: reads, the reconciliation report and the expiry run are OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/wallets', 'GET /v3/admin/wallets/reconciliation', 'POST /v3/admin/wallets/expiry-run', 'GET /v3/admin/wallets/:vendorId', 'GET /v3/admin/wallets/:vendorId/ledger', 'GET /v3/admin/wallets/:vendorId/reconcile',
   // B2 slice 5.1b: reading orders and the payment inbox is OPERATIONS and SUPER_ADMIN
@@ -116,7 +116,7 @@ const MARKETING_DENIED = [
   // 5.13b: act on behalf and the onboarding queue
   'POST /v3/admin/vendors/:id/act-on-behalf', 'POST /v3/admin/act-on-behalf/:sessionId/end', 'GET /v3/admin/act-on-behalf', 'GET /v3/admin/onboarding-queue',
   // 5.6d: domain sales and identity checks
-  'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
+  'GET /v3/admin/domain-orders', 'POST /v3/admin/vendors/:id/domains/register', 'GET /v3/admin/domain-margins', 'POST /v3/admin/registrar/recover', 'POST /v3/admin/registrar/reconcile', 'GET /v3/admin/registrar/runs',
   'GET /v3/admin/identity-checks', 'GET /v3/admin/vendors/:id/identity', 'POST /v3/admin/vendors/:id/identity/document', 'POST /v3/admin/vendors/:id/identity/approve', 'POST /v3/admin/vendors/:id/identity/reject',
   // 5.6c: own-domain automation and the domain log
   'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log', 'GET /v3/admin/vendors/:id/subdomain-log',
@@ -196,6 +196,8 @@ SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id');
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
 // Wave 3 Part E: the cash order and its confirmation. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (mark-paid is in SUPER_ONLY_ROUTES above and gains ADMIN the same way). OPERATIONS is refused (tested in wave3-cash.spec.ts).
 SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/cash-orders');
+// Wave 3 Part F: no role below SUPER_ADMIN changes a price: the service and pack price writes and the domain margin proposal are SUPER_ADMIN only (tested in wave3-no-discounts.spec.ts)
+SUPER_ONLY_ROUTES.push('POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id', 'POST /v3/admin/domain-margins');
 
 // SEO block: the keyword sets and page templates. The base table says SUPER_ADMIN for the writes and SUPER_ADMIN + MARKETING (SALES) for the reads; ADMIN is added for all five by
 // STAFF_ROLE_EXTENSIONS.ADMIN.allow and OPERATIONS and SUPPORT have no access (tested in seo-keywords.spec.ts).

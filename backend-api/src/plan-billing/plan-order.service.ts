@@ -3,7 +3,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { renderInvoiceHtml } from '../v3-vendor-gaps/core/gaps-core';
 import { gapError } from '../v3-vendor-gaps/vendor-gaps.errors';
 import { effectiveStatus } from '../plans/entitlements/entitlement-engine';
-import { priceQuote, resolveApplicableDiscounts, selectTaxRate } from '../plans/pricing/price-quote';
+import { priceQuote, selectTaxRate } from '../plans/pricing/price-quote';
 import { classifyChange, upgradeCreditPaise } from './core/amounts';
 import { OrderStatus } from './core/order-state';
 import { billingError, ORDER_NOT_FOUND_MESSAGE } from './plan-billing.errors';
@@ -50,7 +50,7 @@ export class PlanOrderService {
     };
   }
 
-  async create(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string; promoCode?: string }, actor: Actor): Promise<OrderView> {
+  async create(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string }, actor: Actor): Promise<OrderView> {
     const now = this.clock();
     const key = String(input.idempotencyKey ?? '');
     const prior = await this.repo.findOrderByIdempotency(vendorId, key);
@@ -86,7 +86,7 @@ export class PlanOrderService {
    * downgrade is refused), the upgrade credit and discounts apply, the tax comes from the tax rates. Shared by the online order (create) and plan renewal from the wallet, so both
    * charge exactly the same amount. Throws the same coded errors in the same order as before this was extracted.
    */
-  async buildQuote(vendorId: string, input: { planKey: string; termMonths: number; promoCode?: string }, now: Date, s: BillingSettings, opts: { withTax?: boolean } = {}) {
+  async buildQuote(vendorId: string, input: { planKey: string; termMonths: number }, now: Date, s: BillingSettings, opts: { withTax?: boolean } = {}) {
     const withTax = opts.withTax !== false;   // false = a wallet deduction: exactly the plan price, GST was already added at the refill (owner, 6 November 2026)
     if (!TERMS.includes(input.termMonths)) throw new BadRequestException(billingError('TERM_NOT_OFFERED', 'Choose a term of 3, 6 or 12 months.'));
     const plan = await this.repo.getPlanByKey(String(input.planKey ?? ''));
@@ -105,8 +105,8 @@ export class PlanOrderService {
     if (kind === 'DOWNGRADE') throw new ConflictException(billingError('PLAN_CHANGE_NOT_ALLOWED', 'A cheaper plan can be chosen when your current term ends.'));
     const credit = kind === 'UPGRADE' ? upgradeCreditPaise(s.upgradeProration, { amountPaise: sub.amountPaise, termMonths: sub.termMonths ?? 0, endsAt: sub.endsAt }, now) : 0;
 
-    const rules = resolveApplicableDiscounts(await this.repo.discountRules(), { now, termMonths: input.termMonths, planKey: plan.key, code: input.promoCode });
-    const quote = priceQuote({ basePaise: Math.max(0, price.amountPaise - credit), taxInclusive: withTax ? price.taxInclusive : false, discounts: rules.applicable, taxRatePercent: withTax ? tax.ratePercent : 0 });
+    // Version 3 has NO discount, coupon or offer (owner, 17 November 2026): the amount is the price book total (less the unused-term credit of an upgrade) plus GST on top, and nothing else. The discount rule tables are not read here.
+    const quote = priceQuote({ basePaise: Math.max(0, price.amountPaise - credit), taxInclusive: withTax ? price.taxInclusive : false, discounts: [], taxRatePercent: withTax ? tax.ratePercent : 0 });
     if (!Number.isInteger(quote.totalMinor) || quote.totalMinor < 100) throw new ConflictException(billingError('ORDER_NOT_PAYABLE', 'This amount cannot be paid online. Please contact support.'));
 
     return { plan, sub, price, tax, kind, credit, quote };

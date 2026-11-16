@@ -51,7 +51,7 @@ describe('service requests on staging (fake provider)', () => {
     await api('get', '/v3/me/wallet', tokenA); await api('get', '/v3/me/wallet', tokenB);
     await api('put', '/v3/me/wallet/billing-profile', tokenA, { stateCode: '33' }); await api('put', '/v3/me/wallet/billing-profile', tokenB, { stateCode: '33' });
     expect((await api('post', '/v3/admin/services', ops, { key: SK, name: 'Test request service', shortDescription: 'A test service for the suite.', includesText: 'Nothing real is included.', approvalText: 'Nothing real is approved.', status: 'ACTIVE', doneBy: 'TEAM', deliveryKind: 'TEAM_REQUEST' })).status).toBe(200);
-    const p = await api('post', `/v3/admin/services/${SK}/prices`, ops, { amountPaise: 50_000 }); await api('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, sup, { effectiveFrom: soon() });
+    const p = await api('post', `/v3/admin/services/${SK}/prices`, sup, { amountPaise: 50_000 }); await api('post', `/v3/admin/services/prices/${p.body.data.id}/approve`, sup, { effectiveFrom: soon() });
     await new Promise((r) => setTimeout(r, 2600)); await credit(A.vendorId, 1_000_000); await credit(B.vendorId, 200_000);
   }, 300000);
 

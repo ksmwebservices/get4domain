@@ -40,13 +40,13 @@ describe('creating an order', () => {
     expect(new Set(refusals.map((r) => r.message)).size).toBe(1); expect(w.repo.orders.size).toBe(0);
   });
   it('a vendor with no subscription cannot buy (their track is unknown)', async () => { w.repo.subs.length = 0; expect((await err(w.buy())).code).toBe('PLAN_NOT_PURCHASABLE'); });
-  it('discounts: an APPROVED promo code reduces the price before tax; an unapproved or wrong code does nothing', async () => {
-    w.repo.discounts.push({ type: 'PROMO', name: 'Launch', percentOff: 10, amountOffPaise: null, conditions: { code: 'LAUNCH' }, stackable: true, active: true, status: 'APPROVED', validFrom: new Date('2026-01-01T00:00:00Z'), validTo: null });
-    const withCode = await w.buy({}, 'v1'); expect(withCode.amountPaise).toBe(354_000);   // no code given
-    const o = await w.orders.create('v1', { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: 'key-promo-abcdefgh', promoCode: 'launch' }, VENDOR);
-    expect(o.amountPaise).toBe(Math.round(270_000 * 1.18)); expect(o.quote.discounts).toEqual([{ name: 'Launch', type: 'PROMO', amountPaise: 30_000 }]);
-    const wrong = await w.orders.create('v1', { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: 'key-promo-wrong12', promoCode: 'nope' }, VENDOR); expect(wrong.amountPaise).toBe(354_000);
-    w.repo.discounts[0].status = 'PROPOSED' as never; const draft = await w.orders.create('v1', { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: 'key-promo-draft12', promoCode: 'LAUNCH' }, VENDOR); expect(draft.amountPaise).toBe(354_000);
+  it('NO discounts in version 3: an approved promo or migration rule in the tables, and a code in the request, change nothing: the amount is the price book plus GST', async () => {
+    const rule = (over: object) => ({ type: 'PROMO', name: 'Launch', percentOff: 10, amountOffPaise: null, conditions: { code: 'LAUNCH' }, stackable: true, active: true, status: 'APPROVED', validFrom: new Date('2026-01-01T00:00:00Z'), validTo: null, ...over });
+    w.repo.discounts.push(rule({}) as never, rule({ type: 'MIGRATION', name: 'Migrate', percentOff: 50, conditions: {} }) as never, rule({ type: 'PROMO', name: 'Everyone', percentOff: 100, conditions: {} }) as never);
+    const plain = await w.buy({}, 'v1'); expect(plain.amountPaise).toBe(354_000); expect(plain.quote.discounts).toEqual([]);
+    // a client that sends a code is refused by the validation pipe (unknown field); a caller that bypasses it (a direct service call) still pays the full price
+    const o = await w.orders.create('v1', { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: 'key-promo-abcdefgh', promoCode: 'launch' } as never, VENDOR);
+    expect(o.amountPaise).toBe(354_000); expect(o.quote.discounts).toEqual([]);
   });
   it('IDEMPOTENT: the same key returns the same order and creates no second provider order; the same key for a different plan or term is refused', async () => {
     const a = await w.buy({ idempotencyKey: 'same-key-abcdefgh' }); const b = await w.buy({ idempotencyKey: 'same-key-abcdefgh' });
@@ -64,7 +64,7 @@ describe('creating an order', () => {
     expect(await err(w.buy())).toMatchObject({ code: 'PAYMENT_PROVIDER_ERROR' }); expect([...w.repo.orders.values()][0].status).toBe('FAILED');
   });
   it('an amount that is not payable online (under one rupee after credit) is refused', async () => {
-    w.repo.discounts.push({ type: 'PROMO', name: 'Free', percentOff: 100, amountOffPaise: null, conditions: {}, stackable: true, active: true, status: 'APPROVED', validFrom: new Date('2026-01-01T00:00:00Z'), validTo: null });
+    w.repo.prices.find((p) => p.planId === w.ids.pro && p.termMonths === 3)!.row.amountPaise = 50;   // a price book row of 50 paise plus GST is still under one rupee
     expect(await err(w.buy())).toMatchObject({ code: 'ORDER_NOT_PAYABLE' });
   });
 });

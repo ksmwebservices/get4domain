@@ -37,7 +37,7 @@ export class PlanRenewalService {
     private readonly walletSettings: WalletSettingsService, @Inject(BillingSettingsService) private readonly billing: Pick<BillingSettingsService, 'get'>,
   ) {}
 
-  async renew(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string; promoCode?: string }, actor: Actor): Promise<RenewalView> {
+  async renew(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string }, actor: Actor): Promise<RenewalView> {
     const key = String(input.idempotencyKey ?? '');
     if (!KEY.test(key)) throw new ConflictException(billingError('IDEMPOTENCY_CONFLICT', 'The request key must be 8 to 80 letters, digits, dashes or underscores.'));
     const w = await this.wallet.syncActivation(vendorId);
