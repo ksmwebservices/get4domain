@@ -9,3 +9,6 @@ prod-migrations*.csv*
 # V3 live environment file: created on the server, never committed (job L)
 .env.live
 backend-api/.env.live
+
+# the staging schema dump used to baseline the live database (job M): never committed
+backend-api/live-baseline/
