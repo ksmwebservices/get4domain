@@ -12,6 +12,7 @@ import { ThemeRenderService } from '../site-publish/renderer/theme-render.servic
 import { TermsService } from '../terms/terms.service';
 import { b3Error } from '../b3-settings/b3-errors';
 import { SeedInput } from './core/seeded';
+import { isListableCategory, kitCategoryFor, ListableCategory, listableCategories } from '../directory/core/listable-categories';
 import { BusinessFacts, ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
 import { ConflictException, UnprocessableEntityException } from '@nestjs/common';
 
@@ -72,8 +73,17 @@ export class ClaimsHandover extends ClaimHandover {
 @Injectable()
 export class DirectorySeededFacts extends SeededFacts {
   constructor(private readonly directory: DirectoryRepository, private readonly themes: ThemeRenderService) { super(); }
-  categoryExists(id: string): boolean { return this.themes.kitApi.hasCategory(id); }
-  trackOf(categoryId: string): string { return this.themes.kitApi.categoryById(categoryId).track; }
+  /** K1: every catalogue category is listable (the 196), plus the kit's own; the kit only decides which DESIGN a site uses (see directory/core/listable-categories.ts). */
+  categoryExists(id: string): boolean { return isListableCategory(id, (k) => this.themes.kitApi.hasCategory(k)); }
+  trackOf(categoryId: string): string {
+    const kit = this.themes.kitApi; const kitId = kitCategoryFor(categoryId, (k) => kit.hasCategory(k));
+    if (!kitId) throw new Error(`no site design for the category ${categoryId}`);
+    return kit.categoryById(kitId).track;
+  }
+  async listableCategories(): Promise<Array<ListableCategory & { inDirectory: boolean }>> {
+    const kit = this.themes.kitApi; const rows = await this.directory.listCategories(); const have = new Set(rows.filter((r) => r.parentId !== null).map((r) => r.slug));
+    return listableCategories(kit.CATEGORIES.map((c) => ({ id: c.id, label: c.label, family: c.family }))).map((c) => ({ ...c, inDirectory: have.has(c.key) }));
+  }
   async factsOf(vendorId: string): Promise<BusinessFacts | null> {
     const b = await this.directory.getBusinessByVendor(vendorId);
     if (!b) return null;

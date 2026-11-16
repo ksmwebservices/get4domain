@@ -16,6 +16,8 @@ export abstract class SeededPublisher {
   async ownerTermsAccepted(_vendorId: string): Promise<boolean> { return true; }
 }
 
+import type { ListableCategory } from '../directory/core/listable-categories';
+
 /** The claim link for a seeded business: given to staff ONCE (nothing is emailed or sent), and revoked on request. */
 export abstract class ClaimHandover {
   abstract issue(vendorId: string, actor: Actor): Promise<{ claimUrl: string; expiresAt: string }>;
@@ -28,4 +30,6 @@ export abstract class SeededFacts {
   abstract factsOf(vendorId: string): Promise<BusinessFacts | null>;
   abstract categoryExists(id: string): boolean;
   abstract trackOf(categoryId: string): string;
+  /** K1: every category a seeded listing can be made in, with its pack and family, and whether its row is in the directory yet. Default: none (a twin without a directory). */
+  async listableCategories(): Promise<Array<ListableCategory & { inDirectory: boolean }>> { return []; }
 }

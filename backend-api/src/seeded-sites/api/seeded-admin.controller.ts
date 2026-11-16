@@ -56,6 +56,9 @@ export class SeededAdminController {
   @Post('batches/apply') @HttpCode(200) @ApiOperation({ summary: 'Create the sites of a CSV batch that pass validation' })
   apply(@Body() dto: BatchDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.seeded.batch(dto.csv, dto.fileName ?? 'batch.csv', 'APPLIED', this.who(user, req), dto.overrideReason); }
 
+  @Get('categories') @ApiOperation({ summary: 'Every category a seeded listing can be made in (all 196 of the catalogue plus the theme kit\'s own), with pack, family and whether its directory row exists yet' })
+  categories() { return this.seeded.listableCategories(); }
+
   @Get('register') @ApiOperation({ summary: 'The do-not-contact register (hash prefixes only; OPERATIONS and SUPER_ADMIN)' })
   async register(@Query() q: RegisterListDto) { const { skip, take, page, pageSize } = pageArgs(q); const r = await this.seeded.readRegister(skip, take); return paged(r.items, r.total, page, pageSize); }
 

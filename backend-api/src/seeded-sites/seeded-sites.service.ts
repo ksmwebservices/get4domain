@@ -75,6 +75,9 @@ export class SeededSitesService {
     });
   }
 
+  /** K1: the categories the admin form offers (all of the catalogue), with pack and family. */
+  async listableCategories() { const items = await this.facts.listableCategories(); return { items, total: items.length, missingFromDirectory: items.filter((c) => !c.inDirectory).length }; }
+
   // ── create ──
   /**
    * Creates one seeded site. Refuses: missing public fields or the staff checkbox (400), a phone on the register or a business that was removed before (409, unless a SUPER_ADMIN gives an

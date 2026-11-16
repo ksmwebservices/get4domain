@@ -1,3 +1,4 @@
+import { kitCategoryFor } from '../../directory/core/listable-categories';
 import { ResolvedEntitlements } from '../../plans/entitlements/entitlement-engine';
 import { Kit, loadKit } from '../renderer/renderer-loader';
 import { SiteLimits, SourceDocument } from './content-types';
@@ -36,6 +37,8 @@ export function categoryFor(doc: SourceDocument, kit: Kit, map: CategoryMap): st
     if (kit.hasCategory(key)) return key;
     const first = map.packs[key]?.[0];
     if (first && kit.hasCategory(first)) return first;
+    const fallback = kitCategoryFor(key, (k) => kit.hasCategory(k));   // K1: a catalogue category the kit has no design for uses the kit category of its pack
+    if (fallback) return fallback;
   }
   return null;
 }

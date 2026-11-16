@@ -25,7 +25,9 @@ export class CreateDirectoryProfileStep implements ProvisioningStep {
     if (existing) return { outputRef: { businessId: existing.id } };
 
     const b = parseBusinessInput(ctx.input);
-    const cat = (await this.repo.listCategories()).find((c) => c.themeCategoryId === b.category);
+    // K1: the category is found by its catalogue key (the slug of a category row); the older theme kit link is still honoured
+    const all = await this.repo.listCategories();
+    const cat = all.find((c) => c.parentId !== null && c.slug === b.category) ?? all.find((c) => c.themeCategoryId === b.category);
     if (!cat) throw new StepError('DIRECTORY_CATEGORY_MISSING', false);
     const locs = await this.repo.listLocations();
     const city = (b.city ?? '').trim().toLowerCase();
