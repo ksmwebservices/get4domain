@@ -1,0 +1,49 @@
+# The V3 LIVE API only (job L). No real value is in this file. Run with the variables file:
+#   docker compose -f docker-compose.v3live.yml --env-file .env.live up -d --build
+# .env.live is created on the server from .env.live.example and is NEVER committed (it is in .gitignore).
+# V3_DOMAIN (the live domain) is the one variable the compose file itself needs; the rest reaches the API through env_file.
+name: get4domain-v3live
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.v3live
+    image: ${V3_API_IMAGE:-get4domain-api:v3live}
+    container_name: get4domain_v3live_api
+    restart: unless-stopped
+    env_file:
+      - .env.live
+    environment:
+      NODE_ENV: production
+      V3_LIVE: "true"
+      V3_DOMAIN: ${V3_DOMAIN:?V3_DOMAIN must be set (in .env.live, passed with --env-file)}
+      PORT: "3008"
+    # Bound to the machine's own loopback address ONLY: nginx on the same machine is the one public door. Never 0.0.0.0.
+    ports:
+      - "127.0.0.1:${V3_API_PORT:-3008}:3008"
+    volumes:
+      - public_uploads:/app/uploads
+      - private_uploads:/app/private-uploads
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # Log rotation: five files of ten megabytes at most, then the oldest is dropped.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - v3live_net
+
+volumes:
+  public_uploads:
+    name: get4domain_v3live_public_uploads
+  private_uploads:
+    name: get4domain_v3live_private_uploads
+
+networks:
+  v3live_net:
+    driver: bridge

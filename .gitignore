@@ -5,3 +5,7 @@
 
 # Production export (names/timestamps) — never commit
 prod-migrations*.csv*
+
+# V3 live environment file: created on the server, never committed (job L)
+.env.live
+backend-api/.env.live

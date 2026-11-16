@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.env
+.env.*
+!.env.live.example
+*.log
+coverage
+test
+uploads
+private-uploads
+Dockerfile*
+docker-compose*.yml
