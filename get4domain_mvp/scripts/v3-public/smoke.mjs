@@ -192,6 +192,23 @@ async function flagOn() {
   ok((await get(ON, '/directory-pages/chennai')).status === 404 && (await get(ON, '/directory-robots')).status === 404, 'rewrite targets cannot be typed');
 
   for (const p of ['/pricing', '/terms', '/about']) ok((await get(ON, p)).status === 200, `flag on: live page ${p} untouched`);
+
+  // Site-wide JSON-LD (Organization, SoftwareApplication, WebSite): left out of V3 public routes, kept everywhere else.
+  const ld = (html) => [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((m) => m[1]);
+  const hasRoot = (items) => items.some((s) => /"@type":"SoftwareApplication"/.test(s)) && items.some((s) => /"@type":"WebSite"/.test(s)) && items.some((s) => /"legalName"/.test(s));
+  const SITEWIDE = /Workspace|BOS|SoftwareApplication|"Organization"|"WebSite"/;
+  for (const p of ['/directory', '/chennai/plumbers', '/business/anand-electricals', '/claim', '/claim/screens', '/claim/mock-claim-token-00000000', '/account/login', '/legal/terms', '/legal']) {
+    const items = ld((await get(ON, p)).text);
+    ok(items.every((s) => !SITEWIDE.test(s)), `flag on: ${p} has none of the site-wide JSON-LD`);
+    if (['/claim', '/claim/screens', '/claim/mock-claim-token-00000000', '/account/login', '/legal/terms', '/legal'].includes(p)) ok(items.length === 0, `flag on: ${p} has no JSON-LD at all (${items.length})`);
+    else ok(items.length >= 1 && items.every((s) => /BreadcrumbList|LocalBusiness|CollectionPage/.test(s)), `flag on: ${p} has only the page model JSON-LD (${items.length})`);
+  }
+  for (const p of ['/pricing', '/terms']) {
+    ok(hasRoot(ld((await get(ON, p)).text)), `flag on: live page ${p} keeps its site-wide JSON-LD`);
+    ok(hasRoot(ld((await get(OFF, p)).text)), `flag off: live page ${p} keeps its site-wide JSON-LD`);
+    ok(ld((await get(ON, p)).text).join('') === ld((await get(OFF, p)).text).join(''), `${p}: the JSON-LD is identical with the flag on and off`);
+  }
+  ok(hasRoot(ld((await get(OFF, '/')).text)), 'flag off: the home page keeps its site-wide JSON-LD');
 }
 
 function noConsole() {

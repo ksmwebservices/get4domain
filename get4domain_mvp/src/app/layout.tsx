@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { AuthProvider } from '@/lib/auth-context';
 import { siteConfig, BRAND_TAGLINE, BRAND_TITLE, BRAND_DESCRIPTION } from '@/constants/site';
 import { organizationSameAs } from '@/lib/structured-data';
 import GoogleAnalytics from '@/components/seo/GoogleAnalytics';
+import { isV3PublicEnabled } from '@/lib/v3-public/flag';
+import { V3_ROUTE_HEADER } from '@/lib/v3-public/routes';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -90,10 +93,21 @@ export const viewport: Viewport = {
   themeColor: '#2563eb',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * V3 public site: its pages (directory, claim, account, legal) render only their own JSON-LD, so the site-wide marketing JSON-LD below is left out for them.
+ * The header is set by the middleware only while V3_PUBLIC_ENABLED is on. With the flag off headers() is never called, so every existing page keeps this JSON-LD and stays static.
+ */
+async function isV3PublicRoute(): Promise<boolean> {
+  if (!isV3PublicEnabled()) return false;
+  return (await headers()).get(V3_ROUTE_HEADER) === '1';
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const skipSiteJsonLd = await isV3PublicRoute();
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <head>
+        {!skipSiteJsonLd && (<>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -178,6 +192,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }),
           }}
         />
+        </>)}
       </head>
       <body className="font-sans text-slate-700 bg-white antialiased">
         <AuthProvider>
