@@ -2,7 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { ActivityService } from '../v3-activity/activity.service';
 import { adminGapError } from './admin-gaps.errors';
 import { AdminGapsStore } from './admin-gaps.store';
-import { checkNote, checkVendorFilter, permissionMatrix, VendorListQuery } from './core/admin-gaps-core';
+import { checkNote, checkVendorFilter, ownNameOf, permissionMatrix, VendorListQuery } from './core/admin-gaps-core';
 
 export interface StaffWho { id: string | null; email: string; ip: string | null }
 
@@ -19,7 +19,8 @@ export class AdminGapsService {
     const f = checkVendorFilter(q);
     if (!f.ok) throw adminGapError(400, 'ADMIN_GAP_INVALID', 'Some filters need fixing.', { fields: f.errors });
     const r = await this.store.listVendors(f.value);
-    return { items: r.items.map((v) => ({ ...v, createdAt: v.createdAt.toISOString() })), total: r.total, page: f.value.page, pageSize: f.value.pageSize };
+    // K4: `name` is the vendor's own name (null while no person's name is on record), `businessName` is the business, each in its own field
+    return { items: r.items.map((v) => ({ ...v, name: ownNameOf(v.name, v.businessName), createdAt: v.createdAt.toISOString() })), total: r.total, page: f.value.page, pageSize: f.value.pageSize };
   }
 
   private async mustExist(vendorId: string): Promise<void> {

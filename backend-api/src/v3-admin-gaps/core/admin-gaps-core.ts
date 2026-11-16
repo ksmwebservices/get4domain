@@ -1,5 +1,6 @@
 import { cleanText } from '../../v3-pack-records/core/record-core';
 import { ADMIN_ROLE_MATRIX, effectiveRolesFor, StaffRole, STAFF_ROLE_EXTENSIONS } from '../../auth/guards/admin-role-matrix';
+import { SEEDED_OWNER_PLACEHOLDER } from '../../provisioning/steps/business-input';
 
 /** Pure rules of the Wave 2 Part C admin routes. No clock, randomness or database. */
 
@@ -51,6 +52,20 @@ export function checkVendorFilter(q: VendorListQuery, allowedStatuses: readonly 
 }
 
 // ── C5: staff notes ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+/**
+ * The vendor's OWN name for a row of the vendors list (Wave 2 job K4): the person on the account, kept apart from the business name. Null when no person's name is on record: it is empty, it is the
+ * placeholder a seeded listing's login carries until its owner is known, or it is only a copy of the business name (nothing then tells the person from the business). The business name is always
+ * sent as its own field, so a screen shows both and never has to guess which one `name` is.
+ */
+export function ownNameOf(name: unknown, businessName: unknown): string | null {
+  const n = typeof name === 'string' ? name.replace(/\s+/g, ' ').trim() : '';
+  if (!n) return null;
+  const key = (s: string): string => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  if (key(n) === key(SEEDED_OWNER_PLACEHOLDER)) return null;
+  if (typeof businessName === 'string' && key(businessName) === key(n)) return null;
+  return n;
+}
+
 export const NOTE_MAX = 2000;
 export function checkNote(body: unknown): { ok: true; value: string } | { ok: false; error: string } {
   const c = cleanText(body, NOTE_MAX, true);

@@ -1,5 +1,8 @@
 import { StepError } from '../provisioning.errors';
 
+/** The name a seeded business's login carries until its owner is known: staff made the listing from public facts, so nobody's own name is on record (Wave 2 job K4 reads this to show no name). */
+export const SEEDED_OWNER_PLACEHOLDER = 'Business owner';
+
 export const TRACK_NAMES = ['handyman', 'professional', 'ecommerce'] as const;
 export type TrackName = (typeof TRACK_NAMES)[number];
 
@@ -66,7 +69,7 @@ export function parseBusinessInput(raw: unknown): BusinessInput {
   if (typeof raw !== 'object' || raw === null) return bad();
   const r = raw as Record<string, unknown>;
   const seeded = r.mode === 'SEEDED';
-  const businessName = str(r.businessName, 2, 120); const ownerName = seeded ? (str(r.ownerName, 2, 120) ?? 'Business owner') : str(r.ownerName, 2, 120); const city = str(r.city, 2, 80);
+  const businessName = str(r.businessName, 2, 120); const ownerName = seeded ? (str(r.ownerName, 2, 120) ?? SEEDED_OWNER_PLACEHOLDER) : str(r.ownerName, 2, 120); const city = str(r.city, 2, 80);
   const category = str(r.category, 2, 60); const language = typeof r.language === 'string' && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(r.language) ? r.language : null;
   const track = TRACK_NAMES.find((t) => t === r.track);
   // a SEEDED job never uses a public email as a login: it carries a placeholder address (made when the job was created) that no mailbox exists for
