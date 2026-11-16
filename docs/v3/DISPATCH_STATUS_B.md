@@ -13,7 +13,7 @@
 | K1 S7 step 2 register and login | DONE | b8c8c29 | /register, /directory-api/register and /subdomain; /login rewrites to the Slice 4 sign-in |
 | K1 S7 step 3 referral | DONE | e273155 | /r/{code} route handler sets the cookie; /referral-link neutral page |
 | K1 S7 step 4 marketing pages | DONE | 61c5be4 | six pages; sitemap needs no addition (same addresses as the live pages) |
-| K1 S7 step 5 tests and checks | TODO | | |
+| K1 S7 step 5 tests and checks | DONE | b6c79b2 | 216 unit tests, 795 smoke checks (three servers) |
 | K1 S7 step 6 docs | TODO | | |
 
 ## ASSUMPTIONS
