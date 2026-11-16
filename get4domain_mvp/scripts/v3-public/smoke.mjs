@@ -55,7 +55,7 @@ function sourceFiles(dir, out = []) {
 }
 
 async function flagOff() {
-  for (const p of ['/directory', '/claim', '/claim/screens', '/claim/start/sri-murugan-plumbing', '/legal', '/legal/terms', '/account/login', '/account/register', '/sitemaps/directory-index.xml', '/sitemaps/directory-1.xml', '/directory-go/b-1001', '/directory-pages/chennai', '/directory-robots']) {
+  for (const p of ['/directory', '/claim', '/claim/screens', '/claim/start/sri-murugan-plumbing', '/legal', '/legal/terms', '/account/login', '/account/register', '/account/forgot-password', '/account/reset-password', '/sitemaps/directory-index.xml', '/sitemaps/directory-1.xml', '/directory-go/b-1001', '/directory-pages/chennai', '/directory-robots']) {
     ok((await get(OFF, p)).status === 404, `flag off: ${p} is a 404`);
   }
   ok((await get(OFF, '/directory-api/claim/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"slug":"x"}' })).status === 404, 'flag off: the claim proxy is a 404');
@@ -171,7 +171,14 @@ async function flagOn() {
   for (const t of ['This listing is not claimed', 'This listing is being prepared', 'This listing is already claimed', 'This listing is live', 'This link is not valid', 'Email is switched off', 'Waiting for approval', 'Your site is live']) ok(screens.includes(t), `claim screen: ${t}`);
   ok(/Your site is live/.test((await get(ON, '/claim/live')).text), 'go-live notice page');
 
-  for (const p of ['/account/login', '/account/register', '/account/forgot-password']) pageChecks(p, await get(ON, p));
+  for (const p of ['/account/login', '/account/register', '/account/forgot-password', '/account/reset-password?token=mock-reset-token-000000000']) pageChecks(p, await get(ON, p));
+  const reset = await get(ON, '/account/reset-password?token=mock-reset-token-000000000');
+  ok(/Choose a new password/.test(reset.text) && /Save the new password/.test(reset.text) && /no-referrer/.test(reset.text) && /noindex/.test(reset.text), 'reset page shows the form, no referrer, noindex');
+  ok(/This reset link is not valid/.test((await get(ON, '/account/reset-password')).text), 'reset page without a token says the link is not valid');
+  const resetApi = await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'mock-reset-token-000000000', password: 'Newpass123' }) });
+  ok((await resetApi.json()).ok === true, 'reset confirm answers ok in sample mode');
+  const mailOffApi = await fetch(`http://localhost:${ON}/directory-api/auth/forgot`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'mailoff@example.invalid' }) });
+  ok((await mailOffApi.json()).code === 'MAIL_DISABLED', 'reset request in sample mode can answer email switched off');
 
   for (const p of ['/legal/terms', '/legal/privacy', '/legal/refund-and-cancellation', '/legal/wallet-terms', '/legal/directory-listing-terms', '/legal']) {
     const r = await get(ON, p);

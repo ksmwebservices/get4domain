@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { emailOk } from '@/lib/v3-public/claim';
-import { S } from '@/lib/v3-public/strings';
+import { messageForCode, S } from '@/lib/v3-public/strings';
 import type { ClaimCallResult } from '@/lib/v3-public/types';
 
 async function call(action: string, body: Record<string, unknown>): Promise<ClaimCallResult> {
@@ -153,6 +153,7 @@ export function ForgotForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [mailOff, setMailOff] = useState(false);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -162,9 +163,19 @@ export function ForgotForm() {
     const r = await call('forgot', { email });
     setBusy(false);
     if (r.ok) { setSent(true); return; }
+    if (r.code === 'MAIL_DISABLED') { setMailOff(true); return; }
     setError(failureText(r, S.errors.generic));
   }
 
+  if (mailOff) {
+    return (
+      <section role="status" aria-labelledby="forgot-mail-off" className="rounded-xl border border-amber-300 bg-amber-50 p-6">
+        <h2 id="forgot-mail-off" className="font-semibold text-slate-900">{S.auth.forgot.mailOffTitle}</h2>
+        <p className="mt-2 text-sm text-slate-800">{S.auth.forgot.mailOff}</p>
+        <p className="mt-3 text-sm"><Link href="/account/login" className="text-primary-700 hover:underline">{S.auth.forgot.back}</Link></p>
+      </section>
+    );
+  }
   if (sent) {
     return (
       <section role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-6">
@@ -181,6 +192,65 @@ export function ForgotForm() {
         <input id="forgot-email" name="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={INPUT} />
       </Field>
       <button type="submit" disabled={busy} className={BUTTON}>{busy ? S.auth.working : S.auth.forgot.submit}</button>
+      <p className="mt-4 text-sm"><Link href="/account/login" className="text-primary-700 hover:underline">{S.auth.forgot.back}</Link></p>
+    </form>
+  );
+}
+
+/** The reset link of the email: `token` comes from the address (read by the page), the new password goes to this site only. */
+export function ResetForm({ token }: { token: string | null }) {
+  const [password, setPassword] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [invalidLink, setInvalidLink] = useState(false);
+
+  if (!token || invalidLink) {
+    return (
+      <section role="status" aria-labelledby="reset-invalid" className="rounded-xl border border-amber-300 bg-amber-50 p-6">
+        <h2 id="reset-invalid" className="font-semibold text-slate-900">{S.auth.reset.linkInvalidTitle}</h2>
+        <p className="mt-2 text-sm text-slate-800">{token ? S.auth.reset.linkInvalid : S.auth.reset.missingToken}</p>
+        <p className="mt-3 text-sm"><Link href="/account/forgot-password" className="text-primary-700 hover:underline">{S.auth.reset.newLink}</Link></p>
+      </section>
+    );
+  }
+  if (done) {
+    return (
+      <section role="status" className="rounded-xl border border-emerald-300 bg-emerald-50 p-6">
+        <p className="font-medium text-slate-900">{S.auth.reset.done}</p>
+        <p className="mt-3 text-sm"><Link href="/account/login" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.auth.reset.signIn}</Link></p>
+      </section>
+    );
+  }
+
+  async function submit(e: React.FormEvent): Promise<void> {
+    e.preventDefault();
+    setError(null);
+    if (!strong(password)) { setError(S.auth.errors.passwordWeak); return; }
+    if (password !== repeat) { setError(S.auth.reset.mismatch); return; }
+    setBusy(true);
+    const r = await call('reset', { token, password });
+    setBusy(false);
+    setPassword('');
+    setRepeat('');
+    if (r.ok) { setDone(true); return; }
+    // A link that is spent, expired or unknown is one screen; a registered code gets its plain message; anything else is the generic one.
+    if (r.code === 'GRANT_INVALID' || r.status === 401 || r.status === 404 || r.status === 410) { setInvalidLink(true); return; }
+    setError(failureText(r, r.code && r.code !== 'GRANT_INVALID' ? messageForCode(r.code, r.status) : S.auth.errors.fieldsInvalid));
+  }
+
+  return (
+    <form onSubmit={submit} noValidate aria-labelledby="reset-title">
+      <h2 id="reset-title" className="sr-only">{S.auth.reset.title}</h2>
+      <Alert text={error} />
+      <Field id="reset-password" label={S.auth.reset.passwordLabel} hint={S.auth.fields.passwordRules}>
+        <input id="reset-password" name="password" type="password" autoComplete="new-password" aria-describedby="reset-password-hint" value={password} onChange={(e) => setPassword(e.target.value)} className={INPUT} />
+      </Field>
+      <Field id="reset-repeat" label={S.auth.reset.confirmLabel}>
+        <input id="reset-repeat" name="repeat" type="password" autoComplete="new-password" value={repeat} onChange={(e) => setRepeat(e.target.value)} className={INPUT} />
+      </Field>
+      <button type="submit" disabled={busy} className={BUTTON}>{busy ? S.auth.working : S.auth.reset.submit}</button>
       <p className="mt-4 text-sm"><Link href="/account/login" className="text-primary-700 hover:underline">{S.auth.forgot.back}</Link></p>
     </form>
   );

@@ -1,5 +1,5 @@
 import { INDUSTRIES } from '../../data/industries-list';
-import { emailOk, errorOf } from './claim';
+import { emailOk, errorOf, isMailOff } from './claim';
 import { useMocks } from './flag';
 import { callApi } from './proxy';
 import type { ClaimCallResult } from './types';
@@ -8,12 +8,20 @@ import type { ClaimCallResult } from './types';
  * The sign-in, sign-up and password-reset-request calls of the browser, answered by the server. The browser talks only to this site.
  * Nothing is kept: a successful sign-in only tells the page to continue to the business app, which signs the owner in itself (there is no token handoff yet, gap G2).
  */
-export type AuthAction = 'login' | 'register' | 'forgot';
-export const AUTH_ACTIONS: readonly string[] = ['login', 'register', 'forgot'];
+export type AuthAction = 'login' | 'register' | 'forgot' | 'reset';
+export const AUTH_ACTIONS: readonly string[] = ['login', 'register', 'forgot', 'reset'];
 
 export const MOCK_LOGIN_EMAIL = 'owner@example.invalid';
 export const MOCK_LOGIN_PASSWORD = 'Password1';
 export const MOCK_TAKEN_EMAIL = 'taken@example.invalid';
+/** Sample mode: this address gets the "email is switched off" answer on the reset request. */
+export const MOCK_MAIL_OFF_EMAIL = 'mailoff@example.invalid';
+/** Sample mode: a reset link that works, and one that has expired. */
+export const MOCK_RESET_TOKEN = 'mock-reset-token-000000000';
+export const MOCK_RESET_EXPIRED = 'mock-reset-expired-0000000';
+
+/** A reset token is opaque to this site: only its shape is checked (letters, digits and . _ ~ -), never its meaning. */
+export const RESET_TOKEN = /^[A-Za-z0-9._~-]{16,512}$/;
 
 const res = (ok: boolean, status: number, code: string | null, message: string | null = null): ClaimCallResult => ({ ok, status, code, message, data: ok ? { ok: true } : null });
 const invalid = (): ClaimCallResult => res(false, 400, 'DIRECTORY_INVALID');
@@ -48,11 +56,29 @@ export async function handleAuth(req: Request, action: AuthAction, body: Record<
     case 'forgot': {
       const email = text(body.email, 254);
       if (!email || !emailOk(email)) return invalid();
-      if (useMocks()) return res(true, 200, null);
-      const r = await callApi(req, '/auth/password/forgot', { method: 'POST', body: { email } });
+      if (useMocks()) return email === MOCK_MAIL_OFF_EMAIL ? res(false, 503, 'MAIL_DISABLED') : res(true, 200, null);
+      const r = await callApi(req, '/v3/account/password/reset/request', { method: 'POST', body: { email } });
       if (!r) return res(false, 0, null);
-      // The API answers the same whether or not the address has an account, so the page does too.
-      return r.status === 429 ? res(false, 429, null, errorOf(r.json).message) : res(true, 200, null);
+      const e = errorOf(r.json);
+      if (r.status === 429) return res(false, 429, null, e.message);
+      // Email switched off is a fact about the service, not about the account, so it can be said. Every other answer is the same "sent" answer: no hint whether the address has an account.
+      if (!r.ok && isMailOff(r.status, e.code)) return res(false, 503, 'MAIL_DISABLED');
+      return res(true, 200, null);
+    }
+    case 'reset': {
+      const token = text(body.token, 512);
+      const password = text(body.password, 128);
+      if (!token || !RESET_TOKEN.test(token) || !password || !registerPasswordOk(password)) return invalid();
+      if (useMocks()) {
+        if (token === MOCK_RESET_EXPIRED) return res(false, 400, 'GRANT_INVALID');
+        return token === MOCK_RESET_TOKEN ? res(true, 200, null) : res(false, 400, 'GRANT_INVALID');
+      }
+      // Assumed body (gap G14): { token, password }.
+      const r = await callApi(req, '/v3/account/password/reset/confirm', { method: 'POST', body: { token, password } });
+      if (!r) return res(false, 0, null);
+      if (r.ok) return res(true, 200, null);
+      const e = errorOf(r.json);
+      return res(false, r.status, e.code, r.status === 429 ? e.message : null);
     }
   }
 }

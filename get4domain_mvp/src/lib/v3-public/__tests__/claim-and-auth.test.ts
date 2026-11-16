@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { handleAuth, MOCK_LOGIN_EMAIL, MOCK_LOGIN_PASSWORD, MOCK_TAKEN_EMAIL } from '../auth-proxy';
+import { AUTH_ACTIONS, handleAuth, MOCK_LOGIN_EMAIL, MOCK_LOGIN_PASSWORD, MOCK_MAIL_OFF_EMAIL, MOCK_RESET_EXPIRED, MOCK_RESET_TOKEN, MOCK_TAKEN_EMAIL } from '../auth-proxy';
 import { canClaim, choosable, codeOk, deriveListingState, emailOk, errorOf, isMailOff, passwordOk } from '../claim';
 import { handleClaim } from '../claim-proxy';
 import { gstinLine, getFirm } from '../firm';
@@ -138,6 +138,33 @@ describe('sign in, sign up and password reset (sample mode)', () => {
   test('password reset answers the same for any valid address', async () => {
     assert.equal((await handleAuth(req, 'forgot', { email: 'someone@example.invalid' })).ok, true);
     assert.equal((await handleAuth(req, 'forgot', { email: 'bad' })).code, 'DIRECTORY_INVALID');
+  });
+
+  test('the reset request says email is switched off, and only that, when it is', async () => {
+    const off = await handleAuth(req, 'forgot', { email: MOCK_MAIL_OFF_EMAIL });
+    assert.equal(off.ok, false);
+    assert.equal(off.code, 'MAIL_DISABLED');
+    assert.deepEqual(await handleAuth(req, 'forgot', { email: 'known@example.invalid' }), await handleAuth(req, 'forgot', { email: 'unknown@example.invalid' }));
+    assert.ok(S.auth.forgot.mailOff.length > 20 && S.auth.forgot.mailOffTitle.length > 3);
+    assert.doesNotMatch(S.auth.forgot.sent, /does not exist|no account|not found|unknown/i);
+  });
+
+  test('reset confirm: a good link, an expired link, a weak password, a malformed token', async () => {
+    const pw = 'Newpass123';
+    assert.equal(AUTH_ACTIONS.includes('reset'), true);
+    assert.equal((await handleAuth(req, 'reset', { token: MOCK_RESET_TOKEN, password: pw })).ok, true);
+    const expired = await handleAuth(req, 'reset', { token: MOCK_RESET_EXPIRED, password: pw });
+    assert.equal(expired.ok, false);
+    assert.equal(expired.code, 'GRANT_INVALID');
+    assert.equal((await handleAuth(req, 'reset', { token: 'unknown-but-well-formed-token', password: pw })).code, 'GRANT_INVALID');
+    assert.equal((await handleAuth(req, 'reset', { token: MOCK_RESET_TOKEN, password: 'password1' })).code, 'DIRECTORY_INVALID');
+    assert.equal((await handleAuth(req, 'reset', { token: 'short', password: pw })).code, 'DIRECTORY_INVALID');
+    assert.equal((await handleAuth(req, 'reset', { token: 'has spaces and <script> in it', password: pw })).code, 'DIRECTORY_INVALID');
+    assert.equal((await handleAuth(req, 'reset', { password: pw })).code, 'DIRECTORY_INVALID');
+  });
+
+  test('the reset screens have their text', () => {
+    for (const t of [S.auth.reset.title, S.auth.reset.linkInvalidTitle, S.auth.reset.linkInvalid, S.auth.reset.missingToken, S.auth.reset.done, S.auth.reset.mismatch]) assert.ok(t.length > 10);
   });
 
   test('no answer carries a token or a password', async () => {
