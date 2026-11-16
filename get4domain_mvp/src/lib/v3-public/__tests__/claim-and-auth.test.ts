@@ -5,6 +5,7 @@ import { canClaim, choosable, codeOk, deriveListingState, emailOk, errorOf, isMa
 import { handleClaim } from '../claim-proxy';
 import { gstinLine, getFirm } from '../firm';
 import { handoffCodeOk, handoffTarget } from '../handoff';
+import { safeRedirect } from '../redirect';
 import { MOCK_CODE_LOCKED, MOCK_CODE_OK, MOCK_HANDOFF_CODE, MOCK_NO_HANDOFF_EMAIL, MOCK_SETUP_TOKEN, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockSearch } from '../mocks';
 import { S } from '../strings';
 import type { ListingState } from '../types';
@@ -209,6 +210,24 @@ describe('where the visitor goes after sign-in or claim setup', () => {
     assert.equal(handoffCodeOk('a b c d e f g h'), false);
     assert.equal(handoffCodeOk(12345678), false);
     assert.equal(handoffCodeOk(null), false);
+  });
+});
+
+describe('following redirectTo after a claim approval', () => {
+  test('a relative path and an https address are followed', () => {
+    assert.equal(safeRedirect('/dashboard'), '/dashboard');
+    assert.equal(safeRedirect('/dashboard/site?tab=1#top'), '/dashboard/site?tab=1#top');
+    assert.equal(safeRedirect('https://app.example.invalid/home'), 'https://app.example.invalid/home');
+  });
+  test('scripts, data addresses, plain http and other schemes are refused', () => {
+    for (const v of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', ' javascript:alert(1)', 'data:text/html,<b>x</b>', 'vbscript:x', 'http://app.example.invalid', 'ftp://x.example.invalid', 'file:///etc/passwd']) assert.equal(safeRedirect(v), null, v);
+  });
+  test('//host and its disguises are refused', () => {
+    const disguises = ['//evil.example.invalid', '///evil.example.invalid', '/\\evil.example.invalid', '\\\\evil.example.invalid', '/\tevil.example.invalid', '/\n/evil.example.invalid', 'https://user:pw@app.example.invalid', 'https:///'];
+    for (const v of disguises) assert.equal(safeRedirect(v), null, JSON.stringify(v));
+  });
+  test('empty, wrong type, too long or without a leading slash are refused', () => {
+    for (const v of ['', null, undefined, 42, ['/a'], 'dashboard', 'evil.example.invalid/path', `/${'a'.repeat(2100)}`]) assert.equal(safeRedirect(v), null, String(v));
   });
 });
 

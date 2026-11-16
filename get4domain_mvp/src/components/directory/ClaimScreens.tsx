@@ -61,13 +61,16 @@ export function ApprovalScreen({ vendorUrl, href, follow }: { vendorUrl: string 
   );
 }
 
-export function LiveScreen({ vendorUrl }: { vendorUrl: string | null }) {
+export function LiveScreen({ vendorUrl, redirectTo }: { vendorUrl: string | null; redirectTo?: string | null }) {
+  // redirectTo has already been made safe by the page (lib/v3-public/redirect.ts); without one the screen only offers the business app.
+  const target = redirectTo ?? vendorUrl;
   return (
     <Notice title={S.claim.live.title} tone="good" role="status">
+      {redirectTo && <FollowTo target={redirectTo} />}
       <p>{S.claim.live.body}</p>
       <p className="mt-3">
-        {vendorUrl ? (
-          <a href={vendorUrl} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.claim.live.cta}</a>
+        {target ? (
+          <a href={target} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.claim.live.cta}</a>
         ) : (
           <span className="text-slate-500">{S.claim.approval.notAvailable}</span>
         )}

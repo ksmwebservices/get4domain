@@ -170,6 +170,12 @@ async function flagOn() {
   const screens = (await get(ON, '/claim/screens')).text;
   for (const t of ['This listing is not claimed', 'This listing is being prepared', 'This listing is already claimed', 'This listing is live', 'This link is not valid', 'Email is switched off', 'Waiting for approval', 'Your site is live']) ok(screens.includes(t), `claim screen: ${t}`);
   ok(/Your site is live/.test((await get(ON, '/claim/live')).text), 'go-live notice page');
+  const liveSafe = (await get(ON, '/claim/live?redirectTo=%2Fpricing')).text;
+  ok(/href="\/pricing"/.test(liveSafe), 'go-live page offers a safe relative redirectTo');
+  for (const bad of ['javascript%3Aalert(1)', '%2F%2Fevil.example.invalid', 'http%3A%2F%2Fevil.example.invalid', 'data%3Atext%2Fhtml%2Cx']) {
+    const t = (await get(ON, `/claim/live?redirectTo=${bad}`)).text;
+    ok(!/href="(javascript:|\/\/evil|http:\/\/evil|data:)/i.test(t) && !t.includes('evil.example.invalid'), `go-live page drops redirectTo=${decodeURIComponent(bad)}`);
+  }
 
   for (const p of ['/account/login', '/account/register', '/account/forgot-password', '/account/reset-password?token=mock-reset-token-000000000']) pageChecks(p, await get(ON, p));
   const reset = await get(ON, '/account/reset-password?token=mock-reset-token-000000000');
