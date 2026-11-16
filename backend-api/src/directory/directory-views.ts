@@ -1,3 +1,4 @@
+import { publicStateOf, PublicListingState } from './core/listing-state';
 import { BusinessRow, CategoryRow, LocationRow, MediaRow, PlacementRow, ServiceRow } from './directory.repository';
 
 /** Tree helpers and the views a caller is allowed to see (slice 5.7). The public view NEVER carries an email, an owner name, an internal id, a vendor id or a staff field. */
@@ -47,6 +48,8 @@ export interface PublicBusinessView {
   services: Array<{ name: string; description: string }>; media: Array<{ url: string; altText: string }>; indexable: boolean; updatedAt: string; sponsored?: false;
   /** the business own subdomain site: the ONLY place a visitor is sent (owner rule 1); the directory has no form and delivers no lead */
   siteUrl: string | null; siteState: 'SEEDED' | 'CLAIMED_FREE' | 'PRO'; badges: string[];
+  /** G4: UNCLAIMED_LISTING, CLAIMED or LIVE (never DRAFT_SITE: a draft is not public) */
+  listingState: PublicListingState;
 }
 
 /** An UNCLAIMED business shows only what identifies it in the directory (name, category, area, description). Phone, street address, hours, map position, services and media
@@ -61,6 +64,7 @@ export function publicBusinessView(b: BusinessRow, c: ViewContext): PublicBusine
     services: claimed ? c.services.map((s) => ({ name: s.name, description: s.description })) : [], media: claimed ? c.media.map((m) => ({ url: m.url, altText: m.altText })) : [],
     indexable: b.indexable, updatedAt: b.updatedAt.toISOString(), sponsored: false,
     siteUrl: c.site?.siteUrl ?? null, siteState: c.site?.siteState ?? (claimed ? 'CLAIMED_FREE' : 'SEEDED'), badges: c.site?.badges ?? [],
+    listingState: publicStateOf(claimed, !!c.site?.siteUrl),
   };
 }
 export type PublicSponsoredItem = Omit<PublicBusinessView, 'sponsored'> & { sponsored: true; label: string };

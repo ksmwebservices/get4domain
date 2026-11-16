@@ -10,6 +10,8 @@
  *   /business/{slug}                             business profile
  * Pagination is a path suffix, /page/{n}, from page 2 (page 1 has no suffix).
  */
+/** Wave 2 (public site gap G11): where the directory home lives on the public site. The model of the home page carries this path, and its canonical follows it. */
+export const DIRECTORY_HOME_PATH = '/directory';
 export const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 export const PINCODE = /^[1-9][0-9]{5}$/;
 export const MAX_PAGE = 1000;
@@ -72,6 +74,7 @@ export function parsePath(input: unknown): ParsedPath | null {
   if (a === 'category') return parts.length === 2 ? { type: 'category', category: b, page } : null;
   if (a === 'pincode') return parts.length === 3 && PINCODE.test(b) ? { type: 'pincodeCategory', pincode: b, category: c, page } : null;
   if (a === 'business') return parts.length === 2 && page === 1 ? { type: 'business', slug: b } : null;
+  if (a === DIRECTORY_HOME_PATH.slice(1)) return parts.length === 1 && page === 1 ? { type: 'home' } : null;   // the home may be asked for by its own address too
   if (RESERVED_SEGMENTS.includes(a)) return null;
   if (parts.length === 1) return { type: 'city', city: a, page };
   if (parts.length === 2) return { type: 'cityRest', city: a, rest: b, page };

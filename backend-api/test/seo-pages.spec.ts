@@ -285,3 +285,36 @@ describe('overrides, roll-up and the setting', () => {
     expect(DEFAULT_DIRECTORY_SETTINGS.directoryPagesIndexable).toBe(false);
   });
 });
+
+describe('Wave 2 public site gaps: the business page model (G4, G5) and the directory home path (G11)', () => {
+  it('G11: the home model says /directory and its canonical follows; asking for / or for /directory gives the same model; the pages that already existed keep their paths', async () => {
+    const w = world(); fiveInPerambur(w.data);
+    const a = await ok(w.svc, '/'); const b = await ok(w.svc, '/directory');
+    expect(a.path).toBe('/directory'); expect(a.meta.canonical).toBe('https://get4domain.com/directory'); expect(b).toEqual(a);
+    expect(parsePath('/directory')).toEqual({ type: 'home' }); expect(parsePath('/directory/page/2')).toBeNull(); expect(buildPath({ type: 'home' })).toBe('/');
+    expect((await ok(w.svc, '/chennai')).path).toBe('/chennai'); expect((await ok(w.svc, '/chennai')).meta.canonical).toBe('https://get4domain.com/chennai');
+    expect(JSON.stringify(a.jsonLd)).not.toContain('/directory/directory');
+  });
+  it('G4 and G5: an unclaimed listing says UNCLAIMED_LISTING, carries its business id, and shows no services (and the services are not even read)', async () => {
+    const w = world(); const b = biz({ name: 'Quiet Unclaimed', status: 'UNCLAIMED', claimed: false, vendorId: null }); w.data.rows.push(b);
+    const spy = jest.spyOn(w.data, 'servicesOf').mockImplementation(async () => [{ name: 'Secret', description: 'x' }]);
+    const m = await ok(w.svc, `/business/${b.slug}`);
+    expect(m.business).toMatchObject({ listingState: 'UNCLAIMED_LISTING', businessId: b.id, services: [], claimed: false, listingOnly: true, visitUrl: null }); expect(spy).not.toHaveBeenCalled();
+  });
+  it('G4 and G5: a claimed business with no published site is CLAIMED and lists its services in the owner order', async () => {
+    const w = world(); const b = biz({ name: 'Claimed Only' }); w.data.rows.push(b);
+    jest.spyOn(w.data, 'servicesOf').mockImplementation(async (id) => (id === b.id ? [{ name: 'Pipe repair', description: 'Leaks fixed' }, { name: 'Tank cleaning', description: '' }] : []));
+    const m = await ok(w.svc, `/business/${b.slug}`);
+    expect(m.business).toMatchObject({ listingState: 'CLAIMED', businessId: b.id, listingOnly: true, services: [{ name: 'Pipe repair', description: 'Leaks fixed' }, { name: 'Tank cleaning', description: '' }] });
+  });
+  it('G4 and G5: a claimed business with a published site is LIVE, its business id is the id in the visit-site address, and DRAFT_SITE is never sent', async () => {
+    const w = world(); const b = biz({ name: 'Live Co' }); w.data.rows.push(b); w.sites.set(b.vendorId!, { subdomain: 'liveco', proActive: true });
+    const m = await ok(w.svc, `/business/${b.slug}`);
+    expect(m.business).toMatchObject({ listingState: 'LIVE', businessId: b.id, listingOnly: false }); expect(m.business!.visitUrl).toContain(`/v3/go/${b.id}`);
+    for (const slug of [b.slug]) expect(JSON.stringify((await ok(w.svc, `/business/${slug}`)).business)).not.toContain('DRAFT_SITE');
+  });
+  it('G4: a suspended claimed business stays claimed on the page and the new fields do not change the indexing answer', async () => {
+    const w = world({ directoryPagesIndexable: true }); const b = biz({ name: 'Paused Again', status: 'SUSPENDED' }); w.data.rows.push(b);
+    const m = await ok(w.svc, `/business/${b.slug}`); expect(m.business!.listingState).toBe('CLAIMED'); expect(m.meta).toMatchObject({ indexable: false, noindexReason: 'SUSPENDED' });
+  });
+});

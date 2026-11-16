@@ -46,7 +46,7 @@ describe('directory code and the legacy world (decision D1)', () => {
     expect(touching).toEqual(['directory/prisma-directory.repository.ts']);
   });
   it('directory objects are named Directory*, and nothing is called a Listing', () => {
-    for (const f of files) expect([rel(f), /\bListing\b|\blisting[A-Z]|class \w*Listing/.test(code(f))]).toEqual([rel(f), false]);
+    for (const f of files) expect([rel(f), /\bListing\b|\blisting[A-Z]|class \w*Listing/.test(code(f).replace(/\blistingState\b/g, ''))]).toEqual([rel(f), false]);   // G4: `listingState` is the one field name the public contract fixes
     const schema = fs.readFileSync(path.resolve(__dirname, '../prisma/schema.prisma'), 'utf8');
     for (const m of schema.matchAll(/^model (V3\w+) \{[\s\S]*?^\}/gm)) if (/g4d_directory_/.test(m[0])) expect(m[1]).toMatch(/^V3Directory/);
   });

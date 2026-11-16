@@ -1,3 +1,4 @@
+import { PublicListingState } from '../../directory/core/listing-state';
 import { cutWords, titleCase } from './template-engine';
 import { PageSpec, buildPath, withPageNumber } from './url-scheme';
 import { isUnsafeSeoText } from '../../site-publish/seo/seo-text';
@@ -26,7 +27,13 @@ export interface PageModel {
   /** only on a business page */
   business?: BusinessFacts;
 }
-export interface BusinessFacts { name: string; claimed: boolean; verified: boolean; category: string | null; locality: string | null; city: string | null; description: string | null; address: { street?: string; locality?: string; city?: string; pincode?: string } | null; geo: { lat: number; lng: number } | null; hoursText: string | null; imageUrl: string | null; visitUrl: string | null; listingOnly: boolean }
+export interface BusinessFacts { name: string; claimed: boolean; verified: boolean; category: string | null; locality: string | null; city: string | null; description: string | null; address: { street?: string; locality?: string; city?: string; pincode?: string } | null; geo: { lat: number; lng: number } | null; hoursText: string | null; imageUrl: string | null; visitUrl: string | null; listingOnly: boolean;
+  /** G4: UNCLAIMED_LISTING, CLAIMED or LIVE (never DRAFT_SITE) */
+  listingState: PublicListingState;
+  /** G5: the directory business id, the id of the click-out address and of the backlink block */
+  businessId: string;
+  /** G5: the services a CLAIMED business listed; always empty for an unclaimed listing (its owner has not consented to show them) */
+  services: Array<{ name: string; description: string }> }
 
 export const ROBOTS_INDEX = 'index, follow, max-image-preview:large';
 export const ROBOTS_NOINDEX = 'noindex, follow';
