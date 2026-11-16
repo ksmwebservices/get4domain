@@ -16,6 +16,9 @@ CREATE TABLE "g4d_firm_profile" (
     CONSTRAINT "g4d_firm_profile_pkey" PRIMARY KEY ("id")
 );
 
+-- like every platform table: row level security ON and no policy, so only the server role reads or writes it
+ALTER TABLE "g4d_firm_profile" ENABLE ROW LEVEL SECURITY;
+
 -- one row only, and the tax numbers keep their layout even if something writes around the service
 ALTER TABLE "g4d_firm_profile" ADD CONSTRAINT "g4d_firm_profile_single_row_check" CHECK ("id" = 'platform');
 ALTER TABLE "g4d_firm_profile" ADD CONSTRAINT "g4d_firm_profile_gstin_check" CHECK ("gstin" IS NULL OR "gstin" ~ '^(0[1-9]|[12][0-9]|3[0-8]|97|99)[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$');

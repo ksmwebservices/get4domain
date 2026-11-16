@@ -79,7 +79,7 @@ describe('the firm profile rules (pure)', () => {
   it('the migration carries the same defaults and the same checks (one row, the GSTIN and PAN layouts)', () => {
     const sql = fs.readFileSync(path.resolve(__dirname, '..', 'prisma/migrations/20261219180000_v3_wave2_firm_profile/migration.sql'), 'utf8');
     expect(sql).toContain(`'${FIRM_DEFAULTS.legalName}'`); expect(sql).toContain(`'${FIRM_DEFAULTS.registeredAddress}'`);
-    expect(sql).toContain(`"id" = 'platform'`); expect(sql).toContain('g4d_firm_profile_gstin_check'); expect(sql).toContain('g4d_firm_profile_pan_check'); expect(sql).not.toMatch(/DROP |DELETE FROM|ALTER TABLE "(?!g4d_firm_profile)/);
+    expect(sql).toContain('ALTER TABLE "g4d_firm_profile" ENABLE ROW LEVEL SECURITY'); expect(sql).toContain(`"id" = 'platform'`); expect(sql).toContain('g4d_firm_profile_gstin_check'); expect(sql).toContain('g4d_firm_profile_pan_check'); expect(sql).not.toMatch(/DROP |DELETE FROM|ALTER TABLE "(?!g4d_firm_profile)/);
     // the SQL pattern accepts what the code accepts: every state code the code knows starts a match
     const re = new RegExp((/"gstin" ~ '([^']+)'/.exec(sql) as RegExpExecArray)[1]);
     expect(re.test(GSTIN)).toBe(true); for (const c of ['00', '39', '50', '98']) expect(re.test(`${c}ABCDE1234F1Z5`)).toBe(false); for (const c of ['01', '28', '38', '97', '99']) expect(re.test(`${c}ABCDE1234F1Z5`)).toBe(true);

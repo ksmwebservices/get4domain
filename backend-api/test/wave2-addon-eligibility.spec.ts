@@ -35,7 +35,7 @@ describe('the fixed owner rules and the seed (pure)', () => {
     const values = sql.slice(sql.indexOf('FROM (VALUES'), sql.indexOf(') AS v('));   // only the INSERT's list, not the CHECK's IN (...)
     const pairs = [...values.matchAll(/\('([A-Z0-9_]+)', '([A-Z0-9_]+)'\)/g)].map((m) => `${m[1]}|${m[2]}`).sort();
     expect(pairs).toEqual(ELIGIBILITY_SEED.map((e) => `${e.addonKey}|${e.packKey}`).sort());
-    expect(sql).toContain('g4d_addon_eligibility_owner_rules_check'); expect(sql).not.toMatch(/DROP TABLE|DELETE FROM|ALTER TABLE "(?!g4d_addon_eligibility)/);
+    expect(sql).toContain('ALTER TABLE "g4d_addon_eligibility" ENABLE ROW LEVEL SECURITY'); expect(sql).toContain('g4d_addon_eligibility_owner_rules_check'); expect(sql).not.toMatch(/DROP TABLE|DELETE FROM|ALTER TABLE "(?!g4d_addon_eligibility)/);
   });
   it('isEligible needs an active row, a pack, and the fixed rules; an unknown pack or no pack is no', () => {
     const rows = [{ addonKey: 'SHOP', packKey: 'RETAIL', active: true }, { addonKey: 'SHOP', packKey: 'CLINIC', active: false }, { addonKey: 'SHOP', packKey: 'PHARMACY', active: true }];

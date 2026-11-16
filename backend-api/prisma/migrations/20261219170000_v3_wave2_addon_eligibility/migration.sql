@@ -20,6 +20,9 @@ CREATE INDEX "g4d_addon_eligibility_packKey_idx" ON "g4d_addon_eligibility"("pac
 ALTER TABLE "g4d_addon_eligibility" ADD CONSTRAINT "g4d_addon_eligibility_addonKey_fkey" FOREIGN KEY ("addonKey") REFERENCES "g4d_pack_addons"("key") ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE "g4d_addon_eligibility" ADD CONSTRAINT "g4d_addon_eligibility_packKey_fkey" FOREIGN KEY ("packKey") REFERENCES "g4d_packs"("key") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- like every platform table: row level security ON and no policy, so only the server role reads or writes it
+ALTER TABLE "g4d_addon_eligibility" ENABLE ROW LEVEL SECURITY;
+
 -- the fixed rules also hold in the database, so no tool can write a row that breaks them
 ALTER TABLE "g4d_addon_eligibility" ADD CONSTRAINT "g4d_addon_eligibility_owner_rules_check" CHECK (
   NOT ("addonKey" IN ('SHOP', 'ONLINE_ORDERING_DELIVERY') AND "packKey" = 'PHARMACY')
