@@ -24,16 +24,14 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    // V3 public directory: a fallback rewrite runs only for an address that nothing else matched. It applies only to a request carrying the header that
-    // src/middleware.ts sets while V3_PUBLIC_ENABLED is on (names kept in step with src/lib/v3-public/routes.ts). With the flag off it never matches.
-    const directoryFallback = [{ source: '/:path+', has: [{ type: 'header' as const, key: 'x-v3-public', value: '1' }], destination: '/directory-pages/:path+' }];
+    if (!leadspaceDomain) return [];
     const escaped = leadspaceDomain.replace(/\./g, '\\.');
     return {
-      beforeFiles: leadspaceDomain
-        ? [{ source: '/', has: [{ type: 'host' as const, value: `(?<slug>[a-z0-9-]+)\\.${escaped}` }], destination: '/ls/:slug' }]
-        : [],
+      beforeFiles: [
+        { source: '/', has: [{ type: 'host', value: `(?<slug>[a-z0-9-]+)\\.${escaped}` }], destination: '/ls/:slug' },
+      ],
       afterFiles: [],
-      fallback: directoryFallback,
+      fallback: [],
     };
   },
 };
