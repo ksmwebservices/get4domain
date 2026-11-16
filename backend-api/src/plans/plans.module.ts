@@ -15,6 +15,8 @@ import { MePlansController } from './me/me-plans.controller';
 import { MePlansService } from './me/me-plans.service';
 import { PublicPlansController } from './public/public-plans.controller';
 import { PublicPlansService } from './public/public-plans.service';
+import { PublicPricingPageController } from './public/public-pricing.controller';
+import { PublicPricingService } from './public/public-pricing.service';
 import { RegistrationHook } from './registration/registration.hook';
 import { SubscriptionsService } from './subscriptions/subscriptions.service';
 
@@ -25,11 +27,11 @@ import { SubscriptionsService } from './subscriptions/subscriptions.service';
 @Global()
 @Module({
   imports: [PrismaModule],
-  controllers: [PlansAdminController, RulesAdminController, VendorPlansAdminController, PublicPlansController, MePlansController],
+  controllers: [PlansAdminController, RulesAdminController, VendorPlansAdminController, PublicPlansController, PublicPricingPageController, MePlansController],
   providers: [
     PrismaPlansRepository, { provide: PlansRepository, useExisting: PrismaPlansRepository },
     EntitlementsService, FeatureGuard, AuditService, SubscriptionsService,
-    PlansAdminService, FeaturesAdminService, RulesAdminService, VendorPlansAdminService, PublicPlansService, MePlansService, RegistrationHook,
+    PlansAdminService, FeaturesAdminService, RulesAdminService, VendorPlansAdminService, PublicPlansService, PublicPricingService, MePlansService, RegistrationHook,
   ],
   exports: [EntitlementsService, FeatureGuard, PlansRepository, SubscriptionsService, AuditService, RegistrationHook, VendorPlansAdminService],
 })
