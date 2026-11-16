@@ -204,3 +204,14 @@ export function mockBacklinkBlock(businessId: string): BacklinkBlock | null {
     html: '',
   };
 }
+
+/** What the backend robots text looks like while the directory pages are indexable (fixture). */
+export const MOCK_DIRECTORY_ROBOTS = ['User-agent: *', 'Allow: /', 'Disallow: /go/', 'Disallow: /v3/go/', 'Disallow: /search', 'Disallow: /*?*q=', 'Disallow: /*?*sort=', '', `Sitemap: ${MOCK_ORIGIN}/sitemap.xml`, ''].join('\n');
+
+/** Directory sitemap fixtures: an index of one chunk, and the chunk. */
+export function mockSitemap(route: string): string | null {
+  const head = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  if (route.endsWith('/index.xml')) return `${head}<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>${MOCK_ORIGIN}/sitemaps/directory-1.xml</loc></sitemap></sitemapindex>\n`;
+  if (route.endsWith('/directory-1.xml')) return `${head}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${MOCK_ORIGIN}/chennai/plumbers</loc></url><url><loc>${MOCK_ORIGIN}/business/anand-electricals</loc></url></urlset>\n`;
+  return null;
+}

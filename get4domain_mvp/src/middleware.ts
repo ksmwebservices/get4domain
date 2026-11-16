@@ -4,7 +4,7 @@ import { DEMO_PASS_COOKIE, verifyDemoPass } from '@/lib/demo-access';
 import { FEATURES, resolveLegacyRoute } from '@/lib/nav.generated';
 import { looksLikeBusinessId } from '@/lib/v3-public/click';
 import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
-import { isV3PublicPath, V3_HEADER, V3_PAGES_ROOT } from '@/lib/v3-public/routes';
+import { isInternalOnlyPath, isV3PublicPath, V3_HEADER, V3_ROBOTS_ROUTE } from '@/lib/v3-public/routes';
 
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
@@ -80,8 +80,14 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
   }
   // The internal page behind the directory fallback is only ever reached by the rewrite below (which runs after this), never by a visitor typing the address.
-  if (pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`)) {
+  if (isInternalOnlyPath(pathname)) {
     return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
+  }
+  // Flag on: /robots.txt of the main host is answered by the handler that adds the directory lines (the existing robots.ts stays as it is and answers while the flag is off).
+  if (pathname === '/robots.txt' && isV3PublicEnabled()) {
+    const url = req.nextUrl.clone();
+    url.pathname = V3_ROBOTS_ROUTE;
+    return NextResponse.rewrite(url);
   }
   const clickOut = v3ClickOutRewrite(req);
   if (clickOut) return clickOut;

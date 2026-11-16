@@ -1,6 +1,6 @@
 import { apiBase, defaultRevalidate } from './config';
 import { useMocks } from './flag';
-import { mockBacklinkBlock, mockPage } from './mocks';
+import { MOCK_DIRECTORY_ROBOTS, mockBacklinkBlock, mockPage, mockSitemap } from './mocks';
 import type { BacklinkBlock, Fetched, PageModel } from './types';
 
 /**
@@ -70,7 +70,11 @@ export async function fetchPageModel(path: string): Promise<Fetched<PageModel>> 
 
 /** The raw text body of a backend route (sitemaps, robots, llms). null for 404, undefined for any other failure. */
 export async function fetchText(route: string): Promise<{ status: number; body: string; contentType: string } | null> {
-  if (useMocks()) return null;
+  if (useMocks()) {
+    if (route.endsWith('/robots.txt')) return { status: 200, body: MOCK_DIRECTORY_ROBOTS, contentType: 'text/plain; charset=utf-8' };
+    const xml = mockSitemap(route);
+    return xml ? { status: 200, body: xml, contentType: 'application/xml; charset=utf-8' } : { status: 404, body: '', contentType: '' };
+  }
   const base = apiBase();
   if (!base) return null;
   try {

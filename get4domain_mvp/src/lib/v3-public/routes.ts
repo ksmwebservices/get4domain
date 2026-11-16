@@ -9,6 +9,14 @@ export const V3_PUBLIC_PREFIXES: readonly string[] = ['/directory', '/claim', '/
 export const V3_PAGES_ROOT = '/directory-pages';
 export const V3_HEADER = 'x-v3-public';
 
+/** The internal handler that answers /robots.txt while the flag is on (reached only by the middleware rewrite). */
+export const V3_ROBOTS_ROUTE = '/directory-robots';
+
+/** Paths that exist only as rewrite targets: a visitor typing them gets a 404 (the rewrite runs after the middleware, so it is not affected). */
+export function isInternalOnlyPath(pathname: string): boolean {
+  return pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`) || pathname === V3_ROBOTS_ROUTE;
+}
+
 /** True when this path belongs to a fixed V3 public route (the segment itself, or anything below it, or a handler such as /directory-go). */
 export function isV3PublicPath(pathname: string): boolean {
   return V3_PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}-`));
