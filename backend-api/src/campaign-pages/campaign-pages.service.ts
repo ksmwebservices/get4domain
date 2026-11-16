@@ -7,6 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AiService } from '../ai/ai.service';
 import { GeneratePageDto } from './dto/generate-page.dto';
 import { CreatePageDto } from './dto/create-page.dto';
+import { campaignSlugSafe } from '../seo-directory/click-out/click-out';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { SubmitLeadDto } from './dto/submit-lead.dto';
 
@@ -156,7 +157,7 @@ export class CampaignPagesService {
   }
 
   private async uniqueSlug(seed: string): Promise<string> {
-    const base = slugify(seed) || 'page';
+    const base = campaignSlugSafe(slugify(seed) || 'page');
     let candidate = base;
     let suffix = 0;
     while (await this.prisma.campaignPage.findUnique({ where: { slug: candidate } })) {

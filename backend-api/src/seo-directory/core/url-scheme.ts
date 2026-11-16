@@ -14,7 +14,9 @@ export const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 export const PINCODE = /^[1-9][0-9]{5}$/;
 export const MAX_PAGE = 1000;
 /** First path segments that are not a city. A city or place whose slug is one of these cannot have its own /{city} page. */
-export const RESERVED_SEGMENTS: readonly string[] = ['state', 'category', 'pincode', 'business', 'page', 'v3', 'api', 'admin', 'go', 'sitemap', 'sitemaps', 'robots.txt', 'llms.txt', 'about', 'pricing', 'login', 'signup', 'dashboard'];
+export const RESERVED_SEGMENTS: readonly string[] = ['state', 'category', 'pincode', 'business', 'page', 'v3', 'api', 'admin', 'go', 'sitemap', 'sitemaps', 'robots.txt', 'llms.txt', 'about', 'pricing', 'login', 'signup', 'dashboard',
+  // Wave 2 (public site gap G7): the fixed pages of the public site, so a city or place with one of these slugs never claims their address
+  'legal', 'claim', 'account', 'directory'];
 
 export type PageSpec =
   | { type: 'home' }
