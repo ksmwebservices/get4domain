@@ -14,7 +14,7 @@
 | K1 S7 step 3 referral | DONE | e273155 | /r/{code} route handler sets the cookie; /referral-link neutral page |
 | K1 S7 step 4 marketing pages | DONE | 61c5be4 | six pages; sitemap needs no addition (same addresses as the live pages) |
 | K1 S7 step 5 tests and checks | DONE | b6c79b2 | 216 unit tests, 795 smoke checks (three servers) |
-| K1 S7 step 6 docs | TODO | | |
+| K1 S7 step 6 docs | DONE | aaf90cc | PUBLIC_SITE section 10, gaps G28 to G33 |
 
 ## ASSUMPTIONS
 - Host layer active only with the flag and MAIN_HOST (keeps current staging working).
