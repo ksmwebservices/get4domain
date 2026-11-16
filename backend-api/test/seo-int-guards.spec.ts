@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawnSync } from 'child_process';
 import { NotFoundException } from '@nestjs/common';
 import { SeoPublicController } from '../src/seo-directory/api/seo-public.controller';
 
@@ -63,5 +64,5 @@ describe('the read-only staging checker', () => {
     expect(s).toContain('process.exitCode = on ? 1 : 0'); expect(s).toContain("idx.valueJson === true"); expect(s).toContain('env.mask(');
     expect(s).not.toMatch(/console\.log\([^)]*DATABASE_URL|DIRECT_URL/);
   });
-  it('the syntax is valid', () => { expect(() => new Function(s.replace(/^#!.*\n/, '').replace(/require\(/g, '(()=>({}))('))).not.toThrow(); });
+  it('the syntax is valid', () => { const r = spawnSync(process.execPath, ['--check', path.resolve(__dirname, '..', 'scripts/seo-staging-check.js')], { encoding: 'utf8' }); expect(r.stderr).toBe(''); expect(r.status).toBe(0); });   // node itself parses the real file (a shebang is fine); nothing is executed
 });
