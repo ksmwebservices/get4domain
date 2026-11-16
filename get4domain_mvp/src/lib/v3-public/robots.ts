@@ -46,6 +46,19 @@ export function robotsToText(base: RobotsInput, dir: DirectoryRobots, directoryS
   return `${blocks.join('\n\n')}\n${tail.length ? `\n${tail.join('\n')}\n` : ''}`;
 }
 
+/**
+ * robots.txt of the directory host: the backend text as written (named crawler groups, Allow, its Disallow lines), except that the Sitemap line is rewritten to this host.
+ * The backend writes a Sitemap line only while the directory pages are indexable, so no line in means no line out. Any Host: line is dropped. The result never mentions another host.
+ */
+export function directoryHostRobots(backendText: string, directoryOrigin: string): string {
+  const body = String(backendText ?? '');
+  const hadSitemap = /^\s*sitemap\s*:/im.test(body);
+  const kept = body.split(/\r?\n/).filter((l) => !/^\s*(sitemap|host)\s*:/i.test(l));
+  while (kept.length && kept[kept.length - 1].trim() === '') kept.pop();
+  const out = kept.join('\n');
+  return `${out}\n${hadSitemap ? `\nSitemap: ${directoryOrigin}/sitemaps/directory-index.xml\n` : ''}`;
+}
+
 /** The directory sitemap file names: the index and numbered chunks. Anything else is not served. */
 export function sitemapRoute(file: string): string | null {
   if (file === 'directory-index.xml') return '/v3/directory/sitemaps/index.xml';

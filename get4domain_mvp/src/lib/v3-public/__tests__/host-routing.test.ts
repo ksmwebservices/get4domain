@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { decideHost, hostRoutingActive, stripDirectoryPrefix, type HostRequest } from '../host-routing';
+import { decideHost, directoryHomeHref, hostRoutingActive, stripDirectoryPrefix, type HostRequest } from '../host-routing';
 import { readHostConfig } from '../hostnames';
 
 const HOSTS = {
@@ -57,13 +57,22 @@ describe('directory host', () => {
   test('the home is an internal rewrite, the public address has no prefix', () => {
     assert.deepEqual(run(D, '/'), { action: 'rewrite', pathname: '/directory' });
   });
+  test('/sitemap.xml here is the directory sitemap index; the main host keeps its own', () => {
+    assert.deepEqual(run(D, '/sitemap.xml'), { action: 'rewrite', pathname: '/sitemaps/directory-index.xml' });
+    assert.deepEqual(run('main.example.invalid', '/sitemap.xml'), { action: 'pass', host: 'main' });
+    assert.deepEqual(run('main.example.invalid', '/robots.txt'), { action: 'pass', host: 'main' });
+  });
+  test('the directory sitemaps are answered on the directory host only', () => {
+    assert.deepEqual(run('main.example.invalid', '/sitemaps/directory-index.xml'), { action: 'not-found', host: 'main' });
+    assert.deepEqual(run('main.example.invalid', '/sitemaps/directory-3.xml'), { action: 'not-found', host: 'main' });
+  });
   test('/directory and below redirect to the same address without the prefix', () => {
     assert.deepEqual(run(D, '/directory'), { action: 'redirect', to: 'https://directory.main.example.invalid/', status: 308 });
     assert.deepEqual(run(D, '/directory/chennai', { search: '?x=1' }), { action: 'redirect', to: 'https://directory.main.example.invalid/chennai?x=1', status: 308 });
   });
   test('directory addresses and V3 routes pass', () => {
     for (const p of ['/chennai', '/chennai/plumbers', '/business/anand-electricals', '/state/tamil-nadu', '/category/plumbers', '/pincode/600020/plumbers', '/chennai/plumbers/page/2',
-      '/claim', '/claim/start/x', '/account/login', '/legal/terms', '/sitemaps/directory-index.xml', '/directory-api/page-visit', '/robots.txt', '/sitemap.xml']) {
+      '/claim', '/claim/start/x', '/account/login', '/legal/terms', '/sitemaps/directory-index.xml', '/sitemaps/directory-2.xml', '/directory-api/page-visit', '/robots.txt']) {
       assert.deepEqual(run(D, p), { action: 'pass', host: 'directory' }, p);
     }
   });
@@ -102,5 +111,13 @@ describe('stripDirectoryPrefix', () => {
     assert.equal(stripDirectoryPrefix('/directory/a/b'), '/a/b');
     assert.equal(stripDirectoryPrefix('/directory-go/x'), null);
     assert.equal(stripDirectoryPrefix('/chennai'), null);
+  });
+});
+
+describe('directoryHomeHref', () => {
+  test('/ once the host layer is on, /directory before', () => {
+    assert.equal(directoryHomeHref(cfg, ON), '/');
+    assert.equal(directoryHomeHref(cfg, HOSTS), '/directory');
+    assert.equal(directoryHomeHref(readHostConfig({}), { V3_PUBLIC_ENABLED: 'true' }), '/directory');
   });
 });

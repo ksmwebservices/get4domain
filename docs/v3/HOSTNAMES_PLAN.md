@@ -124,3 +124,18 @@ No new names are needed beyond what is already read: `SITE_BASE_DOMAIN` (vendor 
 1. **The vendor renderer is a proxy, not a re-render** (b). Rebuilding themes and SEO in Next would duplicate and drift from the backend.
 2. **Fallthrough to V2** (b, item 7): a V3 404 on a vendor host reaches the existing V2 `/site/<sub>` path while the flag is on, so no V2 vendor goes dark at the wildcard switch. Owner may prefer an explicit V3 allow-list; this is easy to change.
 3. The first two hosts the front end can classify without environment: none. With any of the six names unset the module treats that host class as not configured (never a production fallback).
+
+---
+
+## Status after Step 3: BLOCKING backend item
+
+The page model still emits the old path form until the backend change in (a) is made: the directory home model carries `path: '/directory'` and a canonical of `{origin}/directory`, and every canonical, breadcrumb url, JSON-LD url, sitemap `<loc>`, llms link, badge and backlink url is built from the single `publicAppUrl` origin (the main host). The front end does **not** patch any of it (frozen rule: render the model as given).
+
+**BLOCKING for turning the directory host on in production: backend items A, B, C, D (directory origin separate from the main origin, brand crumb and brand links kept on the main origin, home path `/`) and E (robots Sitemap line).** Until they ship, a page on the directory host would carry canonicals pointing at the main host.
+
+What the front end already does so the backend change needs no front-end change:
+- renders canonical, robots, title, description, H1, breadcrumbs, JSON-LD and prev/next exactly as the model gives them (no origin or path is computed from the host);
+- the directory host's `robots.txt` is the backend text with the `Sitemap:` line rewritten to the directory host's own `/sitemaps/directory-index.xml` (a backend text that has no Sitemap line, because the pages are not indexable, gets none); `/sitemap.xml` on the directory host is the directory sitemap index;
+- the main host's `robots.txt` is the existing rules and the existing main sitemaps only, with no directory lines; the directory sitemaps (`/sitemaps/...`) are a 404 on the main host;
+- sitemap chunks are relayed as the backend writes them (their `<loc>` values are the backend's; they become directory-host addresses when item B ships);
+- the "browse the directory" link on empty and error states is `/` on the directory host.

@@ -35,6 +35,14 @@ export interface HostRequest {
 /** The internal page that renders the directory home (reached on the directory host by a rewrite from `/`). */
 export const DIRECTORY_HOME_ROUTE = '/directory';
 
+/** The internal address of the directory sitemap index (served by the sitemaps handler). */
+export const DIRECTORY_SITEMAP_ROUTE = '/sitemaps/directory-index.xml';
+
+/** The address of the directory home for a link on a directory page: `/` once the host layer is on (the directory has its own host), `/directory` before. */
+export function directoryHomeHref(cfg: HostConfig = readHostConfig(), env: Record<string, string | undefined> = process.env): string {
+  return hostRoutingActive(cfg, env) ? '/' : DIRECTORY_HOME_ROUTE;
+}
+
 /** Live route segments that stay reachable on the directory host. Every other live (marketing) route is a 404 there. */
 const DIRECTORY_HOST_LIVE_OK: ReadonlySet<string> = new Set(['go', 'robots.txt', 'sitemap.xml']);
 
@@ -66,12 +74,16 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
       if (!cls.canonical) return { action: 'redirect', to: `${origin(req.proto, base)}${pathname}${search}`, status: 308 };
       const rest = stripDirectoryPrefix(pathname);
       if (rest !== null && cfg.directory) return { action: 'redirect', to: `${origin(req.proto, cfg.directory)}${rest}${search}`, status: 308 };
+      // The directory sitemaps list directory-host addresses, so they are answered on the directory host only.
+      if (firstSegment(pathname) === 'sitemaps') return { action: 'not-found', host: 'main' };
       return { action: 'pass', host: 'main' };
     }
     case 'directory': {
       const rest = stripDirectoryPrefix(pathname);
       if (rest !== null) return { action: 'redirect', to: `${origin(req.proto, normalizeHost(req.host))}${rest}${search}`, status: 308 };
       if (pathname === '/') return { action: 'rewrite', pathname: DIRECTORY_HOME_ROUTE };
+      // The directory's own sitemap: /sitemap.xml here is the directory index (the backend's robots text names /sitemap.xml). The main host's /sitemap.xml is untouched.
+      if (pathname === '/sitemap.xml') return { action: 'rewrite', pathname: DIRECTORY_SITEMAP_ROUTE };
       const seg = firstSegment(pathname);
       if (LIVE_SEGMENTS.has(seg) && !DIRECTORY_HOST_LIVE_OK.has(seg)) return { action: 'not-found', host: 'directory' };
       if (seg === 'go' && req.isBusinessId) {

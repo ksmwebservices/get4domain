@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { directoryHomeHref } from '@/lib/v3-public/host-routing';
 import { S } from '@/lib/v3-public/strings';
 
 export function EmptyState() {
@@ -6,7 +7,7 @@ export function EmptyState() {
     <section aria-labelledby="empty-title" className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
       <h2 id="empty-title" className="text-lg font-semibold text-slate-900">{S.empty.title}</h2>
       <p className="mt-2 text-sm text-slate-600">{S.empty.body}</p>
-      <Link href="/directory" className="mt-4 inline-block text-sm font-medium text-primary-700 hover:underline">{S.empty.browse}</Link>
+      <Link href={directoryHomeHref()} className="mt-4 inline-block text-sm font-medium text-primary-700 hover:underline">{S.empty.browse}</Link>
     </section>
   );
 }
@@ -27,7 +28,7 @@ export function GoneState() {
     <section aria-labelledby="gone-title" className="rounded-xl border border-slate-300 bg-slate-50 p-8 text-center">
       <h1 id="gone-title" className="text-xl font-semibold text-slate-900">{S.gone.title}</h1>
       <p className="mt-2 text-sm text-slate-600">{S.gone.body}</p>
-      <Link href="/directory" className="mt-4 inline-block text-sm font-medium text-primary-700 hover:underline">{S.empty.browse}</Link>
+      <Link href={directoryHomeHref()} className="mt-4 inline-block text-sm font-medium text-primary-700 hover:underline">{S.empty.browse}</Link>
     </section>
   );
 }

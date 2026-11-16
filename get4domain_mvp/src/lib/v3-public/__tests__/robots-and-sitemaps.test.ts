@@ -67,3 +67,25 @@ describe('the directory sitemap paths', () => {
     for (const bad of ['directory-0.xml', 'directory-01.xml', 'directory-.xml', 'index.xml', '../directory-1.xml', 'directory-1.xml/x', 'directory-12345.xml', 'sitemap.xml']) assert.equal(sitemapRoute(bad), null, bad);
   });
 });
+
+import { directoryHostRobots } from '../robots';
+
+describe('robots.txt of the directory host', () => {
+  const backend = ['User-agent: Googlebot', 'Allow: /', 'Disallow: /go/', 'Disallow: /*?*q=', '', 'User-agent: *', 'Allow: /', 'Disallow: /go/', 'Disallow: /*?*q=', '', 'Sitemap: https://other.example.invalid/sitemap.xml', ''].join('\n');
+  test('the backend rules are kept and the Sitemap line points at this host only', () => {
+    const t = directoryHostRobots(backend, 'https://directory.main.example.invalid');
+    assert.match(t, /User-agent: Googlebot\nAllow: \/\nDisallow: \/go\//);
+    assert.match(t, /Disallow: \/\*\?\*q=/);
+    assert.match(t, /Sitemap: https:\/\/directory\.main\.example\.invalid\/sitemaps\/directory-index\.xml/);
+    assert.equal((t.match(/^Sitemap:/gim) ?? []).length, 1);
+    assert.doesNotMatch(t, /other\.example\.invalid/);
+  });
+  test('no Sitemap line from the backend (not indexable) means none here, and Host lines are dropped', () => {
+    const t = directoryHostRobots('User-agent: *\nAllow: /\nDisallow: /go/\nHost: other.example.invalid\n', 'https://directory.main.example.invalid');
+    assert.doesNotMatch(t, /sitemap|Host:|other\.example/i);
+    assert.match(t, /Disallow: \/go\//);
+  });
+  test('never closes the whole site', () => {
+    assert.doesNotMatch(directoryHostRobots(backend, 'https://directory.main.example.invalid'), /^Disallow: \/\s*$/m);
+  });
+});
