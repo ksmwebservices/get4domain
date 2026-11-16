@@ -134,8 +134,17 @@ async function flagOn() {
   ok(!/href="\/claim\?business=/.test(claimed.text), 'claimed business has no claim link');
   ok(/claimed by the business owner/.test(claimed.text), 'claimed business says so');
   ok(/More from the directory/.test(claimed.text), 'backlink block shows when the API has one');
-  ok((await get(ON, '/business/nope')).text.includes('noindex'), 'unknown business is noindex');
-  ok(/no longer listed/.test((await get(ON, '/business/removed-shop')).text), 'removed business has its page');
+  for (const p of ['/business/nope', '/zzz', '/chennai/plumbers/page/9', '/chennai/plumbers/page/1', '/nowhere/at-all', '/pincode/600020/nothing']) {
+    const r = await get(ON, p);
+    ok(r.status === 404, `flag on: ${p} is a real HTTP 404 (${r.status})`);
+    ok((r.headers.get('x-robots-tag') ?? '').includes('noindex') && /name="robots" content="noindex/.test(r.text), `flag on: ${p} is noindex in the header and the page`);
+    ok(h1s(r.text) === 1 && !/Workspace|SoftwareApplication/.test(r.text), `flag on: ${p} has one h1 and no site-wide JSON-LD`);
+  }
+  const gone = await get(ON, '/business/removed-shop');
+  ok(gone.status === 410 && /no longer listed/.test(gone.text) && (gone.headers.get('x-robots-tag') ?? '').includes('noindex'), `flag on: a removed business is a real 410 (${gone.status})`);
+  ok((await get(ON, '/zzz', { method: 'HEAD' })).status === 404, 'flag on: HEAD of an unknown address is 404');
+  ok((await get(ON, '/demo/zzz')).status === (await get(OFF, '/demo/zzz')).status, 'flag on: an unknown /demo address behaves as with the flag off');
+  ok((await get(ON, '/pricing/nothing')).status === (await get(OFF, '/pricing/nothing')).status, 'flag on: an unknown address under a live route behaves as with the flag off');
 
   const go = await get(ON, '/go/b-1001?src=city');
   ok(go.status === 302 && /sites\.example\.invalid/.test(go.headers.get('location') ?? ''), `click-out redirects (${go.status})`);

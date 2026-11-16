@@ -4,7 +4,8 @@ import { DEMO_PASS_COOKIE, verifyDemoPass } from '@/lib/demo-access';
 import { FEATURES, resolveLegacyRoute } from '@/lib/nav.generated';
 import { looksLikeBusinessId } from '@/lib/v3-public/click';
 import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
-import { isInternalOnlyPath, isV3PublicPath, V3_HEADER, V3_ROBOTS_ROUTE } from '@/lib/v3-public/routes';
+import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
+import { isInternalOnlyPath, isV3PublicPath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER } from '@/lib/v3-public/routes';
 
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
@@ -58,17 +59,30 @@ function v3ClickOutRewrite(req: NextRequest): NextResponse | null {
 }
 
 /**
- * The directory has no route of its own at the root. next.config has a fallback rewrite (it runs only for an address that no page, file or other route matched) that
- * sends such an address to the directory page, but only for a request carrying this header. Only this middleware sets it, and only while the flag is on; it also
- * removes a copy sent by a visitor. With the flag off the rewrite never matches, so an unknown address is the same 404 it always was.
+ * V3 public site, flag on only (with the flag off this returns at once and nothing changes). Two jobs:
+ *  1. Mark requests for V3 public routes with a header, so the root layout leaves out its site-wide JSON-LD for them.
+ *  2. The directory gate: an address that could be a directory address (not a live route) is checked with the directory API before any page runs, and the real status is
+ *     answered here: 404 or 410 with noindex, 503 if the API cannot answer, otherwise a rewrite to the directory page. (The live root loading.tsx sends a page's status before
+ *     the page runs, so a page cannot do this itself.)
  */
-function v3PassThrough(req: NextRequest): NextResponse {
-  const on = isV3PublicEnabled();
-  if (!on && !req.headers.has(V3_HEADER)) return NextResponse.next();
+async function v3Directory(req: NextRequest): Promise<NextResponse> {
+  if (!isV3PublicEnabled()) return NextResponse.next();
   const headers = new Headers(req.headers);
-  if (on) headers.set(V3_HEADER, '1');
-  else headers.delete(V3_HEADER);
-  return NextResponse.next({ request: { headers } });
+  headers.set(V3_ROUTE_HEADER, '1');
+  const { pathname } = req.nextUrl;
+  if (isV3PublicPath(pathname)) return NextResponse.next({ request: { headers } });
+  if (req.method !== 'GET' && req.method !== 'HEAD') return NextResponse.next();
+  const g = await gateDirectory(pathname);
+  if (g.kind === 'pass') return NextResponse.next();
+  if (g.kind === 'status') {
+    return new NextResponse(req.method === 'HEAD' ? null : gateBody(g.status), {
+      status: g.status,
+      headers: { 'content-type': 'text/html; charset=utf-8', 'x-robots-tag': 'noindex, nofollow', 'cache-control': g.status === 503 ? 'no-store' : 'public, max-age=60' },
+    });
+  }
+  const url = req.nextUrl.clone();
+  url.pathname = `${V3_PAGES_ROOT}${g.path}`;
+  return NextResponse.rewrite(url, { request: { headers } });
 }
 
 export async function middleware(req: NextRequest): Promise<NextResponse> {
@@ -79,7 +93,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
     // Flag off: the fixed V3 public addresses do not exist. A plain 404 here, before any page renders, is a real HTTP 404.
     return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
   }
-  // The internal page behind the directory fallback is only ever reached by the rewrite below (which runs after this), never by a visitor typing the address.
+  // The internal page behind the directory gate is only ever reached by the gate's rewrite (which runs after this), never by a visitor typing the address.
   if (isInternalOnlyPath(pathname)) {
     return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
   }
@@ -93,7 +107,7 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   if (clickOut) return clickOut;
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return legacyDashboardRedirect(req);
   const parts = pathname.split('/').filter(Boolean); // ['demo', <cat>, ...]
-  if (parts[0] !== 'demo' || parts.length < 2) return v3PassThrough(req);
+  if (parts[0] !== 'demo' || parts.length < 2) return v3Directory(req);
 
   const seg = decodeURIComponent(parts[1]).toLowerCase();
 
