@@ -1,0 +1,106 @@
+import assert from 'node:assert/strict';
+import { describe, test } from 'node:test';
+import { decideHost, hostRoutingActive, stripDirectoryPrefix, type HostRequest } from '../host-routing';
+import { readHostConfig } from '../hostnames';
+
+const HOSTS = {
+  MAIN_HOST: 'main.example.invalid', DIRECTORY_HOST: 'directory.main.example.invalid', APP_HOST: 'app.main.example.invalid',
+  ADMIN_HOST: 'admin.main.example.invalid', API_HOST: 'api.main.example.invalid', MEDIA_HOST: 'media.main.example.invalid',
+};
+const ON = { ...HOSTS, V3_PUBLIC_ENABLED: 'true' };
+const cfg = readHostConfig(HOSTS);
+const isId = (s: string): boolean => /^[0-9a-f]{8}-/.test(s);
+const run = (host: string, pathname: string, extra: Partial<HostRequest> = {}, env: Record<string, string | undefined> = ON) => decideHost({ host, pathname, isBusinessId: isId, ...extra }, cfg, env);
+
+describe('the host layer is active only with the flag and a main host', () => {
+  test('flag off: no decision for any host or path', () => {
+    for (const host of ['main.example.invalid', 'directory.main.example.invalid', 'x.main.example.invalid', 'other.invalid', 'api.main.example.invalid']) {
+      for (const path of ['/', '/directory', '/directory/chennai', '/pricing', '/chennai/plumbers']) assert.equal(run(host, path, {}, HOSTS), null, `${host}${path}`);
+    }
+    assert.equal(run('main.example.invalid', '/', {}, { ...HOSTS, V3_PUBLIC_ENABLED: 'false' }), null);
+    assert.equal(hostRoutingActive(cfg, HOSTS), false);
+  });
+  test('flag on but no main host: the earlier single-host behaviour, no decision', () => {
+    const none = readHostConfig({});
+    assert.equal(decideHost({ host: 'whatever.invalid', pathname: '/pricing' }, none, { V3_PUBLIC_ENABLED: 'true' }), null);
+    assert.equal(hostRoutingActive(none, { V3_PUBLIC_ENABLED: 'true' }), false);
+  });
+  test('flag on and a main host: active', () => {
+    assert.equal(hostRoutingActive(cfg, ON), true);
+  });
+});
+
+describe('main host', () => {
+  test('marketing stays', () => {
+    for (const p of ['/', '/pricing', '/industries/travel', '/claim', '/legal', '/account/login']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
+  });
+  test('/directory and below go permanently to the directory host without the prefix', () => {
+    assert.deepEqual(run('main.example.invalid', '/directory'), { action: 'redirect', to: 'https://directory.main.example.invalid/', status: 308 });
+    assert.deepEqual(run('main.example.invalid', '/directory/'), { action: 'redirect', to: 'https://directory.main.example.invalid/', status: 308 });
+    assert.deepEqual(run('main.example.invalid', '/directory/chennai/plumbers', { search: '?utm_source=x' }), { action: 'redirect', to: 'https://directory.main.example.invalid/chennai/plumbers?utm_source=x', status: 308 });
+  });
+  test('look-alikes of the prefix are not redirected', () => {
+    for (const p of ['/directory-go/x', '/directory-api/page-visit', '/directoryx']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
+  });
+  test('no directory host configured: nothing to redirect to, the path passes', () => {
+    const noDir = readHostConfig({ MAIN_HOST: 'main.example.invalid' });
+    assert.deepEqual(decideHost({ host: 'main.example.invalid', pathname: '/directory' }, noDir, ON), { action: 'pass', host: 'main' });
+  });
+  test('www goes permanently to the canonical host, path and query kept', () => {
+    assert.deepEqual(run('www.main.example.invalid', '/pricing', { search: '?a=1' }), { action: 'redirect', to: 'https://main.example.invalid/pricing?a=1', status: 308 });
+    assert.deepEqual(run('www.main.example.invalid', '/', { proto: 'http' }), { action: 'redirect', to: 'http://main.example.invalid/', status: 308 });
+  });
+});
+
+describe('directory host', () => {
+  const D = 'directory.main.example.invalid';
+  test('the home is an internal rewrite, the public address has no prefix', () => {
+    assert.deepEqual(run(D, '/'), { action: 'rewrite', pathname: '/directory' });
+  });
+  test('/directory and below redirect to the same address without the prefix', () => {
+    assert.deepEqual(run(D, '/directory'), { action: 'redirect', to: 'https://directory.main.example.invalid/', status: 308 });
+    assert.deepEqual(run(D, '/directory/chennai', { search: '?x=1' }), { action: 'redirect', to: 'https://directory.main.example.invalid/chennai?x=1', status: 308 });
+  });
+  test('directory addresses and V3 routes pass', () => {
+    for (const p of ['/chennai', '/chennai/plumbers', '/business/anand-electricals', '/state/tamil-nadu', '/category/plumbers', '/pincode/600020/plumbers', '/chennai/plumbers/page/2',
+      '/claim', '/claim/start/x', '/account/login', '/legal/terms', '/sitemaps/directory-index.xml', '/directory-api/page-visit', '/robots.txt', '/sitemap.xml']) {
+      assert.deepEqual(run(D, p), { action: 'pass', host: 'directory' }, p);
+    }
+  });
+  test('marketing and other live routes are a real 404, never the marketing page', () => {
+    for (const p of ['/pricing', '/about', '/industries/travel', '/demo/clinic', '/dashboard', '/login', '/site/anyone', '/ls/x', '/leadspace', '/terms']) {
+      assert.deepEqual(run(D, p), { action: 'not-found', host: 'directory' }, p);
+    }
+  });
+  test('/go is the click-out only: a business id passes, a campaign slug is a 404', () => {
+    assert.deepEqual(run(D, '/go/0a1b2c3d-0000-4000-8000-000000000000'), { action: 'pass', host: 'directory' });
+    assert.deepEqual(run(D, '/go/summer-sale'), { action: 'not-found', host: 'directory' });
+    assert.deepEqual(run(D, '/go/0a1b2c3d-0000-4000-8000-000000000000/extra'), { action: 'not-found', host: 'directory' });
+  });
+});
+
+describe('vendor, reserved and unknown hosts', () => {
+  test('a vendor host passes with its class', () => {
+    assert.deepEqual(run('sri-murugan.main.example.invalid', '/'), { action: 'pass', host: 'vendor-site' });
+    assert.deepEqual(run('sri-murugan.main.example.invalid', '/services'), { action: 'pass', host: 'vendor-site' });
+  });
+  test('app, admin, api and media hosts are never handled here', () => {
+    for (const h of ['app', 'admin', 'api', 'media']) for (const p of ['/', '/login', '/anything']) assert.deepEqual(run(`${h}.main.example.invalid`, p), { action: 'not-found', host: 'reserved' }, `${h}${p}`);
+  });
+  test('reserved labels (gapi, send, mail, V2 client names) are never handled here', () => {
+    for (const n of ['gapi', 'send', 'mail', 'mrtravels', 's2travels', 'allwintours']) assert.deepEqual(run(`${n}.main.example.invalid`, '/'), { action: 'not-found', host: 'reserved' }, n);
+  });
+  test('unknown hosts get a real 404, never the marketing page', () => {
+    for (const h of ['other.invalid', 'a.b.main.example.invalid', 'evilmain.example.invalid', '', 'localhost']) assert.deepEqual(run(h, '/'), { action: 'not-found', host: 'unknown' }, h);
+  });
+});
+
+describe('stripDirectoryPrefix', () => {
+  test('cases', () => {
+    assert.equal(stripDirectoryPrefix('/directory'), '/');
+    assert.equal(stripDirectoryPrefix('/directory/'), '/');
+    assert.equal(stripDirectoryPrefix('/directory/a/b'), '/a/b');
+    assert.equal(stripDirectoryPrefix('/directory-go/x'), null);
+    assert.equal(stripDirectoryPrefix('/chennai'), null);
+  });
+});

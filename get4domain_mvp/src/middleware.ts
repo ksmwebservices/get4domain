@@ -5,6 +5,7 @@ import { FEATURES, resolveLegacyRoute } from '@/lib/nav.generated';
 import { looksLikeBusinessId } from '@/lib/v3-public/click';
 import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
 import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
+import { decideHost } from '@/lib/v3-public/host-routing';
 import { isInternalOnlyPath, isV3PublicPath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER } from '@/lib/v3-public/routes';
 
 /**
@@ -85,8 +86,37 @@ async function v3Directory(req: NextRequest): Promise<NextResponse> {
   return NextResponse.rewrite(url, { request: { headers } });
 }
 
+const plainNotFound = (): NextResponse => new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
+
+/**
+ * One-domain host layer (Slice 6). Null, and so no change at all, unless V3_PUBLIC_ENABLED is on AND MAIN_HOST is set (see host-routing.ts).
+ * Otherwise it answers for the whole request: a redirect, a plain 404 (unknown, reserved, app, admin, api, media hosts and the marketing routes on the directory host),
+ * the directory home rewrite, or passes with the class of host so the later steps know whether the vendor-site rewrite and the directory gate apply.
+ */
+function hostLayer(req: NextRequest): { done: NextResponse } | { host: string } | null {
+  const d = decideHost({
+    host: req.headers.get('host'), pathname: req.nextUrl.pathname, search: req.nextUrl.search,
+    proto: req.headers.get('x-forwarded-proto') ?? undefined, isBusinessId: (s) => looksLikeBusinessId(s, useMocks()),
+  });
+  if (!d) return null;
+  if (d.action === 'not-found') return { done: plainNotFound() };
+  if (d.action === 'redirect') return { done: NextResponse.redirect(d.to, d.status) };
+  if (d.action === 'rewrite') {
+    const headers = new Headers(req.headers);
+    headers.set(V3_ROUTE_HEADER, '1');
+    const url = req.nextUrl.clone();
+    url.pathname = d.pathname;
+    return { done: NextResponse.rewrite(url, { request: { headers } }) };
+  }
+  return { host: d.host };
+}
+
 export async function middleware(req: NextRequest): Promise<NextResponse> {
-  const rewritten = vendorHostRewrite(req);
+  const layer = hostLayer(req);
+  if (layer && 'done' in layer) return layer.done;
+  const hostKind = layer?.host ?? null;
+  // Host layer on: only a vendor host reaches the vendor-site rewrite (the directory host must never become /site/directory).
+  const rewritten = hostKind === null || hostKind === 'vendor-site' ? vendorHostRewrite(req) : null;
   if (rewritten) return rewritten;
   const { pathname } = req.nextUrl;
   if (!isV3PublicEnabled() && isV3PublicPath(pathname)) {
@@ -107,7 +137,8 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   if (clickOut) return clickOut;
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return legacyDashboardRedirect(req);
   const parts = pathname.split('/').filter(Boolean); // ['demo', <cat>, ...]
-  if (parts[0] !== 'demo' || parts.length < 2) return v3Directory(req);
+  // Host layer on: the main host keeps marketing and never serves directory addresses (they are on the directory host), so no directory gate there.
+  if (parts[0] !== 'demo' || parts.length < 2) return hostKind === 'main' && !isV3PublicPath(pathname) ? NextResponse.next() : v3Directory(req);
 
   const seg = decodeURIComponent(parts[1]).toLowerCase();
 

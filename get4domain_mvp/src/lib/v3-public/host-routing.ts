@@ -1,0 +1,87 @@
+import { classifyHost, type HostClass, type HostConfig, normalizeHost, readHostConfig } from './hostnames';
+import { isV3PublicEnabled } from './flag';
+import { LIVE_SEGMENTS } from './routes';
+
+/**
+ * Which host a request is for, and what the middleware does about it. Pure: no framework import, so every host class can be tested.
+ *
+ * Active only while V3_PUBLIC_ENABLED is on AND MAIN_HOST is set. Otherwise the decision is null and the middleware behaves exactly as before
+ * (flag off: nothing changes; flag on with no host names: the earlier single-host behaviour).
+ *
+ *   main (canonical)  marketing stays. `/directory` and `/directory/...` go permanently (308) to the directory host, without the prefix.
+ *   main (www)        308 to the canonical main host, same path and query.
+ *   directory         `/` is the directory home (internal rewrite, no prefix in the public address). `/directory...` goes (308) to the same address without the prefix.
+ *                     Marketing and other live routes are a real 404 here; the directory, claim, account, legal, sitemap, robots and click-out addresses are served.
+ *   vendor-site       passes (the vendor site handler, Step 4).
+ *   reserved          app, admin, api, media and reserved labels are never handled by this app: a plain 404.
+ *   unknown           a plain 404, never the marketing page.
+ */
+export type HostDecision =
+  | { action: 'pass'; host: HostClass['kind'] }
+  | { action: 'redirect'; to: string; status: 308 }
+  | { action: 'rewrite'; pathname: string }
+  | { action: 'not-found'; host: HostClass['kind'] };
+
+export interface HostRequest {
+  host: string | null | undefined;
+  pathname: string;
+  search?: string;
+  /** 'https' unless the request says otherwise (x-forwarded-proto). */
+  proto?: string;
+  /** Tells a business id from a campaign slug in `/go/{segment}` (the live campaign page owns the slugs). */
+  isBusinessId?: (segment: string) => boolean;
+}
+
+/** The internal page that renders the directory home (reached on the directory host by a rewrite from `/`). */
+export const DIRECTORY_HOME_ROUTE = '/directory';
+
+/** Live route segments that stay reachable on the directory host. Every other live (marketing) route is a 404 there. */
+const DIRECTORY_HOST_LIVE_OK: ReadonlySet<string> = new Set(['go', 'robots.txt', 'sitemap.xml']);
+
+/** True while the host layer is on: the flag AND a main host. */
+export function hostRoutingActive(cfg: HostConfig = readHostConfig(), env: Record<string, string | undefined> = process.env): boolean {
+  return isV3PublicEnabled(env) && !!cfg.main;
+}
+
+const firstSegment = (pathname: string): string => pathname.split('/').filter(Boolean)[0]?.toLowerCase() ?? '';
+
+/** `/directory/chennai/plumbers` to `/chennai/plumbers`; `/directory` to `/`. null when the path is not under the prefix. */
+export function stripDirectoryPrefix(pathname: string): string | null {
+  if (pathname === DIRECTORY_HOME_ROUTE || pathname === `${DIRECTORY_HOME_ROUTE}/`) return '/';
+  return pathname.startsWith(`${DIRECTORY_HOME_ROUTE}/`) ? pathname.slice(DIRECTORY_HOME_ROUTE.length) : null;
+}
+
+const origin = (proto: string | undefined, host: string): string => `${proto === 'http' ? 'http' : 'https'}://${host}`;
+
+/** The decision for one request, or null when the host layer is not active. */
+export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(), env: Record<string, string | undefined> = process.env): HostDecision | null {
+  if (!hostRoutingActive(cfg, env)) return null;
+  const cls = classifyHost(req.host, cfg);
+  const search = req.search ?? '';
+  const { pathname } = req;
+
+  switch (cls.kind) {
+    case 'main': {
+      const base = cfg.main!.replace(/^www\./, '');
+      if (!cls.canonical) return { action: 'redirect', to: `${origin(req.proto, base)}${pathname}${search}`, status: 308 };
+      const rest = stripDirectoryPrefix(pathname);
+      if (rest !== null && cfg.directory) return { action: 'redirect', to: `${origin(req.proto, cfg.directory)}${rest}${search}`, status: 308 };
+      return { action: 'pass', host: 'main' };
+    }
+    case 'directory': {
+      const rest = stripDirectoryPrefix(pathname);
+      if (rest !== null) return { action: 'redirect', to: `${origin(req.proto, normalizeHost(req.host))}${rest}${search}`, status: 308 };
+      if (pathname === '/') return { action: 'rewrite', pathname: DIRECTORY_HOME_ROUTE };
+      const seg = firstSegment(pathname);
+      if (LIVE_SEGMENTS.has(seg) && !DIRECTORY_HOST_LIVE_OK.has(seg)) return { action: 'not-found', host: 'directory' };
+      if (seg === 'go' && req.isBusinessId) {
+        const m = /^\/go\/([^/]+)\/?$/.exec(pathname);
+        if (!m || !req.isBusinessId(m[1])) return { action: 'not-found', host: 'directory' };
+      }
+      return { action: 'pass', host: 'directory' };
+    }
+    case 'vendor-site': return { action: 'pass', host: 'vendor-site' };
+    case 'reserved': return { action: 'not-found', host: 'reserved' };
+    default: return { action: 'not-found', host: 'unknown' };
+  }
+}
