@@ -1,7 +1,8 @@
 import { apiBase, defaultRevalidate } from './config';
 import { useMocks } from './flag';
-import { MOCK_DIRECTORY_ROBOTS, mockBacklinkBlock, mockPage, mockSitemap } from './mocks';
-import type { BacklinkBlock, Fetched, PageModel } from './types';
+import { deriveListingState } from './claim';
+import { MOCK_DIRECTORY_ROBOTS, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockBacklinkBlock, mockListing, mockPage, mockSearch, mockSitemap } from './mocks';
+import type { BacklinkBlock, ClaimSearchItem, ClaimStatusResult, Fetched, PageModel } from './types';
 
 /**
  * The typed server-side client of the directory API. Mock mode (the default) returns fixtures and never touches the network; real mode calls the API unchanged.
@@ -94,4 +95,67 @@ export async function fetchBacklinkBlock(businessId: string): Promise<BacklinkBl
   if (!base) return null;
   const r = await getJson<BacklinkBlock>(`${base}/v3/directory/backlink-block/${encodeURIComponent(businessId)}`, defaultRevalidate());
   return r.kind === 'ok' ? r.data : null;
+}
+
+interface RawListItem { slug?: string; name?: string; claimed?: boolean; category?: { name?: string } | null; location?: { name?: string; path?: Array<{ name?: string }> } | null; siteUrl?: string | null; siteState?: string | null }
+interface RawList { items?: RawListItem[] }
+
+/** The claim search: businesses by name and city. Only identifying facts are kept; the API also sends a phone number for claimed businesses and that is dropped here. */
+export async function searchBusinesses(name: string, city: string): Promise<Fetched<ClaimSearchItem[]>> {
+  const n = name.trim().slice(0, 120);
+  const c = city.trim().slice(0, 80);
+  if (!n && !c) return { kind: 'ok', data: [] };
+  if (useMocks()) return { kind: 'ok', data: mockSearch(n, c) };
+  const base = apiBase();
+  if (!base) return { kind: 'error', status: null };
+  const q = new URLSearchParams({ pageSize: '10' });
+  if (n) q.set('q', n);
+  if (c) q.set('location', c);
+  const r = await getJson<RawList>(`${base}/v3/directory/businesses?${q.toString()}`, 60);
+  if (r.kind !== 'ok') return r;
+  const items = (r.data.items ?? []).filter((i) => i.slug && i.name).map((i): ClaimSearchItem => ({
+    slug: String(i.slug), name: String(i.name), category: i.category?.name ?? null, claimed: !!i.claimed,
+    place: i.location ? (i.location.path?.length ? i.location.path.map((p) => p.name).filter(Boolean).join(', ') : i.location.name ?? null) : null,
+    state: deriveListingState({ claimed: !!i.claimed, siteState: i.siteState, siteUrl: i.siteUrl }),
+  }));
+  return { kind: 'ok', data: items };
+}
+
+/** One listing by slug for the start screen (the same public detail the claim search uses). */
+export async function fetchListing(slug: string): Promise<Fetched<ClaimSearchItem>> {
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug)) return { kind: 'notFound' };
+  if (useMocks()) {
+    const m = mockListing(slug);
+    return m ? { kind: 'ok', data: m } : { kind: 'notFound' };
+  }
+  const base = apiBase();
+  if (!base) return { kind: 'error', status: null };
+  const r = await getJson<RawListItem>(`${base}/v3/directory/businesses/${encodeURIComponent(slug)}`, 60);
+  if (r.kind !== 'ok') return r;
+  const i = r.data;
+  return { kind: 'ok', data: {
+    slug, name: String(i.name ?? slug), category: i.category?.name ?? null, claimed: !!i.claimed,
+    place: i.location ? (i.location.path?.length ? i.location.path.map((p) => p.name).filter(Boolean).join(', ') : i.location.name ?? null) : null,
+    state: deriveListingState({ claimed: !!i.claimed, siteState: i.siteState, siteUrl: i.siteUrl }),
+  } };
+}
+
+/** Is this claim link still usable? Never cached: the answer changes the moment the link is used. */
+export async function fetchClaimStatus(token: string): Promise<Fetched<ClaimStatusResult>> {
+  if (!/^[A-Za-z0-9_-]{16,200}$/.test(token)) return { kind: 'notFound' };
+  if (useMocks()) {
+    return token === MOCK_TOKEN_OK || token === MOCK_TOKEN_MAIL_OFF
+      ? { kind: 'ok', data: { valid: true, businessName: 'Sri Murugan Plumbing', expiresAt: '2099-01-01T00:00:00.000Z' } }
+      : { kind: 'notFound' };
+  }
+  const base = apiBase();
+  if (!base) return { kind: 'error', status: null };
+  try {
+    const res = await fetch(`${base}/v3/claim/${encodeURIComponent(token)}/status`, { cache: 'no-store', signal: AbortSignal.timeout(TIMEOUT_MS), headers: { accept: 'application/json' } });
+    if (res.status === 404) return { kind: 'notFound' };
+    if (!res.ok) return { kind: 'error', status: res.status };
+    return { kind: 'ok', data: unwrap<ClaimStatusResult>(await res.json()) };
+  } catch {
+    return { kind: 'error', status: null };
+  }
 }

@@ -29,3 +29,14 @@ export interface BacklinkLink { href: string; text: string }
 export interface BacklinkBlock { brand: BacklinkLink; links: BacklinkLink[]; html: string }
 
 export type Fetched<T> = { kind: 'ok'; data: T } | { kind: 'notFound' } | { kind: 'gone' } | { kind: 'error'; status: number | null };
+
+/** The four listing states of Amendment 13 Part B. The page model does not carry them (gap G4): the claim screens derive them from what the API does send. */
+export type ListingState = 'UNCLAIMED_LISTING' | 'DRAFT_SITE' | 'CLAIMED' | 'LIVE';
+
+/** One business in the claim search. Only identifying facts: no phone, email or street address. */
+export interface ClaimSearchItem { slug: string; name: string; place: string | null; category: string | null; claimed: boolean; state: ListingState }
+
+/** What a same-origin claim call answers to the browser. The browser never sees the API address, a token it did not send, or the API sentence. */
+export interface ClaimCallResult<T = unknown> { ok: boolean; status: number; code: string | null; message: string | null; data: T | null }
+
+export interface ClaimStatusResult { valid: true; businessName: string; expiresAt: string }

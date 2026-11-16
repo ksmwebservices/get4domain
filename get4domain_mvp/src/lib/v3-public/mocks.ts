@@ -1,4 +1,4 @@
-import type { BacklinkBlock, BusinessFacts, Card, Crumb, Facet, Link, PageModel, PageType } from './types';
+import type { BacklinkBlock, BusinessFacts, Card, ClaimSearchItem, ListingState, Crumb, Facet, Link, PageModel, PageType } from './types';
 
 /**
  * Fixtures for reviewing the public site without the API (V3_PUBLIC_USE_MOCKS=true, the default).
@@ -182,13 +182,30 @@ export function mockPage(path: string): { kind: 'ok'; model: PageModel } | { kin
   }
 }
 
-/** Business names a claim search can find (claimed ones are shown but cannot be chosen). */
-export function mockSearch(name: string, city: string): Array<{ slug: string; name: string; locality: string; city: string; category: string; claimed: boolean }> {
+/** The listing state each fixture business is in, so every claim screen can be reached in mock mode. */
+const MOCK_STATE: Record<string, ListingState> = {
+  'sri-murugan-plumbing': 'UNCLAIMED_LISTING', 'anand-electricals': 'LIVE', 'blue-tap-services': 'CLAIMED', 'kavitha-home-care': 'DRAFT_SITE', 'city-pipe-works': 'UNCLAIMED_LISTING',
+};
+
+/** Fixture businesses a claim search can find (claimed ones are shown but cannot be chosen). */
+export function mockSearch(name: string, city: string): ClaimSearchItem[] {
   const n = name.trim().toLowerCase();
   const c = city.trim().toLowerCase();
   if (!n && !c) return [];
-  return BIZ.filter((b) => (!n || b.name.toLowerCase().includes(n)) && (!c || 'chennai'.includes(c))).map((b) => ({ slug: b.slug, name: b.name, locality: b.locality, city: 'Chennai', category: b.category, claimed: b.claimed }));
+  return BIZ.filter((b) => (!n || b.name.toLowerCase().includes(n)) && (!c || 'chennai'.includes(c))).map((b) => ({ slug: b.slug, name: b.name, place: `${b.locality}, Chennai`, category: b.category, claimed: b.claimed, state: MOCK_STATE[b.slug] ?? 'UNCLAIMED_LISTING' }));
 }
+
+export function mockListing(slug: string): ClaimSearchItem | null {
+  const b = BIZ.find((x) => x.slug === slug);
+  return b ? { slug: b.slug, name: b.name, place: `${b.locality}, Chennai`, category: b.category, claimed: b.claimed, state: MOCK_STATE[b.slug] ?? 'UNCLAIMED_LISTING' } : null;
+}
+
+/** Fixture claim tokens: the first works end to end, the second shows the email-switched-off screen, anything else is an invalid link. */
+export const MOCK_TOKEN_OK = 'mock-claim-token-00000000';
+export const MOCK_TOKEN_MAIL_OFF = 'mock-mail-off-token-0000';
+export const MOCK_CODE_OK = '123456';
+export const MOCK_CODE_LOCKED = '000000';
+export const MOCK_SETUP_TOKEN = 'mock-setup-token-0000000000';
 
 export const MOCK_BUSINESS_IDS: readonly string[] = BIZ.map((b) => b.id);
 
