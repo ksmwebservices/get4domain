@@ -10,8 +10,11 @@ import { buildCorsOptions } from './common/cors';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { resolveTrustProxy } from './common/trust-proxy';
+import { assertLiveEnv } from './common/startup-check';
 
 async function bootstrap(): Promise<void> {
+  // The V3 live process (NODE_ENV=production and V3_LIVE=true, set by Dockerfile.v3live) refuses to boot with a missing or placeholder variable or a staging or test database. A no-op everywhere else.
+  assertLiveEnv();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
