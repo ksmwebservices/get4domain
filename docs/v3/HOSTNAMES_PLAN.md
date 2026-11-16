@@ -42,7 +42,7 @@ E. **robots/sitemap line:** `robots()` writes `Sitemap: {directoryOrigin}/sitema
 
 F. **Tests to update on the backend:** the home canonical/path (`/directory` to `/`), every crumb, every sitemap/robots/llms/badge test that asserted one origin, and add one test with two different origins to prove the brand crumb stays on the main origin.
 
-G. **Reserved vendor names** (`site-domains/settings/domain-settings.ts` `reservedSubdomains`): has `www admin api app mail media directory` but **not** `gapi` or `send`; and other lists (`provisioning/steps/business-input.ts`, `site-doc/starter.service.ts`, `commercial/deals.service.ts`) are shorter and separate (they lack `media`, `directory`, `send`). Add `gapi` and `send` to the domain setting, and make the other three use that one list. The existing V2 client names are protected by the transition rule in the owner decisions file; they are also listed in `src/lib/hostnames/reserved.ts` on the front end (Step 1).
+G. **Reserved vendor names** (`site-domains/settings/domain-settings.ts` `reservedSubdomains`): has `www admin api app mail media directory` but **not** `gapi` or `send`; and other lists (`provisioning/steps/business-input.ts`, `site-doc/starter.service.ts`, `commercial/deals.service.ts`) are shorter and separate (they lack `media`, `directory`, `send`). Add `gapi` and `send` to the domain setting, and make the other three use that one list. The existing V2 client names are protected by the transition rule in the owner decisions file; they are also listed in `src/lib/v3-public/hostnames.ts` on the front end (Step 1).
 
 Until A to D are done the model still emits `/directory` and the main origin. Step 3 records this as **blocking** and the front end renders whatever the model gives.
 

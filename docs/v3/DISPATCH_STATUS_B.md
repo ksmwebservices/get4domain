@@ -1,0 +1,20 @@
+# Dispatch B status (frontend lane)
+
+| Step | State | Commit | Note |
+|---|---|---|---|
+| K0 S6 step 0 plan | DONE | 14d827b | HOSTNAMES_PLAN.md |
+| K0 S6 step 1 hostnames module | DONE | 64544b3 | six env names, reserved data, classifier |
+| K0 S6 step 2 host routing | DONE | e9f4451 | flag and MAIN_HOST guarded |
+| K0 S6 step 3 directory on its host | DONE | 91feaec | robots and sitemap per host; backend items recorded as blocking |
+| K0 S6 step 4 vendor renderer | DONE | 5e401d8 | proxy of the backend's stored pages, V2 fallthrough |
+| K0 S6 step 5 checks and docs | DONE | 27c8418 + docs commit | smoke 590 checks, 160 unit tests |
+| K1 S7 | TODO | | |
+
+## ASSUMPTIONS
+- Host layer active only with the flag and MAIN_HOST (keeps current staging working).
+- Redirects always https (request scheme not trusted).
+- Main host does not serve directory addresses; directory host serves claim/account/legal too.
+- V3 asked first for vendor hosts, V2 for hosts V3 answers 404.
+
+## QUESTIONS FOR THE OWNER
+- nginx order for V2 names (G24). Backend items A to F (G26).

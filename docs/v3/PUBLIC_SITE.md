@@ -110,3 +110,38 @@ Then, in order, on staging with the real API (`V3_PUBLIC_USE_MOCKS=false`):
 ## 8. Files
 
 `src/lib/v3-public/` (flag, config, strings, types, API client, mocks, metadata, click-out, claim, proxies, handoff and redirect rules, robots, routes, firm, pagination, tests), `src/components/directory/`, `src/app/(directory)/` (layout, pages, handlers), `scripts/v3-public/` (test hook, smoke). Edited existing files: `src/middleware.ts`, `next.config.ts`, `package.json`, `.env.local.example`.
+
+## 9. One domain, subdomains (Slice 6)
+
+Branch `v3-pub-host`. Everything here needs `V3_PUBLIC_ENABLED=true` **and** `MAIN_HOST` set. With the flag off, or with no `MAIN_HOST`, nothing in this section applies and behaviour is as before (checked by the smoke test: flag off with all six names set changes nothing). Plan and findings: `HOSTNAMES_PLAN.md`.
+
+### Environment (names only, in `.env.local.example`; no default anywhere in code)
+
+`MAIN_HOST`, `DIRECTORY_HOST`, `APP_HOST`, `ADMIN_HOST`, `API_HOST`, `MEDIA_HOST`. A host name only (no scheme). `www.` of the main host is the same site, non-canonical. An unset name means that host class is not configured. Vendor hosts need no name: `<label>.<main host without www>`.
+
+### Host table as implemented (`lib/v3-public/hostnames.ts`, `host-routing.ts`, `middleware.ts`)
+
+| Host | Behaviour |
+|---|---|
+| main | Marketing as before. `/directory` and `/directory/...` go 308 to the directory host without the prefix (query kept). Directory addresses are not served (no gate); `/sitemaps/...` is a 404. `/robots.txt` is the existing rules and main sitemaps only. |
+| `www.` main | 308 to the canonical main host, path and query kept. |
+| directory | `/` is the directory home (internal rewrite to `/directory`, public address has no prefix). `/directory...` goes 308 to the same address without the prefix. Directory, business, claim, account, legal, `/go/{business id}`, `/sitemaps/...`, `/robots.txt` are served. `/sitemap.xml` is the directory sitemap index. Marketing and every other live route is a real 404; a campaign slug under `/go/` is a 404. |
+| `<vendor>` | V3 first: the backend's stored page, sitemap.xml, robots.txt, llms.txt and `/assets/...` are relayed by `/vendor-site` (internal). A host the backend answers a plain 404 for goes on to the V2 renderer (`/site/<name>`) so V2 vendors keep working until cutover; if the V2 rewrite does not apply it is a plain 404, never marketing. |
+| app, admin, api, media, reserved labels (www aside), V2 client names | Never handled here: plain 404, noindex. |
+| anything else (other domains, two-level names) | Real 404, never the marketing page. |
+
+Redirect targets are always `https` (the request scheme is not trusted; localhost is http).
+
+### Vendor sites
+
+No content renderer in this app: the backend renders and stores complete pages (SEO head, Organization/WebSite/FAQPage JSON-LD, areaServed, backlink block, Free listing-only rules, noindex rules, takedown, redirects). The app relays `GET /v3/public/site/by-host` unchanged (body, `Content-Type`, `ETag`, `Cache-Control`, `Content-Language`, `X-Robots-Tag`; 304, 301/302 with an https `Location` only, 451, uniform 404). A backend that cannot answer gives a kind 503 not-available page (noindex, no contact links). Samples in mock mode: `sample-pro`, `sample-free`, `sample-draft`, `sample-hostile`, `sample-moved`, `sample-takedown`, `sample-down` (`.<main host>`).
+
+### Go-live checklist for hostnames
+
+- [ ] Backend items A to E of `HOSTNAMES_PLAN.md` (directory origin, brand on the main origin, home path `/`, robots line) **before** the directory host is indexed. Blocking.
+- [ ] DNS (Cloudflare): `directory`, `app`, `admin`, `api`, `media` and the wildcard `*` under the main domain; `www` redirected to the bare host.
+- [ ] nginx server blocks: main + `www` and `directory` and `*` to this app (port 3006) with `Host $host` and `X-Forwarded-For` kept; explicit blocks for `app` (vendor SPA), `admin` (admin SPA), `api`, and the V2 client names ahead of the wildcard; SPA fallback and `X-Robots-Tag: noindex, nofollow` on `app` and `admin`; `nginx -t` before reload, backup of the old config.
+- [ ] The six host names set in the server's private environment; `V3_PUBLIC_ENABLED` set last.
+- [ ] `VITE_API_BASE_URL=https://<API_HOST>` when building the vendor and admin apps; `NEXT_PUBLIC_VENDOR_APP_URL=https://<APP_HOST>`.
+- [ ] V2 names still served by V2 (see G24); first V3 vendor site checked on its host: page, `/sitemap.xml`, `/robots.txt`, `/llms.txt`.
+- [ ] Checks: `npm run test:v3-public` (unit), `npm run smoke:v3-public` (real servers: flag off with hosts set, flag on without hosts, flag on with hosts).
