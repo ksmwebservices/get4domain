@@ -4,7 +4,8 @@ import { AUTH_ACTIONS, handleAuth, MOCK_LOGIN_EMAIL, MOCK_LOGIN_PASSWORD, MOCK_M
 import { canClaim, choosable, codeOk, deriveListingState, emailOk, errorOf, isMailOff, passwordOk } from '../claim';
 import { handleClaim } from '../claim-proxy';
 import { gstinLine, getFirm } from '../firm';
-import { MOCK_CODE_LOCKED, MOCK_CODE_OK, MOCK_SETUP_TOKEN, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockSearch } from '../mocks';
+import { handoffCodeOk, handoffTarget } from '../handoff';
+import { MOCK_CODE_LOCKED, MOCK_CODE_OK, MOCK_HANDOFF_CODE, MOCK_NO_HANDOFF_EMAIL, MOCK_SETUP_TOKEN, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockSearch } from '../mocks';
 import { S } from '../strings';
 import type { ListingState } from '../types';
 
@@ -110,7 +111,9 @@ describe('the claim calls (sample mode)', () => {
     assert.equal((await handleClaim(req, 'setup', { ...base, acceptTerms: true, email: 'bad' })).code, 'DIRECTORY_INVALID');
     const ok = await handleClaim(req, 'setup', { ...base, acceptTerms: true });
     assert.equal(ok.ok, true);
-    assert.deepEqual(ok.data, { next: 'LOGIN' });
+    assert.deepEqual(ok.data, { next: 'LOGIN', handoff: MOCK_HANDOFF_CODE });
+    const none = await handleClaim(req, 'setup', { ...base, acceptTerms: true, email: MOCK_NO_HANDOFF_EMAIL });
+    assert.deepEqual(none.data, { next: 'LOGIN', handoff: null });
   });
 
   test('bad input never reaches anywhere', async () => {
@@ -125,6 +128,15 @@ describe('sign in, sign up and password reset (sample mode)', () => {
     assert.equal((await handleAuth(req, 'login', { email: MOCK_LOGIN_EMAIL, password: MOCK_LOGIN_PASSWORD })).ok, true);
     assert.equal((await handleAuth(req, 'login', { email: MOCK_LOGIN_EMAIL, password: 'wrong-password' })).status, 401);
     assert.equal((await handleAuth(req, 'login', { email: 'nope', password: 'x' })).code, 'DIRECTORY_INVALID');
+  });
+
+  test('sign in answers with a handoff code, or with none when the handoff route gives none', async () => {
+    const withCode = await handleAuth(req, 'login', { email: MOCK_LOGIN_EMAIL, password: MOCK_LOGIN_PASSWORD });
+    assert.deepEqual(withCode.data, { ok: true, handoff: MOCK_HANDOFF_CODE });
+    const without = await handleAuth(req, 'login', { email: MOCK_NO_HANDOFF_EMAIL, password: MOCK_LOGIN_PASSWORD });
+    assert.equal(without.ok, true);
+    assert.deepEqual(without.data, { ok: true, handoff: null });
+    assert.equal((await handleAuth(req, 'login', { email: MOCK_NO_HANDOFF_EMAIL, password: 'wrong-password' })).status, 401);
   });
 
   test('sign up checks the password rule, the industry and a taken address', async () => {
@@ -170,6 +182,33 @@ describe('sign in, sign up and password reset (sample mode)', () => {
   test('no answer carries a token or a password', async () => {
     const r = await handleAuth(req, 'login', { email: MOCK_LOGIN_EMAIL, password: MOCK_LOGIN_PASSWORD });
     assert.doesNotMatch(JSON.stringify(r), /token|password/i);
+  });
+});
+
+describe('where the visitor goes after sign-in or claim setup', () => {
+  const vendor = 'https://app.example.invalid';
+  test('with a code: the vendor app address with the code in the fragment, never in the query', () => {
+    assert.equal(handoffTarget(vendor, 'abc123_-.~XYZ789'), 'https://app.example.invalid/#handoff=abc123_-.~XYZ789');
+    assert.equal(handoffTarget(`${vendor}/app?x=1`, 'abc123_-.~XYZ789'), 'https://app.example.invalid/app#handoff=abc123_-.~XYZ789');
+    assert.equal(new URL(handoffTarget(vendor, MOCK_HANDOFF_CODE) as string).search, '');
+  });
+  test('without a code, or with an unusable one: the vendor app login', () => {
+    assert.equal(handoffTarget(vendor, null), 'https://app.example.invalid/login');
+    assert.equal(handoffTarget(`${vendor}/`, null), 'https://app.example.invalid/login');
+    assert.equal(handoffTarget(`${vendor}/app`, null), 'https://app.example.invalid/app/login');
+    assert.equal(handoffTarget(vendor, 'short'), 'https://app.example.invalid/login');
+    assert.equal(handoffTarget(vendor, 'has space and <b> markup'), 'https://app.example.invalid/login');
+  });
+  test('no vendor app address, or one that is not http(s): no target', () => {
+    assert.equal(handoffTarget(null, 'abc123_-.~XYZ789'), null);
+    assert.equal(handoffTarget('javascript:alert(1)', null), null);
+    assert.equal(handoffTarget('not a url', null), null);
+  });
+  test('code shape', () => {
+    assert.equal(handoffCodeOk(MOCK_HANDOFF_CODE), true);
+    assert.equal(handoffCodeOk('a b c d e f g h'), false);
+    assert.equal(handoffCodeOk(12345678), false);
+    assert.equal(handoffCodeOk(null), false);
   });
 });
 

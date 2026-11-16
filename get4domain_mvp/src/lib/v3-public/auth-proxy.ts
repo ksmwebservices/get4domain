@@ -1,12 +1,14 @@
 import { INDUSTRIES } from '../../data/industries-list';
 import { emailOk, errorOf, isMailOff } from './claim';
 import { useMocks } from './flag';
+import { accessTokenOf, requestHandoff } from './handoff-api';
+import { MOCK_HANDOFF_CODE, MOCK_NO_HANDOFF_EMAIL } from './mocks';
 import { callApi } from './proxy';
 import type { ClaimCallResult } from './types';
 
 /**
  * The sign-in, sign-up and password-reset-request calls of the browser, answered by the server. The browser talks only to this site.
- * Nothing is kept: a successful sign-in only tells the page to continue to the business app, which signs the owner in itself (there is no token handoff yet, gap G2).
+ * Nothing is kept. A successful sign-in answers with a one-time handoff code (asked from POST /v3/auth/handoff while the owner's token is in hand, then dropped) or with none when that route is missing or fails; the page then sends the visitor to the business app with the code, or to its login (gap G2).
  */
 export type AuthAction = 'login' | 'register' | 'forgot' | 'reset';
 export const AUTH_ACTIONS: readonly string[] = ['login', 'register', 'forgot', 'reset'];
@@ -35,10 +37,14 @@ export async function handleAuth(req: Request, action: AuthAction, body: Record<
       const email = text(body.email, 254);
       const password = text(body.password, 128);
       if (!email || !emailOk(email) || !password || password.length < 6) return invalid();
-      if (useMocks()) return email === MOCK_LOGIN_EMAIL && password === MOCK_LOGIN_PASSWORD ? res(true, 200, null) : res(false, 401, null);
+      if (useMocks()) {
+        if (password !== MOCK_LOGIN_PASSWORD || (email !== MOCK_LOGIN_EMAIL && email !== MOCK_NO_HANDOFF_EMAIL)) return res(false, 401, null);
+        return { ...res(true, 200, null), data: { ok: true, handoff: email === MOCK_LOGIN_EMAIL ? MOCK_HANDOFF_CODE : null } };
+      }
       const r = await callApi(req, '/auth/session/login', { method: 'POST', body: { email, password } });
       if (!r) return res(false, 0, null);
-      return r.ok ? res(true, 200, null) : res(false, r.status, null, r.status === 429 ? errorOf(r.json).message : null);
+      if (!r.ok) return res(false, r.status, null, r.status === 429 ? errorOf(r.json).message : null);
+      return { ...res(true, 200, null), data: { ok: true, handoff: await requestHandoff(req, accessTokenOf(r.json)) } };
     }
     case 'register': {
       const name = text(body.name, 100);

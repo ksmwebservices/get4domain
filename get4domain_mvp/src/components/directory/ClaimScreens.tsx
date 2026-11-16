@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import FollowTo from '@/components/directory/FollowTo';
 import { S } from '@/lib/v3-public/strings';
 import type { ListingState } from '@/lib/v3-public/types';
 
@@ -43,13 +44,15 @@ export function StartUnavailableScreen() {
   return <Notice title={S.claim.start.title} tone="warn" role="status"><p>{S.claim.startUnavailable}</p></Notice>;
 }
 
-export function ApprovalScreen({ vendorUrl }: { vendorUrl: string | null }) {
+export function ApprovalScreen({ vendorUrl, href, follow }: { vendorUrl: string | null; href?: string | null; follow?: boolean }) {
+  const target = href ?? vendorUrl;
   return (
     <Notice title={S.claim.approval.title} tone="good" role="status">
+      {follow && target && <FollowTo target={target} />}
       <p>{S.claim.approval.body}</p>
       <p className="mt-3">
-        {vendorUrl ? (
-          <a href={vendorUrl} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.claim.approval.cta}</a>
+        {target ? (
+          <a href={target} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.claim.approval.cta}</a>
         ) : (
           <span className="text-slate-500">{S.claim.approval.notAvailable}</span>
         )}

@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { emailOk } from '@/lib/v3-public/claim';
+import { handoffCodeOk, handoffTarget } from '@/lib/v3-public/handoff';
 import { messageForCode, S } from '@/lib/v3-public/strings';
 import type { ClaimCallResult } from '@/lib/v3-public/types';
 
@@ -36,12 +37,15 @@ const INPUT = 'mt-1 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2
 const BUTTON = 'mt-5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60';
 
 /** After a successful step the visitor continues to the business app (its address comes from the environment). */
-function Done({ text, vendorUrl }: { text: string; vendorUrl: string | null }) {
+function Done({ text, vendorUrl, href, follow }: { text: string; vendorUrl: string | null; href?: string | null; follow?: boolean }) {
+  const target = href ?? vendorUrl;
+  // The fragment (#handoff=) never reaches a server; the page leaves for the business app at once, and the button stays for browsers that block it.
+  useEffect(() => { if (follow && target) window.location.assign(target); }, [follow, target]);
   return (
     <section role="status" className="rounded-xl border border-emerald-300 bg-emerald-50 p-6">
       <p className="font-medium text-slate-900">{text}</p>
       <p className="mt-3 text-sm">
-        {vendorUrl ? <a href={vendorUrl} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.auth.continueTo}</a> : <span className="text-slate-600">{S.auth.notAvailableBody}</span>}
+        {target ? <a href={target} rel="noopener" className="inline-block rounded-lg bg-slate-900 px-4 py-2 font-medium text-white">{S.auth.continueTo}</a> : <span className="text-slate-600">{S.auth.notAvailableBody}</span>}
       </p>
     </section>
   );
@@ -59,6 +63,7 @@ export function LoginForm({ vendorUrl }: { vendorUrl: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [target, setTarget] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -69,11 +74,17 @@ export function LoginForm({ vendorUrl }: { vendorUrl: string | null }) {
     const r = await call('login', { email, password });
     setBusy(false);
     setPassword('');
-    if (r.ok) { setDone(true); return; }
+    if (r.ok) {
+      const code = (r.data as { handoff?: unknown } | null)?.handoff;
+      // With a code: the business app with #handoff=. Without one (the route is missing or failed): the business app's own login.
+      setTarget(handoffTarget(vendorUrl, handoffCodeOk(code) ? code : null));
+      setDone(true);
+      return;
+    }
     setError(failureText(r, r.status === 401 ? S.auth.errors.badCredentials : S.auth.errors.fieldsInvalid));
   }
 
-  if (done) return <Done text={S.auth.signedIn} vendorUrl={vendorUrl} />;
+  if (done) return <Done text={S.auth.signedIn} vendorUrl={vendorUrl} href={target} follow />;
   return (
     <form onSubmit={submit} noValidate aria-labelledby="login-title">
       <h2 id="login-title" className="sr-only">{S.auth.login.title}</h2>

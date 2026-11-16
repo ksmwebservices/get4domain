@@ -206,6 +206,9 @@ export const MOCK_TOKEN_MAIL_OFF = 'mock-mail-off-token-0000';
 export const MOCK_CODE_OK = '123456';
 export const MOCK_CODE_LOCKED = '000000';
 export const MOCK_SETUP_TOKEN = 'mock-setup-token-0000000000';
+/** Sample mode: the one-time code the handoff route gives, and the address for which it gives none (the "route is missing" case). */
+export const MOCK_HANDOFF_CODE = 'mock-handoff-code-0000';
+export const MOCK_NO_HANDOFF_EMAIL = 'nohandoff@example.invalid';
 
 export const MOCK_BUSINESS_IDS: readonly string[] = BIZ.map((b) => b.id);
 

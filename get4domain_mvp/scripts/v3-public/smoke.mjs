@@ -177,6 +177,13 @@ async function flagOn() {
   ok(/This reset link is not valid/.test((await get(ON, '/account/reset-password')).text), 'reset page without a token says the link is not valid');
   const resetApi = await fetch(`http://localhost:${ON}/directory-api/auth/reset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ token: 'mock-reset-token-000000000', password: 'Newpass123' }) });
   ok((await resetApi.json()).ok === true, 'reset confirm answers ok in sample mode');
+  const post = async (route, payload) => (await fetch(`http://localhost:${ON}${route}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })).json();
+  const loginOk = await post('/directory-api/auth/login', { email: 'owner@example.invalid', password: 'Password1' });
+  ok(loginOk.ok === true && loginOk.data?.handoff === 'mock-handoff-code-0000', 'sign-in in sample mode answers with a handoff code');
+  const loginNoHandoff = await post('/directory-api/auth/login', { email: 'nohandoff@example.invalid', password: 'Password1' });
+  ok(loginNoHandoff.ok === true && loginNoHandoff.data?.handoff === null, 'sign-in without a handoff route answers ok with no code');
+  const setupOk = await post('/directory-api/claim/setup', { setupToken: 'mock-setup-token-0000000000', password: 'long-enough-1', acceptTerms: true });
+  ok(setupOk.ok === true && setupOk.data?.handoff === 'mock-handoff-code-0000', 'claim setup in sample mode answers with a handoff code');
   const mailOffApi = await fetch(`http://localhost:${ON}/directory-api/auth/forgot`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'mailoff@example.invalid' }) });
   ok((await mailOffApi.json()).code === 'MAIL_DISABLED', 'reset request in sample mode can answer email switched off');
 

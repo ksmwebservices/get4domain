@@ -19,7 +19,7 @@ export function forwardedFor(req: Request): string | null {
 export interface ApiCall { ok: boolean; status: number; json: unknown; location: string | null }
 
 /** A server-to-server call to the API for the public forms and the click-out. null when the API is not configured or cannot be reached. Mock mode never calls it. */
-export async function callApi(req: Request, route: string, init: { method: 'GET' | 'POST'; body?: unknown; redirect?: 'manual' | 'follow' }): Promise<ApiCall | null> {
+export async function callApi(req: Request, route: string, init: { method: 'GET' | 'POST'; body?: unknown; redirect?: 'manual' | 'follow'; headers?: Record<string, string> }): Promise<ApiCall | null> {
   if (useMocks()) return null;
   const base = apiBase();
   if (!base) return null;
@@ -30,7 +30,7 @@ export async function callApi(req: Request, route: string, init: { method: 'GET'
       redirect: init.redirect ?? 'follow',
       cache: 'no-store',
       signal: AbortSignal.timeout(6000),
-      headers: { accept: 'application/json', ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}), ...(ip ? { 'x-forwarded-for': ip } : {}) },
+      headers: { accept: 'application/json', ...(init.headers ?? {}), ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}), ...(ip ? { 'x-forwarded-for': ip } : {}) },
       ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
     });
     let json: unknown = null;

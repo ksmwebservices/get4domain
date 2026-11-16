@@ -1,6 +1,7 @@
 import { errorOf, isMailOff, codeOk, emailOk, passwordOk } from './claim';
 import { useMocks } from './flag';
-import { MOCK_CODE_LOCKED, MOCK_CODE_OK, MOCK_SETUP_TOKEN, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockListing } from './mocks';
+import { accessTokenOf, requestHandoff } from './handoff-api';
+import { MOCK_CODE_LOCKED, MOCK_CODE_OK, MOCK_HANDOFF_CODE, MOCK_NO_HANDOFF_EMAIL, MOCK_SETUP_TOKEN, MOCK_TOKEN_MAIL_OFF, MOCK_TOKEN_OK, mockListing } from './mocks';
 import { callApi } from './proxy';
 import type { ClaimCallResult } from './types';
 
@@ -70,12 +71,20 @@ export async function handleClaim(req: Request, action: ClaimAction, body: Recor
       if (useMocks()) {
         if (body.acceptTerms !== true) return res(false, 400, 'CLAIM_TERMS_REQUIRED');
         if (email === 'taken@example.invalid') return res(false, 409, 'CLAIM_EMAIL_TAKEN');
-        return res(true, 200, null, { next: 'LOGIN' });
+        return res(true, 200, null, { next: 'LOGIN', handoff: email === MOCK_NO_HANDOFF_EMAIL ? null : MOCK_HANDOFF_CODE });
       }
       const r = await callApi(req, '/v3/claim/setup', { method: 'POST', body: { setupToken, password, acceptTerms: body.acceptTerms, ...(email ? { email } : {}) } });
       if (!r) return res(false, 0, null);
       const e = errorOf(r.json);
-      return r.ok ? res(true, r.status, null, { next: 'LOGIN' }) : res(false, r.status, e.code, null, r.status === 429 ? e.message : null);
+      if (!r.ok) return res(false, r.status, e.code, null, r.status === 429 ? e.message : null);
+      // The account is ready. Sign the owner in with the password just typed (kept only for this call) to ask for a handoff code; any failure here is not a failure of the setup: no code, and the page sends the owner to the business app's login.
+      const loginEmail = email ?? pick(r.json, 'loginEmail');
+      let handoff: string | null = null;
+      if (loginEmail) {
+        const login = await callApi(req, '/auth/session/login', { method: 'POST', body: { email: loginEmail, password } });
+        if (login?.ok) handoff = await requestHandoff(req, accessTokenOf(login.json));
+      }
+      return res(true, r.status, null, { next: 'LOGIN', handoff });
     }
   }
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ApprovalScreen, MailOffScreen } from '@/components/directory/ClaimScreens';
 import { codeOk, emailOk, passwordOk } from '@/lib/v3-public/claim';
+import { handoffCodeOk, handoffTarget } from '@/lib/v3-public/handoff';
 import { messageForCode, S } from '@/lib/v3-public/strings';
 import type { ClaimCallResult } from '@/lib/v3-public/types';
 
@@ -43,6 +44,7 @@ export default function ClaimWizard({ token, businessName, vendorUrl }: { token:
   const [email, setEmail] = useState('');
   const [needEmail, setNeedEmail] = useState(false);
   const [terms, setTerms] = useState(false);
+  const [target, setTarget] = useState<string | null>(null);
 
   const idx = ORDER.indexOf(step);
 
@@ -76,13 +78,19 @@ export default function ClaimWizard({ token, businessName, vendorUrl }: { token:
     setBusy(true);
     const r = await call('setup', { setupToken, password, acceptTerms: terms, ...(email ? { email } : {}) });
     setBusy(false);
-    if (r.ok) { setPassword(''); setStep('approval'); return; }
+    if (r.ok) {
+      const handoff = (r.data as { handoff?: unknown } | null)?.handoff;
+      setTarget(handoffTarget(vendorUrl, handoffCodeOk(handoff) ? handoff : null));
+      setPassword('');
+      setStep('approval');
+      return;
+    }
     if (r.code === 'CLAIM_EMAIL_REQUIRED') setNeedEmail(true);
     setError(failure(r));
   }
 
   if (mailOff) return <MailOffScreen />;
-  if (step === 'approval') return <ApprovalScreen vendorUrl={vendorUrl} />;
+  if (step === 'approval') return <ApprovalScreen vendorUrl={vendorUrl} href={target} follow />;
 
   return (
     <div>
