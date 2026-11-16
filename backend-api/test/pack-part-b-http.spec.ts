@@ -33,8 +33,8 @@ describe('pack engine, Part B, over HTTP', () => {
 
   beforeEach(async () => {
     const e = await makeEngine(); plans = e.plans; svc = e.svc; badge = { waiting: 3, unread: 1 };
-    plans.states.set('a', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' }); plans.states.set('b', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' });
-    await svc.register('a', { categoryKey: 'plumber' }, owner('a')); await svc.register('b', { categoryKey: 'plumber' }, owner('b'));
+    plans.states.set('a', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' }); plans.states.set('b', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' }); plans.states.set('c', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
+    await svc.register('a', { categoryKey: 'plumber' }, owner('a')); await svc.register('b', { categoryKey: 'plumber' }, owner('b')); await svc.register('c', { categoryKey: 'juice-tea-snack-shop' }, owner('c'));
     const mod = await Test.createTestingModule({
       imports: [throttlerImport], controllers: [MePackController, AdminPackController, MeServicesController, MeDomainsController],
       providers: [
@@ -48,6 +48,7 @@ describe('pack engine, Part B, over HTTP', () => {
     app.use((req: { headers: Record<string, string>; user?: unknown }, _res: unknown, next: () => void) => {
       const p = req.headers['x-test-principal'];
       if (p === 'owner-a') req.user = { sub: 'a', email: 'a@x.invalid', role: 'VENDOR' };
+      else if (p === 'owner-c') req.user = { sub: 'c', email: 'c@x.invalid', role: 'VENDOR' };
       else if (p === 'owner-b') req.user = { sub: 'b', email: 'b@x.invalid', role: 'VENDOR' };
       else if (p === 'member-a') req.user = { sub: 'a', email: 'm@x.invalid', role: 'VENDOR', kind: 'team_member', memberId: 'm1', modules: ['website'] };
       else if (p === 'member-a-msg') req.user = { sub: 'a', email: 'm@x.invalid', role: 'VENDOR', kind: 'team_member', memberId: 'm1', modules: ['communication'] };
@@ -104,18 +105,22 @@ describe('pack engine, Part B, over HTTP', () => {
   });
 
   describe('GET /v3/me/packs and POST /v3/me/packs/:key/purchase (B10)', () => {
-    it('returns the four add-on packs with the price PENDING and no number, next to the wallet packs', async () => {
-      const r = await get('/v3/me/packs', 'owner-a');
+    it('returns only the add-on packs the pack of the vendor may buy, with the price PENDING and no number, next to the wallet packs', async () => {
+      const none = await get('/v3/me/packs', 'owner-a');
+      expect(none.status).toBe(200); expect(none.body.data.addonPacks).toEqual([]);   // a field-service pack buys none
+      const r = await get('/v3/me/packs', 'owner-c');
       expect(r.status).toBe(200); expect(r.body.data.items).toEqual([]);
       const keys = (r.body.data.addonPacks as Array<{ key: string; priceStatus: string; price: unknown }>);
-      expect(keys.map((k) => k.key).sort()).toEqual(['HOME_SAMPLE_COLLECTION', 'ONLINE_ORDERING_DELIVERY', 'PHARMACY_COUNTER', 'SHOP']);
+      expect(keys.map((k) => k.key).sort()).toEqual(['ONLINE_ORDERING_DELIVERY', 'SHOP']);
       for (const k of keys) expect([k.priceStatus, k.price]).toEqual(['PENDING', null]);
     });
-    it('buying SHOP answers 409 ADDON_PRICE_PENDING and the wallet is never asked; an add-on the category does not offer is 404; a wallet pack key still goes to the wallet', async () => {
-      const shop = await send('post', '/v3/me/packs/SHOP/purchase', 'owner-a', { idempotencyKey: 'key-abcdefgh-1' });
+    it('buying SHOP answers 409 ADDON_PRICE_PENDING and the wallet is never asked; an add-on the pack may not buy is 409 ADDON_NOT_ELIGIBLE; a wallet pack key still goes to the wallet', async () => {
+      const shop = await send('post', '/v3/me/packs/SHOP/purchase', 'owner-c', { idempotencyKey: 'key-abcdefgh-1' });
       expect([shop.status, shop.body.code ?? shop.body.error?.code ?? shop.body.data?.code]).toEqual([409, 'ADDON_PRICE_PENDING']);
       const lab = await send('post', '/v3/me/packs/PHARMACY_COUNTER/purchase', 'owner-a', { idempotencyKey: 'key-abcdefgh-2' });
-      expect(lab.status).toBe(404);
+      expect([lab.status, lab.body.code ?? lab.body.error?.code ?? lab.body.data?.code]).toEqual([409, 'ADDON_NOT_ELIGIBLE']);
+      const plumberShop = await send('post', '/v3/me/packs/SHOP/purchase', 'owner-a', { idempotencyKey: 'key-abcdefgh-5' });
+      expect([plumberShop.status, plumberShop.body.code ?? plumberShop.body.error?.code ?? plumberShop.body.data?.code]).toEqual([409, 'ADDON_NOT_ELIGIBLE']);
       const wallet = await send('post', '/v3/me/packs/poster_pack/purchase', 'owner-a', { idempotencyKey: 'key-abcdefgh-3' });
       expect(wallet.status).toBe(200);
     });

@@ -1,5 +1,6 @@
 import { buildSeed, BuiltSeed } from '../../src/v3-packs/seed/pack-seed';
 import { readSeedSources } from '../../src/v3-packs/seed/seed-files';
+import { EligibilityRow } from '../../src/v3-packs/core/addon-eligibility-core';
 import { AddonRecord, CapabilityRecord, CategoryRecord, MatrixRecord, PackRecord, TabRecord, Tier } from '../../src/v3-packs/core/pack-core';
 import { EntitlementsService } from '../../src/plans/entitlements/entitlements.service';
 import {
@@ -45,6 +46,12 @@ export class MemoryRefStore extends PackReferenceStore {
   }
   async listAddons(): Promise<StoredAddon[]> { return [...this.addons.values()]; }
   async createAddons(rows: AddonRecord[]): Promise<void> { for (const r of rows) { this.creates += 1; this.addons.set(r.key, { ...r, id: this.id(), enabled: true }); } }
+  eligibility = new Map<string, EligibilityRow>();
+  async listEligibility(): Promise<EligibilityRow[]> { return [...this.eligibility.values()].map((r) => ({ ...r })); }
+  async createEligibility(rows: Array<{ addonKey: string; packKey: string }>): Promise<number> {
+    let n = 0; for (const r of rows) { const k = `${r.addonKey}|${r.packKey}`; if (this.eligibility.has(k)) continue; this.eligibility.set(k, { ...r, active: true }); n += 1; } return n;
+  }
+  async setEligibility(addonKey: string, packKey: string, active: boolean, _staffId?: string | null): Promise<EligibilityRow> { const r = { addonKey, packKey, active }; this.eligibility.set(`${addonKey}|${packKey}`, r); return { ...r }; }
   async getSettingBool(key: string): Promise<boolean> { return this.settings.get(key) === true; }
   async setSettingBool(key: string, value: boolean): Promise<void> { this.settings.set(key, value); }
 }

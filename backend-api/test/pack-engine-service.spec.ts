@@ -49,10 +49,11 @@ describe('the loaders: dry run, apply, idempotent', () => {
 describe('registration (A5)', () => {
   it('offers the category pack, the category minimum tier, its starter services and what each capability needs', async () => {
     const { svc } = await makeEngine();
-    const o = await svc.offer('plumber');
+    const o = await svc.offer('plumber');   // a field-service pack: no add-on is offered (H2)
     expect(o.pack.key).toBe('FIELD_SERVICE'); expect(o.tier).toBe('HANDYMAN'); expect(o.starterServices.length).toBeGreaterThan(0);
     expect(o.capabilities).toEqual([{ key: 'STORE', name: 'Online store', included: false, needsTier: 'ECOMMERCE' }]);
-    expect(o.addonPacks).toEqual([{ key: 'SHOP', name: 'Shop', bundleDiscount: false, priceStatus: 'PENDING' }]);
+    expect(o.addonPacks).toEqual([]);
+    expect((await svc.offer('juice-tea-snack-shop')).addonPacks.map((a) => a.key)).toEqual(['SHOP', 'ONLINE_ORDERING_DELIVERY']);
   });
   it('sets the one primary pack and keeps the picks', async () => {
     const { svc, vendors, activity } = await makeEngine();

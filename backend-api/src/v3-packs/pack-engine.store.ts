@@ -1,3 +1,4 @@
+import { EligibilityRow } from './core/addon-eligibility-core';
 import { AddonRecord, CapabilityRecord, CategoryRecord, MatrixRecord, PackRecord, TabRecord, Tier } from './core/pack-core';
 
 export interface StoredPack { key: string; name: string; enabled: boolean; disclaimerKey: string | null; reviewStatus: string; config: unknown; updatedAt: Date }
@@ -37,6 +38,11 @@ export abstract class PackReferenceStore {
 
   abstract listAddons(): Promise<StoredAddon[]>;
   abstract createAddons(rows: AddonRecord[]): Promise<void>;
+
+  /** Which add-on packs a pack may buy (H2). Rows are kept: switching a pairing off sets active=false. */
+  abstract listEligibility(): Promise<EligibilityRow[]>;
+  abstract createEligibility(rows: Array<{ addonKey: string; packKey: string }>): Promise<number>;
+  abstract setEligibility(addonKey: string, packKey: string, active: boolean, staffId: string | null): Promise<EligibilityRow>;
 
   abstract getSettingBool(key: string): Promise<boolean>;
   abstract setSettingBool(key: string, value: boolean): Promise<void>;

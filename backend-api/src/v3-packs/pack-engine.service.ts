@@ -3,6 +3,7 @@ import { ActivityService } from '../v3-activity/activity.service';
 import { KeyedQueue } from '../common/keyed-queue';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { capabilityAnswer, CapabilityAnswer, NavInput, NavTab, NavTabDef, resolveNav, tabAccess, tabAccessOf, TabAccess } from './core/nav-core';
+import { checkEligibilityEdit, EligibilityRow, isEligible } from './core/addon-eligibility-core';
 import { checkPackConfig, checkTab, isTier, TabInput, Tier, TIERS } from './core/pack-core';
 import { packError } from './pack.errors';
 import {
@@ -21,7 +22,7 @@ export interface PackActor { type: 'VENDOR' | 'STAFF' | 'SYSTEM'; id: string | n
 export const PACK_CACHE_TTL_MS = 15_000;
 
 interface Reference {
-  packs: StoredPack[]; tabs: StoredTab[]; capabilities: StoredCapability[]; matrix: StoredMatrixCell[]; categories: StoredCategory[]; addons: StoredAddon[];
+  packs: StoredPack[]; tabs: StoredTab[]; capabilities: StoredCapability[]; matrix: StoredMatrixCell[]; categories: StoredCategory[]; addons: StoredAddon[]; eligibility: EligibilityRow[];
   gatedPacksOpen: boolean; onlineMedicineCheckout: boolean;
 }
 
@@ -56,11 +57,11 @@ export class PackEngineService {
   private async reference(): Promise<Reference> {
     const now = this.clock();
     if (this.ref && now - this.ref.at < PACK_CACHE_TTL_MS) return this.ref.data;
-    const [packs, tabs, capabilities, matrix, categories, addons, gatedPacksOpen, onlineMedicineCheckout] = await Promise.all([
-      this.refs.listPacks(), this.refs.listTabs(), this.refs.listCapabilities(), this.refs.listMatrix(), this.refs.listCategories(), this.refs.listAddons(),
+    const [packs, tabs, capabilities, matrix, categories, addons, eligibility, gatedPacksOpen, onlineMedicineCheckout] = await Promise.all([
+      this.refs.listPacks(), this.refs.listTabs(), this.refs.listCapabilities(), this.refs.listMatrix(), this.refs.listCategories(), this.refs.listAddons(), this.refs.listEligibility(),
       this.refs.getSettingBool(PACK_SETTING_KEYS.gatedPacksOpen), this.refs.getSettingBool(PACK_SETTING_KEYS.onlineMedicineCheckout),
     ]);
-    const data = { packs, tabs, capabilities, matrix, categories, addons, gatedPacksOpen, onlineMedicineCheckout };
+    const data = { packs, tabs, capabilities, matrix, categories, addons, eligibility, gatedPacksOpen, onlineMedicineCheckout };
     this.ref = { at: now, data };
     return data;
   }
@@ -143,7 +144,7 @@ export class PackEngineService {
   // ── add-on packs a vendor can see (Amendment 13 V3A, B10) ────────────────────────────────────────
 
   /**
-   * Every enabled add-on pack with whether it is on for this vendor and whether the vendor's category offers it. The price is ALWAYS reported as PENDING with no number until the owner sets it in the
+   * The enabled add-on packs this vendor's PACK may buy (the eligibility table, H2), with whether each is on for this vendor. An add-on the pack may not buy is not in the list at all. The price is ALWAYS reported as PENDING with no number until the owner sets it in the
    * price book (an add-on has no price column), so a screen shows "price not set" and never a figure.
    */
   async myAddons(vendorId: string): Promise<Array<{ key: string; name: string; description: string | null; grantsCapabilities: string[]; active: boolean; offered: boolean; bundleDiscount: boolean; priceStatus: 'PENDING'; price: null; priceNote: string }>> {
@@ -151,8 +152,8 @@ export class PackEngineService {
     const cat = vp ? r.categories.find((c) => c.categoryKey === vp.categoryKey) : undefined;
     const offered = new Map((cat?.addonPacks ?? []).map((a) => [a.key, a.bundleDiscount] as const));
     const on = new Set(vaddons.filter((a) => a.status === 'ACTIVE').map((a) => a.addonKey));
-    return r.addons.filter((a) => a.enabled).map((a) => ({
-      key: a.key, name: a.name, description: a.description, grantsCapabilities: a.grantsCapabilities, active: on.has(a.key), offered: offered.has(a.key), bundleDiscount: offered.get(a.key) === true,
+    return r.addons.filter((a) => a.enabled && isEligible(r.eligibility, a.key, vp?.packKey ?? null)).map((a) => ({
+      key: a.key, name: a.name, description: a.description, grantsCapabilities: a.grantsCapabilities, active: on.has(a.key), offered: true, bundleDiscount: offered.get(a.key) === true,
       priceStatus: 'PENDING' as const, price: null, priceNote: 'Price not set',
     }));
   }
@@ -160,10 +161,10 @@ export class PackEngineService {
   /** Is this key one of the engine's add-on packs (as opposed to a wallet usage pack of the price book)? */
   async isAddonKey(key: string): Promise<boolean> { return (await this.reference()).addons.some((a) => a.key === key && a.enabled); }
 
-  /** Buying an add-on pack: while its price is PENDING nothing is sold and no number is shown. A pack the vendor's category does not offer is not found. */
+  /** Buying an add-on pack: an add-on the vendor's pack may not buy is refused with ADDON_NOT_ELIGIBLE (H2). For an eligible one, while its price is PENDING nothing is sold and no number is shown. */
   async refuseAddonPurchase(vendorId: string, key: string): Promise<never> {
     const mine = (await this.myAddons(vendorId)).find((a) => a.key === key);
-    if (!mine || (!mine.offered && !mine.active)) throw packError(404, 'PACK_NOT_FOUND', 'That add-on pack is not available for your kind of business.');
+    if (!mine) throw packError(409, 'ADDON_NOT_ELIGIBLE', 'This add-on pack is not available for your kind of business.', { addon: key });
     throw packError(409, 'ADDON_PRICE_PENDING', 'This add-on pack cannot be bought yet. Its price has not been set.', { addon: key, priceStatus: 'PENDING' });
   }
 
@@ -197,7 +198,7 @@ export class PackEngineService {
         const a = capabilityAnswer(c.minTier, k, known, matrix);
         return { key: k, name: r.capabilities.find((x) => x.key === k)?.name ?? k, included: a.ok, needsTier: a.ok || a.code !== 'NEEDS_TIER' ? null : a.needsTier };
       }),
-      addonPacks: c.addonPacks.flatMap((a) => { const d = r.addons.find((x) => x.key === a.key && x.enabled); return d ? [{ key: d.key, name: d.name, bundleDiscount: a.bundleDiscount, priceStatus: 'PENDING' as const }] : []; }),
+      addonPacks: c.addonPacks.flatMap((a) => { const d = r.addons.find((x) => x.key === a.key && x.enabled && isEligible(r.eligibility, x.key, c.packKey)); return d ? [{ key: d.key, name: d.name, bundleDiscount: a.bundleDiscount, priceStatus: 'PENDING' as const }] : []; }),
     };
   }
 
@@ -327,6 +328,28 @@ export class PackEngineService {
     return row;
   }
   async adminAddons(): Promise<StoredAddon[]> { return (await this.reference()).addons; }
+
+  // ── add-on eligibility, edited by staff (H2) ────────────────────────────────────────────────────
+
+  /** Every pairing, the add-on and pack keys staff can choose from, and the owner's fixed rules in words. Read only. */
+  async adminEligibility(): Promise<{ rows: EligibilityRow[]; addons: string[]; packs: string[]; fixedRules: string[] }> {
+    const r = await this.reference();
+    return {
+      rows: r.eligibility, addons: r.addons.map((a) => a.key), packs: r.packs.map((p) => p.key),
+      fixedRules: ['SHOP and ONLINE_ORDERING_DELIVERY are never offered to the pharmacy pack', 'PHARMACY_COUNTER is only for the pharmacy pack'],
+    };
+  }
+  /** Turns one pairing on or off (a row is created the first time, never deleted). The owner's fixed rules cannot be switched on. Audited. */
+  async setEligibility(addonKey: string, packKey: string, active: boolean, actor: PackActor): Promise<EligibilityRow> {
+    const r = await this.reference();
+    const problems = checkEligibilityEdit({ addonKey, packKey, active }, new Set(r.addons.map((a) => a.key)), new Set(r.packs.map((p) => p.key)));
+    if (problems.length) throw packError(400, 'ADDON_ELIGIBILITY_INVALID', 'That pairing cannot be saved.', { problems });
+    const before = r.eligibility.find((e) => e.addonKey === addonKey && e.packKey === packKey)?.active ?? null;
+    const row = await this.refs.setEligibility(addonKey, packKey, active, actor.id);
+    this.invalidate();
+    await this.record(actor, null, 'pack.addon_eligibility.changed', 'AddonEligibility', `${addonKey}:${packKey}`, { addonKey, packKey, before, after: active });
+    return row;
+  }
 
   /** Is this pack one of the counsel-gated ones (health, legal and finance), and has SUPER_ADMIN opened them? A gated pack that is not open serves and accepts nothing from its industry fields. Read only. */
   async packGate(packKey: string): Promise<{ counselGated: boolean; open: boolean }> {

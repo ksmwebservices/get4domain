@@ -2,6 +2,7 @@ import {
   AddonRecord, addonRecords, addonTabRecords, capabilityRecords, capabilityTabRecords, CapabilityRecord, CategoryRecord, commonTabRecords, crossCheckMap, MatrixRecord, matrixRecords, PackEngineSettings, PackRecord, parseCategoryMaster, parseCsv,
   parsePackSummary, stableJson, TabRecord, validateSettings,
 } from '../core/pack-core';
+import { ELIGIBILITY_SEED } from '../core/addon-eligibility-core';
 import { PackReferenceStore } from '../pack-engine.store';
 
 /**
@@ -72,6 +73,9 @@ export async function loadPackEngine(store: PackReferenceStore, seed: BuiltSeed,
   await store.createTabs(t.missing); report.tabs.created = t.missing.length;
   await store.createMatrix(m.missing); report.matrix.created = m.missing.length;
   await store.createCategories(g.missing); report.categories.created = g.missing.length;
+  // H2: the add-on eligibility rows. Created when missing, never changed (a staff edit is never overwritten); they point at the packs and add-on packs created above.
+  const haveElig = new Set((await store.listEligibility()).map((e) => `${e.addonKey}|${e.packKey}`));
+  await store.createEligibility(ELIGIBILITY_SEED.filter((e) => !haveElig.has(`${e.addonKey}|${e.packKey}`)));
   report.applied = true;
   return report;
 }

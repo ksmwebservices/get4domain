@@ -218,6 +218,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/pack-engine/packs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/packs/:key': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tabs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/categories': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tier-matrix': OPS_AND_SUPER,
   'GET /v3/admin/pack-engine/addons': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/settings': OPS_AND_SUPER,
   'PUT /v3/admin/pack-engine/packs/:key': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tabs': SUPER_ONLY, 'PUT /v3/admin/pack-engine/categories/:categoryKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey': SUPER_ONLY,
+  'GET /v3/admin/pack-engine/addon-eligibility': OPS_AND_SUPER, 'PUT /v3/admin/pack-engine/addon-eligibility': SUPER_ONLY,   // H2: ADMIN edits through STAFF_ROLE_EXTENSIONS.ADMIN.allow
   'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/settings/:name': SUPER_ONLY,
   // Part B (B13): pausing and resuming a vendor's paid plan: OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SUPPORT and MARKETING refused)
   'POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause': OPS_AND_SUPER, 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume': OPS_AND_SUPER,
@@ -272,7 +273,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],

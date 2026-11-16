@@ -40,4 +40,9 @@ export class EditCategoryDto {
 export class PausePlanDto { @IsString() @MinLength(3) @MaxLength(300) reason!: string }
 export class MatrixCellDto { @IsBoolean() allowed!: boolean }
 export class PackSettingDto { @IsBoolean() value!: boolean }
+export class EligibilityDto {
+  @IsString() @MaxLength(60) addonKey!: string;
+  @IsString() @MaxLength(60) packKey!: string;
+  @IsBoolean() active!: boolean;
+}
 export class VendorAddonDto { @IsIn(['ACTIVE', 'ENDED']) status!: 'ACTIVE' | 'ENDED' }

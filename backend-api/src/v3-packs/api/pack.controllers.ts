@@ -9,7 +9,7 @@ import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { AppShellService } from '../app-shell.service';
 import { PackActor, PackEngineService, PACK_SETTING_KEYS } from '../pack-engine.service';
-import { EditCategoryDto, EditPackDto, MatrixCellDto, PackSettingDto, PausePlanDto, RegisterPackDto, SaveTabDto, SetCapabilityDto, VendorAddonDto } from './pack.dto';
+import { EditCategoryDto, EditPackDto, EligibilityDto, MatrixCellDto, PackSettingDto, PausePlanDto, RegisterPackDto, SaveTabDto, SetCapabilityDto, VendorAddonDto } from './pack.dto';
 
 const staff = (u: AuthenticatedUser, req: Request): PackActor => ({ type: 'STAFF', id: u?.sub ?? null, ip: req?.ip ?? null });
 const owner = (t: TenantContext, req: Request): PackActor => ({ type: 'VENDOR', id: t.memberId ?? t.vendorId, ip: req?.ip ?? null });
@@ -86,6 +86,10 @@ export class AdminPackController {
 
   @Get('addons') @ApiOperation({ summary: 'The add-on packs (prices PENDING)' })
   addons() { return this.packs.adminAddons(); }
+  @Get('addon-eligibility') @ApiOperation({ summary: 'Which add-on packs each pack may buy (data), the keys to choose from and the fixed owner rules' })
+  eligibility() { return this.packs.adminEligibility(); }
+  @Put('addon-eligibility') @HttpCode(200) @ApiOperation({ summary: 'ADMIN and SUPER_ADMIN (audited): allow or stop one add-on pack for one pack. A pairing that breaks an owner rule is refused (ADDON_ELIGIBILITY_INVALID). Rows are never deleted.' })
+  setEligibility(@Body() dto: EligibilityDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.packs.setEligibility(dto.addonKey, dto.packKey, dto.active, staff(u, req)); }
   @Put('vendors/:vendorId/addons/:addonKey') @HttpCode(200) @ApiOperation({ summary: 'SUPER_ADMIN: switch an add-on pack on or off for one vendor (prices are pending, so it cannot be bought yet)' })
   setVendorAddon(@Param('vendorId') vendorId: string, @Param('addonKey') addon: string, @Body() dto: VendorAddonDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.packs.setVendorAddon(vendorId, addon, dto.status, staff(u, req)); }
   @Get('vendors/:vendorId/navigation') @ApiOperation({ summary: 'The tab list one vendor sees (for support)' })

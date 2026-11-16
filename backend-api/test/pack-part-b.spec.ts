@@ -145,27 +145,29 @@ describe('B13 the pack engine service: pause and resume', () => {
 // ── B10: add-on packs in the vendor's pack list ───────────────────────────────────────────────────────────────────────
 
 describe('B10 add-on packs', () => {
-  it('all four keys are returned with the price PENDING and no number', async () => {
-    const { svc } = await makeEngine();
+  it('only the add-ons the pack of the vendor may buy are returned (H2), with the price PENDING and no number; a vendor with no pack sees none', async () => {
+    const { svc, plans: p } = await makeEngine();
+    expect(await svc.myAddons('v1')).toEqual([]);
+    p.states.set('v1', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' }); await svc.register('v1', { categoryKey: 'juice-tea-snack-shop' }, owner('v1'));
     const list = await svc.myAddons('v1');
-    expect(list.map((a) => a.key).sort()).toEqual(['HOME_SAMPLE_COLLECTION', 'ONLINE_ORDERING_DELIVERY', 'PHARMACY_COUNTER', 'SHOP']);
+    expect(list.map((a) => a.key).sort()).toEqual(['ONLINE_ORDERING_DELIVERY', 'SHOP']);
     for (const a of list) { expect([a.priceStatus, a.price, a.priceNote]).toEqual(['PENDING', null, 'Price not set']); expect(JSON.stringify(a)).not.toMatch(/\d{2,}|₹|paise/i); }
   });
-  it('a vendor sees which add-ons its category offers, and which are on', async () => {
+  it('a vendor sees which add-ons its pack may buy, and which are on', async () => {
     const { svc, plans: p } = await makeEngine(); p.states.set('v1', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
-    await svc.register('v1', { categoryKey: 'plumber' }, owner('v1'));
+    await svc.register('v1', { categoryKey: 'juice-tea-snack-shop' }, owner('v1'));
     const before = await svc.myAddons('v1');
     expect(before.find((a) => a.key === 'SHOP')).toMatchObject({ offered: true, active: false });
     await svc.setVendorAddon('v1', 'SHOP', 'ACTIVE', staff);
     expect((await svc.myAddons('v1')).find((a) => a.key === 'SHOP')).toMatchObject({ active: true });
-    expect((await svc.myAddons('other')).find((a) => a.key === 'SHOP')).toMatchObject({ active: false });   // another vendor is not affected
+    expect(await svc.myAddons('other')).toEqual([]);   // another vendor is not affected
   });
-  it('buying an add-on answers ADDON_PRICE_PENDING (409) while the price is pending, and an add-on the category does not offer is not found', async () => {
+  it('buying an eligible add-on answers ADDON_PRICE_PENDING (409) while the price is pending, and one the pack may not buy answers ADDON_NOT_ELIGIBLE (409)', async () => {
     const { svc, plans: p } = await makeEngine(); p.states.set('v1', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
-    await svc.register('v1', { categoryKey: 'plumber' }, owner('v1'));
+    await svc.register('v1', { categoryKey: 'juice-tea-snack-shop' }, owner('v1'));
     expect(await svc.isAddonKey('SHOP')).toBe(true); expect(await svc.isAddonKey('starter_ai_pack')).toBe(false);
     expect(await codeOf(svc.refuseAddonPurchase('v1', 'SHOP'))).toEqual({ code: 'ADDON_PRICE_PENDING', status: 409 });
-    expect(await codeOf(svc.refuseAddonPurchase('v1', 'PHARMACY_COUNTER'))).toEqual({ code: 'PACK_NOT_FOUND', status: 404 });
+    expect(await codeOf(svc.refuseAddonPurchase('v1', 'PHARMACY_COUNTER'))).toEqual({ code: 'ADDON_NOT_ELIGIBLE', status: 409 });
   });
 });
 

@@ -45,7 +45,7 @@ describe('the pack engine and the legacy world', () => {
   });
   it('the pure cores have no clock, randomness, network, file system or database', () => {
     const cores = files.filter((x) => /\/core\//.test(x.replace(/\\/g, '/')));
-    expect(cores.length).toBe(3);
+    expect(cores.length).toBe(4);   // pack-core, nav-core, shell-access and addon-eligibility-core (H2)
     for (const f of cores) expect(code(f)).not.toMatch(/Date\.now|new Date\(|Math\.random|randomBytes|randomUUID|fetch\(|https?\.request|from 'fs'|require\(|prisma|PrismaService|process\.env/);
   });
   it('every tenant query in the Prisma store names the vendor, and the reference queries never do', () => {
@@ -85,8 +85,8 @@ describe('the HTTP layer', () => {
 });
 
 describe('the staff routes follow the role rules', () => {
-  const READS = ['GET /v3/admin/pack-engine/packs', 'GET /v3/admin/pack-engine/packs/:key', 'GET /v3/admin/pack-engine/tabs', 'GET /v3/admin/pack-engine/categories', 'GET /v3/admin/pack-engine/tier-matrix', 'GET /v3/admin/pack-engine/addons', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation'];
-  const WRITES = ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'PUT /v3/admin/pack-engine/settings/:name'];
+  const READS = ['GET /v3/admin/pack-engine/packs', 'GET /v3/admin/pack-engine/packs/:key', 'GET /v3/admin/pack-engine/tabs', 'GET /v3/admin/pack-engine/categories', 'GET /v3/admin/pack-engine/tier-matrix', 'GET /v3/admin/pack-engine/addons', 'GET /v3/admin/pack-engine/addon-eligibility', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation'];
+  const WRITES = ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'PUT /v3/admin/pack-engine/addon-eligibility', 'PUT /v3/admin/pack-engine/settings/:name'];
   const PAUSE = ['POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause', 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume'];
   it('pausing and resuming a paid plan (Part B): OPERATIONS and SUPER_ADMIN, never MARKETING', () => { for (const k of PAUSE) expect([k, [...rolesFor(k)]]).toEqual([k, ['SUPER_ADMIN', 'OPERATIONS']]); });
   it('reads: OPERATIONS and SUPER_ADMIN, never MARKETING', () => { for (const k of READS) expect([k, [...rolesFor(k)]]).toEqual([k, ['SUPER_ADMIN', 'OPERATIONS']]); });

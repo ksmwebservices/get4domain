@@ -7374,6 +7374,7 @@ model V3Pack {
   updatedAt      DateTime @updatedAt
 
   categories  V3PackCategory[]
+  addonEligibility V3AddonEligibility[]
   vendorPacks V3VendorPack[]
 
   @@map("g4d_packs")
@@ -7542,6 +7543,7 @@ model V3PackAddon {
   updatedAt           DateTime @updatedAt
 
   vendors V3VendorPackAddon[]
+  eligibility V3AddonEligibility[]
 
   @@map("g4d_pack_addons")
 }
@@ -7563,6 +7565,25 @@ model V3VendorPackAddon {
   @@unique([vendorId, addonKey])
   @@index([vendorId])
   @@map("g4d_vendor_pack_addons")
+}
+
+/// Which add-on packs a pack may buy (Wave 2 Part H2). One row per (add-on, pack); active=false turns a pairing off and keeps the row. Seeded by the migration, edited by staff (audited). The owner's fixed
+/// rules (no SHOP or ONLINE_ORDERING_DELIVERY for PHARMACY, PHARMACY_COUNTER only for PHARMACY) are enforced in code on top of this data. Holds no price.
+model V3AddonEligibility {
+  id               String   @id @default(cuid())
+  addonKey         String
+  packKey          String
+  active           Boolean  @default(true)
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  addon V3PackAddon @relation(fields: [addonKey], references: [key], onDelete: Restrict)
+  pack  V3Pack      @relation(fields: [packKey], references: [key], onDelete: Restrict)
+
+  @@unique([addonKey, packKey])
+  @@index([packKey])
+  @@map("g4d_addon_eligibility")
 }
 
 /// Access log of the private object bucket (Amendment 12 Q2): who put, read, signed or deleted which object, and why. Append-only (trigger); no foreign key, like the activity log, so the log outlives a file.

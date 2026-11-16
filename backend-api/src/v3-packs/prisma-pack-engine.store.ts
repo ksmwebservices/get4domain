@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EligibilityRow } from './core/addon-eligibility-core';
 import { AddonRecord, CapabilityRecord, CategoryRecord, MatrixRecord, PackRecord, TabRecord, Tier } from './core/pack-core';
 import {
   PackReferenceStore, PackVendorStore, StoredAddon, StoredCapability, StoredCategory, StoredMatrixCell, StoredPack, StoredPause, StoredTab, StoredVendorAddon, StoredVendorCapability, StoredVendorPack,
@@ -87,6 +88,18 @@ export class PrismaPackReferenceStore extends PackReferenceStore {
   }
   async createAddons(rows: AddonRecord[]): Promise<void> {
     if (rows.length) await this.prisma.v3PackAddon.createMany({ data: rows.map((r) => ({ key: r.key, name: r.name, description: r.description, grantsCapabilities: json(r.grantsCapabilities), config: json(r.config), priceStatus: r.priceStatus, bundleDiscountStatus: r.bundleDiscountStatus })), skipDuplicates: true });
+  }
+
+  async listEligibility(): Promise<EligibilityRow[]> {
+    return (await this.prisma.v3AddonEligibility.findMany({ orderBy: [{ addonKey: 'asc' }, { packKey: 'asc' }] })).map((r) => ({ addonKey: r.addonKey, packKey: r.packKey, active: r.active }));
+  }
+  async createEligibility(rows: Array<{ addonKey: string; packKey: string }>): Promise<number> {
+    if (!rows.length) return 0;
+    return (await this.prisma.v3AddonEligibility.createMany({ data: rows.map((r) => ({ addonKey: r.addonKey, packKey: r.packKey })), skipDuplicates: true })).count;
+  }
+  async setEligibility(addonKey: string, packKey: string, active: boolean, staffId: string | null): Promise<EligibilityRow> {
+    const r = await this.prisma.v3AddonEligibility.upsert({ where: { addonKey_packKey: { addonKey, packKey } }, update: { active, updatedByStaffId: staffId }, create: { addonKey, packKey, active, updatedByStaffId: staffId } });
+    return { addonKey: r.addonKey, packKey: r.packKey, active: r.active };
   }
 
   async getSettingBool(key: string): Promise<boolean> { return (await this.prisma.v3PlanSetting.findUnique({ where: { key } }))?.valueJson === true; }
