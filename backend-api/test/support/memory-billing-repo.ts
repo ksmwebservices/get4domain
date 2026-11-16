@@ -60,6 +60,7 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   }
   async getInvoiceForVendor(v: string, id: string) { const i = this.invoices.find((x) => x.vendorId === v && x.id === id); return i ? { ...i } : null; }
 
+  async getInvoiceByOrder(orderId: string) { const i = this.invoices.find((x) => x.orderId === orderId); return i ? { ...i } : null; }
   deliveries: Array<{ id: string; vendorId: string; invoiceId: string; status: string; toMasked: string; toHash: string; payload: Record<string, unknown> }> = [];
   async findInvoiceDelivery(invoiceId: string) { const r = this.deliveries.find((x) => x.invoiceId === invoiceId); return r ? { id: r.id, status: r.status } : null; }
   async addInvoiceDelivery(d: { vendorId: string; invoiceId: string; toHash: string; toMasked: string; payload: Record<string, unknown> }) { const r = { id: this.id('out'), status: 'QUEUED', ...d }; this.deliveries.push(r); return { id: r.id }; }

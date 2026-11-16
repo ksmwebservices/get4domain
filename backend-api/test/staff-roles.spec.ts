@@ -93,7 +93,9 @@ describe('ADMIN', () => {
     for (const r of ['PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey', 'PUT /v3/admin/pack-engine/settings/:name', 'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey', 'GET /v3/admin/pack-engine/settings']) expect(allowed('ADMIN', r)).toBe(false);
   });
   it('cannot change a plan, a price, a tax rate, a platform setting, a terms document or an AI provider', () => {
-    for (const r of ['PUT /v3/admin/plan-settings/:key', 'POST /v3/admin/plans', 'POST /v3/admin/tax-rates', 'POST /v3/admin/terms/:id/publish', 'POST /v3/admin/ai/providers', 'POST /v3/admin/wallets/:vendorId/adjustments', 'POST /v3/admin/billing/orders/:id/mark-paid']) expect(allowed('ADMIN', r)).toBe(false);
+    for (const r of ['PUT /v3/admin/plan-settings/:key', 'POST /v3/admin/plans', 'POST /v3/admin/tax-rates', 'POST /v3/admin/terms/:id/publish', 'POST /v3/admin/ai/providers', 'POST /v3/admin/wallets/:vendorId/adjustments']) expect(allowed('ADMIN', r)).toBe(false);
+    // Wave 3 Part E: ADMIN (like SUPER_ADMIN) may confirm CASH for a cash order, and nothing else is markable by hand; the strict cash rules are tested in wave3-cash.spec.ts
+    expect(allowed('ADMIN', 'POST /v3/admin/billing/orders/:id/mark-paid')).toBe(true);
   });
   it('is closed on the commerce and money guards until the owner opens them', () => { expect(passes(new CommercialAdminGuard(), 'ADMIN')).toBe(false); expect(passes(new MoneyAdminGuard(), 'ADMIN')).toBe(false); });
 });

@@ -240,6 +240,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/partners': OPS_AND_SUPER, 'GET /v3/admin/partners/:id': OPS_AND_SUPER, 'POST /v3/admin/partners': SUPER_ONLY, 'PUT /v3/admin/partners/:id': SUPER_ONLY,
   // Wave 3 Part C: the payment gateway setting. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; choosing the gateway and its mode is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
   'GET /v3/admin/payment-gateway': OPS_AND_SUPER, 'PUT /v3/admin/payment-gateway': SUPER_ONLY,
+  // Wave 3 Part E: cash confirmed by an admin (CASH only, for a cash order). Making the cash order and confirming the cash are ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); OPERATIONS, SALES, SUPPORT and every label are refused. mark-paid itself was SUPER_ADMIN only and stays that in the base table.
+  'POST /v3/admin/billing/vendors/:vendorId/cash-orders': SUPER_ONLY,
 };
 
 /**
@@ -291,7 +293,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],

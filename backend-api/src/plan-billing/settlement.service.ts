@@ -14,6 +14,7 @@ import { GatewayHeaders } from './gateway/gateway.port';
 import { PaymentsGate } from './razorpay/payments-gate';
 import { BillingSettings } from './settings/billing-settings';
 import { BillingSettingsService } from './settings/billing-settings.service';
+import { CashInput, checkCashConfirmation } from './core/cash-core';
 import { invoiceLines } from './core/invoice-lines';
 import { PlanInvoiceDeliveryService } from './invoice-delivery.service';
 import { TopupSettlementHook } from './topup-hook';
@@ -46,11 +47,11 @@ export class PaymentSettlementService {
     @Optional() @Inject(PlanInvoiceDeliveryService) private readonly delivery?: Pick<PlanInvoiceDeliveryService, 'queue'>,
   ) {}
 
-  async settle(i: SettleInput): Promise<SettleOutcome> {
+  async settle(i: SettleInput, ctxOut?: SettleCtx): Promise<SettleOutcome> {
     const order = await this.repo.getOrder(i.orderId);
     if (!order) return 'NO_ORDER';
     const s = await this.settings.get();
-    const ctx: SettleCtx = { planLevel: null };
+    const ctx: SettleCtx = ctxOut ?? { planLevel: null };
     const outcome = await this.repo.transaction(order.vendorId, (tx) => this.settleWithin(tx, i, s, ctx));
     if (outcome === 'PAID') {
       this.afterPaid(order.vendorId, order.id, ctx.planLevel, i);
@@ -98,7 +99,7 @@ export class PaymentSettlementService {
       if (invoice) ctx.invoice = { id: invoice.id, number: invoice.invoiceNumber, planName: plan.name, to: vendor.email };
       const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id, ...(i.offline ? { settledReference: i.offline.reference, settledOn: i.offline.receivedOn, settledAmountPaise: i.offline.amountPaise, settledByName: i.offline.byName } : {}) });
       if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
-      await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice?.invoiceNumber ?? null, via: i.via, amountPaise: o.amountPaise });
+      await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice?.invoiceNumber ?? null, via: i.via, amountPaise: o.amountPaise, ...(i.offline ? { cash: { reference: i.offline.reference, receivedOn: i.offline.receivedOn ? i.offline.receivedOn.toISOString().slice(0, 10) : null, by: i.offline.byName } } : {}) });
       ctx.planLevel = plan.level;
       return 'PAID' as const;
     }
@@ -207,7 +208,29 @@ export class PaymentSettlementService {
     return o;
   }
 
-  /** SUPER_ADMIN: an offline payment (bank transfer, cash). The same settlement path as an online payment; the subscription source is STAFF; a reason is required and audited. */
+  /**
+   * Wave 3 Part E: cash confirmed by an ADMIN or SUPER_ADMIN, for a CASH order an admin made (the vendor can never pay by hand). Every detail is required (see checkCashConfirmation): the method CASH, the receipt
+   * reference, the day received, the amount (exactly the order total including GST) and a special-case note. Then, in ONE transaction: the order is marked paid, the plan is activated, the invoice is made and
+   * the audit row is written (SettlementService.settle). Confirming twice changes nothing. Returns the invoice number and the cash reference, so the screen can show the reference.
+   * Who may call it is the role matrix (ADMIN and SUPER_ADMIN); this method refuses everything that is not cash on a cash order, whoever calls it.
+   */
+  async confirmCash(orderId: string, input: CashInput, actor: Actor, byName: string): Promise<{ status: OrderStatus; outcome: SettleOutcome; invoice: { number: string; reference: string | null } | null }> {
+    const o = await this.load(orderId);
+    const c = checkCashConfirmation(input, o.amountPaise, this.clock().toISOString().slice(0, 10));
+    if (!c.ok) {
+      if (c.code === 'OFFLINE_AMOUNT_MISMATCH') throw adminGapError(409, 'OFFLINE_AMOUNT_MISMATCH', 'The amount received is not the amount of the order, so it cannot be marked paid.');
+      throw new BadRequestException({ ...billingError(c.code, c.code === 'CASH_ONLY' ? 'Only cash can be confirmed here. A plan is otherwise paid through the payment gateway.' : 'Some details need fixing.'), details: { fields: c.fields } });
+    }
+    if (o.gateway !== 'cash') throw new ConflictException(billingError('CASH_ORDER_INVALID', 'Cash can only be confirmed on a cash order made by an admin.'));
+    if (o.status === 'PAID') { const inv = await this.repo.getInvoiceByOrder(o.id); return { status: 'PAID', outcome: 'ALREADY_PAID', invoice: inv ? { number: inv.invoiceNumber, reference: this.cashRef(inv.snapshot) } : null }; }
+    if (o.status !== 'PENDING_PAYMENT') throw new ConflictException(billingError('ORDER_STATE_INVALID', 'Only an order that is waiting for payment can be confirmed as paid in cash.'));
+    const ctx: SettleCtx = { planLevel: null };
+    const outcome = await this.settle({ orderId, paid: { paymentId: `cash:${o.id}`, amount: o.amountPaise, currency: o.currency }, via: 'STAFF', actor, reason: c.value.note, offline: { reference: c.value.reference, receivedOn: new Date(`${c.value.receivedOn}T00:00:00.000Z`), amountPaise: c.value.amountPaise, byName } }, ctx);
+    return { status: (await this.load(orderId)).status, outcome, invoice: ctx.invoice ? { number: ctx.invoice.number, reference: c.value.reference } : null };
+  }
+  private cashRef(snapshot: Record<string, unknown>): string | null { const p = snapshot.payment as { reference?: unknown } | undefined; return typeof p?.reference === 'string' ? p.reference : null; }
+
+  /** INTERNAL: no route calls this any more (Wave 3 Part E: staff confirm CASH through confirmCash, and nothing else marks an order paid by hand). Kept for the services and tests that settle an order directly. SUPER_ADMIN: an offline payment (bank transfer, cash). The same settlement path as an online payment; the subscription source is STAFF; a reason is required and audited. */
   async markPaid(orderId: string, reason: string, actor: Actor, offline?: OfflineSettle): Promise<{ status: OrderStatus; outcome: SettleOutcome }> {
     if (typeof reason !== 'string' || reason.trim().length < 3) throw new BadRequestException('A reason of at least 3 characters is required.');
     const o = await this.load(orderId);

@@ -77,14 +77,21 @@ describe('plan purchase on staging (fake provider)', () => {
     await prisma.v3PaymentEvent.deleteMany({ where: { providerEventId: { startsWith: 'bad-' }, createdAt: { gte: new Date(Date.now() - 600_000) } } });
   });
 
-  it('amount mismatch goes to REVIEW and activates nothing new; SUPER_ADMIN (only) can then mark it paid; OPERATIONS and MARKETING cannot; a refund is recorded, never sent', async () => {
+  it('amount mismatch goes to REVIEW and activates nothing new; nothing marks a held order paid by hand; staff confirm CASH only, on a cash order made by an admin (ADMIN and SUPER_ADMIN; OPERATIONS and MARKETING refused); a refund is recorded, never sent', async () => {
     const c = await order({ termMonths: 3 }); const id = c.body.data.id as string; const p = fake.pay(c.body.data.providerOrderId, { amount: 1 });
     expect((await api('post', `/v3/me/billing/orders/${id}/confirm`, tokenA, { paymentId: p.paymentId, signature: p.signature })).body.data.status).toBe('REVIEW');
     expect((await prisma.v3PlanOrder.findUniqueOrThrow({ where: { id } })).status).toBe('REVIEW');
-    expect((await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, ops, { reason: 'checked the bank statement' })).status).toBe(403); expect((await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, mkt, { reason: 'checked the bank statement' })).status).toBe(403);
-    const done = await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, sup, { reason: 'checked the bank statement' }); expect(done.status).toBe(200); expect(done.body.data.status).toBe('PAID');
-    expect(await prisma.v3PlanOrder.findUniqueOrThrow({ where: { id } })).toMatchObject({ source: 'STAFF', status: 'PAID' });
-    const calls = { ...fake.calls }; const r = await api('post', `/v3/admin/billing/orders/${id}/refund`, sup, { amountPaise: 1000, note: 'goodwill refund made by bank' }); expect(r.status).toBe(200); expect(fake.calls).toEqual(calls);
+    const cash = (amountPaise: number) => ({ method: 'CASH', reference: 'RCPT-' + RUN_ID, receivedOn: new Date().toISOString().slice(0, 10), amountPaise, specialCase: true, reason: 'customer paid cash at the office' });
+    expect((await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, ops, cash(354_000))).status).toBe(403); expect((await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, mkt, cash(354_000))).status).toBe(403);
+    const held = await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, sup, cash(354_000)); expect([held.status, held.body.code]).toEqual([409, 'CASH_ORDER_INVALID']);   // a gateway order, and one under review: never settled by hand
+    expect((await api('post', `/v3/admin/billing/orders/${id}/mark-paid`, sup, { reason: 'checked the bank statement' })).body.code).toBe('CASH_ONLY');
+    const made = await api('post', `/v3/admin/billing/vendors/${A.vendorId}/cash-orders`, sup, { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: 'v3test-' + RUN_ID + '-cash' }); expect(made.status).toBe(200);
+    const cashId = made.body.data.id as string; const total = made.body.data.amountPaise as number;
+    expect((await api('post', `/v3/admin/billing/orders/${cashId}/mark-paid`, sup, cash(total - 1))).body.code).toBe('OFFLINE_AMOUNT_MISMATCH');
+    const done = await api('post', `/v3/admin/billing/orders/${cashId}/mark-paid`, sup, cash(total)); expect(done.status).toBe(200); expect(done.body.data.status).toBe('PAID'); expect(done.body.data.invoice.reference).toBe('RCPT-' + RUN_ID);
+    expect(await prisma.v3PlanOrder.findUniqueOrThrow({ where: { id: cashId } })).toMatchObject({ source: 'STAFF', status: 'PAID', gateway: 'cash' });
+    expect(await prisma.v3PlanInvoice.count({ where: { orderId: cashId } })).toBe(1);
+    const calls = { ...fake.calls }; const r = await api('post', `/v3/admin/billing/orders/${cashId}/refund`, sup, { amountPaise: 1000, note: 'goodwill refund made by bank' }); expect(r.status).toBe(200); expect(fake.calls).toEqual(calls);
     expect((await api('get', '/v3/admin/billing/orders?vendorId=' + A.vendorId, ops)).body.data.total).toBeGreaterThanOrEqual(3); expect((await api('get', '/v3/admin/billing/orders', mkt)).status).toBe(403);
   });
 

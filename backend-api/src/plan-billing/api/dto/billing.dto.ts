@@ -27,12 +27,22 @@ export class AdminOrdersDto extends PageDto {
 export class AdminEventsDto extends PageDto {
   @IsOptional() @IsString() @MaxLength(64) orderId?: string;
 }
-export class MarkPaidDto {
-  @IsString() @MinLength(3) @MaxLength(300) reason!: string;
-  /** C6: where the money came from (a bank or cash reference), the day it was received (YYYY-MM-DD) and the amount received in paise. All optional; checked by checkOffline, which names each field to fix. */
-  @IsOptional() @IsString() @MaxLength(200) reference?: string;
-  @IsOptional() @IsString() @MaxLength(20) receivedOn?: string;
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0) amountPaise?: number;
+/**
+ * Wave 3 Part E: the cash an ADMIN confirms. Every field is optional HERE on purpose: the real checks (CASH only, the reference, the day received, the amount equal to the order total including GST, the
+ * special-case acknowledgement and note) are in the pure cash core, so every refusal carries a registered code and names the fields to fix (a validator here would answer 400 with no code).
+ */
+export class CashConfirmDto {
+  @IsOptional() method?: unknown;
+  @IsOptional() reference?: unknown;
+  @IsOptional() receivedOn?: unknown;
+  @IsOptional() amountPaise?: unknown;
+  @IsOptional() specialCase?: unknown;
+  @IsOptional() reason?: unknown;
+}
+export class CreateCashOrderDto {
+  @IsString() @MaxLength(60) @Matches(/^[a-z][a-z0-9_]*$/, { message: 'planKey must be a plan key such as handyman_pro' }) planKey!: string;
+  @Type(() => Number) @IsInt() @IsIn([3, 6, 12]) termMonths!: number;
+  @IsString() @MinLength(8) @MaxLength(80) @Matches(/^[A-Za-z0-9_-]+$/, { message: 'idempotencyKey may only hold letters, digits, dash and underscore' }) idempotencyKey!: string;
 }
 export class RefundDto {
   @Type(() => Number) @IsInt() @Min(1) amountPaise!: number;

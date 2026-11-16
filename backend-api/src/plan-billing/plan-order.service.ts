@@ -17,13 +17,15 @@ import { BillingSettingsService } from './settings/billing-settings.service';
 import { PaymentSettlementService } from './settlement.service';
 
 const TERMS = [3, 6, 12];
+/** how long a cash order waits for an admin to confirm the cash */
+export const CASH_ORDER_DAYS = 14;
 const notFound = (): NotFoundException => new NotFoundException(billingError('ORDER_NOT_FOUND', ORDER_NOT_FOUND_MESSAGE));
 
 export interface OrderView {
   id: string; status: OrderStatus; kind: string; planKey: string | null; termMonths: number; amountPaise: number; currency: string; quote: Record<string, unknown>;
   providerOrderId: string | null; keyId: string | null; expiresAt: Date; paidAt: Date | null; createdAt: Date;
   /** Wave 3 Part C: which gateway the order is on, and the session token the browser checkout needs (Cashfree); null for Razorpay, whose checkout uses keyId and providerOrderId */
-  gateway: GatewayName; clientToken: string | null;
+  gateway: GatewayName | 'cash'; clientToken: string | null;
 }
 
 /**
@@ -44,7 +46,7 @@ export class PlanOrderService {
       id: o.id, status: o.status, kind: o.kind, planKey: q.planKey ?? null, termMonths: o.termMonths, amountPaise: o.amountPaise, currency: o.currency,
       quote: { base: q.base ?? null, discounts: q.discounts ?? [], creditPaise: q.creditPaise ?? 0, taxName: q.taxName ?? null, taxRatePercent: q.taxRatePercent ?? null, taxInclusive: q.taxInclusive ?? false, taxMinor: q.taxMinor ?? 0, totalMinor: q.totalMinor ?? o.amountPaise },
       providerOrderId: o.providerOrderId, keyId, expiresAt: o.expiresAt, paidAt: o.paidAt, createdAt: o.createdAt,
-      gateway: isGatewayName(o.gateway) ? o.gateway : 'razorpay', clientToken: o.gatewayClientToken ?? null,
+      gateway: isGatewayName(o.gateway) ? o.gateway : o.gateway === 'cash' ? 'cash' : 'razorpay', clientToken: o.gatewayClientToken ?? null,
     };
   }
 
@@ -122,6 +124,37 @@ export class PlanOrderService {
     const o = typeof id === 'string' && id ? await this.repo.getOrder(id) : null;
     if (!o || o.vendorId !== vendorId) throw notFound();
     return o;
+  }
+
+  /**
+   * Wave 3 Part E: an ADMIN or SUPER_ADMIN makes a CASH order for a vendor who paid cash in a special case. The amount is the same server price as an online order (price book plus GST, never typed),
+   * the order has no gateway and no provider order, and it can only be settled by an admin confirming the cash (SettlementService.confirmCash). Idempotent by key.
+   */
+  async createCashOrder(vendorId: string, input: { planKey: string; termMonths: number; idempotencyKey: string }, actor: Actor): Promise<OrderView> {
+    const now = this.clock();
+    const key = String(input.idempotencyKey ?? '');
+    const prior = await this.repo.findOrderByIdempotency(vendorId, key);
+    if (prior) {
+      const plan = await this.repo.getPlanById(prior.planId);
+      if (!plan || plan.key !== input.planKey || prior.termMonths !== input.termMonths || prior.gateway !== 'cash') throw new ConflictException(billingError('IDEMPOTENCY_CONFLICT', 'That request key was already used for a different order.'));
+      return this.view(prior);
+    }
+    const s = await this.settings.get();
+    const { plan, price, tax, kind, credit, quote } = await this.buildQuote(vendorId, { planKey: input.planKey, termMonths: input.termMonths }, now, s);
+    let order: OrderRow;
+    try {
+      order = await this.repo.createOrder({
+        vendorId, planId: plan.id, termMonths: input.termMonths, kind: kind === 'RENEWAL' ? 'RENEWAL' : kind === 'UPGRADE' ? 'UPGRADE' : 'NEW',
+        quote: { ...quote, base: price.amountPaise, planKey: plan.key, priceId: price.id, creditPaise: credit, taxName: tax.name, taxRatePercent: tax.ratePercent, termMonths: input.termMonths },
+        amountPaise: quote.totalMinor, currency: price.currency, gateway: 'cash', idempotencyKey: key, expiresAt: new Date(now.getTime() + CASH_ORDER_DAYS * 86_400_000), createdByType: actor.type, createdById: actor.id,
+      });
+    } catch (e) {
+      if (e instanceof DuplicateOrderError) { const again = await this.repo.findOrderByIdempotency(vendorId, key); if (again) return this.view(again); }
+      throw e;
+    }
+    await this.repo.updateOrderCas(order.id, ['CREATED'], { status: 'PENDING_PAYMENT' });
+    await this.repo.transaction(vendorId, (tx) => tx.audit(actor, 'billing.cash_order.created', order.id, null, { planKey: plan.key, termMonths: input.termMonths, amountPaise: order.amountPaise }));
+    return this.view((await this.repo.getOrder(order.id))!);
   }
 
   // ───────────── the payment port (Wave 3 Part C) ─────────────

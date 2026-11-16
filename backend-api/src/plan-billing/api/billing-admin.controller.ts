@@ -2,8 +2,7 @@ import { Body, Controller, Get, HttpCode, Optional, Param, Post, Put, Query, Req
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
-import { adminGapError } from '../../v3-admin-gaps/admin-gaps.errors';
-import { checkOffline, invoiceStatusOf } from '../../v3-admin-gaps/core/admin-gaps-core';
+import { invoiceStatusOf } from '../../v3-admin-gaps/core/admin-gaps-core';
 import { staffDisplayName } from '../../v3-admin-gaps/staff-name';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -13,7 +12,8 @@ import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { PlanBillingRepository } from '../plan-billing.repository';
 import { PaymentSettlementService } from '../settlement.service';
 import { PaymentGatewaySettingsService } from '../gateway/gateway-settings.service';
-import { AdminEventsDto, AdminOrdersDto, MarkPaidDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
+import { PlanOrderService } from '../plan-order.service';
+import { AdminEventsDto, AdminOrdersDto, CashConfirmDto, CreateCashOrderDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
 
 /** Staff side of plan purchases. Reads: OPERATIONS and SUPER_ADMIN. Marking an order paid offline and recording a refund: SUPER_ADMIN only. MARKETING is refused everywhere. All writes are audited. */
 @ApiTags('v3-billing-admin')
@@ -21,7 +21,7 @@ import { AdminEventsDto, AdminOrdersDto, MarkPaidDto, RefundDto, UpdateGatewayDt
 @UseGuards(AdminGuard)
 @Controller('v3/admin/billing')
 export class BillingAdminController {
-  constructor(private readonly repo: PlanBillingRepository, private readonly settlement: PaymentSettlementService, @Optional() private readonly prisma?: PrismaService) {}
+  constructor(private readonly repo: PlanBillingRepository, private readonly settlement: PaymentSettlementService, private readonly planOrders: PlanOrderService, @Optional() private readonly prisma?: PrismaService) {}
 
   @Get('orders') @ApiOperation({ summary: 'Plan orders, newest first, by vendor or status' })
   async orders(@Query() q: AdminOrdersDto) {
@@ -38,15 +38,14 @@ export class BillingAdminController {
   }
 
   @Post('orders/:id/mark-paid') @HttpCode(200)
-  @ApiOperation({ summary: 'Mark an order paid offline (SUPER_ADMIN, reason required). Creates the same subscription and invoice as an online payment, with source STAFF.' })
-  async markPaid(@Param('id') id: string, @Body() dto: MarkPaidDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) {
-    // C6: the reference, the day the money came and the amount are stored on the order and audited with the payment. Each is optional; a bad one is named, nothing is settled.
-    const o = checkOffline(dto, new Date().toISOString().slice(0, 10));
-    if (!o.ok) throw adminGapError(400, 'ADMIN_GAP_INVALID', 'Some details need fixing.', { fields: o.errors });
-    const anyGiven = o.value.reference !== null || o.value.receivedOn !== null || o.value.amountPaise !== null;
-    const offline = anyGiven ? { reference: o.value.reference, receivedOn: o.value.receivedOn ? new Date(`${o.value.receivedOn}T00:00:00.000Z`) : null, amountPaise: o.value.amountPaise, byName: await staffDisplayName(this.prisma, u) } : undefined;
-    return this.settlement.markPaid(id, dto.reason, actorOf(u, req), offline);
+  @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited: confirm that CASH was received for a cash order (a special case). Requires the method CASH, a receipt reference, the day received, the amount equal to the order total including GST, and a special-case note. Marks the order paid, activates the plan and makes the invoice in one transaction; the answer shows the invoice number and the reference. Nothing but cash can be confirmed here.' })
+  async markPaid(@Param('id') id: string, @Body() dto: CashConfirmDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) {
+    return this.settlement.confirmCash(id, dto, actorOf(u, req), await staffDisplayName(this.prisma, u));
   }
+
+  @Post('vendors/:vendorId/cash-orders') @HttpCode(200)
+  @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited: make a CASH order for a vendor who paid cash in a special case. The amount is the server price (price book plus GST). Idempotent by key. It is settled only by an admin confirming the cash.' })
+  createCashOrder(@Param('vendorId') vendorId: string, @Body() dto: CreateCashOrderDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.planOrders.createCashOrder(vendorId, dto, actorOf(u, req)); }
 
   @Post('orders/:id/refund') @HttpCode(200)
   @ApiOperation({ summary: 'Record a refund that was made elsewhere (SUPER_ADMIN). A record only: no money moves and the subscription is not changed.' })

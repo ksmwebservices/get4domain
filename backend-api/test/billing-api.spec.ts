@@ -122,18 +122,29 @@ describe('billing API', () => {
         const v = m === 'get' ? await get(url, 'owner') : await send(m, url, 'owner', body ?? {}); expect(v.status).toBe(403);
       }
     });
-    it('OPERATIONS and SUPER_ADMIN read orders and the inbox; ONLY SUPER_ADMIN marks paid or records a refund', async () => {
+    it('OPERATIONS and SUPER_ADMIN read orders and the inbox; marking paid is CASH only (ADMIN and SUPER_ADMIN); ONLY SUPER_ADMIN records a refund', async () => {
       const c = await order(); const id = c.body.data.id as string; await order('owner-2', { termMonths: 6 });
       for (const role of ['OPERATIONS', 'SUPER_ADMIN']) { expect((await get('/v3/admin/billing/orders?pageSize=5', role)).body.data.total).toBe(2); expect((await get('/v3/admin/billing/payment-events', role)).status).toBe(200); }
       expect((await get(`/v3/admin/billing/orders?vendorId=v2&status=PENDING_PAYMENT`, 'OPERATIONS')).body.data.total).toBe(1);
       expect((await get('/v3/admin/billing/orders?status=NOPE', 'OPERATIONS')).status).toBe(400);
-      expect((await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'OPERATIONS', { reason: 'bank transfer' })).status).toBe(403); expect((await send('post', `/v3/admin/billing/orders/${id}/refund`, 'OPERATIONS', { amountPaise: 1, note: 'xxx' })).status).toBe(403);
-      expect((await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'SUPER_ADMIN', { reason: 'x' })).status).toBe(400);   // DTO: reason too short
-      const paidRes = await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'SUPER_ADMIN', { reason: 'bank transfer received' }); expect(paidRes.status).toBe(200); expect(paidRes.body.data).toEqual({ status: 'PAID', outcome: 'PAID' });
-      expect(currentOf(w).source).toBe('STAFF');
-      expect((await send('post', `/v3/admin/billing/orders/${id}/refund`, 'SUPER_ADMIN', { amountPaise: 1.5, note: 'half' })).status).toBe(400); expect((await send('post', `/v3/admin/billing/orders/${id}/refund`, 'SUPER_ADMIN', { amountPaise: 100, note: 'x' })).status).toBe(400);
-      const ref = await send('post', `/v3/admin/billing/orders/${id}/refund`, 'SUPER_ADMIN', { amountPaise: 100, note: 'refunded by bank' }); expect(ref.status).toBe(200); expect(ref.body.data).toEqual({ refundRecordedPaise: 100 });
-      expect((await send('post', '/v3/admin/billing/orders/nope/mark-paid', 'SUPER_ADMIN', { reason: 'bank transfer' })).status).toBe(404);
+      const cash = (over: object = {}) => ({ method: 'CASH', reference: 'RCPT-42', receivedOn: '2026-11-05', amountPaise: 354_000, specialCase: true, reason: 'customer paid cash at the office', ...over });
+      expect((await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'OPERATIONS', cash())).status).toBe(403); expect((await send('post', `/v3/admin/billing/orders/${id}/refund`, 'OPERATIONS', { amountPaise: 1, note: 'xxx' })).status).toBe(403);
+      // the old way (a reason only, any method) is gone: only cash is accepted, and only on a cash order an admin made
+      const legacy = await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'SUPER_ADMIN', { reason: 'bank transfer received' }); expect([legacy.status, legacy.body.code]).toEqual([400, 'CASH_ONLY']);
+      const bank = await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'SUPER_ADMIN', cash({ method: 'BANK_TRANSFER' })); expect([bank.status, bank.body.code]).toEqual([400, 'CASH_ONLY']);
+      const online = await send('post', `/v3/admin/billing/orders/${id}/mark-paid`, 'SUPER_ADMIN', cash()); expect([online.status, online.body.code]).toEqual([409, 'CASH_ORDER_INVALID']);
+      expect(currentOf(w).planId).toBe(w.ids.free);
+      const made = await send('post', '/v3/admin/billing/vendors/v2/cash-orders', 'ADMIN', { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: key() }); expect(made.status).toBe(200);
+      expect(made.body.data).toMatchObject({ gateway: 'cash', status: 'PENDING_PAYMENT', amountPaise: 354_000, providerOrderId: null }); const cid = made.body.data.id as string;
+      expect((await send('post', `/v3/admin/billing/orders/${cid}/mark-paid`, 'ADMIN', cash({ amountPaise: 300_000 }))).body.code).toBe('OFFLINE_AMOUNT_MISMATCH');
+      const incomplete = await send('post', `/v3/admin/billing/orders/${cid}/mark-paid`, 'ADMIN', { method: 'CASH' }); expect([incomplete.status, incomplete.body.code]).toEqual([400, 'CASH_DETAILS_INVALID']);
+      const paidRes = await send('post', `/v3/admin/billing/orders/${cid}/mark-paid`, 'ADMIN', cash()); expect(paidRes.status).toBe(200);
+      expect(paidRes.body.data).toEqual({ status: 'PAID', outcome: 'PAID', invoice: { number: 'INV/2026-27/000001', reference: 'RCPT-42' } });
+      expect(currentOf(w, 'v2').source).toBe('STAFF');
+      expect((await send('post', `/v3/admin/billing/orders/${cid}/refund`, 'ADMIN', { amountPaise: 100, note: 'refunded by bank' })).status).toBe(403);
+      expect((await send('post', `/v3/admin/billing/orders/${cid}/refund`, 'SUPER_ADMIN', { amountPaise: 1.5, note: 'half' })).status).toBe(400); expect((await send('post', `/v3/admin/billing/orders/${cid}/refund`, 'SUPER_ADMIN', { amountPaise: 100, note: 'x' })).status).toBe(400);
+      const ref = await send('post', `/v3/admin/billing/orders/${cid}/refund`, 'SUPER_ADMIN', { amountPaise: 100, note: 'refunded by bank' }); expect(ref.status).toBe(200); expect(ref.body.data).toEqual({ refundRecordedPaise: 100 });
+      expect((await send('post', '/v3/admin/billing/orders/nope/mark-paid', 'SUPER_ADMIN', cash())).status).toBe(404);
     });
     it('the staff order list shows the money and refund fields; the inbox shows redacted payloads only', async () => {
       const c = await order(); const p = w.fake.pay(c.body.data.providerOrderId); const h = w.fake.webhook('payment.captured', p.paymentId); await w.settlement.handleWebhook(h.raw, h.signature, h.eventId);

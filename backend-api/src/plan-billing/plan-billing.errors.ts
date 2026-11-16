@@ -7,6 +7,8 @@ export const BILLING_ERROR_CODES = [
   'ORDER_NOT_FOUND', 'ORDER_STATE_INVALID', 'ORDER_NOT_PAYABLE', 'PAYMENT_SIGNATURE_INVALID', 'PAYMENT_NOT_CAPTURED', 'PAYMENT_PROVIDER_ERROR',
   // Wave 3 Part C: the admin gateway setting
   'GATEWAY_SETTING_INVALID', 'GATEWAY_NOT_READY', 'LIVE_NOT_ENABLED',
+  // Wave 3 Part E: cash confirmed by an admin
+  'CASH_ONLY', 'CASH_DETAILS_INVALID', 'CASH_ORDER_INVALID',
 ] as const;
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[number];
 

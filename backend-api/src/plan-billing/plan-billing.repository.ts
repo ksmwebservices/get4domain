@@ -70,6 +70,8 @@ export abstract class PlanBillingRepository {
   /** marks CREATED / PENDING_PAYMENT orders past their expiry as EXPIRED; returns how many */
   abstract expireStale(now: Date): Promise<number>;
 
+  /** Wave 3 Part E: the invoice a paid order produced, or null */
+  abstract getInvoiceByOrder(orderId: string): Promise<InvoiceRow | null>;
   abstract listInvoicesForVendor(vendorId: string, skip: number, take: number): Promise<{ items: InvoiceRow[]; total: number }>;
   /** Staff (C7): every vendor's plan invoices, newest first, paged, by vendor and by status (PAID, or REFUND_RECORDED once a refund was recorded on the order). */
   abstract listInvoicesForStaff(q: { vendorId?: string; status?: 'PAID' | 'REFUND_RECORDED'; skip: number; take: number }): Promise<{ items: Array<InvoiceRow & { paidAmountPaise: number | null; refundRecordedPaise: number | null }>; total: number }>;

@@ -92,6 +92,7 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     return r ? toInvoice(r) : null;
   }
 
+  async getInvoiceByOrder(orderId: string) { const i = await this.prisma.v3PlanInvoice.findUnique({ where: { orderId } }); return i ? toInvoice(i) : null; }
   async findInvoiceDelivery(invoiceId: string) { const r = await this.prisma.v3MessageOutbox.findFirst({ where: { templateKey: 'plan_invoice', relatedRequestId: invoiceId }, select: { id: true, status: true } }); return r ? { id: r.id, status: r.status } : null; }
   async addInvoiceDelivery(d: { vendorId: string; invoiceId: string; toHash: string; toMasked: string; payload: Record<string, unknown> }) {
     const r = await this.prisma.v3MessageOutbox.create({ data: { vendorId: d.vendorId, channel: 'EMAIL', templateKey: 'plan_invoice', toHash: d.toHash, toMasked: d.toMasked, payloadRedactedJson: d.payload as Prisma.InputJsonValue, senderRoute: 'EMAIL_SYSTEM', relatedRequestId: d.invoiceId } });
