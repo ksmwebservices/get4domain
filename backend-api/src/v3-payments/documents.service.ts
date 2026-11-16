@@ -47,6 +47,15 @@ export class DocumentsService {
   }
 
   async saveProfile(vendorId: string, b: { gstRegistered?: unknown; gstin?: unknown; stateCode?: unknown; legalName?: unknown; address?: unknown; compositionScheme?: unknown; invoicePrefix?: unknown }, actorId: string | null): Promise<TaxProfileRow> {
+    // What was typed is checked BEFORE the stored profile is read: a bad value is a registered 400 whatever the state of the store, and the text never repeats the value.
+    const sent = (v: unknown): boolean => v !== undefined && v !== null && v !== '';
+    if (b.gstRegistered !== undefined && typeof b.gstRegistered !== 'boolean') throw invalid('gstRegistered: true or false');
+    if (sent(b.gstin) && !validateGstin(b.gstin).ok) throw invalid('gstin: not a valid GSTIN');
+    if (sent(b.stateCode) && !isStateCode(b.stateCode)) throw invalid('stateCode: not a valid state code');
+    if (sent(b.legalName) && !text(b.legalName, 2, 120)) throw invalid('legalName: 2 to 120 characters');
+    if (sent(b.address) && !text(b.address, 5, 300)) throw invalid('address: 5 to 300 characters');
+    if (b.compositionScheme !== undefined && typeof b.compositionScheme !== 'boolean') throw invalid('compositionScheme: true or false');
+    if (b.invoicePrefix !== undefined && !normaliseInvoicePrefix(b.invoicePrefix)) throw invalid('invoicePrefix: up to 6 capital letters or digits');
     const cur = await this.getProfile(vendorId);
     const registered = b.gstRegistered === undefined ? cur.gstRegistered : b.gstRegistered === true;
     if (b.gstRegistered !== undefined && typeof b.gstRegistered !== 'boolean') throw invalid('gstRegistered: true or false');

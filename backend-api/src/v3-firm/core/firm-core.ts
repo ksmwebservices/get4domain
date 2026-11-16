@@ -30,7 +30,7 @@ const PHONE_RE = /^\+?[0-9][0-9 ()-]{6,18}[0-9]$/;
 /** null when the GSTIN is acceptable: 15 characters in the GST layout (state code, the PAN, an entity number, Z, a check character) and a known state code. */
 export function gstinProblem(g: string): string | null {
   if (!GSTIN_RE.test(g)) return 'must be 15 characters: a 2 digit state code, the 10 character PAN, an entity number, the letter Z and a check character (for example 33ABCDE1234F1Z5)';
-  if (!GST_STATE_CODES.has(g.slice(0, 2))) return `has an unknown state code ${g.slice(0, 2)}`;
+  if (!GST_STATE_CODES.has(g.slice(0, 2))) return 'has an unknown state code (the first two characters)';
   return null;
 }
 

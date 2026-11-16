@@ -14,14 +14,15 @@ import { pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { RequiresFeature } from '../../plans/entitlements/requires-feature.decorator';
 import { DocumentsService } from '../documents.service';
 
+/** Type and length are checked by the service (DocumentsService.saveProfile), so every refusal is PAY_REQUEST_INVALID: a validator here would answer 400 with no error code. */
 export class TaxProfileDto {
-  @IsOptional() @IsBoolean() gstRegistered?: boolean;
-  @IsOptional() @IsString() @MaxLength(20) gstin?: string;
-  @IsOptional() @IsString() @MaxLength(2) stateCode?: string;
-  @IsOptional() @IsString() @MaxLength(160) legalName?: string;
-  @IsOptional() @IsString() @MaxLength(400) address?: string;
-  @IsOptional() @IsBoolean() compositionScheme?: boolean;
-  @IsOptional() @IsString() @MaxLength(12) invoicePrefix?: string;
+  @IsOptional() gstRegistered?: unknown;
+  @IsOptional() gstin?: unknown;
+  @IsOptional() stateCode?: unknown;
+  @IsOptional() legalName?: unknown;
+  @IsOptional() address?: unknown;
+  @IsOptional() compositionScheme?: unknown;
+  @IsOptional() invoicePrefix?: unknown;
 }
 export class DocListDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;

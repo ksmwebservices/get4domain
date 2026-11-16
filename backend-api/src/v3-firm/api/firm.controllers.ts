@@ -1,21 +1,21 @@
 import { Body, Controller, Get, HttpCode, Put, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { IsOptional } from 'class-validator';
 import type { Request, Response } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { FirmService } from '../firm.service';
 
-/** Every field is optional (a field not sent is left alone); a nullable one may be null or empty to clear it. The real checks (GSTIN layout and state code, PAN, email, phone) are in the pure core. */
+/** Every field is optional (a field not sent is left alone); a nullable one may be null or empty to clear it. The real checks (type, length, GSTIN layout and state code, PAN, email, phone) are in the pure core, so every refusal is FIRM_PROFILE_INVALID (a validator here would answer 400 with no code). */
 export class FirmEditDto {
-  @IsOptional() @IsString() @MaxLength(200) legalName?: string;
-  @IsOptional() @IsString() @MaxLength(800) registeredAddress?: string;
-  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) gstin?: string | null;
-  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(40) pan?: string | null;
-  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(300) registeredEmail?: string | null;
-  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() @MaxLength(60) registeredPhone?: string | null;
+  @IsOptional() legalName?: unknown;
+  @IsOptional() registeredAddress?: unknown;
+  @IsOptional() gstin?: unknown;
+  @IsOptional() pan?: unknown;
+  @IsOptional() registeredEmail?: unknown;
+  @IsOptional() registeredPhone?: unknown;
 }
 
 /** The footer data for everyone: the company name, its registered address and the GSTIN only when one is set. Cacheable for a few minutes. */
