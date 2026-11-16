@@ -218,6 +218,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/pack-engine/packs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/packs/:key': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tabs': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/categories': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/tier-matrix': OPS_AND_SUPER,
   'GET /v3/admin/pack-engine/addons': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/vendors/:vendorId/navigation': OPS_AND_SUPER, 'GET /v3/admin/pack-engine/settings': OPS_AND_SUPER,
   'PUT /v3/admin/pack-engine/packs/:key': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tabs': SUPER_ONLY, 'PUT /v3/admin/pack-engine/categories/:categoryKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/tier-matrix/:tier/:capabilityKey': SUPER_ONLY,
+  'GET /v3/admin/firm-profile': SUPER_ONLY, 'PUT /v3/admin/firm-profile': SUPER_ONLY,   // H3: the profile holds the PAN, email and phone, so ADMIN does not inherit it
   'GET /v3/admin/pack-engine/addon-eligibility': OPS_AND_SUPER, 'PUT /v3/admin/pack-engine/addon-eligibility': SUPER_ONLY,   // H2: ADMIN edits through STAFF_ROLE_EXTENSIONS.ADMIN.allow
   'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/settings/:name': SUPER_ONLY,
   // Part B (B13): pausing and resuming a vendor's paid plan: OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SUPPORT and MARKETING refused)

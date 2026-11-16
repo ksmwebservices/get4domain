@@ -1,4 +1,5 @@
 import { Quote } from '@prisma/client';
+import { FIRM_DEFAULTS, joinPresent } from '../../v3-firm/core/firm-core';
 
 const formatCurrency = (paise: number): string => `Rs. ${(paise / 100).toFixed(2)}`;
 
@@ -10,8 +11,8 @@ const GST_RATE = 0.18;
 export interface ProposalCompany {
   name: string;
   address: string;
-  phone: string;
-  email: string;
+  phone?: string | null;
+  email?: string | null;
   logoUrl?: string | null;
 }
 
@@ -38,10 +39,11 @@ export const DEFAULT_PROPOSAL_TERMS =
 
 function resolveCompany(c?: Partial<ProposalCompany>): ProposalCompany {
   return {
-    name: c?.name ?? process.env.COMPANY_NAME ?? 'Get4Domain',
-    address: c?.address ?? process.env.COMPANY_ADDRESS ?? 'Tidel Park, D Block, Tharamani, Chennai 600113',
-    phone: c?.phone ?? process.env.COMPANY_PHONE ?? '',
-    email: c?.email ?? process.env.COMPANY_EMAIL ?? 'admin@get4domain.com',
+    // the firm profile is the source (callers pass it); an empty phone or email is simply not printed
+    name: c?.name || FIRM_DEFAULTS.legalName,
+    address: c?.address || FIRM_DEFAULTS.registeredAddress,
+    phone: c?.phone || null,
+    email: c?.email || null,
     logoUrl: c?.logoUrl ?? process.env.COMPANY_LOGO_URL ?? 'https://get4domain.com/logo.png',
   };
 }
@@ -122,7 +124,7 @@ export function renderProposalHtml(quote: Quote, items: ProposalLineItem[], opts
             <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">From</div>
             <div style="font-weight:700;">${co.name}</div>
             <div style="font-size:13px;color:#475569;">${co.address}</div>
-            <div style="font-size:13px;color:#475569;">${co.phone} · ${co.email}</div>
+            ${joinPresent([co.phone, co.email], ' · ') ? `<div style="font-size:13px;color:#475569;">${joinPresent([co.phone, co.email], ' · ')}</div>` : ''}
           </td>
           <td style="vertical-align:top;width:50%;" align="right">
             <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Prepared For</div>
@@ -168,7 +170,7 @@ export function renderProposalHtml(quote: Quote, items: ProposalLineItem[], opts
     </div>
 
     <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:14px 28px;font-size:11px;color:#94a3b8;text-align:center;">
-      ${co.name} &middot; ${co.address} &middot; ${co.phone} &middot; ${co.email}<br/>
+      ${joinPresent([co.name, co.address, co.phone, co.email], ' &middot; ')}<br/>
       This is a system-generated proposal document.
     </div>
   </div>

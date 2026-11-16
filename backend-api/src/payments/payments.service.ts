@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
@@ -15,6 +16,7 @@ import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WhatsAppService } from '../notifications/whatsapp.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { FirmService } from '../v3-firm/firm.service';
 import { renderInvoiceHtml, InvoiceCompany } from '../invoices/templates/invoice.template';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
@@ -36,6 +38,7 @@ export class PaymentsService {
     private readonly notificationsService: NotificationsService,
     private readonly whatsappService: WhatsAppService,
     private readonly settings: PlatformSettingsService,
+    @Optional() private readonly firm?: FirmService,
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID as string,
@@ -43,22 +46,13 @@ export class PaymentsService {
     });
   }
 
-  /** Company invoice details from Admin → Integrations (env fallback in template). */
+  /** Company invoice details from the firm profile (v3-firm); the logo from Admin → Integrations. */
   private async resolveCompany(): Promise<Partial<InvoiceCompany>> {
-    const [name, gstin, pan, address, phone, email, logoUrl] = await Promise.all([
-      this.settings.getResolvedValue('company', 'name'),
-      this.settings.getResolvedValue('company', 'gstin'),
-      this.settings.getResolvedValue('company', 'pan'),
-      this.settings.getResolvedValue('company', 'address'),
-      this.settings.getResolvedValue('company', 'phone'),
-      this.settings.getResolvedValue('company', 'email'),
-      this.settings.getResolvedValue('company', 'logo_url'),
-    ]);
-    return {
-      name: name ?? undefined, gstin: gstin ?? undefined, pan: pan ?? undefined,
-      address: address ?? undefined, phone: phone ?? undefined, email: email ?? undefined,
-      logoUrl: logoUrl ?? undefined,
-    };
+    const logoUrl = await this.settings.getResolvedValue('company', 'logo_url');
+    // the firm profile (v3-firm) is the one source of the name, address, tax numbers, phone and email; only the logo still comes from the Integrations settings
+    if (!this.firm) return { logoUrl: logoUrl ?? undefined };
+    const f = await this.firm.seller();
+    return { name: f.name, address: f.address, gstin: f.gstin || undefined, pan: f.pan || undefined, phone: f.phone || undefined, email: f.email || undefined, logoUrl: logoUrl ?? undefined };
   }
 
   /**

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { FirmService } from '../../v3-firm/firm.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BILLING_SETTING_KEYS, BillingSettings, resolveBillingSettings } from './billing-settings';
 
@@ -10,11 +11,22 @@ const EXTRA_KEYS = ['graceDays', 'upgradeProration', 'renewalReminderDays'];
 export class BillingSettingsService {
   private cached: { at: number; v: BillingSettings } | null = null;
   clock: () => number = () => Date.now();
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly firm?: FirmService) {}
 
   invalidate(): void { this.cached = null; }
 
+  /**
+   * The stored settings with the SELLER of the invoice taken from the firm profile (v3-firm), so the plan invoice and the wallet tax invoice print the same company as every other document. The three
+   * seller keys that used to be stored here are no longer read when the profile is present; an unset GSTIN is an empty text, which the invoice page leaves out.
+   */
   async get(): Promise<BillingSettings> {
+    const v = await this.stored();
+    if (!this.firm) return v;
+    const f = await this.firm.seller();
+    return { ...v, invoiceSellerName: f.name, invoiceSellerAddress: f.address, invoiceSellerGstin: f.gstin };
+  }
+
+  private async stored(): Promise<BillingSettings> {
     const now = this.clock();
     if (this.cached && now - this.cached.at < TTL_MS) return this.cached.v;
     const rows = await this.prisma.v3PlanSetting.findMany({ where: { key: { in: [...BILLING_SETTING_KEYS, ...EXTRA_KEYS] } } });

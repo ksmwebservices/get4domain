@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { b3Error } from '../b3-settings/b3-errors';
 import { OtpPepper } from '../directory/pepper';
+import { FirmService } from '../v3-firm/firm.service';
 import { Actor } from '../plans/admin/audit.service';
 import { AuditEntry } from '../vendor-lifecycle/lifecycle.store';
 import {
@@ -30,7 +31,7 @@ export interface RequestContext { ip: string | null; userAgent: string | null }
 @Injectable()
 export class TermsService implements AcceptanceGuard, TermsSessionFlag {
   clock: () => Date = () => new Date();
-  constructor(private readonly store: TermsStore, private readonly pepper: OtpPepper) {}
+  constructor(private readonly store: TermsStore, private readonly pepper: OtpPepper, @Optional() private readonly firm?: FirmService) {}
 
   // ── public ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,9 @@ export class TermsService implements AcceptanceGuard, TermsSessionFlag {
     if (!isTermsKind(kind)) throw notFound();
     const d = await this.store.latestPublished(kind);
     if (!d) throw notFound();
-    return publicView(d);
+    const view = publicView(d);
+    // the company's own details come from the firm profile ({{firm.name}}, {{firm.address}}, {{firm.gstin}}...): a line whose value is not set is left out, never printed as a blank
+    return this.firm ? { ...view, bodyMarkdown: await this.firm.fillTokens(view.bodyMarkdown) } : view;
   }
   async versions(kind: string) {
     if (!isTermsKind(kind)) throw notFound();

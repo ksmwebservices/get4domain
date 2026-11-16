@@ -1,18 +1,27 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Prisma, Quote } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CommunicationService, Channel } from '../communication/communication.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { CreateProposalDto, ProposalLineItemDto } from './dto/create-proposal.dto';
-import { renderProposalHtml } from './templates/proposal.template';
+import { FirmService } from '../v3-firm/firm.service';
+import { ProposalCompany, renderProposalHtml } from './templates/proposal.template';
 
 @Injectable()
 export class QuotesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly communication: CommunicationService,
+    @Optional() private readonly firm?: FirmService,
   ) {}
+
+  /** The seller block of the proposal, from the firm profile (v3-firm). Without the profile the template uses the profile's own defaults. */
+  async proposalCompany(): Promise<Partial<ProposalCompany>> {
+    if (!this.firm) return {};
+    const f = await this.firm.seller();
+    return { name: f.name, address: f.address, phone: f.phone, email: f.email };
+  }
 
   async create(sentBy: string, dto: CreateQuoteDto): Promise<Quote> {
     // Resolve recipient — from the prospect fields, falling back to the vendor.
@@ -104,7 +113,7 @@ export class QuotesService {
     const items = (quote.items as unknown as ProposalLineItemDto[] | null) ?? [
       { label: quote.itemLabel, qty: 1, rate: quote.amount },
     ];
-    return renderProposalHtml(quote, items);
+    return renderProposalHtml(quote, items, { company: await this.proposalCompany() });
   }
 
   async createShareLink(id: string): Promise<{ shareToken: string }> {
