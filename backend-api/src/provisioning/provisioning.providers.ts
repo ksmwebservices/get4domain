@@ -8,6 +8,8 @@ import { InviteStore, PrismaInviteStore } from './invites/invite-store';
 import { PrismaProvisioningAudit } from './provisioning-audit';
 import { ClaimOtpController } from './claims/claim-otp.controller';
 import { ClaimOtpService } from './claims/claim-otp.service';
+import { ClaimStartController } from './claims/claim-start.controller';
+import { ClaimStartService } from './claims/claim-start.service';
 import { CreateDirectoryProfileStep } from './steps/create-directory-profile.step';
 import { PrismaProvisioningRepository, ProvisioningRepository } from './provisioning.repository';
 import { JobRunnerService, PROVISIONING_OPTIONAL_STEPS, PROVISIONING_STEPS, ProvisioningAudit, ProvisioningStep } from './runner/job-runner.service';
@@ -46,8 +48,8 @@ export const PROVISIONING_PROVIDERS: Provider[] = [
   },
   // slice 5.7: the optional directory step lives apart from the five steps above, and the claim OTP completes the slice 5.3 claim link
   CreateDirectoryProfileStep, { provide: PROVISIONING_OPTIONAL_STEPS, useFactory: (s: CreateDirectoryProfileStep): ProvisioningStep[] => [s], inject: [CreateDirectoryProfileStep] },
-  ClaimOtpService,
+  ClaimOtpService, ClaimStartService,   // Wave 2 G1: start a claim from a listing
   JobRunnerService,
 ];
 
-export const PROVISIONING_CONTROLLERS: Type<unknown>[] = [ProvisioningAdminController, ClaimPublicController, ClaimOtpController];
+export const PROVISIONING_CONTROLLERS: Type<unknown>[] = [ProvisioningAdminController, ClaimPublicController, ClaimOtpController, ClaimStartController];

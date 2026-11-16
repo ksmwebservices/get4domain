@@ -13,6 +13,7 @@ import { InboxService } from './inbox.service';
 import { InboxStore } from './inbox.store';
 import { PrismaInboxStore } from './prisma-inbox.store';
 import { MailSettingsService } from './settings/mail-settings';
+import { envMailEnabled, MAIL_ENABLED } from './mail-enabled';
 
 export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmailController, MailRulesController];
 
@@ -22,10 +23,11 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
   imports: [PrismaModule],
   controllers: MAIL_CONTROLLERS,
   providers: [
+    { provide: MAIL_ENABLED, useValue: envMailEnabled },
     MailSettingsService, MailRulesSettingsService, MailRulesService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort },
     { provide: InboxStore, useClass: PrismaInboxStore }, InboxService,
     SmsSettingsService, { provide: SmsTransport, useClass: UnboundSmsTransport }, GuardedSmsPort, { provide: SmsPort, useExisting: GuardedSmsPort }, { provide: PhoneCodeSender, useClass: SmsPhoneCodeSender }, { provide: IdentityOtpSender, useClass: ChannelIdentityOtpSender },
   ],
-  exports: [EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender, InboxService],
+  exports: [MAIL_ENABLED, EmailPort, SmsPort, MailSettingsService, IdentityOtpSender, PhoneCodeSender, InboxService],
 })
 export class V3MailModule {}

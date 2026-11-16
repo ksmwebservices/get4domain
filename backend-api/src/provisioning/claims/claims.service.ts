@@ -68,6 +68,21 @@ export class ClaimsService {
     return { vendorId: row.vendorId };
   }
 
+  /**
+   * Wave 2 (G1): a visitor on the public site starts a claim from a listing. Issues a claim link for the listing's business exactly like the staff handover, but returns the raw token to the caller (the
+   * code that follows goes only to the owner's address on the record, so holding the token proves nothing). An already claimed business is refused. The link it replaces (if staff had issued one) stops working.
+   */
+  async issueForPublicStart(vendorId: string, ip: string | null): Promise<{ token: string }> {
+    if (await this.claims.hasUsedToken(vendorId)) throw new ConflictException({ message: 'This business has already been claimed.', code: 'CLAIM_INVALID' });
+    const settings = await this.settings.get();
+    const token = generateToken();
+    const expiresAt = new Date(this.clock().getTime() + settings.claimLinkExpiryDays * 86_400_000);
+    const actor: Actor = { type: 'SYSTEM', id: null, ip };
+    const { id } = await this.claims.issue({ vendorId, tokenHash: hashToken(token), expiresAt, actor });
+    await this.audit.record(actor, 'claim.public_start', 'vendor', vendorId, { claimTokenId: id });
+    return { token };
+  }
+
   async revoke(vendorId: string, actor: Actor): Promise<{ revoked: number }> {
     const revoked = await this.claims.revokeActive(vendorId);
     await this.audit.record(actor, 'claim.revoke', 'vendor', vendorId, { revoked });

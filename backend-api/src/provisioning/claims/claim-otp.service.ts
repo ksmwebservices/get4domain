@@ -6,6 +6,7 @@ import { DirectoryAdminService } from '../../directory/directory-admin.service';
 import { DirectoryAudit } from '../../directory/directory-audit';
 import { directoryError, OTP_INVALID_MESSAGE, OTP_SENT_EMAIL_MESSAGE, OTP_SENT_MESSAGE } from '../../directory/directory.errors';
 import { EmailPort } from '../../v3-mail/email.port';
+import { assertMailEnabled, MAIL_ENABLED, MailEnabled } from '../../v3-mail/mail-enabled';
 import { isPlaceholderOwnerEmail } from './claims.service';
 import { DirectoryRepository } from '../../directory/directory.repository';
 import { AccountSetupGrantService } from '../../directory/grants/account-setup-grant.service';
@@ -35,6 +36,8 @@ export class ClaimOtpService {
     private readonly grants: AccountSetupGrantService, @Inject(DirectoryAdminService) private readonly admin: Pick<DirectoryAdminService, 'indexableFor'>, private readonly audit: DirectoryAudit, private readonly pepper: OtpPepper,
     /** Part B (B7): the claim code by email, on the system mail lane (kind OTP). The lane's own switch (EMAIL_LIVE_SEND) is OFF by default, so a code that cannot be sent leaves the challenge revoked. */
     @Optional() @Inject(EmailPort) private readonly email?: EmailPort,
+    /** Wave 2 (G12): the mail switch. With it OFF an EMAIL code request answers the registered MAIL_DISABLED (503), the same for every token, before the token is even looked at. */
+    @Optional() @Inject(MAIL_ENABLED) private readonly mailEnabled?: MailEnabled,
   ) {}
 
   private readonly sent: OtpRequestResult = { sent: true, message: OTP_SENT_MESSAGE };
@@ -59,6 +62,7 @@ export class ClaimOtpService {
   }
 
   async request(rawToken: string, ip: string | null, channel: 'SMS' | 'EMAIL' = 'SMS'): Promise<OtpRequestResult> {
+    if (channel === 'EMAIL') assertMailEnabled(this.mailEnabled);
     const answer = channel === 'EMAIL' ? this.sentByEmail : this.sent;
     const claim = await this.claims.peek(rawToken);
     if (!claim) { hashCode('000000', 'x', this.pepper.value()); return answer; }   // a bad link costs about the same as a good one

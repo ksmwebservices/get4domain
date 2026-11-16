@@ -13,7 +13,7 @@ const files = BLOCK4B_MODULES.flatMap((m) => tsFiles(path.join(src, m)));
 const rel = (f: string): string => path.relative(src, f).replace(/\\/g, '/');
 const code = (f: string): string => fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 /** The only files that may read process.env: the provider adapters and the places that read a feature flag or a signing secret by name. */
-const ENV_ALLOWED = new Set(['v3-storage/s3.adapters.ts', 'v3-mail/email.port.ts', 'v3-mail/inbox.service.ts', 'v3-mail/sms.port.ts', 'v3-mail/held-enquiries.service.ts', 'v3-mail/mail-rules.service.ts']);
+const ENV_ALLOWED = new Set(['v3-storage/s3.adapters.ts', 'v3-mail/email.port.ts', 'v3-mail/inbox.service.ts', 'v3-mail/sms.port.ts', 'v3-mail/held-enquiries.service.ts', 'v3-mail/mail-rules.service.ts', 'v3-mail/mail-enabled.ts']);
 const LEGACY_DELEGATES = ['contact', 'lead', 'leadCallLog', 'campaignLead', 'callLog', 'vendorProduct', 'catalogItem', 'retailProduct', 'posSale', 'posTable', 'bosDocument', 'bosDocumentLine', 'bosExpense', 'bosPayment', 'expense', 'stockMovement', 'serviceJob', 'appointment', 'supportTicket', 'notification'];
 
 describe('Block 4b modules', () => {
