@@ -27,6 +27,10 @@ Product text rules held everywhere: no timeframes, "enquiries" not "leads", neve
 | P4 G2 and G13: the login handoff and the approval redirect | `8dc4045` | `20261219190000_v3_wave2_login_handoff` (one table, row level security, two CHECKs) |
 | P5 G14: reset password for the public site | `4318d4d` | none |
 | P6 G15: `TRUSTED_PROXIES` | `8c72ce4` | none |
+| K1 all 196 catalogue categories are listable; the loader; `GET /v3/admin/seeded-sites/categories` | `3f19b2f` | none |
+| K2 the upload limits routes | `dbf5355` | none |
+| K3 `Content-Disposition` exposed in CORS | `0d438a2` | none |
+| K4 the vendors list names the vendor's own name | `c5b0015` | none |
 
 All five migrations are additive: new tables, new nullable columns, and one widened CHECK (the enquiry state gains HANDLED; no value is removed or renamed). Every new table has row level security on and no policy, the same rule as the earlier migrations. Table names use the repo's `g4d_` prefix (the brief wrote `v3_`).
 
@@ -290,7 +294,7 @@ Choices:
 
 Skipped (nothing invented): a stored copy and link for the invoice (said not to build it); a virus scanner for PDFs; anything that posts, schedules or sends (drafts and invites are records).
 
-Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (251 suites with the public site gaps).
+Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (254 suites with the public site gaps and job K).
 
 ## 9. Open questions
 
@@ -305,6 +309,9 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
 9. Whether the public site has a reset screen at `/account/reset-password` (choice 36), and whether its server's address is what `TRUSTED_PROXIES` should hold (choice 39).
 10. The vendor app (a separate repository) has two small changes to make: read `#handoff=` and call `POST /v3/auth/handoff/redeem` (choice 32), and navigate to `redirectTo` after a successful approve (choice 34).
 11. Not done, as the gaps file says: G16 (stop sending `phone` on the public business list, optional), G17 to G21 (owner and live-site matters). G6 (the firm identity) is Part H3. G8 to G10 were already resolved on the live site.
+12. K1: whether the fallback kit design per pack is right (choice 41), and whether the 19 new family rows should be merged with the kit's families (choice 42).
+13. K4: whether the claim setup should ask for the owner's own name (choice 46); until it does, a claimed seeded business has no person's name on record.
+14. K3: whether nginx in front of the API passes `Access-Control-Expose-Headers` through (choice 45).
 
 ## 10. Owner commands for staging, in order
 
@@ -313,7 +320,7 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
 1. `.env.staging` was copied into `C:\Get4Domain\get4domain-w2\` (not in git). Then `npm.cmd ci` is done; run `npx.cmd prisma generate` if the client is stale.
 2. `npm.cmd run db:staging:migrate-status`. Expect the ten folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` `20261219160000_v3_wave2_upload_groups`, `20261219170000_v3_wave2_addon_eligibility` and `20261219180000_v3_wave2_firm_profile` and `20261219190000_v3_wave2_login_handoff` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
 3. `npm.cmd run db:staging:rls-off` (expect `0` tables without row level security), then `npm.cmd run db:staging:drift` (the 2 documented allowed items only; the new CHECKs and the notes trigger are not part of the schema diff).
-4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (251 suites).
+4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (254 suites).
 5. Seed scripts, each a **dry run** first (read the counts and the problems), then `--apply`, then the dry run again (nothing to create):
    - `node scripts/seed-v3-pack-tab-fields.js` (expect 96 tabs, 434 fields), then `node scripts/seed-v3-pack-tab-fields.js --apply`.
    - `node scripts/seed-v3-profile-fields.js` (expect 16 packs, 143 categories with fields of their own, 1263 fields, 948 map rows), then `node scripts/seed-v3-profile-fields.js --apply`.
@@ -323,6 +330,7 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
    - Public site gaps (Part P), after the migrations: set `TRUSTED_PROXIES` in the API's environment on the VM (choice 39) and restart the API; the startup log then says `only from <the list>`. `LOGIN_HANDOFF_TTL_SECONDS` is optional (default 60). Leave `EMAIL_LIVE_SEND` as it is: with it off the email routes answer `MAIL_DISABLED`, which is the designed state until the mail sender is set up.
    - Read-only checks on staging with `curl.exe` (each is a plain request, nothing to clean up): `POST /v3/claim/start` with email off answers 503 `MAIL_DISABLED` for ANY slug (the switch is checked before the listing is looked up); with `{ "businessSlug": "no-such-listing", "channel": "SMS" }` it answers 409 `DIRECTORY_STATE_INVALID` (and with a real unclaimed listing it would send an SMS, so use the unknown slug); `POST /v3/account/password/reset/request` with email off answers 503 `MAIL_DISABLED`; `GET /v3/directory/pages/resolve?path=/` (the page model route) answers `path: "/directory"`; `POST /v3/auth/handoff/redeem` with a made-up code answers 401 `HANDOFF_INVALID`.
    - Job K1 (categories): `node scripts/gen-catalogue-categories.js --check` (offline, expect `up to date (196 categories)`), then `node scripts/seed-v3-catalogue-categories.js --offline` (expect 20 families and 196 categories on an empty tree), then against staging `node scripts/seed-v3-directory.js` (the 41 kit categories, if not already loaded), `node scripts/seed-v3-catalogue-categories.js` (dry run: expect 159 categories to create and 37 already there) and, once the counts look right, `node scripts/seed-v3-catalogue-categories.js --apply`. Run the dry run again (nothing to create). Then as any staff role `GET /v3/admin/seeded-sites/categories`: expect `total` 200 and `missingFromDirectory` 0.
+   - Job K read-only checks after the API is rebuilt and restarted (plain requests, nothing to clean up): `GET /v3/me/media/limits` with a vendor token and `GET /v3/admin/media/limits` with a staff token answer `configured: false` until the three upload settings are set, then the numbers (K2); `curl.exe -i -H "Origin: https://example.com" <api>/v3/public/firm` shows `Access-Control-Expose-Headers: Content-Disposition` (K3); `GET /v3/admin/vendors` shows `name: null` with `businessName` filled for a seeded business nobody has claimed (K4).
 7. `npm.cmd run test:cleanup-staging -- --count` (must print 0). The cleanup script now also removes staff draft uploads, the vendor notes (after their vendors) and the tagged platform rows.
 8. To use uploads on staging later: set `mediaUploadMaxBytes`, `mediaUploadMaxPixels` and `mediaUploadAllowedTypes` through `PUT /v3/admin/plan-settings/:key`, and the public storage settings and keys described in `V3_STORAGE.md`.
 9. **Do not push without asking**: a push creates a Vercel Preview deploy. When ready: `git push origin v3-w2`.
