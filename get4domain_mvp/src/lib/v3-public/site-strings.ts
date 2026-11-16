@@ -6,6 +6,7 @@
 export const SITE = {
   brand: 'Get4Domain',
   skip: 'Skip to content',
+  crumbs: { label: 'Breadcrumb', home: 'Home' },
   nav: {
     label: 'Main',
     pricing: 'Pricing',
@@ -220,9 +221,10 @@ export const SITE = {
 
   about: {
     metaTitle: 'About',
-    metaDescription: 'About Get4Domain, a service of KSM QUANTUM TECHNOLOGIES.',
+    metaDescription: 'About Get4Domain and the firm behind it.',
     h1: 'About Get4Domain',
-    body: ['Get4Domain helps businesses get a website on their own subdomain and the tools to run it.', 'Get4Domain is a service of KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai.'],
+    body: ['Get4Domain helps businesses get a website on their own subdomain and the tools to run it.'],
+    firmLine: 'Get4Domain is a service of {name}, {address}.',
   },
 
   contact: {
