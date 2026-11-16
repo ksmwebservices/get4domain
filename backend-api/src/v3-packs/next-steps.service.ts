@@ -12,15 +12,16 @@ export abstract class NextStepFactsPort {
 export class PrismaNextStepFacts extends NextStepFactsPort {
   constructor(private readonly prisma: PrismaService) { super(); }
   async facts(vendorId: string, now: Date): Promise<NextStepFacts> {
-    const [published, draftRow, latest, order, custom] = await Promise.all([
+    const [published, draftRow, latest, order, custom, sub] = await Promise.all([
       this.prisma.v3SitePublication.findFirst({ where: { vendorId, currentVendorId: vendorId }, select: { id: true } }),
       this.prisma.v3SiteDraft.findUnique({ where: { vendorId }, select: { rev: true } }),
       this.prisma.v3SitePublication.findFirst({ where: { vendorId }, orderBy: { version: 'desc' }, select: { missingFieldsJson: true } }),
       this.prisma.v3PlanOrder.findFirst({ where: { vendorId, status: { in: ['CREATED', 'PENDING_PAYMENT'] }, expiresAt: { gt: now } }, select: { id: true } }),
       this.prisma.v3Domain.findFirst({ where: { vendorId, kind: 'CUSTOM', status: { in: ['PENDING', 'VERIFYING', 'FAILED'] }, removedAt: null }, orderBy: { createdAt: 'desc' }, select: { hostname: true } }),
+      this.prisma.v3PlanSubscription.findFirst({ where: { vendorId, currentVendorId: vendorId }, select: { plan: { select: { level: true } } } }),
     ]);
     const missing = Array.isArray(latest?.missingFieldsJson) ? (latest.missingFieldsJson as unknown[]).map((m) => (m && typeof m === 'object' ? (m as { label?: unknown }).label : null)).filter((l): l is string => typeof l === 'string') : [];
-    return { sitePublished: !!published, draftStarted: (draftRow?.rev ?? 0) > 0, missingDetails: missing, unpaidPlanOrder: !!order, unconnectedDomain: custom?.hostname ?? null };
+    return { sitePublished: !!published, draftStarted: (draftRow?.rev ?? 0) > 0, missingDetails: missing, unpaidPlanOrder: !!order, unconnectedDomain: custom?.hostname ?? null, onFreePlan: sub?.plan.level === 'FREE' };
   }
 }
 

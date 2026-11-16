@@ -10,6 +10,7 @@ import { normalizeModules } from '../team/team-access';
 import { Optional } from '@nestjs/common';
 import { RegistrationHook } from '../plans/registration/registration.hook';
 import { TermsSessionFlag } from '../terms/terms-ports';
+import { TrialSignupPolicy } from '../v3-trial/trial-signup.policy';
 import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
 
 export interface LoginResult {
@@ -43,6 +44,8 @@ export class AuthService {
     private readonly vendorsService: VendorsService,
     @Optional() private readonly v3Registration?: RegistrationHook,
     @Optional() private readonly termsFlag?: TermsSessionFlag,
+    /** Wave 3 Part G: the chosen-subdomain rules (mandatory reserved names, availability). Absent = the old naming from the business name. */
+    @Optional() private readonly trial?: TrialSignupPolicy,
   ) {}
 
   /**
@@ -52,7 +55,11 @@ export class AuthService {
    * straight into the product — the same { accessToken, user } shape as login().
    */
   async register(dto: RegisterDto): Promise<LoginResult> {
-    const subdomain = await this.uniqueSubdomain(dto.businessName);
+    // Wave 3 Part G: registering the same account again (same email, same business, and the RIGHT password) is a replay: it signs in to the account that exists and makes nothing new.
+    // A wrong password, or another business name, falls through to the usual refusal of a taken email.
+    const prior = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
+    if (prior && prior.role === 'VENDOR' && prior.businessName === dto.businessName && (await bcrypt.compare(dto.password, prior.password))) return this.login({ email: dto.email, password: dto.password });
+    const subdomain = this.trial ? await this.trial.resolveSubdomain(dto.subdomain, dto.businessName) : await this.uniqueSubdomain(dto.businessName);
     const vendor = await this.vendorsService.create({
       name: dto.name,
       email: dto.email,
@@ -70,7 +77,7 @@ export class AuthService {
     }
 
     // V3 slice 5.1: the Free plan of the chosen track, only when the plan setting registrationProvisioning is on. It can never block a signup.
-    try { await this.v3Registration?.afterRegister(vendor.id, dto.track); } catch { /* registration continues */ }
+    try { await this.v3Registration?.afterRegister(vendor.id, dto.track, { industry: dto.industry, businessName: dto.businessName, phone: dto.phone ?? null }); } catch { /* registration continues */ }
 
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
     return {

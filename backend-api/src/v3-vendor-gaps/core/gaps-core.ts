@@ -33,6 +33,8 @@ export interface NextStepFacts {
   unpaidPlanOrder: boolean;
   /** a custom domain was added and is not yet connected (its hostname) */
   unconnectedDomain: string | null;
+  /** Wave 3 Part G: the business is on a Free plan (a paid plan is what moves it on). Absent or false = no prompt. */
+  onFreePlan?: boolean;
 }
 export interface NextStep { id: string; text: string; route: string; /** who may see it: a team member needs the area, the owner sees all */ area: TeamArea | 'OWNER' }
 
@@ -46,6 +48,8 @@ export function nextSteps(f: NextStepFacts): NextStep[] {
   }
   if (f.unpaidPlanOrder) out.push({ id: 'plan_payment', text: 'Finish paying for your plan.', route: '/plan', area: 'OWNER' });
   if (f.unconnectedDomain) out.push({ id: 'connect_domain', text: `Finish connecting ${f.unconnectedDomain}.`, route: '/domain', area: 'OWNER' });
+  // the conversion prompt: only for a business on a Free plan with no payment already waiting, last in the list, with no price in it
+  if (f.onFreePlan === true && !f.unpaidPlanOrder) out.push({ id: 'move_to_paid_plan', text: 'Your website is on the Free plan. Move to a paid plan when you are ready to unlock more of your business tools.', route: '/plan', area: 'OWNER' });
   return out.slice(0, 5);
 }
 

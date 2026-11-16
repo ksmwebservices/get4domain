@@ -121,7 +121,7 @@ const MARKETING_DENIED = [
   // 5.6c: own-domain automation and the domain log
   'GET /v3/admin/domain-connections', 'POST /v3/admin/vendors/:id/domains/:domainId/connection/retry', 'GET /v3/admin/vendors/:id/domain-log', 'GET /v3/admin/vendors/:id/subdomain-log',
   // Wave 2 Part C
-  'GET /v3/admin/vendors', 'GET /v3/admin/vendors/:id/held-count', 'GET /v3/admin/vendors/:id/notes', 'POST /v3/admin/vendors/:id/notes', 'GET /v3/admin/invoices', 'POST /v3/admin/seeded-sites/:id/go-live',
+  'GET /v3/admin/vendors', 'GET /v3/admin/vendors/:id/held-count', 'GET /v3/admin/vendors/:id/notes', 'POST /v3/admin/vendors/:id/notes', 'GET /v3/admin/invoices',
   // B4: customers' words on a vendor's live site
   'GET /v3/admin/vendors/:id/site/testimonials',
   // B3: the review link of a vendor's live site
@@ -157,6 +157,7 @@ const ALL_STAFF_ROUTES = [
   'GET /v3/admin/seeded-sites/:id/media', 'POST /v3/admin/seeded-sites/:id/media', 'DELETE /v3/admin/seeded-sites/:id/media/:mediaId', 'GET /v3/admin/media/drafts', 'POST /v3/admin/media/drafts', 'DELETE /v3/admin/media/drafts/:mediaId',   // Wave 2 D: C11
   'GET /v3/admin/seeded-sites/imports/template', 'POST /v3/admin/seeded-sites/imports/dry-run', 'POST /v3/admin/seeded-sites/imports/apply',   // Wave 2 Part D: the listing import, every staff role that creates on behalf
   'GET /v3/admin/categories/:slug/profile-schema', 'GET /v3/admin/seeded-sites/:id/profile', 'PUT /v3/admin/seeded-sites/:id/profile',   // Wave 2 Part E: every staff role that creates on behalf
+  'POST /v3/admin/seeded-sites/:id/go-live',   // Wave 3 Part G: SALES and its labels make the business they created live (the go-live keeps its own refusals)
   'GET /v3/admin/permission-matrix',   // Wave 2 C1: every staff role reads the matrix (SUPPORT through STAFF_ROLE_EXTENSIONS.SUPPORT.allow)
   // Part B (B2): SALES (the MARKETING value) creates on behalf, imports a CSV, follows up and issues the claim link
   'POST /v3/admin/seeded-sites', 'POST /v3/admin/seeded-sites/batches/dry-run', 'POST /v3/admin/seeded-sites/batches/apply', 'PUT /v3/admin/seeded-sites/:id/outreach', 'POST /v3/admin/seeded-sites/:id/calls', 'PUT /v3/admin/seeded-sites/:id/consent', 'POST /v3/admin/seeded-sites/:id/claim-link', 'POST /v3/admin/seeded-sites/:id/claim-link/revoke',

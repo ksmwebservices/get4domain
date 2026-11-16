@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { MANDATORY_RESERVED_SUBDOMAINS } from './reserved-subdomains';
 
 /** Editable settings of slice 5.6 (stored in g4d_plan_settings, edited through the existing plan-settings API). Every default is documented here. */
 export interface DomainSettings {
@@ -84,5 +85,7 @@ export function resolveDomainSettings(stored: ReadonlyMap<string, unknown>): Dom
   for (const key of DOMAIN_SETTING_KEYS) if (stored.has(key) && domainSettingProblem(key, stored.get(key)) === null) out[key] = stored.get(key);
   const r = out as unknown as DomainSettings;
   if (r.subdomainMinLength > r.subdomainMaxLength) { r.subdomainMinLength = DEFAULT_DOMAIN_SETTINGS.subdomainMinLength; r.subdomainMaxLength = DEFAULT_DOMAIN_SETTINGS.subdomainMaxLength; }
+  // Wave 3 Part G: the platform hosts and the Version 2 client names are ALWAYS reserved: the setting may add names, never remove these
+  r.reservedSubdomains = [...new Set([...r.reservedSubdomains, ...MANDATORY_RESERVED_SUBDOMAINS])];
   return r;
 }

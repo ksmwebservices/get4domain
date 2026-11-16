@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /** Public self-service signup. Creates a real vendor + trial credit and logs them in. */
 export class RegisterDto {
@@ -29,6 +29,12 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiProperty({ required: false, example: 'carewell', description: 'Wave 3: the free subdomain the business wants (checked by GET /v3/public/subdomain-availability). Omit it and one is made from the business name.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(63)
+  subdomain?: string;
 
   @ApiProperty({ required: false, example: 'leadspace', description: 'leadspace = a LeadSpace-only account (free page, verified leads, prepaid wallet); omit for a normal signup' })
   @IsOptional()
