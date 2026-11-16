@@ -8,6 +8,9 @@ import { securityConfig } from './account-security.config';
 import { SessionService, Tokens } from './session.service';
 import { hashToken, newToken } from './token.util';
 
+/** How a reset link reaches the person. The default is the legacy mailer and the FRONTEND_URL link; the v3 route (Wave 2, G14) passes its own delivery (the mail port, the public site's link). */
+export type ResetDelivery = (d: { to: string; name: string; token: string; ttlMinutes: number }) => Promise<void>;
+
 const BAD_LINK = 'This reset link is invalid or has expired. Please request a new one.';
 const HOUR_MS = 3_600_000;
 
@@ -31,8 +34,8 @@ export class PasswordService {
   ) {}
 
   /** Starts the reset in the background and returns immediately. Never throws and never reports whether the email matched an account. */
-  requestReset(email: string, ip?: string): void {
-    const job: Promise<void> = this.processReset(email, ip)
+  requestReset(email: string, ip?: string, deliver?: ResetDelivery): void {
+    const job: Promise<void> = this.processReset(email, ip, deliver)
       .catch(() => this.logger.warn('A password reset request could not be processed'))      // fixed text: no email, no token, no error details
       .finally(() => { this.pending.delete(job); });
     this.pending.add(job);
@@ -43,7 +46,7 @@ export class PasswordService {
     while (this.pending.size) await Promise.allSettled([...this.pending]);
   }
 
-  private async processReset(email: string, ip?: string): Promise<void> {
+  private async processReset(email: string, ip?: string, deliver?: ResetDelivery): Promise<void> {
     const account = await this.directory.findByEmail(email);
     if (!account) return;
     const cfg = securityConfig();
@@ -60,7 +63,8 @@ export class PasswordService {
       }),
     ]);
     try {
-      await this.email.sendPasswordReset(account.email, account.name, `${cfg.frontendUrl}/reset-password?token=${token}`, cfg.resetTtlMinutes);
+      if (deliver) await deliver({ to: account.email, name: account.name, token, ttlMinutes: cfg.resetTtlMinutes });
+      else await this.email.sendPasswordReset(account.email, account.name, `${cfg.frontendUrl}/reset-password?token=${token}`, cfg.resetTtlMinutes);
     } catch {
       this.logger.warn(`A password reset email could not be delivered for a ${account.type} account`);   // the cause may contain the link, so it is not logged
     }
