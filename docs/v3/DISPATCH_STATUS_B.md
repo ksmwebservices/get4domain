@@ -10,7 +10,7 @@
 | K0 S6 step 5 checks and docs | DONE | 27c8418 + docs commit | smoke 590 checks, 160 unit tests |
 | K1 S7 step 0 plan | DONE | 0f667f6 | PUBLIC_COMMERCE_PLAN.md |
 | K1 S7 step 1 pricing | DONE | 55f172d | /pricing via main-host rewrite to /v3-site/pricing |
-| K1 S7 step 2 register and login | TODO | | |
+| K1 S7 step 2 register and login | DONE | b8c8c29 | /register, /directory-api/register and /subdomain; /login rewrites to the Slice 4 sign-in |
 | K1 S7 step 3 referral | TODO | | |
 | K1 S7 step 4 marketing pages | TODO | | |
 | K1 S7 step 5 tests and checks | TODO | | |
