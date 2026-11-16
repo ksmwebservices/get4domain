@@ -116,8 +116,17 @@ const day = (v: unknown): string => { const d = new Date(String(v ?? '')); retur
 
 export interface InvoiceForPage { invoiceNumber: string; financialYear: string; issuedAt: Date | string; snapshot: Record<string, unknown>; taxBreakdown: Record<string, unknown> }
 /** The invoice as a self-contained HTML page, from the stored snapshot only (no live data). Every value is escaped. Prices are shown with the tax lines the snapshot recorded. */
+/** How it was paid, from the stored snapshot: the gateway and its payment id, or the cash receipt reference. Nothing is printed for an invoice that has no payment block. */
+function paymentNote(p: { method?: unknown; gateway?: unknown; reference?: unknown; receivedOn?: unknown } | undefined): string {
+  if (!p || (typeof p.reference !== 'string' && p.method !== 'CASH')) return '';
+  const ref = typeof p.reference === 'string' && p.reference ? esc(p.reference) : '';
+  if (p.method === 'CASH') return `<p class="muted">Paid in cash${ref ? `. Receipt reference ${ref}` : ''}${typeof p.receivedOn === 'string' ? `. Received ${esc(p.receivedOn)}` : ''}</p>`;
+  const gw = p.gateway === 'cashfree' ? 'Cashfree' : p.gateway === 'razorpay' ? 'Razorpay' : 'the payment gateway';
+  return `<p class="muted">Paid through ${esc(gw)}${ref ? `. Payment reference ${ref}` : ''}</p>`;
+}
+
 export function renderInvoiceHtml(inv: InvoiceForPage): string {
-  const s = inv.snapshot as { seller?: Record<string, unknown>; buyer?: Record<string, unknown>; plan?: Record<string, unknown>; period?: Record<string, unknown>; amountPaise?: unknown; termMonths?: unknown };
+  const s = inv.snapshot as { seller?: Record<string, unknown>; buyer?: Record<string, unknown>; plan?: Record<string, unknown>; period?: Record<string, unknown>; amountPaise?: unknown; termMonths?: unknown; payment?: { method?: unknown; gateway?: unknown; reference?: unknown; receivedOn?: unknown } };
   const t = inv.taxBreakdown as { name?: unknown; ratePercent?: unknown; taxableMinor?: unknown; taxMinor?: unknown; creditPaise?: unknown; taxInclusive?: unknown };
   const rows: string[] = [];
   if (typeof t.taxableMinor === 'number') rows.push(`<tr><td>Amount before tax</td><td class="n">${esc(rupees(t.taxableMinor))}</td></tr>`);
@@ -130,5 +139,5 @@ export function renderInvoiceHtml(inv: InvoiceForPage): string {
     + `<p><strong>${esc(s.seller?.name)}</strong><br>${esc(s.seller?.address)}${gstin}</p>`
     + `<p><strong>Billed to</strong><br>${esc(s.buyer?.businessName ?? s.buyer?.name)}<br>${esc(s.buyer?.email)}</p>`
     + `<table><tr><td>${esc(s.plan?.name)} plan, ${esc(s.termMonths)} months<div class="muted">${esc(day(s.period?.from))} to ${esc(day(s.period?.to))}</div></td><td class="n"></td></tr>${rows.join('')}`
-    + `<tr class="total"><td>Total paid</td><td class="n">${esc(rupees(s.amountPaise))}</td></tr></table></body></html>`;
+    + `<tr class="total"><td>Total paid</td><td class="n">${esc(rupees(s.amountPaise))}</td></tr></table>${paymentNote(s.payment)}</body></html>`;
 }

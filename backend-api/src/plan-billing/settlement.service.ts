@@ -14,8 +14,12 @@ import { GatewayHeaders } from './gateway/gateway.port';
 import { PaymentsGate } from './razorpay/payments-gate';
 import { BillingSettings } from './settings/billing-settings';
 import { BillingSettingsService } from './settings/billing-settings.service';
+import { invoiceLines } from './core/invoice-lines';
+import { PlanInvoiceDeliveryService } from './invoice-delivery.service';
 import { TopupSettlementHook } from './topup-hook';
 
+/** what a settlement hands back to its caller besides the outcome: the plan level, and the invoice it made (for the mail) */
+export interface SettleCtx { planLevel: string | null; invoice?: { id: string; number: string; planName: string; to: string | null } }
 export type SettleOutcome = 'PAID' | 'ALREADY_PAID' | 'REVIEW' | 'IGNORED' | 'NO_ORDER';
 /** C6: what staff recorded when they marked an order paid offline, stored on the order in the same transaction as the payment */
 export interface OfflineSettle { reference: string | null; receivedOn: Date | null; amountPaise: number | null; byName: string }
@@ -38,15 +42,21 @@ export class PaymentSettlementService {
     @Optional() @Inject(TopupSettlementHook) private readonly topups?: TopupSettlementHook,
     /** Batch 4: says "a plan order was paid" after the work is committed (the wallet opens on it). Absent = nobody is told. */
     @Optional() @Inject(ActivityBus) private readonly bus?: Pick<ActivityBus, 'emit'>,
+    /** Wave 3 Part D: records (and, when the mail switch is on, sends) the invoice mail after the payment is committed. Absent = no mail is recorded. */
+    @Optional() @Inject(PlanInvoiceDeliveryService) private readonly delivery?: Pick<PlanInvoiceDeliveryService, 'queue'>,
   ) {}
 
   async settle(i: SettleInput): Promise<SettleOutcome> {
     const order = await this.repo.getOrder(i.orderId);
     if (!order) return 'NO_ORDER';
     const s = await this.settings.get();
-    const ctx: { planLevel: string | null } = { planLevel: null };
+    const ctx: SettleCtx = { planLevel: null };
     const outcome = await this.repo.transaction(order.vendorId, (tx) => this.settleWithin(tx, i, s, ctx));
-    if (outcome === 'PAID') this.afterPaid(order.vendorId, order.id, ctx.planLevel, i);
+    if (outcome === 'PAID') {
+      this.afterPaid(order.vendorId, order.id, ctx.planLevel, i);
+      // the invoice mail is recorded AFTER the commit and never raises: the payment and the invoice do not depend on it
+      if (ctx.invoice && this.delivery) void this.delivery.queue({ invoiceId: ctx.invoice.id, invoiceNumber: ctx.invoice.number, planName: ctx.invoice.planName, vendorId: order.vendorId, to: ctx.invoice.to }).catch(() => undefined);
+    }
     return outcome;
   }
 
@@ -60,7 +70,7 @@ export class PaymentSettlementService {
    * The body of a settlement, inside a transaction the CALLER opened: the online and offline paths wrap it in their own, plan renewal from the wallet runs it in the same transaction as the
    * wallet charge so the charge, the paid order, the term and the invoice commit together or not at all. Settings are read by the caller BEFORE the transaction opens.
    */
-  async settleWithin(tx: BillingTx, i: SettleInput, s: BillingSettings, ctx: { planLevel: string | null } = { planLevel: null }): Promise<SettleOutcome> {
+  async settleWithin(tx: BillingTx, i: SettleInput, s: BillingSettings, ctx: SettleCtx = { planLevel: null }): Promise<SettleOutcome> {
     {
 
       const o = await tx.getOrder(i.orderId);
@@ -85,6 +95,7 @@ export class PaymentSettlementService {
       const sub = await tx.assign({ vendorId: o.vendorId, planKey: plan.key, termMonths: o.termMonths, endsAt, source: i.via === 'STAFF' ? 'STAFF' : 'SELF', actor: i.actor, reason: `plan order ${o.id}`, now });
       // A plan paid from the wallet carries no GST and no invoice of its own: the refill already had both (owner, 6 November 2026). Every other way of paying keeps the invoice.
       const invoice = i.via === 'WALLET' ? null : await this.issueInvoice(tx, o, plan, vendor, i, s, endsAt, now);
+      if (invoice) ctx.invoice = { id: invoice.id, number: invoice.invoiceNumber, planName: plan.name, to: vendor.email };
       const ok = await tx.updateOrderCas(o.id, [o.status], { status: 'PAID', paymentId: i.paid.paymentId, paidAmountPaise: i.paid.amount, paidAt: now, source: i.via === 'STAFF' ? 'STAFF' : i.via === 'WALLET' ? 'WALLET' : 'SELF', reason: i.reason, subscriptionId: sub.id, ...(i.offline ? { settledReference: i.offline.reference, settledOn: i.offline.receivedOn, settledAmountPaise: i.offline.amountPaise, settledByName: i.offline.byName } : {}) });
       if (!ok) throw new Error('the order changed during settlement');   // rolls the whole transaction back
       await tx.audit(i.actor, 'billing.order.paid', o.id, { status: o.status }, { status: 'PAID', subscriptionId: sub.id, invoice: invoice?.invoiceNumber ?? null, via: i.via, amountPaise: o.amountPaise });
@@ -103,7 +114,10 @@ export class PaymentSettlementService {
           seller: { name: s.invoiceSellerName, address: s.invoiceSellerAddress, gstin: s.invoiceSellerGstin, complete: !!(s.invoiceSellerName && s.invoiceSellerAddress) },
           buyer: { businessName: vendor.businessName, name: vendor.name, email: vendor.email, phone: vendor.phone },
           plan: { key: plan.key, name: plan.name }, termMonths: o.termMonths, period: { from: now.toISOString(), to: endsAt.toISOString() },
-          order: { id: o.id, providerOrderId: o.providerOrderId, paymentId: i.paid.paymentId, via: i.via }, amountPaise: o.amountPaise, currency: o.currency, kind: o.kind,
+          order: { id: o.id, providerOrderId: o.providerOrderId, gateway: o.gateway ?? 'razorpay', paymentId: i.paid.paymentId, via: i.via }, amountPaise: o.amountPaise, currency: o.currency, kind: o.kind,
+          // Wave 3 Part D: how it was paid, and the reference the vendor sees: the gateway payment id, or the cash receipt reference an admin recorded
+          payment: i.via === 'STAFF' ? { method: 'CASH', reference: i.offline?.reference ?? null, receivedOn: i.offline?.receivedOn ? i.offline.receivedOn.toISOString().slice(0, 10) : null } : { method: 'GATEWAY', gateway: o.gateway ?? 'razorpay', reference: i.paid.paymentId },
+          lines: invoiceLines(plan.name, o.termMonths, q, o.amountPaise),
         },
         taxBreakdown: { name: q.taxName ?? null, ratePercent: q.taxRatePercent ?? null, taxInclusive: q.taxInclusive ?? false, taxableMinor: q.taxableMinor ?? null, taxMinor: q.taxMinor ?? 0, creditPaise: q.creditPaise ?? 0, discounts: q.discounts ?? [] },
       });

@@ -1,4 +1,3 @@
-import { randomBytes } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { AdminGuard } from '../src/auth/guards/admin.guard';
@@ -6,19 +5,15 @@ import { effectiveRolesFor } from '../src/auth/guards/admin-role-matrix';
 import { CashfreeGateway } from '../src/plan-billing/gateway/cashfree.gateway';
 import { cashfreeSignature, decimalToPaise, normalizeCashfreeEvent, normalizeRazorpayEvent, paiseToDecimal, verifyCashfreeWebhook, WEBHOOK_MAX_SKEW_MS, GatewayName } from '../src/plan-billing/gateway/gateway-core';
 import { PaymentGatewaySettingsService } from '../src/plan-billing/gateway/gateway-settings.service';
-import { PaymentGatewayPort } from '../src/plan-billing/gateway/gateway.port';
-import { InMemoryGateway } from '../src/plan-billing/gateway/in-memory.gateway';
-import { PlanOrderService } from '../src/plan-billing/plan-order.service';
 import { PaymentsGate } from '../src/plan-billing/razorpay/payments-gate';
 import { DEFAULT_BILLING_SETTINGS, BillingSettings } from '../src/plan-billing/settings/billing-settings';
-import { PaymentSettlementService } from '../src/plan-billing/settlement.service';
-import { billingWorld, currentOf, STAFF, VENDOR } from './support/billing-world';
+import { currentOf, STAFF, VENDOR } from './support/billing-world';
+import { deliver, flow, Flow, secret } from './support/wave3-world';
 
 /**
  * Wave 3 Part C: the payment port, Razorpay and Cashfree, signed webhooks, the amount check, the hold for review, the admin setting.
  * Every secret in this file is made by the test itself (randomBytes) at run time: no key, real or fake-looking, is stored in the repository.
  */
-const secret = (): string => randomBytes(16).toString('hex');
 const T = new Date('2026-11-20T10:00:00.000Z');
 const code = (e: unknown): string => ((e as { response?: { code?: string }; getResponse?: () => { code?: string } })?.getResponse?.() ?? (e as { response?: { code?: string } })?.response)?.code ?? '';
 const err = async (p: Promise<unknown>): Promise<unknown> => { try { await p; } catch (e) { return e; } throw new Error('expected a refusal'); };
@@ -145,38 +140,6 @@ describe('CashfreeGateway (no network: fetch is injected)', () => {
     expect(JSON.stringify(new CashfreeGateway(keys))).not.toContain(keys.secretKey);
   });
 });
-
-// ─────────────────────────────────────────────────────────────────────────────────────────────── the gate and the full flow
-class TestGate extends PaymentsGate {
-  readonly gws = new Map<string, InMemoryGateway>();
-  protected buildGateway(name: GatewayName): PaymentGatewayPort | null { return this.gws.get(name) ?? null; }
-}
-
-function flow(chosen: GatewayName = 'razorpay') {
-  const w = billingWorld();
-  w.settings.over = { paymentsMode: 'test', paymentGateway: chosen };
-  const settings = { get: async (): Promise<BillingSettings> => ({ ...DEFAULT_BILLING_SETTINGS, graceDays: 7, upgradeProration: 'NONE', renewalReminderDays: [14, 7, 1], ...w.settings.over }) } as never;
-  const gate = new TestGate(settings);
-  const gws = { razorpay: new InMemoryGateway('razorpay', { signing: secret(), webhook: secret() }), cashfree: new InMemoryGateway('cashfree', { signing: secret(), webhook: secret() }) };
-  gate.gws.set('razorpay', gws.razorpay); gate.gws.set('cashfree', gws.cashfree);
-  const settlement = new PaymentSettlementService(w.repo, settings, gate, { invalidate: () => undefined }); settlement.clock = () => new Date(w.now.t);
-  const orders = new PlanOrderService(w.repo, settings, gate, settlement); orders.clock = () => new Date(w.now.t);
-  let k = 0;
-  const buy = (over: Partial<{ planKey: string; termMonths: number }> = {}, vendorId = 'v1') => orders.create(vendorId, { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: `wave3-key-${++k}-abcdef`, ...over }, VENDOR);
-  const invoices = () => w.repo.invoices.length;
-  return { w, gate, gws, settlement, orders, buy, invoices, gw: gws[chosen], set: (over: Partial<BillingSettings>) => { w.settings.over = { ...w.settings.over, ...over }; } };
-}
-type Flow = ReturnType<typeof flow>;
-
-/** the body and headers a gateway would POST for a payment, signed with the secret the test made */
-function deliver(f: Flow, gateway: GatewayName, order: { providerOrderId: string | null }, o: { amountMinor: number; paymentId: string; eventId?: string; sign?: boolean; kind?: 'PAID' | 'FAILED'; currency?: string }) {
-  const gw = f.gws[gateway];
-  const raw = gateway === 'cashfree'
-    ? JSON.stringify({ type: o.kind === 'FAILED' ? 'PAYMENT_FAILED_WEBHOOK' : 'PAYMENT_SUCCESS_WEBHOOK', data: { order: { order_id: order.providerOrderId }, payment: { cf_payment_id: o.paymentId, payment_status: o.kind === 'FAILED' ? 'FAILED' : 'SUCCESS', payment_amount: paiseToDecimal(o.amountMinor), payment_currency: o.currency ?? 'INR' } } })
-    : JSON.stringify({ event: o.kind === 'FAILED' ? 'payment.failed' : 'payment.captured', payload: { payment: { entity: { id: o.paymentId, order_id: order.providerOrderId, amount: o.amountMinor, currency: o.currency ?? 'INR', status: o.kind === 'FAILED' ? 'failed' : 'captured' } } } });
-  const headers = o.sign === false ? gw.signedHeaders(raw + ' tampered', f.w.now.t, o.eventId) : gw.signedHeaders(raw, f.w.now.t, o.eventId);
-  return { raw, headers };
-}
 
 describe('PaymentsGate: which gateway, which mode', () => {
   const settingsOf = (over: Partial<BillingSettings>) => ({ get: async () => ({ ...DEFAULT_BILLING_SETTINGS, ...over }) }) as never;

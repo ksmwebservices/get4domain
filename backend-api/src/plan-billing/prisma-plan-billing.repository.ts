@@ -92,6 +92,12 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     return r ? toInvoice(r) : null;
   }
 
+  async findInvoiceDelivery(invoiceId: string) { const r = await this.prisma.v3MessageOutbox.findFirst({ where: { templateKey: 'plan_invoice', relatedRequestId: invoiceId }, select: { id: true, status: true } }); return r ? { id: r.id, status: r.status } : null; }
+  async addInvoiceDelivery(d: { vendorId: string; invoiceId: string; toHash: string; toMasked: string; payload: Record<string, unknown> }) {
+    const r = await this.prisma.v3MessageOutbox.create({ data: { vendorId: d.vendorId, channel: 'EMAIL', templateKey: 'plan_invoice', toHash: d.toHash, toMasked: d.toMasked, payloadRedactedJson: d.payload as Prisma.InputJsonValue, senderRoute: 'EMAIL_SYSTEM', relatedRequestId: d.invoiceId } });
+    return { id: r.id };
+  }
+  async setInvoiceDeliveryStatus(id: string, status: 'DELIVERED' | 'FAILED') { await this.prisma.v3MessageOutbox.update({ where: { id }, data: { status, attempts: { increment: 1 } } }); }
   async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; provider?: string }) {
     try { return { created: true, row: toEvent(await this.prisma.v3PaymentEvent.create({ data: { ...(d.provider ? { provider: d.provider } : {}), providerEventId: d.providerEventId, type: d.type, payloadRedactedJson: d.payloadRedacted as Prisma.InputJsonValue, signatureValid: d.signatureValid, orderId: d.orderId } })) }; }
     catch (e) { if (isUnique(e)) return { created: false, row: toEvent(await this.prisma.v3PaymentEvent.findUniqueOrThrow({ where: { providerEventId: d.providerEventId } })) }; throw e; }

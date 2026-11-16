@@ -60,6 +60,10 @@ export class MemoryBillingRepo extends PlanBillingRepository {
   }
   async getInvoiceForVendor(v: string, id: string) { const i = this.invoices.find((x) => x.vendorId === v && x.id === id); return i ? { ...i } : null; }
 
+  deliveries: Array<{ id: string; vendorId: string; invoiceId: string; status: string; toMasked: string; toHash: string; payload: Record<string, unknown> }> = [];
+  async findInvoiceDelivery(invoiceId: string) { const r = this.deliveries.find((x) => x.invoiceId === invoiceId); return r ? { id: r.id, status: r.status } : null; }
+  async addInvoiceDelivery(d: { vendorId: string; invoiceId: string; toHash: string; toMasked: string; payload: Record<string, unknown> }) { const r = { id: this.id('out'), status: 'QUEUED', ...d }; this.deliveries.push(r); return { id: r.id }; }
+  async setInvoiceDeliveryStatus(id: string, status: 'DELIVERED' | 'FAILED') { const r = this.deliveries.find((x) => x.id === id); if (r) r.status = status; }
   async insertEvent(d: { providerEventId: string; type: string; payloadRedacted: Record<string, unknown>; signatureValid: boolean; orderId: string | null; provider?: string }) {
     const ex = this.events.get(d.providerEventId); if (ex) return { created: false, row: { ...ex } };
     const row: EventRow = { id: this.id('evt'), provider: d.provider ?? 'razorpay', providerEventId: d.providerEventId, type: d.type, payloadRedacted: d.payloadRedacted, signatureValid: d.signatureValid, orderId: d.orderId, processedAt: null, result: null, createdAt: this.clock() };

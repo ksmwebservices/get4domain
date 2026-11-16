@@ -81,6 +81,11 @@ export abstract class PlanBillingRepository {
   abstract finishEvent(providerEventId: string, patch: { processedAt: Date; result: string; orderId?: string | null }): Promise<void>;
   abstract listEvents(q: { orderId?: string; skip: number; take: number }): Promise<{ items: EventRow[]; total: number }>;
 
+  /** Wave 3 Part D: the invoice mail is recorded in the message outbox (one row per invoice). QUEUED means pending: the mail switch is off or the mail is not sent yet. */
+  abstract findInvoiceDelivery(invoiceId: string): Promise<{ id: string; status: string } | null>;
+  abstract addInvoiceDelivery(d: { vendorId: string; invoiceId: string; toHash: string; toMasked: string; payload: Record<string, unknown> }): Promise<{ id: string }>;
+  abstract setInvoiceDeliveryStatus(id: string, status: 'DELIVERED' | 'FAILED'): Promise<void>;
+
   abstract transaction<T>(vendorId: string, fn: (tx: BillingTx) => Promise<T>): Promise<T>;
 
   abstract dueSubscriptions(now: Date, maxDays: number): Promise<DueSub[]>;
