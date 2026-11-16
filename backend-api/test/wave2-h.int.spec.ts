@@ -59,15 +59,15 @@ describe('add-on eligibility and the firm profile on staging', () => {
 
   it('the database repeats the owner rules: a SHOP or ONLINE_ORDERING_DELIVERY row for PHARMACY, and a PHARMACY_COUNTER row for any other pack, cannot be written at all', async () => {
     for (const [a, p] of [['SHOP', 'PHARMACY'], ['ONLINE_ORDERING_DELIVERY', 'PHARMACY'], ['PHARMACY_COUNTER', 'LAB']]) {
-      await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-${a}-${p}`}, ${a}, ${p}, CURRENT_TIMESTAMP)`).rejects.toThrow(/owner_rules_check/);
+      await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-${a}-${p}`}, ${a}, ${p}, CURRENT_TIMESTAMP)`).rejects.toThrow(/23514|owner_rules_check|check constraint/);
     }
   });
 
   it('a pairing needs a real add-on pack and a real pack (foreign keys), and a pairing is unique', async () => {
-    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-fk1`}, 'NO_SUCH_ADDON', 'LAB', CURRENT_TIMESTAMP)`).rejects.toThrow(/addonKey_fkey/);
-    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-fk2`}, 'HOME_SAMPLE_COLLECTION', 'NO_SUCH_PACK', CURRENT_TIMESTAMP)`).rejects.toThrow(/packKey_fkey/);
+    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-fk1`}, 'NO_SUCH_ADDON', 'LAB', CURRENT_TIMESTAMP)`).rejects.toThrow(/23503|addonKey_fkey|foreign key/);
+    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-fk2`}, 'HOME_SAMPLE_COLLECTION', 'NO_SUCH_PACK', CURRENT_TIMESTAMP)`).rejects.toThrow(/23503|packKey_fkey|foreign key/);
     await setPair('HOME_SAMPLE_COLLECTION', 'LAB', true);
-    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-dup`}, 'HOME_SAMPLE_COLLECTION', 'LAB', CURRENT_TIMESTAMP)`).rejects.toThrow(/addonKey_packKey_key|Unique constraint/);
+    await expect(prisma.$executeRaw`INSERT INTO "g4d_addon_eligibility" ("id", "addonKey", "packKey", "updatedAt") VALUES (${`vtest-${RUN_ID}-dup`}, 'HOME_SAMPLE_COLLECTION', 'LAB', CURRENT_TIMESTAMP)`).rejects.toThrow(/23505|already exists|addonKey_packKey_key|Unique constraint/);
   });
 
   it('the real store turns a pairing off and on, creates a missing one once, and never duplicates it', async () => {
@@ -81,11 +81,11 @@ describe('add-on eligibility and the firm profile on staging', () => {
   it('the firm table holds exactly one row, the defaults at first, and the database repeats the GSTIN, PAN and non-empty checks', async () => {
     const rows = await prisma.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "g4d_firm_profile"`; expect(rows).toEqual([{ id: 'platform' }]);
     if (firmBefore && firmBefore.gstin === null && firmBefore.legalName === FIRM_DEFAULTS.legalName) expect(firmBefore).toMatchObject({ registeredAddress: FIRM_DEFAULTS.registeredAddress, pan: null });
-    await expect(prisma.$executeRaw`INSERT INTO "g4d_firm_profile" ("id", "updatedAt") VALUES ('second', CURRENT_TIMESTAMP)`).rejects.toThrow(/single_row_check/);
-    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "gstin" = '40ABCDE1234F1Z5' WHERE "id" = 'platform'`).rejects.toThrow(/gstin_check/);
-    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "gstin" = '33abcde1234f1z5' WHERE "id" = 'platform'`).rejects.toThrow(/gstin_check/);
-    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "pan" = '12345' WHERE "id" = 'platform'`).rejects.toThrow(/pan_check/);
-    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "legalName" = '  ' WHERE "id" = 'platform'`).rejects.toThrow(/name_check/);
+    await expect(prisma.$executeRaw`INSERT INTO "g4d_firm_profile" ("id", "updatedAt") VALUES ('second', CURRENT_TIMESTAMP)`).rejects.toThrow(/23514|single_row_check|check constraint/);
+    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "gstin" = '40ABCDE1234F1Z5' WHERE "id" = 'platform'`).rejects.toThrow(/23514|gstin_check|check constraint/);
+    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "gstin" = '33abcde1234f1z5' WHERE "id" = 'platform'`).rejects.toThrow(/23514|gstin_check|check constraint/);
+    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "pan" = '12345' WHERE "id" = 'platform'`).rejects.toThrow(/23514|pan_check|check constraint/);
+    await expect(prisma.$executeRaw`UPDATE "g4d_firm_profile" SET "legalName" = '  ' WHERE "id" = 'platform'`).rejects.toThrow(/23514|name_check|check constraint/);
   });
 
   it('the service saves through the real store, the public view adds the GSTIN only once it is set, and clearing it removes the line again', async () => {
