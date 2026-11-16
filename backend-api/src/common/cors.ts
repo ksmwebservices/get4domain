@@ -23,6 +23,12 @@ function withWwwTwins(origins: string[]): string[] {
   return [...out];
 }
 
+/**
+ * Response headers a browser script may read on a cross-origin call. Without this a download fetched by script (an invoice, a CSV export) loses the file name the server chose, because browsers hide
+ * every header that is not on the short safe list. (Job K3.) Content-Disposition carries a file name only, never anything private.
+ */
+export const CORS_EXPOSED_HEADERS: readonly string[] = ['Content-Disposition'];
+
 const PLATFORM = [/^https:\/\/([a-z0-9-]+\.)*get4domain\.com$/, /^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/];
 
 /**
@@ -33,10 +39,11 @@ const PLATFORM = [/^https:\/\/([a-z0-9-]+\.)*get4domain\.com$/, /^http:\/\/local
  * Requests with no Origin header (server-side fetches, curl) are always allowed — CORS only concerns browsers.
  */
 export function buildCorsOptions(env: Env = process.env): CorsOptions {
-  if ((env.CORS_MODE ?? '').toLowerCase() !== 'strict') return { origin: true, credentials: true };
+  if ((env.CORS_MODE ?? '').toLowerCase() !== 'strict') return { origin: true, credentials: true, exposedHeaders: [...CORS_EXPOSED_HEADERS] };
   const exact = new Set(withWwwTwins([...parseExtraOrigins(env.CORS_EXTRA_ORIGINS), ...parseExtraOrigins(env.FRONTEND_URL)]));
   return {
     credentials: true,
+    exposedHeaders: [...CORS_EXPOSED_HEADERS],
     origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void): void => {
       if (!origin) return cb(null, true);
       const o = origin.trim().toLowerCase().replace(/\/+$/, '');
