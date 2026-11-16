@@ -150,3 +150,5 @@ Written after the build. These replace the statements above where they differ.
 - **Directory home** is `/directory` (G11).
 - **Sitemap index** is served at `/sitemaps/directory-index.xml` (not `/sitemap.xml`, which stays the existing one); robots is served by a handler the middleware rewrites `/robots.txt` to, only while the flag is on.
 - Sign-in uses the safer `POST /auth/session/login`; sign-up uses `POST /auth/register`; reset request uses `POST /auth/password/forgot`.
+
+- **Update after the first follow-up:** unknown directory addresses are now a real 404 and removed businesses a real 410 (a middleware gate, flag on only; no fallback rewrite, `next.config.ts` is unchanged). Directory, claim, account and legal routes render only the page model's JSON-LD while the flag is on. See `PUBLIC_SITE.md` section 3.
