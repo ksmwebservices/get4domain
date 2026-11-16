@@ -28,6 +28,12 @@ const URLS = ['FRONTEND_URL', 'PUBLIC_APP_URL', 'PUBLIC_API_URL'] as const;
  */
 export const STAGING_PROJECT_REF_HASHES: readonly string[] = ['5d1c5890b888e0aaf03fcd6c3648202b2da8c3708713babfb519037e8b9ac2a6'];
 
+/**
+ * SHA-256 of the project ref of the Version 2 PRODUCTION database (the same value as the denied list in scripts/staging/staging-guard.config.json, kept equal by a test). The V3 live API and the live scripts
+ * never use it: the new live database is a different project. Only a hash is kept, never the name.
+ */
+export const V2_PROJECT_REF_HASHES: readonly string[] = ['9f1e98dfed750bfef48b8d0a12e537f260b72bfb5a54adecc8df3a3984678a8c'];
+
 const PLACEHOLDER = /^(change[-_ ]?me|changeme|replace[-_ ]?me|your[-_ ].*|<.*>|x{3,}|todo|tbd|placeholder|example|secret|password|test|none|null|undefined|\.{3}|\*+)$/i;
 const PLACEHOLDER_PART = /(change[-_ ]?me|replace[-_ ]?me|your[-_ ](secret|key|password|domain|api|token)|<[^>]*>|placeholder|example\.(com|org|net)|\.invalid\b|\.test\b|\.example\b)/i;
 /** A host that is a staging, test, development or local database whatever the provider. */
@@ -59,6 +65,7 @@ export function databaseUrlProblem(url: string): string | null {
   if (names.some((n) => NON_LIVE_HOST.test(n))) return 'points at a staging, test, development or local database, which the live API refuses';
   const ref = projectRefOf(url);
   if (ref && STAGING_PROJECT_REF_HASHES.includes(sha(ref))) return 'points at the staging database, which the live API refuses';
+  if (ref && V2_PROJECT_REF_HASHES.includes(sha(ref))) return 'points at the Version 2 production database, which the V3 live API refuses (the live database is a new project)';
   if (/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1$)/.test(u.hostname)) return 'points at a local or private address, which the live API refuses';
   return null;
 }

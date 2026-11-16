@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { STAGING_PROJECT_REF_HASHES, assertLiveEnv, checkDatabaseUrls, checkLiveEnv, databaseUrlProblem, isLiveProcess, isPlaceholder, projectRefOf, REQUIRED_LIVE_ENV } from '../src/common/startup-check';
+import { STAGING_PROJECT_REF_HASHES, V2_PROJECT_REF_HASHES, assertLiveEnv, checkDatabaseUrls, checkLiveEnv, databaseUrlProblem, isLiveProcess, isPlaceholder, projectRefOf, REQUIRED_LIVE_ENV } from '../src/common/startup-check';
 import { createHash } from 'crypto';
 
 /** Job L3: the live API refuses to boot with a missing or placeholder variable or a staging or test database, and never prints a value. */
@@ -77,6 +77,22 @@ describe('the database rules', () => {
     const list = STAGING_PROJECT_REF_HASHES as string[]; const ref = 'zz9fakeprojectref'; list.push(createHash('sha256').update(ref).digest('hex'));
     try { expect(databaseUrlProblem(`postgresql://app:Pa55-w0rd-Zq81xv@db.${ref}.supabase.co:5432/postgres`)).toMatch(/staging database/); expect(projectRefOf(`postgresql://app.${ref}:x@h.supabase.com:6543/postgres`)).toBe(ref); } finally { list.pop(); }
     expect(databaseUrlProblem(DB_DIRECT)).toBeNull();
+  });
+  it('the Version 2 production project is refused by the hash of its ref, the list equals the guard\'s denied list, and a different ref is accepted', () => {
+    const cfg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../scripts/staging/staging-guard.config.json'), 'utf8')) as { deniedProjectRefHashes: string[] };
+    expect([...V2_PROJECT_REF_HASHES]).toEqual(cfg.deniedProjectRefHashes);
+    const list = V2_PROJECT_REF_HASHES as string[]; const ref = 'zz8fakev2projectref'; list.push(createHash('sha256').update(ref).digest('hex'));
+    try {
+      expect(databaseUrlProblem(`postgresql://app:Pa55-w0rd-Zq81xv@db.${ref}.supabase.co:5432/postgres`)).toMatch(/Version 2 production/);
+      expect(databaseUrlProblem(`postgresql://app.${ref}:Pa55-w0rd-Zq81xv@aws-0.pooler.supabase.com:6543/postgres`)).toMatch(/Version 2 production/);
+      expect(checkDatabaseUrls({ DATABASE_URL: `postgresql://app.${ref}:Pa55-w0rd-Zq81xv@aws-0.pooler.supabase.com:6543/postgres`, DIRECT_URL: DB_DIRECT }).map((p) => p.name)).toEqual(['DATABASE_URL']);
+    } finally { list.pop(); }
+    expect(databaseUrlProblem(DB_DIRECT)).toBeNull();
+  });
+  it('the live scripts all take their database rules from checkDatabaseUrls, so the Version 2 and staging refusals reach every one', () => {
+    for (const f of ['baseline-live.js', 'migrate-live.js', 'seed-live.js']) expect(fs.readFileSync(path.resolve(__dirname, '../scripts/live', f), 'utf8')).toContain('liveSeedEnv(process.env, checkDatabaseUrls)');
+    expect(fs.readFileSync(path.resolve(__dirname, '../scripts/live/backup-live-db.js'), 'utf8')).toContain('checkDatabaseUrls(');
+    expect(fs.readFileSync(path.resolve(__dirname, '../src/main.ts'), 'utf8')).toContain('assertLiveEnv');
   });
   it('a bad string, a non-postgres scheme or a missing password is refused, and checkDatabaseUrls names the variable', () => {
     expect(databaseUrlProblem('not a url')).not.toBeNull(); expect(databaseUrlProblem('mysql://u:p@db.live.co:3306/x')).not.toBeNull(); expect(databaseUrlProblem('postgresql://app@db.livepr0jectref.supabase.co/postgres')).not.toBeNull();
