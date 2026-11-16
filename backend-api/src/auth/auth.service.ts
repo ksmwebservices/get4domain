@@ -267,6 +267,23 @@ export class AuthService {
     return { id: vendor.id, email: vendor.email, industry: vendor.industry, isSandbox: vendor.isSandbox, role: vendor.role, ...(termsAcceptanceRequired === undefined ? {} : { termsAcceptanceRequired }) };
   }
 
+  /**
+   * Wave 3 Part J: who is signed in, for any kind of principal. A vendor and a vendor team member get exactly what they got before (id, email, industry, isSandbox, role, terms flag) plus their NAME. A staff
+   * member and a referral partner, who are admin-team rows and not vendors, get their own name and role (with the staff role and the label beside it), so the apps can say who is signed in.
+   */
+  async meFor(user: AuthenticatedUser): Promise<{ id: string; email: string; name: string; industry: string | null; isSandbox: boolean; role: string; adminRole?: string; staffLabel?: string; termsAcceptanceRequired?: boolean }> {
+    if (user.kind === 'admin_member' || user.kind === 'referral_partner') {
+      const m = await this.prisma.adminTeamMember.findUnique({ where: { id: user.sub } });
+      if (!m) throw new UnauthorizedException('Account not found');
+      return { id: m.id, email: m.email, name: m.name, industry: null, isSandbox: false, role: user.role, ...(user.adminRole ? { adminRole: user.adminRole } : {}), ...(user.staffLabel ? { staffLabel: user.staffLabel } : {}) };
+    }
+    const base = await this.me(user.sub);
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: user.sub }, select: { name: true } });
+    let name = vendor?.name ?? '';
+    if (user.kind === 'team_member' && user.memberId) { const tm = await this.prisma.teamMember.findUnique({ where: { id: user.memberId }, select: { name: true } }); if (tm?.name) name = tm.name; }
+    return { ...base, name, ...(user.adminRole ? { adminRole: user.adminRole } : {}) };
+  }
+
   private signToken(payload: {
     sub: string;
     email: string;

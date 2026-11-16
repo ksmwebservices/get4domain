@@ -97,6 +97,20 @@ export function clickOutUrl(apiBase: string, businessId: string, o: { src: strin
 }
 
 /** The one canonical main host: www is not canonical. Returns the origin (no trailing slash), or '' for a value that is not a URL. */
+/**
+ * Wave 3 Part J: where the directory is served. With DIRECTORY_PUBLIC_BASE_URL set (for example https://directory.get4domain.com) the directory has its OWN host: every canonical, sitemap, breadcrumb, robots
+ * and llms URL is built on that origin and the directory home is its root, so no address carries a /directory prefix. With it unset (or not a web address) nothing changes: the origin is the public app
+ * origin and the home is served at /directory, as before. Only the origin of the value is used (a path, a query and a www prefix are dropped).
+ */
+export function directoryBase(env: Record<string, string | undefined>, appOrigin: string): { origin: string; homePath: string; dedicated: boolean } {
+  const raw = env.DIRECTORY_PUBLIC_BASE_URL;
+  if (typeof raw === 'string' && /^https?:\/\//i.test(raw.trim())) {
+    const origin = canonicalOrigin(raw.trim());
+    if (origin) return { origin, homePath: '/', dedicated: true };
+  }
+  return { origin: appOrigin, homePath: DIRECTORY_HOME_PATH, dedicated: false };
+}
+
 export function canonicalOrigin(appUrl: string): string {
   try { const u = new URL(appUrl); return `${u.protocol}//${u.hostname.replace(/^www\./i, '')}${u.port ? `:${u.port}` : ''}`; } catch { return ''; }
 }

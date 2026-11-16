@@ -4,5 +4,5 @@
  */
 export abstract class TopupSettlementHook {
   /** A verified, captured payment arrived whose provider order is not a plan order. Returns the result to record on the payment event, or null when it is not a top-up either. */
-  abstract handleCapturedPayment(i: { providerOrderId: string; paymentId: string; amount: number; currency: string }): Promise<string | null>;
+  abstract handleCapturedPayment(i: { providerOrderId: string; paymentId: string; amount: number; currency: string; /** Wave 3 Part J: the gateway that reported it; a refill started on the OTHER gateway is not credited by it */ gateway?: string }): Promise<string | null>;
 }

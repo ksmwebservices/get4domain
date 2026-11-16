@@ -13,7 +13,7 @@ import {
   plural as pluralFn, shortDescription, takeLinks,
 } from '../core/page-model';
 import { buildDescription, buildH1, buildTitle, cutWords, H1_MAX, SeoVars } from '../core/template-engine';
-import { DIRECTORY_HOME_PATH, PageSpec, buildPath, canonicalOrigin, clickOutUrl, parsePath, splitTail, withPageNumber } from '../core/url-scheme';
+import { PageSpec, buildPath, canonicalOrigin, clickOutUrl, directoryBase, parsePath, splitTail, withPageNumber } from '../core/url-scheme';
 import { publicStateOf } from '../../directory/core/listing-state';
 import { loadPlaces, Places, CatInfo } from './places';
 import { FacetCounts, ListedBusiness, Scope, SeoDirectoryData } from './seo-directory.data';
@@ -90,10 +90,11 @@ export class SeoPageService {
 
   async model(spec: PageSpec): Promise<PageResult> {
     const [s, tpl, pl] = await Promise.all([this.settings.get(), this.templates.templates(), this.places()]);
-    const origin = canonicalOrigin(await this.settings.readPublicAppUrl());
+    const base = directoryBase(process.env, canonicalOrigin(await this.settings.readPublicAppUrl()));   // Wave 3 Part J: the directory's own host when DIRECTORY_PUBLIC_BASE_URL is set
+    const origin = base.origin;
     const { page, pageSize, skip } = clampPage('page' in spec ? spec.page : 1, undefined, s.directoryPageSizeMax, s.directoryPageSizeDefault);
     const path = buildPath(spec);
-    const ctx = { s, tpl, pl, origin, page, pageSize, skip, path };
+    const ctx = { s, tpl, pl, origin, page, pageSize, skip, path, homePath: base.homePath };
     switch (spec.type) {
       case 'home': return this.home(spec, ctx);
       case 'business': return this.business(spec, ctx);
@@ -166,7 +167,7 @@ export class SeoPageService {
     const catLinks: Link[] = takeLinks(cats.map((c) => ({ name: c.info.plural, path: buildPath({ type: 'category', category: c.info.row.slug, page: 1 }), count: c.n })), FACET_MAX);
     const intro = total ? `Get4Domain lists ${total} ${pluralFn(total, 'business', 'businesses')}${cityLinks.length ? ` in ${cityLinks.length} ${pluralFn(cityLinks.length, 'city', 'cities')}` : ''}, with their addresses, services and websites.` : 'Get4Domain is a directory of local businesses and their websites.';
     // G11: the directory home is served at /directory, so its model and its canonical say /directory (the site root is the marketing home)
-    return this.finish(spec, { ...ctx, path: DIRECTORY_HOME_PATH }, {
+    return this.finish(spec, { ...ctx, path: ctx.homePath }, {
       vars: { count: total }, templateType: 'home', total, indexing: { indexable: ctx.s.directoryPagesIndexable, reason: ctx.s.directoryPagesIndexable ? null : 'FLAG_OFF' }, intro, breadcrumbs: this.crumbsOf(ctx.origin, []),
       cards: [], facets: [{ kind: 'city', items: cityLinks }, { kind: 'category', items: catLinks }], related: { nearbyLocalities: [], relatedCategories: [], parents: [] },
       faq: this.faq({ countQ: total ? 'How many businesses are listed on Get4Domain?' : undefined, countA: total ? `${total} ${pluralFn(total, 'business is', 'businesses are')} listed on Get4Domain.` : undefined, listQ: cityLinks.length ? 'Which cities are covered?' : undefined, listA: cityLinks.length ? `${listNames(cityLinks.map((c) => c.name), 8)}.` : undefined, claim: true }),
@@ -333,7 +334,7 @@ export class SeoPageService {
   }
 }
 
-interface Ctx { s: DirectorySettings; tpl: Awaited<ReturnType<SeoSettingsService['templates']>>; pl: Places; origin: string; page: number; pageSize: number; skip: number; path: string }
+interface Ctx { s: DirectorySettings; tpl: Awaited<ReturnType<SeoSettingsService['templates']>>; pl: Places; origin: string; page: number; pageSize: number; skip: number; path: string; homePath: string }
 
 /** No staff override at all: what the page tests (and any build without the keyword target tables) use. The module provides DbPageOverrides. */
 @Injectable()

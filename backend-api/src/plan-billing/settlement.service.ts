@@ -156,8 +156,11 @@ export class PaymentSettlementService {
 
     let result = 'IGNORED';
     if (ev.kind === 'PAID') {
-      if (!known) result = 'NO_ORDER';
-      else if ((isGatewayName(known.gateway) ? known.gateway : 'razorpay') !== gateway) result = 'GATEWAY_MISMATCH';   // money reported by a gateway the order was never started on
+      if (!known) {
+        result = 'NO_ORDER';
+        // not a plan order: it may be a wallet top-up (Wave 3 Part J), settled by the same rules and the same checks as on the Razorpay route
+        if (this.topups && ev.providerOrderId) { const r = await this.topups.handleCapturedPayment({ providerOrderId: ev.providerOrderId, paymentId: String(ev.paymentId ?? `order-${ev.providerOrderId}`), amount: ev.amountMinor as number, currency: String(ev.currency ?? ''), gateway }); if (r) result = r; }
+      } else if ((isGatewayName(known.gateway) ? known.gateway : 'razorpay') !== gateway) result = 'GATEWAY_MISMATCH';   // money reported by a gateway the order was never started on
       else result = await this.settle({ orderId: known.id, paid: { paymentId: String(ev.paymentId ?? `order-${known.providerOrderId}`), amount: ev.amountMinor as number, currency: String(ev.currency ?? '') }, via: 'WEBHOOK', actor: SYSTEM, reason: null });
     } else if (ev.kind === 'FAILED' && known) {
       result = 'FAILED_ATTEMPT';   // a failed ATTEMPT does not end an order: it stays payable until it expires

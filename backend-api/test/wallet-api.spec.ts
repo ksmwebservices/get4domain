@@ -90,9 +90,11 @@ describe('wallet API', () => {
       for (const bad of [{ amountPaise: 'ten' }, { amountPaise: 0 }, { amountPaise: -5 }, { amountPaise: 20_000.5 }, { idempotencyKey: 'short' }, { idempotencyKey: 'has spaces in it!!' }, { vendorId: 'v2' }, { balancePaise: 1 }]) {
         expect([JSON.stringify(bad), (await send('post', '/v3/me/wallet/topups', 'owner', { amountPaise: 20_000, idempotencyKey: key(), ...bad })).status]).toEqual([JSON.stringify(bad), 400]);
       }
-      for (const bad of [{ paymentId: 'x', signature: 'a'.repeat(64) }, { paymentId: 'pay_x', signature: 'short' }, { paymentId: 'pay_x', signature: 'a'.repeat(64), amount: 1 }, {}]) {
+      for (const bad of [{ paymentId: 'x', signature: 'a'.repeat(64) }, { paymentId: 'pay_x', signature: 'short' }, { paymentId: 'pay_x', signature: 'a'.repeat(64), amount: 1 }]) {
         expect([JSON.stringify(bad), (await send('post', '/v3/me/wallet/topups/anything/confirm', 'owner', bad)).status]).toEqual([JSON.stringify(bad), 400]);
       }
+      // Wave 3 Part J: Cashfree signs no return, so an EMPTY confirm body is valid for the DTO; the service then decides (an unknown top-up is a plain 404, and a Razorpay one without a signature is refused there)
+      const empty = await send('post', '/v3/me/wallet/topups/anything/confirm', 'owner', {}); expect([empty.status, empty.body.code]).toEqual([404, 'WALLET_TOPUP_NOT_FOUND']);
       expect((await send('put', '/v3/me/wallet/billing-profile', 'owner', { stateCode: '33', vendorId: 'v2' })).status).toBe(400);
     });
     it('the amount is judged against the staff limits (400 with the limits) and a missing limit is a plain 409', async () => {

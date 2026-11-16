@@ -5,7 +5,7 @@ import { SeoKeywordStore } from '../keywords/seo-keyword.store';
 import { buildDirectoryRobots } from '../core/robots';
 import { buildDirectoryLlms } from '../core/llms-directory';
 import { buildSitemapIndex, buildUrlset, chunkCount, chunkFile, enumerateListingPaths, ListingPath, SITEMAP_CHUNK, SitemapEntry } from '../core/sitemap';
-import { canonicalOrigin } from '../core/url-scheme';
+import { canonicalOrigin, directoryBase } from '../core/url-scheme';
 import { SeoSettingsService } from '../settings/seo-settings.service';
 import { loadPlaces } from '../pages/places';
 import { SeoDirectoryData } from '../pages/seo-directory.data';
@@ -40,7 +40,7 @@ export class SeoSitemapService {
   /** The listing pages that qualify for the sitemap (not thin, not empty), whether or not the directory pages are switched on: the keyword plan and the backlink block read this list. */
   async listing(): Promise<ListingPath[]> { return this.listingPaths((await this.settings.get()).directoryThinPageMinBusinesses); }
 
-  private async origin(): Promise<string> { return canonicalOrigin(await this.settings.readPublicAppUrl()); }
+  private async origin(): Promise<string> { return directoryBase(process.env, canonicalOrigin(await this.settings.readPublicAppUrl())).origin; }   // Wave 3 Part J: the sitemap, robots and llms use the directory's own host when DIRECTORY_PUBLIC_BASE_URL is set
 
   /** The sitemap index. Empty (a valid empty index) while the directory pages are not indexable. */
   async index(): Promise<string> {

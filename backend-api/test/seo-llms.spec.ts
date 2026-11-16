@@ -130,3 +130,18 @@ describe('the global llms.txt of the directory', () => {
     expect(src).toMatch(/@Public\(\) @Throttle\(RATE\.directoryRead\) @Get\('llms\.txt'\)/); expect(src).toContain("throw new NotFoundException(seoError('SEO_NOT_FOUND', 'Not found.'))");
   });
 });
+
+describe('Wave 3 Part J: the sitemap, robots and llms.txt on the directory host', () => {
+  const LOCS2 = [{ id: 'chn', parentId: null, kind: 'CITY', name: 'Chennai', slug: 'chennai', active: true }];
+  it('use DIRECTORY_PUBLIC_BASE_URL when it is set, and the app origin when it is not', async () => {
+    const mk = () => new SeoSitemapService({ groupStats: async () => [], indexableBusinessMeta: async () => ({ total: 0, newest: null }) } as never, { listLocations: async () => LOCS2, listCategories: async () => [] } as never, { all: async () => [] } as never, { get: async () => ({ ...DEFAULT_DIRECTORY_SETTINGS, directoryPagesIndexable: true }), readPublicAppUrl: async () => 'https://www.get4domain.com' } as never, { crawlers: async () => ({}) } as never);
+    const old = process.env.DIRECTORY_PUBLIC_BASE_URL;
+    try {
+      process.env.DIRECTORY_PUBLIC_BASE_URL = 'https://directory.get4domain.com/directory';
+      const robots = await mk().robots();
+      expect(robots).toContain('Sitemap: https://directory.get4domain.com/sitemap.xml'); expect(robots).not.toMatch(/\/directory(?![.\w-])/); expect(robots).not.toContain('https://get4domain.com/sitemap.xml');
+      delete process.env.DIRECTORY_PUBLIC_BASE_URL;
+      expect(await mk().robots()).toContain('Sitemap: https://get4domain.com/sitemap.xml');
+    } finally { if (old === undefined) delete process.env.DIRECTORY_PUBLIC_BASE_URL; else process.env.DIRECTORY_PUBLIC_BASE_URL = old; }
+  });
+});

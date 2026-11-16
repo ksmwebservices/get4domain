@@ -3,7 +3,7 @@ import { BusinessRow, DirectoryRepository } from '../../directory/directory.repo
 import { DirectorySettingsService } from '../../directory/settings/directory-settings.service';
 import { badgeEmbedHtml, badgeSvg, badgeTextLink } from '../core/badge';
 import { BacklinkBlock, BacklinkPage, buildBacklinkBlock } from '../core/backlink-block';
-import { canonicalOrigin } from '../core/url-scheme';
+import { canonicalOrigin, directoryBase } from '../core/url-scheme';
 import { SeoKeywordStore } from '../keywords/seo-keyword.store';
 import { loadPlaces } from '../pages/places';
 import { SeoSitemapService } from '../sitemaps/seo-sitemap.service';
@@ -41,7 +41,7 @@ export class SeoBacklinkService {
 
   async blockOf(b: BusinessRow): Promise<BacklinkBlock> {
     const [s, appUrl, listing, places] = await Promise.all([this.settings.get(), this.settings.readPublicAppUrl(), this.sitemaps.listing(), loadPlaces(this.repo, this.keywords)]);
-    const origin = canonicalOrigin(appUrl);
+    const origin = directoryBase(process.env, canonicalOrigin(appUrl)).origin;
     const chain: Array<{ id: string; kind: string }> = []; let cur = b.locationId ? places.locs.find((l) => l.id === b.locationId) : undefined; let g = 0;
     while (cur && g++ < 10) { chain.push({ id: cur.id, kind: cur.kind }); cur = cur.parentId ? places.locs.find((l) => l.id === cur!.parentId) : undefined; }
     const localityIds = new Set(chain.filter((c) => c.kind === 'LOCALITY').map((c) => c.id));
@@ -69,7 +69,7 @@ export class SeoBacklinkService {
   }
 
   async embedOf(b: BusinessRow): Promise<EmbedSnippet> {
-    const origin = canonicalOrigin(await this.settings.readPublicAppUrl());
+    const origin = directoryBase(process.env, canonicalOrigin(await this.settings.readPublicAppUrl())).origin;
     const apiBase = process.env.PUBLIC_API_URL ?? '';
     return {
       html: badgeEmbedHtml({ origin, apiBase, businessId: b.id, slug: b.slug }), imageUrl: `${apiBase.replace(/\/+$/, '')}/v3/directory/badge/${encodeURIComponent(b.id)}.svg`, profileUrl: `${origin}/business/${b.slug}`,

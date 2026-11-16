@@ -39,6 +39,6 @@ export class AuthController {
   @Get('me')
   @ApiOperation({ summary: 'Current authenticated principal — id, email, industry and sandbox flag' })
   me(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.me(user.sub);
+    return this.authService.meFor(user);   // Wave 3 Part J: name and role for every kind of principal (staff and partners are not vendors); a vendor gets what it always got, plus its name
   }
 }

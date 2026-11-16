@@ -26,7 +26,7 @@ const toLedger = (e: Prisma.V3WalletLedgerGetPayload<Record<string, never>>): Le
 const toTopup = (t: Prisma.V3WalletTopupGetPayload<Record<string, never>>): TopupRow => ({
   id: t.id, vendorId: t.vendorId, amountPaise: t.amountPaise, currency: t.currency, status: t.status, providerOrderId: t.providerOrderId, idempotencyKey: t.idempotencyKey, paymentId: t.paymentId, paidAmountPaise: t.paidAmountPaise,
   paidAt: t.paidAt, ledgerId: t.ledgerId, receiptId: t.receiptId, createdByType: t.createdByType, createdById: t.createdById, expiresAt: t.expiresAt, createdAt: t.createdAt, updatedAt: t.updatedAt,
-  payablePaise: t.payablePaise, taxSnapshot: obj(t.taxSnapshotJson),
+  payablePaise: t.payablePaise, taxSnapshot: obj(t.taxSnapshotJson), gateway: t.gateway, gatewayClientToken: t.gatewayClientToken,
 });
 const toReceipt = (r: Prisma.V3WalletReceiptGetPayload<Record<string, never>>): ReceiptRow => ({ id: r.id, vendorId: r.vendorId, topupId: r.topupId, receiptNumber: r.receiptNumber, financialYear: r.financialYear, documentType: r.documentType === 'TAX_INVOICE' ? 'TAX_INVOICE' : 'RECEIPT', issuedAt: r.issuedAt, snapshot: obj(r.snapshotJson) });
 
@@ -61,7 +61,7 @@ export function prismaWalletTx(db: Prisma.TransactionClient, vendorId: string, a
     setFrozen: async (frozen, reason) => toWallet(await db.v3Wallet.update({ where: { vendorId }, data: { status: frozen ? 'FROZEN' : 'ACTIVE', frozenReason: frozen ? reason : null, version: { increment: 1 } } })),
     setBillingProfile: async (p) => { await db.v3Wallet.update({ where: { vendorId }, data: { billingStateCode: p.stateCode, billingGstin: p.gstin } }); },
     insertTopup: async (d: NewTopup) => {
-      try { return toTopup(await db.v3WalletTopup.create({ data: { vendorId: d.vendorId, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById, payablePaise: d.payablePaise, taxSnapshotJson: d.taxSnapshot as Prisma.InputJsonValue } })); } catch (e) { if (isUnique(e)) throw new DuplicateTopupError(); throw e; }
+      try { return toTopup(await db.v3WalletTopup.create({ data: { vendorId: d.vendorId, amountPaise: d.amountPaise, currency: d.currency, idempotencyKey: d.idempotencyKey, expiresAt: d.expiresAt, createdByType: d.createdByType, createdById: d.createdById, payablePaise: d.payablePaise, taxSnapshotJson: d.taxSnapshot as Prisma.InputJsonValue, ...(d.gateway ? { gateway: d.gateway } : {}) } })); } catch (e) { if (isUnique(e)) throw new DuplicateTopupError(); throw e; }
     },
     getTopup: async (id) => { const t = await db.v3WalletTopup.findFirst({ where: { id, vendorId } }); return t ? toTopup(t) : null; },
     updateTopupCas: async (id: string, expected: TopupStatus[], patch: TopupPatch) => (await db.v3WalletTopup.updateMany({ where: { id, vendorId, status: { in: expected } }, data: { ...patch } })).count === 1,

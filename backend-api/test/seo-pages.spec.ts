@@ -318,3 +318,38 @@ describe('Wave 2 public site gaps: the business page model (G4, G5) and the dire
     const m = await ok(w.svc, `/business/${b.slug}`); expect(m.business!.listingState).toBe('CLAIMED'); expect(m.meta).toMatchObject({ indexable: false, noindexReason: 'SUSPENDED' });
   });
 });
+
+describe('Wave 3 Part J: the directory on its own host (DIRECTORY_PUBLIC_BASE_URL)', () => {
+  const withEnv = async (v: string | undefined, fn: () => Promise<void>): Promise<void> => {
+    const old = process.env.DIRECTORY_PUBLIC_BASE_URL;
+    if (v === undefined) delete process.env.DIRECTORY_PUBLIC_BASE_URL; else process.env.DIRECTORY_PUBLIC_BASE_URL = v;
+    try { await fn(); } finally { if (old === undefined) delete process.env.DIRECTORY_PUBLIC_BASE_URL; else process.env.DIRECTORY_PUBLIC_BASE_URL = old; }
+  };
+  const PREFIX = /\/directory(?![.\w-])/;   // a /directory path prefix, not the word in a host name
+
+  it('with the value set, every canonical, breadcrumb and link is on the directory host and nothing carries a /directory prefix', async () => {
+    await withEnv('https://directory.get4domain.com/', async () => {
+      const w = world({ directoryPagesIndexable: true }); fiveInPerambur(w.data);
+      const home = await ok(w.svc, '/');
+      expect(home.path).toBe('/'); expect(home.meta.canonical).toBe('https://directory.get4domain.com/');
+      expect((await ok(w.svc, '/directory')).meta.canonical).toBe('https://directory.get4domain.com/');   // the old address still answers, and says the new one
+      const city = await ok(w.svc, '/chennai'); const listing = await ok(w.svc, '/chennai/plumbers-in-perambur');
+      expect(city.meta.canonical).toBe('https://directory.get4domain.com/chennai'); expect(listing.meta.canonical).toBe('https://directory.get4domain.com/chennai/plumbers-in-perambur');
+      for (const m of [home, city, listing]) {
+        expect(m.breadcrumbs.every((c) => c.url.startsWith('https://directory.get4domain.com/'))).toBe(true);
+        expect(JSON.stringify(m)).not.toMatch(PREFIX);
+      }
+    });
+  });
+
+  it('with the value unset, or not a web address, nothing changes: the app origin and the /directory home', async () => {
+    for (const v of [undefined, '', 'garbage', 'ftp://directory.get4domain.com']) {
+      await withEnv(v, async () => {
+        const w = world({ directoryPagesIndexable: true }); fiveInPerambur(w.data);
+        const home = await ok(w.svc, '/');
+        expect([home.path, home.meta.canonical]).toEqual(['/directory', 'https://get4domain.com/directory']);
+        expect((await ok(w.svc, '/chennai')).meta.canonical).toBe('https://get4domain.com/chennai');
+      });
+    }
+  });
+});

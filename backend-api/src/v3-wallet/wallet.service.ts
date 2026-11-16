@@ -4,6 +4,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { financialYearOf, formatInvoiceNumber, verifyPaidAmount } from '../plan-billing/core/amounts';
 import { billingError } from '../plan-billing/plan-billing.errors';
 import { PaymentsGate } from '../plan-billing/razorpay/payments-gate';
+import { isGatewayName } from '../plan-billing/gateway/gateway-core';
 import { BillingSettingsService } from '../plan-billing/settings/billing-settings.service';
 import { TopupSettlementHook } from '../plan-billing/topup-hook';
 import { activationDecision, ActivationEvidence, available, reconcile, topupAmountProblem, WalletRuleError } from './core/wallet-core';
@@ -28,6 +29,7 @@ const snapNum = (t: TopupRow, k: string): number => { const v = t.taxSnapshot[k]
  * A refill made before GST was added on top has no payablePaise: it was exactly the credit, with no tax.
  */
 const topupView = (t: TopupRow, keyId: string | null = null) => ({
+  gateway: t.gateway ?? 'razorpay', clientToken: t.gatewayClientToken ?? null,
   id: t.id, amountPaise: t.amountPaise, creditPaise: t.amountPaise, taxPaise: snapNum(t, 'taxMinor'), payablePaise: t.payablePaise ?? t.amountPaise,
   tax: { intraState: typeof t.taxSnapshot.intraState === 'boolean' ? t.taxSnapshot.intraState : null, lines: Array.isArray(t.taxSnapshot.lines) ? t.taxSnapshot.lines : [] },
   currency: t.currency, status: t.status, providerOrderId: t.providerOrderId, keyId, expiresAt: t.expiresAt, paidAt: t.paidAt, receiptId: t.receiptId, createdAt: t.createdAt,
@@ -151,7 +153,7 @@ export class V3WalletService implements TopupSettlementHook {
 
     const prior = await this.store.findTopupByIdempotency(vendorId, key);
     if (prior) return this.replay(prior, input.amountPaise);
-    const port = await this.gate.port();   // refuses first when payments are off or not set up: no row is created for nothing
+    const port = await this.gate.gatewayPort();   // refuses first when payments are off or not set up: no row is created for nothing (Wave 3 Part J: the payment port, either gateway)
     const now = this.clock();
     // GST is added ON TOP of the refill (owner, 5 November 2026): the vendor pays the amount plus tax, the credit is the amount. Tax that cannot be worked out refuses the refill, never guesses.
     const tax = computeTax({ amountMinor: input.amountPaise, taxInclusive: false, buyerStateCode: w.billingStateCode, sellerStateCode: s.walletSellerStateCode, rates: await this.store.taxRates(), now, category: 'ALL' });
@@ -159,14 +161,14 @@ export class V3WalletService implements TopupSettlementHook {
     const taxSnapshot = { taxInclusive: false, taxableMinor: tax.taxableMinor, taxMinor: tax.taxMinor, totalMinor: tax.totalMinor, lines: tax.lines, intraState: tax.intraState, buyerStateCode: w.billingStateCode, buyerGstin: w.billingGstin, sellerStateCode: s.walletSellerStateCode };
     let topup: TopupRow;
     try {
-      topup = await this.store.unit(vendorId, (tx) => tx.insertTopup({ vendorId, amountPaise: input.amountPaise, currency: 'INR', idempotencyKey: key, expiresAt: new Date(now.getTime() + b.orderExpiryMinutes * 60_000), createdByType: actor.type, createdById: actor.id, payablePaise: tax.totalMinor, taxSnapshot }));
+      topup = await this.store.unit(vendorId, (tx) => tx.insertTopup({ vendorId, amountPaise: input.amountPaise, currency: 'INR', gateway: port.gateway, idempotencyKey: key, expiresAt: new Date(now.getTime() + b.orderExpiryMinutes * 60_000), createdByType: actor.type, createdById: actor.id, payablePaise: tax.totalMinor, taxSnapshot }));
     } catch (e) {
       if (e instanceof DuplicateTopupError) { const again = await this.store.findTopupByIdempotency(vendorId, key); if (again) return this.replay(again, input.amountPaise); }
       throw e;
     }
     try {
-      const po = await port.createOrder({ amountPaise: topup.payablePaise ?? topup.amountPaise, currency: topup.currency, receipt: topup.id });
-      await this.store.unit(vendorId, (tx) => tx.updateTopupCas(topup.id, ['CREATED'], { status: 'PENDING', providerOrderId: po.id }));
+      const po = await port.createOrder({ amountMinor: topup.payablePaise ?? topup.amountPaise, currency: topup.currency, receipt: topup.id, customer: { id: vendorId } });
+      await this.store.unit(vendorId, (tx) => tx.updateTopupCas(topup.id, ['CREATED'], { status: 'PENDING', providerOrderId: po.providerOrderId, gatewayClientToken: po.clientToken }));
     } catch {
       await this.store.unit(vendorId, (tx) => tx.updateTopupCas(topup.id, ['CREATED'], { status: 'FAILED' }));
       throw new ConflictException(billingError('PAYMENT_PROVIDER_ERROR', 'The payment service could not start this. Please try again.'));
@@ -177,24 +179,30 @@ export class V3WalletService implements TopupSettlementHook {
   private async replay(prior: TopupRow, amountPaise: number) {
     if (prior.amountPaise !== amountPaise) throw new ConflictException(walletError('WALLET_IDEMPOTENCY_CONFLICT', 'That request key was already used for a different top-up.'));
     let keyId: string | null = null;
-    try { keyId = (await this.gate.port()).publicKeyId(); } catch { /* payments switched off since: the top-up is still shown */ }
+    try { keyId = (await this.gate.portFor(isGatewayName(prior.gateway) ? prior.gateway : 'razorpay')).publicKeyId(); } catch { /* payments switched off since: the top-up is still shown */ }
     return topupView(prior, keyId);
   }
 
-  /** The browser says "I paid"; we do not believe it. The signature is checked, then the PROVIDER is asked what that payment really is. */
-  async confirmTopup(vendorId: string, topupId: string, input: { paymentId: string; signature: string }, actor: Actor) {
+  /**
+   * The browser says "I paid"; we do not believe it. Where the gateway signs the return (Razorpay) the signature is checked, and then the GATEWAY is asked what the payments of this refill really are
+   * (Wave 3 Part J: through the payment port, on the gateway the refill was started on). Only a successful payment of exactly this order is credited, and the settlement checks the amount again.
+   */
+  async confirmTopup(vendorId: string, topupId: string, input: { paymentId?: string; signature?: string }, actor: Actor) {
     const t = typeof topupId === 'string' && topupId ? await this.store.getTopupForVendor(vendorId, topupId) : null;
     if (!t) throw new NotFoundException(walletError('WALLET_TOPUP_NOT_FOUND', 'That top-up does not exist.'));
-    const port = await this.gate.port();
+    const port = await this.gate.portFor(isGatewayName(t.gateway) ? t.gateway : 'razorpay');
     if (t.status === 'PAID') return topupView(t, port.publicKeyId());
     if ((t.status !== 'PENDING' && t.status !== 'EXPIRED') || !t.providerOrderId) throw new ConflictException(walletError('WALLET_TOPUP_STATE_INVALID', 'This top-up cannot be confirmed now.'));
-    if (!port.verifyPaymentSignature({ orderId: t.providerOrderId, paymentId: String(input.paymentId ?? ''), signature: String(input.signature ?? '') })) throw new BadRequestException(billingError('PAYMENT_SIGNATURE_INVALID', 'The payment could not be verified.'));
-    let payment;
-    try { payment = await port.fetchPayment(input.paymentId); } catch { throw new ConflictException(billingError('PAYMENT_PROVIDER_ERROR', 'The payment service could not be reached. Please try again.')); }
-    if (payment.orderId !== t.providerOrderId) throw new BadRequestException(billingError('PAYMENT_SIGNATURE_INVALID', 'The payment could not be verified.'));
-    if (payment.status === 'authorized' || payment.status === 'created') return { ...topupView(t, port.publicKeyId()), pending: true as const };
-    if (payment.status !== 'captured') throw new ConflictException(billingError('PAYMENT_NOT_CAPTURED', 'The payment was not completed.'));
-    await this.settleTopup(t, { paymentId: payment.id, amount: payment.amount, currency: payment.currency }, 'CONFIRM', actor);
+    if (!port.verifyReturn({ providerOrderId: t.providerOrderId, paymentId: input.paymentId ?? null, signature: input.signature ?? null })) throw new BadRequestException(billingError('PAYMENT_SIGNATURE_INVALID', 'The payment could not be verified.'));
+    let payments;
+    try { payments = await port.fetchOrderPayments(t.providerOrderId, { paymentId: input.paymentId ?? null }); } catch { throw new ConflictException(billingError('PAYMENT_PROVIDER_ERROR', 'The payment service could not be reached. Please try again.')); }
+    if (payments.some((p) => p.providerOrderId !== t.providerOrderId)) throw new BadRequestException(billingError('PAYMENT_SIGNATURE_INVALID', 'The payment could not be verified.'));
+    const paid = payments.find((p) => p.status === 'SUCCESS');
+    if (!paid) {
+      if (payments.some((p) => p.status === 'PENDING') || (payments.length === 0 && t.gateway === 'cashfree')) return { ...topupView(t, port.publicKeyId()), pending: true as const };
+      throw new ConflictException(billingError('PAYMENT_NOT_CAPTURED', 'The payment was not completed.'));
+    }
+    await this.settleTopup(t, { paymentId: paid.paymentId, amount: paid.amountMinor, currency: paid.currency }, 'CONFIRM', actor);
     return topupView((await this.store.getTopupForVendor(vendorId, t.id))!, port.publicKeyId());
   }
 
@@ -267,9 +275,10 @@ export class V3WalletService implements TopupSettlementHook {
   }
 
   /** The webhook hook (see TopupSettlementHook): a captured payment whose provider order is not a plan order. */
-  async handleCapturedPayment(i: { providerOrderId: string; paymentId: string; amount: number; currency: string }): Promise<string | null> {
+  async handleCapturedPayment(i: { providerOrderId: string; paymentId: string; amount: number; currency: string; gateway?: string }): Promise<string | null> {
     const t = await this.store.findTopupByProviderOrder(i.providerOrderId);
     if (!t) return null;
+    if (i.gateway !== undefined && (t.gateway ?? 'razorpay') !== i.gateway) return 'TOPUP_GATEWAY_MISMATCH';   // money reported by a gateway the refill was never started on: nothing is credited
     return `TOPUP_${await this.settleTopup(t, { paymentId: i.paymentId, amount: i.amount, currency: i.currency }, 'WEBHOOK', SYSTEM)}`;
   }
 

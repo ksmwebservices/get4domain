@@ -5842,6 +5842,9 @@ model V3WalletTopup {
   paidAmountPaise Int?
   /// what the vendor pays: the credit (amountPaise) plus GST. null on a refill made before GST was added on top.
   payablePaise    Int?
+  /// Wave 3 Part J: the gateway the refill was started on (razorpay or cashfree) and the browser checkout's session token where the gateway has one
+  gateway             String              @default("razorpay")
+  gatewayClientToken  String?
   /// the tax worked out when the refill was made; the tax invoice is issued from this
   taxSnapshotJson Json                @default("{}")
   paidAt          DateTime?

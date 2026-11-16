@@ -24,9 +24,11 @@ export interface TopupRow {
   payablePaise: number | null;
   /** the tax worked out when the refill was made (lines, rates, states): the invoice is issued from THIS, never from rates read later */
   taxSnapshot: Record<string, unknown>;
+  /** Wave 3 Part J: the gateway the refill was started on (razorpay when absent: every refill before Wave 3) and the checkout session token where the gateway has one */
+  gateway?: string; gatewayClientToken?: string | null;
 }
-export type NewTopup = Pick<TopupRow, 'vendorId' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById' | 'payablePaise' | 'taxSnapshot'>;
-export type TopupPatch = Partial<Pick<TopupRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'ledgerId' | 'receiptId'>>;
+export type NewTopup = Pick<TopupRow, 'vendorId' | 'amountPaise' | 'currency' | 'idempotencyKey' | 'expiresAt' | 'createdByType' | 'createdById' | 'payablePaise' | 'taxSnapshot'> & Partial<Pick<TopupRow, 'gateway'>>;
+export type TopupPatch = Partial<Pick<TopupRow, 'status' | 'providerOrderId' | 'paymentId' | 'paidAmountPaise' | 'paidAt' | 'ledgerId' | 'receiptId' | 'gatewayClientToken'>>;
 export interface ReceiptRow { id: string; vendorId: string; topupId: string; receiptNumber: string; financialYear: string; documentType: 'RECEIPT' | 'TAX_INVOICE'; issuedAt: Date; snapshot: Record<string, unknown> }
 
 /** Thrown when (vendorId, idempotencyKey) of a top-up already exists: the caller then returns the existing top-up. */

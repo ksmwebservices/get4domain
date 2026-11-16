@@ -9,9 +9,10 @@ export class CreateTopupDto {
   @Type(() => Number) @IsInt() @Min(1) @Max(1_000_000_000) amountPaise!: number;
   @IsString() @MinLength(8) @MaxLength(80) @Matches(KEY, { message: KEY_MSG }) idempotencyKey!: string;
 }
+/** Razorpay hands the browser a payment id and a signature (both required for it: the service refuses a missing one). Cashfree signs no return: the body may be empty and the server asks the gateway. */
 export class ConfirmTopupDto {
-  @IsString() @MaxLength(60) @Matches(/^pay_[A-Za-z0-9]+$/, { message: 'paymentId must be a payment id' }) paymentId!: string;
-  @IsString() @MaxLength(200) @Matches(/^[0-9a-f]{64}$/, { message: 'signature must be the 64 character signature from the payment' }) signature!: string;
+  @IsOptional() @IsString() @MaxLength(60) @Matches(/^pay_[A-Za-z0-9]+$/, { message: 'paymentId must be a payment id' }) paymentId?: string;
+  @IsOptional() @IsString() @MaxLength(200) @Matches(/^[0-9a-f]{64}$/, { message: 'signature must be the 64 character signature from the payment' }) signature?: string;
 }
 export class BillingProfileDto {
   @IsOptional() @IsString() @MaxLength(2) stateCode?: string;
