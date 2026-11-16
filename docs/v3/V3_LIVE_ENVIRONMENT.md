@@ -8,7 +8,7 @@ Commands are for a Linux server with Docker, nginx, `openssl` and the PostgreSQL
 | Piece | File | What it does |
 |---|---|---|
 | Production image | `Dockerfile.v3live` (+ `Dockerfile.v3live.dockerignore`) | Multi-stage (dependencies, build with `prisma generate`, production-only dependencies, runtime). Non-root user (uid 1001), health check on `/health`, clean stop (tini). Bakes in no value. |
-| Compose file | `docker-compose.v3live.yml` | The API only. Port bound to the machine's own loopback address (`127.0.0.1:3008`), `restart: unless-stopped`, log rotation (5 files of 10 MB), `no-new-privileges`, all capabilities dropped, `env_file: .env.live`. |
+| Compose file | `docker-compose.v3live.yml` | The API only. It listens on `0.0.0.0` INSIDE the container; **no port is published to the host**: the container has a fixed address on its own private network (`172.28.30.10` by default) and the host's nginx connects to `http://<that address>:3008`. `restart: unless-stopped`, log rotation (5 files of 10 MB), `no-new-privileges`, all capabilities dropped, `env_file: .env.live`. |
 | Variable list | `.env.live.example` | Every variable name the API reads, one comment each, no values. A test keeps it complete. |
 | Startup check | `src/common/startup-check.ts`, called first in `src/main.ts` | The live process refuses to boot with a missing or placeholder variable, a secret under 32 characters, an address that is not https on `V3_DOMAIN`, or a staging, test or local database. It prints names, never values. |
 | Pre-flight | `scripts/live/check-live-env.js` | The same check, run before you start the container. |
@@ -54,11 +54,12 @@ openssl rand -base64 48 | tr -d '\n' ; echo        # run three times: JWT_SECRET
 - `V3_DOMAIN` is the live domain only (no `https://`, no path). `FRONTEND_URL`, `PUBLIC_APP_URL` and `PUBLIC_API_URL` are `https://` addresses on it; `SITE_BASE_DOMAIN` is it or a subdomain.
 - `DATABASE_URL` is the pooled connection of the live database, `DIRECT_URL` the direct one. **Never a staging or test database**: the check refuses them by name and by the staging project's hash.
 - `SERVER_IP` is the server's public IPv4 address (custom domains point at it).
-- `TRUSTED_PROXIES`: the address nginx connects from, as the container sees it. With the port bound to the loopback address, nginx arrives from the compose network's gateway:
+- `V3_API_SUBNET` and `V3_API_IP` (optional, commented in the example): the private network of the container and its fixed address. The defaults are `172.28.30.0/24` and `172.28.30.10`; change them only if they clash with another network on the server (`docker network ls`, `ip route`).
+- `TRUSTED_PROXIES`: the address nginx connects from, as the container sees it. The host's nginx reaches the container through the private network's gateway, which is the first address of the subnet: `172.28.30.1` with the defaults. Check it after the first start:
   ```
   docker network inspect get4domain-v3live_v3live_net --format '{{(index .IPAM.Config 0).Gateway}}'
   ```
-  (the network exists after the first `docker compose ... up`; use `172.16.0.0/12` for the first check and tighten it after.)
+  If the public site's server also calls the API from another machine, add that machine's address.
 - Leave every sending and spending switch **unset** (section 9).
 
 Load the file into your shell for the scripts below (nothing is printed):
@@ -150,18 +151,19 @@ docker compose -f docker-compose.v3live.yml --env-file .env.live run --rm -it ap
 
 It refuses to run if any administrator exists, takes no arguments, and needs a terminal. Password rule: 12 to 72 characters with a lower case letter, a capital, a number and a symbol.
 
-nginx: one server block for `api.<V3_DOMAIN>` (certificate by your usual way) that proxies to `http://127.0.0.1:3008`, sets `proxy_set_header Host $host;`, `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, `proxy_set_header X-Forwarded-Proto $scheme;`, and **passes `Access-Control-Expose-Headers` through** (downloads keep their file name only if it is not stripped). Reload nginx.
+nginx: one server block for `api.<V3_DOMAIN>` (certificate by your usual way) that proxies to `http://172.28.30.10:3008` (the container's address, `V3_API_IP`), sets `proxy_set_header Host $host;`, `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, `proxy_set_header X-Forwarded-Proto $scheme;`, and **passes `Access-Control-Expose-Headers` through** (downloads keep their file name only if it is not stripped). Reload nginx.
 
 ## 9. Health checks (read only)
 
 ```
-curl -fsS http://127.0.0.1:3008/health                      # {"status":"ok",...}  the process is up
-curl -fsS http://127.0.0.1:3008/health/ready                # {"status":"ready","database":"up",...}  the database answers
+curl -fsS http://172.28.30.10:3008/health                   # {"status":"ok",...}  the process is up (from the host, by the container address)
+curl -fsS http://172.28.30.10:3008/health/ready             # {"status":"ready","database":"up",...}  the database answers
 curl -fsS https://api.<V3_DOMAIN>/health/ready              # the same through nginx and TLS
 curl -fsS https://api.<V3_DOMAIN>/v3/public/firm            # the company profile answers
 curl -sI -H "Origin: https://<V3_DOMAIN>" https://api.<V3_DOMAIN>/v3/public/firm | grep -i expose     # Access-Control-Expose-Headers: Content-Disposition
 docker inspect --format '{{.State.Health.Status}}' get4domain_v3live_api                              # healthy
-ss -ltn | grep 3008                                         # must show 127.0.0.1:3008 and NOT 0.0.0.0:3008
+docker port get4domain_v3live_api                              # must print NOTHING: no port is published to the host
+ss -ltn | grep ':3008 ' || echo "nothing listens on 3008 on the host (correct)"
 ```
 
 Then, from the admin app, sign in as the first SUPER_ADMIN, and check `GET /v3/admin/seeded-sites/categories` (total 200) and `GET /v3/me/media/limits` (answers `configured: false` until the upload settings are set).

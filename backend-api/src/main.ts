@@ -53,7 +53,9 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3008;
-  await app.listen(port);
+  // HOST (default 0.0.0.0, every address): in the live container the network is private and the host's nginx reaches it by the container address (docker-compose.v3live.yml).
+  const host = process.env.HOST?.trim() || '0.0.0.0';
+  await app.listen(port, host);
   logger.log(`Get4Domain API running on port ${port}`);
 }
 

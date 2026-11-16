@@ -48,12 +48,17 @@ describe('docker-compose.v3live.yml', () => {
     expect(ignore).toMatch(/^\.env\.live$/m);
     expect(fs.existsSync(path.join(root, '.env.live'))).toBe(false);
   });
-  it('binds the port to the machine\'s own loopback address, never to every address', () => {
-    const ports = code.match(/ports:\n((?:\s+- .*\n)+)/);
-    expect(ports).not.toBeNull();
-    for (const l of ports![1].trim().split('\n')) expect(l.trim()).toMatch(/^- "127\.0\.0\.1:\$\{V3_API_PORT:-3008\}:3008"$/);
-    expect(code).not.toContain('0.0.0.0');
+  it('listens on 0.0.0.0 inside the container, publishes NO port to the host, and gives the container a fixed address on a private network for the host\'s nginx', () => {
+    expect(code).toMatch(/HOST: "0\.0\.0\.0"/);
+    expect(code).not.toMatch(/^\s+ports:/m);   // nothing is published to the host
+    expect(code).toMatch(/expose:\n\s+- "3008"/);
+    expect(code).toContain('ipv4_address: ${V3_API_IP:-');
+    expect(code).toMatch(/ipam:\n\s+config:\n\s+- subnet: \$\{V3_API_SUBNET:-/);
+    expect(code).not.toMatch(/driver: host|network_mode: ?host/);
+    expect(read('src/main.ts')).toMatch(/app\.listen\(port, host\)/);
+    expect(dockerfile).toMatch(/^ENV HOST=0\.0\.0\.0$/m);
   });
+  it('keeps the health check (image) and the log rotation (compose)', () => { expect(dockerfile).toContain('HEALTHCHECK'); expect(code).toMatch(/max-size: "10m"/); expect(code).toMatch(/max-file: "5"/); });
   it('rotates its logs, drops privileges, and takes the domain as the variable V3_DOMAIN (required)', () => {
     expect(code).toMatch(/max-size: "10m"/); expect(code).toMatch(/max-file: "5"/);
     expect(code).toContain('no-new-privileges:true');
