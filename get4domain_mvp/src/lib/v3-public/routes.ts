@@ -12,9 +12,17 @@ export const V3_ROUTE_HEADER = 'x-v3-route';
 /** The internal handler that answers /robots.txt while the flag is on (reached only by the middleware rewrite). */
 export const V3_ROBOTS_ROUTE = '/directory-robots';
 
+/** The internal handler that relays a V3 vendor website (reached only by the middleware rewrite from a vendor host). */
+export const V3_VENDOR_SITE_ROOT = '/vendor-site';
+
 /** Paths that exist only as rewrite targets: a visitor typing them gets a 404 (the rewrite runs after the middleware, so it is not affected). */
 export function isInternalOnlyPath(pathname: string): boolean {
-  return pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`) || pathname === V3_ROBOTS_ROUTE;
+  return pathname === V3_PAGES_ROOT || pathname.startsWith(`${V3_PAGES_ROOT}/`) || pathname === V3_ROBOTS_ROUTE || pathname === V3_VENDOR_SITE_ROOT || pathname.startsWith(`${V3_VENDOR_SITE_ROOT}/`);
+}
+
+/** Files a vendor's own host answers from its stored site, although the main matcher skips dotted paths: /llms.txt and the site's /assets/. Handled only for a V3 vendor host. */
+export function isVendorPlatformFilePath(pathname: string): boolean {
+  return pathname === '/llms.txt' || pathname.startsWith('/assets/');
 }
 
 /** True when this path belongs to a fixed V3 public route (the segment itself, or anything below it, or a handler such as /directory-go). */

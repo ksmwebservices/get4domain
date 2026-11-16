@@ -6,7 +6,9 @@ import { looksLikeBusinessId } from '@/lib/v3-public/click';
 import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
 import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
 import { decideHost } from '@/lib/v3-public/host-routing';
-import { isInternalOnlyPath, isV3PublicPath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER } from '@/lib/v3-public/routes';
+import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER, V3_VENDOR_SITE_ROOT } from '@/lib/v3-public/routes';
+import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
+import { forwardedFor } from '@/lib/v3-public/proxy';
 
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
@@ -115,6 +117,19 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const layer = hostLayer(req);
   if (layer && 'done' in layer) return layer.done;
   const hostKind = layer?.host ?? null;
+  // A V3 vendor website: the backend's stored page, relayed. V3 is asked first; a host V3 does not know goes on to the V2 renderer below, so V2 vendors keep working until cutover.
+  let v3Owns = false;
+  if (hostKind === 'vendor-site') {
+    const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
+    v3Owns = await vendorOwnsHost(host, forwardedFor(req));
+    if (v3Owns) {
+      const url = req.nextUrl.clone();
+      url.pathname = `${V3_VENDOR_SITE_ROOT}${req.nextUrl.pathname === '/' ? '' : req.nextUrl.pathname}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+  // /llms.txt and /assets/ reach this function only because of the widened matcher, for a V3 vendor host. For anything else they are served exactly as before (no middleware).
+  if (isVendorPlatformFilePath(req.nextUrl.pathname)) return NextResponse.next();
   // Host layer on: only a vendor host reaches the vendor-site rewrite (the directory host must never become /site/directory).
   const rewritten = hostKind === null || hostKind === 'vendor-site' ? vendorHostRewrite(req) : null;
   if (rewritten) return rewritten;
@@ -169,4 +184,5 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths
 // robots.txt and sitemap.xml are matched too, so a vendor's own host answers them for itself (the main host passes straight through)
-export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml'] };
+// /llms.txt and /assets/:path* are matched only so a V3 vendor host can answer them from its stored site; the middleware returns at once for them on every other host and with the flag off
+export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml', '/llms.txt', '/assets/:path*'] };

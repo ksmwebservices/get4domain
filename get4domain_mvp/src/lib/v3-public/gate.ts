@@ -1,4 +1,5 @@
 import { fetchPageModel } from './api';
+import { directoryHomeHref } from './host-routing';
 import { directoryCandidate } from './routes';
 import { S } from './strings';
 
@@ -36,7 +37,7 @@ export async function gateDirectory(pathname: string, now: () => number = Date.n
 /** A small page for a status the gate answers: noindex in the header and in the page, a way back to the directory. */
 export function gateBody(status: 404 | 410 | 503): string {
   const t = status === 404 ? S.notFound : status === 410 ? S.gone : { title: S.error.title, body: S.error.body };
-  return `<!doctype html><html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${t.title} | ${S.brand}</title></head><body style="font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem"><main><h1>${t.title}</h1><p>${t.body}</p><p><a href="/directory">${S.empty.browse}</a></p></main></body></html>`;
+  return `<!doctype html><html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${t.title} | ${S.brand}</title></head><body style="font-family:system-ui,sans-serif;max-width:40rem;margin:4rem auto;padding:0 1rem"><main><h1>${t.title}</h1><p>${t.body}</p><p><a href="${directoryHomeHref()}">${S.empty.browse}</a></p></main></body></html>`;
 }
 
 export function resetGateMemo(): void { memo.clear(); }
