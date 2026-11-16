@@ -1107,6 +1107,10 @@ enum AdminRole {
   // Amendment 13 V9, added additively: ADMIN (manage vendors, teams and content; no system settings) and SUPPORT (tickets, calls, escalations). The document's SALES role is MARKETING; no value is renamed or removed.
   SUPPORT
   ADMIN
+  // Wave 3 Part A, added additively: two labels that hold exactly the SALES (MARKETING) rights, and the login role of a referral partner (partner routes only)
+  FIELD_EXECUTIVE
+  TELECALLER
+  REFERRAL_PARTNER
 }
 
 // Internal Get4Domain team members (marketing / operations staff). Mirrors the
@@ -8101,4 +8105,21 @@ model V3VendorProfileValue {
 
   @@unique([vendorId, fieldKey])
   @@map("g4d_vendor_profile_values")
+}
+
+/// Wave 3 Part A: a source of referred businesses (a freelancer, a sales team, an admin team). Platform data, staff-only (RLS on, no policy). The login of a partner is an admin-team member whose role is REFERRAL_PARTNER, linked here by staffUserId.
+model ReferralPartner {
+  id          String   @id @default(cuid())
+  type        String   // FREELANCER | SALES_TEAM | ADMIN_TEAM
+  name        String
+  email       String   @unique
+  phone       String?
+  status      String   @default("ACTIVE") // ACTIVE | DISABLED
+  staffUserId String?  @unique
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@map("g4d_referral_partners")
 }

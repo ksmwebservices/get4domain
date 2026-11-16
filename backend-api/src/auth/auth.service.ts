@@ -10,6 +10,7 @@ import { normalizeModules } from '../team/team-access';
 import { Optional } from '@nestjs/common';
 import { RegistrationHook } from '../plans/registration/registration.hook';
 import { TermsSessionFlag } from '../terms/terms-ports';
+import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
 
 export interface LoginResult {
   accessToken: string;
@@ -19,6 +20,8 @@ export interface LoginResult {
     email: string;
     role: string;
     adminRole?: string;
+    /** Wave 3 Part A: FIELD_EXECUTIVE or TELECALLER, shown beside the SALES role they are folded into. */
+    staffLabel?: string;
     businessName: string;
     industry: string | null;
     subdomain: string | null;
@@ -150,12 +153,17 @@ export class AuthService {
 
       await this.prisma.adminTeamMember.update({ where: { id: member.id }, data: { lastLogin: new Date() } });
 
+      // Wave 3 Part A: a referral partner signs in with the PARTNER role (never ADMIN); a staff label is folded into SALES, the label is shown beside it.
+      const isPartner = member.role === PARTNER_ROLE;
+      const memberRole = isPartner ? 'PARTNER' : 'ADMIN';
+      const memberAdminRole = isPartner ? undefined : effectiveStaffRole(member.role);
+      const staffLabel = isPartner ? undefined : staffLabelOf(member.role);
       const accessToken = this.signToken({
         sub: member.id,
         email: member.email,
-        role: 'ADMIN',
-        adminRole: member.role,
-        kind: 'admin_member',
+        role: memberRole,
+        adminRole: memberAdminRole,
+        kind: isPartner ? 'referral_partner' : 'admin_member',
       });
 
       return {
@@ -164,8 +172,9 @@ export class AuthService {
           id: member.id,
           name: member.name,
           email: member.email,
-          role: 'ADMIN',
-          adminRole: member.role,
+          role: memberRole,
+          adminRole: memberAdminRole,
+          ...(staffLabel ? { staffLabel } : {}),
           businessName: 'Get4Domain',
           industry: null,
           subdomain: null,

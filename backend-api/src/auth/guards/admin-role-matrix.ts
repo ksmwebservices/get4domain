@@ -29,6 +29,19 @@ export type StaffRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MA
  */
 export const SALES_ROLE: StaffRole = 'MARKETING';
 
+/**
+ * Wave 3 Part A. FIELD_EXECUTIVE and TELECALLER are LABELS of the SALES role: the same permissions, shown by name. They are folded into SALES (the MARKETING value) the moment a principal is built,
+ * so no matrix entry, guard or redaction rule anywhere can treat them differently, and a label can never hold a right SALES does not. The label itself travels as `staffLabel`.
+ */
+export const STAFF_ROLE_LABELS: Readonly<Record<string, StaffRole>> = Object.freeze({ FIELD_EXECUTIVE: SALES_ROLE, TELECALLER: SALES_ROLE });
+/** The login role of a referral partner: it is not a staff role at all and never reaches an AdminGuard route (its principal is not staff). */
+export const PARTNER_ROLE = 'REFERRAL_PARTNER';
+
+/** The role the matrices are asked about: a label becomes SALES, everything else is unchanged. */
+export function effectiveStaffRole(role: string | null | undefined): string | undefined { return role == null ? undefined : (STAFF_ROLE_LABELS[role] ?? role); }
+/** The label to show, or undefined when the role is not a label. */
+export function staffLabelOf(role: string | null | undefined): string | undefined { return role != null && role in STAFF_ROLE_LABELS ? role : undefined; }
+
 export const ALL_STAFF: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS', 'MARKETING'];
 export const OPS_AND_SUPER: readonly StaffRole[] = ['SUPER_ADMIN', 'OPERATIONS'];
 export const SUPER_ONLY: readonly StaffRole[] = ['SUPER_ADMIN'];
@@ -223,6 +236,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'PUT /v3/admin/pack-engine/vendors/:vendorId/addons/:addonKey': SUPER_ONLY, 'PUT /v3/admin/pack-engine/settings/:name': SUPER_ONLY,
   // Part B (B13): pausing and resuming a vendor's paid plan: OPERATIONS and SUPER_ADMIN (ADMIN inherits OPERATIONS; SUPPORT and MARKETING refused)
   'POST /v3/admin/pack-engine/vendors/:vendorId/plan-pause': OPS_AND_SUPER, 'POST /v3/admin/pack-engine/vendors/:vendorId/plan-resume': OPS_AND_SUPER,
+  // Wave 3 Part A: referral partners. Reading is OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; creating and editing is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and every label are refused.
+  'GET /v3/admin/partners': OPS_AND_SUPER, 'GET /v3/admin/partners/:id': OPS_AND_SUPER, 'POST /v3/admin/partners': SUPER_ONLY, 'PUT /v3/admin/partners/:id': SUPER_ONLY,
 };
 
 /**
@@ -274,7 +289,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', ...Object.keys(SEO_ROUTES)],
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', ...Object.keys(SEO_ROUTES)],
   },
   SUPPORT: {
     deny: [],

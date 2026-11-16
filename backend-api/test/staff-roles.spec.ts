@@ -32,7 +32,8 @@ const MONEY_OR_SETTINGS = /billing|invoices|subscriptions|wallet|plan-settings|\
 
 describe('the staff role values', () => {
   it('the database enum keeps the three old values and adds SUPPORT and ADMIN (nothing renamed or removed)', () => {
-    expect(Object.keys(AdminRole).sort()).toEqual(['ADMIN', 'MARKETING', 'OPERATIONS', 'SUPER_ADMIN', 'SUPPORT']);
+    // Wave 3 Part A added FIELD_EXECUTIVE, TELECALLER (labels of SALES) and REFERRAL_PARTNER (the partner login); the five earlier values are unchanged
+    expect(Object.keys(AdminRole).sort()).toEqual(['ADMIN', 'FIELD_EXECUTIVE', 'MARKETING', 'OPERATIONS', 'REFERRAL_PARTNER', 'SUPER_ADMIN', 'SUPPORT', 'TELECALLER']);
   });
   it('the document SALES role is the existing MARKETING value', () => {
     expect(SALES_ROLE).toBe('MARKETING');

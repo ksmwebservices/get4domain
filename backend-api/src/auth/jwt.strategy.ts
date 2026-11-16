@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
+import { effectiveStaffRole, PARTNER_ROLE, staffLabelOf } from './guards/admin-role-matrix';
 
 /**
  * S13: a password change or reset stamps `passwordChangedAt`; any access token issued before that moment is refused, so a stolen token
@@ -41,13 +42,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     // Standalone internal-staff principal (invited Marketing/Operations members).
-    if (payload.kind === 'admin_member') {
+    if (payload.kind === 'admin_member' || payload.kind === 'referral_partner') {
       const member = await this.prisma.adminTeamMember.findUnique({ where: { id: payload.sub } });
       if (!member || member.status !== 'active') {
         throw new UnauthorizedException('Account not found or removed');
       }
       assertIssuedAfterPasswordChange(payload.iat, member.passwordChangedAt);
-      return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: member.role, kind: 'admin_member' };
+      // Wave 3 Part A: a referral partner is NOT staff: its principal has the role PARTNER, so no staff or vendor guard accepts it, and PartnerScopeGuard keeps it on /v3/partner/*.
+      if (member.role === PARTNER_ROLE) return { sub: member.id, email: member.email, role: 'PARTNER', kind: 'referral_partner' };
+      // A staff label (FIELD_EXECUTIVE, TELECALLER) is folded into SALES here, so it holds exactly the SALES rights everywhere.
+      const label = staffLabelOf(member.role);
+      return { sub: member.id, email: member.email, role: 'ADMIN', adminRole: effectiveStaffRole(member.role), kind: 'admin_member', ...(label ? { staffLabel: label } : {}) };
     }
 
     // A vendor's team member. `sub` is the PARENT vendorId (data scoping); the member

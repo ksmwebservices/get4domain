@@ -100,6 +100,8 @@ import { V3ServiceRequestsModule } from './v3-service-requests/service-requests.
 import { V3ThemeSwitchModule } from './v3-theme-switch/theme-switch.module';
 import { V3ActivityModule } from './v3-activity/activity.module';
 import { V3FirmModule } from './v3-firm/firm.module';
+import { V3PartnersModule } from './v3-partners/partners.module';
+import { PartnerScopeGuard } from './v3-partners/partner-scope.guard';
 import { V3TrustModule } from './v3-trust/trust.module';
 import { AiStudioModule } from './ai-studio/ai-studio.module';
 import { VideoModule } from './video/video.module';
@@ -184,6 +186,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3ServicesModule,   // Batch 4 slice 5.16b: the service catalogue, the price book and add-on packs
     V3ServiceRequestsModule,   // Batch 4 slice 5.16c: requests to our team paid by allowance, pack or wallet
     V3ThemeSwitchModule,   // Batch 4 slice 5.16d: the Theme Switch Service
+    V3PartnersModule,   // Wave 3 Parts A and I: referral partners and their portal
     V3FirmModule,   // Wave 2 Part H3: the firm profile (global: invoices, quotes, billing settings and the legal text read it)
     V3ActivityModule,   // Batch 4B slice 5.20: the activity log and alerts (global: every V3 module calls ActivityService.record())
     V3TrustModule,   // Batch 4B slice 5.21: trust and safety (global: the scan, takedown and payee-check ports)
@@ -284,6 +287,11 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
       // Version 2 industry modules; a legacy vendor, staff and public callers are untouched. Reads and writes no table.
       provide: APP_GUARD,
       useClass: RetiredModuleGuard,
+    },
+    {
+      // Wave 3 Part A. Runs after the JWT guard: a referral-partner login may reach /v3/partner/* and the two token routes only, whatever a route's own guards say.
+      provide: APP_GUARD,
+      useClass: PartnerScopeGuard,
     },
   ],
 })

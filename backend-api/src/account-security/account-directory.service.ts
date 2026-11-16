@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { effectiveStaffRole, PARTNER_ROLE } from '../auth/guards/admin-role-matrix';
 
 export type AccountType = 'VENDOR' | 'ADMIN_MEMBER' | 'TEAM_MEMBER';
 export interface AccountRef { type: AccountType; id: string }
@@ -55,7 +56,7 @@ export class AccountDirectory {
   /** Who is calling, from the verified JWT principal. Null for a demo sandbox (no password of its own). */
   fromPrincipal(user: AuthenticatedUser): AccountRef | null {
     if (user.kind === 'sandbox') return null;
-    if (user.kind === 'admin_member') return { type: 'ADMIN_MEMBER', id: user.sub };
+    if (user.kind === 'admin_member' || user.kind === 'referral_partner') return { type: 'ADMIN_MEMBER', id: user.sub };   // a referral partner is an admin-team row with the REFERRAL_PARTNER role
     if (user.kind === 'team_member') return user.memberId ? { type: 'TEAM_MEMBER', id: user.memberId } : null;
     return { type: 'VENDOR', id: user.sub };
   }
@@ -66,7 +67,8 @@ export class AccountDirectory {
   }
 
   claims(a: Account): TokenClaims {
-    if (a.type === 'ADMIN_MEMBER') return { sub: a.id, email: a.email, role: 'ADMIN', adminRole: a.adminRole, kind: 'admin_member' };
+    if (a.type === 'ADMIN_MEMBER' && a.adminRole === PARTNER_ROLE) return { sub: a.id, email: a.email, role: 'PARTNER', kind: 'referral_partner' };
+    if (a.type === 'ADMIN_MEMBER') return { sub: a.id, email: a.email, role: 'ADMIN', adminRole: effectiveStaffRole(a.adminRole), kind: 'admin_member' };
     if (a.type === 'TEAM_MEMBER') return { sub: a.vendorId, email: a.email, role: 'VENDOR', kind: 'team_member', memberId: a.id };
     return { sub: a.id, email: a.email, role: a.role, adminRole: a.adminRole };
   }

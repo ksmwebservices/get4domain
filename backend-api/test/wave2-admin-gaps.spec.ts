@@ -217,6 +217,7 @@ describe('C13: ADMIN and SUPPORT are valid wherever staff roles are validated', 
       expect(await validate(plainToInstance(UpdateAdminDto, { role }))).toEqual([]);
     }
     expect((await validate(plainToInstance(InviteAdminDto, { name: 'Ravi', email: 'r@x.invalid', role: 'BOSS' }))).length).toBeGreaterThan(0);
-    expect(Object.values(AdminRole).sort()).toEqual(['ADMIN', 'MARKETING', 'OPERATIONS', 'SUPER_ADMIN', 'SUPPORT']);
+    // Wave 3 Part A added the two SALES labels and the partner login role; the five earlier values are unchanged
+    expect(Object.values(AdminRole).sort()).toEqual(['ADMIN', 'FIELD_EXECUTIVE', 'MARKETING', 'OPERATIONS', 'REFERRAL_PARTNER', 'SUPER_ADMIN', 'SUPPORT', 'TELECALLER']);
   });
 });
