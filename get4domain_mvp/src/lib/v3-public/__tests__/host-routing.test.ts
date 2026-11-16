@@ -37,7 +37,7 @@ describe('main host', () => {
   test('the commercial pages replace their live twins only here, by an internal rewrite', () => {
     const want: Record<string, string> = {
       '/': '/v3-site', '/pricing': '/v3-site/pricing', '/pricing/': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
-      '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/r/ABC-123_x': '/v3-site/r/ABC-123_x',
+      '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/r/ABC-123_x': '/v3-site/r/ABC-123_x', '/referral-link': '/v3-site/referral-link',
     };
     for (const [from, to] of Object.entries(want)) assert.deepEqual(run('main.example.invalid', from), { action: 'rewrite', pathname: to }, from);
     assert.equal(mainPageTarget('/constructor'), null);

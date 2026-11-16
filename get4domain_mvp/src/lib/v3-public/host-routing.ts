@@ -39,7 +39,7 @@ export const DIRECTORY_HOME_ROUTE = '/directory';
  */
 const MAIN_PAGES: Readonly<Record<string, string>> = {
   '/': '/v3-site', '/pricing': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
-  '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login',
+  '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/referral-link': '/v3-site/referral-link',
 };
 const REFERRAL_PATH = /^\/r\/([A-Za-z0-9_-]{1,64})\/?$/;
 

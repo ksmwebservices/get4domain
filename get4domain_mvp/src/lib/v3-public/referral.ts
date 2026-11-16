@@ -26,10 +26,18 @@ export function readReferral(cookieHeader: string | null | undefined): string | 
   return null;
 }
 
-/** The cookie to set for a valid code: httpOnly (the page script never reads it), first party, lax, the code alone. */
-export function referralCookie(code: string, secure: boolean): { name: string; value: string; httpOnly: true; sameSite: 'lax'; path: '/'; maxAge: number; secure: boolean } {
-  return { name: REFERRAL_COOKIE, value: code, httpOnly: true, sameSite: 'lax', path: '/', maxAge: REFERRAL_MAX_AGE, secure };
+/**
+ * The Set-Cookie header for a valid code: the code alone, httpOnly (page script never reads it), first party (no Domain attribute), SameSite=Lax, site-wide path.
+ * Secure except on localhost (development). Throws on anything that is not a plain code, so nothing else can ever be written into the cookie.
+ */
+export function referralCookieHeader(code: string, secure: boolean): string {
+  if (!referralCodeOk(code)) throw new Error('not a referral code');
+  return `${REFERRAL_COOKIE}=${code}; Path=/; Max-Age=${REFERRAL_MAX_AGE}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
 }
+
+/** The address a valid code goes to (the code itself is not in it) and the neutral page for every other case. */
+export const REFERRAL_TARGET_VALID = '/register';
+export const REFERRAL_TARGET_NEUTRAL = '/referral-link';
 
 export interface ReferralCheck { valid: boolean; displayName: string | null }
 
