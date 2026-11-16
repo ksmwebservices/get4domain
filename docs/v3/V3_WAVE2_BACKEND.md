@@ -2,7 +2,7 @@
 
 Branch `v3-w2` (worktree `C:\Get4Domain\get4domain-w2`, branched from `v3-seo1`). Source of the work: `WAVE2_BACKEND_PROMPT.md`, the front-end gap files `FRONTEND_GAPS.md`, `API_CONTRACT_SLICE2.md` and `API_CONTRACT_ADMIN.md`, and Amendments 10 to 14.
 
-**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The ten migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order. Part H (H1 to H3) and Part P (the public site gaps, from `PUBLIC_GAPS.md`) are described in sections 1, 2 and 7, with their choices in section 8.
+**Status.** Built, unit-tested, committed. **Nothing is applied, nothing was run on staging, nothing is pushed.** The eleven migrations are written and verified (`verify:migrations`, `verify:raw-sql`) and are NOT applied. The five integration files are written and type-checked and were NOT run. Section 9 lists the owner commands in order. Part H (H1 to H3) and Part P (the public site gaps, from `PUBLIC_GAPS.md`) are described in sections 1, 2 and 7, with their choices in section 8.
 
 Product text rules held everywhere: no timeframes, "enquiries" not "leads", never the words workspace, BOS or LeadSpace, prices exclude GST, a PENDING price is never a number. No real provider is called: storage is the existing R2 adapter, selected only by environment and settings and OFF by default; tests use the in-memory store.
 
@@ -25,6 +25,7 @@ Product text rules held everywhere: no timeframes, "enquiries" not "leads", neve
 | P2 G3 and G7: the click-out id format, reserved segments | `cf04fcf` | none |
 | P3 G4, G5 and G11: listing state, business id, services, the home at `/directory` | `89c165f` | none |
 | P4 G2 and G13: the login handoff and the approval redirect | `8dc4045` | `20261219190000_v3_wave2_login_handoff` (one table, row level security, two CHECKs) |
+| Drift fix: the 64-character index name | (this commit) | `20261219200000_v3_wave2_index_name_63` (a guarded index rename) |
 | P5 G14: reset password for the public site | `4318d4d` | none |
 | P6 G15: `TRUSTED_PROXIES` | `8c72ce4` | none |
 | K1 all 196 catalogue categories are listable; the loader; `GET /v3/admin/seeded-sites/categories` | `3f19b2f` | none |
@@ -294,7 +295,7 @@ Choices:
 
 Skipped (nothing invented): a stored copy and link for the invoice (said not to build it); a virus scanner for PDFs; anything that posts, schedules or sends (drafts and invites are records).
 
-Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (254 suites with the public site gaps and job K).
+Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax is valid") now checks the staging script with `node --check` through `child_process`, and `npm.cmd run test:ci` is fully green (255 suites with the public site gaps, job K and the identifier-length test).
 
 ## 9. Open questions
 
@@ -318,9 +319,9 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
 `npm.cmd`, from `C:\Get4Domain\get4domain-w2\backend-api` unless stated. **Nothing below has been run.**
 
 1. `.env.staging` was copied into `C:\Get4Domain\get4domain-w2\` (not in git). Then `npm.cmd ci` is done; run `npx.cmd prisma generate` if the client is stale.
-2. `npm.cmd run db:staging:migrate-status`. Expect the ten folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` `20261219160000_v3_wave2_upload_groups`, `20261219170000_v3_wave2_addon_eligibility` and `20261219180000_v3_wave2_firm_profile` and `20261219190000_v3_wave2_login_handoff` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
+2. `npm.cmd run db:staging:migrate-status`. Expect the eleven folders `20261219100000_v3_pack_records`, `20261219110000_v3_wave2_vendor_gaps`, `20261219120000_v3_wave2_admin_gaps`, `20261219130000_v3_wave2_media`, `20261219140000_v3_wave2_profile_fields`, `20261219150000_v3_wave2_site_mapping` `20261219160000_v3_wave2_upload_groups`, `20261219170000_v3_wave2_addon_eligibility` and `20261219180000_v3_wave2_firm_profile` and `20261219190000_v3_wave2_login_handoff` and `20261219200000_v3_wave2_index_name_63` pending (plus anything else this branch has that staging lacks). Then `npm.cmd run db:staging:migrate-deploy`, then `migrate-status` again (none pending).
 3. `npm.cmd run db:staging:rls-off` (expect `0` tables without row level security), then `npm.cmd run db:staging:drift` (the 2 documented allowed items only; the new CHECKs and the notes trigger are not part of the schema diff).
-4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (254 suites).
+4. `npm.cmd run build`, then `npm.cmd run test:ci`. Expect everything green (255 suites).
 5. Seed scripts, each a **dry run** first (read the counts and the problems), then `--apply`, then the dry run again (nothing to create):
    - `node scripts/seed-v3-pack-tab-fields.js` (expect 96 tabs, 434 fields), then `node scripts/seed-v3-pack-tab-fields.js --apply`.
    - `node scripts/seed-v3-profile-fields.js` (expect 16 packs, 143 categories with fields of their own, 1263 fields, 948 map rows), then `node scripts/seed-v3-profile-fields.js --apply`.
@@ -338,3 +339,5 @@ Previously failing, now fixed (H1): `test/seo-int-guards.spec.ts` ("the syntax i
 ## 11. Tests added
 
 Unit: `pack-records-core`, `pack-records-http`, `wave2-vendor-gaps-core`, `wave2-vendor-gaps-http`, `wave2-vendor-gaps-services`, `wave2-admin-gaps`, `wave2-media-upload`, `wave2-profile-fields`, `wave2-listing-import`, and for Part G `wave2-site-mapping`, `wave2-upload-groups` and `wave2-pack-tab-fields`. Changed to follow the contract: `pack-part-b`, `pack-part-b-http` (the group and the shell section), `admin-role-matrix`, `tenant-model-registry`, the route baseline. Integration, written and NOT run: `pack-records.int.spec.ts`, `vendor-gaps.int.spec.ts`, `admin-gaps.int.spec.ts`, `media-import.int.spec.ts`, `profile-fields.int.spec.ts`. Part H: `wave2-addon-eligibility` and `wave2-firm-profile`, and `wave2-h.int` (staging, written, not run). Changed for H2: `pack-part-b`, `pack-part-b-http`, `pack-engine-service` (the offer follows the pack, not the category), `pack-wire` (a fourth pure core, the two new routes). Public site gaps: `wave2-claim-start` (G1 and G12). `wave2-public-ids` (G3 and G7). `wave2-listing-state`, plus new cases in `seo-pages` (G4, G5, G11); `directory-service` and `directory-isolation` follow the new field. `wave2-login-handoff` (G2), and new cases in `claim-setup` (G13). `wave2-password-reset` (G14). `wave2-trust-proxy` (G15, on a real Express app with the real throttler). `wave2-catalogue-categories` (K1). `wave2-media-upload` gains the K2 cases. `wave2-cors` (K3, on a real Nest app with the production options). `wave2-vendor-own-name` (K4).
+
+**Drift fix, identifier length (63).** `20261219100000_v3_pack_records` created an index named `g4d_pack_records_vendorId_packKey_tabKey_deletedAt_createdAt_idx` (64 characters). Postgres cut it to 63 (`..._createdAt_id`), while Prisma expects its own shortened `g4d_pack_records_vendorId_packKey_tabKey_deletedAt_createdA_idx`, so `db:staging:drift` reported a rename. `20261219200000_v3_wave2_index_name_63` renames it, guarded (nothing happens if the old name is absent or the new one exists); the applied migration is not edited. A scan of every migration (all 243 files) and `schema.prisma` found no other identifier over 63 characters. `test/migration-identifier-length.spec.ts` fails if any migration or schema `map`/`name` goes over 63 (the one old name is the only grandfathered entry). Owner steps: `npm.cmd run db:staging:migrate-status` (expect `20261219200000_v3_wave2_index_name_63` pending, after the login handoff), `npm.cmd run db:staging:migrate-deploy`, `npm.cmd run db:staging:migrate-status` (none pending), `npm.cmd run db:staging:drift` (expect no drift).
