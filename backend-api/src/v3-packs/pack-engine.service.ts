@@ -164,7 +164,7 @@ export class PackEngineService {
   /** Buying an add-on pack: an add-on the vendor's pack may not buy is refused with ADDON_NOT_ELIGIBLE (H2). For an eligible one, while its price is PENDING nothing is sold and no number is shown. */
   async refuseAddonPurchase(vendorId: string, key: string): Promise<never> {
     const mine = (await this.myAddons(vendorId)).find((a) => a.key === key);
-    if (!mine) throw packError(409, 'ADDON_NOT_ELIGIBLE', 'This add-on pack is not available for your kind of business.', { addon: key });
+    if (!mine) throw packError(409, 'ADDON_NOT_ELIGIBLE', 'This add-on pack is not available for your kind of business.', { details: { addon: key } });
     throw packError(409, 'ADDON_PRICE_PENDING', 'This add-on pack cannot be bought yet. Its price has not been set.', { addon: key, priceStatus: 'PENDING' });
   }
 
@@ -343,7 +343,7 @@ export class PackEngineService {
   async setEligibility(addonKey: string, packKey: string, active: boolean, actor: PackActor): Promise<EligibilityRow> {
     const r = await this.reference();
     const problems = checkEligibilityEdit({ addonKey, packKey, active }, new Set(r.addons.map((a) => a.key)), new Set(r.packs.map((p) => p.key)));
-    if (problems.length) throw packError(400, 'ADDON_ELIGIBILITY_INVALID', 'That pairing cannot be saved.', { problems });
+    if (problems.length) throw packError(400, 'ADDON_ELIGIBILITY_INVALID', 'That pairing cannot be saved.', { details: { problems } });
     const before = r.eligibility.find((e) => e.addonKey === addonKey && e.packKey === packKey)?.active ?? null;
     const row = await this.refs.setEligibility(addonKey, packKey, active, actor.id);
     this.invalidate();

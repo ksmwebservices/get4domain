@@ -10,7 +10,7 @@ import { makeEngine, MemoryRefStore, realSeed } from './support/pack-fakes';
 /** Wave 2 Part H2: add-on eligibility as data. Which add-on packs a pack may buy; seeded, staff-editable (ADMIN and SUPER_ADMIN, audited); the owner's fixed rules hold whatever the rows say. */
 jest.setTimeout(120_000);
 const codeOf = async (p: Promise<unknown>): Promise<{ status: number; code?: string; problems?: string[] }> => {
-  try { await p; } catch (e) { if (e instanceof HttpException) { const b = e.getResponse() as { code?: string; problems?: string[] }; return { status: e.getStatus(), code: b.code, problems: b.problems }; } throw e; }
+  try { await p; } catch (e) { if (e instanceof HttpException) { const b = e.getResponse() as { code?: string; details?: { problems?: string[] } }; return { status: e.getStatus(), code: b.code, problems: b.details?.problems }; } throw e; }
   return { status: 0 };
 };
 const owner = (v: string) => ({ type: 'VENDOR' as const, id: v });
