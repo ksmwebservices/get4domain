@@ -14,8 +14,8 @@ Branch v3-w3, worktree C:\Get4Domain\get4domain-w2. Baseline before J0: build pa
 | J7 | G trial and team live | DONE | a6e884c | build ok; test:ci 272 suites, 5240 tests | mandatory reserved subdomains (platform hosts + 9 V2 clients, unioned into the setting), GET /v3/public/subdomain-availability, register accepts subdomain and is replay safe, trial site hook (same registrationProvisioning switch), move_to_paid_plan next step, go-live opened to SALES + labels; no migration |
 | J8 | H themes | DONE | b229ac5 | build ok; test:ci 273 suites, 5259 tests | PARTIAL: catalogue per pack (GET /v3/public/themes?pack=), owner view GET /v3/me/site/themes (DEFAULT or LIBRARY, may-apply with PLAN_REQUIRED, fee before GST or PENDING). Choosing, previewing and applying already existed and already refuse paid themes on a Free plan. NOT built: a gateway checkout for a theme (see ASSUMPTIONS 17) |
 | J9 | I referrals and commission | DONE | d99ab81 | build ok; test:ci 274 suites, 5327 tests | 5 tables (migration 20261220120000, not applied, RLS on, no slab seeded), referral links/codes, first-touch attribution, self-referral refused, slab by month count, ledger on first paid plan payment (gateway or cash), idempotent close, payouts with reference, reversal on full refund, partner portal (name and state only), vendor referral source |
-| J10 | J small items | TODO | | | |
-| J11 | K tests, docs, contract | TODO | | | |
+| J10 | J small items | DONE | bbb427e | build ok; test:ci 275 suites, 5352 tests | /auth/me name and role for every principal; DIRECTORY_PUBLIC_BASE_URL (HOSTNAMES_PLAN.md does not exist, so the env route); wallet top-up through the payment port (migration 20261220130000, not applied) |
+| J11 | K tests, docs, contract | DONE | af3cb68 | build ok; lint 0 errors; test:ci 276 suites, 5355 tests | 6 integration files written and NOT run (they type-check), cleanup of Wave 3 rows proved by wave3-cleanup.spec, V3_WAVE3_BACKEND.md and API_CONTRACT_WAVE3.md |
 
 ## ASSUMPTIONS
 
