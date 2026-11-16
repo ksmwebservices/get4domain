@@ -39,8 +39,8 @@ describe('Dockerfile.v3live', () => {
 describe('docker-compose.v3live.yml', () => {
   const code = strip(compose);
   it('serves the API only, from the live Dockerfile, restarting, with an env_file that is not committed', () => {
-    expect(code).toMatch(/^services:\n  api:$/m);
-    expect((code.match(/^  [a-z0-9_-]+:$/gm) ?? []).filter((l) => !['  api:'].includes(l) && l !== '  v3live_net:' && l !== '  public_uploads:' && l !== '  private_uploads:')).toEqual([]);
+    expect(code).toMatch(/^services:\n {2}api:$/m);
+    expect((code.match(/^ {2}[a-z0-9_-]+:$/gm) ?? []).filter((l) => !['  api:'].includes(l) && l !== '  v3live_net:' && l !== '  public_uploads:' && l !== '  private_uploads:')).toEqual([]);
     expect(code).toContain('dockerfile: Dockerfile.v3live');
     expect(code).toContain('restart: unless-stopped');
     expect(code).toMatch(/env_file:\n\s+- \.env\.live/);
