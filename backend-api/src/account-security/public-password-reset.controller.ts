@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { RATE } from '../common/throttling';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password.dto';
+import { ForgotPasswordDto, PublicResetConfirmDto } from './dto/password.dto';
 import { PublicPasswordResetService } from './public-password-reset.service';
 
 /** Password reset for the public site (Wave 2, gap G14). HTTP only; the rules are in the two services. */
@@ -19,5 +19,5 @@ export class PublicPasswordResetController {
 
   @Public() @Throttle(RATE.passwordReset) @Post('confirm') @HttpCode(200)
   @ApiOperation({ summary: 'Set a new password with the token from the reset email. The token works once and every session ends.' })
-  confirm(@Body() dto: ResetPasswordDto): Promise<{ ok: true }> { return this.reset.confirm(dto.token, dto.newPassword); }
+  confirm(@Body() dto: PublicResetConfirmDto): Promise<{ ok: true }> { return this.reset.confirm(dto.token, dto.newPassword); }
 }

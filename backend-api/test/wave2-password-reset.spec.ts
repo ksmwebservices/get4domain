@@ -115,4 +115,12 @@ describe('over HTTP', () => {
     const codes: number[] = []; for (let i = 0; i < 6; i++) codes.push((await request(app.getHttpServer()).post('/v3/account/password/reset/request').send({ email: 'x@example.com' })).status);
     expect(codes).toContain(429);
   });
+  it('a too short, too long, missing or non-text token is the same 400 message as an unknown token, so the format is not revealed', async () => {
+    const msg = 'This reset link is invalid or has expired. Please request a new one.';
+    for (const token of ['short', 'A'.repeat(500), undefined, { a: 1 }]) {   // over HTTP (the route is rate limited, so a few); the rest through the service below
+      const r = await request(app.getHttpServer()).post('/v3/account/password/reset/confirm').send({ token, newPassword: 'NewPassw0rd' });
+      expect([String(token).slice(0, 12), r.status, r.body.message]).toEqual([String(token).slice(0, 12), 400, msg]);
+    }
+    for (const token of ['A'.repeat(19), 'A'.repeat(43), '', null, 7]) { const e = await t.pub.confirm(token as never, 'NewPassw0rd').then(() => null, (x: unknown) => x as HttpException); expect([e?.getStatus(), e?.message]).toEqual([400, msg]); }
+  });
 });

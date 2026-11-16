@@ -119,8 +119,14 @@ describe('over HTTP', () => {
     const again = await request(app.getHttpServer()).post('/v3/auth/handoff/redeem').send({ code }); expect(again.status).toBe(401); expect(JSON.stringify(again.body)).toContain('HANDOFF_INVALID');
   });
   it('a bad body is 400, and the redeem route is rate limited like a login', async () => {
-    expect((await request(app.getHttpServer()).post('/v3/auth/handoff/redeem').send({})).status).toBe(400);
+    expect((await request(app.getHttpServer()).post('/v3/auth/handoff/redeem').send({})).status).toBe(401);
     const codes: number[] = []; for (let i = 0; i < 14; i++) codes.push((await request(app.getHttpServer()).post('/v3/auth/handoff/redeem').send({ code: 'ho_' + 'B'.repeat(43) })).status);
     expect(codes).toContain(429);
+  });
+  it('any malformed code (wrong prefix, short, long, missing, not text) is the same 401 HANDOFF_INVALID, never a 400, and the answers are identical', async () => {
+    const bodies: object[] = [{ code: 'ho_short' }, { code: 'x' }, { code: '' }, { code: 'rt_' + 'A'.repeat(43) }, { code: 'ho_' + 'A'.repeat(500) }, { code: 'A'.repeat(1000) }, { code: 5 }, { code: null }, { code: { a: 1 } }, {}];
+    const seen = new Set<string>();
+    for (const b of bodies) { const r = await request(app.getHttpServer()).post('/v3/auth/handoff/redeem').send(b); expect([JSON.stringify(b).slice(0, 30), r.status, r.body.code]).toEqual([JSON.stringify(b).slice(0, 30), 401, 'HANDOFF_INVALID']); seen.add(r.body.message); }
+    expect(seen.size).toBe(1);
   });
 });

@@ -1,6 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /** The signup password rule (8+ characters, an uppercase letter and a digit) plus bcrypt's 72-character limit, so no password is silently cut short. */
 function NewPassword() {
@@ -25,6 +25,15 @@ export class ResetPasswordDto {
   @MinLength(20)
   @MaxLength(200)
   token!: string;
+
+  @NewPassword()
+  newPassword!: string;
+}
+
+/** The public site's confirm. The token has no format validator: a short, long or missing token is the same "invalid or expired link" 400 as an unknown one (PasswordService.reset), so the answer says nothing about the token's format. */
+export class PublicResetConfirmDto {
+  @IsOptional()
+  token?: unknown;
 
   @NewPassword()
   newPassword!: string;

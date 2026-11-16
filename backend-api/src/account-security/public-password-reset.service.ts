@@ -41,5 +41,5 @@ export class PublicPasswordResetService {
   }
 
   /** Same rules and the same single use as the existing reset: a bad, used, expired or revoked token is one 400. */
-  async confirm(token: string, newPassword: string): Promise<{ ok: true }> { await this.passwords.reset(token, newPassword); return { ok: true }; }
+  async confirm(token: unknown, newPassword: string): Promise<{ ok: true }> { await this.passwords.reset(typeof token === 'string' ? token : '', newPassword); return { ok: true }; }
 }
