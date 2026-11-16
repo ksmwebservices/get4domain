@@ -8,7 +8,13 @@
 | K0 S6 step 3 directory on its host | DONE | 91feaec | robots and sitemap per host; backend items recorded as blocking |
 | K0 S6 step 4 vendor renderer | DONE | 5e401d8 | proxy of the backend's stored pages, V2 fallthrough |
 | K0 S6 step 5 checks and docs | DONE | 27c8418 + docs commit | smoke 590 checks, 160 unit tests |
-| K1 S7 | TODO | | |
+| K1 S7 step 0 plan | DONE | 0f667f6 | PUBLIC_COMMERCE_PLAN.md |
+| K1 S7 step 1 pricing | DONE | 55f172d | /pricing via main-host rewrite to /v3-site/pricing |
+| K1 S7 step 2 register and login | TODO | | |
+| K1 S7 step 3 referral | TODO | | |
+| K1 S7 step 4 marketing pages | TODO | | |
+| K1 S7 step 5 tests and checks | TODO | | |
+| K1 S7 step 6 docs | TODO | | |
 
 ## ASSUMPTIONS
 - Host layer active only with the flag and MAIN_HOST (keeps current staging working).
