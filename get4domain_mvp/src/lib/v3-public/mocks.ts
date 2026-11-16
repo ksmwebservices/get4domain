@@ -93,7 +93,7 @@ export function mockPage(path: string): { kind: 'ok'; model: PageModel } | { kin
     const b = BIZ.find((x) => x.slug === biz[1]);
     if (!b) return { kind: 'notFound' };
     return { kind: 'ok', model: model({
-      type: 'business', path: base, title: `${b.name}, ${b.category} in ${b.locality}, Chennai | Get4Domain`, description: `${b.name} is listed as ${b.category.toLowerCase()} in ${b.locality}, Chennai.`,
+      type: 'business', path: base, title: `${b.name}, ${b.locality} | Get4Domain`, description: `${b.name} is listed as ${b.category.toLowerCase()} in ${b.locality}, Chennai.`,
       h1: b.name, intro: b.description, crumbs: [HOME_CRUMB, ['Chennai', '/chennai'], [b.category, '/chennai/plumbers'], [b.name, base]], indexable: b.claimed, reason: b.claimed ? null : 'UNCLAIMED', business: facts(b),
     }) };
   }

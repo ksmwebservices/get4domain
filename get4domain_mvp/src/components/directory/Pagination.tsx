@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { basePathOf, pagePath } from '@/lib/v3-public/metadata';
+import { windowOf } from '@/lib/v3-public/pagination';
 import { S } from '@/lib/v3-public/strings';
 import type { Pagination as PaginationModel } from '@/lib/v3-public/types';
 
@@ -25,12 +26,4 @@ export default function Pagination({ page, path }: { page: PaginationModel | nul
       <div className="min-w-[8rem] text-right">{page.nextPath && <Link href={page.nextPath} rel="next" className="font-medium text-primary-700 hover:underline">{S.pagination.next}</Link>}</div>
     </nav>
   );
-}
-
-/** Up to five page numbers around the current one. */
-export function windowOf(current: number, total: number): number[] {
-  const size = Math.min(5, total);
-  let start = Math.max(1, current - Math.floor(size / 2));
-  if (start + size - 1 > total) start = total - size + 1;
-  return Array.from({ length: size }, (_, i) => start + i);
 }
