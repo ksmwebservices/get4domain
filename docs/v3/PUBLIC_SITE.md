@@ -15,7 +15,8 @@ Related: `PUBLIC_SITE_CONTRACT.md` (API shapes and the Step 0 findings), `PUBLIC
 | `/directory-api/page-visit` | Beacon proxy | Tokens only (path, utm_source, utm_medium, utm_campaign, kw). Always answers ok. |
 | `/claim`, `/claim/start/{slug}`, `/claim/{token}`, `/claim/live`, `/claim/screens` | Claim flow | `/claim/screens` (every claim screen on one page) exists only in sample mode. |
 | `/directory-api/claim/{start,otp-request,otp-verify,setup}` | Claim proxy | The browser talks only to this site. |
-| `/account/login`, `/account/register`, `/account/forgot-password` | Business sign-in, sign-up, reset request | On success the visitor continues to `NEXT_PUBLIC_VENDOR_APP_URL`. `/directory-api/auth/{login,register,forgot}` is the proxy. |
+| `/account/login`, `/account/register`, `/account/forgot-password`, `/account/reset-password?token=` | Business sign-in, sign-up, reset request, reset confirm | Sign-in hands the owner to `NEXT_PUBLIC_VENDOR_APP_URL` (section 3a). Sign-up links on to the business app. The reset request (`POST /v3/account/password/reset/request`) says the same thing for every address and shows an "email is switched off" state on `MAIL_DISABLED`; the reset page (`POST /v3/account/password/reset/confirm`) shows the registered error messages and one "link is not valid" screen. `/directory-api/auth/{login,register,forgot,reset}` is the proxy. |
+| `/claim/live` | Go-live notice | Follows `?redirectTo=` when it is safe (section 3b). |
 | `/legal`, `/legal/{terms,privacy,refund-and-cancellation,wallet-terms,directory-listing-terms}` | Legal drafts | `noindex, nofollow` until counsel approves. |
 | `/sitemaps/directory-index.xml`, `/sitemaps/directory-{n}.xml` | Directory sitemaps | The backend's text as written. `/sitemap.xml` is unchanged. |
 | `/robots.txt` | Main robots | Flag on: served by `/directory-robots` (middleware rewrite), existing rules kept; directory Disallow lines and one directory Sitemap line added only when the backend says the pages are indexable. |
@@ -32,7 +33,7 @@ Names only (values in `.env.local`, never committed; the example file lists them
 | `V3_PUBLIC_USE_MOCKS` | `false` calls the API; anything else uses the built-in sample data and never touches the network. | on |
 | `API_BASE_URL` | Server-only API address (preferred). | none |
 | `NEXT_PUBLIC_API_BASE_URL` | Fallback API address. | none |
-| `NEXT_PUBLIC_VENDOR_APP_URL` | The business app (Vite app) address; where sign-in, sign-up and approval continue. | none: the screens say it is not set up yet |
+| `NEXT_PUBLIC_VENDOR_APP_URL` | The business app (Vite app) address; where sign-in, claim setup and approval continue. The handoff code goes on this address as `#handoff=`; the fallback is this address plus `/login`. | none: the screens say it is not set up yet |
 | `V3_PUBLIC_SITE_ORIGIN` | Canonical origin for the directory Sitemap line (`www` is stripped). | none: no Sitemap line is added |
 | `V3_PUBLIC_REVALIDATE_SECONDS` | Cache time of a page model when the API gives no max-age (10 to 86400). | 300 |
 
@@ -49,6 +50,16 @@ Three measures, each checked by `npm run smoke:v3-public` against two real built
 
 Existing pages, `sitemap.ts`, `robots.ts`, `llms.txt` and all existing metadata are untouched. The only edits to existing files are additive and flag-guarded: `src/middleware.ts`, `src/app/layout.tsx` (the JSON-LD guard above), `package.json` (two scripts) and `.env.local.example` (names).
 
+### 3a. Handoff to the business app
+
+After a visitor signs in on `/account/login`, or finishes the setup step of a claim, the server (never the browser) signs the owner in and calls `POST /v3/auth/handoff` with that owner's bearer token. The token lives inside that one server call; only the one-time code goes back to the page. The page then sends the visitor to `NEXT_PUBLIC_VENDOR_APP_URL` with the code in the URL **fragment**: `https://<vendor app>/#handoff=<code>`. A fragment is not sent to any server and not written to logs. The pages are `noindex` with `Referrer-Policy: no-referrer`.
+
+If the route is missing, answers an error, gives no usable code, or the sign-in answer has no `accessToken`, the visitor goes to the vendor app's own login (`<vendor app>/login`) instead and signs in there. With no vendor app address the screen says so. For the claim setup the password just typed is used for that one sign-in and is not kept. Sign-up (`/account/register`) is unchanged: it links on to the business app.
+
+### 3b. redirectTo after approval
+
+Approval happens in the vendor app. It sends the owner to `/claim/live`, optionally with `?redirectTo=`. The page follows the value only when it is a relative path starting with one `/`, or an absolute `https:` address without credentials. It drops anything with a space, control character or backslash, `//host`, `javascript:`, `data:`, plain `http:` and every other scheme, and then shows the normal link to the business app. Relative paths resolve on this site. The rule is in `lib/v3-public/redirect.ts` and is tested (`claim-and-auth.test.ts`) and smoke checked.
+
 ## 4. Turning it on in staging
 
 1. Set in the staging environment: `V3_PUBLIC_ENABLED=true`, `V3_PUBLIC_USE_MOCKS=true` (first), `V3_PUBLIC_SITE_ORIGIN=<staging origin>`, `NEXT_PUBLIC_VENDOR_APP_URL=<staging business app>`.
@@ -63,14 +74,16 @@ Existing pages, `sitemap.ts`, `robots.ts`, `llms.txt` and all existing metadata 
 - Listings: `/directory`, `/chennai`, `/chennai/plumbers` (three pages with `/page/2`, `/page/3`), `/chennai/plumbers-in-adyar`, a thin page `/chennai/plumbers-in-velachery`, an empty page `/pincode/600020/plumbers`, `/state/tamil-nadu`, `/category/plumbers`.
 - Businesses: unclaimed `/business/sri-murugan-plumbing`, claimed with a backlink block `/business/anand-electricals`, listing only (no site) `/business/kavitha-home-care`, removed `/business/removed-shop`, unknown `/business/nope`.
 - Claim: `/claim?name=murugan`, `/claim/start/{slug}` for each of the four states, `/claim/mock-claim-token-00000000` (code `123456` works, `111111` fails, `000000` shows the attempts message), `/claim/mock-mail-off-token-0000` (email switched off), `/claim/screens` (all screens).
-- Sign-in: `owner@example.invalid` with `Password1` works; `taken@example.invalid` is the "already exists" case on sign-up.
+- Sign-in: `owner@example.invalid` with `Password1` works and hands off with a code (`#handoff=mock-handoff-code-0000`); `nohandoff@example.invalid` with `Password1` signs in but gets no code (the vendor app login); `taken@example.invalid` is the "already exists" case on sign-up. Claim setup in sample mode hands off the same way (`nohandoff@example.invalid` as the login email gives no code).
+- Reset: `/account/forgot-password` (`mailoff@example.invalid` shows the email-switched-off state), `/account/reset-password?token=mock-reset-token-000000000` works, `?token=mock-reset-expired-0000000` or any other well-formed token shows "not valid", no token shows the missing-link text. The new password needs 8 to 128 characters with a capital letter and a number.
+- Go-live redirect: `/claim/live?redirectTo=/pricing` follows to `/pricing`; `javascript:`, `//host`, `http:` and `data:` values are dropped.
 - Click-out: `/go/b-1001?src=city` answers a 302 to an invalid-domain sample address.
 
 ## 6. Checks
 
 - `npx tsc --noEmit` (typecheck), `npm run build`.
-- `npm run test:v3-public`: 84 unit tests (`node:test`, no new dependency): flag and configuration, route guard, the directory gate and the list of live routes, page model to metadata (title with brand at most 60, canonical, robots, prev and next), card and click-out rules, pagination, JSON-LD escaping, copy rules over the whole strings module (banned words, timeframes, ranking claims, prices, contact details), error-code messages, claim and sign-in calls, the four listing states, robots and sitemap text, firm identity.
-- `npm run smoke:v3-public` (after a build): 474 checks against real servers: flag off (every new route 404, unknown addresses stay 404, the root JSON-LD unchanged, live pages untouched, robots and sitemap unchanged) and flag on (real 404 and 410 with noindex for unknown and removed directory addresses, only the page model JSON-LD on directory, claim, account and legal routes, landmarks, one H1, skip link, labels, no contact links, single Visit site link, JSON-LD parses, robots and canonical from the model, pagination, claim screens, legal drafts, sitemaps, robots additions, click-out, no console output in the new code).
+- `npm run test:v3-public`: 96 unit tests (`node:test`, no new dependency): flag and configuration, route guard, the directory gate and the list of live routes, page model to metadata (title with brand at most 60, canonical, robots, prev and next), card and click-out rules, pagination, JSON-LD escaping, copy rules over the whole strings module (banned words, timeframes, ranking claims, prices, contact details), error-code messages, claim, sign-in, handoff target and reset calls, redirectTo rules, the four listing states, robots and sitemap text, firm identity.
+- `npm run smoke:v3-public` (after a build): 503 checks against real servers: flag off (every new route 404, unknown addresses stay 404, the root JSON-LD unchanged, live pages untouched, robots and sitemap unchanged) and flag on (real 404 and 410 with noindex for unknown and removed directory addresses, only the page model JSON-LD on directory, claim, account and legal routes, landmarks, one H1, skip link, labels, no contact links, single Visit site link, JSON-LD parses, robots and canonical from the model, pagination, claim screens, reset pages and calls, handoff answers, redirectTo handling, legal drafts, sitemaps, robots additions, click-out, no console output in the new code).
 - Lint: the app has no ESLint configuration (`next lint` opens an interactive setup), so lint was not run. Accessibility was checked by the smoke test and by hand against the page markup; Lighthouse was not run.
 
 ## 7. Checklist before the flag goes on in production
@@ -82,7 +95,7 @@ Blocking (owner decisions or backend work, see `PUBLIC_GAPS.md`):
 - [x] Site-wide JSON-LD kept off the directory, claim, account and legal routes (section 3, item 4). Build with `V3_PUBLIC_ENABLED` unset (the flag is a run-time setting); a build with it set would make `headers()` run while prerendering.
 - [ ] Decide the directory home address and its canonical (G11).
 - [ ] Backend: business id format or a different click-out prefix (G3); listing state, business id and services on the business model (G4, G5); a public start-claim route (G1); a registered email-off code (G12); reserved segments (G7).
-- [ ] Vendor app: token handoff or a plain link (G2); redirect to `/claim/live` after approve (G13); reset-password screen at the address in the email (G14).
+- [ ] Backend and vendor app: `POST /v3/auth/handoff` and the vendor app reading `#handoff=` (G2); vendor app redirect to `/claim/live` after approve (G13); the reset email linking to `/account/reset-password?token=` on this site (G14); the assumed request and answer field names (G2, G14).
 - [ ] API trusts `X-Forwarded-For` from the app server so rate limits stay per visitor (G15). nginx already sets it.
 
 Then, in order, on staging with the real API (`V3_PUBLIC_USE_MOCKS=false`):
@@ -96,4 +109,4 @@ Then, in order, on staging with the real API (`V3_PUBLIC_USE_MOCKS=false`):
 
 ## 8. Files
 
-`src/lib/v3-public/` (flag, config, strings, types, API client, mocks, metadata, click-out, claim, proxies, robots, routes, firm, pagination, tests), `src/components/directory/`, `src/app/(directory)/` (layout, pages, handlers), `scripts/v3-public/` (test hook, smoke). Edited existing files: `src/middleware.ts`, `next.config.ts`, `package.json`, `.env.local.example`.
+`src/lib/v3-public/` (flag, config, strings, types, API client, mocks, metadata, click-out, claim, proxies, handoff and redirect rules, robots, routes, firm, pagination, tests), `src/components/directory/`, `src/app/(directory)/` (layout, pages, handlers), `scripts/v3-public/` (test hook, smoke). Edited existing files: `src/middleware.ts`, `next.config.ts`, `package.json`, `.env.local.example`.
