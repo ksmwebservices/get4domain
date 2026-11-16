@@ -198,6 +198,137 @@ async function hostLayer() {
   ok(v2robots.status === 200 && /Disallow: \//.test(v2robots.text) && !/sample/i.test(v2robots.text), `vendor: V2 robots.txt (closed while the V2 site is unknown) (${v2robots.status})`);
 }
 
+// ── Slice 7: the commercial public pages (home, pricing, register, referral, marketing) ──
+const visible = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
+const ldBlocks = (html) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+const BANNED = [
+  ['a banned product word', /\b(workspace|BOS|LeadSpace)\b/i],
+  ['leads', /\bleads?\b/i],
+  ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|promo(tion)?s?|cashback|bundle)\b/i],
+  ['a ranking claim', /\b(best|number one|guaranteed|leading)\b/i],
+  ['a card or payment field', /\b(card number|card expiry|expiry date|cvv|cvc|upi id)\b/i],
+];
+
+async function commerce() {
+  const H = (host, p, init) => getHost(HOST, host, p, init);
+  const pages = [['/', 'home'], ['/pricing', 'pricing'], ['/register', 'register'], ['/how-it-works', 'how it works'], ['/industries', 'industries'], ['/features', 'features'], ['/about', 'about'], ['/contact', 'contact'], ['/referral-link', 'referral neutral page']];
+  const seen = {};
+  for (const [p, name] of pages) {
+    const r = await H(M, p);
+    seen[p] = r;
+    ok(r.status === 200, `commerce: ${name} (${p}) answers 200 (${r.status})`);
+    ok(h1s(r.text) === 1, `commerce: ${name} has exactly one h1`);
+    ok(/<main[\s>]/.test(r.text) && /<header[\s>]/.test(r.text) && /<footer[\s>]/.test(r.text) && /<nav[\s>]/.test(r.text), `commerce: ${name} has header, nav, main and footer landmarks`);
+    ok(/href="#main"/.test(r.text) && /id="main"/.test(r.text), `commerce: ${name} has a skip link`);
+    const noindexPage = p === '/register' || p === '/referral-link';
+    ok(noindexPage ? /name="robots" content="noindex/.test(r.text) : /name="robots" content="index, follow"/.test(r.text), `commerce: ${name} robots as intended (${noindexPage ? 'noindex' : 'index'})`);
+    // the origin root is the same address with or without its slash (Next writes it without)
+    ok(new RegExp(`<link rel="canonical" href="https://${M}${p === '/' ? '/?' : p}"`).test(r.text), `commerce: ${name} canonical is on the main host`);
+    const items = ldBlocks(r.text);
+    ok(items.every((s) => { try { JSON.parse(s); return !/SoftwareApplication/.test(s); } catch { return false; } }), `commerce: ${name} JSON-LD parses and has no site-wide marketing block`);
+    const t = visible(r.text);
+    for (const [label, re] of BANNED) ok(!re.test(t), `commerce: ${name} has no ${label}`);
+    ok(!/tel:|wa\.me/.test(r.text), `commerce: ${name} has no phone or WhatsApp link`);
+  }
+  const types = (html) => ldBlocks(html).map((s) => JSON.parse(s)['@type']);
+  ok(['Organization', 'WebSite', 'FAQPage'].every((x) => types(seen['/'].text).includes(x)), 'commerce: home has Organization, WebSite and FAQPage JSON-LD');
+  ok(types(seen['/pricing'].text).includes('FAQPage') && !/"price"|"Offer"|"offers"|AggregateOffer|aggregateRating|"review"/i.test(ldBlocks(seen['/pricing'].text).join('')), 'commerce: pricing has FAQPage JSON-LD and no price, offer, rating or review markup');
+  ok(types(seen['/about'].text).includes('Organization'), 'commerce: about has Organization JSON-LD');
+  for (const p of ['/how-it-works', '/industries', '/features', '/about', '/contact']) ok(types(seen[p].text).includes('BreadcrumbList'), `commerce: ${p} has breadcrumbs JSON-LD`);
+
+  // pricing: every term, GST line, prices from the API sample only, a pending plan shows no number, no payment form
+  const pr = visible(seen['/pricing'].text);
+  ok(/Quarterly/.test(pr) && /Half-yearly/.test(pr) && /Annual/.test(pr), 'commerce: pricing offers the three billing terms');
+  ok(!/\bmonthly\b/i.test(pr), 'commerce: pricing has no monthly billing');
+  ok(/Prices are shown without GST\. GST is added at checkout\./.test(pr), 'commerce: pricing says GST is added at checkout');
+  ok(/₹3,600/.test(pr) && /₹7,200/.test(pr), 'commerce: pricing shows the priced plans for the default term');
+  const ecom = /<li[^>]*>(?:(?!<\/li>)[\s\S])*Ecommerce(?:(?!<\/li>)[\s\S])*<\/li>/.exec(seen['/pricing'].text)?.[0] ?? '';
+  ok(/Price not set yet/.test(ecom) && !/₹/.test(visible(ecom)), 'commerce: a plan with no price shows words and no number');
+  ok(/Add-on packs/.test(pr) && (pr.match(/Price not set yet/g) ?? []).length >= 5, 'commerce: add-on packs are listed with no price');
+  ok(/href="\/register\?plan=handyman&amp;term=12"/.test(seen['/pricing'].text) && /href="\/register\?plan=free"/.test(seen['/pricing'].text), 'commerce: calls to action go to register with plan and term');
+  ok(!/<form|<input[^>]*(card|cvv|cc-)/i.test(seen['/pricing'].text.replace(/<input[^>]*name="term"[^>]*>/g, '')), 'commerce: no payment form on the pricing page');
+  ok(/type="radio"/.test(seen['/pricing'].text) && /<legend/.test(seen['/pricing'].text), 'commerce: the term switch is a labelled radio group');
+  ok(/<caption/.test(seen['/pricing'].text) && /scope="col"/.test(seen['/pricing'].text), 'commerce: the comparison table has a caption and column headers');
+
+  // register
+  const reg = seen['/register'].text;
+  const inputs = count(reg, /<input\b/g) + count(reg, /<select\b/g);
+  ok(inputs >= 8 && count(reg, /<label\b/g) >= inputs - 1, `commerce: every register field has a label (${inputs} fields, ${count(reg, /<label\b/g)} labels)`);
+  ok(/autoComplete|autocomplete="new-password"/.test(reg) && /type="password"/.test(reg), 'commerce: the password field is a password field with new-password autocomplete');
+  const planned = await H(M, '/register?plan=professional&term=12');
+  ok(/Professional/.test(visible(planned.text)) && /Annual/.test(visible(planned.text)), 'commerce: register carries the plan and the term');
+  ok(!/<input[^>]*(card|cvv|cc-)/i.test(reg), 'commerce: no payment field on the register form');
+  const badPlan = await H(M, '/register?plan=gold&term=7');
+  ok(badPlan.status === 200 && /Free trial/.test(visible(badPlan.text)), 'commerce: an unknown plan or term falls back to the free trial');
+  const goodBody = { businessName: 'Sample Plumbing', categoryKey: 'plumber', industry: 'field_service', subdomain: 'fresh-shop', name: 'Owner', email: 'new@example.invalid', phone: '', password: 'Password1', acceptedTerms: true, plan: 'professional', termMonths: 12 };
+  const okReg = await postJson(M, '/directory-api/register', goodBody);
+  ok(okReg.ok === true && okReg.handoff === 'mock-handoff-code-0000' && !/Password1/.test(JSON.stringify(okReg)), 'commerce: register answers ok with a handoff code and never echoes the password');
+  const badReg = await postJson(M, '/directory-api/register', { ...goodBody, subdomain: 'admin', password: 'weak', acceptedTerms: false });
+  ok(badReg.ok === false && badReg.fields.subdomain === 'subdomainReserved' && badReg.fields.password === 'password' && badReg.fields.terms === 'terms', 'commerce: register gives field errors by key');
+  const taken = await postJson(M, '/directory-api/register', { ...goodBody, subdomain: 'taken-site' });
+  ok(taken.fields?.subdomain === 'subdomainTaken', 'commerce: a taken address is reported on the address field');
+  const chk = await H(M, '/directory-api/subdomain?slug=taken-site');
+  ok(JSON.parse(chk.text).state === 'taken' && JSON.parse((await H(M, '/directory-api/subdomain?slug=fresh-shop')).text).state === 'available' && JSON.parse((await H(M, '/directory-api/subdomain?slug=api')).text).state === 'reserved', 'commerce: live address check answers taken, available and reserved');
+
+  // referral
+  const good = await H(M, '/r/SAMPLE-PARTNER');
+  const cookie = good.headers.get('set-cookie') ?? '';
+  ok(good.status === 302 && good.headers.get('location') === '/register' && cookie.split(';')[0] === 'g4d_ref=SAMPLE-PARTNER' && /HttpOnly/.test(cookie) && /SameSite=Lax/.test(cookie), `commerce: a valid referral sets a code-only httpOnly cookie and goes to register (${good.status})`);
+  ok(!/Sample Partner/i.test(cookie), 'commerce: no name in the referral cookie');
+  for (const code of ['NOPE', 'SAMPLE-OFF']) {
+    const r = await H(M, `/r/${code}`);
+    ok(r.status === 302 && r.headers.get('location') === '/referral-link' && !r.headers.get('set-cookie'), `commerce: referral ${code} sets no cookie and goes to the neutral page`);
+  }
+  const reg2 = await H(M, '/register', { headers: { cookie: 'g4d_ref=SAMPLE-PARTNER' } });
+  ok(/referral link/i.test(visible(reg2.text)) && !/SAMPLE-PARTNER/.test(reg2.text), 'commerce: register notes the referral without showing the code');
+
+  // sign in on the main host is the Slice 4 sign-in
+  const login = await H(M, '/login');
+  ok(login.status === 200 && h1s(login.text) === 1 && /type="password"/.test(login.text), 'commerce: /login on the main host is the sign-in page');
+  // not reachable by address, not on other hosts
+  ok((await H(M, '/v3-site/pricing')).status === 404 && (await H(M, '/v3-site/r/SAMPLE-PARTNER')).status === 404, 'commerce: the internal pages are not reachable by address');
+  ok((await H(D, '/pricing')).status === 404 && (await H(D, '/register')).status === 404 && (await H(D, '/r/SAMPLE-PARTNER')).status === 404, 'commerce: the directory host does not get the commercial pages');
+  ok((await H(`api.${M}`, '/pricing')).status === 404, 'commerce: a reserved host does not get the commercial pages');
+  // the existing sitemap already lists these addresses and is unchanged
+  const sm = await H(M, '/sitemap.xml');
+  const smOff = await getHost(OFF, M, '/sitemap.xml');
+  ok(sm.status === 200 && sm.text === smOff.text, 'commerce: sitemap.xml is the same with the flag on and off');
+}
+
+async function postJson(host, p, body) {
+  const r = await getHostBody(HOST, host, p, JSON.stringify(body));
+  return JSON.parse(r.text);
+}
+
+const getHostBody = (port, host, p, body) => new Promise((resolve, reject) => {
+  const req = http.request({ host: '127.0.0.1', port, path: p, method: 'POST', headers: { host, 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } }, (res) => {
+    let text = '';
+    res.setEncoding('utf8');
+    res.on('data', (c) => { text += c; });
+    res.on('end', () => resolve({ status: res.statusCode ?? 0, text }));
+  });
+  req.on('error', reject);
+  req.setTimeout(15000, () => req.destroy(new Error(`timeout ${host}${p}`)));
+  req.write(body);
+  req.end();
+});
+
+// Flag off, with the host names set: every new route is unreachable and the live pages answer as before.
+async function commerceFlagOff() {
+  const O = (host, p, init) => getHost(OFF, host, p, init);
+  for (const p of ['/v3-site', '/v3-site/pricing', '/v3-site/register', '/v3-site/r/SAMPLE-PARTNER', '/v3-site/referral-link', '/referral-link']) ok((await O(M, p)).status === 404, `commerce flag off: ${p} is a 404`);
+  const r = await O(M, '/r/SAMPLE-PARTNER');
+  ok(r.status !== 302 && !r.headers.get('set-cookie'), `commerce flag off: /r/{code} sets no cookie and does not redirect (${r.status})`);
+  for (const p of ['/', '/pricing', '/register', '/login', '/about', '/contact', '/features', '/industries', '/how-it-works']) {
+    const x = await O(M, p);
+    ok(x.status === 200, `commerce flag off: live ${p} still answers 200 (${x.status})`);
+    ok(!/A website for your business, live on your own subdomain|Start with a free trial site|Prices are shown without GST\. GST is added at checkout\./.test(x.text), `commerce flag off: live ${p} is not replaced by a new page`);
+  }
+  ok((await O(M, '/directory-api/register', { method: 'POST' })).status === 404 && (await O(M, '/directory-api/subdomain?slug=x')).status === 404, 'commerce flag off: the register and address routes are 404');
+  const llms = await O(M, '/llms.txt');
+  ok(llms.status === 200 && llms.text.length > 0, 'commerce flag off: llms.txt untouched');
+}
+
 // The widened matcher (/llms.txt, /assets/) must change nothing while the flag is off, or on a host that is not a V3 vendor host.
 async function matcherRegression() {
   const a = await get(OFF, '/llms.txt');
@@ -376,7 +507,7 @@ async function flagOn() {
 }
 
 function noConsole() {
-  const dirs = [path.join(root, 'src', 'lib', 'v3-public'), path.join(root, 'src', 'components', 'directory'), path.join(root, 'src', 'app', '(directory)')];
+  const dirs = [path.join(root, 'src', 'lib', 'v3-public'), path.join(root, 'src', 'components', 'directory'), path.join(root, 'src', 'app', '(directory)'), path.join(root, 'src', 'app', '(v3site)'), path.join(root, 'src', 'components', 'site')];
   for (const d of dirs) {
     for (const f of sourceFiles(d)) {
       if (f.includes('__tests__')) continue;
@@ -398,6 +529,8 @@ try {
   await flagOff();
   await flagOn();
   await hostLayer();
+  await commerce();
+  await commerceFlagOff();
   await matcherRegression();
   noConsole();
 } finally {

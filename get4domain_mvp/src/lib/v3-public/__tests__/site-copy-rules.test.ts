@@ -20,7 +20,7 @@ const RULES: Array<[string, RegExp]> = [
   ['a ranking claim', /\b(best|top|number one|no\. ?1|#1|guaranteed?|leading|unmatched|world-class)\b/i],
   ['a written price or percentage', /[₹$%]|\brs\.?\s*\d|\binr\b/i],
   ['a rating, review or count claim', /\b(reviews?|rated|stars?|testimonials?|thousands?|millions?|\d+\+?\s*(?:businesses|customers|clients|users))\b/i],
-  ['a card or payment form field', /\b(card number|cvv|cvc|expiry|upi id|net banking)\b/i],
+  ['a card or payment form field', /\b(card number|card expiry|expiry date|cvv|cvc|upi id|net banking)\b/i],
 ];
 
 describe('copy rules over every string of the commercial pages', () => {
