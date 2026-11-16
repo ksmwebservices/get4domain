@@ -145,3 +145,32 @@ No content renderer in this app: the backend renders and stores complete pages (
 - [ ] `VITE_API_BASE_URL=https://<API_HOST>` when building the vendor and admin apps; `NEXT_PUBLIC_VENDOR_APP_URL=https://<APP_HOST>`.
 - [ ] V2 names still served by V2 (see G24); first V3 vendor site checked on its host: page, `/sitemap.xml`, `/robots.txt`, `/llms.txt`.
 - [ ] Checks: `npm run test:v3-public` (unit), `npm run smoke:v3-public` (real servers: flag off with hosts set, flag on without hosts, flag on with hosts).
+
+## 10. Commercial public pages (Slice 7)
+
+Branch `v3-pub-fe3`. Plan and API shapes: `PUBLIC_COMMERCE_PLAN.md`. Same switch as section 9: the pages need `V3_PUBLIC_ENABLED=true` and `MAIN_HOST` set. They replace their live twins only on the canonical main host, by an internal rewrite to `/v3-site/...` (typing `/v3-site/...` is a 404). Flag off, or no `MAIN_HOST`: the live pages answer exactly as before (smoke checked with the host names set and the flag off).
+
+| Address (main host) | Page | Notes |
+|---|---|---|
+| `/` | Home | Organization, WebSite and FAQPage JSON-LD |
+| `/pricing` | Pricing | free trial, Handyman, Professional, Ecommerce; term switch quarterly, half-yearly, annual; prices without GST from `GET /v3/plans`; GST line; a plan with no price shows words and no number; add-on packs with no price; Free and paid comparison; feature table; FAQ (FAQPage JSON-LD only, no price schema); every call to action goes to `/register?plan=..&term=..` |
+| `/register` | Self-service register | business name, searchable category, site address with live availability and the reserved-name message, owner name, email, phone, password, terms; carries plan, term and the referral cookie; field errors in plain words; on success goes to the business app (`APP_HOST` or `NEXT_PUBLIC_VENDOR_APP_URL`) with the handoff code, or to its login. `noindex`. |
+| `/login` | Sign in | the Slice 4 sign-in; forgot and reset stay `/account/...` |
+| `/r/{code}` | Referral landing | valid code: first-party cookie `g4d_ref` holding the code only (httpOnly, SameSite=Lax, Secure, no Domain), then `/register`. Unknown, disabled or unreadable code: no cookie, `/referral-link` (neutral page, code not repeated). |
+| `/how-it-works`, `/industries`, `/features`, `/about`, `/contact` | Marketing | breadcrumbs and JSON-LD; industries lists the 16 packs and the categories from the API |
+
+Browser calls (same origin, flag guarded): `POST /directory-api/register`, `GET /directory-api/subdomain?slug=`. No payment form or card field exists anywhere on the public site: payment happens only inside the business app through the gateway.
+
+Copy: one module (`lib/v3-public/site-strings.ts`), tested over every string: no workspace, BOS or LeadSpace, "enquiries" not "leads", no timeframes (the three billing terms are allowed), no written price, no discount, offer, coupon or deal wording, no ranking claim, no rating or review claim. Smoke repeats the rules on the rendered text of every page.
+
+Sitemap: the new indexable addresses are the same as the live ones, which the existing `sitemap.xml` already lists, so `sitemap.ts` is not changed (it is identical with the flag on and off, checked). Register and referral pages are noindex.
+
+Reviewing with samples: `npm run build`, then `V3_PUBLIC_ENABLED=true MAIN_HOST=localhost DIRECTORY_HOST=directory.localhost npx next start` and open `/`, `/pricing`, `/register?plan=professional&term=12`, `/r/SAMPLE-PARTNER` (valid), `/r/SAMPLE-OFF` (disabled), `/industries`. Sample addresses: `taken-site` is taken, `taken@example.invalid` is a taken email, `api` is reserved.
+
+Go-live checklist for the commercial pages:
+
+- [ ] Backend: the assumed routes and fields of G28 and G29 (address check, referral check, the extra register fields); confirm G30 (price semantics) and G31 (public pack list).
+- [ ] Owner decision G32: the commercial pages replace the live marketing pages on the main host when the flag and `MAIN_HOST` are set. Keep the flag off on the live server until this is intended.
+- [ ] `APP_HOST` (or `NEXT_PUBLIC_VENDOR_APP_URL`) set so register can hand off to the business app.
+- [ ] Referral and registration reach the API with the visitor address (G15).
+- [ ] Counsel approves the legal pages that register links to (G18).
