@@ -19,7 +19,12 @@ export function apiBase(env: Env = process.env): string | null {
 
 /** The vendor app (a separate Vite app). null when not configured: the screens then say it is not available yet. */
 export function vendorAppUrl(env: Env = process.env): string | null {
-  return clean(env.NEXT_PUBLIC_VENDOR_APP_URL);
+  const explicit = clean(env.NEXT_PUBLIC_VENDOR_APP_URL);
+  if (explicit) return explicit;
+  // Slice 6 host names: the business app is APP_HOST (a host name only). Local development hosts use http.
+  const h = (env.APP_HOST ?? '').trim().toLowerCase();
+  if (!/^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/.test(h)) return null;
+  return `${h === 'localhost' || h.endsWith('.localhost') ? 'http' : 'https'}://${h}`;
 }
 
 /** The canonical origin for sitemap and robots lines. The www host is never canonical. */
