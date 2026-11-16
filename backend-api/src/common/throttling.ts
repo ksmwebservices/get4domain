@@ -11,7 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
  *   API from ONE IP, so reads must not be throttled like credential endpoints.
  * - Sensitive routes carry tighter `@Throttle(RATE.x)` limits (login, OTP, payments, webhooks…).
  * - The client IP is Express `req.ip`; main.ts sets `trust proxy` so that behind nginx it is the address
- *   nginx saw (not forgeable via X-Forwarded-For). Set TRUST_PROXY_HOPS to the number of proxies.
+ *   nginx saw (not forgeable via X-Forwarded-For). Set TRUSTED_PROXIES to the proxies' addresses (only they may set the header), or TRUST_PROXY_HOPS to a hop count (common/trust-proxy.ts).
  * - Tuning without a code change: THROTTLE_GLOBAL_LIMIT, THROTTLE_READ_LIMIT (per minute),
  *   THROTTLE_TRUSTED_IPS (comma-separated IPs never limited — e.g. the web server), and the emergency
  *   switch THROTTLE_DISABLED=true.

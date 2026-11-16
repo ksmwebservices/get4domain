@@ -9,14 +9,18 @@ import { uploadsDir, uploadsStaticOptions } from './uploads/uploads.util';
 import { buildCorsOptions } from './common/cors';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { resolveTrustProxy } from './common/trust-proxy';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
-  // Behind nginx the socket address is the proxy's. Trust exactly N proxy hops so `req.ip` (the rate-limit
-  // key) is the real client address and cannot be forged through X-Forwarded-For. Override with TRUST_PROXY_HOPS.
-  app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+  // Behind nginx the socket address is the proxy's. `req.ip` (the rate-limit key) must be the real client address and must not be forgeable through X-Forwarded-For. TRUSTED_PROXIES (addresses and subnets)
+  // says WHICH peers may set it; without it the older TRUST_PROXY_HOPS count (default 1) applies (common/trust-proxy.ts).
+  const trust = resolveTrustProxy(process.env);
+  app.set('trust proxy', trust.value);
+  if (trust.rejected.length) logger.warn(`TRUSTED_PROXIES entries ignored (not an address, subnet or loopback, linklocal, uniquelocal): ${trust.rejected.join(', ')}`);
+  logger.log(`Client address from X-Forwarded-For: ${trust.source === 'TRUSTED_PROXIES' ? `only from ${(trust.value as string[]).join(', ')}` : `${String(trust.value)} proxy hop(s) (${trust.source}); set TRUSTED_PROXIES to name the proxy`}`);
 
   // Local VM disk storage for uploaded images, served at /uploads/*.
   const publicUploads = uploadsDir();
