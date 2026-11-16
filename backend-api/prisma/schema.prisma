@@ -8123,6 +8123,106 @@ model ReferralPartner {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  links        ReferralLink[]
+  attributions ReferralAttribution[]
+  ledger       CommissionLedger[]
+  payouts      CommissionPayout[]
+
   @@index([status])
   @@map("g4d_referral_partners")
+}
+
+/// Wave 3 Part I: a code a partner shares. Platform data, staff-only (RLS on, no policy). Disabling keeps the row: a disabled code resolves as invalid and attributions already made stay.
+model ReferralLink {
+  id          String    @id @default(cuid())
+  partnerId   String
+  code        String    @unique
+  active      Boolean   @default(true)
+  createdById String?
+  disabledAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId, active])
+  @@map("g4d_referral_links")
+}
+
+/// Wave 3 Part I: who referred a vendor. ONE row per vendor: the first touch wins. Only SUPER_ADMIN changes it, with an audit row. vendorId has no foreign key on purpose (the history of a commission outlives a vendor row).
+model ReferralAttribution {
+  id        String   @id @default(cuid())
+  vendorId  String   @unique
+  partnerId String
+  linkId    String?
+  source    String // REGISTER | ON_BEHALF | ADMIN_CHANGE
+  setById   String?
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  partner ReferralPartner @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId])
+  @@map("g4d_referral_attributions")
+}
+
+/// Wave 3 Part I: the commission slab rows an ADMIN enters. The system ships with NONE. amountPerVendorMinor is in paise. maxVendors null means "and above".
+model CommissionSlab {
+  id                   String   @id @default(cuid())
+  minVendors           Int
+  maxVendors           Int?
+  amountPerVendorMinor Int
+  effectiveFrom        DateTime
+  createdById          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([effectiveFrom])
+  @@map("g4d_commission_slabs")
+}
+
+/// Wave 3 Part I: one line per vendor, made on the vendor's FIRST successful paid plan payment (a vendor counts once, so vendorId is unique). The amount stays null until the month is closed.
+model CommissionLedger {
+  id          String    @id @default(cuid())
+  partnerId   String
+  vendorId    String    @unique
+  month       String // YYYY-MM, in India time, of the qualifying payment
+  orderId     String
+  qualifiedAt DateTime
+  amountMinor Int?
+  status      String    @default("ACCRUED") // ACCRUED | APPROVED | PAID | REVERSED
+  flagged     Boolean   @default(false)
+  flagReason  String?
+  approvedAt  DateTime?
+  payoutId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  partner ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  payout  CommissionPayout? @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+
+  @@index([partnerId, month, status])
+  @@index([month, status])
+  @@map("g4d_commission_ledger")
+}
+
+/// Wave 3 Part I: a payout an ADMIN recorded after paying by bank or UPI. No money moves from here and no tax is computed. One per partner and month.
+model CommissionPayout {
+  id          String   @id @default(cuid())
+  partnerId   String
+  month       String
+  totalMinor  Int
+  status      String   @default("PAID")
+  reference   String
+  paidById    String?
+  paidAt      DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  partner ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Restrict)
+  lines   CommissionLedger[]
+
+  @@unique([partnerId, month])
+  @@map("g4d_commission_payouts")
 }

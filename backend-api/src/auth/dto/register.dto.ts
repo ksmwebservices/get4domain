@@ -30,6 +30,12 @@ export class RegisterDto {
   @IsString()
   phone?: string;
 
+  @ApiProperty({ required: false, example: 'K7M2P9QX', description: 'Wave 3: a referral code the business came with (checked by GET /v3/public/referral/:code). A code that does not resolve is ignored; it never blocks a signup.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  referralCode?: string;
+
   @ApiProperty({ required: false, example: 'carewell', description: 'Wave 3: the free subdomain the business wants (checked by GET /v3/public/subdomain-availability). Omit it and one is made from the business name.' })
   @IsOptional()
   @IsString()

@@ -17,6 +17,7 @@ import { BillingSettingsService } from './settings/billing-settings.service';
 import { CashInput, checkCashConfirmation } from './core/cash-core';
 import { invoiceLines } from './core/invoice-lines';
 import { PlanInvoiceDeliveryService } from './invoice-delivery.service';
+import { PlanPaidHook } from './plan-paid.hook';
 import { TopupSettlementHook } from './topup-hook';
 
 /** what a settlement hands back to its caller besides the outcome: the plan level, and the invoice it made (for the mail) */
@@ -45,6 +46,8 @@ export class PaymentSettlementService {
     @Optional() @Inject(ActivityBus) private readonly bus?: Pick<ActivityBus, 'emit'>,
     /** Wave 3 Part D: records (and, when the mail switch is on, sends) the invoice mail after the payment is committed. Absent = no mail is recorded. */
     @Optional() @Inject(PlanInvoiceDeliveryService) private readonly delivery?: Pick<PlanInvoiceDeliveryService, 'queue'>,
+    /** Wave 3 Part I: told after a plan payment commits (the referral module makes the first-payment commission line) and after a full refund is recorded. Absent = nobody is told. */
+    @Optional() @Inject(PlanPaidHook) private readonly paidHook?: PlanPaidHook,
   ) {}
 
   async settle(i: SettleInput, ctxOut?: SettleCtx): Promise<SettleOutcome> {
@@ -56,6 +59,8 @@ export class PaymentSettlementService {
     if (outcome === 'PAID') {
       this.afterPaid(order.vendorId, order.id, ctx.planLevel, i);
       // the invoice mail is recorded AFTER the commit and never raises: the payment and the invoice do not depend on it
+      // a plan payment of a referred vendor makes the commission line (the vendor's FIRST one only; the hook checks) after the commit; it never raises into the payment
+      if (this.paidHook) void this.paidHook.onPlanPaid({ vendorId: order.vendorId, orderId: order.id, paidAt: this.clock(), via: i.via }).catch(() => undefined);
       if (ctx.invoice && this.delivery) void this.delivery.queue({ invoiceId: ctx.invoice.id, invoiceNumber: ctx.invoice.number, planName: ctx.invoice.planName, vendorId: order.vendorId, to: ctx.invoice.to }).catch(() => undefined);
     }
     return outcome;
@@ -254,6 +259,8 @@ export class PaymentSettlementService {
     const ok = await this.repo.updateOrderCas(o.id, ['PAID'], { refundRecordedPaise: total, refundNote: input.note.trim().slice(0, 300), refundRecordedBy: actor.id, refundRecordedAt: now });
     if (!ok) throw new ConflictException(billingError('ORDER_STATE_INVALID', 'The order changed; please try again.'));
     await this.repo.transaction(o.vendorId, (tx) => tx.audit(actor, 'billing.order.refund_recorded', o.id, { refundRecordedPaise: o.refundRecordedPaise }, { refundRecordedPaise: total, note: input.note.trim().slice(0, 300) }));
+    // a refund of the WHOLE payment is a reversed payment: the commission line of that vendor is marked REVERSED and flagged for the owner (a part refund is not a reversal)
+    if (total === o.paidAmountPaise && this.paidHook) void this.paidHook.onPaymentReversed({ vendorId: o.vendorId, orderId: o.id, reason: 'refund recorded' }).catch(() => undefined);
     return { refundRecordedPaise: total };
   }
 

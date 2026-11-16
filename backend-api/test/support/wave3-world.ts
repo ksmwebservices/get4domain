@@ -3,6 +3,7 @@ import { GatewayName, paiseToDecimal } from '../../src/plan-billing/gateway/gate
 import { PaymentGatewayPort } from '../../src/plan-billing/gateway/gateway.port';
 import { InMemoryGateway } from '../../src/plan-billing/gateway/in-memory.gateway';
 import { PlanOrderService } from '../../src/plan-billing/plan-order.service';
+import { PlanPaidHook } from '../../src/plan-billing/plan-paid.hook';
 import { PaymentsGate } from '../../src/plan-billing/razorpay/payments-gate';
 import { BillingSettings, DEFAULT_BILLING_SETTINGS } from '../../src/plan-billing/settings/billing-settings';
 import { PaymentSettlementService } from '../../src/plan-billing/settlement.service';
@@ -19,7 +20,7 @@ export class TestGate extends PaymentsGate {
   protected buildGateway(name: GatewayName): PaymentGatewayPort | null { return this.gws.get(name) ?? null; }
 }
 
-export function flow(chosen: GatewayName = 'razorpay') {
+export function flow(chosen: GatewayName = 'razorpay', opts: { paidHook?: PlanPaidHook } = {}) {
   const w = billingWorld();
   w.settings.over = { paymentsMode: 'test', paymentGateway: chosen };
   const settingsObj = { get: async (): Promise<BillingSettings> => ({ ...DEFAULT_BILLING_SETTINGS, graceDays: 7, upgradeProration: 'NONE', renewalReminderDays: [14, 7, 1], ...w.settings.over }) };
@@ -29,7 +30,7 @@ export function flow(chosen: GatewayName = 'razorpay') {
   gate.gws.set('razorpay', gws.razorpay); gate.gws.set('cashfree', gws.cashfree);
   const queued: Array<Record<string, unknown>> = [];
   const delivery = { queue: async (i: Record<string, unknown>) => { queued.push(i); return 'PENDING' as const; } };
-  const settlement = new PaymentSettlementService(w.repo, settings, gate, { invalidate: () => undefined }, undefined, undefined, delivery); settlement.clock = () => new Date(w.now.t);
+  const settlement = new PaymentSettlementService(w.repo, settings, gate, { invalidate: () => undefined }, undefined, undefined, delivery, opts.paidHook); settlement.clock = () => new Date(w.now.t);
   const orders = new PlanOrderService(w.repo, settings, gate, settlement); orders.clock = () => new Date(w.now.t);
   let k = 0;
   const buy = (over: Partial<{ planKey: string; termMonths: number }> = {}, vendorId = 'v1') => orders.create(vendorId, { planKey: 'handyman_pro', termMonths: 3, idempotencyKey: `wave3-key-${++k}-abcdef`, ...over }, VENDOR);
