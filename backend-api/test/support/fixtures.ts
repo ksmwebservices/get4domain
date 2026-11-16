@@ -70,10 +70,18 @@ export async function seedMember(prisma: PrismaClient, vendorId: string, label: 
 }
 
 /** A synthetic Get4Domain STAFF member with the given role (status 'active'). Returns the JWT JwtStrategy accepts for `kind: 'admin_member'`. */
-export async function seedStaff(prisma: PrismaClient, label: string, runId: string, role: 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING', status = 'active'): Promise<string> {
+export async function seedStaff(prisma: PrismaClient, label: string, runId: string, role: 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING' | 'FIELD_EXECUTIVE' | 'TELECALLER', status = 'active'): Promise<string> {
   const email = `staff-${label}-${runId}@v3test.invalid`;
   const m = await prisma.adminTeamMember.create({ data: { name: 'V3TEST staff', email, role, status } });
   return sign({ sub: m.id, email, role: 'ADMIN', kind: 'admin_member' });
+}
+
+/** Wave 3: a synthetic REFERRAL PARTNER with its login (an admin-team row with the REFERRAL_PARTNER role, linked to the partner). Both rows carry the test e-mail marker, so test:cleanup-staging removes them. Returns the partner id and the login's JWT. */
+export async function seedPartnerLogin(prisma: PrismaClient, label: string, runId: string, over: { name?: string; phone?: string | null; type?: 'FREELANCER' | 'SALES_TEAM' | 'ADMIN_TEAM' } = {}): Promise<{ partnerId: string; loginId: string; token: string; email: string }> {
+  const email = `partner-${label}-${runId}@v3test.invalid`;
+  const login = await prisma.adminTeamMember.create({ data: { name: `V3TEST partner ${label}`, email: `login-${label}-${runId}@v3test.invalid`, role: 'REFERRAL_PARTNER', status: 'active' } });
+  const partner = await prisma.referralPartner.create({ data: { type: over.type ?? 'FREELANCER', name: over.name ?? `V3TEST partner ${label}`, email, phone: over.phone ?? null, staffUserId: login.id } });
+  return { partnerId: partner.id, loginId: login.id, token: sign({ sub: login.id, email: login.email, role: 'PARTNER', kind: 'referral_partner' }), email };
 }
 
 /** A synthetic platform admin stored as a Vendor row with role ADMIN (how the seeded admin@get4domain.com works). Returns its JWT. */

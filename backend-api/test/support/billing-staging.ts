@@ -6,7 +6,7 @@ import { RUN_ID } from './staging-env';
  * suite adds its OWN approved price for handyman_pro and its own active tax rate (both removed at the end), and switches paymentsMode to "test" (restored at the end).
  */
 export interface BillingFixture { priceIds: string[]; taxId: string | null; previous: Map<string, { existed: boolean; value: unknown }> }
-const KEYS = ['paymentsMode', 'renewalRemindersEnabled', 'upgradeProration'];
+const KEYS = ['paymentsMode', 'renewalRemindersEnabled', 'upgradeProration', 'paymentGateway'];   // Wave 3: the gateway choice is restored (or removed) at the end too
 
 export async function setUpBilling(prisma: PrismaClient, opts: { reminders?: boolean } = {}): Promise<BillingFixture> {
   const fx: BillingFixture = { priceIds: [], taxId: null, previous: new Map() };

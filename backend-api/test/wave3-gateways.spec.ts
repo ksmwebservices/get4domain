@@ -393,7 +393,7 @@ describe('gateway boundaries', () => {
 
 describe('PaymentGatewaySettingsService', () => {
   function make(env: Record<string, string | undefined>, initial: Partial<BillingSettings> = {}) {
-    let stored: Partial<BillingSettings> = { ...initial };
+    const stored: Partial<BillingSettings> = { ...initial };
     const upserts: Array<{ key: string; value: unknown }> = [];
     const prisma = { v3PlanSetting: { upsert: async (a: { where: { key: string }; update: { valueJson: unknown } }) => { upserts.push({ key: a.where.key, value: a.update.valueJson }); (stored as Record<string, unknown>)[a.where.key] = a.update.valueJson; } } };
     let invalidated = 0; const recorded: unknown[] = [];

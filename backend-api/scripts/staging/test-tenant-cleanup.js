@@ -47,6 +47,7 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
   if (staffIds.length) counts.v3MediaDrafts = (await prisma.v3Media.deleteMany({ where: { vendorId: null, uploadedById: { in: staffIds } } })).count;
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   await cleanupWave2Platform(prisma, runId, counts);
+  await cleanupWave3Platform(prisma, runId, counts, staffIds, ids);
   await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;
   const byVendor = { vendorId: { in: ids } };
@@ -151,6 +152,26 @@ async function cleanupWave2Platform(prisma, runId, counts) {
   counts.v3PackTabFields = (await prisma.v3PackTabField.deleteMany({ where: { ownerKey: key } })).count;
   counts.v3CategoryProfileFields = (await prisma.v3CategoryProfileField.deleteMany({ where: { packKey: key } })).count;
   counts.v3ProfileSiteMap = (await prisma.v3ProfileSiteMap.deleteMany({ where: { packKey: key } })).count;
+}
+
+/**
+ * Wave 3: referral partners, links, attributions, the commission ledger, payouts and slabs. These are platform tables with no foreign key to the vendor, so they are found by their own markers: a partner whose email
+ * ends with @v3test.invalid (and holds the run id, when given), the synthetic vendors' ids, and the synthetic staff who entered a slab. Children first: the ledger points at a payout, links and payouts point at a partner.
+ * (A plan order's gateway columns, a wallet top-up's, the invoice mail outbox row and the trial site go with their vendor.)
+ */
+async function cleanupWave3Platform(prisma, runId, counts, staffIds, vendorIds) {
+  const partnerIds = (await prisma.referralPartner.findMany({ where: { email: { endsWith: TEST_EMAIL_SUFFIX, ...(runId ? { contains: runId } : {}) } }, select: { id: true } })).map((r) => r.id);
+  const owners = [...(partnerIds.length ? [{ partnerId: { in: partnerIds } }] : []), ...(vendorIds.length ? [{ vendorId: { in: vendorIds } }] : [])];
+  if (owners.length) {
+    counts.commissionLedger = (await prisma.commissionLedger.deleteMany({ where: { OR: owners } })).count;
+    counts.referralAttributions = (await prisma.referralAttribution.deleteMany({ where: { OR: owners } })).count;
+  }
+  if (partnerIds.length) {
+    counts.commissionPayouts = (await prisma.commissionPayout.deleteMany({ where: { partnerId: { in: partnerIds } } })).count;
+    counts.referralLinks = (await prisma.referralLink.deleteMany({ where: { partnerId: { in: partnerIds } } })).count;
+  }
+  if (staffIds.length) counts.commissionSlabs = (await prisma.commissionSlab.deleteMany({ where: { createdById: { in: staffIds } } })).count;
+  if (partnerIds.length) counts.referralPartners = (await prisma.referralPartner.deleteMany({ where: { id: { in: partnerIds } } })).count;
 }
 
 async function countTestTenants(prisma) {
