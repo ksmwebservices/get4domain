@@ -9,9 +9,9 @@ const codeOf = (src: string): string => src.split('\n').filter((l) => !l.trim().
 describe('scripts/live/migrate-live.js', () => {
   const code = codeOf(read('scripts/live/migrate-live.js'));
   it('knows only status and deploy, refuses a staging, test or local database, and needs LIVE typed in a terminal for a deploy', () => {
-    expect(code).toContain("['status', 'deploy'].includes(cmd)"); expect(code).toContain('checkDatabaseUrls'); expect(code).toContain('isTTY'); expect(code).toContain('applyConfirmed');
+    expect(code).toContain("['status', 'deploy', 'drift', 'rls'].includes(cmd)"); expect(code).toContain('checkDatabaseUrls'); expect(code).toContain('isTTY'); expect(code).toContain('applyConfirmed');
     expect(code.indexOf('applyConfirmed(')).toBeLessThan(code.indexOf('spawnSync(process'));
-    expect(code).toContain("'prisma', 'migrate', cmd"); expect(code).not.toMatch(/migrate['"],\s*['"]?(dev|reset|resolve)|--force|--accept-data-loss|db push/);
+    expect(code).toContain("['prisma', 'migrate', cmd]"); expect(code).toContain("'migrate', 'diff', '--from-schema-datasource'"); expect(code).toContain('NOT rowsecurity'); expect(code).not.toMatch(/migrate['"],\s*['"]?(dev|reset|resolve)|--force|--accept-data-loss|db push/);
   });
   it('masks the connection in everything the Prisma CLI prints', () => { expect(code).toContain('live.mask(r.stdout'); expect(code).toContain('live.mask(r.stderr'); });
   it('refuses to run with a staging database, a bad command, or a missing connection (run for real: no database is touched)', () => {
