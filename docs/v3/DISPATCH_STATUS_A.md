@@ -4,8 +4,8 @@ Branch v3-w3, worktree C:\Get4Domain\get4domain-w2. Baseline before J0: build pa
 
 | Job | Part | Status | Commit | Tests | Note |
 |---|---|---|---|---|---|
-| J0 | Section 0 | DONE | (see log) | n/a | docs\v3\V3_WAVE3_BACKEND.md written |
-| J1 | A roles and partners | TODO | | | |
+| J0 | Section 0 | DONE | 192a67e | n/a | docs\v3\V3_WAVE3_BACKEND.md written |
+| J1 | A roles and partners | DONE | 889b56a | build ok; test:ci 266 suites, 5033 tests | labels fold into SALES in the principal; partner login = admin-team row with role REFERRAL_PARTNER, principal role PARTNER, global PartnerScopeGuard; migration 20261220100000 (not applied) |
 | J2 | B public pricing | TODO | | | |
 | J3 | C checkout and gateways | TODO | | | |
 | J4 | D auto invoice | TODO | | | |
