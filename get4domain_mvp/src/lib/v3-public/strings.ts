@@ -253,9 +253,124 @@ export const S = {
     refundTitle: 'Refunds and cancellation',
     walletTitle: 'Wallet terms',
     listingTitle: 'Directory listing terms',
-    index: { label: 'Legal pages' },
+    index: { label: 'Legal pages', title: 'Legal', intro: 'The terms and policies that apply to the directory and to business accounts. These texts are drafts awaiting legal review.' },
+    otherDocs: 'Other legal pages',
+    docs: {
+      terms: {
+        title: 'Terms',
+        summary: 'The terms for using the directory and for business accounts.',
+        sections: [
+          { heading: 'Who we are', body: ['The directory and the business accounts are run by the firm named on this page. In these terms, "we" means that firm.'] },
+          { heading: 'The directory', body: [
+            'The directory lists businesses so that people can find their sites. A listing is informational. The directory has one action on a listing, a Visit site link that opens the business site.',
+            'The directory does not pass on enquiries, and it does not show phone numbers or email addresses of businesses. To reach a business, use its own site.',
+            'A listing that has not been claimed was added from public information. Its owner can claim it, ask for a correction, or ask for it to be removed.',
+          ] },
+          { heading: 'Plans', body: [
+            'A Free site is an informational listing. Pro means any paid plan.',
+            'Prices exclude GST. The price that applies to you is the price shown when you choose a plan.',
+          ] },
+          { heading: 'Accounts', body: [
+            'You must give correct details when you create an account or claim a listing. You are responsible for keeping your password safe and for what is done with your account.',
+            'You may claim a listing only if you are the owner of the business or are authorised by the owner.',
+          ] },
+          { heading: 'What you must not do', body: [
+            'Do not claim a business that is not yours, publish content you have no right to publish, or use the site to mislead people or to harm the service.',
+            'We may remove a listing, a site or an account that breaks these terms.',
+          ] },
+          { heading: 'Changes to these terms', body: ['We may update these terms. The version that applies is the one published on this page when you use the service.'] },
+        ],
+      },
+      privacy: {
+        title: 'Privacy',
+        summary: 'What we collect and why.',
+        sections: [
+          { heading: 'What we hold', body: [
+            'For a listing: the business name, category, area, description and the contact details held for the business so that its owner can be reached about a claim.',
+            'For an account: your name, your email address and your business name.',
+          ] },
+          { heading: 'What the directory shows', body: [
+            'Directory pages show a business name, category, area and description. They never show phone numbers or email addresses.',
+          ] },
+          { heading: 'Claim codes', body: ['A claim code is sent to the contact held for the business, never to a number or address typed on the claim page.'] },
+          { heading: 'Visits and clicks', body: [
+            'When a Visit site link is used we count the click. When a directory page is opened with campaign parameters in its address we add to a count for that campaign. These counts hold no personal details and no cookie is set for them.',
+            'We may use technical data such as the network address to protect the service from repeated or abusive requests.',
+          ] },
+          { heading: 'Your choices', body: [
+            'An owner can ask for a listing to be corrected or removed. A removal request is confirmed through the contact held for the business.',
+            'To ask about the data we hold, write to us at the registered address on this page.',
+          ] },
+        ],
+      },
+      refund: {
+        title: 'Refunds and cancellation',
+        summary: 'How cancellation works and what is not refunded.',
+        sections: [
+          { heading: 'Free listings', body: ['A Free listing costs nothing. It can be removed on request.'] },
+          { heading: 'Paid plans and services', body: [
+            'Prices exclude GST. Money paid for a plan, for a service or for a wallet top-up is not refunded.',
+            'Cancelling a plan or a service request stops further charges for it. It does not return money already paid.',
+          ] },
+          { heading: 'What is not a refund', body: [
+            'A hold placed on the wallet for a request and released because the request was cancelled or rejected is not a refund: the money never left the wallet.',
+            'A charge reversed because the service failed on our side is not a refund either. The wallet is returned to where it was.',
+          ] },
+          { heading: 'More', body: ['The wallet rules are in the Wallet terms.'] },
+        ],
+      },
+      wallet: {
+        title: 'Wallet terms',
+        summary: 'How the wallet works.',
+        sections: [
+          { heading: 'What the wallet is', body: ['The wallet holds prepaid credit that you can spend on plans and services. Prices exclude GST.'] },
+          { heading: 'No refunds', body: ['Money added to the wallet is not refunded. Money spent on a plan or a service is not refunded.'] },
+          { heading: 'No cash-out', body: ['Credit cannot be withdrawn, paid out or converted to cash, and it cannot be moved to another person.'] },
+          { heading: 'Expiry', body: ['Each top-up carries an expiry date, which is shown with it. Credit that has expired cannot be used.'] },
+          { heading: 'Holds and reversals', body: [
+            'A hold may be placed while a request is open. It is released if the request is cancelled or rejected.',
+            'A charge reversed after a failure on our side puts the credit back. Neither is a refund.',
+          ] },
+          { heading: 'Balance', body: ['The wallet balance cannot go below zero.'] },
+        ],
+      },
+      listing: {
+        title: 'Directory listing terms',
+        summary: 'The rules for being listed in the directory and for claiming a listing.',
+        sections: [
+          { heading: 'What a listing is', body: [
+            'A listing shows the business name, category, area and a short description, and one Visit site link. It is informational.',
+            'We may list a business from public information. An unclaimed listing carries no contact details.',
+          ] },
+          { heading: 'Claiming a listing', body: [
+            'The owner proves ownership with a one-time code sent to the contact held for the business. The owner then sets up an account and accepts the current terms and policies.',
+            'After approval the owner can manage the listing and its site.',
+          ] },
+          { heading: 'Corrections and removal', body: [
+            'An owner can ask for a listing to be corrected or removed. A removal request is confirmed through the contact held for the business.',
+            'When a listing is removed it is no longer shown in the directory.',
+          ] },
+          { heading: 'Order and wording', body: [
+            'Listings are shown in an order set by the directory rules. A listing may not describe itself with ranking claims or with claims we cannot check.',
+          ] },
+          { heading: 'Free and paid', body: ['A Free site is an informational listing. Pro means any paid plan. Prices exclude GST.'] },
+        ],
+      },
+    },
   },
 } as const;
+
+export type LegalDocKey = keyof typeof S.legal.docs;
+export const LEGAL_DOC_KEYS: readonly LegalDocKey[] = ['terms', 'privacy', 'refund', 'wallet', 'listing'];
+
+/** The address segment of each legal page. */
+export const LEGAL_SLUGS: Record<LegalDocKey, string> = {
+  terms: 'terms',
+  privacy: 'privacy',
+  refund: 'refund-and-cancellation',
+  wallet: 'wallet-terms',
+  listing: 'directory-listing-terms',
+};
 
 /** A registered backend error code to its plain message; anything unknown gets the generic message (never the backend sentence). */
 export function messageForCode(code: string | null | undefined, status?: number | null): string {
