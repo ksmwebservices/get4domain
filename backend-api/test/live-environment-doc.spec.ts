@@ -31,5 +31,16 @@ describe('docs/v3/V3_LIVE_ENVIRONMENT.md', () => {
     expect(doc).not.toMatch(/get4domain\.(com|in)|ksm|@gmail|sk_live|rzp_|AKIA[0-9A-Z]{8}|BEGIN (RSA|PRIVATE)/i);
     expect(doc).not.toMatch(/(password|secret|passphrase)\s*[:=]\s*['"]?[A-Za-z0-9+/]{16,}/i);
   });
+  it('gives the order for a new live database and the baseline steps, with the guards, the extensions, the two drift items and how to verify', () => {
+    const order = doc.slice(doc.indexOf('## 1a.'), doc.indexOf('## 2.'));
+    const at = (w: string): number => order.indexOf(w);
+    expect([at('new Supabase project'), at('Schema baseline'), at('Seeds in order'), at('bootstrap the first SUPER_ADMIN'), at('Health checks')].every((n) => n >= 0)).toBe(true);
+    expect(at('new Supabase project')).toBeLessThan(at('Schema baseline')); expect(at('Schema baseline')).toBeLessThan(at('Seeds in order'));
+    expect(at('Seeds in order')).toBeLessThan(at('bootstrap the first SUPER_ADMIN')); expect(at('bootstrap the first SUPER_ADMIN')).toBeLessThan(at('Health checks'));
+    expect(order.indexOf('pack engine')).toBeLessThan(order.indexOf('pack tab fields')); expect(order.indexOf('pack tab fields')).toBeLessThan(order.indexOf('profile fields')); expect(order.indexOf('profile fields')).toBeLessThan(order.indexOf('catalogue categories'));
+    const base = doc.slice(doc.indexOf('## 6a.'), doc.indexOf('## 7.'));
+    for (const w of ['dump-staging-schema.js', 'baseline-live.js', '--schema-only --no-owner --no-privileges', 'pg_trgm', 'pgcrypto', 'uuid-ossp', 'g4d_directory_businesses_name_trgm_idx', 'searchVector', 'The database must be empty', 'LIVE', 'resolve --applied', 'rls', 'drift', 'never committed', 'Delete the Supabase project']) expect([w, base.includes(w)]).toEqual([w, true]);
+    for (const f of ['scripts/live/dump-staging-schema.js', 'scripts/live/baseline-live.js']) expect(fs.existsSync(path.join(root, f))).toBe(true);
+  });
   it('says what was not run', () => { expect(doc).toContain('Not run:'); expect(doc).toContain('Docker build'); });
 });

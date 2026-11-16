@@ -15,15 +15,27 @@ Commands are for a Linux server with Docker, nginx, `openssl` and the PostgreSQL
 | Migrations | `scripts/live/migrate-live.js` | `status`, `deploy`, `drift`, `rls` against the LIVE database only. Refuses a staging, test or local database. `deploy` needs `LIVE` typed in a terminal. |
 | Data loaders | `scripts/live/seed-live.js` | Runs one `seed-v3-*.js` loader against the live database (dry run by default, `--apply` needs `LIVE` typed). |
 | First administrator | `scripts/bootstrap-super-admin.js` | Asks for the email and the password at the prompt, never from an argument or a file, never prints them, refuses when an administrator exists. |
+| Schema baseline, step A | `scripts/live/dump-staging-schema.js` | On the owner's PC: asks for the STAGING connection string at a prompt that does not echo, refuses any other project, checks staging has every migration and no unexpected drift, then runs `pg_dump --schema-only --no-owner --no-privileges` into a local file that is never committed. Prints counts only. |
+| Schema baseline, step B | `scripts/live/baseline-live.js` | Refuses anything that is not the live database (the same guards as `migrate-live`), refuses a database that is not empty, needs `LIVE` typed, creates the extensions, applies the schema in one transaction, marks every migration folder applied in order, then runs the row level security and drift checks. Prints counts only. |
 | Backup | `scripts/live/backup-live-db.js` | `pg_dump` piped through `openssl` (AES-256) into an encrypted file, read back and checked before it is kept, old ones rotated. |
 
 **The startup check applies only to the live process.** The image sets `NODE_ENV=production` and `V3_LIVE=true`; any other deployment (the Version 2 containers, staging, tests, a developer machine) does not set `V3_LIVE=true` and boots exactly as before.
 
 ## 1. Before you start: decisions that change the steps
 
-1. **Is the V3 live database the existing production database (Version 2 clients on it) or a new, empty one?** The production database is at the head of the migration history (see `V3_PRODUCTION_MIGRATION_STATE.md`), so `deploy` below just applies the V3 migrations. **A new empty database cannot be built by `migrate deploy`** (the early history is not replayable; staging was built from `prisma/staging/baseline.sql`). There is no live baseline command yet: if you choose a new database, ask for one before step 6.
+1. **The live database is a NEW Supabase project (decided in job M).** `migrate deploy` cannot build an empty database (the early migration history is not replayable), so the schema is taken from staging and the migration history is marked as applied: section 6a. `migrate-live` (section 6) is for LATER releases, once the baseline is done.
 2. **Who serves the public site and the vendor app?** Their addresses must be on `V3_DOMAIN` (the check refuses others). `TRUSTED_PROXIES` must name the server that connects to the API (nginx, and the public site's server if it calls the API from outside).
 3. **Nothing sends or spends until you switch it on** (section 9). Leave every switch off for the first boot.
+
+## 1a. The order of work for a new live database (read this first)
+
+1. **Create a new Supabase project** for live (a new, empty database; note its region and the pooled and direct connection strings). Do not touch the staging project.
+2. Prepare the server and the environment file (sections 2 to 4): `.env.live` holds the NEW project's `DATABASE_URL` and `DIRECT_URL`; `node scripts/live/check-live-env.js` must pass.
+3. **Back up** (section 5) is skipped on an empty database; from the first data onward it is daily (section 12).
+4. **Schema baseline** (section 6a): step A on the owner's PC (dump the staging schema), step B (apply it to the empty live database, mark every migration applied, check).
+5. **Seeds in order** with `seed-live` (section 7): the pack engine, then the pack tab fields, then the profile fields, then the catalogue categories (the reference data the plan, wallet, payment, terms, alert and mail loaders and the directory categories come before, as listed there).
+6. **Build and start the API** (section 8), then **bootstrap the first SUPER_ADMIN** (section 8).
+7. **Health checks** (section 9).
 
 ## 2. Prepare the server (once)
 
@@ -91,6 +103,8 @@ Expect `Backup written: v3live-<UTC time>.dump.enc (... KiB), verified. Rotated 
 
 ## 6. Migrations: the live database only
 
+**This section is for LATER releases.** On a new, empty live database do the schema baseline first (section 6a): it applies the schema and marks every migration applied, so the first run of this section finds nothing pending.
+
 ```
 npm run verify:migrations
 npm run verify:raw-sql
@@ -102,6 +116,64 @@ node scripts/live/migrate-live.js rls           # expect: Every public table has
 ```
 
 All migrations are additive. There are no down migrations: the way back is the restore in section 11. If `deploy` stops partway, **do not re-run it blindly**: read the error, run `status`, and restore from the backup of step 5 if the schema is half applied.
+
+## 6a. The schema baseline for an EMPTY live database (new Supabase project)
+
+Why: the early migration history cannot be replayed on an empty database, so `migrate deploy` cannot build one. Instead the structure of STAGING (which has every migration applied and no unexpected drift) is dumped once and applied to the empty live database; then every migration folder is marked as applied, so later releases are ordinary `migrate-live deploy` runs. This is done **once**, on a database with **no tables**.
+
+**Before step A**, staging must be at the head of THIS checkout: `npm run db:staging:migrate-status` (none pending) and `npm run db:staging:drift` (no drift beyond the allowed items). The migration `20261219200000_v3_wave2_index_name_63` must be applied to staging first. Step A checks both again and refuses if either fails.
+
+**Step A: on the owner's PC** (needs `pg_dump` of the same major version as staging, and `npm ci` in this checkout):
+
+```
+cd backend-api
+node scripts/live/dump-staging-schema.js
+```
+
+It asks for the **direct** connection string of the STAGING database (port 5432) at a prompt that does not echo. It is not read from an argument, a file or the environment, and it is never printed or stored. It refuses production and the live project (only the staging project is accepted), checks `prisma migrate status` and the drift, and then runs this for you (shown so you can run it by hand if you prefer; use the `PG*` variables, not a connection string on the command line):
+
+```
+pg_dump --schema-only --no-owner --no-privileges --schema=public --exclude-table=public._prisma_migrations > live-baseline/staging-schema.sql
+```
+
+The public schema only (not Supabase's own schemas), and not the `_prisma_migrations` table (Prisma makes it when the folders are marked applied). It writes `live-baseline/staging-schema.sql` and `live-baseline/staging-schema.manifest.json` (a table count, the number of migration folders and a hash). **The folder `backend-api/live-baseline/` is in `.gitignore`: it is never committed and never printed.** The script prints counts only, for example `Schema dumped: 150 tables, 6x migration folders, 2 documented drift item(s) in staging.`
+
+Copy the two files to the machine that will run step B (a private copy, for example `scp`), into the same folder name, and delete them from both machines once the baseline is verified.
+
+**Step B: on the machine that has `.env.live`** (needs `psql`, `npm ci` and `npm run build`):
+
+```
+set -a; . ./.env.live; set +a
+node scripts/live/check-live-env.js
+node scripts/live/baseline-live.js
+```
+
+In this order, stopping at the first failure and saying which step failed:
+
+1. The same refusals as `migrate-live`: a staging, test or local database, a placeholder, a missing connection.
+2. The schema file must be a schema-only dump (no data statement, no `DROP` or `TRUNCATE`, no role or database statement, no other schema, no psql command) and must match step A's manifest (hash and table count) and this checkout's number of migration folders.
+3. **The database must be empty**: no table in `public` and no migration history table. A database that has either is refused **before anything is changed** and before the prompt.
+4. You type `LIVE`.
+5. **Extensions.** The schema needs `pgcrypto`, `uuid-ossp` and `pg_trgm` in the schema `extensions` (a Supabase project has that schema, and usually the first two already). The script creates only the missing ones. `pg_trgm` is needed by the directory name search index (migration `20261107100000_v3_directory`); `pgcrypto` and `uuid-ossp` by id and hash defaults.
+6. The schema is applied by `psql --single-transaction` with `ON_ERROR_STOP`: all of it or none of it.
+7. The table count must equal the manifest; then every migration folder is marked applied, oldest first (`prisma migrate resolve --applied <folder>` for each).
+8. The row level security check (no public table without it) and the drift check run.
+
+It prints counts only, for example `Baseline done: 150 tables, 1 extension(s) created, N of N migrations marked applied, 0 tables without row level security, 2 documented drift item(s), 0 unexpected.`
+
+**The two documented drift items** are intentional and the drift check allows exactly these and nothing else (see `scripts/staging/drift-allowlist.js`, `B2_LOG.md`): the `pg_trgm` index `g4d_directory_businesses_name_trgm_idx` (Prisma cannot express an operator-class index) and the generated column `searchVector` on `g4d_directory_businesses` (declared `Unsupported("tsvector")`). Both come across in the dump, so the live drift check reports the same two items as staging. Any third difference fails the baseline.
+
+**How to verify afterwards** (each is read only):
+
+```
+node scripts/live/migrate-live.js status     # expect: Database schema is up to date
+node scripts/live/migrate-live.js drift      # expect only the two allowed items (it prints a diff of exactly those; any other statement is a fault)
+node scripts/live/migrate-live.js rls        # expect: Every public table has row level security on.
+```
+
+and compare the table count printed by step A with the one printed by step B (they must be equal: step B checks it itself).
+
+**If step B stops after the schema was applied** (a failed table count or a failed mark): do not repair it by hand. The database is no longer empty, so a second run refuses. Delete the Supabase project, create a new one, update `.env.live`, and start step B again. If it stopped before the schema was applied (steps 1 to 5), nothing was written: fix the cause and run it again.
 
 ## 7. Load the reference data (dry run first, then apply)
 
@@ -229,4 +301,4 @@ The script prints one line (file name, size, how many were rotated out) and neve
 ## 13. What was tested, and what was not
 
 Tested by the unit suite: the startup check (every required name, placeholders, short secrets, domain and https rules, staging by name and by hash, no value in any message), the example file (complete, no values), the bootstrap (creates once, refuses a second, never prints the password, refuses a weak one, no argument, no file), the backup's pure parts (connection handling, names, rotation, masking), the live migrate and seed doors (refuse a staging database, need `LIVE`), and the compose and Docker files (read as text: non-root, health check, loopback port, no value).
-**Not run:** the Docker build (no Docker on the build machine), `pg_dump` and `openssl` themselves, a real restore, the migrations and loaders against a live database, and the nginx block. The first real run is the owner's, in the order above.
+**Not run:** the Docker build (no Docker on the build machine), `pg_dump`, `psql` and `openssl` themselves, step A against staging, step B against any database, a real restore, the migrations and loaders against a live database, and the nginx block. The baseline's order and refusals (empty database, schema file, manifest, extensions, table count, marking order, checks) are tested with injected functions. The first real run is the owner's, in the order above.

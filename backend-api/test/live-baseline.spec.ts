@@ -14,7 +14,6 @@ const lib = require('../scripts/live/baseline-lib') as {
 
 /** Job M2: the live baseline, its pure parts and its fixed order. */
 const sql = (tables = 150): string => `${'-- schema\nSET statement_timeout = 0;\n'}${Array.from({ length: tables }, (_, i) => `CREATE TABLE public.t${i} (id text NOT NULL, note text);\nALTER TABLE ONLY public.t${i} ADD CONSTRAINT t${i}_pkey PRIMARY KEY (id);\nALTER TABLE public.t${i} ENABLE ROW LEVEL SECURITY;\n`).join('')}`;
-const FOLDERS = ['20260718152033_init', '20260722000000_web_push_subscriptions', '20261219200000_v3_wave2_index_name_63', 'migration_lock.toml'];
 
 describe('the pieces', () => {
   it('step A dumps structure only, no owners, no grants, the public schema, without the migration history table', () => {
