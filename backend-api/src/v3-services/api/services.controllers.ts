@@ -12,6 +12,7 @@ import { RATE } from '../../common/throttling';
 import { actorOf } from '../../plans/admin/plans-admin.common';
 import { Actor } from '../../plans/admin/audit.service';
 import { PackEngineService } from '../../v3-packs/pack-engine.service';
+import { PriceBookService } from '../price-book.service';
 import { ServicesCatalogService } from '../services.service';
 import { ApprovePriceDto, CreatePackDto, CreateServiceDto, EditPriceDto, ProposePriceDto, PurchasePackDto, UpdatePackDto, UpdateServiceDto } from './dto/services.dto';
 
@@ -118,4 +119,19 @@ export class AdminPacksController {
 
   @Post(':key/prices') @HttpCode(200) @ApiOperation({ summary: 'Propose a price for a pack' })
   propose(@Param('key') key: string, @Body() dto: ProposePriceDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.services.proposePrice('pack', key, dto, actorOf(u, req)); }
+}
+
+/**
+ * The price book at a glance for the owner and operations: every paid plan by term, every service (the theme switch fee first) and every add-on pack, each as IN_FORCE, SCHEDULED, PROPOSED or PRICE_PENDING,
+ * with a count of each. Read only; the numbers are entered and approved through the plan price, service price and pack price routes. Never a number is made up: an item with no row says PRICE_PENDING.
+ */
+@ApiTags('v3-price-book-admin')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('v3/admin/price-book')
+export class AdminPriceBookController {
+  constructor(private readonly book: PriceBookService) {}
+
+  @Get() @ApiOperation({ summary: 'Every plan price by term, every service price (the theme switch fee first) and every add-on pack price, each pending, proposed, scheduled or in force, with counts' })
+  get(@CurrentUser() u: AuthenticatedUser) { return this.book.get(!noPrices(u)); }
 }

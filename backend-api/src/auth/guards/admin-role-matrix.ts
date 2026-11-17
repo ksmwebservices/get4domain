@@ -111,6 +111,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/audit-logs': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subscription': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/overrides': OPS_AND_SUPER,
   'GET /v3/admin/vendors/:id/entitlements': OPS_AND_SUPER,
   'POST /v3/admin/plans': SUPER_ONLY, 'PUT /v3/admin/plans/:id': SUPER_ONLY, 'DELETE /v3/admin/plans/:id': SUPER_ONLY,
+  'GET /v3/admin/price-book': OPS_AND_SUPER, 'POST /v3/admin/prices/:priceId/approve': SUPER_ONLY,   // Dispatch G1 B2: the overview is read only; approving a plan price is a money rule
   'POST /v3/admin/plans/:id/prices': SUPER_ONLY, 'PUT /v3/admin/prices/:priceId': SUPER_ONLY, 'DELETE /v3/admin/prices/:priceId': SUPER_ONLY,
   'POST /v3/admin/features': SUPER_ONLY, 'PUT /v3/admin/features/:key': SUPER_ONLY, 'DELETE /v3/admin/features/:key': SUPER_ONLY, 'PUT /v3/admin/plans/:id/features': SUPER_ONLY,
   'POST /v3/admin/tax-rates': SUPER_ONLY, 'PUT /v3/admin/tax-rates/:id': SUPER_ONLY, 'DELETE /v3/admin/tax-rates/:id': SUPER_ONLY,
@@ -299,7 +300,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
     // no system settings and no price book (Amendment 13 V9): reading the settings, proposing a price or a margin, and the platform content and demo switches
     deny: [
       'GET /v3/admin/plan-settings', 'GET /v3/admin/pack-engine/settings', 'GET /v3/admin/seeded-sites/indexing-mode', 'GET /v3/admin/mail-rules',
-      'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins',
+      'GET /v3/admin/domain-margins', 'POST /v3/admin/domain-margins', 'GET /v3/admin/price-book',
       'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id',
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],

@@ -5,7 +5,7 @@ import { EntitlementsService } from '../entitlements/entitlements.service';
 import { planError } from '../plans.errors';
 import { validateAmount, validateTerm } from './admin-validation';
 import { Actor, AuditService } from './audit.service';
-import { CreatePlanDto, CreatePriceDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
+import { ApprovePlanPriceDto, CreatePlanDto, CreatePriceDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
 import { expectedDate, PageQueryDto, pageArgs, paged, staleWrite, unknownPlan } from './plans-admin.common';
 
 /** Plans and their price rows. Every write: one transaction = the change + its audit row; the entitlement cache is cleared afterwards. */
@@ -131,6 +131,29 @@ export class PlansAdminService {
       if (res.count === 0) throw staleWrite();
       const after = await tx.v3PlanPrice.findUniqueOrThrow({ where: { id: priceId } });
       await this.audit.record(tx, actor, 'price.update', 'price', priceId, before, after);
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return price;
+  }
+
+  /**
+   * Approve a PROPOSED plan price (SUPER_ADMIN, by the role matrix). The row starts now unless a later moment is given; a moment in the past (more than a minute ago) is refused so a price can never be
+   * back-dated under an invoice already issued. Approving an approved row is a no-op answer, not an error. Two prices of one plan and term may not start at the same moment. Audited; the cache is cleared.
+   */
+  async approvePrice(priceId: string, dto: ApprovePlanPriceDto, actor: Actor, now: Date = new Date()) {
+    const when = dto.effectiveFrom ? new Date(dto.effectiveFrom) : now;
+    if (Number.isNaN(when.getTime())) throw new BadRequestException(planError('PRICE_DATE_INVALID', 'That date is not valid.'));
+    if (when.getTime() < now.getTime() - 60_000) throw new BadRequestException(planError('PRICE_DATE_IN_PAST', 'A price cannot start in the past.'));
+    const price = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      if (before.status === 'APPROVED') return before;
+      validateAmount(before.amountPaise);
+      const clash = await tx.v3PlanPrice.findFirst({ where: { planId: before.planId, termMonths: before.termMonths, effectiveFrom: when, NOT: { id: priceId } } });
+      if (clash) throw new ConflictException(planError('PRICE_START_CLASH', 'Another price of this plan and term starts at that moment.'));
+      const after = await tx.v3PlanPrice.update({ where: { id: priceId }, data: { status: 'APPROVED', effectiveFrom: when } });
+      await this.audit.record(tx, actor, 'price.approve', 'price', priceId, before, after);
       return after;
     });
     this.entitlements.invalidateAll();

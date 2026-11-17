@@ -37,6 +37,11 @@ export class CreatePriceDto {
   @IsOptional() @IsDateString() effectiveFrom?: string;
 }
 
+export class ApprovePlanPriceDto {
+  /** absent = from now; a past moment is refused */
+  @IsOptional() @IsDateString() effectiveFrom?: string;
+}
+
 export class UpdatePriceDto {
   @IsDateString() expectedUpdatedAt!: string;
   @IsOptional() @IsNumber() amountPaise?: number;

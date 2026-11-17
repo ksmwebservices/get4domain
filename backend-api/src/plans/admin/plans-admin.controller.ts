@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
-import { CreateFeatureDto, CreatePlanDto, CreatePriceDto, SaveMatrixDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
+import { ApprovePlanPriceDto, CreateFeatureDto, CreatePlanDto, CreatePriceDto, SaveMatrixDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
 import { FeaturesAdminService } from './features-admin.service';
 import { actorOf, PageQueryDto } from './plans-admin.common';
 import { PlansAdminService } from './plans-admin.service';
@@ -44,6 +44,9 @@ export class PlansAdminController {
 
   @Put('prices/:priceId') @ApiOperation({ summary: 'Change a price row; needs expectedUpdatedAt (SUPER_ADMIN)' })
   updatePrice(@Param('priceId') priceId: string, @Body() dto: UpdatePriceDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.updatePrice(priceId, dto, actorOf(user, req)); }
+
+  @Post('prices/:priceId/approve') @HttpCode(200) @ApiOperation({ summary: 'Approve a proposed plan price from now or a later date; the public pricing shows it from then (SUPER_ADMIN)' })
+  approvePrice(@Param('priceId') priceId: string, @Body() dto: ApprovePlanPriceDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.approvePrice(priceId, dto, actorOf(user, req)); }
 
   @Delete('prices/:priceId') @ApiOperation({ summary: 'Delete a price row (SUPER_ADMIN)' })
   deletePrice(@Param('priceId') priceId: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.deletePrice(priceId, actorOf(user, req)); }

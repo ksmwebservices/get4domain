@@ -128,7 +128,7 @@ describe('PublicPricingService cache and controller', () => {
     const del = (data: unknown[]) => ({ findMany: async () => { counter.n++; return data; } });
     return {
       v3Plan: del(r.plans), v3PlanPrice: del(r.prices), v3TaxRate: del([{ name: 'GST', ratePercent: 18, appliesTo: 'ALL', active: true, validFrom: PAST }]),
-      v3Capability: del(r.capabilities), v3TierCapability: del(r.tierCells), v3AddonPack: del(r.addonPacks), v3AddonPackPrice: del(r.addonPrices),
+      v3Capability: del(r.capabilities), v3TierCapability: del(r.tierCells), v3AddonPack: del(r.addonPacks), v3AddonPackPrice: del(r.addonPrices), v3ServicePrice: del([]),
     };
   }
 
@@ -139,10 +139,10 @@ describe('PublicPricingService cache and controller', () => {
     svc.clock = () => new Date(t);
     const first = await svc.get();
     await svc.get();
-    expect(counter.n).toBe(7);
-    t += PRICING_CACHE_TTL_MS - 1; await svc.get(); expect(counter.n).toBe(7);
-    t += 2; await svc.get(); expect(counter.n).toBe(14);
-    svc.invalidate(); await svc.get(); expect(counter.n).toBe(21);
+    expect(counter.n).toBe(8);
+    t += PRICING_CACHE_TTL_MS - 1; await svc.get(); expect(counter.n).toBe(8);
+    t += 2; await svc.get(); expect(counter.n).toBe(16);
+    svc.invalidate(); await svc.get(); expect(counter.n).toBe(24);
     expect(first.gst).toEqual({ name: 'GST', ratePercent: 18 });
     expect(first.plans.find((x) => x.key === 'handyman_pro')!.terms[0].price!.totalMinor).toBe(176646);
   });

@@ -22,6 +22,8 @@ export interface PricingRows {
   tierCells: { tier: string; capabilityKey: string; allowed: boolean }[];
   addonPacks: { id: string; key: string; name: string; description: string; status: string }[];
   addonPrices: { packId: string; amountPaise: number; currency: string; taxInclusive: boolean; status: string; effectiveFrom: Date | null }[];
+  /** the price rows of the THEME_SWITCH service (the fee for a later theme switch); absent or empty means no price is set */
+  themeSwitchPrices?: { amountPaise: number; currency: string; taxInclusive: boolean; status: string; effectiveFrom: Date | null }[];
 }
 
 export type PriceState = 'AVAILABLE' | 'PRICE_PENDING';
@@ -35,6 +37,8 @@ export interface PublicPricing {
   free: { key: 'free'; name: string; kind: 'TRIAL'; description: string | null; informational: true };
   plans: { key: string; track: string; name: string; description: string | null; capabilities: { key: string; name: string; description: string | null }[]; terms: PricingTerm[] }[];
   addons: { key: string; name: string; description: string; state: PriceState; price: PriceLine | null; purchasable: boolean }[];
+  /** the fee for a later theme switch (the first switch is included in a paid plan); PRICE_PENDING until a price is approved and started, and then never a number */
+  themeSwitch: { state: PriceState; price: PriceLine | null };
 }
 
 /** Product words that never appear on a public page, whatever a data row says. */
@@ -81,9 +85,13 @@ export function shapePublicPricing(r: PricingRows): PublicPricing {
     return { key: a.key, name: a.name, description: clean(a.description) ?? '', state: 'AVAILABLE' as const, price: line, purchasable: line.totalMinor !== null };
   });
 
+  const ts = (r.themeSwitchPrices ?? []).filter((x) => x.status === 'APPROVED' && x.effectiveFrom !== null && x.effectiveFrom.getTime() <= now && x.currency === 'INR').sort((x, y) => y.effectiveFrom!.getTime() - x.effectiveFrom!.getTime())[0];
+  const tsLine = ts ? priceLine(ts, r.tax) : null;
+  const themeSwitch: PublicPricing['themeSwitch'] = tsLine ? { state: 'AVAILABLE', price: tsLine } : { state: 'PRICE_PENDING', price: null };
+
   return {
     currency: 'INR', pricesExcludeGst: true, terms: [...PRICING_TERMS], gst: r.tax ? { name: r.tax.name, ratePercent: r.tax.ratePercent } : null,
     free: { key: 'free', name: 'Free', kind: 'TRIAL', description: clean(free?.description ?? null), informational: true },
-    plans, addons,
+    plans, addons, themeSwitch,
   };
 }
