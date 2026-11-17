@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import AcceptNotice from '@/components/site/AcceptNotice';
 import { handoffTarget } from '@/lib/v3-public/handoff';
 import { subdomainProblem, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterField, type SubdomainState } from '@/lib/v3-public/register';
 import { SITE } from '@/lib/v3-public/site-strings';
@@ -195,7 +196,8 @@ export default function RegisterForm(p: Props) {
           <input id="terms" name="terms" type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} aria-invalid={!!errors.terms} aria-describedby={errors.terms ? 'terms-error' : undefined} className="mt-1" />
           <span>{R.labels.terms}</span>
         </label>
-        <p className="ml-6 mt-1 text-xs"><Link href="/legal/terms" className="text-slate-700 underline">{R.termsLinkText}</Link> <Link href="/legal/privacy" className="ml-3 text-slate-700 underline">{R.privacyLinkText}</Link></p>
+        <p className="ml-6 mt-1 text-xs"><Link href="/terms" className="text-slate-700 underline">{R.termsLinkText}</Link> <Link href="/privacy-policy" className="ml-3 text-slate-700 underline">{R.privacyLinkText}</Link></p>
+        <AcceptNotice className="ml-6 mt-2 text-xs text-slate-600" />
         {errors.terms ? <p id="terms-error" role="alert" className="ml-6 mt-1 text-sm text-red-700">{R.errors.terms}</p> : null}
       </div>
 

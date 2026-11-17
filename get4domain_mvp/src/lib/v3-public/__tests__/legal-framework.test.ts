@@ -9,6 +9,7 @@ import { LEGAL_PAGE_PATHS } from '../legal-paths';
 import { LEGAL_DOCS, LEGAL_UI } from '../legal-strings';
 import { breadcrumbLd, firmOrganizationLd } from '../site-jsonld';
 import { siteMetadata } from '../site-metadata';
+import { SITE } from '../site-strings';
 import { serializeJsonLd } from '../metadata';
 import { isV3PublicEnabled } from '../flag';
 
@@ -162,6 +163,15 @@ describe('Organization JSON-LD is written from the firm facts only', () => {
     assert.equal(ld.taxID, '33ABCDE1234F1Z5');
     assert.equal(ld.email, 'help@example.invalid');
     assert.ok(!('telephone' in ld));
+  });
+});
+
+describe('the accept notice of /pricing and /register', () => {
+  test('it reads as one sentence naming the Terms of Service and the Privacy Policy, and the names match the policy titles', () => {
+    const N = SITE.acceptNotice;
+    assert.equal(`${N.before}${N.terms}${N.between}${N.privacy}${N.after}`, 'By continuing, you accept the Terms of Service and the Privacy Policy.');
+    assert.equal(LEGAL_DOCS.find((d) => d.path === '/terms')!.title, N.terms);
+    assert.equal(LEGAL_DOCS.find((d) => d.path === '/privacy-policy')!.title, N.privacy);
   });
 });
 

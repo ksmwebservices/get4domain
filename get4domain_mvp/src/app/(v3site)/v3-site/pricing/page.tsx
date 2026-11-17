@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import JsonLd from '@/components/directory/JsonLd';
+import AcceptNotice from '@/components/site/AcceptNotice';
 import PricingPlans, { type PlanRow } from '@/components/site/PricingPlans';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { ADDON_PACKS, fetchPlans, formatRupees, netAmountPaise, priceFor, PUBLIC_TERMS, type PublicPlan, type PublicPlans } from '@/lib/v3-public/plans';
@@ -63,6 +64,7 @@ export default async function PricingPage() {
         <h2 id="plans-title" className="mb-4 text-xl font-semibold text-slate-900">{P.plansHeading}</h2>
         {data && rows.length > 0 ? <PricingPlans terms={data.terms.length ? data.terms : [...PUBLIC_TERMS]} plans={rows} /> : <p className="text-slate-600" role="status">{r.kind === 'ok' ? P.empty : P.loadError}</p>}
       </section>
+      <AcceptNotice className="mt-4 text-sm text-slate-600" />
 
       <section aria-labelledby="compare-title" className="mt-10">
         <h2 id="compare-title" className="mb-3 text-xl font-semibold text-slate-900">{P.compareHeading}</h2>

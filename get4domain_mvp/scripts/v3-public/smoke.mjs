@@ -518,6 +518,46 @@ async function companyPages() {
   }
 }
 
+// Accessibility and structure of every new page (dispatch D1, L4): document language, unique ids, anchors that resolve, heading order, labelled landmarks, links with text.
+function a11yChecks(tag, p, html) {
+  ok(/<html[^>]*\slang="[a-z]{2}/.test(html), `${tag}: ${p} declares the page language`);
+  const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  ok(new Set(ids).size === ids.length, `${tag}: ${p} has unique element ids`);
+  const anchors = [...html.matchAll(/<a [^>]*href="#([^"]+)"/g)].map((m) => m[1]);
+  ok(anchors.every((a) => ids.includes(a)), `${tag}: ${p} every in-page link reaches an element`);
+  const levels = [...html.matchAll(/<h([1-6])[\s>]/g)].map((m) => Number(m[1]));
+  ok(levels[0] === 1 && levels.every((l, i) => i === 0 || l <= levels[i - 1] + 1), `${tag}: ${p} headings start at one and never skip a level (${levels.join('')})`);
+  const navs = [...html.matchAll(/<nav([^>]*)>/g)].map((m) => m[1]);
+  ok(navs.length > 0 && navs.every((a) => /aria-label="[^"]+"/.test(a)), `${tag}: ${p} every nav landmark has a name`);
+  const links = [...html.matchAll(/<a\s[^>]*href="[^"]*"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => m[1].replace(/<[^>]+>/g, '').trim());
+  ok(links.every((t) => t.length > 0) && !links.some((t) => /^(click here|here|read more|link)$/i.test(t)), `${tag}: ${p} every link has its own readable text`);
+  ok(!/<img\s/.test(html) || /<img\s[^>]*alt=/.test(html), `${tag}: ${p} images have alt text`);
+  ok(/<time[^>]*dateTime="\d{4}-\d{2}-\d{2}"|<time[^>]*datetime="\d{4}-\d{2}-\d{2}"/.test(html) || !/<time/.test(html), `${tag}: ${p} dates are machine readable`);
+}
+
+async function wireIn() {
+  const H = (p) => getHost(HOST, M, p);
+  for (const p of [...LEGAL_PATHS, '/about', '/contact']) a11yChecks('a11y', p, (await H(p)).text);
+  // the footer of every commerce page links to every policy page and to About and Contact
+  const home = await H('/');
+  const footer = /<footer[\s\S]*<\/footer>/.exec(home.text)?.[0] ?? '';
+  ok(LEGAL_PATHS.every((p) => footer.includes(`href="${p}"`)) && footer.includes('href="/about"') && footer.includes('href="/contact"'), 'wire-in: the footer links to every policy page, About and Contact');
+  ok(!/href="\/legal\//.test(footer), 'wire-in: the footer no longer links to the older /legal drafts');
+  for (const p of ['/pricing', '/register']) {
+    const r = await H(p);
+    const t = visible(r.text);
+    ok(/By continuing, you accept the\s*Terms of Service\s*and the\s*Privacy Policy\s*\./.test(t), `wire-in: ${p} says that continuing accepts the Terms of Service and the Privacy Policy`);
+    const notice = /<p[^>]*data-accept-notice[^>]*>[\s\S]*?<\/p>/.exec(r.text)?.[0] ?? '';
+    ok(/href="\/terms"/.test(notice) && /href="\/privacy-policy"/.test(notice), `wire-in: ${p} notice links to /terms and /privacy-policy`);
+    ok(!/href="\/legal\/(terms|privacy)"/.test(r.text), `wire-in: ${p} no longer links to the /legal drafts`);
+  }
+  const reg = await H('/register');
+  ok(/id="terms"[^>]*type="checkbox"|type="checkbox"[^>]*id="terms"/.test(reg.text), 'wire-in: the register accept checkbox is still there (its logic is unchanged)');
+  for (const p of ['/terms', '/privacy-policy']) ok((await H(p)).status === 200, `wire-in: ${p} (the link target) answers 200`);
+  // flag off with host names set: the live pricing and register pages carry no new notice
+  for (const p of ['/pricing', '/register']) ok(!/By continuing, you accept/.test(visible((await getHost(OFF, M, p)).text)), `wire-in flag off: the live ${p} is unchanged`);
+}
+
 async function postJson(host, p, body) {
   const r = await getHostBody(HOST, host, p, JSON.stringify(body));
   return JSON.parse(r.text);
@@ -767,6 +807,7 @@ try {
   await legalFlagOff();
   await legalNoHosts();
   await companyPages();
+  await wireIn();
   await matcherRegression();
   noConsole();
 } finally {

@@ -16,6 +16,8 @@ export const SITE = {
     login: 'Sign in',
     register: 'Start free',
   },
+  /** The sentence under the call to action on /pricing and /register. The two links go to the policy pages (dispatch D1). */
+  acceptNotice: { before: 'By continuing, you accept the ', terms: 'Terms of Service', between: ' and the ', privacy: 'Privacy Policy', after: '.' },
   footer: {
     label: 'Footer',
     product: 'Product',
@@ -101,7 +103,7 @@ export const SITE = {
       email: 'Email',
       phone: 'Phone',
       password: 'Password',
-      terms: 'I accept the terms and the privacy notice',
+      terms: 'I accept the Terms of Service and the Privacy Policy',
     },
     hints: {
       subdomain: 'Letters, numbers and hyphens. This is where your trial site lives.',
@@ -109,8 +111,8 @@ export const SITE = {
       phone: 'Optional.',
       category: 'Start typing to find your category.',
     },
-    termsLinkText: 'Read the terms',
-    privacyLinkText: 'Read the privacy notice',
+    termsLinkText: 'Read the Terms of Service',
+    privacyLinkText: 'Read the Privacy Policy',
     submit: 'Create my account',
     submitting: 'Creating your account',
     checking: 'Checking the address',
@@ -136,7 +138,7 @@ export const SITE = {
       emailTaken: 'An account with this email already exists. Try signing in instead.',
       phone: 'That phone number does not look right.',
       password: 'The password needs at least 8 characters, with a capital letter and a number.',
-      terms: 'Please accept the terms and the privacy notice to continue.',
+      terms: 'Please accept the Terms of Service and the Privacy Policy to continue.',
       rate: 'Too many attempts. Please wait a little and try again.',
       notAvailable: 'Registration is not available yet. Please try again later.',
     },

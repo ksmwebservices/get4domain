@@ -36,8 +36,8 @@ Other findings:
 | L0 | DONE | e01f704 | investigation, table above |
 | L1 | DONE | 1f495f4 | legal framework, firm facts module, `[doc]` policy route, footer, sitemap, tests, smoke |
 | L2 | DONE | d7752e4 | terms, privacy, refund, payments, delivery, acceptable use, cookies, disclaimer; copy-rule and fact tests |
-| L3 | DONE | (see git log) | About, Contact (firm facts, grievance only when set, Organization JSON-LD from facts), partner terms, directory and listing terms |
-| L4 | TODO | | |
+| L3 | DONE | 703263f | About, Contact (firm facts, grievance only when set, Organization JSON-LD from facts), partner terms, directory and listing terms |
+| L4 | DONE | (see git log) | footer to every policy, register and pricing accept notice with links to /terms and /privacy-policy, a11y and structured-data smoke over all new pages, three server modes plus a contact-values server |
 | L5 | TODO | | |
 
 ## ASSUMPTIONS
