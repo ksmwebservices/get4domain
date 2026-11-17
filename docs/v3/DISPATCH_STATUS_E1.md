@@ -11,7 +11,7 @@ Branch `v3-pack` (from `v3-smoke2`). Nothing here was run against a server, a da
 | E1b Compose and env | DONE | ac398ad | `deploy/v3live/docker-compose.apps.yml`, `env/*.example`, static test |
 | E1c Host nginx files | DONE | 63d4003 | `deploy/v3live/nginx/*`, `WILDCARD_SWITCH_LATER.md`, static test |
 | E1d Runbook | DONE | (this commit) | `deploy/v3live/RUNBOOK.md` |
-| E1e Final checks and report | TODO | | build, test:ci, `DISPATCH_REPORT_E1.md` |
+| E1e Final checks and report | DONE | (this commit) | build exit 0; test:ci 292 suites, 5622 tests passed; report written | build, test:ci, `DISPATCH_REPORT_E1.md` |
 
 ## E0: what exists to build and run each piece
 
@@ -54,4 +54,4 @@ Other facts:
 
 ## QUESTIONS FOR THE OWNER
 
-(Filled in at the end; see `DISPATCH_REPORT_E1.md`.)
+The 14 questions are in `DISPATCH_REPORT_E1.md` (repo access, Postgres container name and rights, mrtravels and s2travels upstreams, existing app/admin/api rules, certificate paths, FRONTEND_URL, other V2 client blocks, apps/site, non-root SPAs, gateway checkout CSP, the day-one doc location, backup cron, TRUSTED_PROXIES check, size limits).
