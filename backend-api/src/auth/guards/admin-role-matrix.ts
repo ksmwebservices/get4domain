@@ -243,6 +243,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'POST /v3/admin/billing/vendors/:vendorId/cash-orders': SUPER_ONLY,
   // Wave 4 W2: held payments (list, detail, resolve) are ADMIN and SUPER_ADMIN only (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); OPERATIONS, SALES, SUPPORT and every label are refused.
   // Wave 4 W6: the gateway keys are SUPER_ADMIN only in every method; ADMIN is NOT given them (no STAFF_ROLE_EXTENSIONS entry), and every other role is refused.
+  // Wave 4 W7: the GST rate. Reading is OPERATIONS and SUPER_ADMIN (ADMIN inherits the read); setting it is SUPER_ADMIN only, and ADMIN is NOT extended (tested in wave4-gst-rate.spec.ts).
+  'GET /v3/admin/gst-rate': OPS_AND_SUPER, 'PUT /v3/admin/gst-rate': SUPER_ONLY,
   'GET /v3/admin/payment-gateway/credentials': SUPER_ONLY, 'PUT /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY, 'DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY,
   'GET /v3/admin/billing/held-payments': SUPER_ONLY, 'GET /v3/admin/billing/held-payments/:id': SUPER_ONLY, 'POST /v3/admin/billing/held-payments/:id/resolve': SUPER_ONLY,
   // Wave 3 Part I: referrals and commission. Reads are OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; every write is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and the labels are refused. Changing an existing referrer is further limited to SUPER_ADMIN inside the service.

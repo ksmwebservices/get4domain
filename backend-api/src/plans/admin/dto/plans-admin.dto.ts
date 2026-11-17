@@ -77,6 +77,13 @@ export class SaveMatrixDto {
   @ValidateNested({ each: true }) @Type(() => MatrixRowDto) @ArrayMaxSize(300) rows!: MatrixRowDto[];
 }
 
+/** Wave 4 W7: loose on purpose; the real checks (a rate 0 to 100 with at most 3 decimals, a day today or later, a reason) are in the pure core so every refusal carries GST_RATE_INVALID and names the field. */
+export class GstRateDto {
+  @IsOptional() ratePercent?: unknown;
+  @IsOptional() effectiveFrom?: unknown;
+  @IsOptional() reason?: unknown;
+}
+
 export class CreateTaxRateDto {
   @IsString() @MinLength(2) @MaxLength(60) name!: string;
   @IsNumber() ratePercent!: number;

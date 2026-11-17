@@ -21,7 +21,7 @@ const routes = scanRoutes(src);
 /** every route that writes a price, a rate, a margin, a fee, a plan or a price rule: typed by hand, so a route added later has to be added here on purpose */
 const PRICE_WRITES = [
   'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'DELETE /v3/admin/plans/:id', 'POST /v3/admin/plans/:id/prices', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
-  'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
+  'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id', 'PUT /v3/admin/gst-rate',
   'PUT /v3/admin/plan-settings/:key', 'POST /v3/admin/vendors/:id/subscription',
   'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/services/prices/:id/approve', 'POST /v3/admin/services/prices/:id/retire',
   'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id', 'POST /v3/admin/packs/prices/:id/approve', 'POST /v3/admin/packs/prices/:id/retire',

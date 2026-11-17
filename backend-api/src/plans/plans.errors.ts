@@ -5,6 +5,8 @@
 export const PLAN_ERROR_CODES = [
   'FEATURE_LOCKED', 'LIMIT_REACHED', 'STALE_WRITE', 'PLAN_IN_USE', 'FEATURE_IN_USE', 'INVALID_AMOUNT', 'INVALID_TERM',
   'FREE_PLAN_HAS_NO_PRICE', 'REASON_REQUIRED', 'UNKNOWN_PLAN', 'UNKNOWN_VENDOR',
+  // Wave 4 W7: the GST rate setting
+  'GST_RATE_INVALID', 'GST_RATE_EXISTS',
 ] as const;
 export type PlanErrorCode = (typeof PLAN_ERROR_CODES)[number];
 

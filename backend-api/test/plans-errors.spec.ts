@@ -12,9 +12,9 @@ function run(exception: unknown) {
 }
 
 describe('plan error codes', () => {
-  it('lists the stable codes of the design note', () => {
+  it('lists the stable codes of the design note (and the two GST rate codes added in Wave 4)', () => {
     expect([...PLAN_ERROR_CODES].sort()).toEqual([
-      'FEATURE_IN_USE', 'FEATURE_LOCKED', 'FREE_PLAN_HAS_NO_PRICE', 'INVALID_AMOUNT', 'INVALID_TERM', 'LIMIT_REACHED', 'PLAN_IN_USE', 'REASON_REQUIRED', 'STALE_WRITE', 'UNKNOWN_PLAN', 'UNKNOWN_VENDOR',
+      'FEATURE_IN_USE', 'FEATURE_LOCKED', 'FREE_PLAN_HAS_NO_PRICE', 'GST_RATE_EXISTS', 'GST_RATE_INVALID', 'INVALID_AMOUNT', 'INVALID_TERM', 'LIMIT_REACHED', 'PLAN_IN_USE', 'REASON_REQUIRED', 'STALE_WRITE', 'UNKNOWN_PLAN', 'UNKNOWN_VENDOR',
     ]);
   });
 

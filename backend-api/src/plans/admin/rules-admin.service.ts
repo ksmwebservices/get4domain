@@ -1,7 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EntitlementsService } from '../entitlements/entitlements.service';
+import { planError } from '../plans.errors';
+import { checkGstChange, GstChangeInput } from '../pricing/gst-rate-core';
+import { selectTaxRate, TaxRateRow } from '../pricing/price-quote';
 import { validateSettingValue, validateTaxRate } from './admin-validation';
 import { Actor, AuditService } from './audit.service';
 import { CreateTaxRateDto, PutPlanSettingDto, UpdateTaxRateDto } from './dto/plans-admin.dto';
@@ -59,6 +62,49 @@ export class RulesAdminService {
       await this.audit.record(tx, actor, 'tax.delete', 'tax_rate', id, before, null);
     });
     return { deleted: true };
+  }
+
+  // ------------------------------------------------------------------------------------------------------------------------------ the GST rate (Wave 4 W7)
+  clock: () => Date = () => new Date();
+
+  private toRow = (t: { name: string; ratePercent: unknown; appliesTo: string; active: boolean; validFrom: Date }): TaxRateRow => ({ name: t.name, ratePercent: Number(t.ratePercent), appliesTo: t.appliesTo, active: t.active, validFrom: t.validFrom });
+
+  /** The rate in force right now (the SAME selection checkout uses), what is scheduled, and the whole history, newest first. No rate set: inForce is null and the platform cannot price an order with GST. */
+  async gstRate() {
+    const all = (await this.prisma.v3TaxRate.findMany({ orderBy: { validFrom: 'desc' } })) as Array<{ id: string; name: string; ratePercent: unknown; appliesTo: string; active: boolean; validFrom: Date }>;
+    const now = this.clock();
+    const inForce = selectTaxRate(all.map(this.toRow), now);
+    const view = (t: { id: string; name: string; ratePercent: unknown; active: boolean; validFrom: Date }) => ({ id: t.id, name: t.name, ratePercent: Number(t.ratePercent), active: t.active, effectiveFrom: t.validFrom });
+    return {
+      inForce: inForce ? { name: inForce.name, ratePercent: inForce.ratePercent, effectiveFrom: inForce.validFrom } : null,
+      upcoming: all.filter((t) => t.active && t.validFrom.getTime() > now.getTime()).map(view).reverse(),
+      history: all.map(view),
+    };
+  }
+
+  /**
+   * SUPER_ADMIN sets the GST rate from an effective day (today, or later; never the past). It adds a NEW row and edits or removes nothing, so the table is the history, and an order already made keeps the rate
+   * it was quoted with (the rate is in the order's own quote). The same change twice, or a rate equal to the one already in force at that moment, changes nothing (idempotent). A different rate on a day that
+   * already has a row is refused with GST_RATE_EXISTS. Audited with the reason.
+   */
+  async setGstRate(input: GstChangeInput, actor: Actor) {
+    const c = checkGstChange(input, this.clock());
+    if (!c.ok) throw new BadRequestException({ ...planError('GST_RATE_INVALID', 'Some details need fixing.'), details: { fields: c.fields } });
+    const now = this.clock();
+    const validFrom = c.value.validFrom ?? now;
+    const changed = await this.prisma.$transaction(async (tx) => {
+      const rows = ((await tx.v3TaxRate.findMany({})) as Array<{ name: string; ratePercent: unknown; appliesTo: string; active: boolean; validFrom: Date }>).map(this.toRow);
+      const at = selectTaxRate(rows, validFrom);
+      if (at && at.ratePercent === c.value.ratePercent) return false;   // already the rate from that moment: nothing to add
+      if (rows.some((r) => r.validFrom.getTime() === validFrom.getTime())) throw new ConflictException(planError('GST_RATE_EXISTS', 'A rate already starts on that day. Choose another day.'));
+      const now0 = selectTaxRate(rows, now);
+      const created = await tx.v3TaxRate.create({ data: { name: now0?.name ?? at?.name ?? 'GST', ratePercent: c.value.ratePercent, appliesTo: 'ALL', active: true, validFrom } });
+      await this.audit.record(tx, actor, 'gst.rate.set', 'tax_rate', (created as { id?: string }).id ?? null,
+        now0 ? { ratePercent: now0.ratePercent, effectiveFrom: now0.validFrom } : null, { ratePercent: c.value.ratePercent, effectiveFrom: validFrom, reason: c.value.reason });
+      return true;
+    });
+    if (changed) this.entitlements.invalidateAll();
+    return { changed, ...(await this.gstRate()) };
   }
 
   // ------------------------------------------------------------------------------------------------------------------------------ settings

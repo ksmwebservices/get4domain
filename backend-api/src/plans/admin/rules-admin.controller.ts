@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AuditService } from './audit.service';
-import { CreateTaxRateDto, PutPlanSettingDto, UpdateTaxRateDto } from './dto/plans-admin.dto';
+import { CreateTaxRateDto, GstRateDto, PutPlanSettingDto, UpdateTaxRateDto } from './dto/plans-admin.dto';
 import { actorOf, PageQueryDto } from './plans-admin.common';
 import { RulesAdminService } from './rules-admin.service';
 
@@ -27,6 +27,12 @@ export class RulesAdminController {
 
   @Delete('tax-rates/:id') @ApiOperation({ summary: 'Delete a tax rate (SUPER_ADMIN)' })
   deleteTax(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.rules.deleteTaxRate(id, actorOf(user, req)); }
+
+  @Get('gst-rate') @ApiOperation({ summary: 'The GST rate in force now (the one checkout uses), the rates scheduled, and the whole history, newest first. inForce is null until a rate is set.' })
+  gstRate() { return this.rules.gstRate(); }
+
+  @Put('gst-rate') @HttpCode(200) @ApiOperation({ summary: 'SUPER_ADMIN, audited, idempotent: set the GST rate from an effective day (today or later, never the past) with a reason. Adds a new row; older rows are never changed, and an order keeps the rate it was quoted with.' })
+  setGstRate(@Body() dto: GstRateDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.rules.setGstRate(dto, actorOf(user, req)); }
 
   @Get('plan-settings') @ApiOperation({ summary: 'Plan settings (grace days, monthly switch, downgrade behaviour, base rates...)' })
   listSettings(@Query() q: PageQueryDto) { return this.rules.listSettings(q); }
