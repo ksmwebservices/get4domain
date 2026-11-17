@@ -171,6 +171,12 @@ export class PaymentSettlementService {
 
   /** Always resolves with a small answer the controller turns into 200 (duplicates included) or 401 (bad signature). */
   async handleWebhook(rawBody: Buffer | string | undefined, signature: string | undefined, eventIdHeader: string | undefined): Promise<{ status: 'OK' | 'BAD_SIGNATURE' | 'IGNORED'; duplicate?: boolean; result?: string }> {
+    // Wave 3 Part C: the Razorpay route goes through the same payment port as Cashfree, so the adapter the checkout chose (and its webhook secret) is the one that verifies, in test and in live.
+    // A gate without the gateway port (the older unit fakes) keeps the Razorpay-only path below.
+    if (typeof this.gate.webhookGatewayPort === 'function') {
+      const r = await this.handleGatewayWebhook('razorpay', rawBody, { 'x-razorpay-signature': signature, ...(eventIdHeader !== undefined ? { 'x-razorpay-event-id': eventIdHeader } : {}) });
+      return r.result === 'FAILED_ATTEMPT' ? { ...r, result: 'IGNORED' } : r;   // this route has always answered a failed attempt as IGNORED (the order stays payable either way)
+    }
     const port = await this.gate.webhookPort();
     if (!port) return { status: 'IGNORED' };   // payments are off or not set up: nothing to verify against, nothing to do
     const raw = rawBody ?? '';

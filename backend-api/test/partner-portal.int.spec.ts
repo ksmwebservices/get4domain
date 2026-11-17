@@ -16,7 +16,7 @@ describe('the partner portal on staging', () => {
   let env: Wave3Env; let prisma: PrismaClient; let fx: BillingFixture; let V: SeededTenant; let vToken: string; let sup: string; let sales: string; let tele: string;
   let p1: { partnerId: string; token: string }; let p2: { partnerId: string; token: string };
   beforeAll(async () => {
-    prisma = newPrisma(); fx = await setUpBilling(prisma); env = await bootWave3(prisma);
+    prisma = newPrisma(); fx = await setUpBilling(prisma); env = await bootWave3(prisma, { wallet: true, legacyVendorsRoute: true });
     V = await seedTenant(prisma, 'w3pv', RUN_ID); vToken = vendorToken(V.vendorId, V.email);
     sup = await seedStaff(prisma, 'w3psup', RUN_ID, 'SUPER_ADMIN'); sales = await seedStaff(prisma, 'w3pfe', RUN_ID, 'FIELD_EXECUTIVE'); tele = await seedStaff(prisma, 'w3ptc', RUN_ID, 'TELECALLER');
     p1 = await seedPartnerLogin(prisma, 'w3pa', RUN_ID); p2 = await seedPartnerLogin(prisma, 'w3pb', RUN_ID);
@@ -36,10 +36,21 @@ describe('the partner portal on staging', () => {
   });
 
   it('every route outside /v3/partner/* is refused to a partner, including routes with no role check', async () => {
-    for (const [m, u] of [['get', '/v3/me/billing/orders'], ['get', '/v3/me/wallet'], ['get', '/v3/admin/partners'], ['get', '/v3/admin/commission/ledger'], ['post', '/v3/admin/commission/payouts'], ['get', '/v3/public/pricing'], ['get', '/vendors']] as const) {
+    for (const [m, u] of [['get', '/v3/me/billing/orders'], ['get', '/v3/me/wallet'], ['get', '/v3/admin/partners'], ['get', '/v3/admin/commission/ledger'], ['post', '/v3/admin/commission/payouts'], ['get', '/vendors']] as const) {
       const r = await env.api(m, u, p1.token, m === 'post' ? {} : undefined); expect([m, u, r.status]).toEqual([m, u, 403]);
     }
     const adminList = await env.api('get', '/v3/admin/partners', p1.token); expect(adminList.body.code).toBe('PARTNER_SCOPE_REFUSED');
+    // The wallet routes are real only because the test app mounts them (wallet: true); a refused answer here proves the guard runs before the wallet's own checks.
+    const wallet = await env.api('get', '/v3/me/wallet', p1.token); expect(wallet.body.code).toBe('PARTNER_SCOPE_REFUSED');
+  });
+
+  it('a @Public route never reads the token, so a partner gets exactly what an anonymous caller gets (public data, no extra access)', async () => {
+    const anon = await env.api('get', '/v3/public/pricing'); const asPartner = await env.api('get', '/v3/public/pricing', p1.token);
+    expect(anon.status).toBe(200); expect(asPartner.status).toBe(anon.status); expect(asPartner.body.data).toEqual(anon.body.data);
+  });
+
+  it('a path that matches no route answers 404 to a partner: the router answers before any guard, and nothing is exposed', async () => {
+    const r = await env.api('get', '/v3/me/no-such-route-w3', p1.token); expect(r.status).toBe(404); expect(JSON.stringify(r.body)).not.toMatch(/PARTNER|partner/i);
   });
 
   it('a vendor, SALES and its labels, and staff cannot use the partner routes; SALES and its labels cannot read partners either', async () => {
