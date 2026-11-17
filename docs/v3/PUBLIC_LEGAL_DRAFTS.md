@@ -1,5 +1,7 @@
 # V3 Public Legal Pages: DRAFT FOR COUNSEL REVIEW
 
+**Note (dispatch D1): on the main host these five drafts are overlapped by the new policy set (`LEGAL_REVIEW.md`, `PUBLIC_SITE.md` section 14). This file describes the older directory-host drafts only.**
+
 **Status: draft. Not reviewed by counsel. Do not turn the public site on in production until counsel has approved or replaced every text listed here.**
 
 The five legal pages are plain-language drafts written from the product rules only. Each page shows a "draft for review" banner and is `noindex, nofollow` until they are approved.

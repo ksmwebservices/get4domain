@@ -37,8 +37,8 @@ Other findings:
 | L1 | DONE | 1f495f4 | legal framework, firm facts module, `[doc]` policy route, footer, sitemap, tests, smoke |
 | L2 | DONE | d7752e4 | terms, privacy, refund, payments, delivery, acceptable use, cookies, disclaimer; copy-rule and fact tests |
 | L3 | DONE | 703263f | About, Contact (firm facts, grievance only when set, Organization JSON-LD from facts), partner terms, directory and listing terms |
-| L4 | DONE | (see git log) | footer to every policy, register and pricing accept notice with links to /terms and /privacy-policy, a11y and structured-data smoke over all new pages, three server modes plus a contact-values server |
-| L5 | TODO | | |
+| L4 | DONE | d43e94b | footer to every policy, register and pricing accept notice with links to /terms and /privacy-policy, a11y and structured-data smoke over all new pages, three server modes plus a contact-values server |
+| L5 | DONE | (L5 commit) | LEGAL_REVIEW.md, PUBLIC_SITE.md section 14, PUBLIC_GAPS.md G38 to G41, DISPATCH_REPORT_D1.md |
 
 ## ASSUMPTIONS
 
@@ -51,4 +51,12 @@ Other findings:
 
 ## QUESTIONS FOR THE OWNER
 
-(Filled in during L2 to L5; the full list is in `docs/v3/LEGAL_REVIEW.md`.)
+The full list, page by page, is in `docs/v3/LEGAL_REVIEW.md`. Short form:
+
+1. Lawyer review of every text before the flag goes on (the text is a plain-language draft).
+2. Refund windows and amounts, cancellation notice, trial length, end-of-term behaviour, wallet scope and expiry, retention, response and grievance timelines.
+3. Partner programme numbers: slabs, payout day, minimum payout, TDS rate, commission reversal.
+4. CA: GST invoice wording with the GSTIN pending, GST on wallet top-ups and on commission, TDS wording.
+5. Support email, support phone, grievance officer, CIN: set the environment names listed in the report.
+6. Replace the live /terms, /privacy-policy, /refund-policy, /about, /contact on the main host at go-live? Retire the older /legal/* drafts?
+7. Set the effective date on the day the flag goes on.
