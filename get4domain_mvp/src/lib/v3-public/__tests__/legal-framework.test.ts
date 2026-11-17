@@ -7,7 +7,7 @@ import { legalDocByPath, LEGAL_DOC_PATHS, sectionIdsOk } from '../legal-docs';
 import { formatEffectiveDate, LEGAL_EFFECTIVE_DATE, LEGAL_VERSION } from '../legal-meta';
 import { LEGAL_PAGE_PATHS } from '../legal-paths';
 import { LEGAL_DOCS, LEGAL_UI } from '../legal-strings';
-import { breadcrumbLd } from '../site-jsonld';
+import { breadcrumbLd, firmOrganizationLd } from '../site-jsonld';
 import { siteMetadata } from '../site-metadata';
 import { serializeJsonLd } from '../metadata';
 import { isV3PublicEnabled } from '../flag';
@@ -141,3 +141,27 @@ describe('firm facts: an empty value prints nothing', () => {
     } finally { globalThis.fetch = real; }
   });
 });
+
+describe('Organization JSON-LD is written from the firm facts only', () => {
+  test('with nothing set it has the name, the legal name and the decided location, and no tax id, email or phone', () => {
+    const saved = process.env.MAIN_HOST;
+    process.env.MAIN_HOST = HOSTS.MAIN_HOST;
+    try {
+      const f = fallbackFirm(readContactConfig({}));
+      const ld = JSON.parse(serializeJsonLd(firmOrganizationLd(f))) as Record<string, unknown>;
+      assert.equal(ld['@type'], 'Organization');
+      assert.equal(ld.legalName, 'KSM QUANTUM TECHNOLOGIES');
+      assert.equal(ld.url, 'https://main.example.invalid/');
+      assert.deepEqual(ld.address, { '@type': 'PostalAddress', streetAddress: f.address, addressLocality: 'Chennai', addressRegion: 'Tamil Nadu', addressCountry: 'IN' });
+      for (const k of ['taxID', 'email', 'telephone', 'aggregateRating', 'review', 'logo', 'sameAs', 'foundingDate']) assert.ok(!(k in ld), k);
+    } finally { if (saved === undefined) delete process.env.MAIN_HOST; else process.env.MAIN_HOST = saved; }
+  });
+  test('values that are set appear, and only those', () => {
+    const f = { ...fallbackFirm(readContactConfig({ V3_PUBLIC_SUPPORT_EMAIL: 'help@example.invalid' })), gstin: '33ABCDE1234F1Z5' };
+    const ld = firmOrganizationLd(f);
+    assert.equal(ld.taxID, '33ABCDE1234F1Z5');
+    assert.equal(ld.email, 'help@example.invalid');
+    assert.ok(!('telephone' in ld));
+  });
+});
+

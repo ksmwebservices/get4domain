@@ -12,6 +12,7 @@ const OFF = 3061;
 const ON = 3062;
 const HOST = 3063;
 const REG = 3064;
+const FULL = 3065;
 
 let failures = 0;
 let checks = 0;
@@ -476,6 +477,47 @@ async function legalNoHosts() {
   }
 }
 
+// About and Contact (dispatch D1, L3): firm facts only, an empty value prints nothing, Organization JSON-LD from the facts.
+const orgOf = (html) => ldBlocks(html).map((b) => JSON.parse(b)).find((x) => x['@type'] === 'Organization');
+async function companyPages() {
+  const H = (p) => getHost(HOST, M, p);
+  const F = (p) => getHost(FULL, M, p);
+  for (const [p, h1] of [['/about', 'About Get4Domain'], ['/contact', 'Contact']]) {
+    const r = await H(p);
+    ok(r.status === 200 && h1s(r.text) === 1 && new RegExp(`<h1[^>]*>${h1}</h1>`).test(r.text), `company: ${p} answers 200 with one h1 "${h1}"`);
+    ok(titleOf(r.text).length > 0 && titleOf(r.text).length <= 60 && descOf(r.text).length >= 40 && descOf(r.text).length <= 170, `company: ${p} title at most 60 and a description of sensible length`);
+    ok(new RegExp(`<link rel="canonical" href="https://${M}${p}"`).test(r.text) && /name="robots" content="index, follow"/.test(r.text), `company: ${p} canonical on the main host, indexable`);
+    const types = ldBlocks(r.text).map((b) => JSON.parse(b)['@type']);
+    ok(types.includes('BreadcrumbList') && types.filter((t) => t === 'Organization').length === 1, `company: ${p} has BreadcrumbList and one Organization JSON-LD`);
+    const org = orgOf(r.text);
+    ok(org && org.legalName === 'KSM QUANTUM TECHNOLOGIES' && org.address?.addressCountry === 'IN' && org.address?.addressRegion === 'Tamil Nadu' && org.address?.addressLocality === 'Chennai', `company: ${p} Organization is written from the firm facts`);
+    ok(org && !('taxID' in org) && !('email' in org) && !('telephone' in org) && !/aggregateRating|review|sameAs|logo|foundingDate/.test(JSON.stringify(org)), `company: ${p} Organization carries no value that is not set`);
+    const t = visible(r.text);
+    for (const issue of legalTextProblems(t)) ok(false, `company: ${p} has ${issue}`);
+    ok(/KSM QUANTUM TECHNOLOGIES/.test(t) && /Tidel Park/.test(t) && /Tamil Nadu/.test(t), `company: ${p} names the firm and the Chennai office`);
+    ok(!/mailto:|tel:|wa\.me|<form|<input|<button/i.test(r.text), `company: ${p} has no contact link, form or button while no contact value is set`);
+    ok(!/GSTIN|Support email|Support phone|CIN/.test(t), `company: ${p} prints nothing for a value that is not set`);
+  }
+  const contact = visible((await H('/contact')).text);
+  ok(!/Grievance officer/.test(contact) && /Registered office/.test(contact) && /write to us at our registered office/.test(contact), 'company: contact has no grievance section without grievance data, and points to the registered office');
+  ok(/Payments and refunds/.test(contact) && /Data requests, listing corrections and removals/.test(contact), 'company: contact covers payments and data requests');
+  // the same pages with every contact value set
+  const c = await F('/contact');
+  ok(c.status === 200 && /href="mailto:help@example\.invalid"/.test(c.text) && /href="tel:\+914400000000"/.test(c.text), 'company (values set): contact prints the support email and phone as links');
+  ok(/Grievance officer/.test(visible(c.text)) && /A Grievance Person/.test(visible(c.text)) && /href="mailto:grievance@example\.invalid"/.test(c.text), 'company (values set): the grievance officer section appears with the data');
+  ok(/U00000TN0000PTC000000/.test(visible(c.text)) && /For anything else, use the support details below/.test(visible(c.text)), 'company (values set): the CIN is printed and the help text points to the details');
+  const org = orgOf(c.text);
+  ok(org && org.email === 'help@example.invalid' && org.telephone === '+91 44 0000 0000' && !('taxID' in org), 'company (values set): Organization carries the email and phone that are set, and no tax id');
+  const terms = await F('/terms');
+  ok(/href="mailto:help@example\.invalid"/.test(terms.text) && /CIN/.test(visible(terms.text)), 'company (values set): a policy page prints the support email and the CIN in its company details');
+  ok(!/Support email/.test(visible((await H('/terms')).text)), 'company: a policy page prints no support email row while none is set');
+  // flag off with host names set: the live /about and /contact are not the new pages
+  for (const p of ['/about', '/contact']) {
+    const r = await getHost(OFF, M, p);
+    ok(r.status === 200 && !/Registered office|Company details|software-as-a-service platform for small businesses/.test(visible(r.text)), `company flag off: the live ${p} is unchanged`);
+  }
+}
+
 async function postJson(host, p, body) {
   const r = await getHostBody(HOST, host, p, JSON.stringify(body));
   return JSON.parse(r.text);
@@ -705,10 +747,13 @@ const servers = [
   // the V2 API address is refused at once, so a V2 fallthrough answers its own 404 without any network
   start(HOST, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
   // the same, with the regulated packs published
+  // the same, with every contact value set
+  start(FULL, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV,
+    V3_PUBLIC_SUPPORT_EMAIL: 'help@example.invalid', V3_PUBLIC_SUPPORT_PHONE: '+91 44 0000 0000', V3_PUBLIC_GRIEVANCE_OFFICER_NAME: 'A Grievance Person', V3_PUBLIC_GRIEVANCE_OFFICER_EMAIL: 'grievance@example.invalid', V3_PUBLIC_FIRM_CIN: 'U00000TN0000PTC000000' }),
   start(REG, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', V3_REGULATED_PACKS_PUBLIC: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
 ];
 try {
-  await Promise.all([waitFor(OFF), waitFor(ON), waitFor(HOST), waitFor(REG)]);
+  await Promise.all([waitFor(OFF), waitFor(ON), waitFor(HOST), waitFor(REG), waitFor(FULL)]);
   await flagOff();
   await flagOn();
   await hostLayer();
@@ -721,6 +766,7 @@ try {
   await legalPages();
   await legalFlagOff();
   await legalNoHosts();
+  await companyPages();
   await matcherRegression();
   noConsole();
 } finally {

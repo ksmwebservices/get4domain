@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
+import { ABOUT_STRINGS, CONTACT_STRINGS } from '../company-strings';
 import { LEGAL_DOCS, LEGAL_UI } from '../legal-strings';
 
 /** Every string of the legal and company pages, with where it is. */
@@ -11,6 +12,8 @@ function walk(v: unknown, at: string, out: Array<{ at: string; text: string }>):
 const all: Array<{ at: string; text: string }> = [];
 for (const d of LEGAL_DOCS) walk(d, d.path, all);
 walk(LEGAL_UI, 'LEGAL_UI', all);
+walk(ABOUT_STRINGS, 'about', all);
+walk(CONTACT_STRINGS, 'contact', all);
 
 const policyText = (path: string): string => {
   const d = LEGAL_DOCS.find((x) => x.path === path)!;
@@ -88,3 +91,25 @@ describe('the decided business facts are in the texts', () => {
     for (const s of all) assert.doesNotMatch(s.text.replace(allowed, ''), /\b(?:Act|Rules)\b/, `${s.at}: ${s.text.slice(0, 80)}`);
   });
 });
+
+describe('the company and partner pages', () => {
+  test('partner terms: independent partners, slabs set by the admin, counted once on the first successful paid plan payment, monthly payouts, TDS, no discounts, no contact data, termination', () => {
+    const t = policyText('/partner-terms');
+    for (const re of [/A partner is independent/, /not an employee, agent or representative/, /administrator of Get4Domain sets the slabs/, /once, on its first successful paid plan payment/, /paid out monthly/, /Tax is deducted at source as the law requires/, /No discounts, coupons or offers exist/, /does not show a partner the contact details/, /Ending the arrangement/, /courts at Chennai, Tamil Nadu/]) assert.match(t, re);
+  });
+  test('directory and listing terms: no contact data, no enquiries passed on, claim code to the contact held, no ranking, removal through the contact held', () => {
+    const t = policyText('/directory-listing-terms');
+    for (const re of [/does not show a phone number, an email address or a messaging link/, /does not pass on enquiries/, /We send a code to that contact/, /never send a code to an address typed into the page/, /does not rate or review businesses/, /confirm the request through the contact we hold/, /Free site is informational/, /courts at Chennai, Tamil Nadu/]) assert.match(t, re);
+  });
+  test('about: says what Get4Domain is and who operates it, and invents no history, number or team', () => {
+    const t = JSON.stringify(ABOUT_STRINGS);
+    assert.match(t, /software-as-a-service platform for small businesses/);
+    assert.match(t, /operated by KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai, Tamil Nadu, India/);
+    assert.doesNotMatch(t, /(founded|since|years|team|clients|customers|award|trusted by|established)/i);
+  });
+  test('contact: help text exists for both the filled and the empty support details', () => {
+    assert.ok(CONTACT_STRINGS.otherHelpWithDetails.length > 10 && CONTACT_STRINGS.otherHelpNoDetails.length > 10);
+    assert.match(CONTACT_STRINGS.grievanceBody, /grievance officer/);
+  });
+});
+

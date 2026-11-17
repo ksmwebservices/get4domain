@@ -7,6 +7,25 @@ export function organizationLd(): Record<string, unknown> {
   return { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.brand, ...(origin ? { url: `${origin}/` } : {}) };
 }
 
+/**
+ * The Organization block of the About and Contact pages, written only from the firm facts: legal name, registered office, and the GSTIN, email or phone only when they are set.
+ * The country, state and city are the decided location (Chennai, Tamil Nadu, India). Nothing else is added: no logo, no founding date, no sameAs, no rating.
+ */
+export function firmOrganizationLd(f: { legalName: string; address: string; gstin: string; supportEmail: string; supportPhone: string }): Record<string, unknown> {
+  const origin = mainOrigin();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE.brand,
+    legalName: f.legalName,
+    ...(origin ? { url: `${origin}/` } : {}),
+    address: { '@type': 'PostalAddress', streetAddress: f.address, addressLocality: 'Chennai', addressRegion: 'Tamil Nadu', addressCountry: 'IN' },
+    ...(f.gstin ? { taxID: f.gstin } : {}),
+    ...(f.supportEmail ? { email: f.supportEmail } : {}),
+    ...(f.supportPhone ? { telephone: f.supportPhone } : {}),
+  };
+}
+
 export function webSiteLd(): Record<string, unknown> {
   const origin = mainOrigin();
   return { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.brand, ...(origin ? { url: `${origin}/` } : {}) };
