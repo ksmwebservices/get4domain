@@ -12,3 +12,6 @@ backend-api/.env.live
 
 # the staging schema dump used to baseline the live database (job M): never committed
 backend-api/live-baseline/
+
+# filled deploy env files of the v3live container (E1b): never committed; only the *.example templates are
+deploy/v3live/env/*.env

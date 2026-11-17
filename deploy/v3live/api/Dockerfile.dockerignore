@@ -1,0 +1,14 @@
+# Allow-list for the repository-root build context: only backend-api and themes go in. Later lines win, so the exclusions below also apply inside them.
+*
+!backend-api
+!themes
+**/node_modules
+**/dist
+**/.git
+**/.env
+**/.env.*
+**/*.log
+backend-api/test
+backend-api/uploads
+backend-api/private-uploads
+backend-api/live-baseline
