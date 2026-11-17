@@ -206,3 +206,13 @@ No new route is needed; the price book already does it, **SUPER_ADMIN only** at 
 ## A4-3. `POST /v3/admin/tax-rates` is never back-dated
 
 SUPER_ADMIN only, as before. Body unchanged (`name`, `ratePercent`, optional `appliesTo`, `active`, `validFrom`). New rule, the same one the GST rate setting uses: **`validFrom` on an earlier India-time day than today is refused, 409 `TAX_RATE_IN_FORCE`** (the same code the generic PUT uses for a start in the past; nothing is created and nothing is audited). A start later today or on a later day is kept exactly as sent. A start earlier today, or no `validFrom`, means "from now" (the start is the moment of creation, never an earlier time). Existing rows are not changed. To change the GST rate, `PUT /v3/admin/gst-rate` is still the route that takes a plain day.
+
+## A4-4. The public vendor-site answer is a finished page (theme rendering, backend side)
+
+`GET /v3/public/site/by-host?host&path&lang` (public, internal use by the site app and the host mapper) answers **the finished HTML page** of the published site for that host, already drawn from the vendor's chosen theme at build time, with `ETag` (the page's sha256), `Content-Language`, `Cache-Control`, and `X-Robots-Tag` / `X-Canonical-Host` where they apply. It is not a data model, there is no theme to apply on the way out, and **no theme key is needed to draw it**: the site app and the relay pass the stored page through unchanged (status, headers and body). A theme switch makes a new publication; the next request for that host returns the new pages (new `ETag`), and the previous publication stays available for rollback.
+
+Two honest notes for whoever renders it:
+1. The page is served byte for byte, except one rule that never needs a theme key: when the vendor's plan can no longer carry calls to action (lapsed or suspended), the same stored page is served as a listing (calls to action removed, with a "listed on" line) and its `ETag` changes with it; when the plan is active again the stored page is served untouched.
+2. Every miss, a bad host, a path that does not exist, or a preview-only site is the same plain `404 Not found`; a takedown is `451`. Nothing says which hosts exist.
+
+**No `themeKey` was added to this answer.** The answer is HTML plus headers, not a JSON site model, so a field would mean a new response header and a change to the type the host mapper reads, for a value no screen needs (the chosen theme is already `themeId` in `GET /v3/me/site` and `GET /v3/admin/vendors/:id/site`, and `selectedThemeId` in `GET /v3/me/site/themes`). Documented only.

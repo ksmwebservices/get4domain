@@ -4,10 +4,10 @@
 |---|---|---|---|
 | Q0 | DONE | (with Q1) | Findings below. No code. |
 | Q1 | DONE | see report | Detail route was already correct (probe artifact); pinned with real-stack tests; businessName added to list rows and detail. |
-| Q2 | TODO | | Theme contract. |
+| Q2 | DONE | c252a1e | Theme routes, shapes, error codes and the THEME_SWITCH price path (existing SUPER_ADMIN price-book routes; no new route) in the contract, A4-2. |
 | Q3 | DONE | Q3-Q4 commit | POST /v3/admin/tax-rates refuses a start on an earlier India-time day (409 TAX_RATE_IN_FORCE); today or none = from now. |
 | Q4 | DONE | Q3-Q4 commit | test-tenant-cleanup.js (and --count) remove tax rates whose name starts V3TEST; matching rule unit-tested; NOT run. |
-| Q5 | TODO | | Vendor-site model: document, themeKey if free. |
+| Q5 | DONE | Q5 commit | Documented in the contract (A4-4): the public answer is a finished page, no theme key needed; themeKey NOT added (answer is HTML + headers, no model). |
 | Q6 | TODO | | Final checks and report. |
 
 ## Q0 findings
