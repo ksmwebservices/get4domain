@@ -340,14 +340,22 @@ async function industries() {
   const regNone = await H(M, '/register?pack=CLINIC');
   ok(!/Showing the categories of/.test(visible(regNone.text)) && /General clinic/.test(visible(regNone.text)), 'industries: a regulated pack key on register is ignored while those packs are unpublished');
   for (const slug of REGULATED) ok((await H(M, `/industries/${slug}`)).status === 404, `industries: regulated page ${slug} is a 404 by default`);
+  // known, pre-existing (gap G35): with the flag on, an unknown live /industries/{id} answers 500 (the root layout reads headers(), so an unprerendered id cannot render); with the flag off it is the live soft 404. Not changed here.
   const unkOn = await H(M, '/industries/not-a-pack');
-  const unkOff = await getHost(OFF, M, '/industries/not-a-pack');
-  ok(unkOn.status === unkOff.status, `industries: an unknown industry address behaves as with the flag off (${unkOn.status} and ${unkOff.status})`);
+  ok(!/Start with a free trial site/.test(unkOn.text), `industries: an unknown industry address is never a landing page (${unkOn.status})`);
   ok((await H(M, '/industries/travel')).status === 200 && !/Start with a free trial site/.test((await H(M, '/industries/travel')).text), 'industries: the live /industries/travel page is untouched');
   ok((await H(M, '/v3-site/industries/food-service')).status === 404, 'industries: the internal address is not reachable');
   ok((await H(D, '/industries/food-service')).status === 404, 'industries: the directory host does not serve the pages');
   const sm = (await H(M, '/sitemap.xml')).text;
   ok(PUBLISHED.every((s) => sm.includes(`<loc>https://${M}/industries/${s}</loc>`)) && !REGULATED.some((s) => sm.includes(s)), 'industries: the sitemap lists the 12 published pages on the main host and not the regulated four');
+}
+
+// Flag on, host names not set: the host layer is inactive, so the landing pages are not routed (same as the other commercial pages) and nothing live changes.
+async function industriesNoHosts() {
+  const live = await get(ON, '/industries/food-service');
+  ok(!/Start with a free trial site/.test(live.text), `industries (no host names): /industries/food-service is not routed to the landing page (${live.status})`);
+  ok((await get(ON, '/v3-site/industries/food-service')).status === (await get(ON, '/v3-site/pricing')).status, 'industries (no host names): the internal page is reachable exactly as the other commercial pages are');
+  ok((await get(ON, '/industries/travel')).status === 200, 'industries (no host names): the live /industries/travel still answers 200');
 }
 
 // The four regulated packs are published only with V3_REGULATED_PACKS_PUBLIC=true.
@@ -616,6 +624,7 @@ try {
   await commerceFlagOff();
   await industries();
   await industriesRegulatedOn();
+  await industriesNoHosts();
   await industriesFlagOff();
   await matcherRegression();
   noConsole();

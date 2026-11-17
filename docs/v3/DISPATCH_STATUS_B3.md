@@ -4,8 +4,8 @@
 |---|---|---|---|
 | R0 Investigate | DONE | see R1 | findings below |
 | R1 Reconcile with Wave 3 contract | DONE | 095f801 | pricing, subdomain check, referral, register reconciled; 219 unit tests, 795 smoke checks pass |
-| R2 Industry landing pages | DONE | R2COMMIT | 12 pages at /industries/{slug}, regulated 4 behind V3_REGULATED_PACKS_PUBLIC; 239 unit tests, 1186 smoke checks (four servers) |
-| R3 Quality | TODO | | |
+| R2 Industry landing pages | DONE | 114cf78 | 12 pages at /industries/{slug}, regulated 4 behind V3_REGULATED_PACKS_PUBLIC; 239 unit tests, 1186 smoke checks (four servers) |
+| R3 Quality | DONE | R3COMMIT | structured-data unit tests, no-host-names smoke mode, 241 unit tests, 1189 smoke checks; no ESLint config in the app (G19), lint not run; found G35 |
 | R4 Docs and report | TODO | | |
 
 ## R0 FINDINGS: assumed shapes vs API_CONTRACT_WAVE3.md
@@ -31,7 +31,7 @@ Docs live at the repo root `docs/v3` (not under get4domain_mvp). Wave 4 contract
 - `src/app/sitemap.ts` now has `export const dynamic = 'force-dynamic'` so the flag (a runtime value) can add the landing pages; with the flag off the XML is byte for byte the same (smoke compares it). This is the only edit to a live file other than the sitemap import lines.
 - An unpublished regulated pack is a real 404 from the middleware decision (a page cannot send one, gap G9). With the flag off the address is the live page's own answer, as for any unknown industry id.
 - `/register?pack=KEY` limits the category list to the pack (with a "Show all categories" button). Only a published pack key counts.
-- One smoke check ("unknown industry address behaves as with the flag off") failed once and passed on the rerun with no code change (first-hit timing on the host server); the check now prints both statuses so a repeat is explained.
+- The smoke failure seen once on "unknown industry address" was real, not timing: with the flag on, an unknown live `/industries/{id}` answers 500 (root layout reads `headers()` only when the flag is on, so an id that was not prerendered cannot render: DYNAMIC_SERVER_USAGE). With the flag off it is the live soft 404. Neither file is changed by this dispatch (git diff empty), so it is pre-existing: recorded as gap G35, not fixed (live files). The smoke now asserts only that such an address is never a landing page.
 
 ## QUESTIONS FOR THE OWNER
 - none yet

@@ -6,6 +6,7 @@ import { decideHost } from '../host-routing';
 import { readHostConfig } from '../hostnames';
 import { ALL_INDUSTRY_SLUGS, industryBySlug, industryDescription, industryTitle, PACK_SLUGS, PACK_SUITS, publishedIndustries, REGULATED_PACKS, regulatedPacksPublic } from '../industries';
 import { PACKS } from '../packs';
+import { breadcrumbLd, faqLd } from '../site-jsonld';
 import { SITE } from '../site-strings';
 
 const OFF = {};
@@ -104,4 +105,30 @@ describe('host routing of the landing pages', () => {
     for (const p of ['/industries/travel', '/industries/retail', '/industries/whatever', '/industries/food-service/extra']) assert.deepEqual(decide(p), { action: 'pass', host: 'main' }, p);
   });
   test('with the flag off nothing is decided at all', () => assert.equal(decide('/industries/food-service', {}), null));
+});
+
+describe('structured data of the landing pages', () => {
+  test('FAQPage lists every question once with a text answer; the data serialises and parses', () => {
+    for (const p of publishedIndustries(ON)) {
+      const faq = SITE.industryPage.faq.map((f) => ({ q: f.q.replace('{name}', p.pack.name), a: f.a.replace('{gives}', p.pack.gives.join(', ')) }));
+      const ld = JSON.parse(JSON.stringify(faqLd(faq))) as { '@type': string; mainEntity: Array<{ name: string; acceptedAnswer: { text: string } }> };
+      assert.equal(ld['@type'], 'FAQPage');
+      assert.equal(new Set(ld.mainEntity.map((m) => m.name)).size, faq.length);
+      for (const m of ld.mainEntity) assert.ok(m.name && m.acceptedAnswer.text && !/\{(name|gives)\}/.test(m.name + m.acceptedAnswer.text));
+    }
+  });
+  test('BreadcrumbList is Home, Industries, the pack, in order, on the main host; none without a main host', () => {
+    const prev = process.env.MAIN_HOST;
+    try {
+      process.env.MAIN_HOST = 'main.example.invalid';
+      const p = publishedIndustries(OFF)[0];
+      const ld = JSON.parse(JSON.stringify(breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Industries', path: '/industries' }, { name: p.pack.name, path: `/industries/${p.slug}` }]))) as { itemListElement: Array<{ position: number; item: string }> };
+      assert.deepEqual(ld.itemListElement.map((i) => i.position), [1, 2, 3]);
+      assert.equal(ld.itemListElement[2].item, `https://main.example.invalid/industries/${p.slug}`);
+      delete process.env.MAIN_HOST;
+      assert.equal(breadcrumbLd([{ name: 'Home', path: '/' }]), null);
+    } finally {
+      if (prev === undefined) delete process.env.MAIN_HOST; else process.env.MAIN_HOST = prev;
+    }
+  });
 });
