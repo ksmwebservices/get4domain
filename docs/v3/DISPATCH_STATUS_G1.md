@@ -1,4 +1,3 @@
-# DISPATCH STATUS G1 (backend lane)
 
 Branch `v3-build-be`. Worktree `C:\Get4Domain\get4domain-w2`. Never pushed. Source dispatch: `C:\Get4Domain\get4domain-site\DISPATCH_G1_BUILD_BACKEND.md`.
 
@@ -24,14 +23,14 @@ Covered by an owner priority (P1 to P7) or left out (and why). Repo BE only; eve
 
 | Row | State | Commit | One line |
 |---|---|---|---|
-| B0 | DONE | (this file) | plan written |
-| B1 | TODO | | |
-| B2 | TODO | | |
-| B3 | TODO | | |
-| B4 | TODO | | |
-| B5 | TODO | | |
-| B6 | TODO | | |
-| B7 | TODO | | |
+| B0 | DONE | (first doc commit) | plan written |
+| B1 | DONE | b7d3a29 | enquiry form route, inbox copy, alert, held rule; staging int 2/2, cleanup 0 |
+| B2 | DONE | cb8116c | price book overview, plan price approve, theme switch fee on public pricing |
+| B3 | PARTLY | c059801 | customer import, public packs, pack demo content; 10 screens need schema (B3_SCREEN_GAPS.md) |
+| B4 | DONE | 37904f4 | claim status route and whole-path test |
+| B5 | PARTLY | ee0ba1f | order read, terms flag on registration; staff screens and the gateway run are not backend |
+| B6 | PARTLY | 6496d52 | catalogue fixes, previews, gallery script; new theme designs not done |
+| B7 | DONE | (docs commit) | build, test:ci 295 suites / 5675 tests, int alone, cleanup 0, baseline, SEE_IT, report |
 
 ## ASSUMPTIONS
 
@@ -40,4 +39,4 @@ Covered by an owner priority (P1 to P7) or left out (and why). Repo BE only; eve
 
 ## QUESTIONS FOR THE OWNER
 
-(none yet)
+See DISPATCH_REPORT_G1.md.
