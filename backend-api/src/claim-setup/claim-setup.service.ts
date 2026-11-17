@@ -17,6 +17,17 @@ export interface SetupResult { vendorId: string; loginEmail: string; passwordSet
 /** G13: `redirectTo` is where the vendor app sends the owner after a successful approval (the public site's go-live page), or null when the public address is not set. */
 export interface ApproveResult { state: 'LIVE'; alreadyLive: boolean; publicationId: string; version: number; redirectTo: string | null }
 
+/**
+ * Where the claimed business stands, for the vendor app to draw the go-live step after sign-in (Dispatch G1 B4; audit journey 8: the approval existed but nothing told the app it was waiting).
+ * NO_LISTING: this account is not a directory business. NOT_CLAIMED: it is one but the claim has not completed (the state is the listing's own). AWAITING_APPROVAL: claimed, not live; `canApprove` is false while
+ * the current Terms and policies are not accepted (`termsOutstanding`). LIVE: published, with the publication to show.
+ */
+export type ClaimStatus =
+  | { state: 'NO_LISTING' }
+  | { state: 'NOT_CLAIMED'; listingState: string }
+  | { state: 'AWAITING_APPROVAL'; canApprove: boolean; termsOutstanding: boolean }
+  | { state: 'LIVE'; publicationId: string; version: number; redirectTo: string | null };
+
 /** The public site's base address (Directory Settings, Provisioning). Provided by the module; a build without it answers no redirect. */
 export const CLAIM_PUBLIC_URL = Symbol('CLAIM_PUBLIC_URL');
 export type ClaimPublicUrl = () => Promise<string>;
@@ -66,6 +77,17 @@ export class ClaimSetupService {
     await this.accounts.setCredentials(vendorId, { passwordHash: hash, email: email === vendor.email ? null : email, at: this.clock() });
     await this.audit.record({ type: 'SYSTEM', id: null, ip: ctx.ip }, 'claim.account_setup', 'vendor', vendorId, null, { emailChanged: email !== vendor.email });
     return { vendorId, loginEmail: email, passwordSet: true, termsAccepted: true, next: 'LOGIN' };
+  }
+
+  /** Read only. Never builds or publishes anything. */
+  async status(vendorId: string): Promise<ClaimStatus> {
+    const biz = await this.repo.getBusinessByVendor(vendorId);
+    if (!biz) return { state: 'NO_LISTING' };
+    if (biz.status !== 'CLAIMED') return { state: 'NOT_CLAIMED', listingState: String(biz.status) };
+    const live = await this.site.current(vendorId);
+    if (live) return { state: 'LIVE', publicationId: live.publicationId, version: live.version, redirectTo: await this.redirectTarget() };
+    const termsOutstanding = this.terms ? await this.terms.acceptanceRequired(vendorId) : false;
+    return { state: 'AWAITING_APPROVAL', canApprove: !termsOutstanding, termsOutstanding };
   }
 
   /** The owner approves the site: it is built and published. Repeating it when the site is already live changes nothing. */

@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
@@ -9,7 +9,7 @@ import { VendorOwnerGuard } from '../common/guards/vendor-owner.guard';
 import { Tenant, UseTenant } from '../common/tenant/tenant.guard';
 import { TenantContext } from '../common/tenant/tenant.types';
 import { RATE } from '../common/throttling';
-import { ApproveResult, ClaimSetupService, SetupResult } from './claim-setup.service';
+import { ApproveResult, ClaimSetupService, ClaimStatus, SetupResult } from './claim-setup.service';
 
 export class ClaimSetupDto {
   @IsString() @MinLength(20) @MaxLength(200) setupToken!: string;
@@ -40,6 +40,10 @@ export class ClaimSetupController {
 @Controller('v3/me/claim')
 export class MeClaimController {
   constructor(private readonly setup: ClaimSetupService) {}
+
+  @Get('status')
+  @ApiOperation({ summary: 'Where my claimed business stands: not a listing, not claimed, awaiting my approval (and whether I may approve now), or live. Read only.' })
+  status(@Tenant() t: TenantContext): Promise<ClaimStatus> { return this.setup.status(t.vendorId); }
 
   @Post('approve') @HttpCode(200)
   @ApiOperation({ summary: 'Approve my claimed business: the site goes live on my subdomain (needs the current Terms and policies accepted; repeating it changes nothing)' })

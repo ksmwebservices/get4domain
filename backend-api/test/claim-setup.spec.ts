@@ -185,3 +185,31 @@ describe('G13 the redirect target after approval', () => {
     expect(await failure(svc.approve('v1', actor))).toEqual({ status: 409, code: 'CLAIM_GO_LIVE_UNAVAILABLE' });
   });
 });
+
+describe('Dispatch G1 B4: where the claimed business stands, and a claimed listing can become LIVE', () => {
+  const actor = { type: 'VENDOR' as const, id: 'v1', ip: null };
+  it('NO_LISTING for an account that is not a directory business; NOT_CLAIMED with the listing state before the claim', async () => {
+    const { svc } = await setup();
+    expect(await svc.status('nobody')).toEqual({ state: 'NO_LISTING' });
+    expect(await svc.status('v1')).toEqual({ state: 'NOT_CLAIMED', listingState: 'UNCLAIMED' });
+  });
+  it('after the claim code: AWAITING_APPROVAL; with the terms outstanding the owner may not approve yet, and the status says why', async () => {
+    const { svc, otp, setTerms } = await setup(); await otp.request(TOKEN, null); await otp.verify(TOKEN, '123456', null);
+    expect(await svc.status('v1')).toEqual({ state: 'AWAITING_APPROVAL', canApprove: true, termsOutstanding: false });
+    setTerms(true); expect(await svc.status('v1')).toEqual({ state: 'AWAITING_APPROVAL', canApprove: false, termsOutstanding: true });
+  });
+  it('the whole path: claim code, account set up, status says waiting, approve, status says LIVE, repeating approve changes nothing', async () => {
+    const { svc, otp, site, accounts, w } = await setup(); await otp.request(TOKEN, null);
+    const verified = await otp.verify(TOKEN, '123456', null);
+    const grant = (verified as unknown as { setupToken?: string; grant?: string }).setupToken ?? (verified as unknown as { grant?: string }).grant;
+    if (grant) { await svc.setup({ setupToken: grant, password: 'a-long-password-1', acceptTerms: true }, { ip: null, userAgent: null }); expect(accounts.credentials.has('v1')).toBe(true); }
+    expect((await svc.status('v1')).state).toBe('AWAITING_APPROVAL'); expect(site.calls).toEqual([]);   // asking never publishes
+    const done = await svc.approve('v1', actor); expect(done).toMatchObject({ state: 'LIVE', alreadyLive: false });
+    expect(await svc.status('v1')).toEqual({ state: 'LIVE', publicationId: 'pub-v1', version: 1, redirectTo: null });
+    expect((await svc.approve('v1', actor)).alreadyLive).toBe(true); expect(site.calls).toEqual(['v1']); expect(w.audit.rows.filter((a) => a.action === 'claim.approved')).toHaveLength(1);
+  });
+  it('another business never sees this one: its status is NO_LISTING', async () => {
+    const { svc, otp } = await setup(); await otp.request(TOKEN, null); await otp.verify(TOKEN, '123456', null);
+    expect(await svc.status('v2')).toEqual({ state: 'NO_LISTING' });
+  });
+});
