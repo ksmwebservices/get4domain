@@ -5,7 +5,9 @@ import { FEATURES, resolveLegacyRoute } from '@/lib/nav.generated';
 import { looksLikeBusinessId } from '@/lib/v3-public/click';
 import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
 import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
+import { DEV_VENDOR_HEADER, devVendorHost, devVendorViewEnabled, parseDevVendorPath } from '@/lib/v3-public/dev-vendor';
 import { decideHost } from '@/lib/v3-public/host-routing';
+import { baseDomain, readHostConfig } from '@/lib/v3-public/hostnames';
 import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER, V3_VENDOR_SITE_ROOT } from '@/lib/v3-public/routes';
 import { isUnknownLiveIndustryPath, LIVE_INDUSTRY_IDS } from '@/lib/v3-public/industries';
 import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
@@ -114,7 +116,26 @@ function hostLayer(req: NextRequest): { done: NextResponse } | { host: string } 
   return { host: d.host };
 }
 
+/**
+ * Developer machines only (V3_PUBLIC_ENABLED and V3_PUBLIC_DEV_VENDOR_VIEW both exactly true, never in a production build; see dev-vendor.ts): /_vendor/{subdomain}/{path} is sent through the
+ * vendor-site relay as if the request had come for {subdomain}.<main domain>. Everything else, and every request while the switch is off, is untouched (null at once).
+ */
+function devVendorRewrite(req: NextRequest): NextResponse | null {
+  if (!devVendorViewEnabled()) return null;
+  const { pathname } = req.nextUrl;
+  const d = parseDevVendorPath(pathname);
+  if (!d) return pathname === '/_vendor' || pathname.startsWith('/_vendor/') ? plainNotFound() : null;
+  if (req.method !== 'GET' && req.method !== 'HEAD') return plainNotFound();
+  const headers = new Headers(req.headers);
+  headers.set(DEV_VENDOR_HEADER, devVendorHost(d.label, baseDomain(readHostConfig())));
+  const url = req.nextUrl.clone();
+  url.pathname = `${V3_VENDOR_SITE_ROOT}${d.rest === '/' ? '' : d.rest}`;
+  return NextResponse.rewrite(url, { request: { headers } });
+}
+
 export async function middleware(req: NextRequest): Promise<NextResponse> {
+  const dev = devVendorRewrite(req);
+  if (dev) return dev;
   const layer = hostLayer(req);
   if (layer && 'done' in layer) return layer.done;
   const hostKind = layer?.host ?? null;
@@ -193,4 +214,5 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths
 // robots.txt and sitemap.xml are matched too, so a vendor's own host answers them for itself (the main host passes straight through)
 // /llms.txt and /assets/:path* are matched only so a V3 vendor host can answer them from its stored site; the middleware returns at once for them on every other host and with the flag off
-export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml', '/llms.txt', '/assets/:path*'] };
+export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml', '/llms.txt', '/assets/:path*', '/_vendor/:path*'] };
+// /_vendor/:path* is matched only so the developer-only vendor view (dev-vendor.ts) also sees dotted paths such as sitemap.xml; with its switch off (always, in a production build) the middleware returns at once for it

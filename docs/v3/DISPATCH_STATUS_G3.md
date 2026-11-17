@@ -8,7 +8,7 @@ Branch `v3-pub-fe8` (from `v3-pub-fe7`), folder `get4domain-pub/get4domain_mvp`.
 | S1 Marketing pages | DONE | see git log | Home, Product hub plus 8 capability pages, How it works, Partners, Guides (5), nav and footer, sitemap. Industries hub gets its category links in S2. |
 | S2 Industry and category pages | DONE | see git log | `/industries/{pack}/{category}` for the 196 catalogue categories. |
 | S3 Directory pages | DONE | see git log | The directory pages already existed (Slice 4); the mock set grew to 4 cities in 2 states, 5 categories and 15 businesses, every link resolves, tested and smoked. |
-| S4 Vendor site viewing | TODO | | Dev-only `/_vendor/{subdomain}` switch. |
+| S4 Vendor site viewing | DONE | see git log | Dev-only `/_vendor/{subdomain}` (V3_PUBLIC_DEV_VENDOR_VIEW, never in a production build); checked on a real next dev server and 404 in all production smoke servers. |
 | S5 Open gaps | TODO | | G2, G31, termsAcceptanceRequired, themes. |
 | S6 Quality | TODO | | Accessibility, structured data, forbidden words, link resolution, smoke in three modes. |
 | S7 Report | TODO | | `SEE_IT_SITE.md`, `PUBLIC_SITE.md`, `PUBLIC_GAPS.md`, `DISPATCH_REPORT_G3.md`. |

@@ -190,6 +190,23 @@ export function createG3Smoke(h) {
     }
   }
 
+  // ── S4: the developer-only vendor view is never reachable in a production build (these servers are production builds) ──
+  async function devVendorOff() {
+    const paths = ['/_vendor/sample-pro', '/_vendor/sample-pro/about', '/_vendor/sample-pro/sitemap.xml', '/_vendor/sample-pro/robots.txt', '/_vendor', '/_vendor/sample-pro/assets/x.css'];
+    for (const [name, port] of [['flag off', ports.OFF], ['flag on, no host names', ports.ON], ['flag on with host names', ports.HOST], ['flag on, switch name set', ports.FULL]]) {
+      for (const p of paths) {
+        const r = await get(port, p);
+        ok(r.status === 404 && !/Sample Pro Plumbing/.test(r.text), `g3 dev vendor (${name}): ${p} is a 404 in a production build (${r.status})`);
+      }
+    }
+    const rh = await getHost(ports.FULL, M, '/_vendor/sample-pro');
+    ok(rh.status === 404, 'g3 dev vendor: the main host answers 404 as well even with the switch name set');
+    const spoof = await get(ports.FULL, '/vendor-site', { headers: { 'x-v3-dev-vendor-host': 'sample-pro.localhost' } });
+    ok(spoof.status === 404 && !/Sample Pro Plumbing/.test(spoof.text), 'g3 dev vendor: the internal relay ignores the dev header in a production build');
+    const spoof2 = await get(ports.FULL, '/_vendor/sample-pro', { headers: { 'x-v3-dev-vendor-host': 'sample-pro.localhost' } });
+    ok(spoof2.status === 404, 'g3 dev vendor: sending the dev header changes nothing');
+  }
+
   // every internal link of the main-host site resolves: a crawl from the home page
   async function crawl() {
     const H = (p) => getHost(ports.HOST, M, p);
@@ -230,5 +247,5 @@ export function createG3Smoke(h) {
     ok((await get(ports.ON, '/v3-site/product')).status === (await get(ports.ON, '/v3-site/pricing')).status, 'g3 no hosts: the internal product page is reachable exactly as the other commercial pages are');
   }
 
-  return { directoryPages, categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
+  return { devVendorOff, directoryPages, categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
 }

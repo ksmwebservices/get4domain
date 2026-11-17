@@ -805,7 +805,7 @@ const servers = [
   // the same, with the regulated packs published
   // the same, with every contact value set
   start(FULL, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV,
-    V3_PUBLIC_SUPPORT_EMAIL: 'help@example.invalid', V3_PUBLIC_SUPPORT_PHONE: '+91 44 0000 0000', V3_PUBLIC_GRIEVANCE_OFFICER_NAME: 'A Grievance Person', V3_PUBLIC_GRIEVANCE_OFFICER_EMAIL: 'grievance@example.invalid', V3_PUBLIC_FIRM_CIN: 'U00000TN0000PTC000000' }),
+    V3_PUBLIC_SUPPORT_EMAIL: 'help@example.invalid', V3_PUBLIC_SUPPORT_PHONE: '+91 44 0000 0000', V3_PUBLIC_GRIEVANCE_OFFICER_NAME: 'A Grievance Person', V3_PUBLIC_GRIEVANCE_OFFICER_EMAIL: 'grievance@example.invalid', V3_PUBLIC_FIRM_CIN: 'U00000TN0000PTC000000', V3_PUBLIC_DEV_VENDOR_VIEW: 'true' }),
   start(REG, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', V3_REGULATED_PACKS_PUBLIC: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
 ];
 try {
@@ -827,6 +827,7 @@ try {
   await g3.marketing();
   await g3.categoryPages();
   await g3.directoryPages();
+  await g3.devVendorOff();
   await g3.categoryRegulatedOn();
   await g3.categoryFlagOff();
   await g3.crawl();

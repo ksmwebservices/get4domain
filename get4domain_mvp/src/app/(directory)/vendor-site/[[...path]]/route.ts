@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { DEV_VENDOR_HEADER, devRedirectLocation, devVendorViewEnabled, prefixRootLinks } from '@/lib/v3-public/dev-vendor';
 import { hostRoutingActive } from '@/lib/v3-public/host-routing';
 import { classifyHost, readHostConfig } from '@/lib/v3-public/hostnames';
 import { forwardedFor, guardResponse } from '@/lib/v3-public/proxy';
@@ -14,12 +15,21 @@ async function handle(req: Request, ctx: { params: Promise<{ path?: string[] }> 
   const off = guardResponse();
   if (off) return off;
   const h = await headers();
-  const host = h.get('host');
-  if (!hostRoutingActive() || classifyHost(host, readHostConfig()).kind !== 'vendor-site') return vendorFor(vendorResponseParts({ kind: 'not-found' }, req.method), req.method);
+  // Developer machines only: the middleware names the vendor host from the /_vendor/{subdomain} address. Ignored unless the switch is on (never in a production build).
+  const devHost = devVendorViewEnabled() ? h.get(DEV_VENDOR_HEADER) : null;
+  const host = devHost ?? h.get('host');
+  if (!devHost && (!hostRoutingActive() || classifyHost(host, readHostConfig()).kind !== 'vendor-site')) return vendorFor(vendorResponseParts({ kind: 'not-found' }, req.method), req.method);
   const segments = (await ctx.params).path ?? [];
   const path = `/${segments.join('/')}`;
   const r = await fetchVendorPage(String(host).toLowerCase().split(':')[0], path, { ifNoneMatch: req.headers.get('if-none-match'), forwardedFor: forwardedFor(req) });
-  return vendorFor(vendorResponseParts(r, req.method), req.method);
+  const parts = vendorResponseParts(r, req.method);
+  // the dev view only: root-relative links of a stored HTML page point back under the dev address so that clicking through works
+  if (devHost && parts.body && /text\/html/i.test(parts.headers['content-type'] ?? '')) {
+    const { etag: _etag, ...rest } = parts.headers;
+    return vendorFor({ ...parts, headers: { ...rest, 'cache-control': 'no-store' }, body: prefixRootLinks(parts.body, devHost.split('.')[0]) }, req.method);
+  }
+  if (devHost && parts.headers.location) return vendorFor({ ...parts, headers: { ...parts.headers, location: devRedirectLocation(parts.headers.location, devHost) } }, req.method);
+  return vendorFor(parts, req.method);
 }
 
 function vendorFor(p: { status: number; headers: Record<string, string>; body: string | null }, method: string): Response {
