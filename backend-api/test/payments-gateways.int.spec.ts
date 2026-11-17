@@ -75,8 +75,10 @@ describe('payment gateways on staging (in-memory gateways)', () => {
     const wrong = env.hook('cashfree', b.body.data.providerOrderId, { amountMinor: 100, paymentId: '5100004', eventId: 'cf-5100004' }); expect((await postHook(env, 'cashfree', wrong)).status).toBe(200);
     expect((await prisma.v3PlanOrder.findUniqueOrThrow({ where: { id: idB } })).status).toBe('REVIEW'); expect(await prisma.v3PlanInvoice.count({ where: { orderId: idB } })).toBe(0);
     const unknown = env.hook('cashfree', `v3test-${RUN_ID}-nope`, { amountMinor: 354_000, paymentId: '5100005', eventId: 'cf-5100005' }); expect((await postHook(env, 'cashfree', unknown)).status).toBe(200);
-    const events = await prisma.v3PaymentEvent.findMany({ where: { providerEventId: { in: ['cf-5100002', 'cf-5100004', 'cf-5100005'] } } });
-    expect(events.map((e) => e.provider)).toEqual(['cashfree', 'cashfree', 'cashfree']); expect(events.find((e) => e.providerEventId === 'cf-5100005')!.result).toBe('NO_ORDER');
+    // Cashfree sends no event-id header: the adapter's event id is `cf-<payment id>-<event type>` (gateway-core normalizeCashfreeEvent), so that is what is stored and queried
+    const cfId = (paymentId: string): string => `cf-${paymentId}-PAYMENT_SUCCESS_WEBHOOK`;
+    const events = await prisma.v3PaymentEvent.findMany({ where: { providerEventId: { in: [cfId('5100002'), cfId('5100004'), cfId('5100005')] } } });
+    expect(events.map((e) => e.provider)).toEqual(['cashfree', 'cashfree', 'cashfree']); expect(events.find((e) => e.providerEventId === cfId('5100005'))!.result).toBe('NO_ORDER');
     expect(JSON.stringify(events.map((e) => e.payloadRedactedJson))).not.toMatch(/email|phone|contact|card|vpa/i);
   });
 
