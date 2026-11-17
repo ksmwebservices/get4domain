@@ -175,3 +175,27 @@ describe('the accept notice of /pricing and /register', () => {
   });
 });
 
+
+describe('the effective date is shown from one place', () => {
+  test('only the policy page layout reads the date constant or its formatter (outside tests and legal-meta)', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join, sep } = await import('node:path');
+    const users: string[] = [];
+    const walkDir = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) { if (name !== '__tests__' && name !== 'node_modules') walkDir(p); continue; }
+        if (!/\.(ts|tsx)$/.test(name) || name === 'legal-meta.ts') continue;
+        if (/LEGAL_EFFECTIVE_DATE|formatEffectiveDate/.test(readFileSync(p, 'utf8'))) users.push(p.split(sep).join('/').split('/src/').pop()!);
+      }
+    };
+    walkDir(join(process.cwd(), 'src'));
+    assert.deepEqual(users, ['components/site/LegalDocument.tsx']);
+  });
+});
+
+describe('the grievance block flag', () => {
+  test('exactly Terms and Refund carry the block', () => {
+    assert.deepEqual(LEGAL_DOCS.filter((d) => d.showGrievance).map((d) => d.path).sort(), ['/refund-policy', '/terms']);
+  });
+});
