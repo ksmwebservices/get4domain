@@ -7,21 +7,24 @@
  *  - one switch is included; every later switch is the Theme Switch Service fee from the price book, paid from wallet credit (and a PENDING fee is never a number).
  * This file only decides what is LISTED for a pack and what one business may apply now, and why not.
  */
-export interface ThemeLite { id: string; name: string; tier: string; tracks: string[]; categories: string[] }
+export interface ThemeLite { id: string; name: string; tier: string; tracks: string[]; categories: string[]; description?: string | null }
 export type ThemeAccess = 'DEFAULT' | 'LIBRARY';
 export type NotAllowedReason = 'PLAN_REQUIRED' | 'NOT_FOR_YOUR_BUSINESS';
 
-export interface PackThemes { matchedBy: 'CATEGORY' | 'TRACK' | 'NONE'; themes: ThemeLite[] }
+/** CATEGORY: designed for a category of the pack. KIT_FALLBACK: no theme names a category of the pack, so the themes of the kit category the pack's site is drawn from (PACK_KIT_FALLBACK). TRACK: last resort. */
+export interface PackThemes { matchedBy: 'CATEGORY' | 'KIT_FALLBACK' | 'TRACK' | 'NONE'; themes: ThemeLite[] }
 
 /**
  * The themes for a pack: those designed for at least one of the pack's categories; when the theme kit names none of them (the kit covers fewer kinds of business than the packs do), those designed
  * for the tracks the pack's categories need. Sorted by name then id so the answer never changes between calls.
  */
-export function themesForPack(themes: readonly ThemeLite[], packCategoryKeys: readonly string[], packTracks: readonly string[]): PackThemes {
+export function themesForPack(themes: readonly ThemeLite[], packCategoryKeys: readonly string[], packTracks: readonly string[], fallbackKitCategory: string | null = null): PackThemes {
   const cats = new Set(packCategoryKeys);
   const byCategory = themes.filter((t) => t.categories.some((c) => cats.has(c)));
   const sort = (xs: ThemeLite[]): ThemeLite[] => [...xs].sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
   if (byCategory.length) return { matchedBy: 'CATEGORY', themes: sort(byCategory) };
+  const byFallback = fallbackKitCategory ? themes.filter((t) => t.categories.includes(fallbackKitCategory)) : [];
+  if (byFallback.length) return { matchedBy: 'KIT_FALLBACK', themes: sort(byFallback) };
   const tracks = new Set(packTracks.map((t) => t.toLowerCase()));
   const byTrack = themes.filter((t) => t.tracks.some((x) => tracks.has(x.toLowerCase())));
   return byTrack.length ? { matchedBy: 'TRACK', themes: sort(byTrack) } : { matchedBy: 'NONE', themes: [] };
@@ -53,3 +56,17 @@ export function feeLine(f: ThemeFeeView): { priceStatus: 'SET' | 'PENDING'; pric
   const set = f.priceStatus === 'SET' && typeof f.pricePaise === 'number' && Number.isInteger(f.pricePaise) && f.pricePaise > 0;
   return { priceStatus: set ? 'SET' : 'PENDING', pricePaise: set ? f.pricePaise : null, taxNote: 'Before GST', purchasable: set };
 }
+
+/**
+ * The categories that count for a pack: its catalogue categories plus the theme kit's own categories that the catalogue sheet does not name but that belong to the pack (auto-mechanic, tutor, salon-spa and
+ * gym-yoga, see KIT_ONLY_PACK). Without them MEMBERSHIP_WELLNESS had no theme "by category" although the kit has designs for gyms and salons.
+ */
+export function packCategoriesWithKit(catalogueKeys: readonly string[], packKey: string, kitOnlyPack: Readonly<Record<string, string>>): string[] {
+  const extra = Object.entries(kitOnlyPack).filter(([, p]) => p === packKey).map(([id]) => id).sort();
+  return [...new Set([...catalogueKeys, ...extra])];
+}
+
+export const isPremium = (tier: string): boolean => tier === 'Premium';
+export interface ThemePreviewRef { kind: 'GENERATED'; path: string }
+/** Where a theme's generated preview for a pack is served (the sample business of that pack, drawn by the real renderer). Never a file name, never a vendor. */
+export const previewRef = (themeId: string, packKey: string): ThemePreviewRef => ({ kind: 'GENERATED', path: `/v3/public/themes/${encodeURIComponent(themeId)}/preview?pack=${encodeURIComponent(packKey)}` });

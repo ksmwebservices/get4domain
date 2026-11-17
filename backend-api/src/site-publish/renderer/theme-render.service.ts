@@ -5,7 +5,7 @@ import { Kit, KitManifest, KitTheme, RenderInput, RenderResult, loadKit } from '
 export const KIT = Symbol('THEME_KIT');
 
 export interface LoadedTheme { id: string; theme: KitTheme; hash: string; manifest: KitManifest }
-export interface ThemeSummary { id: string; name: string; tier: string; tracks: string[]; categories: string[]; hash: string }
+export interface ThemeSummary { id: string; name: string; description?: string | null; tier: string; tracks: string[]; categories: string[]; hash: string }
 
 /**
  * The backend's one door to the theme kit's renderer. It loads the theme library read-only (no theme file is ever user supplied in this slice),
@@ -49,7 +49,7 @@ export class ThemeRenderService implements OnModuleInit {
   invalidThemes(): Record<string, string[]> { return { ...this.invalid }; }
 
   listThemes(): ThemeSummary[] {
-    return [...this.served.values()].map((t) => ({ id: t.id, name: t.manifest.name, tier: t.manifest.tier, tracks: t.manifest.tracks, categories: t.manifest.categories, hash: t.hash }));
+    return [...this.served.values()].map((t) => ({ id: t.id, name: t.manifest.name, description: t.manifest.description ?? null, tier: t.manifest.tier, tracks: t.manifest.tracks, categories: t.manifest.categories, hash: t.hash }));
   }
 
   /** The theme to render with, or THEME_INVALID for an unknown id, an internal theme or one that failed validation. */

@@ -11,7 +11,7 @@ import * as path from 'path';
  * fly in a cache folder named after the hash of the kit sources, so the unit tests use the real renderer. In production a missing build is an error.
  */
 export interface KitCategory { id: string; label: string; track: string; family: string; schemaType: string; ctaPrimary: string; flow?: string; packKey?: string }
-export interface KitManifest { id: string; name: string; tier: string; tracks: string[]; families: string[]; categories: string[]; internal?: boolean; version: number; fonts?: string[] }
+export interface KitManifest { id: string; name: string; description?: string; tier: string; tracks: string[]; families: string[]; categories: string[]; internal?: boolean; version: number; fonts?: string[] }
 export interface KitTheme { manifest: KitManifest; templates: Record<string, string>; css: { base?: string; tokens?: string; motion?: string; print?: string }; presets?: Record<string, unknown>; dir: string | null }
 export interface RenderInput {
   theme?: KitTheme; page: string | { slug: string; template?: string; item?: unknown; parent?: string };
