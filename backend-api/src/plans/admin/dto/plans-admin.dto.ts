@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { Allow, ArrayMaxSize, IsBoolean, IsDateString, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
 
 /** Request bodies of the admin plans API. Money and term rules are checked by the service so the error carries a stable machine code. */
 const TRACKS = ['HANDYMAN', 'PROFESSIONAL', 'ECOMMERCE'];
@@ -103,8 +103,8 @@ export class UpdateTaxRateDto {
 
 export class PutPlanSettingDto {
   @IsOptional() @IsDateString() expectedUpdatedAt?: string;
-  /** boolean, number, string or list; validated per key */
-  valueJson!: unknown;
+  /** boolean, number, string, list or null (empty); validated per key. @Allow() is what lets the strict whitelist keep the field: without a decorator the pipe refused every body with "property valueJson should not exist". */
+  @Allow() valueJson!: unknown;
   @IsOptional() @IsString() @MaxLength(300) description?: string;
 }
 

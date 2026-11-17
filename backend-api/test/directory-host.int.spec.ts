@@ -95,11 +95,28 @@ describe('the directory host on staging', () => {
     });
   });
 
-  it('with it UNSET the behaviour is the old one: the listing links sit under /directory on the main origin', async () => {
+  it('with it UNSET the behaviour is the old one: everything on the one main origin, and only the directory HOME sits at /directory', async () => {
     await withApp(undefined, async (get, getText) => {
+      // a city+category page: no /directory prefix in its path, canonical or JSON-LD, and nothing names the directory host
       const page = await get(`/v3/directory/pages/resolve?path=${encodeURIComponent(cityCatPath)}`); expect(page.status).toBe(200);
-      expect(JSON.stringify(page.body.data)).toContain('/directory'); expect(JSON.stringify(page.body.data)).not.toContain(DIR_HOST);
-      const robots = await getText('/v3/directory/robots.txt'); expect(String(robots.body)).not.toContain(DIR_HOST);
+      const text = JSON.stringify(page.body.data);
+      expect(text).not.toContain(DIR_HOST); expect(text).not.toMatch(/\/directory(?![.\w-])/);
+      const canonical = String(page.body.data.meta?.canonical ?? ''); expect(canonical.endsWith(cityCatPath)).toBe(true);
+      const mainOrigin = canonical.slice(0, canonical.length - cityCatPath.length); expect(mainOrigin).toMatch(/^https?:\/\//);
+      // the directory home keeps its /directory address (public site gap G11)
+      const home = await get(`/v3/directory/pages/resolve?path=${encodeURIComponent('/directory')}`); expect(home.status).toBe(200);
+      expect(JSON.stringify(home.body.data)).toMatch(/\/directory(?![.\w-])/); expect(JSON.stringify(home.body.data)).not.toContain(DIR_HOST);
+      // the backlink block: the brand and every listing link are on the same main origin
+      const b = await get(`/v3/directory/backlink-block/${bizIds[0]}`); expect(b.status).toBe(200);
+      const links = (b.body.data.links as Array<{ href: string }>).map((l) => l.href); expect(links.length).toBeGreaterThanOrEqual(1);
+      expect(String(b.body.data.brand.href).startsWith(`${mainOrigin}/`)).toBe(true); expect(links.every((h) => h.startsWith(`${mainOrigin}/`))).toBe(true); expect(links.join(' ')).not.toContain(DIR_HOST);
+      // robots and the sitemaps name the main origin, never the directory host
+      const robots = await getText('/v3/directory/robots.txt'); expect(robots.status).toBe(200);
+      expect(String(robots.body)).not.toContain(DIR_HOST); expect(String(robots.body)).toContain(`Sitemap: ${mainOrigin}/`);
+      const idx = await getText('/v3/directory/sitemaps/index.xml'); expect(idx.status).toBe(200);
+      expect(String(idx.body)).toContain(`${mainOrigin}/sitemaps/`); expect(String(idx.body)).not.toContain(DIR_HOST);
+      const chunk = await getText('/v3/directory/sitemaps/directory-1.xml'); expect(chunk.status).toBe(200);
+      expect(String(chunk.body)).toContain(`${mainOrigin}${cityCatPath}`); expect(String(chunk.body)).not.toContain(DIR_HOST);
     });
   });
 
