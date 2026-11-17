@@ -4,4 +4,4 @@
  *
  * `/terms`, `/privacy-policy` and `/refund-policy` are also paths of the live site: they are replaced by the new pages only while the flag and MAIN_HOST are on.
  */
-export const LEGAL_PAGE_PATHS: readonly string[] = ['/disclaimer'];
+export const LEGAL_PAGE_PATHS: readonly string[] = ['/terms', '/privacy-policy', '/refund-policy', '/payments-and-billing', '/delivery-policy', '/acceptable-use', '/cookie-notice', '/disclaimer'];

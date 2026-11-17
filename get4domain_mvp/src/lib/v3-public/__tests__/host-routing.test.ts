@@ -32,7 +32,7 @@ describe('the host layer is active only with the flag and a main host', () => {
 
 describe('main host', () => {
   test('live marketing sub-pages and the V3 routes pass untouched', () => {
-    for (const p of ['/industries/travel', '/claim', '/legal', '/account/login', '/terms', '/demo/clinic', '/leadspace', '/pricing/extra', '/r', '/r/a/b']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
+    for (const p of ['/industries/travel', '/claim', '/legal', '/account/login', '/demo/clinic', '/leadspace', '/pricing/extra', '/r', '/r/a/b']) assert.deepEqual(run('main.example.invalid', p), { action: 'pass', host: 'main' }, p);
   });
   test('the commercial pages replace their live twins only here, by an internal rewrite', () => {
     const want: Record<string, string> = {

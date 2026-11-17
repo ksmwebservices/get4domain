@@ -33,9 +33,9 @@ Other findings:
 
 | Job | State | Commit | Note |
 |---|---|---|---|
-| L0 | DONE | (this file) | investigation, table above |
-| L1 | TODO | | |
-| L2 | TODO | | |
+| L0 | DONE | e01f704 | investigation, table above |
+| L1 | DONE | 1f495f4 | legal framework, firm facts module, `[doc]` policy route, footer, sitemap, tests, smoke |
+| L2 | DONE | (next commit line) | terms, privacy, refund, payments, delivery, acceptable use, cookies, disclaimer; copy-rule and fact tests |
 | L3 | TODO | | |
 | L4 | TODO | | |
 | L5 | TODO | | |

@@ -36,7 +36,7 @@ export const DISCLAIMER: LegalDocDef = {
       id: 'third-party-services',
       heading: 'Third-party services',
       paragraphs: [
-        'We rely on other companies for some parts of the service, for example payment gateways, hosting, email delivery and domain registration. Their services are governed by their own terms. We are not responsible for a failure that is caused by a third party outside our control.',
+        'We rely on other companies for some parts of the service, for example payment gateways, hosting and email delivery. Their services are governed by their own terms. We are not responsible for a failure that is caused by a third party outside our control.',
         'Links on this website to other websites are for convenience. We do not control those websites and are not responsible for them.',
       ],
     },

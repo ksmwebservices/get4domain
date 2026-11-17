@@ -1,5 +1,12 @@
 import type { LegalDocDef } from './legal-meta';
+import { ACCEPTABLE_USE } from './legal-text/acceptable-use';
+import { COOKIES } from './legal-text/cookies';
+import { DELIVERY } from './legal-text/delivery';
 import { DISCLAIMER } from './legal-text/disclaimer';
+import { PAYMENTS } from './legal-text/payments';
+import { PRIVACY } from './legal-text/privacy';
+import { REFUND } from './legal-text/refund';
+import { TERMS } from './legal-text/terms';
 
 /**
  * Every word of the legal and company pages (the strings module of dispatch D1). The long texts sit one per file in `legal-text/` and are gathered here,
@@ -9,7 +16,7 @@ import { DISCLAIMER } from './legal-text/disclaimer';
  * (where a rule normally needs a number it says "as shown at checkout or as agreed in writing"); no discount, coupon or offer unless to say there is none;
  * no ranking claim, no invented company fact, no professional claim. The text is a DRAFT until a lawyer in India has reviewed it (docs/v3/LEGAL_REVIEW.md).
  */
-export const LEGAL_DOCS: readonly LegalDocDef[] = [DISCLAIMER];
+export const LEGAL_DOCS: readonly LegalDocDef[] = [TERMS, PRIVACY, REFUND, PAYMENTS, DELIVERY, ACCEPTABLE_USE, COOKIES, DISCLAIMER];
 
 export const LEGAL_UI = {
   contents: 'Contents',
