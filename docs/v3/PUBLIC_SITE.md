@@ -223,3 +223,27 @@ Branch `v3-pub-fe6`. Same switch as sections 9 and 10: the pages need `V3_PUBLIC
 ## 15. Dispatch D2 (owner default terms on the legal pages)
 
 Branch `v3-pub-fe7`. The ten policy pages, About and Contact keep their routes and headings; the text now applies the eight owner defaults (refunds, cancellation, grievance, data, taxes, partner, trial; law and courts were already there). New shared component `components/site/GrievanceBlock.tsx` (name, email, phone and the 48 hours and one month timelines) is used by Contact and by Terms and Refund (`showGrievance` on the document) and prints only when a grievance value is set. The copy guard (`legal-copy-rules.test.ts`, mirrored in the smoke script) allows exactly "48 hours" and "one month", only in a sentence naming the grievance officer or a complaint; every other digit, time word and percentage is still refused. Go-live environment names: `GO_LIVE_PUBLIC.md`. Review sheet: `LEGAL_REVIEW.md` (D2 section). Everything is still behind `V3_PUBLIC_ENABLED`; the flag-off smoke checks pass.
+
+
+## 16. Dispatch G3 (marketing, product, category, directory and vendor viewing)
+
+Branch `v3-pub-fe8`. Same switch as sections 9 and 10: the pages need `V3_PUBLIC_ENABLED=true` and `MAIN_HOST`, are reached only by the main-host rewrite to `/v3-site/...` (typing that is a 404), and with the flag off nothing changes (smoke checked). How to see it: `SEE_IT_SITE.md`. Report: `DISPATCH_REPORT_G3.md`.
+
+| Address (main host) | Page | Notes |
+|---|---|---|
+| `/` | Home | who it is for, how it works, the three business tracks (Handyman, Professional, Ecommerce), product, directory, partners, guides, FAQ |
+| `/product`, `/product/{website, search-visibility, enquiries, directory, reports, ai-studio, domains, business-tools}` | Product hub and eight pages | each: what you get, three steps, which plan, FAQ (FAQPage), related, calls to action |
+| `/how-it-works` | How it works | who it is for, steps, after registering, FAQ |
+| `/industries`, `/industries/{pack}` | Hub and 12 packs (16 with `V3_REGULATED_PACKS_PUBLIC`) | now link every category |
+| `/industries/{pack}/{category}` | One page per catalogue category (196; 140 by default) | working areas of its pack, how it works, FAQ, call to action to `/register?pack=KEY&category=ID` (both preselected) |
+| `/partners` | Partner programme | how it works from the contract facts; no rate or amount; links to the partner terms and contact |
+| `/guides`, `/guides/{slug}` | Five evergreen guides | no statistics, no promises |
+
+- **Real 404s.** An unknown product or guide slug, an unknown or wrong-pack category id, and a regulated category while unpublished are answered by the middleware (a page cannot, G9).
+- **Category data.** `lib/v3-public/catalogue-data.ts` is generated, read-only, from the category master sheet (196 rows: id, name, pack, family). The registration form still reads `GET /v3/public/pack-categories`; `/register?category=` adds the chosen category from the catalogue if the API list lacks it.
+- **Pages are rendered on request** (not prerendered): the canonical, the flag and the host names are runtime values.
+- **Navigation.** Header: Product, Pricing, How it works, Industries, Guides, Partners, Directory (when `DIRECTORY_HOST` is set), Sign in, Start free. Footer: product pages, learn, company, policies. Every link is a real page; smoke crawls the site and checks all of them.
+- **Sitemap.** `/sitemap-industries.xml` (flag on, main host) now lists industries, categories, product pages, guides, partners and policies. `sitemap.xml` is unchanged.
+- **Directory samples.** Mock mode now has 4 cities in 2 states, 5 categories and 15 businesses; every link in the set resolves (test and smoke crawl).
+- **Developer vendor view.** `/_vendor/{subdomain}[/path]` renders a vendor site through the same relay as production. Needs `V3_PUBLIC_ENABLED=true` and `V3_PUBLIC_DEV_VENDOR_VIEW=true`, and is never on in a production build (`NODE_ENV`), so production smoke servers answer 404 even with the name set. Root links and same-domain redirects are mapped under the dev address; the stored page is not otherwise changed. Real mode uses `MAIN_HOST` as the base (else `localhost`).
+- **Checks.** 342 unit tests (`npm run test:v3-public`) and 3829 smoke checks (`npm run smoke:v3-public`), including a crawl of the main-host site, one H1, landmarks, title length, canonical, JSON-LD, forbidden words and accessibility structure on every new page.

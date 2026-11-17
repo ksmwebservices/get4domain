@@ -9,9 +9,9 @@ Branch `v3-pub-fe8` (from `v3-pub-fe7`), folder `get4domain-pub/get4domain_mvp`.
 | S2 Industry and category pages | DONE | see git log | `/industries/{pack}/{category}` for the 196 catalogue categories. |
 | S3 Directory pages | DONE | see git log | The directory pages already existed (Slice 4); the mock set grew to 4 cities in 2 states, 5 categories and 15 businesses, every link resolves, tested and smoked. |
 | S4 Vendor site viewing | DONE | see git log | Dev-only `/_vendor/{subdomain}` (V3_PUBLIC_DEV_VENDOR_VIEW, never in a production build); checked on a real next dev server and 404 in all production smoke servers. |
-| S5 Open gaps | TODO | | G2, G31, termsAcceptanceRequired, themes. |
-| S6 Quality | TODO | | Accessibility, structured data, forbidden words, link resolution, smoke in three modes. |
-| S7 Report | TODO | | `SEE_IT_SITE.md`, `PUBLIC_SITE.md`, `PUBLIC_GAPS.md`, `DISPATCH_REPORT_G3.md`. |
+| S5 Open gaps | DONE | final commit | Re-checked against the Wave 4 contract; docs only (see PUBLIC_GAPS.md). |
+| S6 Quality | DONE | final commit | Accessibility, structured data, forbidden words, link resolution, smoke in three modes. |
+| S7 Report | DONE | final commit | `SEE_IT_SITE.md`, `PUBLIC_SITE.md`, `PUBLIC_GAPS.md`, `DISPATCH_REPORT_G3.md`. |
 
 ## S0. The plan (ordered public-site job list)
 
@@ -57,4 +57,6 @@ Read: audit sections 4, 5, 7, 8, 9, the F1 report, the Wave 3 and 4 contracts, `
 
 ## QUESTIONS FOR THE OWNER
 
-(filled in as they come up; none block the queue)
+1. Confirm or hold back the Reports, AI Studio and Enquiries product pages (G46).
+2. Confirm the partner page sends people to Contact (G47).
+3. Confirm the three business tracks are Handyman, Professional, Ecommerce.
