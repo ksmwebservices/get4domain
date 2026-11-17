@@ -7,12 +7,17 @@ export type PartnerType = (typeof PARTNER_TYPES)[number];
 export const PARTNER_STATUSES = ['ACTIVE', 'DISABLED'] as const;
 export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
 
-export interface PartnerInput { type?: unknown; name?: unknown; email?: unknown; phone?: unknown; status?: unknown; staffUserId?: unknown }
-export interface PartnerFields { type: PartnerType; name: string; email: string; phone: string | null; status: PartnerStatus; staffUserId: string | null }
+export interface PartnerInput { type?: unknown; name?: unknown; email?: unknown; phone?: unknown; status?: unknown; staffUserId?: unknown; pan?: unknown }
+/** `pan` (Wave 4 W8) is optional, written by staff only through the admin partner routes. */
+export interface PartnerFields { type: PartnerType; name: string; email: string; phone: string | null; status: PartnerStatus; staffUserId: string | null; pan: string | null }
 export type PartnerCheck = { ok: true; value: Partial<PartnerFields> } | { ok: false; problems: Record<string, string> };
 
 const EMAIL_RE = /^[^\s@<>"]{1,64}@[^\s@<>"]{1,255}\.[^\s@<>"]{2,}$/;
 const PHONE_RE = /^\+?[0-9][0-9 ()-]{6,18}[0-9]$/;
+const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+/** A PAN with its first five characters hidden, for the partner's own view ("•••••1234A"); null when there is none. */
+export const maskPan = (pan: string | null | undefined): string | null => (typeof pan === 'string' && PAN_RE.test(pan) ? `•••••${pan.slice(5)}` : null);
 
 /** One email form for storage and for matching: trimmed and lower case. */
 export const normaliseEmail = (e: string): string => e.trim().toLowerCase();
@@ -46,6 +51,12 @@ export function checkPartnerInput(input: PartnerInput, mode: 'create' | 'edit'):
   }
 
   if (has('status')) { if (typeof input.status === 'string' && (PARTNER_STATUSES as readonly string[]).includes(input.status)) value.status = input.status as PartnerStatus; else problems.status = `must be one of ${PARTNER_STATUSES.join(', ')}`; }
+
+  if (has('pan')) {
+    if (input.pan === null || input.pan === '') value.pan = null;
+    else if (typeof input.pan === 'string' && PAN_RE.test(input.pan.trim().toUpperCase())) value.pan = input.pan.trim().toUpperCase();
+    else problems.pan = 'must be a PAN such as ABCDE1234F, or empty';
+  }
 
   if (has('staffUserId')) {
     if (input.staffUserId === null || input.staffUserId === '') value.staffUserId = null;

@@ -244,6 +244,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Wave 4 W2: held payments (list, detail, resolve) are ADMIN and SUPER_ADMIN only (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow); OPERATIONS, SALES, SUPPORT and every label are refused.
   // Wave 4 W6: the gateway keys are SUPER_ADMIN only in every method; ADMIN is NOT given them (no STAFF_ROLE_EXTENSIONS entry), and every other role is refused.
   // Wave 4 W7: the GST rate. Reading is OPERATIONS and SUPER_ADMIN (ADMIN inherits the read); setting it is SUPER_ADMIN only, and ADMIN is NOT extended (tested in wave4-gst-rate.spec.ts).
+  // Wave 4 W8: the payout preview is read by OPERATIONS, ADMIN and SUPER_ADMIN (no PAN in it); the payouts CSV carries the PAN, so it is ADMIN and SUPER_ADMIN only (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
+  'GET /v3/admin/commission/payouts/preview': OPS_AND_SUPER, 'GET /v3/admin/commission/payouts/export.csv': SUPER_ONLY,
   'GET /v3/admin/gst-rate': OPS_AND_SUPER, 'PUT /v3/admin/gst-rate': SUPER_ONLY,
   'GET /v3/admin/payment-gateway/credentials': SUPER_ONLY, 'PUT /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY, 'DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY,
   'GET /v3/admin/billing/held-payments': SUPER_ONLY, 'GET /v3/admin/billing/held-payments/:id': SUPER_ONLY, 'POST /v3/admin/billing/held-payments/:id/resolve': SUPER_ONLY,
@@ -302,7 +304,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve',
+    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve', 'GET /v3/admin/commission/payouts/export.csv',
       'POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral',
       ...Object.keys(SEO_ROUTES)],
   },

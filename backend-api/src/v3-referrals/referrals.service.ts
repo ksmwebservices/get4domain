@@ -4,9 +4,10 @@ import { PlanPaidHook, PlanPaidInfo, PlanReversedInfo } from '../plan-billing/pl
 import { ReferralAttributionPort } from '../plans/registration/referral-attribution.port';
 import { ActivityService } from '../v3-activity/activity.service';
 import { PartnersStore } from '../v3-partners/partners.store';
-import { checkPayoutReference, closeMonth, codeFromBytes, CloseResult, isMonth, isSelfReferral, LedgerStatus, monthEnd, monthOf, normaliseCode, payoutTotal, rupeesText, slabProblems, toCsv } from './core/referral-core';
+import { checkPayoutReference, checkTds, closeMonth, defaultTds, codeFromBytes, CloseResult, isMonth, isSelfReferral, LedgerStatus, monthEnd, monthOf, normaliseCode, payoutTotal, rupeesText, slabProblems, toCsv } from './core/referral-core';
 import { referralError } from './referrals.errors';
-import { LedgerRow, ReferralsStore, SlabRow } from './referrals.store';
+import { LedgerRow, PayoutRow, ReferralsStore, SlabRow } from './referrals.store';
+import { CommissionSettingsPort } from './settings/commission-settings';
 
 export interface StaffActor { id: string | null; ip?: string | null }
 const MAX_DRAWS = 6;
@@ -23,7 +24,7 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
   clock: () => Date = () => new Date();
   /** overridable in tests */
   draw: (n: number) => Uint8Array = (n) => randomBytes(n);
-  constructor(private readonly store: ReferralsStore, private readonly partners: PartnersStore, @Optional() private readonly activity?: ActivityService) { super(); }
+  constructor(private readonly store: ReferralsStore, private readonly partners: PartnersStore, @Optional() private readonly activity?: ActivityService, @Optional() private readonly settings?: CommissionSettingsPort) { super(); }
 
   private async record(actionKey: string, entityType: string, entityId: string, actor: StaffActor | null, summary: Record<string, unknown>): Promise<void> {
     try { await this.activity?.record({ vendorId: null, actor: actor ? { type: 'STAFF', id: actor.id, ip: actor.ip ?? null } : { type: 'SYSTEM', id: null, ip: null }, actionKey, entityType, entityId, summary }); } catch { /* an audit-log failure never undoes the business action */ }
@@ -223,7 +224,7 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
    * Records the payout of one partner for one month, after the admin paid it by bank or UPI (the reference is required; no money moves from here, no tax is computed). The month must be closed (no ACCRUED
    * line left for that partner), there must be APPROVED lines, and one payout per partner and month: a repeat is refused and changes nothing.
    */
-  async recordPayout(input: { partnerId: string; month: string; reference: unknown }, actor: StaffActor) {
+  async recordPayout(input: { partnerId: string; month: string; reference: unknown; tdsMinor?: unknown; tdsReason?: unknown }, actor: StaffActor) {
     if (!isMonth(input.month)) throw referralError(400, 'COMMISSION_MONTH_INVALID', 'The month must look like 2026-11.');
     const ref = checkPayoutReference(input.reference);
     if (!ref.ok) throw referralError(400, 'COMMISSION_PAYOUT_INVALID', 'The bank or UPI reference is required (3 to 120 characters).');
@@ -233,10 +234,43 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
     if (lines.some((l) => l.status === 'ACCRUED')) throw referralError(409, 'COMMISSION_MONTH_NOT_CLOSED', 'Close the month first: some lines have no amount yet.');
     const t = payoutTotal(lines, input.partnerId, input.month);
     if (t.lineIds.length === 0 || t.totalMinor <= 0) throw referralError(409, 'COMMISSION_NOTHING_TO_PAY', 'There is nothing approved to pay for that partner and month.');
-    const row = await this.store.createPayout({ partnerId: input.partnerId, month: input.month, totalMinor: t.totalMinor, reference: ref.value, paidById: actor.id, paidAt: this.clock() }, t.lineIds);
+    // TDS (Wave 4 W8): pre-filled from the percent the owner set (none set = 0); an ADMIN or SUPER_ADMIN may change the amount with a reason. net = gross - tds.
+    const bp = (await this.settings?.tdsPercentBp()) ?? null;
+    const tds = checkTds(t.totalMinor, bp, input);
+    if (!tds.ok) throw referralError(400, 'COMMISSION_PAYOUT_INVALID', 'Some details need fixing.', { fields: tds.fields });
+    const row = await this.store.createPayout({ partnerId: input.partnerId, month: input.month, totalMinor: t.totalMinor, tdsMinor: tds.tdsMinor, netMinor: tds.netMinor, tdsPercentBp: bp, tdsEdited: tds.edited, tdsReason: tds.reason, reference: ref.value, paidById: actor.id, paidAt: this.clock() }, t.lineIds);
     if (!row) throw referralError(409, 'COMMISSION_PAYOUT_EXISTS', 'A payout for that partner and month is already recorded.');
-    await this.record('commission.payout.recorded', 'CommissionPayout', row.id, actor, { partnerId: input.partnerId, month: input.month, totalMinor: row.totalMinor, lines: t.lineIds.length });
+    await this.record('commission.payout.recorded', 'CommissionPayout', row.id, actor, { partnerId: input.partnerId, month: input.month, grossMinor: row.grossMinor, tdsMinor: row.tdsMinor, netMinor: row.netMinor, tdsPercentBp: row.tdsPercentBp, tdsEdited: row.tdsEdited, tdsReason: row.tdsReason, lines: t.lineIds.length });
     return row;
+  }
+
+  /**
+   * What recording a payout would do, for the screen to pre-fill: the gross, the percent in force, the pre-filled TDS, the net, and whether the partner has a PAN on record (the PAN itself is never in this answer).
+   * Changes nothing. Refused like recordPayout when there is nothing to pay.
+   */
+  async previewPayout(input: { partnerId: string; month: string }) {
+    if (!isMonth(input.month)) throw referralError(400, 'COMMISSION_MONTH_INVALID', 'The month must look like 2026-11.');
+    const partner = await this.partners.get(input.partnerId);
+    if (!partner) throw referralError(404, 'REFERRAL_LINK_NOT_FOUND', 'That partner does not exist.');
+    const existing = await this.store.getPayout(input.partnerId, input.month);
+    if (existing) return { alreadyRecorded: true as const, payout: existing };
+    const lines = await this.store.linesOfPartnerMonth(input.partnerId, input.month);
+    if (lines.some((l) => l.status === 'ACCRUED')) throw referralError(409, 'COMMISSION_MONTH_NOT_CLOSED', 'Close the month first: some lines have no amount yet.');
+    const t = payoutTotal(lines, input.partnerId, input.month);
+    if (t.lineIds.length === 0 || t.totalMinor <= 0) throw referralError(409, 'COMMISSION_NOTHING_TO_PAY', 'There is nothing approved to pay for that partner and month.');
+    const bp = (await this.settings?.tdsPercentBp()) ?? null;
+    const tds = defaultTds(t.totalMinor, bp);
+    return { alreadyRecorded: false as const, grossMinor: t.totalMinor, tdsPercentBp: bp, tdsMinor: tds, netMinor: t.totalMinor - tds, lines: t.lineIds.length, panOnRecord: !!partner.pan };
+  }
+
+  /** The payouts as CSV for the owner's accountant: gross, TDS and net in rupees, the percent, whether the TDS was changed and why, and the PAN. Staff only (ADMIN and SUPER_ADMIN). A typed formula is defused. */
+  async payoutsCsv(q: { partnerId?: string; month?: string }): Promise<string> {
+    const items: PayoutRow[] = [];
+    for (let skip = 0; ; skip += 200) { const r = await this.store.listPayouts({ ...q, skip, take: 200 }); items.push(...r.items); if (items.length >= r.total || r.items.length === 0) break; }
+    const partners = new Map<string, { name: string; pan: string | null }>();
+    for (const p of items) if (!partners.has(p.partnerId)) { const x = await this.partners.get(p.partnerId); partners.set(p.partnerId, { name: x?.name ?? '', pan: x?.pan ?? null }); }
+    return toCsv(['month', 'partner', 'partnerId', 'pan', 'reference', 'grossRupees', 'tdsPercent', 'tdsRupees', 'netRupees', 'tdsChanged', 'tdsReason', 'paidAt'],
+      items.map((p) => [p.month, partners.get(p.partnerId)?.name, p.partnerId, partners.get(p.partnerId)?.pan, p.reference, rupeesText(p.grossMinor), p.tdsPercentBp === null ? '' : (p.tdsPercentBp / 100).toFixed(2), rupeesText(p.tdsMinor), rupeesText(p.netMinor), p.tdsEdited ? 'yes' : 'no', p.tdsReason, p.paidAt.toISOString()]));
   }
 
   async payouts(q: { partnerId?: string; month?: string; skip: number; take: number }) { return this.store.listPayouts(q); }
@@ -260,6 +294,6 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
 
   async myPayouts(partnerId: string, skip: number, take: number) {
     const r = await this.store.listPayouts({ partnerId, skip, take });
-    return { items: r.items.map((p) => ({ month: p.month, totalMinor: p.totalMinor, status: p.status, reference: p.reference, paidAt: p.paidAt })), total: r.total };
+    return { items: r.items.map((p) => ({ month: p.month, grossMinor: p.grossMinor, tdsMinor: p.tdsMinor, netMinor: p.netMinor, totalMinor: p.totalMinor, status: p.status, reference: p.reference, paidAt: p.paidAt })), total: r.total };
   }
 }

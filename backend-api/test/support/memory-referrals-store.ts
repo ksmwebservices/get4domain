@@ -1,12 +1,12 @@
 import { LedgerKind, LedgerStatus } from '../../src/v3-referrals/core/referral-core';
 import { PartnerFields } from '../../src/v3-partners/core/partner-core';
 import { PartnerRow, PartnersStore, StaffMemberRef } from '../../src/v3-partners/partners.store';
-import { AttributionRow, LedgerRow, LinkRow, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from '../../src/v3-referrals/referrals.store';
+import { AttributionRow, LedgerRow, LinkRow, NewPayout, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from '../../src/v3-referrals/referrals.store';
 
 /** In-memory partners and referral tables for the unit tests, with the same uniqueness rules as the database (one attribution and one ledger line per vendor, one payout per partner and month, unique codes). */
 export class MemoryPartnersStore extends PartnersStore {
   rows: PartnerRow[] = []; staff = new Map<string, StaffMemberRef>(); n = 0;
-  add(f: Partial<PartnerFields> & { name: string; email: string }): PartnerRow { const r: PartnerRow = { id: `p${++this.n}`, type: 'FREELANCER', phone: null, status: 'ACTIVE', staffUserId: null, ...f, createdById: null, createdAt: new Date(), updatedAt: new Date() }; this.rows.push(r); return r; }
+  add(f: Partial<PartnerFields> & { name: string; email: string }): PartnerRow { const r: PartnerRow = { id: `p${++this.n}`, type: 'FREELANCER', phone: null, status: 'ACTIVE', staffUserId: null, pan: null, ...f, createdById: null, createdAt: new Date(), updatedAt: new Date() }; this.rows.push(r); return r; }
   async list(i: { status?: string; type?: string; skip: number; take: number }) { const all = this.rows.filter((r) => (!i.status || r.status === i.status) && (!i.type || r.type === i.type)); return { items: all.slice(i.skip, i.skip + i.take), total: all.length }; }
   async get(id: string) { return this.rows.find((r) => r.id === id) ?? null; }
   async getByStaffUser(s: string) { return this.rows.find((r) => r.staffUserId === s) ?? null; }
@@ -51,9 +51,9 @@ export class MemoryReferralsStore extends ReferralsStore {
   async reverseLine(vendorId: string, reason: string) { const l = this.lines.find((x) => x.vendorId === vendorId && x.kind === 'COMMISSION'); if (!l) return null; if (l.status !== 'REVERSED') { l.status = 'REVERSED'; l.flagged = true; l.flagReason = reason; } return { ...l }; }
 
   async getPayout(partnerId: string, month: string) { const r = this.payouts.find((p) => p.partnerId === partnerId && p.month === month); return r ? { ...r } : null; }
-  async createPayout(p: { partnerId: string; month: string; totalMinor: number; reference: string; paidById: string | null; paidAt: Date }, lineIds: string[]) {
+  async createPayout(p: NewPayout, lineIds: string[]) {
     if (this.payouts.some((x) => x.partnerId === p.partnerId && x.month === p.month)) return null;
-    const row: PayoutRow = { ...p, id: this.id('pay'), status: 'PAID', createdAt: new Date() };
+    const row: PayoutRow = { ...p, grossMinor: p.totalMinor, id: this.id('pay'), status: 'PAID', createdAt: new Date() };
     for (const id of lineIds) { const l = this.lines.find((x) => x.id === id); if (!l || l.status !== 'APPROVED') throw new Error('the ledger changed while the payout was being recorded'); }
     for (const id of lineIds) { const l = this.lines.find((x) => x.id === id)!; l.status = 'PAID'; l.payoutId = row.id; }
     this.payouts.push(row); return { ...row };

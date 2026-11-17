@@ -369,7 +369,7 @@ describe('what a partner sees (and never sees)', () => {
     const w = world(); await two(w);
     const c = await w.svc.myCommission(w.asha.id, 0, 25); expect(c.items).toEqual([{ month: '2026-11', kind: 'COMMISSION', businessName: 'Business v1', status: 'PAID', amountMinor: 100_000, flagged: false }]);
     expect(JSON.stringify(c)).not.toMatch(/vendorId|orderId|private@|9000000001|partnerId/);
-    const p = await w.svc.myPayouts(w.asha.id, 0, 25); expect(p.items).toEqual([{ month: '2026-11', totalMinor: 100_000, status: 'PAID', reference: 'UTR777888', paidAt: expect.any(Date) }]);
+    const p = await w.svc.myPayouts(w.asha.id, 0, 25); expect(p.items).toEqual([{ month: '2026-11', grossMinor: 100_000, tdsMinor: 0, netMinor: 100_000, totalMinor: 100_000, status: 'PAID', reference: 'UTR777888', paidAt: expect.any(Date) }]);
     expect((await w.svc.myPayouts(w.ben.id, 0, 25)).total).toBe(0); expect((await w.svc.myCommission(w.ben.id, 0, 25)).items[0].status).toBe('APPROVED');
   });
   it('a reversed or flagged line is shown to the partner as it is, without the owner\'s note', async () => {

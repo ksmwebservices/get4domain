@@ -8122,6 +8122,8 @@ model ReferralPartner {
   phone       String?
   status      String   @default("ACTIVE") // ACTIVE | DISABLED
   staffUserId String?  @unique
+  /// Wave 4 W8: the partner's PAN, optional, written by staff only; the partner sees only a masked form of their own
+  pan         String?
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -8220,7 +8222,17 @@ model CommissionPayout {
   id          String   @id @default(cuid())
   partnerId   String
   month       String
+  /// the gross amount (what the approved lines add up to); kept equal to grossMinor
   totalMinor  Int
+  /// Wave 4 W8: gross, the TDS held back and the net paid. net = gross - tds. The app applies the percent the owner sets and computes no tax law.
+  grossMinor  Int      @default(0)
+  tdsMinor    Int      @default(0)
+  netMinor    Int      @default(0)
+  /// the percent that was set when the payout was recorded, in basis points (1000 = 10 percent); null when none was set
+  tdsPercentBp Int?
+  /// true when an ADMIN or SUPER_ADMIN changed the pre-filled TDS amount; the reason is then required
+  tdsEdited   Boolean  @default(false)
+  tdsReason   String?
   status      String   @default("PAID")
   reference   String
   paidById    String?

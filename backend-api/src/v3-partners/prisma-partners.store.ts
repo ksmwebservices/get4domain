@@ -3,8 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PartnerFields, PartnerStatus, PartnerType } from './core/partner-core';
 import { PartnerRow, PartnersStore, StaffMemberRef } from './partners.store';
 
-type Row = { id: string; type: string; name: string; email: string; phone: string | null; status: string; staffUserId: string | null; createdById: string | null; createdAt: Date; updatedAt: Date };
-const toRow = (r: Row): PartnerRow => ({ id: r.id, type: r.type as PartnerType, name: r.name, email: r.email, phone: r.phone, status: r.status as PartnerStatus, staffUserId: r.staffUserId, createdById: r.createdById, createdAt: r.createdAt, updatedAt: r.updatedAt });
+type Row = { id: string; type: string; name: string; email: string; phone: string | null; status: string; staffUserId: string | null; pan: string | null; createdById: string | null; createdAt: Date; updatedAt: Date };
+const toRow = (r: Row): PartnerRow => ({ id: r.id, type: r.type as PartnerType, name: r.name, email: r.email, phone: r.phone, status: r.status as PartnerStatus, staffUserId: r.staffUserId, pan: r.pan, createdById: r.createdById, createdAt: r.createdAt, updatedAt: r.updatedAt });
 
 @Injectable()
 export class PrismaPartnersStore extends PartnersStore {

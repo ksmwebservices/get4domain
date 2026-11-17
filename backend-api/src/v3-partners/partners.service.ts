@@ -8,7 +8,7 @@ import { PartnerRow, PartnersStore } from './partners.store';
 export interface PartnerActor { id: string | null; ip?: string | null }
 
 /** What the admin app sees of a partner. */
-export const partnerView = (p: PartnerRow) => ({ id: p.id, type: p.type, name: p.name, email: p.email, phone: p.phone, status: p.status, staffUserId: p.staffUserId, createdAt: p.createdAt, updatedAt: p.updatedAt });
+export const partnerView = (p: PartnerRow) => ({ id: p.id, type: p.type, name: p.name, email: p.email, phone: p.phone, status: p.status, staffUserId: p.staffUserId, pan: p.pan, createdAt: p.createdAt, updatedAt: p.updatedAt });
 
 /**
  * Referral partners (Wave 3 Part A): create, list, edit, disable, and link the admin-team login a partner signs in with. Staff writes are audited. A partner is never deleted (it is DISABLED), so
@@ -35,7 +35,7 @@ export class PartnersService {
     const v = c.value as Required<NonNullable<typeof c.value>>;
     if (await this.store.getByEmail(v.email)) throw partnerError(409, 'PARTNER_EMAIL_TAKEN', 'A partner with that email already exists.');
     if (v.staffUserId) await this.assertLinkable(v.staffUserId, null);
-    const row = await this.store.create({ type: v.type, name: v.name, email: v.email, phone: v.phone ?? null, status: v.status ?? 'ACTIVE', staffUserId: v.staffUserId ?? null }, actor.id);
+    const row = await this.store.create({ type: v.type, name: v.name, email: v.email, phone: v.phone ?? null, status: v.status ?? 'ACTIVE', staffUserId: v.staffUserId ?? null, pan: v.pan ?? null }, actor.id);
     await this.record('partner.created', row.id, actor, { type: row.type, status: row.status });
     return partnerView(row);
   }

@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
-import { PARTNER_STATUSES, PARTNER_TYPES } from '../core/partner-core';
+import { maskPan, PARTNER_STATUSES, PARTNER_TYPES } from '../core/partner-core';
 import { partnerError } from '../partners.errors';
 import { PartnerGuard } from '../partner.guard';
 import { partnerView, PartnersService } from '../partners.service';
@@ -19,6 +19,8 @@ export class PartnerEditDto {
   @IsOptional() phone?: unknown;
   @IsOptional() status?: unknown;
   @IsOptional() staffUserId?: unknown;
+  /** Wave 4 W8: the partner's PAN (staff write only; empty clears it) */
+  @IsOptional() pan?: unknown;
 }
 
 export class PartnerListDto {
@@ -64,6 +66,6 @@ export class PartnerPortalController {
     const p = await this.partners.forLogin(u.sub);
     if (!p) throw partnerError(404, 'PARTNER_NOT_FOUND', 'This login is not linked to an active partner.');
     const v = partnerView(p);
-    return { id: v.id, name: v.name, type: v.type, status: v.status };
+    return { id: v.id, name: v.name, type: v.type, status: v.status, panMasked: maskPan(v.pan) };
   }
 }

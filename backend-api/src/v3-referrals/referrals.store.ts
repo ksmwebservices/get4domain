@@ -4,7 +4,9 @@ export interface LinkRow { id: string; partnerId: string; code: string; active: 
 export interface AttributionRow { id: string; vendorId: string; partnerId: string; linkId: string | null; source: 'REGISTER' | 'ON_BEHALF' | 'ADMIN_CHANGE'; setById: string | null; reason: string | null; createdAt: Date }
 export interface SlabRow extends Slab { createdById: string | null }
 export interface LedgerRow { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: LedgerStatus; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; kind: LedgerKind; adjustsLineId: string | null; createdAt: Date }
-export interface PayoutRow { id: string; partnerId: string; month: string; totalMinor: number; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }
+/** Wave 4 W8: totalMinor is the GROSS (kept equal to grossMinor); net = gross - tds. tdsPercentBp is the percent that was set when it was recorded (null = none). */
+export interface PayoutRow { id: string; partnerId: string; month: string; totalMinor: number; grossMinor: number; tdsMinor: number; netMinor: number; tdsPercentBp: number | null; tdsEdited: boolean; tdsReason: string | null; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }
+export type NewPayout = { partnerId: string; month: string; totalMinor: number; tdsMinor: number; netMinor: number; tdsPercentBp: number | null; tdsEdited: boolean; tdsReason: string | null; reference: string; paidById: string | null; paidAt: Date };
 export interface VendorFacts { id: string; email: string; phone: string | null; businessName: string; state: string | null }
 
 /** Platform data (staff-only tables): links, attributions, slabs, the ledger and the payouts. Every method is a plain read or write; the rules are in the core and the service. */
@@ -45,6 +47,6 @@ export abstract class ReferralsStore {
 
   abstract getPayout(partnerId: string, month: string): Promise<PayoutRow | null>;
   /** one unit: the payout row and APPROVED -> PAID for exactly these lines; null when a payout for that partner and month already exists */
-  abstract createPayout(p: { partnerId: string; month: string; totalMinor: number; reference: string; paidById: string | null; paidAt: Date }, lineIds: string[]): Promise<PayoutRow | null>;
+  abstract createPayout(p: NewPayout, lineIds: string[]): Promise<PayoutRow | null>;
   abstract listPayouts(q: { partnerId?: string; month?: string; skip: number; take: number }): Promise<{ items: PayoutRow[]; total: number }>;
 }

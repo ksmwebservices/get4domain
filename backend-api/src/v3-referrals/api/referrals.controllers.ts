@@ -23,7 +23,8 @@ export class SlabDto {
   @IsOptional() amountPerVendorMinor?: unknown;
   @IsOptional() effectiveFrom?: unknown;
 }
-export class PayoutDto { @IsOptional() partnerId?: unknown; @IsOptional() month?: unknown; @IsOptional() reference?: unknown }
+export class PayoutDto { @IsOptional() partnerId?: unknown; @IsOptional() month?: unknown; @IsOptional() reference?: unknown; /** Wave 4 W8: the TDS amount in paise when the pre-filled one is changed, and the reason that then becomes required */ @IsOptional() tdsMinor?: unknown; @IsOptional() tdsReason?: unknown }
+export class PayoutPreviewDto { @IsOptional() @IsString() @MaxLength(64) partnerId?: string; @IsOptional() @IsString() @MaxLength(7) month?: string }
 export class AttributionDto { @IsOptional() partnerId?: unknown; @IsOptional() reason?: unknown }
 export class LedgerQueryDto {
   @IsOptional() @IsString() @MaxLength(7) month?: string;
@@ -75,9 +76,18 @@ export class AdminReferralsController {
   }
 
   @Post('commission/payouts') @HttpCode(200) @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited: record a payout made by bank or UPI (the reference is required). The month must be closed; one payout per partner and month. No money moves from here and no tax is computed.' })
-  payout(@Body() dto: PayoutDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.referrals.recordPayout({ partnerId: String(dto.partnerId ?? ''), month: String(dto.month ?? ''), reference: dto.reference }, staff(u, req)); }
+  payout(@Body() dto: PayoutDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.referrals.recordPayout({ partnerId: String(dto.partnerId ?? ''), month: String(dto.month ?? ''), reference: dto.reference, tdsMinor: dto.tdsMinor, tdsReason: dto.tdsReason }, staff(u, req)); }
 
-  @Get('commission/payouts') @ApiOperation({ summary: 'The recorded payouts, newest first' })
+  @Get('commission/payouts/preview') @ApiOperation({ summary: 'What recording a payout would do, to pre-fill the screen: gross, the TDS percent in force (empty until the owner sets it), the pre-filled TDS, the net, and whether a PAN is on record (never the PAN). Changes nothing.' })
+  preview(@Query() q: PayoutPreviewDto) { return this.referrals.previewPayout({ partnerId: String(q.partnerId ?? ''), month: String(q.month ?? '') }); }
+
+  @Get('commission/payouts/export.csv') @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN: the payouts as CSV with gross, TDS and net, the percent, whether the TDS was changed and why, and the partner PAN (a typed formula is defused)' })
+  async payoutsCsv(@Query() q: PayoutPreviewDto, @Res({ passthrough: true }) res: Response): Promise<string> {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8'); res.setHeader('Content-Disposition', 'attachment; filename="commission-payouts.csv"'); res.setHeader('Cache-Control', 'private, no-store');
+    return this.referrals.payoutsCsv({ partnerId: q.partnerId, month: q.month });
+  }
+
+  @Get('commission/payouts') @ApiOperation({ summary: 'The recorded payouts, newest first, each with gross, TDS and net' })
   async payouts(@Query() q: LedgerQueryDto) { const a = pageArgs(q); const r = await this.referrals.payouts({ partnerId: q.partnerId, month: q.month, skip: a.skip, take: a.take }); return paged(r.items, r.total, a.page, a.pageSize); }
 
   @Get('vendors/:id/referral') @ApiOperation({ summary: 'Who referred this business (for the vendor detail): the partner name and type, the source and the code, or null' })
@@ -113,7 +123,7 @@ export class PartnerReferralsController {
   @Get('commission') @ApiOperation({ summary: 'My commission lines: month, business name, status, amount' })
   async commission(@CurrentUser() u: AuthenticatedUser, @Query() q: PartnerPageDto) { const a = pageArgs(q); const r = await this.referrals.myCommission(await this.me(u), a.skip, a.take); return paged(r.items, r.total, a.page, a.pageSize); }
 
-  @Get('payouts') @ApiOperation({ summary: 'My recorded payouts: month, total, reference, day' })
+  @Get('payouts') @ApiOperation({ summary: 'My recorded payouts: month, gross, TDS, net, reference, day' })
   async payouts(@CurrentUser() u: AuthenticatedUser, @Query() q: PartnerPageDto) { const a = pageArgs(q); const r = await this.referrals.myPayouts(await this.me(u), a.skip, a.take); return paged(r.items, r.total, a.page, a.pageSize); }
 }
 

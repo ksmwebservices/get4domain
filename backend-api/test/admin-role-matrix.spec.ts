@@ -197,6 +197,8 @@ SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('
 // Wave 3 Part E: the cash order and its confirmation. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (mark-paid is in SUPER_ONLY_ROUTES above and gains ADMIN the same way). OPERATIONS is refused (tested in wave3-cash.spec.ts).
 SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/cash-orders');
 // Wave 4 W2: held payments. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave4-held-payments.spec.ts).
+// Wave 4 W8: the payout preview (read) and the payouts CSV (ADMIN and SUPER_ADMIN, it carries the PAN)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/commission/payouts/export.csv'); MARKETING_DENIED.push('GET /v3/admin/commission/payouts/preview');
 // Wave 4 W7: the GST rate. The write is SUPER_ADMIN only; the read is OPERATIONS and SUPER_ADMIN (MARKETING refused)
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/gst-rate'); MARKETING_DENIED.push('GET /v3/admin/gst-rate');
 // Wave 4 W6: the gateway keys, SUPER_ADMIN only and NOT extended to ADMIN (tested in wave4-gateway-credentials.spec.ts)
@@ -218,7 +220,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(415);
+    expect(oracle).toHaveLength(417);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

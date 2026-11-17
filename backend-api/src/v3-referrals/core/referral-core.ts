@@ -173,6 +173,42 @@ export function payoutTotal(lines: readonly Line[], partnerId: string, month: st
   return { lineIds: ls.map((l) => l.id), totalMinor: ls.reduce((n, l) => n + (l.amountMinor as number), 0) };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────── TDS on a payout (Wave 4 W8)
+/**
+ * The TDS held back from a payout. The app applies the percent the owner sets from the CA's advice and computes NO tax law beyond that: no section, no threshold, no PAN rule. Integer paise throughout.
+ * The pre-filled amount is gross x percent, rounded to the nearest paisa (half up); with no percent set it is 0.
+ */
+export function defaultTds(grossMinor: number, percentBp: number | null): number {
+  if (!percentBp || !Number.isInteger(grossMinor) || grossMinor <= 0) return 0;
+  return Math.round((grossMinor * percentBp) / 10_000);
+}
+export interface TdsInput { tdsMinor?: unknown; tdsReason?: unknown }
+export type TdsCheck =
+  | { ok: true; tdsMinor: number; netMinor: number; edited: boolean; reason: string | null }
+  | { ok: false; fields: Record<string, string> };
+// eslint-disable-next-line no-control-regex
+const TDS_CONTROL = /[\u0000-\u001f\u007f]+/g;
+/**
+ * Checks the TDS of one payout. No amount sent means the pre-filled one. An amount that differs from the pre-filled one is an EDIT and needs a reason of 3 to 300 characters (an ADMIN or SUPER_ADMIN may
+ * edit; the route decides who). TDS is a whole number of paise, 0 or more, and leaves something to pay: below the gross. net = gross - tds.
+ */
+export function checkTds(grossMinor: number, percentBp: number | null, input: TdsInput): TdsCheck {
+  const pre = defaultTds(grossMinor, percentBp);
+  const sent = input.tdsMinor !== undefined && input.tdsMinor !== null;
+  const fields: Record<string, string> = {};
+  let tds = pre;
+  if (sent) {
+    if (typeof input.tdsMinor !== 'number' || !Number.isInteger(input.tdsMinor) || input.tdsMinor < 0) fields.tdsMinor = 'must be a whole number of paise, 0 or more';
+    else if (input.tdsMinor >= grossMinor) fields.tdsMinor = 'must be less than the gross amount';
+    else tds = input.tdsMinor;
+  }
+  const edited = sent && !fields.tdsMinor && tds !== pre;
+  const reason = typeof input.tdsReason === 'string' ? input.tdsReason.replace(TDS_CONTROL, ' ').replace(/\s+/g, ' ').trim() : null;
+  if (edited && (reason === null || reason.length < 3 || reason.length > 300)) fields.tdsReason = 'a reason of 3 to 300 characters is required when the TDS amount is changed';
+  if (Object.keys(fields).length > 0) return { ok: false, fields };
+  return { ok: true, tdsMinor: tds, netMinor: grossMinor - tds, edited, reason: edited ? reason : null };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────── the payout record
 export function checkPayoutReference(ref: unknown): { ok: true; value: string } | { ok: false } {
   const v = typeof ref === 'string' ? ref.replace(/\s+/g, ' ').trim() : '';

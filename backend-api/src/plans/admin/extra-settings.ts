@@ -13,6 +13,7 @@ import { isSmsSettingKey, validateSmsSetting } from '../../v3-mail/settings/sms-
 import { isSupportSettingKey, validateSupportSetting } from '../../v3-support/settings/support-settings';
 import { isAdminActionsSettingKey, validateAdminActionsSetting } from '../../v3-admin-actions/settings/admin-actions-settings';
 import { isMailRulesSettingKey, validateMailRulesSetting } from '../../v3-mail/mail-rules/mail-rules-settings';
+import { isCommissionSettingKey, validateCommissionSetting } from '../../v3-referrals/settings/commission-settings';
 import { validateProvisioningSetting } from '../../provisioning/settings/provisioning-settings';
 
 /**
@@ -46,6 +47,8 @@ const EXTRA: Array<{ owns: (key: string) => boolean; validate: (key: string, val
   { owns: isSupportSettingKey, validate: validateSupportSetting },
   // block 4b (Amendment 09 A4): merging listings stays off until the undo window is set; unset by default
   { owns: isAdminActionsSettingKey, validate: validateAdminActionsSetting },
+  // Wave 4 W8: the TDS percent on commission payouts; unset (no TDS) until the owner sets the CA's rate
+  { owns: isCommissionSettingKey, validate: validateCommissionSetting },
 ];
 
 export function validateExtraSetting(key: string, value: unknown): void {

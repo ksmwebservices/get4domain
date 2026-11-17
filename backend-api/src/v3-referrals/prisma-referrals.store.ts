@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerKind, LedgerStatus, stateOfBusiness } from './core/referral-core';
-import { AttributionRow, LedgerRow, LinkRow, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from './referrals.store';
+import { AttributionRow, LedgerRow, LinkRow, NewPayout, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from './referrals.store';
 
 const isUnique = (e: unknown): boolean => (e as { code?: string })?.code === 'P2002';
 const toLink = (r: { id: string; partnerId: string; code: string; active: boolean; createdById: string | null; disabledAt: Date | null; createdAt: Date }): LinkRow => ({ ...r });
 const toAttr = (r: { id: string; vendorId: string; partnerId: string; linkId: string | null; source: string; setById: string | null; reason: string | null; createdAt: Date }): AttributionRow => ({ ...r, source: r.source as AttributionRow['source'] });
 const toSlab = (r: { id: string; minVendors: number; maxVendors: number | null; amountPerVendorMinor: number; effectiveFrom: Date; createdById: string | null }): SlabRow => ({ ...r });
 const toLine = (r: { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: string; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; kind: string; adjustsLineId: string | null; createdAt: Date }): LedgerRow => ({ ...r, status: r.status as LedgerStatus, kind: r.kind as LedgerKind });
-const toPayout = (r: { id: string; partnerId: string; month: string; totalMinor: number; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }): PayoutRow => ({ ...r });
+const toPayout = (r: { id: string; partnerId: string; month: string; totalMinor: number; grossMinor: number; tdsMinor: number; netMinor: number; tdsPercentBp: number | null; tdsEdited: boolean; tdsReason: string | null; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }): PayoutRow => ({ ...r });
 
 @Injectable()
 export class PrismaReferralsStore extends ReferralsStore {
@@ -92,10 +92,10 @@ export class PrismaReferralsStore extends ReferralsStore {
   }
 
   async getPayout(partnerId: string, month: string) { const r = await this.prisma.commissionPayout.findUnique({ where: { partnerId_month: { partnerId, month } } }); return r ? toPayout(r) : null; }
-  async createPayout(p: { partnerId: string; month: string; totalMinor: number; reference: string; paidById: string | null; paidAt: Date }, lineIds: string[]) {
+  async createPayout(p: NewPayout, lineIds: string[]) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const row = await tx.commissionPayout.create({ data: { ...p, status: 'PAID' } });
+        const row = await tx.commissionPayout.create({ data: { ...p, grossMinor: p.totalMinor, status: 'PAID' } });
         const n = (await tx.commissionLedger.updateMany({ where: { id: { in: lineIds }, status: 'APPROVED', partnerId: p.partnerId, month: p.month }, data: { status: 'PAID', payoutId: row.id } })).count;
         if (n !== lineIds.length) throw new Error('the ledger changed while the payout was being recorded');   // rolls the whole unit back
         return toPayout(row);
