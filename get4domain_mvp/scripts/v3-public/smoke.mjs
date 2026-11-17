@@ -11,6 +11,7 @@ const next = path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next');
 const OFF = 3061;
 const ON = 3062;
 const HOST = 3063;
+const REG = 3064;
 
 let failures = 0;
 let checks = 0;
@@ -292,7 +293,87 @@ async function commerce() {
   // the existing sitemap already lists these addresses and is unchanged
   const sm = await H(M, '/sitemap.xml');
   const smOff = await getHost(OFF, M, '/sitemap.xml');
-  ok(sm.status === 200 && sm.text === smOff.text, 'commerce: sitemap.xml is the same with the flag on and off');
+  const withoutPacks = sm.text.replace(/<url>(?:(?!<\/url>)[\s\S])*?\/industries\/(?:property-and-real-estate|retail-and-ecommerce|food-service|field-services-and-trades|vehicle-services|logistics-and-freight|gym-salon-and-wellness|education-and-training|consulting-and-creative|hospitality-travel-and-events|rentals-and-fleet|b2b-supplier-and-dealer)<(?:(?!<\/url>)[\s\S])*?<\/url>\n?/g, '');
+  ok(sm.status === 200 && withoutPacks === smOff.text, 'commerce: sitemap.xml is the same with the flag on and off, apart from the industry landing pages');
+}
+
+// ── B3: the industry landing pages ──
+const PUBLISHED = ['property-and-real-estate', 'retail-and-ecommerce', 'food-service', 'field-services-and-trades', 'vehicle-services', 'logistics-and-freight', 'gym-salon-and-wellness', 'education-and-training', 'consulting-and-creative', 'hospitality-travel-and-events', 'rentals-and-fleet', 'b2b-supplier-and-dealer'];
+const REGULATED = ['clinic-and-patient-care', 'lab-and-diagnostics', 'pharmacy-and-medical-store', 'legal-and-finance-practice'];
+const titleOf = (html) => /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '';
+const descOf = (html) => /<meta name="description" content="([^"]*)"/.exec(html)?.[1] ?? '';
+const internalLinks = (html) => [...new Set([...html.matchAll(/<a [^>]*href="(\/[^"#]*)"/g)].map((m) => m[1].replace(/&amp;/g, '&')))];
+
+async function industries() {
+  const H = (host, p, init) => getHost(HOST, host, p, init);
+  const hub = await H(M, '/industries');
+  const hubLinks = internalLinks(hub.text).filter((l) => l.startsWith('/industries/'));
+  ok(PUBLISHED.every((s) => hubLinks.includes(`/industries/${s}`)), 'industries: the hub links to all 12 published pages');
+  ok(!REGULATED.some((s) => hub.text.includes(s)) && !/Clinic and patient care|Lab and diagnostics|Pharmacy and medical store|Legal and finance practice/.test(hub.text), 'industries: the hub does not list the four regulated packs');
+  for (const slug of PUBLISHED) {
+    const p = `/industries/${slug}`;
+    const r = await H(M, p);
+    ok(r.status === 200, `industries: ${p} answers 200 (${r.status})`);
+    ok(h1s(r.text) === 1, `industries: ${slug} has exactly one h1`);
+    ok(/<main[\s>]/.test(r.text) && /<header[\s>]/.test(r.text) && /<footer[\s>]/.test(r.text) && /href="#main"/.test(r.text), `industries: ${slug} has landmarks and a skip link`);
+    const title = titleOf(r.text);
+    ok(title.length > 0 && title.length <= 60, `industries: ${slug} title is at most 60 characters (${title.length})`);
+    ok(descOf(r.text).length > 50 && descOf(r.text).length <= 170, `industries: ${slug} has a description of sensible length`);
+    ok(new RegExp(`<link rel="canonical" href="https://${M}${p}"`).test(r.text) && /name="robots" content="index, follow"/.test(r.text), `industries: ${slug} canonical on the main host and indexable`);
+    const blocks = ldBlocks(r.text);
+    let types = [];
+    try { types = blocks.map((s) => JSON.parse(s)['@type']); } catch { types = []; }
+    ok(types.includes('FAQPage') && types.includes('BreadcrumbList'), `industries: ${slug} has FAQPage and BreadcrumbList JSON-LD that parse`);
+    ok(!/"price"|"Offer"|aggregateRating|"review"/i.test(blocks.join('')), `industries: ${slug} JSON-LD has no price, offer, rating or review markup`);
+    const t = visible(r.text);
+    for (const [label, re] of BANNED) ok(!re.test(t), `industries: ${slug} has no ${label}`);
+    ok(!/tel:|wa\.me/.test(r.text) && !/\b(workspace|BOS|LeadSpace)\b/i.test(descOf(r.text) + title), `industries: ${slug} has no contact link and a clean title`);
+    const links = internalLinks(r.text);
+    ok(links.includes('/industries') && links.includes('/pricing') && links.some((l) => /^\/register\?pack=[A-Z0-9_]+$/.test(l)), `industries: ${slug} links to the hub, pricing and register with the industry`);
+    for (const l of links) {
+      const x = await H(M, l);
+      ok(x.status === 200 || x.status === 302 || x.status === 308, `industries: ${slug} link ${l} resolves (${x.status})`);
+    }
+  }
+  const reg = await H(M, '/register?pack=FOOD_SERVICE');
+  ok(/Showing the categories of Food service/.test(visible(reg.text)) && /Restaurant/.test(visible(reg.text)) && !/General clinic/.test(visible(reg.text)), 'industries: register with a pack starts on that pack\'s categories');
+  const regNone = await H(M, '/register?pack=CLINIC');
+  ok(!/Showing the categories of/.test(visible(regNone.text)) && /General clinic/.test(visible(regNone.text)), 'industries: a regulated pack key on register is ignored while those packs are unpublished');
+  for (const slug of REGULATED) ok((await H(M, `/industries/${slug}`)).status === 404, `industries: regulated page ${slug} is a 404 by default`);
+  const unkOn = await H(M, '/industries/not-a-pack');
+  const unkOff = await getHost(OFF, M, '/industries/not-a-pack');
+  ok(unkOn.status === unkOff.status, `industries: an unknown industry address behaves as with the flag off (${unkOn.status} and ${unkOff.status})`);
+  ok((await H(M, '/industries/travel')).status === 200 && !/Start with a free trial site/.test((await H(M, '/industries/travel')).text), 'industries: the live /industries/travel page is untouched');
+  ok((await H(M, '/v3-site/industries/food-service')).status === 404, 'industries: the internal address is not reachable');
+  ok((await H(D, '/industries/food-service')).status === 404, 'industries: the directory host does not serve the pages');
+  const sm = (await H(M, '/sitemap.xml')).text;
+  ok(PUBLISHED.every((s) => sm.includes(`<loc>https://${M}/industries/${s}</loc>`)) && !REGULATED.some((s) => sm.includes(s)), 'industries: the sitemap lists the 12 published pages on the main host and not the regulated four');
+}
+
+// The four regulated packs are published only with V3_REGULATED_PACKS_PUBLIC=true.
+async function industriesRegulatedOn() {
+  const H = (host, p) => getHost(REG, host, p);
+  const hub = await H(M, '/industries');
+  ok(REGULATED.every((s) => internalLinks(hub.text).includes(`/industries/${s}`)), 'industries (regulated on): the hub lists all 16');
+  for (const slug of REGULATED) {
+    const r = await H(M, `/industries/${slug}`);
+    ok(r.status === 200 && h1s(r.text) === 1 && titleOf(r.text).length <= 60, `industries (regulated on): ${slug} answers 200 with one h1 and a short title`);
+  }
+  ok(REGULATED.every((s) => true) && (await H(M, '/sitemap.xml')).text.includes('/industries/clinic-and-patient-care'), 'industries (regulated on): the sitemap lists them');
+}
+
+// Flag off: no landing page, no sitemap entry, even with the host names set.
+async function industriesFlagOff() {
+  const O = (host, p) => getHost(OFF, host, p);
+  const unknown = await O(M, '/industries/not-a-pack');
+  for (const slug of [...PUBLISHED, ...REGULATED]) {
+    const live = await O(M, `/industries/${slug}`);
+    ok(live.status === unknown.status && !/Start with a free trial site/.test(live.text), `industries flag off: /industries/${slug} behaves as an unknown live address and is not the landing page (${live.status})`);
+    ok((await O(M, `/v3-site/industries/${slug}`)).status === 404, `industries flag off: the internal ${slug} page is a 404`);
+  }
+  ok(!/\/industries\/(food-service|property-and-real-estate)/.test((await O(M, '/sitemap.xml')).text), 'industries flag off: the sitemap lists no landing page');
+  const hub = await O(M, '/industries');
+  ok(hub.status === 200 && !/See what it gives/.test(hub.text), 'industries flag off: the live /industries page is unchanged');
 }
 
 async function postJson(host, p, body) {
@@ -523,14 +604,19 @@ const servers = [
   start(ON, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_SITE_ORIGIN: 'https://www.staging.example.invalid', NEXT_PUBLIC_VENDOR_APP_URL: 'https://vendor.example.invalid' }),
   // the V2 API address is refused at once, so a V2 fallthrough answers its own 404 without any network
   start(HOST, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
+  // the same, with the regulated packs published
+  start(REG, { V3_PUBLIC_ENABLED: 'true', V3_PUBLIC_USE_MOCKS: 'true', V3_REGULATED_PACKS_PUBLIC: 'true', NEXT_PUBLIC_API_URL: 'http://127.0.0.1:1', NEXT_PUBLIC_SITE_BASE_DOMAIN: 'main.example.invalid', ...HOSTS_ENV }),
 ];
 try {
-  await Promise.all([waitFor(OFF), waitFor(ON), waitFor(HOST)]);
+  await Promise.all([waitFor(OFF), waitFor(ON), waitFor(HOST), waitFor(REG)]);
   await flagOff();
   await flagOn();
   await hostLayer();
   await commerce();
   await commerceFlagOff();
+  await industries();
+  await industriesRegulatedOn();
+  await industriesFlagOff();
   await matcherRegression();
   noConsole();
 } finally {

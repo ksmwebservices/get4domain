@@ -1,5 +1,6 @@
 import { classifyHost, type HostClass, type HostConfig, originFor, readHostConfig } from './hostnames';
 import { isV3PublicEnabled } from './flag';
+import { ALL_INDUSTRY_SLUGS, industryBySlug } from './industries';
 import { LIVE_SEGMENTS } from './routes';
 
 /**
@@ -41,11 +42,15 @@ const MAIN_PAGES: Readonly<Record<string, string>> = {
   '/': '/v3-site', '/pricing': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
   '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/referral-link': '/v3-site/referral-link',
 };
+const INDUSTRY_PATH = /^\/industries\/([a-z0-9-]+)\/?$/;
 const REFERRAL_PATH = /^\/r\/([A-Za-z0-9_-]{1,64})\/?$/;
 
 export function mainPageTarget(pathname: string): string | null {
   const key = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   if (Object.prototype.hasOwnProperty.call(MAIN_PAGES, key)) return MAIN_PAGES[key];
+  // /industries/{pack slug}: the slugs never equal a live industry id; the page itself answers notFound for a pack that is not published
+  const ind = INDUSTRY_PATH.exec(pathname);
+  if (ind && ALL_INDUSTRY_SLUGS.includes(ind[1])) return `/v3-site/industries/${ind[1]}`;
   const m = REFERRAL_PATH.exec(pathname);
   return m ? `/v3-site/r/${m[1]}` : null;
 }
@@ -89,6 +94,9 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
       if (rest !== null && cfg.directory) return { action: 'redirect', to: `${originFor(cfg.directory)}${rest}${search}`, status: 308 };
       // The directory sitemaps list directory-host addresses, so they are answered on the directory host only.
       if (firstSegment(pathname) === 'sitemaps') return { action: 'not-found', host: 'main' };
+      // a pack that is not published (the regulated four by default) is a real 404 here: a page cannot send one itself (root loading.tsx, gap G9)
+      const ind = INDUSTRY_PATH.exec(pathname);
+      if (ind && ALL_INDUSTRY_SLUGS.includes(ind[1]) && !industryBySlug(ind[1], env)) return { action: 'not-found', host: 'main' };
       const page = mainPageTarget(pathname);
       if (page) return { action: 'rewrite', pathname: page };
       return { action: 'pass', host: 'main' };

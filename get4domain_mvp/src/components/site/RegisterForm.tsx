@@ -6,7 +6,7 @@ import { handoffTarget } from '@/lib/v3-public/handoff';
 import { subdomainProblem, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterField, type SubdomainState } from '@/lib/v3-public/register';
 import { SITE } from '@/lib/v3-public/site-strings';
 
-export interface CategoryOption { key: string; name: string; industry: string }
+export interface CategoryOption { key: string; name: string; industry: string; packKey?: string }
 
 interface Props {
   categories: CategoryOption[];
@@ -16,6 +16,9 @@ interface Props {
   term: number | null;
   termName: string | null;
   referral: boolean;
+  /** a pack key from an industry page (?pack=): the category list starts limited to that pack; null for none */
+  pack?: string | null;
+  packName?: string | null;
   vendorUrl: string | null;
   /** ".main-domain" shown after the address box; empty when the main host is not set */
   suffix: string;
@@ -42,6 +45,9 @@ export default function RegisterForm(p: Props) {
   const [businessName, setBusinessName] = useState('');
   const [categoryKey, setCategoryKey] = useState('');
   const [filter, setFilter] = useState('');
+  const inPack = useMemo(() => (p.pack ? p.categories.filter((c) => c.packKey === p.pack) : []), [p.pack, p.categories]);
+  const [onlyPack, setOnlyPack] = useState(true);
+  const limited = onlyPack && inPack.length > 0;
   const [subdomain, setSubdomain] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -58,8 +64,9 @@ export default function RegisterForm(p: Props) {
 
   const shown = useMemo(() => {
     const f = filter.trim().toLowerCase();
-    return f ? p.categories.filter((c) => c.name.toLowerCase().includes(f)) : p.categories;
-  }, [filter, p.categories]);
+    const base = limited ? inPack : p.categories;
+    return f ? base.filter((c) => c.name.toLowerCase().includes(f)) : base;
+  }, [filter, p.categories, limited, inPack]);
 
   // live availability: the local rules answer at once; the server is asked once the visitor pauses
   useEffect(() => {
@@ -156,6 +163,9 @@ export default function RegisterForm(p: Props) {
         <select id="category" aria-label={R.labels.category} size={6} value={categoryKey} onChange={(e) => setCategoryKey(e.target.value)} aria-invalid={!!errors.category} className={`${INPUT} mt-2`}>
           {shown.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
         </select>
+        {limited ? (
+          <p className="mt-1 text-sm text-slate-600">{R.packLimited.replace('{name}', p.packName ?? '')} <button type="button" onClick={() => setOnlyPack(false)} className="font-medium text-slate-900 underline">{R.packShowAll}</button></p>
+        ) : null}
         {shown.length === 0 && !p.categoriesFailed ? <p className="mt-1 text-sm text-slate-600" role="status">{R.noCategories}</p> : null}
       </Field>
 

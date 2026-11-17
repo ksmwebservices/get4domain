@@ -3,8 +3,8 @@
 | Job | State | Commit | Note |
 |---|---|---|---|
 | R0 Investigate | DONE | see R1 | findings below |
-| R1 Reconcile with Wave 3 contract | DONE | R1COMMIT | pricing, subdomain check, referral, register reconciled; 219 unit tests, 795 smoke checks pass |
-| R2 Industry landing pages | TODO | | |
+| R1 Reconcile with Wave 3 contract | DONE | 095f801 | pricing, subdomain check, referral, register reconciled; 219 unit tests, 795 smoke checks pass |
+| R2 Industry landing pages | DONE | R2COMMIT | 12 pages at /industries/{slug}, regulated 4 behind V3_REGULATED_PACKS_PUBLIC; 239 unit tests, 1186 smoke checks (four servers) |
 | R3 Quality | TODO | | |
 | R4 Docs and report | TODO | | |
 
@@ -26,6 +26,12 @@ Docs live at the repo root `docs/v3` (not under get4domain_mvp). Wave 4 contract
 - Docs path is `get4domain-pub/docs/v3`, the existing location of PUBLIC_SITE.md, not get4domain_mvp.
 - The register answer still carries `accessToken` (not in Wave 3 contract); the existing fallback to the vendor login applies if not.
 - Selected billing term can no longer be sent at register (contract has no field); it stays a query hint only.
+
+- The slugs are descriptive (for example `food-service`, `field-services-and-trades`), chosen so that none equals a live industry id (`retail`, `logistics`, `finance`...), so no live page is shadowed.
+- `src/app/sitemap.ts` now has `export const dynamic = 'force-dynamic'` so the flag (a runtime value) can add the landing pages; with the flag off the XML is byte for byte the same (smoke compares it). This is the only edit to a live file other than the sitemap import lines.
+- An unpublished regulated pack is a real 404 from the middleware decision (a page cannot send one, gap G9). With the flag off the address is the live page's own answer, as for any unknown industry id.
+- `/register?pack=KEY` limits the category list to the pack (with a "Show all categories" button). Only a published pack key counts.
+- One smoke check ("unknown industry address behaves as with the flag off") failed once and passed on the rerun with no code change (first-hit timing on the host server); the check now prints both statuses so a repeat is explained.
 
 ## QUESTIONS FOR THE OWNER
 - none yet
