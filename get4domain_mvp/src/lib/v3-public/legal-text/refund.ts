@@ -63,7 +63,7 @@ export const REFUND: LegalDocDef = {
       id: 'cash-payments',
       heading: 'Cash payments',
       paragraphs: [
-        'A cash payment is accepted only when an administrator of Get4Domain confirms it. Anything to be returned on a cash payment is agreed with that administrator in writing.',
+        'A cash payment is accepted only when an administrator of Get4Domain confirms it. A cash payment follows the same rules as any other plan payment. It is not refundable once the plan is active, with the same exceptions: a duplicate payment, a payment that was taken but did not activate a plan, or a payment whose amount did not match the order and was held. Where an exception applies, the administrator who confirmed the cash handles the return and records it.',
       ],
     },
     {
