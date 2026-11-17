@@ -23,6 +23,20 @@ export class AdminOrdersDto extends PageDto {
   @IsOptional() @IsString() @MaxLength(64) vendorId?: string;
   @IsOptional() @IsIn(['CREATED', 'PENDING_PAYMENT', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED', 'REVIEW']) status?: 'CREATED' | 'PENDING_PAYMENT' | 'PAID' | 'FAILED' | 'EXPIRED' | 'CANCELLED' | 'REVIEW';
 }
+/** Wave 4 W2: the held payments list. Dates are days (YYYY-MM-DD); the range is by the day the payment was held. */
+export class HeldListDto extends PageDto {
+  @IsOptional() @IsString() @MaxLength(64) vendorId?: string;
+  @IsOptional() @IsIn(['razorpay', 'cashfree']) gateway?: 'razorpay' | 'cashfree';
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'from must be a day, YYYY-MM-DD' }) from?: string;
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'to must be a day, YYYY-MM-DD' }) to?: string;
+}
+/** Wave 4 W2: resolving a held payment. Every field is optional HERE on purpose: the real checks are in the pure held core, so every refusal carries the registered code HELD_PAYMENT_INVALID and names the fields. */
+export class HeldResolveDto {
+  @IsOptional() action?: unknown;
+  @IsOptional() note?: unknown;
+  @IsOptional() verifiedAmountPaise?: unknown;
+  @IsOptional() gatewayPaymentId?: unknown;
+}
 export class AdminEventsDto extends PageDto {
   @IsOptional() @IsString() @MaxLength(64) orderId?: string;
 }

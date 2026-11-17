@@ -66,7 +66,7 @@ export abstract class PlanBillingRepository {
   abstract createOrder(d: NewOrder): Promise<OrderRow>;
   abstract updateOrderCas(id: string, expected: OrderStatus[], patch: OrderPatch): Promise<boolean>;
   abstract listOrdersForVendor(vendorId: string, skip: number, take: number): Promise<{ items: OrderRow[]; total: number }>;
-  abstract listOrders(q: { vendorId?: string; status?: OrderStatus; skip: number; take: number }): Promise<{ items: OrderRow[]; total: number }>;
+  abstract listOrders(q: { vendorId?: string; status?: OrderStatus; gateway?: string; from?: Date; to?: Date; skip: number; take: number }): Promise<{ items: OrderRow[]; total: number }>;
   /** marks CREATED / PENDING_PAYMENT orders past their expiry as EXPIRED; returns how many */
   abstract expireStale(now: Date): Promise<number>;
 

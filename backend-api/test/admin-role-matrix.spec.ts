@@ -197,6 +197,8 @@ SUPER_ONLY_ROUTES.push('POST /v3/admin/partners', 'PUT /v3/admin/partners/:id');
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/payment-gateway'); MARKETING_DENIED.push('GET /v3/admin/payment-gateway');
 // Wave 3 Part E: the cash order and its confirmation. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (mark-paid is in SUPER_ONLY_ROUTES above and gains ADMIN the same way). OPERATIONS is refused (tested in wave3-cash.spec.ts).
 SUPER_ONLY_ROUTES.push('POST /v3/admin/billing/vendors/:vendorId/cash-orders');
+// Wave 4 W2: held payments. SUPER_ADMIN in the base table; ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave4-held-payments.spec.ts).
+SUPER_ONLY_ROUTES.push('GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve');
 // Wave 3 Part I: referrals and commission. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-referrals.spec.ts)
 SUPER_ONLY_ROUTES.push('POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral', 'POST /v3/admin/vendors/:id/referral/change');
 MARKETING_DENIED.push('GET /v3/admin/partners/:id/links', 'GET /v3/admin/commission/slabs', 'GET /v3/admin/commission/ledger', 'GET /v3/admin/commission/ledger/export.csv', 'GET /v3/admin/commission/payouts', 'GET /v3/admin/vendors/:id/referral');
@@ -213,7 +215,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(411);
+    expect(oracle).toHaveLength(414);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

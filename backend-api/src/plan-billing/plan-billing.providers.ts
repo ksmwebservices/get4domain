@@ -1,11 +1,12 @@
 import { Provider, Type } from '@nestjs/common';
-import { AdminInvoicesController, AdminPaymentGatewayController, BillingAdminController } from './api/billing-admin.controller';
+import { AdminInvoicesController, AdminPaymentGatewayController, BillingAdminController, HeldPaymentsAdminController } from './api/billing-admin.controller';
 import { MeBillingController } from './api/me-billing.controller';
 import { CashfreeWebhookController, PaymentsWebhookController } from './api/payments-webhook.controller';
 import { OtpPepper } from '../directory/pepper';
 import { PaymentGatewaySettingsService } from './gateway/gateway-settings.service';
 import { PlanInvoiceDeliveryService } from './invoice-delivery.service';
 import { PlanOrderService } from './plan-order.service';
+import { HeldPaymentsService } from './held-payments.service';
 import { PlanBillingRepository } from './plan-billing.repository';
 import { PrismaPlanBillingRepository } from './prisma-plan-billing.repository';
 import { PaymentsGate } from './razorpay/payments-gate';
@@ -18,6 +19,6 @@ import { PaymentSettlementService } from './settlement.service';
 export const PLAN_BILLING_PROVIDERS: Provider[] = [
   { provide: PlanBillingRepository, useClass: PrismaPlanBillingRepository },
   { provide: ReminderMailer, useClass: SandboxReminderMailer },
-  BillingSettingsService, PaymentGatewaySettingsService, PaymentsGate, OtpPepper, PlanInvoiceDeliveryService, PaymentSettlementService, PlanOrderService, RenewalReminderService, PlanBillingCron,
+  BillingSettingsService, PaymentGatewaySettingsService, PaymentsGate, OtpPepper, PlanInvoiceDeliveryService, PaymentSettlementService, HeldPaymentsService, PlanOrderService, RenewalReminderService, PlanBillingCron,
 ];
-export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, CashfreeWebhookController, BillingAdminController, AdminInvoicesController, AdminPaymentGatewayController];
+export const PLAN_BILLING_CONTROLLERS: Type<unknown>[] = [MeBillingController, PaymentsWebhookController, CashfreeWebhookController, BillingAdminController, AdminInvoicesController, AdminPaymentGatewayController, HeldPaymentsAdminController];

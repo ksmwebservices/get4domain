@@ -7,7 +7,7 @@ const D = (s: string): Date => new Date(s);
 describe('order state machine', () => {
   const ALL: OrderStatus[] = ['CREATED', 'PENDING_PAYMENT', 'PAID', 'FAILED', 'EXPIRED', 'CANCELLED', 'REVIEW'];
   const allowed: Record<OrderStatus, OrderStatus[]> = {
-    CREATED: ['PENDING_PAYMENT', 'FAILED', 'EXPIRED', 'CANCELLED'], PENDING_PAYMENT: ['PAID', 'EXPIRED', 'CANCELLED', 'REVIEW'], REVIEW: ['PAID', 'CANCELLED'], PAID: [], FAILED: [], EXPIRED: ['REVIEW'], CANCELLED: ['REVIEW'],   // money that arrives for a closed order goes to staff, it never activates anything
+    CREATED: ['PENDING_PAYMENT', 'FAILED', 'EXPIRED', 'CANCELLED'], PENDING_PAYMENT: ['PAID', 'EXPIRED', 'CANCELLED', 'REVIEW'], REVIEW: ['PAID', 'CANCELLED', 'FAILED'], PAID: [], FAILED: [], EXPIRED: ['REVIEW'], CANCELLED: ['REVIEW'],   // money that arrives for a closed order goes to staff, it never activates anything
   };
   it.each(ALL.flatMap((a) => ALL.map((b) => [a, b] as const)))('%s -> %s', (a, b) => { expect(canTransitionOrder(a, b)).toBe(allowed[a].includes(b)); });
   it('PAID and FAILED are final; EXPIRED and CANCELLED only lead to REVIEW (late money); REVIEW and PENDING_PAYMENT are open', () => { for (const s of ['PAID', 'FAILED'] as const) expect(isTerminalOrder(s)).toBe(true); for (const s of ['EXPIRED', 'CANCELLED', 'REVIEW', 'PENDING_PAYMENT', 'CREATED'] as const) expect(isTerminalOrder(s)).toBe(false); });

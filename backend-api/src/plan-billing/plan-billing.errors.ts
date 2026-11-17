@@ -9,6 +9,8 @@ export const BILLING_ERROR_CODES = [
   'GATEWAY_SETTING_INVALID', 'GATEWAY_NOT_READY', 'LIVE_NOT_ENABLED',
   // Wave 3 Part E: cash confirmed by an admin
   'CASH_ONLY', 'CASH_DETAILS_INVALID', 'CASH_ORDER_INVALID',
+  // Wave 4 W2: a held payment resolved by an admin
+  'HELD_PAYMENT_NOT_FOUND', 'HELD_PAYMENT_INVALID', 'HELD_AMOUNT_MISMATCH', 'HELD_ALREADY_RESOLVED',
 ] as const;
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[number];
 

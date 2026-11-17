@@ -64,8 +64,8 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     const [rows, total] = await Promise.all([this.prisma.v3PlanOrder.findMany({ where: { vendorId }, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], skip, take }), this.prisma.v3PlanOrder.count({ where: { vendorId } })]);
     return { items: rows.map(toOrder), total };
   }
-  async listOrders(q: { vendorId?: string; status?: OrderStatus; skip: number; take: number }) {
-    const where: Prisma.V3PlanOrderWhereInput = { ...(q.vendorId ? { vendorId: q.vendorId } : {}), ...(q.status ? { status: q.status } : {}) };
+  async listOrders(q: { vendorId?: string; status?: OrderStatus; gateway?: string; from?: Date; to?: Date; skip: number; take: number }) {
+    const where: Prisma.V3PlanOrderWhereInput = { ...(q.vendorId ? { vendorId: q.vendorId } : {}), ...(q.status ? { status: q.status } : {}), ...(q.gateway ? { gateway: q.gateway } : {}), ...(q.from || q.to ? { updatedAt: { ...(q.from ? { gte: q.from } : {}), ...(q.to ? { lt: q.to } : {}) } } : {}) };
     const [rows, total] = await Promise.all([this.prisma.v3PlanOrder.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'asc' }], skip: q.skip, take: q.take }), this.prisma.v3PlanOrder.count({ where })]);
     return { items: rows.map(toOrder), total };
   }

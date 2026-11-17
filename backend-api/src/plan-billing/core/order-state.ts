@@ -8,7 +8,7 @@ export type OrderStatus = 'CREATED' | 'PENDING_PAYMENT' | 'PAID' | 'FAILED' | 'E
 const NEXT: Record<OrderStatus, OrderStatus[]> = {
   CREATED: ['PENDING_PAYMENT', 'FAILED', 'EXPIRED', 'CANCELLED'],
   PENDING_PAYMENT: ['PAID', 'EXPIRED', 'CANCELLED', 'REVIEW'],
-  REVIEW: ['PAID', 'CANCELLED'],
+  REVIEW: ['PAID', 'CANCELLED', 'FAILED'],   // Wave 4: staff ACCEPT a held payment (PAID) or REJECT it (FAILED)
   PAID: [], FAILED: [],
   EXPIRED: ['REVIEW'], CANCELLED: ['REVIEW'],   // a payment that arrives for a closed order is money without a purchase: staff decide, nothing activates by itself
 };

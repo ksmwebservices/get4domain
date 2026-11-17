@@ -13,7 +13,8 @@ import { PlanBillingRepository } from '../plan-billing.repository';
 import { PaymentSettlementService } from '../settlement.service';
 import { PaymentGatewaySettingsService } from '../gateway/gateway-settings.service';
 import { PlanOrderService } from '../plan-order.service';
-import { AdminEventsDto, AdminOrdersDto, CashConfirmDto, CreateCashOrderDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
+import { HeldPaymentsService } from '../held-payments.service';
+import { AdminEventsDto, AdminOrdersDto, CashConfirmDto, CreateCashOrderDto, HeldListDto, HeldResolveDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
 
 /** Staff side of plan purchases. Reads: OPERATIONS and SUPER_ADMIN. Marking an order paid offline and recording a refund: SUPER_ADMIN only. MARKETING is refused everywhere. All writes are audited. */
 @ApiTags('v3-billing-admin')
@@ -50,6 +51,35 @@ export class BillingAdminController {
   @Post('orders/:id/refund') @HttpCode(200)
   @ApiOperation({ summary: 'Record a refund that was made elsewhere (SUPER_ADMIN). A record only: no money moves and the subscription is not changed.' })
   refund(@Param('id') id: string, @Body() dto: RefundDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.settlement.recordRefund(id, dto, actorOf(u, req)); }
+}
+
+/**
+ * Wave 4 W2: held payments. A payment the gateway reported whose amount or currency did not match its order (or that arrived for a closed order) waits here. ADMIN and SUPER_ADMIN only (the role matrix); every other
+ * role is refused. The admin checks the gateway dashboard, then ACCEPTS (only when the verified amount equals the order total including GST) or REJECTS with a note. Refunds are done in the gateway dashboard.
+ */
+@ApiTags('v3-billing-admin')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('v3/admin/billing/held-payments')
+export class HeldPaymentsAdminController {
+  constructor(private readonly held: HeldPaymentsService, @Optional() private readonly prisma?: PrismaService) {}
+
+  @Get() @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN: payments on hold, newest first, paged; filter by business, gateway and the day held (from, to)' })
+  async list(@Query() q: HeldListDto) {
+    const { skip, take, page, pageSize } = pageArgs(q);
+    const day = (v?: string, plus = 0): Date | undefined => (v ? new Date(Date.parse(`${v}T00:00:00.000Z`) + plus * 86400000) : undefined);
+    const r = await this.held.list({ vendorId: q.vendorId, gateway: q.gateway, from: day(q.from), to: day(q.to, 1), skip, take });
+    return paged(r.items, r.total, page, pageSize);
+  }
+
+  @Get(':id') @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN: one held payment: the order, the expected total, the amount seen, the gateway ids, when it was held, and how it was resolved if it was' })
+  detail(@Param('id') id: string) { return this.held.detail(id); }
+
+  @Post(':id/resolve') @HttpCode(200)
+  @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited, idempotent: ACCEPT (needs the verified amount, equal to the order total including GST, and the gateway payment id; activates the plan and makes the invoice in one transaction) or REJECT (marks the order failed and queues the vendor message). A note is required.' })
+  async resolve(@Param('id') id: string, @Body() dto: HeldResolveDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) {
+    return this.held.resolve(id, dto, actorOf(u, req), await staffDisplayName(this.prisma, u));
+  }
 }
 
 class InvoiceListDto {
