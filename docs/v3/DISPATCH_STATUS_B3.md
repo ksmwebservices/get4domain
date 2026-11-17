@@ -22,13 +22,15 @@ Docs live at the repo root `docs/v3` (not under get4domain_mvp). Wave 4 contract
 | G31 pack list | none | Not in Wave 3 (`/v3/public/themes?pack=` exists but lists themes, not pack contents) | Stays open |
 | G1, G3 to G7, G12 to G16, G22, G23 | | Not covered by Wave 3 | Unchanged |
 
+| R5 Follow-up G35, G36 | DONE | see git log | unknown industry id is a real 404 with the flag on; sitemap.ts restored, own industries sitemap |
+
 ## ASSUMPTIONS
 - Docs path is `get4domain-pub/docs/v3`, the existing location of PUBLIC_SITE.md, not get4domain_mvp.
 - The register answer still carries `accessToken` (not in Wave 3 contract); the existing fallback to the vendor login applies if not.
 - Selected billing term can no longer be sent at register (contract has no field); it stays a query hint only.
 
 - The slugs are descriptive (for example `food-service`, `field-services-and-trades`), chosen so that none equals a live industry id (`retail`, `logistics`, `finance`...), so no live page is shadowed.
-- `src/app/sitemap.ts` now has `export const dynamic = 'force-dynamic'` so the flag (a runtime value) can add the landing pages; with the flag off the XML is byte for byte the same (smoke compares it). This is the only edit to a live file other than the sitemap import lines.
+- (Superseded by R5: sitemap.ts is restored.) `src/app/sitemap.ts` had `export const dynamic = 'force-dynamic'` so the flag (a runtime value) can add the landing pages; with the flag off the XML is byte for byte the same (smoke compares it). This is the only edit to a live file other than the sitemap import lines.
 - An unpublished regulated pack is a real 404 from the middleware decision (a page cannot send one, gap G9). With the flag off the address is the live page's own answer, as for any unknown industry id.
 - `/register?pack=KEY` limits the category list to the pack (with a "Show all categories" button). Only a published pack key counts.
 - The smoke failure seen once on "unknown industry address" was real, not timing: with the flag on, an unknown live `/industries/{id}` answers 500 (root layout reads `headers()` only when the flag is on, so an id that was not prerendered cannot render: DYNAMIC_SERVER_USAGE). With the flag off it is the live soft 404. Neither file is changed by this dispatch (git diff empty), so it is pre-existing: recorded as gap G35, not fixed (live files). The smoke now asserts only that such an address is never a landing page.

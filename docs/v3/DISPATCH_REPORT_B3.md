@@ -24,15 +24,14 @@ Nothing. No job hit the three-attempt rule.
 
 ## Pages and routes added
 - `/industries/{slug}` (12 slugs, main host, rewritten internally to `/v3-site/industries/{slug}`), `/register?pack=KEY`.
-- Hub `/industries` now links each page. Sitemap lists the 12 on the main host (flag on and `MAIN_HOST` set only).
+- Hub `/industries` now links each page. The 12 are listed in `/sitemap-industries.xml` (R5), not in `sitemap.xml`.
 - New env flag `V3_REGULATED_PACKS_PUBLIC` (default off): CLINIC, LAB, PHARMACY, PRACTICE_LEGAL_FINANCE get a page, a hub entry and a sitemap entry only when it is exactly `true`; off means a real 404 from the middleware.
-- Files: `lib/v3-public/industries.ts` (new), `plans.ts`, `register.ts`, `register-proxy.ts`, `referral.ts`, `host-routing.ts`, `site-strings.ts`, `components/site/RegisterForm.tsx`, the pricing, register and industries pages, `app/sitemap.ts`, tests and smoke.
+- Files: `lib/v3-public/industries.ts` (new), `plans.ts`, `register.ts`, `register-proxy.ts`, `referral.ts`, `host-routing.ts`, `site-strings.ts`, `components/site/RegisterForm.tsx`, the pricing, register and industries pages, tests and smoke. (`app/sitemap.ts` was changed in R2 and put back in R5.)
 
 ## Gaps still open
 - G28 (rest): `/auth/register` answer shape and `industry` value are not in the contract; no field for term or category key.
 - G31: no public pack list (landing pages use data in the app).
-- G35 (new, live, owner): flag on, an unknown live `/industries/{id}` answers 500. Pre-existing, found by smoke; suggested fix `dynamicParams = false` on that page.
-- G36 (new, owner): `sitemap.ts` is `force-dynamic` so the flag can add pages; XML with the flag off is unchanged.
+- G35 and G36: fixed or resolved in the R5 follow-up (below).
 - G34 (new, owner): counsel sign-off before `V3_REGULATED_PACKS_PUBLIC=true`.
 - G19: no ESLint configuration in the app, so lint was not run (not added, per the dispatch).
 - Unchanged and still open: G1 to G7, G11 to G16, G18, G20 to G27, G32, G33.
@@ -46,4 +45,10 @@ Nothing. No job hit the three-attempt rule.
 ## Skipped
 - Real-mode network test of the new routes (no API access by rule).
 - A test of the referral route's real-mode parsing with a stubbed fetch (the `source` read is one line; mock mode is tested).
-- Fixing G35 (live file).
+
+## Follow-up R5 (G35 and G36)
+- **G35 fixed.** With the flag on, an unknown `/industries/{id}` is now a real 404 from the middleware (it was a 500). The live page is untouched and with the flag off nothing runs, so its answer is as before. The check uses `LIVE_INDUSTRY_IDS` (30 ids). A first version that used the shorter `industries-list` (20 ids) would have 404'd ten live pages (`petcare`, `movers`, `astrology`, `pestcontrol`, `interior`, `homeservices`, `rentalservices`, `printing`, `recruitment`, `government`); a unit test now compares the list with `industryContent`. Unit test and smoke checks added (unknown id 404 on repeated requests, with and without host names, live `/industries/travel` still 200).
+- **G36 resolved without touching live behaviour.** `app/sitemap.ts` is restored to its earlier content and is prerendered again (the build lists `/sitemap.xml` as static). A prerendered file cannot read a runtime flag, so the landing pages moved to their own route `/sitemap-industries.xml` (dynamic; served only on the canonical main host with the flag on and `MAIN_HOST` set; 404 otherwise and on the directory host). robots.txt names it only while the flag is on. `/sitemap-industries.xml` is a live segment so the directory host cannot serve it, and because dotted paths skip the middleware the route checks the host itself.
+- **Proof.** Smoke compares `sitemap.xml` of the flag-on and flag-off servers byte for byte (equal), checks the new sitemap in all modes, and checks robots.txt lines in flag off, flag on without hosts, and flag on with hosts.
+- **Tests after R5.** `tsc --noEmit` clean, build clean, 244 unit tests pass, smoke 1198 of 1198.
+

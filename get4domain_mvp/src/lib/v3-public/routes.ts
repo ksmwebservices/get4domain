@@ -41,7 +41,7 @@ export function isV3PublicPath(pathname: string): boolean {
 export const LIVE_SEGMENTS: ReadonlySet<string> = new Set([
   'about', 'admin', 'admin-team', 'api', 'book-demo', 'cart', 'checkout', 'contact', 'customer', 'd', 'dashboard', 'demo', 'digital-growth', 'domain-app', 'domain-campaign',
   'engine', 'features', 'go', 'how-it-works', 'industries', 'leadspace', 'login', 'ls', 'managed-services', 'offline', 'order-success', 'pay', 'portfolio', 'pricing',
-  'privacy-policy', 'products', 'quote', 'refund-policy', 'register', 'robots.txt', 'site', 'sitemap.xml', 'support', 'talk-to-sales', 'templates', 'terms',
+  'privacy-policy', 'products', 'quote', 'refund-policy', 'register', 'robots.txt', 'site', 'sitemap.xml', 'sitemap-industries.xml', 'support', 'talk-to-sales', 'templates', 'terms',
   'theme-local-test', 'theme-pack', 'theme-preview', 'visit-demo',
 ]);
 

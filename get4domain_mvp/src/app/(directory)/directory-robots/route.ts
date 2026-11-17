@@ -5,6 +5,8 @@ import { siteOrigin } from '@/lib/v3-public/config';
 import { hostRoutingActive } from '@/lib/v3-public/host-routing';
 import { classifyHost, originFor, readHostConfig } from '@/lib/v3-public/hostnames';
 import { guardResponse } from '@/lib/v3-public/proxy';
+import { INDUSTRIES_SITEMAP_PATH } from '@/lib/v3-public/industries';
+import { mainOrigin } from '@/lib/v3-public/site-metadata';
 import { directoryHostRobots, parseDirectoryRobots, robotsToText, type RobotsInput } from '@/lib/v3-public/robots';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +21,14 @@ const text = (body: string, status = 200): Response =>
  *   main host       the existing rules and the existing main sitemaps only; no directory lines
  * With no host names configured it keeps the earlier single-host behaviour: the existing rules plus the directory additions.
  */
+/** Flag on and a main host: the landing page sitemap is named in robots.txt (this handler exists only while the flag is on). */
+function withIndustriesSitemap(base: RobotsInput): RobotsInput {
+  const origin = mainOrigin();
+  if (!origin) return base;
+  const have = base.sitemap === undefined ? [] : Array.isArray(base.sitemap) ? base.sitemap : [base.sitemap];
+  return { ...base, sitemap: [...have, `${origin}${INDUSTRIES_SITEMAP_PATH}`] };
+}
+
 export async function GET(): Promise<Response> {
   const off = guardResponse();
   if (off) return off;
@@ -32,7 +42,7 @@ export async function GET(): Promise<Response> {
       if (!backend || backend.status !== 200) return text('Unavailable', 503);
       return text(directoryHostRobots(backend.body, originFor(cfg.directory!)));
     }
-    if (cls.kind === 'main') return text(robotsToText(robots() as unknown as RobotsInput, { indexable: false, disallow: [] }, null));
+    if (cls.kind === 'main') return text(robotsToText(withIndustriesSitemap(robots() as unknown as RobotsInput), { indexable: false, disallow: [] }, null));
     return text('Not found', 404);
   }
   const backend = await fetchText('/v3/directory/robots.txt');

@@ -4,7 +4,8 @@ import { INDUSTRIES } from '../../../data/industries-list';
 import { brandedTitle } from '../../metadata';
 import { decideHost } from '../host-routing';
 import { readHostConfig } from '../hostnames';
-import { ALL_INDUSTRY_SLUGS, industryBySlug, industryDescription, industryTitle, PACK_SLUGS, PACK_SUITS, publishedIndustries, REGULATED_PACKS, regulatedPacksPublic } from '../industries';
+import { industryContent } from '../../../data/industry-content';
+import { ALL_INDUSTRY_SLUGS, INDUSTRIES_SITEMAP_PATH, LIVE_INDUSTRY_IDS, industryBySlug, isUnknownLiveIndustryPath, industryDescription, industryTitle, PACK_SLUGS, PACK_SUITS, publishedIndustries, REGULATED_PACKS, regulatedPacksPublic } from '../industries';
 import { PACKS } from '../packs';
 import { breadcrumbLd, faqLd } from '../site-jsonld';
 import { SITE } from '../site-strings';
@@ -130,5 +131,20 @@ describe('structured data of the landing pages', () => {
     } finally {
       if (prev === undefined) delete process.env.MAIN_HOST; else process.env.MAIN_HOST = prev;
     }
+  });
+});
+
+describe('unknown live industry ids (G35)', () => {
+  const live = LIVE_INDUSTRY_IDS;
+  test('the id list the middleware uses is exactly the list of prerendered live pages', () => {
+    assert.deepEqual([...live].sort(), industryContent.map((i: { id: string }) => i.id).sort());
+  });
+  test('an unknown single id is flagged; a live id, a nested path and other paths are not', () => {
+    for (const p of ['/industries/not-a-pack', '/industries/zzz/', '/industries/Food-Service', '/industries/%E0%A4%A']) assert.equal(isUnknownLiveIndustryPath(p, live), true, p);
+    for (const p of ['/industries/travel', '/industries/restaurant/', '/industries', '/industries/travel/x', '/pricing/nothing']) assert.equal(isUnknownLiveIndustryPath(p, live), false, p);
+  });
+  test('the industries sitemap path is a live segment, so the directory host never serves it', async () => {
+    const { LIVE_SEGMENTS } = await import('../routes');
+    assert.ok(LIVE_SEGMENTS.has(INDUSTRIES_SITEMAP_PATH.slice(1)));
   });
 });

@@ -67,3 +67,27 @@ export function industryBySlug(slug: string, env: Env = process.env): IndustryPa
 
 /** Every slug that exists as data, published or not (the host routing sends all of them to the page, which decides). */
 export const ALL_INDUSTRY_SLUGS: readonly string[] = ALL.map((p) => p.slug);
+
+/**
+ * The ids of the live /industries/{id} pages (the prerendered ones: `industryContent` in data/industry-content.ts). A literal list so the middleware does not bundle the page copy;
+ * a unit test compares it with `industryContent`, so a new live industry cannot be missed (it would be a 404 with the flag on).
+ */
+export const LIVE_INDUSTRY_IDS: ReadonlySet<string> = new Set([
+  'restaurant', 'travel', 'clinic', 'education', 'realestate', 'retail', 'salon', 'gym', 'construction', 'professional', 'events', 'finance', 'automobile', 'logistics', 'hotel', 'diagnostics',
+  'photography', 'technology', 'agriculture', 'coaching', 'petcare', 'movers', 'astrology', 'pestcontrol', 'interior', 'homeservices', 'rentalservices', 'printing', 'recruitment', 'government',
+]);
+
+/** The address of the sitemap that lists the landing pages. */
+export const INDUSTRIES_SITEMAP_PATH = '/sitemap-industries.xml';
+
+/**
+ * True for `/industries/{id}` (one segment) when `id` is not a live industry page. With the flag on the middleware answers these with a real 404:
+ * the live page cannot render an id that was not prerendered once the root layout reads headers() (it answered 500), and a page cannot send a 404 itself (root loading.tsx).
+ */
+export function isUnknownLiveIndustryPath(pathname: string, liveIds: ReadonlySet<string>): boolean {
+  const m = /^\/industries\/([^/]+)\/?$/.exec(pathname);
+  if (!m) return false;
+  let id = m[1];
+  try { id = decodeURIComponent(id); } catch { return true; } // a malformed escape is not a live id
+  return !liveIds.has(id) && !liveIds.has(id.toLowerCase());
+}

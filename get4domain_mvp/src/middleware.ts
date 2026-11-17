@@ -7,6 +7,7 @@ import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
 import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
 import { decideHost } from '@/lib/v3-public/host-routing';
 import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER, V3_VENDOR_SITE_ROOT } from '@/lib/v3-public/routes';
+import { isUnknownLiveIndustryPath, LIVE_INDUSTRY_IDS } from '@/lib/v3-public/industries';
 import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
 import { forwardedFor } from '@/lib/v3-public/proxy';
 
@@ -143,6 +144,10 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   }
   // The internal page behind the directory gate is only ever reached by the gate's rewrite (which runs after this), never by a visitor typing the address.
   if (isInternalOnlyPath(pathname)) {
+    return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
+  }
+  // Flag on only: an unknown /industries/{id} is a real 404 (G35). Flag off: the live page answers as it always did.
+  if (isV3PublicEnabled() && (req.method === 'GET' || req.method === 'HEAD') && isUnknownLiveIndustryPath(pathname, LIVE_INDUSTRY_IDS)) {
     return new NextResponse('Not found', { status: 404, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
   }
   // Flag on: /robots.txt of the main host is answered by the handler that adds the directory lines (the existing robots.ts stays as it is and answers while the flag is off).

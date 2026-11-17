@@ -293,8 +293,8 @@ async function commerce() {
   // the existing sitemap already lists these addresses and is unchanged
   const sm = await H(M, '/sitemap.xml');
   const smOff = await getHost(OFF, M, '/sitemap.xml');
-  const withoutPacks = sm.text.replace(/<url>(?:(?!<\/url>)[\s\S])*?\/industries\/(?:property-and-real-estate|retail-and-ecommerce|food-service|field-services-and-trades|vehicle-services|logistics-and-freight|gym-salon-and-wellness|education-and-training|consulting-and-creative|hospitality-travel-and-events|rentals-and-fleet|b2b-supplier-and-dealer)<(?:(?!<\/url>)[\s\S])*?<\/url>\n?/g, '');
-  ok(sm.status === 200 && withoutPacks === smOff.text, 'commerce: sitemap.xml is the same with the flag on and off, apart from the industry landing pages');
+  ok(sm.status === 200 && sm.text === smOff.text, 'commerce: sitemap.xml is byte for byte the same with the flag on and off');
+  ok(!/\/industries\/(food-service|property-and-real-estate)/.test(sm.text), 'commerce: sitemap.xml lists no landing page (they have their own sitemap)');
 }
 
 // ── B3: the industry landing pages ──
@@ -340,20 +340,28 @@ async function industries() {
   const regNone = await H(M, '/register?pack=CLINIC');
   ok(!/Showing the categories of/.test(visible(regNone.text)) && /General clinic/.test(visible(regNone.text)), 'industries: a regulated pack key on register is ignored while those packs are unpublished');
   for (const slug of REGULATED) ok((await H(M, `/industries/${slug}`)).status === 404, `industries: regulated page ${slug} is a 404 by default`);
-  // known, pre-existing (gap G35): with the flag on, an unknown live /industries/{id} answers 500 (the root layout reads headers(), so an unprerendered id cannot render); with the flag off it is the live soft 404. Not changed here.
+  // G35: with the flag on an unknown live /industries/{id} is a real 404 (it was a 500); the flag-off answer is the live page's own
   const unkOn = await H(M, '/industries/not-a-pack');
-  ok(!/Start with a free trial site/.test(unkOn.text), `industries: an unknown industry address is never a landing page (${unkOn.status})`);
+  ok(unkOn.status === 404 && !/Start with a free trial site/.test(unkOn.text), `industries: an unknown industry address is a real 404 with the flag on (${unkOn.status})`);
+  ok((await H(M, '/industries/zzz')).status === 404 && (await H(M, '/industries/zzz')).status === 404, 'industries: an unknown industry address is a 404 on every request, not only the first');
   ok((await H(M, '/industries/travel')).status === 200 && !/Start with a free trial site/.test((await H(M, '/industries/travel')).text), 'industries: the live /industries/travel page is untouched');
   ok((await H(M, '/v3-site/industries/food-service')).status === 404, 'industries: the internal address is not reachable');
   ok((await H(D, '/industries/food-service')).status === 404, 'industries: the directory host does not serve the pages');
-  const sm = (await H(M, '/sitemap.xml')).text;
-  ok(PUBLISHED.every((s) => sm.includes(`<loc>https://${M}/industries/${s}</loc>`)) && !REGULATED.some((s) => sm.includes(s)), 'industries: the sitemap lists the 12 published pages on the main host and not the regulated four');
+  const ism = await H(M, '/sitemap-industries.xml');
+  ok(ism.status === 200 && /xml/.test(ism.headers.get('content-type') ?? '') && PUBLISHED.every((x) => ism.text.includes(`<loc>https://${M}/industries/${x}</loc>`)) && !REGULATED.some((x) => ism.text.includes(x)), 'industries: /sitemap-industries.xml lists the 12 published pages on the main host and not the regulated four');
+  ok((await H(D, '/sitemap-industries.xml')).status === 404, 'industries: the directory host does not serve the industries sitemap');
+  const rob = (await H(M, '/robots.txt')).text;
+  ok(rob.includes(`Sitemap: https://${M}/sitemap-industries.xml`) && /Sitemap: https:\/\/get4domain\.com\/sitemap\.xml/.test(rob), 'industries: robots.txt names the industries sitemap next to the existing ones');
+  ok(!/sitemap-industries/.test((await H(D, '/robots.txt')).text), 'industries: the directory host robots.txt does not name it');
 }
 
 // Flag on, host names not set: the host layer is inactive, so the landing pages are not routed (same as the other commercial pages) and nothing live changes.
 async function industriesNoHosts() {
   const live = await get(ON, '/industries/food-service');
-  ok(!/Start with a free trial site/.test(live.text), `industries (no host names): /industries/food-service is not routed to the landing page (${live.status})`);
+  ok(live.status === 404 && !/Start with a free trial site/.test(live.text), `industries (no host names): /industries/food-service is not routed to the landing page (${live.status})`);
+  ok((await get(ON, '/industries/not-a-pack')).status === 404, 'industries (no host names): an unknown industry address is a real 404');
+  ok((await get(ON, '/sitemap-industries.xml')).status === 404, 'industries (no host names): no industries sitemap without a main host');
+  ok(!/sitemap-industries/.test((await get(ON, '/robots.txt')).text), 'industries (no host names): robots.txt does not name it');
   ok((await get(ON, '/v3-site/industries/food-service')).status === (await get(ON, '/v3-site/pricing')).status, 'industries (no host names): the internal page is reachable exactly as the other commercial pages are');
   ok((await get(ON, '/industries/travel')).status === 200, 'industries (no host names): the live /industries/travel still answers 200');
 }
@@ -367,7 +375,7 @@ async function industriesRegulatedOn() {
     const r = await H(M, `/industries/${slug}`);
     ok(r.status === 200 && h1s(r.text) === 1 && titleOf(r.text).length <= 60, `industries (regulated on): ${slug} answers 200 with one h1 and a short title`);
   }
-  ok(REGULATED.every((s) => true) && (await H(M, '/sitemap.xml')).text.includes('/industries/clinic-and-patient-care'), 'industries (regulated on): the sitemap lists them');
+  ok(REGULATED.every((s) => true) && (await H(M, '/sitemap-industries.xml')).text.includes('/industries/clinic-and-patient-care'), 'industries (regulated on): the industries sitemap lists them');
 }
 
 // Flag off: no landing page, no sitemap entry, even with the host names set.
@@ -380,6 +388,7 @@ async function industriesFlagOff() {
     ok((await O(M, `/v3-site/industries/${slug}`)).status === 404, `industries flag off: the internal ${slug} page is a 404`);
   }
   ok(!/\/industries\/(food-service|property-and-real-estate)/.test((await O(M, '/sitemap.xml')).text), 'industries flag off: the sitemap lists no landing page');
+  ok((await O(M, '/sitemap-industries.xml')).status === 404 && !/sitemap-industries/.test((await O(M, '/robots.txt')).text), 'industries flag off: no industries sitemap and no robots line for it');
   const hub = await O(M, '/industries');
   ok(hub.status === 200 && !/See what it gives/.test(hub.text), 'industries flag off: the live /industries page is unchanged');
 }

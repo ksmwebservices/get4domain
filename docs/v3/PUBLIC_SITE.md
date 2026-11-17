@@ -164,7 +164,7 @@ Browser calls (same origin, flag guarded): `POST /directory-api/register`, `GET 
 
 Copy: one module (`lib/v3-public/site-strings.ts`), tested over every string: no workspace, BOS or LeadSpace, "enquiries" not "leads", no timeframes (the three billing terms are allowed), no written price, no discount, offer, coupon or deal wording, no ranking claim, no rating or review claim. Smoke repeats the rules on the rendered text of every page.
 
-Sitemap: the first six pages have the same addresses as the live ones, which `sitemap.xml` already lists. The industry landing pages (section 11) are added to it only with the flag on and `MAIN_HOST` set; with the flag off the XML is identical to before (checked). Register and referral pages are noindex.
+Sitemap: the first six pages have the same addresses as the live ones, which `sitemap.xml` already lists. The industry landing pages (section 11) are not in it: they have their own `/sitemap-industries.xml` (flag on, main host only), named in robots.txt only while the flag is on. `sitemap.xml` itself is byte for byte the same with the flag on and off (checked). Register and referral pages are noindex.
 
 Reviewing with samples: `npm run build`, then `V3_PUBLIC_ENABLED=true MAIN_HOST=localhost DIRECTORY_HOST=directory.localhost npx next start` and open `/`, `/pricing`, `/register?plan=professional&term=12`, `/r/SAMPLE-PARTNER` (valid), `/r/SAMPLE-OFF` (disabled), `/industries`. Sample addresses: `taken-site` is taken, `taken@example.invalid` is a taken email, `api` is reserved.
 
@@ -185,7 +185,8 @@ Branch `v3-pub-fe4`. Same switch as sections 9 and 10 (`V3_PUBLIC_ENABLED` and `
 - **Content.** Server rendered from `lib/v3-public/packs.ts` and `lib/v3-public/industries.ts` (kinds of business) and `site-strings.ts` (`SITE.industryPage`): what the pack gives (its working areas), the kinds of business it suits, the registered categories from the API, how it works (register, trial site live, move to a paid plan), a call to action to `/register?pack=KEY`, links to the hub and `/pricing`, and an FAQ. Title is the pack name and "website" with the brand when it fits in 60 characters; description; canonical on the main host; indexable. JSON-LD: FAQPage and BreadcrumbList (no price, offer, rating or review markup). One H1, landmarks, skip link, breadcrumbs.
 - **Register.** `/register?pack=FOOD_SERVICE` starts the category list on that pack's categories, with a "Show all categories" button. Only a published pack key counts.
 - **Hub.** `/industries` lists only published packs and links each to its page.
-- **Sitemap.** The published pages are listed only with the flag on and `MAIN_HOST` set (`sitemap.ts` is now `force-dynamic`, G36).
+- **Sitemap.** The published pages are listed in `/sitemap-industries.xml`, served only with the flag on and `MAIN_HOST` set, and named in robots.txt only then. `sitemap.ts` is unchanged and prerendered (G36).
+- **Unknown live industry id.** With the flag on the middleware answers a real 404 for `/industries/{id}` when the id is not a live one (G35).
 - **Tests.** `__tests__/industries.test.ts` (publication rules, slugs, metadata length, copy rules over the page text, host routing, JSON-LD) and smoke checks over every page in four servers: flag off, flag on without host names, flag on with host names, and with `V3_REGULATED_PACKS_PUBLIC=true`.
 
 ## 12. Wave 3 reconciliation (dispatch B3)
