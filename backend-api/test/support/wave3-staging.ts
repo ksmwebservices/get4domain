@@ -23,9 +23,10 @@ export interface Wave3Env {
   key: (label: string) => string;
 }
 
-export async function bootWave3(prisma: PrismaClient): Promise<Wave3Env> {
+/** `wallet: true` also mounts the real V3 wallet routes (/v3/me/wallet and the rest), for suites that must prove a rule holds on routes outside the partner area. */
+export async function bootWave3(prisma: PrismaClient, opts: { wallet?: boolean; legacyVendorsRoute?: boolean } = {}): Promise<Wave3Env> {
   const gws = { razorpay: new InMemoryGateway('razorpay', { signing: secret(), webhook: secret() }), cashfree: new InMemoryGateway('cashfree', { signing: secret(), webhook: secret() }) };
-  const app = await buildProvisioningTestApp({ billing: { fake: new FakeRazorpay() }, wave3: { gateways: gws } });
+  const app = await buildProvisioningTestApp({ billing: { fake: new FakeRazorpay() }, wave3: { gateways: gws }, ...(opts.wallet ? { wallet: true } : {}), ...(opts.legacyVendorsRoute ? { legacyVendorsRoute: true } : {}) });
   const api = (method: 'get' | 'post' | 'put' | 'delete', url: string, token?: string, body?: object) => { const r = request(app.getHttpServer())[method](url); const t = token ? r.set('Authorization', `Bearer ${token}`) : r; return body ? t.send(body) : t; };
   const setGateway = async (name: 'razorpay' | 'cashfree') => { await prisma.v3PlanSetting.upsert({ where: { key: 'paymentGateway' }, create: { key: 'paymentGateway', valueJson: name, description: 'v3test' }, update: { valueJson: name } }); app.get(BillingSettingsService).invalidate(); };
   const hook: Wave3Env['hook'] = (gateway, providerOrderId, o) => {
