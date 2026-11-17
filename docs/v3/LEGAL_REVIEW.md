@@ -4,6 +4,27 @@
 
 Branch `v3-pub-fe6`. Texts: `get4domain_mvp/src/lib/v3-public/legal-text/*.ts` (one file per policy) and `company-strings.ts` (About, Contact). Shared constants (effective date, version): `legal-meta.ts`. Firm details: `firm-facts.ts`.
 
+## Dispatch D2: OWNER DEFAULTS applied (branch `v3-pub-fe7`)
+
+The owner chose default terms so the site can go live now. Each is an **OWNER DEFAULT awaiting lawyer review**, not a lawyer-approved term. They replace the "as shown at checkout or as agreed in writing" wording where D1 left a decision open. The only numbers and time words now in policy text are "48 hours" and "one month" (grievance timelines).
+
+| # | OWNER DEFAULT (awaiting lawyer review) | Where |
+|---|---|---|
+| 1 | Laws of India; courts at Chennai, Tamil Nadu exclusive; no arbitration | Terms, Privacy, Refund, Disclaimer, Partner, Listing (unchanged from D1) |
+| 2 | A plan payment is not refundable once the plan is active. Exceptions: duplicate payment; payment taken but no plan activated; payment whose amount did not match the order and was held. Refund through the gateway to the original method after an administrator checks the gateway record. Wallet: prepaid credit, no refund, no cash-out. Legal rights kept | Refund, Payments, Terms, Delivery |
+| 3 | Stop renewing any time; access to the end of the paid term; no part refund | Refund, Terms, Payments, About |
+| 4 | Grievance officer acknowledges in 48 hours, resolves in one month; block and support contacts shown when the firm data exists | Contact, Terms, Refund (block); company details on every policy page |
+| 5 | Data kept while the account is active; after closing, deleted or anonymised except records the law requires (invoices, tax) | Privacy |
+| 6 | Prices exclude GST; GST at the rate in force added at checkout as its own line; invoice after a successful payment; no GST percentage printed | Payments, Terms, Delivery, About |
+| 7 | Partner: slabs set by the company; counted once on the first successful paid plan payment; monthly payouts; tax at source as the law requires at the rate the company applies; PAN; no discounts | Partner, Privacy |
+| 8 | Free trial site is informational; main features need a paid plan; no trial length | Terms, Delivery, About |
+
+**Still open for the lawyer** (not decided by the defaults): whether to have an arbitration clause; retention periods (the text gives none); the real cookie list; the partner agreement as a contract (clawback, termination, confidentiality); TDS wording and rate; GSTIN invoice wording while the number is pending; whether the Chennai exclusive jurisdiction holds against consumers; whether the wallet falls under prepaid-instrument rules; whether "no refund once active" and the exceptions meet gateway merchant terms and the E-Commerce Rules; the grievance officer's required details.
+
+**Still open for the owner**: the billing terms named in the text are quarterly, half-yearly or annually, but the project notes say launch pricing is annual only; the cash-payment return wording ("agreed with that administrator in writing") was not one of the eight defaults.
+
+The "open questions" columns in the table below are the D1 versions: refund window, cancellation notice, trial length, retention and the partner numbers are now answered by the defaults above (still awaiting review).
+
 ## How the texts were written (rules held)
 
 - Only these company facts are used: legal name KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai, Tamil Nadu, India; brand Get4Domain; the business model facts in the dispatch.

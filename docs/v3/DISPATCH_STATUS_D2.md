@@ -4,10 +4,10 @@ Repo root `C:\Get4Domain\get4domain-pub`, app `get4domain_mvp`. Branch `v3-pub-f
 
 | Job | State | Commit | One line |
 |---|---|---|---|
-| D0 | DONE | (in D1a commit) | Placement table below |
-| D1a | DONE | see git log (feat(public): apply owner default terms) | Texts rewritten, shared GrievanceBlock on Contact/Terms/Refund, guard allows only the two grievance timelines; typecheck, build, 298 unit tests, 1641 smoke checks pass |
-| D2a | TODO | | GO_LIVE_PUBLIC.md with environment variable names; effective date shown from one place |
-| D3 | TODO | | LEGAL_REVIEW, PUBLIC_SITE, PUBLIC_GAPS, DISPATCH_REPORT_D2 |
+| D0 | DONE | acc4e20 | Placement table below |
+| D1a | DONE | acc4e20 | Texts rewritten, shared GrievanceBlock on Contact/Terms/Refund, guard allows only the two grievance timelines; typecheck, build, 298 unit tests, 1641 smoke checks pass |
+| D2a | DONE | 9e31b94 | GO_LIVE_PUBLIC.md with environment variable names; effective date shown from one place |
+| D3 | DONE | see git log (docs(public): D2 report) | LEGAL_REVIEW, PUBLIC_SITE, PUBLIC_GAPS, DISPATCH_REPORT_D2 |
 
 ## D0 placement table (where each owner default goes in the D1 pages)
 
