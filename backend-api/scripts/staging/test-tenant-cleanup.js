@@ -23,6 +23,25 @@ async function findTestVendorIds(prisma, runId) {
   return rows.map((r) => r.id);
 }
 
+/**
+ * Dispatch A4 Q4: the synthetic tax rates the staging suites create (billing fixtures name them `V3TEST GST <runId>`). A tax rate has no vendor, so the ONLY marker is the name: it must start with
+ * V3TEST (case-sensitive; a real rate is named like "GST" and never starts with it), and when a run id is given it must also contain that run id. This is the single matching rule used to count and to delete,
+ * so the two can never disagree, and it is exported so a test can prove it cannot match a real rate.
+ */
+function taxRateWhere(runId) {
+  return { name: { startsWith: TEST_NAME_PREFIX, ...(runId ? { contains: runId } : {}) } };
+}
+/** The same rule as plain JavaScript, for a unit test and for anyone checking a name by eye. */
+function isSyntheticTaxRateName(name, runId) {
+  return typeof name === 'string' && name.startsWith(TEST_NAME_PREFIX) && (!runId || name.includes(runId));
+}
+async function cleanupTestTaxRates(prisma, runId, counts) {
+  counts.v3TaxRates = (await prisma.v3TaxRate.deleteMany({ where: taxRateWhere(runId) })).count;
+}
+async function countTestTaxRates(prisma) {
+  return prisma.v3TaxRate.count({ where: taxRateWhere() });
+}
+
 async function cleanupTestTenants(prisma, { runId } = {}) {
   const counts = { vendors: 0 };
   // Synthetic Get4Domain staff (S7 tests): not tied to any vendor, so they are removed first, by the same email marker.
@@ -47,6 +66,7 @@ async function cleanupTestTenants(prisma, { runId } = {}) {
   if (staffIds.length) counts.v3MediaDrafts = (await prisma.v3Media.deleteMany({ where: { vendorId: null, uploadedById: { in: staffIds } } })).count;
   counts.adminTeamMembers = (await prisma.adminTeamMember.deleteMany({ where: staffWhere })).count;
   await cleanupWave2Platform(prisma, runId, counts);
+  await cleanupTestTaxRates(prisma, runId, counts);
   await cleanupWave3Platform(prisma, runId, counts, staffIds, ids);
   await cleanupProvisioning(prisma, ids, runId, counts);
   if (!ids.length) return counts;
@@ -178,7 +198,7 @@ async function countTestTenants(prisma) {
   return (await findTestVendorIds(prisma)).length;
 }
 
-module.exports = { cleanupTestTenants, countTestTenants, findTestVendorIds, SEEDED_EMAIL_SUFFIX, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX, TEST_JOB_KEY_PREFIX };
+module.exports = { cleanupTestTenants, countTestTenants, countTestTaxRates, taxRateWhere, isSyntheticTaxRateName, findTestVendorIds, SEEDED_EMAIL_SUFFIX, TEST_EMAIL_SUFFIX, TEST_NAME_PREFIX, TEST_JOB_KEY_PREFIX };
 
 // CLI: node scripts/staging/test-tenant-cleanup.js [--count]   (staging only, via the guard)
 if (require.main === module) {
@@ -189,7 +209,7 @@ if (require.main === module) {
     const { PrismaClient } = require(path.join(__dirname, '../../node_modules/@prisma/client'));
     const prisma = new PrismaClient({ datasourceUrl: env.DATABASE_URL, log: [] });
     try {
-      if (process.argv.includes('--count')) { console.log(`synthetic test tenants on staging (includes seeded V3TEST vendors): ${await countTestTenants(prisma)}`); return; }
+      if (process.argv.includes('--count')) { console.log(`synthetic test tenants on staging (includes seeded V3TEST vendors and synthetic V3TEST tax rates): ${(await countTestTenants(prisma)) + (await countTestTaxRates(prisma))}`); return; }
       console.log('deleted:', JSON.stringify(await cleanupTestTenants(prisma)));
     } catch (e) {
       console.error('ERROR:', env.mask(e.message).split('\n').slice(-2).join(' | '));

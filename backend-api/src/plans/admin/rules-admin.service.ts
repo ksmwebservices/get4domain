@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EntitlementsService } from '../entitlements/entitlements.service';
 import { planError } from '../plans.errors';
-import { checkGstChange, GstChangeInput } from '../pricing/gst-rate-core';
+import { checkGstChange, GstChangeInput, istDay } from '../pricing/gst-rate-core';
 import { selectTaxRate, TaxRateRow } from '../pricing/price-quote';
 import { validateSettingValue, validateTaxRate } from './admin-validation';
 import { Actor, AuditService } from './audit.service';
@@ -24,13 +24,26 @@ export class RulesAdminService {
 
   async createTaxRate(dto: CreateTaxRateDto, actor: Actor) {
     validateTaxRate(dto.ratePercent);
+    const validFrom = this.startOfNewRate(dto.validFrom);
     const row = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.v3TaxRate.create({ data: { name: dto.name, ratePercent: dto.ratePercent, appliesTo: dto.appliesTo ?? 'ALL', active: dto.active ?? true, ...(dto.validFrom ? { validFrom: new Date(dto.validFrom) } : {}) } });
+      const created = await tx.v3TaxRate.create({ data: { name: dto.name, ratePercent: dto.ratePercent, appliesTo: dto.appliesTo ?? 'ALL', active: dto.active ?? true, ...(validFrom ? { validFrom } : {}) } });
       await this.audit.record(tx, actor, 'tax.create', 'tax_rate', created.id, null, created);
       return created;
     });
     this.entitlements.invalidateAll();
     return { ...row, ratePercent: Number(row.ratePercent) };
+  }
+
+  /**
+   * A new rate is never back-dated (the same rule as the GST rate setting): a start on an earlier India-time day than today is refused 409 TAX_RATE_IN_FORCE, because it would rewrite what orders already priced with the rate then
+   * in force. A start later today or after is kept as given; a start earlier today means "from now" (undefined: the column defaults to the moment of creation), exactly as "today" does for the GST setting.
+   */
+  private startOfNewRate(validFrom: string | undefined): Date | undefined {
+    if (!validFrom) return undefined;
+    const start = new Date(validFrom); const now = this.clock();
+    if (start.getTime() > now.getTime()) return start;
+    if (istDay(start) < istDay(now)) throw new ConflictException(planError('TAX_RATE_IN_FORCE', 'A rate cannot start in the past. Choose today or a later day.'));
+    return undefined;
   }
 
   /** A rate whose start has passed was (or could have been) used to price an order: it is history. The generic PUT and DELETE must not rewrite or remove it; a change is a NEW rate that starts later (PUT /v3/admin/gst-rate). */

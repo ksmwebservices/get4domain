@@ -5,8 +5,8 @@
 | Q0 | DONE | (with Q1) | Findings below. No code. |
 | Q1 | DONE | see report | Detail route was already correct (probe artifact); pinned with real-stack tests; businessName added to list rows and detail. |
 | Q2 | TODO | | Theme contract. |
-| Q3 | TODO | | Tax-rate create: no back-dated start. |
-| Q4 | TODO | | Staging cleanup of V3TEST tax rows (not run). |
+| Q3 | DONE | Q3-Q4 commit | POST /v3/admin/tax-rates refuses a start on an earlier India-time day (409 TAX_RATE_IN_FORCE); today or none = from now. |
+| Q4 | DONE | Q3-Q4 commit | test-tenant-cleanup.js (and --count) remove tax rates whose name starts V3TEST; matching rule unit-tested; NOT run. |
 | Q5 | TODO | | Vendor-site model: document, themeKey if free. |
 | Q6 | TODO | | Final checks and report. |
 
@@ -34,6 +34,9 @@ Written out in full in `API_CONTRACT_WAVE4.md` section A4-2 (Q2).
 ## ASSUMPTIONS
 1. Q0(a): treated as a probe artifact because the code path is provably guard-first; if the front-end can reproduce it with a recorded request and the principal's real role, send me that request.
 2. The route baseline file had an uncommitted change when this lane started (from before A4); it is regenerated in Q6 so the final diff is whatever the code really produces.
+
+3. Q3: reused the registered code `TAX_RATE_IN_FORCE` (already used by the PUT for a start in the past) instead of adding a new code, so the front-end maps one code. Day rule copied from the GST setting (India-time day): a start earlier today means "from now".
+4. Q4: `--count` now prints tenants plus synthetic V3TEST tax rates as one number, so "0" means both are clean. The staging suites create their tax row with Prisma directly (name `V3TEST GST <runId>`), so Q3 does not affect them.
 
 ## QUESTIONS FOR THE OWNER
 - None yet.

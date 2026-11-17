@@ -202,3 +202,7 @@ No new route is needed; the price book already does it, **SUPER_ADMIN only** at 
 2. (optional) `POST /v3/admin/services/THEME_SWITCH/prices` `{ amountPaise, taxCategory?, taxInclusive?, note? }` to propose a different amount, or `PUT /v3/admin/services/prices/:id` to edit a PROPOSED row.
 3. `POST /v3/admin/services/prices/:id/approve` `{ "effectiveFrom": "<ISO 8601 date>" }` (not in the past; later than the price in force). From that date `GET fee` shows `SET` and a paid switch can be bought.
 `POST .../prices/:id/retire` takes a price out. OPERATIONS and ADMIN cannot do any of these (matrix and ADMIN extension). No price is ever set by code.
+
+## A4-3. `POST /v3/admin/tax-rates` is never back-dated
+
+SUPER_ADMIN only, as before. Body unchanged (`name`, `ratePercent`, optional `appliesTo`, `active`, `validFrom`). New rule, the same one the GST rate setting uses: **`validFrom` on an earlier India-time day than today is refused, 409 `TAX_RATE_IN_FORCE`** (the same code the generic PUT uses for a start in the past; nothing is created and nothing is audited). A start later today or on a later day is kept exactly as sent. A start earlier today, or no `validFrom`, means "from now" (the start is the moment of creation, never an earlier time). Existing rows are not changed. To change the GST rate, `PUT /v3/admin/gst-rate` is still the route that takes a plain day.
