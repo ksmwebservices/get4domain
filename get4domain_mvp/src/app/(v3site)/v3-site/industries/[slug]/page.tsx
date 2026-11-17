@@ -4,7 +4,8 @@ import Link from 'next/link';
 import JsonLd from '@/components/directory/JsonLd';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { industryBySlug, industryDescription, industryTitle } from '@/lib/v3-public/industries';
-import { categoriesByPack, fetchCategories } from '@/lib/v3-public/packs';
+import { categoriesOfPack, categoryPath } from '@/lib/v3-public/catalogue';
+import { MARKETING } from '@/lib/v3-public/marketing-strings';
 import { breadcrumbLd, faqLd } from '@/lib/v3-public/site-jsonld';
 import { siteMetadata } from '@/lib/v3-public/site-metadata';
 import { SITE } from '@/lib/v3-public/site-strings';
@@ -28,8 +29,7 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
   const name = page.pack.name;
   const gives = page.pack.gives.map((g) => g.toLowerCase()).join(', ');
   const faq = S.faq.map((f) => ({ q: fill(f.q, name, gives), a: fill(f.a, name, gives) }));
-  const cats = await fetchCategories();
-  const mine = cats.kind === 'ok' ? categoriesByPack(cats.data).get(page.pack.key) ?? [] : [];
+  const mine = categoriesOfPack(page.pack.key);
   const path = `/industries/${page.slug}`;
   const crumbs = breadcrumbLd([{ name: SITE.crumbs.home, path: '/' }, { name: SITE.industries.h1, path: '/industries' }, { name, path }]);
   const register = `/register?pack=${page.pack.key}`;
@@ -58,13 +58,17 @@ export default async function IndustryLandingPage({ params }: { params: Promise<
       <section aria-labelledby="suits-title" className="mt-10">
         <h2 id="suits-title" className="text-xl font-semibold text-slate-900">{S.suitsHeading}</h2>
         <ul className="mt-3 list-disc pl-5 text-slate-700">{page.suits.map((x) => <li key={x}>{x}</li>)}</ul>
-        {mine.length > 0 ? (
-          <>
-            <h3 className="mt-4 text-sm font-medium text-slate-900">{S.categoriesHeading}</h3>
-            <p className="mt-1 text-sm text-slate-600">{mine.map((c) => c.name).join(', ')}</p>
-          </>
-        ) : null}
       </section>
+
+      {mine.length > 0 ? (
+        <section aria-labelledby="cats-title" className="mt-10">
+          <h2 id="cats-title" className="text-xl font-semibold text-slate-900">{S.categoriesHeading}</h2>
+          <p className="mt-1 text-slate-600">{MARKETING.packExtra.categoriesIntro}</p>
+          <ul className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 md:grid-cols-3">
+            {mine.map((c) => <li key={c.id}><Link href={categoryPath(c)} className="text-slate-900 underline">{c.name}</Link></li>)}
+          </ul>
+        </section>
+      ) : null}
 
       <section aria-labelledby="how-title" className="mt-10">
         <h2 id="how-title" className="text-xl font-semibold text-slate-900">{S.howHeading}</h2>

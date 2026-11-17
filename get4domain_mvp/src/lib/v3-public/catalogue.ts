@@ -11,7 +11,7 @@ type Env = Record<string, string | undefined>;
 
 export interface CatalogueCategory { id: string; name: string; packKey: string; family: string }
 
-export const CATALOGUE: readonly CatalogueCategory[] = CATALOGUE_ROWS.map(([id, name, packKey, family]) => ({ id, name, packKey, family }));
+export const CATALOGUE: readonly CatalogueCategory[] = CATALOGUE_ROWS.map(([id, name, packKey, family]) => ({ id, name, packKey, family: family.replace(/\s*\([^)]*\)/g, '').trim() }));
 
 const BY_ID: ReadonlyMap<string, CatalogueCategory> = new Map(CATALOGUE.map((c) => [c.id, c]));
 

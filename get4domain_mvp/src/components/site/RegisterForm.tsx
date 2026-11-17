@@ -19,6 +19,8 @@ interface Props {
   referral: boolean;
   /** a pack key from an industry page (?pack=): the category list starts limited to that pack; null for none */
   pack?: string | null;
+  /** a category id from a category page (?category=): chosen when the form opens; null for none */
+  category?: string | null;
   packName?: string | null;
   vendorUrl: string | null;
   /** ".main-domain" shown after the address box; empty when the main host is not set */
@@ -44,7 +46,7 @@ const describedBy = (id: string, hint: boolean, error: boolean): string | undefi
 
 export default function RegisterForm(p: Props) {
   const [businessName, setBusinessName] = useState('');
-  const [categoryKey, setCategoryKey] = useState('');
+  const [categoryKey, setCategoryKey] = useState(() => (p.category && p.categories.some((c) => c.key === p.category) ? p.category : ''));
   const [filter, setFilter] = useState('');
   const inPack = useMemo(() => (p.pack ? p.categories.filter((c) => c.packKey === p.pack) : []), [p.pack, p.categories]);
   const [onlyPack, setOnlyPack] = useState(true);

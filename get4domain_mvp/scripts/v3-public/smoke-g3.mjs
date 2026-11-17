@@ -5,7 +5,8 @@ import path from 'node:path';
 
 export function createG3Smoke(h) {
   const { ok, getHost, get, ports, M, D, visible, ldBlocks, h1s, titleOf, descOf, internalLinks, BANNED, a11yChecks, root } = h;
-  const routes = readFileSync(path.join(root, 'src', 'lib', 'v3-public', 'site-routes.ts'), 'utf8');
+  const src = (...p) => readFileSync(path.join(root, 'src', 'lib', 'v3-public', ...p), 'utf8');
+  const routes = src('site-routes.ts');
   const listOf = (name) => [...new RegExp(`${name}: readonly string\\[\\] = \\[([\\s\\S]*?)\\];`).exec(routes)[1].matchAll(/'([a-z0-9-]+)'/g)].map((m) => m[1]);
   const PRODUCT = listOf('PRODUCT_SLUGS');
   const GUIDES = listOf('GUIDE_SLUGS');
@@ -23,7 +24,8 @@ export function createG3Smoke(h) {
     ok(title.length > 0 && title.length <= 60, `${tag}: ${p} title is at most 60 characters (${title.length})`);
     const d = descOf(r.text);
     ok(d.length >= 50 && d.length <= 175, `${tag}: ${p} has a description of sensible length (${d.length})`);
-    const canon = p === "/" ? `https://${host}` : `https://${host}${p}`; // Next writes the root canonical without the slash
+    // Next writes the root canonical without the slash
+    const canon = p === '/' ? `https://${host}` : `https://${host}${p}`;
     ok(r.text.includes(`<link rel="canonical" href="${canon}"`), `${tag}: ${p} canonical is on the main host`);
     ok(/name="robots" content="index, follow"/.test(r.text), `${tag}: ${p} is indexable`);
     const t = types(r.text);
@@ -58,13 +60,14 @@ export function createG3Smoke(h) {
     for (const l of navLinks) { const x = await H(l); ok(okStatus(x.status) && !/being built/i.test(x.text), `g3: navigation link ${l} is a real page (${x.status})`); }
     const homeText = visible(home.text);
     for (const w of ['Who it is for', 'Three business tracks', 'Handyman', 'Professional', 'Ecommerce', 'Partner programme']) ok(homeText.includes(w), `g3: home says "${w}"`);
-    ok(navLinks.includes('/register') && navLinks.includes('/pricing'), 'g3: home links to /register and /pricing');
+    ok(internalLinks(home.text).includes('/register') && internalLinks(home.text).includes('/pricing'), 'g3: home links to /register and /pricing');
 
     // unknown slugs are real 404s; the internal addresses are not reachable; the directory host does not serve them
     for (const p of ['/product/nothing', '/guides/nothing', '/product/website/extra', '/guides/nothing/more']) ok((await H(p)).status === 404, `g3: ${p} is a real 404`);
     for (const p of ['/v3-site/product', '/v3-site/guides', '/v3-site/partners', '/v3-site/product/website']) ok((await H(p)).status === 404, `g3: internal ${p} is a 404`);
     for (const p of ['/product', '/product/website', '/guides', '/partners']) ok((await getHost(ports.HOST, D, p)).status === 404, `g3: the directory host does not serve ${p}`);
-    ok((await H('/products')).status === 308 || (await H('/products')).status === 307, 'g3: the live /products redirect is untouched');
+    const products = await H('/products');
+    ok(products.status === 308 || products.status === 307, 'g3: the live /products redirect is untouched');
 
     // the sitemap and robots
     const sm = await H('/sitemap-industries.xml');
@@ -72,6 +75,79 @@ export function createG3Smoke(h) {
     ok(!sm.text.includes('/v3-site'), 'g3: the sitemap names no internal address');
     const robots = (await H('/robots.txt')).text;
     ok(!/Disallow: \/(product|guides|partners)/.test(robots), 'g3: robots.txt does not block the new pages');
+  }
+
+  // ── S2: industry and category pages ──
+  const slugsSrc = src('industries.ts');
+  const PACK_SLUG = Object.fromEntries([...(/PACK_SLUGS[^=]*= \{([\s\S]*?)\};/.exec(slugsSrc)[1]).matchAll(/([A-Z0-9_]+): '([a-z0-9-]+)'/g)].map((m) => [m[1], m[2]]));
+  const REGULATED_KEYS = ['CLINIC', 'LAB', 'PHARMACY', 'PRACTICE_LEGAL_FINANCE'];
+  const CATS = [...src('catalogue-data.ts').matchAll(/^ {2}\['([a-z0-9-]+)', '((?:[^'\\]|\\.)*)', '([A-Z0-9_]+)'/gm)].map((m) => ({ id: m[1], name: m[2], pack: m[3] }));
+  const catPath = (c) => `/industries/${PACK_SLUG[c.pack]}/${c.id}`;
+  const PUBLISHED_CATS = CATS.filter((c) => !REGULATED_KEYS.includes(c.pack));
+  const REGULATED_CATS = CATS.filter((c) => REGULATED_KEYS.includes(c.pack));
+
+  async function categoryPages() {
+    const H = (p) => getHost(ports.HOST, M, p);
+    ok(CATS.length === 196, `g3 categories: the catalogue has 196 categories (${CATS.length})`);
+    const heavyDone = new Set();
+    for (const c of PUBLISHED_CATS) {
+      const p = catPath(c);
+      if (!heavyDone.has(c.pack)) {
+        heavyDone.add(c.pack);
+        await pageQuality('g3 category', M, ports.HOST, p, { faq: true });
+        continue;
+      }
+      const r = await H(p);
+      const title = titleOf(r.text);
+      ok(r.status === 200 && h1s(r.text) === 1 && title.length > 0 && title.length <= 60, `g3 category: ${p} answers 200 with one h1 and a short title (${r.status}, ${title.length})`);
+      ok(r.text.includes(`<link rel="canonical" href="https://${M}${p}"`) && types(r.text).includes('FAQPage') && types(r.text).includes('BreadcrumbList'), `g3 category: ${p} has its canonical, FAQPage and BreadcrumbList`);
+      const t = visible(r.text);
+      ok(!BANNED.some(([, re]) => re.test(t)) && !/being built/i.test(t), `g3 category: ${p} keeps the copy rules`);
+    }
+    // the page links to register with the industry and the category
+    const sample = PUBLISHED_CATS.find((c) => c.id === 'restaurant-cafe');
+    const sr = await H(catPath(sample));
+    ok(internalLinks(sr.text).includes('/register?pack=FOOD_SERVICE&category=restaurant-cafe'), 'g3 category: the call to action preselects the industry and the category');
+    ok(/Restaurant cafe/.test(visible(sr.text)) && /Menu/.test(visible(sr.text)), 'g3 category: the page names the category and the working areas of its pack');
+    // the pack page and the hub link to the categories
+    for (const key of Object.keys(PACK_SLUG).filter((k) => !REGULATED_KEYS.includes(k))) {
+      const links = internalLinks((await H(`/industries/${PACK_SLUG[key]}`)).text);
+      ok(CATS.filter((c) => c.pack === key).every((c) => links.includes(catPath(c))), `g3 category: the page of ${PACK_SLUG[key]} links every one of its categories`);
+    }
+    const hub = await H('/industries');
+    ok(PUBLISHED_CATS.some((c) => internalLinks(hub.text).includes(catPath(c))) && !REGULATED_CATS.some((c) => hub.text.includes(c.id)), 'g3 category: the hub links to categories and none of the regulated packs');
+    // register preselects
+    const reg = await H('/register?pack=FOOD_SERVICE&category=restaurant-cafe');
+    ok(/<option[^>]*value="restaurant-cafe"[^>]*selected/.test(reg.text) || /<option[^>]*selected[^>]*value="restaurant-cafe"/.test(reg.text), 'g3 category: /register preselects the category');
+    const regOnly = await H('/register?category=restaurant-cafe');
+    ok(/Showing the categories of Food service/.test(visible(regOnly.text)), 'g3 category: a category alone also chooses its pack');
+    const regBad = await H('/register?category=not-a-category');
+    ok(regBad.status === 200 && !/<option[^>]*selected/.test(regBad.text), 'g3 category: an unknown category id is ignored on /register');
+    // 404s
+    for (const p of ['/industries/food-service/nothing', '/industries/retail-and-ecommerce/restaurant-cafe', '/industries/nothing/restaurant-cafe', '/industries/food-service/restaurant-cafe/extra', '/v3-site/industries/food-service/restaurant-cafe']) ok((await H(p)).status === 404, `g3 category: ${p} is a real 404`);
+    for (const c of REGULATED_CATS) ok((await H(catPath(c))).status === 404, `g3 category: regulated ${c.id} is a 404 by default`);
+    ok((await getHost(ports.HOST, D, catPath(sample))).status === 404, 'g3 category: the directory host does not serve a category page');
+    // sitemap
+    const sm = (await H('/sitemap-industries.xml')).text;
+    ok(PUBLISHED_CATS.every((c) => sm.includes(`<loc>https://${M}${catPath(c)}</loc>`)) && !REGULATED_CATS.some((c) => sm.includes(c.id)), 'g3 category: the sitemap lists every published category and no regulated one');
+  }
+
+  async function categoryRegulatedOn() {
+    const H = (p) => getHost(ports.REG, M, p);
+    for (const c of REGULATED_CATS) {
+      const r = await H(catPath(c));
+      ok(r.status === 200 && h1s(r.text) === 1 && titleOf(r.text).length <= 60, `g3 category (regulated on): ${c.id} answers 200 with one h1 and a short title (${r.status})`);
+    }
+    const sm = (await H('/sitemap-industries.xml')).text;
+    ok(REGULATED_CATS.every((c) => sm.includes(catPath(c))), 'g3 category (regulated on): the sitemap lists them');
+  }
+
+  async function categoryFlagOff() {
+    const O = (p) => getHost(ports.OFF, M, p);
+    const unknown = await O('/zzz-not-a-page-zzz');
+    for (const c of CATS.slice(0, 8)) { const r = await O(catPath(c)); ok(r.status === unknown.status && !/Typical working areas/.test(r.text), `g3 category flag off: ${catPath(c)} is an unknown address (${r.status})`); }
+    const reg = await O('/register?category=restaurant-cafe');
+    ok(reg.status === 200 && !/Showing the categories of/.test(visible(reg.text)), 'g3 category flag off: the live /register ignores the new parameter');
   }
 
   // every internal link of the main-host site resolves: a crawl from the home page
@@ -89,31 +165,30 @@ export function createG3Smoke(h) {
     }
     const bad = [...seen].filter(([, s]) => !okStatus(s));
     ok(bad.length === 0, `g3 crawl: every internal link resolves (${seen.size} addresses, bad: ${bad.map(([p, s]) => `${p} ${s}`).join(', ')})`);
-    ok(seen.size > 30, `g3 crawl: the crawl reached the site (${seen.size} addresses)`);
+    ok(seen.size > 100, `g3 crawl: the crawl reached the site (${seen.size} addresses)`);
   }
 
   // flag off with the host names set: nothing new exists, and the live pages are untouched
   async function flagOff() {
     const O = (p) => getHost(ports.OFF, M, p);
     const unknown = await O('/zzz-not-a-page-zzz');
-    for (const p of ['/product', '/product/website', '/partners', '/guides', '/guides/choosing-your-site-address', '/industries/food-service/restaurant']) {
+    for (const p of ['/product', '/product/website', '/partners', '/guides', '/guides/choosing-your-site-address']) {
       const r = await O(p);
       ok(r.status === unknown.status && !/Start with a free trial site|Partner programme|Product pages/.test(r.text), `g3 flag off: ${p} behaves as an unknown address (${r.status})`);
     }
-    for (const p of ['/v3-site/product', '/v3-site/guides', '/v3-site/partners', '/v3-site/industries/food-service/restaurant']) ok((await O(p)).status === 404, `g3 flag off: internal ${p} is a 404`);
+    for (const p of ['/v3-site/product', '/v3-site/guides', '/v3-site/partners', '/v3-site/industries/food-service/restaurant-cafe']) ok((await O(p)).status === 404, `g3 flag off: internal ${p} is a 404`);
     ok((await O('/sitemap-industries.xml')).status === 404, 'g3 flag off: no flag-on sitemap');
-    const sm = (await O('/sitemap.xml')).text;
-    ok(!/\/(product|guides|partners)\b/.test(sm), 'g3 flag off: sitemap.xml lists none of the new pages');
+    ok(!/\/(product|guides|partners)\b/.test((await O('/sitemap.xml')).text), 'g3 flag off: sitemap.xml lists none of the new pages');
   }
 
   // flag on, host names not set: nothing is routed on the main host, as for every commercial page
   async function noHosts() {
-    for (const p of ['/product', '/product/website', '/partners', '/guides']) {
+    for (const p of ['/product', '/product/website', '/partners', '/guides', '/industries/food-service/restaurant-cafe']) {
       const r = await get(ports.ON, p);
       ok(r.status === 404 && !/Start with a free trial site/.test(r.text), `g3 no hosts: ${p} is not routed (${r.status})`);
     }
     ok((await get(ports.ON, '/v3-site/product')).status === (await get(ports.ON, '/v3-site/pricing')).status, 'g3 no hosts: the internal product page is reachable exactly as the other commercial pages are');
   }
 
-  return { marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types };
+  return { categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
 }

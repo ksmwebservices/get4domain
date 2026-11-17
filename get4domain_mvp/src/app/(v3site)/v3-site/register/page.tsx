@@ -4,6 +4,7 @@ import RegisterForm from '@/components/site/RegisterForm';
 import { vendorAppUrl } from '@/lib/v3-public/config';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { baseDomain, readHostConfig } from '@/lib/v3-public/hostnames';
+import { preselectableCategory } from '@/lib/v3-public/catalogue';
 import { publishedIndustries } from '@/lib/v3-public/industries';
 import { fetchCategories } from '@/lib/v3-public/packs';
 import { fetchPlans } from '@/lib/v3-public/plans';
@@ -30,7 +31,12 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const [cats, plans, jar] = await Promise.all([fetchCategories(), fetchPlans(), cookies()]);
   const planName = plan === 'free' ? null : plans.kind === 'ok' ? plans.data.plans.find((x) => x.key === plan)?.name ?? null : null;
   // ?pack= comes from an industry page; only a published pack counts, anything else is ignored
-  const packPage = publishedIndustries().find((x) => x.pack.key === one(q.pack)) ?? null;
+  // ?category= comes from a category page: only a published, known category counts; it also decides the pack
+  const preset = preselectableCategory(one(q.category));
+  const packPage = publishedIndustries().find((x) => x.pack.key === (preset?.packKey ?? one(q.pack))) ?? null;
+  const options = cats.kind === 'ok' ? cats.data.map((c) => ({ key: c.categoryKey, name: c.name, industry: c.family || c.packKey.toLowerCase(), packKey: c.packKey })) : [];
+  // the list comes from the API; the chosen category is added from the catalogue when the API list does not carry it yet
+  if (preset && !options.some((o) => o.key === preset.id)) options.push({ key: preset.id, name: preset.name, industry: preset.family || preset.packKey.toLowerCase(), packKey: preset.packKey });
   const base = baseDomain(readHostConfig());
   return (
     <>
@@ -38,8 +44,9 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <p className="mb-6 mt-2 text-slate-600">{SITE.register.intro}</p>
       <div className="max-w-xl">
         <RegisterForm
-          categories={cats.kind === 'ok' ? cats.data.map((c) => ({ key: c.categoryKey, name: c.name, industry: c.family || c.packKey.toLowerCase(), packKey: c.packKey })) : []}
-          categoriesFailed={cats.kind !== 'ok'}
+          categories={options}
+          categoriesFailed={cats.kind !== 'ok' && !preset}
+          category={preset?.id ?? null}
           pack={packPage?.pack.key ?? null}
           packName={packPage?.pack.name ?? null}
           plan={plan}
