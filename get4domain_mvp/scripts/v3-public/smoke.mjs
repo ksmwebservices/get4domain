@@ -5,6 +5,7 @@ import http from 'node:http';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createG3Smoke } from './smoke-g3.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const next = path.join(root, 'node_modules', 'next', 'dist', 'bin', 'next');
@@ -793,6 +794,7 @@ function noConsole() {
   }
 }
 
+const g3 = createG3Smoke({ ok, getHost, get, ports: { OFF, ON, HOST, REG, FULL }, M, D, visible, ldBlocks, h1s, titleOf, descOf, internalLinks, BANNED, a11yChecks, root });
 const HOSTS_ENV = { MAIN_HOST: 'main.example.invalid', DIRECTORY_HOST: 'directory.main.example.invalid', APP_HOST: 'app.main.example.invalid', ADMIN_HOST: 'admin.main.example.invalid', API_HOST: 'api.main.example.invalid', MEDIA_HOST: 'media.main.example.invalid' };
 const servers = [
   // flag off, with the host names set: they must change nothing
@@ -822,6 +824,10 @@ try {
   await legalNoHosts();
   await companyPages();
   await wireIn();
+  await g3.marketing();
+  await g3.crawl();
+  await g3.flagOff();
+  await g3.noHosts();
   await matcherRegression();
   noConsole();
 } finally {

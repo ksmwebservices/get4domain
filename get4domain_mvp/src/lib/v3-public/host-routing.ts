@@ -2,7 +2,9 @@ import { classifyHost, type HostClass, type HostConfig, originFor, readHostConfi
 import { isV3PublicEnabled } from './flag';
 import { ALL_INDUSTRY_SLUGS, industryBySlug } from './industries';
 import { LEGAL_PAGE_PATHS } from './legal-paths';
+import { categoryPage } from './catalogue';
 import { LIVE_SEGMENTS } from './routes';
+import { GUIDE_SLUGS, marketingRoute, PRODUCT_SLUGS } from './site-routes';
 
 /**
  * Which host a request is for, and what the middleware does about it. Pure: no framework import, so every host class can be tested.
@@ -99,6 +101,14 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
       // a pack that is not published (the regulated four by default) is a real 404 here: a page cannot send one itself (root loading.tsx, gap G9)
       const ind = INDUSTRY_PATH.exec(pathname);
       if (ind && ALL_INDUSTRY_SLUGS.includes(ind[1]) && !industryBySlug(ind[1], env)) return { action: 'not-found', host: 'main' };
+      // the marketing pages of dispatch G3: a known address is rewritten to its page, an unknown slug in these families is a real 404 (a page cannot send one itself, G9)
+      const mr = marketingRoute(pathname);
+      if (mr) {
+        if (mr.kind === 'fixed') return { action: 'rewrite', pathname: `/v3-site${mr.path}` };
+        if (mr.kind === 'product') return PRODUCT_SLUGS.includes(mr.slug) ? { action: 'rewrite', pathname: `/v3-site/product/${mr.slug}` } : { action: 'not-found', host: 'main' };
+        if (mr.kind === 'guide') return GUIDE_SLUGS.includes(mr.slug) ? { action: 'rewrite', pathname: `/v3-site/guides/${mr.slug}` } : { action: 'not-found', host: 'main' };
+        return categoryPage(mr.pack, mr.id, env) ? { action: 'rewrite', pathname: `/v3-site/industries/${mr.pack}/${mr.id}` } : { action: 'not-found', host: 'main' };
+      }
       const page = mainPageTarget(pathname);
       if (page) return { action: 'rewrite', pathname: page };
       return { action: 'pass', host: 'main' };

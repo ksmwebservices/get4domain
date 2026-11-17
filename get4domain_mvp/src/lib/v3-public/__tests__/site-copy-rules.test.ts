@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { cleanPlans, formatRupees, fromPricing, MOCK_PRICING, MOCK_PLANS, netAmountPaise, priceFor, PUBLIC_TERMS, type PublicPlan } from '../plans';
+import { MARKETING } from '../marketing-strings';
 import { PAYMENT_NOTE, SITE } from '../site-strings';
 
 function walk(v: unknown, path: string, out: Array<{ path: string; text: string }>): void {
@@ -10,6 +11,7 @@ function walk(v: unknown, path: string, out: Array<{ path: string; text: string 
 }
 const all: Array<{ path: string; text: string }> = [];
 walk(SITE, 'SITE', all);
+walk(MARKETING, 'MARKETING', all);
 all.push({ path: 'PAYMENT_NOTE', text: PAYMENT_NOTE });
 
 const RULES: Array<[string, RegExp]> = [

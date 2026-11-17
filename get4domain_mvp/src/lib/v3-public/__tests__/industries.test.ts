@@ -103,7 +103,9 @@ describe('host routing of the landing pages', () => {
     }
   });
   test('a live industry id and an unknown slug pass through untouched', () => {
-    for (const p of ['/industries/travel', '/industries/retail', '/industries/whatever', '/industries/food-service/extra']) assert.deepEqual(decide(p), { action: 'pass', host: 'main' }, p);
+    for (const p of ['/industries/travel', '/industries/retail', '/industries/whatever']) assert.deepEqual(decide(p), { action: 'pass', host: 'main' }, p);
+    // two segments under /industries are category pages (dispatch G3): an unknown category is a real 404, not a pass-through
+    assert.deepEqual(decide('/industries/food-service/extra'), { action: 'not-found', host: 'main' });
   });
   test('with the flag off nothing is decided at all', () => assert.equal(decide('/industries/food-service', {}), null));
 });
