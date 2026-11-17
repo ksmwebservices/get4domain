@@ -161,3 +161,71 @@ describe('packs and categories', () => {
     assert.equal(categoriesByPack(MOCK_CATEGORIES).get('CLINIC')?.length, 2);
   });
 });
+
+describe('the validation 400 names its fields in data.fields (Wave 4 contract)', () => {
+  const v = (fields: unknown, message = 'Please fix the form.') => ({ success: false, statusCode: 400, message, data: { fields } });
+  test('a message that names nothing still lands on the fields the API listed', () => {
+    assert.deepEqual(mapRegisterFailure(400, v(['name', 'email', 'password', 'businessName', 'industry', 'phone'])), {
+      fields: { owner: 'owner', email: 'email', password: 'password', businessName: 'businessName', category: 'category', phone: 'phone' }, general: null,
+    });
+  });
+  test('names with no form field (referralCode, track, unknown) fall to the general message', () => {
+    assert.deepEqual(mapRegisterFailure(400, v(['referralCode', 'track', 'extra'])), { fields: {}, general: 'general' });
+  });
+  test('data null (fields cannot be named) is the general message, and the message words still win when they name a field', () => {
+    assert.deepEqual(mapRegisterFailure(400, { statusCode: 400, message: 'Something odd', data: null }), { fields: {}, general: 'general' });
+    assert.deepEqual(mapRegisterFailure(400, v(['name'], 'Email does not look right.')).fields, { email: 'email' });
+  });
+  test('only a 400 reads the list', () => {
+    assert.deepEqual(mapRegisterFailure(500, v(['email'])), { fields: {}, general: 'general' });
+  });
+});
+
+describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave 4 A3-1)', () => {
+  const saved = { fetch: globalThis.fetch, mocks: process.env.V3_PUBLIC_USE_MOCKS, base: process.env.API_BASE_URL };
+  const calls: { url: string; body: unknown }[] = [];
+  const stub = (answers: Record<string, { status: number; json: unknown }>): void => {
+    calls.length = 0;
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const u = String(url);
+      calls.push({ url: u, body: init?.body ? JSON.parse(String(init.body)) : null });
+      const key = Object.keys(answers).find((k) => u.includes(k));
+      const a = key ? answers[key] : { status: 404, json: {} };
+      return new Response(JSON.stringify(a.json), { status: a.status, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
+  };
+  const restore = (): void => {
+    globalThis.fetch = saved.fetch;
+    if (saved.mocks === undefined) delete process.env.V3_PUBLIC_USE_MOCKS; else process.env.V3_PUBLIC_USE_MOCKS = saved.mocks;
+    if (saved.base === undefined) delete process.env.API_BASE_URL; else process.env.API_BASE_URL = saved.base;
+  };
+  const real = (): void => { process.env.V3_PUBLIC_USE_MOCKS = 'false'; process.env.API_BASE_URL = 'http://api.invalid'; };
+
+  test('201 with the login-shaped answer signs the owner in and sends only the contract fields', async () => {
+    real();
+    try {
+      stub({ '/auth/register': { status: 201, json: { success: true, statusCode: 201, data: { accessToken: 'tok-1', user: { id: 'u', name: 'M', email: 'e', role: 'VENDOR', businessName: 'B', industry: 'plumber', subdomain: 'sri-murugan' } } } }, '/v3/auth/handoff': { status: 200, json: { data: { code: 'h'.repeat(32) } } } });
+      const r = await handleRegister(req, body());
+      assert.equal(r.ok, true);
+      const sent = calls.find((c) => c.url.endsWith('/auth/register'))!.body as Record<string, unknown>;
+      const allowed = new Set(['name', 'email', 'password', 'businessName', 'industry', 'phone', 'referralCode', 'subdomain', 'product', 'track']);
+      for (const k of Object.keys(sent)) assert.ok(allowed.has(k), `unknown field sent: ${k}`);
+      assert.equal(sent.track, 'professional');
+      assert.equal(sent.subdomain, 'sri-murugan');
+    } finally { restore(); }
+  });
+
+  test('the documented refusals reach the right field', async () => {
+    real();
+    try {
+      stub({ '/auth/register': { status: 409, json: { success: false, statusCode: 409, code: 'HOST_UNAVAILABLE', message: 'That address is not available.' } } });
+      assert.deepEqual((await handleRegister(req, body())).fields, { subdomain: 'subdomainTaken' });
+      stub({ '/auth/register': { status: 409, json: { success: false, statusCode: 409, message: 'A vendor with this email already exists' } } });
+      assert.deepEqual((await handleRegister(req, body())).fields, { email: 'emailTaken' });
+      stub({ '/auth/register': { status: 400, json: { success: false, statusCode: 400, message: 'Please check the form.', data: { fields: ['email'] } } } });
+      assert.deepEqual((await handleRegister(req, body())).fields, { email: 'email' });
+      stub({ '/auth/register': { status: 429, json: {} } });
+      assert.equal((await handleRegister(req, body())).general, 'rate');
+    } finally { restore(); }
+  });
+});

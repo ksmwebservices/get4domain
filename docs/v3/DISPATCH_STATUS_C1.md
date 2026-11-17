@@ -5,7 +5,7 @@ Branch `v3-pub-fe5` (from `v3-pub-fe4`), folder `get4domain-pub/get4domain_mvp`.
 | Job | State | Commit | Note |
 |---|---|---|---|
 | P0 Investigate | DONE | (this commit) | findings below |
-| P1 Reconcile | TODO | | |
+| P1 Reconcile | DONE | see git log | register 400 now reads `data.fields`; 6 new tests (250 unit, smoke 1198 of 1198); every other row was already SAME |
 | P2 Theme rendering | TODO | | |
 | P3 Real-API probe | TODO | | |
 | P4 Quality | TODO | | |
@@ -21,7 +21,7 @@ Branch `v3-pub-fe5` (from `v3-pub-fe4`), folder `get4domain-pub/get4domain_mvp`.
 | Register request `POST /auth/register` | `name,email,password,businessName,industry` required; `phone,referralCode,subdomain,product,track` optional; unknown field is 400; `track` handyman/professional/ecommerce | sends exactly those (no `product`) | SAME |
 | Register success | HTTP 201, `data:{accessToken,user{...}}`, no `termsAcceptanceRequired` on a first registration | `r.ok` covers 201; `accessTokenOf` reads `data.accessToken`; terms screen is the vendor app's (via `/auth/me` there) | SAME (no test pinned the 201 and the exact user shape: add) |
 | Register errors, codes | 400 `SUBDOMAIN_INVALID`, 400 `SUBDOMAIN_RESERVED`, 409 `HOST_UNAVAILABLE`, 409 no code (email exists), 429 | all mapped | SAME |
-| Register errors, validation 400 | no code; `message` is one sentence; `data.fields` lists field names (e.g. `["name","email"]`) when they can be named, else `data:null`; unknown field also 400 | only the message wording is read; `data.fields` ignored, so a message that names no field gives the general error although the API named the field | DIFFERENT |
+| Register errors, validation 400 | no code; `message` is one sentence; `data.fields` lists field names (e.g. `["name","email"]`) when they can be named, else `data:null`; unknown field also 400 | only the message wording is read; `data.fields` ignored, so a message that names no field gives the general error although the API named the field | FIXED in P1 (was DIFFERENT) |
 | Subdomain length | up to 63 | form allows 3 to 40 | SAME (stricter on purpose, kept) |
 | Register replay | same email + business + right password signs in, also 201, includes `termsAcceptanceRequired` | treated as success | SAME |
 | Handoff `POST /v3/auth/handoff` | not in Wave 3 or 4 contract | assumed `{code}` (G2) | MISSING (stays open) |

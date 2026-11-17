@@ -91,6 +91,19 @@ function fieldOfMessage(msg: string, code: string): { field: RegisterField; key:
   return null;
 }
 
+/** The contract's own field names (a 400 lists them in `data.fields`) to the form field they belong to. Unlisted names (referralCode, track, product, unknown) map to nothing. */
+const API_FIELD: Readonly<Record<string, { field: RegisterField; key: RegisterErrorKey }>> = {
+  name: { field: 'owner', key: 'owner' }, email: { field: 'email', key: 'email' }, password: { field: 'password', key: 'password' }, businessName: { field: 'businessName', key: 'businessName' },
+  industry: { field: 'category', key: 'category' }, phone: { field: 'phone', key: 'phone' }, subdomain: { field: 'subdomain', key: 'subdomainInvalid' },
+};
+
+/** The field names a validation 400 lists in `data.fields` (an array of strings), or an empty list. */
+export function apiFieldsOf(json: unknown): string[] {
+  const root = json && typeof json === 'object' ? (json as Record<string, unknown>) : {};
+  const d = root.data && typeof root.data === 'object' ? (root.data as Record<string, unknown>) : {};
+  return Array.isArray(d.fields) ? d.fields.filter((x): x is string => typeof x === 'string') : [];
+}
+
 export interface RegisterFailure { fields: FieldErrors; general: RegisterErrorKey | null }
 
 /** An API refusal to field errors and, when it names none, one general message. Status 0 means the API could not be reached. */
@@ -106,6 +119,12 @@ export function mapRegisterFailure(status: number, json: unknown): RegisterFailu
   if (!Object.keys(fields).length && code) {
     const hit = fieldOfMessage('', code);
     if (hit) fields[hit.field] = hit.key;
+  }
+  if (!Object.keys(fields).length && status === 400) {
+    for (const name of apiFieldsOf(json)) {
+      const hit = API_FIELD[name];
+      if (hit && !fields[hit.field]) fields[hit.field] = hit.key;
+    }
   }
   if (!Object.keys(fields).length && status === 409) fields.email = 'emailTaken';
   return Object.keys(fields).length ? { fields, general: null } : { fields: {}, general: 'general' };
