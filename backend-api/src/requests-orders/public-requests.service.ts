@@ -37,7 +37,7 @@ interface Prepared {
   s: B3Settings; now: Date; name: string; phone: string; email: string | null; consent: { contactByBusiness: boolean; contactByPlatform: boolean; marketing: boolean }; ipHash: string | null;
   spam: { score: number; reasons: string[] }; decision: 'ACCEPT' | 'ASK_OTP' | 'BLOCK';
 }
-type Gate = { vendorId: string; vendor: { businessName: string; phone: string | null; email: string }; host: string };
+export type Gate = { vendorId: string; vendor: { businessName: string; phone: string | null; email: string }; host: string };
 export type SubmitResult =
   | { accepted: true; reference: string; status: string; trackingUrl?: string; replay?: true }
   | { otpRequired: true; message: string };
@@ -65,17 +65,24 @@ export class PublicRequestsService {
   ) {}
 
   // ── the gate ──
-  private async gate(hostIn: string, needs: string[]) {
+  /** The checks that never depend on the plan: a known host, a vendor that is not suspended or removed, and no legal takedown. Null when any fails (the caller answers one plain 404). */
+  async lookup(hostIn: string): Promise<Gate | null> {
     const host = normaliseHostname(String(hostIn ?? ''));
-    if (!host) throw nothing();
+    if (!host) return null;
     const r = await this.hosts.resolveHost(host);
-    if (!r) throw nothing();
+    if (!r) return null;
     const vendor = await this.lifecycle.vendor(r.vendorId);
-    if (!vendor || vendor.status === 'SUSPENDED' || (await this.lifecycle.isRemoved(r.vendorId))) throw nothing();
-    if (this.takedowns && (await this.takedowns.activeForVendor(r.vendorId))) throw nothing();   // a legal takedown: the site shows a notice, so nothing can be sent to it   // read fresh each time: suspension stops forms and checkout AT ONCE
-    const e = await this.ents.resolve(r.vendorId);
-    for (const k of ['site.cta', 'requests.inbox', ...needs]) if (e.features[k]?.state !== 'ACTIVE') throw nothing();
+    if (!vendor || vendor.status === 'SUSPENDED' || (await this.lifecycle.isRemoved(r.vendorId))) return null;
+    if (this.takedowns && (await this.takedowns.activeForVendor(r.vendorId))) return null;   // a legal takedown: the site shows a notice, so nothing can be sent to it   // read fresh each time: suspension stops forms and checkout AT ONCE
     return { vendorId: r.vendorId, vendor, host };
+  }
+
+  private async gate(hostIn: string, needs: string[]): Promise<Gate> {
+    const found = await this.lookup(hostIn);
+    if (!found) throw nothing();
+    const e = await this.ents.resolve(found.vendorId);
+    for (const k of ['site.cta', 'requests.inbox', ...needs]) if (e.features[k]?.state !== 'ACTIVE') throw nothing();
+    return found;
   }
 
   // ── what both routes share ──

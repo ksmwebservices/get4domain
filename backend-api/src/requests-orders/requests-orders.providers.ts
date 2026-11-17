@@ -4,6 +4,7 @@ import { MeOffersController, MePaymentsController, MeRequestsController } from '
 import { PublicRequestsController, VendorWebhookController } from './api/public-requests.controller';
 import { MessagingService } from './messaging.service';
 import { PrismaRequestsStore } from './prisma-requests.store';
+import { EnquiryFormService } from './enquiry-form.service';
 import { PublicRequestsService } from './public-requests.service';
 import { RequestsCron } from './requests.cron';
 import { Catalogue, ContentCatalogue, OwnGatewayGate, PrismaStoreProducts, StoreFirstCatalogue, StoreProducts } from './requests-ports';
@@ -15,6 +16,6 @@ import { VendorWebhookService } from './vendor-webhook.service';
 /** Every provider and controller of the bridge in one list: RequestsOrdersModule uses it and the staging integration tests assemble the same list into a slim app. */
 export const REQUESTS_PROVIDERS: Provider[] = [
   { provide: RequestsStore, useClass: PrismaRequestsStore }, ContentCatalogue, { provide: StoreProducts, useClass: PrismaStoreProducts }, { provide: Catalogue, useClass: StoreFirstCatalogue }, { provide: 'PUBLIC_APP_URL', useFactory: () => process.env.PUBLIC_APP_URL || 'https://get4domain.com' },
-  OwnGatewayGate, MessagingService, PublicRequestsService, VendorRequestsService, VendorWebhookService, StaffRequestsService, RequestsCron,
+  OwnGatewayGate, MessagingService, PublicRequestsService, EnquiryFormService, VendorRequestsService, VendorWebhookService, StaffRequestsService, RequestsCron,
 ];
 export const REQUESTS_CONTROLLERS: Type<unknown>[] = [PublicRequestsController, VendorWebhookController, MeRequestsController, MeOffersController, MePaymentsController, AdminRequestsController];

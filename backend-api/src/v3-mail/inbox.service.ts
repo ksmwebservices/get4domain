@@ -60,12 +60,33 @@ export class InboxService {
     return { accepted: true, id: stored.row.id, duplicate: false, held: false, forwardStatus };
   }
 
+  /**
+   * A visitor's enquiry from a vendor site's own form (the website form route, not the Email Worker) is written into THIS inbox, the one the vendor's Enquiries screen and tab badge read, so there is a
+   * single list. The key `request:<id>` makes it idempotent. A business whose plan is not active has it kept as HELD (only the caller decides that, after the switch and the consent text allow it); a held
+   * row is counted against the hourly limit when the settings set one, and is never forwarded. Otherwise it is forwarded through the guarded system lane exactly like mailed enquiries (flag
+   * EMAIL_FORWARD_LIVE, default OFF: the row then says SKIPPED_FLAG_OFF) so the vendor is alerted by e-mail the moment the owner switches the flag on.
+   */
+  async recordWebEnquiry(vendor: { id: string; email: string }, e: { key: string; host: string; name: string; phone: string; email: string | null; message: string; item?: string | null; held: boolean }): Promise<{ id: string | null; created: boolean; held: boolean; forwardStatus: string }> {
+    const now = this.clock(); const s = await this.settings.get();
+    const body = `${e.message}\n\nPhone: ${e.phone}${e.email ? `\nEmail: ${e.email}` : ''}${e.item ? `\nAbout: ${e.item}` : ''}`;
+    const subject = (e.item ? `Enquiry about ${e.item}` : 'Enquiry from the website').slice(0, 200);
+    const m: InboundInput = { to: `enquiries@${e.host}`, from: e.email ?? e.phone, fromName: e.name, subject, text: body, messageId: `request:${e.key}`, spamScore: null, sizeBytes: Buffer.byteLength(body) };
+    const stored = await queue.run(`inbox:${vendor.id}`, async () => {
+      if (e.held && s.inboxRatePerHour !== null && !underRateLimit(await this.store.countSince(vendor.id, new Date(now.getTime() - HOUR_MS)), s.inboxRatePerHour)) throw mailError(429, 'INBOX_RATE_LIMITED', 'Too many messages for that business. Try again later.');
+      return this.store.insertIfNew(vendor.id, { toAddress: m.to, fromAddress: m.from, fromName: m.fromName, subject: m.subject, bodyText: m.text, messageIdHdr: m.messageId, sizeBytes: m.sizeBytes, spamScore: null, spamVerdict: 'CLEAN', state: e.held ? 'HELD' : 'NEW', forwardStatus: e.held ? 'SKIPPED_PLAN_ENDED' : 'PENDING' }, now);
+    });
+    if (!stored.created) return { id: stored.row.id, created: false, held: stored.row.state === 'HELD', forwardStatus: stored.row.forwardStatus };
+    this.emit(e.held ? 'inbox.message_held' : 'inbox.message_received', vendor.id, stored.row.id, { source: 'WEBSITE_FORM' });
+    if (e.held) return { id: stored.row.id, created: true, held: true, forwardStatus: 'SKIPPED_PLAN_ENDED' };
+    return { id: stored.row.id, created: true, held: false, forwardStatus: await this.forward(vendor, stored.row.id, m, false) };
+  }
+
   private async forward(vendor: { id: string; email: string }, id: string, m: InboundInput, spam: boolean): Promise<string> {
     let status: string; let at: Date | null = null;
     if (spam) status = 'SKIPPED_SPAM';
     else {
       try {
-        await this.email.send({ lane: 'SYSTEM', kind: 'ENQUIRY_FORWARD', to: vendor.email, subject: forwardSubject(m.subject), text: forwardText(m), replyTo: m.from, fromName: m.fromName });
+        await this.email.send({ lane: 'SYSTEM', kind: 'ENQUIRY_FORWARD', to: vendor.email, subject: forwardSubject(m.subject), text: forwardText(m), replyTo: m.from.includes('@') ? m.from : undefined, fromName: m.fromName });
         status = 'FORWARDED'; at = this.clock();
       } catch (e) { status = (e as { response?: { code?: string } }).response?.code === 'EMAIL_NOT_LIVE' ? 'SKIPPED_FLAG_OFF' : 'FAILED'; }
     }

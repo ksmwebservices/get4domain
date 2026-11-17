@@ -3,6 +3,7 @@ import { DirectoryModule } from '../directory/directory.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SiteDomainsModule } from '../site-domains/site-domains.module';
 import { SitePublishModule } from '../site-publish/site-publish.module';
+import { V3MailModule } from '../v3-mail/mail.module';
 import { VendorLifecycleModule } from '../vendor-lifecycle/vendor-lifecycle.module';
 import { REQUESTS_CONTROLLERS, REQUESTS_PROVIDERS } from './requests-orders.providers';
 import { VendorRequestsService } from './vendor-requests.service';
@@ -14,7 +15,7 @@ import { RequestsStore } from './requests.store';
  * Messaging is SANDBOX only; the vendor gateway is a fake unless an owner flag allows live (none is wired); nothing here calls a real provider.
  */
 @Module({
-  imports: [PrismaModule, DirectoryModule, SiteDomainsModule, SitePublishModule, VendorLifecycleModule],
+  imports: [PrismaModule, DirectoryModule, SiteDomainsModule, SitePublishModule, VendorLifecycleModule, V3MailModule],
   controllers: REQUESTS_CONTROLLERS,
   providers: REQUESTS_PROVIDERS,
   exports: [RequestsStore, VendorRequestsService, MessagingService],

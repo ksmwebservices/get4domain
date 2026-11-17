@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { RATE } from '../../common/throttling';
+import { EnquiryForm, EnquiryFormService } from '../enquiry-form.service';
 import { PublicRequestsService } from '../public-requests.service';
 import { VendorWebhookService } from '../vendor-webhook.service';
 import { ReportDto, SubmitOrderDto, SubmitRequestDto } from './dto/requests.dto';
@@ -15,7 +16,7 @@ import { ReportDto, SubmitOrderDto, SubmitRequestDto } from './dto/requests.dto'
 @ApiTags('v3-requests-public')
 @Controller('v3/public')
 export class PublicRequestsController {
-  constructor(private readonly requests: PublicRequestsService) {}
+  constructor(private readonly requests: PublicRequestsService, private readonly enquiries: EnquiryFormService) {}
 
   @Public() @Throttle(RATE.requestSubmit)
   @Post('sites/:host/requests') @HttpCode(200)
@@ -23,6 +24,20 @@ export class PublicRequestsController {
   async submit(@Param('host') host: string, @Body() dto: SubmitRequestDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     res.set('Cache-Control', 'no-store');
     return this.requests.submit(host, dto as never, req.ip ?? null);
+  }
+
+  /**
+   * The route a vendor site's own enquiry form posts to. It takes exactly what the theme form sends (urlencoded or JSON: name, phone, message, consent, source; optional email and item): the server
+   * builds the request, the consent object and the idempotency key. A browser form post (Accept: text/html) is answered with a 303 back to the site; a script gets JSON.
+   */
+  @Public() @Throttle(RATE.requestSubmit)
+  @Post('sites/:host/enquire') @HttpCode(200)
+  @ApiOperation({ summary: 'The vendor site enquiry form post: a visitor\'s name, phone, message and consent become one stored, de-duplicated enquiry in the business inbox (a browser form post gets a 303 back to the site, a script gets JSON)' })
+  async enquire(@Param('host') host: string, @Body() form: EnquiryForm, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    res.set('Cache-Control', 'no-store');
+    const r = await this.enquiries.enquire(host, form ?? {}, req.ip ?? null);
+    if ('received' in r && String(req.headers.accept ?? '').includes('text/html')) { res.status(303).set('Location', '/?enquiry=sent'); return { received: true }; }
+    return r;
   }
 
   @Public() @Throttle(RATE.requestSubmit)

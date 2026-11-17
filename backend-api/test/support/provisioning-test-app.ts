@@ -52,6 +52,12 @@ import { B3SettingsService } from '../../src/b3-settings/b3-settings.service';
 import { VENDOR_LIFECYCLE_CONTROLLERS, VENDOR_LIFECYCLE_PROVIDERS } from '../../src/vendor-lifecycle/vendor-lifecycle.providers';
 import { SEEDED_CONTROLLERS, SEEDED_PROVIDERS } from '../../src/seeded-sites/seeded-sites.module';
 import { REQUESTS_CONTROLLERS, REQUESTS_PROVIDERS } from '../../src/requests-orders/requests-orders.providers';
+import { EmailPort, EmailTransport, GuardedEmailPort, ResendTransport } from '../../src/v3-mail/email.port';
+import { MeInboxController } from '../../src/v3-mail/api/inbox.controllers';
+import { InboxService } from '../../src/v3-mail/inbox.service';
+import { InboxStore } from '../../src/v3-mail/inbox.store';
+import { PrismaInboxStore } from '../../src/v3-mail/prisma-inbox.store';
+import { MailSettingsService } from '../../src/v3-mail/settings/mail-settings';
 import { TERMS_CONTROLLERS, TERMS_PROVIDERS } from '../../src/terms/terms.module';
 import { PrismaSiteLifecycle } from '../../src/seeded-sites/prisma-site-lifecycle';
 import { SiteLifecycle } from '../../src/site-publish/publish/site-lifecycle';
@@ -66,8 +72,10 @@ import { Kit, loadKit } from '../../src/site-publish/renderer/renderer-loader';
 import { WEBSITE_CONTROLLERS, WEBSITE_PROVIDERS } from '../../src/v3-website/website.module';
 
 /** Batch 3 pieces, switched on with the b3 option; each slice appends its lists here. */
-const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS, { provide: SiteLifecycle, useClass: PrismaSiteLifecycle }, ...SEEDED_PROVIDERS, ...REQUESTS_PROVIDERS, ...TERMS_PROVIDERS];
-const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS, ...SEEDED_CONTROLLERS, ...REQUESTS_CONTROLLERS, ...TERMS_CONTROLLERS];
+const B3_PROVIDERS: Provider[] = [B3SettingsService, ...VENDOR_LIFECYCLE_PROVIDERS, { provide: SiteLifecycle, useClass: PrismaSiteLifecycle }, ...SEEDED_PROVIDERS, ...REQUESTS_PROVIDERS, ...TERMS_PROVIDERS,
+  // the enquiry form route writes into the mail inbox (EnquiryFormService needs InboxService, the mail settings and the guarded e-mail port)
+  MailSettingsService, ResendTransport, { provide: EmailTransport, useExisting: ResendTransport }, GuardedEmailPort, { provide: EmailPort, useExisting: GuardedEmailPort }, { provide: InboxStore, useClass: PrismaInboxStore }, InboxService];
+const B3_CONTROLLERS = [...VENDOR_LIFECYCLE_CONTROLLERS, ...SEEDED_CONTROLLERS, ...REQUESTS_CONTROLLERS, ...TERMS_CONTROLLERS, MeInboxController];   // MeInboxController: the vendor reads the enquiries the site form wrote
 
 /**
  * A slim app for the staging integration tests: the REAL provisioning providers, controllers, JWT strategy, guards, pipe, interceptor and filter, over the

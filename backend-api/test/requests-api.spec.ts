@@ -11,10 +11,12 @@ import { EntitlementsService } from '../src/plans/entitlements/entitlements.serv
 import { AdminRequestsController } from '../src/requests-orders/api/admin-requests.controller';
 import { MeOffersController, MePaymentsController, MeRequestsController } from '../src/requests-orders/api/me-requests.controller';
 import { PublicRequestsController, VendorWebhookController } from '../src/requests-orders/api/public-requests.controller';
+import { EnquiryFormService } from '../src/requests-orders/enquiry-form.service';
 import { PublicRequestsService } from '../src/requests-orders/public-requests.service';
 import { StaffRequestsService } from '../src/requests-orders/staff-requests.service';
 import { VendorRequestsService } from '../src/requests-orders/vendor-requests.service';
 import { VendorWebhookService } from '../src/requests-orders/vendor-webhook.service';
+import { enquiryWorld } from './support/enquiry-world';
 import { consent, HOST_A, requestsWorld, RW } from './support/requests-world';
 import { entitlements } from './support/site-fixtures';
 
@@ -24,7 +26,7 @@ const untimed = (t: string): string => t.replace(/"timestamp":"[^"]*"/, '');
 const body = (over: Record<string, unknown> = {}) => ({ kind: 'ENQUIRY', name: 'Meena R', phone: '98765 43210', payload: { message: 'Do you fix geysers?' }, consent: consent(), idempotencyKey: `k-${Math.random().toString(36).slice(2)}-${Date.now()}-aaaa`, ...over });
 
 describe('requests and orders API', () => {
-  let app: INestApplication; let w: RW; let prevKey: string | undefined;
+  let app: INestApplication; let w: RW; let ew: ReturnType<typeof enquiryWorld>; let prevKey: string | undefined;
   const as = (p: string) => ({ 'x-test-principal': p });
   const get = (url: string, p?: string) => { const r = request(app.getHttpServer()).get(url); return p ? r.set(as(p)) : r; };
   const send = (m: 'post' | 'put' | 'delete', url: string, p: string | null, b: object = {}, extra: Record<string, string> = {}) => { const r = request(app.getHttpServer())[m](url).set(extra); return (p ? r.set(as(p)) : r).send(b); };
@@ -32,13 +34,13 @@ describe('requests and orders API', () => {
   beforeAll(() => { prevKey = process.env.PLATFORM_SETTINGS_KEY; process.env.PLATFORM_SETTINGS_KEY = 'unit-test-platform-settings-key-0123456789'; });
   afterAll(() => { if (prevKey === undefined) delete process.env.PLATFORM_SETTINGS_KEY; else process.env.PLATFORM_SETTINGS_KEY = prevKey; });
   beforeEach(async () => {
-    w = await requestsWorld();
+    w = await requestsWorld(); ew = enquiryWorld(w);
     const mod = await Test.createTestingModule({
       imports: [throttlerImport],
       controllers: [PublicRequestsController, VendorWebhookController, MeRequestsController, MeOffersController, MePaymentsController, AdminRequestsController],
       providers: [
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard },
-        { provide: PublicRequestsService, useValue: w.pub }, { provide: VendorWebhookService, useValue: w.webhook }, { provide: VendorRequestsService, useValue: w.vendor }, { provide: StaffRequestsService, useValue: w.staff },
+        { provide: PublicRequestsService, useValue: w.pub }, { provide: EnquiryFormService, useValue: ew.svc }, { provide: VendorWebhookService, useValue: w.webhook }, { provide: VendorRequestsService, useValue: w.vendor }, { provide: StaffRequestsService, useValue: w.staff },
         { provide: EntitlementsService, useValue: { resolveForRequest: async (_r: unknown, vendorId: string) => w.ents.get(vendorId) ?? entitlements('FREE', 'ecommerce') } },
       ],
     }).compile();
@@ -70,6 +72,18 @@ describe('requests and orders API', () => {
       expect([a.status, b.status]).toEqual([404, 404]); expect(untimed(a.text)).toBe(untimed(b.text));
       const bad = await send('post', `/v3/public/sites/${HOST_A}/requests`, null, body({ name: 'x' })); expect(bad.status).toBe(400); expect(bad.body.code).toBe('REQUEST_INVALID');
       expect((await send('post', `/v3/public/sites/${HOST_A}/requests`, null, { kind: 'ENQUIRY' })).status).toBe(400);
+    });
+    it('POST enquire: the theme form own post (urlencoded, consent=on) is stored; a browser gets a 303 back to the site, a script gets JSON; the vendor reads it in the inbox', async () => {
+      const url = `/v3/public/sites/${HOST_A}/enquire`;
+      const f = { name: 'Meena R', phone: '98765 43210', message: 'Do you fix geysers?', consent: 'on', source: 'site' };
+      const browser = await request(app.getHttpServer()).post(url).set('Accept', 'text/html,application/xhtml+xml').type('form').send(f).redirects(0);
+      expect(browser.status).toBe(303); expect(browser.headers.location).toBe('/?enquiry=sent'); expect(browser.headers['cache-control']).toBe('no-store'); expect(browser.headers['set-cookie']).toBeUndefined();
+      const script = await request(app.getHttpServer()).post(url).type('form').send(f);
+      expect(script.status).toBe(200); expect(script.body.data).toMatchObject({ received: true }); expect(w.store.requests.size).toBe(1); expect(ew.inboxStore.rows).toHaveLength(1);   // the second post was the same enquiry
+      const json = await send('post', url, null, { ...f, message: 'A different question', item: 'sku-1', extraField: 'ignored' }); expect(json.status).toBe(200); expect(ew.inboxStore.rows).toHaveLength(2);
+      const bad = await send('post', url, null, { ...f, consent: undefined }); expect(bad.status).toBe(400); expect(bad.body.code).toBe('REQUEST_INVALID');
+      const a = await send('post', '/v3/public/sites/free.get4domain.com/enquire', null, f); const b = await send('post', '/v3/public/sites/nobody.get4domain.com/enquire', null, f);
+      expect([a.status, b.status]).toEqual([404, 404]); expect(untimed(a.text)).toBe(untimed(b.text));
     });
     it('rate limited per IP: the 11th request in a minute is 429', async () => {
       const codes: number[] = [];
