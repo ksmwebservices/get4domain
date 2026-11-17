@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { LedgerKind, LedgerStatus } from './core/referral-core';
+import { LedgerKind, LedgerStatus, stateOfBusiness } from './core/referral-core';
 import { AttributionRow, LedgerRow, LinkRow, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from './referrals.store';
 
 const isUnique = (e: unknown): boolean => (e as { code?: string })?.code === 'P2002';
@@ -44,9 +44,11 @@ export class PrismaReferralsStore extends ReferralsStore {
   async vendorFacts(vendorId: string): Promise<VendorFacts | null> {
     const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true, email: true, phone: true, businessName: true } });
     if (!v) return null;
-    const biz = await this.prisma.v3DirectoryBusiness.findUnique({ where: { vendorId }, select: { addressJson: true } });
+    // the state of the business ADDRESS; when the address has none, the STATE above the business's place in the directory tree (a locality, city or district sits at most three steps below it); empty when unknown
+    const up = { select: { kind: true, name: true } };
+    const biz = await this.prisma.v3DirectoryBusiness.findUnique({ where: { vendorId }, select: { addressJson: true, location: { select: { kind: true, name: true, parent: { select: { kind: true, name: true, parent: { select: { kind: true, name: true, parent: up } } } } } } } });
     const a = biz?.addressJson as { state?: unknown } | null;
-    return { id: v.id, email: v.email, phone: v.phone, businessName: v.businessName, state: typeof a?.state === 'string' && a.state.trim() ? a.state.trim() : null };
+    return { id: v.id, email: v.email, phone: v.phone, businessName: v.businessName, state: stateOfBusiness(a?.state, biz?.location ?? null) };
   }
 
   async listSlabs() { return (await this.prisma.commissionSlab.findMany({ orderBy: [{ effectiveFrom: 'asc' }, { minVendors: 'asc' }, { id: 'asc' }] })).map(toSlab); }

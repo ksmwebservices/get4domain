@@ -9,7 +9,7 @@ Branch v3-w4, worktree C:\Get4Domain\get4domain-w4. Baseline before W0: v3-w3 (2
 | W2 | held payments | DONE | (this commit) | 278 suites, 5398 tests pass (after oracle 411->414); build ok | 3 routes under /v3/admin/billing/held-payments, ADMIN+SUPER_ADMIN; REVIEW->FAILED edge added |
 | W3 | retire discount routes | DONE | (this commit) | 278 suites pass (one spec fixed), build ok | 4 routes, service methods, DTOs, validator, matrix and baseline lines, repo.discountRules() removed; tables, migrations and seed untouched |
 | W4 | commission adjustment | DONE | (this commit) | 279 suites, 5413 tests pass; build, verify:migrations, verify:raw-sql ok | NEW MIGRATION 20261230100000_v3_wave4_commission_adjustment (NOT applied) |
-| W5 | partner state | TODO | | | |
+| W5 | partner state | DONE | (this commit) | 280 suites, 5423 tests pass; build ok | address state first, then the STATE above the place; cleaned, capped at 60, null when unknown |
 | W6 | tests and docs | TODO | | | |
 
 ## ASSUMPTIONS

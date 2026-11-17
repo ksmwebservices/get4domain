@@ -46,6 +46,28 @@ export function isSelfReferral(partner: Contact, vendor: Contact): boolean {
   return pp.length >= 7 && pp === vp;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────── the vendor's state (Wave 4 W5)
+export const STATE_MAX = 60;
+// eslint-disable-next-line no-control-regex
+const STATE_JUNK = /[\u0000-\u001f\u007f<>]+/g;
+/** A state name cleaned for display: control characters and angle brackets dropped, spaces collapsed, at most 60 characters; null when nothing is left or it is not text. */
+export function normaliseState(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const s = v.replace(STATE_JUNK, ' ').replace(/\s+/g, ' ').trim().slice(0, STATE_MAX).trim();
+  return s === '' ? null : s;
+}
+export interface PlaceStep { kind: string; name: string | null; parent?: PlaceStep | null }
+/**
+ * The state shown to a referral partner for a business (owner, 17 Nov 2026): the state of the business address; empty (null) when unknown. The state written in the address comes first; when the address
+ * has none, the STATE above the business's place in the directory tree is used. Nothing else (no district, no city) is ever returned.
+ */
+export function stateOfBusiness(addressState: unknown, place: PlaceStep | null | undefined): string | null {
+  const fromAddress = normaliseState(addressState);
+  if (fromAddress) return fromAddress;
+  for (let p: PlaceStep | null | undefined = place, hops = 0; p && hops < 8; p = p.parent, hops++) if (p.kind === 'STATE') return normaliseState(p.name);
+  return null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────── months (India time)
 const IST_MS = 330 * 60_000;
 /** The YYYY-MM of a moment in India time (the owner counts months there). */
