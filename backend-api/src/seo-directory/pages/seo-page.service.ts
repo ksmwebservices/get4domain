@@ -92,9 +92,10 @@ export class SeoPageService {
     const [s, tpl, pl] = await Promise.all([this.settings.get(), this.templates.templates(), this.places()]);
     const base = directoryBase(process.env, canonicalOrigin(await this.settings.readPublicAppUrl()));   // Wave 3 Part J: the directory's own host when DIRECTORY_PUBLIC_BASE_URL is set
     const origin = base.origin;
+    const mainOrigin = canonicalOrigin(await this.settings.readPublicAppUrl());   // Wave 4: the brand (first crumb, the Get4Domain WebSite and Organization) stays on the MAIN host even when the directory has its own
     const { page, pageSize, skip } = clampPage('page' in spec ? spec.page : 1, undefined, s.directoryPageSizeMax, s.directoryPageSizeDefault);
     const path = buildPath(spec);
-    const ctx = { s, tpl, pl, origin, page, pageSize, skip, path, homePath: base.homePath };
+    const ctx = { s, tpl, pl, origin, mainOrigin, page, pageSize, skip, path, homePath: base.homePath };
     switch (spec.type) {
       case 'home': return this.home(spec, ctx);
       case 'business': return this.business(spec, ctx);
@@ -128,7 +129,10 @@ export class SeoPageService {
     });
   }
 
-  private crumbsOf(origin: string, items: Array<{ name: string; path: string }>): Crumb[] { return [{ name: 'Get4Domain', path: '/' }, ...items].map((c) => ({ ...c, url: `${origin}${c.path}` })); }
+  /** The brand crumb is the MAIN site's home; every other crumb is a directory page, so it is built on the directory origin. With no separate directory host the two origins are the same. */
+  private crumbsOf(ctx: Pick<Ctx, 'origin' | 'mainOrigin'>, items: Array<{ name: string; path: string }>): Crumb[] {
+    return [{ name: 'Get4Domain', path: '/', url: `${ctx.mainOrigin}/` }, ...items.map((c) => ({ ...c, url: `${ctx.origin}${c.path}` }))];
+  }
 
   private faq(parts: { count?: number; countQ?: string; countA?: string; listQ?: string; listA?: string; claim: boolean }): FaqItem[] {
     const out: FaqItem[] = [];
@@ -149,7 +153,7 @@ export class SeoPageService {
     const canonical = `${ctx.origin}${ctx.path}`;
     const pagination = m.paged ? paginate(spec, m.total, ctx.pageSize, n, ctx.origin) : null;
     const jsonLd: Array<Record<string, unknown>> = [
-      ...(m.collection ? [collectionJsonLd({ name: h1, description, url: canonical, origin: ctx.origin, cards: m.cards, firstPosition: ctx.skip + 1 })] : []),
+      ...(m.collection ? [collectionJsonLd({ name: h1, description, url: canonical, origin: ctx.origin, mainOrigin: ctx.mainOrigin, cards: m.cards, firstPosition: ctx.skip + 1 })] : []),
       ...(m.jsonLdExtra ?? []), breadcrumbList(m.breadcrumbs),
     ];
     const { over: _o, vars: _v, templateType: _t, total: _tot, indexing, jsonLdExtra: _j, collection: _c, paged: _p, ...rest } = m;
@@ -168,10 +172,10 @@ export class SeoPageService {
     const intro = total ? `Get4Domain lists ${total} ${pluralFn(total, 'business', 'businesses')}${cityLinks.length ? ` in ${cityLinks.length} ${pluralFn(cityLinks.length, 'city', 'cities')}` : ''}, with their addresses, services and websites.` : 'Get4Domain is a directory of local businesses and their websites.';
     // G11: the directory home is served at /directory, so its model and its canonical say /directory (the site root is the marketing home)
     return this.finish(spec, { ...ctx, path: ctx.homePath }, {
-      vars: { count: total }, templateType: 'home', total, indexing: { indexable: ctx.s.directoryPagesIndexable, reason: ctx.s.directoryPagesIndexable ? null : 'FLAG_OFF' }, intro, breadcrumbs: this.crumbsOf(ctx.origin, []),
+      vars: { count: total }, templateType: 'home', total, indexing: { indexable: ctx.s.directoryPagesIndexable, reason: ctx.s.directoryPagesIndexable ? null : 'FLAG_OFF' }, intro, breadcrumbs: this.crumbsOf(ctx, []),
       cards: [], facets: [{ kind: 'city', items: cityLinks }, { kind: 'category', items: catLinks }], related: { nearbyLocalities: [], relatedCategories: [], parents: [] },
       faq: this.faq({ countQ: total ? 'How many businesses are listed on Get4Domain?' : undefined, countA: total ? `${total} ${pluralFn(total, 'business is', 'businesses are')} listed on Get4Domain.` : undefined, listQ: cityLinks.length ? 'Which cities are covered?' : undefined, listA: cityLinks.length ? `${listNames(cityLinks.map((c) => c.name), 8)}.` : undefined, claim: true }),
-      jsonLdExtra: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Get4Domain', url: ctx.origin, publisher: { '@type': 'Organization', name: 'Get4Domain', url: ctx.origin } }], collection: false, paged: false,
+      jsonLdExtra: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: 'Get4Domain', url: ctx.mainOrigin, publisher: { '@type': 'Organization', name: 'Get4Domain', url: ctx.mainOrigin } }], collection: false, paged: false,
     });
   }
 
@@ -233,7 +237,7 @@ export class SeoPageService {
     if (spec.type === 'cityCategory' || spec.type === 'localityCategory') items.push({ name: `${o.cat!.plural} in ${o.city!.name}`, path: buildPath({ type: 'cityCategory', city: o.city!.slug, term: o.cat!.pluralSlug, page: 1 }) });
     if (spec.type === 'localityCategory') items.push({ name: `${o.cat!.plural} in ${o.locality!.name}`, path: buildPath({ type: 'localityCategory', city: o.city!.slug, locality: o.locality!.slug, term: o.cat!.pluralSlug, page: 1 }) });
     if (spec.type === 'pincodeCategory') { items.push({ name: o.cat!.plural, path: buildPath({ type: 'category', category: o.cat!.row.slug, page: 1 }) }); items.push({ name: `${o.cat!.plural} in ${spec.pincode}`, path: buildPath({ type: 'pincodeCategory', pincode: spec.pincode, category: o.cat!.row.slug, page: 1 }) }); }
-    return this.crumbsOf(ctx.origin, items);
+    return this.crumbsOf(ctx, items);
   }
 
   private buildFacets(spec: PageSpec, ctx: Ctx, o: { city: LocationRow | null; cat: CatInfo | null; locality: LocationRow | null; state: LocationRow | null; facets: FacetCounts; scope: Scope; cityWide: { withCat: FacetCounts; allCats: FacetCounts } | null }): { facets: Facet[]; nearby: Link[]; relatedCats: Link[]; localityNames: string[]; cityNames: string[]; catNames: string[] } {
@@ -323,18 +327,18 @@ export class SeoPageService {
     if (city && info) crumbItems.push({ name: `${info.plural} in ${city.name}`, path: buildPath({ type: 'cityCategory', city: city.slug, term: info.pluralSlug, page: 1 }) });
     if (city && info && loc) crumbItems.push({ name: `${info.plural} in ${loc.name}`, path: buildPath({ type: 'localityCategory', city: city.slug, locality: loc.slug, term: info.pluralSlug, page: 1 }) });
     crumbItems.push({ name: b.name, path: ctx.path });
-    const crumbs = this.crumbsOf(ctx.origin, crumbItems);
+    const crumbs = this.crumbsOf(ctx, crumbItems);
     const where = loc && city ? `${loc.name}, ${city.name}` : city?.name ?? '';
     const intro = `${b.name} is listed on Get4Domain${info ? ` as ${info.singular}` : ''}${where ? ` in ${where}` : ''}.${factsOut.description ? ` ${factsOut.description}` : ''}`;
     return this.finish(spec, ctx, {
       vars: { vendorName: b.name, ...(info ? { category: info.singular } : {}), ...(loc ? { locality: loc.name } : {}), ...(city ? { city: city.name } : {}) }, templateType: 'business', total: 1, indexing, intro, breadcrumbs: crumbs,
       cards: [], facets: [], related: { nearbyLocalities: [], relatedCategories: [], parents: crumbs.slice(0, -1).map((c) => ({ name: c.name, path: c.path })) }, faq: b.claimed ? [] : this.faq({ claim: true }),
-      business: factsOut, jsonLdExtra: [localBusinessJsonLd(factsOut, url, ctx.origin)], collection: false, paged: false,
+      business: factsOut, jsonLdExtra: [localBusinessJsonLd(factsOut, url, ctx.mainOrigin)], collection: false, paged: false,
     });
   }
 }
 
-interface Ctx { s: DirectorySettings; tpl: Awaited<ReturnType<SeoSettingsService['templates']>>; pl: Places; origin: string; page: number; pageSize: number; skip: number; path: string; homePath: string }
+interface Ctx { s: DirectorySettings; tpl: Awaited<ReturnType<SeoSettingsService['templates']>>; pl: Places; origin: string; mainOrigin: string; page: number; pageSize: number; skip: number; path: string; homePath: string }
 
 /** No staff override at all: what the page tests (and any build without the keyword target tables) use. The module provides DbPageOverrides. */
 @Injectable()

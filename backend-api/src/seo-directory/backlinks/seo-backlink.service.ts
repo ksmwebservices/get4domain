@@ -56,7 +56,7 @@ export class SeoBacklinkService {
       else if (c.type === 'category') pages.push({ kind: 'category', path: l.path, plural: cat.plural, singular: cat.singular });
     }
     for (const l of listing) if (l.ctx.type === 'city' && l.ctx.cityId && cityIds.has(l.ctx.cityId)) pages.push({ kind: 'city', path: l.path, place: l.ctx.cityName });
-    return buildBacklinkBlock({ origin, seed: b.id, pages, listed: null, indexable: s.directoryPagesIndexable });
+    return buildBacklinkBlock({ origin, brandOrigin: canonicalOrigin(appUrl), seed: b.id, pages, listed: null, indexable: s.directoryPagesIndexable });
   }
 
   /** The badge picture for a listed business. The picture is the same for everyone; the business only decides whether it may be shown. */

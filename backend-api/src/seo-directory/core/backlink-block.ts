@@ -37,8 +37,9 @@ const fill = (t: string, p: BacklinkPage): string | null => {
 /** The anchor texts one page could carry, in rotation order, with any that would be unsafe or claim a rank removed. */
 export function anchorCandidates(p: BacklinkPage): string[] { return ANCHORS[p.kind].map((t) => fill(t, p)).filter((x): x is string => !!x && !isUnsafeSeoText(x) && !hasRankingClaim(x)); }
 
-export function buildBacklinkBlock(o: { origin: string; seed: string; period?: string; pages: readonly BacklinkPage[]; listed: ReadonlySet<string> | null; indexable: boolean }): BacklinkBlock {
-  const brand: BacklinkLink = { href: `${o.origin}/`, text: 'Get4Domain' };
+/** `origin` is where the directory pages live; `brandOrigin` (the main site) is where the one brand link points, and defaults to `origin` when the directory has no host of its own. */
+export function buildBacklinkBlock(o: { origin: string; brandOrigin?: string; seed: string; period?: string; pages: readonly BacklinkPage[]; listed: ReadonlySet<string> | null; indexable: boolean }): BacklinkBlock {
+  const brand: BacklinkLink = { href: `${o.brandOrigin ?? o.origin}/`, text: 'Get4Domain' };
   const links: BacklinkLink[] = [];
   if (o.indexable && o.origin) {
     const used = new Set<string>();

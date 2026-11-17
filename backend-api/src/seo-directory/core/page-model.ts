@@ -65,22 +65,22 @@ export function breadcrumbList(crumbs: Crumb[]): Record<string, unknown> {
 export function publisherOf(origin: string): Record<string, unknown> { return { '@type': 'Organization', name: 'Get4Domain', url: origin }; }
 
 /** CollectionPage with an ItemList of the businesses on this page (names and profile addresses only). */
-export function collectionJsonLd(o: { name: string; description: string; url: string; origin: string; cards: Card[]; firstPosition: number }): Record<string, unknown> {
+export function collectionJsonLd(o: { name: string; description: string; url: string; origin: string; /** the main site (where the Get4Domain brand lives); defaults to `origin` when there is no separate directory host */ mainOrigin?: string; cards: Card[]; firstPosition: number }): Record<string, unknown> {
   return {
-    '@context': 'https://schema.org', '@type': 'CollectionPage', name: o.name, description: o.description, url: o.url, publisher: publisherOf(o.origin),
+    '@context': 'https://schema.org', '@type': 'CollectionPage', name: o.name, description: o.description, url: o.url, publisher: publisherOf(o.mainOrigin ?? o.origin),
     mainEntity: { '@type': 'ItemList', numberOfItems: o.cards.length, itemListElement: o.cards.map((c, i) => ({ '@type': 'ListItem', position: o.firstPosition + i, name: c.name, url: `${o.origin}${c.profilePath}` })) },
   };
 }
 
 /** LocalBusiness for a profile page. Address, position and hours appear only when the owner has claimed the profile (their consent). No telephone, price, rating or review. */
-export function localBusinessJsonLd(b: BusinessFacts, url: string, origin: string): Record<string, unknown> {
+export function localBusinessJsonLd(b: BusinessFacts, url: string, mainOrigin: string): Record<string, unknown> {
   const a = b.address;
   const out: Record<string, unknown> = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness', name: b.name, url, ...(b.description ? { description: b.description } : {}), ...(b.imageUrl ? { image: b.imageUrl } : {}),
     ...(a && (a.street || a.locality || a.city || a.pincode) ? { address: { '@type': 'PostalAddress', ...(a.street ? { streetAddress: a.street } : {}), ...(a.locality ? { addressLocality: a.locality } : {}), ...(a.city && a.city !== a.locality ? { addressRegion: a.city } : {}), ...(a.pincode ? { postalCode: a.pincode } : {}), addressCountry: 'IN' } } : {}),
     ...(b.geo ? { geo: { '@type': 'GeoCoordinates', latitude: b.geo.lat, longitude: b.geo.lng } } : {}),
     ...(b.hoursText ? { openingHours: b.hoursText } : {}),
-    isPartOf: { '@type': 'WebSite', name: 'Get4Domain', url: origin },
+    isPartOf: { '@type': 'WebSite', name: 'Get4Domain', url: mainOrigin },
   };
   return out;
 }

@@ -336,7 +336,9 @@ describe('Wave 3 Part J: the directory on its own host (DIRECTORY_PUBLIC_BASE_UR
       const city = await ok(w.svc, '/chennai'); const listing = await ok(w.svc, '/chennai/plumbers-in-perambur');
       expect(city.meta.canonical).toBe('https://directory.get4domain.com/chennai'); expect(listing.meta.canonical).toBe('https://directory.get4domain.com/chennai/plumbers-in-perambur');
       for (const m of [home, city, listing]) {
-        expect(m.breadcrumbs.every((c) => c.url.startsWith('https://directory.get4domain.com/'))).toBe(true);
+        // Wave 4: the first crumb is the Get4Domain brand and stays on the MAIN host; every other crumb is a directory page on the directory host
+        expect(m.breadcrumbs[0]).toMatchObject({ name: 'Get4Domain', url: 'https://get4domain.com/' });
+        expect(m.breadcrumbs.slice(1).every((c) => c.url.startsWith('https://directory.get4domain.com/'))).toBe(true);
         expect(JSON.stringify(m)).not.toMatch(PREFIX);
       }
     });
@@ -351,5 +353,78 @@ describe('Wave 3 Part J: the directory on its own host (DIRECTORY_PUBLIC_BASE_UR
         expect((await ok(w.svc, '/chennai')).meta.canonical).toBe('https://get4domain.com/chennai');
       });
     }
+  });
+});
+
+describe('Wave 4 W1: the brand stays on the main host, the directory pages on the directory host (HOSTNAMES_PLAN items C and F)', () => {
+  const MAIN = 'https://get4domain.com'; const DIR = 'https://directory.get4domain.com';
+  const withEnv = async (v: string | undefined, fn: () => Promise<void>): Promise<void> => {
+    const old = process.env.DIRECTORY_PUBLIC_BASE_URL;
+    if (v === undefined) delete process.env.DIRECTORY_PUBLIC_BASE_URL; else process.env.DIRECTORY_PUBLIC_BASE_URL = v;
+    try { await fn(); } finally { if (old === undefined) delete process.env.DIRECTORY_PUBLIC_BASE_URL; else process.env.DIRECTORY_PUBLIC_BASE_URL = old; }
+  };
+  const urlsOf = (v: unknown, out: string[] = []): string[] => { if (typeof v === 'string') { if (/^https?:\/\//.test(v)) out.push(v); } else if (Array.isArray(v)) v.forEach((x) => urlsOf(x, out)); else if (v && typeof v === 'object') Object.values(v).forEach((x) => urlsOf(x, out)); return out; };
+
+  it('two different origins: the home model has the brand crumb, the WebSite and the publisher on the main origin, and its canonical on the directory origin', async () => {
+    await withEnv(DIR, async () => {
+      const w = world({ directoryPagesIndexable: true }, 'https://www.get4domain.com'); fiveInPerambur(w.data);
+      const home = await ok(w.svc, '/');
+      expect(home.meta.canonical).toBe(`${DIR}/`); expect(home.path).toBe('/');
+      expect(home.breadcrumbs).toEqual([{ name: 'Get4Domain', path: '/', url: `${MAIN}/` }]);
+      const site = home.jsonLd.find((j) => j['@type'] === 'WebSite') as { url: string; publisher: { url: string } };
+      expect(site.url).toBe(`${MAIN}`); expect(site.publisher.url).toBe(`${MAIN}`);
+      const crumbLd = home.jsonLd.find((j) => j['@type'] === 'BreadcrumbList') as { itemListElement: Array<{ item: string }> };
+      expect(crumbLd.itemListElement.map((i) => i.item)).toEqual([`${MAIN}/`]);
+    });
+  });
+
+  it('a listing page: brand crumb on the main origin, every other crumb, the canonical, prev/next and the item urls on the directory origin', async () => {
+    await withEnv(DIR, async () => {
+      const w = world({ directoryPagesIndexable: true, directoryPageSizeDefault: 2, directoryPageSizeMax: 2 } as never, MAIN); fiveInPerambur(w.data);
+      const m = await ok(w.svc, '/chennai/plumbers-in-perambur/page/2');
+      expect(m.breadcrumbs[0].url).toBe(`${MAIN}/`);
+      expect(m.breadcrumbs.slice(1).map((c) => c.url.startsWith(`${DIR}/`))).toEqual(m.breadcrumbs.slice(1).map(() => true));
+      expect(m.meta.canonical).toBe(`${DIR}/chennai/plumbers-in-perambur/page/2`);
+      expect(m.page!.prev).toBe(`${DIR}/chennai/plumbers-in-perambur`); expect(m.page!.next).toBe(`${DIR}/chennai/plumbers-in-perambur/page/3`);
+      const coll = m.jsonLd.find((j) => j['@type'] === 'CollectionPage') as { url: string; publisher: { url: string }; mainEntity: { itemListElement: Array<{ url: string }> } };
+      expect(coll.url).toBe(m.meta.canonical); expect(coll.publisher.url).toBe(MAIN);
+      expect(coll.mainEntity.itemListElement.every((i) => i.url.startsWith(`${DIR}/business/`))).toBe(true);
+      // the only urls anywhere in the model that are on the main host are the brand ones
+      const onMain = urlsOf(m).filter((u) => u.startsWith(MAIN));
+      expect(onMain.every((u) => u === `${MAIN}/` || u === MAIN)).toBe(true);
+    });
+  });
+
+  it('a business profile: LocalBusiness url and breadcrumbs on the directory origin, isPartOf WebSite and the brand crumb on the main origin', async () => {
+    await withEnv(DIR, async () => {
+      const w = world({ directoryPagesIndexable: true }, MAIN); const b = biz({ name: 'Perambur Pipes' }); w.data.rows.push(b);
+      const m = await ok(w.svc, `/business/${b.slug}`);
+      const lb = m.jsonLd.find((j) => j['@type'] === 'LocalBusiness') as { url: string; isPartOf: { url: string } };
+      expect(lb.url).toBe(`${DIR}/business/${b.slug}`); expect(lb.isPartOf.url).toBe(MAIN);
+      expect(m.breadcrumbs[0].url).toBe(`${MAIN}/`); expect(m.breadcrumbs[m.breadcrumbs.length - 1].url).toBe(`${DIR}/business/${b.slug}`);
+      expect(m.meta.canonical).toBe(`${DIR}/business/${b.slug}`);
+    });
+  });
+
+  it('unset (or not a web address): ONE origin, exactly as before, the brand crumb and the WebSite included', async () => {
+    for (const v of [undefined, '', 'garbage']) {
+      await withEnv(v, async () => {
+        const w = world({ directoryPagesIndexable: true }, 'https://www.get4domain.com'); fiveInPerambur(w.data);
+        const home = await ok(w.svc, '/directory');
+        expect(home.meta.canonical).toBe(`${MAIN}/directory`); expect(home.breadcrumbs).toEqual([{ name: 'Get4Domain', path: '/', url: `${MAIN}/` }]);
+        expect((home.jsonLd.find((j) => j['@type'] === 'WebSite') as { url: string }).url).toBe(MAIN);
+        const city = await ok(w.svc, '/chennai');
+        expect(city.breadcrumbs.every((c) => c.url.startsWith(`${MAIN}/`))).toBe(true); expect(city.meta.canonical).toBe(`${MAIN}/chennai`);
+      });
+    }
+  });
+
+  it('directoryPagesIndexable stays OFF by default: the default setting is false and a page is noindex with FLAG_OFF even on the directory host', async () => {
+    expect(DEFAULT_DIRECTORY_SETTINGS.directoryPagesIndexable).toBe(false);
+    await withEnv(DIR, async () => {
+      const w = world({}, MAIN); fiveInPerambur(w.data);
+      const m = await ok(w.svc, '/chennai');
+      expect(m.meta).toMatchObject({ indexable: false, noindexReason: 'FLAG_OFF' });
+    });
   });
 });
