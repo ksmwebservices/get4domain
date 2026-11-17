@@ -3,6 +3,8 @@ import { checkCustomerInput, cleanTags, ConsentState, CustomerSource, isConsentS
 import { customerError } from './customers.errors';
 import { CustomerKeyTaken, CustomerRow, CustomersStore, SourceRow } from './customers.store';
 
+/** Rows one import call may carry. */
+export const IMPORT_MAX_ROWS = 500;
 export interface CaptureInput { name: string; phone?: string | null; email?: string | null; source: CustomerSource; refType?: string; refId?: string }
 export interface CaptureResult { customer: CustomerRow; created: boolean; sourceAdded: boolean }
 export interface CustomerPatchInput { name?: string; phone?: string | null; email?: string | null; notes?: string | null; tags?: string[]; consent?: ConsentState }
@@ -64,6 +66,36 @@ export class CustomersService {
     const patch = { ...(input.notes ? { notes: input.notes.slice(0, 2000) } : {}), ...(tags.length ? { tags } : {}) };
     const row = Object.keys(patch).length ? ((await this.store.update(vendorId, r.customer.id, patch)) ?? r.customer) : r.customer;
     return view(row);
+  }
+
+  /**
+   * Bring a list in at once (the Import screen). Every row is checked on its own: a bad row is reported with its position and never stops the others; a person already on the list (same phone or e-mail,
+   * or the same person twice in the file) is counted as existing, never duplicated; a new person gets the source MANUAL, reference "import", and consent UNKNOWN. Nothing is deleted or overwritten.
+   * At most IMPORT_MAX_ROWS rows in one call, so one request cannot hold the database.
+   */
+  async importRows(vendorId: string, rows: Array<{ name?: unknown; phone?: unknown; email?: unknown; notes?: unknown; tags?: unknown }>) {
+    if (!Array.isArray(rows) || rows.length === 0) throw customerError(400, 'CUSTOMER_INVALID', 'Send at least one row.', { problem: 'rows' });
+    if (rows.length > IMPORT_MAX_ROWS) throw customerError(400, 'CUSTOMER_IMPORT_TOO_LARGE', `Send at most ${IMPORT_MAX_ROWS} rows at a time.`, { details: { max: IMPORT_MAX_ROWS } });
+    const seen = new Set<string>(); const invalid: Array<{ row: number; problems: string[] }> = [];
+    let created = 0; let existing = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i] ?? {};
+      const c = checkCustomerInput(r as { name?: unknown; phone?: unknown; email?: unknown });
+      if (!c.ok) { invalid.push({ row: i + 1, problems: c.problems }); continue; }
+      const tags = r.tags === undefined || r.tags === null || r.tags === '' ? [] : cleanTags(Array.isArray(r.tags) ? r.tags : String(r.tags).split(/[;,]/).map((t) => t.trim()).filter(Boolean));
+      if (!tags) { invalid.push({ row: i + 1, problems: ['tags: up to 20 short labels'] }); continue; }
+      const keys = [c.value.phoneKey && `p:${c.value.phoneKey}`, c.value.emailKey && `e:${c.value.emailKey}`].filter((k): k is string => !!k);
+      if (keys.some((k) => seen.has(k))) { existing += 1; continue; }   // the same person twice in the file
+      keys.forEach((k) => seen.add(k));
+      const found = await this.store.findByKeys(vendorId, c.value.phoneKey, c.value.emailKey);
+      if (found) { existing += 1; continue; }
+      const cap = await this.capture(vendorId, { name: String(r.name), phone: r.phone as string | null | undefined, email: r.email as string | null | undefined, source: 'MANUAL', refType: 'import', refId: '' });
+      if (!cap.created) { existing += 1; continue; }
+      created += 1;
+      const patch = { ...(typeof r.notes === 'string' && r.notes.trim() ? { notes: r.notes.slice(0, 2000) } : {}), ...(tags.length ? { tags } : {}) };
+      if (Object.keys(patch).length) await this.store.update(vendorId, cap.customer.id, patch);
+    }
+    return { total: rows.length, created, existing, invalid };
   }
 
   async update(vendorId: string, id: string, p: CustomerPatchInput) {

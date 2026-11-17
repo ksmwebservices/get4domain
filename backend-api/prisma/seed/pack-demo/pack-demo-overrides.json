@@ -1,0 +1,101 @@
+{
+  "note": "Packs whose kit category is a NEIGHBOURING trade (a pharmacy falls back to a grocery design, a dealer to a consultant, fleet rental to a travel agent, wellness to a salon). The demo must show what that business really does, so these four carry their own content. Invented names, no price, no medical claim, no offer. Every other pack comes from the theme kit's fixtures (scripts/build-pack-demo-content.js).",
+  "packs": {
+    "PHARMACY": {
+      "business": { "name": "Sri Lakshmi Medicals", "tagline": "Your neighbourhood pharmacy.", "city": "Dindigul", "about": "Sri Lakshmi Medicals is a licensed pharmacy serving Dindigul. Medicines are given against a valid prescription where the law requires one, and our pharmacist is at the counter to answer your questions. This text is sample content for a demo." },
+      "terms": { "items": "What we keep", "itemOne": "Product", "team": "Our pharmacists", "teamOne": "Pharmacist" },
+      "services": [
+        ["Prescription medicines", "Given against a valid prescription, checked by the pharmacist."],
+        ["Over-the-counter products", "Everyday health products that do not need a prescription."],
+        ["Health and wellness products", "Vitamins, supplements, hygiene and baby care."],
+        ["Medical devices", "Thermometers, blood pressure monitors and glucose meters."],
+        ["Refill reminders", "Tell us your regular medicines and we will remind you before they run out."],
+        ["Home delivery nearby", "Delivery within the neighbourhood, arranged by the shop."]
+      ],
+      "people": [["Lakshmi N.", "Owner and pharmacist"], ["Arun K.", "Pharmacist"], ["Divya S.", "Counter assistant"]],
+      "faqs": [
+        ["Do I need a prescription?", "For prescription medicines, yes. The pharmacist will tell you."],
+        ["Can I ask about a medicine?", "Yes. Ask the pharmacist at the counter or call the shop."],
+        ["Do you deliver?", "Within the neighbourhood, as the shop arranges it. Call to confirm."],
+        ["Are you licensed?", "The shop shows its drug licence number on the site."]
+      ],
+      "areas": ["Gandhi Nagar", "Kamaraj Road", "Bazaar Street", "Railway Colony"],
+      "sections": [
+        ["licence", "Licence", [["Drug licence", "Shown here once the owner enters it."]]],
+        ["refills", "Refills", [["Regular medicines", "We keep a list for each family and remind them."]]]
+      ]
+    },
+    "B2B_DEALER": {
+      "business": { "name": "Vel Industrial Supplies", "tagline": "Industrial supplies for factories and workshops.", "city": "Coimbatore", "about": "Vel Industrial Supplies supplies bearings, fasteners, hand tools and safety equipment to factories and workshops. Send us the specification and quantity and we reply with a quotation. This text is sample content for a demo." },
+      "terms": { "items": "Product ranges", "itemOne": "Range", "team": "Our team", "teamOne": "Team member" },
+      "services": [
+        ["Bearings and seals", "Ball, roller and sealed bearings in common industrial sizes."],
+        ["Fasteners", "Bolts, nuts, washers and anchors in standard grades."],
+        ["Hand and power tools", "Spanners, drills, grinders and cutting tools for workshops."],
+        ["Safety equipment", "Helmets, gloves, shoes and eye protection for the shop floor."],
+        ["Pipes and fittings", "Industrial pipes, valves and fittings."],
+        ["Electrical supplies", "Cables, switchgear and lighting for plants and workshops."]
+      ],
+      "people": [["Velu R.", "Proprietor"], ["Sathish M.", "Sales engineer"], ["Revathi P.", "Order desk"]],
+      "faqs": [
+        ["How do I get a quotation?", "Send the product, specification and quantity with the enquiry form. We reply with a quotation."],
+        ["Is there a minimum order?", "Ask us. It depends on the product."],
+        ["Do you supply outside the city?", "Yes, by transport. We confirm the arrangement in the quotation."],
+        ["Can I get a bulk or repeat supply?", "Yes. Tell us the monthly need in the enquiry."]
+      ],
+      "areas": ["Coimbatore", "Tiruppur", "Erode", "Salem"],
+      "sections": [
+        ["specifications", "Specifications", [["Grades and sizes", "Listed with each range; ask for a data sheet."]]],
+        ["enquiry", "How enquiry works", [["Send the requirement", "Product, specification, quantity and delivery place."]]]
+      ]
+    },
+    "RENTAL_FLEET": {
+      "business": { "name": "Kaveri Cabs and Rentals", "tagline": "Cars and vans on rent, with or without a driver.", "city": "Tiruchirappalli", "about": "Kaveri Cabs and Rentals rents cars and vans for the day, the week or a trip, with or without a driver. Tell us the dates and the vehicle and we confirm availability. This text is sample content for a demo." },
+      "terms": { "items": "Our vehicles", "itemOne": "Vehicle", "team": "Our team", "teamOne": "Team member" },
+      "services": [
+        ["Hatchback car", "A small car for the city, five seats."],
+        ["Sedan", "A comfortable sedan for longer trips."],
+        ["SUV", "Seven seats for families and groups."],
+        ["Tempo traveller", "A van for large groups and events."],
+        ["Self-drive on rent", "Take the vehicle yourself with the documents the shop asks for."],
+        ["Driver on request", "A driver who knows the routes, arranged with the booking."]
+      ],
+      "people": [["Karthik V.", "Owner"], ["Suresh P.", "Fleet manager"], ["Anitha D.", "Booking desk"]],
+      "faqs": [
+        ["How do I book?", "Send the dates, the pick-up place and the vehicle you want. The shop confirms availability."],
+        ["What documents do I need?", "The shop will tell you when it confirms the booking."],
+        ["Is a driver included?", "You can choose with or without a driver when you book."],
+        ["What if I need to change the dates?", "Tell the shop as early as you can and it will say what is possible."]
+      ],
+      "areas": ["Tiruchirappalli", "Thanjavur", "Karur", "Pudukkottai"],
+      "sections": [
+        ["fleet", "The fleet", [["Cars and vans", "Each vehicle is listed with its seats."]]],
+        ["booking", "How booking works", [["Send the dates", "Pick-up, drop and vehicle."]]]
+      ]
+    },
+    "MEMBERSHIP_WELLNESS": {
+      "business": { "name": "Fitwell Gym and Yoga Studio", "tagline": "Train, stretch and feel better.", "city": "Madurai", "about": "Fitwell is a neighbourhood gym and yoga studio. Join for a month or longer, come to a class or train on your own, and meet a trainer before you decide. This text is sample content for a demo." },
+      "terms": { "items": "Memberships and classes", "itemOne": "Plan", "team": "Our trainers", "teamOne": "Trainer" },
+      "services": [
+        ["Gym membership", "Use the gym floor in the studio hours."],
+        ["Yoga classes", "Morning and evening group classes for all levels."],
+        ["Personal training", "One-to-one sessions with a trainer."],
+        ["Weight training", "Guided sessions for strength and form."],
+        ["Trial visit", "Come and see the studio and meet a trainer first."],
+        ["Women-only batch", "A batch for women, with a woman trainer."]
+      ],
+      "people": [["Meenakshi R.", "Head trainer"], ["Praveen K.", "Gym trainer"], ["Nisha S.", "Yoga teacher"]],
+      "faqs": [
+        ["Can I try before joining?", "Yes. Ask for a trial visit."],
+        ["Do I need experience?", "No. The trainers start from where you are."],
+        ["What are the timings?", "See the hours on this page."],
+        ["Can I pause my membership?", "Ask the studio. It depends on the plan you choose."]
+      ],
+      "areas": ["Anna Nagar", "KK Nagar", "Simmakkal", "Goripalayam"],
+      "sections": [
+        ["timetable", "Class timetable", [["Yoga", "Morning and evening batches."]]],
+        ["trainers", "Trainers", [["Meet the trainers", "Ask for a free introduction."]]]
+      ]
+    }
+  }
+}

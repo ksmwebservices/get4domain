@@ -275,6 +275,21 @@ export class PackEngineService {
 
   // ── staff: view and edit the data (A6) ──────────────────────────────────────────────────────────
 
+  /** The public list (audit gap G31). Only enabled packs; a counsel-gated pack says whether the owner has opened it, so the marketing site decides what to show. Add-on packs show their price STATUS only. */
+  async publicPacks(): Promise<{ packs: Array<{ key: string; name: string; regulated: boolean; open: boolean; disclaimerKey: string | null; tabs: Array<{ key: string; label: string }>; categoryCount: number }>; addonPacks: Array<{ key: string; name: string; description: string | null; grantsCapabilities: string[]; priceState: 'PRICE_PENDING'; bundleDiscount: 'PENDING' }> }> {
+    const r = await this.reference();
+    const packs = [...r.packs].filter((p) => p.enabled).sort((a, b) => a.key.localeCompare(b.key)).map((p) => {
+      const regulated = (p.config as { flags?: { counselGated?: boolean } } | null)?.flags?.counselGated === true;
+      return {
+        key: p.key, name: p.name, regulated, open: !regulated || r.gatedPacksOpen, disclaimerKey: p.disclaimerKey,
+        tabs: r.tabs.filter((t) => t.scope === 'PACK' && t.ownerKey === p.key && t.active).sort((a, b) => a.sortOrder - b.sortOrder).map((t) => ({ key: t.key, label: t.label })),
+        categoryCount: r.categories.filter((c) => c.packKey === p.key && c.active).length,
+      };
+    });
+    const addonPacks = r.addons.filter((a) => a.enabled).sort((a, b) => a.key.localeCompare(b.key)).map((a) => ({ key: a.key, name: a.name, description: a.description, grantsCapabilities: a.grantsCapabilities, priceState: 'PRICE_PENDING' as const, bundleDiscount: 'PENDING' as const }));
+    return { packs, addonPacks };
+  }
+
   async adminPacks(): Promise<StoredPack[]> { return (await this.reference()).packs; }
   async adminPack(key: string): Promise<{ pack: StoredPack; tabs: StoredTab[]; categories: number }> {
     const r = await this.reference();

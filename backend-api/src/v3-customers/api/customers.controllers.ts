@@ -1,8 +1,10 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
+import { RATE } from '../../common/throttling';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { pageArgs, paged } from '../../plans/admin/plans-admin.common';
@@ -24,6 +26,18 @@ export class CreateCustomerDto {
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) @MaxLength(30, { each: true }) tags?: string[];
 }
+/** One line of an import file. Every field is checked again by the service; tags may be a list or one text split on commas or semicolons. */
+export class ImportRowDto {
+  @IsOptional() @IsString() @MaxLength(120) name?: string;
+  @IsOptional() @IsString() @MaxLength(20) phone?: string;
+  @IsOptional() @IsString() @MaxLength(254) email?: string;
+  @IsOptional() @IsString() @MaxLength(2000) notes?: string;
+  @IsOptional() tags?: string | string[];
+}
+export class ImportCustomersDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => ImportRowDto) rows!: ImportRowDto[];
+}
+
 export class UpdateCustomerDto {
   @IsOptional() @IsString() @MaxLength(120) name?: string;
   @IsOptional() @IsString() @MaxLength(20) phone?: string;
@@ -54,6 +68,8 @@ export class MeCustomersController {
   one(@Tenant() t: TenantContext, @Param('id') id: string) { return this.customers.get(t.vendorId, id); }
   @Post() @HttpCode(200) @ApiOperation({ summary: 'Add a customer by hand (source MANUAL); a person already on the list is refused with their id' })
   create(@Tenant() t: TenantContext, @Body() dto: CreateCustomerDto) { return this.customers.create(t.vendorId, dto); }
+  @Throttle(RATE.recordWrite) @Post('import') @HttpCode(200) @ApiOperation({ summary: 'Bring in a list of customers (up to 500 rows): each row is checked alone, people already on the list are counted not duplicated, bad rows are reported by position' })
+  importRows(@Tenant() t: TenantContext, @Body() dto: ImportCustomersDto) { return this.customers.importRows(t.vendorId, dto.rows as never); }
   @Put(':id') @HttpCode(200) @ApiOperation({ summary: 'Change a customer; an opt-out cannot be turned back on by the business' })
   update(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: UpdateCustomerDto) { return this.customers.update(t.vendorId, id, dto); }
   @Post(':id/archive') @HttpCode(200) @ApiOperation({ summary: 'Archive a customer (never deleted)' })

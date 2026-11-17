@@ -95,3 +95,35 @@ describe('cross-tenant', () => {
     expect((await svc.get(A, c.id)).archived).toBe(false);
   });
 });
+
+describe('the import (Dispatch G1 B3)', () => {
+  it('creates new people, counts people already on the list, reports bad rows by position, and one bad row never stops the others', async () => {
+    const { svc, store } = make();
+    await svc.create(A, { name: 'Already Here', phone: '9876500001' });
+    const r = await svc.importRows(A, [
+      { name: 'Meena R', phone: '98765 43210', tags: 'vip, local' }, { name: 'Ravi', email: 'RAVI@x.com', notes: 'from the old register' },
+      { name: 'Already Here', phone: '9876500001' }, { name: '', phone: '9876500002' }, { name: 'No Contact' }, { name: 'Meena Again', phone: '09876543210' }, { name: 'Tagged', phone: '9876500003', tags: ['a', 'b'] },
+    ]);
+    expect(r).toMatchObject({ total: 7, created: 3, existing: 2 }); expect(r.invalid.map((x) => x.row)).toEqual([4, 5]);
+    expect(store.rows.map((x) => x.name).sort()).toEqual(['Already Here', 'Meena R', 'Ravi', 'Tagged']);
+    const meena = store.rows.find((x) => x.name === 'Meena R')!; expect(meena.tags).toEqual(['vip', 'local']); expect(meena.consent).toBe('UNKNOWN'); expect(meena.firstSource).toBe('MANUAL');
+    expect(store.sources.some((s) => s.refType === 'import')).toBe(true);
+  });
+  it('importing the same file again creates nobody new; it never overwrites a person; another business is untouched', async () => {
+    const { svc, store } = make();
+    const rows = [{ name: 'Meena R', phone: '9876543210' }, { name: 'Ravi', email: 'r@x.com' }];
+    expect((await svc.importRows(A, rows)).created).toBe(2); const again = await svc.importRows(A, [{ name: 'Different Name', phone: '9876543210' }, ...rows]);
+    expect(again).toMatchObject({ created: 0, existing: 3 }); expect(store.rows.find((x) => x.phoneKey === '919876543210')!.name).toBe('Meena R');
+    expect((await svc.importRows(B, rows)).created).toBe(2); expect(store.rows.filter((x) => x.vendorId === B)).toHaveLength(2);
+  });
+  it('refuses an empty list and a list over 500 rows (one request cannot hold the database)', async () => {
+    const { svc } = make();
+    expect(await code(svc.importRows(A, []))).toBe('CUSTOMER_INVALID');
+    expect(await code(svc.importRows(A, Array.from({ length: 501 }, (_, i) => ({ name: `P${i}`, phone: `98765${String(i).padStart(5, '0')}` }))))).toBe('CUSTOMER_IMPORT_TOO_LARGE');
+  });
+  it('a bad tag list is a bad row, not a crash', async () => {
+    const { svc } = make();
+    const r = await svc.importRows(A, [{ name: 'Tagged', phone: '9876500003', tags: Array.from({ length: 25 }, (_, i) => `t${i}`) }, { name: 'Fine', phone: '9876500004' }]);
+    expect(r).toMatchObject({ created: 1, existing: 0 }); expect(r.invalid).toEqual([{ row: 1, problems: ['tags: up to 20 short labels'] }]);
+  });
+});
