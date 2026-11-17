@@ -9,9 +9,12 @@ import { phoneDigits } from '../../v3-partners/core/partner-core';
  *  - the commission is a SLAB BY THE NUMBER OF NEW PAID VENDORS CONVERTED IN THE MONTH: the more a partner converts in a month, the higher the amount per vendor; the admin enters the rows, the system ships with none;
  *  - a vendor counts ONCE, on the first successful paid plan payment (gateway or admin-confirmed cash);
  *  - payout is monthly: an ADMIN closes the month (a route, not a cron), reviews the ledger, and records each payout with a bank or UPI reference; no automatic payout and no tax computed;
- *  - a reversed payment marks the line REVERSED and flags it for the owner.
+ *  - a reversed payment marks the line REVERSED and flags it for the owner;
+ *  - (Wave 4) a line reversed AFTER it was PAID out stays PAID and a separate negative ADJUSTMENT line is made; it is netted on the partner's next month close, and carried forward to the following close when
+ *    netting it would leave the partner with nothing to pay.
  */
 export type LedgerStatus = 'ACCRUED' | 'APPROVED' | 'PAID' | 'REVERSED';
+export type LedgerKind = 'COMMISSION' | 'ADJUSTMENT';
 
 // ─────────────────────────────────────────────────────────────────────────────── codes
 /** No 0, 1, I, L, O or U (they are confused when read aloud or copied by hand). 30 symbols. */
@@ -90,34 +93,54 @@ export function slabFor(slabs: readonly Slab[], count: number, atMonthEnd: Date)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────── month close
-export interface Line { id: string; partnerId: string; vendorId: string; month: string; status: LedgerStatus; amountMinor: number | null }
+/** `kind` absent means COMMISSION (every line before Wave 4). `qualifiedAt` is, for an ADJUSTMENT, the moment of the reversal. */
+export interface Line { id: string; partnerId: string; vendorId: string; month: string; status: LedgerStatus; amountMinor: number | null; kind?: LedgerKind; qualifiedAt?: Date }
 export interface CloseResult {
   month: string;
   /** true when there were no slab rows in force: nothing accrues and the lines stay ACCRUED with no amount */
   noSlabs: boolean;
-  /** lines that move ACCRUED -> APPROVED with their amount; empty on a repeat */
-  approve: Array<{ id: string; amountMinor: number }>;
-  /** per partner: how many qualifying vendors, the per-vendor amount, the total (a partner whose count fits no slab row is listed with amount null) */
-  partners: Array<{ partnerId: string; count: number; perVendorMinor: number | null; totalMinor: number | null }>;
+  /** lines that move ACCRUED -> APPROVED with their amount; empty on a repeat. An ADJUSTMENT carries `month`: the month it is netted in (its own month becomes the closing month). */
+  approve: Array<{ id: string; amountMinor: number; month?: string }>;
+  /** per partner: how many qualifying vendors, the per-vendor amount, the total (a partner whose count fits no slab row is listed with amount null); adjustmentMinor is what was netted by this close and carriedMinor what waits for a later one (both negative or 0) */
+  partners: Array<{ partnerId: string; count: number; perVendorMinor: number | null; totalMinor: number | null; adjustmentMinor: number; carriedMinor: number }>;
 }
 
 /**
- * Closing a month. For each partner the count of its qualifying vendors in the month (lines that are not REVERSED) picks the slab row; every ACCRUED line of that partner gets the row's amount per vendor and
- * becomes APPROVED. A line already APPROVED or PAID is NEVER touched, so closing again changes nothing (idempotent). No slab rows in force: nothing changes and the answer says so.
+ * Closing a month. For each partner the count of its qualifying COMMISSION vendors in the month (lines that are not REVERSED) picks the slab row; every ACCRUED line of that partner gets the row's amount per
+ * vendor and becomes APPROVED. A line already APPROVED or PAID is NEVER touched, so closing again changes nothing (idempotent). No slab rows in force: nothing changes and the answer says so.
+ *
+ * Adjustments (Wave 4): an ACCRUED ADJUSTMENT whose reversal happened on or before the end of the month, for a partner with no payout in that month yet (`settledPartners`), is netted here, oldest first, as long
+ * as the partner is left with MORE than nothing (the month's commission plus the adjustments already netted in this month plus this one is above 0). The first one that would not fit, and every later one, is
+ * carried forward untouched to the next close. A netted adjustment moves to the closing month so the payout of that month holds it.
  */
-export function closeMonth(month: string, lines: readonly Line[], slabs: readonly Slab[]): CloseResult {
+export function closeMonth(month: string, lines: readonly Line[], slabs: readonly Slab[], settledPartners: ReadonlySet<string> = new Set()): CloseResult {
   const end = monthEnd(month);
-  const inMonth = lines.filter((l) => l.month === month && l.status !== 'REVERSED');
+  const kindOf = (l: Line): LedgerKind => l.kind ?? 'COMMISSION';
+  const commission = lines.filter((l) => kindOf(l) === 'COMMISSION' && l.month === month && l.status !== 'REVERSED');
   const live = slabs.some((s) => s.effectiveFrom.getTime() <= end.getTime());
   const byPartner = new Map<string, Line[]>();
-  for (const l of inMonth) byPartner.set(l.partnerId, [...(byPartner.get(l.partnerId) ?? []), l]);
+  for (const l of commission) byPartner.set(l.partnerId, [...(byPartner.get(l.partnerId) ?? []), l]);
+  const adjustments = lines.filter((l) => kindOf(l) === 'ADJUSTMENT' && typeof l.amountMinor === 'number');
+  const adjPartners = new Set(adjustments.filter((l) => l.status === 'ACCRUED').map((l) => l.partnerId));
+  for (const p of adjPartners) if (!byPartner.has(p)) byPartner.set(p, []);
   const approve: CloseResult['approve'] = [];
   const partners: CloseResult['partners'] = [];
   for (const [partnerId, ls] of [...byPartner.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     const count = ls.length;
     const row = live ? slabFor(slabs, count, end) : null;
     for (const l of ls.slice().sort((a, b) => a.id.localeCompare(b.id))) if (row && l.status === 'ACCRUED') approve.push({ id: l.id, amountMinor: row.amountPerVendorMinor });
-    partners.push({ partnerId, count, perVendorMinor: row?.amountPerVendorMinor ?? null, totalMinor: row ? row.amountPerVendorMinor * count : null });
+    const commissionTotal = row ? row.amountPerVendorMinor * count : null;
+    // adjustments: already netted in THIS month (APPROVED or PAID, month = this month) count first; then the waiting ones, oldest first
+    const mine = adjustments.filter((l) => l.partnerId === partnerId);
+    let running = (commissionTotal ?? 0) + mine.filter((l) => l.month === month && (l.status === 'APPROVED' || l.status === 'PAID')).reduce((n, l) => n + (l.amountMinor as number), 0);
+    const waiting = mine.filter((l) => l.status === 'ACCRUED' && (l.qualifiedAt ? l.qualifiedAt.getTime() <= end.getTime() : true))
+      .sort((a, b) => (a.qualifiedAt?.getTime() ?? 0) - (b.qualifiedAt?.getTime() ?? 0) || a.id.localeCompare(b.id));
+    let netted = 0; let carried = 0; let blocked = settledPartners.has(partnerId) || !row;
+    for (const a of waiting) {
+      const amt = a.amountMinor as number;
+      if (!blocked && running + amt > 0) { approve.push({ id: a.id, amountMinor: amt, month }); running += amt; netted += amt; } else { blocked = true; carried += amt; }
+    }
+    partners.push({ partnerId, count, perVendorMinor: row?.amountPerVendorMinor ?? null, totalMinor: commissionTotal, adjustmentMinor: netted, carriedMinor: carried });
   }
   return { month, noSlabs: !live, approve, partners };
 }
@@ -138,9 +161,9 @@ export function checkPayoutReference(ref: unknown): { ok: true; value: string } 
 /** One CSV cell: quoted when needed, and a leading = + - @ tab or return is defused with a quote, so a spreadsheet never runs a typed formula. */
 export function csvCell(v: unknown): string {
   let s = v === null || v === undefined ? '' : String(v);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  if (/^[=+\-@\t\r]/.test(s) && !/^-[0-9]+(\.[0-9]+)?$/.test(s)) s = `'${s}`;   // a plain negative number (an adjustment) is not a formula
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 export function toCsv(header: readonly string[], rows: ReadonlyArray<ReadonlyArray<unknown>>): string { return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n'; }
-/** paise as "1234.50" without a float */
-export const rupeesText = (paise: number | null): string => (paise === null ? '' : `${Math.floor(paise / 100)}.${String(paise % 100).padStart(2, '0')}`);
+/** paise as "1234.50" without a float; a negative amount (an adjustment) is "-1234.50" */
+export const rupeesText = (paise: number | null): string => { if (paise === null) return ''; const a = Math.abs(paise); return `${paise < 0 ? '-' : ''}${Math.floor(a / 100)}.${String(a % 100).padStart(2, '0')}`; };

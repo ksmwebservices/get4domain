@@ -8189,7 +8189,7 @@ model CommissionSlab {
 model CommissionLedger {
   id          String    @id @default(cuid())
   partnerId   String
-  vendorId    String    @unique
+  vendorId    String
   month       String // YYYY-MM, in India time, of the qualifying payment
   orderId     String
   qualifiedAt DateTime
@@ -8199,12 +8199,17 @@ model CommissionLedger {
   flagReason  String?
   approvedAt  DateTime?
   payoutId    String?
+  /// Wave 4 W4: COMMISSION (the vendor's first-payment line) or ADJUSTMENT (a negative line made when a PAID line is reversed; netted on the partner's next month close, carried forward if the net would be negative)
+  kind        String    @default("COMMISSION")
+  /// Wave 4 W4: for an ADJUSTMENT, the PAID commission line it takes back
+  adjustsLineId String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   partner ReferralPartner  @relation(fields: [partnerId], references: [id], onDelete: Restrict)
   payout  CommissionPayout? @relation(fields: [payoutId], references: [id], onDelete: Restrict)
 
+  @@unique([vendorId, kind])
   @@index([partnerId, month, status])
   @@index([month, status])
   @@map("g4d_commission_ledger")

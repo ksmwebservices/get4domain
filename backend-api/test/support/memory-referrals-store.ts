@@ -1,4 +1,4 @@
-import { LedgerStatus } from '../../src/v3-referrals/core/referral-core';
+import { LedgerKind, LedgerStatus } from '../../src/v3-referrals/core/referral-core';
 import { PartnerFields } from '../../src/v3-partners/core/partner-core';
 import { PartnerRow, PartnersStore, StaffMemberRef } from '../../src/v3-partners/partners.store';
 import { AttributionRow, LedgerRow, LinkRow, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from '../../src/v3-referrals/referrals.store';
@@ -39,13 +39,16 @@ export class MemoryReferralsStore extends ReferralsStore {
   async createSlab(r: Omit<SlabRow, 'id'>) { const row: SlabRow = { ...r, id: this.id('slab') }; this.slabs.push(row); return { ...row }; }
   async updateSlab(id: string, r: Partial<Omit<SlabRow, 'id'>>) { const row = this.slabs.find((s) => s.id === id); if (!row) return null; Object.assign(row, r); return { ...row }; }
 
-  async getLineByVendor(vendorId: string) { const r = this.lines.find((l) => l.vendorId === vendorId); return r ? { ...r } : null; }
-  async createLine(r: Parameters<ReferralsStore['createLine']>[0]) { this.boom(); const ex = this.lines.find((l) => l.vendorId === r.vendorId); if (ex) return { created: false, row: { ...ex } }; const row: LedgerRow = { ...r, id: this.id('led'), amountMinor: null, status: 'ACCRUED', flagged: false, flagReason: null, approvedAt: null, payoutId: null, createdAt: new Date() }; this.lines.push(row); return { created: true, row: { ...row } }; }
+  async getLineByVendor(vendorId: string, kind: LedgerKind = 'COMMISSION') { const r = this.lines.find((l) => l.vendorId === vendorId && l.kind === kind); return r ? { ...r } : null; }
+  async createAdjustment(r: Parameters<ReferralsStore['createAdjustment']>[0]) { const ex = this.lines.find((l) => l.vendorId === r.vendorId && l.kind === 'ADJUSTMENT'); if (ex) return { created: false, row: { ...ex } }; const row: LedgerRow = { ...r, id: this.id('adj'), status: 'ACCRUED', flagged: true, approvedAt: null, payoutId: null, kind: 'ADJUSTMENT', createdAt: new Date() }; this.lines.push(row); return { created: true, row: { ...row } }; }
+  async pendingAdjustments(upTo: Date) { return this.lines.filter((l) => l.kind === 'ADJUSTMENT' && l.status === 'ACCRUED' && l.qualifiedAt.getTime() <= upTo.getTime()).map((l) => ({ ...l })); }
+  async flagLine(id: string, reason: string) { const l = this.lines.find((x) => x.id === id); if (l) { l.flagged = true; l.flagReason = reason; } }
+  async createLine(r: Parameters<ReferralsStore['createLine']>[0]) { this.boom(); const ex = this.lines.find((l) => l.vendorId === r.vendorId && l.kind === 'COMMISSION'); if (ex) return { created: false, row: { ...ex } }; const row: LedgerRow = { ...r, id: this.id('led'), amountMinor: null, status: 'ACCRUED', flagged: false, flagReason: null, approvedAt: null, payoutId: null, kind: 'COMMISSION', adjustsLineId: null, createdAt: new Date() }; this.lines.push(row); return { created: true, row: { ...row } }; }
   async linesOfMonth(month: string) { return this.lines.filter((l) => l.month === month).map((l) => ({ ...l })); }
   async linesOfPartnerMonth(partnerId: string, month: string) { return this.lines.filter((l) => l.partnerId === partnerId && l.month === month).map((l) => ({ ...l })); }
   async listLines(q: { month?: string; partnerId?: string; status?: LedgerStatus; skip: number; take: number }) { const all = this.lines.filter((l) => (!q.month || l.month === q.month) && (!q.partnerId || l.partnerId === q.partnerId) && (!q.status || l.status === q.status)).sort((a, b) => b.month.localeCompare(a.month) || a.id.localeCompare(b.id)); return { items: all.slice(q.skip, q.skip + q.take).map((l) => ({ ...l })), total: all.length }; }
-  async approveLines(items: Array<{ id: string; amountMinor: number }>, at: Date) { let n = 0; for (const i of items) { const l = this.lines.find((x) => x.id === i.id); if (l && l.status === 'ACCRUED') { l.status = 'APPROVED'; l.amountMinor = i.amountMinor; l.approvedAt = at; n++; } } return n; }
-  async reverseLine(vendorId: string, reason: string) { const l = this.lines.find((x) => x.vendorId === vendorId); if (!l) return null; if (l.status !== 'REVERSED') { l.status = 'REVERSED'; l.flagged = true; l.flagReason = reason; } return { ...l }; }
+  async approveLines(items: Array<{ id: string; amountMinor: number; month?: string }>, at: Date) { let n = 0; for (const i of items) { const l = this.lines.find((x) => x.id === i.id); if (l && l.status === 'ACCRUED') { l.status = 'APPROVED'; l.amountMinor = i.amountMinor; l.approvedAt = at; if (i.month) l.month = i.month; n++; } } return n; }
+  async reverseLine(vendorId: string, reason: string) { const l = this.lines.find((x) => x.vendorId === vendorId && x.kind === 'COMMISSION'); if (!l) return null; if (l.status !== 'REVERSED') { l.status = 'REVERSED'; l.flagged = true; l.flagReason = reason; } return { ...l }; }
 
   async getPayout(partnerId: string, month: string) { const r = this.payouts.find((p) => p.partnerId === partnerId && p.month === month); return r ? { ...r } : null; }
   async createPayout(p: { partnerId: string; month: string; totalMinor: number; reference: string; paidById: string | null; paidAt: Date }, lineIds: string[]) {

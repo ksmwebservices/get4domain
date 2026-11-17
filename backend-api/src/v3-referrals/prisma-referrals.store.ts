@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { LedgerStatus } from './core/referral-core';
+import { LedgerKind, LedgerStatus } from './core/referral-core';
 import { AttributionRow, LedgerRow, LinkRow, PayoutRow, ReferralsStore, SlabRow, VendorFacts } from './referrals.store';
 
 const isUnique = (e: unknown): boolean => (e as { code?: string })?.code === 'P2002';
 const toLink = (r: { id: string; partnerId: string; code: string; active: boolean; createdById: string | null; disabledAt: Date | null; createdAt: Date }): LinkRow => ({ ...r });
 const toAttr = (r: { id: string; vendorId: string; partnerId: string; linkId: string | null; source: string; setById: string | null; reason: string | null; createdAt: Date }): AttributionRow => ({ ...r, source: r.source as AttributionRow['source'] });
 const toSlab = (r: { id: string; minVendors: number; maxVendors: number | null; amountPerVendorMinor: number; effectiveFrom: Date; createdById: string | null }): SlabRow => ({ ...r });
-const toLine = (r: { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: string; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; createdAt: Date }): LedgerRow => ({ ...r, status: r.status as LedgerStatus });
+const toLine = (r: { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: string; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; kind: string; adjustsLineId: string | null; createdAt: Date }): LedgerRow => ({ ...r, status: r.status as LedgerStatus, kind: r.kind as LedgerKind });
 const toPayout = (r: { id: string; partnerId: string; month: string; totalMinor: number; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }): PayoutRow => ({ ...r });
 
 @Injectable()
@@ -56,11 +56,17 @@ export class PrismaReferralsStore extends ReferralsStore {
     try { return toSlab(await this.prisma.commissionSlab.update({ where: { id }, data: r })); } catch (e) { if ((e as { code?: string }).code === 'P2025') return null; throw e; }
   }
 
-  async getLineByVendor(vendorId: string) { const r = await this.prisma.commissionLedger.findUnique({ where: { vendorId } }); return r ? toLine(r) : null; }
+  async getLineByVendor(vendorId: string, kind: LedgerKind = 'COMMISSION') { const r = await this.prisma.commissionLedger.findUnique({ where: { vendorId_kind: { vendorId, kind } } }); return r ? toLine(r) : null; }
   async createLine(r: Parameters<ReferralsStore['createLine']>[0]) {
     try { return { created: true, row: toLine(await this.prisma.commissionLedger.create({ data: r })) }; }
-    catch (e) { if (isUnique(e)) return { created: false, row: toLine(await this.prisma.commissionLedger.findUniqueOrThrow({ where: { vendorId: r.vendorId } })) }; throw e; }
+    catch (e) { if (isUnique(e)) return { created: false, row: toLine(await this.prisma.commissionLedger.findUniqueOrThrow({ where: { vendorId_kind: { vendorId: r.vendorId, kind: 'COMMISSION' } } })) }; throw e; }
   }
+  async createAdjustment(r: Parameters<ReferralsStore['createAdjustment']>[0]) {
+    try { return { created: true, row: toLine(await this.prisma.commissionLedger.create({ data: { ...r, kind: 'ADJUSTMENT', status: 'ACCRUED', flagged: true } })) }; }
+    catch (e) { if (isUnique(e)) return { created: false, row: toLine(await this.prisma.commissionLedger.findUniqueOrThrow({ where: { vendorId_kind: { vendorId: r.vendorId, kind: 'ADJUSTMENT' } } })) }; throw e; }
+  }
+  async pendingAdjustments(upTo: Date) { return (await this.prisma.commissionLedger.findMany({ where: { kind: 'ADJUSTMENT', status: 'ACCRUED', qualifiedAt: { lte: upTo } }, orderBy: [{ qualifiedAt: 'asc' }, { id: 'asc' }] })).map(toLine); }
+  async flagLine(id: string, reason: string) { await this.prisma.commissionLedger.update({ where: { id }, data: { flagged: true, flagReason: reason.slice(0, 300) } }); }
   async linesOfMonth(month: string) { return (await this.prisma.commissionLedger.findMany({ where: { month }, orderBy: { id: 'asc' } })).map(toLine); }
   async linesOfPartnerMonth(partnerId: string, month: string) { return (await this.prisma.commissionLedger.findMany({ where: { partnerId, month }, orderBy: { id: 'asc' } })).map(toLine); }
   async listLines(q: { month?: string; partnerId?: string; status?: LedgerStatus; skip: number; take: number }) {
@@ -68,19 +74,19 @@ export class PrismaReferralsStore extends ReferralsStore {
     const [rows, total] = await Promise.all([this.prisma.commissionLedger.findMany({ where, orderBy: [{ month: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }], skip: q.skip, take: q.take }), this.prisma.commissionLedger.count({ where })]);
     return { items: rows.map(toLine), total };
   }
-  async approveLines(items: Array<{ id: string; amountMinor: number }>, at: Date): Promise<number> {
+  async approveLines(items: Array<{ id: string; amountMinor: number; month?: string }>, at: Date): Promise<number> {
     if (items.length === 0) return 0;
     return this.prisma.$transaction(async (tx) => {
       let n = 0;
-      for (const i of items) n += (await tx.commissionLedger.updateMany({ where: { id: i.id, status: 'ACCRUED' }, data: { status: 'APPROVED', amountMinor: i.amountMinor, approvedAt: at } })).count;
+      for (const i of items) n += (await tx.commissionLedger.updateMany({ where: { id: i.id, status: 'ACCRUED' }, data: { status: 'APPROVED', amountMinor: i.amountMinor, approvedAt: at, ...(i.month ? { month: i.month } : {}) } })).count;
       return n;
     });
   }
   async reverseLine(vendorId: string, reason: string) {
-    const cur = await this.prisma.commissionLedger.findUnique({ where: { vendorId } });
+    const cur = await this.prisma.commissionLedger.findUnique({ where: { vendorId_kind: { vendorId, kind: 'COMMISSION' } } });
     if (!cur) return null;
     if (cur.status === 'REVERSED') return toLine(cur);
-    return toLine(await this.prisma.commissionLedger.update({ where: { vendorId }, data: { status: 'REVERSED', flagged: true, flagReason: reason.slice(0, 300) } }));
+    return toLine(await this.prisma.commissionLedger.update({ where: { id: cur.id }, data: { status: 'REVERSED', flagged: true, flagReason: reason.slice(0, 300) } }));
   }
 
   async getPayout(partnerId: string, month: string) { const r = await this.prisma.commissionPayout.findUnique({ where: { partnerId_month: { partnerId, month } } }); return r ? toPayout(r) : null; }

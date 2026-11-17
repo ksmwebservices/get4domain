@@ -1,9 +1,9 @@
-import { LedgerStatus, Slab } from './core/referral-core';
+import { LedgerKind, LedgerStatus, Slab } from './core/referral-core';
 
 export interface LinkRow { id: string; partnerId: string; code: string; active: boolean; createdById: string | null; disabledAt: Date | null; createdAt: Date }
 export interface AttributionRow { id: string; vendorId: string; partnerId: string; linkId: string | null; source: 'REGISTER' | 'ON_BEHALF' | 'ADMIN_CHANGE'; setById: string | null; reason: string | null; createdAt: Date }
 export interface SlabRow extends Slab { createdById: string | null }
-export interface LedgerRow { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: LedgerStatus; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; createdAt: Date }
+export interface LedgerRow { id: string; partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number | null; status: LedgerStatus; flagged: boolean; flagReason: string | null; approvedAt: Date | null; payoutId: string | null; kind: LedgerKind; adjustsLineId: string | null; createdAt: Date }
 export interface PayoutRow { id: string; partnerId: string; month: string; totalMinor: number; status: string; reference: string; paidById: string | null; paidAt: Date; createdAt: Date }
 export interface VendorFacts { id: string; email: string; phone: string | null; businessName: string; state: string | null }
 
@@ -27,14 +27,20 @@ export abstract class ReferralsStore {
   abstract createSlab(r: Omit<SlabRow, 'id'>): Promise<SlabRow>;
   abstract updateSlab(id: string, r: Partial<Omit<SlabRow, 'id'>>): Promise<SlabRow | null>;
 
-  abstract getLineByVendor(vendorId: string): Promise<LedgerRow | null>;
-  /** inserts, or returns the existing row (a vendor counts once: vendorId is unique) */
-  abstract createLine(r: Omit<LedgerRow, 'id' | 'createdAt' | 'amountMinor' | 'status' | 'flagged' | 'flagReason' | 'approvedAt' | 'payoutId'>): Promise<{ created: boolean; row: LedgerRow }>;
+  abstract getLineByVendor(vendorId: string, kind?: LedgerKind): Promise<LedgerRow | null>;
+  /** inserts, or returns the existing row (a vendor counts once: vendorId and kind are unique) */
+  abstract createLine(r: Omit<LedgerRow, 'id' | 'createdAt' | 'amountMinor' | 'status' | 'flagged' | 'flagReason' | 'approvedAt' | 'payoutId' | 'kind' | 'adjustsLineId'>): Promise<{ created: boolean; row: LedgerRow }>;
+  /** Wave 4 W4: the negative ADJUSTMENT line that takes back a PAID line; inserts, or returns the existing one (a vendor has one adjustment). It starts ACCRUED with its amount already set (negative) and flagged. */
+  abstract createAdjustment(r: { partnerId: string; vendorId: string; month: string; orderId: string; qualifiedAt: Date; amountMinor: number; adjustsLineId: string; flagReason: string }): Promise<{ created: boolean; row: LedgerRow }>;
+  /** Wave 4 W4: ADJUSTMENT lines still ACCRUED whose reversal happened on or before the moment (the ones a close may net, with the ones carried from earlier months) */
+  abstract pendingAdjustments(upTo: Date): Promise<LedgerRow[]>;
+  /** Wave 4 W4: flags a line and sets the note without changing its status (a PAID line that was reversed stays PAID) */
+  abstract flagLine(id: string, reason: string): Promise<void>;
   abstract linesOfMonth(month: string): Promise<LedgerRow[]>;
   abstract listLines(q: { month?: string; partnerId?: string; status?: LedgerStatus; skip: number; take: number }): Promise<{ items: LedgerRow[]; total: number }>;
   abstract linesOfPartnerMonth(partnerId: string, month: string): Promise<LedgerRow[]>;
   /** ACCRUED -> APPROVED with the amount, in one unit; only lines that are still ACCRUED change; returns how many */
-  abstract approveLines(items: Array<{ id: string; amountMinor: number }>, at: Date): Promise<number>;
+  abstract approveLines(items: Array<{ id: string; amountMinor: number; month?: string }>, at: Date): Promise<number>;
   abstract reverseLine(vendorId: string, reason: string): Promise<LedgerRow | null>;
 
   abstract getPayout(partnerId: string, month: string): Promise<PayoutRow | null>;

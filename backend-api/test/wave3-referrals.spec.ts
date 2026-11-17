@@ -94,7 +94,7 @@ describe('closing a month (pure)', () => {
     const lines = [L('a', 'p1', '2026-11'), L('b', 'p1', '2026-11'), L('c', 'p1', '2026-11'), L('d', 'p2', '2026-11')];
     const r = closeMonth('2026-11', lines, slabs);
     expect(r.noSlabs).toBe(false);
-    expect(r.partners).toEqual([{ partnerId: 'p1', count: 3, perVendorMinor: 150_000, totalMinor: 450_000 }, { partnerId: 'p2', count: 1, perVendorMinor: 100_000, totalMinor: 100_000 }]);
+    expect(r.partners).toEqual([{ partnerId: 'p1', count: 3, perVendorMinor: 150_000, totalMinor: 450_000, adjustmentMinor: 0, carriedMinor: 0 }, { partnerId: 'p2', count: 1, perVendorMinor: 100_000, totalMinor: 100_000, adjustmentMinor: 0, carriedMinor: 0 }]);
     expect(r.approve).toEqual([{ id: 'a', amountMinor: 150_000 }, { id: 'b', amountMinor: 150_000 }, { id: 'c', amountMinor: 150_000 }, { id: 'd', amountMinor: 100_000 }]);
   });
   it('the more a partner converts, the higher the amount per vendor', () => {
@@ -126,7 +126,8 @@ describe('closing a month (pure)', () => {
 describe('CSV (pure)', () => {
   it('quotes what needs it and defuses a typed formula', () => {
     expect(csvCell('plain')).toBe('plain'); expect(csvCell('a,b')).toBe('"a,b"'); expect(csvCell('say "hi"')).toBe('"say ""hi"""'); expect(csvCell(null)).toBe(''); expect(csvCell(42)).toBe('42');
-    for (const f of ['=1+1', '+SUM(A1)', '-2', '@cmd', '\tx']) expect(csvCell(f).startsWith("'") || csvCell(f).startsWith('"\'')).toBe(true);
+    expect(csvCell('-2')).toBe('-2');   // Wave 4: a plain negative number (an adjustment amount) is not a formula
+    for (const f of ['=1+1', '+SUM(A1)', '-2+3', '@cmd', '\tx']) expect(csvCell(f).startsWith("'") || csvCell(f).startsWith('"\'')).toBe(true);
     expect(toCsv(['a', 'b'], [[1, '=x'], ['y,z', null]])).toBe("a,b\r\n1,'=x\r\n\"y,z\",\r\n");
   });
   it('writes paise as rupees without a float', () => { expect(rupeesText(150000)).toBe('1500.00'); expect(rupeesText(5)).toBe('0.05'); expect(rupeesText(null)).toBe(''); });
@@ -243,18 +244,22 @@ describe('the ledger: a vendor counts once, on the first paid plan payment', () 
     const w = world(); await w.svc.setAttribution('v1', w.asha.id, undefined, w.admin);
     w.store.failNext = true; await expect(paid(w, 'v1', 'o1')).resolves.toBeUndefined();
   });
-  it('a reversed payment marks the line REVERSED and flags it for the owner; a paid-out line says the owner decides; another order or an unknown vendor changes nothing', async () => {
+  it('a reversed payment marks the line REVERSED and flags it for the owner; a paid-out line stays PAID and gets an adjustment; another order or an unknown vendor changes nothing', async () => {
     const w = world(); await w.svc.setAttribution('v1', w.asha.id, undefined, w.admin); await w.svc.setAttribution('v2', w.asha.id, undefined, w.admin);
     await paid(w, 'v1', 'o1'); await paid(w, 'v2', 'o2');
     await w.svc.onPaymentReversed({ vendorId: 'v1', orderId: 'other', reason: 'refund recorded' }); await w.svc.onPaymentReversed({ vendorId: 'ghost', orderId: 'o1', reason: 'x' });
     expect(w.store.lines.map((l) => l.status)).toEqual(['ACCRUED', 'ACCRUED']);
     await w.svc.onPaymentReversed({ vendorId: 'v1', orderId: 'o1', reason: 'refund recorded' });
     expect(w.store.lines[0]).toMatchObject({ status: 'REVERSED', flagged: true }); expect(w.store.lines[0].flagReason).toContain('refund recorded');
-    w.store.lines[1].status = 'PAID';
+    // Wave 4 W4: a line reversed AFTER the payout stays PAID and a separate negative ADJUSTMENT line is made (see wave4-commission-adjustment.spec.ts for the netting)
+    Object.assign(w.store.lines[1], { status: 'PAID', amountMinor: 100_000 });
     await w.svc.onPaymentReversed({ vendorId: 'v2', orderId: 'o2', reason: 'refund recorded' });
-    expect(w.store.lines[1]).toMatchObject({ status: 'REVERSED', flagged: true }); expect(w.store.lines[1].flagReason).toMatch(/after the payout.*owner decides/);
+    expect(w.store.lines[1]).toMatchObject({ status: 'PAID', flagged: true }); expect(w.store.lines[1].flagReason).toMatch(/after the payout.*adjustment/);
+    expect(w.store.lines[2]).toMatchObject({ kind: 'ADJUSTMENT', vendorId: 'v2', status: 'ACCRUED', amountMinor: -100_000, adjustsLineId: w.store.lines[1].id });
     await w.svc.onPaymentReversed({ vendorId: 'v2', orderId: 'o2', reason: 'again' });   // a repeat is quiet
-    expect(w.recorded.filter((r) => r.actionKey === 'commission.line.reversed')).toHaveLength(2);
+    expect(w.store.lines).toHaveLength(3);
+    expect(w.recorded.filter((r) => r.actionKey === 'commission.line.reversed')).toHaveLength(1);
+    expect(w.recorded.filter((r) => r.actionKey === 'commission.adjustment.created')).toHaveLength(1);
   });
 });
 
@@ -339,7 +344,7 @@ describe('closing a month and paying out (service)', () => {
     const all = await w.svc.ledger({ skip: 0, take: 50 }); expect(all.total).toBe(2);
     expect((await w.svc.ledger({ month: '2026-10', skip: 0, take: 50 })).total).toBe(0); expect((await w.svc.ledger({ status: 'APPROVED', skip: 0, take: 1 })).items).toHaveLength(1);
     const csv = await w.svc.exportCsv({ month: '2026-11' });
-    const lines = csv.trim().split('\r\n'); expect(lines).toHaveLength(3); expect(lines[0]).toBe('month,partner,partnerId,vendorId,orderId,status,amountRupees,flagged,flagReason,qualifiedAt,payoutId');
+    const lines = csv.trim().split('\r\n'); expect(lines).toHaveLength(3); expect(lines[0]).toBe('month,kind,partner,partnerId,vendorId,orderId,status,amountRupees,flagged,flagReason,qualifiedAt,payoutId');
     expect(lines[1]).toContain('2026-11'); expect(lines[1]).toContain('1000.00'); expect(csv).not.toMatch(/,=HYPERLINK|^=HYPERLINK/m); expect(csv).toContain("\"'=HYPERLINK");
   });
 });
@@ -362,7 +367,7 @@ describe('what a partner sees (and never sees)', () => {
   });
   it('shows only its own commission lines and payouts', async () => {
     const w = world(); await two(w);
-    const c = await w.svc.myCommission(w.asha.id, 0, 25); expect(c.items).toEqual([{ month: '2026-11', businessName: 'Business v1', status: 'PAID', amountMinor: 100_000, flagged: false }]);
+    const c = await w.svc.myCommission(w.asha.id, 0, 25); expect(c.items).toEqual([{ month: '2026-11', kind: 'COMMISSION', businessName: 'Business v1', status: 'PAID', amountMinor: 100_000, flagged: false }]);
     expect(JSON.stringify(c)).not.toMatch(/vendorId|orderId|private@|9000000001|partnerId/);
     const p = await w.svc.myPayouts(w.asha.id, 0, 25); expect(p.items).toEqual([{ month: '2026-11', totalMinor: 100_000, status: 'PAID', reference: 'UTR777888', paidAt: expect.any(Date) }]);
     expect((await w.svc.myPayouts(w.ben.id, 0, 25)).total).toBe(0); expect((await w.svc.myCommission(w.ben.id, 0, 25)).items[0].status).toBe('APPROVED');

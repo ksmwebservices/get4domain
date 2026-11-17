@@ -10,7 +10,7 @@ import { LedgerRow, ReferralsStore, SlabRow } from './referrals.store';
 
 export interface StaffActor { id: string | null; ip?: string | null }
 const MAX_DRAWS = 6;
-const lineView = (l: LedgerRow) => ({ id: l.id, partnerId: l.partnerId, vendorId: l.vendorId, month: l.month, orderId: l.orderId, qualifiedAt: l.qualifiedAt, amountMinor: l.amountMinor, status: l.status, flagged: l.flagged, flagReason: l.flagReason, approvedAt: l.approvedAt, payoutId: l.payoutId });
+const lineView = (l: LedgerRow) => ({ id: l.id, partnerId: l.partnerId, vendorId: l.vendorId, month: l.month, orderId: l.orderId, qualifiedAt: l.qualifiedAt, amountMinor: l.amountMinor, status: l.status, flagged: l.flagged, flagReason: l.flagReason, approvedAt: l.approvedAt, payoutId: l.payoutId, kind: l.kind, adjustsLineId: l.adjustsLineId });
 const slabView = (s: SlabRow) => ({ id: s.id, minVendors: s.minVendors, maxVendors: s.maxVendors, amountPerVendorMinor: s.amountPerVendorMinor, effectiveFrom: s.effectiveFrom });
 
 /**
@@ -138,13 +138,25 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
     } catch { /* never raised to the payment */ }
   }
 
-  /** A reversed payment marks the line REVERSED and flags it for the owner; a line that had already been paid out says so, because taking it back is the owner's decision. */
+  /**
+   * A reversed payment. A line not yet paid out is marked REVERSED and flagged for the owner (it drops out of the payout). A line that was ALREADY PAID out stays PAID (the payout record is history) and a separate
+   * negative ADJUSTMENT line of the same amount is made (Wave 4: owner decision, 17 Nov 2026); it is netted on the partner's next month close, or carried forward when netting it would leave nothing to pay.
+   * A repeat of the same reversal changes nothing.
+   */
   async onPaymentReversed(i: PlanReversedInfo): Promise<void> {
     try {
       const line = await this.store.getLineByVendor(i.vendorId);
       if (!line || line.orderId !== i.orderId || line.status === 'REVERSED') return;
-      const reason = line.status === 'PAID' ? `The payment was reversed after the payout (${i.reason}). The owner decides whether to take it back.` : `The payment was reversed (${i.reason}).`;
-      await this.store.reverseLine(i.vendorId, reason);
+      if (line.status === 'PAID') {
+        if (!line.amountMinor || line.amountMinor <= 0) return;
+        const at = this.clock();
+        const adj = await this.store.createAdjustment({ partnerId: line.partnerId, vendorId: line.vendorId, month: monthOf(at), orderId: line.orderId, qualifiedAt: at, amountMinor: -line.amountMinor, adjustsLineId: line.id, flagReason: `The payment was reversed after the payout (${i.reason}). Taken back as an adjustment on the next month close.` });
+        if (!adj.created) return;   // a repeat is quiet
+        await this.store.flagLine(line.id, `The payment was reversed after the payout (${i.reason}). An adjustment of ${rupeesText(-line.amountMinor)} is netted on the next month close.`);
+        await this.record('commission.adjustment.created', 'CommissionLedger', adj.row.id, null, { adjusts: line.id, amountMinor: adj.row.amountMinor, partnerId: line.partnerId });
+        return;
+      }
+      await this.store.reverseLine(i.vendorId, `The payment was reversed (${i.reason}).`);
       await this.record('commission.line.reversed', 'CommissionLedger', line.id, null, { was: line.status });
     } catch { /* never raised to the refund */ }
   }
@@ -185,10 +197,14 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
   /** Closing a month is an action by an ADMIN or SUPER_ADMIN (never a cron). Idempotent: a repeat approves nothing. With no slab rows nothing accrues and the answer says so. */
   async closeMonth(month: string, actor: StaffActor): Promise<CloseResult & { approved: number }> {
     if (!isMonth(month)) throw referralError(400, 'COMMISSION_MONTH_INVALID', 'The month must look like 2026-11.');
-    const [lines, slabs] = await Promise.all([this.store.linesOfMonth(month), this.store.listSlabs()]);
-    const r = closeMonth(month, lines, slabs);
+    const [monthLines, slabs, pending] = await Promise.all([this.store.linesOfMonth(month), this.store.listSlabs(), this.store.pendingAdjustments(monthEnd(month))]);
+    // adjustments waiting from this or an earlier month join the close; a partner that already has a payout for this month is not touched (its adjustments wait for the next close)
+    const lines = [...monthLines, ...pending.filter((p) => !monthLines.some((m) => m.id === p.id))];
+    const settled = new Set<string>();
+    for (const p of new Set(pending.map((x) => x.partnerId))) if (await this.store.getPayout(p, month)) settled.add(p);
+    const r = closeMonth(month, lines, slabs, settled);
     const approved = await this.store.approveLines(r.approve, this.clock());
-    if (approved > 0 || lines.length === 0) await this.record('commission.month.closed', 'CommissionMonth', month, actor, { approved, noSlabs: r.noSlabs, partners: r.partners.length });
+    if (approved > 0 || lines.length === 0) await this.record('commission.month.closed', 'CommissionMonth', month, actor, { approved, noSlabs: r.noSlabs, partners: r.partners.length, adjustmentsNetted: r.approve.filter((a) => a.month).length });
     return { ...r, approved };
   }
 
@@ -199,8 +215,8 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
     const items: LedgerRow[] = [];
     for (let skip = 0; ; skip += 200) { const r = await this.store.listLines({ ...q, skip, take: 200 }); items.push(...r.items); if (items.length >= r.total || r.items.length === 0) break; }
     for (const l of items) if (!names.has(l.partnerId)) names.set(l.partnerId, (await this.partners.get(l.partnerId))?.name ?? '');
-    return toCsv(['month', 'partner', 'partnerId', 'vendorId', 'orderId', 'status', 'amountRupees', 'flagged', 'flagReason', 'qualifiedAt', 'payoutId'],
-      items.map((l) => [l.month, names.get(l.partnerId), l.partnerId, l.vendorId, l.orderId, l.status, rupeesText(l.amountMinor), l.flagged ? 'yes' : 'no', l.flagReason, l.qualifiedAt.toISOString(), l.payoutId]));
+    return toCsv(['month', 'kind', 'partner', 'partnerId', 'vendorId', 'orderId', 'status', 'amountRupees', 'flagged', 'flagReason', 'qualifiedAt', 'payoutId'],
+      items.map((l) => [l.month, l.kind, names.get(l.partnerId), l.partnerId, l.vendorId, l.orderId, l.status, rupeesText(l.amountMinor), l.flagged ? 'yes' : 'no', l.flagReason, l.qualifiedAt.toISOString(), l.payoutId]));
   }
 
   /**
@@ -239,7 +255,7 @@ export class ReferralsService extends PlanPaidHook implements ReferralAttributio
   async myCommission(partnerId: string, skip: number, take: number) {
     const r = await this.store.listLines({ partnerId, skip, take });
     const names = await Promise.all(r.items.map(async (l) => (await this.store.vendorFacts(l.vendorId))?.businessName ?? null));
-    return { items: r.items.map((l, i) => ({ month: l.month, businessName: names[i], status: l.status, amountMinor: l.amountMinor, flagged: l.flagged })), total: r.total };
+    return { items: r.items.map((l, i) => ({ month: l.month, kind: l.kind, businessName: names[i], status: l.status, amountMinor: l.amountMinor, flagged: l.flagged })), total: r.total };
   }
 
   async myPayouts(partnerId: string, skip: number, take: number) {
