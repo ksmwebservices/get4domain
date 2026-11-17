@@ -5,8 +5,8 @@ Branch v3-audit (from v3-pack). Documents only. Never pushed.
 | Job | State | Commit | Note |
 |---|---|---|---|
 | F0 | DONE | (see git log) | Section 1 written: inventory, flags, enquiry effect |
-| F1 | TODO | - | 16 packs + add-on packs |
-| F2 | TODO | - | Vendor app tab by tab |
+| F1 | DONE | see git log | Section 2 (packs). Theme inventory (section 9, user-added) TODO |
+| F2 | DONE | see git log | Section 3 |
 | F3 | TODO | - | Admin screens vs routes |
 | F4 | TODO | - | Public site + partner portal |
 | F5 | TODO | - | 12 launch journeys |

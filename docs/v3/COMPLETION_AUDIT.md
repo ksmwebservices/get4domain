@@ -134,3 +134,108 @@ Path, read in `src/requests-orders/public-requests.service.ts`: `POST /v3/public
 4. `EMAIL_FORWARD_LIVE` and `heldEnquiriesEnabled` concern the mailbox inbox (`v3-mail`), not the website form.
 5. `requestNudgeEnabled` adds a reminder through the same sandbox messaging.
 6. Payments, indexing, registrar and AI flags do not change whether an enquiry arrives. `provisioningRunnerEnabled` decides whether a created vendor has a site at all (section 6, journeys 1 and 7).
+
+---
+
+## 2. Industry packs (F1)
+
+Sources read: `backend-api/prisma/seed/pack-engine/PACK_SUMMARY_V1.csv` (16 packs), `pack-engine-settings.json` (packMeta, 14 capabilities, 4 add-on packs), `src/v3-pack-records/seed/tab-field-seed.ts`, `src/v3-pack-records/api/pack-records.controller.ts:24` (`/v3/me/packs/:packKey/tabs/:tabKey/...`), `src/v3-packs/core/nav-core.ts:79`, `src/directory/core/listable-categories.ts:16-18` (`PACK_KIT_FALLBACK`), vendor app `apps/vendor/src/pages/business/packs/PackScreen.tsx` (typed client `packRecords`), `themes/library/*`.
+
+### 2.1 How a pack works in code (applies to all 16)
+
+- **Backend:** one generic engine, not 16 modules. Pack, tab, capability, tier-matrix and category tables are loaded from the CSV/JSON by `scripts/seed-v3-pack-engine.js` (idempotent). Each tab is a list of field definitions (`tab-field-seed.ts`, loaded by `scripts/seed-v3-pack-tab-fields.js`); a vendor's record is validated JSON (text, money in paise, date, select, status). All 16 packs have every tab listed in `PACK_SUMMARY_V1.csv` backed by a field set in the seed (script check: 16 of 16 packs, every tab key has a field entry; the slug rule that turns a tab label into a key was inferred, so treat as **UNVERIFIED** for the exact key).
+- **Vendor screen:** the server sends the vendor's tabs (`GET /v3/me/navigation`), and every pack tab opens the **one generic `PackScreen`** (`apps/vendor/src/pages/bodies.ts:15`, `TabPage.tsx:58-90`), which lists, adds, edits, archives and restores records through the real client. So every pack tab is a **generic record list**, not a pack-specific screen (no batch-expiry board, no case timeline, no job-card board).
+- **Site:** the public site of any pack is drawn by one of five Standard themes through a kit category. `PACK_KIT_FALLBACK` (`listable-categories.ts:16-18`) names the kit category each pack falls back to.
+- **Gating:** `packGatedPacksOpen` (default off) hides the tabs of CLINIC, LAB, PHARMACY and PRACTICE_LEGAL_FINANCE (`packMeta.counselGated` in the settings JSON; `nav-core.ts:79` answers HIDDEN/GATED_PACK). `packOnlineMedicineCheckout` is off (`docs/v3/V3_PACK_ENGINE.md` section 9). These are owner switches, listed in section 8.
+- **Tests:** pack engine, records, nav, tab fields and HTTP are covered generically (`test/pack-core.spec.ts`, `pack-engine-service.spec.ts`, `pack-nav-core.spec.ts`, `pack-records-core.spec.ts`, `pack-records-http.spec.ts`, `wave2-pack-tab-fields.spec.ts`, `pack-part-b*.spec.ts`). A grep of the keys finds a pack-specific test only for the gated and shop packs (CLINIC, PHARMACY, RETAIL, FIELD_SERVICE); VEHICLE_SERVICE, LOGISTICS, MEMBERSHIP_WELLNESS, EDUCATION, AGENCY_CONSULTING, HOSPITALITY_EVENTS and RENTAL_FLEET are named in no spec file (the LAB hit count is noise from an unrelated word).
+
+### 2.2 The 16 packs
+
+Vendor screen legend: REAL = opens a screen wired to the real API (here always the generic record screen); LOCKED = tabs hidden until the owner switch; MOCK-ONLY = fixtures only; MISSING = nothing.
+"Specific working module" lists V3 backend modules that exist beyond the generic records and are relevant to the pack; whether the vendor app uses them is stated in section 3.
+
+| Pack | Backend (tabs from CSV; backend categories in the catalogue) | Vendor screens | Site rendering (fallback kit category -> theme) | Tests | Notes |
+|---|---|---|---|---|---|
+| PROPERTY | 5 tabs (listings, projects and units, site visits, owners and tenants, rent roll) with typed fields; 3 catalogue categories; specific: `v3-store`, requests inbox | REAL generic records | `real-estate-agent` -> `free-hospitality` (has `properties.html`) | generic + `pack-engine-service.spec.ts` | RERA field and map filters named in the CSV site sections: renderer support UNVERIFIED |
+| CLINIC | 6 tabs (patients, appointments, visit notes, prescriptions, billing, follow-ups); 11 categories; specific: `v3-appointments` (19 routes) | LOCKED (counsel switch) then generic records | `doctor-clinic` -> `free-practice` (has `doctors.html`) | pack-core, nav-core, engine specs | health disclaimer fixed text (disclaimerKey `health`) |
+| LAB | 4 tabs (test catalogue, orders, sample tracking, reports); 1 category | LOCKED then generic | `diagnostics-lab` -> `free-practice` | gated-pack specs | sample tracking is a plain status field, no workflow |
+| PHARMACY | 4 tabs (stock with batches and expiry, prescriptions, billing, refills); 2 categories; online checkout OFF | LOCKED then generic | `grocery-kirana` -> `free-shop-lite` (a grocery design; no pharmacy sections) | gated-pack specs | batch expiry and drug licence flags exist in the settings (`hasBatchExpiry`, `drugLicenceRequired`); no screen or job acts on them (UNVERIFIED beyond the flag) |
+| RETAIL | 5 tabs (products, stock, cart and orders, returns, offers); 41 categories; specific: `v3-store` (17), orders and offers in `requests-orders` | REAL generic; the shop screens (Orders, Stock) are MOCK-ONLY (section 3) | `electronics-mobile` -> `free-shop-lite` | engine, nav specs | best-covered pack in the backend; vendor Stock/Orders screens not wired |
+| FOOD_SERVICE | 4 tabs (menu, orders, kitchen status, delivery); 6 categories | REAL generic | `restaurant-cafe` -> `free-hospitality` (has `menu.html`) | pack-core only | table booking and catering enquiry: only as enquiry kinds (`ENQUIRY`, `APPOINTMENT`, `QUOTE`, `PRODUCT_ENQUIRY`) |
+| FIELD_SERVICE | 5 tabs (jobs, dispatch, quotes, AMC, service history); 44 categories; specific: `v3-jobs` (16), quotes | REAL generic; Jobs and Quotes screens MOCK-ONLY | `plumber` -> `free-service-pro` | engine, tab-fields, import specs | biggest category count in the catalogue |
+| VEHICLE_SERVICE | 5 tabs (job cards, vehicle records, service history, reminders, parts); 8 categories | REAL generic | `auto-mechanic` -> `free-service-pro` | none named | reminders are fields only, no sender |
+| LOGISTICS | 6 tabs (shipments, trips, vehicles, drivers, tracking, POD); 10 categories | REAL generic | `packers-movers` -> `free-service-pro` | none named | public "track shipment" page in the CSV: no tracking route found (UNVERIFIED) |
+| MEMBERSHIP_WELLNESS | 5 tabs (members, plans and renewals, attendance, appointments, product sales); 11 categories; specific: `v3-appointments` | REAL generic | `salon-spa` -> `free-studio` | none named | kit has `gym-yoga` and `salon-spa` designs, but those two ids are not in the 196-category catalogue (see 9.5) |
+| EDUCATION | 6 tabs (courses, batches, admissions, fees, attendance, results); 12 categories | REAL generic | `coaching-centre` -> `free-studio` (has `courses.html`) | none named | fee reminders not automated |
+| PRACTICE_LEGAL_FINANCE | 5 tabs; 8 categories; `hasCases` flag | LOCKED then generic | `ca-tax-consultant` -> `free-practice` | pack-core only | disclaimerKey `legal_finance` |
+| AGENCY_CONSULTING | 5 tabs; 16 categories | REAL generic | `it-consultant` -> `free-practice` | none named | |
+| HOSPITALITY_EVENTS | 4 tabs; 13 categories | REAL generic | `hotel-homestay` -> `free-hospitality` (has `packages.html`) | none named | |
+| RENTAL_FLEET | 5 tabs; 2 categories | REAL generic | `travel-agency` -> `free-hospitality` | none named | |
+| B2B_DEALER | 5 tabs; 8 categories; enquiry only (no cart) | REAL generic | `it-consultant` -> `free-practice` (a consulting design) | catalogue spec only | no dealer-specific theme |
+
+### 2.3 Add-on packs
+
+Four add-on packs are defined (`pack-engine-settings.json` addonPacks): SHOP, ONLINE_ORDERING_DELIVERY, PHARMACY_COUNTER, HOME_SAMPLE_COLLECTION, with 14 capabilities (SERVICES, APPOINTMENTS, MEMBERSHIPS, LISTINGS, BROKERAGE, RENTALS, MADE_TO_ORDER, DISPATCH, DELIVERY, PHARMACY, LAB, FOOD_SERVICE, VEHICLE_RENTAL, STORE). Backend: add-on tabs seeded (`addonTabRecords`), eligibility table (`src/v3-packs/core/addon-eligibility-core.ts`), purchase from wallet (`/v3/me/packs`, 9 routes under `v3-services`). Vendor: **Add-on packs screen REAL** (`money/packs`, `apps/vendor/src/pages/money/PacksScreen.tsx`, route `/v3/me/packs`, `money-data.ts`). Add-on tabs open the same generic record screen. Price and bundle discount are `PENDING` until staff set them (`pack-core.ts:107`). Add-on goods-pack list awaits the owner (memory note, UNVERIFIED in code). No add-on has its own theme section.
+
+### 2.4 Verdict, counts
+
+- Counting a pack REAL only when its working areas run end to end (backend rules, a pack-specific screen, a fitting theme section, own tests): **0 REAL**.
+- **16 PARTIAL**: all have working generic backend records, a real generic vendor screen and a themed site; none has pack-specific logic or screens.
+- **0 MISSING.**
+- Weakest: PHARMACY, B2B_DEALER, RENTAL_FLEET, LOGISTICS, VEHICLE_SERVICE (no dedicated design, no own tests, workflow-heavy needs expressed only as record fields). Strongest: RETAIL, FIELD_SERVICE, CLINIC (backend modules for store, jobs, appointments exist; the vendor screens for them are not wired, section 3).
+
+---
+
+## 3. Vendor app, tab by tab (F2)
+
+Sources: `get4domain-ui/apps/vendor/src/config/nav.ts` (tab definitions), `pages/bodies.ts` (route to screen; `REAL_SCREENS` list at line 108), `pages/TabPage.tsx`, each screen's `*-data.ts`, `packages/api/src/wave2|wave3` (typed client). Routes follow `/app/{group}/{item}`.
+
+Rule from `bodies.ts:99-105`: a screen not in `REAL_SCREENS` is **sample-only**: in real mode it shows "not available yet" (`UnavailableState`), in sample/demo mode it shows fixtures. A nav item with no entry in `BODIES` shows a placeholder.
+
+| Route | Screen | State | Real route(s) / evidence |
+|---|---|---|---|
+| home/overview | `HomePage` / `OverviewPage` | MOCK-ONLY (`home-data.ts`, `data/mock`) | no typed client import |
+| business/enquiries | `InboxScreen` | **REAL** | `/v3/me/inbox`, `/inbox/waiting`, `/inbox/:id`, `/inbox/:id/state` (`inbox-data.ts`) |
+| business/customers | `CustomersScreen` | **REAL** | `/v3/me/customers`, `/summary`, `/:id/archive|restore` (`customers-data.ts`) |
+| business/jobs | `JobsPage` | MOCK-ONLY | backend `/v3/me/jobs` (9 routes) exists, not called |
+| business/quotes | `QuotesPage` | MOCK-ONLY | backend `/v3/me/quotes` (7) exists, not called |
+| business/work | `WorkPage` | MOCK-ONLY | backend `/v3/me/appointments` (19) exists, not called |
+| business/deals | `DealsPage` | MOCK-ONLY | no matching V3 route found (UNVERIFIED) |
+| business/orders | `OrdersPage` | MOCK-ONLY | backend `/v3/me/orders` (5) exists, not called |
+| business/stock | `StockPage` | MOCK-ONLY | backend `/v3/me/store`, `/items`, `/stock` exist, not called |
+| business/tasks | `TasksPage` | MOCK-ONLY | no V3 tasks route found (UNVERIFIED) |
+| business/segments | `SegmentsPage` | MOCK-ONLY | no segments route found |
+| business/import | `ImportPage` | MOCK-ONLY | no import route for customers found (`/v3/me/migration-requests` is a site migration) |
+| business/offerings | `OfferingsPage` | MOCK-ONLY | `/v3/me/items` exists, not called |
+| pack tabs (`/app/{group}/pack/{key}`) | `PackScreen` | **REAL** | `packRecords` client -> `/v3/me/packs/:packKey/tabs/:tabKey/records`, schema; `/v3/me/pack/capabilities` (`pack-data.ts`) |
+| grow/website (pages, content, theme, brand, gallery, SEO, directory, revisions) | `WebsiteScreen`, `ThemePanel`, `MediaPanels` | **REAL** | `/v3/me/site`, `/site/draft`, `/draft/field`, `/draft/preview`, `/draft/publish`, `/site/revisions`, `/site/submissions`, `/site/editor/map`, `/site/theme`; theme switch client (`themeSwitch.preview/switch/history`); media client (`media.upload/list/remove`) |
+| grow/domain | `DomainScreen` | **REAL** | `/v3/me/domains`, `/subdomain`, `/custom`, `/:id/verify`, `/:id/primary` (`domain-data.ts`) |
+| grow/promotion, grow/social | `DraftsScreen` | **REAL** (drafts client) | `/v3/me/promotion`, `/v3/me/social` (3 routes each). These are drafts for the team, not publishing |
+| grow/telecrm | `TeleCrmPage` | MOCK-ONLY | no V3 route (legacy CRM only) |
+| grow/messages | `MessagesPage` | MOCK-ONLY | no V3 campaign route found (UNVERIFIED) |
+| grow/marketplace | `MarketplacePage` | MOCK-ONLY | `/v3/me/service-requests` (6) and `/v3/me/services` exist, not called |
+| grow/reviews, grow/chat | `ReviewsPage`, `ChatPage` | MOCK-ONLY | no V3 route found |
+| grow/offers | `OffersPage` | MOCK-ONLY | `/v3/me/offers` (3) exists, not called |
+| grow/ai-studio | none (nav item without a `BODIES` entry) | PLACEHOLDER | `/v3/me/ai` (2 routes) exists |
+| grow/reports | `ReportsPage` | MOCK-ONLY | no V3 route found |
+| money/sell | `SellPage` | MOCK-ONLY | no V3 counter-sale route found |
+| money/invoices | `InvoicesScreen` | **REAL** | `/v3/me/documents`, `/:id/resend`, `/:id/download` (`money-data.ts`). Vendor's own invoices (`/v3/me/invoices`, 2) are not the documents list: UNVERIFIED which |
+| money/payments | `PaymentsScreen` | **REAL** | `/v3/me/payment-requests`, `/:id/mark-paid`, `/:id/cancel` |
+| money/accounting | `AccountingPage` | MOCK-ONLY | `/v3/me/accounts` (8) exists, not called |
+| money/analytics | `AnalyticsPage` | MOCK-ONLY | none |
+| money/invoice-settings | `InvoiceSettingsPage` | MOCK-ONLY | none found |
+| money/payment-setup, more/payment-methods | `PaymentSetupPage` | MOCK-ONLY (no data import at all) | `/v3/me/payment-methods` (6) exists, not called |
+| money/wallet | `WalletScreen`, `TopUp` | **REAL** | `/v3/me/wallet`, `/wallet/ledger`, top-up through the checkout client |
+| money/packs | `PacksScreen` | **REAL** | `/v3/me/packs`, `/packs/:key/purchase` |
+| more/plan | `PlanScreen`, `PlanCheckout` | **REAL** | `/v3/me/subscription`, `/v3/me/billing/invoices`, checkout client (wave3 `checkout.ts`, `billing.ts`) |
+| more/profile | `ProfileScreen` | **REAL but narrow** | `/v3/me/tax-profile` only; business profile fields (`/v3/me/profile`, `/profile-schema`) not used here |
+| more/team | `TeamScreen` | **REAL** | team client: list, invite, change, deactivate, reactivate (`/v3/me/team`) |
+| more/help | `SupportScreen` | **REAL** | `/v3/me/tickets`, `/:id`, `/:id/messages` |
+| more/notifications | `NotificationsPage` (`settings/TeamPages`) | MOCK-ONLY | none |
+| more/legal | `LegalPage` | MOCK-ONLY | `/v3/me/terms` (2) exists |
+| more/account | `AccountPanel` | local only (no data import): sign-in, colour, accent | auth routes not called here |
+| more/activity | `ActivityPage` | MOCK-ONLY | `/v3/me/activity` (1) exists, not called |
+
+**Counts:** 41 route entries in `BODIES`; 14 keys in `REAL_SCREENS` plus pack tabs (generic) and the theme panel = **16 real screens**, **25 MOCK-ONLY**, 1 placeholder (AI studio), 1 local-only (account). Of the 25 mock-only screens, at least 13 already have V3 backend routes (jobs, quotes, work, orders, stock, offerings, offers, marketplace, accounting, payment methods, legal, activity, AI studio) so the work is wiring, not backend.
+
+Also in the vendor folder (not routed in V3): `pages/customers/*`, `pages/requests/*`, `pages/revenue/*` (`SellPage`, `AccountingPage` etc. are imported from `revenue`), `pages/inventory/*`, `pages/settings/*` older variants. Those with `mock` imports and no route are dead or re-homed code (UNVERIFIED which are unreachable).
