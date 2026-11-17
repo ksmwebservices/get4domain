@@ -8,8 +8,8 @@ Branch `v3-pub-fe5` (from `v3-pub-fe4`), folder `get4domain-pub/get4domain_mvp`.
 | P1 Reconcile | DONE | see git log | register 400 now reads `data.fields`; 6 new tests (250 unit, smoke 1198 of 1198); every other row was already SAME |
 | P2 Theme rendering | BLOCKED-BY-GAP | see git log | by-host returns a finished stored page drawn from the theme by the backend; no theme key and no render data reach this app; shape needed is in PUBLIC_GAPS G37; nothing built |
 | P3 Real-API probe | DONE | see git log | `npm run probe:v3-real -- <baseUrl>`; ran now: "API not reachable" (ECONNREFUSED), exit 0; table path checked against a throwaway stub (10 of 10) |
-| P4 Quality | TODO | | |
-| P5 Docs and report | TODO | | |
+| P4 Quality | DONE | no change | smoke 1198 of 1198 over four servers; nothing new to test
+| P5 Docs and report | DONE | see git log | PUBLIC_SITE section 13, G37, DISPATCH_REPORT_C1 |
 
 ## P0 FINDINGS: the site against API_CONTRACT_WAVE3.md and API_CONTRACT_WAVE4.md (incl. the A3 additions)
 

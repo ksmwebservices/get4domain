@@ -193,3 +193,9 @@ Branch `v3-pub-fe4`. Same switch as sections 9 and 10 (`V3_PUBLIC_ENABLED` and `
 
 The pricing route, address check, referral check and register fields follow `API_CONTRACT_WAVE3.md` (see G28 to G30). Mock mode feeds the same normaliser and parsers as real mode.
 
+
+## 13. Dispatch C1 (Wave 4 shapes, real-API probe, theme question)
+
+- **Register refusals.** A validation 400 from `POST /auth/register` lists the field names in `data.fields` (A3-1). `mapRegisterFailure` now reads that list when the message words name no field, so the form marks the right field instead of the general message. Names with no form field (`referralCode`, `track`, `product`) still give the general message. The success answer (HTTP 201, `data.accessToken`), the three address codes and the 409 for an email already registered were already handled; real-mode tests with a stubbed fetch now pin them and check that only contract fields are sent.
+- **Vendor-site theme.** Not built here (gap G37). The by-host answer is the backend's finished, stored page, already drawn from the vendor's chosen theme; no theme key and no render data reach this app, and the relay never edits a stored page. A Free site, an unknown theme and a missing theme all arrive as the backend's own page.
+- **Real-API probe.** `npm run probe:v3-real -- http://localhost:3008` (or `PROBE_API_BASE_URL`, or `--env NAME`). GET only, no login, nothing created, no secret. Checks pricing, three address names, an unknown referral code, the directory home model (including whether the canonical still carries `/directory`), the sitemap index, robots, llms.txt and an unknown vendor host, each against the site's own parsers. API not reachable: one line, exit 0.
