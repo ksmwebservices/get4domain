@@ -5,8 +5,8 @@
 | R0 Investigate | DONE | see R1 | findings below |
 | R1 Reconcile with Wave 3 contract | DONE | 095f801 | pricing, subdomain check, referral, register reconciled; 219 unit tests, 795 smoke checks pass |
 | R2 Industry landing pages | DONE | 114cf78 | 12 pages at /industries/{slug}, regulated 4 behind V3_REGULATED_PACKS_PUBLIC; 239 unit tests, 1186 smoke checks (four servers) |
-| R3 Quality | DONE | R3COMMIT | structured-data unit tests, no-host-names smoke mode, 241 unit tests, 1189 smoke checks; no ESLint config in the app (G19), lint not run; found G35 |
-| R4 Docs and report | TODO | | |
+| R3 Quality | DONE | 4508dca | structured-data unit tests, no-host-names smoke mode, 241 unit tests, 1189 smoke checks; no ESLint config in the app (G19), lint not run; found G35 |
+| R4 Docs and report | DONE | see git log | PUBLIC_SITE sections 10 to 12, PUBLIC_GAPS (G28 to G31 updated, G34 to G36 added), DISPATCH_REPORT_B3 |
 
 ## R0 FINDINGS: assumed shapes vs API_CONTRACT_WAVE3.md
 Docs live at the repo root `docs/v3` (not under get4domain_mvp). Wave 4 contract does not exist at get4domain-w4, so it is not used.

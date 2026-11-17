@@ -153,24 +153,42 @@ Branch `v3-pub-fe3`. Plan and API shapes: `PUBLIC_COMMERCE_PLAN.md`. Same switch
 | Address (main host) | Page | Notes |
 |---|---|---|
 | `/` | Home | Organization, WebSite and FAQPage JSON-LD |
-| `/pricing` | Pricing | free trial, Handyman, Professional, Ecommerce; term switch quarterly, half-yearly, annual; prices without GST from `GET /v3/plans`; GST line; a plan with no price shows words and no number; add-on packs with no price; Free and paid comparison; feature table; FAQ (FAQPage JSON-LD only, no price schema); every call to action goes to `/register?plan=..&term=..` |
+| `/pricing` | Pricing | free trial, Handyman, Professional, Ecommerce; term switch quarterly, half-yearly, annual; prices without GST from `GET /v3/public/pricing`; GST line; a plan with no price shows words and no number; add-on packs with no price; Free and paid comparison; feature table; FAQ (FAQPage JSON-LD only, no price schema); every call to action goes to `/register?plan=..&term=..` |
 | `/register` | Self-service register | business name, searchable category, site address with live availability and the reserved-name message, owner name, email, phone, password, terms; carries plan, term and the referral cookie; field errors in plain words; on success goes to the business app (`APP_HOST` or `NEXT_PUBLIC_VENDOR_APP_URL`) with the handoff code, or to its login. `noindex`. |
 | `/login` | Sign in | the Slice 4 sign-in; forgot and reset stay `/account/...` |
 | `/r/{code}` | Referral landing | valid code: first-party cookie `g4d_ref` holding the code only (httpOnly, SameSite=Lax, Secure, no Domain), then `/register`. Unknown, disabled or unreadable code: no cookie, `/referral-link` (neutral page, code not repeated). |
-| `/how-it-works`, `/industries`, `/features`, `/about`, `/contact` | Marketing | breadcrumbs and JSON-LD; industries lists the 16 packs and the categories from the API |
+| `/how-it-works`, `/industries`, `/features`, `/about`, `/contact` | Marketing | breadcrumbs and JSON-LD; industries lists the published packs (12; 16 with `V3_REGULATED_PACKS_PUBLIC=true`), links each to its page and shows the categories from the API |
+| `/industries/{slug}` | Industry landing page | see section 11 |
 
-Browser calls (same origin, flag guarded): `POST /directory-api/register`, `GET /directory-api/subdomain?slug=`. No payment form or card field exists anywhere on the public site: payment happens only inside the business app through the gateway.
+Browser calls (same origin, flag guarded): `POST /directory-api/register`, `GET /directory-api/subdomain?slug=` (the server asks `GET /v3/public/subdomain-availability?name=`). No payment form or card field exists anywhere on the public site: payment happens only inside the business app through the gateway.
 
 Copy: one module (`lib/v3-public/site-strings.ts`), tested over every string: no workspace, BOS or LeadSpace, "enquiries" not "leads", no timeframes (the three billing terms are allowed), no written price, no discount, offer, coupon or deal wording, no ranking claim, no rating or review claim. Smoke repeats the rules on the rendered text of every page.
 
-Sitemap: the new indexable addresses are the same as the live ones, which the existing `sitemap.xml` already lists, so `sitemap.ts` is not changed (it is identical with the flag on and off, checked). Register and referral pages are noindex.
+Sitemap: the first six pages have the same addresses as the live ones, which `sitemap.xml` already lists. The industry landing pages (section 11) are added to it only with the flag on and `MAIN_HOST` set; with the flag off the XML is identical to before (checked). Register and referral pages are noindex.
 
 Reviewing with samples: `npm run build`, then `V3_PUBLIC_ENABLED=true MAIN_HOST=localhost DIRECTORY_HOST=directory.localhost npx next start` and open `/`, `/pricing`, `/register?plan=professional&term=12`, `/r/SAMPLE-PARTNER` (valid), `/r/SAMPLE-OFF` (disabled), `/industries`. Sample addresses: `taken-site` is taken, `taken@example.invalid` is a taken email, `api` is reserved.
 
 Go-live checklist for the commercial pages:
 
-- [ ] Backend: the assumed routes and fields of G28 and G29 (address check, referral check, the extra register fields); confirm G30 (price semantics) and G31 (public pack list).
+- [ ] Backend: the Wave 3 shapes are built in (G28 partly, G29, G30 closed). Still to confirm: what `/auth/register` answers (G28), and the public pack list (G31).
 - [ ] Owner decision G32: the commercial pages replace the live marketing pages on the main host when the flag and `MAIN_HOST` are set. Keep the flag off on the live server until this is intended.
 - [ ] `APP_HOST` (or `NEXT_PUBLIC_VENDOR_APP_URL`) set so register can hand off to the business app.
 - [ ] Referral and registration reach the API with the visitor address (G15).
 - [ ] Counsel approves the legal pages that register links to (G18).
+
+## 11. Industry landing pages (dispatch B3)
+
+Branch `v3-pub-fe4`. Same switch as sections 9 and 10 (`V3_PUBLIC_ENABLED` and `MAIN_HOST`). Report: `DISPATCH_REPORT_B3.md`.
+
+- **Routes.** `/industries/{slug}` on the main host, one per published pack (12): `property-and-real-estate`, `retail-and-ecommerce`, `food-service`, `field-services-and-trades`, `vehicle-services`, `logistics-and-freight`, `gym-salon-and-wellness`, `education-and-training`, `consulting-and-creative`, `hospitality-travel-and-events`, `rentals-and-fleet`, `b2b-supplier-and-dealer`. The middleware rewrites them to `/v3-site/industries/{slug}` (typing that address is a 404). No slug equals a live industry id, so `/industries/travel` and the other live pages are untouched.
+- **Regulated packs.** `CLINIC`, `LAB`, `PHARMACY` and `PRACTICE_LEGAL_FINANCE` (slugs `clinic-and-patient-care`, `lab-and-diagnostics`, `pharmacy-and-medical-store`, `legal-and-finance-practice`) have no page, are not on the hub or in the sitemap, and answer a real 404, unless `V3_REGULATED_PACKS_PUBLIC` is exactly `true` (default off). `/register?pack=` ignores them while they are unpublished.
+- **Content.** Server rendered from `lib/v3-public/packs.ts` and `lib/v3-public/industries.ts` (kinds of business) and `site-strings.ts` (`SITE.industryPage`): what the pack gives (its working areas), the kinds of business it suits, the registered categories from the API, how it works (register, trial site live, move to a paid plan), a call to action to `/register?pack=KEY`, links to the hub and `/pricing`, and an FAQ. Title is the pack name and "website" with the brand when it fits in 60 characters; description; canonical on the main host; indexable. JSON-LD: FAQPage and BreadcrumbList (no price, offer, rating or review markup). One H1, landmarks, skip link, breadcrumbs.
+- **Register.** `/register?pack=FOOD_SERVICE` starts the category list on that pack's categories, with a "Show all categories" button. Only a published pack key counts.
+- **Hub.** `/industries` lists only published packs and links each to its page.
+- **Sitemap.** The published pages are listed only with the flag on and `MAIN_HOST` set (`sitemap.ts` is now `force-dynamic`, G36).
+- **Tests.** `__tests__/industries.test.ts` (publication rules, slugs, metadata length, copy rules over the page text, host routing, JSON-LD) and smoke checks over every page in four servers: flag off, flag on without host names, flag on with host names, and with `V3_REGULATED_PACKS_PUBLIC=true`.
+
+## 12. Wave 3 reconciliation (dispatch B3)
+
+The pricing route, address check, referral check and register fields follow `API_CONTRACT_WAVE3.md` (see G28 to G30). Mock mode feeds the same normaliser and parsers as real mode.
+
