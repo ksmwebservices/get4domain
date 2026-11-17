@@ -826,6 +826,7 @@ try {
   await wireIn();
   await g3.marketing();
   await g3.categoryPages();
+  await g3.directoryPages();
   await g3.categoryRegulatedOn();
   await g3.categoryFlagOff();
   await g3.crawl();

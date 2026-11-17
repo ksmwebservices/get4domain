@@ -150,6 +150,46 @@ export function createG3Smoke(h) {
     ok(reg.status === 200 && !/Showing the categories of/.test(visible(reg.text)), 'g3 category flag off: the live /register ignores the new parameter');
   }
 
+  // ── S3: the directory pages, viewed on the directory host with the sample set ──
+  async function directoryPages() {
+    const H = (p) => getHost(ports.HOST, D, p);
+    const seen = new Map();
+    const queue = ['/'];
+    const SKIP = /^\/(claim|account|legal|sitemaps|go|directory-)/;
+    while (queue.length) {
+      const p = queue.shift();
+      if (seen.has(p)) continue;
+      const r = await H(p);
+      seen.set(p, r);
+      if (r.status !== 200) continue;
+      for (const l of internalLinks(r.text)) if (!seen.has(l) && !SKIP.test(l)) queue.push(l);
+    }
+    ok(seen.size >= 25, `g3 directory: the sample directory has many pages to view (${seen.size})`);
+    // the breadcrumb home link is the model's /directory address, which the directory host answers with a 308 to / (the model is rendered as given, gap G11)
+    const bad = [...seen].filter(([p, r]) => r.status !== 200 && !(p === '/directory' && r.status === 308)).map(([p, r]) => `${p} ${r.status}`);
+    ok(bad.length === 0, `g3 directory: every internal link on the directory pages resolves (${bad.join(', ')})`);
+    const wanted = ['/', '/chennai', '/coimbatore', '/madurai', '/bengaluru', '/state/tamil-nadu', '/state/karnataka', '/category/plumbers', '/category/salons', '/coimbatore/plumbers', '/bengaluru/restaurants', '/business/kovai-plumbing-works', '/business/spice-route-cafe'];
+    for (const p of wanted) ok(seen.has(p), `g3 directory: ${p} is reachable by links from the directory home`);
+    for (const [p, r] of seen) {
+      if (r.status !== 200) continue;
+      const tag = `g3 directory ${p}`;
+      ok(h1s(r.text) === 1, `${tag}: exactly one h1`);
+      ok(/<main[\s>]/.test(r.text) && /<header[\s>]/.test(r.text) && /<footer[\s>]/.test(r.text) && /href="#main"/.test(r.text), `${tag}: landmarks and a skip link`);
+      ok(!/tel:|mailto:|wa\.me/i.test(r.text), `${tag}: no contact link`);
+      ok(!/href="#\/|href="\/#\//.test(r.text), `${tag}: no hash address`);
+      const blocks = ldBlocks(r.text);
+      let parsed = true;
+      try { blocks.forEach((b) => JSON.parse(b)); } catch { parsed = false; }
+      ok(parsed && blocks.length > 0, `${tag}: JSON-LD parses`);
+      ok(/<link rel="canonical" href="https:\/\/directory\.example\.invalid[^"]*"/.test(r.text), `${tag}: canonical comes from the page model`);
+      const visits = (r.text.match(/>Visit site</g) ?? []).length;
+      const goLinks = (r.text.match(/href="\/go\/b-\d+/g) ?? []).length;
+      ok(visits === goLinks, `${tag}: every Visit site link goes through the click-out (${visits}, ${goLinks})`);
+      const t = visible(r.text);
+      ok(!/\b(best|top rated|number one|guaranteed|\d+ reviews?|rated \d)/i.test(t), `${tag}: no ranking, rating or review claim`);
+    }
+  }
+
   // every internal link of the main-host site resolves: a crawl from the home page
   async function crawl() {
     const H = (p) => getHost(ports.HOST, M, p);
@@ -190,5 +230,5 @@ export function createG3Smoke(h) {
     ok((await get(ports.ON, '/v3-site/product')).status === (await get(ports.ON, '/v3-site/pricing')).status, 'g3 no hosts: the internal product page is reachable exactly as the other commercial pages are');
   }
 
-  return { categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
+  return { directoryPages, categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
 }
