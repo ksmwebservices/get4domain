@@ -396,3 +396,194 @@ States: PASS = the whole chain exists in code; PARTIAL = chain exists but a code
 | 12 | Plan expiry and renewal | **PARTIAL** | Expiry is computed at read time: ACTIVE, GRACE, then the track's Free plan and listing-only pages (`entitlement-engine.ts:75-102`, `site-public.service.ts:73`), no job needed. Renewal: `PlanCheckout` and `POST /v3/me/plan/renew-with-wallet` are REAL. The reminder is off (`renewalRemindersEnabled=false`) and cannot reach the vendor anyway until e-mail/SMS are live. Staff lifecycle actions (extend grace, convert to free) have no screen |
 
 **Count: PASS 5 (journeys 2, 5, 6, 10, 11); PARTIAL 5 (1, 4, 7, 9, 12); BROKEN 2 (3, 8).** Of the launch set (journeys 1 to 7 and 10): PASS 4 (2, 5, 6, 10), PARTIAL 3 (1, 4, 7), BROKEN 1 (3).
+
+---
+
+## 7. Completion queue (F6)
+
+Repos: **BE** = `get4domain-w2` (backend in `backend-api`, theme kit in `themes/`, same git repo), **UI** = `get4domain-ui` (vendor, admin, partner, site apps, `packages/api`), **PUB** = `get4domain-pub/get4domain_mvp`. Sizes: S under half a day of agent time, M about a day, L several days. "Staging" = needs the staging database or server (integration tests or a smoke run). Tiers: **LAUNCH** = needed for journeys 1 to 7 and 10 with real data; **OPS** = needed to run the business day once live; **COMPLETE** = finishes V3 but does not block launch. Theme jobs (T-) come from section 9.
+
+### 7.1 Ranked jobs
+
+| Id | What | Why (journey or pack) | Repo | Size | Depends on | Staging | Tier |
+|---|---|---|---|---|---|---|---|
+| Q1 | **Enquiry form post, backend half.** New public route `POST /v3/public/sites/:host/enquire` that accepts the theme form's fields (`name`, `phone`, `message`, `consent`, `source`), builds the request body the existing `PublicRequestsService.submit` needs (kind ENQUIRY, server-made idempotency key, consent object at the current `customerConsentVersion`), and answers a 303 redirect or a small JSON. Keeps the spam, block, takedown and plan gates | Journey 3 (a, b) | BE | M | none | yes (integration test) | LAUNCH |
+| Q2 | **Enquiry form post, public half.** Add POST to `vendor-site/[[...path]]/route.ts`, let `/enquire` POST pass the middleware, forward the visitor address in `X-Forwarded-For`, show a plain thank-you page; test with mocks off | Journey 3 (a) | PUB | S | Q1 contract (route name and answer are fixed above, so it can run in parallel) | no | LAUNCH |
+| Q3 | **Vendor Enquiries reads the requests inbox.** Add `GET /v3/me/requests`, `/requests/:id`, `respond` to the typed client; Enquiries screen lists requests and mail messages together, with respond and status (the screen today reads only `/v3/me/inbox`) | Journey 3 (c) | UI | M | Q1 | no | LAUNCH |
+| Q4 | **Real vendor alert on a new enquiry.** Make the messaging service's e-mail adapter send through the existing mail service when `EMAIL_LIVE_SEND` is on (it records SENT_SANDBOX only today), keeping the dashboard row as the fallback; WhatsApp/SMS stay sandbox until a provider exists (Q20) | Journey 3; vendor never knows an enquiry arrived | BE | M | Q1 | yes | LAUNCH |
+| Q5 | **Admin plan, price, feature and tax-rate editor, and the price book.** Screens for `/v3/admin/plans*`, `/features*`, `/prices*`, `/tax-rates*`, `/vendors/:id/overrides`, audit log, plus `v3-services` (services, add-on packs, price approve/retire, the THEME_SWITCH fee). Prices stay owner data | Journeys 4, 9, 10 (prices are PENDING with no way to set them); add-on packs | UI | L | none | no | LAUNCH |
+| Q6 | **Terms acceptance screen in the vendor app.** Call `POST /v3/me/terms/accept` when the login answer says `termsAcceptanceRequired`, and read `/auth/me` after a first registration; show current policy text on `more/legal` from `/v3/me/terms` | Journeys 1, 2 (publishing a CTA site requires accepted terms, `publish.service.ts:71`) | UI | S | none | no | LAUNCH |
+| Q7 | **Create a full vendor on behalf.** Admin screens for provisioning jobs (create, list, run, retry, cancel), invites, claim-link revoke; staff site build, publish, rollback and noindex per vendor. Owner switch `provisioningRunnerEnabled` then makes it live | Journey 7 | UI | M | none | no | LAUNCH |
+| Q8 | **Pilot the checkout against the gateway test mode** (smoke run, no code unless it fails): order, webhook, invoice, referral commission, wallet top-up, theme switch fee. Fix what it finds. Add `GET /v3/me/billing/orders/:id` | Journeys 4, 6, 9 never exercised (S8) | BE + UI | M | Q5 for prices | yes | LAUNCH |
+| Q9 | **Claim approval step in the vendor app.** After claim setup and sign-in call `claim.approve` (already in `packages/api`) and follow `redirectTo`; show the go-live result | Journey 8 | UI | S | none | no | OPS (journey 8 is outside the launch set but the claim button is public) |
+| Q10 | **Admin operations screens: directory.** Businesses, categories, locations, placements, removal requests (approve, execute, reject), moderate, claim phone override, visits | Directory claims; legal removal clock | UI | L | none | no | OPS |
+| Q11 | **Admin operations screens: trust, reports and moderation.** Business proofs, business reports, prohibited terms, takedowns, trust blocklist, request reports and blocklist, content reviews, act-on-behalf sessions | Content moderation | UI | L | none | no | OPS |
+| Q12 | **Admin operations screens: vendor lifecycle.** Suspend, reinstate, convert to free, restore Pro, extend grace, account deletions, plan changes, business-name change, listing merges, plan-order refund, staff theme switch and recover | Journey 12; legal deletion clock | UI | M | none | no | OPS |
+| Q13 | **Admin settings screens: terms and policy text, alerts and alert rules, platform keys (`platform-settings`), mail rules.** | Settings | UI | M | none | no | OPS |
+| Q14 | **Vendor screens wired to existing V3 routes.** Group A: Jobs, Quotes, Work (appointments), Orders, Stock, Offerings, Offers. Group B: Accounting, Payment setup and payment methods, Activity, Legal, Notifications, Profile (`/v3/me/profile`), AI studio, Marketplace (services and service requests). Each: client module, data hook, real screen, test, then add the key to `REAL_SCREENS` | 25 mock-only screens (section 3); retail, field-service and clinic packs | UI | L (two M jobs: Q14a, Q14b) | none | no | COMPLETE |
+| Q15 | **Pack-specific working screens.** P1 shop and pharmacy (stock with batches and expiry, prescription requests, refills), P2 jobs (job cards, dispatch, quotes, AMC), P3 appointments and members (clinic visit notes, memberships, attendance), P4 logistics and rentals (shipments, trips, POD, fleet), P5 property, education, food, B2B dealer. Backend rules where the field set is not enough | Section 2 (16 packs PARTIAL) | BE + UI | L each | Q14 | yes | COMPLETE |
+| Q16 | **Per-pack tests.** One spec per pack covering seed, tabs, record validation, nav and site rendering for the seven packs with no named test (VEHICLE_SERVICE, LOGISTICS, MEMBERSHIP_WELLNESS, EDUCATION, AGENCY_CONSULTING, HOSPITALITY_EVENTS, RENTAL_FLEET) | Section 2 | BE | S | none | no | COMPLETE |
+| Q17 | **G31 public packs route.** `GET /v3/public/packs` listing the 16 packs, tabs, add-on packs and their price status; the public site reads it instead of its own copy | G31 | BE then PUB (one job each, in order) | S + S | none | no | COMPLETE |
+| Q18 | **G3 and G22/G23/G26.** Document or change the `go` click-out id, confirm by-host rate limiting per visitor, return bytes for binary assets, directory host origin and sitemaps (`HOSTNAMES_PLAN.md`) | PUBLIC_GAPS | BE + PUB | M | none | yes | COMPLETE (G26 blocks the directory host going live: treat as LAUNCH for the directory) |
+| Q19 | **Partner portal deploy and host**, and the `[W4?]` answer shapes confirmed against a staging run (theme preview, billing order status, held payment business name, `Content-Disposition` exposure) | Journey 6 on a real host; FRONTEND_GAPS S9, S10 | UI + BE | M | Q8 | yes | LAUNCH for the partner link host |
+| Q20 | **Real SMS and WhatsApp transport** behind the existing ports once the owner picks a provider (`UnboundSmsTransport`, `smsAdapterMode`, `messagingMode`) | claim OTP by phone, enquiry alerts, visitor OTP when spam score is high | BE | M | owner picks provider | yes | OPS |
+| Q21 | **Directory category alignment.** Make the 196 catalogue categories and the 41 kit categories one list (add `gym-yoga`, `salon-spa`, `tutor`, `auto-mechanic` to the catalogue or map them), so MEMBERSHIP_WELLNESS has category-matched themes | Section 9 | BE | S | none | no | COMPLETE |
+| T1 | **Missing themes for packs with no dedicated design.** Pharmacy (licence field, upload prescription, order request), B2B dealer (enquiry-only catalogue, specifications), Rental fleet (vehicles with rates, booking enquiry), and a Membership and wellness design (plans, timings, trainers); each with category presets, lint and screenshots | Section 9.4 | BE (`themes/`) | L | Q21 | no | COMPLETE |
+| T2 | **Premium tier themes and prices.** Today every theme is tier `Standard`; build a first set of `Premium` themes per track (T5 brief `docs/v3/themes-brief/T5_PRO_MOTION_AND_INDUSTRY_VARIANTS.md`), and a price entry per tier in the price book | Section 9.2 (no paid theme exists) | BE (`themes/`) | L | Q5 | no | COMPLETE |
+| T3 | **Theme previews.** A public gallery with a rendered preview per theme per category (`GET /v3/public/themes` plus a preview page or stored thumbnails) and thumbnails in the vendor Theme panel and the admin; screenshots are only produced by a local tool today | Section 9.6 | BE + UI + PUB | M | none | yes | COMPLETE |
+| T4 | **Theme render checks in CI.** Run the kit lint and the 41-category coverage in the V3 workflow and record the result (the theme tests are not shown in this audit as run) | Section 9.5 | BE | S | none | no | COMPLETE |
+| T5 | **V2 theme store retirement decision and code.** `themes`, `website-themes`, `ThemePackage` and `theme-uploads/` are legacy; remove them from the V3 vendor Marketplace or map them | Section 9.7 | BE + UI | S | owner | no | COMPLETE |
+
+### 7.2 Parallel lanes (at most two windows, one window per repo folder)
+
+| Lane | Window 1 | Window 2 | Runs |
+|---|---|---|---|
+| **A (first)** | BE: Q1, then Q4, then Q16, Q17a | UI: Q6, Q7, then Q9 | start now: no shared file |
+| **B** | BE: Q8 smoke and fixes (needs the owner's test-mode keys entered through the admin Settings screen; list in section 8) | UI: Q3 (after Q1 is merged), then Q5 | after A |
+| **C** | PUB: Q2 (can start with Lane A, in place of the UI window, because the Q1 contract is fixed in 7.1), then Q17b, Q18 | UI: Q10, Q11, Q12, Q13 | after B |
+| **D** | BE: Q20, Q21, T1, T2, T4 | UI: Q14a, Q14b, T3, Q15 | complete |
+
+Lane A can run first. Q1 and Q2 together close journey 3; Q5 is the largest launch item and has no dependency, so it can also start in Lane A instead of Q6 if the owner prefers.
+
+### 7.3 Launch set versus complete set
+
+- **LAUNCH:** Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8, Q19 (journeys 1 to 7 and 10 with real data). Today four of the eight launch journeys pass (2, 5, 6, 10); with these jobs the other four (1, 3, 4, 7) become PASS or depend only on owner switches.
+- **OPS (needed to run the business day):** Q9 to Q13, Q20.
+- **COMPLETE:** Q14 to Q18, Q21, T1 to T5.
+- Rough size: 26 jobs (Q1 to Q21 with Q14 counted once, plus T1 to T5), mostly M and L. The launch set (9 jobs) is about 2 S, 5 M and 2 L (Q5 and Q8 are the large ones).
+
+### 7.4 Ready-to-use job lists (turn each block into a dispatch file)
+
+**Dispatch G1-BE (backend, Lane A window 1):** Q1 enquiry form route; Q4 e-mail alert on enquiry; Q16 per-pack specs; Q17a public packs route. Hard rules as in this audit: path-only commits, no push, staging only for integration tests.
+**Dispatch G1-UI (Lane A window 2):** Q6 terms screen; Q7 provisioning and staff publish screens; Q9 claim approve step.
+**Dispatch G2-PUB:** Q2 vendor-site POST and thank-you; Q17b read packs route; Q18 public gaps.
+**Dispatch G2-UI:** Q3 Enquiries on requests; Q5 plan, price and price-book editor.
+**Dispatch G3-SMOKE (BE + UI):** Q8 test-mode checkout smoke with fixes; Q19 partner host and shape confirmations.
+**Dispatch G4-OPS-UI:** Q10 directory, Q11 trust and moderation, Q12 lifecycle, Q13 settings screens.
+**Dispatch G5-COMPLETE-UI:** Q14a, Q14b, T3 (UI part), Q15 UI parts.
+**Dispatch G5-COMPLETE-BE:** Q15 backend rules, Q20, Q21, T1, T2, T4, T5.
+
+---
+
+## 8. Owner-only switches (flags and settings)
+
+Everything below is entered by the owner (admin Settings screen for settings, server environment for ENV), not coding work. "Visitor" means a person using a vendor site, the directory or the public site.
+
+| Switch (exact name) | Where | Default | What it does | What changes for a visitor when it is turned on |
+|---|---|---|---|---|
+| `V3_PUBLIC_ENABLED` | PUB env | off | switches on the V3 public routes (directory, claim, account, commercial pages, vendor-site relay) | new pages exist instead of 404 |
+| `V3_PUBLIC_USE_MOCKS` | PUB env | on (mock) | `false` makes the public site call the real API | real directory data, real registration, real vendor sites instead of fixtures |
+| `MAIN_HOST`, `NEXT_PUBLIC_VENDOR_APP_URL`, `V3_PUBLIC_SUPPORT_EMAIL/PHONE`, `V3_PUBLIC_GRIEVANCE_OFFICER_NAME/EMAIL` | PUB env | unset | main host, vendor-app hand-off, contact and grievance blocks | the commercial and policy pages replace the live ones; a grievance block with timelines shows |
+| `V3_REGULATED_PACKS_PUBLIC` | PUB env | off | publishes landing pages of CLINIC, LAB, PHARMACY, PRACTICE_LEGAL_FINANCE | those industry pages appear and registration accepts them |
+| `packGatedPacksOpen` | setting | off | opens the tabs of the four counsel-gated packs for vendors | vendors of those packs see their working tabs |
+| `packOnlineMedicineCheckout` | setting | off | online medicine checkout of the pharmacy pack (no screen builds it yet) | none until built |
+| `paymentsMode` (`off`, `test`, `live`) | setting | `off` | online plan payments | vendors can pay online; `live` also needs `PLAN_PAYMENTS_LIVE_ENABLED=true` and the live keys |
+| `paymentGateway` | setting | `razorpay` | Razorpay or Cashfree | which payment window the vendor sees |
+| `PLAN_PAYMENTS_LIVE_ENABLED` | API env | unset | lets live mode run | real money moves |
+| gateway keys (`PUT /v3/admin/payment-gateway/credentials/...`), GST rate (`gst-rate`), TDS (`tdsPercent`) | admin Settings | unset | keys, tax | invoices show GST; commission shows TDS |
+| `EMAIL_LIVE_SEND` | API env | off | system mail lane | claim code, identity code, password reset and plan receipts are actually e-mailed; claim and reset screens stop saying "e-mail is off" |
+| `EMAIL_FORWARD_LIVE` | API env | off | forwards mailbox mail | business mail reaches the owner's own address |
+| `heldEnquiriesEnabled` | setting | false | holds mail for businesses with an inactive plan | an inactive business's enquirers get held instead of refused |
+| `smsAdapterMode` + `SMS_LIVE_ENABLED`, `SMS_LIVE_SEND` | setting + API env | sandbox / off | live SMS (a provider is still to be chosen and bound, Q20) | visitor phone codes and claim codes by SMS |
+| `messagingMode`, `MESSAGING_LIVE_ENABLED` | setting + API env | sandbox only | live WhatsApp/SMS/e-mail for requests (not built; `true` makes sends FAILED) | nothing until Q4 and Q20 are built |
+| `requestNudgeEnabled` | setting | false | reminders to vendors about unanswered requests | vendor gets reminders (through the same channels) |
+| `provisioningRunnerEnabled` | setting | false | runs provisioning jobs every 30 s | vendors created on behalf get their draft site |
+| `inviteAdapterMode` | setting | sandbox | `live` sends the claim invite | the business receives the invite message |
+| `siteDraftBuilderMode` | setting | legacy | `renderer` builds the draft site and a preview | drafts look like the themed site |
+| `provisioningDirectoryProfileEnabled` | setting | false | adds the directory profile step | a listing appears in the directory on creation |
+| `directoryPagesIndexable`, `directoryIndexUnclaimed` | setting | false | allow search engines on directory pages and unclaimed listings | pages become indexable |
+| `seededSiteIndexingMode` | setting | `OFF` (`QUALITY`) | allow indexing of seeded sites that pass the quality check | those sites become indexable |
+| `canonicalSwitchTickEnabled`, `domainDnsLiveChecks`, `connectionWatcherEnabled` | settings | false | custom-domain jobs and real DNS checks | custom domains connect and switch automatically |
+| `REGISTRAR_LIVE_SEARCH`, `REGISTRAR_LIVE_PURCHASE`, `registrarReconcileEnabled` and the null registrar settings (name servers, minimum balance, OTP limits, document size) | API env + settings | off / null | domain search and purchase through ResellerClub | vendors can search and buy domains |
+| `renewalRemindersEnabled` | setting | false | renewal reminder job | vendors are reminded before expiry (needs e-mail or SMS live) |
+| `walletExpiryTickEnabled`, `serviceAutoApproveEnabled` | settings | false | wallet credit expiry, auto-approval of service deliveries | credit expires; deliveries close themselves |
+| `aiLiveCalls` and `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | setting + key | false | real AI calls | AI studio produces text and images |
+| `VENDOR_GATEWAY_LIVE_ENABLED`, `VENDOR_GATEWAY_WEBHOOK_ENABLED` | API env | off | vendor's own gateway (no adapter exists, vendors confirm UPI by hand) | nothing until an adapter is built |
+| `V3_LIVE` | API env | unset | strict startup check for the live container | the API refuses to start with a placeholder value |
+| Plan features `site.cta`, `requests.inbox`, `site.themes` | plan data (admin, needs Q5) | per plan | enquiry form, inbox, theme library | a Free site is informational only; a paid plan can take enquiries and switch themes |
+| Prices: plans, add-on packs, services, THEME_SWITCH fee, domain margins | admin (needs Q5) | PENDING | the numbers | prices appear on the pricing page and in checkout |
+| Policy and consent texts (`customerConsentText`, `customerConsentVersion`, `seededNoticeText`, `customerDisclosureText`, terms kinds) | settings / admin (terms screen needs Q13) | draft wording | the legal text | visitors see and agree to the new text |
+
+---
+
+## 9. Theme inventory
+
+Sources (read only): `themes/library/*/theme.json`, `themes/library/*/presets`, `themes/library/*/templates`, `themes/library/*/css`, `themes/data/category-map.json`, `themes/CONTRACT.md`, `docs/v3/THEMES_KIT_HANDOVER.md`, `backend-api/scripts/build-renderer.js`, `backend-api/src/site-publish/renderer/theme-render.service.ts`, `src/v3-theme-catalog/*`, `src/directory/core/listable-categories.ts`, `backend-api/prisma/seed/pack-engine/CATEGORY_TO_PACK_MAP_V1.csv`, vendor `grow/website/ThemePanel.tsx`. Nothing was run, so the lint, build and test results are **UNVERIFIED** as current.
+
+### 9.1 What the catalogue is
+
+The V3 catalogue is the folder `themes/library`. The backend serves exactly the themes found there that are not marked internal and that pass validation at start (`theme-render.service.ts` init and `listThemes`; `build-renderer.js` copies `library` and `data` to `dist/renderer`). That gives **5 served themes** plus 1 internal reference theme (`_starter`, `internal: true`, not served). `themes/reference/` holds two older reference themes (`clinic-calm`, `restaurant-hearth`) that are not part of the kit and not served. The V2 theme store (`ThemePackage`, `WebsiteTheme`, `themes` and `website-themes` modules, `theme-uploads/`) is a separate legacy world (section 9.7).
+
+### 9.2 Every served theme
+
+"Free or paid": every theme's manifest tier is `Standard`. The contract says tier is a price class and not a plan (`THEMES_KIT_HANDOVER.md` decision 5): a **Free-plan vendor gets the one Standard theme assigned to its category (access DEFAULT)**; a **paid plan** has the theme library (plan feature `site.themes` = `library`, `v3-plans.seed.json:18`) and may choose any theme of its track; the first switch is included and each later switch costs the price-book fee `THEME_SWITCH` (PENDING, no price set). No theme has its own price and **no `Premium` theme exists** (no manifest says Premium).
+
+| Key | Name | Tier | Track | Families | Categories it was designed for (the preset list) | Presets | Page templates | CSS |
+|---|---|---|---|---|---|---|---|---|
+| `free-service-pro` | Service Pro | Standard | handyman | home-services, auto-services | plumber, electrician, carpenter, painter, ac-appliance-repair, pest-control, home-cleaning, locksmith, packers-movers, mason-contractor, cctv-security-installer, auto-mechanic, car-wash-detailing | 13 | about, contact, gallery, home, item, page, services | tokens, base, motion, print (about 36.7 KB) |
+| `free-practice` | Practice | Standard | professional | healthcare, legal-finance, creative-consulting | doctor-clinic, dentist, physiotherapy, diagnostics-lab, lawyer, ca-tax-consultant, insurance-advisor, photographer, interior-designer-architect, event-planner, it-consultant | 11 | about, contact, doctors, gallery, home, item, page, services | same 4 files (36.3 KB) |
+| `free-studio` | Studio | Standard | professional | education, wellness-beauty | coaching-centre, tutor, music-dance-school, salon-spa, gym-yoga | 5 | about, contact, courses, gallery, home, item, page, services | same (35.7 KB) |
+| `free-hospitality` | Hospitality and Property | Standard | professional | hospitality-property | restaurant-cafe, hotel-homestay, travel-agency, real-estate-agent | 4 | about, contact, gallery, home, item, menu, packages, page, properties, services | same (35.9 KB) |
+| `free-shop-lite` | Shop Lite | Standard | ecommerce | fashion-lifestyle, food-grocery, electronics-home, gifts-books | fashion-apparel, jewellery, grocery-kirana, bakery-sweets, electronics-mobile, home-furniture, gifts-handicrafts, books-stationery | 8 | about, contact, gallery, home, item, page, services | same (35.4 KB) |
+| `kit-starter` (folder `_starter`) | Kit starter (internal) | Standard | all three | all 12 | all 41 | none | 7 | internal, **not served** |
+
+All manifests: version 1, motion default Low, 5 to 12 approved fonts each (self-hosted by the platform). The 5 served themes list **disjoint** categories that together cover **41 kit categories** (13 + 11 + 5 + 4 + 8 = 41), which is how `defaultThemeFor(category)` picks the one assigned theme (`theme-render.service.ts`: "five themes list disjoint categories covering all 41").
+
+### 9.3 Themes per pack
+
+The pack view (`GET /v3/public/themes?pack=KEY`, `v3-theme-catalog/theme-catalog.service.ts` `forPack`, core `themesForPack`) matches themes whose categories overlap the pack's catalogue categories; if none overlap it falls back to themes of the same track. Counts below come from `CATEGORY_TO_PACK_MAP_V1.csv` (196 catalogue categories) against the manifests. No theme is named for a pack: themes are by family.
+
+| Pack | Catalogue categories | Categories with a designed preset | Themes found by category | Themes by track fallback (if none) | Dedicated theme? |
+|---|---|---|---|---|---|
+| PROPERTY | 3 | 1 | free-hospitality (1) | - | yes (properties page) |
+| CLINIC | 11 | 3 | free-practice (1) | - | yes |
+| LAB | 1 | 1 | free-practice (1) | - | yes |
+| PHARMACY | 2 | 0 | 0 | up to 4 (shop-lite plus the 3 professional themes), track values UNVERIFIED | **NO** |
+| RETAIL | 41 | 8 | free-shop-lite (1) | - | yes |
+| FOOD_SERVICE | 6 | 1 | free-hospitality (1) | - | yes (menu page) |
+| FIELD_SERVICE | 44 | 10 | free-service-pro (1) | - | yes |
+| VEHICLE_SERVICE | 8 | 1 | free-service-pro (1) | - | yes (one category only) |
+| LOGISTICS | 10 | 1 | free-service-pro (1) | - | yes (one category only) |
+| MEMBERSHIP_WELLNESS | 11 | 0 | 0 | 3 (hospitality, practice, studio) | **NO** (see 9.5) |
+| EDUCATION | 12 | 2 | free-studio (1) | - | yes (courses page) |
+| PRACTICE_LEGAL_FINANCE | 8 | 3 | free-practice (1) | - | yes |
+| AGENCY_CONSULTING | 16 | 3 | free-practice (1) | - | yes |
+| HOSPITALITY_EVENTS | 13 | 3 | free-practice, free-hospitality (2) | - | yes |
+| RENTAL_FLEET | 2 | 0 | 0 | 3 (hospitality, practice, studio) | **NO** |
+| B2B_DEALER | 8 | 0 | 0 | 1 (shop-lite) | **NO** |
+
+Count per pack, by the rule above: 11 packs have 1 theme by category, HOSPITALITY_EVENTS has 2, B2B_DEALER gets 1 by track fallback, MEMBERSHIP_WELLNESS and RENTAL_FLEET fall back to 3, PHARMACY to up to 4. **Packs with no dedicated theme: PHARMACY, B2B_DEALER, RENTAL_FLEET, MEMBERSHIP_WELLNESS** (4 of 16). A pack still renders: `PACK_KIT_FALLBACK` (`listable-categories.ts:16-18`) sends it to one kit category and so to a theme (section 2.2). The four add-on packs have no theme of their own.
+
+### 9.4 Is it a real template and styles or only a name
+
+**Real for all 5 served themes.** Each folder has HTML page templates (7 to 10), four CSS files of about 35 KB, and a preset JSON per category (41 in total); `renderPage()` in `themes/lib/render.mjs` renders them and the backend serves them after validation (`theme-render.service.ts`, `renderer-loader.ts`; `site-theme-render.spec.ts`, `wave3-themes.spec.ts`, `themes/test/standard-themes.test.mjs` exist). The handover states that all five pass the whole lint, including the real-browser check at six widths (`THEMES_KIT_HANDOVER.md`, "Standard themes"): that is a past claim, **UNVERIFIED now**. A theme that fails validation is logged and not served, so a name cannot appear in the list without a template. Gaps in what the templates cover: 41 of the 196 catalogue categories have a designed preset; the other 155 render through the pack's fallback category and its preset, i.e. the look of a neighbouring business type. `free-hospitality` has the most page types (menu, packages, properties); `free-shop-lite` has no dedicated product or cart page beyond the shared `item` and `services` templates (the cart slot is renderer-provided), UNVERIFIED in a browser.
+
+### 9.5 Category ids that do not line up
+
+Four kit category ids are not in the 196-category catalogue: **`auto-mechanic`, `tutor`, `salon-spa`, `gym-yoga`** (script comparison of the manifests and `CATEGORY_TO_PACK_MAP_V1.csv`: 37 of 41 kit ids appear in the catalogue). Effects: MEMBERSHIP_WELLNESS (gyms, salons) gets no category match in the pack view although the kit has designs for them; a vendor whose industry is the catalogue id reaches them only through `PACK_KIT_FALLBACK` (`MEMBERSHIP_WELLNESS: 'salon-spa'`, `VEHICLE_SERVICE: 'auto-mechanic'`). The handover also says the category-to-legacy-pack map is an inference (`themes/data/category-map.json`, `status: "inference"`). Job Q21.
+
+### 9.6 Previews
+
+| Preview | Exists? | Evidence |
+|---|---|---|
+| Owner's own site preview (server builds the whole site with the chosen theme, shown in the vendor app) | **Yes** | `POST /v3/me/site/draft/preview`, `/v3/me/site/theme/preview` (`me-site.controller.ts:44`, `ThemePanel.tsx:159`); the answer shape (`previewUrl` or `previewHtml`) is assumed (FRONTEND_GAPS "Still assumed" item 1) |
+| Preview per theme per category before choosing, for visitors or in a gallery | **No** | `GET /v3/public/themes?pack=` returns id, name, tier, tracks, access and categories only, no image or link (`v3-theme-catalog/theme-catalog.service.ts`) |
+| Thumbnails or screenshots stored with a theme | **No** | no image in `themes/library/*`; `themes/.shots/` is git-ignored and absent in this checkout |
+| Local review harness (coverage grid, motion lab, contrast, variant picker) | Yes, 127.0.0.1 only, for the team | `themes/lib/preview.mjs`, `themes/README.md` |
+| Vendor theme gallery screen | Placeholder: `ThemeGallery.tsx` is not routed (`bodies.ts` has no entry); the Theme panel inside Website manager is the real one | `apps/vendor/src/pages/grow/ThemeGallery.tsx`, `bodies.ts` |
+| Public site render of the chosen theme | Relays the backend's stored page; the public app cannot render a theme itself (G37) | `PUBLIC_GAPS.md` G37 |
+
+### 9.7 Legacy theme world (not V3)
+
+`src/themes` (10 routes), `src/website-themes` (9), models `ThemePackage`, `ThemeAsset`, `ThemeEntitlement`, `WebsiteTheme` (`prisma/schema.prisma:437-489, 1283`), the old marketplace and sample themes (`theme-sample.ts`), per-industry designs in `scripts/industry-designs`, and the raw HTML site `theme-uploads/clinic-demo` (a physiotherapy site, not converted to the kit format). These were not counted as catalogue themes. How many themes the V2 store holds in the database is **UNVERIFIED** (no database access).
+
+### 9.8 Theme gaps (all in the queue)
+
+1. No dedicated theme for PHARMACY, B2B_DEALER, RENTAL_FLEET, MEMBERSHIP_WELLNESS: **T1**, **Q21**.
+2. No Premium tier or paid theme; the library is "any Standard theme of your track" on a paid plan: **T2**.
+3. 155 of 196 catalogue categories have no designed preset: **T1** (expand presets) and **Q21**.
+4. No preview per theme (gallery, thumbnails) and an unrouted placeholder gallery: **T3**.
+5. Four kit ids not in the catalogue: **Q21**.
+6. Theme switch fee has no price and no admin screen: **Q5**.
+7. Lint and coverage not run in CI as recorded here: **T4**.
+8. V2 theme store still present: **T5**.

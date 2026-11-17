@@ -5,12 +5,12 @@ Branch v3-audit (from v3-pack). Documents only. Never pushed.
 | Job | State | Commit | Note |
 |---|---|---|---|
 | F0 | DONE | (see git log) | Section 1 written: inventory, flags, enquiry effect |
-| F1 | DONE | see git log | Section 2 (packs). Theme inventory (section 9, user-added) TODO |
+| F1 | DONE | see git log | Section 2 (packs). Theme inventory is in section 9 |
 | F2 | DONE | see git log | Section 3 |
 | F3 | DONE | see git log | Section 4 |
 | F4 | DONE | see git log | Section 5 |
 | F5 | DONE | see git log | Section 6 (2 BROKEN: enquiry, claim approve) |
-| F6 | TODO | - | Completion queue + owner switches |
+| F6 | DONE | see git log | Sections 7 and 8, plus theme inventory section 9 (user-added) with theme jobs T1-T5 |
 | F7 | TODO | - | DISPATCH_REPORT_F1.md |
 
 ## ASSUMPTIONS
