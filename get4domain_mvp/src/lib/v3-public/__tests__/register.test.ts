@@ -45,7 +45,8 @@ describe('the site address', () => {
   test('the answer of the availability route to a state', () => {
     assert.equal(subdomainStateOf(200, { available: true }), 'available');
     assert.equal(subdomainStateOf(200, { data: { available: true } }), 'available');
-    assert.equal(subdomainStateOf(200, { available: false, reason: 'TAKEN' }), 'taken');
+    assert.equal(subdomainStateOf(200, { available: false, reason: 'UNAVAILABLE' }), 'taken');
+    assert.equal(subdomainStateOf(200, { data: { available: true, name: 'abc', reason: 'AVAILABLE', message: 'ok' } }), 'available');
     assert.equal(subdomainStateOf(200, { available: false, reason: 'RESERVED' }), 'reserved');
     assert.equal(subdomainStateOf(200, { available: false, reason: 'INVALID' }), 'invalid');
     assert.equal(subdomainStateOf(200, { available: false, reason: 'TOO_SHORT' }), 'short');
@@ -78,6 +79,11 @@ describe('API refusals become field errors in plain words', () => {
     assert.deepEqual(mapRegisterFailure(400, { message: 'subdomain has invalid characters' }).fields, { subdomain: 'subdomainInvalid' });
     assert.deepEqual(mapRegisterFailure(400, { code: 'SUBDOMAIN_RESERVED', message: 'Not allowed' }).fields, { subdomain: 'subdomainReserved' });
     assert.deepEqual(mapRegisterFailure(409, { code: 'SUBDOMAIN_TAKEN' }).fields, { subdomain: 'subdomainTaken' });
+    // Wave 3 codes: 409 HOST_UNAVAILABLE is a taken address (never the email message), 400 SUBDOMAIN_INVALID / SUBDOMAIN_RESERVED
+    assert.deepEqual(mapRegisterFailure(409, { code: 'HOST_UNAVAILABLE', message: 'Host unavailable' }).fields, { subdomain: 'subdomainTaken' });
+    assert.deepEqual(mapRegisterFailure(409, { success: false, statusCode: 409, code: 'HOST_UNAVAILABLE' }).fields, { subdomain: 'subdomainTaken' });
+    assert.deepEqual(mapRegisterFailure(400, { code: 'SUBDOMAIN_INVALID' }).fields, { subdomain: 'subdomainInvalid' });
+    assert.deepEqual(mapRegisterFailure(400, { code: 'SUBDOMAIN_RESERVED' }).fields, { subdomain: 'subdomainReserved' });
   });
   test('email already registered, with or without words', () => {
     assert.deepEqual(mapRegisterFailure(409, { message: 'Email already registered' }).fields, { email: 'emailTaken' });

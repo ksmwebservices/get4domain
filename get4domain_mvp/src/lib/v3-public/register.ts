@@ -73,6 +73,8 @@ const codeOf = (json: unknown): string => {
 /** One API sentence to the field it is about (keywords of the API's own wording), or null when it names none. */
 function fieldOfMessage(msg: string, code: string): { field: RegisterField; key: RegisterErrorKey } | null {
   const m = msg.toLowerCase();
+  // HOST_UNAVAILABLE (409) is the contract's code for a site address that is taken
+  if (code === 'HOST_UNAVAILABLE') return { field: 'subdomain', key: 'subdomainTaken' };
   if (/subdomain|slug|site address/.test(m) || code.includes('SUBDOMAIN') || code.includes('SLUG')) {
     if (/reserved/.test(m) || code.includes('RESERVED')) return { field: 'subdomain', key: 'subdomainReserved' };
     if (/taken|in use|already|exists/.test(m) || code.includes('TAKEN') || code.includes('EXISTS')) return { field: 'subdomain', key: 'subdomainTaken' };
@@ -111,7 +113,7 @@ export function mapRegisterFailure(status: number, json: unknown): RegisterFailu
 
 export type SubdomainState = 'available' | 'taken' | 'reserved' | 'invalid' | 'short' | 'unknown';
 
-/** The answer of the (assumed) availability route to a state. */
+/** The answer of GET /v3/public/subdomain-availability to a state: `{ available, reason: AVAILABLE | INVALID | RESERVED | UNAVAILABLE }`; UNAVAILABLE means the name is taken. */
 export function subdomainStateOf(status: number, json: unknown): SubdomainState {
   if (status < 200 || status >= 300) return 'unknown';
   const root = json && typeof json === 'object' ? (json as Record<string, unknown>) : {};
@@ -122,5 +124,5 @@ export function subdomainStateOf(status: number, json: unknown): SubdomainState 
   if (reason === 'RESERVED') return 'reserved';
   if (reason === 'INVALID') return 'invalid';
   if (reason === 'TOO_SHORT') return 'short';
-  return 'taken';
+  return 'taken'; // UNAVAILABLE (and anything unrecognised that says not available) holds the address back
 }

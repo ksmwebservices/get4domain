@@ -6,8 +6,8 @@ import { cleanSubdomain, mapRegisterFailure, PLAN_KEYS, subdomainProblem, subdom
 
 /**
  * The registration calls of the browser, answered by the server (the browser talks only to this site; no token reaches it).
- * Mock mode answers from samples and never touches the network. In real mode the register route is POST /auth/register (exists; the extra fields are assumed, gap G28)
- * and the address check is GET /v3/public/subdomain/check (assumed, gap G28). The referral code is taken from the cookie on the server, never from the page.
+ * Mock mode answers from samples and never touches the network. In real mode the register route is POST /auth/register (Wave 3 adds `subdomain` and `referralCode`; nothing else is sent beyond the fields it already took)
+ * and the address check is GET /v3/public/subdomain-availability?name= (Wave 3). The referral code is taken from the cookie on the server, never from the page.
  */
 export interface RegisterResult { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null }
 
@@ -38,13 +38,14 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
     if (input.email.toLowerCase() === MOCK_TAKEN_EMAIL_REGISTER) return fail({ email: 'emailTaken' });
     return { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF };
   }
+  const referral = readReferral(req.headers.get('cookie'));
   const track = input.plan === 'free' ? undefined : input.plan;
   const r = await callApi(req, '/auth/register', {
     method: 'POST',
     body: {
       name: input.name, email: input.email, password: input.password, businessName: input.businessName, industry: input.industry || input.categoryKey, ...(input.phone ? { phone: input.phone } : {}),
-      ...(track ? { track } : {}), categoryKey: input.categoryKey, subdomain: input.subdomain, ...(input.termMonths ? { termMonths: input.termMonths } : {}),
-      ...(readReferral(req.headers.get('cookie')) ? { referralCode: readReferral(req.headers.get('cookie')) } : {}), acceptedTerms: true,
+      ...(track ? { track } : {}), subdomain: input.subdomain,
+      ...(referral ? { referralCode: referral.slice(0, 20) } : {}),
     },
   });
   if (!r) return fail({}, 'notAvailable');
@@ -60,7 +61,7 @@ export async function handleSubdomainCheck(req: Request, slugIn: string): Promis
   if (p === 'subdomainShort') return { state: 'short' };
   if (p) return { state: 'invalid' };
   if (useMocks()) return { state: MOCK_TAKEN_SUBDOMAINS.includes(slug) ? 'taken' : 'available' };
-  const r = await callApi(req, `/v3/public/subdomain/check?slug=${encodeURIComponent(slug)}`, { method: 'GET' });
+  const r = await callApi(req, `/v3/public/subdomain-availability?name=${encodeURIComponent(slug)}`, { method: 'GET' });
   if (!r) return { state: 'unknown' };
   return { state: subdomainStateOf(r.status, r.json) };
 }

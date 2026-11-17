@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { cleanPlans, formatRupees, MOCK_PLANS, netAmountPaise, priceFor, PUBLIC_TERMS, type PublicPlan } from '../plans';
+import { cleanPlans, formatRupees, fromPricing, MOCK_PRICING, MOCK_PLANS, netAmountPaise, priceFor, PUBLIC_TERMS, type PublicPlan } from '../plans';
 import { PAYMENT_NOTE, SITE } from '../site-strings';
 
 function walk(v: unknown, path: string, out: Array<{ path: string; text: string }>): void {
@@ -46,6 +46,27 @@ describe('copy rules over every string of the commercial pages', () => {
     const qs = SITE.pricing.faq.map((f) => f.q).join(' | ');
     for (const w of [/trial/i, /pay/i, /GST/, /plan ends/i, /billing terms/i]) assert.match(qs, w);
     assert.ok(SITE.pricing.faq.some((f) => /stops working/.test(f.a) && /subdomain/.test(f.a) && /kept/.test(f.a)), 'plan end: domain stops and redirects to the subdomain, data and theme kept');
+  });
+});
+
+describe('pricing data from the Wave 3 route shape', () => {
+  test('a pending term has no price row and no number; an available term is the price before GST', () => {
+    const m = fromPricing(MOCK_PRICING);
+    assert.deepEqual(m.plans.find((p) => p.key === 'ecommerce')!.prices, []);
+    const h = m.plans.find((p) => p.key === 'handyman')!;
+    assert.deepEqual(h.prices.map((p) => [p.termMonths, p.amountPaise, p.taxInclusive]), [[3, 100000, false], [6, 190000, false], [12, 360000, false]]);
+    assert.deepEqual(m.tax, { name: 'GST', ratePercent: 18 });
+  });
+  test('gst null stays null, capabilities become plain included rows, add-ons carry a price only when available', () => {
+    const m = fromPricing({ currency: 'INR', gst: null, terms: [3], plans: [{ key: 'a', name: 'A', capabilities: [{ key: 'x', name: 'X' }], terms: [{ termMonths: 3, state: 'AVAILABLE', price: { priceMinor: 5000, gstMinor: null, totalMinor: null }, purchasable: true }] }],
+      addons: [{ key: 'S', name: 'S', state: 'PRICE_PENDING', price: null }, { key: 'T', name: 'T', state: 'AVAILABLE', price: { priceMinor: 9900 } }] });
+    assert.equal(m.tax, null);
+    assert.equal(priceFor(m.plans[0], 3, m.tax).paise, 5000);
+    assert.deepEqual(m.plans[0].features.map((f) => [f.key, f.state]), [['x', 'ACTIVE']]);
+    assert.deepEqual(m.addons!.map((a) => a.priceMinor), [null, 9900]);
+  });
+  test('missing arrays do not throw', () => {
+    assert.deepEqual(fromPricing({}), { plans: [], terms: [], tax: null, addons: [] });
   });
 });
 

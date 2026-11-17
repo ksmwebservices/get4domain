@@ -41,6 +41,8 @@ export default async function PricingPage() {
   const r = await fetchPlans();
   const data = r.kind === 'ok' ? r.data : null;
   const rows = data ? rowsOf(data) : [];
+  // the add-ons the API lists win; the fixed list is only the fallback while the API is unreachable (a price shows only when the API gives one)
+  const addons = data?.addons && data.addons.length ? data.addons : ADDON_PACKS.map((a) => ({ key: a.key, name: a.name, description: null, priceMinor: null }));
   // the feature comparison: one table, rows are features in the API's order, columns are the plans
   const keys: Array<{ key: string; name: string }> = [];
   if (data) for (const p of data.plans) for (const f of p.features) if (!keys.some((k) => k.key === f.key)) keys.push({ key: f.key, name: f.name });
@@ -96,7 +98,7 @@ export default async function PricingPage() {
         <h2 id="addons-title" className="mb-2 text-xl font-semibold text-slate-900">{P.addonsHeading}</h2>
         <p className="mb-3 text-slate-600">{P.addonsIntro}</p>
         <ul className="grid gap-2 sm:grid-cols-2">
-          {ADDON_PACKS.map((a) => (<li key={a.key} className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2 text-sm"><span className="text-slate-900">{a.name}</span><span className="text-slate-600">{P.addonsPrice}</span></li>))}
+          {addons.map((a) => (<li key={a.key} className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2 text-sm"><span className="text-slate-900">{a.name}</span><span className="text-slate-600">{a.priceMinor === null ? P.addonsPrice : formatRupees(a.priceMinor)}</span></li>))}
         </ul>
       </section>
 

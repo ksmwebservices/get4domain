@@ -46,7 +46,7 @@ export const MOCK_REFERRAL_VALID = 'SAMPLE-PARTNER';
 export const MOCK_REFERRAL_DISABLED = 'SAMPLE-OFF';
 
 /**
- * Asks the (assumed, gap G29) public referral route. 404 is an unknown code; any other failure is "could not check". Only the display name is kept, trimmed and length limited:
+ * Asks the public referral route (GET /v3/public/referral/:code, answering `{ valid: true, source }` or `{ valid: false }`). 404 is an unknown code; any other failure is "could not check". Only the display name (`source`) is kept, trimmed and length limited:
  * no source details beyond it.
  */
 export async function checkReferral(code: string): Promise<Fetched<ReferralCheck>> {
@@ -62,6 +62,6 @@ export async function checkReferral(code: string): Promise<Fetched<ReferralCheck
   if (r.kind !== 'ok') return r;
   const o = unwrap<Record<string, unknown>>(r.data);
   const valid = !!o && o.valid === true;
-  const name = valid && typeof o.displayName === 'string' ? o.displayName.trim().slice(0, 80) : '';
+  const name = valid && typeof o.source === 'string' ? o.source.trim().slice(0, 80) : '';
   return { kind: 'ok', data: { valid, displayName: name || null } };
 }
