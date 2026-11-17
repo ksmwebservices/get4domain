@@ -6,7 +6,7 @@ Branch `v3-pub-fe5` (from `v3-pub-fe4`), folder `get4domain-pub/get4domain_mvp`.
 |---|---|---|---|
 | P0 Investigate | DONE | (this commit) | findings below |
 | P1 Reconcile | DONE | see git log | register 400 now reads `data.fields`; 6 new tests (250 unit, smoke 1198 of 1198); every other row was already SAME |
-| P2 Theme rendering | TODO | | |
+| P2 Theme rendering | BLOCKED-BY-GAP | see git log | by-host returns a finished stored page drawn from the theme by the backend; no theme key and no render data reach this app; shape needed is in PUBLIC_GAPS G37; nothing built |
 | P3 Real-API probe | TODO | | |
 | P4 Quality | TODO | | |
 | P5 Docs and report | TODO | | |
