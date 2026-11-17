@@ -2,13 +2,13 @@
 
 | Job | State | Commit | One line |
 |---|---|---|---|
-| Q0 | DONE | (with Q1) | Findings below. No code. |
-| Q1 | DONE | see report | Detail route was already correct (probe artifact); pinned with real-stack tests; businessName added to list rows and detail. |
+| Q0 | DONE | c252a1e | Findings below. No code. |
+| Q1 | DONE | c252a1e | Detail route was already correct (probe artifact); pinned with real-stack tests; businessName added to list rows and detail. |
 | Q2 | DONE | c252a1e | Theme routes, shapes, error codes and the THEME_SWITCH price path (existing SUPER_ADMIN price-book routes; no new route) in the contract, A4-2. |
-| Q3 | DONE | Q3-Q4 commit | POST /v3/admin/tax-rates refuses a start on an earlier India-time day (409 TAX_RATE_IN_FORCE); today or none = from now. |
-| Q4 | DONE | Q3-Q4 commit | test-tenant-cleanup.js (and --count) remove tax rates whose name starts V3TEST; matching rule unit-tested; NOT run. |
-| Q5 | DONE | Q5 commit | Documented in the contract (A4-4): the public answer is a finished page, no theme key needed; themeKey NOT added (answer is HTML + headers, no model). |
-| Q6 | TODO | | Final checks and report. |
+| Q3 | DONE | ee3a96a | POST /v3/admin/tax-rates refuses a start on an earlier India-time day (409 TAX_RATE_IN_FORCE); today or none = from now. |
+| Q4 | DONE | ee3a96a | test-tenant-cleanup.js (and --count) remove tax rates whose name starts V3TEST; matching rule unit-tested; NOT run. |
+| Q5 | DONE | 64e2428 | Documented in the contract (A4-4): the public answer is a finished page, no theme key needed; themeKey NOT added (answer is HTML + headers, no model). |
+| Q6 | DONE | report commit | build clean; test:ci 290 suites / 5564 tests pass; no integration file added so none run; route baseline regenerated, no content change (1439 routes). |
 
 ## Q0 findings
 
@@ -39,4 +39,4 @@ Written out in full in `API_CONTRACT_WAVE4.md` section A4-2 (Q2).
 4. Q4: `--count` now prints tenants plus synthetic V3TEST tax rates as one number, so "0" means both are clean. The staging suites create their tax row with Prisma directly (name `V3TEST GST <runId>`), so Q3 does not affect them.
 
 ## QUESTIONS FOR THE OWNER
-- None yet.
+- None.
