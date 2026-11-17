@@ -86,6 +86,9 @@ export class AuthService {
     try { await this.v3Registration?.afterRegister(vendor.id, dto.track, { industry: dto.industry, businessName: dto.businessName, phone: dto.phone ?? null }); } catch { /* registration continues */ }
 
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
+    // Dispatch G1 B5 (audit journey 1 and 2): a first registration answer carried no `termsAcceptanceRequired`, so the vendor app did not know to ask for the Terms before the first publish. The flag never blocks a signup.
+    let termsAcceptanceRequired: boolean | undefined;
+    if (this.termsFlag && vendor.role === 'VENDOR') { try { termsAcceptanceRequired = await this.termsFlag.acceptanceRequired(vendor.id); } catch { termsAcceptanceRequired = undefined; } }
     return {
       accessToken,
       user: {
@@ -96,6 +99,7 @@ export class AuthService {
         businessName: vendor.businessName,
         industry: vendor.industry,
         subdomain: vendor.subdomain,
+        ...(termsAcceptanceRequired === undefined ? {} : { termsAcceptanceRequired }),
       },
     };
   }

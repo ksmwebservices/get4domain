@@ -213,6 +213,8 @@ export class PlanOrderService {
     const { items, total } = await this.repo.listOrdersForVendor(vendorId, (page - 1) * pageSize, pageSize);
     return { items: items.map((o) => this.view(o)), total };
   }
+  /** One of my orders (audit journey 4: the checkout screen asked for it to learn the status after the webhook, and had to fall back to confirm). Another business's order answers like one that does not exist. */
+  async getMine(vendorId: string, id: string) { return this.view(await this.own(vendorId, id)); }
   async invoicesMine(vendorId: string, page: number, pageSize: number) {
     const { items, total } = await this.repo.listInvoicesForVendor(vendorId, (page - 1) * pageSize, pageSize);
     // totalPaise is the amount paid (the snapshot's amountPaise), added to the snapshot for the list screen; the stored snapshot is never changed

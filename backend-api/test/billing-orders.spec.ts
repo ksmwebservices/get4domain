@@ -163,3 +163,18 @@ describe('confirming a payment (the browser is never trusted)', () => {
     expect((await w.orders.invoicesMine('v1', 1, 25)).total).toBe(1); expect((await w.orders.invoicesMine('v2', 1, 25)).total).toBe(0);
   });
 });
+
+describe('one of my orders (Dispatch G1 B5, journey 4)', () => {
+  it('returns the order with its status and the same fields as the list; another business\'s order and an unknown id are the same 404', async () => {
+    const o = await w.buy();
+    const one = await w.orders.getMine('v1', o.id);
+    expect(one).toMatchObject({ id: o.id, status: 'PENDING_PAYMENT', planKey: 'handyman_pro', termMonths: 3, amountPaise: 354_000 });
+    expect(Object.keys(one).sort()).toEqual(Object.keys((await w.orders.listMine('v1', 1, 25)).items[0]).sort());
+    const foreign = await err(w.orders.getMine(OTHER.id, o.id)); const missing = await err(w.orders.getMine('v1', 'does-not-exist'));
+    expect(foreign).toMatchObject({ code: 'ORDER_NOT_FOUND', status: 404 }); expect(missing).toEqual(foreign);
+  });
+  it('shows the order paid after the payment settles, so the checkout screen needs no confirm call to learn it', async () => {
+    const o = await w.buy(); await paid(w, o);
+    expect((await w.orders.getMine('v1', o.id)).status).toBe('PAID');
+  });
+});

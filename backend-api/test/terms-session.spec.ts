@@ -36,3 +36,26 @@ describe('terms flag in the session', () => {
     expect(r.accessToken).toBeTruthy(); expect(r.user).not.toHaveProperty('termsAcceptanceRequired');
   });
 });
+
+describe('the first registration answer carries the terms flag (Dispatch G1 B5, journeys 1 and 2)', () => {
+  const jwt = new JwtService({ secret: 'unit-test-secret' });
+  const dto = { name: 'Asha', email: 'new@x.invalid', password: 'Correct-horse-1', businessName: 'Shop New', industry: 'retail', track: 'ecommerce' };
+  const make = (flag?: { acceptanceRequired: (id: string) => Promise<boolean> }) => {
+    const vendors: Array<Record<string, unknown>> = [];
+    const prisma = { vendor: { findUnique: async ({ where }: { where: { email?: string; id?: string; subdomain?: string } }) => vendors.find((v) => v.email === where.email || v.id === where.id || v.subdomain === where.subdomain) ?? null }, adminTeamMember: { findUnique: async () => null }, teamMember: { findFirst: async () => null }, vendorAddon: { upsert: async () => ({}) } };
+    const vendorsService = { create: async (d: Record<string, unknown>) => { const v = { id: 'vnew', role: 'VENDOR', status: 'ACTIVE', isSandbox: false, ...d }; vendors.push(v); return v; } };
+    return new AuthService(prisma as never, jwt, vendorsService as never, undefined, flag as never);
+  };
+  it('says true while a published version waits, false when none does; the flag is a boolean, never a guess', async () => {
+    const w = await termsWorld();
+    expect((await make(w.svc).register(dto as never)).user.termsAcceptanceRequired).toBe(false);
+    await w.publishRequired();
+    expect((await make(w.svc).register({ ...dto, email: 'second@x.invalid' } as never)).user.termsAcceptanceRequired).toBe(true);
+  });
+  it('is left out (not false) when the terms module is absent or its check fails; registering still works', async () => {
+    expect((await make().register(dto as never)).user).not.toHaveProperty('termsAcceptanceRequired');
+    const broken = { acceptanceRequired: async () => { throw new Error('db down'); } };
+    const r = await make(broken).register({ ...dto, email: 'third@x.invalid' } as never);
+    expect(r.accessToken).toBeTruthy(); expect(r.user).not.toHaveProperty('termsAcceptanceRequired');
+  });
+});

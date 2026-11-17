@@ -39,6 +39,9 @@ export class MeBillingController {
   @Get('orders') @ApiOperation({ summary: 'My orders, newest first' })
   async list(@Tenant() t: TenantContext, @Query() q: PageDto) { const page = q.page ?? 1; const pageSize = q.pageSize ?? 25; const r = await this.orders.listMine(t.vendorId, page, pageSize); return { items: r.items, page, pageSize, total: r.total }; }
 
+  @Get('orders/:id') @ApiOperation({ summary: 'One of my orders with its status (an order that is not mine answers like one that does not exist)' })
+  one(@Tenant() t: TenantContext, @Param('id') id: string) { return this.orders.getMine(t.vendorId, id); }
+
   @Get('invoices') @ApiOperation({ summary: 'My plan invoices, newest first' })
   async invoices(@Tenant() t: TenantContext, @Query() q: PageDto) { const page = q.page ?? 1; const pageSize = q.pageSize ?? 25; const r = await this.orders.invoicesMine(t.vendorId, page, pageSize); return { items: r.items, page, pageSize, total: r.total }; }
 
