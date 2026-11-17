@@ -5,7 +5,6 @@ import { OtpPepper } from '../directory/pepper';
 import { EntitlementsService } from '../plans/entitlements/entitlements.service';
 import { Actor } from '../plans/admin/audit.service';
 import { planStateAllows, PlanSnapshot, resolvePrice } from '../v3-services/core/services-core';
-import { conflict as servicesConflict } from '../v3-services/services.errors';
 import { DuplicateError, ServicesStore } from '../v3-services/services.store';
 import { deductionOutcome } from '../v3-wallet/core/tax-core';
 import { WalletRuleError } from '../v3-wallet/core/wallet-core';
@@ -134,7 +133,7 @@ export class ThemeSwitchService {
           if (fund.reason === 'WALLET_NOT_ACTIVE') throw notActive();
           if (fund.reason === 'WALLET_FROZEN') throw frozen();
         }
-        if (!('price' in q)) throw servicesConflict('SERVICE_PRICE_NOT_SET', 'The theme switch has no approved price yet, so it cannot be bought.');
+        if (!('price' in q)) throw themeConflict('THEME_SWITCH_FEE_PENDING', 'The theme switch fee is not set yet, so this switch cannot be bought. Nothing was charged.');
         if ('tax' in q && q.tax && 'problem' in q.tax) throw new ConflictException(walletError('TAX_NOT_CONFIGURED', 'Tax is not set up yet, so this cannot be priced.', { problem: q.tax.problem }));
       }
       const fields = await this.pipeline.fieldsFor(vendorId, themeId);

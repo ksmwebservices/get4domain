@@ -155,7 +155,7 @@ describe('what may be switched to, and by whom', () => {
   });
   it('a paid switch needs an approved price; tax is not needed (the GST was added at the refill) and no invoice is made', async () => {
     const x = themeWorld(); await x.seed(); await x.vendor('v1', 500_000); await x.themes.switchTheme('v1', { themeId: 'pro-b', idempotencyKey: key() }, x.vendorBy());
-    expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('SERVICE_PRICE_NOT_SET');
+    expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('THEME_SWITCH_FEE_PENDING');
     expect(x.themeStore.rows.filter((r) => r.kind === 'PAID')).toEqual([]); expect(x.store.ledger.filter((e) => e.kind === 'CHARGE')).toHaveLength(0);
     await x.ensureFee(); x.wsettings.over = { ...x.wsettings.over, walletSellerStateCode: '' };   // no seller state: the switch is still sold
     expect((await x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy())).kind).toBe('PAID');
@@ -249,6 +249,47 @@ describe('tenants', () => {
   it('the staff switch for one vendor changes only that vendor', async () => {
     await w.themes.switchTheme('v2', { themeId: 'pro-c', idempotencyKey: key() }, { type: 'STAFF', actor: TEAM, funding: 'COMPLIMENTARY', reason: 'A gift for the vendor.' });
     expect(w.pipe.vendors.get('v2')!.stored).toBe('pro-c'); expect((await w.pipe.snapshot('v1')).storedThemeId).toBe('standard-a');
+  });
+});
+
+describe('M3 (dispatch A3): an unset fee is PENDING, never a number', () => {
+  const pending = async () => { const x = themeWorld(); await x.seed(); await x.vendor('v1', 500_000); await x.themes.switchTheme('v1', { themeId: 'pro-b', idempotencyKey: key() }, x.vendorBy()); return x; };
+  it('the code is registered with the others, so the exception filter passes it through', () => {
+    const { THEME_SWITCH_ERROR_CODES } = jest.requireActual('../src/v3-theme-switch/theme-switch.errors') as { THEME_SWITCH_ERROR_CODES: readonly string[] };
+    expect(THEME_SWITCH_ERROR_CODES).toContain('THEME_SWITCH_FEE_PENDING');
+  });
+  it('no approved price: the fee view answers PENDING with no number, the preview quote has no amount, and a paid switch is refused with THEME_SWITCH_FEE_PENDING (409)', async () => {
+    const x = await pending();
+    expect(await x.themes.fee()).toEqual({ pricePaise: null, priceStatus: 'PENDING', taxNote: 'Before GST', priceNote: 'Price not set' });
+    const q = (await x.themes.preview('v1', 'pro-c')).fee as Record<string, unknown>; expect(q.free).toBe(false); expect(q).not.toHaveProperty('amountPaise'); expect(q).not.toHaveProperty('price');
+    const r = await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()));
+    expect(r.status).toBe(409); expect(r.code).toBe('THEME_SWITCH_FEE_PENDING');
+    expect(JSON.stringify(r.body)).not.toMatch(/[0-9]{3,}/);   // the refusal quotes no amount
+  });
+  it('a refused switch leaves nothing behind: no row, no wallet charge, the theme unchanged, the balance untouched, and the same key can be used once the fee is set', async () => {
+    const x = await pending(); const before = (await x.store.wallet('v1'))!.balancePaise; const k = key();
+    await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: k }, x.vendorBy()));
+    expect(x.themeStore.rows.filter((r) => r.kind === 'PAID')).toEqual([]); expect(x.store.ledger.filter((e) => e.kind === 'CHARGE')).toHaveLength(0);
+    expect((await x.store.wallet('v1'))!.balancePaise).toBe(before); expect((await x.pipe.snapshot('v1')).storedThemeId).toBe('pro-b');
+    await x.ensureFee(); const ok = await x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: k }, x.vendorBy());
+    expect(ok.kind).toBe('PAID'); expect(ok.amountPaise).toBe(THEME_FEE_TOTAL);
+  });
+  it('the included first switch and a staff gift do not need the fee, so they still work while it is pending', async () => {
+    const x = themeWorld(); await x.seed(); await x.vendor('v1', 500_000);
+    expect((await x.themes.switchTheme('v1', { themeId: 'pro-b', idempotencyKey: key() }, x.vendorBy())).kind).toBe('FREE_INCLUDED');
+    const g = await x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, { type: 'STAFF', actor: TEAM, funding: 'COMPLIMENTARY', reason: 'A gift while the fee is not set.' });
+    expect(g.kind).toBe('COMPLIMENTARY_STAFF');
+  });
+  it('a Free vendor is refused before the fee is ever looked at (the plan gate answers first), with the registered plan code', async () => {
+    const x = await pending(); x.plan.level = 'FREE'; x.plan.subscriptionStatus = 'EXPIRED';
+    expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('THEME_SWITCH_PLAN_STATE');
+  });
+  it('an empty wallet with no price reports the missing fee, not a made-up shortfall; with a price and an empty wallet it reports the exact shortfall', async () => {
+    const x = themeWorld(); await x.seed(); await x.vendor('v1', 100_000); await x.themes.switchTheme('v1', { themeId: 'pro-b', idempotencyKey: key() }, x.vendorBy());
+    expect((await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()))).code).toBe('THEME_SWITCH_FEE_PENDING');
+    await x.ensureFee(); await x.store.unit('v1', (tx) => postEntry(tx, { kind: 'CHARGE', amountPaise: 100_000 - 100, idempotencyKey: 'drain-m3-0001', actor: { type: 'SYSTEM', id: null }, now: new Date(x.now.t) }));
+    const e = await codeOf(x.themes.switchTheme('v1', { themeId: 'pro-c', idempotencyKey: key() }, x.vendorBy()));
+    expect(e.code).toBe('INSUFFICIENT_WALLET'); expect(e.body).toMatchObject({ shortfallPaise: THEME_FEE_TOTAL - 100 });
   });
 });
 void OPS;
