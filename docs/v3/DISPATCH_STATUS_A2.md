@@ -13,7 +13,7 @@ Branch v3-w4, worktree C:\Get4Domain\get4domain-w4. Baseline before W0: v3-w3 (2
 | W6 | gateway credentials in the admin app | DONE | (this commit) | 281 suites, 5451 tests pass; build ok | 3 SUPER_ADMIN-only routes under /v3/admin/payment-gateway/credentials; stored in g4d_platform_settings (no migration) |
 | W7 | GST rate setting | DONE | (this commit) | 282 suites; the only failure (pinned error-code list) fixed and re-run alone; build ok | GET and PUT /v3/admin/gst-rate; new row per change, history kept, no migration |
 | W8 | TDS on payouts | DONE | (this commit) | 283 suites, 5499 tests (one shape assertion updated, re-run alone); build, verify:migrations, verify:raw-sql ok | NEW MIGRATION 20261230110000_v3_wave4_tds_payouts (NOT applied); tdsPercent via plan-settings; PAN on partner |
-| W9 | tests and docs, report | TODO | | | |
+| W9 | tests and docs, report | DONE | (this commit) | 283 suites, 5499 tests pass; build, verify:migrations, verify:raw-sql ok; baseline regenerated with no diff | 3 integration files written NOT run (type-checked only); V3_WAVE4_BACKEND.md and API_CONTRACT_WAVE4.md |
 
 ## ASSUMPTIONS
 
