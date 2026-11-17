@@ -12,7 +12,8 @@
     "audit:vendor-dark": "node scripts/audit-vendor-dark.mjs",
     "verify:admin-nav": "node scripts/verify-admin-nav.mjs",
     "test:v3-public": "node --no-warnings --import ./scripts/v3-public/register.mjs --test \"src/lib/v3-public/__tests__/*.test.ts\"",
-    "smoke:v3-public": "node scripts/v3-public/smoke.mjs"
+    "smoke:v3-public": "node scripts/v3-public/smoke.mjs",
+    "probe:v3-real": "node --no-warnings --import ./scripts/v3-public/register.mjs scripts/real-probe.mjs"
   },
   "dependencies": {
     "fabric": "^6.9.1",
