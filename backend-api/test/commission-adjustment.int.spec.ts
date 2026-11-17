@@ -133,7 +133,7 @@ describe('commission adjustment on staging', () => {
       const mine = await env.api('get', '/v3/partner/payouts', p2.token); expect(mine.body.data.items[0]).toMatchObject({ grossMinor: 200_000, tdsMinor: 15_000, netMinor: 185_000 });
       expect(JSON.stringify(mine.body)).not.toMatch(/CA certificate|tdsReason|tdsPercent/);
       const csv = await env.api('get', `/v3/admin/commission/payouts/export.csv?partnerId=${p2.partnerId}`, admin); expect(csv.status).toBe(200);
-      expect(csv.text.split(String.fromCharCode(10))[0]).toBe('month,partner,partnerId,pan,reference,grossRupees,tdsPercent,tdsRupees,netRupees,tdsChanged,tdsReason,paidAt');
+      expect(csv.text.split(/\r?\n/)[0]).toBe('month,partner,partnerId,pan,reference,grossRupees,tdsPercent,tdsRupees,netRupees,tdsChanged,tdsReason,paidAt');
       expect(csv.text).toContain('2000.00'); expect(csv.text).toContain('150.00'); expect(csv.text).toContain('1850.00'); expect(csv.text).toContain('CA certificate for a lower rate');
       expect((await env.api('get', `/v3/admin/commission/payouts/export.csv?partnerId=${p2.partnerId}`, ops)).status).toBe(403);   // the CSV carries the PAN: ADMIN and SUPER_ADMIN only
     } finally { await prisma.v3PlanSetting.deleteMany({ where: { key: 'tdsPercent' } }); }
