@@ -6,11 +6,11 @@ Branch `v3-pack` (from `v3-smoke2`). Nothing here was run against a server, a da
 
 | Job | State | Commit | One line |
 |---|---|---|---|
-| E0 Investigate | DONE | (this commit) | Six pieces mapped; four deploy gaps found (below). |
-| E1a Build plan | TODO | | `docs/v3/DEPLOY_V3LIVE_PLAN.md` |
-| E1b Compose and env | TODO | | `deploy/v3live/docker-compose.apps.yml`, `env/*.example`, static test |
-| E1c Host nginx files | TODO | | `deploy/v3live/nginx/*`, `WILDCARD_SWITCH_LATER.md`, static test |
-| E1d Runbook | TODO | | `deploy/v3live/RUNBOOK.md` |
+| E0 Investigate | DONE | 23f01e3 | Six pieces mapped; four deploy gaps found (below). |
+| E1a Build plan | DONE | c1464c5 | `docs/v3/DEPLOY_V3LIVE_PLAN.md` |
+| E1b Compose and env | DONE | ac398ad | `deploy/v3live/docker-compose.apps.yml`, `env/*.example`, static test |
+| E1c Host nginx files | DONE | 63d4003 | `deploy/v3live/nginx/*`, `WILDCARD_SWITCH_LATER.md`, static test |
+| E1d Runbook | DONE | (this commit) | `deploy/v3live/RUNBOOK.md` |
 | E1e Final checks and report | TODO | | build, test:ci, `DISPATCH_REPORT_E1.md` |
 
 ## E0: what exists to build and run each piece

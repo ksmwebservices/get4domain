@@ -191,3 +191,25 @@ describe('deploy/v3live/env/*.example', () => {
     expect(ig).toContain('deploy/v3live/env/*.env');
   });
 });
+
+describe('deploy/v3live/RUNBOOK.md', () => {
+  const book = read('deploy/v3live/RUNBOOK.md');
+  it('holds no secret: no key-like string, no password in a connection string, no echo of a secret file', () => {
+    expect(book).not.toMatch(/[A-Za-z0-9]{40,}/);   // paths contain slashes, so only a real key-like run matches
+    expect(book).not.toMatch(/postgres(ql)?:\/\/[^\s:]+:(?!\$\(cat )[^\s@{]+@/);
+    expect(book).not.toMatch(/cat \/opt\/v3live\/secrets\/(pg_password|ops\/backup_passphrase|deploy_keys\/(backend|apps|site))\s*$/m);
+    expect(book).not.toMatch(/-----BEGIN/);
+  });
+  it('names the window of every part, keeps the public flag off, never touches the wildcard, and says nothing was run', () => {
+    for (const w of ['**PC**', '**HOST**', '**CONTAINER**']) expect(book).toContain(w);
+    expect(book).toMatch(/Nothing in this runbook has been run/);
+    expect(book).toMatch(/V3_PUBLIC_ENABLED=false/);
+    expect(book).toContain('WILDCARD_SWITCH_LATER.md');
+    expect(book).not.toMatch(/ssl_certificate\s+\//);
+    expect(book).toMatch(/nginx -t[\s\S]*systemctl reload nginx/);
+  });
+  it('covers every job of the dispatch: build, env, Postgres reachability, nginx, baseline, seed, first admin, health, backup, restore test, off-server copy, flag, rollback', () => {
+    for (const needle of ['docker build', 'check-live-env.js', 'baseline-live.js', 'dump-staging-schema.js', 'seed-live.js', 'bootstrap-super-admin.js', '/health/ready', 'backup-live-db.js', 'pg_restore', 'scp root@', 'V3_ADMIN_DAY_ONE_SETUP', 'Rollback table', 'nginx -t'])
+      expect([needle, book.includes(needle)]).toEqual([needle, true]);
+  });
+});
