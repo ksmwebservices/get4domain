@@ -30,6 +30,17 @@ export class HeldListDto extends PageDto {
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'from must be a day, YYYY-MM-DD' }) from?: string;
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'to must be a day, YYYY-MM-DD' }) to?: string;
 }
+/**
+ * Wave 4 W6: the keys of one gateway. Loose on purpose (every field optional here): the real checks (all fields required, length, no spaces, the Razorpay prefix of the mode, no unknown field) are in the pure
+ * credentials core, so every refusal carries the registered code GATEWAY_CREDENTIALS_INVALID and names the FIELD, never a value. A property outside the five is refused by the validation pipe, which names the property and never a value.
+ */
+export class GatewayCredentialsDto {
+  @IsOptional() keyId?: unknown;
+  @IsOptional() keySecret?: unknown;
+  @IsOptional() webhookSecret?: unknown;
+  @IsOptional() appId?: unknown;
+  @IsOptional() secretKey?: unknown;
+}
 /** Wave 4 W2: resolving a held payment. Every field is optional HERE on purpose: the real checks are in the pure held core, so every refusal carries the registered code HELD_PAYMENT_INVALID and names the fields. */
 export class HeldResolveDto {
   @IsOptional() action?: unknown;

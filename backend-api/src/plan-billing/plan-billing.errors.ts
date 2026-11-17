@@ -11,6 +11,8 @@ export const BILLING_ERROR_CODES = [
   'CASH_ONLY', 'CASH_DETAILS_INVALID', 'CASH_ORDER_INVALID',
   // Wave 4 W2: a held payment resolved by an admin
   'HELD_PAYMENT_NOT_FOUND', 'HELD_PAYMENT_INVALID', 'HELD_AMOUNT_MISMATCH', 'HELD_ALREADY_RESOLVED',
+  // Wave 4 W6: the gateway keys entered in the admin app
+  'GATEWAY_CREDENTIALS_INVALID', 'GATEWAY_CREDENTIALS_UNAVAILABLE',
 ] as const;
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[number];
 

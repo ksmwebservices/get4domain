@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Optional, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Optional, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -12,9 +12,10 @@ import { actorOf, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { PlanBillingRepository } from '../plan-billing.repository';
 import { PaymentSettlementService } from '../settlement.service';
 import { PaymentGatewaySettingsService } from '../gateway/gateway-settings.service';
+import { GatewayCredentialsService } from '../gateway/gateway-credentials.service';
 import { PlanOrderService } from '../plan-order.service';
 import { HeldPaymentsService } from '../held-payments.service';
-import { AdminEventsDto, AdminOrdersDto, CashConfirmDto, CreateCashOrderDto, HeldListDto, HeldResolveDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
+import { AdminEventsDto, AdminOrdersDto, CashConfirmDto, CreateCashOrderDto, GatewayCredentialsDto, HeldListDto, HeldResolveDto, RefundDto, UpdateGatewayDto } from './dto/billing.dto';
 
 /** Staff side of plan purchases. Reads: OPERATIONS and SUPER_ADMIN. Marking an order paid offline and recording a refund: SUPER_ADMIN only. MARKETING is refused everywhere. All writes are audited. */
 @ApiTags('v3-billing-admin')
@@ -127,4 +128,27 @@ export class AdminPaymentGatewayController {
 
   @Put() @HttpCode(200) @ApiOperation({ summary: 'ADMIN or SUPER_ADMIN, audited: choose the gateway (razorpay or cashfree) and its mode. Refused unless the server has that gateway keys; live also needs the live flag.' })
   update(@Body() dto: UpdateGatewayDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.gateways.update(dto, { id: u?.sub ?? null, ip: req?.ip ?? null }); }
+}
+
+/**
+ * The gateway keys and webhook secrets (Wave 4 W6): SUPER_ADMIN only, in every method (the role matrix; ADMIN is refused). WRITE-ONLY: no route returns a value. The status says, for each gateway and mode, whether
+ * a complete set is stored, who set it and when, and at most the last 4 characters of the key id. Setting and clearing are audited. Business verification (KYC) is done on the gateways' own sites.
+ */
+@ApiTags('v3-billing-admin')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('v3/admin/payment-gateway/credentials')
+export class AdminGatewayCredentialsController {
+  constructor(private readonly credentials: GatewayCredentialsService) {}
+
+  @Get() @ApiOperation({ summary: 'SUPER_ADMIN: for each gateway and mode, whether its keys are stored, who set them and when, and at most the last 4 characters of the key id. Never a secret.' })
+  status() { return this.credentials.status(); }
+
+  @Put(':gateway/:mode') @HttpCode(200)
+  @ApiOperation({ summary: 'SUPER_ADMIN, audited, write-only: store the full key set of a gateway (razorpay: keyId, keySecret, webhookSecret; cashfree: appId, secretKey) for the mode test or live, encrypted at rest. Replaces the set. The answer is the status, never a value.' })
+  set(@Param('gateway') gateway: string, @Param('mode') mode: string, @Body() dto: GatewayCredentialsDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.credentials.set(gateway, mode, dto, { id: u?.sub ?? null, ip: req?.ip ?? null }); }
+
+  @Delete(':gateway/:mode') @HttpCode(200)
+  @ApiOperation({ summary: 'SUPER_ADMIN, audited: remove the stored key set of a gateway and mode (the environment then applies, if it has keys). Clearing what is not there changes nothing.' })
+  clear(@Param('gateway') gateway: string, @Param('mode') mode: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.credentials.clear(gateway, mode, { id: u?.sub ?? null, ip: req?.ip ?? null }); }
 }
