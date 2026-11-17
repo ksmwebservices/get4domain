@@ -1,6 +1,6 @@
 import type { LegalDocDef } from '../legal-meta';
 
-/** Privacy Policy. Plain-language DRAFT for review by a lawyer in India. General terms only for retention and rights handling. */
+/** Privacy Policy. Plain-language DRAFT for review by a lawyer in India. Retention follows the OWNER DEFAULT of dispatch D2 (kept while the account is active; deleted or anonymised after closing, except records the law requires); a lawyer refines it later. */
 export const PRIVACY: LegalDocDef = {
   path: '/privacy-policy',
   title: 'Privacy Policy',
@@ -16,7 +16,7 @@ export const PRIVACY: LegalDocDef = {
         'Account details: your name, email address, phone number and password (stored in a protected form).',
         'Business details: the name of your business, its category, your site address and the content you put on your website or listing.',
         'Billing records: your plan, billing term, orders, invoices and wallet transactions. Payments are made on the payment gateway, which tells us whether a payment succeeded and gives us a payment reference. We do not receive or store your card, UPI or bank details.',
-        'Partner details: a referral code and the details needed to pay commission and deduct tax as the law requires, for partners only.',
+        'Partner details: a referral code, a Permanent Account Number (PAN) and the details needed to pay commission and deduct tax as the law requires, for partners only.',
         'Messages: what you send us when you ask for help or make a request.',
         'Technical data: your IP address, browser and device information, and basic logs of how the service is used, kept for security and to run the service.',
         'Directory data: information about businesses shown in the directory, described below.',
@@ -91,7 +91,7 @@ export const PRIVACY: LegalDocDef = {
       id: 'retention',
       heading: 'How long we keep data',
       paragraphs: [
-        'We keep personal data for as long as it is needed for the purposes in this policy and for as long as the law requires us to keep records, such as billing and tax records. When data is no longer needed, we delete it or make it anonymous.',
+        'We keep your personal data while your account is active. After the account is closed, we delete the data or make it anonymous. The exception is records that the law requires us to keep, such as invoices and tax records. We keep those for as long as the law requires.',
       ],
     },
     {

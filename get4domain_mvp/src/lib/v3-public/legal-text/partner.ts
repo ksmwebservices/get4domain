@@ -59,8 +59,8 @@ export const PARTNER: LegalDocDef = {
       id: 'payouts-and-tax',
       heading: 'Payouts and tax',
       paragraphs: [
-        'Commission is paid out monthly, to the account the partner has given us. A partner must keep those details correct. We may ask for tax and identity details before a payout, and we may hold a payout until we have them.',
-        'Tax is deducted at source as the law requires, at the rate the company sets in line with the law. The partner is responsible for any other tax on their income. We may give the partner a statement of the tax deducted.',
+        'Commission is paid out monthly, to the account the partner has given us. A partner must keep those details correct and must provide a Permanent Account Number (PAN). We may ask for other tax and identity details before a payout, and we may hold a payout until we have them.',
+        'Tax is deducted at source as the law requires, at the rate the company applies. The partner is responsible for any other tax on their income. We may give the partner a statement of the tax deducted.',
       ],
     },
     {

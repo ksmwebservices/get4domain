@@ -24,6 +24,8 @@ export interface LegalDocDef {
   metaTitle: string;
   metaDescription: string;
   intro: string;
+  /** print the grievance officer block (timelines and details) on this page when the firm data exists */
+  showGrievance?: boolean;
   sections: readonly LegalSection[];
 }
 

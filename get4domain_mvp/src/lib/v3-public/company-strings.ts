@@ -1,7 +1,7 @@
 import type { LegalSection } from './legal-meta';
 
 /**
- * The words of the About and Contact pages (dispatch D1, L3). Same rules as the policy text: no digits, no time words, no discount or offer wording,
+ * The words of the About and Contact pages (dispatch D1, L3). Same rules as the policy text: no digits, no time words (the one exception is the grievance timelines, "48 hours" and "one month"), no discount or offer wording,
  * no ranking claim, nothing invented about the company (no history, numbers or team). The firm's details come from the firm facts module, not from here.
  */
 export const ABOUT_STRINGS = {
@@ -15,8 +15,9 @@ export const ABOUT_STRINGS = {
       id: 'what-you-can-do',
       heading: 'What a business can do on Get4Domain',
       bullets: [
-        'Start with a free trial site.',
+        'Start with a free trial site. It is informational, and the main features need a paid plan.',
         'Move to a paid plan, billed quarterly, half-yearly or annually. Prices are shown without GST.',
+        'Stop renewing a plan at any time. Access continues until the end of the term that is paid for.',
         'Use the wallet, which holds prepaid platform credit.',
         'Claim its listing in the Get4Domain business directory.',
         'Run its website on its own subdomain.',
@@ -26,7 +27,7 @@ export const ABOUT_STRINGS = {
       id: 'how-you-pay',
       heading: 'How payment works',
       paragraphs: [
-        'Businesses pay for plans only through an online payment gateway. GST is added at checkout, and an invoice is issued after a successful payment.',
+        'Businesses pay for plans only through an online payment gateway. GST at the rate in force is added at checkout and shown as its own line, and an invoice is issued after a successful payment.',
       ],
     },
     {
@@ -61,10 +62,10 @@ export const CONTACT_STRINGS = {
   otherHelpNoDetails: 'For anything else, write to us at our registered office below.',
   detailsHeading: 'Company details',
   paymentsHeading: 'Payments and refunds',
-  paymentsBody: 'For a question about a payment, an invoice or a refund, give your account email and the payment reference.',
+  paymentsBody: 'For a question about a payment, an invoice or a refund, give your account email and the payment reference. Refunds follow our Refund and Cancellation Policy.',
   requestsHeading: 'Data requests, listing corrections and removals',
   requestsBody: 'To ask about your personal data, to correct or remove a directory listing, or to report content that breaks our rules, tell us what you need. We confirm a request about a listing through the contact we hold for the business.',
   grievanceHeading: 'Grievance officer',
-  grievanceBody: 'If you have a complaint about how we handle your personal data or about the service, you can write to our grievance officer.',
+  grievanceBody: 'If you have a complaint about how we handle your personal data, a payment or the service, you can write to our grievance officer. The grievance officer acknowledges a complaint no later than 48 hours after it is received and resolves it no later than one month after it is received, as the Consumer Protection (E-Commerce) Rules require.',
   grievanceLabels: { name: 'Name', email: 'Email', phone: 'Phone' },
 } as const;

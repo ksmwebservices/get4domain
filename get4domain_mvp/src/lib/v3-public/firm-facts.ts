@@ -101,3 +101,13 @@ export function firmRows(f: FirmFacts, labels: { name: string; address: string; 
 export function hasGrievanceContact(f: FirmFacts): boolean {
   return !!(f.grievanceName || f.grievanceEmail || f.grievancePhone);
 }
+
+/** The grievance officer rows a page prints: a row whose value is empty is not returned. */
+export function grievanceRows(f: FirmFacts, labels: { name: string; email: string; phone: string }): FactRow[] {
+  const rows: FactRow[] = [
+    { key: 'name', label: labels.name, value: f.grievanceName },
+    { key: 'email', label: labels.email, value: f.grievanceEmail, href: f.grievanceEmail ? `mailto:${f.grievanceEmail}` : undefined },
+    { key: 'phone', label: labels.phone, value: f.grievancePhone, href: f.grievancePhone ? `tel:${f.grievancePhone.replace(/[^0-9+]/g, '')}` : undefined },
+  ];
+  return rows.filter((r) => r.value.trim() !== '');
+}

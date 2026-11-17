@@ -400,7 +400,12 @@ const LEGAL_LIVE_PATHS = ['/terms', '/privacy-policy', '/refund-policy']; // the
 const NEGATABLE = /\b(discounts?|coupons?|offers?|promo(?:tion|tional)?s?|guarantee[sd]?)\b/i;
 const NEGATION = /\b(no|not|never|nor|without|cannot|neither|n't)\b/i;
 /** Problems in the rendered text of a policy page: banned words, a digit, a time word, a number of a policy (none is decided), a placeholder, a promise that is not a negation. */
-function legalTextProblems(t) {
+/** The one exception (owner default 4, dispatch D2): "48 hours" and "one month" are allowed only in a sentence about the grievance officer or a complaint. */
+function withoutGrievanceTimelines(text) {
+  return text.split(/(?<=[.!?])\s+/).map((s) => (/\b(grievance officer|complaint)\b/i.test(s) ? s.replace(/\b48 hours\b/g, 'a set time').replace(/\bone month\b/g, 'a set time') : s)).join(' ');
+}
+function legalTextProblems(raw) {
+  const t = withoutGrievanceTimelines(raw);
   const out = [];
   if (/\b(workspace|BOS|LeadSpace)\b/i.test(t)) out.push('a banned product word');
   if (/\bleads?\b/i.test(t)) out.push('leads');
@@ -496,7 +501,7 @@ async function companyPages() {
     for (const issue of legalTextProblems(t)) ok(false, `company: ${p} has ${issue}`);
     ok(/KSM QUANTUM TECHNOLOGIES/.test(t) && /Tidel Park/.test(t) && /Tamil Nadu/.test(t), `company: ${p} names the firm and the Chennai office`);
     ok(!/mailto:|tel:|wa\.me|<form|<input|<button/i.test(r.text), `company: ${p} has no contact link, form or button while no contact value is set`);
-    ok(!/GSTIN|Support email|Support phone|CIN/.test(t), `company: ${p} prints nothing for a value that is not set`);
+    ok(!/\bGSTIN\b|Support email|Support phone|\bCIN\b/.test(t), `company: ${p} prints nothing for a value that is not set`);
   }
   const contact = visible((await H('/contact')).text);
   ok(!/Grievance officer/.test(contact) && /Registered office/.test(contact) && /write to us at our registered office/.test(contact), 'company: contact has no grievance section without grievance data, and points to the registered office');
@@ -511,6 +516,15 @@ async function companyPages() {
   const terms = await F('/terms');
   ok(/href="mailto:help@example\.invalid"/.test(terms.text) && /CIN/.test(visible(terms.text)), 'company (values set): a policy page prints the support email and the CIN in its company details');
   ok(!/Support email/.test(visible((await H('/terms')).text)), 'company: a policy page prints no support email row while none is set');
+  // the grievance officer block (owner default 4): Terms and Refund carry it when the data is set, and never when it is not
+  for (const p of ['/terms', '/refund-policy']) {
+    const withData = visible((await F(p)).text);
+    ok(/Grievance officer/.test(withData) && /A Grievance Person/.test(withData) && /no later than 48 hours after it is received/.test(withData) && /no later than one month after it is received/.test(withData), `company (values set): ${p} shows the grievance officer block with both timelines`);
+    ok(legalTextProblems(withData).length === 0, `company (values set): ${p} has no number or time word beyond the two grievance timelines`);
+    const without = visible((await H(p)).text);
+    ok(!/Grievance officer/.test(without) && !/48 hours|one month/.test(without), `company: ${p} shows no grievance block and no timeline while no grievance value is set`);
+  }
+  ok(!/Grievance officer/.test(visible((await F('/privacy-policy')).text)),'company (values set): the privacy policy carries no separate grievance block');
   // flag off with host names set: the live /about and /contact are not the new pages
   for (const p of ['/about', '/contact']) {
     const r = await getHost(OFF, M, p);

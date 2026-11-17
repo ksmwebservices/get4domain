@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Crumbs from '@/components/site/Crumbs';
 import JsonLd from '@/components/directory/JsonLd';
+import GrievanceBlock from '@/components/site/GrievanceBlock';
 import { CONTACT_STRINGS as C } from '@/lib/v3-public/company-strings';
-import { firmRows, getFirmFacts, hasGrievanceContact } from '@/lib/v3-public/firm-facts';
+import { firmRows, getFirmFacts } from '@/lib/v3-public/firm-facts';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { LEGAL_UI } from '@/lib/v3-public/legal-strings';
 import { firmOrganizationLd } from '@/lib/v3-public/site-jsonld';
@@ -24,11 +25,6 @@ export default async function ContactPage() {
   const f = await getFirmFacts();
   const rows = firmRows(f, LEGAL_UI.rows);
   const hasSupport = !!(f.supportEmail || f.supportPhone);
-  const grievance = [
-    { key: 'name', label: C.grievanceLabels.name, value: f.grievanceName, href: undefined as string | undefined },
-    { key: 'email', label: C.grievanceLabels.email, value: f.grievanceEmail, href: f.grievanceEmail ? `mailto:${f.grievanceEmail}` : undefined },
-    { key: 'phone', label: C.grievanceLabels.phone, value: f.grievancePhone, href: f.grievancePhone ? `tel:${f.grievancePhone.replace(/[^0-9+]/g, '')}` : undefined },
-  ].filter((r) => r.value);
   return (
     <>
       <JsonLd items={[firmOrganizationLd(f)]} />
@@ -64,20 +60,7 @@ export default async function ContactPage() {
           <p className="mt-2 text-slate-700">{C.requestsBody}</p>
         </section>
 
-        {hasGrievanceContact(f) ? (
-          <section aria-labelledby="grievance-h" className="mt-8 rounded-xl border border-slate-200 p-4">
-            <h2 id="grievance-h" className="text-xl font-semibold text-slate-900">{C.grievanceHeading}</h2>
-            <p className="mt-2 text-slate-700">{C.grievanceBody}</p>
-            <dl className="mt-2 space-y-1 text-sm">
-              {grievance.map((r) => (
-                <div key={r.key}>
-                  <dt className="inline font-medium text-slate-900">{r.label}: </dt>
-                  <dd className="inline text-slate-700">{r.href ? <a href={r.href} className="underline">{r.value}</a> : r.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ) : null}
+        <GrievanceBlock facts={f} />
       </article>
     </>
   );

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Crumbs from '@/components/site/Crumbs';
+import GrievanceBlock from '@/components/site/GrievanceBlock';
 import type { FirmFacts } from '@/lib/v3-public/firm-facts';
 import { firmRows } from '@/lib/v3-public/firm-facts';
 import { formatEffectiveDate, LEGAL_EFFECTIVE_DATE, LEGAL_VERSION, type LegalDocDef } from '@/lib/v3-public/legal-meta';
@@ -38,6 +39,8 @@ export default function LegalDocument({ doc, facts }: { doc: LegalDocDef; facts:
             {s.bullets?.length ? <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-700">{s.bullets.map((b) => <li key={b}>{b}</li>)}</ul> : null}
           </section>
         ))}
+
+        {doc.showGrievance ? <GrievanceBlock facts={facts} /> : null}
 
         {rows.length ? (
           <section aria-labelledby="company-h" className="mt-10 rounded-xl border border-slate-200 bg-slate-50 p-4">

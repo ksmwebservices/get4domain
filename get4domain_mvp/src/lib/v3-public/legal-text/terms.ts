@@ -7,6 +7,7 @@ export const TERMS: LegalDocDef = {
   metaTitle: 'Terms of Service',
   metaDescription: 'The terms for using Get4Domain: accounts, plans and billing, the wallet, trial and Free sites, your content, directory listings and how disputes are handled.',
   intro: 'These terms are the agreement between you and KSM QUANTUM TECHNOLOGIES for the use of Get4Domain. Please read them with our Privacy Policy, Refund and Cancellation Policy, Payments and Billing page and Acceptable Use policy.',
+  showGrievance: true,
   sections: [
     {
       id: 'who-we-are',
@@ -37,8 +38,8 @@ export const TERMS: LegalDocDef = {
       id: 'trial-and-free-sites',
       heading: 'Trial and Free sites',
       paragraphs: [
-        'A trial site lets you try Get4Domain before you buy a plan. The length and limits of a trial are shown when you sign up.',
-        'A Free site is informational. It is a simple listing of your business and does not carry the features of a paid plan. We may set limits on what a Free site can show.',
+        'A Free trial site is informational. It shows your business, but the main features of Get4Domain need a paid plan.',
+        'We may set limits on what a Free trial site or a Free site can show.',
         'If you do not move to a paid plan, we may limit, pause or remove a trial or Free site as described in your account or on the pricing page.',
       ],
     },
@@ -48,7 +49,8 @@ export const TERMS: LegalDocDef = {
       paragraphs: [
         'Plans are billed quarterly, half-yearly or annually. You choose the billing term at checkout.',
         'You pay for plans only through an online payment gateway, Razorpay or Cashfree. Payment is started from your business account and completed through the gateway. We do not take payment in any other way, except a cash payment that an administrator of Get4Domain has confirmed.',
-        'Prices are shown without GST. GST is added on top at checkout, and you see the total before you pay. We issue an invoice after a successful payment.',
+        'Prices are shown without GST. GST at the rate in force is added on top at checkout and shown as its own line, and you see the total before you pay. We issue an invoice after a successful payment.',
+        'A payment for a plan is not refundable once the plan is active. The exceptions are a duplicate payment, a payment that was taken but did not activate a plan, and a payment whose amount did not match the order and was held. An administrator checks the payment gateway record, and the refund is made through the payment gateway to the original payment method.',
         'A plan starts only after the payment gateway confirms the payment. A failed or cancelled order does not start a plan. A payment that does not match the order is held for review.',
         'No discounts, coupons or offers exist. The price shown at checkout is the price you pay, plus GST.',
         'Our Payments and Billing page and our Refund and Cancellation Policy explain these points in more detail.',
@@ -99,7 +101,7 @@ export const TERMS: LegalDocDef = {
       id: 'suspension-and-ending',
       heading: 'Suspension and ending',
       paragraphs: [
-        'You may stop using Get4Domain at any time. Stopping does not by itself entitle you to a refund. Our Refund and Cancellation Policy explains what applies.',
+        'You can stop renewing your plan at any time. Your access continues until the end of the term you have paid for. There is no part refund for the unused part of a term. Our Refund and Cancellation Policy explains what applies.',
         'We may suspend or end your access if you break these terms, if you do not pay, if the law requires it, or if your use puts the service or other people at risk. Where we reasonably can, we will tell you why.',
         'Ending your account does not remove duties that arose before it ended, such as payment of charges that are due.',
       ],

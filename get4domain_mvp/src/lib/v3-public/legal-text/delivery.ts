@@ -19,7 +19,7 @@ export const DELIVERY: LegalDocDef = {
       id: 'trial-site',
       heading: 'Trial site',
       paragraphs: [
-        'When you register, your trial site is set up and you are taken to your business account, where you can start working on it.',
+        'When you register, your trial site is set up and you are taken to your business account, where you can start working on it. A Free trial site is informational. The main features need a paid plan.',
       ],
     },
     {
@@ -42,15 +42,15 @@ export const DELIVERY: LegalDocDef = {
       id: 'invoice',
       heading: 'Invoice',
       paragraphs: [
-        'We issue an invoice after a successful payment. Prices are shown without GST and GST is added at checkout.',
+        'We issue an invoice after a successful payment. Prices are shown without GST. GST at the rate in force is added at checkout and shown as its own line.',
       ],
     },
     {
       id: 'if-something-is-missing',
       heading: 'If your plan or credit does not appear',
       paragraphs: [
-        'If you paid and your plan or wallet credit does not appear, please contact us using the details on our Contact page. Give your account email and the payment reference. We will check the payment with the payment gateway.',
-        'Where a payment cannot be accepted, any refund is made through the payment gateway to the original payment method, as our Refund and Cancellation Policy explains.',
+        'If you paid and your plan or wallet credit does not appear, please contact us using the details on our Contact page. Give your account email and the payment reference. An administrator checks the payment gateway record.',
+        'Where a payment was taken but no plan was activated, or a payment cannot be accepted, the amount is refunded through the payment gateway to the original payment method, as our Refund and Cancellation Policy explains.',
       ],
     },
     {

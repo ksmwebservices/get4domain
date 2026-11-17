@@ -1,6 +1,6 @@
 import type { LegalDocDef } from '../legal-meta';
 
-/** Payments and Billing. Plain-language DRAFT for review. Only decided facts: gateway only, GST on top, invoice after payment, held and failed payments, wallet, cash only when confirmed, no discounts. */
+/** Payments and Billing. Plain-language DRAFT for review. Only decided facts plus the OWNER DEFAULTS of dispatch D2: gateway only, GST on top as its own line, invoice after payment, held and failed payments, no part refund, wallet, cash only when confirmed, no discounts. */
 export const PAYMENTS: LegalDocDef = {
   path: '/payments-and-billing',
   title: 'Payments and Billing',
@@ -22,35 +22,36 @@ export const PAYMENTS: LegalDocDef = {
       heading: 'Plans and billing terms',
       paragraphs: [
         'Plans are billed quarterly, half-yearly or annually. You choose the billing term at checkout and see the price for it before you pay.',
-        'What happens at the end of a billing term is as shown at checkout or as agreed in writing.',
+        'You can stop renewing at any time. Your access continues until the end of the term you have paid for. There is no part refund for the unused part of a term.',
       ],
     },
     {
       id: 'gst',
       heading: 'GST',
       paragraphs: [
-        'Prices on Get4Domain are shown without GST. GST is added on top at checkout, and the total is shown before you pay. GST is charged as the Central Goods and Services Tax Act and its rules require.',
+        'Prices on Get4Domain are shown without GST. GST at the rate in force is added on top at checkout and shown as its own line, and the total is shown before you pay. GST is charged as the Central Goods and Services Tax Act and its rules require.',
       ],
     },
     {
       id: 'invoices',
       heading: 'Invoices',
       paragraphs: [
-        'We issue an invoice after a successful payment. The invoice shows the plan, the price, the GST and the total. It shows our tax registration details where we have them.',
+        'We issue an invoice after a successful payment. The invoice shows the plan, the price, the GST as its own line and the total. It shows our tax registration details where we have them.',
       ],
     },
     {
       id: 'failed-payments',
       heading: 'Failed and cancelled payments',
       paragraphs: [
-        'A failed or cancelled order does not start a plan. If money was taken but the order failed or was cancelled, contact us with the payment reference. The matter is dealt with through the payment gateway, and any refund goes to the original payment method.',
+        'A failed or cancelled order does not start a plan. If money was taken but the order failed or was cancelled, or if you paid and no plan was activated, contact us with the payment reference. An administrator checks the payment gateway record, and any refund goes through the payment gateway to the original payment method.',
+        'A repeat payment for the same order is a duplicate and is dealt with in the same way.',
       ],
     },
     {
       id: 'held-payments',
       heading: 'Payments held for review',
       paragraphs: [
-        'A payment that does not match the order, for example an amount that differs from the order, is held for review. We do not start a plan until the review is done. If the payment cannot be accepted, any refund is made through the payment gateway to the original payment method.',
+        'A payment that does not match the order, for example an amount that differs from the order, is held for review. We do not start a plan until the review is done. An administrator checks the payment gateway record. If the payment cannot be accepted, the amount is refunded through the payment gateway to the original payment method.',
       ],
     },
     {
@@ -79,7 +80,8 @@ export const PAYMENTS: LegalDocDef = {
       id: 'refunds',
       heading: 'Refunds',
       paragraphs: [
-        'Our Refund and Cancellation Policy explains refunds. Any refund is made through the payment gateway to the original payment method.',
+        'A payment for a plan is not refundable once the plan is active. The exceptions are a duplicate payment, a payment that was taken but did not activate a plan, and a payment whose amount did not match the order and was held.',
+        'Our Refund and Cancellation Policy explains refunds. Any refund is made through the payment gateway to the original payment method, after an administrator checks the payment gateway record.',
       ],
     },
     {
