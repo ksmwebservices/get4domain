@@ -300,3 +300,15 @@ None.
 - `GET /v3/public/requests/track/:token`: needs an id the seed does not know
 - `GET /v3/public/terms/:kind/versions`: needs an id the seed does not know
 - `GET /v3/public/terms/:kind`: needs an id the seed does not know
+
+## FOR THE FRONT-END LANES
+
+Found while probing and while checking codes (none is a backend fault; all are state or contract facts):
+
+1. **Plan gates for the Free vendor.** `vendorFree` gets `403 FEATURE_LOCKED` ("This is not part of your plan.") on accounts, appointments, customers, documents, invoices, items, jobs, offers, orders, payment methods and requests, payment requests, quotes, tax profile and the store tabs. The screens must show the upgrade card from the code, not an error. `vendorPaid` (Handyman Pro) opens all of them except the appointments tabs and the store tabs, which stay `FEATURE_LOCKED` for both (the store belongs to the e-commerce track).
+2. **Routes that want input (REACH column).** `GET /v3/admin/commission/payouts/preview` needs `?partnerId=&month=2026-11` (400 `COMMISSION_MONTH_INVALID` without it). `GET /v3/admin/pack-engine/tab-fields` needs its query (400). `GET /v3/me/accounts/gst-summary`, `GET /v3/me/jobs/calendar` and `GET /v3/me/site/revisions/compare` need their query (400). `GET /v3/public/themes?pack=` answers 404 `THEME_PACK_NOT_FOUND` for an unknown pack: take pack keys from `GET /v3/public/pack-categories` (for example `FIELD_SERVICE`), not a track name.
+3. **State, not faults.** `GET /v3/me/directory/badge` is 404 `SEO_NOT_FOUND` until the business has a directory listing; `GET /v3/me/domains/connections` is 404 `DOMAIN_NOT_FOUND` with no domain; `GET /v3/admin/vendors/:id/identity` is 404 `IDENTITY_NOT_FOUND` with no identity check; `GET /v3/public/site/by-host` is 404 for a host with no published site (the smoke sites are drafts). The seeded vendors have a handyman business category, so the profile and tab routes answer.
+4. **Registering.** A first `POST /auth/register` answers 201 without `termsAcceptanceRequired`; call `GET /auth/me` straight after (see `API_CONTRACT_WAVE4.md`, A3-1).
+5. **Theme fee.** `GET /v3/me/site/theme/fee` can answer `PENDING` with a null price (then a paid switch is `THEME_SWITCH_FEE_PENDING`). On staging right now the price book holds an approved 29,900 paise for the theme switch, so it answers `SET`; do not hard-code either state.
+6. **GST on the public pricing page.** The pricing answer on staging names the GST row `V3TEST GST ...` (a leftover test row); the name is data, show the rate, not the name.
+7. **A staff user on a vendor route** gets 403 and a vendor on an admin route gets 403 (401 with no token): the apps should send each kind of user to its own screens and not rely on the 403 for navigation.
