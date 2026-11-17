@@ -7,9 +7,9 @@ Branch v3-audit (from v3-pack). Documents only. Never pushed.
 | F0 | DONE | (see git log) | Section 1 written: inventory, flags, enquiry effect |
 | F1 | DONE | see git log | Section 2 (packs). Theme inventory (section 9, user-added) TODO |
 | F2 | DONE | see git log | Section 3 |
-| F3 | TODO | - | Admin screens vs routes |
-| F4 | TODO | - | Public site + partner portal |
-| F5 | TODO | - | 12 launch journeys |
+| F3 | DONE | see git log | Section 4 |
+| F4 | DONE | see git log | Section 5 |
+| F5 | DONE | see git log | Section 6 (2 BROKEN: enquiry, claim approve) |
 | F6 | TODO | - | Completion queue + owner switches |
 | F7 | TODO | - | DISPATCH_REPORT_F1.md |
 

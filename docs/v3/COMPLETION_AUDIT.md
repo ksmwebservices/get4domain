@@ -239,3 +239,160 @@ Rule from `bodies.ts:99-105`: a screen not in `REAL_SCREENS` is **sample-only**:
 **Counts:** 41 route entries in `BODIES`; 14 keys in `REAL_SCREENS` plus pack tabs (generic) and the theme panel = **16 real screens**, **25 MOCK-ONLY**, 1 placeholder (AI studio), 1 local-only (account). Of the 25 mock-only screens, at least 13 already have V3 backend routes (jobs, quotes, work, orders, stock, offerings, offers, marketplace, accounting, payment methods, legal, activity, AI studio) so the work is wiring, not backend.
 
 Also in the vendor folder (not routed in V3): `pages/customers/*`, `pages/requests/*`, `pages/revenue/*` (`SellPage`, `AccountingPage` etc. are imported from `revenue`), `pages/inventory/*`, `pages/settings/*` older variants. Those with `mock` imports and no route are dead or re-homed code (UNVERIFIED which are unreachable).
+
+---
+
+## 4. Admin app and the routes with no screen (F3)
+
+Sources: `get4domain-ui/apps/admin/src/access/screens.ts` (the screens), `pages/registry.tsx`, each page's `*-data.ts`, and the baseline `backend-api/test/baselines/route-classification.json`.
+
+**Method for "has a screen":** a script collected every path written in `apps/admin/src` and `packages/api/src` (not tests, not fakes), turned `${id}` and `:id` into one placeholder, and compared with the 542 admin routes of the baseline. A route counts as screened when its path appears in that code. This is a **string match**, not proof the screen calls it (a path in a list of documented routes also matches), so the screened number is an upper bound. UNVERIFIED per route.
+
+### 4.1 The 11 admin screens
+
+| Screen | Path | Real? | Main routes |
+|---|---|---|---|
+| Catalog (packs, tab fields, add-on eligibility) | `/catalog` | REAL | `/v3/admin/pack-engine/*` (18 of 18 routes) |
+| Vendors (list, detail, subscription, site, domains, activity, plan pause/resume) | `/vendors` | REAL | `/v3/admin/vendors`, `/vendors/:id/*`, `/v3/admin/pack-engine/vendors/:id/*` |
+| Invoices (plan orders, cash, settle) | `/invoices` | REAL | `/v3/admin/billing/orders`, `/orders/:id/mark-paid`, `/vendors/:vendorId/cash-orders` |
+| Payments (gateway, held payments) | `/payments` | REAL | `/v3/admin/payment-gateway`, `/credentials`, `/billing/held-payments` |
+| Partners (partners, slabs, commission, payouts) | `/partners` | REAL | `/v3/admin/partners`, `/commission/*` (v3-referrals 16 of 16) |
+| Domains | `/domains` | REAL | `/v3/admin/domains`, connection retry, logs |
+| On behalf (create listing, bulk import, claim links, pictures, profile fields) | `/create` | REAL | `/v3/admin/seeded-sites*` (16 of 17), `/claim-link*`, listing import, media |
+| Tickets | `/tickets` | REAL | `/v3/admin/tickets*` (v3-support 5 of 5) |
+| Staff | `/staff` | REAL | `/admin-team/members*` |
+| Company profile | `/company` | REAL (SUPER_ADMIN) | `/v3/admin/firm-profile` |
+| Settings (plan settings, GST, TDS, gateway keys) | `/settings` | REAL (SUPER_ADMIN) | `/v3/admin/plan-settings`, `PUT /v3/admin/gst-rate`, `/payment-gateway/credentials/:gateway/:mode` |
+
+### 4.2 Routes with no screen
+
+Totals: **542 admin routes; 148 screened; 394 not**. Split by what the route belongs to: V3 modules 337 routes (128 screened, **209 not**), legacy V2 modules 157 (20 screened, 137 not), shared 48 (0 screened, 48 not).
+
+**V3 admin routes with no screen, by module (count not screened / total):**
+
+| Module | Not screened | What it is |
+|---|---|---|
+| plans | 26 / 32 | plan, feature, price, tax-rate, override and audit-log editing (`/v3/admin/plans*`, `/features*`, `/prices*`, `/tax-rates*`, `/vendors/:id/overrides`, `/audit-logs`) |
+| directory | 20 / 20 | directory businesses, categories, locations, placements, removal requests, visits, claim phone override, moderation |
+| seo-directory | 17 / 25 | SEO pages and directory settings |
+| v3-website | 16 / 19 | content reviews, act-on-behalf sessions, banner library, onboarding queue, per-vendor site banners/media/seo/testimonials |
+| v3-services | 16 / 16 | the price book: services, add-on packs and their prices (create, approve, retire) |
+| v3-trust | 14 / 14 | business proofs, business reports, prohibited terms, takedowns, trust blocklist |
+| v3-registrar | 14 / 14 | domain margins, domain orders, identity checks, registrar runs, register for a vendor |
+| vendor-lifecycle | 9 / 10 | suspend, reinstate, convert to free, restore pro, extend grace, account deletions |
+| v3-admin-actions | 9 / 10 | listing merges, plan changes, business-name change, visits |
+| v3-service-requests | 10 / 10 | requests to our team: assign, deliver, reject, SLA sweep |
+| requests-orders | 9 / 9 | enquiry list, reports, blocklist, message outbox, vendor payment methods |
+| v3-wallet | 8 / 8 | wallets, ledger, reconcile, adjustments, freeze, expiry run |
+| provisioning | 6 / 9 | provisioning jobs (list, run, retry, cancel), invites, claim-link revoke |
+| site-publish | 5 / 8 | build, publish, rollback, noindex, theme for a vendor |
+| v3-activity | 6 / 7 | alerts and alert rules, attention list |
+| v3-profile-fields | 5 / 6 | category profile field editing |
+| site-domains | 3 / 10 | canonical, custom-domain add-on, domain state |
+| v3-theme-switch | 3 / 3 | staff theme switch, history, recover |
+| terms | 5 / 5 | terms and policy text (draft, edit, publish) |
+| v3-mail | 2 / 2 | mail settings and rules admin |
+| plan-billing | 1 / 14 | refund of a plan order |
+| seeded-sites | 1 / 17 | claim link on a seeded site (UNVERIFIED) |
+
+**Shared (all 48 unscreened):** `platform-settings` 4 (encrypted keys and pricing values: key entry for SMS, ResellerClub, OpenAI), ai-studio 9, themes 7, site-doc 8, website-themes 5, ai-templates 4, registry 5 (V2 registry), others small.
+**Legacy with no screen (137, not needed for V3):** leadspace 50, commercial 30, bos 4, social 7, domain-campaign 7, quotes 7, admin-crm 4, managed-services 4, addons 4, domains 4, subscriptions 4, and others.
+
+### 4.3 What the team needs for the business day (ranked)
+
+| Rank | Day-to-day need | Routes with no screen | Verdict |
+|---|---|---|---|
+| 1 | **Enter plan prices, features and GST** (owner said this is done in the admin dashboard) | plans (26): no screen edits plan prices, features or tax rates; only the key/value plan-settings screen, GST rate and TDS exist | **NEEDED, missing.** The `plans` and `v3-services` price book have no screen; a PENDING price shows as "not set" for theme switch, add-on packs, services and domain margins |
+| 2 | **Vendor go-live and creation** | provisioning jobs (6), site-publish build/publish/rollback (5), act-on-behalf (v3-website) | Partly covered: the On behalf screen creates and takes live a seeded listing; running a provisioning job, rollback and staff publish have no screen |
+| 3 | **Support** | none (tickets screened) | OK |
+| 4 | **Invoices and cash** | plan-billing refund (1) | Almost complete; refund missing |
+| 5 | **Partners and commission** | none | OK |
+| 6 | **Directory claims and listings** | directory (20), seo-directory (17): moderation, removal requests, claim phone override, placements | **NEEDED, missing.** Removal requests and moderation are legally time-bound; no screen |
+| 7 | **Content moderation and trust** | v3-trust (14), v3-website content reviews (3), requests-orders reports/blocklist (9) | **NEEDED, missing.** Takedowns and abuse reports cannot be handled without a screen |
+| 8 | **Account lifecycle** (suspend, reinstate, grace, deletion requests) | vendor-lifecycle (9), v3-admin-actions plan-change (9) | **NEEDED, missing** (deletion requests have a legal clock) |
+| 9 | **Settings** (terms and policy text, mail rules, alerts) | terms (5), v3-activity (6), platform-settings keys (4) | terms text and keys **NEEDED**; alert rules rare |
+| 10 | Rarely | v3-wallet adjustments and reconcile (8), v3-registrar (14, until domain sales are live), v3-service-requests (10, until the service desk runs), listing merges, theme switch staff tools (3), profile-field editing (5), seo settings | Later |
+
+---
+
+## 5. Public site and partner portal (F4)
+
+Sources: `get4domain-pub/get4domain_mvp/src/app` (Next.js routes), `src/lib/v3-public/*`, `get4domain-pub/docs/v3/PUBLIC_GAPS.md`, `get4domain-ui/apps/partner/src`, `apps/site/src`, `get4domain-ui/docs/FRONTEND_GAPS.md`.
+
+### 5.1 Switches that decide whether any of it is real
+
+| Switch | Default | Effect | Evidence |
+|---|---|---|---|
+| `V3_PUBLIC_ENABLED` | off | every new V3 public route answers 404, nothing existing changes | `src/lib/v3-public/flag.ts:8-9` |
+| `V3_PUBLIC_USE_MOCKS` | **on** (unless exactly `false`) | the typed client returns fixtures and never calls the API | `flag.ts:13-14` |
+| `V3_REGULATED_PACKS_PUBLIC` | off | CLINIC, LAB, PHARMACY, PRACTICE_LEGAL_FINANCE landing pages 404 | PUBLIC_GAPS G34 |
+| `MAIN_HOST`, `NEXT_PUBLIC_VENDOR_APP_URL`, `V3_PUBLIC_SUPPORT_*`, `V3_PUBLIC_GRIEVANCE_OFFICER_*` | unset | commercial pages replace the live pages only when set; vendor hand-off and legal contact blocks need them | G32, G38, G44 |
+| `VITE_USE_MOCKS` (vendor, admin, partner apps) | per build | sample data instead of the API | `apps/*/src/data-layer` |
+
+### 5.2 Public Next.js site routes (`get4domain_mvp/src/app`)
+
+| Route | Real or mock | Notes |
+|---|---|---|
+| `/directory`, `/directory-pages/[...path]`, `/sitemaps/[file]`, `/directory-robots` | real when flag on and mocks off | directory pages from `/v3/directory/*`, `/v3/seo-directory`; indexable only when `directoryPagesIndexable` |
+| `/claim`, `/claim/[token]`, `/claim/start/[slug]`, `/claim/live`, `/claim/screens` | real (needs `POST /v3/claim/start`, OTP routes) | claim OTP by e-mail needs `EMAIL_LIVE_SEND`; `/claim/live` is only a notice page, the approval itself is in the vendor app (journey 8) |
+| `/account/login`, `/register`, `/forgot-password`, `/reset-password` | real; proxies `/directory-api/auth`, `/register` | reset mail needs `EMAIL_LIVE_SEND` (G12, G14) |
+| `/legal`, `/legal/[doc]` and main-host `/terms`, `/privacy-policy`, `/refund-policy` | real pages with owner-default drafts (G18, G40-G42) | text awaits owner/lawyer |
+| `(v3site)/v3-site/*`: home, about, contact, features, how-it-works, industries, pricing, register, `r/[code]`, referral-link | real; pricing from `GET /v3/public/pricing` | commercial pages; replace live pages when the flag and `MAIN_HOST` are on (G32) |
+| `/vendor-site/[[...path]]` | real; relays the backend's stored page for a vendor host | **GET and HEAD only** (`vendor-site/[[...path]]/route.ts:33-34`); middleware ignores POST (`src/middleware.ts:78`) |
+| `/directory-go/[id]` | real click-out | G3: id format |
+| `/site/[subdomain]/*`, `/demo/*`, `/go/[slug]`, `/ls/[slug]`, `/admin/*`, `/dashboard/*`, `/login`, `/register` (old), `/engine` | **V2 (legacy)**, unchanged | V2 renderer and dashboards; not V3 |
+
+No placeholder pages were found in the V3 public routes. The separate Vite marketing app `get4domain-ui/apps/site/src` has a `PlaceholderPage` used by `App.tsx:54,94` for paths without content and for the 404, plus blog, guides, themes gallery, tour: marketing content, no API calls (no `/v3` path in its source). Whether it is deployed is **UNVERIFIED**.
+
+### 5.3 Partner portal (`get4domain-ui/apps/partner/src/pages`)
+
+| Page | Real route | State |
+|---|---|---|
+| LoginPage | auth login | REAL (typed client) |
+| LinkPage | `GET /v3/partner/link` | REAL; in sample mode a base address is faked |
+| BusinessesPage | `GET /v3/partner/vendors` | REAL |
+| CommissionPage | `GET /v3/partner/commission` | REAL |
+| PayoutsPage | `GET /v3/partner/payouts` | REAL |
+| (profile) | `GET /v3/partner/me` | REAL |
+
+Five of five data routes are wired. A partner cannot be created in the portal; admin creates partners (admin Partners screen, REAL). The partner host/deploy is open per FRONTEND_GAPS "Still open" (slice 8, UNVERIFIED).
+
+### 5.4 Open gaps (still open or relevant)
+
+| Gap | State | Detail |
+|---|---|---|
+| **G2** handoff answer shape | STILL ASSUMED. The public site calls `POST /v3/auth/handoff` and redirects with `#handoff=<code>`; vendor app redeems through `POST /v3/auth/handoff/redeem` (code `ho_` + 43 characters). If the route fails the visitor goes to the vendor login (FRONTEND_GAPS "SLICE 5 FOLLOW-UP", H3/H4). Works, with a login fallback; `/auth/me` role/name shape H4 unconfirmed |
+| **G31** packs list | OPEN. No public route lists the 16 packs with what each gives, or add-on packs with price status; the site keeps a copy in `lib/v3-public/packs.ts` |
+| **G37** vendor theme rendering | BLOCKED-BY-GAP. The public app cannot render the chosen theme; it relays the finished page the backend stored |
+| **termsAcceptanceRequired** | The backend sets it on the login answer (`src/auth/auth.service.ts`; `docs/API_CONTRACT_SLICE1.md:19`). A first registration answer lacks it; the terms screen must call `/auth/me`. **No vendor-app screen accepts terms**: grep of `apps/vendor` and `packages/api` finds the field only in `session.ts:27`; `POST /v3/me/terms/accept` (`src/terms`) is not called. A new terms version then blocks publishing a Pro site (`publish.service.ts:71`) with no way to accept |
+| G1 | CLOSED on the backend (`POST /v3/claim/start` in the baseline); the site forwards to it |
+| G12/G14 | e-mail switched off screens built; registered code `MAIL_DISABLED` unconfirmed |
+| G22/G23 | by-host route relays text only; binary assets (fonts, images) UNVERIFIED |
+| G24/G25/G26 | nginx order, reserved lists, directory host origin: owner/backend items; G26 is marked blocking for the directory host |
+| G32-G44 | owner decisions: page replacement at go-live, support e-mail and grievance officer, lawyer review of policy texts, billing-term wording (quarterly vs annual, G43) |
+| S4 (FRONTEND_GAPS) | only 37 of 196 category keys passed the seeded-site category check on staging; later closed by `kitCategoryFor` fallback in `listable-categories.ts` (code present); live re-check UNVERIFIED |
+| S5/S6 | profile-field loader and upload settings not applied on staging (data, not code) |
+| S7 | **no enquiry could be created in the smoke run** (see journey 3: the route exists but nothing calls it) |
+
+---
+
+## 6. Launch-critical journeys (F5)
+
+States: PASS = the whole chain exists in code; PARTIAL = chain exists but a code gap or an owner switch stands in the way; BROKEN = a link in the chain is missing in code. "Live data" claims are UNVERIFIED because nothing was run.
+
+| # | Journey | State | Trace and exact break |
+|---|---|---|---|
+| 1 | Visitor registers and gets a Free trial subdomain site live | **PARTIAL** | Public `/register` -> `/directory-api/register` -> `POST /auth/register` (public) -> `RegistrationHook` -> `ModuleTrialSite.createLiveTrialSite` builds and publishes the draft synchronously (`src/v3-trial/module-trial-site.ts:19-27`), subdomain from `TrialSignupPolicy`. Subdomain check `GET /v3/public/subdomain-availability`. Breaks only on switches/infra: `V3_PUBLIC_ENABLED` on and `V3_PUBLIC_USE_MOCKS=false`, wildcard DNS and host routing (E1 deploy plan), and the site is `noindex` until claimed (`indexing-rule.ts`). No terms-acceptance screen (section 5.4) |
+| 2 | Vendor edits content and the public site shows it | **PASS** | Vendor `grow/website` REAL: `PUT /v3/me/site/draft/field`, `/draft/publish` (`website-data.ts`); backend rebuilds the stored page; `vendor-site` route is `force-dynamic` and relays it by host. Pro-only fields are refused on Free (`website.service.ts:177`). Publishing a CTA site needs current terms accepted (see journey 1 note) |
+| 3 | Visitor sends an enquiry on the vendor site and the vendor sees it | **BROKEN** | Three breaks. (a) The theme's enquiry form posts `method=post action="/enquire"` (`themes/lib/render.mjs:389`) on the vendor host, but the public app's vendor-site handler exports only GET and HEAD (`route.ts:33-34`) and the middleware returns early for non-GET (`middleware.ts:78`), so the POST gets no handler (405, UNVERIFIED at nginx). (b) Even if forwarded, the backend route `POST /v3/public/sites/:host/requests` needs JSON with an `idempotencyKey`, a `consent` object (`contactByBusiness`, `contactByPlatform`, `marketing`) and a `kind` (`public-requests.service.ts:68-74`); the form sends `name, phone, message, consent=on, source` only. No code in `get4domain_mvp`, `get4domain-ui`, or `themes` calls that route. (c) The vendor Enquiries screen reads `GET /v3/me/inbox` (the **mail inbox**, `inbox-data.ts`), not `GET /v3/me/requests` (the requests inbox the public route writes to; `me-requests.controller.ts`), so a stored request would not appear. Also no SMS/WhatsApp/e-mail alert is ever sent (section 1.6). FRONTEND_GAPS S7 saw the same (no enquiry could be created) |
+| 4 | Vendor pays through the gateway, plan activates, invoice appears | **PARTIAL** | Chain exists: vendor `more/plan` REAL (`PlanCheckout`) -> `POST /v3/me/billing/orders` -> gateway order -> webhooks `POST /v3/payments/razorpay/webhook` / `cashfree/webhook` or `POST /v3/me/billing/orders/:id/confirm` -> `PaymentSettlementService` activates the plan and calls `PlanPaidHook` (`settlement.service.ts:63`) -> invoice at `GET /v3/me/billing/invoices` (REAL). Blocked until the owner sets `paymentsMode` to `test`/`live`, keys, and for live `PLAN_PAYMENTS_LIVE_ENABLED=true` (`payments-gate.ts:37-93`). Invoice e-mail needs `EMAIL_LIVE_SEND`. FRONTEND_GAPS S8: never exercised against a gateway; `GET /v3/me/billing/orders/:id` missing (status falls back to confirm) |
+| 5 | Cash confirmed by admin activates the plan | **PASS** | Admin Invoices screen REAL with `CashDialogs`: `POST /v3/admin/billing/vendors/:vendorId/cash-orders`, `/orders/:id/mark-paid` (settles through the same settlement service). Needs no gateway |
+| 6 | Partner link brings a vendor and commission accrues | **PASS** (needs owner data) | `/v3-site/r/[code]` reads `GET /v3/public/referral/:code`, sets a cookie; register takes `referralCode` (`auth.service.ts:51` `ReferralAttributionPort`); on payment `ReferralsService.onPlanPaid` accrues (`referrals.service.ts:133`); partner portal and admin Partners/slabs/payouts screens REAL. Commission rates, slabs and TDS must be entered by the owner or no commission is created (UNVERIFIED default) |
+| 7 | Team creates a vendor on behalf and makes the site live | **PARTIAL** | Admin On behalf REAL creates a seeded, **unclaimed** listing, issues a claim link, and has go-live (`POST /v3/admin/seeded-sites/:id/go-live`, `/claim-link`). A full vendor with a login and a plan is only created by the provisioning job (`POST /v3/admin/provisioning/jobs`, no screen) and the runner is off (`provisioningRunnerEnabled=false`); the invite is sandbox unless `inviteAdapterMode=live`. So "on behalf" works for listings, not for paying vendors |
+| 8 | Business owner claims a directory listing | **BROKEN** | Public `/claim/start/[slug]` -> `POST /v3/claim/start` -> OTP `POST /v3/claim/:token/otp/request|verify` (e-mail needs `EMAIL_LIVE_SEND`; phone sandbox) -> `POST /v3/claim/setup` (password, acceptTerms) -> the owner must **approve** with `POST /v3/me/claim/approve` for the site to be built and published (`claim-setup.controller.ts:35-45`). The typed client has `claim.approve` (`packages/api/src/wave2/vendor.ts:207-211`) but **no vendor-app screen calls it**, so the site never goes live after a claim. Also unverified: the OTP delivery with all channels off |
+| 9 | Theme switch with the wallet fee | **PARTIAL** | Vendor Theme panel REAL (`themeSwitch.preview/switch/history`, `/v3/me/site/theme/*`); first switch included. A later switch charges the price-book entry `THEME_SWITCH`; the fee is PENDING (a price is not set) and there is **no admin screen to set it** (v3-services price book, 16 routes unscreened), so later switches are refused as "price not set" until a coder or direct API call sets it. Preview is a server build (`previewUrl` / `previewHtml` shape assumed, FRONTEND_GAPS item 1) |
+| 10 | Admin enters gateway keys, GST and TDS, checkout uses them | **PASS** (UNVERIFIED live) | Admin Settings REAL: `PUT /v3/admin/payment-gateway/credentials/:gateway/:mode`, `PUT /v3/admin/gst-rate`, TDS via `PUT /v3/admin/plan-settings/tdsPercent`; `PaymentsGate` reads stored keys first (`payments-gate.ts` buildGateway with credential service) and checkout reads the GST rate. Live additionally needs ENV `PLAN_PAYMENTS_LIVE_ENABLED`. Answer shapes marked `[W4?]` in the client |
+| 11 | Support ticket from the vendor reaches the admin | **PASS** | Vendor Help REAL `POST /v3/me/tickets`, `/:id/messages`; admin Tickets REAL (`/v3/admin/tickets*`, 5 of 5). No e-mail notification either way (flags off); staff see it in the screen |
+| 12 | Plan expiry and renewal | **PARTIAL** | Expiry is computed at read time: ACTIVE, GRACE, then the track's Free plan and listing-only pages (`entitlement-engine.ts:75-102`, `site-public.service.ts:73`), no job needed. Renewal: `PlanCheckout` and `POST /v3/me/plan/renew-with-wallet` are REAL. The reminder is off (`renewalRemindersEnabled=false`) and cannot reach the vendor anyway until e-mail/SMS are live. Staff lifecycle actions (extend grace, convert to free) have no screen |
+
+**Count: PASS 5 (journeys 2, 5, 6, 10, 11); PARTIAL 5 (1, 4, 7, 9, 12); BROKEN 2 (3, 8).** Of the launch set (journeys 1 to 7 and 10): PASS 4 (2, 5, 6, 10), PARTIAL 3 (1, 4, 7), BROKEN 1 (3).
