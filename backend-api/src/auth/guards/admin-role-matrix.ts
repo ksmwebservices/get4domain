@@ -107,14 +107,13 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // ── V3 slice 5.1: plans, prices, features, taxes, discounts, settings, assignments, overrides ───────────────────────────
   // Reads: OPERATIONS and SUPER_ADMIN (MARKETING refused). Every WRITE is a money rule: SUPER_ADMIN only.
   'GET /v3/admin/plans': OPS_AND_SUPER, 'GET /v3/admin/plans/:id': OPS_AND_SUPER, 'GET /v3/admin/plans/:id/prices': OPS_AND_SUPER, 'GET /v3/admin/plans/:id/features': OPS_AND_SUPER,
-  'GET /v3/admin/features': OPS_AND_SUPER, 'GET /v3/admin/tax-rates': OPS_AND_SUPER, 'GET /v3/admin/discount-rules': OPS_AND_SUPER, 'GET /v3/admin/plan-settings': OPS_AND_SUPER,
+  'GET /v3/admin/features': OPS_AND_SUPER, 'GET /v3/admin/tax-rates': OPS_AND_SUPER, 'GET /v3/admin/plan-settings': OPS_AND_SUPER,
   'GET /v3/admin/audit-logs': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subscription': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/overrides': OPS_AND_SUPER,
   'GET /v3/admin/vendors/:id/entitlements': OPS_AND_SUPER,
   'POST /v3/admin/plans': SUPER_ONLY, 'PUT /v3/admin/plans/:id': SUPER_ONLY, 'DELETE /v3/admin/plans/:id': SUPER_ONLY,
   'POST /v3/admin/plans/:id/prices': SUPER_ONLY, 'PUT /v3/admin/prices/:priceId': SUPER_ONLY, 'DELETE /v3/admin/prices/:priceId': SUPER_ONLY,
   'POST /v3/admin/features': SUPER_ONLY, 'PUT /v3/admin/features/:key': SUPER_ONLY, 'DELETE /v3/admin/features/:key': SUPER_ONLY, 'PUT /v3/admin/plans/:id/features': SUPER_ONLY,
   'POST /v3/admin/tax-rates': SUPER_ONLY, 'PUT /v3/admin/tax-rates/:id': SUPER_ONLY, 'DELETE /v3/admin/tax-rates/:id': SUPER_ONLY,
-  'POST /v3/admin/discount-rules': SUPER_ONLY, 'PUT /v3/admin/discount-rules/:id': SUPER_ONLY, 'DELETE /v3/admin/discount-rules/:id': SUPER_ONLY,
   'PUT /v3/admin/plan-settings/:key': SUPER_ONLY,
   'POST /v3/admin/vendors/:id/subscription': SUPER_ONLY, 'POST /v3/admin/vendors/:id/overrides': SUPER_ONLY,
   'PUT /v3/admin/overrides/:overrideId': SUPER_ONLY, 'DELETE /v3/admin/overrides/:overrideId': SUPER_ONLY, 'PUT /v3/admin/vendors/:id/flags/v3_plans': SUPER_ONLY,

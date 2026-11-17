@@ -22,7 +22,6 @@ const routes = scanRoutes(src);
 const PRICE_WRITES = [
   'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'DELETE /v3/admin/plans/:id', 'POST /v3/admin/plans/:id/prices', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
   'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
-  'POST /v3/admin/discount-rules', 'PUT /v3/admin/discount-rules/:id', 'DELETE /v3/admin/discount-rules/:id',
   'PUT /v3/admin/plan-settings/:key', 'POST /v3/admin/vendors/:id/subscription',
   'POST /v3/admin/services/:key/prices', 'PUT /v3/admin/services/prices/:id', 'POST /v3/admin/services/prices/:id/approve', 'POST /v3/admin/services/prices/:id/retire',
   'POST /v3/admin/packs/:key/prices', 'PUT /v3/admin/packs/prices/:id', 'POST /v3/admin/packs/prices/:id/approve', 'POST /v3/admin/packs/prices/:id/retire',
@@ -77,7 +76,9 @@ const WORDS = /coupon|discount|offer|promo/i;
  * The slice 5.1 DISCOUNT RULE tables and their SUPER_ADMIN routes still exist (Wave 3 is additive: nothing is removed). They are LEGACY price-book configuration: no checkout reads them any more (tested below),
  * so a rule in them can never change an amount. The owner is asked whether to retire the routes. Every other version 3 route and DTO must be free of the words.
  */
-const LEGACY_DISCOUNT_RULE_ROUTES = ['GET /v3/admin/discount-rules', 'POST /v3/admin/discount-rules', 'PUT /v3/admin/discount-rules/:id', 'DELETE /v3/admin/discount-rules/:id'];
+/** Wave 4 W3: the four routes are RETIRED (owner, 17 Nov 2026): no discounts in version 3. The tables and migrations stay untouched. */
+const RETIRED_DISCOUNT_RULE_ROUTES = ['GET /v3/admin/discount-rules', 'POST /v3/admin/discount-rules', 'PUT /v3/admin/discount-rules/:id', 'DELETE /v3/admin/discount-rules/:id'];
+const LEGACY_DISCOUNT_RULE_ROUTES: string[] = [];
 const LEGACY_DISCOUNT_RULE_FILES = ['src/plans/admin/rules-admin.controller.ts', 'src/plans/admin/rules-admin.service.ts', 'src/plans/admin/dto/plans-admin.dto.ts', 'src/plans/admin/admin-validation.ts', 'src/plans/pricing/price-quote.ts', 'src/plans/pricing/price-generator.ts', 'src/plans/seed/seed-file.ts', 'src/plans/seed/seed-applier.ts', 'src/plans/seed/prisma-seed-store.ts'];
 
 /**
@@ -91,6 +92,12 @@ describe('no coupon, discount or offer in version 3', () => {
   const v3 = routes.filter((r) => PLATFORM_SURFACE.test(r.route.split(' ')[1]));
 
   it('the surface is found (the scan itself works)', () => { expect(v3.length).toBeGreaterThanOrEqual(60); });
+
+  it('the four discount rule routes are retired: no route and no repository read (an unlisted route is SUPER_ADMIN only by default) (Wave 4 W3)', () => {
+    const all = new Set(routes.map((r) => r.route));
+    for (const k of RETIRED_DISCOUNT_RULE_ROUTES) { expect([k, all.has(k)]).toEqual([k, false]); }
+    expect(fs.readFileSync(path.join(src, 'plan-billing/plan-billing.repository.ts'), 'utf8')).not.toMatch(/discountRules/);
+  });
 
   it('no platform pricing or billing route is named coupon, discount, offer or promo, except the four legacy rule routes, which are SUPER_ADMIN only', () => {
     const named = v3.filter((r) => WORDS.test(r.route.split(' ')[1])).map((r) => r.route).sort();

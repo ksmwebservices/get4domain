@@ -29,7 +29,6 @@ const SUPER_ONLY_ROUTES = [
   'POST /v3/admin/plans/:id/prices', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
   'POST /v3/admin/features', 'PUT /v3/admin/features/:key', 'DELETE /v3/admin/features/:key', 'PUT /v3/admin/plans/:id/features',
   'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
-  'POST /v3/admin/discount-rules', 'PUT /v3/admin/discount-rules/:id', 'DELETE /v3/admin/discount-rules/:id',
   'PUT /v3/admin/plan-settings/:key',
   'POST /v3/admin/vendors/:id/subscription', 'POST /v3/admin/vendors/:id/overrides', 'PUT /v3/admin/overrides/:overrideId', 'DELETE /v3/admin/overrides/:overrideId',
   'PUT /v3/admin/vendors/:id/flags/v3_plans',
@@ -65,7 +64,7 @@ const MARKETING_DENIED = [
   'POST /website-themes', 'PUT /website-themes/:id', 'DELETE /website-themes/:id',
   // S51.6: reads of the plans slice (OPERATIONS and SUPER_ADMIN; MARKETING refused)
   'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
-  'GET /v3/admin/tax-rates', 'GET /v3/admin/discount-rules', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
+  'GET /v3/admin/tax-rates', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
   // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
   'GET /v3/admin/ai/usage',
@@ -215,7 +214,7 @@ SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(414);
+    expect(oracle).toHaveLength(410);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

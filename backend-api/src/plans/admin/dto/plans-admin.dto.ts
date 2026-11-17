@@ -8,7 +8,6 @@ const PLAN_STATUS = ['DRAFT', 'ACTIVE', 'RETIRED'];
 const PRICE_STATUS = ['PROPOSED', 'APPROVED'];
 const KINDS = ['BOOLEAN', 'LIMIT', 'ENUM'];
 const STATES = ['ACTIVE', 'LIMITED', 'LOCKED_PREVIEW', 'HIDDEN'];
-const DISCOUNT_TYPES = ['TERM', 'PROMO', 'MIGRATION'];
 
 export class CreatePlanDto {
   @IsString() @MinLength(3) @MaxLength(60) key!: string;
@@ -93,32 +92,6 @@ export class UpdateTaxRateDto {
   @IsOptional() @IsString() @MaxLength(40) appliesTo?: string;
   @IsOptional() @IsBoolean() active?: boolean;
   @IsOptional() @IsDateString() validFrom?: string;
-}
-
-export class CreateDiscountRuleDto {
-  @IsIn(DISCOUNT_TYPES) type!: 'TERM' | 'PROMO' | 'MIGRATION';
-  @IsString() @MinLength(2) @MaxLength(80) name!: string;
-  @IsOptional() @IsNumber() percentOff?: number;
-  @IsOptional() @IsNumber() amountOffPaise?: number;
-  @IsOptional() @IsObject() conditions?: Record<string, unknown>;
-  @IsOptional() @IsBoolean() stackable?: boolean;
-  @IsOptional() @IsBoolean() active?: boolean;
-  @IsOptional() @IsIn(PRICE_STATUS) status?: 'PROPOSED' | 'APPROVED';
-  @IsOptional() @IsDateString() validFrom?: string;
-  @IsOptional() @IsDateString() validTo?: string;
-}
-
-export class UpdateDiscountRuleDto {
-  @IsDateString() expectedUpdatedAt!: string;
-  @IsOptional() @IsString() @MinLength(2) @MaxLength(80) name?: string;
-  @IsOptional() @IsNumber() percentOff?: number;
-  @IsOptional() @IsNumber() amountOffPaise?: number;
-  @IsOptional() @IsObject() conditions?: Record<string, unknown>;
-  @IsOptional() @IsBoolean() stackable?: boolean;
-  @IsOptional() @IsBoolean() active?: boolean;
-  @IsOptional() @IsIn(PRICE_STATUS) status?: 'PROPOSED' | 'APPROVED';
-  @IsOptional() @IsDateString() validFrom?: string;
-  @IsOptional() @IsDateString() validTo?: string;
 }
 
 export class PutPlanSettingDto {

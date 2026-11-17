@@ -202,7 +202,7 @@ describe('features and the matrix', () => {
   });
 });
 
-describe('tax, discounts and settings', () => {
+describe('tax and settings', () => {
   it('a tax rate must be between 0 and 100; a valid one is audited', async () => {
     const s = setup();
     await expect(s.rules.createTaxRate({ name: 'GST', ratePercent: 120 }, STAFF)).rejects.toBeInstanceOf(BadRequestException);
@@ -211,15 +211,9 @@ describe('tax, discounts and settings', () => {
     expect(auditRows(s.prisma).map((r) => r.action)).toEqual(['tax.create']);
   });
 
-  it('a discount needs exactly one of percentOff and amountOffPaise; a TERM discount needs a term', async () => {
+  it('the discount rule routes are retired (Wave 4 W3): the service has no discount method any more', () => {
     const s = setup();
-    await expect(s.rules.createDiscountRule({ type: 'PROMO', name: 'x' }, STAFF)).rejects.toBeInstanceOf(BadRequestException);
-    await expect(s.rules.createDiscountRule({ type: 'PROMO', name: 'x', percentOff: 10, amountOffPaise: 100 }, STAFF)).rejects.toBeInstanceOf(BadRequestException);
-    await expect(s.rules.createDiscountRule({ type: 'PROMO', name: 'x', percentOff: 101 }, STAFF)).rejects.toBeInstanceOf(BadRequestException);
-    expect(code(await rejects(s.rules.createDiscountRule({ type: 'TERM', name: 'x', percentOff: 10, conditions: { termMonths: 5 } }, STAFF)))).toBe('INVALID_TERM');
-    s.prisma.v3DiscountRule.create.mockResolvedValue({ id: 'd1', percentOff: 10 });
-    await s.rules.createDiscountRule({ type: 'TERM', name: 'Half-yearly', percentOff: 10, conditions: { termMonths: 6 } }, STAFF);
-    expect(auditRows(s.prisma).map((r) => r.action)).toEqual(['discount.create']);
+    for (const m of ['listDiscountRules', 'createDiscountRule', 'updateDiscountRule', 'deleteDiscountRule']) expect((s.rules as unknown as Record<string, unknown>)[m]).toBeUndefined();
   });
 
   it('settings: a fixed vocabulary with typed values; an unknown key is refused', () => {

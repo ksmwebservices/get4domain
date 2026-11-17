@@ -39,16 +39,6 @@ export function validateMatrixRow(r: MatrixRowInput): void {
   if (r.state === 'LOCKED_PREVIEW' && !(r.upsellText ?? '').trim()) throw new BadRequestException(`${r.featureKey}: a locked preview needs upsell text.`);
 }
 
-export interface DiscountInput { type: string; percentOff?: number | null; amountOffPaise?: number | null; conditions?: Record<string, unknown> | null }
-export function validateDiscount(d: DiscountInput): void {
-  const hasPct = d.percentOff !== undefined && d.percentOff !== null;
-  const hasAmt = d.amountOffPaise !== undefined && d.amountOffPaise !== null;
-  if (hasPct === hasAmt) throw new BadRequestException('Give exactly one of percentOff and amountOffPaise.');
-  if (hasPct && !(d.percentOff! >= 0 && d.percentOff! <= 100)) throw new BadRequestException('percentOff must be 0 to 100.');
-  if (hasAmt) validateAmount(d.amountOffPaise);
-  if (d.type === 'TERM' && !DISCOUNT_TERMS.includes(Number(d.conditions?.termMonths))) throw new BadRequestException(planError('INVALID_TERM', `A TERM discount needs conditions.termMonths in ${DISCOUNT_TERMS.join(', ')}.`));
-}
-
 export function validateTaxRate(ratePercent: unknown): number {
   if (typeof ratePercent !== 'number' || !(ratePercent >= 0 && ratePercent <= 100)) throw new BadRequestException('The tax rate must be between 0 and 100.');
   return ratePercent;

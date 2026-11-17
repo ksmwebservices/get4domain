@@ -1,4 +1,4 @@
-import { DiscountRuleRow, TaxRateRow } from '../plans/pricing/price-quote';
+import { TaxRateRow } from '../plans/pricing/price-quote';
 import { Actor } from '../plans/admin/audit.service';
 import { WalletTx } from '../v3-wallet/wallet.store';
 import { OrderStatus } from './core/order-state';
@@ -56,7 +56,6 @@ export abstract class PlanBillingRepository {
   abstract getPlanById(id: string): Promise<PlanRow | null>;
   abstract activePrice(planId: string, termMonths: number, now: Date): Promise<PriceRow | null>;
   abstract taxRates(): Promise<TaxRateRow[]>;
-  abstract discountRules(): Promise<DiscountRuleRow[]>;
   abstract vendor(vendorId: string): Promise<VendorRow | null>;
   abstract currentSub(vendorId: string): Promise<SubRow | null>;
 

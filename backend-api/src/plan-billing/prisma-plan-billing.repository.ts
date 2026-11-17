@@ -6,7 +6,7 @@ import { KeyedQueue } from '../common/keyed-queue';
 import { PrismaService } from '../prisma/prisma.service';
 import { Actor, AuditService } from '../plans/admin/audit.service';
 import { SubscriptionsService } from '../plans/subscriptions/subscriptions.service';
-import { DiscountRuleRow, TaxRateRow } from '../plans/pricing/price-quote';
+import { TaxRateRow } from '../plans/pricing/price-quote';
 import { OrderStatus } from './core/order-state';
 import {
   AssignArgs, BillingTx, DueSub, DuplicateOrderError, EventRow, InvoiceRow, NewOrder, OrderPatch, OrderRow, PlanBillingRepository, PlanRow, PriceRow, SubRow, VendorRow,
@@ -47,9 +47,6 @@ export class PrismaPlanBillingRepository extends PlanBillingRepository {
     return p ? { id: p.id, amountPaise: p.amountPaise, currency: p.currency, taxInclusive: p.taxInclusive } : null;
   }
   async taxRates(): Promise<TaxRateRow[]> { return (await this.prisma.v3TaxRate.findMany()).map((t) => ({ name: t.name, ratePercent: Number(t.ratePercent), appliesTo: t.appliesTo, active: t.active, validFrom: t.validFrom })); }
-  async discountRules(): Promise<DiscountRuleRow[]> {
-    return (await this.prisma.v3DiscountRule.findMany()).map((r) => ({ type: r.type, name: r.name, percentOff: r.percentOff === null ? null : Number(r.percentOff), amountOffPaise: r.amountOffPaise, conditions: obj(r.conditions), stackable: r.stackable, active: r.active, status: r.status as 'PROPOSED' | 'APPROVED', validFrom: r.validFrom, validTo: r.validTo }));
-  }
   async vendor(vendorId: string): Promise<VendorRow | null> { const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true, name: true, businessName: true, email: true, phone: true } }); return v ? { ...v, phone: v.phone ?? null } : null; }
   currentSub(vendorId: string) { return currentSubOn(this.prisma, vendorId); }
 

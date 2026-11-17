@@ -11,7 +11,7 @@ export interface MemSub { id: string; vendorId: string; planId: string; status: 
 /** In-memory twin of the Prisma plan billing repository: per-vendor serialised transactions that roll back on a throw, gap-free counters, unique keys, a subscription table with the same close-the-old-open-the-new rule. */
 export class MemoryBillingRepo extends PlanBillingRepository {
   plans = new Map<string, PlanRow>(); prices: Array<{ planId: string; termMonths: number; row: PriceRow; status: 'PROPOSED' | 'APPROVED'; effectiveFrom: Date }> = [];
-  taxes: TaxRateRow[] = []; discounts: DiscountRuleRow[] = []; vendors = new Map<string, VendorRow>();
+  taxes: TaxRateRow[] = []; /** INERT since Wave 4 W3: nothing reads it any more; kept so a test can plant a rule and prove it changes no amount */ discounts: DiscountRuleRow[] = []; vendors = new Map<string, VendorRow>();
   subs: MemSub[] = []; orders = new Map<string, OrderRow>(); invoices: InvoiceRow[] = []; counters = new Map<string, number>(); events = new Map<string, EventRow>();
   reminders: Array<{ subscriptionId: string; daysBefore: number; endsAt: Date; kind: string }> = [];
   audits: Array<{ actor: Actor; action: string; entityId: string | null; before: unknown; after: unknown }> = [];
@@ -30,7 +30,6 @@ export class MemoryBillingRepo extends PlanBillingRepository {
     return c[0] ? { ...c[0].row } : null;
   }
   async taxRates() { return this.taxes.map((t) => ({ ...t })); }
-  async discountRules() { return this.discounts.map((d) => ({ ...d })); }
   async vendor(id: string) { const v = this.vendors.get(id); return v ? { ...v } : null; }
   async currentSub(vendorId: string): Promise<SubRow | null> {
     const s = this.subs.find((x) => x.vendorId === vendorId && x.current); if (!s) return null; const p = this.plans.get(s.planId)!;
