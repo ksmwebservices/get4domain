@@ -1,6 +1,7 @@
 import { classifyHost, type HostClass, type HostConfig, originFor, readHostConfig } from './hostnames';
 import { isV3PublicEnabled } from './flag';
 import { ALL_INDUSTRY_SLUGS, industryBySlug } from './industries';
+import { LEGAL_PAGE_PATHS } from './legal-paths';
 import { LIVE_SEGMENTS } from './routes';
 
 /**
@@ -38,10 +39,11 @@ export const DIRECTORY_HOME_ROUTE = '/directory';
  * The commercial public pages that replace live pages on the main host while the host layer is on. The live pages are not edited: these exact addresses are rewritten to the
  * pages under /v3-site (and /login to the Slice 4 sign-in). Sub-paths (/industries/travel and the rest) and every other live address are untouched.
  */
-const MAIN_PAGES: Readonly<Record<string, string>> = {
+const BASE_MAIN_PAGES: Readonly<Record<string, string>> = {
   '/': '/v3-site', '/pricing': '/v3-site/pricing', '/register': '/v3-site/register', '/how-it-works': '/v3-site/how-it-works', '/industries': '/v3-site/industries',
   '/features': '/v3-site/features', '/about': '/v3-site/about', '/contact': '/v3-site/contact', '/login': '/account/login', '/referral-link': '/v3-site/referral-link',
 };
+const MAIN_PAGES: Readonly<Record<string, string>> = { ...BASE_MAIN_PAGES, ...Object.fromEntries(LEGAL_PAGE_PATHS.map((p) => [p, `/v3-site${p}`])) };
 const INDUSTRY_PATH = /^\/industries\/([a-z0-9-]+)\/?$/;
 const REFERRAL_PATH = /^\/r\/([A-Za-z0-9_-]{1,64})\/?$/;
 

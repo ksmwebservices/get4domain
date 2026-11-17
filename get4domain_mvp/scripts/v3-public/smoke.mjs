@@ -393,6 +393,89 @@ async function industriesFlagOff() {
   ok(hub.status === 200 && !/See what it gives/.test(hub.text), 'industries flag off: the live /industries page is unchanged');
 }
 
+// ---- Dispatch D1: legal and company pages ------------------------------------------------------------------------------------------------------------------------------
+const LEGAL_PATHS = [...readFileSync(path.join(root, 'src', 'lib', 'v3-public', 'legal-paths.ts'), 'utf8').matchAll(/'(\/[a-z-]+)'/g)].map((m) => m[1]);
+const LEGAL_LIVE_PATHS = ['/terms', '/privacy-policy', '/refund-policy']; // these paths exist on the live site; the new text replaces them only with the flag on and a main host
+const NEGATABLE = /\b(discounts?|coupons?|offers?|promo(?:tion|tional)?s?|guarantee[sd]?)\b/i;
+const NEGATION = /\b(no|not|never|nor|without|cannot|neither|n't)\b/i;
+/** Problems in the rendered text of a policy page: banned words, a digit, a time word, a number of a policy (none is decided), a placeholder, a promise that is not a negation. */
+function legalTextProblems(t) {
+  const out = [];
+  if (/\b(workspace|BOS|LeadSpace)\b/i.test(t)) out.push('a banned product word');
+  if (/\bleads?\b/i.test(t)) out.push('leads');
+  if (/\b(\d+\s*(seconds?|minutes?|hours?|days?|weeks?|months?|years?)|within|instantly|24\/7)\b/i.test(t)) out.push('a timeframe');
+  if (/₹|\brs\.?\s*\d|\binr\b|%/i.test(t)) out.push('a price or percentage');
+  if (/\b(arbitrat\w*|section\s+\d+)/i.test(t)) out.push('arbitration or a section number');
+  if (/\bx{3,}\b|\bTBD\b|\bTODO\b|lorem ipsum|\[[^\]]*\]|\{[a-z.]+\}/i.test(t)) out.push('a placeholder');
+  if (/\b(best|number one|world-class|leading)\b/i.test(t)) out.push('a ranking claim');
+  for (const s of t.split(/(?<=[.!?])\s+/)) if (NEGATABLE.test(s) && !NEGATION.test(s)) out.push(`a promise without a negation: ${s.slice(0, 80)}`);
+  return out;
+}
+
+function policyPageChecks(tag, p, r, mainHost) {
+  ok(r.status === 200, `${tag}: ${p} answers 200 (${r.status})`);
+  ok(h1s(r.text) === 1, `${tag}: ${p} has exactly one h1`);
+  ok(/<main[\s>]/.test(r.text) && /<header[\s>]/.test(r.text) && /<footer[\s>]/.test(r.text) && /href="#main"/.test(r.text), `${tag}: ${p} has landmarks and a skip link`);
+  const title = titleOf(r.text);
+  ok(title.length > 0 && title.length <= 60, `${tag}: ${p} title is at most 60 characters (${title.length})`);
+  ok(descOf(r.text).length >= 40 && descOf(r.text).length <= 170, `${tag}: ${p} has a description of sensible length`);
+  ok(new RegExp(`<link rel="canonical" href="https://${mainHost}${p}"`).test(r.text) && /name="robots" content="index, follow"/.test(r.text), `${tag}: ${p} canonical on the main host and indexable`);
+  const blocks = ldBlocks(r.text);
+  let parsed = [];
+  try { parsed = blocks.map((b) => JSON.parse(b)); } catch { parsed = null; }
+  ok(parsed !== null && parsed.some((x) => x['@type'] === 'BreadcrumbList'), `${tag}: ${p} has BreadcrumbList JSON-LD that parses`);
+  ok(!/"Organization"|"price"|"Offer"|aggregateRating|"review"/i.test(blocks.join('')), `${tag}: ${p} JSON-LD has no organization, price, offer, rating or review markup`);
+  const t = visible(r.text);
+  ok(/Effective\s*:/.test(t) && /Version\s*:/.test(t) && /\b\d{1,2} [A-Z][a-z]+ \d{4}\b/.test(t), `${tag}: ${p} shows an effective date and a version`);
+  const toc = [...r.text.matchAll(/<a href="#([a-z-]+)"/g)].map((m) => m[1]).filter((id) => id !== 'main');
+  ok(toc.length >= 3 && toc.every((id) => new RegExp(`<section id="${id}"`).test(r.text)), `${tag}: ${p} has a table of contents whose links reach a section`);
+  for (const issue of legalTextProblems(t)) ok(false, `${tag}: ${p} has ${issue}`);
+  ok(!/tel:|wa\.me|<form|<input|<button/i.test(r.text), `${tag}: ${p} has no contact link, form or button`);
+  ok(/KSM QUANTUM TECHNOLOGIES/.test(t) && /Tidel Park/.test(t), `${tag}: ${p} names the firm and its office`);
+  ok(!/\bGSTIN\b/.test(t), `${tag}: ${p} prints no GSTIN line while none is set`);
+}
+
+// Flag on, host names set: every policy page on the main host.
+async function legalPages() {
+  const H = (p) => getHost(HOST, M, p);
+  ok(LEGAL_PATHS.length >= 1, `legal: the path list was read (${LEGAL_PATHS.length})`);
+  for (const p of LEGAL_PATHS) {
+    const r = await H(p);
+    policyPageChecks('legal', p, r, M);
+    { const t = await H(`${p}/`); ok(t.status === 200 || ((t.status === 308 || t.status === 301) && /\/[a-z-]+$/.test(t.headers.get('location') ?? '')), `legal: ${p}/ with a trailing slash answers 200 or redirects to the plain address (${t.status})`); }
+    ok((await H(`/v3-site${p}`)).status === 404, `legal: the internal /v3-site${p} is a 404`);
+    ok(!/Effective\s*:/.test(visible((await getHost(HOST, D, p)).text)), `legal: ${p} is not a policy page on the directory host`);
+  }
+  ok((await H('/not-a-policy')).status === 404, 'legal: an unknown address on the main host is still a 404');
+  const sm = await H('/sitemap-industries.xml');
+  ok(LEGAL_PATHS.every((p) => sm.text.includes(`<loc>https://${M}${p}</loc>`)), 'legal: the flag-on sitemap lists every policy page');
+  const live = (await H('/sitemap.xml')).text;
+  ok(LEGAL_PATHS.filter((p) => !LEGAL_LIVE_PATHS.includes(p)).every((p) => !live.includes(`${p}</loc>`)), 'legal: the live sitemap.xml lists none of the new-only policy pages');
+}
+
+// Flag off, host names set: nothing changes.
+async function legalFlagOff() {
+  const O = (p) => getHost(OFF, M, p);
+  const unknown = await O('/zzz-not-a-page');
+  for (const p of LEGAL_PATHS) {
+    const r = await O(p);
+    if (LEGAL_LIVE_PATHS.includes(p)) ok(r.status === 200 && !/Effective\s*:/.test(visible(r.text)), `legal flag off: the live ${p} still answers 200 and is not the new policy page (${r.status})`);
+    else ok(r.status === unknown.status && !/Effective\s*:/.test(visible(r.text)), `legal flag off: ${p} behaves as an unknown address (${r.status} against ${unknown.status})`);
+    ok((await O(`/v3-site${p}`)).status === 404, `legal flag off: the internal /v3-site${p} is a 404`);
+  }
+  const sm = await O('/sitemap.xml');
+  ok(LEGAL_PATHS.filter((p) => !LEGAL_LIVE_PATHS.includes(p)).every((p) => !sm.text.includes(`${p}</loc>`)), 'legal flag off: the live sitemap.xml lists none of the new-only policy pages');
+}
+
+// Flag on, no host names: the host layer is off, so the live pages answer and the new-only pages are not routed.
+async function legalNoHosts() {
+  for (const p of LEGAL_PATHS) {
+    const r = await get(ON, p);
+    if (LEGAL_LIVE_PATHS.includes(p)) ok(r.status === 200 && !/Effective\s*:/.test(visible(r.text)), `legal (no host names): the live ${p} still answers 200 (${r.status})`);
+    else ok(r.status === 404 && !/Effective\s*:/.test(visible(r.text)), `legal (no host names): ${p} is not routed (${r.status})`);
+  }
+}
+
 async function postJson(host, p, body) {
   const r = await getHostBody(HOST, host, p, JSON.stringify(body));
   return JSON.parse(r.text);
@@ -635,6 +718,9 @@ try {
   await industriesRegulatedOn();
   await industriesNoHosts();
   await industriesFlagOff();
+  await legalPages();
+  await legalFlagOff();
+  await legalNoHosts();
   await matcherRegression();
   noConsole();
 } finally {
