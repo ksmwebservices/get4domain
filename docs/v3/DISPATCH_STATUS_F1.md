@@ -11,7 +11,7 @@ Branch v3-audit (from v3-pack). Documents only. Never pushed.
 | F4 | DONE | see git log | Section 5 |
 | F5 | DONE | see git log | Section 6 (2 BROKEN: enquiry, claim approve) |
 | F6 | DONE | see git log | Sections 7 and 8, plus theme inventory section 9 (user-added) with theme jobs T1-T5 |
-| F7 | TODO | - | DISPATCH_REPORT_F1.md |
+| F7 | DONE | see git log | DISPATCH_REPORT_F1.md written; stop, not pushed |
 
 ## ASSUMPTIONS
 1. Branch v3-audit already existed and was clean at start (only the known route-classification.json line-endings difference), so no new branch was created.
