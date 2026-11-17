@@ -141,3 +141,64 @@ Theme codes: `THEME_ALREADY_ACTIVE`, `THEME_NOT_ALLOWED` (`reason` says why), `T
 ## A3-4. Error codes added in A3
 
 `THEME_SWITCH_FEE_PENDING`, `TAX_RATE_IN_FORCE`. Routes: none added or removed.
+
+# Dispatch A4 additions (branch `v3-smoke2`; no new migration)
+
+## A4-1. Held payments: business name, and the role rule pinned
+
+Every row of `GET /v3/admin/billing/held-payments` and the answer of `GET /v3/admin/billing/held-payments/:id` now carry **`businessName`**: the business name on the vendor's profile, or `null` when it is blank or the vendor can no longer be read. Additive; nothing else changed. Show `businessName ?? vendorId`.
+
+Who may call these routes did not change and is now pinned by tests through the real guard stack: **ADMIN and SUPER_ADMIN only**. Every other staff role (OPERATIONS, SALES and its labels, SUPPORT), a referral partner and a vendor get **403** on the list, the detail and the resolve route, for any id (real, unknown, malformed), before any lookup. No token, a bad token or a tampered token gets **401**. A token cannot claim a staff role: the role is read from the database row, never from the token. For ADMIN and SUPER_ADMIN, an unknown id (or an order that is not held) is **404 `HELD_PAYMENT_NOT_FOUND`**.
+
+## A4-2. Theme routes, complete
+
+All money is in paise, before GST unless a field says otherwise. Errors have the shape `{ success:false, statusCode, message, code, ... }`; switch on `code`.
+
+### Themes list (three views of the same library)
+| Route | Roles | Answer |
+|---|---|---|
+| `GET /v3/public/themes?pack=KEY` | public (no login), cacheable | `{ pack:{key,name}, matchedBy:"CATEGORY"\|"TRACK"\|"NONE", items:[{ id, name, tier, tracks[], access:"DEFAULT"\|"LIBRARY", categories[] }] }`. No price, no personal data. Unknown or disabled pack: 404 `THEME_PACK_NOT_FOUND`. |
+| `GET /v3/me/site/themes` | vendor OWNER | `{ selectedThemeId, library:boolean, fee:{ priceStatus:"SET"\|"PENDING", pricePaise:number\|null, taxNote:"Before GST", purchasable:boolean }, items:[{ id, name, tier, tracks[], access, selected, allowed:boolean, reason:null\|"PLAN_REQUIRED"\|"NOT_FOR_YOUR_BUSINESS" }] }`. |
+| `GET /website-themes`, `GET /website-themes/mine` | public / vendor | the older theme catalogue (marketplace themes); not the pack library above. |
+
+### `POST /v3/me/site/theme/preview` (vendor OWNER; free; stores nothing)
+Request `{ "themeId": "<theme id, 2..81 chars>" }`. Response 200:
+`{ themeId, current, alreadyActive, previewRef, expiresAt, html, css, warnings[], hiddenFields[], fee }`. `html` and `css` are the finished home page drawn with the vendor's own content. `fee` is the quote of what a switch would cost now:
+- the included switch: `{ kind, free:true, amountPaise:0 }`
+- a paid switch with an approved price: `{ kind, free:false, price:{ amountPaise, taxInclusive }, tax:{ taxPaise, totalPaise, lines[] }, amountPaise:<total incl. GST>, funding:{ kind:"WALLET", amountPaise } }` or `funding:{ kind:"NONE", reason:"WALLET_NOT_ACTIVE"|"WALLET_FROZEN"|"TAX_NOT_SET"|"INSUFFICIENT_WALLET", shortfallPaise? }`
+- no approved price: `{ kind, free:false, priceNote:"Price not set", funding:{ kind:"NONE", reason:"PRICE_NOT_SET" } }` (no number).
+Errors: 400 `THEME_SWITCH_INVALID` (bad id), 409 `THEME_NOT_ALLOWED` (`reason` says why).
+
+### `POST /v3/me/site/theme/switch` (vendor OWNER; idempotent)
+Request `{ "themeId": "<id>", "idempotencyKey": "<8..80 of letters, digits, - : _>" }`. Response 200:
+`{ id, from, to, kind:"INCLUDED"|"PAID"|"COMPLIMENTARY_STAFF"|"RESTORE", status:"APPLIED", by:"YOU"|"OUR_TEAM"|"SYSTEM", amountPaise:number|null, viaRequest:boolean, reason:null|string, note:null|string, publicationId, hiddenFields[], at, replay:boolean }`. `amountPaise` is the amount charged including GST (null for an included or gifted switch). The same key with the same theme again answers the same switch with `replay:true` and charges once. The first switch is included in a paid plan; each later one is charged to the wallet.
+Errors (409 unless noted):
+| code | when |
+|---|---|
+| `THEME_SWITCH_INVALID` (400) | bad key or theme id |
+| `THEME_SWITCH_PLAN_STATE` | the plan is not a paid plan in force or in grace (a **Free** vendor is refused here) |
+| `THEME_ALREADY_ACTIVE` | that theme is already the vendor's theme |
+| `THEME_NOT_ALLOWED` (+`reason`) | the plan or the business kind does not allow that theme |
+| `THEME_SWITCH_FEE_PENDING` | a paid switch while the THEME_SWITCH price is not approved; nothing charged |
+| `INSUFFICIENT_WALLET` (+`shortfallPaise`) | the wallet cannot cover the fee including GST; nothing charged |
+| `WALLET_NOT_ACTIVE` (403), `WALLET_FROZEN` (403) | wallet state, checked before the price |
+| `TAX_NOT_CONFIGURED` | no GST rate in force |
+| `WALLET_IDEMPOTENCY_CONFLICT` | the key was used for a different theme |
+| `THEME_SWITCH_RETRY` | the site changed while preparing; nothing charged; try again |
+| `THEME_SWITCH_FAILED` | applying failed; the theme is put back and any charge reversed |
+
+### `GET /v3/me/site/theme/fee` (vendor OWNER)
+`{ pricePaise:number|null, priceStatus:"SET"|"PENDING", taxNote:"Before GST", priceNote?:"Price not set" }`. PENDING always has `pricePaise:null`.
+
+### `GET /v3/me/site/theme/history?page&pageSize` (vendor OWNER; pageSize up to 100)
+`{ items:[ same shape as a switch answer, without replay ], page, pageSize, total }`, newest first.
+
+### Staff
+- `POST /v3/admin/vendors/:vendorId/site/theme/switch` body `{ themeId, idempotencyKey, funding:"WALLET"|"COMPLIMENTARY"|"SERVICE_REQUEST", reason:<5..300 chars>, serviceRequestId? }`; `GET /v3/admin/vendors/:vendorId/site/theme/history` (adds `performedById, ledgerEntryId, serviceRequestId, idempotencyKey, failureReason, reasonRaw`); `POST /v3/admin/theme-switches/recover` `{ olderThanMinutes:1..10080 }` answers `{ applied, reversed }`. Roles per the matrix (OPERATIONS, ADMIN, SUPER_ADMIN). Extra code: `THEME_SWITCH_FREE_USE_DIRECT` (a request cannot carry the included switch).
+
+### How the THEME_SWITCH price is set
+No new route is needed; the price book already does it, **SUPER_ADMIN only** at each step. The seed leaves one PROPOSED row (29,900 paise, before GST, the owner-approved figure); it is not in force and the fee shows PENDING until approved.
+1. `GET /v3/admin/services/THEME_SWITCH` -> find the row in `prices` (status PROPOSED).
+2. (optional) `POST /v3/admin/services/THEME_SWITCH/prices` `{ amountPaise, taxCategory?, taxInclusive?, note? }` to propose a different amount, or `PUT /v3/admin/services/prices/:id` to edit a PROPOSED row.
+3. `POST /v3/admin/services/prices/:id/approve` `{ "effectiveFrom": "<ISO 8601 date>" }` (not in the past; later than the price in force). From that date `GET fee` shows `SET` and a paid switch can be bought.
+`POST .../prices/:id/retire` takes a price out. OPERATIONS and ADMIN cannot do any of these (matrix and ADMIN extension). No price is ever set by code.

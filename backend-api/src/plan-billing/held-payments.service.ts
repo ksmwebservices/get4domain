@@ -8,7 +8,7 @@ import { PaymentSettlementService, SettleCtx } from './settlement.service';
 
 export interface HeldFilter { vendorId?: string; gateway?: string; from?: Date; to?: Date; skip: number; take: number }
 export interface HeldView {
-  id: string; vendorId: string; gateway: string; status: string; heldReason: string; expectedTotalPaise: number; amountSeenPaise: number | null; currency: string;
+  id: string; vendorId: string; /** the business name on the vendor's profile, or null when it has none or the business no longer exists */ businessName: string | null; gateway: string; status: string; heldReason: string; expectedTotalPaise: number; amountSeenPaise: number | null; currency: string;
   providerOrderId: string | null; gatewayPaymentId: string | null; heldAt: Date; resolution: 'ACCEPTED' | 'REJECTED' | null; resolvedBy: string | null; resolvedAt: Date | null; note: string | null;
 }
 export interface ResolveOutcome { status: string; outcome: 'ACCEPTED' | 'REJECTED' | 'ALREADY_ACCEPTED' | 'ALREADY_REJECTED'; invoice: { number: string } | null; mail?: 'PENDING' | 'SENT' | 'FAILED' | 'NO_ADDRESS' }
@@ -27,10 +27,10 @@ export class HeldPaymentsService {
   private rejected(o: OrderRow): boolean { return o.status === 'FAILED' && o.paymentId !== null; }
   private accepted(o: OrderRow): boolean { return o.status === 'PAID' && o.settledByName !== null && o.reason !== null && o.source === 'SELF'; }
 
-  private view(o: OrderRow): HeldView {
+  private view(o: OrderRow, businessName: string | null): HeldView {
     const rej = this.rejected(o); const acc = this.accepted(o);
     return {
-      id: o.id, vendorId: o.vendorId, gateway: o.gateway ?? 'razorpay', status: o.status, heldReason: heldReason(o), expectedTotalPaise: o.amountPaise, amountSeenPaise: o.paidAmountPaise, currency: o.currency,
+      id: o.id, vendorId: o.vendorId, businessName, gateway: o.gateway ?? 'razorpay', status: o.status, heldReason: heldReason(o), expectedTotalPaise: o.amountPaise, amountSeenPaise: o.paidAmountPaise, currency: o.currency,
       providerOrderId: o.providerOrderId, gatewayPaymentId: o.paymentId, heldAt: o.updatedAt,
       resolution: rej ? 'REJECTED' : acc ? 'ACCEPTED' : null, resolvedBy: rej || acc ? o.settledByName : null, resolvedAt: rej ? o.settledOn : acc ? o.paidAt : null, note: rej || acc ? o.reason : null,
     };
@@ -38,14 +38,21 @@ export class HeldPaymentsService {
 
   async list(f: HeldFilter): Promise<{ items: HeldView[]; total: number }> {
     const r = await this.repo.listOrders({ status: 'REVIEW', ...(f.vendorId ? { vendorId: f.vendorId } : {}), ...(f.gateway ? { gateway: f.gateway } : {}), ...(f.from ? { from: f.from } : {}), ...(f.to ? { to: f.to } : {}), skip: f.skip, take: f.take });
-    return { items: r.items.map((o) => this.view(o)), total: r.total };
+    const names = new Map<string, string | null>();
+    for (const id of new Set(r.items.map((o) => o.vendorId))) names.set(id, await this.businessNameOf(id));
+    return { items: r.items.map((o) => this.view(o, names.get(o.vendorId) ?? null)), total: r.total };
+  }
+
+  /** The vendor's business name for the screen; null when blank or when the vendor row cannot be read (the held payment itself must still show). */
+  private async businessNameOf(vendorId: string): Promise<string | null> {
+    try { const v = await this.repo.vendor(vendorId); const n = v?.businessName?.trim(); return n ? n : null; } catch { return null; }
   }
 
   /** A held payment, or one that was resolved (it stays readable). Any other order answers exactly like one that does not exist. */
   async detail(id: string): Promise<HeldView> {
     const o = await this.repo.getOrder(id);
     if (!o || !(o.status === 'REVIEW' || this.rejected(o) || this.accepted(o))) throw new NotFoundException(billingError('HELD_PAYMENT_NOT_FOUND', 'That held payment does not exist.'));
-    return this.view(o);
+    return this.view(o, await this.businessNameOf(o.vendorId));
   }
 
   async resolve(id: string, input: HeldResolveInput, actor: Actor, byName: string): Promise<ResolveOutcome> {
