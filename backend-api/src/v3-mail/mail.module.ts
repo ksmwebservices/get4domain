@@ -1,5 +1,6 @@
 import { Global, Module, Type } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { TermsModule } from '../terms/terms.module';
 import { IdentityOtpSender } from '../v3-registrar/identity.service';
 import { InboundEmailController, MeInboxController } from './api/inbox.controllers';
 import { EmailPort, EmailTransport, GuardedEmailPort, ResendTransport } from './email.port';
@@ -20,7 +21,7 @@ export const MAIL_CONTROLLERS: Type<unknown>[] = [MeInboxController, InboundEmai
 /** Lane 1 email, the enquiry inbox and the identity code sender (Block 4b). Global so the registrar can take the OTP sender and later modules can take EmailPort. PlansModule (entitlements) is global. */
 @Global()
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, TermsModule],
   controllers: MAIL_CONTROLLERS,
   providers: [
     { provide: MAIL_ENABLED, useValue: envMailEnabled },
