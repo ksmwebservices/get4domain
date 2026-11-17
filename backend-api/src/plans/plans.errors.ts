@@ -7,6 +7,8 @@ export const PLAN_ERROR_CODES = [
   'FREE_PLAN_HAS_NO_PRICE', 'REASON_REQUIRED', 'UNKNOWN_PLAN', 'UNKNOWN_VENDOR',
   // Wave 4 W7: the GST rate setting
   'GST_RATE_INVALID', 'GST_RATE_EXISTS',
+  // A rate that has already started was used to price orders: the generic tax-rate PUT and DELETE refuse to rewrite or remove it (add a new rate that starts later instead)
+  'TAX_RATE_IN_FORCE',
 ] as const;
 export type PlanErrorCode = (typeof PLAN_ERROR_CODES)[number];
 

@@ -98,3 +98,46 @@ Items: `{ month, grossMinor, tdsMinor, netMinor, totalMinor, status, reference, 
 
 Added: `GET /v3/admin/billing/held-payments`, `GET /v3/admin/billing/held-payments/:id`, `POST /v3/admin/billing/held-payments/:id/resolve`, `GET /v3/admin/payment-gateway/credentials`, `PUT` and `DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode`, `GET /v3/admin/gst-rate`, `PUT /v3/admin/gst-rate`, `GET /v3/admin/commission/payouts/preview`, `GET /v3/admin/commission/payouts/export.csv`.
 Removed: `GET`, `POST /v3/admin/discount-rules`, `PUT`, `DELETE /v3/admin/discount-rules/:id`.
+
+---
+
+# Dispatch A3 additions (smoke branch `v3-smoke`; no new route, no new migration)
+
+## A3-1. `POST /auth/register` (closes gaps G2 and G28; behaviour checked on the local API against staging)
+
+Public. Rate limited per client address (default 5 a minute; 429 beyond it).
+
+Body (all strings; any field not listed is refused with 400): `name`, `email`, `password`, `businessName`, `industry` (all required); `phone`, `referralCode` (max 20), `subdomain` (max 63), `product` (`"leadspace"` only), `track` (`"handyman"`, `"professional"`, `"ecommerce"`) optional. `password`: at least 8 characters with one capital letter and one digit. `industry` is a free text key (it is not checked against a list here).
+
+**Success: HTTP 201** (not 200). `data`: `{ accessToken, user:{ id, name, email, role:"VENDOR", businessName, industry, subdomain } }`, the same shape as login. `subdomain` is the one asked for, or one made from the business name. Differences from login: a fresh registration does **not** carry `termsAcceptanceRequired` (login, the replay below and `GET /auth/me` do), so call `GET /auth/me` right after registering before deciding whether to show the terms screen. The token works at once (7 days).
+
+**Replay.** The same email, the same business name and the **right** password again signs in to the account that exists and makes nothing new; it also answers 201 and includes `termsAcceptanceRequired`. A wrong password or another business name falls through to the refusal below.
+
+**Errors** (body is the usual `{ success:false, statusCode, message, data, timestamp }`, plus `code` where one exists):
+
+| HTTP | `code` | When |
+|---|---|---|
+| 400 | none | validation: `message` is one sentence naming what to fix ("Email does not look right. ..."); `data.fields` lists the field names when they can be named (`["name","email",...]`), otherwise `data` is `null`: show `message`, do not depend on `fields`. A field the API does not know is also 400 ("Extra cannot be changed here.") |
+| 400 | `SUBDOMAIN_INVALID` | not lowercase letters, digits and hyphens, too short or too long, begins or ends with a hyphen; `message` says which |
+| 400 | `SUBDOMAIN_RESERVED` | a reserved name (for example `admin`) |
+| 409 | `HOST_UNAVAILABLE` | the subdomain is taken or blocked ("That address is not available."); check first with `GET /v3/public/subdomain-availability?name=` |
+| 409 | none | the email already has an account and the replay conditions did not hold: "A vendor with this email already exists" (no `code`; switch on the status) |
+| 429 | none | too many attempts from this address |
+
+A bad `referralCode` is **never** an error (it is ignored). The subdomain is checked before anything is created, so a refused subdomain leaves no account behind.
+
+## A3-2. Theme switch, as built (Batch 4, slice 5.16d) and the fee-pending code
+
+Vendor owner routes (`/v3/me/site/theme/...`, owner only): `POST preview` `{themeId}` (free, stores nothing; its `fee` says what a switch would cost), `POST switch` `{themeId, idempotencyKey}` (the key is 8 to 80 of letters, digits, `-`, `:`, `_`), `GET fee`, `GET history`. The list of themes and `selectedThemeId` stay on `GET /v3/me/site/themes`; the chosen theme is `themeId` in `GET /v3/me/site` and `GET /v3/admin/vendors/:id/site` (the published pages are drawn from it). Staff: `POST /v3/admin/vendors/:vendorId/site/theme/switch`, `GET /v3/admin/vendors/:vendorId/site/theme/history`, `POST /v3/admin/theme-switches/recover` (OPERATIONS, ADMIN, SUPER_ADMIN).
+
+Rules: only while the plan is a paid one in force or in grace (a Free vendor gets 409 `THEME_SWITCH_PLAN_STATE`). The first switch is included; every later one is charged to the wallet in one transaction with an audit row and an idempotency key (a repeat with the same key is one switch and one charge; the same key for another theme is 409 `WALLET_IDEMPOTENCY_CONFLICT`). **The fee comes from the price book entry `THEME_SWITCH`, which only the SUPER_ADMIN sets. While it has no approved price: `GET fee` answers `{ pricePaise:null, priceStatus:"PENDING", taxNote:"Before GST", priceNote:"Price not set" }`, the preview quote has no amount, and a paid switch is refused with 409 `THEME_SWITCH_FEE_PENDING`. No number is shown or charged in its place.** The included first switch and a staff gift do not need the fee. A short wallet is 409 `INSUFFICIENT_WALLET` with `shortfallPaise`.
+
+Theme codes: `THEME_ALREADY_ACTIVE`, `THEME_NOT_ALLOWED` (`reason` says why), `THEME_SWITCH_PLAN_STATE`, `THEME_SWITCH_FAILED`, `THEME_SWITCH_INVALID`, `THEME_SWITCH_FREE_USE_DIRECT`, `THEME_SWITCH_NOT_FOUND`, `THEME_SWITCH_RETRY`, and new: `THEME_SWITCH_FEE_PENDING` (replaces `SERVICE_PRICE_NOT_SET` on this path only).
+
+## A3-3. The generic tax-rate routes can no longer rewrite history
+
+`PUT /v3/admin/tax-rates/:id` and `DELETE /v3/admin/tax-rates/:id` (SUPER_ADMIN) now answer **409 `TAX_RATE_IN_FORCE`** for any rate whose start has passed (in force, superseded or switched off): it priced orders, so it is history. A rate still waiting to start can be changed or deleted as before, but cannot be moved to a start in the past (same code). To change the GST rate, add a new one that starts later with `PUT /v3/admin/gst-rate`. `POST /v3/admin/tax-rates` is unchanged. An unknown id is still 404.
+
+## A3-4. Error codes added in A3
+
+`THEME_SWITCH_FEE_PENDING`, `TAX_RATE_IN_FORCE`. Routes: none added or removed.

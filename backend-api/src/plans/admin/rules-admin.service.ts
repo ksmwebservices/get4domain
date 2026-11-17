@@ -33,11 +33,19 @@ export class RulesAdminService {
     return { ...row, ratePercent: Number(row.ratePercent) };
   }
 
+  /** A rate whose start has passed was (or could have been) used to price an order: it is history. The generic PUT and DELETE must not rewrite or remove it; a change is a NEW rate that starts later (PUT /v3/admin/gst-rate). */
+  private assertNotStarted(before: { validFrom: Date }): void {
+    if (before.validFrom.getTime() <= this.clock().getTime()) throw new ConflictException(planError('TAX_RATE_IN_FORCE', 'This rate has already started, so it cannot be changed or removed. Add a new rate that starts later instead.'));
+  }
+
   async updateTaxRate(id: string, dto: UpdateTaxRateDto, actor: Actor) {
     if (dto.ratePercent !== undefined) validateTaxRate(dto.ratePercent);
     const row = await this.prisma.$transaction(async (tx) => {
       const before = await tx.v3TaxRate.findUnique({ where: { id } });
       if (!before) throw new NotFoundException('That tax rate does not exist.');
+      this.assertNotStarted(before);
+      // a rate still waiting to start must not be moved into the past either: that would rewrite what orders were priced with
+      if (dto.validFrom !== undefined && new Date(dto.validFrom).getTime() <= this.clock().getTime()) throw new ConflictException(planError('TAX_RATE_IN_FORCE', 'A rate cannot be made to start in the past. Choose a later day.'));
       const data: Prisma.V3TaxRateUpdateManyMutationInput = { updatedAt: new Date() };
       if (dto.name !== undefined) data.name = dto.name;
       if (dto.ratePercent !== undefined) data.ratePercent = dto.ratePercent;
@@ -58,6 +66,7 @@ export class RulesAdminService {
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.v3TaxRate.findUnique({ where: { id } });
       if (!before) throw new NotFoundException('That tax rate does not exist.');
+      this.assertNotStarted(before);
       await tx.v3TaxRate.delete({ where: { id } });
       await this.audit.record(tx, actor, 'tax.delete', 'tax_rate', id, before, null);
     });
