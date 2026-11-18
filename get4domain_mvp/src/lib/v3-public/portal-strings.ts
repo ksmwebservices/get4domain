@@ -6,7 +6,7 @@
  */
 export const PORTAL = {
   brand: 'Get4Domain',
-  tagline: 'Local search and business websites',
+  tagline: 'Local business directory, search and web app',
   skip: 'Skip to content',
 
   nav: {
@@ -194,7 +194,7 @@ export const PORTAL = {
 
   footer: {
     label: 'Footer',
-    blurb: 'Local search and business websites, made by KSM Quantum Technologies.',
+    blurb: 'A local business directory and search, with a web app for every business, made by KSM Quantum Technologies.',
     find: 'Find',
     business: 'For businesses',
     learn: 'Learn',
