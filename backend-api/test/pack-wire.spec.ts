@@ -45,7 +45,7 @@ describe('the pack engine and the legacy world', () => {
   });
   it('the pure cores have no clock, randomness, network, file system or database', () => {
     const cores = files.filter((x) => /\/core\//.test(x.replace(/\\/g, '/')));
-    expect(cores.length).toBe(4);   // pack-core, nav-core, shell-access and addon-eligibility-core (H2)
+    expect(cores.length).toBe(5);   // pack-core, nav-core, shell-access, addon-eligibility-core (H2) and overview-access (TM1, the Home overview matrix); each must pass the purity check below
     for (const f of cores) expect(code(f)).not.toMatch(/Date\.now|new Date\(|Math\.random|randomBytes|randomUUID|fetch\(|https?\.request|from 'fs'|require\(|prisma|PrismaService|process\.env/);
   });
   it('every tenant query in the Prisma store names the vendor, and the reference queries never do', () => {

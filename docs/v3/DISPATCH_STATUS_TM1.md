@@ -14,7 +14,7 @@ Branch `v3-theme-mp` (from `v3-build-be`). Worktree `C:\Get4Domain\get4domain-w2
 | M4 | DONE | (M4 commit) | private theme per customer (upload with vendorId, usable by that business only); publish-to-marketplace needs recorded consent (yes + note, audited, DB check) and a content-free check (name, addresses, phone, e-mail, own media by hash); 12 + 1 tests |
 | M5 | DONE | (M5 commit) | public, vendor (owner) and admin marketplace routes: filters by pack, category, add-on, capability, tag, tier; detail; plan gate and fee via the existing switch; server-side preview with strict CSP and no cookie (public, vendor, admin draft); 15 tests |
 | M6 | DONE | (M6 commit) | 32 starter themes (recipes + builder in themes/), every pack has 4 to 8 valid ones, all 14 combination tags used, all pass validator + marketplace rules + lint, all draw every page for every pack they name, all upload and publish; gallery lists every theme per pack with combinations; kit 289 tests, backend 10 + 12 |
-| M7 | TODO | | |
+| M7 | DONE | (final commit) | build clean, test:ci 5783 tests (1 stale count fixed), kit 289, int alone 6+6, cleanup 0, baseline +17, contract, SEE_IT_THEMES_BACKEND.md, DISPATCH_REPORT_TM1.md |
 
 ## M0 FINDINGS (investigation, no code)
 
@@ -57,4 +57,4 @@ Branch `v3-theme-mp` (from `v3-build-be`). Worktree `C:\Get4Domain\get4domain-w2
 
 ## QUESTIONS FOR THE OWNER
 
-(none yet)
+See DISPATCH_REPORT_TM1.md, section Questions for the owner (7 questions).
