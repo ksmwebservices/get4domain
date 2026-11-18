@@ -25,7 +25,7 @@ const SUPER_ONLY_ROUTES = [
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
   // S51.6: every WRITE of the plans slice is a money rule, SUPER_ADMIN only
-  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'PUT /v3/admin/plans/by-key/:key/name', 'DELETE /v3/admin/plans/:id',
+  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'PUT /v3/admin/plans/by-key/:key/name', 'PUT /v3/admin/included-services/:planKey/:termMonths/:groupKey', 'DELETE /v3/admin/plans/:id',
   'POST /v3/admin/plans/:id/prices', 'POST /v3/admin/prices/:priceId/approve', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
   'POST /v3/admin/features', 'PUT /v3/admin/features/:key', 'DELETE /v3/admin/features/:key', 'PUT /v3/admin/plans/:id/features',
   'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
@@ -63,7 +63,7 @@ const MARKETING_DENIED = [
   'POST /wallet/deduct',
   'POST /website-themes', 'PUT /website-themes/:id', 'DELETE /website-themes/:id',
   // S51.6: reads of the plans slice (OPERATIONS and SUPER_ADMIN; MARKETING refused)
-  'GET /v3/admin/plans', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/price-book', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
+  'GET /v3/admin/plans', 'GET /v3/admin/included-services', 'GET /v3/admin/plans/:id', 'GET /v3/admin/plans/:id/prices', 'GET /v3/admin/price-book', 'GET /v3/admin/plans/:id/features', 'GET /v3/admin/features',
   'GET /v3/admin/tax-rates', 'GET /v3/admin/plan-settings', 'GET /v3/admin/audit-logs',
   'GET /v3/admin/vendors/:id/subscription', 'GET /v3/admin/vendors/:id/overrides', 'GET /v3/admin/vendors/:id/entitlements',
   // B2 slice 5.11: reading AI usage is OPERATIONS and SUPER_ADMIN
@@ -226,7 +226,7 @@ MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(435);
+    expect(oracle).toHaveLength(437);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

@@ -15,6 +15,8 @@ import { V3WalletService } from '../v3-wallet/wallet.service';
 import { WalletStore, WalletTx } from '../v3-wallet/wallet.store';
 import { checkTransition, FundingKind, isAutoApprovable, isSlaBreached, moneyEffect, RequestActor, RequestStatus, validateBrief } from './core/request-core';
 import { PromotionGrantPort } from './promotion-grant.port';
+import { groupOfService } from '../v3-services/included/included-core';
+import { IncludedAllowancePort } from '../v3-services/included/included-allowance.service';
 import { requestConflict, requestError, requestInvalid, requestNotFound } from './requests.errors';
 import { Creator, DeliverableKind, DeliverableRow, DuplicateRequestError, EventRow, RequestRow, RequestsStore, RequestsTx } from './requests.store';
 
@@ -42,8 +44,10 @@ export class ServiceRequestsService {
   constructor(
     private readonly store: RequestsStore, private readonly services: ServicesStore, private readonly wallet: V3WalletService, private readonly walletStore: WalletStore, private readonly walletSettings: WalletSettingsService,
     @Inject(BillingSettingsService) private readonly billing: Pick<BillingSettingsService, 'get'>, private readonly entitlements: EntitlementsService, private readonly promotion: PromotionGrantPort,
-    @Optional() private readonly bus?: ActivityBus,
+    @Optional() private readonly bus?: ActivityBus, @Optional() private readonly included?: IncludedAllowancePort,
   ) {}
+
+  private async otherGroupUsed(vendorId: string, keys: readonly string[]): Promise<number> { let n = 0; for (const k of keys) n += await this.store.allowanceUsedFor(vendorId, k); return n; }
 
   private emit(type: string, vendorId: string, actor: Actor, data: Record<string, unknown>): void { void this.bus?.emit({ type, vendorId, at: this.clock(), actor: { type: actor.type, id: actor.id }, data }); }
   private event(r: RequestsTx, req: RequestRow, type: string, a: { from?: string | null; to?: string | null; actor: Actor; note?: string | null; meta?: Record<string, unknown> }) {
@@ -88,7 +92,11 @@ export class ServiceRequestsService {
     const price = resolvePrice(await this.services.servicePrices(svc.id), this.clock());
     const tax = price ? deductionOutcome(price.amountPaise) : null;   // using credit costs exactly the price: the GST was added at the refill
     const feat = resolved.features[`services.included.${svc.key}`];
-    const allowanceLimit = feat && feat.state === 'LIMITED' && feat.limit !== null ? feat.limit : null;
+    // B3.3: the quantity set for this plan and billing term (the service's group) wins; else the older per-plan feature; else none
+    const grp = groupOfService(svc.key);
+    const termLimit = grp ? ((await this.included?.groupLimits(vendorId)) ?? {})[grp.key] ?? null : null;
+    const allowanceLimit = termLimit !== null ? termLimit : feat && feat.state === 'LIMITED' && feat.limit !== null ? feat.limit : null;
+    const otherInGroup = termLimit !== null && grp ? grp.serviceKeys.filter((k) => k !== svc.key) : [];
     const limits = { minPaise: ws.walletTopupMinPaise, maxPaise: ws.walletTopupMaxPaise };
     const now = this.clock();
 
@@ -101,7 +109,7 @@ export class ServiceRequestsService {
         const packCount = Math.max(0, packRemainingFor(purchases, svc.key, now) - (await r.packReserved(svc.id)));
         const w = await wtx.wallet();
         const choice = fundingChoice({
-          allowance: allowanceLimit === null ? null : { limit: allowanceLimit, used: await r.allowanceUsed(svc.id) }, packCount, totalMinor: tax && tax.ok ? tax.totalMinor : null, taxProblem: tax && !tax.ok ? tax.problem : null,
+          allowance: allowanceLimit === null ? null : { limit: allowanceLimit, used: (await r.allowanceUsed(svc.id)) + (await this.otherGroupUsed(vendorId, otherInGroup)) }, packCount, totalMinor: tax && tax.ok ? tax.totalMinor : null, taxProblem: tax && !tax.ok ? tax.problem : null,
           wallet: w ? { status: w.status, availablePaise: w.balancePaise - w.heldPaise } : null,
         });
         if (choice.kind === 'NONE') {

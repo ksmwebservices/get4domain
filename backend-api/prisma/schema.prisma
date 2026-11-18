@@ -4005,9 +4005,27 @@ model V3Plan {
   features      V3PlanFeature[]
   subscriptions V3PlanSubscription[]
   orders        V3PlanOrder[]
+  serviceAllowances V3PlanServiceAllowance[]
 
   @@unique([track, level])
   @@map("g4d_plans")
+}
+
+/// B3.3: how many of a service group a plan includes on one billing term (3, 6 or 12 months). NO row = not set = nothing included. Only a SUPER_ADMIN writes it; the owner has not set any quantity.
+model V3PlanServiceAllowance {
+  id               String   @id @default(cuid())
+  planId           String
+  termMonths       Int
+  groupKey         String // REELS, POSTERS, POSTS, BLOGS_CONTENT, SUBDOMAIN_SPOTLIGHT, SEO_KEYWORD_WORK
+  quantity         Int
+  updatedByStaffId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  plan V3Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, termMonths, groupKey])
+  @@map("g4d_plan_service_allowances")
 }
 
 model V3PlanPrice {

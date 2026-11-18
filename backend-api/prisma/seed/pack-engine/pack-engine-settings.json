@@ -343,6 +343,18 @@
       ]
     },
     {
+      "key": "CUSTOM_DOMAIN_SEO_ADS",
+      "name": "SEO and paid ads for your own domain",
+      "description": "Search work and paid advertising for a custom domain you connect. Our directory placement, search and own ads cover your Get4Domain address only; your own domain is promoted only through this add-on. The price is not set yet.",
+      "config": {
+        "priceStatus": "PENDING",
+        "neverPartOfPlan": true,
+        "needs": "a connected custom domain",
+        "grantedBy": "staff add-on with an end date"
+      },
+      "tabs": []
+    },
+    {
       "key": "HOME_SAMPLE_COLLECTION",
       "name": "Home sample collection",
       "description": "Sample pickup at the customer's address for labs",

@@ -17,13 +17,13 @@ describe('the loaders: dry run, apply, idempotent', () => {
     const s = new MemoryRefStore();
     const r = await loadPackEngine(s, realSeed(), { apply: false });
     expect(r.applied).toBe(false); expect(s.creates).toBe(0);
-    expect([r.capabilities.toCreate, r.matrix.toCreate, r.packs.toCreate, r.tabs.toCreate, r.addons.toCreate, r.categories.toCreate]).toEqual([14, 42, 16, 109, 4, 196]);
+    expect([r.capabilities.toCreate, r.matrix.toCreate, r.packs.toCreate, r.tabs.toCreate, r.addons.toCreate, r.categories.toCreate]).toEqual([14, 42, 16, 109, 5, 196]);
     expect(r.needsBlueprint).toBe(53); expect(r.problems).toEqual([]);
   });
   it('--apply writes everything once; a second run creates nothing', async () => {
     const s = new MemoryRefStore();
     const first = await loadPackEngine(s, realSeed(), { apply: true });
-    expect(first.applied).toBe(true); expect([first.packs.created, first.tabs.created, first.categories.created, first.addons.created]).toEqual([16, 109, 196, 4]);
+    expect(first.applied).toBe(true); expect([first.packs.created, first.tabs.created, first.categories.created, first.addons.created]).toEqual([16, 109, 196, 5]);
     const before = s.creates;
     const second = await loadPackEngine(s, realSeed(), { apply: true });
     expect(s.creates).toBe(before); expect(second.packs.toCreate + second.tabs.toCreate + second.categories.toCreate + second.matrix.toCreate + second.capabilities.toCreate + second.addons.toCreate).toBe(0);

@@ -12,6 +12,8 @@ import { WalletStore } from '../v3-wallet/wallet.store';
 import {
   approvalProblem, fundingChoice, packRemainingFor, planStateAllows, PlanSnapshot, resolvePrice, trackAllows, validatePackItems, validateServiceInput, ServiceInput,
 } from './core/services-core';
+import { INCLUDED_GROUPS, IncludedGroup, groupOfService, includedView } from './included/included-core';
+import { IncludedAllowancePort } from './included/included-allowance.service';
 import { conflict, packNotFound, priceNotFound, serviceNotFound, servicesError } from './services.errors';
 import { DuplicateError, PackRow, PriceRow, PurchaseRow, ServiceRow, ServicesStore, ServicesTx, ServiceUsagePort } from './services.store';
 
@@ -33,7 +35,7 @@ export class ServicesCatalogService {
   clock: () => Date = () => new Date();
   constructor(
     private readonly store: ServicesStore, private readonly walletStore: WalletStore, private readonly wallet: V3WalletService, private readonly walletSettings: WalletSettingsService,
-    private readonly entitlements: EntitlementsService, private readonly usage: ServiceUsagePort, @Optional() private readonly bus?: ActivityBus,
+    private readonly entitlements: EntitlementsService, private readonly usage: ServiceUsagePort, @Optional() private readonly bus?: ActivityBus, @Optional() private readonly included?: IncludedAllowancePort,
   ) {}
 
   // ───────────────────────────────────────────────────────────────────────────────────────── public
@@ -66,23 +68,31 @@ export class ServicesCatalogService {
     const [services, prices, purchases, ctx, plan] = await Promise.all([this.store.services(), this.store.allServicePrices(), this.store.purchasesFor(vendorId), this.taxContext(vendorId), this.planSnapshot(vendorId)]);
     const purchaseLite = purchases.map((p) => ({ id: p.id, remaining: p.remaining, purchasedAt: p.purchasedAt, expiresAt: p.expiresAt }));
     const items = [];
+    const groupLimits = (await this.included?.groupLimits(vendorId)) ?? {};
+    const groupUsed = async (g: IncludedGroup): Promise<number> => { let n = 0; for (const k of g.serviceKeys) n += await this.usage.allowanceUsed(vendorId, k); return n; };
     for (const s of services.filter((x) => x.status === 'ACTIVE')) {
       const price = resolvePrice(prices.filter((x) => x.ownerId === s.id), now);
       const tax = this.quote(price, ctx, now);
       const feat = plan.features[`services.included.${s.key}`];
-      const allowance = feat && feat.state === 'LIMITED' && feat.limit !== null ? { limit: feat.limit, used: await this.usage.allowanceUsed(vendorId, s.key) } : null;
+      // B3.3: a quantity staff set for this plan and billing term wins; else the older per-plan feature; else NOT_SET (never a guessed number)
+      const grp = groupOfService(s.key);
+      const termLimit = grp ? groupLimits[grp.key] ?? null : null;
+      const allowance = termLimit !== null && grp ? { limit: termLimit, used: await groupUsed(grp) } : feat && feat.state === 'LIMITED' && feat.limit !== null ? { limit: feat.limit, used: await this.usage.allowanceUsed(vendorId, s.key) } : null;
       const packCount = packRemainingFor(purchaseLite, s.key, now);
       const planOk = planStateAllows(s.planStateRule, plan.snap); const trackOk = trackAllows(s.trackScope, plan.track);
       const funding = fundingChoice({ allowance, packCount, totalMinor: tax && tax.ok ? tax.totalMinor : null, taxProblem: tax && !tax.ok ? tax.problem : null, wallet: ctx.wallet ? { status: ctx.wallet.status, availablePaise: ctx.wallet.balancePaise - ctx.wallet.heldPaise } : null });
       items.push({
         ...serviceView(s), publicVisible: undefined, status: undefined, sortOrder: undefined, trackScope: undefined,
         price: price ? publicPrice(price) : null, priceNote: price ? null : 'Price not set', tax: tax ? taxView(tax) : null,
-        allowance: allowance ? { limit: allowance.limit, used: allowance.used, remaining: Math.max(0, allowance.limit - allowance.used) } : null, pack: { remaining: packCount },
+        allowance: allowance ? { limit: allowance.limit, used: allowance.used, remaining: Math.max(0, allowance.limit - allowance.used) } : null,
+        included: includedView(grp?.key ?? null, allowance ? allowance.limit : null, allowance ? allowance.used : 0), pack: { remaining: packCount },
         available: planOk && trackOk, unavailableReason: !trackOk ? 'TRACK' : !planOk ? 'PLAN_STATE' : null,
         funding: planOk && trackOk ? funding : { kind: 'NONE', reason: !trackOk ? 'TRACK' : 'PLAN_STATE' },
       });
     }
-    return { items, wallet: ctx.wallet ? { status: ctx.wallet.status, availablePaise: ctx.wallet.balancePaise - ctx.wallet.heldPaise } : { status: 'INACTIVE', availablePaise: 0 } };
+    const includedServices = [];
+    for (const g of INCLUDED_GROUPS) includedServices.push({ key: g.key, name: g.name, ...includedView(g.key, groupLimits[g.key] ?? null, groupLimits[g.key] === undefined ? 0 : await groupUsed(g)) });
+    return { items, includedServices, wallet: ctx.wallet ? { status: ctx.wallet.status, availablePaise: ctx.wallet.balancePaise - ctx.wallet.heldPaise } : { status: 'INACTIVE', availablePaise: 0 } };
   }
 
   async vendorPacks(vendorId: string) {

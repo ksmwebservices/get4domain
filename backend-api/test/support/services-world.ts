@@ -15,6 +15,8 @@ export interface ServicesWorld extends WalletWorld {
   services: MemoryServicesStore; catalogue: ServicesCatalogService; entitlements: EntitlementsService;
   plan: { level: 'PRO' | 'FREE' | null; subscriptionStatus: 'ACTIVE' | 'GRACE' | 'EXPIRED' | 'CANCELLED' | null; suspended: boolean; track: string | null; features: Record<string, { state: string; limit: number | null }> };
   usage: { used: Record<string, number> };
+  /** B3.3: the quantities set for the vendor's plan and billing term, by group (empty = nothing set) */
+  included: { limits: Record<string, number> };
   rates(): TaxRateLite[];
   /** put the twelve seeded services in the catalogue (words only; no price) */
   seed(): Promise<void>;
@@ -32,8 +34,9 @@ export function servicesWorld(): ServicesWorld {
   const plan: ServicesWorld['plan'] = { level: 'PRO', subscriptionStatus: 'ACTIVE', suspended: false, track: 'handyman', features: {} };
   const usage = { used: {} as Record<string, number> };
   const entitlements = { resolve: async () => ({ level: plan.level, subscriptionStatus: plan.subscriptionStatus, suspended: plan.suspended, track: plan.track, features: plan.features }) } as unknown as EntitlementsService;
+  const included = { limits: {} as Record<string, number> };
   const usagePort: ServiceUsagePort = { allowanceUsed: async (_v: string, k: string) => usage.used[k] ?? 0 };
-  const catalogue = new ServicesCatalogService(store, ww.store, ww.svc, ww.settingsService, entitlements, usagePort, ww.bus); catalogue.clock = () => new Date(ww.now.t);
+  const catalogue = new ServicesCatalogService(store, ww.store, ww.svc, ww.settingsService, entitlements, usagePort, ww.bus, { groupLimits: async () => included.limits }); catalogue.clock = () => new Date(ww.now.t);
   const seed = async () => { for (const s of SERVICE_SEED) await store.unit((tx) => tx.insertService({ ...s, trackScope: [...s.trackScope] })); };
   const price = async (serviceKey: string, amountPaise: number, over: { taxInclusive?: boolean } = {}) => {
     const p = await catalogue.proposePrice('service', serviceKey, { amountPaise, taxInclusive: over.taxInclusive ?? false }, OPS);
@@ -45,5 +48,5 @@ export function servicesWorld(): ServicesWorld {
     const p = await catalogue.proposePrice('pack', key, { amountPaise }, OPS);
     await catalogue.approvePrice('pack', p.id, { effectiveFrom: new Date(ww.now.t).toISOString() }, SUPER); return p.id;
   };
-  return { ...ww, services: store, catalogue, entitlements, plan, usage, rates, seed, price, pack };
+  return { ...ww, services: store, catalogue, entitlements, plan, usage, included, rates, seed, price, pack };
 }
