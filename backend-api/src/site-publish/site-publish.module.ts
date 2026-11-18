@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SiteDomainsModule } from '../site-domains/site-domains.module';
+import { V3ThemeMarketModule } from '../v3-theme-market/theme-market.module';
 import { ContentSource } from './content/content-source';
 import { SnapshotSink } from './content/snapshot-sink';
 import { PublishService } from './publish/publish.service';
@@ -15,7 +16,7 @@ import { SITE_PUBLISH_CONTROLLERS, SITE_PUBLISH_PROVIDERS } from './site-publish
  * service are available without importing it here. Nothing in this module exposes a page on a real host: the public route is an internal, read-only API.
  */
 @Module({
-  imports: [PrismaModule, SiteDomainsModule],   // SiteDomainsModule exports the HostDirectory the host resolver and the build use
+  imports: [PrismaModule, SiteDomainsModule, V3ThemeMarketModule],   // SiteDomainsModule exports the HostDirectory the host resolver and the build use; V3ThemeMarketModule gives the renderer the published marketplace themes (TM1 M3)
   controllers: SITE_PUBLISH_CONTROLLERS,
   providers: SITE_PUBLISH_PROVIDERS,
   exports: [SiteBuildService, SiteSettingsService, PublishService, ThemeRenderService, SiteRepository, ContentSource, SnapshotSink],   // ContentSource: the catalogue of requests and orders (slice 5.14) reads the vendor's published items

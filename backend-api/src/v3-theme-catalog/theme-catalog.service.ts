@@ -20,7 +20,7 @@ export interface PackCatalogue { pack: { key: string; name: string }; matchedBy:
 export class ThemeCatalogV3Service {
   constructor(private readonly prisma: PrismaService, private readonly modules: ModuleRef) {}
 
-  private themes(): ThemeLite[] { return this.modules.get(ThemeRenderService, { strict: false }).listThemes().map((t) => ({ id: t.id, name: t.name, tier: t.tier, tracks: t.tracks, categories: t.categories, description: t.description ?? null })); }
+  private themes(vendorId?: string, keepId?: string | null): ThemeLite[] { return this.modules.get(ThemeRenderService, { strict: false }).listThemes(vendorId, keepId).map((t) => ({ id: t.id, name: t.name, tier: t.tier, tracks: t.tracks, categories: t.categories, description: t.description ?? null })); }
 
   /** The themes for one pack, public: no vendor, no price, no personal data. */
   async forPack(packKey: string): Promise<PackCatalogue> {
@@ -74,7 +74,7 @@ ${[css.tokens, css.base, css.motion, css.print].filter(Boolean).join(NEWLINE)}</
     const settings = this.modules.get(SiteSettingsService, { strict: false });
     const status = await settings.status(vendorId);
     const render = this.modules.get(ThemeRenderService, { strict: false });
-    const all = this.themes();
+    const all = this.themes(vendorId, status.themeId);
     const allowedIds = new Set(status.allowedThemes);
     const selected = all.find((t) => t.id === status.themeId) ?? null;
     const track = selected?.tracks[0] ?? (await this.trackOf(vendorId));

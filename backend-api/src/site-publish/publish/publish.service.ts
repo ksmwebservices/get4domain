@@ -55,8 +55,9 @@ export class PublishService {
     const categoryId = doc ? categoryFor(doc, kit, kit.categoryMap()) : null;
     if (doc && categoryId) {
       const f = ent.features['site.themes'];
+      const storedTheme = (await this.repo.getSettings(vendorId))?.themeId ?? null;   // an archived marketplace theme keeps working for the business that already uses it
       const r = resolveTheme({
-        requested: p.themeId, categoryId, track: kit.categoryById(categoryId).track, themes: this.themes.listThemes(), defaultId: this.themes.defaultThemeFor(categoryId),
+        requested: p.themeId, categoryId, track: kit.categoryById(categoryId).track, themes: this.themes.listThemes(vendorId, storedTheme), defaultId: this.themes.defaultThemeFor(categoryId),
         entitlement: f ? { state: f.state, enumValue: f.enumValue, upsellText: f.upsellText } : null, strict: false,
       });
       if (r.themeId !== p.themeId) problems.push({ code: 'THEME_NOT_ALLOWED', label: 'Your plan no longer allows this theme' });

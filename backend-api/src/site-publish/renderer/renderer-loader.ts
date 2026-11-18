@@ -11,6 +11,9 @@ import * as path from 'path';
  * fly in a cache folder named after the hash of the kit sources, so the unit tests use the real renderer. In production a missing build is an error.
  */
 export interface KitCategory { id: string; label: string; track: string; family: string; schemaType: string; ctaPrimary: string; flow?: string; packKey?: string }
+/** The injection token of the theme kit (kept here so the render service and the marketplace service share it without importing each other). */
+export const KIT = Symbol('THEME_KIT');
+
 export interface KitMarketplace { packs: string[]; addons?: string[]; capabilities?: string[]; tags?: string[]; catalogueCategories?: string[]; previews?: Array<{ path: string; alt: string; page?: string }>; licence?: string; starter?: boolean; sourceVendorId?: string | null }
 export interface KitManifest { id: string; name: string; description?: string; tier: string; tracks: string[]; families: string[]; categories: string[]; internal?: boolean; version: number; fonts?: string[]; author?: string; marketplace?: KitMarketplace }
 /** What the kit's validatePackage answers: nothing is extracted or run; `errors` carry the kit's own rule code and the file path. */

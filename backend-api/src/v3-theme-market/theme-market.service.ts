@@ -1,19 +1,13 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { Actor } from '../plans/admin/audit.service';
-import { KIT } from '../site-publish/renderer/theme-render.service';
-import { Kit, loadKit } from '../site-publish/renderer/renderer-loader';
+import { Kit, KIT, loadKit } from '../site-publish/renderer/renderer-loader';
 import { inspectPackage, PackageContext, PackageProblem, PACK_KEYS, ADDON_KEYS, CAPABILITY_KEYS, COMBINATION_TAGS } from './core/theme-package-core';
+import { ThemeChangeNotifier } from './theme-change-notifier';
 import { packageInvalid, themeError } from './theme-market.errors';
 import { AuditSpec, ThemeFilter, ThemeMarketStore, ThemeRow, ThemeStatus, THEME_STATUSES } from './theme-market.store';
 
-/** A plain notifier the runtime loader (M3) subscribes to: told after every publish and archive so its short cache is dropped at once. */
-@Injectable()
-export class ThemeChangeNotifier {
-  private readonly fns: Array<() => void> = [];
-  subscribe(fn: () => void): void { this.fns.push(fn); }
-  notify(): void { for (const f of this.fns) { try { f(); } catch { /* a listener must never break a publish */ } } }
-}
+export { ThemeChangeNotifier } from './theme-change-notifier';
 
 export interface UploadedZip { buffer?: Buffer; size?: number; originalname?: string }
 export const MAX_PACKAGE_BYTES = 5 * 1024 * 1024;
@@ -151,13 +145,13 @@ export class ThemeMarketService {
     const r = inspectPackage(this.kit, cur.bytes, { vendorId: cur.privateVendorId }, sha256);
     if (!r.ok) throw packageInvalid(r.problems, 'THEME_PUBLISH_BLOCKED', 409);
     const done = await this.move(id, actor, ['REVIEW'], 'PUBLISHED', 'theme.publish', { publishedById: actor.id }, { key: cur.key, below: cur.version }, { visibility: cur.visibility });
-    this.notifier.notify();
+    await this.notifier.notify();
     return themeView(done);
   }
 
   async archive(id: string, actor: Actor) {
     const done = await this.move(id, actor, ['DRAFT', 'REVIEW', 'PUBLISHED'], 'ARCHIVED', 'theme.archive');
-    this.notifier.notify();
+    await this.notifier.notify();
     return themeView(done);
   }
 }

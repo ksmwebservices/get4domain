@@ -63,7 +63,7 @@ export class SitePublishPipeline extends SitePipelinePort {
     if (!c || !c.categoryId || !c.track) return { ok: false, code: 'THEME_NOT_ALLOWED', message: 'This business has no category yet, so its theme cannot be changed.' };
     const f = c.ent.features['site.themes'];
     try {
-      resolveTheme({ requested: themeId, categoryId: c.categoryId, track: c.track, themes: this.themes.listThemes(), defaultId: this.themes.defaultThemeFor(c.categoryId), entitlement: f ? { state: f.state, enumValue: f.enumValue, upsellText: f.upsellText } : null, strict: true });
+      resolveTheme({ requested: themeId, categoryId: c.categoryId, track: c.track, themes: this.themes.listThemes(vendorId), defaultId: this.themes.defaultThemeFor(c.categoryId), entitlement: f ? { state: f.state, enumValue: f.enumValue, upsellText: f.upsellText } : null, strict: true });
       return { ok: true };
     } catch (e) { return { ok: false, ...safeCode(e) }; }
   }

@@ -26,7 +26,7 @@ export interface SiteWorld {
   audit: string[];
 }
 
-export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument; hosts?: VendorHosts; b3?: Pick<B3SettingsService, 'get'>; lifecycle?: SiteLifecycle; /** serve pages through the entitlement filter (slice 5.1d / 5.4b) */ servePolicy?: boolean } = {}): SiteWorld {
+export function siteWorld(o: { themes?: ThemeRenderService; kind?: 'plumber' | 'dentist' | 'jewellery'; level?: 'FREE' | 'PRO'; claimed?: boolean; doc?: SourceDocument; hosts?: VendorHosts; b3?: Pick<B3SettingsService, 'get'>; lifecycle?: SiteLifecycle; /** serve pages through the entitlement filter (slice 5.1d / 5.4b) */ servePolicy?: boolean } = {}): SiteWorld {
   const kind = o.kind ?? 'plumber';
   const track = kind === 'jewellery' ? 'ecommerce' : kind === 'dentist' ? 'professional' : 'handyman';
   const state: SiteWorld['state'] = { doc: o.doc ?? makeDoc(kind, { claimed: o.claimed ?? false }), ent: entitlements(o.level ?? 'FREE', track), vendorHosts: new Map() };
@@ -35,7 +35,7 @@ export function siteWorld(o: { kind?: 'plumber' | 'dentist' | 'jewellery'; level
   const content = { load: async () => state.doc };
   const ents = { resolve: async () => state.ent };
   const auditSink: SiteAudit = { hook: (_actor, action) => async () => { audit.push(action); } };
-  const themes = themeService();
+  const themes = o.themes ?? themeService();   // TM1 M3: a test may bring a renderer that also serves marketplace themes
   const build = new SiteBuildService(repo, themes, content as never, ents as never, auditSink, o.hosts, o.b3, o.lifecycle); build.clock = () => NOW;
   const publish = new PublishService(repo, themes, content as never, ents as never, auditSink); publish.clock = () => NOW;
   const settings = new SiteSettingsService(repo, themes, content as never, ents as never, build, publish, auditSink);

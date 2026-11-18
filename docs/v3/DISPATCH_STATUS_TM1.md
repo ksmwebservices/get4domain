@@ -10,7 +10,7 @@ Branch `v3-theme-mp` (from `v3-build-be`). Worktree `C:\Get4Domain\get4domain-w2
 | M0 | DONE | (this commit) | findings below |
 | M1 | DONE | (M1 commit) | theme package spec v1 = kit zip + optional marketplace block; schema, backend core, 22 new tests |
 | M2 | DONE | (M2 commit) | package table (g4d_theme_market_packages), 8 admin routes, role matrix, 14 error codes, upload/validate/flow; migration applied to staging (rls-off 0, drift 2 documented); unit 18+7, int 6 |
-| M3 | TODO | | |
+| M3 | DONE | (M3 commit) | renderer loads PUBLISHED packages at run time (30 s cache, dropped on publish/archive); private visibility; archived keeps working for current users; render failure falls back to previous or default theme; 13 tests |
 | M4 | TODO | | |
 | M5 | TODO | | |
 | M6 | TODO | | |

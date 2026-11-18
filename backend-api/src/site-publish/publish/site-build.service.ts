@@ -12,7 +12,7 @@ import { ContentSource } from '../content/content-source';
 import { SnapshotSink } from '../content/snapshot-sink';
 import type { ManagedDoc } from '../../v3-website/core/managed-doc';
 import { resolveTheme } from '../content/theme-resolution';
-import { ThemeRenderService } from '../renderer/theme-render.service';
+import { ThemeRenderError, ThemeRenderService } from '../renderer/theme-render.service';
 import { evaluateIndexing, homeContentOk } from '../seo/indexing-rule';
 import { assembleDocument, buildPageSeo } from '../seo/page-seo';
 import { buildLlmsTxt } from '../seo/llms-txt';
@@ -58,7 +58,19 @@ export class SiteBuildService {
     @Optional() @Inject(VendorDirectoryFactsPort) private readonly dirFacts?: VendorDirectoryFactsPort,
   ) {}
 
+  /**
+   * Builds the site. TM1 M3: a marketplace theme that throws while drawing a page never produces an error page or a failed publish: the build is repeated with the business's previous theme, then with the
+   * library default of its category (a library theme cannot raise this error, so the loop always ends). The note `theme-render-fallback` is kept with the build.
+   */
   async build(vendorId: string, opts: BuildOptions): Promise<BuildResult> {
+    const failed: string[] = [];
+    for (;;) {
+      try { return await this.buildWith(vendorId, opts, failed); }
+      catch (e) { if (!(e instanceof ThemeRenderError) || failed.includes(e.themeId) || failed.length >= 3) throw e; failed.push(e.themeId); }
+    }
+  }
+
+  private async buildWith(vendorId: string, opts: BuildOptions, failed: readonly string[]): Promise<BuildResult> {
     const doc = await this.content.load(vendorId, opts.overlay ? { overlay: opts.overlay } : undefined);
     if (!doc) throw new NotFoundException(planError('UNKNOWN_VENDOR', 'That vendor does not exist.'));
     const kit = this.themes.kitApi;
@@ -70,11 +82,19 @@ export class SiteBuildService {
     const ent = await this.entitlements.resolve(vendorId);
     const notes: string[] = [];
     const themeFeature = ent.features['site.themes'];
-    const resolved = resolveTheme({
-      requested: opts.themeId ?? settings?.themeId ?? null, categoryId, track: cat.track, themes: this.themes.listThemes(), defaultId: this.themes.defaultThemeFor(categoryId),
+    let resolved = resolveTheme({
+      requested: opts.themeId ?? settings?.themeId ?? null, categoryId, track: cat.track, themes: this.themes.listThemes(vendorId, settings?.themeId ?? null), defaultId: this.themes.defaultThemeFor(categoryId),
       entitlement: themeFeature ? { state: themeFeature.state, enumValue: themeFeature.enumValue, upsellText: themeFeature.upsellText } : null, strict: opts.themeId !== undefined,
     });
     notes.push(...resolved.notes);
+    if (failed.length) {   // a marketplace theme failed to draw: the previous theme of this business if it still draws, else the library default
+      const previous = (await this.repo.newestPublication(vendorId))?.themeId ?? null;
+      const usable = (id: string | null): id is string => { if (!id || failed.includes(id)) return false; try { this.themes.getTheme(id); return true; } catch { return false; } };
+      const next = [previous, this.themes.defaultThemeFor(categoryId)].find(usable);
+      if (!next) throw new ConflictException(siteError('THEME_INVALID', 'There is no theme that can draw this site right now.'));
+      resolved = { themeId: next, source: 'default', notes: ['theme-render-fallback'] };
+      notes.push('theme-render-fallback');
+    }
     const theme = this.themes.getTheme(resolved.themeId);
 
     const langs = parseLanguages(settings?.language, ent.features['site.language_ta']?.state === 'ACTIVE');
