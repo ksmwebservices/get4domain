@@ -18,3 +18,6 @@ CREATE TABLE "g4d_plan_service_allowances" (
 CREATE UNIQUE INDEX "g4d_plan_service_allowances_planId_termMonths_groupKey_key" ON "g4d_plan_service_allowances"("planId", "termMonths", "groupKey");
 
 ALTER TABLE "g4d_plan_service_allowances" ADD CONSTRAINT "g4d_plan_service_allowances_planId_fkey" FOREIGN KEY ("planId") REFERENCES "g4d_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- like every platform table: row level security ON and no policy, so only the server role reads or writes it
+ALTER TABLE "g4d_plan_service_allowances" ENABLE ROW LEVEL SECURITY;
