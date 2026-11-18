@@ -6,6 +6,7 @@ import {
   Phone, MessageCircle, MapPin, CheckCircle2, Loader2, Send, Users2, Star,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { PoweredBy } from '@/engine/components/PoweredBy';
 
 interface CampaignPageData {
   id: string;
@@ -260,7 +261,7 @@ export default function LegacyCampaignPage() {
 
       {/* Footer watermark */}
       <footer className={`px-5 py-6 text-center text-xs ${theme.subtext}`}>
-        Powered by <span className="font-semibold">Get4Domain</span>
+        <PoweredBy className="font-semibold" />
       </footer>
 
       {/* Floating always-visible Call/WhatsApp */}

@@ -263,6 +263,16 @@ function stripCtas(html) {
       return h && CTA_HREF.test(h[1].replace(/&amp;/g, '&').trim()) ? text : m;
     });
 }
+/**
+ * The "Powered by Get4Domain" mark. Every published site carries it, free or paid, on a subdomain or a custom domain: this is the ONE place the static renderer writes it (the footer), and nothing
+ * passed to the renderer (plan, entitlement, vendor setting, theme option) can switch it off. The link text is the brand name only. The React renderer's twin is get4domain_mvp/src/engine/components/PoweredBy.tsx
+ * (a test keeps the two in step).
+ */
+export const POWERED_BY_HREF = 'https://get4domain.com';
+export const POWERED_BY_BRAND = 'Get4Domain';
+function poweredByHtml() {
+  return `<p class="g4d-footer__powered" data-g4d-powered-by>Powered by <a href="${POWERED_BY_HREF}" target="_blank" rel="noopener">${POWERED_BY_BRAND}</a></p>`;
+}
 /** The customer-facing disclosure line (text from the platform's editable setting), drawn beside every form and checkout. */
 function disclosureHtml(ctx) {
   const t = String(ctx.host.texts?.customerDisclosure ?? '').trim();
@@ -335,7 +345,7 @@ function renderSlot(ctx, name, attrs, childNodes) {
       const addr = contact.address ? `<address>${esc(contact.address)}</address>` : '';
       const tel = contact.phone ? (listingOnly ? esc(contact.phone) : link(contact.phoneHref || `tel:${String(contact.phone).replace(/[^+\d]/g, '')}`, contact.phone)) : '';   // listing-only: plain text, no tel: link
       const mail = contact.email && !listingOnly ? link(`mailto:${contact.email}`, contact.email) : '';
-      const html = `<div class="g4d-footer__inner"><p class="g4d-footer__name">${esc(site.name)}</p>${addr}<p>${tel}${tel && mail ? ' · ' : ''}${mail}</p>${socialHtml(ctx)}<p class="g4d-footer__legal"><a href="/legal/privacy">${esc(ui.privacy)}</a> · <a href="/legal/terms">${esc(ui.terms)}</a></p><p class="g4d-footer__copy">© ${esc(site.year ?? '')} ${esc(site.name)}</p></div>`;
+      const html = `<div class="g4d-footer__inner"><p class="g4d-footer__name">${esc(site.name)}</p>${addr}<p>${tel}${tel && mail ? ' · ' : ''}${mail}</p>${socialHtml(ctx)}<p class="g4d-footer__legal"><a href="/legal/privacy">${esc(ui.privacy)}</a> · <a href="/legal/terms">${esc(ui.terms)}</a></p><p class="g4d-footer__copy">© ${esc(site.year ?? '')} ${esc(site.name)}</p>${poweredByHtml()}</div>`;
       return wrap(ctx, name, 'footer', html, { class: `g4d-footer--${variant} ${attrs.class ?? ''}` });
     }
     case 'hours': return wrap(ctx, name, 'div', hoursTable(ctx) || `<p>${esc(ui.hoursTitle)}</p>`, attrs);

@@ -3,6 +3,7 @@ import {
   Baby, PlugZap, Drama, Laptop, CloudRain, Footprints, Check, Circle, Loader2,
 } from 'lucide-react';
 import type { ReSiteModel, ReProject } from '../model';
+import { PoweredBy } from '../../../components/PoweredBy';
 
 const AMENITY_ICONS: Record<string, typeof Building2> = {
   Building2, Waves, Dumbbell, Trees, ShieldCheck, Zap, Baby, PlugZap, Drama, Laptop, CloudRain, Footprints,
@@ -218,7 +219,7 @@ export function ReFooter({ model }: { model: ReSiteModel }) {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-[var(--eng-border)] pt-6 text-xs text-[var(--eng-muted)] sm:flex-row">
           <p>© {new Date().getFullYear()} {brand.name}. All rights reserved.</p>
-          <p>Powered by Get4Domain</p>
+          <p><PoweredBy /></p>
         </div>
       </div>
     </footer>

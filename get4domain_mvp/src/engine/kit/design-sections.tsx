@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, Clock, MessageCircle, Phone } from 'lucide-react';
 import type { KitBeforeAfter, KitBrand, KitItem, KitRow } from './model';
 import { Heading } from './sections';
 import { AddToCartButton } from '../components/EngineCart';
+import { PoweredBy } from '../components/PoweredBy';
 
 /**
  * Sections added for the industry designs (15 Oct 2026). Each one has three layouts that differ in structure, not only in colour. They are server components
@@ -310,7 +311,7 @@ export function DesignFooter({ variant, brand, cta }: { variant: 'columns' | 'ce
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 sm:flex-row">
           <p>© {year} {brand.name}</p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1">{links}</div>
-          <p>Powered by Get4Domain</p>
+          <p><PoweredBy /></p>
         </div>
       </footer>
     );
@@ -323,7 +324,7 @@ export function DesignFooter({ variant, brand, cta }: { variant: 'columns' | 'ce
         <a href="#enquiry" className="mt-6 inline-block bg-[var(--eng-accent)] px-6 py-3 text-sm font-semibold text-[var(--eng-accent-fg)]" style={{ borderRadius: 'var(--eng-radius)' }}>{cta}</a>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-[var(--eng-muted)]">{links}</div>
         {brand.address && <p className="mt-4 text-xs text-[var(--eng-muted)]">{brand.address}</p>}
-        <p className="mt-8 text-xs text-[var(--eng-muted)]">© {year} {brand.name}. All rights reserved. · Powered by Get4Domain</p>
+        <p className="mt-8 text-xs text-[var(--eng-muted)]">© {year} {brand.name}. All rights reserved. · <PoweredBy /></p>
       </footer>
     );
   }

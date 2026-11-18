@@ -13,6 +13,7 @@ import ChatBot from '@/components/ChatBot';
 import { canonicalIndustryId } from '@/data/demo-site';
 import { getEngineIndustry, renderKitTemplate } from '@/engine/registry';
 import KitRenderer from '@/engine/kit/KitRenderer';
+import { PoweredBy } from '@/engine/components/PoweredBy';
 import { buildPageModel, buildSiteDocModel, jsonLdFor } from '@/engine/sitedoc/build';
 import { templateFromThemeRow, type ThemeRow } from '@/engine/kit/template';
 import { themePages } from '@/engine/raw-html-site';
@@ -341,7 +342,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
 
       <footer className="border-t border-slate-200 py-8 text-center text-xs text-slate-400">
         <p>© {new Date().getFullYear()} {brand}. All rights reserved.</p>
-        <p className="mt-1">Powered by <Link href="/" className="font-semibold text-primary-600">Get4Domain</Link></p>
+        <p className="mt-1"><PoweredBy /></p>
       </footer>
 
       <ChatBot />

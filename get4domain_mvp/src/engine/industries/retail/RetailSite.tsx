@@ -1,5 +1,6 @@
 import EngineSiteFrame from '../../components/EngineSiteFrame';
 import Reveal from '../../components/Reveal';
+import { PoweredBy } from '../../components/PoweredBy';
 import KitHero from '../../kit/KitHero';
 import KitEnquiry from '../../kit/KitEnquiry';
 import { IconGrid, Testimonials, Rows } from '../../kit/sections';
@@ -143,7 +144,7 @@ export default function RetailSite({ site, mode }: { site: EngineSiteData; mode:
             </div>
             <div className="mt-12 flex flex-col items-center justify-between gap-2 border-t border-[var(--eng-border)] pt-6 text-xs text-[var(--eng-muted)] sm:flex-row">
               <p>© {new Date().getFullYear()} {brand.name}. All rights reserved.</p>
-              <p>Powered by Get4Domain</p>
+              <p><PoweredBy /></p>
             </div>
           </div>
         </footer>

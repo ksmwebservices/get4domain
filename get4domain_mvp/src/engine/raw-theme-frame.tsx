@@ -7,6 +7,8 @@
  * intra-theme links navigate the top window — no redesign, no Next.js in the theme.
  */
 
+import { PoweredByBar, POWERED_BY_BAR_HEIGHT } from './components/PoweredBy';
+
 const esc = (s: string | null | undefined): string =>
   (s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -108,16 +110,19 @@ ${bridge(opts.apiBase, site.vendor.subdomain ? opts.subdomain : '', base)}
 </body></html>`;
 }
 
-/** Render the theme as a full-viewport isolated iframe. */
+/** Render the theme as a full-viewport isolated iframe. The uploaded theme is its own document, so the "Powered by Get4Domain" mark sits in a bar under it (the frame gives up exactly the bar's height). */
 export function RawThemeFrame({ srcDoc, title }: { srcDoc: string; title: string }) {
   return (
+    <>
     <iframe
       title={title}
       srcDoc={srcDoc}
       // Allow the theme's own scripts + our bridge (same-origin srcdoc) to run and to
       // navigate the top window on intra-site links; forms post via fetch to our API.
       sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-top-navigation-by-user-activation"
-      style={{ width: '100%', height: '100vh', border: 0, display: 'block' }}
+      style={{ width: '100%', height: `calc(100vh - ${POWERED_BY_BAR_HEIGHT})`, border: 0, display: 'block' }}
     />
+    <PoweredByBar />
+    </>
   );
 }
