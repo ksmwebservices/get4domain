@@ -8,6 +8,7 @@ import { CreateVendorStep } from '../src/provisioning/steps/create-vendor.step';
 import { StepContext } from '../src/provisioning/runner/job-runner.service';
 import { DEFAULT_PROVISIONING_SETTINGS } from '../src/provisioning/settings/provisioning-settings';
 import { BusinessVendors, NewBusinessVendor } from '../src/provisioning/vendors/business-vendors';
+import { TrialSignupPolicy } from '../src/v3-trial/trial-signup.policy';
 import { ProvisioningAdminService } from '../src/provisioning/admin/provisioning-admin.service';
 import { DuplicateCheckService } from '../src/v3-duplicates/duplicate-check.service';
 import { VendorsService } from '../src/vendors/vendors.service';
@@ -258,5 +259,20 @@ describe('publish hold', () => {
     // once cleared the publish goes on to the repository, which this test does not have: the point is that the hold no longer answers first
     const r = await code(svc().publish('v-held', 'p1', actor));
     expect(r?.code).not.toBe('DUPLICATE_REVIEW_PENDING');
+  });
+});
+
+// ── the public availability check carries the similar-address warning ──────────────────────────────────────────────────
+describe('subdomain availability check', () => {
+  const settings = { get: async () => ({ subdomainMinLength: 3, subdomainMaxLength: 40, reservedSubdomains: [], blockedSubdomainWords: [], baseDomain: 'get4domain.com' }) };
+  const prisma = { vendor: { findUnique: async ({ where }: { where: { subdomain: string } }) => (where.subdomain === 'sriganesh' ? { id: 'v-old' } : null) }, v3Domain: { findUnique: async () => null } };
+  it('a look-alike of an existing address is still available, with a warning naming it; an exact match is unavailable; a different name has no warning', async () => {
+    const policy = new TrialSignupPolicy(prisma as never, settings as never, dup);
+    expect(await policy.check('sr1ganesh')).toMatchObject({ available: true, reason: 'AVAILABLE', similarTo: 'sriganesh' });
+    expect(await policy.check('sriganesh')).toMatchObject({ available: false, reason: 'UNAVAILABLE' });
+    expect((await policy.check('kumar-electricals')).similarTo).toBeUndefined();
+  });
+  it('without the duplicate check (an older construction) the answer is exactly as before', async () => {
+    expect(await new TrialSignupPolicy(prisma as never, settings as never).check('sr1ganesh')).toEqual({ available: true, name: 'sr1ganesh', reason: 'AVAILABLE', message: 'That address is free.' });
   });
 });

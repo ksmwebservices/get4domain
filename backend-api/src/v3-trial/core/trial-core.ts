@@ -21,7 +21,7 @@ export function candidateSlug(base: string, n: number, max = 40): string {
 export function padToMinimum(slug: string, min: number): string { return slug.length >= min ? slug : `${slug}-${SLUG_FALLBACK}`.slice(0, Math.max(min, slug.length + SLUG_FALLBACK.length + 1)); }
 
 export type AvailabilityReason = 'AVAILABLE' | 'INVALID' | 'RESERVED' | 'UNAVAILABLE';
-export interface Availability { available: boolean; name: string | null; reason: AvailabilityReason; message: string }
+export interface Availability { available: boolean; name: string | null; reason: AvailabilityReason; message: string; /** D1: an existing address this one looks like (look-alike letters or one letter apart). A warning only: the name is still available. */ similarTo?: string }
 
 export const AVAILABILITY_MESSAGES: Readonly<Record<AvailabilityReason, string>> = Object.freeze({
   AVAILABLE: 'That address is free.',

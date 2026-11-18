@@ -1,10 +1,11 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateSubdomainSlug } from '../site-domains/core/hostname';
 import { domainError, HOST_UNAVAILABLE_MESSAGE } from '../site-domains/site-domains.errors';
 import { DomainSettings } from '../site-domains/settings/domain-settings';
 import { DomainSettingsService } from '../site-domains/settings/domain-settings.service';
 import { Availability, availability, candidateSlug, padToMinimum, slugFromName } from './core/trial-core';
+import { DuplicateCheckService } from '../v3-duplicates/duplicate-check.service';
 
 const SLUG_MESSAGES: Record<string, string> = {
   TOO_SHORT: 'That name is too short.', TOO_LONG: 'That name is too long.', BAD_CHARACTERS: 'Use only lowercase letters, digits and hyphens.',
@@ -19,7 +20,8 @@ const MAX_TRIES = 200;
  */
 @Injectable()
 export class TrialSignupPolicy {
-  constructor(private readonly prisma: PrismaService, private readonly settings: DomainSettingsService) {}
+  /** `duplicates` (D1) only adds the similar-address warning to the public check; it never changes what is available. Optional so older tests that build this policy by hand keep working. */
+  constructor(private readonly prisma: PrismaService, private readonly settings: DomainSettingsService, @Optional() private readonly duplicates?: DuplicateCheckService) {}
 
   private rules(s: DomainSettings) { return { min: s.subdomainMinLength, max: s.subdomainMaxLength, reserved: s.reservedSubdomains, blockedWords: s.blockedSubdomainWords }; }
 
@@ -41,7 +43,9 @@ export class TrialSignupPolicy {
       if (v.code === 'RESERVED') return availability('RESERVED', null);
       return availability('INVALID', null, SLUG_MESSAGES[v.code]);
     }
-    return (await this.taken(v.slug, s.baseDomain)) ? availability('UNAVAILABLE', null) : availability('AVAILABLE', v.slug);
+    if (await this.taken(v.slug, s.baseDomain)) return availability('UNAVAILABLE', null);
+    const similarTo = await this.duplicates?.subdomainWarning(v.slug);   // a warning, never a block
+    return { ...availability('AVAILABLE', v.slug), ...(similarTo ? { similarTo } : {}) };
   }
 
   /** The subdomain a registration will use. A chosen name that is not allowed or not free is refused with the registered domain codes. */
