@@ -68,6 +68,6 @@ describe('vendor gap routes on staging', () => {
 
   it('B5: the next steps facts are read from the real tables for a business with nothing yet', async () => {
     const f = await new PrismaNextStepFacts(prisma as unknown as PrismaService).facts(A.vendorId, new Date());
-    expect(f).toEqual({ sitePublished: false, draftStarted: false, missingDetails: [], unpaidPlanOrder: false, unconnectedDomain: null });
+    expect(f).toEqual({ sitePublished: false, draftStarted: false, missingDetails: [], unpaidPlanOrder: false, unconnectedDomain: null, onFreePlan: false });
   });
 });

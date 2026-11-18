@@ -11,6 +11,7 @@ import { BUSINESS_ERROR_CODES } from '../src/v3-business/business.errors';
 import { NextStepFactsPort, NextStepsService } from '../src/v3-packs/next-steps.service';
 import { MePackController } from '../src/v3-packs/api/pack.controllers';
 import { AppShellService } from '../src/v3-packs/app-shell.service';
+import { OverviewService } from '../src/v3-packs/overview.service';
 import { PackEngineService } from '../src/v3-packs/pack-engine.service';
 import { TabGuard } from '../src/v3-packs/requires-tab';
 import { MeMigrationController, MePromotionDraftsController, MeSocialDraftsController, MeTeamController } from '../src/v3-vendor-gaps/api/vendor-gaps.controllers';
@@ -45,6 +46,7 @@ describe('wave 2 part B over HTTP', () => {
       providers: [
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, TabGuard,
         { provide: PackEngineService, useValue: svc }, { provide: AppShellService, useValue: new AppShellService(svc, { badge: async () => ({ waiting: 0, unread: 0 }) } as never, steps) },
+        { provide: OverviewService, useValue: {} },   // this file does not call GET /v3/me/overview (pack-part-b-http.spec.ts does)
         { provide: VendorGapsStore, useValue: store }, VendorGapsService,
       ],
     }).compile();

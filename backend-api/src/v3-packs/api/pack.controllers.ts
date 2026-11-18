@@ -8,6 +8,7 @@ import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { AppShellService } from '../app-shell.service';
+import { OverviewService } from '../overview.service';
 import { PackActor, PackEngineService, PACK_SETTING_KEYS } from '../pack-engine.service';
 import { EditCategoryDto, EditPackDto, EligibilityDto, MatrixCellDto, PackSettingDto, PausePlanDto, RegisterPackDto, SaveTabDto, SetCapabilityDto, VendorAddonDto } from './pack.dto';
 
@@ -33,7 +34,10 @@ export class PublicPackController {
 @UseTenant()
 @Controller('v3/me')
 export class MePackController {
-  constructor(private readonly packs: PackEngineService, private readonly shell: AppShellService) {}
+  constructor(private readonly packs: PackEngineService, private readonly shell: AppShellService, private readonly overview: OverviewService) {}
+
+  @Get('overview') @ApiOperation({ summary: 'Everything the vendor Home screen needs in one read: the app-shell, the business, the site state and the order and customer counts, each cut by the overview matrix (a team member never gets the customer count; a Free plan gets locked:true instead of a number). Counts of real records only, no prices' })
+  overviewOf(@Tenant() t: TenantContext, @CurrentUser() u: AuthenticatedUser) { return this.overview.get(t.vendorId, { kind: u?.kind, modules: u?.modules }); }
 
   @Get('app-shell') @ApiOperation({ summary: 'Everything the vendor app needs to draw its menu, read only, for the owner and for a team member: the tab list, the plan state words, the packs on and a message count. Cut by the permission matrix; never a price, an order, an invoice, a term date or a setting' })
   appShell(@Tenant() t: TenantContext, @CurrentUser() u: AuthenticatedUser) { return this.shell.get(t.vendorId, { kind: u?.kind, modules: u?.modules }); }

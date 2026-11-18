@@ -216,3 +216,40 @@ Two honest notes for whoever renders it:
 2. Every miss, a bad host, a path that does not exist, or a preview-only site is the same plain `404 Not found`; a takedown is `451`. Nothing says which hosts exist.
 
 **No `themeKey` was added to this answer.** The answer is HTML plus headers, not a JSON site model, so a field would mean a new response header and a change to the type the host mapper reads, for a value no screen needs (the chosen theme is already `themeId` in `GET /v3/me/site` and `GET /v3/admin/vendors/:id/site`, and `selectedThemeId` in `GET /v3/me/site/themes`). Documented only.
+
+# TM1 additions (branch `v3-theme-mp`; additive; no new migration so far)
+
+## TM1-1. `GET /v3/me/overview` (the vendor Home screen, one read)
+
+Signed-in business (owner or team member). Read only, own vendor only (the vendor is always the verified principal's). It is **additive**: `GET /v3/me/app-shell` is unchanged and is returned whole inside `shell`.
+
+`data`: `{ actor:"OWNER"|"TEAM_MEMBER", parts:string[], shell:<the app-shell answer>, business, site, orders, customers }` where
+- `business`: `{ name, subdomain:string|null, customDomain:string|null, industry:string|null }`
+- `site`: `{ published:boolean, version:number|null, publishedAt:ISO|null, themeId:string|null }`
+- `orders`: `{ locked:boolean, open:number|null, total:number|null }` (`open` = every order not yet delivered, cancelled or returned)
+- `customers`: `{ locked:boolean, total:number|null }` (archived customers are not counted)
+
+`locked:true` means the plan does not include the feature behind the matching list screen (`requests.inbox` for orders, `crm.customers` for customers): the numbers are `null`, show the locked state, never a zero. Counts are row counts of the business's own records; there is no price, money amount, sender, subject or customer detail anywhere in the answer.
+
+**Role matrix (data, `src/v3-packs/core/overview-access.ts`).** `parts` lists what this caller was given; a part not given is `null` in its field.
+
+| part | owner | team member |
+|---|---|---|
+| `business` | yes | yes |
+| `site` | yes | needs the `website` area |
+| `orders` | yes | needs the `website` area (same as `GET /v3/me/orders`) |
+| `customers` | yes | never (same as `GET /v3/me/customers`, owner only) |
+
+The `shell` field keeps its own matrix (`sections`). A signed-out caller is 401; a staff principal is 403. Throttling is the global default. The route is classified "authenticated, reads the principal" in the route baseline (1448 to 1449 routes).
+
+## TM1-2. `POST /v3/me/terms/accept` (the body, confirmed against the code)
+
+Owner only (a team member is 403). The body is **`{ "documents": [ { "kind": string, "version": integer >= 1 } ] }`**, 1 to 8 items, nothing else (no `acceptTerms` flag: that flag belongs to the claim flow only).
+
+Rules, from `acceptanceMatches` in `src/terms/core/terms-core.ts`:
+1. Send **every** document that `GET /v3/me/terms` lists under `outstanding` (`{ kind, version }` each), with exactly the version shown. The request is checked as a whole: a missing waiting document, a stale version, a repeated kind, or a kind that is not waiting is refused.
+2. Refusals: an empty or malformed list or a non-integer version is 400 (validation); everything else above is 409 `TERMS_STATE_INVALID` with the reason in `message`.
+3. Success is HTTP 200: `data: { accepted:number, acceptanceRequired:boolean }`. `acceptanceRequired:false` means nothing is waiting any more. Calling it again with nothing waiting is not an error: `{ accepted:0, acceptanceRequired:false }` (idempotent).
+4. Every acceptance is audited (`terms.accept`); the IP and user agent are stored only as keyed hashes.
+
+Typical flow: `GET /v3/me/terms` then, if `acceptanceRequired` is true, `POST /v3/me/terms/accept` with `documents` taken straight from `outstanding`.

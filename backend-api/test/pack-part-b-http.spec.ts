@@ -11,6 +11,7 @@ import { SiteDomainsService } from '../src/site-domains/site-domains.service';
 import { MeDomainsController } from '../src/site-domains/api/me-domains.controller';
 import { AdminPackController, MePackController } from '../src/v3-packs/api/pack.controllers';
 import { AppShellService } from '../src/v3-packs/app-shell.service';
+import { OverviewService } from '../src/v3-packs/overview.service';
 import { PackEngineService } from '../src/v3-packs/pack-engine.service';
 import { TabGuard } from '../src/v3-packs/requires-tab';
 import { MeServicesController } from '../src/v3-services/api/services.controllers';
@@ -35,11 +36,21 @@ describe('pack engine, Part B, over HTTP', () => {
     const e = await makeEngine(); plans = e.plans; svc = e.svc; badge = { waiting: 3, unread: 1 };
     plans.states.set('a', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' }); plans.states.set('b', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' }); plans.states.set('c', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
     await svc.register('a', { categoryKey: 'plumber' }, owner('a')); await svc.register('b', { categoryKey: 'plumber' }, owner('b')); await svc.register('c', { categoryKey: 'juice-tea-snack-shop' }, owner('c'));
+    const shell = new AppShellService(svc, { badge: async () => badge } as never);
+    // the overview reads real counts: a small in-memory stand-in for the four reads, and a plan check that allows the paid features only
+    const rows = { orders: [{ vendorId: 'a', status: 'PLACED' }, { vendorId: 'a', status: 'DELIVERED' }, { vendorId: 'b', status: 'PLACED' }], customers: [{ vendorId: 'a', archivedAt: null }, { vendorId: 'a', archivedAt: new Date() }, { vendorId: 'b', archivedAt: null }] };
+    const prismaFake = {
+      vendor: { findUnique: async ({ where }: { where: { id: string } }) => ({ businessName: `Business ${where.id}`, subdomain: `sub-${where.id}`, customDomain: null, industry: 'plumber' }) },
+      v3SitePublication: { findFirst: async ({ where }: { where: { vendorId: string } }) => (where.vendorId === 'a' ? { version: 3, publishedAt: new Date('2026-11-01T00:00:00Z'), themeId: 'default' } : null) },
+      v3Order: { count: async ({ where }: { where: { vendorId: string; status?: { notIn: string[] } } }) => rows.orders.filter((o) => o.vendorId === where.vendorId && (!where.status || !where.status.notIn.includes(o.status))).length },
+      v3Customer: { count: async ({ where }: { where: { vendorId: string } }) => rows.customers.filter((c) => c.vendorId === where.vendorId && c.archivedAt === null).length },
+    };
+    const canFake = { can: async (v: string) => ({ allowed: plans.states.get(v)?.level === 'PRO' }) };
     const mod = await Test.createTestingModule({
       imports: [throttlerImport], controllers: [MePackController, AdminPackController, MeServicesController, MeDomainsController],
       providers: [
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, TabGuard,
-        { provide: PackEngineService, useValue: svc }, { provide: AppShellService, useValue: new AppShellService(svc, { badge: async () => badge } as never) },
+        { provide: PackEngineService, useValue: svc }, { provide: AppShellService, useValue: shell }, { provide: OverviewService, useValue: new OverviewService(shell, prismaFake as never, canFake as never) },
         { provide: ServicesCatalogService, useValue: { vendorPacks: async () => ({ items: [], purchases: [] }), purchasePack: jest.fn(async () => ({ id: 'p1' })) } },
         { provide: SiteDomainsService, useValue: { overview: async (v: string) => ({ vendor: v }) } },
       ],
@@ -101,6 +112,34 @@ describe('pack engine, Part B, over HTTP', () => {
     it('staff and signed-out callers are refused', async () => {
       expect((await get('/v3/me/app-shell')).status).toBe(401);
       expect((await get('/v3/me/app-shell', 'SUPER_ADMIN')).status).toBe(403);
+    });
+  });
+
+  describe('GET /v3/me/overview (Home screen)', () => {
+    it('the owner of a paid plan gets the shell, the business, the site state and real counts (own vendor only)', async () => {
+      const r = await get('/v3/me/overview', 'owner-a');
+      expect(r.status).toBe(200); const d = r.body.data;
+      expect(d.actor).toBe('OWNER'); expect(d.parts.sort()).toEqual(['business', 'customers', 'orders', 'site']);
+      expect(d.shell.sections.sort()).toEqual(['inbox', 'navigation', 'nextSteps', 'packs', 'plan']); expect(d.shell.inbox).toEqual({ waiting: 3, unread: 1 });
+      expect(d.business).toEqual({ name: 'Business a', subdomain: 'sub-a', customDomain: null, industry: 'plumber' });
+      expect(d.site).toEqual({ published: true, version: 3, publishedAt: '2026-11-01T00:00:00.000Z', themeId: 'default' });
+      expect(d.orders).toEqual({ locked: false, open: 1, total: 2 }); expect(d.customers).toEqual({ locked: false, total: 1 });   // archived customer and another vendor's rows are not counted
+    });
+    it('a Free plan gets locked:true and no number, and an unpublished site says so', async () => {
+      const d = (await get('/v3/me/overview', 'owner-b')).body.data;
+      expect(d.orders).toEqual({ locked: true, open: null, total: null }); expect(d.customers).toEqual({ locked: true, total: null });
+      expect(d.site).toEqual({ published: false, version: null, publishedAt: null, themeId: null });
+    });
+    it('a team member gets only what the matrix gives: the website area gets the orders and the site, nobody but the owner gets the customer count', async () => {
+      const a = (await get('/v3/me/overview', 'member-a')).body.data;
+      expect(a.actor).toBe('TEAM_MEMBER'); expect(a.parts.sort()).toEqual(['business', 'orders', 'site']); expect(a.customers).toBeNull(); expect(a.orders).toEqual({ locked: false, open: 1, total: 2 });
+      const m = (await get('/v3/me/overview', 'member-a-msg')).body.data;
+      expect(m.parts).toEqual(['business']); expect(m.orders).toBeNull(); expect(m.site).toBeNull(); expect(m.customers).toBeNull();
+      expect(JSON.stringify(m)).not.toMatch(/paise|invoice|endsAt|startsAt|termMonths|priceStatus/);
+    });
+    it('a signed-out caller and a staff member are refused', async () => {
+      expect((await get('/v3/me/overview')).status).toBe(401);
+      expect((await get('/v3/me/overview', 'SUPER_ADMIN')).status).toBe(403);
     });
   });
 
