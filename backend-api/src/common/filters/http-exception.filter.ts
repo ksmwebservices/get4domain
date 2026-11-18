@@ -29,6 +29,7 @@ import { REGISTRAR_ERROR_CODES } from '../../v3-registrar/registrar.service';
 import { IDENTITY_ERROR_CODES } from '../../v3-registrar/identity.service';
 import { CONNECTION_ERROR_CODES } from '../../v3-domain-automation/connection.service';
 import { BUSINESS_ERROR_CODES } from '../../v3-business/business.errors';
+import { DUPLICATE_CODES } from '../../v3-duplicates/duplicate.errors';
 
 /** "createdAt" -> "Created at" */
 const words = (field: string): string => { const t = field.replace(/\[\d+\]/g, '').split('.').pop() ?? field; const w = t.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').toLowerCase().trim(); return w.charAt(0).toUpperCase() + w.slice(1); };
@@ -130,7 +131,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Structured, machine-readable reasons (e.g. PLAN_REQUIRED + the feature and plan that unlock it) so a screen can render an upgrade card.
     const extra: Record<string, unknown> = {};
-    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...SEO_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
+    if (exceptionResponse && typeof exceptionResponse === 'object' && ['PLAN_REQUIRED', ...PLAN_ERROR_CODES, ...PROVISIONING_API_ERROR_CODES, ...SITE_ERROR_CODES, ...DOMAIN_ERROR_CODES, ...DIRECTORY_ERROR_CODES, ...SEO_ERROR_CODES, ...BILLING_ERROR_CODES, ...AI_ERROR_CODES, ...B3_ERROR_CODES, ...WALLET_ERROR_CODES, ...SERVICES_ERROR_CODES, ...SERVICE_REQUEST_ERROR_CODES, ...THEME_SWITCH_ERROR_CODES, ...ACTIVITY_ERROR_CODES, ...TRUST_ERROR_CODES, ...WEBSITE_ERROR_CODES, ...REGISTRAR_ERROR_CODES, ...IDENTITY_ERROR_CODES, ...CONNECTION_ERROR_CODES, ...BUSINESS_ERROR_CODES, ...DUPLICATE_CODES].includes(String((exceptionResponse as Record<string, unknown>).code))) {
       // Batch 4 adds `problem`: the machine reason behind a refusal (for example EFFECTIVE_DATE_IN_PAST, or RATES_MISSING for tax)
       for (const k of ['code', 'feature', 'requiredPlan', 'upsellText', 'problem'] as const) {
         const v = (exceptionResponse as Record<string, unknown>)[k];
@@ -151,6 +152,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (Array.isArray(problems)) extra.problems = problems.filter((p): p is { file: string; rule: string; message: string; source: string } => !!p && typeof (p as { file?: unknown }).file === 'string' && typeof (p as { rule?: unknown }).rule === 'string' && typeof (p as { message?: unknown }).message === 'string').slice(0, 100).map((p) => ({ file: p.file.slice(0, 200), rule: p.rule.slice(0, 80), message: p.message.slice(0, 300), source: typeof p.source === 'string' ? p.source.slice(0, 20) : 'package' }));
       const problemCount = (exceptionResponse as Record<string, unknown>).problemCount;
       if (typeof problemCount === 'number' && Number.isFinite(problemCount)) extra.problemCount = problemCount;
+      // Duplicate refusals (B5.2): the claim route and the matching listings, PUBLIC facts only. Whatever the service put in a candidate, only these six fields leave the server.
+      const claim = (exceptionResponse as Record<string, unknown>).claim;
+      if (claim === null) extra.claim = null;
+      else if (claim && typeof claim === 'object' && typeof (claim as { businessSlug?: unknown }).businessSlug === 'string') extra.claim = { businessSlug: (claim as { businessSlug: string }).businessSlug, startPath: typeof (claim as { startPath?: unknown }).startPath === 'string' ? (claim as { startPath: string }).startPath : '/v3/claim/start' };
+      const candidates = (exceptionResponse as Record<string, unknown>).candidates;
+      if (Array.isArray(candidates)) {
+        const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+        extra.candidates = candidates.filter((c): c is Record<string, unknown> => !!c && typeof c === 'object' && typeof (c as { slug?: unknown }).slug === 'string' && typeof (c as { name?: unknown }).name === 'string').slice(0, 10)
+          .map((c) => ({ slug: c.slug as string, name: c.name as string, category: str(c.category), city: str(c.city), area: str(c.area), claimable: c.claimable === true }));
+      }
       // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
       const missing = (exceptionResponse as Record<string, unknown>).missing;
       if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));
