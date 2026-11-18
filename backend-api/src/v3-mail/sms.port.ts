@@ -9,7 +9,11 @@ import { SmsSettingsService } from './settings/sms-settings';
  * list, the number an Indian mobile, the DLT entity id, sender id and an APPROVED template of that kind must be set in settings, the text is the template with its values in place, and the flag
  * SMS_LIVE_SEND must be ON (default OFF). The provider sits behind SmsTransport. No provider has been chosen, so the product binding is UnboundSmsTransport, which refuses.
  */
-export abstract class SmsPort { abstract send(m: SmsMessage): Promise<void> }
+export abstract class SmsPort {
+  abstract send(m: SmsMessage): Promise<void>;
+  /** Could a text message be sent right now (DLT settings complete, flag on, a provider bound)? Reads only. Default: yes. */
+  async ready(): Promise<boolean> { return true; }
+}
 export abstract class SmsTransport { abstract deliver(r: DltRequest): Promise<void> }
 
 /** Until the owner picks an SMS provider this refuses (nothing is pretended). The adapter for the chosen provider replaces it. */
@@ -22,6 +26,11 @@ export class FakeSmsTransport extends SmsTransport {
 @Injectable()
 export class GuardedSmsPort extends SmsPort {
   constructor(private readonly transport: SmsTransport, private readonly settings: SmsSettingsService, @Optional() private readonly env: () => Env = () => process.env) { super(); }
+  async ready(): Promise<boolean> {
+    if (this.transport instanceof UnboundSmsTransport || !smsFlag(this.env())) return false;
+    const s = await this.settings.get();
+    return !!(s.smsPrincipalEntityId && s.smsSenderId && s.smsTemplates);
+  }
   async send(m: SmsMessage): Promise<void> {
     const s = await this.settings.get();
     const cfg: DltConfig | null = s.smsPrincipalEntityId && s.smsSenderId && s.smsTemplates ? { principalEntityId: s.smsPrincipalEntityId, senderId: s.smsSenderId, templates: s.smsTemplates } : null;
@@ -38,5 +47,6 @@ export class GuardedSmsPort extends SmsPort {
 @Injectable()
 export class SmsPhoneCodeSender extends PhoneCodeSender {
   constructor(private readonly sms: SmsPort) { super(); }
+  async ready(): Promise<boolean> { return this.sms.ready(); }
   async sendCode(to: string, code: string): Promise<void> { await this.sms.send({ kind: 'OTP', to, templateKey: 'IDENTITY_OTP', vars: [code] }); }
 }

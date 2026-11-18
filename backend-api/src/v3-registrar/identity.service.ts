@@ -16,8 +16,17 @@ type IdentityCode = (typeof IDENTITY_ERROR_CODES)[number];
 const err = (code: IdentityCode, message: string): { message: string; code: IdentityCode } => ({ message, code });
 
 /** Sends the one-time code. Production binds the unavailable sender until the message providers are connected (no live email or SMS in this run); tests record what would be sent. */
-export abstract class IdentityOtpSender { abstract send(channel: 'EMAIL' | 'PHONE', to: string, code: string, vendorId: string): Promise<void> }
-export class UnavailableOtpSender extends IdentityOtpSender { async send(): Promise<void> { throw new Error('OTP_DELIVERY_NOT_CONNECTED'); } }
+export abstract class IdentityOtpSender {
+  abstract send(channel: 'EMAIL' | 'PHONE', to: string, code: string, vendorId: string): Promise<void>;
+  /** B5.8: can a code be delivered on this channel right now (flag on, sender configured, provider bound)? Asked BEFORE a code is made, so a switched-off channel says so plainly. Default: yes. */
+  async channelReady(_channel: 'EMAIL' | 'PHONE'): Promise<boolean> { return true; }
+}
+export class UnavailableOtpSender extends IdentityOtpSender { async send(): Promise<void> { throw new Error('OTP_DELIVERY_NOT_CONNECTED'); } async channelReady(): Promise<boolean> { return false; } }
+/** The plain words for a channel that cannot deliver. No promise of a date: nothing here knows one. */
+const CHANNEL_OFF: Record<'EMAIL' | 'PHONE', string> = { EMAIL: 'E-mail codes are not available yet.', PHONE: 'Text message codes are not available yet.' };
+/** Delivery refusals that mean "switched off or not set up", not "the provider failed just now". */
+const NOT_LIVE_CODES = ['EMAIL_NOT_LIVE', 'EMAIL_NOT_CONFIGURED', 'SMS_NOT_LIVE', 'SMS_NOT_CONFIGURED'];
+const isNotLive = (e: unknown): boolean => (e instanceof Error && e.message === 'OTP_DELIVERY_NOT_CONNECTED') || NOT_LIVE_CODES.includes(String((e as { response?: { code?: unknown } })?.response?.code ?? ''));
 
 const MIMES = ['application/pdf', 'image/jpeg', 'image/png'] as const;
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
@@ -52,7 +61,11 @@ export class IdentityService {
       document: r.docKind ? { kind: r.docKind, last4: r.docLast4, uploadedAt: r.docUploadedAt, purged: !!r.docPurgedAt } : null,
     };
   }
-  async mine(vendorId: string) { return this.view(await this.store.registrant(vendorId)); }
+  /** The vendor's own check, plus which code channels can deliver right now (B5.8): the app greys out a channel that is off instead of failing at "Send code". */
+  async mine(vendorId: string) {
+    const [email, phone] = await Promise.all([this.sender.channelReady('EMAIL'), this.sender.channelReady('PHONE')]);
+    return { ...this.view(await this.store.registrant(vendorId)), codeChannels: { EMAIL: { available: email, text: email ? null : CHANNEL_OFF.EMAIL }, PHONE: { available: phone, text: phone ? null : CHANNEL_OFF.PHONE } } };
+  }
 
   // ───────────────────────────────────────────────────────────────────────────── details
   /** Saves the registrant's details. A changed email or phone must be verified again; any change after a decision sends the check back to the start. */
@@ -82,6 +95,7 @@ export class IdentityService {
     if (!r) throw new ConflictException(err('IDENTITY_STATE_INVALID', 'Please save your details first.'));
     const s = await this.settings.get(); const now = this.clock();
     if (s.identityOtpTtlSeconds === null || s.identityOtpMaxAttempts === null) throw new ConflictException(err('OTP_NOT_AVAILABLE', 'Verification codes are not available yet.'));
+    if (!(await this.sender.channelReady(channel))) throw new ConflictException(err('OTP_NOT_AVAILABLE', CHANNEL_OFF[channel]));
     const last = await this.store.latestOtp(vendorId, channel);
     if (s.identityOtpMinIntervalSeconds !== null && last && now.getTime() - last.createdAt.getTime() < s.identityOtpMinIntervalSeconds * 1000) throw new ConflictException(err('OTP_TOO_SOON', 'Please wait a little before asking for another code.'));
     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
@@ -90,6 +104,7 @@ export class IdentityService {
     try { await this.sender.send(channel, to, code, vendorId); } catch (e) {
       this.logger.warn(`identity code not delivered (${channel}): ${e instanceof Error ? e.message : 'error'}`);
       await this.store.updateOtp(vendorId, row.id, { consumedAt: now });   // a code that was never delivered cannot be used
+      if (isNotLive(e)) throw new ConflictException(err('OTP_NOT_AVAILABLE', CHANNEL_OFF[channel]));
       throw new ConflictException(err('OTP_DELIVERY_FAILED', 'We could not send the code. Please try again later.'));
     }
     this.emit('domain.identity_code_sent', vendorId, { type: actor.type, id: actor.id }, { channel });

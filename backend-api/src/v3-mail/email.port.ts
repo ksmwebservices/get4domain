@@ -9,7 +9,11 @@ import { MailSettingsService } from './settings/mail-settings';
  * list of its lane (no promotion, ever), exactly one valid recipient, the flag for that kind must be ON (both default OFF), the sender must be set in settings. Only lane 1 sends in this block:
  * lane 2 is recorded as rules and refuses (Release 2). The provider itself sits behind EmailTransport, so tests bind FakeEmailTransport and never reach Resend.
  */
-export abstract class EmailPort { abstract send(m: OutboundEmail): Promise<void> }
+export abstract class EmailPort {
+  abstract send(m: OutboundEmail): Promise<void>;
+  /** Would a system message of this kind be sent right now (its flag on, a sender set)? Reads only; sends nothing. Default: yes. */
+  async ready(_kind: string): Promise<boolean> { return true; }
+}
 export interface EmailSender { address: string; name: string }
 export abstract class EmailTransport { abstract deliver(from: EmailSender, m: OutboundEmail): Promise<void> }
 
@@ -32,6 +36,11 @@ export class ResendTransport extends EmailTransport {
 @Injectable()
 export class GuardedEmailPort extends EmailPort {
   constructor(private readonly transport: EmailTransport, private readonly settings: MailSettingsService, @Optional() private readonly env: () => Env = () => process.env) { super(); }
+  async ready(kind: string): Promise<boolean> {
+    if (!flagFor(kind, this.env())) return false;
+    const s = await this.settings.get();
+    return !!s.mailSystemFromAddress && !!s.mailSystemFromName && !!this.env().RESEND_API_KEY;
+  }
   async send(m: OutboundEmail): Promise<void> {
     const bad = assertTransactional(m);
     if (bad) throw mailError(400, bad.code, bad.message);
