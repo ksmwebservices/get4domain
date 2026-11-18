@@ -13,12 +13,15 @@ export interface PlanPrice { termMonths: number; amountPaise: number; currency: 
 export interface PlanFeature { key: string; name: string; group: string; kind: string; unit: string | null; state: FeatureState; limit: number | null; enumValue: string | null; upsellText: string | null }
 export interface PublicPlan { key: string; track: string; level: string; name: string; description: string | null; prices: PlanPrice[]; features: PlanFeature[] }
 export interface PublicAddon { key: string; name: string; description: string | null; priceMinor: number | null }
-export interface PublicPlans { plans: PublicPlan[]; terms: number[]; tax: { name: string; ratePercent: number } | null; addons?: PublicAddon[] }
+/** The one public Free entry of the price route (`free`, kind FREE; the older kind TRIAL is accepted too). Informational: it has no price and no term. */
+export interface PublicFree { key: string; name: string; description: string | null }
+export interface PublicPlans { plans: PublicPlan[]; terms: number[]; tax: { name: string; ratePercent: number } | null; addons?: PublicAddon[]; free?: PublicFree | null }
 
 /** The answer of GET /v3/public/pricing as the contract documents it (money is integer paise, always before GST; PRICE_PENDING has no price). */
 export interface RawPricing {
   currency?: string; pricesExcludeGst?: boolean; terms?: number[]; gst?: { name: string; ratePercent: number } | null;
-  plans?: Array<{ key: string; track?: string; name: string; description?: string | null; capabilities?: Array<{ key: string; name: string; description?: string | null }>;
+  free?: { key?: string; name?: string; kind?: string; description?: string | null } | null;
+  plans?: Array<{ key: string; track?: string; kind?: string; name: string; description?: string | null; capabilities?: Array<{ key: string; name: string; description?: string | null }>;
     terms?: Array<{ termMonths: number; state: string; price: { priceMinor: number; gstMinor: number | null; totalMinor: number | null } | null; purchasable?: boolean }> }>;
   addons?: Array<{ key: string; name: string; description?: string | null; state?: string; price?: { priceMinor: number } | null; purchasable?: boolean }>;
 }
@@ -26,8 +29,21 @@ export interface RawPricing {
 const text = (v: unknown, max: number): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
 /** The contract answer to the page model. Only AVAILABLE terms with a price become a price row (a pending term has no number); capabilities are listed as included. */
+/** A kind the price route uses for the Free entry. FREE is the current word; TRIAL is the old one and is still accepted. Both mean Free, never a paid plan. */
+export const FREE_KINDS: readonly string[] = ['FREE', 'TRIAL'];
+export const isFreeKind = (k: unknown): boolean => typeof k === 'string' && FREE_KINDS.includes(k.toUpperCase());
+
+/** The Free entry of the answer, or null. A name that carries the retired trial wording is replaced by null so it is never shown (the page then uses its own Free plan words). */
+export function freeOf(raw: RawPricing): PublicFree | null {
+  const f = raw.free;
+  if (!f || typeof f !== 'object' || !isFreeKind(f.kind)) return null;
+  const name = text(f.name, 60);
+  return { key: 'free', name: name && !/trial/i.test(name) ? name : 'Free plan', description: (() => { const d = text(f.description, 300); return d && !/trial/i.test(d) ? d : null; })() };
+}
+
 export function fromPricing(raw: RawPricing): PublicPlans {
-  const plans: PublicPlan[] = (Array.isArray(raw.plans) ? raw.plans : []).map((p) => ({
+  // a Free or TRIAL entry that arrives inside `plans` is the Free plan, not a Pro plan
+  const plans: PublicPlan[] = (Array.isArray(raw.plans) ? raw.plans : []).filter((p) => !isFreeKind(p.kind)).map((p) => ({
     key: p.key, track: p.track ?? p.key, level: 'PRO', name: p.name, description: text(p.description, 300),
     prices: (Array.isArray(p.terms) ? p.terms : [])
       .filter((t) => t.state === 'AVAILABLE' && t.price && Number.isFinite(t.price.priceMinor))
@@ -38,7 +54,7 @@ export function fromPricing(raw: RawPricing): PublicPlans {
     key: a.key, name: a.name, description: text(a.description, 300),
     priceMinor: a.state === 'AVAILABLE' && a.price && Number.isFinite(a.price.priceMinor) && a.price.priceMinor > 0 ? a.price.priceMinor : null,
   }));
-  return { plans, terms: Array.isArray(raw.terms) ? raw.terms : [], tax: raw.gst ?? null, addons };
+  return { plans, terms: Array.isArray(raw.terms) ? raw.terms : [], tax: raw.gst ?? null, addons, ...(freeOf(raw) ? { free: freeOf(raw) } : {}) };
 }
 
 /** The billing terms of the public site. There is no monthly billing here, whatever the API lists. */
@@ -72,6 +88,7 @@ export function cleanPlans(raw: PublicPlans): PublicPlans {
     terms: PUBLIC_TERMS.filter((t) => raw.terms.length === 0 || raw.terms.includes(t)).slice(),
     tax: raw.tax ?? null,
     ...(raw.addons ? { addons: raw.addons } : {}),
+    free: raw.free ?? null,
     plans: raw.plans.map((p) => ({
       ...p,
       prices: p.prices.filter((x) => PUBLIC_TERMS.includes(x.termMonths)),
@@ -86,6 +103,7 @@ const CAPS = [{ key: 'site.cta', name: 'Buttons, forms and contact links' }, { k
 const T = (termMonths: number, rupees: number | null) => ({ termMonths, state: rupees === null ? 'PRICE_PENDING' : 'AVAILABLE', price: rupees === null ? null : { priceMinor: rupees * 100, gstMinor: Math.round(rupees * 18), totalMinor: Math.round(rupees * 118) }, purchasable: rupees !== null });
 export const MOCK_PRICING: RawPricing = {
   currency: 'INR', pricesExcludeGst: true, terms: [3, 6, 12], gst: { name: 'GST', ratePercent: 18 },
+  free: { key: 'free', name: 'Free plan', kind: 'FREE', description: 'A free website and directory listing for any kind of business.' },
   plans: [
     { key: 'handyman', track: 'handyman', name: 'Handyman', description: 'For one-person service businesses.', capabilities: CAPS, terms: [T(3, 1000), T(6, 1900), T(12, 3600)] },
     { key: 'professional', track: 'professional', name: 'Professional', description: 'For firms and practices.', capabilities: CAPS, terms: [T(3, 2000), T(6, 3800), T(12, 7200)] },

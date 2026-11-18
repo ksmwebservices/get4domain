@@ -46,7 +46,7 @@ export default async function PricingPage() {
       <PageHead crumbs={[{ name: P.title, path: '/pricing' }]} h1={P.h1} lead={P.intro} />
 
       <section aria-labelledby="free-title" className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-        <h2 id="free-title" className="text-2xl font-bold tracking-tight text-ink-900">{P.free.name}</h2>
+        <h2 id="free-title" className="text-2xl font-bold tracking-tight text-ink-900">{data?.free?.name ?? P.free.name}</h2>
         <p className="mt-1 text-slate-600">{P.free.tagline}</p>
         <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.includedHeading}</h3>
         <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.points.map((x) => <li key={x}>{x}</li>)}</ul>

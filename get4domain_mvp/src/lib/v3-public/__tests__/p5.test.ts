@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
+import { fromPricing, MOCK_PLANS } from '../plans';
 import { fromDomainAvailability, handleDomainAvailability, mockDomainAnswer } from '../domain-availability';
 import { ABOUT_STRINGS, CONTACT_STRINGS } from '../company-strings';
 import { GROWTH } from '../growth-strings';
@@ -215,4 +216,26 @@ describe('P5.7 and P5.8 wording', () => {
     assert.equal(SITE.register.pro.title, 'Create your account for {plan}');
     assert.equal(SITE.register.submit, 'Create my account');
   });
+});
+
+describe('P5.6 the Free entry of the price route: kind FREE, and the older TRIAL', () => {
+  const base = { currency: 'INR', terms: [3, 6, 12], plans: [{ key: 'handyman', track: 'handyman', name: 'Handyman', terms: [] }] };
+  test('kind FREE and kind TRIAL are both the Free plan (and never a Pro plan)', () => {
+    for (const kind of ['FREE', 'TRIAL', 'free']) {
+      const r = fromPricing({ ...base, free: { key: 'free', name: 'Free plan', kind, description: 'A free listing.' } });
+      assert.equal(r.free?.name, 'Free plan', kind);
+      assert.equal(r.plans.length, 1, kind);
+    }
+  });
+  test('an entry of kind FREE or TRIAL inside plans is dropped from the Pro plans', () => {
+    const r = fromPricing({ ...base, plans: [...base.plans, { key: 'free', kind: 'TRIAL', name: 'Free', terms: [] }, { key: 'x', kind: 'FREE', name: 'X', terms: [] }] });
+    assert.deepEqual(r.plans.map((p) => p.key), ['handyman']);
+  });
+  test('another kind, or none, gives no Free entry; a name with the retired trial word is replaced', () => {
+    assert.equal(fromPricing({ ...base, free: { name: 'Free', kind: 'PRO' } }).free ?? null, null);
+    assert.equal(fromPricing(base).free ?? null, null);
+    assert.equal(fromPricing({ ...base, free: { kind: 'TRIAL', name: 'Free trial', description: 'A trial.' } }).free?.name, 'Free plan');
+    assert.equal(fromPricing({ ...base, free: { kind: 'TRIAL', name: 'Free trial', description: 'A trial.' } }).free?.description, null);
+  });
+  test('the sample price answer has the Free entry', () => assert.equal(MOCK_PLANS.free?.name, 'Free plan'));
 });
