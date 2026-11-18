@@ -57,6 +57,19 @@ function sqlFileProblem(text) {
   return null;
 }
 
+/**
+ * The in-memory changes made to the dump at apply time (the file, its manifest and its hash are never touched; the checks above run on the original text):
+ *  1. "CREATE SCHEMA public;" becomes IF NOT EXISTS, because every new database already has public;
+ *  2. pg_trgm operator classes lose their "public." prefix, because on staging pg_trgm lives in public but on live it lives in the extensions schema;
+ *  3. pg_dump's `set_config('search_path', '', false)` becomes "public, <extensions schema>": with an EMPTY path an unqualified operator class could not be found at all.
+ */
+function applyRewrites(text) {
+  return String(text)
+    .replace(/^CREATE\s+SCHEMA\s+public\s*;/gm, 'CREATE SCHEMA IF NOT EXISTS public;')
+    .replace(/\bpublic\.(gin_trgm_ops|gist_trgm_ops)\b/g, '$1')
+    .replace(/(set_config\(\s*'search_path'\s*,\s*)''(\s*,\s*false\s*\))/g, `$1'public, ${EXTENSION_SCHEMA}'$2`);
+}
+
 /** The number of CREATE TABLE statements in a dump. */
 const tableCountOf = (text) => (String(text).match(/^CREATE TABLE /gm) || []).length;
 const sha256 = (text) => crypto.createHash('sha256').update(text).digest('hex');
@@ -75,7 +88,7 @@ function manifestProblem(manifest, sqlText, folders) {
 
 /**
  * The steps of step B, in their fixed order, over injected functions. Stops at the FIRST failure and says which. Prints (through `say`) counts only.
- * io: { publicTables, hasMigrationsTable, extensionsPresent, extensionSchemaExists, createExtension(name), applySql(), resolveApplied(name), rlsOffCount, drift() }
+ * io: { publicTables, hasMigrationsTable, extensionsPresent, extensionSchemaExists, createExtension(name), applySql(rewrittenText),resolveApplied(name), rlsOffCount, drift() }
  */
 async function runBaseline({ sqlText, manifest, folderNames, io, say = () => undefined }) {
   const fail = (step, why) => { say(`BASELINE STOPPED at ${step}: ${why}`); return { ok: false, step, why }; };
@@ -94,7 +107,7 @@ async function runBaseline({ sqlText, manifest, folderNames, io, say = () => und
   for (const name of missing) { try { await io.createExtension(name); } catch { return fail('extensions', `could not create the extension ${name}`); } }
   counts.extensionsCreated = missing.length;
 
-  try { await io.applySql(); } catch { return fail('apply schema', 'the schema file did not apply (it ran in one transaction, so nothing of it was kept)'); }
+  try { await io.applySql(applyRewrites(sqlText)); } catch { return fail('apply schema', 'the schema file did not apply (it ran in one transaction, so nothing of it was kept)'); }
   counts.tables = await io.publicTables();
   if (counts.tables !== manifest.tables) return fail('table count', `expected ${manifest.tables} tables, found ${counts.tables}. Do not use this database: create a new project and start again.`);
 
@@ -135,4 +148,4 @@ const stagingDirectUrl = (loadStagingEnv) => loadStagingEnv().DIRECT_URL;
 /** Trim a typed or pasted string and drop one pair of surrounding quotes. */
 const cleanUrl = (s) => String(s).trim().replace(/^(['"])(.*)\1$/, '$2');
 
-module.exports = { statusFailureKind, statusRefusal, stagingDirectUrl, cleanUrl, REQUIRED_EXTENSIONS, EXTENSION_SCHEMA, dumpArgs, migrationFolders, extensionsToCreate, emptinessProblem, sourceProblem, sqlFileProblem, tableCountOf, sha256, manifestFor, manifestProblem, runBaseline };
+module.exports = { statusFailureKind, statusRefusal, stagingDirectUrl, cleanUrl, REQUIRED_EXTENSIONS, EXTENSION_SCHEMA, dumpArgs, migrationFolders, extensionsToCreate, emptinessProblem, sourceProblem, sqlFileProblem, applyRewrites, tableCountOf, sha256, manifestFor, manifestProblem, runBaseline };

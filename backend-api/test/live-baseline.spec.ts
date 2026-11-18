@@ -3,11 +3,11 @@ import * as path from 'path';
 import { spawnSync } from 'child_process';
 
 /* eslint-disable @typescript-eslint/no-require-imports */
-interface Io { publicTables: () => Promise<number>; hasMigrationsTable: () => Promise<boolean>; extensionSchemaExists: () => Promise<boolean>; extensionsPresent: () => Promise<string[]>; createExtension: (n: string) => Promise<void>; applySql: () => Promise<void>; resolveApplied: (n: string) => Promise<void>; rlsOffCount: () => Promise<number>; drift: () => Promise<{ allowed: string[]; unexpected: string[] }> }
+interface Io { publicTables: () => Promise<number>; hasMigrationsTable: () => Promise<boolean>; extensionSchemaExists: () => Promise<boolean>; extensionsPresent: () => Promise<string[]>; createExtension: (n: string) => Promise<void>; applySql: (text: string) => Promise<void>; resolveApplied: (n: string) => Promise<void>; rlsOffCount: () => Promise<number>; drift: () => Promise<{ allowed: string[]; unexpected: string[] }> }
 const lib = require('../scripts/live/baseline-lib') as {
   REQUIRED_EXTENSIONS: string[]; dumpArgs: () => string[]; migrationFolders: (n: string[]) => string[]; extensionsToCreate: (h: string[]) => string[];
   emptinessProblem: (c: { publicTables: unknown; hasMigrationsTable: boolean }) => string | null; sourceProblem: (h: string | null, c: { allowedProjectRefHashes: string[]; deniedProjectRefHashes: string[] }) => string | null;
-  sqlFileProblem: (t: unknown) => string | null; tableCountOf: (t: string) => number; sha256: (t: string) => string; manifestFor: (t: string, m: number) => { tables: number; migrations: number; sha256: string };
+  sqlFileProblem: (t: unknown) => string | null; applyRewrites: (t: string) => string; tableCountOf: (t: string) => number; sha256: (t: string) => string; manifestFor: (t: string, m: number) => { tables: number; migrations: number; sha256: string };
   manifestProblem: (m: unknown, t: string, f: string[]) => string | null;
   statusFailureKind: (t: string) => string; statusRefusal: (k: string) => string; stagingDirectUrl: (l: () => { DIRECT_URL: string }) => string; cleanUrl: (s: string) => string;
   runBaseline: (d: { sqlText: string; manifest: unknown; folderNames: string[]; io: Io; say?: (s: string) => void }) => Promise<{ ok: boolean; step?: string; why?: string; counts?: Record<string, number> }>;
@@ -54,6 +54,14 @@ describe('the pieces', () => {
     }
     expect(lib.sqlFileProblem(sql(10))).toMatch(/only 10 tables/); expect(lib.sqlFileProblem('')).toMatch(/missing or too small/); expect(lib.sqlFileProblem(undefined)).not.toBeNull();
   });
+  it('rewrites the dump in memory at apply time: CREATE SCHEMA IF NOT EXISTS public, no public. prefix on pg_trgm operator classes, and a search_path that can find them', () => {
+    const dump = "SELECT pg_catalog.set_config('search_path', '', false);\nCREATE SCHEMA public;\nCREATE INDEX a ON public.t USING gin (n public.gin_trgm_ops);\nCREATE INDEX b ON public.t USING gist (n public.gist_trgm_ops);\nCREATE INDEX c ON public.t (n);\n";
+    const out = lib.applyRewrites(dump);
+    expect(out).toContain('CREATE SCHEMA IF NOT EXISTS public;'); expect(out).not.toMatch(/CREATE SCHEMA public;/);
+    expect(out).toContain('(n gin_trgm_ops)'); expect(out).toContain('(n gist_trgm_ops)'); expect(out).not.toMatch(/public\.g(in|ist)_trgm_ops/);
+    expect(out).toContain("set_config('search_path', 'public, extensions', false)"); expect(out).toContain('ON public.t USING gin'); expect(out).toContain('CREATE INDEX c ON public.t (n);');
+    expect(lib.applyRewrites(out)).toBe(out);   // idempotent; an already-IF NOT EXISTS line is left alone
+  });
   it('the manifest ties step B to the file step A wrote, and to this checkout\'s migration count', () => {
     const t = sql(); const m = lib.manifestFor(t, 3);
     expect(m).toEqual({ tables: 150, migrations: 3, sha256: lib.sha256(t) });
@@ -67,20 +75,20 @@ describe('the pieces', () => {
 describe('runBaseline: the fixed order and the refusals', () => {
   const FOLD = ['20260718152033_init', '20260722000000_web_push_subscriptions', '20261219200000_v3_wave2_index_name_63'];
   function world(over: Partial<{ tables: number; migrationsTable: boolean; have: string[]; extSchema: boolean; failApply: boolean; failResolveAt: number; rlsOff: number; unexpected: string[]; tablesAfter: number }> = {}) {
-    const log: string[] = []; const s = sql(); const manifest = lib.manifestFor(s, FOLD.length); let applied = false; let resolved = 0;
+    const log: string[] = []; const seen: string[] = []; const s = sql(); const manifest = lib.manifestFor(s, FOLD.length); let applied = false; let resolved = 0;
     const o = { tables: 0, migrationsTable: false, have: ['plpgsql', 'pgcrypto', 'uuid-ossp'], extSchema: true, failApply: false, failResolveAt: -1, rlsOff: 0, unexpected: [] as string[], tablesAfter: 150, ...over };
     const io: Io = {
       publicTables: async () => (applied ? o.tablesAfter : o.tables), hasMigrationsTable: async () => o.migrationsTable, extensionSchemaExists: async () => o.extSchema, extensionsPresent: async () => o.have,
-      createExtension: async (n) => { log.push(`ext:${n}`); }, applySql: async () => { log.push('apply'); if (o.failApply) throw new Error('x'); applied = true; },
+      createExtension: async (n) => { log.push(`ext:${n}`); }, applySql: async (t) => { seen.push(t); log.push('apply'); if (o.failApply) throw new Error('x'); applied = true; },
       resolveApplied: async (n) => { if (resolved === o.failResolveAt) throw new Error('x'); resolved += 1; log.push(`resolve:${n}`); }, rlsOffCount: async () => o.rlsOff, drift: async () => ({ allowed: ['a', 'b'], unexpected: o.unexpected }),
     };
     const said: string[] = []; const run = () => lib.runBaseline({ sqlText: s, manifest, folderNames: [...FOLD].reverse().concat('migration_lock.toml'), io, say: (x) => said.push(x) });
-    return { log, said, run };
+    return { log, said, run, seen };
   }
   it('creates the missing extension, applies the schema once, marks every migration applied oldest first, then checks; prints counts only', async () => {
     const w = world(); const r = await w.run();
     expect(r.ok).toBe(true); expect(r.counts).toEqual({ extensionsCreated: 1, tables: 150, resolved: 3, rlsOff: 0, driftAllowed: 2, driftUnexpected: 0 });
-    expect(w.log).toEqual(['ext:pg_trgm', 'apply', ...FOLD.map((f) => `resolve:${f}`)]);
+    expect(w.log).toEqual(['ext:pg_trgm', 'apply', ...FOLD.map((f) => `resolve:${f}`)]); expect(w.seen).toEqual([lib.applyRewrites(sql())]);
     expect(w.said.join('\n')).toBe('Baseline done: 150 tables, 1 extension(s) created, 3 of 3 migrations marked applied, 0 tables without row level security, 2 documented drift item(s), 0 unexpected.');
   });
   it('REFUSES a database that is not empty, before any change (a table, a migration history table, or both)', async () => {

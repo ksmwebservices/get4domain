@@ -73,8 +73,8 @@ const fail = (msg, code) => { console.error(`BASELINE REFUSED: ${msg}`); process
         const r = spawnSync('psql', ['-v', 'ON_ERROR_STOP=1', '-q', '-c', `CREATE EXTENSION IF NOT EXISTS "${name}" WITH SCHEMA ${EXTENSION_SCHEMA}`], { env: { ...process.env, ...pg }, encoding: 'utf8' });
         if (r.status !== 0) throw new Error('psql failed');
       },
-      applySql: async () => {
-        const r = spawnSync('psql', ['-v', 'ON_ERROR_STOP=1', '--single-transaction', '-q', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', '-f', sqlPath], { env: { ...process.env, ...pg }, encoding: 'utf8' });
+      applySql: async (text) => {   // the rewritten text goes to psql on stdin: the dump file on disk is never changed
+        const r = spawnSync('psql', ['-v', 'ON_ERROR_STOP=1', '--single-transaction', '-q', '-o', process.platform === 'win32' ? 'NUL' : '/dev/null', '-f', '-'], { input: text, maxBuffer: 1 << 28, env: { ...process.env, ...pg }, encoding: 'utf8' });
         if (r.status !== 0) { console.error(mask(String(r.stderr || '')).split('\n').slice(0, 3).join(' | ').slice(0, 300)); throw new Error('psql failed'); }
       },
       resolveApplied: async (name) => { const r = cli(['migrate', 'resolve', '--applied', name]); if (r.status !== 0) throw new Error('resolve failed'); },
