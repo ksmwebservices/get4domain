@@ -67,7 +67,7 @@ export const MARKETING = {
     after: [
       'Edit your site content in your business app: text, photos, pages and contact details.',
       'Choose a theme that suits your business area.',
-      'Move to a paid plan to turn on buttons, forms, contact links and the main features of your business area.',
+      'Move to a Pro plan to turn on buttons, forms, contact links and the main features of your business area.',
       'Connect a domain name of your own on a paid plan.',
     ],
     moreHeading: 'Learn more',
@@ -120,7 +120,7 @@ export const MARKETING = {
         steps: [
           { title: 'Register', body: 'Enter your business name, choose a category and pick your site address.' },
           { title: 'Check your site', body: 'It is live right away. Change the content to describe your business.' },
-          { title: 'Move to a paid plan', body: 'Turn on buttons, forms and contact links when you are ready.' },
+          { title: 'Move to a Pro plan', body: 'Turn on buttons, forms and contact links when you are ready.' },
         ],
         plan: PLAN_NOTE,
         faq: [
@@ -358,7 +358,7 @@ export const MARKETING = {
 
   categoryPage: {
     metaDescription: 'A website for a {name}: what it gives your business, how it works, and how to start with a free site.',
-    lead: 'Get a free site made for a {name}. Move to a paid plan when you want the main features of the {pack} area.',
+    lead: 'Get a free site made for a {name}. Move to a Pro plan when you want the main features of the {pack} area.',
     groupLine: 'Listed under: {family}.',
     givesHeading: 'Typical working areas',
     givesIntro: 'A {name} uses the working areas of the {pack} pack, in the business app, on a paid plan.',
@@ -366,7 +366,7 @@ export const MARKETING = {
     steps: [
       { title: 'Register', body: 'Tell us about your business. Your industry and category are already chosen.' },
       { title: 'Your free site is live', body: 'It goes live right away on your own subdomain, with starter content for a {name}. Edit it yourself.' },
-      { title: 'Move to a paid plan', body: 'To use the main features, choose a paid plan and pay inside your business app.' },
+      { title: 'Move to a Pro plan', body: 'To use the main features, choose a paid plan and pay inside your business app.' },
     ],
     note: 'Free sites are informational. Prices are shown without GST.',
     moreHeading: 'Other categories in {pack}',

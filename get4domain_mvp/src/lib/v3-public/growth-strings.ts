@@ -69,7 +69,7 @@ export const GROWTH = {
   footerAll: 'All growth services',
   footerCompare: 'Compare Free and paid',
   footerFree: 'The Free plan',
-  footerSeePlans: 'Paid plans',
+  footerSeePlans: 'Pro plans',
 
   /** Pricing comparison. */
   compareGrowthHeading: 'Growth and promotion',

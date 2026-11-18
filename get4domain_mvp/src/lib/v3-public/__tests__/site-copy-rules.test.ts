@@ -58,12 +58,12 @@ describe('the Free plan card', () => {
     assert.equal(f.name, 'Free plan');
     assert.equal(f.tagline, 'A free site with limited access, to get started.');
     assert.equal(f.includedHeading, 'Included on Free');
-    assert.equal(f.unlockHeading, 'Move to a paid plan to unlock');
+    assert.equal(f.unlockHeading, 'Move to a Pro plan to unlock');
     assert.equal(f.points.length, 5);
     assert.equal(f.unlock.length, 5);
     assert.ok(f.unlock[0].startsWith('Enquiries and the customer tools'));
     assert.equal(f.cta, 'Start free');
-    assert.equal(f.ctaPaid, 'See paid plans');
+    assert.equal(f.ctaPaid, 'See Pro plans');
     assert.equal(SITE.pricing.compareFree, 'Free plan');
     assert.equal(SITE.register.h1, 'Start with a free site');
   });

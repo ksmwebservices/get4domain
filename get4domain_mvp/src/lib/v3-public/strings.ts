@@ -326,7 +326,7 @@ export const S = {
         summary: 'How cancellation works and what is not refunded.',
         sections: [
           { heading: 'Free listings', body: ['A Free listing costs nothing. It can be removed on request.'] },
-          { heading: 'Paid plans and services', body: [
+          { heading: 'Pro plans and services', body: [
             'Prices exclude GST. Money paid for a plan, for a service or for a wallet top-up is not refunded.',
             'Cancelling a plan or a service request stops further charges for it. It does not return money already paid.',
           ] },
