@@ -162,6 +162,16 @@ describe('the similar-subdomain warning (a warning, not a block)', () => {
 });
 
 describe('the admin review queue', () => {
+  it('the held list carries the held business, the matched record and its public listing, and no contact details (B3.2)', async () => {
+    store.vendors.push({ id: 'v-held', email: 'held@example.com', phone: '9111122222', phoneKey: '9111122222', name: 'Held Owner', businessName: 'Sri Ganesh Plumbing Works', industry: 'plumbing', address: null, subdomain: 'sri-ganesh-works', gstin: null, customDomain: null, sandboxExpiring: false } as never);
+    store.addReview({ path: 'REGISTER', vendorId: 'v-held', matchedVendorId: 'v-old', matchedBusinessId: 'b-old', matchedSignals: ['NAME_LOCATION_CATEGORY'], score: 0.8 });
+    const r = await svc.listReviews({ skip: 0, take: 10 });
+    expect(r.total).toBe(1);
+    expect(r.items[0].vendor).toMatchObject({ id: 'v-held', businessName: 'Sri Ganesh Plumbing Works', subdomain: 'sri-ganesh-works', industry: 'plumbing' });
+    expect(r.items[0].matched).toMatchObject({ vendorId: 'v-old', businessId: 'b-old', listing: { businessId: 'b-old', slug: 'sri-ganesh-plumbing-chennai' } });
+    const text = JSON.stringify(r.items[0]);
+    for (const secret of ['held@example.com', '9111122222', 'Held Owner', 'old@example.com', '9876543210']) expect(text).not.toContain(secret);
+  });
   const held = () => { store.addReview({ path: 'REGISTER', vendorId: 'v-held', matchedVendorId: 'v-old', matchedBusinessId: 'b-old', matchedSignals: ['NAME_LOCATION_CATEGORY'], score: 0.8 }); return store.reviews[0].id; };
   it('a held business is held until cleared; rejected stays held', async () => {
     const id = held();

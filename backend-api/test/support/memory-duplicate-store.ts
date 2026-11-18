@@ -45,6 +45,7 @@ export class MemoryDuplicateStore extends DuplicateStore {
   async publicListings(bIds: string[], vIds: string[]): Promise<PublicListing[]> {
     return this.listings.filter((l) => l.status !== 'REMOVED' && (bIds.includes(l.id) || (l.vendorId && vIds.includes(l.vendorId)))).map((l) => ({ businessId: l.id, slug: l.slug, name: l.name, category: l.category, city: l.city ?? null, area: l.line2 ?? null, claimable: l.status === 'UNCLAIMED' }));
   }
+  async vendorBasics(ids: string[]) { return this.vendors.filter((v) => ids.includes(v.id)).map((v) => ({ id: v.id, businessName: v.businessName, subdomain: v.subdomain, industry: v.industry, createdAt: new Date('2026-11-01T00:00:00Z') })); }
   async recordOverride(o: OverrideRecord) { const id = `ov${this.overrides.length + 1}`; this.overrides.push({ ...o, id }); return { id }; }
   async isHeld(vendorId: string) { return this.reviews.some((r) => r.vendorId === vendorId && r.status !== 'CLEARED'); }
   async listReviews(status: string | null, skip: number, take: number) { const all = this.reviews.filter((r) => !status || r.status === status); return { items: all.slice(skip, skip + take), total: all.length }; }

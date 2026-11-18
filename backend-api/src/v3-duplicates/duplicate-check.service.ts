@@ -170,7 +170,27 @@ export class DuplicateCheckService extends DuplicateHoldPort {
 
   isHeld(vendorId: string): Promise<boolean> { return this.store.isHeld(vendorId); }
 
-  async listReviews(q: { status?: string; skip: number; take: number }) { return this.store.listReviews(q.status ?? null, q.skip, q.take); }
+  /**
+   * The held list with the facts staff decide on: the held business (what it called itself, subdomain, trade) and its public listing, and the matched record
+   * (the same facts the public directory page shows). No phone, e-mail or address of either side is returned.
+   */
+  async listReviews(q: { status?: string; skip: number; take: number }) {
+    const r = await this.store.listReviews(q.status ?? null, q.skip, q.take);
+    const vendorIds = [...new Set(r.items.flatMap((x) => [x.vendorId, x.matchedVendorId]).filter((x): x is string => !!x))];
+    const businessIds = [...new Set(r.items.map((x) => x.matchedBusinessId).filter((x): x is string => !!x))];
+    const [basics, listings] = await Promise.all([this.store.vendorBasics(vendorIds), this.store.publicListings(businessIds, [])]);
+    const basic = (id: string | null) => basics.find((b) => b.id === id) ?? null;
+    const listing = (businessId: string | null) => listings.find((l) => !!businessId && l.businessId === businessId) ?? null;
+    const items = r.items.map((x) => {
+      const v = basic(x.vendorId); const m = basic(x.matchedVendorId); const ml = listing(x.matchedBusinessId);
+      return {
+        ...x,
+        vendor: { id: x.vendorId, businessName: v?.businessName ?? null, subdomain: v?.subdomain ?? null, industry: v?.industry ?? null, registeredAt: v?.createdAt ?? null },
+        matched: x.matchedVendorId || x.matchedBusinessId ? { vendorId: x.matchedVendorId, businessId: x.matchedBusinessId, businessName: m?.businessName ?? ml?.name ?? null, subdomain: m?.subdomain ?? null, listing: ml ? pub(ml) : null } : null,
+      };
+    });
+    return { items, total: r.total };
+  }
 
   /** ADMIN or SUPER_ADMIN clears (the business is let through) or rejects (it stays unpublished) a held possible duplicate, with a written reason. */
   async decide(id: string, decision: 'CLEARED' | 'REJECTED', reasonIn: unknown, actor: Actor): Promise<{ id: string; status: string }> {
@@ -184,5 +204,7 @@ export class DuplicateCheckService extends DuplicateHoldPort {
     return { id, status: decision };
   }
 }
+
+const pub = (l: PublicListing) => ({ businessId: l.businessId, slug: l.slug, name: l.name, category: l.category, city: l.city, area: l.area, claimable: l.claimable });
 
 export type { Hit };

@@ -5,6 +5,8 @@ export interface Hit { vendorId: string | null; businessId: string | null; attac
 export interface HostHit { vendorId: string; via: 'WEBSITE' | 'CUSTOM_DOMAIN' }
 /** What anybody may see of a listing: the same facts the public directory page shows. */
 export interface PublicListing { businessId: string; slug: string; name: string; category: string | null; city: string | null; area: string | null; claimable: boolean }
+/** The few facts staff need about a held vendor: what it called itself and its address, never contact details. */
+export interface VendorBasics { id: string; businessName: string; subdomain: string | null; industry: string | null; createdAt: Date }
 export interface NameQuery { name: string; pincode: string | null; area: string | null; category: string | null; ownerName: string | null; address: string | null; excludeVendorId: string | null }
 export interface OverrideRecord { path: DuplicatePath; staffId: string; staffRole: string; reason: string; outcome: 'BLOCKED' | 'POSSIBLE'; matches: Match[]; newVendorId: string | null }
 export interface ReviewRow { id: string; path: string; vendorId: string; status: string; matchedVendorId: string | null; matchedBusinessId: string | null; matchedSignals: string[]; score: number | null; decidedByStaffId: string | null; decisionReason: string | null; decidedAt: Date | null; createdAt: Date }
@@ -21,6 +23,7 @@ export abstract class DuplicateStore {
   /** existing subdomains that may look like the slug (narrowed in the database; the look-alike rule is applied by the caller) */
   abstract subdomainsNear(slug: string): Promise<string[]>;
   abstract publicListings(businessIds: string[], vendorIds: string[]): Promise<PublicListing[]>;
+  abstract vendorBasics(vendorIds: string[]): Promise<VendorBasics[]>;
   abstract recordOverride(o: OverrideRecord): Promise<{ id: string }>;
   abstract isHeld(vendorId: string): Promise<boolean>;
   abstract listReviews(status: string | null, skip: number, take: number): Promise<{ items: ReviewRow[]; total: number }>;

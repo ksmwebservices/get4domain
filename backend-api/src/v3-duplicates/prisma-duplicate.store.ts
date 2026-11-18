@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NameCandidate, normaliseArea, normaliseBusinessName, trigramSimilarity } from './core/duplicate-core';
-import { DuplicateStore, Hit, HostHit, NameQuery, OverrideRecord, PublicListing, ReviewRow } from './duplicate.store';
+import { DuplicateStore, Hit, HostHit, NameQuery, OverrideRecord, PublicListing, ReviewRow, VendorBasics } from './duplicate.store';
 
 // A demo sandbox is a throwaway tour account (isSandbox with an expiry) and never counts; a pre-sale prospect (isSandbox, no expiry) is a real business and does. Every query below says so.
 const NAME_FLOOR = 0.4;   // the lowest similarity that can ever matter (the medium rule with support); the core decides the rest
@@ -137,6 +137,11 @@ export class PrismaDuplicateStore extends DuplicateStore {
     });
   }
 
+  async vendorBasics(vendorIds: string[]): Promise<VendorBasics[]> {
+    if (vendorIds.length === 0) return [];
+    return this.prisma.vendor.findMany({ where: { id: { in: vendorIds } }, select: { id: true, businessName: true, subdomain: true, industry: true, createdAt: true }, take: 200 });
+  }
+
   async recordOverride(o: OverrideRecord): Promise<{ id: string }> {
     const first = o.matches[0];
     return this.prisma.v3DuplicateOverride.create({
@@ -158,7 +163,12 @@ export class PrismaDuplicateStore extends DuplicateStore {
   getReview(id: string): Promise<ReviewRow | null> { return this.prisma.v3DuplicateReview.findUnique({ where: { id } }); }
 
   async decideReview(id: string, d: { status: 'CLEARED' | 'REJECTED'; staffId: string; reason: string; now: Date }): Promise<boolean> {
-    const r = await this.prisma.v3DuplicateReview.updateMany({ where: { id, status: 'PENDING' }, data: { status: d.status, decidedByStaffId: d.staffId, decisionReason: d.reason, decidedAt: d.now } });
-    return r.count === 1;
+    // the decision and its audit row are one transaction: a decision is never unlogged (B3.2)
+    return this.prisma.$transaction(async (tx) => {
+      const r = await tx.v3DuplicateReview.updateMany({ where: { id, status: 'PENDING' }, data: { status: d.status, decidedByStaffId: d.staffId, decisionReason: d.reason, decidedAt: d.now } });
+      if (r.count !== 1) return false;
+      await tx.v3AuditLog.create({ data: { actorType: 'ADMIN', actorId: d.staffId, action: d.status === 'CLEARED' ? 'duplicate.review.clear' : 'duplicate.review.reject', entityType: 'duplicate_review', entityId: id, beforeJson: { status: 'PENDING' }, afterJson: { status: d.status, reason: d.reason }, ip: null } });
+      return true;
+    });
   }
 }
