@@ -87,11 +87,14 @@ export class V3WalletService implements TopupSettlementHook {
     const w = await this.syncActivation(vendorId); const s = await this.settings.get();
     const status = w?.status ?? 'INACTIVE';
     const topupsReady = s.walletTopupMinPaise !== null && s.walletTopupMaxPaise !== null;
+    const nextExpiry = w ? nextCreditExpiry(await this.store.lots(vendorId)) : null;
     return {
       status, locked: status !== 'ACTIVE', lockedReason: status === 'FROZEN' ? 'FROZEN' : status === 'INACTIVE' ? 'NO_PAID_PRO_TERM' : null,
       lockedText: status === 'FROZEN' ? 'This wallet is on hold. Please contact support.' : status === 'INACTIVE' ? LOCKED_TEXT : null,
       currency: 'INR', balancePaise: w?.balancePaise ?? 0, heldPaise: w?.heldPaise ?? 0, availablePaise: w ? available(w) : 0, activatedAt: w?.activatedAt ?? null,
       creditValidityDays: s.walletCreditValidityDays,
+      /** B5.7: how long a credit lasts (the same number as creditValidityDays, under the name the app reads) and when the next credit runs out */
+      validityDays: s.walletCreditValidityDays, nextExpiry,
       topup: { enabled: status === 'ACTIVE' && topupsReady, configured: topupsReady, minPaise: s.walletTopupMinPaise, maxPaise: s.walletTopupMaxPaise, gstAddedOnTop: true },
       billingProfile: { stateCode: w?.billingStateCode ?? null, gstin: w?.billingGstin ?? null },
     };
@@ -366,4 +369,15 @@ export class V3WalletService implements TopupSettlementHook {
     }
     return { vendors: vendors.length, entries, failed, topupsExpired: await this.store.expireStaleTopups(now) };
   }
+}
+
+/**
+ * B5.7: the soonest date a credit expires and how much expires that day (UTC), from the lots that still hold money. Null when no open lot has anything left.
+ * Spending takes from the lot that expires first, so this is the date the vendor should watch.
+ */
+export function nextCreditExpiry(lots: ReadonlyArray<{ remainingPaise: number; expiresAt: Date; status: string }>): { expiresAt: string; amountPaise: number } | null {
+  const open = lots.filter((l) => l.status === 'OPEN' && l.remainingPaise > 0).sort((a, b) => a.expiresAt.getTime() - b.expiresAt.getTime());
+  if (open.length === 0) return null;
+  const day = open[0].expiresAt.toISOString().slice(0, 10);
+  return { expiresAt: open[0].expiresAt.toISOString(), amountPaise: open.filter((l) => l.expiresAt.toISOString().slice(0, 10) === day).reduce((n, l) => n + l.remainingPaise, 0) };
 }
