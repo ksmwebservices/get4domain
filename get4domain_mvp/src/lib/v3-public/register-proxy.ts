@@ -33,7 +33,7 @@ export function siteStateOf(json: unknown): 'live' | 'pending' {
 }
 
 /**
- * The track every signup sends, so the API can provision the trial site (it ignores a signup without one).
+ * The track every signup sends, so the API can provision the free site (it ignores a signup without one).
  * A paid plan is already a track and wins (the visitor chose it). The free plan takes the track from the chosen category's minimum tier (the API's category list, HANDYMAN | PROFESSIONAL | ECOMMERCE).
  * A category the list cannot answer for (list unreachable, or a category only the static catalogue knows) gets the smallest track, never none.
  */

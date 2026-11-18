@@ -5,7 +5,7 @@ export const DELIVERY: LegalDocDef = {
   path: '/delivery-policy',
   title: 'Delivery Policy',
   metaTitle: 'Delivery Policy',
-  metaDescription: 'Get4Domain is a digital service. This policy explains how a plan, a trial site and wallet credit are delivered and what happens when a payment does not complete.',
+  metaDescription: 'Get4Domain is a digital service. This policy explains how a plan, a free site and wallet credit are delivered and what happens when a payment does not complete.',
   intro: 'Get4Domain is a digital service operated by KSM QUANTUM TECHNOLOGIES. Nothing is shipped. This policy explains how the service is delivered.',
   sections: [
     {
@@ -16,10 +16,10 @@ export const DELIVERY: LegalDocDef = {
       ],
     },
     {
-      id: 'trial-site',
-      heading: 'Trial site',
+      id: 'free-plan-site',
+      heading: 'Free plan site',
       paragraphs: [
-        'When you register, your trial site is set up and you are taken to your business account, where you can start working on it. A Free trial site is informational. The main features need a paid plan.',
+        'When you register, your free site is set up and you are taken to your business account, where you can start working on it. A Free plan site is informational. The main features need a paid plan.',
       ],
     },
     {

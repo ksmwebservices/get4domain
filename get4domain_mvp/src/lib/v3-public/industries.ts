@@ -47,7 +47,7 @@ export const PACK_SUITS: Readonly<Record<string, readonly string[]>> = {
 /** Page title: the pack name and one word (the brand is added when it fits in 60 characters). */
 export const industryTitle = (name: string): string => `${name} website`;
 
-const DESCRIPTION = 'What the {name} pack gives your business, the kinds of business it suits, and how to start with a free trial site.';
+const DESCRIPTION = 'What the {name} pack gives your business, the kinds of business it suits, and how to start with a free site.';
 /** Meta description of a landing page. */
 export const industryDescription = (name: string): string => DESCRIPTION.replace('{name}', name);
 

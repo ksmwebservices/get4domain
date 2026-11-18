@@ -17,7 +17,8 @@ all.push({ path: 'PAYMENT_NOTE', text: PAYMENT_NOTE });
 const RULES: Array<[string, RegExp]> = [
   ['the banned product words', /\b(workspace|bos|leadspace)\b/i],
   ['"leads" (use enquiries)', /\bleads?\b/i],
-  ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|promo(?:tion|tional)?s?|cashback|sale|save[sd]?|savings?|free of charge|% off|bundle)\b/i],
+  ['the old trial wording (the one free state is the Free plan)', /\b(free trial|trial)\b/i],
+  ['discount, offer, coupon or deal wording (the owner phrase "SEO and promotion" is allowed)', /\b(discounts?|offers?|coupons?|deals?|promo(?:tion|tional)?s?|cashback|sale|save[sd]?|savings?|free of charge|% off|bundle)\b/i],
   ['a timeframe', /\b\d+\s*(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\b|\b(?:within|instantly|overnight|in minutes|24\/7|monthly|per month|a month)\b/i],
   ['a ranking claim', /\b(best|top|number one|no\. ?1|#1|guaranteed?|leading|unmatched|world-class)\b/i],
   ['a written price or percentage', /[₹$%]|\brs\.?\s*\d|\binr\b/i],
@@ -29,7 +30,7 @@ describe('copy rules over every string of the commercial pages', () => {
   test('there is copy to check', () => assert.ok(all.length > 100, String(all.length)));
   for (const [name, re] of RULES) {
     test(`none contains ${name}`, () => {
-      const hits = all.filter((s) => re.test(s.text)).map((s) => `${s.path}: ${s.text}`);
+      const hits = all.filter((s) => re.test(s.text.replace(/SEO and promotion/g, 'SEO and reach'))).map((s) => `${s.path}: ${s.text}`);
       assert.deepEqual(hits, []);
     });
   }
@@ -44,10 +45,27 @@ describe('copy rules over every string of the commercial pages', () => {
     assert.deepEqual(Object.keys(SITE.pricing.terms).map(Number), [3, 6, 12]);
     assert.deepEqual([...PUBLIC_TERMS], [3, 6, 12]);
   });
-  test('the pricing FAQ answers the trial, paying, GST, plan end and terms', () => {
+  test('the pricing FAQ answers the Free plan, paying, GST, plan end and terms', () => {
     const qs = SITE.pricing.faq.map((f) => f.q).join(' | ');
-    for (const w of [/trial/i, /pay/i, /GST/, /plan ends/i, /billing terms/i]) assert.match(qs, w);
+    for (const w of [/Free plan/, /pay/i, /GST/, /plan ends/i, /billing terms/i]) assert.match(qs, w);
     assert.ok(SITE.pricing.faq.some((f) => /stops working/.test(f.a) && /subdomain/.test(f.a) && /kept/.test(f.a)), 'plan end: domain stops and redirects to the subdomain, data and theme kept');
+  });
+});
+
+describe('the Free plan card', () => {
+  test('carries the owner wording and a paid-plans button', () => {
+    const f = SITE.pricing.free;
+    assert.equal(f.name, 'Free plan');
+    assert.equal(f.tagline, 'A free site with limited access, to get started.');
+    assert.equal(f.includedHeading, 'Included on Free');
+    assert.equal(f.unlockHeading, 'Move to a paid plan to unlock');
+    assert.equal(f.points.length, 5);
+    assert.equal(f.unlock.length, 5);
+    assert.ok(f.unlock[0].startsWith('Enquiries and the customer tools'));
+    assert.equal(f.cta, 'Start free');
+    assert.equal(f.ctaPaid, 'See paid plans');
+    assert.equal(SITE.pricing.compareFree, 'Free plan');
+    assert.equal(SITE.register.h1, 'Start with a free site');
   });
 });
 

@@ -5,7 +5,7 @@ export const TERMS: LegalDocDef = {
   path: '/terms',
   title: 'Terms of Service',
   metaTitle: 'Terms of Service',
-  metaDescription: 'The terms for using Get4Domain: accounts, plans and billing, the wallet, trial and Free sites, your content, directory listings and how disputes are handled.',
+  metaDescription: 'The terms for using Get4Domain: accounts, plans and billing, the wallet, Free plan sites, your content, directory listings and how disputes are handled.',
   intro: 'These terms are the agreement between you and KSM QUANTUM TECHNOLOGIES for the use of Get4Domain. Please read them with our Privacy Policy, Refund and Cancellation Policy, Payments and Billing page and Acceptable Use policy.',
   showGrievance: true,
   sections: [
@@ -14,7 +14,7 @@ export const TERMS: LegalDocDef = {
       heading: 'Who we are and what these terms cover',
       paragraphs: [
         'Get4Domain is a software-as-a-service platform for small businesses. It is operated by KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai, Tamil Nadu, India. In these terms, "we" and "us" mean KSM QUANTUM TECHNOLOGIES.',
-        'These terms apply when you create an account, start a trial site, buy a plan, use the wallet, claim or use a directory listing, or otherwise use Get4Domain. By using Get4Domain you accept these terms. If you do not accept them, please do not use the service.',
+        'These terms apply when you create an account, start a free site, buy a plan, use the wallet, claim or use a directory listing, or otherwise use Get4Domain. By using Get4Domain you accept these terms. If you do not accept them, please do not use the service.',
         'If you use Get4Domain for a business, you confirm that you are allowed to accept these terms for that business.',
       ],
     },
@@ -35,12 +35,12 @@ export const TERMS: LegalDocDef = {
       ],
     },
     {
-      id: 'trial-and-free-sites',
-      heading: 'Trial and Free sites',
+      id: 'free-plan-sites',
+      heading: 'Free plan sites',
       paragraphs: [
-        'A Free trial site is informational. It shows your business, but the main features of Get4Domain need a paid plan.',
-        'We may set limits on what a Free trial site or a Free site can show.',
-        'If you do not move to a paid plan, we may limit, pause or remove a trial or Free site as described in your account or on the pricing page.',
+        'A Free plan site is informational. It shows your business, but the main features of Get4Domain need a paid plan.',
+        'We may set limits on what a Free plan site can show.',
+        'If you do not move to a paid plan, we may limit, pause or remove a Free plan site as described in your account or on the pricing page.',
       ],
     },
     {

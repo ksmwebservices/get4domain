@@ -262,7 +262,7 @@ async function commerce() {
   ok(/Professional/.test(visible(planned.text)) && /Annual/.test(visible(planned.text)), 'commerce: register carries the plan and the term');
   ok(!/<input[^>]*(card|cvv|cc-)/i.test(reg), 'commerce: no payment field on the register form');
   const badPlan = await H(M, '/register?plan=gold&term=7');
-  ok(badPlan.status === 200 && /Free trial/.test(visible(badPlan.text)), 'commerce: an unknown plan or term falls back to the free trial');
+  ok(badPlan.status === 200 && /Free plan/.test(visible(badPlan.text)), 'commerce: an unknown plan or term falls back to the Free plan');
   const goodBody = { businessName: 'Sample Plumbing', categoryKey: 'plumber', industry: 'field_service', subdomain: 'fresh-shop', name: 'Owner', email: 'new@example.invalid', phone: '', password: 'Password1', acceptedTerms: true, plan: 'professional', termMonths: 12 };
   const okReg = await postJson(M, '/directory-api/register', goodBody);
   ok(okReg.ok === true && okReg.handoff === 'mock-handoff-code-0000' && !/Password1/.test(JSON.stringify(okReg)), 'commerce: register answers ok with a handoff code and never echoes the password');
@@ -344,9 +344,9 @@ async function industries() {
   for (const slug of REGULATED) ok((await H(M, `/industries/${slug}`)).status === 404, `industries: regulated page ${slug} is a 404 by default`);
   // G35: with the flag on an unknown live /industries/{id} is a real 404 (it was a 500); the flag-off answer is the live page's own
   const unkOn = await H(M, '/industries/not-a-pack');
-  ok(unkOn.status === 404 && !/Start with a free trial site/.test(unkOn.text), `industries: an unknown industry address is a real 404 with the flag on (${unkOn.status})`);
+  ok(unkOn.status === 404 && !/Start with a free site/.test(unkOn.text), `industries: an unknown industry address is a real 404 with the flag on (${unkOn.status})`);
   ok((await H(M, '/industries/zzz')).status === 404 && (await H(M, '/industries/zzz')).status === 404, 'industries: an unknown industry address is a 404 on every request, not only the first');
-  ok((await H(M, '/industries/travel')).status === 200 && !/Start with a free trial site/.test((await H(M, '/industries/travel')).text), 'industries: the live /industries/travel page is untouched');
+  ok((await H(M, '/industries/travel')).status === 200 && !/Start with a free site/.test((await H(M, '/industries/travel')).text), 'industries: the live /industries/travel page is untouched');
   ok((await H(M, '/v3-site/industries/food-service')).status === 404, 'industries: the internal address is not reachable');
   ok((await H(D, '/industries/food-service')).status === 404, 'industries: the directory host does not serve the pages');
   const ism = await H(M, '/sitemap-industries.xml');
@@ -360,7 +360,7 @@ async function industries() {
 // Flag on, host names not set: the host layer is inactive, so the landing pages are not routed (same as the other commercial pages) and nothing live changes.
 async function industriesNoHosts() {
   const live = await get(ON, '/industries/food-service');
-  ok(live.status === 404 && !/Start with a free trial site/.test(live.text), `industries (no host names): /industries/food-service is not routed to the landing page (${live.status})`);
+  ok(live.status === 404 && !/Start with a free site/.test(live.text), `industries (no host names): /industries/food-service is not routed to the landing page (${live.status})`);
   ok((await get(ON, '/industries/not-a-pack')).status === 404, 'industries (no host names): an unknown industry address is a real 404');
   ok((await get(ON, '/sitemap-industries.xml')).status === 404, 'industries (no host names): no industries sitemap without a main host');
   ok(!/sitemap-industries/.test((await get(ON, '/robots.txt')).text), 'industries (no host names): robots.txt does not name it');
@@ -386,7 +386,7 @@ async function industriesFlagOff() {
   const unknown = await O(M, '/industries/not-a-pack');
   for (const slug of [...PUBLISHED, ...REGULATED]) {
     const live = await O(M, `/industries/${slug}`);
-    ok(live.status === unknown.status && !/Start with a free trial site/.test(live.text), `industries flag off: /industries/${slug} behaves as an unknown live address and is not the landing page (${live.status})`);
+    ok(live.status === unknown.status && !/Start with a free site/.test(live.text), `industries flag off: /industries/${slug} behaves as an unknown live address and is not the landing page (${live.status})`);
     ok((await O(M, `/v3-site/industries/${slug}`)).status === 404, `industries flag off: the internal ${slug} page is a 404`);
   }
   ok(!/\/industries\/(food-service|property-and-real-estate)/.test((await O(M, '/sitemap.xml')).text), 'industries flag off: the sitemap lists no landing page');
@@ -602,7 +602,7 @@ async function commerceFlagOff() {
   for (const p of ['/', '/pricing', '/register', '/login', '/about', '/contact', '/features', '/industries', '/how-it-works']) {
     const x = await O(M, p);
     ok(x.status === 200, `commerce flag off: live ${p} still answers 200 (${x.status})`);
-    ok(!/A website for your business, live on your own subdomain|Start with a free trial site|Prices are shown without GST\. GST is added at checkout\./.test(x.text), `commerce flag off: live ${p} is not replaced by a new page`);
+    ok(!/A website for your business, live on your own subdomain|Start with a free site|Prices are shown without GST\. GST is added at checkout\./.test(x.text), `commerce flag off: live ${p} is not replaced by a new page`);
   }
   ok((await O(M, '/directory-api/register', { method: 'POST' })).status === 404 && (await O(M, '/directory-api/subdomain?slug=x')).status === 404, 'commerce flag off: the register and address routes are 404');
   const llms = await O(M, '/llms.txt');

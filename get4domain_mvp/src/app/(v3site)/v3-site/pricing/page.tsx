@@ -45,8 +45,14 @@ export default async function PricingPage() {
       <section aria-labelledby="free-title" className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
         <h2 id="free-title" className="text-2xl font-bold tracking-tight text-ink-900">{P.free.name}</h2>
         <p className="mt-1 text-slate-600">{P.free.tagline}</p>
-        <ul className="mt-3 list-disc pl-5 text-sm text-slate-700">{P.free.points.map((x) => <li key={x}>{x}</li>)}</ul>
-        <Link href="/register?plan=free" className="mt-4 inline-block inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{P.free.cta}</Link>
+        <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.includedHeading}</h3>
+        <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.points.map((x) => <li key={x}>{x}</li>)}</ul>
+        <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.unlockHeading}</h3>
+        <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.unlock.map((x) => <li key={x}>{x}</li>)}</ul>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link href="/register?plan=free" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 bg-brand-600 text-white hover:bg-brand-700">{P.free.cta}</Link>
+          <a href="#plans-title" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 border border-slate-300 text-ink-900 hover:bg-slate-50">{P.free.ctaPaid}</a>
+        </div>
       </section>
 
       <section aria-labelledby="plans-title" className="mt-10">

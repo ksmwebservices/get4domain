@@ -84,6 +84,6 @@ describe('marketing routes', () => {
   test('the sitemap lists the marketing pages once each', () => {
     const paths = siteSitemapEntries(ENV).map((e) => e.path);
     assert.equal(new Set(paths).size, paths.length);
-    for (const p of ['/product', '/partners', '/guides', '/product/website', '/guides/from-trial-to-paid-plan', '/industries/food-service', '/terms']) assert.ok(paths.includes(p), p);
+    for (const p of ['/product', '/partners', '/guides', '/product/website', '/guides/from-free-to-paid-plan', '/industries/food-service', '/terms']) assert.ok(paths.includes(p), p);
   });
 });

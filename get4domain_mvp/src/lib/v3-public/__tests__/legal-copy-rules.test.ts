@@ -38,6 +38,7 @@ const NEGATION = /\b(no|not|never|nor|without|cannot|neither)\b|n't/i;
 const RULES: Array<[string, RegExp]> = [
   ['a banned product word (workspace, BOS, LeadSpace)', /\b(workspace|bos|leadspace)\b/i],
   ['"leads" (use enquiries)', /\bleads?\b/i],
+  ['the old trial wording (the one free state is the Free plan)', /\b(free trial|trial)\b/i],
   ['a digit (no number is decided, so policy text carries none; the brand name Get4Domain is the one exception)', /\d/],
   ['a timeframe or time word', /\b(seconds?|minutes?|hours?|days?|weeks?|months?|years?|within|instantly|immediately|overnight|24\/7|a month|per month)\b/i],
   ['a price, currency or percentage', /[₹$%]|\brs\.?\s|\binr\b|\bpercent\b/i],
@@ -73,7 +74,7 @@ describe('copy rules over every string of the legal and company pages', () => {
 describe('the decided business facts are in the texts', () => {
   test('terms: gateway only, GST on top as its own line, invoice after payment, no refund once active with three exceptions, cancellation, wallet, no discounts, Chennai courts, no arbitration', () => {
     const t = policyText('/terms');
-    for (const re of [/Razorpay or Cashfree/, /GST at the rate in force is added on top at checkout and shown as its own line/, /invoice after a successful payment/, /prepaid platform credit/, /not refundable and cannot be withdrawn as cash/, /No discounts, coupons or offers exist/, /courts at Chennai, Tamil Nadu have exclusive jurisdiction/, /laws of India/, /A failed or cancelled order does not start a plan/, /cash payment that an administrator of Get4Domain has confirmed/, /quarterly, half-yearly or annually/, /Free trial site is informational/, /main features of Get4Domain need a paid plan/, /not refundable once the plan is active/, /duplicate payment/, /did not activate a plan/, /did not match the order and was held/, /administrator checks the payment gateway record/, /stop renewing your plan at any time/, /until the end of the term you have paid for/, /no part refund for the unused part of a term/]) assert.match(t, re);
+    for (const re of [/Razorpay or Cashfree/, /GST at the rate in force is added on top at checkout and shown as its own line/, /invoice after a successful payment/, /prepaid platform credit/, /not refundable and cannot be withdrawn as cash/, /No discounts, coupons or offers exist/, /courts at Chennai, Tamil Nadu have exclusive jurisdiction/, /laws of India/, /A failed or cancelled order does not start a plan/, /cash payment that an administrator of Get4Domain has confirmed/, /quarterly, half-yearly or annually/, /Free plan site is informational/, /main features of Get4Domain need a paid plan/, /not refundable once the plan is active/, /duplicate payment/, /did not activate a plan/, /did not match the order and was held/, /administrator checks the payment gateway record/, /stop renewing your plan at any time/, /until the end of the term you have paid for/, /no part refund for the unused part of a term/]) assert.match(t, re);
   });
   test('refund: not refundable once active, three exceptions, gateway refund to the original payment method after an administrator check, cancellation without part refund, wallet', () => {
     const t = policyText('/refund-policy');
@@ -86,7 +87,7 @@ describe('the decided business facts are in the texts', () => {
   });
   test('delivery: digital service, no shipping, activation after the gateway confirms payment', () => {
     const t = policyText('/delivery-policy');
-    for (const re of [/no physical goods/, /after the payment gateway confirms/, /does not activate a plan/, /Free trial site is informational/, /main features need a paid plan/, /GST at the rate in force is added at checkout and shown as its own line/]) assert.match(t, re);
+    for (const re of [/no physical goods/, /after the payment gateway confirms/, /does not activate a plan/, /Free plan site is informational/, /main features need a paid plan/, /GST at the rate in force is added at checkout and shown as its own line/]) assert.match(t, re);
   });
   test('privacy: gateways, hosting, directory shows no contact data, rights under the data protection law, retention while the account is active, children', () => {
     const t = policyText('/privacy-policy');

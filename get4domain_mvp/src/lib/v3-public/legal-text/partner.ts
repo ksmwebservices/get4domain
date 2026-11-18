@@ -42,7 +42,7 @@ export const PARTNER: LegalDocDef = {
       id: 'when-a-business-counts',
       heading: 'When a business counts',
       paragraphs: [
-        'A business counts for a partner once, on its first successful paid plan payment. A trial site, a Free site or a registration alone does not count.',
+        'A business counts for a partner once, on its first successful paid plan payment. A free site, a Free site or a registration alone does not count.',
         'A payment counts only after the payment gateway confirms it. A payment that fails, is cancelled or is held for review does not count until it is confirmed.',
         'Each business counts for one partner only. Our records decide which partner a business is linked to.',
       ],

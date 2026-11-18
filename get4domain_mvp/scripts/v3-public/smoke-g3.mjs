@@ -270,7 +270,7 @@ export function createG3Smoke(h) {
     const unknown = await O('/zzz-not-a-page-zzz');
     for (const p of ['/product', '/product/website', '/partners', '/guides', '/guides/choosing-your-site-address']) {
       const r = await O(p);
-      ok(r.status === unknown.status && !/Start with a free trial site|Partner programme|Product pages/.test(r.text), `g3 flag off: ${p} behaves as an unknown address (${r.status})`);
+      ok(r.status === unknown.status && !/Start with a free site|Partner programme|Product pages/.test(r.text), `g3 flag off: ${p} behaves as an unknown address (${r.status})`);
     }
     for (const p of ['/v3-site/product', '/v3-site/guides', '/v3-site/partners', '/v3-site/industries/food-service/restaurant-cafe']) ok((await O(p)).status === 404, `g3 flag off: internal ${p} is a 404`);
     ok((await O('/sitemap-industries.xml')).status === 404, 'g3 flag off: no flag-on sitemap');
@@ -281,7 +281,7 @@ export function createG3Smoke(h) {
   async function noHosts() {
     for (const p of ['/product', '/product/website', '/partners', '/guides', '/industries/food-service/restaurant-cafe']) {
       const r = await get(ports.ON, p);
-      ok(r.status === 404 && !/Start with a free trial site/.test(r.text), `g3 no hosts: ${p} is not routed (${r.status})`);
+      ok(r.status === 404 && !/Start with a free site/.test(r.text), `g3 no hosts: ${p} is not routed (${r.status})`);
     }
     ok((await get(ports.ON, '/v3-site/product')).status === (await get(ports.ON, '/v3-site/pricing')).status, 'g3 no hosts: the internal product page is reachable exactly as the other commercial pages are');
   }

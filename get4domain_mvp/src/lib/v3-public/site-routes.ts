@@ -6,7 +6,7 @@
 export const PRODUCT_SLUGS: readonly string[] = ['website', 'search-visibility', 'enquiries', 'directory', 'reports', 'ai-studio', 'domains', 'business-tools'];
 
 export const GUIDE_SLUGS: readonly string[] = [
-  'what-a-business-website-needs', 'choosing-your-site-address', 'how-search-engines-find-your-site', 'handling-enquiries-well', 'from-trial-to-paid-plan',
+  'what-a-business-website-needs', 'choosing-your-site-address', 'how-search-engines-find-your-site', 'handling-enquiries-well', 'from-free-to-paid-plan',
 ];
 
 /** Fixed addresses that exist as pages of their own. */

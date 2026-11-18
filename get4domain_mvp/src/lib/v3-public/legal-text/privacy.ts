@@ -27,7 +27,7 @@ export const PRIVACY: LegalDocDef = {
       heading: 'Why we use it',
       paragraphs: ['We use personal data to:'],
       bullets: [
-        'create and run your account, trial site and website;',
+        'create and run your account, free site and website;',
         'take payment through the payment gateway, issue invoices and keep records the law requires, including under the Central Goods and Services Tax Act;',
         'verify claims on directory listings and handle requests to correct or remove a listing;',
         'pay partner commission and deduct tax where the law requires;',
