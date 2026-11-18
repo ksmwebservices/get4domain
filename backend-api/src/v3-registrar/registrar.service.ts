@@ -38,6 +38,17 @@ export interface Quote {
   domain: string; tld: string; years: number; kind: OrderKind; costPaise: number; marginPaise: number; privacyPaise: number; taxablePaise: number; taxPaise: number; totalPaise: number; lines: Array<{ name: string; ratePercent: number; amountPaise: number }>;
   taxSnapshot: Record<string, unknown>;
 }
+/**
+ * What a vendor may see of a quote. The cost the registrar charges and the margin staff approved are internal: the vendor sees the price
+ * parts it pays (privacy, GST lines, total) and nothing else. The snapshot kept on the order is trimmed the same way, so no copy leaks them.
+ */
+export type VendorQuote = Omit<Quote, 'costPaise' | 'marginPaise' | 'taxSnapshot'> & { taxSnapshot: Record<string, unknown> };
+export function vendorQuoteView(q: Quote): VendorQuote {
+  const { costPaise: _cost, marginPaise: _margin, taxSnapshot, ...rest } = q;
+  const { costPaise: _c2, marginPaise: _m2, ...snap } = taxSnapshot ?? {};
+  void _cost; void _margin; void _c2; void _m2;
+  return { ...rest, taxSnapshot: snap };
+}
 export interface PurchaseInput { domain: string; years: number; privacy?: boolean; idempotencyKey: string; expectedTotalPaise: number; consent?: boolean }
 export interface TransferInput { domain: string; authCode: string; privacy?: boolean; idempotencyKey: string; expectedTotalPaise: number; confirmUnlocked: boolean; consent?: boolean }
 export interface RenewInput { years: number; idempotencyKey: string; expectedTotalPaise: number }

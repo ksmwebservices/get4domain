@@ -14,7 +14,7 @@ import { Actor } from '../../plans/admin/audit.service';
 import { PageQueryDto, pageArgs } from '../../plans/admin/plans-admin.common';
 import { OrderStatus } from '../core/registrar-core';
 import { IdentityService, StaffRef } from '../identity.service';
-import { RegistrarService } from '../registrar.service';
+import { RegistrarService, vendorQuoteView } from '../registrar.service';
 import { OrderKind, RegistrantStatus } from '../registrar.store';
 
 const actor = (user: AuthenticatedUser, req: Request, type: 'VENDOR' | 'STAFF'): Actor => ({ type, id: user?.sub ?? null, ip: req?.ip ?? null });
@@ -73,7 +73,7 @@ export class MeDomainSalesController {
 
   @Post('quote') @HttpCode(200)
   @ApiOperation({ summary: 'The exact price of registering a name: cost plus approved margin, GST as its own line, the total that would be held and charged' })
-  quote(@Tenant() t: TenantContext, @Body() dto: QuoteDto) { return this.svc.quote(t.vendorId, dto); }
+  async quote(@Tenant() t: TenantContext, @Body() dto: QuoteDto) { return vendorQuoteView(await this.svc.quote(t.vendorId, dto)); }
 
   @Post('purchase') @HttpCode(200)
   @ApiOperation({ summary: 'Register a domain from my wallet (hold, registrar, charge; the hold is released if the registrar fails; the same key never buys twice)' })
@@ -81,7 +81,7 @@ export class MeDomainSalesController {
 
   @Post('transfer-quote') @HttpCode(200)
   @ApiOperation({ summary: 'The exact price of moving a domain I already own into the Get4Domain account: transfer cost plus approved margin, GST as its own line' })
-  transferQuote(@Tenant() t: TenantContext, @Body() dto: TransferQuoteDto) { return this.svc.transferQuote(t.vendorId, dto.domain, dto.privacy === true); }
+  async transferQuote(@Tenant() t: TenantContext, @Body() dto: TransferQuoteDto) { return vendorQuoteView(await this.svc.transferQuote(t.vendorId, dto.domain, dto.privacy === true)); }
 
   @Post('transfer') @HttpCode(200)
   @ApiOperation({ summary: 'Move a domain in from another registrar (authorisation code, domain unlocked); the price is held from my wallet and charged when the transfer finishes. The code is never stored' })
@@ -101,7 +101,7 @@ export class MeDomainSalesController {
 
   @Post('registered/:id/renew-quote') @HttpCode(200)
   @ApiOperation({ summary: 'The exact price of renewing one of my domains (before it expires)' })
-  renewQuote(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: RenewQuoteDto) { return this.svc.renewQuote(t.vendorId, id, dto.years); }
+  async renewQuote(@Tenant() t: TenantContext, @Param('id') id: string, @Body() dto: RenewQuoteDto) { return vendorQuoteView(await this.svc.renewQuote(t.vendorId, id, dto.years)); }
 
   @Post('registered/:id/renew') @HttpCode(200)
   @ApiOperation({ summary: 'Renew one of my domains from my wallet; only before it expires' })

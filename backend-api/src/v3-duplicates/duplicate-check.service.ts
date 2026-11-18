@@ -4,7 +4,7 @@ import { cleanReason } from '../vendor-lifecycle/core/lifecycle-core';
 import {
   classify, DuplicateInput, DuplicatePath, hostOf, Match, matchesFromCandidates, normaliseGstin, normalisePincode, Outcome, phoneKeyOf, similarSubdomain, strengthOf,
 } from './core/duplicate-core';
-import { claimRoute, DUPLICATE_BLOCKED_MESSAGE, DUPLICATE_POSSIBLE_MESSAGE, duplicateError } from './duplicate.errors';
+import { claimRoute, DUPLICATE_BLOCKED_MESSAGE, DUPLICATE_POSSIBLE_MESSAGE, duplicateError, publicFacts } from './duplicate.errors';
 import { DuplicateHoldPort, DuplicateStore, Hit, PublicListing } from './duplicate.store';
 
 /** Staff who may override a duplicate refusal (with a written reason). Every other role, and every self-service path, cannot. */
@@ -120,13 +120,13 @@ export class DuplicateCheckService extends DuplicateHoldPort {
     }
     // POSSIBLE. A visitor is asked, once, with PUBLIC listing facts only. If they say it is another business, or there is no public listing to show, it goes to admin review, unpublished.
     if (ctx.selfService) {
-      const facts = r.listings.map(({ slug, name, category, city, area, claimable }) => ({ slug, name, category, city, area, claimable }));
+      const facts = publicFacts(r.listings);
       if (facts.length > 0 && ctx.confirmDistinct !== true) {
         throw new ConflictException(duplicateError('DUPLICATE_POSSIBLE', DUPLICATE_POSSIBLE_MESSAGE, { candidates: facts, claim: claimRoute(r.listings.find((l) => l.claimable)) }));
       }
       return { outcome: 'POSSIBLE', hold: true, override: null, ...base };
     }
-    throw new ConflictException(duplicateError('DUPLICATE_POSSIBLE', DUPLICATE_POSSIBLE_MESSAGE, { candidates: r.listings, claim: claimRoute(r.listings.find((l) => l.claimable)), ...staffView }));
+    throw new ConflictException(duplicateError('DUPLICATE_POSSIBLE', DUPLICATE_POSSIBLE_MESSAGE, { candidates: publicFacts(r.listings), claim: claimRoute(r.listings.find((l) => l.claimable)), ...staffView }));
   }
 
   private checkOverride(ctx: EnforceContext): { reason: string; staff: Actor } | null {

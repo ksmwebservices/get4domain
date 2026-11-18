@@ -12,3 +12,7 @@ export const DUPLICATE_POSSIBLE_MESSAGE = 'We found a business that looks like y
 
 /** Where a visitor goes to claim a listing: the public claim start (POST with the listing's slug). Present only for a listing nobody has claimed. */
 export const claimRoute = (l: PublicListing | undefined): { businessSlug: string; startPath: string } | null => (l && l.claimable ? { businessSlug: l.slug, startPath: '/v3/claim/start' } : null);
+
+/** The only facts about another business a refusal may carry. Whatever a listing row holds, only these seven reach a caller. */
+export interface PublicFact { slug: string; name: string; category: string | null; city: string | null; area: string | null; claimable: boolean }
+export const publicFacts = (rows: readonly PublicListing[]): PublicFact[] => rows.map((l) => ({ slug: l.slug, name: l.name, category: l.category ?? null, city: l.city ?? null, area: l.area ?? null, claimable: l.claimable === true }));
