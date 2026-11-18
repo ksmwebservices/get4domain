@@ -13,6 +13,7 @@ import { SiteBuildService } from './publish/site-build.service';
 import { HostResolver, SitePublicService } from './publish/site-public.service';
 import { SitePreviewService } from './publish/site-preview.service';
 import { SiteSettingsService } from './publish/site-settings.service';
+import { SiteProvisionFacts } from './publish/site-provision-facts.service';
 import { SiteRepository } from './publish/site.repository';
 import { VendorHosts } from './publish/vendor-hosts';
 import { DomainHostResolver, DomainVendorHosts } from '../site-domains/site-publish-adapters';
@@ -32,6 +33,6 @@ export const SITE_PUBLISH_PROVIDERS: Provider[] = [
   { provide: SnapshotSink, useClass: PrismaSnapshotSink },
   { provide: VendorSeoSettings, useClass: PrismaVendorSeoSettings },   // slice 6: the SEO templates and crawler list the build reads
   { provide: SiteAudit, useClass: PrismaSiteAudit },
-  ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePreviewService, SitePublicService,
+  ThemeRenderService, SiteBuildService, PublishService, SiteSettingsService, SitePreviewService, SitePublicService, SiteProvisionFacts,
 ];
 export const SITE_PUBLISH_CONTROLLERS: Type<unknown>[] = [MeSiteController, SitesAdminController, PublicSiteController];

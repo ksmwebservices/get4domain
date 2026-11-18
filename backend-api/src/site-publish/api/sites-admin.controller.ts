@@ -6,6 +6,7 @@ import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-
 import { actorOf, PageQueryDto, pageArgs, paged } from '../../plans/admin/plans-admin.common';
 import { PublishService } from '../publish/publish.service';
 import { SiteBuildService } from '../publish/site-build.service';
+import { SiteProvisionFacts } from '../publish/site-provision-facts.service';
 import { SitePreviewService } from '../publish/site-preview.service';
 import { SiteSettingsService, summarise } from '../publish/site-settings.service';
 import { SiteRepository } from '../publish/site.repository';
@@ -23,7 +24,7 @@ import { previewHeaders, settingsView } from './site-http';
 export class SitesAdminController {
   constructor(
     private readonly repo: SiteRepository, private readonly settings: SiteSettingsService, private readonly build: SiteBuildService,
-    private readonly publisher: PublishService, private readonly preview: SitePreviewService,
+    private readonly publisher: PublishService, private readonly preview: SitePreviewService, private readonly facts: SiteProvisionFacts,
   ) {}
 
   @Get('sites')
@@ -38,8 +39,8 @@ export class SitesAdminController {
   }
 
   @Get('vendors/:id/site')
-  @ApiOperation({ summary: 'One vendor\'s site: settings, current and newest publication, what is missing, allowed themes (no html)' })
-  status(@Param('id') id: string) { return this.settings.status(id); }
+  @ApiOperation({ summary: 'One vendor\'s site: settings, current and newest publication, what is missing, allowed themes, the vendor status, subdomain, site address and why the site was not made (siteProvisionStatus, siteProvisionCode, siteProvisionFailedAt); no html' })
+  async status(@Param('id') id: string) { const s = await this.settings.status(id); return { ...s, ...(await this.facts.forAdmin(id)) }; }
 
   @Put('vendors/:id/site/theme') @HttpCode(200)
   @ApiOperation({ summary: 'Choose a vendor\'s theme on their behalf (the plan rules still apply)' })
