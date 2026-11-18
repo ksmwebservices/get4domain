@@ -39,7 +39,9 @@ const SAMPLE: Array<[string, string, string]> = [
   ['MEMBERSHIP_WELLNESS', 'salon', 'Salon'], ['EDUCATION', 'tuition-centre', 'Tuition centre'], ['PRACTICE_LEGAL_FINANCE', 'chartered-accountant', 'Chartered accountant'],
   ['AGENCY_CONSULTING', 'design-studio', 'Design studio'], ['HOSPITALITY_EVENTS', 'travel-agency', 'Travel agency'], ['RENTAL_FLEET', 'car-rental', 'Car rental'], ['B2B_DEALER', 'machinery-dealer', 'Machinery dealer'],
 ];
-export const MOCK_CATEGORIES: readonly Category[] = SAMPLE.map(([packKey, categoryKey, name]) => ({ categoryKey, name, family: packKey.toLowerCase(), packKey, minTier: 'HANDYMAN' }));
+// the sample tier of each pack, so the picker by track and the plan switch can be reviewed (the real list carries its own minTier)
+const SAMPLE_TIER: Readonly<Record<string, string>> = { PROPERTY: 'PROFESSIONAL', CLINIC: 'PROFESSIONAL', LAB: 'PROFESSIONAL', PRACTICE_LEGAL_FINANCE: 'PROFESSIONAL', AGENCY_CONSULTING: 'PROFESSIONAL', PHARMACY: 'ECOMMERCE', RETAIL: 'ECOMMERCE', FOOD_SERVICE: 'ECOMMERCE', B2B_DEALER: 'ECOMMERCE' };
+export const MOCK_CATEGORIES: readonly Category[] = SAMPLE.map(([packKey, categoryKey, name]) => ({ categoryKey, name, family: packKey.toLowerCase(), packKey, minTier: SAMPLE_TIER[packKey] ?? 'HANDYMAN' }));
 
 /** The categories a business can register under. */
 export async function fetchCategories(): Promise<Fetched<Category[]>> {
