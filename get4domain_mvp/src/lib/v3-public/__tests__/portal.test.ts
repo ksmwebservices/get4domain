@@ -23,7 +23,7 @@ walk(PORTAL, 'PORTAL', all);
 const RULES: Array<[string, RegExp]> = [
   ['the banned product words', /\b(workspace|bos|leadspace)\b/i],
   ['"leads" (use enquiries)', /\bleads?\b/i],
-  ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|promo(?:tion|tional)?s?|cashback|sale|save[sd]?|savings?|free of charge|% off|bundle)\b/i],
+  ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|cashback|sale|save[sd]?|savings?|free of charge|% off|bundle)\b/i],
   ['a timeframe', /\b\d+\s*(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\b|\b(?:within|instantly|overnight|in minutes|24\/7|monthly|per month|a month)\b/i],
   ['a ranking claim', /\b(best|top|number one|no\. ?1|#1|guaranteed?|leading|unmatched|world-class)\b/i],
   ['a written price or percentage', /[₹$%]|\brs\.?\s*\d|\binr\b/i],

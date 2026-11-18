@@ -10,13 +10,13 @@ export const GUIDE_SLUGS: readonly string[] = [
 ];
 
 /** Fixed addresses that exist as pages of their own. */
-export const MARKETING_FIXED_PATHS: readonly string[] = ['/product', '/partners', '/guides'];
+export const MARKETING_FIXED_PATHS: readonly string[] = ['/product', '/growth', '/partners', '/guides'];
 
 export const productPath = (slug: string): string => `/product/${slug}`;
 export const guidePath = (slug: string): string => `/guides/${slug}`;
 
 /** The three segments are reserved for the marketing pages (the backend list of reserved directory segments should carry them: gap G45). */
-export const MARKETING_SEGMENTS: readonly string[] = ['product', 'partners', 'guides'];
+export const MARKETING_SEGMENTS: readonly string[] = ['product', 'growth', 'partners', 'guides'];
 
 export type MarketingRoute =
   | { kind: 'fixed'; path: string }

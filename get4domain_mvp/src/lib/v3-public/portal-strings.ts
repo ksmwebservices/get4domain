@@ -14,6 +14,7 @@ export const PORTAL = {
     categories: 'Categories',
     directory: 'Directory',
     product: 'Product',
+    growth: 'Growth',
     pricing: 'Pricing',
     how: 'How it works',
     industries: 'Industries',
@@ -83,9 +84,9 @@ export const PORTAL = {
   },
 
   home: {
-    eyebrow: 'Local search and business websites',
+    eyebrow: 'Local business directory, search and web app',
     h1: 'Find any local business. Get a website for yours.',
-    lead: 'Search for a business by what it does and where it is. Or choose your own website name and start your business online with the tools to run it.',
+    lead: 'Search for a business by keyword and place, or find a website name on the Get4Domain subdomain directory. Every business also gets a website, business tools, enquiry capture and promotion.',
     popularHeading: 'Popular searches',
     popularLabel: 'Popular searches',
     popular: ['Plumber', 'Electrician', 'Dentist', 'Salon', 'Gym', 'Restaurant', 'Car workshop', 'Tuition centre'],
@@ -207,8 +208,18 @@ export const browseCount = (areas: number, categories: number): string => `${are
 /** The annual price against four quarterly prices, as a whole percentage worked out from the price route. Shown only when it is a real positive number. */
 export const annualSaving = (percent: number): string => `Save ${percent}% with annual`;
 
+/** The billing term dropdown option: "Annual (save 33%)" when the saving is real, else just the term name. */
+export const termOption = (name: string, savingPercent: number | null): string => (savingPercent === null ? name : `${name} (save ${savingPercent}%)`);
+
+/** The small line under the monthly price: "billed annually ₹3,600 + GST". The total is the real term price, shown without GST. */
+export const billedLine = (term: number, total: string): string => `billed ${term === 12 ? 'annually' : term === 6 ? 'half-yearly' : 'quarterly'} ${total} + GST`;
+
 /** "12 businesses found", from the real total of a search. */
 export const resultCount = (n: number): string => (n === 1 ? '1 business found' : `${n} businesses found`);
 
 /** "Page 2 of 5" for the pager of the results. */
 export const pageOf = (n: number, total: number): string => `Page ${n} of ${total}`;
+
+/** The unit beside the large monthly price (a function-side string: the copy tests walk the PORTAL object, and a time word is allowed here only as this label). */
+export const PER_MONTH = 'per month';
+export const TERM_LABEL = 'Billing term';

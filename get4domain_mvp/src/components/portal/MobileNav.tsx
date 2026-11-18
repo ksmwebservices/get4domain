@@ -134,6 +134,7 @@ export default function MobileNav({ links }: { links: HeaderLinks }) {
               <li><A href={links.login} className={ROW} onClick={closeSheet}>{PORTAL.nav.signIn}</A></li>
               <li><A href={links.register} className={`${ROWB} font-semibold text-brand-700`} onClick={closeSheet}>{PORTAL.nav.start}</A></li>
               <li><A href={links.product} className={ROW} onClick={closeSheet}>{PORTAL.nav.product}</A></li>
+              <li><A href={links.growth} className={ROW} onClick={closeSheet}>{PORTAL.nav.growth}</A></li>
               <li><A href={links.how} className={ROW} onClick={closeSheet}>{PORTAL.nav.how}</A></li>
               <li><A href={links.guides} className={ROW} onClick={closeSheet}>{PORTAL.nav.guides}</A></li>
               <li><A href={links.partners} className={ROW} onClick={closeSheet}>{PORTAL.nav.partners}</A></li>

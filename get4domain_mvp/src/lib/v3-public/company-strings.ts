@@ -7,9 +7,9 @@ import type { LegalSection } from './legal-meta';
 export const ABOUT_STRINGS = {
   path: '/about',
   metaTitle: 'About us',
-  metaDescription: 'Get4Domain is a software-as-a-service platform for small businesses, operated by KSM QUANTUM TECHNOLOGIES in Chennai, Tamil Nadu, India.',
+  metaDescription: 'Get4Domain is a local business directory and search, with a web app for every business, operated by KSM QUANTUM TECHNOLOGIES in Chennai, Tamil Nadu, India.',
   h1: 'About Get4Domain',
-  intro: 'Get4Domain is a software-as-a-service platform for small businesses. A business gets a website on its own subdomain and the tools to run it.',
+  intro: 'Get4Domain is a local business directory and search engine: you find a business by keyword and place, or find a website name on the Get4Domain subdomain directory. It comes with a web app for every business: a website, business tools, an enquiry capture system, and promotion through our SEO keywords, directory pages and the business subdomain.',
   sections: [
     {
       id: 'what-you-can-do',

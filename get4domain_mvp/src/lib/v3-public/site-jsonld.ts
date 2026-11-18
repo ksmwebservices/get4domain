@@ -1,7 +1,8 @@
+import { netAmountPaise, PUBLIC_TERMS, type PublicPlans } from './plans';
 import { SITE } from './site-strings';
 import { mainOrigin } from './site-metadata';
 
-/** JSON-LD of the commercial pages, as data (serialised and escaped by the JsonLd component). No price schema, no ratings, no review markup. */
+/** JSON-LD of the commercial pages, as data (serialised and escaped by the JsonLd component). Prices only through offersLd, from the public price route; no ratings, no review markup. */
 export function organizationLd(): Record<string, unknown> {
   const origin = mainOrigin();
   return { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.brand, ...(origin ? { url: `${origin}/` } : {}) };
@@ -47,4 +48,25 @@ export function breadcrumbLd(items: ReadonlyArray<{ name: string; path: string }
     '@type': 'BreadcrumbList',
     itemListElement: items.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: `${origin}${c.path === '/' ? '/' : c.path}` })),
   };
+}
+
+/**
+ * One Product per paid plan with one Offer per billing term, built ONLY from the public price route (net of GST, so valueAddedTaxIncluded is false).
+ * A term without a real price gets no Offer; a plan with no Offer at all is left out; with nothing priced the block is null (nothing is written).
+ */
+export function offersLd(data: PublicPlans, termNames: Record<number, string>): Record<string, unknown> | null {
+  const products = data.plans.map((p) => {
+    const offers = PUBLIC_TERMS.flatMap((t) => {
+      const price = p.prices.find((x) => x.termMonths === t);
+      const net = price ? netAmountPaise(price, data.tax) : null;
+      if (net === null) return [];
+      return [{
+        '@type': 'Offer', name: `${p.name}, ${termNames[t] ?? t}`, price: (net / 100).toFixed(2), priceCurrency: 'INR',
+        priceSpecification: { '@type': 'PriceSpecification', price: (net / 100).toFixed(2), priceCurrency: 'INR', valueAddedTaxIncluded: false },
+      }];
+    });
+    return offers.length ? { '@type': 'Product', name: p.name, ...(p.description ? { description: p.description } : {}), offers } : null;
+  }).filter((x): x is NonNullable<typeof x> => x !== null);
+  if (products.length === 0) return null;
+  return { '@context': 'https://schema.org', '@type': 'ItemList', itemListElement: products.map((item, i) => ({ '@type': 'ListItem', position: i + 1, item })) };
 }

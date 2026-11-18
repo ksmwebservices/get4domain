@@ -6,11 +6,14 @@ import DirectoryEmpty from '@/components/portal/DirectoryEmpty';
 import CategoryGrid from '@/components/portal/CategoryGrid';
 import FullBleed from '@/components/portal/FullBleed';
 import { BrowserFrame, DashboardScreen, DirectoryScreen, PanelPreview, PhoneFrame } from '@/components/portal/Mockups';
+import GrowthGrid from '@/components/portal/GrowthGrid';
 import { navPacks } from '@/components/portal/nav-data';
 import PortalPricing from '@/components/portal/PortalPricing';
 import SearchBox from '@/components/portal/SearchBox';
 import { Band, CtaPanel, FaqAccordion, SectionHead } from '@/components/portal/Section';
 import { CARD, CHIP, CONTAINER, PROSE_LINK } from '@/components/portal/ui';
+import { GROWTH_ONLY } from '@/lib/v3-public/growth-config';
+import { GROWTH } from '@/lib/v3-public/growth-strings';
 import { getPageModel } from '@/lib/v3-public/data';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { MARKETING } from '@/lib/v3-public/marketing-strings';
@@ -56,6 +59,7 @@ export default async function HomePage() {
             <p className="text-sm font-semibold uppercase tracking-wide text-gold-300">{H.eyebrow}</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">{H.h1}</h1>
             <p className="mt-4 max-w-xl text-lg text-ink-200">{H.lead}</p>
+            <p className="mt-2 max-w-xl text-base font-medium text-gold-200">{GROWTH.heroLine}</p>
             <div className="mt-8 max-w-2xl">
               <SearchBox action={l.search} registerHref={register} suffix={base ? `.${base}` : ''} idPrefix="hero" />
             </div>
@@ -99,6 +103,13 @@ export default async function HomePage() {
           ))}
         </ul>
         <p className="mt-6"><Link href={l.main('/industries')} className={PROSE_LINK}>{MARKETING.home.audienceLink}</Link></p>
+      </Band>
+
+      {/* 2c. Get found and get enquiries: the growth services with their status labels (config: growth-config.ts) */}
+      <Band id="growth-title">
+        <SectionHead id="growth-title" title={GROWTH.homeHeading} lead={GROWTH.homeLead} />
+        <div className="mt-8"><GrowthGrid services={GROWTH_ONLY} withSummary={false} /></div>
+        <p className="mt-6"><Link href={l.main('/growth')} className={PROSE_LINK}>{GROWTH.homeMore}</Link></p>
       </Band>
 
       {/* 3. How it works */}

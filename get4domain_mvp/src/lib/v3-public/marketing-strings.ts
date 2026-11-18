@@ -32,7 +32,7 @@ export const MARKETING = {
     audienceBody: 'Get4Domain is for businesses that want a website of their own and the tools to run it: service providers, shops, practices, studios, schools and many other kinds of business. Each business area comes with starter content and working areas that suit it.',
     audienceLink: 'Browse industries',
     tracksHeading: 'Three business tracks',
-    tracksIntro: 'Choose the track that fits how your business works. You can start with a free site before you choose.',
+    tracksIntro: 'Every paid plan includes your website, the business tools and the promotion work done by our team. Choose the track that fits how your business works. You can start with a free site before you choose.',
     tracks: [
       { name: 'Handyman', body: 'For one-person service businesses.' },
       { name: 'Professional', body: 'For firms and practices.' },
@@ -93,9 +93,9 @@ export const MARKETING = {
 
   product: {
     metaTitle: 'Product',
-    metaDescription: 'What Get4Domain gives your business: a website, search visibility, enquiries, the directory, reports, AI Studio, domains and business tools.',
+    metaDescription: 'The Get4Domain web app: a website for your business, business tools, enquiry capture, and promotion through our directory pages, SEO keywords and your own subdomain.',
     h1: 'Product',
-    lead: 'Everything a business needs online, in one place. Each part has a page of its own.',
+    lead: 'Get4Domain is a local business directory and search, with a web app for every business: a website, business tools, enquiry capture and promotion. Each part has a page of its own.',
     viewLink: 'Read more',
     crumb: 'Product',
     gives: 'What you get',

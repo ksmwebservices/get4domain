@@ -75,7 +75,7 @@ describe('copy of the landing pages', () => {
     ['a banned product word', /\b(workspace|bos|leadspace)\b/i],
     ['"leads"', /\bleads?\b/i],
     ['the old trial wording', /\b(free trial|trial)\b/i],
-    ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|promo(?:tion|tional)?s?|cashback|sale|save[sd]?|savings?|free of charge|bundle)\b/i],
+    ['discount, offer, coupon or deal wording', /\b(discounts?|offers?|coupons?|deals?|cashback|sale|save[sd]?|savings?|free of charge|bundle)\b/i],
     ['a timeframe', /\b\d+\s*(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\b|\b(?:within|instantly|overnight|in minutes|24\/7|monthly|per month)\b/i],
     ['a ranking claim', /\b(best|top|number one|guaranteed?|leading|unmatched|world-class)\b/i],
     ['a written price or percentage', /[₹$%]|\binr\b/i],

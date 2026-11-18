@@ -9,7 +9,7 @@ import { PORTAL } from '@/lib/v3-public/portal-strings';
 
 /** Every address the header needs, worked out on the server (the main site and the directory can be two hosts). */
 export interface HeaderLinks {
-  home: string; product: string; pricing: string; how: string; industries: string; guides: string; partners: string;
+  home: string; product: string; growth: string; pricing: string; how: string; industries: string; guides: string; partners: string;
   directory: string; search: string; claim: string; login: string; register: string;
 }
 
@@ -124,6 +124,7 @@ export default function Header({ links, packs, mainPrefix, active, navLabel }: {
           </div>
           <A href={links.directory} className={`${NAV_LINK} ${active === 'directory' ? 'bg-brand-50 text-brand-800' : ''}`}>{N.directory}</A>
           <A href={links.product} className={NAV_LINK}>{N.product}</A>
+          <A href={links.growth} className={NAV_LINK}>{N.growth}</A>
           <A href={links.pricing} className={NAV_LINK}>{N.pricing}</A>
           <A href={links.how} className={NAV_LINK}>{N.how}</A>
           <A href={links.guides} className={NAV_LINK}>{N.guides}</A>
@@ -181,6 +182,7 @@ export default function Header({ links, packs, mainPrefix, active, navLabel }: {
                 </ul>
               </details>
               <A href={links.product} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.product}</A>
+              <A href={links.growth} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.growth}</A>
               <A href={links.pricing} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.pricing}</A>
               <A href={links.how} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.how}</A>
               <A href={links.guides} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.guides}</A>

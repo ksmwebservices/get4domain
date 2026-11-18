@@ -18,7 +18,7 @@ import { S } from '@/lib/v3-public/strings';
 export default function PortalShell({ variant, children }: { variant: 'site' | 'directory'; children: ReactNode }) {
   const l = portalLinks(variant === 'site' ? 'main' : 'directory');
   const links: HeaderLinks = {
-    home: variant === 'site' ? l.main('/') : l.directoryHome, product: l.main('/product'), pricing: l.main('/pricing'), how: l.main('/how-it-works'), industries: l.main('/industries'),
+    home: variant === 'site' ? l.main('/') : l.directoryHome, product: l.main('/product'), growth: l.main('/growth'), pricing: l.main('/pricing'), how: l.main('/how-it-works'), industries: l.main('/industries'),
     guides: l.main('/guides'), partners: l.main('/partners'), directory: l.directoryHome, search: l.search, claim: l.claim, login: l.login, register: l.main('/register'),
   };
   // a path on this host stays relative; to the other host it is absolute (portalLinks decides), so the prefix is whatever main('') gives

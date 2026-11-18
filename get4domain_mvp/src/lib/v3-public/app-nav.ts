@@ -13,7 +13,7 @@ const pathOf = (href: string): string => href.split('#')[0].split('?')[0].replac
 const within = (pathname: string, base: string): boolean => pathname === base || pathname.startsWith(`${base}/`);
 
 /** Pages of the "More" sheet; the More tab is marked while one of them is open. */
-export const MORE_PATHS: readonly string[] = ['/login', '/register', '/product', '/how-it-works', '/guides', '/partners', '/account'];
+export const MORE_PATHS: readonly string[] = ['/login', '/register', '/product', '/growth', '/how-it-works', '/guides', '/partners', '/account'];
 
 /** Policy pages: long reading with their own links, so the bar stays away from them. */
 export function isLegalPath(pathname: string): boolean {

@@ -32,7 +32,7 @@ export function withoutGrievanceTimelines(text: string): string {
     .map((sentence) => (/\b(grievance officer|complaint)\b/i.test(sentence) ? sentence.replace(/\b48 hours\b/g, 'a set time').replace(/\bone month\b/g, 'a set time') : sentence))
     .join(' ');
 }
-const NEGATABLE =/\b(discounts?|coupons?|offers?|promo(?:tion|tional)?s?|guarantee[sd]?)\b/i;
+const NEGATABLE =/\b(discounts?|coupons?|offers?|guarantee[sd]?)\b/i;
 const NEGATION = /\b(no|not|never|nor|without|cannot|neither)\b|n't/i;
 
 const RULES: Array<[string, RegExp]> = [
@@ -116,7 +116,7 @@ describe('the company and partner pages', () => {
   });
   test('about: says what Get4Domain is and who operates it, and invents no history, number or team', () => {
     const t = JSON.stringify(ABOUT_STRINGS);
-    assert.match(t, /software-as-a-service platform for small businesses/);
+    assert.match(t, /local business directory and search engine/);
     assert.match(t, /operated by KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai, Tamil Nadu, India/);
     assert.doesNotMatch(t, /\b(founded|since|years|team|clients|customers|award|trusted by|established)\b/i);
     assert.match(t, /informational, and the main features need a paid plan/);

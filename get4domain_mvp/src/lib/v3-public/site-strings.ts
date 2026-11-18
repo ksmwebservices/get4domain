@@ -35,7 +35,7 @@ export const SITE = {
   pricing: {
     title: 'Pricing',
     metaTitle: 'Plans and pricing',
-    metaDescription: 'Start with a free site, then move to a paid plan: Handyman, Professional or Ecommerce, billed quarterly, half-yearly or annually. Prices are without GST.',
+    metaDescription: 'Plans for the web app: a website, business tools, enquiry capture and promotion through directory pages and your subdomain. Handyman, Professional or Ecommerce, billed quarterly, half-yearly or annually. Prices are without GST.',
     h1: 'Plans and pricing',
     intro: 'Start with a free site. Move to a paid plan when you want the main features.',
     termLegend: 'Billing term',
@@ -186,10 +186,10 @@ export const SITE = {
   },
 
   home: {
-    metaTitle: 'Business websites on your own subdomain',
-    metaDescription: 'Get a free site for your business on your own subdomain, edit it yourself, and move to a paid plan for the main features.',
+    metaTitle: 'Local business directory, search and business websites',
+    metaDescription: 'A local business directory and search, with a web app for every business: a website, business tools, enquiry capture and promotion through directory pages and your own subdomain.',
     h1: 'A website for your business, live on your own subdomain',
-    lead: 'Register yourself, edit your site, and move to a paid plan when you want the main features of your business area.',
+    lead: 'Get4Domain is a local business directory and search, with a web app for every business: a website, business tools, enquiry capture, and promotion through our SEO keywords, directory pages and your own subdomain.',
     ctaPrimary: 'Start free',
     ctaSecondary: 'See pricing',
     stepsHeading: 'How it works',

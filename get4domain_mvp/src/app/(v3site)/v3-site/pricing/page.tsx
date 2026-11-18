@@ -4,10 +4,13 @@ import JsonLd from '@/components/directory/JsonLd';
 import AcceptNotice from '@/components/site/AcceptNotice';
 import PageHead from '@/components/portal/PageHead';
 import PortalPricing from '@/components/portal/PortalPricing';
+import { GROWTH } from '@/lib/v3-public/growth-strings';
+import { GROWTH_SERVICES, GROWTH_STATUS_LABEL } from '@/lib/v3-public/growth-config';
+import { PORTAL } from '@/lib/v3-public/portal-strings';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { ADDON_PACKS, fetchPlans, formatRupees, PUBLIC_TERMS, type PublicPlan } from '@/lib/v3-public/plans';
 import { portalPlanRows } from '@/lib/v3-public/portal-pricing';
-import { faqLd } from '@/lib/v3-public/site-jsonld';
+import { faqLd, offersLd } from '@/lib/v3-public/site-jsonld';
 import { siteMetadata } from '@/lib/v3-public/site-metadata';
 import { SITE } from '@/lib/v3-public/site-strings';
 
@@ -39,7 +42,7 @@ export default async function PricingPage() {
   if (data) for (const p of data.plans) for (const f of p.features) if (!keys.some((k) => k.key === f.key)) keys.push({ key: f.key, name: f.name });
   return (
     <>
-      <JsonLd items={[faqLd(P.faq)]} />
+      <JsonLd items={[faqLd(P.faq), ...(data ? [offersLd(data, PORTAL.home.terms)] : []).filter((x): x is Record<string, unknown> => x !== null)]} />
       <PageHead crumbs={[{ name: P.title, path: '/pricing' }]} h1={P.h1} lead={P.intro} />
 
       <section aria-labelledby="free-title" className="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
@@ -57,7 +60,7 @@ export default async function PricingPage() {
 
       <section aria-labelledby="plans-title" className="mt-10">
         <h2 id="plans-title" className="mb-4 text-2xl font-bold tracking-tight text-ink-900">{P.plansHeading}</h2>
-        {data && rows.length > 0 ? <PortalPricing terms={data.terms.length ? data.terms : [...PUBLIC_TERMS]} plans={rows} registerHref="/register" tracks={{}} /> : <p className="text-slate-600" role="status">{r.kind === 'ok' ? P.empty : P.loadError}</p>}
+        {data && rows.length > 0 ? <PortalPricing terms={data.terms.length ? data.terms : [...PUBLIC_TERMS]} plans={rows} registerHref="/register" tracks={{}} /> : <p className="text-slate-600" role="status">{r.kind === 'ok' ? PORTAL.home.pricesPending : P.loadError}</p>}
       </section>
       <AcceptNotice className="mt-4 text-sm text-slate-600" />
 
@@ -70,8 +73,21 @@ export default async function PricingPage() {
             {P.compareRows.map((row) => (
               <tr key={row.label} className="border-b border-slate-200"><th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{row.label}</th><td className="py-2 pr-3 text-slate-700">{row.free}</td><td className="py-2 text-slate-700">{row.paid}</td></tr>
             ))}
+            <tr className="border-b border-slate-300 bg-slate-50"><th scope="rowgroup" colSpan={3} className="py-2 pr-3 text-ink-900">{GROWTH.compareGrowthHeading}</th></tr>
+            {GROWTH_SERVICES.filter((svc) => !svc.base || svc.key === 'tools').map((svc) => (
+              <tr key={svc.key} className="border-b border-slate-200">
+                <th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{svc.name}</th>
+                <td className="py-2 pr-3 text-slate-700">{svc.free === 'included' ? GROWTH.compareIncludedFree : GROWTH.compareLocked}</td>
+                <td className="py-2 text-slate-700">
+                  {svc.plans === 'ecommerce' ? <span className="block font-medium">{GROWTH.compareEcommerceNote}</span> : null}
+                  {svc.note ? <span className="block font-medium">{svc.note}.</span> : null}
+                  {svc.statuses.map((k) => <span key={k} className="block">{GROWTH_STATUS_LABEL[k]}{k === 'addon' ? `. ${GROWTH.addonPrice}` : ''}</span>)}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table></div>
+        <p className="mt-3 text-sm text-slate-600">{GROWTH.promotionNote} <Link href="/growth" className="font-semibold text-brand-700 underline underline-offset-2">{GROWTH.footerAll}</Link></p>
       </section>
 
       {data && keys.length > 0 ? (

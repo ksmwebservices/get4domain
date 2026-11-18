@@ -63,7 +63,7 @@ describe('marketing routes', () => {
     assert.deepEqual(marketingRoute('/guides/choosing-your-site-address'), { kind: 'guide', slug: 'choosing-your-site-address' });
     assert.deepEqual(marketingRoute('/industries/food-service/restaurant'), { kind: 'category', pack: 'food-service', id: 'restaurant' });
     for (const p of ['/', '/pricing', '/industries', '/industries/food-service', '/product/a/b', '/products', '/guide']) assert.equal(marketingRoute(p), null, p);
-    assert.deepEqual([...MARKETING_FIXED_PATHS], ['/product', '/partners', '/guides']);
+    assert.deepEqual([...MARKETING_FIXED_PATHS], ['/product', '/growth', '/partners', '/guides']);
   });
   test('on the main host a known page is rewritten to its internal page, an unknown slug is a real 404', () => {
     assert.deepEqual(decide('/product'), { action: 'rewrite', pathname: '/v3-site/product' });

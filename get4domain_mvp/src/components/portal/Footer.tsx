@@ -2,6 +2,8 @@ import Link from 'next/link';
 import type { HeaderLinks } from '@/components/portal/Header';
 import { CONTAINER } from '@/components/portal/ui';
 import { LEGAL_DOCS, LEGAL_UI } from '@/lib/v3-public/legal-strings';
+import { GROWTH_GROUPS } from '@/lib/v3-public/growth-config';
+import { GROWTH, growthAnchor } from '@/lib/v3-public/growth-strings';
 import { PORTAL } from '@/lib/v3-public/portal-strings';
 import { MARKETING } from '@/lib/v3-public/marketing-strings';
 import { productPath } from '@/lib/v3-public/site-routes';
@@ -18,7 +20,7 @@ export default function Footer({ links, main }: { links: HeaderLinks; main: (pat
   return (
     <footer className="mt-auto bg-ink-900 text-ink-200 print:hidden">
       <div className={`${CONTAINER} py-12`}>
-        <nav aria-label={F.label} className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+        <nav aria-label={F.label} className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="lg:col-span-1">
             <p className="text-lg font-bold text-white">{PORTAL.brand}</p>
             <p className="mt-2 text-sm text-ink-300">{F.blurb}</p>
@@ -40,6 +42,19 @@ export default function Footer({ links, main }: { links: HeaderLinks; main: (pat
               <li><A href={links.product}>{PORTAL.nav.product}</A></li>
               {MARKETING.product.pages.map((p) => <li key={p.slug}><A href={main(productPath(p.slug))}>{p.name}</A></li>)}
               <li><A href={links.partners}>{PORTAL.nav.partners}</A></li>
+            </ul>
+          </div>
+          <div>
+            <p className={heading}>{GROWTH.footerHeading}</p>
+            <ul className="mt-3 space-y-2">
+              <li><A href={main('/growth')}>{GROWTH.footerAll}</A></li>
+              {GROWTH_GROUPS.map((g) => <li key={g.key}><A href={main(`/growth#${growthAnchor(g.key)}`)}>{g.name}</A></li>)}
+            </ul>
+            <p className={`${heading} mt-6`}>{GROWTH.footerPlans}</p>
+            <ul className="mt-3 space-y-2">
+              <li><A href={main('/pricing#free-title')}>{GROWTH.footerFree}</A></li>
+              <li><A href={main('/pricing#plans-title')}>{GROWTH.footerSeePlans}</A></li>
+              <li><A href={main('/pricing#compare-title')}>{GROWTH.footerCompare}</A></li>
             </ul>
           </div>
           <div>
