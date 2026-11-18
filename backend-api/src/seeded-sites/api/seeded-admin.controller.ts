@@ -37,11 +37,11 @@ export class SeededAdminController {
 
   @Post() @HttpCode(200) @ApiOperation({ summary: 'Create one seeded Free site from public facts (the staff checkbox is required)' })
   async create(@Body() dto: CreateSeededDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) {
-    const { overrideReason, profile, uploadGroup, ...raw } = dto; const who = this.who(user, req);
+    const { overrideReason, duplicateOverrideReason, profile, uploadGroup, ...raw } = dto; const who = this.who(user, req);
     // Wave 2 C9: the profile details are checked against the category BEFORE anything is created, so a bad detail leaves no half-made listing
     const profiles = profile !== undefined ? this.profiles() : null;
     if (profiles) await profiles.validateForCategory(String(raw.category), profile);
-    const view = await this.seeded.create(raw as unknown as Record<string, unknown>, who, { overrideReason });
+    const view = await this.seeded.create(raw as unknown as Record<string, unknown>, who, { overrideReason, duplicateOverrideReason });
     const out: Record<string, unknown> = { ...view };
     if (profiles) out.profile = await profiles.saveForListing(view.id, who.actor, profile);
     // Wave 2 Part G: the draft uploads made under this group before the listing existed follow it (found lazily, like the profile service)

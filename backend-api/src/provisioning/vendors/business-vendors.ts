@@ -13,6 +13,8 @@ export interface NewBusinessVendor {
   password: string;          // an unusable random hash: the owner sets a password when they claim the business (slice 5.7)
   businessName: string;
   phone: string;
+  /** the last 10 digits of the phone (D1 duplicate check) */
+  phoneKey?: string;
   industry: string;
   subdomain: string;
   status: 'PENDING';
@@ -58,7 +60,7 @@ export class PrismaBusinessVendors extends BusinessVendors {
       return await this.prisma.$transaction(async (tx) => {
         const v = await tx.vendor.create({
           data: {
-            name: d.name, email: d.email, password: d.password, businessName: d.businessName, phone: d.phone, industry: d.industry, subdomain: d.subdomain,
+            name: d.name, email: d.email, password: d.password, businessName: d.businessName, phone: d.phone, phoneKey: d.phoneKey ?? null, industry: d.industry, subdomain: d.subdomain,
             status: d.status, source: d.source, registeredByStaffId: d.registeredByStaffId,
           },
           select: { id: true },

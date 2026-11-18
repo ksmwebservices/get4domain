@@ -11,6 +11,8 @@ import { overlayDraft } from './site-merge';
 import { sampleMap } from './sample-markers';
 import { makePreviewToken } from './preview-token';
 import { SiteExtras } from './site-doc.constants';
+import { phoneKeyOf } from '../v3-duplicates/core/duplicate-core';
+import { DuplicateCheckService } from '../v3-duplicates/duplicate-check.service';
 
 /** "12 Marker Street, Anna Nagar, Chennai, 600001" -> the part before the pin code; a single word is the city itself. Same rule as the public renderer. */
 export function cityOf(address: string | null | undefined): string {
@@ -42,7 +44,7 @@ const isEmptyValue = (v: unknown): boolean => v === undefined || v === null || (
  */
 @Injectable()
 export class StarterService {
-  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService, private readonly themes: ThemeCatalogService) {}
+  constructor(private readonly prisma: PrismaService, private readonly site: SiteDocService, private readonly themes: ThemeCatalogService, private readonly duplicates: DuplicateCheckService) {}
 
   async packFor(packKey: string | null | undefined, industry: string | null | undefined): Promise<{ key: string; config: PackConfig } | null> {
     const keys = [packKey, industry].filter((k): k is string => !!k);
@@ -185,9 +187,11 @@ export class StarterService {
     if (!pack || !pack.enabled || !(pack.config as unknown as PackConfig).seed) throw new BadRequestException('Choose a category that is switched on and has starter content.');
     const name = input.businessName.trim();
     if (name.length < 2 || name.length > 120) throw new BadRequestException('Give the business a name of 2 to 120 characters.');
+    // D1: the shared duplicate check, before anything is made (the login e-mail here is a placeholder, so it says nothing about who the business is)
+    await this.duplicates.enforce({ phone: input.phone, businessName: name, city: input.city, category: pack.key, subdomain: sub }, { path: 'STARTER_SITE', actor: null, selfService: false });
     const password = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
     const vendor = await this.prisma.vendor.create({
-      data: { name, email: `site+${sub}@sites.get4domain.invalid`, password, businessName: name, phone: input.phone?.trim() || null, industry: pack.key, subdomain: sub, status: 'PENDING' },
+      data: { name, email: `site+${sub}@sites.get4domain.invalid`, password, businessName: name, phone: input.phone?.trim() || null, phoneKey: phoneKeyOf(input.phone), industry: pack.key, subdomain: sub, status: 'PENDING' },
     });
     await this.prisma.vendorAddon.create({ data: { vendorId: vendor.id, addonKey: 'site_doc_v2', enabled: true } });
     await this.prisma.vendorCMS.create({ data: { vendorId: vendor.id, packKey: pack.key, siteStatus: 'DRAFT', businessName: name, ...(input.phone?.trim() ? { phone: input.phone.trim() } : {}) } });

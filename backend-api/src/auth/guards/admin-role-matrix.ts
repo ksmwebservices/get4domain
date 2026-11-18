@@ -198,6 +198,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Part B (B2, Amendment 13 V9): SALES (the MARKETING value) creates listings and draft sites on behalf, imports a CSV (dry run first), follows up and issues the claim link. The register, the indexing mode and removals stay OPERATIONS and SUPER_ADMIN.
   'POST /v3/admin/seeded-sites': ALL_STAFF, 'POST /v3/admin/seeded-sites/batches/dry-run': ALL_STAFF, 'POST /v3/admin/seeded-sites/batches/apply': ALL_STAFF, 'GET /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'POST /v3/admin/seeded-sites/register': OPS_AND_SUPER, 'GET /v3/admin/seeded-sites/indexing-mode': OPS_AND_SUPER, 'PUT /v3/admin/seeded-sites/:id/outreach': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/calls': ALL_STAFF, 'PUT /v3/admin/seeded-sites/:id/consent': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/claim-link': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/claim-link/revoke': ALL_STAFF, 'POST /v3/admin/seeded-sites/:id/removal': OPS_AND_SUPER,
   'PUT /v3/admin/seeded-sites/indexing-mode': SUPER_ONLY,
+  // D1 duplicate check: the held possible duplicates. OPERATIONS (and ADMIN by extension) and SUPER_ADMIN reach the routes; the service itself lets only ADMIN and SUPER_ADMIN decide, with a written reason.
+  'GET /v3/admin/duplicates/reviews': OPS_AND_SUPER, 'POST /v3/admin/duplicates/reviews/:id/clear': OPS_AND_SUPER, 'POST /v3/admin/duplicates/reviews/:id/reject': OPS_AND_SUPER,
   // B3 slice 5.7b: the Visit-site report across vendors: OPERATIONS and SUPER_ADMIN (MARKETING refused)
   'GET /v3/admin/directory/visits': OPS_AND_SUPER,
   // B3 slice 5.6b: the canonical host and the custom-domain promotion add-on: OPERATIONS and SUPER_ADMIN, MARKETING refused

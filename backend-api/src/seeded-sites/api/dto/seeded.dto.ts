@@ -17,6 +17,8 @@ export class CreateSeededDto {
   @IsBoolean() publicFactsOnly!: boolean;
   /** SUPER_ADMIN only: create again a business that was removed before */
   @IsOptional() @IsString() @MaxLength(300) overrideReason?: string;
+  /** D1: a written reason to create this business although it looks like an existing one (ADMIN or SUPER_ADMIN; logged) */
+  @IsOptional() @IsString() @MaxLength(300) duplicateOverrideReason?: string;
   /** Wave 2 C9: the profile details of the category (state, pincode, services, hours, social links and the industry fields), keyed by the field keys of GET /v3/admin/categories/:slug/profile-schema. Checked BEFORE anything is created. */
   @IsOptional() @IsObject() profile?: Record<string, unknown>;
   /** Wave 2 Part G: the upload group the create form used for its draft uploads (POST /v3/admin/media/drafts with the same `group`); they are attached to the new listing, idempotently, and only the caller's own drafts move */

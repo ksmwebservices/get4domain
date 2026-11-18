@@ -40,6 +40,8 @@ model Vendor {
   // V3 slice 5.1: where the account came from (provenance only; nullable, no behaviour depends on it)
   source                 String?
   registeredByStaffId    String?
+  /// D1 duplicate check: the last 10 digits of the phone, whatever way it was typed (nullable: older rows are filled by the migration, the application falls back to the raw phone while it is null)
+  phoneKey               String?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
@@ -226,6 +228,8 @@ model Vendor {
   specialArrangements SpecialArrangement[]
   billingDeals       BillingDeal[]
   planChangeRequests PlanChangeRequest[]
+
+  @@index([phoneKey])
 }
 
 model Subscription {
@@ -8308,4 +8312,43 @@ model V3ThemeMarketPackage {
   @@index([packs], type: Gin)
   @@index([tags], type: Gin)
   @@map("g4d_theme_market_packages")
+}
+
+/// D1 duplicate check: a staff override of a duplicate refusal. Who, why, which record it matched, when. Plain ids (no foreign keys) so the record outlives either business.
+model V3DuplicateOverride {
+  id             String   @id @default(cuid())
+  path           String // REGISTER | REFERRAL | ADMIN_VENDOR | PROVISIONING | SEEDED | DEAL | STARTER_SITE
+  staffId        String
+  staffRole      String
+  reason         String
+  outcome        String // BLOCKED | POSSIBLE: what was overridden
+  matchedVendorId String?
+  matchedBusinessId String?
+  matchedSignals String[]
+  newVendorId    String?
+  createdAt      DateTime @default(now())
+
+  @@index([newVendorId])
+  @@index([matchedVendorId])
+  @@map("g4d_duplicate_overrides")
+}
+
+/// D1 duplicate check: a possible duplicate (medium match) that was let through only on the owner's word. The site is held (not published) until staff clear or reject it.
+model V3DuplicateReview {
+  id             String    @id @default(cuid())
+  path           String
+  vendorId       String    @unique
+  status         String    @default("PENDING") // PENDING | CLEARED | REJECTED
+  matchedVendorId String?
+  matchedBusinessId String?
+  matchedSignals String[]
+  score          Float?
+  decidedByStaffId String?
+  decisionReason String?
+  decidedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@map("g4d_duplicate_reviews")
 }

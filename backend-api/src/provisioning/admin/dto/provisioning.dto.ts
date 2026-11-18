@@ -12,6 +12,11 @@ export class CreateProvisioningJobDto {
   @IsEmail() @MaxLength(254) email!: string;
   @IsString() @Length(2, 80) city!: string;
   @Matches(/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/, { message: 'language must be a code such as en or ta' }) language!: string;
+  /** D1: where the business is (optional): with them the duplicate check can also compare name, place and category */
+  @IsOptional() @IsString() @Length(2, 80) area?: string;
+  @IsOptional() @Matches(/^\d{6}$/, { message: 'pincode must be 6 digits' }) pincode?: string;
+  /** D1: a written reason (5 to 300 characters) to create this business although it looks like an existing one. ADMIN or SUPER_ADMIN only; logged. */
+  @IsOptional() @IsString() @MaxLength(300) duplicateOverrideReason?: string;
 }
 
 export class ListJobsQueryDto {

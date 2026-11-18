@@ -18,6 +18,8 @@ import { advisoryXactLock } from '../common/db-lock';
 import { OPEN_INVOICE_STATUSES, findActivationConflict, validOverrideReason } from './activation-guard';
 import { ArrangementsService } from './arrangements.service';
 import { shadowGst } from './arrangement-rules';
+import { phoneKeyOf } from '../v3-duplicates/core/duplicate-core';
+import { DuplicateCheckService } from '../v3-duplicates/duplicate-check.service';
 
 export interface ProspectInput { name?: string; phone?: string; email?: string; business?: string; demoSubdomain?: string }
 
@@ -50,6 +52,7 @@ export class DealsService {
     private readonly messenger: CommercialMessenger,
     private readonly email: EmailService,
     private readonly arrangements: ArrangementsService,
+    private readonly duplicates: DuplicateCheckService,
   ) {}
 
   /** Annual list prices — the platform's single pricing source (admin Pricing Manager keys, constants as fallback). */
@@ -143,9 +146,13 @@ export class DealsService {
     const byEmail = await this.prisma.vendor.findUnique({ where: { email }, select: { id: true } });
     if (byEmail) return { vendorId: byEmail.id, created: false };
 
+    // D1: the shared duplicate check. A pre-sale prospect that is already a business under another e-mail, phone or website is refused (409 DUPLICATE_BUSINESS / DUPLICATE_POSSIBLE): staff attach the deal to that
+    // business with `vendorId`, they never get a second site. (To create a look-alike on purpose, create the vendor with POST /vendors and an override reason, then use its id.)
+    await this.duplicates.enforce({ email, phone: p.phone, businessName: p.business, ownerName: p.name, subdomain: sub, category: 'general' }, { path: 'DEAL', actor: null, selfService: false });
+
     const vendor = await this.prisma.vendor.create({
       data: {
-        name: p.name.trim().slice(0, 80), email, businessName: p.business.trim().slice(0, 120), phone: p.phone?.trim() || undefined,
+        name: p.name.trim().slice(0, 80), email, businessName: p.business.trim().slice(0, 120), phone: p.phone?.trim() || undefined, phoneKey: phoneKeyOf(p.phone),
         industry: 'general', subdomain: sub, role: 'VENDOR', status: 'ACTIVE',
         isSandbox: true, expiresAt: null, // pre-sale: hidden from the public site, never auto-deleted; flipped live when the activation invoice is paid
         password: await AuthService.hashPassword(crypto.randomBytes(24).toString('hex')),

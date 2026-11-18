@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /** Public self-service signup. Creates a real vendor + trial credit and logs them in. */
 export class RegisterDto {
@@ -51,4 +51,25 @@ export class RegisterDto {
   @IsOptional()
   @IsIn(['handyman', 'professional', 'ecommerce'])
   track?: 'handyman' | 'professional' | 'ecommerce';
+
+  // D1 duplicate check: optional details that make it sharper (none is stored by registration)
+  @ApiProperty({ required: false, example: 'Chennai' })
+  @IsOptional() @IsString() @MaxLength(80)
+  city?: string;
+
+  @ApiProperty({ required: false, example: 'T Nagar' })
+  @IsOptional() @IsString() @MaxLength(80)
+  area?: string;
+
+  @ApiProperty({ required: false, example: '600017' })
+  @IsOptional() @IsString() @MaxLength(6)
+  pincode?: string;
+
+  @ApiProperty({ required: false, example: '33ABCDE1234F1Z5', description: 'GSTIN, used only to find an existing business' })
+  @IsOptional() @IsString() @MaxLength(20)
+  gstin?: string;
+
+  @ApiProperty({ required: false, description: 'Answer to "Is this your business?" (409 DUPLICATE_POSSIBLE): true = it is a different business. The site is created but held for admin review and not published.' })
+  @IsOptional() @IsBoolean()
+  confirmDistinct?: boolean;
 }

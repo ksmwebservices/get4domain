@@ -9,6 +9,8 @@ export type ProvisioningApiErrorCode = (typeof PROVISIONING_API_ERROR_CODES)[num
 
 const MESSAGES: Record<string, string> = {
   DUPLICATE_BUSINESS: 'A business with this email or phone number already exists.',
+  DUPLICATE_POSSIBLE: 'A business that looks like this one already exists. Staff decide: use the existing business, or override with a written reason.',
+  DUPLICATE_OVERRIDE_INVALID: 'The duplicate override on this job is not allowed (an ADMIN or SUPER_ADMIN with a written reason is required).',
   UNKNOWN_TRACK: 'The track is not one of handyman, professional or ecommerce.',
   UNKNOWN_PLAN: 'The Free plan for this track is not set up.',
   UNKNOWN_VENDOR: 'The business record for this job could not be found.',

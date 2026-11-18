@@ -13,6 +13,8 @@ import { SiteAudit } from './site-audit';
 import { PublicationRow, SiteRepository } from './site.repository';
 import { AcceptanceGuard } from '../../terms/terms-ports';
 import { ProhibitedScanPort } from '../../v3-trust/trust.ports';
+import { DuplicateHoldPort } from '../../v3-duplicates/duplicate.store';
+import { duplicateError } from '../../v3-duplicates/duplicate.errors';
 
 /** The readable text of a stored page: tags, scripts and styles removed, entities left as they are (the scan folds punctuation away). */
 const textOfHtml = (html: string): string => html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -40,6 +42,8 @@ export class PublishService {
     @Optional() @Inject(AcceptanceGuard) private readonly acceptance?: AcceptanceGuard,
     /** slice 5.21: looks at what was just published; never blocks and never throws */
     @Optional() @Inject(ProhibitedScanPort) private readonly scan?: ProhibitedScanPort,
+    /** D1: a possible duplicate held for admin review is never published */
+    @Optional() @Inject(DuplicateHoldPort) private readonly hold?: DuplicateHoldPort,
   ) {}
 
   /** Re-checks a snapshot against the vendor as they are NOW: hard minimums, renderer warnings, size, the plan (theme and Tamil) and the staff noindex switch. */
@@ -68,6 +72,8 @@ export class PublishService {
   }
 
   async publish(vendorId: string, publicationId: string, actor: Actor): Promise<PublicationRow> {
+    // D1: a business let through on the owner's word as "a different business" waits for an admin to clear it; until then nothing is published
+    if (this.hold && (await this.hold.isHeld(vendorId))) throw new ConflictException(duplicateError('DUPLICATE_REVIEW_PENDING', 'This business is waiting for a staff review before it can be published.'));
     // A Pro vendor's published site carries the call-to-action slots: the current terms must be accepted first. A Free (or lapsed, or suspended) site has none, so nothing is asked.
     if (this.acceptance && (await this.entitlements.resolve(vendorId)).features['site.cta']?.state === 'ACTIVE') await this.acceptance.require(vendorId, CTA_TERMS);
     const row = await this.repo.publish(vendorId, publicationId, {

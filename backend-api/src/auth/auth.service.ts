@@ -71,7 +71,9 @@ export class AuthService {
       industry: dto.industry,
       phone: dto.phone,
       subdomain,
-    });
+      // D1 duplicate check: the extra details it uses, and the visitor's answer to "Is this your business?"
+      city: dto.city, area: dto.area, pincode: dto.pincode, gstin: dto.gstin, confirmDistinct: dto.confirmDistinct,
+    }, { path: dto.referralCode ? 'REFERRAL' : 'REGISTER', selfService: true });
     // A LeadSpace signup: the five-tab app instead of the full dashboard until the vendor buys a plan (provisioning switches the mode off then).
     if (dto.product === 'leadspace') {
       for (const addonKey of ['leadspace', 'leadspace_only']) {

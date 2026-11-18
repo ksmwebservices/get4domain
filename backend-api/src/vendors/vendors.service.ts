@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { WalletService } from '../wallet/wallet.service';
 import { AiService } from '../ai/ai.service';
+import { DuplicatePath, phoneKeyOf } from '../v3-duplicates/core/duplicate-core';
+import { DuplicateCheckService } from '../v3-duplicates/duplicate-check.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 
@@ -20,6 +22,7 @@ export class VendorsService {
     private readonly emailService: EmailService,
     private readonly wallet: WalletService,
     private readonly ai: AiService,
+    private readonly duplicates: DuplicateCheckService,
   ) {}
 
   findAll(): Promise<Vendor[]> {
@@ -36,26 +39,44 @@ export class VendorsService {
     return vendor;
   }
 
-  async create(dto: CreateVendorDto): Promise<Vendor> {
+  /**
+   * `opts.selfService` = the caller is a visitor registering (POST /auth/register), not staff. The e-mail refusal below is unchanged; the duplicate check (D1) then runs for every caller:
+   * a strong match refuses, a medium match asks "Is this your business?" (self-service) or needs a staff override with a reason, and an answered-"different" business is created HELD for admin review.
+   */
+  async create(dto: CreateVendorDto, opts: { path?: DuplicatePath; actor?: { id: string; role: string } | null; selfService?: boolean } = {}): Promise<Vendor> {
     const existing = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new ConflictException('A vendor with this email already exists');
     }
 
+    const selfService = opts.selfService === true;
+    const decision = await this.duplicates.enforce(
+      { email: dto.email, phone: dto.phone, gstin: dto.gstin, businessName: dto.businessName, city: dto.city, area: dto.area, pincode: dto.pincode, category: dto.industry, ownerName: dto.name, subdomain: dto.subdomain, customDomain: dto.customDomain },
+      { path: opts.path ?? (selfService ? 'REGISTER' : 'ADMIN_VENDOR'), actor: opts.actor ?? null, overrideReason: dto.duplicateOverrideReason, confirmDistinct: dto.confirmDistinct, selfService },
+    );
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        password: hashedPassword,
-        businessName: dto.businessName,
-        phone: dto.phone,
-        industry: dto.industry,
-        subdomain: dto.subdomain,
-        customDomain: dto.customDomain,
-      },
+    // the vendor and, for a possible duplicate, the review row that holds its site go in ONE transaction: it can never exist unheld with its review lost
+    const vendor = await this.prisma.$transaction(async (tx) => {
+      const v = await tx.vendor.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          password: hashedPassword,
+          businessName: dto.businessName,
+          phone: dto.phone,
+          phoneKey: phoneKeyOf(dto.phone),
+          industry: dto.industry,
+          subdomain: dto.subdomain,
+          customDomain: dto.customDomain,
+        },
+      });
+      const review = this.duplicates.reviewData(decision, v.id);
+      if (review) await tx.v3DuplicateReview.create({ data: review });
+      return v;
     });
+    await this.duplicates.record(decision, vendor.id);
 
     // Grant the Trial-plan free wallet credit (admin-editable in Pricing Manager).
     try {
@@ -110,7 +131,7 @@ export class VendorsService {
 
   async update(id: string, dto: UpdateVendorDto): Promise<Vendor> {
     await this.findOne(id);
-    return this.prisma.vendor.update({ where: { id }, data: dto });
+    return this.prisma.vendor.update({ where: { id }, data: 'phone' in dto ? { ...dto, phoneKey: phoneKeyOf(dto.phone) } : dto });
   }
 
   async remove(id: string): Promise<Vendor> {

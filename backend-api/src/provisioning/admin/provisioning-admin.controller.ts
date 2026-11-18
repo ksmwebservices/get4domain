@@ -22,7 +22,7 @@ export class ProvisioningAdminController {
   @Post('provisioning/jobs')
   @ApiOperation({ summary: 'Create a provisioning job for one business (Idempotency-Key header required; the same key returns the same job)' })
   async create(@Body() dto: CreateProvisioningJobDto, @Headers('idempotency-key') key: string | undefined, @CurrentUser() user: AuthenticatedUser, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const { created, job } = await this.jobs.createJob(dto, key, actorOf(user, req));
+    const { created, job } = await this.jobs.createJob(dto, key, actorOf(user, req), String(user.adminRole ?? ''));
     res.status(created ? 201 : 200);
     return job;
   }

@@ -90,6 +90,7 @@ import { SeoVendorFactsModule } from './seo-directory/seo-vendor-facts.module';
 import { B3SettingsModule } from './b3-settings/b3-settings.module';
 import { VendorLifecycleModule } from './vendor-lifecycle/vendor-lifecycle.module';
 import { SeededSitesModule } from './seeded-sites/seeded-sites.module';
+import { DuplicateCheckModule } from './v3-duplicates/duplicate-check.module';
 import { RequestsOrdersModule } from './requests-orders/requests-orders.module';
 import { TermsModule } from './terms/terms.module';
 import { SiteLifecycleModule } from './seeded-sites/prisma-site-lifecycle';
@@ -181,6 +182,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     VendorLifecycleModule,
     SiteLifecycleModule,
     SeededSitesModule,
+    DuplicateCheckModule,   // D1: the one duplicate check every creation path calls (global)
     RequestsOrdersModule,
     PayRequestsModule,
     PayLinkBridgeModule,

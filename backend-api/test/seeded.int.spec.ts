@@ -40,7 +40,8 @@ describe('seeded sites on staging', () => {
 
   it('SALES (MARKETING) and ADMIN may create, SUPPORT may not; the checkbox is required; a dry run creates nothing', async () => {
     // Amendment 13 V9: SALES (the MARKETING value) and ADMIN create seeded sites; SUPPORT is not on the route's allow list. Each create has its own phone and name so none is a duplicate of another.
-    const other = (n: string, ph: string) => ({ ...body, businessName: `V3TEST ${RUN_ID} seeded ${n}`, phone: ph });
+    // D1: the shared duplicate check also compares name + area + category, so each create here also has its own area
+    const other = (n: string, ph: string) => ({ ...body, businessName: `V3TEST ${RUN_ID} seeded ${n}`, area: `V3T ${n} area`, phone: ph });
     const suffix = String(Date.now()).slice(-7);
     expect((await api('post', '/v3/admin/seeded-sites', sup2, other('support', `96${suffix}1`))).status).toBe(403);
     const bySales = await api('post', '/v3/admin/seeded-sites', mkt, other('sales', `96${suffix}2`)); expect(bySales.status).toBe(200); expect(bySales.body.data).toMatchObject({ lifecycle: 'SEEDED' });

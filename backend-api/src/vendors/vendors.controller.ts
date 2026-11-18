@@ -5,6 +5,7 @@ import { VendorsService } from './vendors.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { AuthenticatedUser, CurrentUser } from '../common/decorators/current-user.decorator';
 
 /** A vendor as returned to clients — never the bcrypt password hash. */
 export type SafeVendor = Omit<Vendor, 'password'>;
@@ -28,8 +29,8 @@ export class VendorsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a vendor and send welcome email (admin only)' })
-  async create(@Body() dto: CreateVendorDto): Promise<SafeVendor> {
-    return toSafeVendor(await this.vendorsService.create(dto));
+  async create(@Body() dto: CreateVendorDto, @CurrentUser() user: AuthenticatedUser): Promise<SafeVendor> {
+    return toSafeVendor(await this.vendorsService.create(dto, { path: 'ADMIN_VENDOR', actor: { id: user.sub, role: String(user.adminRole ?? 'MARKETING') }, selfService: false }));
   }
 
   @Get(':id')

@@ -17,9 +17,11 @@ export interface BusinessInput {
   /** slice 5.13a: a SEEDED job comes from public facts and has no owner yet */
   seeded?: boolean;
   city: string;
+  /** D1 duplicate check: where the business is, when staff know it (any mode) */
+  area?: string; pincode?: string;
   language: string;    // for example "en", "ta"; wording per language is a later slice
   /** SEEDED jobs only: the public address facts the staff recorded */
-  area?: string; addressLine?: string; description?: string;
+  addressLine?: string; description?: string;
 }
 
 /** Digits only, then: strip 0091 / 91 / a trunk 0 from an Indian mobile. Anything else with a leading + keeps its country code (8 to 15 digits). */
@@ -76,6 +78,7 @@ export function parseBusinessInput(raw: unknown): BusinessInput {
   const email = typeof (seeded ? r.placeholderEmail : r.email) === 'string' ? normaliseEmail((seeded ? r.placeholderEmail : r.email) as string) : null;
   const phone = typeof r.phone === 'string' ? normalisePhone(r.phone) : null;
   if (!businessName || !ownerName || !city || !category || !language || !track || !email || !phone) return bad();
-  const extra = seeded ? { seeded: true as const, ...(str(r.area, 2, 80) ? { area: str(r.area, 2, 80)! } : {}), ...(str(r.addressLine, 2, 300) ? { addressLine: str(r.addressLine, 2, 300)! } : {}), ...(str(r.description, 2, 600) ? { description: str(r.description, 2, 600)! } : {}) } : {};
-  return { businessName, track, category, ownerName, phone, phoneKey: phoneKey(phone), email, city, language, ...extra };
+  const place = { ...(str(r.area, 2, 80) ? { area: str(r.area, 2, 80)! } : {}), ...(typeof r.pincode === 'string' && /^\d{6}$/.test(r.pincode.trim()) ? { pincode: r.pincode.trim() } : {}) };
+  const extra = seeded ? { seeded: true as const, ...(str(r.addressLine, 2, 300) ? { addressLine: str(r.addressLine, 2, 300)! } : {}), ...(str(r.description, 2, 600) ? { description: str(r.description, 2, 600)! } : {}) } : {};
+  return { businessName, track, category, ownerName, phone, phoneKey: phoneKey(phone), email, city, language, ...place, ...extra };
 }

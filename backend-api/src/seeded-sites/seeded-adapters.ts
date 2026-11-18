@@ -15,24 +15,29 @@ import { SeedInput } from './core/seeded';
 import { isListableCategory, kitCategoryFor, ListableCategory, listableCategories } from '../directory/core/listable-categories';
 import { BusinessFacts, ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
 import { ConflictException, UnprocessableEntityException } from '@nestjs/common';
+import { DUPLICATE_BLOCKED_MESSAGE, DUPLICATE_POSSIBLE_MESSAGE, duplicateError } from '../v3-duplicates/duplicate.errors';
 
 /** Creates the job (idempotent on its key) and runs THAT job to the end with the real runner. A failure is reported with the runner's own stable code. */
 @Injectable()
 export class JobSeedProvisioner extends SeedProvisioner {
   constructor(private readonly jobs: ProvisioningRepository, private readonly runner: JobRunnerService, private readonly directory: DirectoryRepository, private readonly facts: SeededFacts) { super(); }
 
-  async provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor }) {
+  async provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor; duplicateOverride?: { reason: string; staffId: string; staffRole: string } }) {
     const s = i.input;
     const { job } = await this.jobs.createJob({
       idempotencyKey: i.idempotencyKey, maxAttempts: 3, createdByType: 'STAFF', createdById: i.actor.id,
       input: {
         mode: 'SEEDED', businessName: s.businessName, track: this.facts.trackOf(s.category), category: s.category, city: s.city, language: 'en', phone: s.phone, placeholderEmail: i.placeholderEmail,
         area: s.area, addressLine: s.address || undefined, description: s.description || undefined,
+        ...(i.duplicateOverride ? { duplicateOverride: i.duplicateOverride } : {}),
       },
     });
     const report = await this.runner.runOne({ jobId: job.id });
     const done = await this.jobs.getJob(job.id);
     if (!done || done.status !== 'SUCCEEDED' || !done.vendorId) {
+      // D1: the shared duplicate check refused the business: say so with its own code (nothing about the other business)
+      if (done?.lastErrorCode === 'DUPLICATE_BUSINESS') throw new ConflictException(duplicateError('DUPLICATE_BUSINESS', DUPLICATE_BLOCKED_MESSAGE));
+      if (done?.lastErrorCode === 'DUPLICATE_POSSIBLE') throw new ConflictException(duplicateError('DUPLICATE_POSSIBLE', DUPLICATE_POSSIBLE_MESSAGE));
       throw new UnprocessableEntityException(b3Error('SEEDED_INVALID', 'The site could not be created. Nothing was published.', { jobId: job.id, code: done?.lastErrorCode ?? report?.status ?? 'UNEXPECTED' }));
     }
     const biz = await this.directory.getBusinessByVendor(done.vendorId);

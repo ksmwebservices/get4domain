@@ -218,12 +218,14 @@ const SEO_READS = ['GET /v3/admin/seo-directory/category-keywords', 'GET /v3/adm
 SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 // TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS and SUPER_ADMIN (ADMIN inherits; MARKETING refused); the five changes are SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in theme-market-http.spec.ts)
 SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive');
+// D1: the held possible duplicates (OPERATIONS and SUPER_ADMIN reach the routes, ADMIN by extension; the service lets only ADMIN and SUPER_ADMIN decide)
+MARKETING_DENIED.push('GET /v3/admin/duplicates/reviews', 'POST /v3/admin/duplicates/reviews/:id/clear', 'POST /v3/admin/duplicates/reviews/:id/reject');
 MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-market/themes/:id', 'GET /v3/admin/theme-market/themes/:id/preview', 'POST /v3/admin/theme-market/validate');
 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(429);
+    expect(oracle).toHaveLength(432);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

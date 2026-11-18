@@ -42,11 +42,11 @@ export class MemorySeededStore extends SeededStore {
 }
 
 export class FakeProvisioner extends SeedProvisioner {
-  calls: Array<{ input: SeedInput; key: string; placeholderEmail: string }> = []; failFor = new Set<string>(); private n = 0;
+  calls: Array<{ input: SeedInput; key: string; placeholderEmail: string; duplicateOverride?: { reason: string; staffId: string; staffRole: string } }> = []; failFor = new Set<string>(); private n = 0;
   constructor(private readonly onCreate: (vendorId: string, input: SeedInput) => void) { super(); }
-  async provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor }) {
+  async provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor; duplicateOverride?: { reason: string; staffId: string; staffRole: string } }) {
     if (this.failFor.has(i.input.businessName)) throw Object.assign(new Error('x'), { response: { code: 'SEEDED_INVALID' } });
-    this.calls.push({ input: i.input, key: i.idempotencyKey, placeholderEmail: i.placeholderEmail });
+    this.calls.push({ input: i.input, key: i.idempotencyKey, placeholderEmail: i.placeholderEmail, ...(i.duplicateOverride ? { duplicateOverride: i.duplicateOverride } : {}) });
     const vendorId = `seed-v-${++this.n}`; this.onCreate(vendorId, i.input);
     return { vendorId, directoryBusinessId: `seed-b-${this.n}` };
   }

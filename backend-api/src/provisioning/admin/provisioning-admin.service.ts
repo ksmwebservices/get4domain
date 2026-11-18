@@ -10,6 +10,9 @@ import { StepError } from '../provisioning.errors';
 import { parseBusinessInput } from '../steps/business-input';
 import { IDEMPOTENCY_KEY, CreateProvisioningJobDto, ListInvitesQueryDto, ListJobsQueryDto } from './dto/provisioning.dto';
 import { presentInvite, presentJob, presentStep } from './provisioning-admin.shape';
+import { OVERRIDE_ROLES } from '../../v3-duplicates/duplicate-check.service';
+import { duplicateError } from '../../v3-duplicates/duplicate.errors';
+import { cleanReason } from '../../vendor-lifecycle/core/lifecycle-core';
 
 const jobNotFound = (): NotFoundException => new NotFoundException({ message: 'That provisioning job does not exist.', code: 'JOB_NOT_FOUND' });
 const notRetryable = (what: string): ConflictException => new ConflictException({ message: what, code: 'JOB_NOT_RETRYABLE' });
@@ -26,14 +29,22 @@ export class ProvisioningAdminService {
   ) {}
 
   /** Creates the job, or returns the existing one for the same Idempotency-Key (`created: false`). */
-  async createJob(dto: CreateProvisioningJobDto, idempotencyKey: string | undefined, actor: Actor) {
+  async createJob(dto: CreateProvisioningJobDto, idempotencyKey: string | undefined, actor: Actor, staffRole?: string) {
     if (!idempotencyKey || !IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException('The Idempotency-Key header is required: 8 to 100 letters, digits or - _ . :');
     let input;
     try { input = parseBusinessInput(dto); } catch (e) { if (e instanceof StepError) throw new BadRequestException('One of the business details is not valid. Check the phone number and the email address.'); throw e; }
+    // D1: an override of a duplicate refusal is judged HERE (role and reason) so staff hear at once; the step checks again before it trusts it
+    let duplicateOverride: { reason: string; staffId: string; staffRole: string } | undefined;
+    if (dto.duplicateOverrideReason !== undefined && dto.duplicateOverrideReason !== '') {
+      if (!actor.id || !staffRole || !OVERRIDE_ROLES.includes(staffRole)) throw new ForbiddenException(duplicateError('DUPLICATE_OVERRIDE_FORBIDDEN', 'Only an ADMIN or SUPER_ADMIN can override a duplicate refusal.'));
+      const reason = cleanReason(dto.duplicateOverrideReason);
+      if (!reason) throw new BadRequestException(duplicateError('DUPLICATE_OVERRIDE_REASON_REQUIRED', 'A written reason of 5 to 300 characters is required to override a duplicate refusal.'));
+      duplicateOverride = { reason, staffId: actor.id, staffRole };
+    }
     const s = await this.settings.get();
     const { job, created } = await this.repo.createJob({
       idempotencyKey,
-      input: { businessName: input.businessName, track: input.track, category: input.category, ownerName: input.ownerName, phone: input.phone, email: input.email, city: input.city, language: input.language },
+      input: { businessName: input.businessName, track: input.track, category: input.category, ownerName: input.ownerName, phone: input.phone, email: input.email, city: input.city, language: input.language, ...(input.area ? { area: input.area } : {}), ...(input.pincode ? { pincode: input.pincode } : {}), ...(duplicateOverride ? { duplicateOverride } : {}) },
       maxAttempts: s.provisioningMaxAttempts, createdByType: 'STAFF', createdById: actor.id,
     });
     if (created) await this.audit.record(actor, 'provisioning.job.created', 'provisioning_job', job.id, { kind: job.kind, track: input.track });

@@ -3,7 +3,7 @@ import { SeedInput } from './core/seeded';
 
 /** Creates the vendor shell, the Free plan, the Free site draft and the UNCLAIMED directory profile for one seeded business, through the slice 5.3 job runner (SEEDED mode). */
 export abstract class SeedProvisioner {
-  abstract provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor }): Promise<{ vendorId: string; directoryBusinessId: string | null }>;
+  abstract provision(i: { input: SeedInput; placeholderEmail: string; idempotencyKey: string; actor: Actor; duplicateOverride?: { reason: string; staffId: string; staffRole: string } }): Promise<{ vendorId: string; directoryBusinessId: string | null }>;
 }
 
 /** Builds and publishes the listing-only Free site. The indexing decision (noindex unless the quality rule and the setting allow) is made by the site build itself. */

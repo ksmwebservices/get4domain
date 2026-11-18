@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { KeyedQueue } from '../common/keyed-queue';
 import { adminGapError } from '../v3-admin-gaps/admin-gaps.errors';
@@ -15,6 +15,7 @@ import {
 } from './core/seeded';
 import { ClaimHandover, SeedProvisioner, SeededFacts, SeededPublisher } from './seeded-ports';
 import { SeededRow, SeededStore } from './seeded.store';
+import { Decision, DuplicateCheckService } from '../v3-duplicates/duplicate-check.service';
 
 export type StaffRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATIONS' | 'SUPPORT' | 'MARKETING';
 /** A staff view of one seeded site. The fields depend on the role (MARKETING gets the non-personal ones only). */
@@ -42,6 +43,8 @@ export class SeededSitesService {
   constructor(
     private readonly store: SeededStore, private readonly provisioner: SeedProvisioner, private readonly publisher: SeededPublisher, private readonly handover: ClaimHandover,
     private readonly facts: SeededFacts, private readonly lifecycle: LifecycleStore, @Inject(B3SettingsService) private readonly b3: Pick<B3SettingsService, 'get'>, private readonly pepper: OtpPepper,
+    /** D1 shared duplicate check: always provided by the application (the module is global); optional in the constructor only so older tests that build this service by hand keep working */
+    @Optional() private readonly dup?: DuplicateCheckService,
   ) {}
 
   // ── keys ──
@@ -83,7 +86,7 @@ export class SeededSitesService {
    * Creates one seeded site. Refuses: missing public fields or the staff checkbox (400), a phone on the register or a business that was removed before (409, unless a SUPER_ADMIN gives an
    * override reason), a duplicate of an existing site (409, never overridable). The site is published listing-only; whether it is indexable is decided by the quality rule and the setting.
    */
-  async create(raw: Record<string, unknown>, who: Who, o: { batchId?: string | null; overrideReason?: string } = {}) {
+  async create(raw: Record<string, unknown>, who: Who, o: { batchId?: string | null; overrideReason?: string; duplicateOverrideReason?: string } = {}) {
     const v = validateSeedRow(raw, { categoryExists: (id) => this.facts.categoryExists(id) });
     if (!v.ok) throw new BadRequestException(b3Error('SEEDED_INVALID', 'Some public facts are missing or not valid.', { errors: v.errors }));
     const input = v.input; const keys = this.keysOf(input);
@@ -93,7 +96,9 @@ export class SeededSitesService {
     if (!override) {
       if (await this.store.onRegister(keys.phoneHash)) throw new ConflictException(b3Error('SEEDED_DNC', 'This business asked not to be contacted or listed, so no site can be made.'));
     }
-    const created = await this.createOne(input, keys, who, o.batchId ?? null);
+    // D1: the shared check, BEFORE anything is made (so the staff member gets the real code, and a refused business leaves no half-made site). The job step runs it again as the safety net.
+    const dupOverride = await this.duplicateGate(input, who, o.duplicateOverrideReason);
+    const created = await this.createOne(input, keys, who, o.batchId ?? null, dupOverride ?? undefined);
     if (override) await this.store.recordAudit(who.actor, 'seeded.override_create', 'seeded_site', created.id, null, { reason: override });
     return this.view(created, who.role, true);
   }
@@ -109,9 +114,19 @@ export class SeededSitesService {
     return findDuplicates(c, existing);
   }
 
-  private async createOne(input: SeedInput, keys: DupKeys, who: Who, batchId: string | null): Promise<SeededRow> {
+  /** Runs the shared duplicate check for a seeded business. Returns the override to carry into the job when a staff override was accepted; throws 409 DUPLICATE_BUSINESS / DUPLICATE_POSSIBLE otherwise. */
+  private async duplicateGate(input: SeedInput, who: Who, reason?: string): Promise<{ reason: string; staffId: string; staffRole: string } | null> {
+    if (!this.dup) return null;
+    const d: Decision = await this.dup.enforce(
+      { email: input.email, phone: input.phone, businessName: input.businessName, city: input.city, area: input.area, category: input.category, address: input.address },
+      { path: 'SEEDED', actor: who.actor.id ? { id: who.actor.id, role: who.role } : null, overrideReason: reason ?? null, selfService: false, listingsAreAttachable: true },
+    );
+    return d.override ? { reason: d.override.reason, staffId: d.override.staff.id, staffRole: d.override.staff.role } : null;
+  }
+
+  private async createOne(input: SeedInput, keys: DupKeys, who: Who, batchId: string | null, duplicateOverride?: { reason: string; staffId: string; staffRole: string }): Promise<SeededRow> {
     const placeholderEmail = `site+seed-${keys.phoneHash.slice(0, 24)}@sites.get4domain.invalid`;
-    const { vendorId, directoryBusinessId } = await this.provisioner.provision({ input, placeholderEmail, idempotencyKey: `seeded:${keys.phoneHash.slice(0, 40)}`, actor: who.actor });
+    const { vendorId, directoryBusinessId } = await this.provisioner.provision({ input, placeholderEmail, idempotencyKey: `seeded:${keys.phoneHash.slice(0, 40)}`, actor: who.actor, ...(duplicateOverride ? { duplicateOverride } : {}) });
     const existing = await this.store.getByVendor(vendorId);
     const row = existing ?? await this.store.create({
       vendorId, directoryBusinessId, lifecycle: 'SEEDED', sourceKind: input.sourceKind, sourceNote: input.sourceNote || null, publicFactsConfirmed: true, phoneHash: keys.phoneHash, emailHash: keys.emailHash,
