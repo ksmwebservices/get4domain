@@ -9,7 +9,7 @@ Branch `v3-theme-mp` (from `v3-build-be`). Worktree `C:\Get4Domain\get4domain-w2
 | PRE | DONE | b695d74 | vendor-gaps int test was stale (fixed, stricter); `GET /v3/me/overview` added; terms body confirmed and documented |
 | M0 | DONE | (this commit) | findings below |
 | M1 | DONE | (M1 commit) | theme package spec v1 = kit zip + optional marketplace block; schema, backend core, 22 new tests |
-| M2 | TODO | | |
+| M2 | DONE | (M2 commit) | package table (g4d_theme_market_packages), 8 admin routes, role matrix, 14 error codes, upload/validate/flow; migration applied to staging (rls-off 0, drift 2 documented); unit 18+7, int 6 |
 | M3 | TODO | | |
 | M4 | TODO | | |
 | M5 | TODO | | |

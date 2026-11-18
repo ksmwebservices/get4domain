@@ -64,8 +64,20 @@ export const SEO_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = {
 /** The crawler list names the bots robots.txt lets in: SUPER_ADMIN only to change (ADMIN is not added to this one). */
 export const SEO_SUPER_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = { 'PUT /v3/admin/seo-directory/crawlers': SUPER_ONLY };
 
+/**
+ * TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; uploading, submitting, returning, publishing and archiving a theme are ADMIN and SUPER_ADMIN
+ * (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow, built from THEME_MARKET_ADMIN_WRITES). SALES, SUPPORT and every label are refused.
+ */
+export const THEME_MARKET_READS: Readonly<Record<string, readonly StaffRole[]>> = {
+  'GET /v3/admin/theme-market/themes': OPS_AND_SUPER, 'GET /v3/admin/theme-market/themes/:id': OPS_AND_SUPER, 'POST /v3/admin/theme-market/validate': OPS_AND_SUPER,
+};
+export const THEME_MARKET_ADMIN_WRITES: readonly string[] = [
+  'POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/archive',
+];
+const THEME_MARKET_WRITES: Readonly<Record<string, readonly StaffRole[]>> = Object.fromEntries(THEME_MARKET_ADMIN_WRITES.map((r) => [r, SUPER_ONLY]));
+
 export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> = {
-  ...SEO_ROUTES, ...SEO_SUPER_ROUTES,
+  ...SEO_ROUTES, ...SEO_SUPER_ROUTES, ...THEME_MARKET_READS, ...THEME_MARKET_WRITES,
   // ── Operations + super admin only (MARKETING refused) ────────────────────────────────────────────────
   // vendors: create, read, edit, delete, suspend, activate
   'GET /vendors': OPS_AND_SUPER, 'POST /vendors': OPS_AND_SUPER, 'GET /vendors/:id': OPS_AND_SUPER, 'PUT /vendors/:id': OPS_AND_SUPER,
@@ -305,7 +317,7 @@ export const STAFF_ROLE_EXTENSIONS: Readonly<Record<'ADMIN' | 'SUPPORT', RoleExt
       'PUT /cms/platform', 'POST /demo/seed', 'POST /demo/cleanup-sandboxes',
     ],
     // the pack engine's content (A6): packs, tabs and the category map. The tier matrix, the two switches and the add-on switch stay SUPER_ADMIN only.
-    allow: ['PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve', 'GET /v3/admin/commission/payouts/export.csv',
+    allow: [...THEME_MARKET_ADMIN_WRITES, 'PUT /v3/admin/pack-engine/packs/:key', 'PUT /v3/admin/pack-engine/tabs', 'PUT /v3/admin/pack-engine/categories/:categoryKey', 'PUT /v3/admin/profile-fields', 'PUT /v3/admin/profile-fields/map', 'PUT /v3/admin/pack-engine/tab-fields', 'PUT /v3/admin/pack-engine/addon-eligibility', 'POST /v3/admin/partners', 'PUT /v3/admin/partners/:id', 'PUT /v3/admin/payment-gateway', 'POST /v3/admin/billing/orders/:id/mark-paid', 'POST /v3/admin/billing/vendors/:vendorId/cash-orders', 'GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve', 'GET /v3/admin/commission/payouts/export.csv',
       'POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral',
       ...Object.keys(SEO_ROUTES)],
   },

@@ -80,6 +80,7 @@ import { V3PacksModule } from './v3-packs/packs.module';
 import { V3PackRecordsModule } from './v3-pack-records/pack-records.module';
 import { V3VendorGapsModule } from './v3-vendor-gaps/vendor-gaps.module';
 import { V3AdminGapsModule } from './v3-admin-gaps/admin-gaps.module';
+import { V3ThemeMarketModule } from './v3-theme-market/theme-market.module';
 import { V3MediaUploadModule } from './v3-media-upload/media-upload.module';
 import { V3ProfileFieldsModule } from './v3-profile-fields/profile.module';
 import { V3ListingImportModule } from './v3-listing-import/listing-import.module';
@@ -169,6 +170,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3VendorGapsModule,
     V3AdminGapsModule,
     V3MediaUploadModule,
+    V3ThemeMarketModule,   // TM1: the theme marketplace (upload, validate, publish)
     V3ProfileFieldsModule,
     V3ListingImportModule,
     ClaimSetupModule,   // Part B (B7): account setup after the claim code and the owner's approval that puts the site live

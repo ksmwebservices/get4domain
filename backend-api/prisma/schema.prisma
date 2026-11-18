@@ -48,6 +48,7 @@ model Vendor {
   v3SubscriptionEvents V3SubscriptionEvent[]
   v3EntitlementOverrides V3EntitlementOverride[]
   v3Flags V3VendorFlag[]
+  v3PrivateThemes V3ThemeMarketPackage[] @relation("ThemePrivateVendor")
   v3ClaimTokens V3ClaimToken[]
   v3Invites V3Invite[]
   v3ProvisioningJobs V3ProvisioningJob[]
@@ -8245,4 +8246,66 @@ model CommissionPayout {
 
   @@unique([partnerId, month])
   @@map("g4d_commission_payouts")
+}
+
+/// TM1 M2: a theme package of the theme marketplace (the kit's zip, stored whole). The bytes are in the row because object storage is unset and a local disk does not survive a redeploy.
+/// One row per (key, version). Never deleted: ARCHIVED hides it from new choices while vendors already using it keep it. RLS on, no policy (service role only).
+model V3ThemeMarketPackage {
+  id                  String    @id @default(cuid())
+  /// the manifest id (the theme key); several versions share a key
+  key                 String
+  version             Int
+  name                String
+  description         String?
+  /// Standard or Premium: a price class of the theme, never a plan
+  tier                String    @default("Standard")
+  /// DRAFT, REVIEW, PUBLISHED or ARCHIVED
+  status              String    @default("DRAFT")
+  /// PUBLIC (the marketplace) or PRIVATE (one business only, privateVendorId)
+  visibility          String    @default("PUBLIC")
+  /// set exactly while visibility is PRIVATE: the only business that may see and use the theme
+  privateVendorId     String?
+  /// the business a custom theme was first made for (kept after it is published to the marketplace); provenance only
+  sourceVendorId      String?
+  /// true for a starter theme built by the Get4Domain team (said honestly in the listing)
+  starter             Boolean   @default(false)
+  licence             String
+  tracks              String[]
+  packs               String[]
+  addons              String[]
+  capabilities        String[]
+  tags                String[]
+  catalogueCategories String[]
+  kitCategories       String[]
+  /// theme.json as uploaded (no secrets, no customer data)
+  manifestJson        Json
+  contentHash         String
+  sizeBytes           Int
+  fileCount           Int
+  /// the zip, exactly as validated
+  bytes               Bytes
+  /// M4: the admin recorded that the customer agreed to the theme being published; a note, never legal wording
+  consentObtained     Boolean?
+  consentNote         String?
+  consentAt           DateTime?
+  consentById         String?
+  /// why a reviewer sent it back to DRAFT
+  reviewNote          String?
+  createdByType       String    @default("STAFF")
+  createdById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  submittedAt         DateTime?
+  publishedAt         DateTime?
+  publishedById       String?
+  archivedAt          DateTime?
+
+  privateVendor Vendor? @relation("ThemePrivateVendor", fields: [privateVendorId], references: [id], onDelete: Cascade)
+
+  @@unique([key, version])
+  @@index([status, visibility])
+  @@index([privateVendorId])
+  @@index([packs], type: Gin)
+  @@index([tags], type: Gin)
+  @@map("g4d_theme_market_packages")
 }

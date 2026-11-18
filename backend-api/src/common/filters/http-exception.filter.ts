@@ -146,6 +146,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       // TERMS_ACCEPTANCE_REQUIRED: which documents wait, as plain { kind, version } pairs
       const waiting = (exceptionResponse as Record<string, unknown>).outstanding;
       if (Array.isArray(waiting)) extra.outstanding = waiting.filter((o): o is { kind: string; version: number } => !!o && typeof (o as { kind?: unknown }).kind === 'string' && typeof (o as { version?: unknown }).version === 'number').map((o) => ({ kind: o.kind, version: o.version }));
+      // THEME_PACKAGE_INVALID and THEME_PUBLISH_BLOCKED: every problem of a theme package as plain { file, rule, message, source } (nothing else from the body, nothing from the file's content)
+      const problems = (exceptionResponse as Record<string, unknown>).problems;
+      if (Array.isArray(problems)) extra.problems = problems.filter((p): p is { file: string; rule: string; message: string; source: string } => !!p && typeof (p as { file?: unknown }).file === 'string' && typeof (p as { rule?: unknown }).rule === 'string' && typeof (p as { message?: unknown }).message === 'string').slice(0, 100).map((p) => ({ file: p.file.slice(0, 200), rule: p.rule.slice(0, 80), message: p.message.slice(0, 300), source: typeof p.source === 'string' ? p.source.slice(0, 20) : 'package' }));
+      const problemCount = (exceptionResponse as Record<string, unknown>).problemCount;
+      if (typeof problemCount === 'number' && Number.isFinite(problemCount)) extra.problemCount = problemCount;
       // PUBLISH_BLOCKED: what is missing, as plain { code, label } pairs (nothing else from the body)
       const missing = (exceptionResponse as Record<string, unknown>).missing;
       if (Array.isArray(missing)) extra.missing = missing.filter((m): m is { code: string; label: string } => !!m && typeof (m as { code?: unknown }).code === 'string' && typeof (m as { label?: unknown }).label === 'string').map((m) => ({ code: m.code, label: m.label }));

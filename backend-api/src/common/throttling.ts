@@ -30,6 +30,10 @@ export const READ_LIMIT = { limit: intFromEnv('THROTTLE_READ_LIMIT', 1500), ttl:
 export const RATE = {
   /** Wave 2: a vendor adding or changing a record on a pack tab. Roomy for a person typing, tight for a script. */
   recordWrite: { default: { limit: 120, ttl: 60_000 } },
+  /** TM1: uploading or validating a theme package (up to 5 MB, a full lint per call): an admin does a few a minute, a script does not. */
+  themeUpload: { default: { limit: 10, ttl: 60_000 } },
+  /** TM1: a server-side theme preview renders every page of a theme; cheap for a person browsing, tight for a script. */
+  themePreview: { default: { limit: 60, ttl: 60_000 } },
   /** Credential endpoints — brute-force / credential-stuffing targets. */
   login: { default: { limit: 10, ttl: 60_000 } },
   register: { default: { limit: 5, ttl: 60_000 } },
