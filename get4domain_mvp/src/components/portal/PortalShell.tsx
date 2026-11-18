@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import Footer from '@/components/portal/Footer';
+import MobileNav from '@/components/portal/MobileNav';
+import ServiceWorkerRegister from '@/components/portal/ServiceWorkerRegister';
 import { portalFont } from '@/components/portal/fonts';
 import Header, { type HeaderLinks } from '@/components/portal/Header';
 import { orderPacks } from '@/components/portal/CategoryGrid';
@@ -27,6 +29,8 @@ export default function PortalShell({ variant, children }: { variant: 'site' | '
       <Header links={links} packs={orderPacks(navPacks())} mainPrefix={mainPrefix} active={variant} navLabel={variant === 'site' ? SITE.nav.label : S.nav.label} />
       <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">{children}</main>
       <Footer links={links} main={l.main} />
+      <MobileNav links={links} />
+      <ServiceWorkerRegister />
     </div>
   );
 }

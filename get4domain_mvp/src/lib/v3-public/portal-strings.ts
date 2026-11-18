@@ -31,6 +31,23 @@ export const PORTAL = {
     more: 'More',
   },
 
+  /** The phone bottom bar and the install item (dispatch P2.6). */
+  app: {
+    barLabel: 'App menu',
+    home: 'Home',
+    search: 'Search',
+    categories: 'Categories',
+    plans: 'Plans',
+    more: 'More',
+    moreTitle: 'More',
+    close: 'Close',
+    install: 'Install app',
+    installDone: 'Thank you. The app is being added to your device.',
+    iosTitle: 'Add to Home Screen',
+    iosSteps: 'Tap the Share button in your browser, then choose "Add to Home Screen".',
+    iosGotIt: 'Got it',
+  },
+
   search: {
     label: 'Search',
     tabsLabel: 'What do you want to find?',

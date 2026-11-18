@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
       { source: '/digital-growth', destination: '/leadspace', permanent: true },
     ];
   },
+  // The service worker file is always fetched fresh (a stale worker could keep an old rule alive); it may control the whole site.
+  async headers() {
+    return [{ source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, max-age=0' }, { key: 'Service-Worker-Allowed', value: '/' }] }];
+  },
   async rewrites() {
     if (!leadspaceDomain) return [];
     const escaped = leadspaceDomain.replace(/\./g, '\\.');
