@@ -9,6 +9,14 @@ import { VendorsService } from '../vendors/vendors.service';
 import { CreateVendorWithSiteDto } from './admin-vendor-site.dto';
 import { buildCategoryTree, CategoryTree, PackRow } from './category-tree';
 
+/** The address kept for the site: the full address when given, else the line, area, city and pincode that were given, joined with commas. Null when nothing was given. */
+export function siteAddress(dto: Pick<CreateVendorWithSiteDto, 'address' | 'addressLine' | 'area' | 'city' | 'pincode'>): string | null {
+  const full = dto.address?.trim();
+  if (full) return dto.addressLine?.trim() && !full.toLowerCase().includes(dto.addressLine.trim().toLowerCase()) ? `${dto.addressLine.trim()}, ${full}` : full;
+  const line = dto.addressLine?.trim(); if (!line) return null;
+  return [line, dto.area?.trim(), dto.city?.trim(), dto.pincode?.trim()].filter(Boolean).join(', ');
+}
+
 export interface StaffActor { id: string; role: string }
 export interface CreatedVendorSite { vendorId: string; subdomain: string; site: SiteAnswer; siteUrl: string | null }
 
@@ -41,6 +49,8 @@ export class AdminVendorSiteService {
     }, { path: 'ADMIN_VENDOR', actor, selfService: false });
     // provenance first: the plan step only fills an empty `source`
     await this.prisma.vendor.update({ where: { id: vendor.id }, data: { source: 'STAFF', registeredByStaffId: actor.id } });
+    const address = siteAddress(dto);
+    if (address) await this.prisma.vendorCMS.upsert({ where: { vendorId: vendor.id }, create: { vendorId: vendor.id, address }, update: { address } });
     const site = await this.registration.createMySite(vendor.id, 'STAFF');
     return { vendorId: vendor.id, subdomain, site, siteUrl: site.url };
   }

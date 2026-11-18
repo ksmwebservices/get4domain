@@ -11,6 +11,8 @@ export class CreateVendorWithSiteDto {
   @ApiProperty({ example: 'Madurai' }) @IsString() @Length(2, 80) city!: string;
   @ApiProperty({ example: 'srimurugan', description: 'The free address: srimurugan.get4domain.com. Checked with the same rules as a signup.' }) @IsString() @Length(2, 63) subdomain!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(2, 80) area?: string;
+  @ApiPropertyOptional({ example: '12 Bypass Road, Madurai 625010', description: 'The full address shown on the site. When absent it is built from the address line, area, city and pincode.' }) @IsOptional() @IsString() @Length(5, 300) address?: string;
+  @ApiPropertyOptional({ example: '12 Bypass Road', description: 'The street and building line only' }) @IsOptional() @IsString() @Length(2, 200) addressLine?: string;
   @ApiPropertyOptional() @IsOptional() @Matches(/^\d{6}$/, { message: 'pincode must be 6 digits' }) pincode?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(20) gstin?: string;
   @ApiPropertyOptional({ description: 'A written reason (5 to 300 characters) to create this business although it looks like an existing one. ADMIN or SUPER_ADMIN only; logged.' }) @IsOptional() @IsString() @MaxLength(300) duplicateOverrideReason?: string;
