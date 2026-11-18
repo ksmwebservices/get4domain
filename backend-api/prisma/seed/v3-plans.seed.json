@@ -3,11 +3,11 @@
   "effectiveFrom": "2026-11-01T00:00:00.000Z",
   "notes": "THE OWNER EDITS THIS FILE. Plans, the feature catalogue, the Free/Pro matrix, settings, term discounts and tax are DATA: change a value here (or in admin) and load it with `node scripts/seed-v3-plans.js --apply` (staging). Price rows are NOT in this file: they are generated from the base monthly rates (settings baseMonthlyPaise.<plan>) and the TERM discount rules below. Anything marked proposed:true is a proposal, not a confirmed business value. A price an admin has already APPROVED is never overwritten by the seed.",
   "plans": [
-    { "key": "handyman_free", "track": "HANDYMAN", "level": "FREE", "name": "Handyman Free", "description": "A free website and directory listing for handyman and home-service businesses.", "status": "ACTIVE", "isPublic": true, "sortOrder": 10 },
+    { "key": "handyman_free", "track": "HANDYMAN", "level": "FREE", "name": "Free plan", "description": "A free website and directory listing for handyman and home-service businesses.", "status": "ACTIVE", "isPublic": true, "sortOrder": 10 },
     { "key": "handyman_pro", "track": "HANDYMAN", "level": "PRO", "name": "Handyman Pro", "description": "More pages, services and photos, video, booking, your own domain and priority support.", "status": "ACTIVE", "isPublic": true, "sortOrder": 20 },
-    { "key": "professional_free", "track": "PROFESSIONAL", "level": "FREE", "name": "Professional Free", "description": "A free website and directory listing for clinics, advisers, studios and other professionals.", "status": "ACTIVE", "isPublic": true, "sortOrder": 30 },
+    { "key": "professional_free", "track": "PROFESSIONAL", "level": "FREE", "name": "Free plan", "description": "A free website and directory listing for clinics, advisers, studios and other professionals.", "status": "ACTIVE", "isPublic": true, "sortOrder": 30 },
     { "key": "professional_pro", "track": "PROFESSIONAL", "level": "PRO", "name": "Professional Pro", "description": "The full site with booking, video, reports, Google connections and your own domain.", "status": "ACTIVE", "isPublic": true, "sortOrder": 40 },
-    { "key": "ecommerce_free", "track": "ECOMMERCE", "level": "FREE", "name": "Ecommerce Free", "description": "A free catalogue site with product enquiries.", "status": "ACTIVE", "isPublic": true, "sortOrder": 50 },
+    { "key": "ecommerce_free", "track": "ECOMMERCE", "level": "FREE", "name": "Free plan", "description": "A free catalogue site with product enquiries.", "status": "ACTIVE", "isPublic": true, "sortOrder": 50 },
     { "key": "ecommerce_pro", "track": "ECOMMERCE", "level": "PRO", "name": "Ecommerce Pro", "description": "A shop with a cart, a larger catalogue, video, reports and your own domain.", "status": "ACTIVE", "isPublic": true, "sortOrder": 60 }
   ],
   "features": [

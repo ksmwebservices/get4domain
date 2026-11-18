@@ -64,6 +64,22 @@ export class PlansAdminService {
     return plan;
   }
 
+  /** B3.1: change only the display name of a plan, found by key. Same value = no write and no audit row. The key, track, level and prices are untouched. */
+  async renamePlan(key: string, name: string, actor: Actor) {
+    const clean = name.trim();
+    if (clean.length < 2) throw new BadRequestException(planError('PLAN_NAME_INVALID', 'Give the plan a name of at least two characters.'));
+    const plan = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3Plan.findUnique({ where: { key } });
+      if (!before) throw unknownPlan();
+      if (before.name === clean) return before;
+      const after = await tx.v3Plan.update({ where: { key }, data: { name: clean } });
+      await this.audit.record(tx, actor, 'plan.rename', 'plan', before.id, { name: before.name }, { name: after.name });
+      return after;
+    });
+    this.entitlements.invalidateAll();
+    return { key: plan.key, name: plan.name };
+  }
+
   /** A plan that has ever been given to a vendor can only be retired. An unused plan can be deleted (its price and matrix rows go with it). */
   async deletePlan(id: string, actor: Actor) {
     await this.prisma.$transaction(async (tx) => {

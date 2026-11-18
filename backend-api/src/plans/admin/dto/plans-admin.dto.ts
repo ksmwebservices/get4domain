@@ -29,6 +29,11 @@ export class UpdatePlanDto {
   @IsOptional() @IsInt() sortOrder?: number;
 }
 
+/** B3.1: the display name of one plan, found by its key. No expectedUpdatedAt: a rename is idempotent and the key never changes. */
+export class RenamePlanDto {
+  @IsString() @MinLength(2) @MaxLength(80) name!: string;
+}
+
 export class CreatePriceDto {
   @IsNumber() termMonths!: number;
   @IsNumber() amountPaise!: number;

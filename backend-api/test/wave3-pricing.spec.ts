@@ -93,7 +93,7 @@ describe('shapePublicPricing', () => {
   });
 
   it('Free is the informational trial entry', () => {
-    expect(shapePublicPricing(rows()).free).toEqual({ key: 'free', name: 'Free', kind: 'TRIAL', description: 'A simple site to start', informational: true });
+    expect(shapePublicPricing(rows()).free).toEqual({ key: 'free', name: 'Free plan', kind: 'TRIAL', description: 'A simple site to start', informational: true });
     expect(shapePublicPricing(rows({ plans: [] })).free.description).toBeNull();
   });
 

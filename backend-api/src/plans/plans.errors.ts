@@ -8,7 +8,7 @@ export const PLAN_ERROR_CODES = [
   // Wave 4 W7: the GST rate setting
   'GST_RATE_INVALID', 'GST_RATE_EXISTS',
   // A rate that has already started was used to price orders: the generic tax-rate PUT and DELETE refuse to rewrite or remove it (add a new rate that starts later instead)
-  'TAX_RATE_IN_FORCE', 'PRICE_DATE_INVALID', 'PRICE_DATE_IN_PAST', 'PRICE_START_CLASH',
+  'TAX_RATE_IN_FORCE', 'PRICE_DATE_INVALID', 'PRICE_DATE_IN_PAST', 'PRICE_START_CLASH', 'PLAN_NAME_INVALID',
 ] as const;
 export type PlanErrorCode = (typeof PLAN_ERROR_CODES)[number];
 

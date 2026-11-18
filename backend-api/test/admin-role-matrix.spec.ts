@@ -25,7 +25,7 @@ const SUPER_ONLY_ROUTES = [
   'GET /leads', 'PUT /leads/:id/status',  // Demo Bookings
   'DELETE /vendors/:id',                  // deleting a vendor; suspend and activate stay OPERATIONS + SUPER_ADMIN
   // S51.6: every WRITE of the plans slice is a money rule, SUPER_ADMIN only
-  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'DELETE /v3/admin/plans/:id',
+  'POST /v3/admin/plans', 'PUT /v3/admin/plans/:id', 'PUT /v3/admin/plans/by-key/:key/name', 'DELETE /v3/admin/plans/:id',
   'POST /v3/admin/plans/:id/prices', 'POST /v3/admin/prices/:priceId/approve', 'PUT /v3/admin/prices/:priceId', 'DELETE /v3/admin/prices/:priceId',
   'POST /v3/admin/features', 'PUT /v3/admin/features/:key', 'DELETE /v3/admin/features/:key', 'PUT /v3/admin/plans/:id/features',
   'POST /v3/admin/tax-rates', 'PUT /v3/admin/tax-rates/:id', 'DELETE /v3/admin/tax-rates/:id',
@@ -226,7 +226,7 @@ MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(434);
+    expect(oracle).toHaveLength(435);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });

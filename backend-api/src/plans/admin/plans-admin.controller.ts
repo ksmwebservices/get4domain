@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ApprovePlanPriceDto, CreateFeatureDto, CreatePlanDto, CreatePriceDto, SaveMatrixDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
+import { ApprovePlanPriceDto, CreateFeatureDto, CreatePlanDto, CreatePriceDto, RenamePlanDto, SaveMatrixDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
 import { FeaturesAdminService } from './features-admin.service';
 import { actorOf, PageQueryDto } from './plans-admin.common';
 import { PlansAdminService } from './plans-admin.service';
@@ -31,6 +31,9 @@ export class PlansAdminController {
 
   @Put('plans/:id') @ApiOperation({ summary: 'Update a plan; needs expectedUpdatedAt (SUPER_ADMIN)' })
   updatePlan(@Param('id') id: string, @Body() dto: UpdatePlanDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.updatePlan(id, dto, actorOf(user, req)); }
+
+  @Put('plans/by-key/:key/name') @ApiOperation({ summary: 'Rename the display name of one plan by its key, for example handyman_free; the key never changes; audited (SUPER_ADMIN)' })
+  renamePlan(@Param('key') key: string, @Body() dto: RenamePlanDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.renamePlan(key, dto.name, actorOf(user, req)); }
 
   @Delete('plans/:id') @ApiOperation({ summary: 'Delete an unused plan; a plan in use can only be retired (SUPER_ADMIN)' })
   deletePlan(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.deletePlan(id, actorOf(user, req)); }

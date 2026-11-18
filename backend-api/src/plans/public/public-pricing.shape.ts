@@ -91,7 +91,7 @@ export function shapePublicPricing(r: PricingRows): PublicPricing {
 
   return {
     currency: 'INR', pricesExcludeGst: true, terms: [...PRICING_TERMS], gst: r.tax ? { name: r.tax.name, ratePercent: r.tax.ratePercent } : null,
-    free: { key: 'free', name: 'Free', kind: 'TRIAL', description: clean(free?.description ?? null), informational: true },
+    free: { key: 'free', name: 'Free plan', kind: 'TRIAL', description: clean(free?.description ?? null), informational: true },
     plans, addons, themeSwitch,
   };
 }
