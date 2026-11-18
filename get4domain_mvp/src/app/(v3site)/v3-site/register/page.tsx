@@ -40,7 +40,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const base = baseDomain(readHostConfig());
   return (
     <>
-      <h1 className="text-3xl font-bold text-slate-900">{SITE.register.h1}</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{SITE.register.h1}</h1>
       <p className="mb-6 mt-2 text-slate-600">{SITE.register.intro}</p>
       <div className="max-w-xl">
         <RegisterForm

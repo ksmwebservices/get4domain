@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import JsonLd from '@/components/directory/JsonLd';
+import PageHead from '@/components/portal/PageHead';
 import { CtaBox, FaqList } from '@/components/site/Blocks';
-import Trail from '@/components/site/Trail';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { MARKETING } from '@/lib/v3-public/marketing-strings';
 import { faqLd } from '@/lib/v3-public/site-jsonld';
@@ -22,15 +22,13 @@ export default function ProductHubPage() {
   return (
     <>
       <JsonLd items={[faqLd(P.faq)]} />
-      <Trail items={[{ name: P.crumb, path: '/product' }]} />
-      <h1 className="text-3xl font-bold text-slate-900">{P.h1}</h1>
-      <p className="mt-2 max-w-2xl text-slate-600">{P.lead}</p>
-      <ul className="mt-6 grid gap-4 md:grid-cols-2">
+      <PageHead crumbs={[{ name: P.crumb, path: '/product' }]} h1={P.h1} lead={P.lead} />
+      <ul className="grid gap-5 pt-10 md:grid-cols-2">
         {P.pages.map((p) => (
-          <li key={p.slug} className="rounded-xl border border-slate-200 p-5">
-            <h2 className="text-lg font-semibold text-slate-900"><Link href={productPath(p.slug)} className="hover:underline">{p.name}</Link></h2>
+          <li key={p.slug} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+            <h2 className="text-lg font-bold text-ink-900"><Link href={productPath(p.slug)} className="hover:underline">{p.name}</Link></h2>
             <p className="mt-2 text-sm text-slate-700">{p.lead}</p>
-            <p className="mt-3 text-sm"><Link href={productPath(p.slug)} className="font-medium text-slate-900 underline">{P.viewLink}<span className="sr-only">: {p.name}</span></Link></p>
+            <p className="mt-3 text-sm"><Link href={productPath(p.slug)} className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800">{P.viewLink}<span className="sr-only">: {p.name}</span></Link></p>
           </li>
         ))}
       </ul>

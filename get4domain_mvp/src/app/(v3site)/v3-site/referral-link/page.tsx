@@ -18,9 +18,9 @@ export default function ReferralLinkPage() {
   const R = SITE.referral;
   return (
     <section aria-labelledby="ref-title">
-      <h1 id="ref-title" className="text-3xl font-bold text-slate-900">{R.invalidH1}</h1>
+      <h1 id="ref-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{R.invalidH1}</h1>
       <p className="mt-3 text-slate-700">{R.invalidBody}</p>
-      <Link href="/register" className="mt-6 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.cta}</Link>
+      <Link href="/register" className="mt-6 inline-block inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2">{R.cta}</Link>
     </section>
   );
 }

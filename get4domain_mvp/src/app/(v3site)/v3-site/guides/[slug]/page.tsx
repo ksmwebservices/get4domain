@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import PageHead from '@/components/portal/PageHead';
 import { CtaBox } from '@/components/site/Blocks';
-import Trail from '@/components/site/Trail';
 import { assertV3Public } from '@/lib/v3-public/guard';
 import { MARKETING } from '@/lib/v3-public/marketing-strings';
 import { siteMetadata } from '@/lib/v3-public/site-metadata';
@@ -27,22 +27,20 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const more = g.links.map((s) => find(s)).filter((x): x is NonNullable<typeof x> => !!x);
   return (
     <>
-      <Trail items={[{ name: G.crumb, path: '/guides' }, { name: g.title, path: guidePath(g.slug) }]} />
-      <article>
-        <h1 className="text-3xl font-bold text-slate-900">{g.title}</h1>
-        <p className="mt-2 max-w-2xl text-lg text-slate-600">{g.lead}</p>
+      <PageHead crumbs={[{ name: G.crumb, path: '/guides' }, { name: g.title, path: guidePath(g.slug) }]} h1={g.title} lead={g.lead} />
+      <article className="pt-2">
         {g.sections.map((s) => (
           <section key={s.h} className="mt-8">
-            <h2 className="text-xl font-semibold text-slate-900">{s.h}</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-ink-900">{s.h}</h2>
             {s.body.map((t) => <p key={t} className="mt-2 max-w-2xl text-slate-700">{t}</p>)}
           </section>
         ))}
       </article>
       <section aria-labelledby="more-title" className="mt-10">
-        <h2 id="more-title" className="text-xl font-semibold text-slate-900">{G.relatedHeading}</h2>
+        <h2 id="more-title" className="text-2xl font-bold tracking-tight text-ink-900">{G.relatedHeading}</h2>
         <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
-          {more.map((m) => <li key={m.slug}><Link href={guidePath(m.slug)} className="font-medium text-slate-900 underline">{m.title}</Link></li>)}
-          <li><Link href="/guides" className="font-medium text-slate-900 underline">{G.hubLink}</Link></li>
+          {more.map((m) => <li key={m.slug}><Link href={guidePath(m.slug)} className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800">{m.title}</Link></li>)}
+          <li><Link href="/guides" className="font-semibold text-brand-700 underline underline-offset-2 hover:text-brand-800">{G.hubLink}</Link></li>
         </ul>
       </section>
       <CtaBox id="cta-title" heading={G.ctaHeading} body={G.ctaBody} links={[{ href: '/register', label: G.ctaPrimary }, { href: '/pricing', label: MARKETING.product.ctaSecondary }]} />
