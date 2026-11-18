@@ -27,6 +27,10 @@ export type TabAudience = 'ANY' | 'OWNER_ONLY' | TeamArea;
 export const TEAM_TAB_AREA: Readonly<Record<string, TabAudience>> = {
   website: 'website', industry: 'website', promotion: 'campaigns', crm: 'telecrm', telecrm: 'telecrm', accounting: 'accounts', social: 'campaigns', ai_studio: 'ai_studio', support: 'ANY',
   billing: 'OWNER_ONLY', plan: 'OWNER_ONLY', domain: 'OWNER_ONLY', migration: 'OWNER_ONLY',
+  // B3.4: the tabs the vendor app used to place by its own list. Money, people and the business record stay owner only.
+  tasks: 'ANY', offerings: 'website', reviews: 'campaigns', chat: 'communication', reports: 'reports',
+  wallet: 'OWNER_ONLY', packs: 'OWNER_ONLY', team: 'OWNER_ONLY', profile: 'OWNER_ONLY', activity: 'OWNER_ONLY',
+  notifications: 'ANY', legal: 'ANY', account: 'ANY',
 };
 /** Pack, capability and add-on tabs are the business's own work screens; their routes keep their own area checks. */
 export const TEAM_SCOPE_DEFAULT: Readonly<Record<'PACK' | 'CAPABILITY' | 'ADDON', TabAudience>> = { PACK: 'ANY', CAPABILITY: 'ANY', ADDON: 'ANY' };

@@ -10,17 +10,18 @@ function realSettings() { return readSeedSources().settings; }
 
 const base = (over: Partial<NavInput>): NavInput => ({ mode: 'V3', level: 'PRO', tier: 'PROFESSIONAL', tabs: defs, pack: null, gatedPacksOpen: false, matrix, held: new Set(), ...over });
 const stateOf = (nav: ReturnType<typeof resolveNav>, key: string): string | undefined => nav.find((t) => t.key === key)?.state;
-const COMMON = ['website', 'industry', 'promotion', 'crm', 'telecrm', 'billing', 'accounting', 'social', 'ai_studio', 'domain', 'support', 'plan', 'migration'];
+const COMMON = ['website', 'industry', 'promotion', 'crm', 'telecrm', 'billing', 'accounting', 'social', 'ai_studio', 'domain', 'support', 'plan', 'migration', 'tasks', 'offerings', 'reviews', 'chat', 'reports', 'wallet', 'packs', 'team', 'profile', 'notifications', 'legal', 'account', 'activity'];
+const FREE_OPEN = ['website', 'industry', 'plan', 'support', 'profile', 'notifications', 'legal', 'account', 'activity'];
 
 describe('Free trial', () => {
-  it.each(TIERS.map((t) => [t]))('on a %s Free plan only the site, industry management, plan and support are ACTIVE; every other common tab is LOCKED_PREVIEW', (tier) => {
+  it.each(TIERS.map((t) => [t]))('on a %s Free plan only the site, industry management, plan, support, profile, notifications, legal, account and activity are ACTIVE; every other common tab is LOCKED_PREVIEW', (tier) => {
     const nav = resolveNav(base({ level: 'FREE', tier }));
-    expect(nav.filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['industry', 'plan', 'support', 'website']);
-    for (const k of COMMON.filter((c) => !['website', 'industry', 'plan', 'support'].includes(c))) expect([k, stateOf(nav, k)]).toEqual([k, 'LOCKED_PREVIEW']);
+    expect(nav.filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['account', 'activity', 'industry', 'legal', 'notifications', 'plan', 'profile', 'support', 'website']);
+    for (const k of COMMON.filter((c) => !FREE_OPEN.includes(c))) expect([k, stateOf(nav, k)]).toEqual([k, 'LOCKED_PREVIEW']);
     expect(nav.filter((t) => t.state === 'LOCKED_PREVIEW').every((t) => t.reason === 'FREE_TRIAL')).toBe(true);
   });
   it('a V3 vendor with no plan yet (UNASSIGNED) is on the trial rules too', () => {
-    expect(resolveNav(base({ mode: 'UNASSIGNED', level: null, tier: null })).filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['industry', 'plan', 'support', 'website']);
+    expect(resolveNav(base({ mode: 'UNASSIGNED', level: null, tier: null })).filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['account', 'activity', 'industry', 'legal', 'notifications', 'plan', 'profile', 'support', 'website']);
   });
   it('a Free vendor sees the tabs of their pack and the capabilities they hold, all locked', () => {
     const nav = resolveNav(base({ level: 'FREE', tier: 'PROFESSIONAL', pack: { key: 'CLINIC', counselGated: false }, held: new Set(['APPOINTMENTS']) }));

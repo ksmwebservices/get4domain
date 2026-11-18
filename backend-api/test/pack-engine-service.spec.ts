@@ -17,13 +17,13 @@ describe('the loaders: dry run, apply, idempotent', () => {
     const s = new MemoryRefStore();
     const r = await loadPackEngine(s, realSeed(), { apply: false });
     expect(r.applied).toBe(false); expect(s.creates).toBe(0);
-    expect([r.capabilities.toCreate, r.matrix.toCreate, r.packs.toCreate, r.tabs.toCreate, r.addons.toCreate, r.categories.toCreate]).toEqual([14, 42, 16, 109, 5, 196]);
+    expect([r.capabilities.toCreate, r.matrix.toCreate, r.packs.toCreate, r.tabs.toCreate, r.addons.toCreate, r.categories.toCreate]).toEqual([14, 42, 16, 122, 5, 196]);
     expect(r.needsBlueprint).toBe(53); expect(r.problems).toEqual([]);
   });
   it('--apply writes everything once; a second run creates nothing', async () => {
     const s = new MemoryRefStore();
     const first = await loadPackEngine(s, realSeed(), { apply: true });
-    expect(first.applied).toBe(true); expect([first.packs.created, first.tabs.created, first.categories.created, first.addons.created]).toEqual([16, 109, 196, 5]);
+    expect(first.applied).toBe(true); expect([first.packs.created, first.tabs.created, first.categories.created, first.addons.created]).toEqual([16, 122, 196, 5]);
     const before = s.creates;
     const second = await loadPackEngine(s, realSeed(), { apply: true });
     expect(s.creates).toBe(before); expect(second.packs.toCreate + second.tabs.toCreate + second.categories.toCreate + second.matrix.toCreate + second.capabilities.toCreate + second.addons.toCreate).toBe(0);
@@ -93,14 +93,14 @@ describe('navigation (A4) through the service', () => {
     const { svc, plans } = await makeEngine();
     plans.states.set('v1', { mode: 'V3', level: 'FREE', track: 'PROFESSIONAL' });
     const free = await svc.navigation('v1');
-    expect(free.tabs.filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['industry', 'plan', 'support', 'website']);
+    expect(free.tabs.filter((t) => t.state === 'ACTIVE').map((t) => t.key).sort()).toEqual(['account', 'activity', 'industry', 'legal', 'notifications', 'plan', 'profile', 'support', 'website']);
     plans.states.set('v1', { mode: 'V3', level: 'PRO', track: 'PROFESSIONAL' });
     expect((await svc.navigation('v1')).tabs.find((t) => t.key === 'crm')!.state).toBe('ACTIVE');
   });
   it('a vendor with no pack yet still gets the common tabs', async () => {
     const { svc, plans } = await makeEngine(); plans.states.set('v1', { mode: 'V3', level: 'PRO', track: 'HANDYMAN' });
     const n = await svc.navigation('v1');
-    expect(n.pack).toBeNull(); expect(n.tabs.map((t) => t.scope)).toEqual(Array(13).fill('COMMON'));
+    expect(n.pack).toBeNull(); expect(n.tabs.map((t) => t.scope)).toEqual(Array(26).fill('COMMON'));
   });
   it.each([['PROPERTY', 'listings-agent'], ['CLINIC', 'general-physician'], ['RETAIL', 'grocery-kirana']])('the %s pack tabs reach the vendor from the category map', async (pack, _hint) => {
     const { svc, plans, refs } = await makeEngine();

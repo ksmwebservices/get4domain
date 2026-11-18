@@ -55,7 +55,7 @@ describe('the settings file', () => {
   it('carries the common tabs the amendment names, and website and industry management are open on a Free trial', () => {
     const keys = src.settings.commonTabs.map((t) => t.key);
     for (const k of ['promotion', 'crm', 'telecrm', 'billing', 'accounting', 'social', 'ai_studio', 'domain', 'support', 'plan', 'migration', 'website', 'industry']) expect(keys).toContain(k);
-    expect(src.settings.commonTabs.filter((t) => t.freeTrial).map((t) => t.key).sort()).toEqual(['industry', 'plan', 'support', 'website']);
+    expect(src.settings.commonTabs.filter((t) => t.freeTrial).map((t) => t.key).sort()).toEqual(['account', 'activity', 'industry', 'legal', 'notifications', 'plan', 'profile', 'support', 'website']);
   });
   it('gives every capability a tab', () => { expect(capabilityTabRecords(src.settings).map((t) => t.ownerKey).sort()).toEqual(src.settings.capabilities.map((c) => c.key).sort()); });
 });
@@ -128,8 +128,8 @@ describe('CATEGORY_MASTER_V3: the 196 categories', () => {
 });
 
 describe('add-on packs (V3A)', () => {
-  it('are the four owner packs, with PENDING prices and no amount anywhere', () => {
-    expect(seed.addons.map((a) => a.key).sort()).toEqual(['HOME_SAMPLE_COLLECTION', 'ONLINE_ORDERING_DELIVERY', 'PHARMACY_COUNTER', 'SHOP']);
+  it('are the four owner packs and the custom-domain SEO and ads pack (B3.3), with PENDING prices and no amount anywhere', () => {
+    expect(seed.addons.map((a) => a.key).sort()).toEqual(['CUSTOM_DOMAIN_SEO_ADS', 'HOME_SAMPLE_COLLECTION', 'ONLINE_ORDERING_DELIVERY', 'PHARMACY_COUNTER', 'SHOP']);
     expect(seed.addons.every((a) => a.priceStatus === 'PENDING' && a.bundleDiscountStatus === 'PENDING')).toBe(true);
   });
   it('SHOP grants the store; the pharmacy counter dispenses to the clinic\'s own patients only and sells nothing online', () => {

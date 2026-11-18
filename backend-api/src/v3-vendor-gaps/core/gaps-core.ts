@@ -15,6 +15,11 @@ export const COMMON_TAB_GROUP: Readonly<Record<string, BarGroup>> = {
   website: 'grow', promotion: 'grow', social: 'grow', ai_studio: 'grow', domain: 'grow',
   billing: 'money', accounting: 'money',
   support: 'more', plan: 'more', migration: 'more',
+  // B3.4: the tabs the vendor app used to place by its own fixed list
+  tasks: 'business', offerings: 'business',
+  reviews: 'grow', chat: 'grow', reports: 'grow',
+  wallet: 'money', packs: 'money',
+  team: 'more', profile: 'more', notifications: 'more', legal: 'more', account: 'more', activity: 'more',
 };
 export function barGroupOf(scope: 'COMMON' | 'PACK' | 'CAPABILITY' | 'ADDON', key: string): BarGroup {
   if (scope !== 'COMMON') return 'business';

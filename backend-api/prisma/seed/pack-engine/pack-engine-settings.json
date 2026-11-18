@@ -167,6 +167,76 @@
       "key": "migration",
       "label": "Migration",
       "route": "/migration"
+    },
+    {
+      "key": "tasks",
+      "label": "Tasks",
+      "route": "/tasks"
+    },
+    {
+      "key": "offerings",
+      "label": "Offerings",
+      "route": "/offerings"
+    },
+    {
+      "key": "reviews",
+      "label": "Reviews",
+      "route": "/reviews"
+    },
+    {
+      "key": "chat",
+      "label": "Website chat",
+      "route": "/chat"
+    },
+    {
+      "key": "reports",
+      "label": "Reports",
+      "route": "/reports"
+    },
+    {
+      "key": "wallet",
+      "label": "Wallet",
+      "route": "/wallet"
+    },
+    {
+      "key": "packs",
+      "label": "Add-on packs",
+      "route": "/packs"
+    },
+    {
+      "key": "team",
+      "label": "Team",
+      "route": "/team"
+    },
+    {
+      "key": "profile",
+      "label": "Business profile",
+      "route": "/profile",
+      "freeTrial": true
+    },
+    {
+      "key": "notifications",
+      "label": "Notifications",
+      "route": "/notifications",
+      "freeTrial": true
+    },
+    {
+      "key": "legal",
+      "label": "Legal and policies",
+      "route": "/legal",
+      "freeTrial": true
+    },
+    {
+      "key": "account",
+      "label": "Account and appearance",
+      "route": "/account",
+      "freeTrial": true
+    },
+    {
+      "key": "activity",
+      "label": "Activity log",
+      "route": "/activity",
+      "freeTrial": true
     }
   ],
   "capabilityTabs": [
