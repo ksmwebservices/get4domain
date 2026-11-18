@@ -8,7 +8,8 @@ import { isReservedName } from './hostnames';
 export type RegisterField = 'businessName' | 'category' | 'subdomain' | 'owner' | 'email' | 'phone' | 'password' | 'terms';
 export type RegisterErrorKey =
   | 'general' | 'businessName' | 'category' | 'subdomain' | 'subdomainTaken' | 'subdomainReserved' | 'subdomainInvalid' | 'subdomainShort'
-  | 'owner' | 'email' | 'emailTaken' | 'phone' | 'password' | 'terms' | 'rate' | 'notAvailable';
+  | 'owner' | 'email' | 'emailTaken' | 'phone' | 'password' | 'terms' | 'rate' | 'notAvailable'
+  | 'businessDuplicate' | 'businessPossible' | 'mailNotReady' | 'server';
 export type FieldErrors = Partial<Record<RegisterField, RegisterErrorKey>>;
 
 export const PLAN_KEYS: readonly string[] = ['free', 'handyman', 'professional', 'ecommerce'];
@@ -112,11 +113,19 @@ export function apiFieldsOf(json: unknown): string[] {
   return Array.isArray(d.fields) ? d.fields.filter((x): x is string => typeof x === 'string') : [];
 }
 
+/** The API's codes for an e-mail service that is switched off or not set up. */
+const MAIL_CODES: readonly string[] = ['MAIL_DISABLED', 'EMAIL_NOT_CONFIGURED', 'EMAIL_NOT_LIVE'];
+
 export interface RegisterFailure { fields: FieldErrors; general: RegisterErrorKey | null }
 
 /** An API refusal to field errors and, when it names none, one general message. Status 0 means the API could not be reached. */
 export function mapRegisterFailure(status: number, json: unknown): RegisterFailure {
   if (status === 429) return { fields: {}, general: 'rate' };
+  const code0 = codeOf(json);
+  // a business that already exists: said plainly, but never which business, who owns it or what matched (the API's candidate list is dropped here)
+  if (code0 === 'DUPLICATE_BUSINESS') return { fields: {}, general: 'businessDuplicate' };
+  if (code0 === 'DUPLICATE_POSSIBLE') return { fields: {}, general: 'businessPossible' };
+  if (MAIL_CODES.includes(code0)) return { fields: {}, general: 'mailNotReady' };
   if (status === 0 || status === 404 || status === 405 || status === 501 || status === 502 || status === 503 || status === 504) return { fields: {}, general: 'notAvailable' };
   const code = codeOf(json);
   const fields: FieldErrors = {};
@@ -135,7 +144,8 @@ export function mapRegisterFailure(status: number, json: unknown): RegisterFailu
     }
   }
   if (!Object.keys(fields).length && status === 409) fields.email = 'emailTaken';
-  return Object.keys(fields).length ? { fields, general: null } : { fields: {}, general: 'general' };
+  if (Object.keys(fields).length) return { fields, general: null };
+  return { fields: {}, general: status >= 500 ? 'server' : 'general' };
 }
 
 export type SubdomainState = 'available' | 'taken' | 'reserved' | 'invalid' | 'short' | 'unknown';

@@ -61,7 +61,7 @@ export default function RegisterForm(p: Props) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [general, setGeneral] = useState<RegisterErrorKey | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ target: string | null } | null>(null);
+  const [done, setDone] = useState<{ target: string | null; site: 'live' | 'pending' } | null>(null);
   const [availability, setAvailability] = useState<SubdomainState | 'checking' | null>(null);
   const seq = useRef(0);
   const summary = useRef<HTMLDivElement>(null);
@@ -111,7 +111,7 @@ export default function RegisterForm(p: Props) {
     setErrors(found);
     if (Object.keys(found).length) { summary.current?.focus(); return; }
     setBusy(true);
-    let r: { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null };
+    let r: { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null; site?: 'live' | 'pending' };
     try {
       const res = await fetch('/directory-api/register', {
         method: 'POST', headers: { 'content-type': 'application/json' },
@@ -119,14 +119,16 @@ export default function RegisterForm(p: Props) {
       });
       r = (await res.json()) as typeof r;
     } catch {
-      r = { ok: false, fields: {}, general: 'notAvailable', handoff: null };
+      r = { ok: false, fields: {}, general: 'notAvailable', handoff: null, site: 'pending' };
     }
     setBusy(false);
     setPassword('');
     if (r.ok) {
       const target = handoffTarget(p.vendorUrl, r.handoff);
-      setDone({ target });
-      if (target) window.location.assign(target);
+      // only the API's own word makes the site live; otherwise the note stays on screen (no redirect) so it is read, with a way to sign in
+      const site = r.site === 'live' ? 'live' : 'pending';
+      setDone({ target, site });
+      if (target && site === 'live') window.location.assign(target);
       return;
     }
     setErrors(r.fields ?? {});
@@ -137,9 +139,10 @@ export default function RegisterForm(p: Props) {
   if (done) {
     return (
       <section aria-labelledby="done-title" role="status">
-        <h2 id="done-title" className="text-xl font-semibold text-slate-900">{R.done.title}</h2>
-        <p className="mt-2 text-slate-700">{R.done.body}</p>
-        {done.target ? <a href={done.target} className="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.done.cta}</a> : <p className="mt-3 text-slate-600">{R.done.noApp}</p>}
+        <h2 id="done-title" className="text-xl font-semibold text-slate-900">{done.site === 'live' ? R.done.title : R.done.pendingTitle}</h2>
+        <p className="mt-2 text-slate-700">{done.site === 'live' ? R.done.body : R.done.pendingBody}</p>
+        {done.target ? <a href={done.target} className="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.done.cta}</a> : done.site === 'live' ? <p className="mt-3 text-slate-600">{R.done.noApp}</p> : null}
+        {done.site === 'pending' ? <p className="mt-3 text-sm"><Link href="/login" className="text-slate-900 underline">{R.done.pendingSignIn}</Link></p> : null}
       </section>
     );
   }
@@ -151,7 +154,7 @@ export default function RegisterForm(p: Props) {
       <h2 id="register-title" className="sr-only">{R.title}</h2>
       <div ref={summary} tabIndex={-1} aria-live="assertive">
         {general ? <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{R.errors[general]}</p> : null}
-        {fieldKeys.length > 0 && !general ? <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{R.errors.general}</p> : null}
+        {fieldKeys.length > 0 && !general ? <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{R.errors.fieldsSummary}</p> : null}
       </div>
       <p className="mb-4 text-sm text-slate-700">
         <span className="font-medium">{R.planNote}:</span> {p.planName ?? R.freePlan}{p.termName ? `, ${p.termName}` : ''}

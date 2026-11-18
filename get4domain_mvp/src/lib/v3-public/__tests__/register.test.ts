@@ -95,7 +95,7 @@ describe('API refusals become field errors in plain words', () => {
   });
   test('a sentence naming no field is the one general message, never the API sentence', () => {
     assert.deepEqual(mapRegisterFailure(400, { message: 'Something odd' }), { fields: {}, general: 'general' });
-    assert.deepEqual(mapRegisterFailure(500, {}), { fields: {}, general: 'general' });
+    assert.deepEqual(mapRegisterFailure(500, {}), { fields: {}, general: 'server' });
   });
   test('rate limit, and an API that is missing or down', () => {
     assert.deepEqual(mapRegisterFailure(429, {}), { fields: {}, general: 'rate' });
@@ -109,6 +109,29 @@ describe('API refusals become field errors in plain words', () => {
       if (f.general) keys.add(f.general);
     }
     for (const k of keys) assert.ok((SITE.register.errors as Record<string, string>)[k], k);
+  });
+  test('a business that exists, a likely duplicate, mail off and a server error each have their own words', () => {
+    assert.deepEqual(mapRegisterFailure(409, { code: 'DUPLICATE_BUSINESS', message: 'x' }), { fields: {}, general: 'businessDuplicate' });
+    assert.deepEqual(mapRegisterFailure(409, { success: false, data: { code: 'DUPLICATE_BUSINESS' } }), { fields: {}, general: 'businessDuplicate' });
+    assert.deepEqual(mapRegisterFailure(409, { code: 'DUPLICATE_POSSIBLE' }), { fields: {}, general: 'businessPossible' });
+    for (const c of ['MAIL_DISABLED', 'EMAIL_NOT_CONFIGURED', 'EMAIL_NOT_LIVE']) assert.deepEqual(mapRegisterFailure(503, { code: c }), { fields: {}, general: 'mailNotReady' }, c);
+    assert.deepEqual(mapRegisterFailure(500, { message: 'Internal server error' }), { fields: {}, general: 'server' });
+    assert.deepEqual(mapRegisterFailure(409, { message: 'A vendor with this email already exists' }).fields, { email: 'emailTaken' });
+    assert.deepEqual(mapRegisterFailure(400, { message: ['Password must be at least 8 characters'] }).fields, { password: 'password' });
+  });
+  test('a duplicate answer never leaks the other business: no name, candidate, id or phone reaches the result or the words', () => {
+    const leak = { code: 'DUPLICATE_POSSIBLE', message: 'x', data: { candidates: [{ businessName: 'Secret Traders', phone: '9876543210', vendorId: 'v-123' }], claim: { token: 'tok' } } };
+    const f = mapRegisterFailure(409, leak);
+    const text = JSON.stringify(f) + SITE.register.errors[f.general!];
+    assert.doesNotMatch(text, /Secret|9876543210|v-123|tok|candidates/);
+    const own = JSON.stringify([SITE.register.errors.businessDuplicate, SITE.register.errors.businessPossible]);
+    assert.doesNotMatch(own, /\d{6,}|@/);
+  });
+  test('every general message is honest in tone: none says the account or site exists, none is the old catch-all for a server error', () => {
+    const e = SITE.register.errors;
+    assert.notEqual(e.server, e.general);
+    assert.notEqual(e.fieldsSummary, e.general);
+    for (const k of ['businessDuplicate', 'businessPossible', 'mailNotReady', 'server'] as const) assert.ok(e[k].length > 20, k);
   });
   test('messagesOf reads strings and lists, plain or wrapped', () => {
     assert.deepEqual(messagesOf({ message: 'a' }), ['a']);
@@ -149,6 +172,33 @@ describe('the register call in mock mode', () => {
   });
 });
 
+describe('the site state of a registration answer', () => {
+  test('only the API saying published makes it live; anything else is pending', () => {
+    assert.equal(siteStateOf({ data: { site: { published: true } } }), 'live');
+    assert.equal(siteStateOf({ site: { published: true } }), 'live');
+    for (const j of [null, {}, { data: { accessToken: 't', user: { subdomain: 'x' } } }, { data: { site: { published: false } } }, { data: { site: 'live' } }]) assert.equal(siteStateOf(j), 'pending', JSON.stringify(j));
+  });
+  test('the real registration answer of today (token and user only) is pending, and the result never says live', async () => {
+    const saved = { fetch: globalThis.fetch, mocks: process.env.V3_PUBLIC_USE_MOCKS, base: process.env.API_BASE_URL };
+    process.env.V3_PUBLIC_USE_MOCKS = 'false'; process.env.API_BASE_URL = 'http://api.invalid';
+    globalThis.fetch = (async (url: string | URL | Request) => new Response(JSON.stringify(String(url).endsWith('/auth/register') ? { data: { accessToken: 'tok-1', user: { subdomain: 'x' } } } : {}), { status: String(url).endsWith('/auth/register') ? 201 : 404, headers: { 'content-type': 'application/json' } })) as typeof fetch;
+    try {
+      const r = await handleRegister(req, body());
+      assert.equal(r.ok, true);
+      assert.equal(r.site, 'pending');
+    } finally {
+      globalThis.fetch = saved.fetch;
+      if (saved.mocks === undefined) delete process.env.V3_PUBLIC_USE_MOCKS; else process.env.V3_PUBLIC_USE_MOCKS = saved.mocks;
+      if (saved.base === undefined) delete process.env.API_BASE_URL; else process.env.API_BASE_URL = saved.base;
+    }
+  });
+  test('the pending words never claim the site is live', () => {
+    assert.match(SITE.register.done.pendingBody, /setting up your site/);
+    assert.match(SITE.register.done.pendingBody, /not live yet/);
+    assert.doesNotMatch(SITE.register.done.pendingTitle, /live/i);
+  });
+});
+
 describe('packs and categories', () => {
   test('sixteen packs, each with something to give, no offer wording', () => {
     assert.equal(PACKS.length, 16);
@@ -177,7 +227,7 @@ describe('the validation 400 names its fields in data.fields (Wave 4 contract)',
     assert.deepEqual(mapRegisterFailure(400, v(['name'], 'Email does not look right.')).fields, { email: 'email' });
   });
   test('only a 400 reads the list', () => {
-    assert.deepEqual(mapRegisterFailure(500, v(['email'])), { fields: {}, general: 'general' });
+    assert.deepEqual(mapRegisterFailure(500, v(['email'])), { fields: {}, general: 'server' });
   });
 });
 
