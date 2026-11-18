@@ -167,7 +167,7 @@ export class PrismaDuplicateStore extends DuplicateStore {
     return this.prisma.$transaction(async (tx) => {
       const r = await tx.v3DuplicateReview.updateMany({ where: { id, status: 'PENDING' }, data: { status: d.status, decidedByStaffId: d.staffId, decisionReason: d.reason, decidedAt: d.now } });
       if (r.count !== 1) return false;
-      await tx.v3AuditLog.create({ data: { actorType: 'ADMIN', actorId: d.staffId, action: d.status === 'CLEARED' ? 'duplicate.review.clear' : 'duplicate.review.reject', entityType: 'duplicate_review', entityId: id, beforeJson: { status: 'PENDING' }, afterJson: { status: d.status, reason: d.reason }, ip: null } });
+      await tx.v3AuditLog.create({ data: { actorType: 'STAFF', actorId: d.staffId, action: d.status === 'CLEARED' ? 'duplicate.review.clear' : 'duplicate.review.reject', entityType: 'duplicate_review', entityId: id, beforeJson: { status: 'PENDING' }, afterJson: { status: d.status, reason: d.reason }, ip: null } });
       return true;
     });
   }
