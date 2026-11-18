@@ -52,15 +52,15 @@ export class RegistrationHook {
   }
 
   /** The vendor's own "Create my site" (B2.1): the same steps as signup, from the vendor's stored details, whatever the switch says. Idempotent (plan and site both return what exists). */
-  async createMySite(vendorId: string): Promise<SiteAnswer> {
+  async createMySite(vendorId: string, source: 'REGISTRATION' | 'STAFF' = 'REGISTRATION'): Promise<SiteAnswer> {
     const v = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true, businessName: true, phone: true } });
     if (!v) throw new HttpException({ code: 'UNKNOWN_VENDOR', message: 'That vendor does not exist.' }, 404);
-    return this.provision(vendorId, await this.resolveTrack(undefined, v.industry ?? undefined), { industry: v.industry ?? '', businessName: v.businessName, phone: v.phone });
+    return this.provision(vendorId, await this.resolveTrack(undefined, v.industry ?? undefined), { industry: v.industry ?? '', businessName: v.businessName, phone: v.phone }, source);
   }
 
-  private async provision(vendorId: string, track: string, info?: RegistrationInfo): Promise<SiteAnswer> {
+  private async provision(vendorId: string, track: string, info?: RegistrationInfo, source: 'REGISTRATION' | 'STAFF' = 'REGISTRATION'): Promise<SiteAnswer> {
     try {
-      await this.subscriptions.provisionFreeSubscription(vendorId, track, 'REGISTRATION');
+      await this.subscriptions.provisionFreeSubscription(vendorId, track, source);
     } catch (e) {
       return this.fail(vendorId, 'PLAN_FAILED', e);
     }

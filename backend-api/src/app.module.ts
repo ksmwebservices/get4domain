@@ -104,6 +104,7 @@ import { V3ActivityModule } from './v3-activity/activity.module';
 import { V3FirmModule } from './v3-firm/firm.module';
 import { V3PartnersModule } from './v3-partners/partners.module';
 import { V3TrialModule } from './v3-trial/trial.module';
+import { AdminVendorSiteModule } from './v3-admin-vendor-site/admin-vendor-site.module';
 import { V3ThemeCatalogModule } from './v3-theme-catalog/theme-catalog.module';
 import { V3ReferralsModule } from './v3-referrals/referrals.module';
 import { PartnerScopeGuard } from './v3-partners/partner-scope.guard';
@@ -196,6 +197,7 @@ import { RetiredModuleGuard } from './v3-retire/retired-module.guard';
     V3PartnersModule,   // Wave 3 Parts A and I: referral partners and their portal
     V3ReferralsModule,   // Wave 3 Part I: referral links, attribution, commission slabs, ledger and payouts (global: billing and registration take its hook and port as optional)
     V3ThemeCatalogModule,   // Wave 3 Part H: the theme catalogue per pack and the owner's theme choice view (read only)
+    AdminVendorSiteModule,   // B2.2: staff create a business with its site; category picker tree
     V3TrialModule,   // Wave 3 Part G: self-service trial signup (global: the registration path and the plans module take its policy and port as optional)
     V3FirmModule,   // Wave 2 Part H3: the firm profile (global: invoices, quotes, billing settings and the legal text read it)
     V3ActivityModule,   // Batch 4B slice 5.20: the activity log and alerts (global: every V3 module calls ActivityService.record())
