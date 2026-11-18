@@ -9,6 +9,7 @@ const lib = require('../scripts/live/baseline-lib') as {
   emptinessProblem: (c: { publicTables: unknown; hasMigrationsTable: boolean }) => string | null; sourceProblem: (h: string | null, c: { allowedProjectRefHashes: string[]; deniedProjectRefHashes: string[] }) => string | null;
   sqlFileProblem: (t: unknown) => string | null; tableCountOf: (t: string) => number; sha256: (t: string) => string; manifestFor: (t: string, m: number) => { tables: number; migrations: number; sha256: string };
   manifestProblem: (m: unknown, t: string, f: string[]) => string | null;
+  statusFailureKind: (t: string) => string; statusRefusal: (k: string) => string; stagingDirectUrl: (l: () => { DIRECT_URL: string }) => string; cleanUrl: (s: string) => string;
   runBaseline: (d: { sqlText: string; manifest: unknown; folderNames: string[]; io: Io; say?: (s: string) => void }) => Promise<{ ok: boolean; step?: string; why?: string; counts?: Record<string, number> }>;
 };
 
@@ -116,7 +117,7 @@ describe('the scripts', () => {
   const code = (f: string): string => fs.readFileSync(path.resolve(__dirname, '..', f), 'utf8').split('\n').filter((l) => !l.trim().startsWith('*') && !l.trim().startsWith('//') && !l.trim().startsWith('/*')).join('\n');
   it('step A takes no argument, asks for the connection string at a prompt that does not echo, accepts only the staging project, and checks staging is at the head with no unexpected drift before dumping', () => {
     const c = code('scripts/live/dump-staging-schema.js');
-    expect(c).toContain('process.argv.length > 2'); expect(c).toContain('askSecret'); expect(c).toContain('sourceProblem'); expect(c).toContain("'migrate', 'status'"); expect(c).toContain('classifyDrift');
+    expect(c).toContain('--from-staging-env'); expect(c).toContain('askSecret'); expect(c).toContain('sourceProblem'); expect(c).toContain("'migrate', 'status'"); expect(c).toContain('classifyDrift');
     expect(c).not.toMatch(/process\.env\.(DATABASE_URL|DIRECT_URL|STAGING)/); expect(c).not.toMatch(/console\.(log|error)\([^'"`)]*(url|text|errors)\b/i);
     expect(c.indexOf("'migrate', 'status'")).toBeLessThan(c.indexOf("spawn('pg_dump'"));
     expect(code('scripts/live/prompt.js')).toContain('muted');
@@ -136,6 +137,19 @@ describe('the scripts', () => {
     expect(run(['x'], {}).status).toBe(2);
     const live = 'postgresql://app:Pa55-w0rd-Zq81xv@db.livepr0jectref.supabase.co:5432/postgres';
     const b = run([], { DATABASE_URL: live, DIRECT_URL: live, BASELINE_DIR: path.resolve(__dirname, 'no-such-baseline-folder') }); expect(b.status).toBe(2); expect(b.stderr).toContain('step A has not been run');
+  });
+  it('--from-staging-env: reads DIRECT_URL from the staging loader, cleans quotes, tells a connection failure from pending migrations, and prints no string', () => {
+    expect(lib.stagingDirectUrl(() => ({ DIRECT_URL: 'postgresql://u:p@h:5432/postgres' }))).toBe('postgresql://u:p@h:5432/postgres');
+    expect(lib.cleanUrl('  "postgresql://u:p@h:5432/postgres" ')).toBe('postgresql://u:p@h:5432/postgres');
+    expect(lib.statusFailureKind("Error: P1001: Can't reach database server at `db.x.supabase.co`:`5432`")).toBe('connect');
+    expect(lib.statusFailureKind('The following migration(s) have not yet been applied:')).toBe('pending');
+    expect(lib.statusFailureKind('boom')).toBe('other');
+    for (const k of ['connect', 'pending', 'other']) expect(lib.statusRefusal(k)).not.toMatch(/postgres(ql)?:\/\//);
+    const run = (args: string[]) => spawnSync(process.execPath, [path.resolve(__dirname, '../scripts/live/dump-staging-schema.js'), ...args], { env: { PATH: process.env.PATH ?? '' }, encoding: 'utf8' });
+    expect(run(['--bogus']).status).toBe(2);
+    expect(run(['--from-staging-env', 'x']).status).toBe(2);
+    const c = fs.readFileSync(path.resolve(__dirname, '../scripts/live/dump-staging-schema.js'), 'utf8');
+    expect(c).toContain('--from-staging-env'); expect(c).not.toMatch(/console\.(log|error)\([^'"`)]*(url|DIRECT_URL|DATABASE_URL)/);
   });
   it('the baseline folder is ignored by git, so the schema is never committed', () => {
     const ignore = fs.readFileSync(path.resolve(__dirname, '../../.gitignore'), 'utf8');

@@ -4,7 +4,8 @@
  * STEP A of the live baseline (job M2): dump the schema of the STAGING database into a local file. Run on the owner's PC (needs pg_dump, of the same major version as the database, and the Prisma CLI of this
  * checkout: `npm ci`).
  *
- *   node scripts/live/dump-staging-schema.js
+ *   node scripts/live/dump-staging-schema.js                      (asks for the string at a prompt: the default)
+ *   node scripts/live/dump-staging-schema.js --from-staging-env   (reads DIRECT_URL the way db:staging:* does: .env.staging at the repo root or STAGING_* variables; no prompt, nothing pasted)
  *
  * It asks, at a prompt that does not echo, for the DIRECT connection string of the STAGING database (port 5432). Nothing is read from an argument, a file or the environment, and the string is never printed
  * or stored. It refuses anything that is not the staging project (production and the live project are refused). Before it dumps, it checks that staging has EVERY migration of this checkout applied and has no
@@ -18,7 +19,7 @@ const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 const { askSecret } = require('./prompt');
 const { pgEnvFromUrl, maskerFor } = require('./backup-lib');
-const { dumpArgs, migrationFolders, sourceProblem, sqlFileProblem, manifestFor } = require('./baseline-lib');
+const { dumpArgs, migrationFolders, sourceProblem, sqlFileProblem, manifestFor, statusFailureKind, statusRefusal, stagingDirectUrl, cleanUrl } = require('./baseline-lib');
 const guard = require('../staging/guard');
 const { classifyDrift } = require('../staging/drift-allowlist');
 
@@ -27,12 +28,14 @@ const PRISMA = path.join(BACKEND, 'node_modules', 'prisma', 'build', 'index.js')
 const fail = (msg, code) => { console.error(`DUMP REFUSED: ${msg}`); process.exitCode = code; };
 
 (async () => {
-  if (process.argv.length > 2) return fail('this script takes no arguments: the connection string is asked for at the prompt only.', 2);
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return fail('run this in a terminal: it asks for the connection string at a prompt.', 2);
+  const args = process.argv.slice(2);
+  const fromEnv = args.length === 1 && args[0] === '--from-staging-env';
+  if (args.length > 0 && !fromEnv) return fail('the only option is --from-staging-env: the connection string is otherwise asked for at the prompt only.', 2);
+  if (!fromEnv && (!process.stdin.isTTY || !process.stdout.isTTY)) return fail('run this in a terminal: it asks for the connection string at a prompt.', 2);
   const dir = process.env.BASELINE_DIR ? path.resolve(process.env.BASELINE_DIR) : path.join(BACKEND, 'live-baseline');
   if (process.env.BASELINE_DIR && dir.startsWith(path.resolve(BACKEND, '..')) && !dir.startsWith(path.join(BACKEND, 'live-baseline'))) return fail('BASELINE_DIR must be outside the repository, or the default folder (which git ignores).', 2);
 
-  const url = String((await askSecret('Direct connection string of the STAGING database (not shown): ')).trim());
+  const url = fromEnv ? cleanUrl(stagingDirectUrl(guard.loadStagingEnv)) : cleanUrl(await askSecret('Direct connection string of the STAGING database (not shown): '));
   let parsed; try { parsed = new URL(url); } catch { return fail('that is not a connection string.', 2); }
   if (!/^postgres(ql)?:$/.test(parsed.protocol) || !parsed.password) return fail('that is not a postgres connection string with a password.', 2);
   const cfg = JSON.parse(fs.readFileSync(guard.CONFIG, 'utf8'));
@@ -45,7 +48,7 @@ const fail = (msg, code) => { console.error(`DUMP REFUSED: ${msg}`); process.exi
   const prisma = (args) => spawnSync(process.execPath, [PRISMA, ...args], { cwd: BACKEND, encoding: 'utf8', env: prismaEnv });
 
   const st = prisma(['migrate', 'status']);
-  if (st.status !== 0) return fail('staging does not have every migration of this checkout applied (prisma migrate status). Apply them to staging first (npm run db:staging:migrate-deploy), then run this again.', 4);
+  if (st.status !== 0) return fail(statusRefusal(statusFailureKind(mask(`${st.stdout || ''}${st.stderr || ''}${st.error ? st.error.message : ''}`))), 4);
   const df = prisma(['migrate', 'diff', '--from-schema-datasource', 'prisma/schema.prisma', '--to-schema-datamodel', 'prisma/schema.prisma', '--script']);
   if (df.status !== 0) return fail('the drift comparison could not run.', 4);
   const drift = classifyDrift(df.stdout || '');

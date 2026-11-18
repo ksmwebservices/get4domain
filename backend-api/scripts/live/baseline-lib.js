@@ -114,4 +114,25 @@ async function runBaseline({ sqlText, manifest, folderNames, io, say = () => und
   return { ok: true, counts };
 }
 
-module.exports = { REQUIRED_EXTENSIONS, EXTENSION_SCHEMA, dumpArgs, migrationFolders, extensionsToCreate, emptinessProblem, sourceProblem, sqlFileProblem, tableCountOf, sha256, manifestFor, manifestProblem, runBaseline };
+/** Why `prisma migrate status` exited non-zero, from its (already masked) output: 'connect' when the database could not be reached or logged into (the check never ran), 'pending' when it ran and migrations differ, else 'other'. */
+function statusFailureKind(text) {
+  const t = String(text || '');
+  if (/P10(00|01|02|03|08|11|17)|ENOTFOUND|ETIMEDOUT|ECONNREFUSED|EHOSTUNREACH|ENETUNREACH|authentication failed|Can't reach database server|Timed out/i.test(t)) return 'connect';
+  if (/have not yet been applied|following migration|not found locally|failed migrations|Database schema is not up to date/i.test(t)) return 'pending';
+  return 'other';
+}
+
+/** The refusal text for a failed `migrate status`, never containing the output itself. */
+function statusRefusal(kind) {
+  if (kind === 'connect') return 'could not connect to staging with that connection string, so the migration check did not run. Use the session-pooler DIRECT_URL (IPv4, port 5432) that npm run db:staging:migrate-status uses: run this with --from-staging-env, or paste that same string. A db.<ref>.supabase.co host is IPv6-only and fails from many PCs.';
+  if (kind === 'pending') return 'staging does not have every migration of this checkout applied (prisma migrate status). Apply them to staging first (npm run db:staging:migrate-deploy), then run this again.';
+  return 'prisma migrate status failed for a reason other than pending migrations (run npm run db:staging:migrate-status to see it).';
+}
+
+/** The staging direct connection string from the loader run.js uses (guard.loadStagingEnv: .env.staging at the repo root, or STAGING_* variables; refuses non-staging). Returns the string only; the caller must never print it. */
+const stagingDirectUrl = (loadStagingEnv) => loadStagingEnv().DIRECT_URL;
+
+/** Trim a typed or pasted string and drop one pair of surrounding quotes. */
+const cleanUrl = (s) => String(s).trim().replace(/^(['"])(.*)\1$/, '$2');
+
+module.exports = { statusFailureKind, statusRefusal, stagingDirectUrl, cleanUrl, REQUIRED_EXTENSIONS, EXTENSION_SCHEMA, dumpArgs, migrationFolders, extensionsToCreate, emptinessProblem, sourceProblem, sqlFileProblem, tableCountOf, sha256, manifestFor, manifestProblem, runBaseline };
