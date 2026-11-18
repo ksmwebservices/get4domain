@@ -7,12 +7,35 @@ const NAME_RE = /^v3live-(\d{8})-(\d{6})Z\.dump\.enc$/;
 const MIN_PASSPHRASE = 20;
 const DEFAULT_KEEP = 14;
 
+/** A host that is never on the public internet: a container name (no dot), localhost, or a private IPv4 address (10.x, 172.16-31.x, 192.168.x). */
+function isPrivateHost(host) {
+  const h = String(host).toLowerCase();
+  if (h === 'localhost' || h === '[::1]') return true;
+  if (h.startsWith('[')) return false;   // any other IPv6 literal is not treated as private
+  if (!h.includes('.')) return h.length > 0;
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(h);
+  if (!m) return false;
+  const [a, b] = [Number(m[1]), Number(m[2])];
+  return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+}
+
+const SSL_MODES = ['disable', 'allow', 'prefer', 'require', 'verify-ca', 'verify-full'];
+const SSL_ENFORCING = ['require', 'verify-ca', 'verify-full'];
+
+/** The TLS setting for a host: the URL's sslmode is honoured, but a mode that does not force TLS (disable, allow, prefer) is accepted only for a private host. No sslmode means require. Throws without ever repeating the URL. */
+function sslModeFor(host, requested) {
+  if (requested === null || requested === undefined || requested === '') return 'require';
+  if (!SSL_MODES.includes(requested)) throw new Error('The connection has an unknown sslmode.');
+  if (SSL_ENFORCING.includes(requested) || isPrivateHost(host)) return requested;
+  throw new Error(`sslmode=${requested} is accepted only for a container name or a private address; this host is public, so TLS is required.`);
+}
+
 /** The connection as the PG* variables pg_dump reads, so no password is ever in a command line (where `ps` would show it). */
 function pgEnvFromUrl(url) {
   const u = new URL(url);
   return {
     PGHOST: u.hostname, PGPORT: u.port || '5432', PGUSER: decodeURIComponent(u.username), PGPASSWORD: decodeURIComponent(u.password),
-    PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, '')) || 'postgres', PGSSLMODE: 'require',
+    PGDATABASE: decodeURIComponent(u.pathname.replace(/^\//, '')) || 'postgres', PGSSLMODE: sslModeFor(u.hostname, u.searchParams.get('sslmode')),
   };
 }
 
@@ -45,4 +68,4 @@ function maskerFor(env) {
   return (text) => secrets.reduce((acc, s) => acc.split(s).join('***'), String(text));
 }
 
-module.exports = { pgEnvFromUrl, backupFileName, selectExpired, keepFrom, passphraseProblem, maskerFor, NAME_RE, DEFAULT_KEEP, MIN_PASSPHRASE };
+module.exports = { pgEnvFromUrl, isPrivateHost, sslModeFor, backupFileName, selectExpired, keepFrom, passphraseProblem, maskerFor, NAME_RE, DEFAULT_KEEP, MIN_PASSPHRASE };

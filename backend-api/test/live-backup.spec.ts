@@ -14,6 +14,22 @@ describe('the connection', () => {
     expect(e).toEqual({ PGHOST: 'db.example-live.net', PGPORT: '6543', PGUSER: 'app.ref', PGPASSWORD: 'p@ss/w0rd', PGDATABASE: 'livedb', PGSSLMODE: 'require' });
     expect(lib.pgEnvFromUrl('postgresql://u:p@h.example-live.net/postgres').PGPORT).toBe('5432');
   });
+  it('sslmode=disable is accepted for a container name or a private address', () => {
+    for (const host of ['postgres-v3db-1', '172.18.0.5', '172.31.1.1', '10.0.0.4', '192.168.1.9', 'localhost']) {
+      expect(lib.pgEnvFromUrl(`postgresql://u:p@${host}:5432/livedb?sslmode=disable`).PGSSLMODE).toBe('disable');
+    }
+  });
+  it('sslmode=disable is refused for a public host, without repeating the URL', () => {
+    for (const host of ['db.example-live.net', '8.8.8.8', '172.32.0.1', '172.15.0.1']) {
+      expect(() => lib.pgEnvFromUrl(`postgresql://u:SecretPw1@${host}:5432/livedb?sslmode=disable`)).toThrow(/public/);
+    }
+    expect(() => lib.pgEnvFromUrl('postgresql://u:SecretPw1@db.example-live.net/x?sslmode=prefer')).toThrow(/^(?!.*SecretPw1)/);
+  });
+  it('no sslmode still requires TLS on every host; require and verify-full are honoured on a public host', () => {
+    expect(lib.pgEnvFromUrl('postgresql://u:p@db.example-live.net/x').PGSSLMODE).toBe('require');
+    expect(lib.pgEnvFromUrl('postgresql://u:p@postgres-v3db-1/x').PGSSLMODE).toBe('require');
+    expect(lib.pgEnvFromUrl('postgresql://u:p@db.example-live.net/x?sslmode=verify-full').PGSSLMODE).toBe('verify-full');
+  });
   it('a masker removes the password, user and host from any text', () => {
     const e = lib.pgEnvFromUrl('postgresql://app.ref:Sup3rSecretPw@db.example-live.net:5432/postgres');
     const out = lib.maskerFor(e)('connection to server at "db.example-live.net" failed for user "app.ref": password Sup3rSecretPw');
