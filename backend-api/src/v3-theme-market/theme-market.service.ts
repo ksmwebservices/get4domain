@@ -154,4 +154,43 @@ export class ThemeMarketService {
     await this.notifier.notify();
     return themeView(done);
   }
+
+  /**
+   * M4: a theme made for ONE business (PRIVATE, already PUBLISHED for it) is released to the marketplace for its packs and categories. Three things must hold, each with its own answer:
+   *  1. the admin records that the customer agreed (a yes and a short note on how; both are audited; no legal wording is written here), else 409 THEME_CONSENT_REQUIRED;
+   *  2. the package carries nothing of that business: its name, its addresses, its phone, its e-mail, or any of its own media files (by hash), else 409 THEME_PRIVATE_CONTENT listing each file;
+   *  3. every other package rule still passes.
+   * The database repeats rule 1 (a published theme made for a customer needs the recorded consent). The theme keeps its key and version, so the business that uses it keeps it, and everyone else may now choose it.
+   * The provenance (sourceVendorId) stays on the row for the audit trail only: no vendor or public route ever returns it.
+   */
+  async publishToMarketplace(id: string, consent: { consentObtained?: boolean; consentNote?: string }, actor: Actor) {
+    const cur = await this.store.findWithBytes((await this.mustFind(id)).id);
+    if (!cur) throw themeError(404, 'THEME_NOT_FOUND', 'That theme was not found.');
+    if (cur.visibility !== 'PRIVATE' || !cur.privateVendorId) throw themeError(409, 'THEME_STATE_INVALID', 'Only a theme made for one business can be published to the marketplace this way.', { status: cur.status });
+    if (cur.status !== 'PUBLISHED') throw themeError(409, 'THEME_STATE_INVALID', `The theme is ${cur.status}; publish it for its business first, then release it to the marketplace.`, { status: cur.status });
+    if (consent.consentObtained !== true) throw themeError(409, 'THEME_CONSENT_REQUIRED', 'Record that the customer agreed before this theme goes to the marketplace.');
+    const note = String(consent.consentNote ?? '').trim();
+    if (note.length < 3 || note.length > 500) throw themeError(409, 'THEME_CONSENT_REQUIRED', 'Add a short note on how the customer agreed (3 to 500 characters).');
+
+    const vendorId = cur.sourceVendorId ?? cur.privateVendorId;
+    const facts = await this.store.vendorFacts(vendorId);
+    const forbidden: Array<{ label: string; value: string }> = [];
+    if (facts) {
+      if (facts.name) forbidden.push({ label: 'name', value: facts.name });
+      if (facts.email) forbidden.push({ label: 'e-mail address', value: facts.email });
+      if (facts.phone) forbidden.push({ label: 'phone', value: facts.phone });
+      if (facts.subdomain) forbidden.push({ label: 'web address', value: `${facts.subdomain}.get4domain.` });
+      if (facts.customDomain) forbidden.push({ label: 'web address', value: facts.customDomain });
+    }
+    const r = inspectPackage(this.kit, cur.bytes, { vendorId, forbiddenText: forbidden, forbiddenAssetHashes: new Set(facts?.mediaHashes ?? []) }, sha256);
+    if (!r.ok) throw packageInvalid(r.problems, r.problems.some((p) => p.source === 'content' && /vendor/.test(p.rule)) ? 'THEME_PRIVATE_CONTENT' : 'THEME_PUBLISH_BLOCKED', 409);
+
+    const now = this.clock();
+    const updated = await this.store.transition(id, ['PUBLISHED'], { visibility: 'PUBLIC', privateVendorId: null, consentObtained: true, consentNote: note, consentAt: now, consentById: actor.id },
+      { actor, action: 'theme.publish_to_marketplace', before: { visibility: 'PRIVATE' }, after: { visibility: 'PUBLIC', key: cur.key, version: cur.version, sourceVendorId: cur.sourceVendorId, consentObtained: true, consentNote: note } },
+      { key: cur.key, below: cur.version });
+    if (!updated) throw themeError(409, 'THEME_STATE_INVALID', 'The theme was changed by someone else; reload and try again.');
+    await this.notifier.notify();
+    return themeView(updated);
+  }
 }

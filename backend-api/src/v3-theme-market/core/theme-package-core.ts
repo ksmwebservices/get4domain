@@ -114,7 +114,12 @@ export function contentProblems(files: Readonly<Record<string, Buffer>>, ctx: Pi
         const h = hostOf(m[0]);
         if (!ALLOWED_HOSTS.includes(h) && !/schema\.org$|w3\.org$|get4domain\.com$/.test(h)) { out.push(P(path, 'content-outside-address', `names an outside address (${h || 'unreadable'}); only the platform's own addresses and the map and video hosts are allowed.`, 'content')); break; }
       }
-      for (const f of ctx.forbiddenText ?? []) if (f.value.length >= 3 && text.toLowerCase().includes(f.value.toLowerCase())) out.push(P(path, 'content-vendor-detail', `contains the business's ${f.label}; a theme that is published must be content-free.`, 'content'));
+      for (const f of ctx.forbiddenText ?? []) {
+        if (f.label === 'phone') {   // a phone number is found whatever its spacing: compare the last ten digits with spaces, hyphens, brackets and plus signs removed (html and the manifest only: a stylesheet has numbers, not phones)
+          const digits = f.value.replace(/[^0-9]/g, '').slice(-10);
+          if (digits.length >= 7 && /[.](html|json)$/.test(path) && body.replace(/[ \t\r\n().+-]/g, '').includes(digits)) out.push(P(path, 'content-vendor-detail', "contains the business's phone number; a theme that is published must be content-free.", 'content'));
+        } else if (f.value.length >= 3 && text.toLowerCase().includes(f.value.toLowerCase())) out.push(P(path, 'content-vendor-detail', `contains the business's ${f.label}; a theme that is published must be content-free.`, 'content'));
+      }
     }
     if (ctx.forbiddenAssetHashes && sha256 && path.startsWith('assets/') && ctx.forbiddenAssetHashes.has(sha256(data))) out.push(P(path, 'content-vendor-media', 'is a file from the business\'s own media; a theme that is published must be content-free.', 'content'));
   }

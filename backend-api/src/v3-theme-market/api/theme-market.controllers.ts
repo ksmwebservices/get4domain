@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -32,6 +32,8 @@ class ThemeListDto {
 }
 class UploadBodyDto { @IsOptional() @IsString() @Matches(ID) vendorId?: string }
 class NoteDto { @IsString() @MaxLength(300) note!: string }
+/** The admin's record that the customer agreed to a custom theme going to the marketplace: a yes and a short note on how. Both are audited. */
+class ConsentDto { @IsBoolean() consentObtained!: boolean; @IsOptional() @IsString() @MaxLength(500) consentNote?: string }
 
 const toFilter = (q: ThemeListDto): ThemeFilter => ({
   status: q.status as ThemeStatus | undefined, visibility: q.visibility as ThemeVisibility | undefined, pack: q.pack, addon: q.addon, capability: q.capability, tag: q.tag, category: q.category, tier: q.tier, key: q.key,
@@ -74,6 +76,10 @@ export class AdminThemeMarketController {
 
   @Post('themes/:id/publish') @HttpCode(200) @ApiOperation({ summary: 'Publish a theme in REVIEW: every rule is checked again on the stored package (409 THEME_PUBLISH_BLOCKED lists what fails), then it goes live for vendors with no restart' })
   publish(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.publish(id, actorOf(u, req)); }
+
+  @Post('themes/:id/publish-to-marketplace') @HttpCode(200)
+  @ApiOperation({ summary: 'Release a theme made for one business (private and published) to the marketplace. Needs the recorded consent (consentObtained true and a note, audited); refused with 409 THEME_PRIVATE_CONTENT, listing each file, when the package carries the business\'s name, address, phone, e-mail or its own media' })
+  toMarketplace(@Param('id') id: string, @Body() dto: ConsentDto, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.publishToMarketplace(id, dto, actorOf(u, req)); }
 
   @Post('themes/:id/archive') @HttpCode(200) @ApiOperation({ summary: 'Archive a theme: it is no longer offered; a business already using it keeps it until it switches' })
   archive(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.archive(id, actorOf(u, req)); }

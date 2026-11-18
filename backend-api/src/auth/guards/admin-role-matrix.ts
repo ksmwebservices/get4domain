@@ -72,7 +72,7 @@ export const THEME_MARKET_READS: Readonly<Record<string, readonly StaffRole[]>> 
   'GET /v3/admin/theme-market/themes': OPS_AND_SUPER, 'GET /v3/admin/theme-market/themes/:id': OPS_AND_SUPER, 'POST /v3/admin/theme-market/validate': OPS_AND_SUPER,
 };
 export const THEME_MARKET_ADMIN_WRITES: readonly string[] = [
-  'POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/archive',
+  'POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive',
 ];
 const THEME_MARKET_WRITES: Readonly<Record<string, readonly StaffRole[]>> = Object.fromEntries(THEME_MARKET_ADMIN_WRITES.map((r) => [r, SUPER_ONLY]));
 

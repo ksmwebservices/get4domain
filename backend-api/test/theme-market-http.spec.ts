@@ -100,6 +100,22 @@ describe('theme market admin routes over HTTP', () => {
     expect((await upload('/v3/admin/theme-market/themes', 'ADMIN', goodZip({}, 'tm1-private-http2'), { vendorId: 'x y!' })).status).toBe(400);
   });
 
+  it('releasing a private theme to the marketplace: ADMIN only, a yes and a note are required, then it is PUBLIC and audited', async () => {
+    const mk = { packs: ['HOSPITALITY_EVENTS', 'FOOD_SERVICE'], licence: 'One customer.', sourceVendorId: 'vendor-aaaa' };
+    const up = await upload('/v3/admin/theme-market/themes', 'ADMIN', goodZip({ marketplace: mk }, 'tm1-http-private'), { vendorId: 'vendor-aaaa' });
+    const id = up.body.data.theme.id as string; const url = `/v3/admin/theme-market/themes/${id}/publish-to-marketplace`;
+    const send = (role: string | undefined, body: object) => { const r = request(app.getHttpServer()).post(url); return (role ? r.set(as(role)) : r).send(body); };
+    expect((await send('ADMIN', { consentObtained: true, consentNote: 'agreed' })).body.code).toBe('THEME_STATE_INVALID');   // still a draft
+    await post(`/v3/admin/theme-market/themes/${id}/submit`, 'ADMIN'); await post(`/v3/admin/theme-market/themes/${id}/publish`, 'ADMIN');
+    for (const role of ['OPERATIONS', 'MARKETING', 'SUPPORT']) expect((await send(role, { consentObtained: true, consentNote: 'agreed' })).status).toBe(403);
+    expect((await send('ADMIN', { consentNote: 'agreed' })).status).toBe(400);                                              // the yes must be stated
+    const no = await send('ADMIN', { consentObtained: false, consentNote: 'agreed' }); expect([no.status, no.body.code]).toEqual([409, 'THEME_CONSENT_REQUIRED']);
+    expect((await send('SUPER_ADMIN', { consentObtained: true })).body.code).toBe('THEME_CONSENT_REQUIRED');               // a note is required with the yes
+    const ok = await send('SUPER_ADMIN', { consentObtained: true, consentNote: 'Owner agreed by phone, noted by staff' });
+    expect(ok.status).toBe(200); expect(ok.body.data).toMatchObject({ visibility: 'PUBLIC', privateVendorId: null, consent: { obtained: true, note: 'Owner agreed by phone, noted by staff' } });
+    expect(store.audits.map((a) => a.action)).toContain('theme.publish_to_marketplace');
+  });
+
   it('list filters work over HTTP and a value that is not recognised is 400 THEME_FILTER_INVALID', async () => {
     await upload('/v3/admin/theme-market/themes', 'ADMIN', goodZip());
     expect((await get('/v3/admin/theme-market/themes?pack=FOOD_SERVICE&status=DRAFT', 'OPERATIONS')).body.data.total).toBe(1);

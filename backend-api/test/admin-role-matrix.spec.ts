@@ -217,13 +217,13 @@ const SEO_READS = ['GET /v3/admin/seo-directory/category-keywords', 'GET /v3/adm
   'GET /v3/admin/seo-directory/keyword-targets', 'GET /v3/admin/seo-directory/keyword-targets/export.csv', 'GET /v3/admin/seo-directory/keyword-targets/:id', 'GET /v3/admin/seo-directory/keyword-plan', 'GET /v3/admin/seo-directory/keyword-plan/export.csv', 'POST /v3/admin/seo-directory/links', 'GET /v3/admin/seo-directory/utm-report', 'GET /v3/admin/seo-directory/businesses/:id/badge', 'GET /v3/admin/seo-directory/keyword-plan/research', 'GET /v3/admin/seo-directory/keyword-plan/research.csv', 'GET /v3/admin/seo-directory/keyword-plan/planner.csv', 'GET /v3/admin/seo-directory/modifiers'];
 SUPER_ONLY_ROUTES.push(...SEO_WRITES);
 // TM1: the theme marketplace. Reading and the dry-run check are OPERATIONS and SUPER_ADMIN (ADMIN inherits; MARKETING refused); the five changes are SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in theme-market-http.spec.ts)
-SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/archive');
+SUPER_ONLY_ROUTES.push('POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive');
 MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-market/themes/:id', 'POST /v3/admin/theme-market/validate');
 
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(427);
+    expect(oracle).toHaveLength(428);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
