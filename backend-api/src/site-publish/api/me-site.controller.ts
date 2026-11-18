@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Optional, Get, HttpCode, Param, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -8,6 +8,7 @@ import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
 import { RegistrationHook } from '../../plans/registration/registration.hook';
+import { SiteProvisionFacts } from '../publish/site-provision-facts.service';
 import { PublishService } from '../publish/publish.service';
 import { SiteBuildService } from '../publish/site-build.service';
 import { SitePreviewService } from '../publish/site-preview.service';
@@ -26,13 +27,19 @@ import { previewHeaders, settingsView } from './site-http';
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeSiteController {
-  constructor(private readonly settings: SiteSettingsService, private readonly build: SiteBuildService, private readonly publisher: PublishService, private readonly preview: SitePreviewService, private readonly registration: RegistrationHook) {}
+  constructor(private readonly settings: SiteSettingsService, private readonly build: SiteBuildService, private readonly publisher: PublishService, private readonly preview: SitePreviewService, private readonly registration: RegistrationHook, @Optional() private readonly facts?: SiteProvisionFacts) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
   @Get()
   @ApiOperation({ summary: 'My site: settings, the current and newest publication, what is missing for search engines, and the themes I may use' })
-  status(@Tenant() t: TenantContext) { return this.settings.status(t.vendorId); }
+  /** B5.5: why the site is missing (a status word and a code) goes to the OWNER only; a team member's answer is unchanged. */
+  async status(@Tenant() t: TenantContext, @CurrentUser() user: AuthenticatedUser) {
+    const s = await this.settings.status(t.vendorId);
+    if (user?.kind === 'team_member' || !this.facts) return s;
+    const f = await this.facts.provision(t.vendorId);
+    return { ...s, siteProvisionStatus: f.siteProvisionStatus, siteProvisionCode: f.siteProvisionCode };
+  }
 
   @UseGuards(VendorOwnerGuard)
   @Post('create') @HttpCode(200)

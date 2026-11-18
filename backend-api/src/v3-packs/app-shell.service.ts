@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { InboxService } from '../v3-mail/inbox.service';
 import { NavTab } from './core/nav-core';
 import { isTeamMember, ShellPrincipal, shellSections, ShellSection, tabsFor } from './core/shell-access';
@@ -16,6 +17,9 @@ export interface AppShell {
   inbox: { waiting: number; unread: number } | null;
   /** what to do next, from real state; never a number or a price */
   nextSteps: Array<{ id: string; text: string; route: string }> | null;
+  /** B5.5, OWNER only (the keys are absent for a team member): why the trial site is not there, a status word and a code, never an error text */
+  siteProvisionStatus?: string | null;
+  siteProvisionCode?: string | null;
 }
 
 /**
@@ -25,16 +29,18 @@ export interface AppShell {
 @Injectable()
 export class AppShellService {
   /** The inbox comes from the global mail module; where it is not loaded (a unit test of one module) the shell simply carries no count. */
-  constructor(private readonly packs: PackEngineService, @Optional() private readonly inbox?: InboxService, @Optional() private readonly steps?: NextStepsService) {}
+  constructor(private readonly packs: PackEngineService, @Optional() private readonly inbox?: InboxService, @Optional() private readonly steps?: NextStepsService, @Optional() private readonly prisma?: PrismaService) {}
 
   async get(vendorId: string, who: ShellPrincipal): Promise<AppShell> {
     const sections = shellSections(who); const has = (s: ShellSection): boolean => sections.includes(s);
     const needNav = has('navigation') || has('plan') || has('packs');
-    const [nav, addons, badge, nextSteps] = await Promise.all([
+    const owner = !isTeamMember(who);
+    const [nav, addons, badge, nextSteps, prov] = await Promise.all([
       needNav ? this.packs.navigation(vendorId) : null,
       has('packs') ? this.packs.myAddons(vendorId) : null,
       has('inbox') && this.inbox ? this.inbox.badge(vendorId) : null,
       has('nextSteps') && this.steps ? this.steps.forCaller(vendorId, who) : null,
+      owner && this.prisma ? this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { siteProvisionStatus: true, siteProvisionCode: true } }) : null,
     ]);
     return {
       actor: isTeamMember(who) ? 'TEAM_MEMBER' : 'OWNER',
@@ -44,6 +50,7 @@ export class AppShellService {
       packs: nav && addons ? { primary: nav.pack ? { key: nav.pack.key, name: nav.pack.name } : null, addons: addons.filter((a) => a.active || a.offered).map((a) => ({ key: a.key, name: a.name, active: a.active })) } : null,
       inbox: badge,
       nextSteps,
+      ...(owner ? { siteProvisionStatus: prov?.siteProvisionStatus ?? null, siteProvisionCode: prov?.siteProvisionCode ?? null } : {}),
     };
   }
 }
