@@ -34,7 +34,7 @@ export interface PublicPricing {
   pricesExcludeGst: true;
   terms: number[];
   gst: { name: string; ratePercent: number } | null;
-  free: { key: 'free'; name: string; kind: 'TRIAL'; description: string | null; informational: true };
+  free: { key: 'free'; name: string; kind: 'FREE'; description: string; informational: true };
   plans: { key: string; track: string; name: string; description: string | null; capabilities: { key: string; name: string; description: string | null }[]; terms: PricingTerm[] }[];
   addons: { key: string; name: string; description: string; state: PriceState; price: PriceLine | null; purchasable: boolean }[];
   /** the fee for a later theme switch (the first switch is included in a paid plan); PRICE_PENDING until a price is approved and started, and then never a number */
@@ -52,6 +52,10 @@ export function priceLine(p: Priced, tax: PricingRows['tax']): PriceLine | null 
   const q = priceQuote({ basePaise: p.amountPaise, taxInclusive: p.taxInclusive, discounts: [], taxRatePercent: tax.ratePercent });
   return { priceMinor: q.taxableMinor - (q.taxInclusive ? q.taxMinor : 0), gstMinor: q.taxMinor, totalMinor: q.totalMinor };
 }
+
+/** B3.0: the public Free entry is one neutral entry for every kind of business. It does not borrow the name, the description or the kind of any one track's Free plan. */
+export const FREE_PLAN_NAME = 'Free plan';
+export const FREE_PLAN_DESCRIPTION = 'A free website and directory listing for any kind of business.';
 
 export function shapePublicPricing(r: PricingRows): PublicPricing {
   const now = r.now.getTime();
@@ -91,7 +95,7 @@ export function shapePublicPricing(r: PricingRows): PublicPricing {
 
   return {
     currency: 'INR', pricesExcludeGst: true, terms: [...PRICING_TERMS], gst: r.tax ? { name: r.tax.name, ratePercent: r.tax.ratePercent } : null,
-    free: { key: 'free', name: 'Free plan', kind: 'TRIAL', description: clean(free?.description ?? null), informational: true },
+    free: { key: 'free', name: FREE_PLAN_NAME, kind: 'FREE', description: FREE_PLAN_DESCRIPTION, informational: true },
     plans, addons, themeSwitch,
   };
 }

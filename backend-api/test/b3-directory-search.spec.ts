@@ -1,4 +1,4 @@
-import { asPincode, categoriesForToken, categoryTerms, likePrefix, nameRank, parseSuggestTypes, resolvePlaceText } from '../src/directory/core/search';
+import { asPincode, categoriesForToken, toPrefixTsQuery, tsWord, categoryTerms, likePrefix, nameRank, parseSuggestTypes, resolvePlaceText } from '../src/directory/core/search';
 import { directoryWorld, DirectoryWorld } from './support/directory-world';
 
 /** B3.5: what a text search matches (G49), suggestions (G50), typed place text (G51), the business id on results (G53). Near-me and open-now are not built. */
@@ -27,6 +27,10 @@ describe('pure rules', () => {
     expect(resolvePlaceText(places, 'adya').map((p) => p.id).sort()).toEqual(['ad', 'ad2']);
     expect(resolvePlaceText(places, 'Chennai').map((p) => p.id).sort()).toEqual(['ci', 'd']);
     expect(resolvePlaceText(places, 'near the airport')).toEqual([]); expect(resolvePlaceText(places, '')).toEqual([]);
+  });
+  it('a typed word reaches a tsquery as letters and digits only, and a word with none left is dropped (a bare ":*" is a database error)', () => {
+    expect(tsWord('plumber')).toBe('plumber'); expect(tsWord("o'neil")).toBe('oneil'); expect(tsWord('ça-va')).toBe('çava'); expect(tsWord('!!')).toBe(''); expect(tsWord('zzqq')).toBe('zzqq');
+    expect(toPrefixTsQuery(['plumb', 'chen'])).toBe('plumb:* & chen:*');
   });
   it('a pincode is exactly six digits not starting with 0; like prefixes carry no wildcard; suggestion types default to all and ignore unknown words', () => {
     expect(asPincode('600020')).toBe('600020'); expect(asPincode(' 600020 ')).toBe('600020'); expect(asPincode('060020')).toBeNull(); expect(asPincode('6000200')).toBeNull(); expect(asPincode('chennai')).toBeNull();

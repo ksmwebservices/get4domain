@@ -3946,6 +3946,8 @@ enum V3PlanStatus {
 enum V3PriceStatus {
   PROPOSED
   APPROVED
+  /// B3.0: an approved price a SUPER_ADMIN took out of force, with a written reason in the audit log. The row, its amount and its start date are never edited; it simply stops counting.
+  WITHDRAWN
 }
 
 enum V3FeatureKind {

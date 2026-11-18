@@ -34,6 +34,11 @@ export class RenamePlanDto {
   @IsString() @MinLength(2) @MaxLength(80) name!: string;
 }
 
+/** B3.0: withdraw an approved plan price. The reason is required and goes in the audit log. */
+export class WithdrawPriceDto {
+  @IsString() @MinLength(5) @MaxLength(300) reason!: string;
+}
+
 export class CreatePriceDto {
   @IsNumber() termMonths!: number;
   @IsNumber() amountPaise!: number;

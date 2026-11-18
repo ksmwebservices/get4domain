@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { RemovalStatus } from './core/removal';
-import { likePrefix, toPrefixTsQuery } from './core/search';
+import { likePrefix, toPrefixTsQuery, tsWord } from './core/search';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BusinessPatch, BusinessRow, CategoryRow, ChallengeRow, DirectoryRepository, GrantRow, LocationKind, LocationRow, MediaRow, NewBusiness, OtpStatus, OverrideRow, PlacementRow, RemovalRow,
@@ -96,8 +96,7 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     if (q.locationIds) conds.push(Prisma.sql`"locationId" IN (${Prisma.join(q.locationIds)})`);
     if (q.pincode) conds.push(Prisma.sql`"pincode" = ${q.pincode}`);
     // B3.5: every typed word must be found somewhere: in the name or description (the vector), in a category it answers to, or in one of the business's services. Words are ANDed.
-    const perWord = q.tokens.map((t, i) => {
-      const w = t.replace(/[^p{L}p{N}]/gu, '');
+    const perWord = q.tokens.map((t, i) => ({ w: tsWord(t), i })).filter((x) => x.w !== '').map(({ w, i }) => {
       const ids = (q.tokenCategoryIds?.[i] ?? []).slice(0, 2000);
       const parts: Prisma.Sql[] = [Prisma.sql`"searchVector" @@ to_tsquery('simple', ${`${w}:*`})`];
       if (ids.length) parts.push(Prisma.sql`"categoryId" IN (${Prisma.join(ids)})`);

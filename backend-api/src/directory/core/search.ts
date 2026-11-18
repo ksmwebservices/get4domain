@@ -9,6 +9,9 @@ export function normaliseQuery(input: unknown): { text: string; tokens: string[]
   return { text: tokens.join(' '), tokens };
 }
 
+/** One typed word reduced to letters and digits (never an operator): the form that reaches a tsquery. Empty when nothing is left. */
+export const tsWord = (t: string): string => t.replace(/[^\p{L}\p{N}]/gu, '');
+
 /** `plumb:* & chen:*`: only letters and digits reach the database function, so the text can never add operators. */
 export function toPrefixTsQuery(tokens: readonly string[]): string {
   return tokens.map((t) => t.replace(/[^\p{L}\p{N}]/gu, '')).filter(Boolean).map((t) => `${t}:*`).join(' & ');

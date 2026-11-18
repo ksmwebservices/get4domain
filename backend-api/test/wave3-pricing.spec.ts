@@ -92,9 +92,11 @@ describe('shapePublicPricing', () => {
     expect(h.terms[1]).toEqual({ termMonths: 6, state: 'PRICE_PENDING', price: null, purchasable: false });
   });
 
-  it('Free is the informational trial entry', () => {
-    expect(shapePublicPricing(rows()).free).toEqual({ key: 'free', name: 'Free plan', kind: 'TRIAL', description: 'A simple site to start', informational: true });
-    expect(shapePublicPricing(rows({ plans: [] })).free.description).toBeNull();
+  it('Free is one neutral informational entry: it borrows nothing from any one track Free plan (B3.0)', () => {
+    const expected = { key: 'free', name: 'Free plan', kind: 'FREE', description: 'A free website and directory listing for any kind of business.', informational: true };
+    expect(shapePublicPricing(rows()).free).toEqual(expected);
+    expect(shapePublicPricing(rows({ plans: [] })).free).toEqual(expected);
+    expect(JSON.stringify(shapePublicPricing(rows()).free)).not.toMatch(/handyman|TRIAL|trial/i);
   });
 
   it('shows only active public paid plans, in their order, with the capabilities their tier allows', () => {

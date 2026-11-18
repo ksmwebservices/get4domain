@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ApprovePlanPriceDto, CreateFeatureDto, CreatePlanDto, CreatePriceDto, RenamePlanDto, SaveMatrixDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
+import { ApprovePlanPriceDto, CreateFeatureDto, CreatePlanDto, CreatePriceDto, RenamePlanDto, SaveMatrixDto, WithdrawPriceDto, UpdateFeatureDto, UpdatePlanDto, UpdatePriceDto } from './dto/plans-admin.dto';
 import { FeaturesAdminService } from './features-admin.service';
 import { actorOf, PageQueryDto } from './plans-admin.common';
 import { PlansAdminService } from './plans-admin.service';
@@ -57,6 +57,9 @@ export class PlansAdminController {
   // ---- features
   @Get('features') @ApiOperation({ summary: 'The feature catalogue (paginated)' })
   listFeatures(@Query() q: PageQueryDto) { return this.features.listFeatures(q); }
+
+  @Post('prices/:priceId/withdraw') @HttpCode(200) @ApiOperation({ summary: 'Take an APPROVED plan price out of force with a written reason; the row and its history are kept, the earlier started price (if any) is in force again (SUPER_ADMIN, audited)' })
+  withdrawPrice(@Param('priceId') priceId: string, @Body() dto: WithdrawPriceDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.plans.withdrawPrice(priceId, dto.reason, actorOf(user, req)); }
 
   @Post('features') @ApiOperation({ summary: 'Add a feature (SUPER_ADMIN)' })
   createFeature(@Body() dto: CreateFeatureDto, @CurrentUser() user: AuthenticatedUser, @Req() req: Request) { return this.features.createFeature(dto, actorOf(user, req)); }

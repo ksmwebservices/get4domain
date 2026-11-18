@@ -122,7 +122,7 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   'GET /v3/admin/features': OPS_AND_SUPER, 'GET /v3/admin/tax-rates': OPS_AND_SUPER, 'GET /v3/admin/plan-settings': OPS_AND_SUPER,
   'GET /v3/admin/audit-logs': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/subscription': OPS_AND_SUPER, 'GET /v3/admin/vendors/:id/overrides': OPS_AND_SUPER,
   'GET /v3/admin/vendors/:id/entitlements': OPS_AND_SUPER,
-  'POST /v3/admin/plans': SUPER_ONLY, 'PUT /v3/admin/plans/:id': SUPER_ONLY, 'PUT /v3/admin/plans/by-key/:key/name': SUPER_ONLY, 'PUT /v3/admin/included-services/:planKey/:termMonths/:groupKey': SUPER_ONLY, 'GET /v3/admin/included-services': OPS_AND_SUPER, 'DELETE /v3/admin/plans/:id': SUPER_ONLY,
+  'POST /v3/admin/plans': SUPER_ONLY, 'PUT /v3/admin/plans/:id': SUPER_ONLY, 'PUT /v3/admin/plans/by-key/:key/name': SUPER_ONLY, 'POST /v3/admin/prices/:priceId/withdraw': SUPER_ONLY, 'PUT /v3/admin/included-services/:planKey/:termMonths/:groupKey': SUPER_ONLY, 'GET /v3/admin/included-services': OPS_AND_SUPER, 'DELETE /v3/admin/plans/:id': SUPER_ONLY,
   'GET /v3/admin/price-book': OPS_AND_SUPER, 'POST /v3/admin/prices/:priceId/approve': SUPER_ONLY,   // Dispatch G1 B2: the overview is read only; approving a plan price is a money rule
   'POST /v3/admin/plans/:id/prices': SUPER_ONLY, 'PUT /v3/admin/prices/:priceId': SUPER_ONLY, 'DELETE /v3/admin/prices/:priceId': SUPER_ONLY,
   'POST /v3/admin/features': SUPER_ONLY, 'PUT /v3/admin/features/:key': SUPER_ONLY, 'DELETE /v3/admin/features/:key': SUPER_ONLY, 'PUT /v3/admin/plans/:id/features': SUPER_ONLY,

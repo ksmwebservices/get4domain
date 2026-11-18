@@ -180,6 +180,32 @@ export class PlansAdminService {
     return price;
   }
 
+  /**
+   * B3.0: take an APPROVED price out of force. It never edits history: the amount, the start date and the creation time stay as they were, only the status becomes WITHDRAWN, and the audit row
+   * carries who, when, why, and what is in force afterwards. A price that has not started yet simply never starts; one that is in force is replaced by the latest earlier started APPROVED price of
+   * the same plan and term, or by PRICE_PENDING when there is none. Subscriptions keep their own copy of the price they were sold at, so nobody already subscribed changes. A withdrawn row
+   * cannot be approved again (propose a new price instead). Withdrawing a withdrawn price answers the same row.
+   */
+  async withdrawPrice(priceId: string, reasonIn: string, actor: Actor, now: Date = new Date()) {
+    const reason = String(reasonIn ?? '').trim();
+    if (reason.length < 5 || reason.length > 300) throw new BadRequestException(planError('PRICE_REASON_REQUIRED', 'A written reason of 5 to 300 characters is required.'));
+    const out = await this.prisma.$transaction(async (tx) => {
+      const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
+      if (!before) throw new NotFoundException('That price does not exist.');
+      if (before.status === 'WITHDRAWN') return { row: before, wasInForce: false, inForceAfter: null as null | { id: string; amountPaise: number; effectiveFrom: Date }, replay: true };
+      if (before.status !== 'APPROVED') throw new ConflictException(planError('PRICE_NOT_APPROVED', 'Only an approved price can be withdrawn. A proposed price can be deleted.'));
+      const rows = await tx.v3PlanPrice.findMany({ where: { planId: before.planId, termMonths: before.termMonths, status: 'APPROVED', currency: before.currency } });
+      const forceOf = (list: typeof rows) => list.filter((r) => r.effectiveFrom.getTime() <= now.getTime()).sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime())[0] ?? null;
+      const wasInForce = forceOf(rows)?.id === before.id;
+      const row = await tx.v3PlanPrice.update({ where: { id: priceId }, data: { status: 'WITHDRAWN' } });
+      const next = forceOf(rows.filter((r) => r.id !== priceId));
+      await this.audit.record(tx, actor, 'price.withdraw', 'price', priceId, before, { ...row, reason, wasInForce, inForceAfter: next ? { id: next.id, amountPaise: next.amountPaise, effectiveFrom: next.effectiveFrom } : null });
+      return { row, wasInForce, inForceAfter: next ? { id: next.id, amountPaise: next.amountPaise, effectiveFrom: next.effectiveFrom } : null, replay: false };
+    });
+    if (!out.replay) this.entitlements.invalidateAll();
+    return { id: out.row.id, status: out.row.status, planId: out.row.planId, termMonths: out.row.termMonths, amountPaise: out.row.amountPaise, effectiveFrom: out.row.effectiveFrom, wasInForce: out.wasInForce, inForceAfter: out.inForceAfter };
+  }
+
   async deletePrice(priceId: string, actor: Actor) {
     await this.prisma.$transaction(async (tx) => {
       const before = await tx.v3PlanPrice.findUnique({ where: { id: priceId } });
