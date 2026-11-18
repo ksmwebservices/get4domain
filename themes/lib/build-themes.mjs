@@ -45,7 +45,8 @@ function partial(name, id, root) {
   return readIf(path.join(root, id, 'templates', `_${name}.html`)) ?? readIf(path.join(root, 'shared', 'templates', `_${name}.html`));
 }
 
-function expand(html, id, root, depth = 0) {
+/** Expands {{> partial}} includes of a template (a theme's own partial beats the shared one). Exported for the starter-theme builder. */
+export function expand(html, id, root, depth = 0) {
   if (depth > MAX_INCLUDE_DEPTH) throw new Error(`theme ${id}: partials include each other too deep (a loop?)`);
   return html.replace(/\{\{>\s*([a-z0-9-]+)\s*\}\}/g, (_m, name) => {
     const part = partial(name, id, root);
@@ -63,7 +64,8 @@ function pages(id, root) {
   return names;
 }
 
-function tokensCss(cfg) {
+/** The css/tokens.css of a theme config. Exported for the starter-theme builder. */
+export function tokensCss(cfg) {
   const L = derivePalette('light', cfg.palette.light);
   const D = derivePalette('dark', cfg.palette.dark);
   const stack = (name) => `'${name}', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', ${SERIF.has(name) ? 'serif' : 'system-ui, sans-serif'}`;

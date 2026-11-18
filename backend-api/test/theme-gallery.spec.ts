@@ -40,7 +40,7 @@ describe('the theme gallery script', () => {
   it('writes an index and one folder per pack and theme, with plain HTML and a machine-readable summary; no price, no offer', () => {
     const out = tmp();
     try {
-      const r = run(['--out', out, '--packs', 'CLINIC,PHARMACY', '--pages', 'home,about']);
+      const r = run(['--out', out, '--packs', 'CLINIC,PHARMACY', '--pages', 'home,about', '--library-only']);
       expect(r.status).toBe(0); expect(r.stdout).toMatch(/5 themes x 2 packs, 10 rendered, 0 MISSING/);
       const index = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
       expect(index).toContain('Clinic and patient care'); expect(index).toContain('Sri Lakshmi Medicals'); expect(index).toContain('noindex'); expect(index).toContain('href="CLINIC/free-practice/home.html"');
@@ -60,12 +60,43 @@ describe('the theme gallery script', () => {
     try {
       fs.mkdirSync(path.join(bad, 'templates'), { recursive: true }); fs.mkdirSync(path.join(bad, 'css'), { recursive: true });
       fs.writeFileSync(path.join(bad, 'theme.json'), JSON.stringify({ id: 'broken-theme', version: 1, name: 'Broken', tier: 'Standard', tracks: ['professional'], families: ['healthcare'], categories: ['doctor-clinic'] }));
-      const script = `const g=require(${JSON.stringify(path.join(ROOT, 'scripts', 'build-theme-gallery.js'))});g.buildGallery({out:${JSON.stringify(out)},packs:['CLINIC'],pages:['home'],extraDirs:[${JSON.stringify(bad)}]}).then(r=>{console.log(JSON.stringify(r));process.exit(0)}).catch(e=>{console.error(e);process.exit(1)});`;
+      const script = `const g=require(${JSON.stringify(path.join(ROOT, 'scripts', 'build-theme-gallery.js'))});g.buildGallery({out:${JSON.stringify(out)},packs:['CLINIC'],pages:['home'],starters:false,extraDirs:[${JSON.stringify(bad)}]}).then(r=>{console.log(JSON.stringify(r));process.exit(0)}).catch(e=>{console.error(e);process.exit(1)});`;
       const r = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8', cwd: ROOT }); expect(r.status).toBe(0);
       const sum = JSON.parse(r.stdout.trim().split('\n').pop()!); expect(sum).toMatchObject({ themes: 6, rendered: 5, missing: 1 });
       const g = JSON.parse(fs.readFileSync(path.join(out, 'gallery.json'), 'utf8')); expect(g.packs[0].themes.find((t: { id: string }) => t.id === 'broken-theme')).toMatchObject({ state: 'MISSING', pages: [] });
       expect(fs.existsSync(path.join(out, 'CLINIC', 'broken-theme'))).toBe(false); expect(fs.readFileSync(path.join(out, 'index.html'), 'utf8')).toContain('MISSING');
     } finally { fs.rmSync(out, { recursive: true, force: true }); fs.rmSync(path.dirname(bad), { recursive: true, force: true }); }
+  });
+  it('by default also draws the starter themes, only for the packs they name, and lists their add-ons and combinations (TM1 M6)', () => {
+    const out = tmp();
+    try {
+      const r = run(['--out', out, '--packs', 'CLINIC,PHARMACY', '--pages', 'home']);
+      expect(r.status).toBe(0); expect(r.stdout).toMatch(/37 themes x 2 packs, \d+ rendered, 0 MISSING/);
+      const g = JSON.parse(fs.readFileSync(path.join(out, 'gallery.json'), 'utf8'));
+      type Row = { id: string; state: string; designedFor: boolean | null; starter: boolean; tags: string[]; addons: string[]; pages: string[] };
+      const clinic = g.packs.find((p: { pack: string }) => p.pack === 'CLINIC').themes as Row[]; const pharmacy = g.packs.find((p: { pack: string }) => p.pack === 'PHARMACY').themes as Row[];
+      expect(clinic.filter((t) => !t.starter)).toHaveLength(5); expect(clinic.filter((t) => t.starter).length).toBeGreaterThanOrEqual(4); expect(pharmacy.filter((t) => t.starter).length).toBeGreaterThanOrEqual(4);
+      for (const t of [...clinic, ...pharmacy].filter((x) => x.starter)) expect(t).toMatchObject({ state: 'RENDERED', designedFor: true });
+      expect(clinic.find((t) => t.id === 'starter-clinic-teal')).toMatchObject({ addons: ['PHARMACY_COUNTER', 'HOME_SAMPLE_COLLECTION'], tags: expect.arrayContaining(['clinic-pharmacy-lab-home-sample']) });
+      expect(g.combinations['clinic-pharmacy-lab-home-sample']).toEqual(['starter-clinic-teal']); expect(Object.keys(g.combinations).sort()).toEqual(['clinic-pharmacy-lab-home-sample', 'clinic-plus-lab', 'clinic-plus-pharmacy', 'lab-plus-home-sample', 'pharmacy-plus-delivery']);   // only the combinations of the packs drawn
+      expect(fs.existsSync(path.join(out, 'PHARMACY', 'starter-shop-fresh', 'home.html'))).toBe(true); expect(fs.existsSync(path.join(out, 'CLINIC', 'starter-shop-fresh'))).toBe(false);   // drawn only for the packs it names
+      const index = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
+      expect(index).toContain('Combinations'); expect(index).toContain('clinic pharmacy lab home sample'); expect(index).toContain('starter theme</strong> built by the team'); expect(index).toContain('pharmacy + delivery'); expect(index).not.toMatch(/₹|% off/);
+      expect(fs.readFileSync(path.join(out, 'CLINIC', 'starter-clinic-teal', 'home.html'), 'utf8')).toContain('<style>');
+    } finally { fs.rmSync(out, { recursive: true, force: true }); }
+  });
+  it('the full gallery lists at least 4 starter themes for each of the 16 packs, and every combination, and every page of every one is drawn', () => {
+    const out = tmp();
+    try {
+      const r = run(['--out', out]);
+      expect(r.status).toBe(0); expect(r.stdout).toMatch(/37 themes x 16 packs, \d+ rendered, 0 MISSING/);
+      const g = JSON.parse(fs.readFileSync(path.join(out, 'gallery.json'), 'utf8'));
+      type Row = { id: string; state: string; starter: boolean; pages: string[] };
+      expect(g.packs).toHaveLength(16); expect(g.starters).toBeGreaterThanOrEqual(32);
+      for (const pk of g.packs as Array<{ pack: string; themes: Row[] }>) { const st = pk.themes.filter((t) => t.starter); expect({ pack: pk.pack, starters: st.length >= 4 }).toEqual({ pack: pk.pack, starters: true }); expect(pk.themes.every((t) => t.state === 'RENDERED' && t.pages.length === 4)).toBe(true); }
+      expect(Object.keys(g.combinations).sort()).toEqual(['clinic-pharmacy-lab-home-sample', 'clinic-plus-lab', 'clinic-plus-pharmacy', 'cloud-kitchen-plus-delivery', 'education-plus-shop', 'handyman-plus-shop', 'hospitality-plus-shop', 'lab-plus-home-sample', 'pharmacy-plus-delivery', 'restaurant-plus-delivery', 'service-plus-shop', 'shop-plus-delivery', 'vehicle-service-plus-shop', 'wellness-plus-shop']);
+      expect(fs.readFileSync(path.join(out, 'index.html'), 'utf8')).toContain('37 themes (5 library, 32 starter) by 16 packs');
+    } finally { fs.rmSync(out, { recursive: true, force: true }); }
   });
   it('refuses an unknown argument', () => { const r = run(['--nope']); expect(r.status).toBe(1); });
 });
