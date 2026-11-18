@@ -6,7 +6,10 @@ import PageVisitBeacon from '@/components/directory/PageVisitBeacon';
 import Pagination from '@/components/directory/Pagination';
 import { EmptyState } from '@/components/directory/States';
 import { FaqAccordion } from '@/components/portal/Section';
-import { CHIP } from '@/components/portal/ui';
+import { btn, CHIP } from '@/components/portal/ui';
+import { introFallback, localBusinessListLd, showEmptyState, showListOrClaim } from '@/lib/v3-public/area-page';
+import { portalLinks } from '@/lib/v3-public/portal-links';
+import { PORTAL } from '@/lib/v3-public/portal-strings';
 import { S } from '@/lib/v3-public/strings';
 import type { Facet, Link as ModelLink, PageModel } from '@/lib/v3-public/types';
 
@@ -46,13 +49,13 @@ export default function ModelPage({ model, headless = false }: { model: PageMode
   const hasLinks = model.facets.some((f) => f.items.length > 0);
   return (
     <>
-      <JsonLd items={model.jsonLd} />
+      <JsonLd items={[...model.jsonLd, ...(localBusinessListLd(model) ? [localBusinessListLd(model) as Record<string, unknown>] : [])]} />
       <PageVisitBeacon />
       {headless ? <div className="mb-6"><Breadcrumbs crumbs={model.breadcrumbs} /></div> : (
         <>
           <Breadcrumbs crumbs={model.breadcrumbs} />
           <h1 className="text-3xl font-bold tracking-tight text-ink-900">{model.h1}</h1>
-          {model.intro && <p className="mt-3 max-w-3xl text-slate-700">{model.intro}</p>}
+          <p className="mt-3 max-w-3xl text-slate-700">{introFallback(model)}</p>
         </>
       )}
 
@@ -67,8 +70,19 @@ export default function ModelPage({ model, headless = false }: { model: PageMode
           <Pagination page={model.page} path={model.path} />
         </section>
       ) : (
-        !hasLinks && <div className="mt-6"><EmptyState /></div>
+        showEmptyState(model) && <div className="mt-6"><EmptyState /></div>
       )}
+
+      {showListOrClaim(model) ? (
+        <section aria-labelledby="missing-title" className="mt-10 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h2 id="missing-title" className="text-lg font-bold text-ink-900">{PORTAL.directory.missingHeading}</h2>
+          <p className="mt-1 text-sm text-slate-700">{PORTAL.directory.missingBody}</p>
+          <p className="mt-3 flex flex-wrap gap-3">
+            <a href={portalLinks('directory').main('/register')} className={btn('primary')}>{PORTAL.directory.missingList}</a>
+            <a href={portalLinks('directory').claim} className={btn('secondary')}>{PORTAL.directory.missingClaim}</a>
+          </p>
+        </section>
+      ) : null}
 
       {model.facets.map((f) => (
         <LinkList key={f.kind} heading={FACET_HEADING[f.kind]} items={f.items} />
