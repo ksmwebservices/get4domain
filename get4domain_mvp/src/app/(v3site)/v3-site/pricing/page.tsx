@@ -53,7 +53,7 @@ export default async function PricingPage() {
         <h3 className="mt-4 text-sm font-semibold text-ink-900">{P.free.unlockHeading}</h3>
         <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">{P.free.unlock.map((x) => <li key={x}>{x}</li>)}</ul>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/register?plan=free" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 bg-brand-600 text-white hover:bg-brand-700">{P.free.cta}</Link>
+          <Link href="/register" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 bg-brand-600 text-white hover:bg-brand-700">{P.free.cta}</Link>
           <a href="#plans-title" className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 border border-slate-300 text-ink-900 hover:bg-slate-50">{P.free.ctaPaid}</a>
         </div>
       </section>

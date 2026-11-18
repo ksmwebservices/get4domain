@@ -8,6 +8,7 @@ import { SITE } from '../site-strings';
 const good: RegisterInput = {
   businessName: 'Sri Murugan Plumbing', categoryKey: 'plumber', industry: 'field_service', subdomain: 'sri-murugan', name: 'Murugan', email: 'owner@example.invalid', phone: '',
   password: 'Password1', acceptedTerms: true, plan: 'professional', termMonths: 12,
+  city: 'Chennai', area: 'Adyar', pincode: '600020', gstin: '', confirmDistinct: false,
 };
 const req = new Request('http://localhost/x');
 const body = (o: Partial<RegisterInput> = {}): Record<string, unknown> => ({ ...good, ...o });
@@ -143,7 +144,7 @@ describe('API refusals become field errors in plain words', () => {
 
 describe('the register call in mock mode', () => {
   test('a good form is accepted and hands off', async () => {
-    assert.deepEqual(await handleRegister(req, body()), { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending' });
+    assert.deepEqual(await handleRegister(req, body()), { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending', siteCreated: false, duplicate: null, claimSlug: null });
   });
   test('the server checks the form again', async () => {
     const r = await handleRegister(req, body({ password: 'weak', acceptedTerms: false }));
@@ -258,7 +259,7 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
       const r = await handleRegister(req, body());
       assert.equal(r.ok, true);
       const sent = calls.find((c) => c.url.endsWith('/auth/register'))!.body as Record<string, unknown>;
-      const allowed = new Set(['name', 'email', 'password', 'businessName', 'industry', 'phone', 'referralCode', 'subdomain', 'product', 'track']);
+      const allowed = new Set(['name', 'email', 'password', 'businessName', 'industry', 'phone', 'referralCode', 'subdomain', 'product', 'track', 'city', 'area', 'pincode', 'gstin', 'confirmDistinct']);
       for (const k of Object.keys(sent)) assert.ok(allowed.has(k), `unknown field sent: ${k}`);
       assert.equal(sent.track, 'professional');
       assert.equal(sent.subdomain, 'sri-murugan');

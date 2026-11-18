@@ -3,7 +3,7 @@ import { accessTokenOf, requestHandoff } from './handoff-api';
 import { fetchCategories } from './packs';
 import { callApi } from './proxy';
 import { readReferral } from './referral';
-import { cleanSubdomain, mapRegisterFailure, PLAN_KEYS, trackOfTier, TRACKS, DEFAULT_TRACK, subdomainProblem, subdomainStateOf, TERMS, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterInput, type SubdomainState } from './register';
+import { cleanSubdomain, duplicateAskOf, duplicateClaimOf, mapRegisterFailure, PLAN_KEYS, type DuplicateAsk, trackOfTier, TRACKS, DEFAULT_TRACK, subdomainProblem, subdomainStateOf, TERMS, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterInput, type SubdomainState } from './register';
 
 /**
  * The registration calls of the browser, answered by the server (the browser talks only to this site; no token reaches it).
@@ -14,6 +14,12 @@ export interface RegisterResult {
   ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null;
   /** 'live' only when the API's answer says the site is published; otherwise 'pending' (the answer of POST /auth/register carries no site fact today, so real mode is always 'pending'). Never a claim the site is live. */
   site: 'live' | 'pending';
+  /** true when the answer itself says the site was created (status LIVE or published); it may still be held for review or not yet public. Never a payment claim. */
+  siteCreated: boolean;
+  /** "Is this your business?": the backend found a likely duplicate (409 DUPLICATE_POSSIBLE) and shows public listing facts; null otherwise */
+  duplicate: DuplicateAsk | null;
+  /** a strong duplicate (409 DUPLICATE_BUSINESS) says which listing can be claimed; null otherwise */
+  claimSlug: string | null;
 }
 
 /** Sample mode: addresses that are taken. */
@@ -22,7 +28,7 @@ export const MOCK_TAKEN_EMAIL_REGISTER = 'taken@example.invalid';
 export const MOCK_REGISTER_HANDOFF = 'mock-handoff-code-0000';
 
 const str = (v: unknown, max: number): string => (typeof v === 'string' && v.length <= max ? v : '');
-const fail = (fields: FieldErrors, general: RegisterErrorKey | null = null): RegisterResult => ({ ok: false, fields, general, handoff: null, site: 'pending' });
+const fail = (fields: FieldErrors, general: RegisterErrorKey | null = null, extra: { duplicate?: DuplicateAsk | null; claimSlug?: string | null } = {}): RegisterResult => ({ ok: false, fields, general, handoff: null, site: 'pending', siteCreated: false, duplicate: extra.duplicate ?? null, claimSlug: extra.claimSlug ?? null });
 
 /** The API's own statement that the new site is published (assumed field data.site.published, gap P2-G1); anything else is not a claim. */
 export function siteStateOf(json: unknown): 'live' | 'pending' {
@@ -52,6 +58,8 @@ export function parseRegisterBody(body: Record<string, unknown>): RegisterInput 
     businessName: str(body.businessName, 120).trim(), categoryKey: str(body.categoryKey, 80), industry: str(body.industry, 80), subdomain: cleanSubdomain(str(body.subdomain, 80)),
     name: str(body.name, 100).trim(), email: str(body.email, 254).trim(), phone: str(body.phone, 30).trim(), password: str(body.password, 128), acceptedTerms: body.acceptedTerms === true,
     plan: PLAN_KEYS.includes(str(body.plan, 20)) ? str(body.plan, 20) : 'free', termMonths: TERMS.includes(term) ? term : null,
+    city: str(body.city, 80).trim(), area: str(body.area, 80).trim(), pincode: str(body.pincode, 12).replace(/\s+/g, ''), gstin: str(body.gstin, 20).trim().toUpperCase(),
+    confirmDistinct: body.confirmDistinct === true,
   };
 }
 
@@ -62,7 +70,11 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
   if (useMocks()) {
     if (MOCK_TAKEN_SUBDOMAINS.includes(input.subdomain)) return fail({ subdomain: 'subdomainTaken' });
     if (input.email.toLowerCase() === MOCK_TAKEN_EMAIL_REGISTER) return fail({ email: 'emailTaken' });
-    return { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending' };
+    // sample mode: a business called "Adyar Plumbing House" looks like an existing listing, so the "Is this your business?" step can be reviewed
+    if (!input.confirmDistinct && input.businessName.toLowerCase().includes('adyar plumbing house')) {
+      return fail({}, 'businessPossible', { duplicate: { candidates: [{ slug: 'sri-murugan-plumbing', name: 'Sri Murugan Plumbing', category: 'Plumbers', city: 'Chennai', area: 'Adyar', claimable: true }], claimSlug: 'sri-murugan-plumbing' } });
+    }
+    return { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending', siteCreated: false, duplicate: null, claimSlug: null };
   }
   const referral = readReferral(req.headers.get('cookie'));
   const track = await trackFor(input.plan, input.categoryKey);
@@ -71,12 +83,15 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
     body: {
       name: input.name, email: input.email, password: input.password, businessName: input.businessName, industry: input.industry || input.categoryKey, ...(input.phone ? { phone: input.phone } : {}),
       track, subdomain: input.subdomain,
+      // the duplicate check's details: city, area and pincode always, GSTIN only when given, the answer only after the backend asked
+      city: input.city, area: input.area, pincode: input.pincode, ...(input.gstin ? { gstin: input.gstin } : {}),
+      ...(input.confirmDistinct ? { confirmDistinct: true } : {}),
       ...(referral ? { referralCode: referral.slice(0, 20) } : {}),
     },
   });
   if (!r) return fail({}, 'notAvailable');
-  if (!r.ok) { const f = mapRegisterFailure(r.status, r.json); return fail(f.fields, f.general); }
-  return { ok: true, fields: {}, general: null, handoff: await requestHandoff(req, accessTokenOf(r.json)), site: siteStateOf(r.json) };
+  if (!r.ok) { const f = mapRegisterFailure(r.status, r.json); return fail(f.fields, f.general, { duplicate: duplicateAskOf(r.status, r.json), claimSlug: duplicateClaimOf(r.status, r.json) }); }
+  return { ok: true, fields: {}, general: null, handoff: await requestHandoff(req, accessTokenOf(r.json)), site: siteStateOf(r.json), siteCreated: siteCreatedOf(r.json), duplicate: null, claimSlug: null };
 }
 
 /** The state of one address: the local rules first (no call for a shape or reserved problem), then the API. 'unknown' when it cannot be checked. */
@@ -90,4 +105,15 @@ export async function handleSubdomainCheck(req: Request, slugIn: string): Promis
   const r = await callApi(req, `/v3/public/subdomain-availability?name=${encodeURIComponent(slug)}`, { method: 'GET' });
   if (!r) return { state: 'unknown' };
   return { state: subdomainStateOf(r.status, r.json) };
+}
+
+/**
+ * The register answer's own word on the site (B2.1: `site: { status: LIVE | FAILED | NOT_SWITCHED_ON, published, subdomain, url }`): created when its status is LIVE or it says published.
+ * Anything else, or no site fact at all, is not a claim. Never a statement about payment.
+ */
+export function siteCreatedOf(json: unknown): boolean {
+  const root = json && typeof json === 'object' ? (json as Record<string, unknown>) : {};
+  const o = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>;
+  const site = o.site && typeof o.site === 'object' ? (o.site as Record<string, unknown>) : {};
+  return site.status === 'LIVE' || site.published === true;
 }

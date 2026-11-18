@@ -3,19 +3,27 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AcceptNotice from '@/components/site/AcceptNotice';
+import CategoryPicker from '@/components/site/CategoryPicker';
 import { handoffTarget } from '@/lib/v3-public/handoff';
-import { subdomainProblem, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterField, type SubdomainState } from '@/lib/v3-public/register';
+import { billedLine, PER_MONTH, PORTAL } from '@/lib/v3-public/portal-strings';
+import { categoriesForTrack, isProPlan, planAfterPick, signInWithNext, type CatOption, type PlanChoice } from '@/lib/v3-public/register-plan';
+import { subdomainProblem, validateRegister, type DuplicateAsk, type FieldErrors, type RegisterErrorKey, type RegisterField, type SubdomainState } from '@/lib/v3-public/register';
 import { SITE } from '@/lib/v3-public/site-strings';
 
-export interface CategoryOption { key: string; name: string; industry: string; packKey?: string }
+export type CategoryOption = CatOption;
 
 interface Props {
-  categories: CategoryOption[];
+  categories: CatOption[];
   categoriesFailed: boolean;
+  /** the plan the page was opened with: free, or a Pro plan key (handyman, professional, ecommerce) */
   plan: string;
-  planName: string | null;
+  /** the Pro plans with their prices as text, from the public price route only */
+  planChoices: PlanChoice[];
+  /** the name of the opened plan when the price list could not be read */
+  planNameFallback: string | null;
   term: number | null;
-  termName: string | null;
+  /** the billing terms the price list offers */
+  terms: number[];
   referral: boolean;
   /** a pack key from an industry page (?pack=): the category list starts limited to that pack; null for none */
   pack?: string | null;
@@ -23,14 +31,22 @@ interface Props {
   category?: string | null;
   packName?: string | null;
   vendorUrl: string | null;
+  /** where "Change plan" goes (the pricing page) and where a directory listing lives */
+  pricingHref: string;
+  directoryBase: string;
   /** ".main-domain" shown after the address box; empty when the main host is not set */
   suffix: string;
   subdomain?: string;
 }
 
+interface Done { target: string | null; site: 'live' | 'pending'; siteCreated: boolean; held: boolean }
+interface Reply { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null; site?: 'live' | 'pending'; siteCreated?: boolean; duplicate?: DuplicateAsk | null; claimSlug?: string | null }
+
 const INPUT = 'mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900';
 const R = SITE.register;
 const errText = (k: RegisterErrorKey | undefined): string | null => (k ? R.errors[k] : null);
+const fill = (t: string, vars: Record<string, string>): string => Object.entries(vars).reduce((s, [k, v]) => s.split(`{${k}}`).join(v), t);
+const titleCase = (k: string): string => k.charAt(0).toUpperCase() + k.slice(1);
 
 function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error: string | null; children: React.ReactNode }) {
   return (
@@ -46,31 +62,45 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
 const describedBy = (id: string, hint: boolean, error: boolean): string | undefined => [hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined;
 
 export default function RegisterForm(p: Props) {
+  const [planKey, setPlanKey] = useState(p.plan);
+  const [term, setTerm] = useState<number | null>(() => (isProPlan(p.plan) ? (p.term ?? (p.terms.includes(12) ? 12 : p.terms[p.terms.length - 1] ?? null)) : null));
+  const [notice, setNotice] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState('');
   const [categoryKey, setCategoryKey] = useState(() => (p.category && p.categories.some((c) => c.key === p.category) ? p.category : ''));
-  const [filter, setFilter] = useState('');
-  const inPack = useMemo(() => (p.pack ? p.categories.filter((c) => c.packKey === p.pack) : []), [p.pack, p.categories]);
+  const [showAll, setShowAll] = useState(false);
   const [onlyPack, setOnlyPack] = useState(true);
-  const limited = onlyPack && inPack.length > 0;
   const [subdomain, setSubdomain] = useState(p.subdomain ?? '');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [city, setCity] = useState('');
+  const [area, setArea] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [gstin, setGstin] = useState('');
   const [accepted, setAccepted] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [general, setGeneral] = useState<RegisterErrorKey | null>(null);
+  const [claimSlug, setClaimSlug] = useState<string | null>(null);
+  const [ask, setAsk] = useState<DuplicateAsk | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ target: string | null; site: 'live' | 'pending' } | null>(null);
+  const [done, setDone] = useState<Done | null>(null);
   const [availability, setAvailability] = useState<SubdomainState | 'checking' | null>(null);
   const seq = useRef(0);
   const summary = useRef<HTMLDivElement>(null);
+  const askRef = useRef<HTMLElement>(null);
 
-  const shown = useMemo(() => {
-    const f = filter.trim().toLowerCase();
-    const base = limited ? inPack : p.categories;
-    return f ? base.filter((c) => c.name.toLowerCase().includes(f)) : base;
-  }, [filter, p.categories, limited, inPack]);
+  const pro = isProPlan(planKey);
+  const planRow = p.planChoices.find((x) => x.key === planKey) ?? null;
+  const planName = planRow?.name ?? (pro ? p.planNameFallback ?? titleCase(planKey) : null);
+
+  // the categories offered: a Pro plan lists only its own track until the visitor asks for all; Free (or the list of a pack) lists everything, grouped by family
+  const inPack = useMemo(() => (p.pack ? p.categories.filter((c) => c.packKey === p.pack) : []), [p.pack, p.categories]);
+  const trackList = useMemo(() => (planRow ? categoriesForTrack(p.categories, planRow.track) : []), [planRow, p.categories]);
+  const trackLimited = pro && !!planRow && !showAll && trackList.length > 0;
+  const packLimited = !pro && onlyPack && inPack.length > 0;
+  const offered = trackLimited ? trackList : packLimited ? inPack : p.categories;
+  const pickerNote = trackLimited && planName ? fill(R.pro.trackOnly, { plan: planName }) : packLimited ? fill(R.packLimited, { name: p.packName ?? '' }) : null;
 
   // live availability: the local rules answer at once; the server is asked once the visitor pauses
   useEffect(() => {
@@ -102,45 +132,79 @@ export default function RegisterForm(p: Props) {
     return null;
   })();
 
-  async function submit(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  function pick(c: CatOption): void {
+    setCategoryKey(c.key);
+    setAsk(null);
+    if (!pro) return;
+    // a category from another track moves the visitor to that track's plan, and says so
+    const r = planAfterPick(p.planChoices, planKey, c);
+    if (r.switched && r.plan && planRow) {
+      setPlanKey(r.plan.key);
+      setNotice(fill(R.pro.switchedNotice, { category: c.name, from: planRow.name, to: r.plan.name }));
+    } else {
+      setNotice(null);
+    }
+  }
+
+  async function submit(e: React.FormEvent | null, confirmDistinct = false): Promise<void> {
+    e?.preventDefault();
     setGeneral(null);
+    setClaimSlug(null);
     const cat = p.categories.find((c) => c.key === categoryKey);
-    const found = validateRegister({ businessName, categoryKey, industry: cat?.industry ?? '', subdomain, name, email, phone, password, acceptedTerms: accepted, plan: p.plan, termMonths: p.term });
+    const input = { businessName, categoryKey, industry: cat?.industry ?? '', subdomain, name, email, phone, password, acceptedTerms: accepted, plan: planKey, termMonths: pro ? term : null, city, area, pincode, gstin, confirmDistinct };
+    const found = validateRegister(input);
     if (availability === 'taken' && !found.subdomain) found.subdomain = 'subdomainTaken';
     setErrors(found);
-    if (Object.keys(found).length) { summary.current?.focus(); return; }
+    if (Object.keys(found).length) { setAsk(null); summary.current?.focus(); return; }
     setBusy(true);
-    let r: { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null; site?: 'live' | 'pending' };
+    let r: Reply;
     try {
-      const res = await fetch('/directory-api/register', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ businessName, categoryKey, industry: cat?.industry ?? '', subdomain, name, email, phone, password, acceptedTerms: accepted, plan: p.plan, termMonths: p.term }),
-      });
-      r = (await res.json()) as typeof r;
+      const res = await fetch('/directory-api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) });
+      r = (await res.json()) as Reply;
     } catch {
-      r = { ok: false, fields: {}, general: 'notAvailable', handoff: null, site: 'pending' };
+      r = { ok: false, fields: {}, general: 'notAvailable', handoff: null, site: 'pending', siteCreated: false, duplicate: null, claimSlug: null };
     }
     setBusy(false);
+    if (r.duplicate) {
+      // "Is this your business?": the form keeps what was typed (the password too) so a "No, a different business" answer can send it again
+      setAsk(r.duplicate);
+      setErrors({});
+      setTimeout(() => askRef.current?.focus(), 0);
+      return;
+    }
+    setAsk(null);
     setPassword('');
     if (r.ok) {
-      const target = handoffTarget(p.vendorUrl, r.handoff);
-      // only the API's own word makes the site live; otherwise the note stays on screen (no redirect) so it is read, with a way to sign in
       const site = r.site === 'live' ? 'live' : 'pending';
-      setDone({ target, site });
-      if (target && site === 'live') window.location.assign(target);
+      const target = handoffTarget(p.vendorUrl, r.handoff);
+      setDone({ target, site, siteCreated: r.siteCreated === true || site === 'live', held: confirmDistinct });
+      // a Free account whose site the API says is live goes straight on; a Pro account stays here so "Continue to payment" is read and nothing is claimed as paid
+      if (!pro && target && site === 'live') window.location.assign(target);
       return;
     }
     setErrors(r.fields ?? {});
+    setClaimSlug(r.claimSlug ?? null);
     setGeneral(r.general ?? (Object.keys(r.fields ?? {}).length ? null : 'general'));
     summary.current?.focus();
   }
 
   if (done) {
+    if (pro) {
+      const next = signInWithNext(p.vendorUrl, planKey, term);
+      return (
+        <section aria-labelledby="done-title" role="status" className="max-w-xl">
+          <h1 id="done-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{R.done.proTitle}</h1>
+          <p className="mt-3 text-slate-700">{R.done.proBody}</p>
+          {done.siteCreated ? <p className="mt-2 text-slate-700">{R.done.proSiteCreated}{done.site === 'live' ? '' : done.held ? ` ${R.done.proSiteHeld}` : ''}</p> : null}
+          {next ? <a href={next} className="mt-5 inline-block rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white">{R.done.proCta}</a> : <p className="mt-4 text-slate-600">{R.done.proNoApp}</p>}
+          <p className="mt-4 text-sm"><Link href="/login" className="text-slate-900 underline">{R.done.pendingSignIn}</Link></p>
+        </section>
+      );
+    }
     return (
-      <section aria-labelledby="done-title" role="status">
-        <h2 id="done-title" className="text-xl font-semibold text-slate-900">{done.site === 'live' ? R.done.title : R.done.pendingTitle}</h2>
-        <p className="mt-2 text-slate-700">{done.site === 'live' ? R.done.body : R.done.pendingBody}</p>
+      <section aria-labelledby="done-title" role="status" className="max-w-xl">
+        <h1 id="done-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{done.site === 'live' ? R.done.title : R.done.pendingTitle}</h1>
+        <p className="mt-3 text-slate-700">{done.site === 'live' ? R.done.body : R.done.pendingBody}{done.held ? ` ${R.duplicate.distinctNote}` : ''}</p>
         {done.target ? <a href={done.target} className="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.done.cta}</a> : done.site === 'live' ? <p className="mt-3 text-slate-600">{R.done.noApp}</p> : null}
         {done.site === 'pending' ? <p className="mt-3 text-sm"><Link href="/login" className="text-slate-900 underline">{R.done.pendingSignIn}</Link></p> : null}
       </section>
@@ -149,34 +213,109 @@ export default function RegisterForm(p: Props) {
 
   const fieldKeys = Object.keys(errors) as RegisterField[];
   const err = (f: RegisterField): string | null => errText(errors[f]);
+  const H = PORTAL.home;
+  const termRow = pro && term !== null ? { monthly: planRow?.monthly[term] ?? null, total: planRow?.total[term] ?? null } : null;
+
   return (
-    <form onSubmit={submit} noValidate aria-labelledby="register-title">
-      <h2 id="register-title" className="sr-only">{R.title}</h2>
+    <form onSubmit={(e) => void submit(e)} noValidate aria-labelledby="register-title" className="max-w-xl">
+      {pro && planName ? (
+        <>
+          <h1 id="register-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{fill(R.pro.title, { plan: planName })}</h1>
+          <p className="mb-6 mt-2 text-slate-600">{R.pro.intro}</p>
+        </>
+      ) : (
+        <>
+          <h1 id="register-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{R.h1}</h1>
+          <p className="mb-6 mt-2 text-slate-600">{R.intro}</p>
+        </>
+      )}
+
+      {pro && planName ? (
+        <section aria-labelledby="plan-summary-title" className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
+          <h2 id="plan-summary-title" className="text-sm font-semibold text-ink-900">{R.pro.summaryHeading}</h2>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-slate-500">{R.pro.planLabel}</dt>
+              <dd className="text-base font-semibold text-ink-900" data-testid="summary-plan">{planName}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-slate-500"><label htmlFor="summary-term">{R.pro.termLabel}</label></dt>
+              <dd>
+                <select id="summary-term" value={term ?? ''} onChange={(e) => setTerm(Number(e.target.value) || null)} className="mt-0.5 min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-ink-900 focus:outline-none focus:ring-2 focus:ring-slate-900">
+                  {[...p.terms].sort((a, b) => b - a).map((t) => <option key={t} value={t}>{H.terms[t] ?? t}</option>)}
+                </select>
+              </dd>
+            </div>
+          </dl>
+          <div className="mt-3" aria-live="polite">
+            {termRow && termRow.monthly && termRow.total ? (
+              <>
+                <p className="text-xs text-slate-500">{R.pro.monthlyLabel}</p>
+                <p className="text-3xl font-bold text-ink-900" data-testid="summary-monthly">{termRow.monthly}<span className="ml-1 text-sm font-normal text-slate-600">{PER_MONTH}</span></p>
+                <p className="mt-1 text-sm text-slate-600" data-testid="summary-billed">{billedLine(term as number, termRow.total)}</p>
+              </>
+            ) : <p className="text-sm font-medium text-slate-600">{planRow && !planRow.pending ? R.pro.notOffered : R.pro.priceNotSet}</p>}
+          </div>
+          <p className="mt-3 text-sm"><Link href={p.pricingHref} className="font-medium text-slate-900 underline">{R.pro.changePlan}</Link></p>
+          {notice ? <p role="status" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-testid="plan-switched">{notice}</p> : null}
+        </section>
+      ) : null}
+
       <div ref={summary} tabIndex={-1} aria-live="assertive">
-        {general ? <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{R.errors[general]}</p> : null}
+        {general ? (
+          <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+            {R.errors[general]}
+            {claimSlug ? <> <a href={`${p.directoryBase}/business/${claimSlug}`} className="font-medium underline">{R.duplicate.view}</a></> : null}
+          </p>
+        ) : null}
         {fieldKeys.length > 0 && !general ? <p role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">{R.errors.fieldsSummary}</p> : null}
       </div>
-      <p className="mb-4 text-sm text-slate-700">
-        <span className="font-medium">{R.planNote}:</span> {p.planName ?? R.freePlan}{p.termName ? `, ${p.termName}` : ''}
-        {p.referral ? <span className="ml-2 text-slate-500">{R.referralNote}</span> : null}
-      </p>
+      {!pro ? (
+        <p className="mb-4 text-sm text-slate-700">
+          <span className="font-medium">{R.planNote}:</span> {R.freePlan}
+          {p.referral ? <span className="ml-2 text-slate-500">{R.referralNote}</span> : null}
+        </p>
+      ) : p.referral ? <p className="mb-4 text-sm text-slate-500">{R.referralNote}</p> : null}
 
       <Field id="businessName" label={R.labels.businessName} error={err('businessName')}>
-        <input id="businessName" name="businessName" autoComplete="organization" value={businessName} onChange={(e) => setBusinessName(e.target.value)} aria-invalid={!!errors.businessName} aria-describedby={describedBy('businessName', false, !!errors.businessName)} className={INPUT} />
+        <input id="businessName" name="businessName" autoComplete="organization" value={businessName} onChange={(e) => { setBusinessName(e.target.value); setAsk(null); }} aria-invalid={!!errors.businessName} aria-describedby={describedBy('businessName', false, !!errors.businessName)} className={INPUT} />
       </Field>
 
-      <Field id="categorySearch" label={R.labels.category} hint={p.categoriesFailed ? undefined : R.hints.category} error={err('category') ?? (p.categoriesFailed ? R.categoriesError : null)}>
-        <input id="categorySearch" type="search" placeholder={R.labels.categorySearch} value={filter} onChange={(e) => setFilter(e.target.value)} aria-describedby={describedBy('categorySearch', !p.categoriesFailed, !!errors.category || p.categoriesFailed)} className={INPUT} />
-        <select id="category" aria-label={R.labels.category} size={6} value={categoryKey} onChange={(e) => setCategoryKey(e.target.value)} aria-invalid={!!errors.category} className={`${INPUT} mt-2`}>
-          {shown.map((c) => <option key={c.key} value={c.key}>{c.name}</option>)}
-        </select>
-        {limited ? (
-          <p className="mt-1 text-sm text-slate-600">{R.packLimited.replace('{name}', p.packName ?? '')} <button type="button" onClick={() => setOnlyPack(false)} className="font-medium text-slate-900 underline">{R.packShowAll}</button></p>
-        ) : null}
-        {shown.length === 0 && !p.categoriesFailed ? <p className="mt-1 text-sm text-slate-600" role="status">{R.noCategories}</p> : null}
+      <Field id="category" label={R.labels.category} hint={p.categoriesFailed ? undefined : R.hints.category} error={err('category') ?? (p.categoriesFailed ? R.categoriesError : null)}>
+        <CategoryPicker
+          id="category"
+          options={offered}
+          value={categoryKey}
+          onPick={pick}
+          invalid={!!errors.category}
+          describedBy={describedBy('category', !p.categoriesFailed, !!errors.category || p.categoriesFailed)}
+          note={pickerNote}
+          footer={
+            trackLimited ? <button type="button" onClick={() => setShowAll(true)} className="min-h-[44px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">{R.picker.notHere}</button>
+              : pro && showAll && trackList.length > 0 ? <button type="button" onClick={() => setShowAll(false)} className="min-h-[44px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">{R.picker.backToTrack}</button>
+              : packLimited ? <button type="button" onClick={() => setOnlyPack(false)} className="min-h-[44px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50">{R.packShowAll}</button>
+              : null
+          }
+        />
+        {p.categories.length === 0 && !p.categoriesFailed ? <p className="mt-1 text-sm text-slate-600" role="status">{R.noCategories}</p> : null}
       </Field>
 
-      <Field id="subdomain" label={R.labels.subdomain} hint={R.hints.subdomain} error={null}>
+      <Field id="city" label={R.labels.city} hint={R.hints.city} error={err('city')}>
+        <input id="city" name="city" autoComplete="address-level2" value={city} onChange={(e) => { setCity(e.target.value); setAsk(null); }} aria-invalid={!!errors.city} aria-describedby={describedBy('city', true, !!errors.city)} className={INPUT} />
+      </Field>
+      <div className="grid gap-x-4 sm:grid-cols-2">
+        <Field id="area" label={R.labels.area} hint={R.hints.area} error={err('area')}>
+          <input id="area" name="area" autoComplete="address-level3" value={area} onChange={(e) => { setArea(e.target.value); setAsk(null); }} aria-invalid={!!errors.area} aria-describedby={describedBy('area', true, !!errors.area)} className={INPUT} />
+        </Field>
+        <Field id="pincode" label={R.labels.pincode} hint={R.hints.pincode} error={err('pincode')}>
+          <input id="pincode" name="pincode" inputMode="numeric" maxLength={6} autoComplete="postal-code" value={pincode} onChange={(e) => { setPincode(e.target.value.replace(/[^0-9]/g, '')); setAsk(null); }} aria-invalid={!!errors.pincode} aria-describedby={describedBy('pincode', true, !!errors.pincode)} className={INPUT} />
+        </Field>
+      </div>
+      <Field id="gstin" label={R.labels.gstin} hint={R.hints.gstin} error={err('gstin')}>
+        <input id="gstin" name="gstin" autoCapitalize="characters" autoComplete="off" maxLength={20} value={gstin} onChange={(e) => { setGstin(e.target.value.toUpperCase()); setAsk(null); }} aria-invalid={!!errors.gstin} aria-describedby={describedBy('gstin', true, !!errors.gstin)} className={INPUT} />
+      </Field>
+
+      <Field id="subdomain" label={R.labels.subdomain} hint={pro ? R.hints.subdomainPro : R.hints.subdomain} error={null}>
         <div className="flex items-center gap-1">
           <input id="subdomain" name="subdomain" autoComplete="off" autoCapitalize="none" spellCheck={false} value={subdomain} onChange={(e) => setSubdomain(e.target.value)} aria-invalid={addressMessage?.bad === true} aria-describedby={describedBy('subdomain', true, false) + ' subdomain-status'} className={INPUT} />
           {p.suffix ? <span className="mt-1 whitespace-nowrap text-sm text-slate-600">{p.suffix}</span> : null}
@@ -207,7 +346,28 @@ export default function RegisterForm(p: Props) {
         {errors.terms ? <p id="terms-error" role="alert" className="ml-6 mt-1 text-sm text-red-700">{R.errors.terms}</p> : null}
       </div>
 
-      <button type="submit" disabled={busy} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60">{busy ? R.submitting : R.submit}</button>
+      {ask ? (
+        <section ref={askRef} tabIndex={-1} aria-labelledby="dup-title" className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 p-4" data-testid="is-this-yours">
+          <h2 id="dup-title" className="text-base font-semibold text-amber-950">{R.duplicate.title}</h2>
+          <p className="mt-1 text-sm text-amber-900">{R.duplicate.body}</p>
+          <ul className="mt-3 space-y-2">
+            {ask.candidates.map((c) => (
+              <li key={c.slug} className="rounded-lg bg-white p-3 text-sm text-slate-800">
+                <p className="font-semibold">{c.name}</p>
+                <p className="text-slate-600">{[c.category, c.area, c.city].filter(Boolean).join(', ')}</p>
+                <a href={`${p.directoryBase}/business/${c.slug}`} className="mt-1 inline-block font-medium text-slate-900 underline">{c.claimable ? R.duplicate.claim : R.duplicate.view}</a>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm text-amber-900">{R.duplicate.distinctNote}</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button type="button" disabled={busy} onClick={() => void submit(null, true)} className="min-h-[44px] rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60">{R.duplicate.distinct}</button>
+            <button type="button" onClick={() => setAsk(null)} className="min-h-[44px] rounded-lg border border-slate-400 bg-white px-4 py-2 text-sm font-medium text-slate-900">{R.duplicate.edit}</button>
+          </div>
+        </section>
+      ) : null}
+
+      {!ask ? <button type="submit" disabled={busy} className="min-h-[44px] rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60">{busy ? R.submitting : pro ? R.pro.submit : R.submit}</button> : null}
       <p className="mt-4 text-sm text-slate-600">{R.haveAccount} <Link href="/login" className="text-slate-900 underline">{R.signIn}</Link></p>
     </form>
   );

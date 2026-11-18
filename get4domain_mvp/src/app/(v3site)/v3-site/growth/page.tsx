@@ -23,7 +23,7 @@ export default function GrowthPage() {
       <JsonLd items={[faqLd(GROWTH.faq)]} />
       <PageHead crumbs={[{ name: GROWTH.nav, path: '/growth' }]} h1={GROWTH.h1} lead={GROWTH.lead} />
       <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{GROWTH.honest}</p>
-      <CtaBox id="top-cta" heading={GROWTH.ctaHeading} links={[{ href: '/register?plan=free', label: GROWTH.ctaStart }, { href: '/pricing', label: GROWTH.ctaPlans }]} />
+      <CtaBox id="top-cta" heading={GROWTH.ctaHeading} links={[{ href: '/register', label: GROWTH.ctaStart }, { href: '/pricing', label: GROWTH.ctaPlans }]} />
 
       <section aria-labelledby="model-title" className="mt-10">
         <h2 id="model-title" className="text-2xl font-bold tracking-tight text-ink-900">{GROWTH.modelHeading}</h2>
@@ -63,7 +63,7 @@ export default function GrowthPage() {
       </section>
 
       <FaqList id="faq-title" heading={GROWTH.faqHeading} items={GROWTH.faq} />
-      <CtaBox id="cta-title" heading={GROWTH.ctaHeading} body={GROWTH.ctaBody} links={[{ href: '/register?plan=free', label: GROWTH.ctaStart }, { href: '/pricing', label: GROWTH.ctaPlans }]} />
+      <CtaBox id="cta-title" heading={GROWTH.ctaHeading} body={GROWTH.ctaBody} links={[{ href: '/register', label: GROWTH.ctaStart }, { href: '/pricing', label: GROWTH.ctaPlans }]} />
     </>
   );
 }
