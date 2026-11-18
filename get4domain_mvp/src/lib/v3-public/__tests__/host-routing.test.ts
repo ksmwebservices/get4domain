@@ -73,6 +73,11 @@ describe('main host', () => {
 
 describe('directory host', () => {
   const D = 'directory.main.example.invalid';
+  test('the old /account/register goes to the main host /register for good, keeping the query; login is left alone', () => {
+    assert.deepEqual(run(D, '/account/register'), { action: 'redirect', to: 'https://main.example.invalid/register', status: 308 });
+    assert.deepEqual(run(D, '/account/register/', { search: '?plan=handyman' }), { action: 'redirect', to: 'https://main.example.invalid/register?plan=handyman', status: 308 });
+    assert.notEqual(run(D, '/account/login')?.action, 'redirect');
+  });
   test('the home is an internal rewrite, the public address has no prefix', () => {
     assert.deepEqual(run(D, '/'), { action: 'rewrite', pathname: '/directory' });
   });

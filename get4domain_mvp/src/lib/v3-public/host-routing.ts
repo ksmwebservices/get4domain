@@ -118,6 +118,8 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
     case 'directory': {
       const rest = stripDirectoryPrefix(pathname);
       if (rest !== null) return { action: 'redirect', to: `${originFor(cfg.directory!)}${rest}${search}`, status: 308 };
+      // the old directory sign-up address: registration is one flow on the main host, so it goes there for good (the query, such as ?plan=, is kept)
+      if (pathname === '/account/register' || pathname === '/account/register/') return { action: 'redirect', to: `${originFor(cfg.main!.replace(/^www./, ''))}/register${search}`, status: 308 };
       if (pathname === '/') return { action: 'rewrite', pathname: DIRECTORY_HOME_ROUTE };
       // The directory's own sitemap: /sitemap.xml here is the directory index (the backend's robots text names /sitemap.xml). The main host's /sitemap.xml is untouched.
       if (pathname === '/sitemap.xml') return { action: 'rewrite', pathname: DIRECTORY_SITEMAP_ROUTE };
