@@ -49,6 +49,9 @@ export class RegistrarCron {
   @Cron('0 6 * * *') expiry(): Promise<void> { return this.once('expiry', () => this.svc.expiryTick()); }
 }
 
+import { PublicDomainAvailabilityController } from './api/public-availability.controller';
+import { PublicDomainAvailabilityService } from './public-availability.service';
+
 export const REGISTRAR_PROVIDERS: Provider[] = [
   { provide: RegistrarStore, useClass: PrismaRegistrarStore },
   { provide: RegistrarHttp, useFactory: () => new FetchHttp() },
@@ -56,9 +59,9 @@ export const REGISTRAR_PROVIDERS: Provider[] = [
   { provide: RegistrarPort, useFactory: (http: RegistrarHttp) => new GatedRegistrarPort(new ResellerClubAdapter(http)), inject: [RegistrarHttp] },
   { provide: DocCrypto, useFactory: () => new AesGcmDocCrypto() },
   // IdentityOtpSender comes from the global V3MailModule (Block 4b): email on lane 1 behind EMAIL_LIVE_SEND (default OFF); the phone channel is bound with the SMS port
-  OtpPepper, RegistrarSettingsService, IdentityService, RegistrarService, RegistrarCron, RegistrarStartupGuard,
+  OtpPepper, RegistrarSettingsService, IdentityService, RegistrarService, RegistrarCron, RegistrarStartupGuard, PublicDomainAvailabilityService,
 ];
-export const REGISTRAR_CONTROLLERS: Type<unknown>[] = [MeDomainSalesController, MeIdentityController, AdminRegistrarController];
+export const REGISTRAR_CONTROLLERS: Type<unknown>[] = [MeDomainSalesController, MeIdentityController, AdminRegistrarController, PublicDomainAvailabilityController];
 
 /** Domain sales (slice 5.6d). It spends through the V3 wallet (global) and reads the plan through the entitlements (global). Nothing here touches the old ResellerClub service or any legacy table. */
 @Module({ imports: [PrismaModule, V3DomainAutomationModule, V3PacksModule], controllers: REGISTRAR_CONTROLLERS, providers: REGISTRAR_PROVIDERS, exports: [RegistrarService, IdentityService, RegistrarStore] })
