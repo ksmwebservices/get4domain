@@ -142,7 +142,11 @@ export class PlansAdminService {
    * back-dated under an invoice already issued. Approving an approved row is a no-op answer, not an error. Two prices of one plan and term may not start at the same moment. Audited; the cache is cleared.
    */
   async approvePrice(priceId: string, dto: ApprovePlanPriceDto, actor: Actor, now: Date = new Date()) {
-    const when = dto.effectiveFrom ? new Date(dto.effectiveFrom) : now;
+    // B2.3: the admin screen sends a bare date ("2026-11-18", today by default). That parses as midnight UTC, which is already past, so "today" was refused as "in the past" and the screen showed its
+    // generic "Some details do not look right". A bare date that is today (UTC or India date) or earlier-today means "from now"; a later bare date still starts at its midnight.
+    const bare = dto.effectiveFrom !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(dto.effectiveFrom);
+    const todays = [now, new Date(now.getTime() + 330 * 60_000)].map((d) => d.toISOString().slice(0, 10));
+    const when = dto.effectiveFrom ? (bare && todays.includes(dto.effectiveFrom) ? now : new Date(dto.effectiveFrom)) : now;
     if (Number.isNaN(when.getTime())) throw new BadRequestException(planError('PRICE_DATE_INVALID', 'That date is not valid.'));
     if (when.getTime() < now.getTime() - 60_000) throw new BadRequestException(planError('PRICE_DATE_IN_PAST', 'A price cannot start in the past.'));
     const price = await this.prisma.$transaction(async (tx) => {

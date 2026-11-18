@@ -74,6 +74,12 @@ describe('approving a plan price', () => {
     expect(out).toMatchObject({ status: 'APPROVED' }); expect(s.prisma.v3PlanPrice.update.mock.calls[0][0]).toMatchObject({ where: { id: 'pr1' }, data: { status: 'APPROVED', effectiveFrom: NOW } });
     expect(s.prisma.v3AuditLog.create.mock.calls.map((c: unknown[]) => (c[0] as { data: { action: string } }).data.action)).toEqual(['price.approve']); expect(s.spy).toHaveBeenCalledTimes(1);
   });
+  it('B2.3: the date the admin screen sends by default (a bare date, today) means "from now" instead of "in the past"; yesterday still fails, a later bare date starts at its midnight', async () => {
+    const s = make(); s.prisma.v3PlanPrice.findUnique.mockResolvedValue(proposed); s.prisma.v3PlanPrice.findFirst.mockResolvedValue(null); s.prisma.v3PlanPrice.update.mockImplementation(async (a: { data: object }) => ({ ...proposed, ...a.data }));
+    expect((await s.plans.approvePrice('pr1', { effectiveFrom: '2026-11-17' }, STAFF, NOW)).effectiveFrom).toEqual(NOW);
+    expect((await s.plans.approvePrice('pr1', { effectiveFrom: '2026-11-19' }, STAFF, NOW)).effectiveFrom).toEqual(new Date('2026-11-19T00:00:00Z'));
+    expect(code(await rejects(s.plans.approvePrice('pr1', { effectiveFrom: '2026-11-16' }, STAFF, NOW)))).toBe('PRICE_DATE_IN_PAST');
+  });
   it('a later date is allowed; a past date, a bad date and an unknown price are refused; an approved price is returned unchanged', async () => {
     const s = make(); s.prisma.v3PlanPrice.findUnique.mockResolvedValue(proposed); s.prisma.v3PlanPrice.findFirst.mockResolvedValue(null); s.prisma.v3PlanPrice.update.mockImplementation(async (a: { data: object }) => ({ ...proposed, ...a.data }));
     expect((await s.plans.approvePrice('pr1', { effectiveFrom: day(3).toISOString() }, STAFF, NOW)).effectiveFrom).toEqual(day(3));
