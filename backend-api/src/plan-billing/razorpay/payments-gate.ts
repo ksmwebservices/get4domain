@@ -32,6 +32,19 @@ export class PaymentsGate {
     return this.adapter;
   }
 
+  /**
+   * B5.6: true only when checkout would not be refused right now: paymentsMode is "test" or "live" (live also needs PLAN_PAYMENTS_LIVE_ENABLED) AND the chosen gateway has its keys for that mode.
+   * Never throws and never creates anything; a failure to read counts as closed. No key value is read out or returned, only whether an adapter could be built.
+   */
+  async isOpen(): Promise<boolean> {
+    try {
+      const s = await this.settings.get();
+      if (s.paymentsMode === 'off') return false;
+      if (s.paymentsMode === 'live' && !this.liveEnabled()) return false;
+      return (await this.buildGateway(s.paymentGateway, s.paymentsMode)) !== null;
+    } catch { return false; }
+  }
+
   /** The adapter for creating and confirming orders, or a plain refusal. */
   async port(): Promise<RazorpayPort> {
     const mode = (await this.settings.get()).paymentsMode;

@@ -39,6 +39,8 @@ export interface PublicPricing {
   addons: { key: string; name: string; description: string; state: PriceState; price: PriceLine | null; purchasable: boolean }[];
   /** the fee for a later theme switch (the first switch is included in a paid plan); PRICE_PENDING until a price is approved and started, and then never a number */
   themeSwitch: { state: PriceState; price: PriceLine | null };
+  /** B5.6: true only when paymentsMode is test or live and the gateway keys are configured, so the app can say "Online payment is not open yet" before Pay */
+  paymentsOpen: boolean;
 }
 
 /** Product words that never appear on a public page, whatever a data row says. */
@@ -96,6 +98,6 @@ export function shapePublicPricing(r: PricingRows): PublicPricing {
   return {
     currency: 'INR', pricesExcludeGst: true, terms: [...PRICING_TERMS], gst: r.tax ? { name: r.tax.name, ratePercent: r.tax.ratePercent } : null,
     free: { key: 'free', name: FREE_PLAN_NAME, kind: 'FREE', description: FREE_PLAN_DESCRIPTION, informational: true },
-    plans, addons, themeSwitch,
+    plans, addons, themeSwitch, paymentsOpen: false,   // closed unless the controller, which can ask the payments gate, says otherwise
   };
 }
