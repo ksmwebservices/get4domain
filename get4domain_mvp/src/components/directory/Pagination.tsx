@@ -11,19 +11,19 @@ export default function Pagination({ page, path }: { page: PaginationModel | nul
   const numbers = windowOf(page.number, page.totalPages);
   return (
     <nav aria-label={S.pagination.label} className="mt-8 flex flex-wrap items-center justify-between gap-3 text-sm">
-      <div className="min-w-[8rem]">{page.prevPath && <Link href={page.prevPath} rel="prev" className="font-medium text-primary-700 hover:underline">{S.pagination.previous}</Link>}</div>
+      <div className="min-w-[8rem]">{page.prevPath && <Link href={page.prevPath} rel="prev" className="font-semibold text-brand-700 hover:underline">{S.pagination.previous}</Link>}</div>
       <ol className="flex flex-wrap items-center gap-1" aria-label={S.pagination.pageOf(page.number, page.totalPages)}>
         {numbers.map((n) => (
           <li key={n}>
             {n === page.number ? (
-              <span aria-current="page" aria-label={S.pagination.current(n)} className="inline-block rounded-md bg-slate-900 px-3 py-1 text-white">{n}</span>
+              <span aria-current="page" aria-label={S.pagination.current(n)} className="inline-block rounded-lg bg-brand-600 px-3 py-1.5 font-semibold text-white">{n}</span>
             ) : (
-              <Link href={pagePath(base, n)} aria-label={S.pagination.goTo(n)} className="inline-block rounded-md px-3 py-1 text-slate-700 hover:bg-slate-100">{n}</Link>
+              <Link href={pagePath(base, n)} aria-label={S.pagination.goTo(n)} className="inline-block rounded-lg px-3 py-1.5 text-slate-700 hover:bg-slate-100">{n}</Link>
             )}
           </li>
         ))}
       </ol>
-      <div className="min-w-[8rem] text-right">{page.nextPath && <Link href={page.nextPath} rel="next" className="font-medium text-primary-700 hover:underline">{S.pagination.next}</Link>}</div>
+      <div className="min-w-[8rem] text-right">{page.nextPath && <Link href={page.nextPath} rel="next" className="font-semibold text-brand-700 hover:underline">{S.pagination.next}</Link>}</div>
     </nav>
   );
 }

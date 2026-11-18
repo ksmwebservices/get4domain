@@ -189,3 +189,9 @@ export const browseCount = (areas: number, categories: number): string => `${are
 
 /** The annual price against four quarterly prices, as a whole percentage worked out from the price route. Shown only when it is a real positive number. */
 export const annualSaving = (percent: number): string => `Save ${percent}% with annual`;
+
+/** "12 businesses found", from the real total of a search. */
+export const resultCount = (n: number): string => (n === 1 ? '1 business found' : `${n} businesses found`);
+
+/** "Page 2 of 5" for the pager of the results. */
+export const pageOf = (n: number, total: number): string => `Page ${n} of ${total}`;

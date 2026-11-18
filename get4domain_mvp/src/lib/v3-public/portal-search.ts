@@ -10,7 +10,7 @@ import type { Fetched, RawBusiness, RawBusinessList, TreeNode } from './types';
  * and the two trees GET /v3/directory/locations and /categories. Everything the backend cannot do yet (category, services and keywords inside the text match, suggestions, free place text,
  * near me, open now) is listed in the J1 report as a backend request and is NOT imitated here.
  */
-export interface Place { slug: string; path: string; name: string; label: string; depth: number }
+export interface Place { slug: string; path: string; name: string; label: string; depth: number; kind: string | null }
 export interface Cat { slug: string; name: string; parent: string | null }
 export interface Trees { places: Place[]; categories: Cat[] }
 
@@ -27,7 +27,7 @@ export function flattenPlaces(nodes: readonly TreeNode[]): Place[] {
       if (!n.slug || !n.name) continue;
       const s = [...slugs, n.slug];
       const nm = [n.name, ...names];
-      out.push({ slug: n.slug, path: s.join('/'), name: n.name, label: nm.slice(0, 2).join(', '), depth: s.length });
+      out.push({ slug: n.slug, path: s.join('/'), name: n.name, label: nm.slice(0, 2).join(', '), depth: s.length, kind: n.kind ?? null });
       walk(n.children ?? [], s, nm);
     }
   };

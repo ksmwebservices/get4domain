@@ -15,7 +15,7 @@ export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
               {last ? (
                 <span aria-current="page" className="font-medium text-slate-900">{c.name}</span>
               ) : (
-                <Link href={c.path} className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600">{c.name}</Link>
+                <Link href={c.path} className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600">{c.name}</Link>
               )}
               {!last && <span aria-hidden="true">/</span>}
             </li>
