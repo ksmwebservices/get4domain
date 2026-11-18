@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { evaluateListingPageIndexing } from './core/indexing';
 import { badgesOf, siteStateOf, siteUrlOf } from './core/visits';
-import { clampPage, mergeSponsored, normaliseQuery } from './core/search';
-import { BusinessRow, CategoryRow, DirectoryRepository, LocationRow } from './directory.repository';
+import { asPincode, categoriesForToken, CategoryTerms, categoryTerms, clampPage, mergeSponsored, nameRank, normaliseQuery, parseSuggestTypes, resolvePlaceText, SUGGEST_MAX } from './core/search';
+import { BusinessRow, CategoryRow, DirectoryRepository, KeywordRow, LocationRow } from './directory.repository';
 import {
   categoryTree, descendantIds, locationPath, locationTree, PublicBusinessView, PublicListItem, PublicSponsoredItem, publicBusinessView, resolveCategory, resolveLocation, sponsoredItem, TreeNode, ViewContext,
 } from './directory-views';
@@ -14,8 +14,20 @@ const TREE_TTL_MS = 60_000;
 /** Owner rule 6: a suspended listing is still listed, as the Free listing-only site it has become. Shown as the claimed or unclaimed listing it is; the stored status is not changed. */
 const shownAs = (b: BusinessRow): BusinessRow => (b.status === 'SUSPENDED' ? { ...b, status: b.claimedAt ? 'CLAIMED' : 'UNCLAIMED' } : b);
 
+/** The words each category answers to (name, parents, staff-reviewed keywords): built with the trees, so a search never reads the keyword table per request. */
+function buildTerms(cat: readonly CategoryRow[], kw: readonly KeywordRow[]): CategoryTerms[] {
+  const byId = new Map(cat.map((c) => [c.id, c]));
+  const kwBySlug = new Map(kw.map((k) => [k.categorySlug, k]));
+  return cat.map((c) => {
+    const ancestors: string[] = []; let cur = c.parentId ? byId.get(c.parentId) : undefined; let g = 0;
+    while (cur && g++ < 10) { ancestors.push(cur.name); cur = cur.parentId ? byId.get(cur.parentId) : undefined; }
+    return categoryTerms({ id: c.id, name: c.name, slug: c.slug, ancestors, keywords: kwBySlug.get(c.slug) ?? null });
+  });
+}
+
 export interface ListQuery { location?: string; category?: string; q?: string; page?: unknown; pageSize?: unknown }
-export interface ListResult { items: PublicListItem[]; page: number; pageSize: number; total: number; filters: { location: string | null; category: string | null; q: string }; indexable: boolean }
+export interface ListResult { items: PublicListItem[]; page: number; pageSize: number; total: number; filters: { location: string | null; category: string | null; q: string; /** B3.5: typed place text that matched no place */ locationUnknown?: boolean }; indexable: boolean }
+export interface SuggestResult { q: string; categories: Array<{ slug: string; name: string; kind: 'category' | 'subcategory'; parent: string | null }>; places: Array<{ slug: string; name: string; kind: string; path: string; label: string }>; businesses: Array<{ id: string; slug: string; name: string; category: string | null; city: string | null }> }
 
 /**
  * The public, read-only side of the directory. Never exposes an email, an owner name, an internal id, a vendor id or a staff field, and shows an UNCLAIMED business's private data
@@ -24,15 +36,18 @@ export interface ListResult { items: PublicListItem[]; page: number; pageSize: n
 @Injectable()
 export class DirectoryReadService {
   clock: () => Date = () => new Date();
-  private trees: { at: number; loc: LocationRow[]; cat: CategoryRow[] } | null = null;
+  private trees: { at: number; loc: LocationRow[]; cat: CategoryRow[]; terms: CategoryTerms[] } | null = null;
 
   constructor(private readonly repo: DirectoryRepository, @Inject(DirectorySettingsService) private readonly settings: Pick<DirectorySettingsService, 'get'>) {}
 
   invalidate(): void { this.trees = null; }
 
-  private async loadTrees(): Promise<{ loc: LocationRow[]; cat: CategoryRow[] }> {
+  private async loadTrees(): Promise<{ loc: LocationRow[]; cat: CategoryRow[]; terms: CategoryTerms[] }> {
     const now = this.clock().getTime();
-    if (!this.trees || now - this.trees.at >= TREE_TTL_MS) this.trees = { at: now, loc: await this.repo.listLocations(), cat: await this.repo.listCategories() };
+    if (!this.trees || now - this.trees.at >= TREE_TTL_MS) {
+      const [loc, cat, kw] = await Promise.all([this.repo.listLocations(), this.repo.listCategories(), this.repo.listCategoryKeywords()]);
+      this.trees = { at: now, loc, cat, terms: buildTerms(cat, kw) };
+    }
     return this.trees;
   }
 
@@ -61,13 +76,24 @@ export class DirectoryReadService {
     const s: DirectorySettings = await this.settings.get();
     const t = await this.loadTrees();
     const { page, pageSize, skip } = clampPage(q.page, q.pageSize, s.directoryPageSizeMax, s.directoryPageSizeDefault);
-    const loc = q.location ? resolveLocation(t.loc, String(q.location)) : null;
+    // B3.5: the place is a slug path as before, or typed text ("Adyar", "Adyar Chennai"), or a six digit postal code
+    const typed = q.location ? String(q.location).trim() : '';
+    const pincode = typed ? asPincode(typed) : null;
+    let loc = typed && !pincode ? resolveLocation(t.loc, typed) : null;
+    let locIds: string[] | null = loc ? descendantIds(t.loc, loc.id) : null;
+    let locSlug: string | null = loc ? loc.slug : null;
+    if (typed && !pincode && !loc) {
+      const hits = resolvePlaceText(t.loc, typed);
+      if (hits.length) { locIds = [...new Set(hits.flatMap((h) => descendantIds(t.loc, h.id)))]; locSlug = hits.length === 1 ? hits[0].slug : typed.slice(0, 100); loc = hits[0] as LocationRow; }
+    }
     const cat = q.category ? resolveCategory(t.cat, String(q.category)) : null;
     const norm = normaliseQuery(q.q);
-    const empty = (): ListResult => ({ items: [], page, pageSize, total: 0, filters: { location: q.location ? String(q.location).slice(0, 100) : null, category: q.category ? String(q.category).slice(0, 100) : null, q: norm.text }, indexable: false });
-    if ((q.location && !loc) || (q.category && !cat)) return empty();   // an unknown filter is an empty result, not an error and not "everything"
-    const scope = { ...(loc ? { locationIds: descendantIds(t.loc, loc.id) } : {}), ...(cat ? { categoryIds: descendantIds(t.cat, cat.id) } : {}) };
-    const { items, total } = await this.repo.search({ tokens: norm.tokens, text: norm.text, ...scope, skip, take: pageSize });
+    const placeUnknown = !!typed && !pincode && !loc;
+    const empty = (): ListResult => ({ items: [], page, pageSize, total: 0, filters: { location: typed ? typed.slice(0, 100) : null, category: q.category ? String(q.category).slice(0, 100) : null, q: norm.text, ...(placeUnknown ? { locationUnknown: true } : {}) }, indexable: false });
+    if (placeUnknown || (q.category && !cat)) return empty();   // an unknown filter is an empty result, not an error and not "everything"
+    const scope = { ...(locIds ? { locationIds: locIds } : {}), ...(pincode ? { pincode } : {}), ...(cat ? { categoryIds: descendantIds(t.cat, cat.id) } : {}) };
+    const tokenCategoryIds = norm.tokens.map((tk) => categoriesForToken(tk, t.terms).flatMap((id) => descendantIds(t.cat, id)));
+    const { items, total } = await this.repo.search({ tokens: norm.tokens, text: norm.text, tokenCategoryIds, ...scope, skip, take: pageSize });
     const organic: PublicBusinessView[] = [];
     const shownItems = items.map(shownAs);
     const sitesOf = await this.siteContexts(shownItems);
@@ -81,10 +107,41 @@ export class DirectoryReadService {
       const sponsoredSites = await this.siteContexts(placements.map((p) => p.business));
       for (const p of placements) if (!onPage.has(p.business.slug)) sponsored.push(sponsoredItem(publicBusinessView(p.business, await this.context(p.business, false, t, sponsoredSites.get(p.business.id))), p.placement));
       const out = mergeSponsored(organic.map((o) => ({ ...o, id: o.slug, sponsored: false as const })), sponsored.map((x) => ({ ...x, id: x.slug, sponsored: true as const })), s.directorySponsoredEvery);
-      merged = out.map((x) => { const { id: _id, ...rest } = x; return rest as PublicListItem; });
+      // the merge keys on the slug; the views themselves (which now carry the business id) are put back untouched
+      const original = new Map<string, PublicListItem>([...organic, ...sponsored].map((v) => [v.slug, v]));
+      merged = out.map((x) => original.get(x.id)!);
     }
-    const whole = loc || cat ? await this.repo.countPublic(scope) : total;
-    return { items: merged, page, pageSize, total, filters: { location: loc ? loc.slug : null, category: cat ? cat.slug : null, q: norm.text }, indexable: !norm.text && evaluateListingPageIndexing(whole, s.directoryThinPageMinBusinesses).indexable };
+    const whole = loc || cat || pincode ? await this.repo.countPublic(scope) : total;
+    return { items: merged, page, pageSize, total, filters: { location: pincode ?? locSlug, category: cat ? cat.slug : null, q: norm.text }, indexable: !norm.text && evaluateListingPageIndexing(whole, s.directoryThinPageMinBusinesses).indexable };
+  }
+
+  /**
+   * B3.5: suggestions while typing: categories (with sub categories and their keywords), places and business names, at most 8 of each. Categories and places come from the cached trees
+   * (no query); business names are one indexed prefix query. Public data only; the text is normalised first and never reaches SQL as anything but a parameter.
+   */
+  async suggest(qIn: unknown, typesIn: unknown, limitIn: unknown): Promise<SuggestResult> {
+    const norm = normaliseQuery(qIn);
+    const types = parseSuggestTypes(typesIn);
+    const n = Number(limitIn); const limit = Number.isFinite(n) && n >= 1 ? Math.min(Math.floor(n), SUGGEST_MAX) : SUGGEST_MAX;
+    const out: SuggestResult = { q: norm.text, categories: [], places: [], businesses: [] };
+    if (norm.text.length < 2) return out;
+    const t = await this.loadTrees();
+    if (types.includes('category')) {
+      const byId = new Map(t.cat.map((c) => [c.id, c]));
+      const ranked = t.cat.map((c) => { const terms = t.terms.find((x) => x.id === c.id); const r = nameRank(c.name, norm.text) ?? (terms && norm.tokens.every((tk) => terms.all.some((w) => w.startsWith(tk))) ? 2 : null); return r === null ? null : { c, r }; }).filter((x): x is { c: CategoryRow; r: number } => !!x);
+      ranked.sort((a, b) => a.r - b.r || a.c.name.localeCompare(b.c.name));
+      out.categories = ranked.slice(0, limit).map(({ c }) => ({ slug: c.slug, name: c.name, kind: c.parentId ? 'subcategory' as const : 'category' as const, parent: c.parentId ? byId.get(c.parentId)?.name ?? null : null }));
+    }
+    if (types.includes('place')) {
+      const hits = t.loc.map((l) => { const r = nameRank(l.name, norm.text); return r === null ? null : { l, r }; }).filter((x): x is { l: LocationRow; r: number } => !!x);
+      hits.sort((a, b) => a.r - b.r || locationPath(t.loc, a.l.id).length - locationPath(t.loc, b.l.id).length || a.l.name.localeCompare(b.l.name));
+      out.places = hits.slice(0, limit).map(({ l }) => { const path = locationPath(t.loc, l.id); return { slug: l.slug, name: l.name, kind: l.kind, path: path.map((p) => p.slug).join('/'), label: path.slice(-2).reverse().map((p) => p.name).join(', ') }; });
+    }
+    if (types.includes('business')) {
+      const rows = await this.repo.suggestBusinesses(norm.text, limit);
+      out.businesses = rows.map((r) => ({ id: r.id, slug: r.slug, name: r.name, category: r.categoryName, city: r.city }));
+    }
+    return out;
   }
 
   /** null = unknown or not public (draft, suspended): the same answer. `gone` = removed: the API answers 410. */

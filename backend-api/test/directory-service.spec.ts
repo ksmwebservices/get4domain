@@ -53,13 +53,15 @@ describe('public read: what is exposed', () => {
     expect(a.business).toMatchObject({ claimed: true, phone: PHONE, address: { line1: '12 Test Road', city: 'Chennai' }, hours: { mon: '9-5' }, geo: { lat: 13, lng: 80 }, services: [{ name: 'Tap repair', description: 'Quick' }], media: [{ url: 'https://x.invalid/a.jpg', altText: 'a' }] });
     expect(b.business).toMatchObject({ claimed: false, phone: null, address: { city: 'Chennai' }, hours: {}, geo: null, services: [], media: [] });
   });
-  it('NO view ever carries an id, a vendor id, an email, an owner name, a status or a source: the keys are a fixed list', async () => {
+  it('NO view ever carries a vendor id, an email, an owner name, a status or a source: the keys are a fixed list (the directory business id is the click-out id, B3.5)', async () => {
     const withVendor = await w.biz({ name: 'Linked Co', vendorId: 'vendor-secret-1' }); await w.repo.updateBusiness(withVendor.id, { emailMasked: 'o•••@example.com' });
     await w.biz({ name: 'Unclaimed Co', status: 'UNCLAIMED' });
-    const keys = ['address', 'badges', 'category', 'claimed', 'description', 'geo', 'hours', 'indexable', 'listingState', 'location', 'media', 'name', 'phone', 'services', 'siteState', 'siteUrl', 'slug', 'sponsored', 'updatedAt'];   // 5.7b adds siteUrl, siteState and badges
+    const keys = ['address', 'badges', 'category', 'claimed', 'description', 'geo', 'hours', 'id', 'indexable', 'listingState', 'location', 'media', 'name', 'phone', 'services', 'siteState', 'siteUrl', 'slug', 'sponsored', 'updatedAt'];   // 5.7b, B3.5 adds id adds siteUrl, siteState and badges
     const list = await w.read.list({}); for (const i of list.items) expect(Object.keys(i).sort()).toEqual(keys);
+    expect(list.items.find((i) => i.name === 'Linked Co')!.id).toBe(withVendor.id);   // the business id, never the vendor id
     const text = JSON.stringify([list, await w.read.detail('linked-co'), await w.read.sitemapData(1, 10), await w.read.locations(), await w.read.categories()]);
-    expect(text).not.toMatch(/vendor-secret|emailMasked|example\.com|vendorId|"id"|"status"|"source"|"ownerName"|"email"/);
+    expect(text).not.toMatch(/vendor-secret|emailMasked|example\.com|vendorId|"status"|"source"|"ownerName"|"email"/);
+    expect(JSON.stringify([await w.read.sitemapData(1, 10), await w.read.locations(), await w.read.categories()])).not.toMatch(/"id"/);
   });
   it('draft, removed and unknown businesses are not in the list; a suspended one IS listed (owner rule 6); detail is 404 (null) for unknown and draft and "gone" for removed', async () => {
     await w.biz({ name: 'Live Co' }); await w.biz({ name: 'Draft Co', status: 'DRAFT' }); await w.biz({ name: 'Susp Co', status: 'SUSPENDED' }); await w.biz({ name: 'Gone Co', status: 'REMOVED' });

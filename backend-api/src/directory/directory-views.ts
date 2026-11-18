@@ -43,6 +43,8 @@ export const resolveCategory = (rows: readonly CategoryRow[], slug: string): Cat
 export interface ViewContext { category: Pick<CategoryRow, 'slug' | 'name'> | null; location: Array<{ slug: string; name: string }>; services: ServiceRow[]; media: MediaRow[]; /** the business own site (slice 5.7b) */ site?: { siteUrl: string | null; siteState: 'SEEDED' | 'CLAIMED_FREE' | 'PRO'; badges: string[] } }
 
 export interface PublicBusinessView {
+  /** B3.5: the directory business id (not the vendor id), so a result can link through the click-out that counts visits */
+  id: string;
   slug: string; name: string; claimed: boolean; category: { slug: string; name: string } | null; location: { slug: string; name: string; path: Array<{ slug: string; name: string }> } | null;
   description: string; phone: string | null; address: { line1?: string; line2?: string; pin?: string; city?: string }; hours: Record<string, unknown>; geo: { lat: number; lng: number } | null;
   services: Array<{ name: string; description: string }>; media: Array<{ url: string; altText: string }>; indexable: boolean; updatedAt: string; sponsored?: false;
@@ -58,7 +60,7 @@ export function publicBusinessView(b: BusinessRow, c: ViewContext): PublicBusine
   const claimed = b.status === 'CLAIMED';
   const loc = c.location.length ? c.location[c.location.length - 1] : null;
   return {
-    slug: b.slug, name: b.name, claimed, category: c.category ? { slug: c.category.slug, name: c.category.name } : null,
+    id: b.id, slug: b.slug, name: b.name, claimed, category: c.category ? { slug: c.category.slug, name: c.category.name } : null,
     location: loc ? { slug: loc.slug, name: loc.name, path: c.location } : null, description: b.descriptionText,
     phone: claimed ? b.phoneE164 : null, address: claimed ? { ...b.address } : b.address.city ? { city: b.address.city } : {}, hours: claimed ? { ...b.hours } : {}, geo: claimed ? b.geo : null,
     services: claimed ? c.services.map((s) => ({ name: s.name, description: s.description })) : [], media: claimed ? c.media.map((m) => ({ url: m.url, altText: m.altText })) : [],

@@ -2,7 +2,7 @@ import { RemovalStatus } from '../../src/directory/core/removal';
 import { scoreMatch } from '../../src/directory/core/search';
 import {
   BusinessPatch, BusinessRow, CategoryRow, ChallengeRow, DirectoryRepository, GrantRow, LocationKind, LocationRow, MediaRow, NewBusiness, OtpStatus, OverrideRow, PlacementRow, RemovalRow,
-  SearchQuery, ServiceRow, StaffBusinessQuery,
+  KeywordRow, SearchQuery, ServiceRow, StaffBusinessQuery,
 } from '../../src/directory/directory.repository';
 import { Actor } from '../../src/plans/admin/audit.service';
 import { DirectoryAudit } from '../../src/directory/directory-audit';
@@ -68,16 +68,39 @@ export class MemoryDirectoryRepo extends DirectoryRepository {
   async replaceMedia(id: string, items: Array<{ url: string; altText: string; kind?: string }>) { this.media.set(id, items.map((m, i) => ({ id: this.id('med'), businessId: id, url: m.url, altText: m.altText, kind: m.kind ?? 'IMAGE', sortOrder: i }))); }
 
   private visible(b: BusinessRow): boolean { return b.status === 'CLAIMED' || b.status === 'UNCLAIMED' || b.status === 'SUSPENDED'; }
-  private inScope(b: BusinessRow, s: { categoryIds?: string[]; locationIds?: string[] }): boolean {
-    return (!s.categoryIds || s.categoryIds.includes(b.categoryId)) && (!s.locationIds || (b.locationId !== null && s.locationIds.includes(b.locationId)));
+  private inScope(b: BusinessRow, s: { categoryIds?: string[]; locationIds?: string[]; pincode?: string }): boolean {
+    return (!s.categoryIds || s.categoryIds.includes(b.categoryId)) && (!s.locationIds || (b.locationId !== null && s.locationIds.includes(b.locationId))) && (!s.pincode || (b as { pincode?: string | null }).pincode === s.pincode);
+  }
+  /** B3.5: staff-reviewed keywords the test sets directly */
+  keywords: KeywordRow[] = [];
+  async listCategoryKeywords() { return this.keywords.map((k) => ({ ...k })); }
+  async suggestBusinesses(prefixText: string, limit: number) {
+    const p = prefixText.toLowerCase();
+    return [...this.businesses.values()].filter((b) => this.visible(b) && b.name.toLowerCase().startsWith(p)).sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)).slice(0, limit)
+      .map((b) => ({ id: b.id, slug: b.slug, name: b.name, categoryName: this.categories.get(b.categoryId)?.name ?? null, city: b.address.city ?? null }));
   }
   async search(q: SearchQuery) {
     const rows = [...this.businesses.values()].filter((b) => this.visible(b) && this.inScope(b, q));
-    const scored = rows.map((b) => ({ b, s: q.tokens.length ? scoreMatch(q.tokens, { name: b.name, description: b.descriptionText, category: this.categories.get(b.categoryId)?.name ?? '' }) : 1 })).filter((x) => x.s > 0);
+    // B3.5: every typed word must be found in the name, the description, a category it answers to, or a service name
+    const scoreOf = (b: BusinessRow): number => {
+      if (!q.tokens.length) return 1;
+      let score = 0;
+      for (let i = 0; i < q.tokens.length; i++) {
+        const t = q.tokens[i];
+        const base = scoreMatch([t], { name: b.name, description: b.descriptionText, category: this.categories.get(b.categoryId)?.name ?? '' });
+        const viaCat = (q.tokenCategoryIds?.[i] ?? []).includes(b.categoryId) ? 2 : 0;
+        const viaService = (this.services.get(b.id) ?? []).some((s) => s.name.toLowerCase().split(/\s+/).some((w) => w.startsWith(t))) ? 1 : 0;
+        const s = Math.max(base, viaCat, viaService);
+        if (s === 0) return 0;
+        score += s;
+      }
+      return score;
+    };
+    const scored = rows.map((b) => ({ b, s: scoreOf(b) })).filter((x) => x.s > 0);
     scored.sort((a, b) => b.s - a.s || a.b.name.localeCompare(b.b.name) || a.b.id.localeCompare(b.b.id));
     return { items: scored.slice(q.skip, q.skip + q.take).map((x) => this.cp(x.b)!), total: scored.length };
   }
-  async countPublic(scope: { categoryIds?: string[]; locationIds?: string[] }) { return [...this.businesses.values()].filter((b) => this.visible(b) && this.inScope(b, scope)).length; }
+  async countPublic(scope: { categoryIds?: string[]; locationIds?: string[]; pincode?: string }) { return [...this.businesses.values()].filter((b) => this.visible(b) && this.inScope(b, scope)).length; }
   async sitemapPage(skip: number, take: number) {
     const all = [...this.businesses.values()].filter((b) => b.status !== 'SUSPENDED' && this.visible(b) && b.indexable).sort((a, b) => a.slug.localeCompare(b.slug));
     return { items: all.slice(skip, skip + take).map((b) => ({ slug: b.slug, updatedAt: b.updatedAt })), total: all.length };

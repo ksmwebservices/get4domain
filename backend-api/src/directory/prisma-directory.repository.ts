@@ -2,11 +2,11 @@ import { randomUUID } from 'crypto';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { RemovalStatus } from './core/removal';
-import { toPrefixTsQuery } from './core/search';
+import { likePrefix, toPrefixTsQuery } from './core/search';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   BusinessPatch, BusinessRow, CategoryRow, ChallengeRow, DirectoryRepository, GrantRow, LocationKind, LocationRow, MediaRow, NewBusiness, OtpStatus, OverrideRow, PlacementRow, RemovalRow,
-  SearchQuery, ServiceRow, StaffBusinessQuery,
+  KeywordRow, SearchQuery, ServiceRow, StaffBusinessQuery, SuggestedBusiness,
 } from './directory.repository';
 
 type Biz = Prisma.V3DirectoryBusinessGetPayload<Record<string, never>>;
@@ -71,8 +71,8 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     await this.prisma.$transaction([this.prisma.v3DirectoryBusinessMedia.deleteMany({ where: { businessId } }), this.prisma.v3DirectoryBusinessMedia.createMany({ data: items.map((m, i) => ({ businessId, url: m.url, altText: m.altText, kind: m.kind ?? 'IMAGE', sortOrder: i })) })]);
   }
 
-  private scopeWhere(s: { categoryIds?: string[]; locationIds?: string[] }): Prisma.V3DirectoryBusinessWhereInput {
-    return { status: { in: [...VISIBLE] }, ...(s.categoryIds ? { categoryId: { in: s.categoryIds } } : {}), ...(s.locationIds ? { locationId: { in: s.locationIds } } : {}) };
+  private scopeWhere(s: { categoryIds?: string[]; locationIds?: string[]; pincode?: string }): Prisma.V3DirectoryBusinessWhereInput {
+    return { status: { in: [...VISIBLE] }, ...(s.categoryIds ? { categoryId: { in: s.categoryIds } } : {}), ...(s.locationIds ? { locationId: { in: s.locationIds } } : {}), ...(s.pincode ? { pincode: s.pincode } : {}) };
   }
 
   /** pg_trgm present? Checked once a minute. When it is not, search uses full text only (see the migration header). */
@@ -94,9 +94,18 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     const conds: Prisma.Sql[] = [Prisma.sql`"status" IN ('CLAIMED', 'UNCLAIMED', 'SUSPENDED')`];
     if (q.categoryIds) conds.push(Prisma.sql`"categoryId" IN (${Prisma.join(q.categoryIds)})`);
     if (q.locationIds) conds.push(Prisma.sql`"locationId" IN (${Prisma.join(q.locationIds)})`);
-    const match = useTrgm
-      ? Prisma.sql`("searchVector" @@ to_tsquery('simple', ${tsq}) OR similarity("name", ${q.text}) > 0.3)`
-      : Prisma.sql`"searchVector" @@ to_tsquery('simple', ${tsq})`;
+    if (q.pincode) conds.push(Prisma.sql`"pincode" = ${q.pincode}`);
+    // B3.5: every typed word must be found somewhere: in the name or description (the vector), in a category it answers to, or in one of the business's services. Words are ANDed.
+    const perWord = q.tokens.map((t, i) => {
+      const w = t.replace(/[^p{L}p{N}]/gu, '');
+      const ids = (q.tokenCategoryIds?.[i] ?? []).slice(0, 2000);
+      const parts: Prisma.Sql[] = [Prisma.sql`"searchVector" @@ to_tsquery('simple', ${`${w}:*`})`];
+      if (ids.length) parts.push(Prisma.sql`"categoryId" IN (${Prisma.join(ids)})`);
+      parts.push(Prisma.sql`EXISTS (SELECT 1 FROM "g4d_directory_business_services" s WHERE s."businessId" = "g4d_directory_businesses"."id" AND to_tsvector('simple', s."name") @@ to_tsquery('simple', ${`${w}:*`}))`);
+      return Prisma.sql`(${Prisma.join(parts, ' OR ')})`;
+    });
+    const wordsMatch = Prisma.join(perWord, ' AND ');
+    const match = useTrgm ? Prisma.sql`((${wordsMatch}) OR similarity("name", ${q.text}) > 0.3)` : Prisma.sql`(${wordsMatch})`;
     const rank = useTrgm ? Prisma.sql`(ts_rank("searchVector", to_tsquery('simple', ${tsq})) * 2 + similarity("name", ${q.text}))` : Prisma.sql`ts_rank("searchVector", to_tsquery('simple', ${tsq}))`;
     const where = Prisma.join([...conds, match], ' AND ');
     const [ids, count] = await Promise.all([
@@ -108,7 +117,23 @@ export class PrismaDirectoryRepository extends DirectoryRepository {
     return { items: ids.map((i) => byId.get(i.id)).filter((r): r is Biz => !!r).map(toBusiness), total: Number(count[0]?.n ?? 0) };
   }
 
-  countPublic(scope: { categoryIds?: string[]; locationIds?: string[] }) { return this.prisma.v3DirectoryBusiness.count({ where: this.scopeWhere(scope) }); }
+  countPublic(scope: { categoryIds?: string[]; locationIds?: string[]; pincode?: string }) { return this.prisma.v3DirectoryBusiness.count({ where: this.scopeWhere(scope) }); }
+
+  async listCategoryKeywords(): Promise<KeywordRow[]> {
+    const rows = await this.prisma.v3SeoCategoryKeyword.findMany({ select: { categorySlug: true, singular: true, plural: true, synonyms: true, specialisations: true } });
+    const strs = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(0, 60) : []);
+    return rows.map((r) => ({ categorySlug: r.categorySlug, singular: r.singular, plural: r.plural, synonyms: strs(r.synonyms), specialisations: strs(r.specialisations) }));
+  }
+
+  async suggestBusinesses(prefixText: string, limit: number): Promise<SuggestedBusiness[]> {
+    const like = likePrefix(prefixText);
+    const rows = await this.prisma.$queryRaw<Array<{ id: string; slug: string; name: string; categoryName: string | null; city: string | null }>>`
+      SELECT b."id", b."slug", b."name", c."name" AS "categoryName", b."addressJson"->>'city' AS "city"
+      FROM "g4d_directory_businesses" b JOIN "g4d_directory_categories" c ON c."id" = b."categoryId"
+      WHERE b."status" IN ('CLAIMED', 'UNCLAIMED', 'SUSPENDED') AND b."name" ILIKE ${like}
+      ORDER BY b."name" ASC, b."id" ASC LIMIT ${Math.max(1, Math.min(limit, 20))}`;
+    return rows;
+  }
 
   async sitemapPage(skip: number, take: number) {
     const where: Prisma.V3DirectoryBusinessWhereInput = { status: { in: ['CLAIMED', 'UNCLAIMED'] }, indexable: true };   // a suspended listing stays listed but is never put in the sitemap

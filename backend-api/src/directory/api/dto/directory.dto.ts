@@ -25,6 +25,11 @@ export class PublicListDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) pageSize?: number;
 }
+export class SuggestDto {
+  @IsOptional() @IsString() @MaxLength(80) q?: string;
+  @IsOptional() @IsString() @MaxLength(60) type?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) limit?: number;
+}
 export class SitemapDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) pageSize?: number;

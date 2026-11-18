@@ -79,7 +79,7 @@ describe('directory API', () => {
       const gone = await get('/v3/directory/businesses/gone-co'); expect(gone.status).toBe(410); expect(gone.body.code).toBe('DIRECTORY_GONE');
       const unknown = await get('/v3/directory/businesses/nobody'); const susp = await get('/v3/directory/businesses/susp-co');
       expect(unknown.status).toBe(404); expect(susp.status).toBe(200); expect(susp.body.data).toMatchObject({ name: 'Susp Co' });   // owner rule 6: a suspended listing stays listed
-      expect(JSON.stringify([live.body, un.body])).not.toMatch(/"vendorId"|"id"|"email"|"status"|"source"|\bva\b/);
+      expect(JSON.stringify([live.body, un.body])).not.toMatch(/"vendorId"|"email"|"status"|"source"|\bva\b/);   // B3.5: the directory business id is returned ("id"); the vendor id never is
     });
     it('sitemap data: indexable, public businesses only', async () => {
       await w.biz({ name: 'Index Co' }); await w.biz({ name: 'Unclaimed Co', status: 'UNCLAIMED' });

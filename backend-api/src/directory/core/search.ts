@@ -50,3 +50,61 @@ export function mergeSponsored<O extends { id: string; sponsored: false }, S ext
   if (organic.length === 0 && sponsored.length) out.push(sponsored[0]);
   return out;
 }
+
+// ── B3.5: what a text search matches, typed places, suggestions ────────────────────────────────────────────────────────────────────
+
+const words = (s: string): string[] => normaliseQuery(s).tokens;
+
+/** Every word a category answers to: its own name, its parents' names (so a family word finds its categories) and the staff-reviewed keywords (singular, plural, synonyms, specialisations). */
+export interface CategoryTermsInput { id: string; name: string; slug: string; ancestors: readonly string[]; keywords?: { singular?: string; plural?: string; synonyms?: readonly string[]; specialisations?: readonly string[] } | null }
+export interface CategoryTerms { id: string; own: string[]; all: string[] }
+export function categoryTerms(c: CategoryTermsInput): CategoryTerms {
+  const own = [...new Set([...words(c.name), ...words(c.slug.replace(/-/g, ' '))])];
+  const kw = c.keywords ? [c.keywords.singular ?? '', c.keywords.plural ?? '', ...(c.keywords.synonyms ?? []), ...(c.keywords.specialisations ?? [])].flatMap((x) => words(String(x))) : [];
+  const parents = c.ancestors.flatMap((a) => words(a));
+  return { id: c.id, own, all: [...new Set([...own, ...kw, ...parents])] };
+}
+/** A word matches a category when it is the start of one of its words (two letters at least, so one letter never matches everything). */
+export const categoriesForToken = (token: string, cats: readonly CategoryTerms[]): string[] =>
+  token.length < 2 ? [] : cats.filter((c) => c.all.some((w) => w.startsWith(token))).map((c) => c.id);
+
+/** Typed place text: every typed word must start one of the words of the place and its parents, and the place's own name must carry at least one typed word. An exact name wins alone. Capped. */
+export interface PlaceRowLite { id: string; parentId: string | null; name: string; slug: string }
+export function resolvePlaceText(rows: readonly PlaceRowLite[], input: unknown, cap = 20): PlaceRowLite[] {
+  const typed = words(String(input ?? '').replace(/[,/]+/g, ' '));
+  if (!typed.length) return [];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const chain = (r: PlaceRowLite): PlaceRowLite[] => { const out: PlaceRowLite[] = []; let cur: PlaceRowLite | undefined = r; let g = 0; while (cur && g++ < 10) { out.push(cur); cur = cur.parentId ? byId.get(cur.parentId) : undefined; } return out; };
+  const full = typed.join(' ');
+  const exact = rows.filter((r) => words(r.name).join(' ') === full || r.slug === full.replace(/ /g, '-'));
+  if (exact.length) return exact.slice(0, cap);
+  const hits = rows.filter((r) => {
+    const pathWords = chain(r).flatMap((p) => words(p.name));
+    const own = words(r.name);
+    return typed.every((t) => pathWords.some((w) => w.startsWith(t))) && typed.some((t) => own.some((w) => w.startsWith(t)));
+  });
+  return hits.slice(0, cap);
+}
+
+/** A six digit postal code typed as the place. */
+export const asPincode = (input: unknown): string | null => { const t = String(input ?? '').trim(); return /^[1-9][0-9]{5}$/.test(t) ? t : null; };
+
+/** A safe prefix for a LIKE query: letters, digits and spaces only, so no wildcard can come from the visitor. */
+export const likePrefix = (text: string): string => `${text.replace(/[^\p{L}\p{N} ]/gu, '')}%`;
+
+export const SUGGEST_MAX = 8;
+export const SUGGEST_TYPES = ['category', 'place', 'business'] as const;
+export type SuggestType = (typeof SUGGEST_TYPES)[number];
+export function parseSuggestTypes(input: unknown): SuggestType[] {
+  const asked = String(input ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const ok = SUGGEST_TYPES.filter((t) => asked.includes(t));
+  return ok.length ? ok : [...SUGGEST_TYPES];
+}
+/** Rank a name against the typed text: whole-name start, then a word start, then a word anywhere; lower is better, null = no match. */
+export function nameRank(name: string, text: string): number | null {
+  const n = words(name).join(' '); if (!text) return null;
+  if (n.startsWith(text)) return 0;
+  const tokens = text.split(' ');
+  if (tokens.every((t) => n.split(' ').some((w) => w.startsWith(t)))) return 1;
+  return null;
+}

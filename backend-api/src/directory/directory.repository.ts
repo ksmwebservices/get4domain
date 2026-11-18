@@ -28,7 +28,15 @@ export interface GrantRow { id: string; vendorId: string; tokenHash: string; sta
 
 export type NewBusiness = Omit<BusinessRow, 'id' | 'createdAt' | 'updatedAt' | 'claimedAt' | 'removedAt'> & { claimedAt?: Date | null };
 export type BusinessPatch = Partial<Omit<BusinessRow, 'id' | 'createdAt' | 'updatedAt'>>;
-export interface SearchQuery { tokens: string[]; text: string; categoryIds?: string[]; locationIds?: string[]; skip: number; take: number }
+export interface SearchQuery {
+  tokens: string[]; text: string; categoryIds?: string[]; locationIds?: string[]; skip: number; take: number;
+  /** B3.5: for each typed word (same order as tokens), the categories whose name, parents or keywords start with it. A word matches a business by name or description, by one of these categories, or by one of its services. */
+  tokenCategoryIds?: string[][];
+  /** B3.5: a typed six digit postal code */
+  pincode?: string;
+}
+export interface KeywordRow { categorySlug: string; singular: string; plural: string; synonyms: string[]; specialisations: string[] }
+export interface SuggestedBusiness { id: string; slug: string; name: string; categoryName: string | null; city: string | null }
 export interface StaffBusinessQuery { status?: BusinessStatus; categoryId?: string; locationId?: string; q?: string; skip: number; take: number }
 
 /** The one port the directory services use. A Prisma implementation and an in-memory twin (tests) implement it. */
@@ -56,7 +64,11 @@ export abstract class DirectoryRepository {
   abstract replaceMedia(businessId: string, items: Array<{ url: string; altText: string; kind?: string }>): Promise<void>;
   /** public search: only CLAIMED and UNCLAIMED businesses; organic order only (relevance, then name) */
   abstract search(q: SearchQuery): Promise<{ items: BusinessRow[]; total: number }>;
-  abstract countPublic(scope: { categoryIds?: string[]; locationIds?: string[] }): Promise<number>;
+  abstract countPublic(scope: { categoryIds?: string[]; locationIds?: string[]; pincode?: string }): Promise<number>;
+  /** B3.5: staff-reviewed keywords per category (read only here) */
+  abstract listCategoryKeywords(): Promise<KeywordRow[]>;
+  /** B3.5: public businesses whose name starts with the text, at most `limit` */
+  abstract suggestBusinesses(prefixText: string, limit: number): Promise<SuggestedBusiness[]>;
   abstract sitemapPage(skip: number, take: number): Promise<{ items: Array<{ slug: string; updatedAt: Date }>; total: number }>;
   abstract listForStaff(q: StaffBusinessQuery): Promise<{ items: BusinessRow[]; total: number }>;
 

@@ -10,7 +10,7 @@ import { DirectoryVisitService } from '../directory-visit.service';
 import { DirectoryRemovalService } from '../directory-removal.service';
 import { directoryError, REMOVAL_ACCEPTED_MESSAGE } from '../directory.errors';
 import { DirectorySettingsService } from '../settings/directory-settings.service';
-import { PublicListDto, RemovalRequestDto, SitemapDto, VisitDto } from './dto/directory.dto';
+import { PublicListDto, RemovalRequestDto, SitemapDto, SuggestDto, VisitDto } from './dto/directory.dto';
 
 /**
  * The public directory: read only, rate limited, cacheable with an ETag, and it never exposes an email, an owner name, an internal id, a vendor id, a staff field or an unclaimed
@@ -41,6 +41,10 @@ export class DirectoryPublicController {
   @Public() @Throttle(RATE.directoryRead) @Get('businesses')
   @ApiOperation({ summary: 'Search and list businesses by place, category and text. Page size is capped. Sponsored items are labelled and never change the organic order.' })
   async list(@Query() q: PublicListDto, @Res({ passthrough: true }) res: Response, @Headers('if-none-match') inm?: string) { return this.cached(await this.read.list(q), res, inm); }
+
+  @Public() @Throttle(RATE.directoryRead) @Get('suggest')
+  @ApiOperation({ summary: 'Suggestions while typing: businesses, categories (with sub categories) and places, at most 8 of each. type is a comma list of business, category, place. Public data only.' })
+  async suggest(@Query() q: SuggestDto, @Res({ passthrough: true }) res: Response, @Headers('if-none-match') inm?: string) { return this.cached(await this.read.suggest(q.q, q.type, q.limit), res, inm); }
 
   @Public() @Throttle(RATE.directoryRead) @Get('businesses/:slug')
   @ApiOperation({ summary: 'One business. 404 for an unknown or non-public one; 410 for one that has been removed.' })
