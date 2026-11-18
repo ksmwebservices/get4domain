@@ -42,6 +42,10 @@ model Vendor {
   registeredByStaffId    String?
   /// D1 duplicate check: the last 10 digits of the phone, whatever way it was typed (nullable: older rows are filled by the migration, the application falls back to the raw phone while it is null)
   phoneKey               String?
+  /// B2.1: set to FAILED when the trial site could not be made at signup (the vendor app then offers "Create my site"); cleared when a site exists. Holds a code, never an error text.
+  siteProvisionStatus    String?
+  siteProvisionCode      String?
+  siteProvisionFailedAt  DateTime?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 

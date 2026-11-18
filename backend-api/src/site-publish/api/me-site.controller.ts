@@ -7,6 +7,7 @@ import { VendorOwnerGuard } from '../../common/guards/vendor-owner.guard';
 import { Tenant, UseTenant } from '../../common/tenant/tenant.guard';
 import { TenantContext } from '../../common/tenant/tenant.types';
 import { Actor } from '../../plans/admin/audit.service';
+import { RegistrationHook } from '../../plans/registration/registration.hook';
 import { PublishService } from '../publish/publish.service';
 import { SiteBuildService } from '../publish/site-build.service';
 import { SitePreviewService } from '../publish/site-preview.service';
@@ -25,13 +26,18 @@ import { previewHeaders, settingsView } from './site-http';
 @RequireModule('website')
 @Controller('v3/me/site')
 export class MeSiteController {
-  constructor(private readonly settings: SiteSettingsService, private readonly build: SiteBuildService, private readonly publisher: PublishService, private readonly preview: SitePreviewService) {}
+  constructor(private readonly settings: SiteSettingsService, private readonly build: SiteBuildService, private readonly publisher: PublishService, private readonly preview: SitePreviewService, private readonly registration: RegistrationHook) {}
 
   private actor(user: AuthenticatedUser, req: Request): Actor { return { type: 'VENDOR', id: user?.sub ?? null, ip: req?.ip ?? null }; }
 
   @Get()
   @ApiOperation({ summary: 'My site: settings, the current and newest publication, what is missing for search engines, and the themes I may use' })
   status(@Tenant() t: TenantContext) { return this.settings.status(t.vendorId); }
+
+  @UseGuards(VendorOwnerGuard)
+  @Post('create') @HttpCode(200)
+  @ApiOperation({ summary: 'Create my site (owner only): the same steps as signup, for a vendor whose trial site failed or was never made. Safe to repeat: what exists is kept.' })
+  create(@Tenant() t: TenantContext) { return this.registration.createMySite(t.vendorId); }
 
   @UseGuards(VendorOwnerGuard)
   @Put('theme') @HttpCode(200)

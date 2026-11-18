@@ -83,17 +83,19 @@ describe('RegistrationHook (behind the registrationProvisioning setting)', () =>
     expect(prisma.v3PlanSubscription.create.mock.calls[0][0].data).toMatchObject({ planId: 'F_handyman', source: 'REGISTRATION' });
   });
 
-  it('no track, or a track that is not one of the three: skipped quietly (the vendor stays as before; staff can assign a plan)', async () => {
+  it('B2.1: no track, or a track that is not one of the three: the track is defaulted (category minimum tier, else the lowest), not skipped', async () => {
     const { prisma, hook } = setup();
+    prisma.v3PackCategory = { findUnique: jest.fn().mockResolvedValue(null) };
     await hook.afterRegister('v1', undefined);
     await hook.afterRegister('v1', 'banking');
-    expect(prisma.v3PlanSubscription.create).not.toHaveBeenCalled();
+    expect(prisma.v3PlanSubscription.create).toHaveBeenCalledTimes(2);
+    expect(prisma.v3PlanSubscription.create.mock.calls[0][0].data).toMatchObject({ planId: 'F_handyman' });
   });
 
   it('a failure never escapes: the error is logged (without the vendor\'s details) and registration continues', async () => {
     const { prisma, hook } = setup();
     prisma.$transaction.mockRejectedValue(new Error('connection to db-host-secret.example refused password=hunter2'));
-    await expect(hook.afterRegister('v1', 'handyman')).resolves.toBeUndefined();
+    await expect(hook.afterRegister('v1', 'handyman')).resolves.toMatchObject({ status: 'FAILED' });
     expect(warn).toHaveBeenCalled();
     expect(String(warn.mock.calls[0][0])).not.toMatch(/hunter2|db-host-secret/);
   });

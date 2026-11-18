@@ -163,3 +163,15 @@ describe('tenant separation of the store', () => {
     expect(await w.snapshots.liveDoc('v-other')).toBeNull();
   });
 });
+
+describe('B2.1 (d) a vendor with no stored theme gets the category default on the first call', () => {
+  it('the first editor call saves the category default instead of throwing NO_THEME, and keeps a stored choice', async () => {
+    const x = websiteWorld({ level: 'PRO' });
+    expect((await x.repo.getSettings(V))?.themeId ?? null).toBeNull();
+    const e = await x.web.editor(V);
+    expect(e.themeId).toBe('free-service-pro');
+    expect((await x.repo.getSettings(V))?.themeId).toBe('free-service-pro');
+    await x.repo.upsertSettings(V, { themeId: 'free-service-pro' });
+    expect((await x.web.editor(V)).themeId).toBe('free-service-pro');
+  });
+});

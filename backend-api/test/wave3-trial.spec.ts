@@ -210,18 +210,17 @@ describe('the Free trial site after registration', () => {
   });
   it('does nothing while the switch (registrationProvisioning) is off, or with no track, or with no details', async () => {
     for (const setting of [false, null, 'yes']) { const m = make({ setting }); await m.hook.afterRegister('v1', 'professional', info); expect(m.calls).toEqual([]); }
-    const m = make(); await m.hook.afterRegister('v1', undefined, info); await m.hook.afterRegister('v1', 'nonsense', info); expect(m.calls).toEqual([]);
-    await m.hook.afterRegister('v1', 'handyman'); expect(m.calls).toEqual(['plan']);   // an older caller with no details: the plan only
+    const m = make(); await m.hook.afterRegister('v1', 'handyman'); expect(m.calls).toEqual(['plan']);   // an older caller with no details: the plan only
   });
   it('a failing site never fails the signup and never undoes the plan; a failing plan never blocks it either', async () => {
     const a = make({ site: () => { throw new Error('connection string postgres://secret'); } });
-    await expect(a.hook.afterRegister('v1', 'professional', info)).resolves.toBeUndefined(); expect(a.calls).toEqual(['plan', 'site:clinic:CareWell Clinic']);
+    await expect(a.hook.afterRegister('v1', 'professional', info)).resolves.toMatchObject({ status: 'FAILED' }); expect(a.calls).toEqual(['plan', 'site:clinic:CareWell Clinic']);
     const b = make({ plan: () => { throw new Error('db down'); } });
-    await expect(b.hook.afterRegister('v1', 'professional', info)).resolves.toBeUndefined(); expect(b.calls).toEqual(['plan']);
+    await expect(b.hook.afterRegister('v1', 'professional', info)).resolves.toMatchObject({ status: 'FAILED' }); expect(b.calls).toEqual(['plan']);
   });
   it('without the trial module there is no site and no error (an older build registers as before)', async () => {
     const hook = new RegistrationHook({ v3PlanSetting: { findUnique: async () => ({ valueJson: true }) } } as never, { provisionFreeSubscription: async () => undefined } as never);
-    await expect(hook.afterRegister('v1', 'professional', info)).resolves.toBeUndefined();
+    await expect(hook.afterRegister('v1', 'professional', info)).resolves.toMatchObject({ status: 'NOT_SWITCHED_ON' });
   });
 });
 

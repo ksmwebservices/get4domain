@@ -75,6 +75,21 @@ export class SiteSettingsService {
     };
   }
 
+  /**
+   * B2.1: the vendor's stored theme, or, when none is stored yet, the default theme of the vendor's category, saved now (so the first call of the website manager never stops at "choose a theme").
+   * Null only when the business has no category the library has a design for. Never replaces a stored choice.
+   */
+  async ensureTheme(vendorId: string): Promise<string | null> {
+    const { categoryId } = await this.context(vendorId);
+    const stored = (await this.repo.getSettings(vendorId))?.themeId ?? null;
+    if (stored) return stored;
+    const def = categoryId ? this.themes.defaultThemeFor(categoryId) : null;
+    if (!categoryId || !def) return null;
+    const variant = this.themes.kitApi.variantFor(categoryId);
+    await this.repo.upsertSettings(vendorId, { themeId: def, variant: typeof variant === 'string' ? variant : variant?.id ?? null });
+    return def;
+  }
+
   /** The vendor or staff pick a theme. Strict: a Free plan, a theme of another track and an unknown theme are refused with their codes. */
   async setTheme(vendorId: string, themeId: string, actor: Actor): Promise<SiteSettingsRow> {
     const { categoryId, track, ent } = await this.context(vendorId);

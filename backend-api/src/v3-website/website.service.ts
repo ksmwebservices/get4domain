@@ -87,9 +87,11 @@ export class WebsiteService {
   private async context(vendorId: string): Promise<Ctx> {
     const status = await this.settings.status(vendorId);
     const ent = await this.entitlements.resolve(vendorId);
-    if (!status.themeId) throw fieldProblem('NO_THEME', 'This site has no theme yet; choose a category first.');
-    const loaded = this.themes.getTheme(status.themeId);
-    return { ent, pro: isPro(ent), testimonialMax: (await this.wsettings?.get())?.testimonialMaxCount ?? null, themeId: status.themeId, map: deriveEditorMap(loaded.theme.templates), fonts: loaded.manifest.fonts ?? [] };
+    // B2.1: a vendor with no stored theme gets the category default on the first call instead of an error; only a business with no category at all still has none.
+    const themeId = status.settings.themeId ? status.themeId : (await this.settings.ensureTheme(vendorId)) ?? status.themeId;
+    if (!themeId) throw fieldProblem('NO_THEME', 'This business has no category yet; choose a business category first.');
+    const loaded = this.themes.getTheme(themeId);
+    return { ent, pro: isPro(ent), testimonialMax: (await this.wsettings?.get())?.testimonialMaxCount ?? null, themeId, map: deriveEditorMap(loaded.theme.templates), fonts: loaded.manifest.fonts ?? [] };
   }
 
   private async liveDoc(vendorId: string): Promise<ManagedDoc> { return (await this.content.load(vendorId))?.managed ?? emptyDoc(); }
