@@ -64,3 +64,19 @@ Owner column: **B** = backend work, **L** = live app (existing files), **O** = o
 - **G31** (public packs list): still open, the contract has no such route. Exact shape needed: `GET /v3/public/packs` answering `[{ key, name, gives: string[], addOns?: [{ key, name, priceStatus }] }]`. The site keeps `lib/v3-public/packs.ts`; the category pages use the generated catalogue (assumption 1 in `DISPATCH_STATUS_G3.md`).
 - **termsAcceptanceRequired**: not a public-site job. Register does not carry it (Wave 4 A3-1: call `GET /auth/me`); the vendor app must show the terms screen and call `POST /v3/me/terms/accept`. Kept as an open vendor-app gap.
 - **G37** (vendor theme rendering): still blocked, the contract has no theme data on the by-host answer; unchanged.
+
+## Dispatch J1 (public portal): search and portal gaps
+
+The portal search is built on what the backend has (`GET /v3/directory/businesses?q=&location=&category=`, `GET /v3/directory/locations`, `GET /v3/directory/categories`). Nothing below is imitated in the front end.
+
+| # | Owner | Gap | What the front end does meanwhile | Assumed shape or fix |
+|---|---|---|---|---|
+| G49 | B | The search text matches only the business name and description (`searchVector`). Category name, sub category, services and keywords are not in it, so "dentist" finds a business only if its name or description says so. | Typed words that are exactly a category name (singular or plural) become the `category` filter; every other word is the text query. | Add category and sub category names, service names and the category keywords (`g4d_seo_category_keywords`) to the vector (or a second ranked vector) and keep prefix matching. |
+| G50 | B | No suggestions route. | The browser fetches the two trees once from `/directory-api/suggest` (cached 5 minutes) and filters them as the visitor types, for categories and places. Business-name suggestions are not offered. | `GET /v3/directory/suggest?q=&type=category,place,business` returning at most 8 names with slugs. |
+| G51 | B | `location` is an exact slug path, not free text. "Adyar" or "near the airport" cannot be sent. | Typed place text is matched against the place tree (name, slug, "Locality, City"); a place that is not in the tree is said to be unknown and shows no results. | Accept free place text (or a pincode) and resolve it at the backend; add latitude and longitude for near me. |
+| G52 | B | No near-me and no open-now filter, no synonyms ("pipe repair" to Plumber). | Not offered. | As in the main-site design D1 (`/businesses/search`): `near`, `openNow`, synonym table per category. |
+| G53 | B | The list route does not return the business id, so a "Visit site" link on a search result cannot go through the `/go/{id}` click-out that counts visits. | Search results link straight to the business site (`siteUrl`, its subdomain). Pages built from the page model keep the click-out. | Add `id` (or the click-out address) to each item of the list answer. |
+| G54 | B | No domain availability route. The registrar is off. | The custom-domain box says "Connect a domain you own" and that registering new domain names opens soon. Subdomain availability uses the real route and is the only availability shown. | `GET /v3/public/domain-availability?name=` answering only when the registrar is switched on. |
+| G55 | B | `search` is not in the backend `RESERVED_SEGMENTS` (same kind of gap as G7, G39 and G45). A city or category with that slug would not be reachable. | `/search` is a fixed route of the directory host; the main host sends it there (308). | Add `search` to `RESERVED_SEGMENTS`. |
+| G56 | B | No popularity data. | "Popular searches" (eight words) and the order of the business areas are an editorial list in the code, not measured. | A public route with search or visit counts per category, then order by it. |
+

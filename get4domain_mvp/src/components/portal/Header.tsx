@@ -28,6 +28,8 @@ function A({ href, className, children, onClick }: { href: string; className?: s
  */
 export default function Header({ links, packs, mainPrefix, active, navLabel }: { links: HeaderLinks; packs: NavPack[]; mainPrefix: string; active: 'site' | 'directory'; navLabel: string }) {
   const [menu, setMenu] = useState(false);
+  // opened by hover it closes when the pointer leaves; opened by click or Enter it stays until Escape, a click outside, or another click
+  const [pinned, setPinned] = useState(false);
   const [pack, setPack] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -35,12 +37,12 @@ export default function Header({ links, packs, mainPrefix, active, navLabel }: {
   const drawerButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
 
-  const closeMenu = useCallback(() => setMenu(false), []);
+  const closeMenu = useCallback(() => { setMenu(false); setPinned(false); }, []);
 
   useEffect(() => {
     if (!menu) return;
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') { setMenu(false); menuButton.current?.focus(); } };
-    const onDown = (e: MouseEvent): void => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(false); };
+    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') { setMenu(false); setPinned(false); menuButton.current?.focus(); } };
+    const onDown = (e: MouseEvent): void => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) { setMenu(false); setPinned(false); } };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
@@ -68,13 +70,13 @@ export default function Header({ links, packs, mainPrefix, active, navLabel }: {
         </A>
 
         <nav aria-label={navLabel} className="hidden flex-1 items-center gap-1 lg:flex">
-          <div ref={menuRef} className="relative" onMouseLeave={closeMenu}>
+          <div ref={menuRef} className="relative" onMouseLeave={() => { if (!pinned) setMenu(false); }}>
             <button
               ref={menuButton}
               type="button"
               aria-expanded={menu}
               aria-controls="portal-mega"
-              onClick={() => setMenu((v) => !v)}
+              onClick={() => { if (menu && pinned) { setMenu(false); setPinned(false); } else { setMenu(true); setPinned(true); } }}
               onMouseEnter={() => setMenu(true)}
               className={`${NAV_LINK} inline-flex items-center gap-1`}
             >
@@ -103,7 +105,7 @@ export default function Header({ links, packs, mainPrefix, active, navLabel }: {
                   <div className="max-h-[26rem] overflow-y-auto p-4">
                     <p className="mb-2 flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold text-ink-900">{current.name}</span>
-                      <A href={`${mainPrefix}${current.path}`} onClick={closeMenu} className={`text-sm font-medium text-brand-700 hover:underline ${FOCUS}`}>{`${N.categoriesOf}: ${current.categories.length}`}</A>
+                      <A href={`${mainPrefix}${current.path}`} onClick={closeMenu} className={`text-sm font-medium text-brand-700 hover:underline ${FOCUS}`}>{N.viewArea}</A>
                     </p>
                     <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                       {current.categories.map((c) => (

@@ -27,7 +27,7 @@ export const PORTAL = {
     closeMenu: 'Close menu',
     allCategories: 'All categories',
     chooseArea: 'Business areas',
-    categoriesOf: 'Categories',
+    viewArea: 'View this whole area',
     more: 'More',
   },
 
