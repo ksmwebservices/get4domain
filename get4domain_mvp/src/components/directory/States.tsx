@@ -9,7 +9,7 @@ import { S } from '@/lib/v3-public/strings';
 
 /** A page with no businesses on it: said plainly, with the two things a visitor can do about it (list a business, claim a listing). No invented businesses. */
 export function EmptyState() {
-  const l = portalLinks();
+  const l = portalLinks('directory');
   return <DirectoryEmpty title={PORTAL.directory.emptyTitle} body={PORTAL.directory.emptyBody} registerHref={l.main('/register')} claimHref={l.claim} />;
 }
 

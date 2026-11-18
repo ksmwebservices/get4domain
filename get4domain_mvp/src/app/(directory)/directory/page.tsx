@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function DirectoryHome() {
   assertV3Public();
-  const l = portalLinks();
+  const l = portalLinks('directory');
   const [r, t] = await Promise.all([getPageModel('/'), fetchTrees()]);
   const base = baseDomain(readHostConfig());
   return (

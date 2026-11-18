@@ -177,18 +177,30 @@ const cfg = (over: Partial<HostConfig>): HostConfig => ({ main: null, directory:
 const ON = { V3_PUBLIC_ENABLED: 'true' };
 
 describe('links across the two hosts', () => {
+  const two = cfg({ main: 'main.example.invalid', directory: 'directory.main.example.invalid' });
   test('with the host layer off every link is a path on the same host', () => {
-    const l = portalLinks(cfg({}), ON);
-    assert.equal(l.main('/pricing'), '/pricing');
-    assert.equal(l.search, '/search');
-    assert.equal(l.directoryHome, '/directory');
-    assert.equal(l.claim, '/claim');
+    for (const from of ['main', 'directory'] as const) {
+      const l = portalLinks(from, cfg({}), ON);
+      assert.equal(l.main('/pricing'), '/pricing');
+      assert.equal(l.search, '/search');
+      assert.equal(l.directoryHome, '/directory');
+      assert.equal(l.claim, '/claim');
+    }
   });
-  test('with two hosts a link to the other host is absolute', () => {
-    const l = portalLinks(cfg({ main: 'main.example.invalid', directory: 'directory.main.example.invalid' }), ON);
-    assert.equal(l.main('/pricing'), 'https://main.example.invalid/pricing');
+  test('on the main host its own pages stay paths and the directory is absolute', () => {
+    const l = portalLinks('main', two, ON);
+    assert.equal(l.main('/pricing'), '/pricing');
+    assert.equal(l.login, '/login');
     assert.equal(l.search, 'https://directory.main.example.invalid/search');
     assert.equal(l.directoryHome, 'https://directory.main.example.invalid/');
+    assert.equal(l.directoryPath('/business/x'), 'https://directory.main.example.invalid/business/x');
+  });
+  test('on the directory host its own pages stay paths and the main site is absolute', () => {
+    const l = portalLinks('directory', two, ON);
+    assert.equal(l.search, '/search');
+    assert.equal(l.directoryHome, '/');
+    assert.equal(l.claim, '/claim');
+    assert.equal(l.main('/pricing'), 'https://main.example.invalid/pricing');
     assert.equal(l.login, 'https://main.example.invalid/login');
   });
 });

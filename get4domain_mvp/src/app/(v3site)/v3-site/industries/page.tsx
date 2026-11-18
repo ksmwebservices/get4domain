@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import PageHero from '@/components/portal/PageHero';
+import PageHead from '@/components/portal/PageHead';
 import { CtaPanel } from '@/components/portal/Section';
 import { btn, CARD_HOVER, CHIP, FOCUS } from '@/components/portal/ui';
 import { categoriesOfPack, categoryPath } from '@/lib/v3-public/catalogue';
@@ -28,7 +28,7 @@ export default function IndustriesPage() {
   const X = MARKETING.industriesHub;
   return (
     <>
-      <PageHero
+      <PageHead
         crumbs={[{ name: I.h1, path: '/industries' }]}
         h1={I.h1}
         lead={`${I.intro} ${X.lead}`}

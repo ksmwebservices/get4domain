@@ -34,7 +34,7 @@ export function generateMetadata(): Metadata {
 export default async function HomePage() {
   assertV3Public();
   const H = PORTAL.home;
-  const l = portalLinks();
+  const l = portalLinks('main');
   const packs = navPacks();
   const categoryCount = packs.reduce((n, p) => n + p.categories.length, 0);
   const [plans, dir] = await Promise.all([fetchPlans(), getPageModel('/')]);
@@ -82,6 +82,25 @@ export default async function HomePage() {
         <p className="mt-6"><Link href={l.main('/industries')} className={PROSE_LINK}>{H.browseAll}</Link></p>
       </Band>
 
+      {/* 2b. Who it is for, the partner programme and the guides */}
+      <Band id="who-title" tone="soft">
+        <SectionHead id="who-title" title={MARKETING.home.audienceHeading} lead={MARKETING.home.audienceBody} />
+        <ul className="mt-8 grid gap-4 md:grid-cols-3">
+          {[
+            { h: MARKETING.home.productHeading, b: MARKETING.home.productIntro, href: '/product', t: PORTAL.nav.product },
+            { h: MARKETING.home.partnersHeading, b: MARKETING.home.partnersBody, href: '/partners', t: MARKETING.home.partnersLink },
+            { h: MARKETING.home.guidesHeading, b: MARKETING.home.guidesBody, href: '/guides', t: MARKETING.home.guidesLink },
+          ].map((x) => (
+            <li key={x.href} className={`${CARD} flex flex-col p-6`}>
+              <h3 className="text-lg font-bold text-ink-900">{x.h}</h3>
+              <p className="mt-2 flex-1 text-sm text-slate-700">{x.b}</p>
+              <Link href={l.main(x.href)} className={`${PROSE_LINK} mt-4 text-sm`}>{x.t}</Link>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-6"><Link href={l.main('/industries')} className={PROSE_LINK}>{MARKETING.home.audienceLink}</Link></p>
+      </Band>
+
       {/* 3. How it works */}
       <Band id="how-title" tone="soft">
         <SectionHead id="how-title" title={H.howHeading} lead={H.howLead} />
@@ -116,7 +135,7 @@ export default async function HomePage() {
 
       {/* 5. Tracks and prices (numbers come only from the public price route) */}
       <Band id="tracks-title" tone="soft">
-        <SectionHead id="tracks-title" title={H.tracksHeading} lead={H.tracksLead} />
+        <SectionHead id="tracks-title" title={MARKETING.home.tracksHeading} lead={MARKETING.home.tracksIntro} />
         <div className="mt-8">
           {plans.kind === 'ok' && rows.length > 0
             ? <PortalPricing terms={[...PUBLIC_TERMS]} plans={rows} registerHref={register} tracks={tracks} />
@@ -138,7 +157,7 @@ export default async function HomePage() {
       <Band id="dir-title">
         <SectionHead id="dir-title" title={H.directoryHeading} lead={H.directoryLead} />
         {cards.length > 0 ? (
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{cards.map((c) => <li key={c.slug}><ListingCard card={c} headingLevel={3} /></li>)}</ul>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{cards.map((c) => <li key={c.slug}><ListingCard card={c} headingLevel={3} profilePrefix={l.directoryPath('')} /></li>)}</ul>
         ) : (
           <div className="mt-8"><DirectoryEmpty title={H.directoryEmptyTitle} body={H.directoryEmptyBody} registerHref={register} claimHref={l.claim} /></div>
         )}

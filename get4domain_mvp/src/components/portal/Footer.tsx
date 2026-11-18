@@ -38,7 +38,7 @@ export default function Footer({ links, main }: { links: HeaderLinks; main: (pat
               <li><A href={links.register}>{PORTAL.nav.start}</A></li>
               <li><A href={links.pricing}>{PORTAL.nav.pricing}</A></li>
               <li><A href={links.product}>{PORTAL.nav.product}</A></li>
-              {MARKETING.product.pages.slice(0, 4).map((p) => <li key={p.slug}><A href={main(productPath(p.slug))}>{p.name}</A></li>)}
+              {MARKETING.product.pages.map((p) => <li key={p.slug}><A href={main(productPath(p.slug))}>{p.name}</A></li>)}
               <li><A href={links.partners}>{PORTAL.nav.partners}</A></li>
             </ul>
           </div>

@@ -85,7 +85,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const q = await searchParams;
   const input = { what: one(q.what), where: one(q.where), c: one(q.c), l: one(q.l) };
   const pageNo = Number(one(q.page)) || 1;
-  const l = portalLinks();
+  const l = portalLinks('directory');
   const base = baseDomain(readHostConfig());
   const t = await fetchTrees();
   const trees = t.kind === 'ok' ? t.data : null;

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import JsonLd from '@/components/directory/JsonLd';
 import { SampleSite } from '@/components/portal/Mockups';
-import PageHero from '@/components/portal/PageHero';
+import PageHead from '@/components/portal/PageHead';
 import { Band, CtaPanel, FaqAccordion, SectionHead } from '@/components/portal/Section';
 import { btn, CARD, CHIP } from '@/components/portal/ui';
 import { categoriesOfPack, categoryPage, categoryPath } from '@/lib/v3-public/catalogue';
@@ -48,11 +48,11 @@ export default async function CategoryLandingPage({ params }: { params: Params }
   const others = categoriesOfPack(industry.pack.key).filter((c) => c.id !== category.id);
   const register = `/register?pack=${industry.pack.key}&category=${category.id}`;
   const packPath = `/industries/${industry.slug}`;
-  const l = portalLinks();
+  const l = portalLinks('main');
   return (
     <>
       <JsonLd items={[faqLd(faq)]} />
-      <PageHero
+      <PageHead
         crumbs={[{ name: SITE.industries.h1, path: '/industries' }, { name: packName, path: packPath }, { name: category.name, path: categoryPath(category) }]}
         h1={`${category.name} website`}
         lead={fill(C.lead, vars)}

@@ -26,7 +26,7 @@ function A({ href, className, children, onClick }: { href: string; className?: s
  * The portal header: brand, a category mega menu (areas on the left, their categories on the right), the main links, and a drawer on phones.
  * The mega menu opens on click or Enter and also on hover; Escape and a click outside close it. The drawer locks page scroll while open and closes on Escape.
  */
-export default function Header({ links, packs, mainPrefix, active }: { links: HeaderLinks; packs: NavPack[]; mainPrefix: string; active: 'site' | 'directory' }) {
+export default function Header({ links, packs, mainPrefix, active, navLabel }: { links: HeaderLinks; packs: NavPack[]; mainPrefix: string; active: 'site' | 'directory'; navLabel: string }) {
   const [menu, setMenu] = useState(false);
   const [pack, setPack] = useState(0);
   const [drawer, setDrawer] = useState(false);
@@ -67,7 +67,7 @@ export default function Header({ links, packs, mainPrefix, active }: { links: He
           <span className="text-lg font-bold tracking-tight text-ink-900">{PORTAL.brand}</span>
         </A>
 
-        <nav aria-label={N.label} className="hidden flex-1 items-center gap-1 lg:flex">
+        <nav aria-label={navLabel} className="hidden flex-1 items-center gap-1 lg:flex">
           <div ref={menuRef} className="relative" onMouseLeave={closeMenu}>
             <button
               ref={menuButton}
@@ -154,7 +154,7 @@ export default function Header({ links, packs, mainPrefix, active }: { links: He
                 <X aria-hidden="true" className="h-6 w-6" /><span className="sr-only">{N.closeMenu}</span>
               </button>
             </div>
-            <nav aria-label={N.label} className="flex flex-col gap-1">
+            <nav aria-label={navLabel} className="flex flex-col gap-1">
               <A href={links.directory} onClick={() => setDrawer(false)} className={`${NAV_LINK} text-base`}>{N.directory}</A>
               <details className="group">
                 <summary className={`flex cursor-pointer list-none items-center justify-between rounded-lg px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 ${FOCUS}`}>

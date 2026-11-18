@@ -37,7 +37,12 @@ export function createG3Smoke(h) {
     for (const [label, re] of BANNED) ok(!re.test(text), `${tag}: ${p} has no ${label}`);
     ok(!/tel:|mailto:|wa\.me/.test(r.text), `${tag}: ${p} has no contact link`);
     ok(!/being built|coming soon|lorem ipsum|placeholder/i.test(text), `${tag}: ${p} is not a placeholder`);
-    ok(!/[₹]|\bRs\.?\s*\d/.test(text), `${tag}: ${p} writes no price`);
+    if (p === '/') {
+      // the home page shows the plan cards from the price route, so it may show a price, but only one that /pricing shows too (never one written into the page)
+      const pr = visible((await getHost(port, host, '/pricing')).text);
+      const onHome = text.match(/₹[\d,]+(?:\.\d+)?/g) ?? [];
+      ok(onHome.every((a) => pr.includes(a)), `${tag}: / shows only prices that /pricing shows (they come from the price route)`);
+    } else ok(!/[₹]|\bRs\.?\s*\d/.test(text), `${tag}: ${p} writes no price`);
     a11yChecks(tag, p, r.text);
     return r;
   }
@@ -155,7 +160,7 @@ export function createG3Smoke(h) {
     const H = (p) => getHost(ports.HOST, D, p);
     const seen = new Map();
     const queue = ['/'];
-    const SKIP = /^\/(claim|account|legal|sitemaps|go|directory-)/;
+    const SKIP = /^\/(claim|account|legal|sitemaps|go|directory-|search)/; // /search is a results page, checked on its own below
     while (queue.length) {
       const p = queue.shift();
       if (seen.has(p)) continue;
@@ -188,6 +193,40 @@ export function createG3Smoke(h) {
       const t = visible(r.text);
       ok(!/\b(best|top rated|number one|guaranteed|\d+ reviews?|rated \d)/i.test(t), `${tag}: no ranking, rating or review claim`);
     }
+  }
+
+  // ── J1: the directory search results page (same search as the home page box; sample data) ──
+  async function searchPages() {
+    const H = (p) => getHost(ports.HOST, D, p);
+    const robots = (t) => (t.match(/name="robots" content="([^"]*)"/) ?? [])[1];
+    const hit = await H('/search?what=plumber&where=chennai');
+    ok(hit.status === 200 && h1s(hit.text) === 1, `j1 search: the results page answers 200 with one h1 (${hit.status})`);
+    ok(robots(hit.text) === 'noindex, nofollow', 'j1 search: the results page is noindex');
+    ok(/<nav[^>]*aria-label="Directory navigation"/.test(hit.text) && /href="#main"/.test(hit.text), 'j1 search: labelled navigation and a skip link');
+    const visits = (hit.text.match(/>Visit site</g) ?? []).length;
+    const own = (hit.text.match(/href="https:\/\/[a-z0-9-]+\.example\.invalid"/g) ?? []).length;
+    ok(visits > 0 && own >= visits, `j1 search: every Visit site link is the business's own site address (${visits} links, ${own} site addresses)`);
+    ok(/View listing/.test(hit.text) && /href="\/business\/[a-z0-9-]+"/.test(hit.text), 'j1 search: each result links to its directory page');
+    ok(/Directory listing only/.test(hit.text), 'j1 search: a listing without a site says so');
+    ok(!/tel:|mailto:|wa\.me/i.test(hit.text), 'j1 search: no contact link');
+    const none = await H('/search?what=dentist&where=Chennai');
+    ok(none.status === 200 && /No matching businesses/.test(none.text) && /List your business/.test(none.text) && /Claim a listing/.test(none.text), 'j1 search: an empty result is said plainly, with List your business and Claim a listing');
+    ok(!/>Visit site</.test(none.text), 'j1 search: an empty result shows no invented business');
+    const place = await H('/search?what=plumber&where=Atlantis');
+    ok(/do not have that place/.test(place.text) && !/>Visit site</.test(place.text), 'j1 search: an unknown place is said, not turned into everywhere');
+    const home = await H('/search');
+    ok(home.status === 200 && /Browse by city/.test(home.text) && /Browse by category/.test(home.text), 'j1 search: with no search typed it offers the cities and categories');
+    const sug = await getHost(ports.HOST, D, '/directory-api/suggest');
+    let tj = null;
+    try { tj = JSON.parse(sug.text); } catch { tj = null; }
+    ok(sug.status === 200 && tj && tj.places.length > 0 && tj.categories.length > 0, 'j1 search: the suggestions route gives the place and category lists');
+    const mh = await getHost(ports.HOST, M, '/search?what=plumber', { redirect: 'manual' });
+    ok(mh.status === 308, `j1 search: the main host sends /search to the directory host (${mh.status})`);
+    const dh = await H('/');
+    ok(/role="combobox"/.test(dh.text) && /Find a local business/.test(dh.text), 'j1 search: the directory home has the search box');
+    const mhome = await getHost(ports.HOST, M, '/');
+    ok(/role="tablist"/.test(mhome.text) && /Find a domain or website name/.test(mhome.text) && /Find a business/.test(mhome.text), 'j1 search: the main home has the same two-mode search');
+    ok(/action="https:\/\/[^"]*\/search"/.test(mhome.text), 'j1 search: the main home search goes to the directory host');
   }
 
   // ── S4: the developer-only vendor view is never reachable in a production build (these servers are production builds) ──
@@ -247,5 +286,5 @@ export function createG3Smoke(h) {
     ok((await get(ports.ON, '/v3-site/product')).status === (await get(ports.ON, '/v3-site/pricing')).status, 'g3 no hosts: the internal product page is reachable exactly as the other commercial pages are');
   }
 
-  return { devVendorOff, directoryPages, categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
+  return { devVendorOff, directoryPages, searchPages, categoryPages, categoryRegulatedOn, categoryFlagOff, marketing, crawl, flagOff, noHosts, PRODUCT, GUIDES, pageQuality, okStatus, types, CATS, catPath };
 }

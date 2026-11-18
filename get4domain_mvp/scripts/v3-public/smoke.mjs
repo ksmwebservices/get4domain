@@ -437,7 +437,9 @@ function policyPageChecks(tag, p, r, mainHost) {
   const toc = [...r.text.matchAll(/<a href="#([a-z-]+)"/g)].map((m) => m[1]).filter((id) => id !== 'main');
   ok(toc.length >= 3 && toc.every((id) => new RegExp(`<section id="${id}"`).test(r.text)), `${tag}: ${p} has a table of contents whose links reach a section`);
   for (const issue of legalTextProblems(t)) ok(false, `${tag}: ${p} has ${issue}`);
-  ok(!/tel:|wa\.me|<form|<input|<button/i.test(r.text), `${tag}: ${p} has no contact link, form or button`);
+  // the shell (header and footer) has menu buttons that are navigation, not contact: the form, input and button rule applies to the page itself (the main element)
+  const mainOf = (html) => /<main[\s\S]*?<\/main>/.exec(html)?.[0] ?? html;
+  ok(!/tel:|wa\.me/i.test(r.text) && !/<form|<input|<button/i.test(mainOf(r.text)), `${tag}: ${p} has no contact link, form or button`);
   ok(/KSM QUANTUM TECHNOLOGIES/.test(t) && /Tidel Park/.test(t), `${tag}: ${p} names the firm and its office`);
   ok(!/\bGSTIN\b/.test(t), `${tag}: ${p} prints no GSTIN line while none is set`);
 }
@@ -501,7 +503,7 @@ async function companyPages() {
     const t = visible(r.text);
     for (const issue of legalTextProblems(t)) ok(false, `company: ${p} has ${issue}`);
     ok(/KSM QUANTUM TECHNOLOGIES/.test(t) && /Tidel Park/.test(t) && /Tamil Nadu/.test(t), `company: ${p} names the firm and the Chennai office`);
-    ok(!/mailto:|tel:|wa\.me|<form|<input|<button/i.test(r.text), `company: ${p} has no contact link, form or button while no contact value is set`);
+    ok(!/mailto:|tel:|wa\.me/i.test(r.text) && !/<form|<input|<button/i.test(/<main[\s\S]*?<\/main>/.exec(r.text)?.[0] ?? r.text), `company: ${p} has no contact link, form or button while no contact value is set`);
     ok(!/\bGSTIN\b|Support email|Support phone|\bCIN\b/.test(t), `company: ${p} prints nothing for a value that is not set`);
   }
   const contact = visible((await H('/contact')).text);
@@ -830,6 +832,7 @@ try {
   await g3.devVendorOff();
   await g3.categoryRegulatedOn();
   await g3.categoryFlagOff();
+  await g3.searchPages();
   await g3.crawl();
   await g3.flagOff();
   await g3.noHosts();

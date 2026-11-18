@@ -48,7 +48,7 @@ export default function ModelPage({ model, headless = false }: { model: PageMode
     <>
       <JsonLd items={model.jsonLd} />
       <PageVisitBeacon />
-      {headless ? null : (
+      {headless ? <div className="mb-6"><Breadcrumbs crumbs={model.breadcrumbs} /></div> : (
         <>
           <Breadcrumbs crumbs={model.breadcrumbs} />
           <h1 className="text-3xl font-bold tracking-tight text-ink-900">{model.h1}</h1>
