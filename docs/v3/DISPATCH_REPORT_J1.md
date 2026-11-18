@@ -35,7 +35,7 @@ Branch `v3-pub-fe9` from `v3-pub-fe8`, folder `get4domain-pub/get4domain_mvp`. N
 10. **Directory chips** (cities and categories) open real searches, not city pages, so they work while the directory has no listings.
 11. **Links stay on their own host.** On the main host its pages are paths and the directory is absolute; on the directory host the reverse. On your computer the absolute links drop the port (existing behaviour of the host layer), see `SEE_IT_PORTAL.md`.
 12. **`/search`** is a fixed route of the directory host, noindex, and the main host sends it there (308). It joins the fixed V3 paths; the pinned list in `flag-and-routes.test.ts` was updated for it.
-13. **Smoke checks changed (the old ones described the old design).** The legal and company "no form, input or button" rule now looks at the page content, not the header and footer (the shell has menu buttons; `tel:`, `mailto:` and `wa.me` are still banned everywhere). The home may show prices, but only ones that `/pricing` shows. `/search` pages are checked on their own. 22 new checks cover the search page.
+13. **Smoke checks changed (the old ones described the old design).** The legal and company "no form, input or button" rule now looks at the page content, not the header and footer (the shell has menu buttons; `tel:`, `mailto:` and `wa.me` are still banned everywhere). The home may show prices, but only ones that `/pricing` shows. `/search` pages are checked on their own. 16 new checks cover the search page.
 14. The brand link on directory pages still goes to the directory home, and the directory navigation keeps its label "Directory navigation".
 
 ## Missing backend search features (requests, not faked)
