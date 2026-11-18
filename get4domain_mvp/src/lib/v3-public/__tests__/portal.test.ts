@@ -80,11 +80,19 @@ describe('typed text becomes a category or a place', () => {
     assert.equal(matchPlace(trees, 'Tamil Nadu')?.path, 'tamil-nadu');
     assert.equal(matchCategory(trees, 'zzz'), null);
   });
-  test('a place that is not in the tree is reported, never turned into everywhere', () => {
+  test('a typed place the tree does not have is sent to the backend as typed, never turned into everywhere', () => {
     const r = resolveSearch(trees, { what: 'plumber', where: 'Atlantis' });
-    assert.equal(r.unknownPlace, true);
     assert.equal(r.place, null);
+    assert.equal(r.location, 'Atlantis');
+    assert.equal(r.pincode, false);
   });
+  test('a six digit pincode is sent as the location, with its spaces closed up', () => {
+    const r = resolveSearch(trees, { what: 'plumber', where: '600 017' });
+    assert.equal(r.location, '600017');
+    assert.equal(r.pincode, true);
+    assert.equal(resolveSearch(trees, { where: '60001' }).pincode, false);
+  });
+  test('a matched place is sent as its path', () => assert.equal(resolveSearch(trees, { where: 'Chennai' }).location, 'tamil-nadu/chennai'));
   test('a picked suggestion wins over the typed words', () => {
     const r = resolveSearch(trees, { what: 'something else', where: 'nowhere', c: 'electricians', l: 'tamil-nadu/chennai' });
     assert.equal(r.category?.slug, 'electricians');

@@ -46,9 +46,9 @@ export interface TreeNode { slug: string; name: string; kind?: string; children:
 
 /** One business of GET /v3/directory/businesses as the backend sends it (only the fields the portal reads). */
 export interface RawBusiness {
-  slug?: string; name?: string; claimed?: boolean; description?: string | null;
+  id?: string; slug?: string; name?: string; claimed?: boolean; description?: string | null;
   category?: { slug?: string; name?: string } | null;
   location?: { slug?: string; name?: string; path?: Array<{ slug?: string; name?: string }> } | null;
   siteUrl?: string | null; siteState?: string | null; listingState?: string | null; badges?: string[]; sponsored?: boolean; label?: string;
 }
-export interface RawBusinessList { items?: RawBusiness[]; page?: number; pageSize?: number; total?: number }
+export interface RawBusinessList { items?: RawBusiness[]; page?: number; pageSize?: number; total?: number; filters?: { locationUnknown?: boolean } }

@@ -49,6 +49,7 @@ function Refine({ trees, resolved, action }: { trees: Trees; resolved: Resolved;
       </div>
       {/* the typed words stay when no category or place was chosen from the lists */}
       {!resolved.category && resolved.what ? <input type="hidden" name="what" value={resolved.what} /> : null}
+      {!resolved.place && resolved.where ? <input type="hidden" name="where" value={resolved.where} /> : null}
       <button type="submit" className={btn('primary')}>{D.apply}</button>
       <Link href={action} className={btn('secondary')}>{D.clear}</Link>
     </form>
@@ -114,14 +115,14 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             <p className="mt-1 flex flex-wrap gap-2 text-sm text-slate-700">
               {resolved.category ? <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-800">{D.filterCategory}: {resolved.category.name}</span> : null}
               {resolved.q ? <span className="rounded-full bg-slate-100 px-3 py-1">&ldquo;{resolved.q}&rdquo;</span> : null}
-              {resolved.place ? <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-800">{D.filterPlace}: {resolved.place.label}</span> : null}
+              {resolved.place ? <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-800">{D.filterPlace}: {resolved.place.label}</span> : resolved.where ? <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-800">{resolved.pincode ? D.filterPincode : D.filterPlace}: {resolved.where}</span> : null}
             </p>
-            {resolved.unknownPlace ? <p role="status" className="mt-3 rounded-xl bg-gold-50 px-4 py-3 text-sm font-medium text-gold-900">{D.unknownPlace}</p> : null}
+            {res.data.locationUnknown ? <p role="status" className="mt-3 rounded-xl bg-gold-50 px-4 py-3 text-sm font-medium text-gold-900">{D.unknownPlace}</p> : null}
             {res.data.items.length > 0 ? (
               <>
                 <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {res.data.items.map((b) => (
-                    <li key={b.slug}>
+                    <li key={b.slug} data-business-id={b.id ?? undefined}>
                       <BusinessCard b={{ name: b.name, profilePath: b.profilePath, category: b.category, place: b.place, description: b.description, claimed: b.claimed, verified: b.verified, sponsoredLabel: b.sponsored ? b.sponsoredLabel ?? D.sponsored : null, visitHref: b.siteUrl }} />
                     </li>
                   ))}

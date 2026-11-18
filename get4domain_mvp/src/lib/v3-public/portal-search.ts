@@ -76,14 +76,20 @@ export function matchPlace(trees: Trees, text: string): Place | null {
   return hits.sort((a, b) => a.depth - b.depth)[0] ?? null;
 }
 
+const PINCODE = /^[1-9][0-9]{5}$/;
+
 export interface SearchInput { what?: string; where?: string; c?: string; l?: string }
 export interface Resolved {
   /** the text sent as q: empty when the typed words were a category name */
   q: string;
   category: Cat | null;
   place: Place | null;
-  /** a place was typed that the place tree does not have: the search answers with no results instead of guessing (an unknown place is an empty result at the backend too) */
+  /** kept for the screens: the resolver no longer decides a place is unknown. The backend takes typed place text and a pincode and says so itself (SearchResult.locationUnknown). */
   unknownPlace: boolean;
+  /** what goes to the backend as `location`: the place path when one was picked or matched, otherwise the typed text (a place name or a six digit pincode); empty for none */
+  location: string;
+  /** the typed text is a six digit postal code */
+  pincode: boolean;
   what: string;
   where: string;
 }
@@ -100,9 +106,11 @@ export function resolveSearch(trees: Trees | null, input: SearchInput): Resolved
   const pickedPlace = input.l ? t.places.find((p) => p.path === input.l) ?? null : null;
   const category = pickedCat ?? (what ? matchCategory(t, what) : null);
   const place = pickedPlace ?? (where ? matchPlace(t, where) : null);
-  // with no place tree (the API did not answer) a typed place cannot be judged: it is not reported as unknown
-  const unknownPlace = !!where && !place && t.places.length > 0;
-  return { q: category ? '' : normalize(what), category, place, unknownPlace, what, where };
+  // the backend resolves typed place text and a pincode itself and reports a place it does not know, so a typed place is sent as typed
+  const compact = where.replace(/\s+/g, '');
+  const pincode = !place && PINCODE.test(compact);
+  const location = place ? place.path : pincode ? compact : where;
+  return { q: category ? '' : normalize(what), category, place, unknownPlace: false, location, pincode, what, where };
 }
 
 /** Suggestions for the text typed so far: names that start with it first, then names that contain it. At most `limit` of each kind. */
@@ -133,10 +141,13 @@ export async function fetchTrees(): Promise<Fetched<Trees>> {
 }
 
 export interface ResultItem {
+  /** the business id the backend now returns on a result (null when an answer has none) */
+  id: string | null;
   slug: string; name: string; description: string | null; claimed: boolean; verified: boolean; sponsored: boolean; sponsoredLabel: string | null;
   category: string | null; place: string | null; siteUrl: string | null; listingOnly: boolean; profilePath: string;
 }
-export interface SearchResult { items: ResultItem[]; page: number; pageSize: number; total: number; totalPages: number }
+/** `locationUnknown` is the backend's own word that it does not know the typed place. */
+export interface SearchResult { items: ResultItem[]; page: number; pageSize: number; total: number; totalPages: number; locationUnknown: boolean }
 
 export const RESULTS_PER_PAGE = 12;
 
@@ -147,7 +158,7 @@ export function toResultItem(b: RawBusiness): ResultItem | null {
   const place = path.length ? path.slice(-2).reverse().join(', ') : b.location?.name ?? null;
   const siteUrl = typeof b.siteUrl === 'string' && /^https?:\/\//.test(b.siteUrl) ? b.siteUrl : null;
   return {
-    slug: b.slug, name: b.name, description: b.description ?? null, claimed: !!b.claimed, verified: !!b.badges?.some((x) => /verified/i.test(x)),
+    id: typeof b.id === 'string' && b.id ? b.id : null, slug: b.slug, name: b.name, description: b.description ?? null, claimed: !!b.claimed, verified: !!b.badges?.some((x) => /verified/i.test(x)),
     sponsored: !!b.sponsored, sponsoredLabel: b.sponsored ? b.label ?? null : null,
     category: b.category?.name ?? null, place, siteUrl, listingOnly: !siteUrl, profilePath: `/business/${b.slug}`,
   };
@@ -156,17 +167,16 @@ export function toResultItem(b: RawBusiness): ResultItem | null {
 /** Run the directory search for resolved filters. An unknown place is an empty result without a call. 404 and 410 cannot happen on this route; any failure is an error state. */
 export async function searchDirectory(r: Resolved, pageNumber: number): Promise<Fetched<SearchResult>> {
   const page = Number.isFinite(pageNumber) && pageNumber >= 1 ? Math.min(Math.floor(pageNumber), 1000) : 1;
-  const empty: SearchResult = { items: [], page, pageSize: RESULTS_PER_PAGE, total: 0, totalPages: 1 };
-  if (r.unknownPlace) return { kind: 'ok', data: empty };
+  const empty: SearchResult = { items: [], page, pageSize: RESULTS_PER_PAGE, total: 0, totalPages: 1, locationUnknown: false };
   let raw: RawBusinessList;
   if (useMocks()) {
-    raw = mockList(r.q, r.place?.path ?? '', r.category?.slug ?? '', page, RESULTS_PER_PAGE);
+    raw = mockList(r.q, r.location, r.category?.slug ?? '', page, RESULTS_PER_PAGE);
   } else {
     const base = apiBase();
     if (!base) return { kind: 'error', status: null };
     const q = new URLSearchParams({ page: String(page), pageSize: String(RESULTS_PER_PAGE) });
     if (r.q) q.set('q', r.q);
-    if (r.place) q.set('location', r.place.path);
+    if (r.location) q.set('location', r.location);
     if (r.category) q.set('category', r.category.slug);
     const res = await getJson<RawBusinessList>(`${base}/v3/directory/businesses?${q.toString()}`, 60);
     if (res.kind !== 'ok') return res.kind === 'notFound' || res.kind === 'gone' ? { kind: 'ok', data: empty } : res;
@@ -174,7 +184,7 @@ export async function searchDirectory(r: Resolved, pageNumber: number): Promise<
   }
   const items = (raw.items ?? []).map(toResultItem).filter((x): x is ResultItem => x !== null);
   const total = Number.isFinite(raw.total) ? Number(raw.total) : items.length;
-  return { kind: 'ok', data: { items, page, pageSize: RESULTS_PER_PAGE, total, totalPages: Math.max(1, Math.ceil(total / RESULTS_PER_PAGE)) } };
+  return { kind: 'ok', data: { items, page, pageSize: RESULTS_PER_PAGE, total, totalPages: Math.max(1, Math.ceil(total / RESULTS_PER_PAGE)), locationUnknown: raw.filters?.locationUnknown === true } };
 }
 
 /** The address of a results page for these inputs (kept short: only what was given). */
@@ -187,4 +197,54 @@ export function searchQueryString(i: SearchInput & { page?: number }): string {
   if (i.page && i.page > 1) q.set('page', String(i.page));
   const s = q.toString();
   return s ? `?${s}` : '';
+}
+
+/** What GET /v3/directory/suggest answers, trimmed to what the box shows. */
+export interface SuggestBusiness { id: string | null; slug: string; name: string; category: string | null; city: string | null }
+export interface SuggestCategory { slug: string; name: string; kind: 'category' | 'subcategory'; parent: string | null }
+export interface SuggestPlace { slug: string; name: string; kind: string | null; path: string; label: string }
+export interface Suggestions { q: string; businesses: SuggestBusiness[]; categories: SuggestCategory[]; places: SuggestPlace[] }
+
+export const SUGGEST_TYPES = ['business', 'category', 'place'] as const;
+export type SuggestType = (typeof SUGGEST_TYPES)[number];
+export const SUGGEST_MIN = 2;
+
+const sv = (v: unknown, max: number): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+
+/** The raw suggest answer to the shape above. Rows without a name or slug are dropped; nothing else is invented. */
+export function fromSuggest(json: unknown): Suggestions {
+  const root = (json && typeof json === 'object' ? json : {}) as Record<string, unknown>;
+  const o = (root.data && typeof root.data === 'object' ? root.data : root) as Record<string, unknown>;
+  const list = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.filter((x): x is Record<string, unknown> => !!x && typeof x === 'object') : []);
+  return {
+    q: sv(o.q, 80) ?? '',
+    businesses: list(o.businesses).map((b) => ({ id: sv(b.id, 60), slug: sv(b.slug, 100) ?? '', name: sv(b.name, 120) ?? '', category: sv(b.category, 80), city: sv(b.city, 80) })).filter((b) => b.slug && b.name),
+    categories: list(o.categories).map((c) => ({ slug: sv(c.slug, 80) ?? '', name: sv(c.name, 80) ?? '', kind: (c.kind === 'subcategory' ? 'subcategory' : 'category') as 'category' | 'subcategory', parent: sv(c.parent, 80) })).filter((c) => c.slug && c.name),
+    places: list(o.places).map((p) => ({ slug: sv(p.slug, 80) ?? '', name: sv(p.name, 80) ?? '', kind: sv(p.kind, 20), path: sv(p.path, 200) ?? '', label: sv(p.label, 160) ?? '' })).filter((p) => p.slug && p.name && p.path),
+  };
+}
+
+/** Typed text and the wanted kinds to the suggest call (at most 8 of each, the backend's own cap). Mock mode answers from the fixtures. */
+export async function fetchSuggest(text: string, types: readonly SuggestType[]): Promise<Fetched<Suggestions>> {
+  const q = text.trim().slice(0, 80);
+  const wanted = types.filter((t) => (SUGGEST_TYPES as readonly string[]).includes(t));
+  if (q.length < SUGGEST_MIN) return { kind: 'ok', data: { q, businesses: [], categories: [], places: [] } };
+  if (useMocks()) {
+    const m = mockTrees();
+    const hit = suggest(treesFrom(m.places, m.categories), q, 8);
+    const biz = mockList(q, '', '', 1, 8).items ?? [];
+    return { kind: 'ok', data: {
+      q,
+      businesses: wanted.includes('business') ? biz.map((b) => ({ id: b.id ?? null, slug: b.slug ?? '', name: b.name ?? '', category: b.category?.name ?? null, city: b.location?.path?.[1]?.name ?? null })).filter((b) => b.slug && b.name) : [],
+      categories: wanted.includes('category') ? hit.categories.map((c) => ({ slug: c.slug, name: c.name, kind: (c.parent ? 'subcategory' : 'category') as 'category' | 'subcategory', parent: c.parent })) : [],
+      places: wanted.includes('place') ? hit.places.map((p) => ({ slug: p.slug, name: p.name, kind: p.kind, path: p.path, label: p.label })) : [],
+    } };
+  }
+  const base = apiBase();
+  if (!base) return { kind: 'error', status: null };
+  const qs = new URLSearchParams({ q, limit: '8' });
+  if (wanted.length) qs.set('type', wanted.join(','));
+  const r = await getJson<unknown>(`${base}/v3/directory/suggest?${qs.toString()}`, 0);
+  if (r.kind !== 'ok') return r;
+  return { kind: 'ok', data: fromSuggest(r.data) };
 }

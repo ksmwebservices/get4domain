@@ -337,15 +337,14 @@ export function mockTrees(): { places: TreeNode[]; categories: TreeNode[] } {
 /** GET /v3/directory/businesses over the fixtures: every word is a prefix of a word of the name or description (as the backend does), category and place are slugs. */
 export function mockList(q: string, location: string, category: string, page: number, pageSize: number): RawBusinessList {
   const words = q.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  const loc = location.split('/').filter(Boolean).pop() ?? '';
-  const inPlace = (b: Biz): boolean => {
-    if (!loc) return true;
-    const city = slugOf(cityOf(b));
-    return loc === city || loc === slugOf(b.locality) || loc === slugOf(CITY_STATE[cityOf(b)] ?? '');
-  };
+  const loc = slugOf(location.split('/').filter(Boolean).pop() ?? '');
+  const knownPlace = (b: Biz): boolean => [slugOf(cityOf(b)), slugOf(b.locality), slugOf(CITY_STATE[cityOf(b)] ?? '')].includes(loc);
+  // a typed place or a pincode is sent as typed (as the backend takes it): a name the fixtures do not know, or any pincode, is an unknown place with no results
+  if (loc && !BIZ.some(knownPlace)) return { items: [], page, pageSize, total: 0, filters: { locationUnknown: true } };
+  const inPlace = (b: Biz): boolean => !loc || knownPlace(b);
   const hits = BIZ.filter((b) => inPlace(b) && (!category || slugOf(b.category) === category) && words.every((w) => `${b.name} ${b.description}`.toLowerCase().split(/[^a-z0-9]+/).some((t) => t.startsWith(w))));
   const items = hits.slice((page - 1) * pageSize, page * pageSize).map((b) => ({
-    slug: b.slug, name: b.name, claimed: b.claimed, description: b.description,
+    id: b.id, slug: b.slug, name: b.name, claimed: b.claimed, description: b.description,
     category: { slug: slugOf(b.category), name: b.category },
     location: { slug: slugOf(b.locality), name: b.locality, path: [{ slug: slugOf(CITY_STATE[cityOf(b)]), name: CITY_STATE[cityOf(b)] }, { slug: slugOf(cityOf(b)), name: cityOf(b) }, { slug: slugOf(b.locality), name: b.locality }] },
     siteUrl: b.site ? `https://${b.slug}.example.invalid` : null, siteState: b.site ? 'LIVE' : 'SEEDED', badges: b.verified ? ['VERIFIED'] : [], sponsored: false,
