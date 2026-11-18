@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { MOCK_CATEGORIES, PACKS, categoriesByPack } from '../packs';
-import { cleanSubdomain, mapRegisterFailure, messagesOf, passwordOk, phoneOk, subdomainProblem, subdomainStateOf, validateRegister, type RegisterInput } from '../register';
-import { MOCK_REGISTER_HANDOFF, MOCK_TAKEN_EMAIL_REGISTER, handleRegister, handleSubdomainCheck, parseRegisterBody } from '../register-proxy';
+import { DEFAULT_TRACK, TRACKS, cleanSubdomain, trackOfTier, mapRegisterFailure, messagesOf, passwordOk, phoneOk, subdomainProblem, subdomainStateOf, validateRegister, type RegisterInput } from '../register';
+import { MOCK_REGISTER_HANDOFF, MOCK_TAKEN_EMAIL_REGISTER, handleRegister, handleSubdomainCheck, parseRegisterBody, siteStateOf, trackFor } from '../register-proxy';
 import { SITE } from '../site-strings';
 
 const good: RegisterInput = {
@@ -120,7 +120,7 @@ describe('API refusals become field errors in plain words', () => {
 
 describe('the register call in mock mode', () => {
   test('a good form is accepted and hands off', async () => {
-    assert.deepEqual(await handleRegister(req, body()), { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF });
+    assert.deepEqual(await handleRegister(req, body()), { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending' });
   });
   test('the server checks the form again', async () => {
     const r = await handleRegister(req, body({ password: 'weak', acceptedTerms: false }));
@@ -213,6 +213,49 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
       assert.equal(sent.track, 'professional');
       assert.equal(sent.subdomain, 'sri-murugan');
     } finally { restore(); }
+  });
+
+  const okAnswer = { '/auth/register': { status: 201, json: { data: { accessToken: 'tok-1', user: { subdomain: 'x' } } } } };
+  const sentTrack = (): unknown => (calls.find((c) => c.url.endsWith('/auth/register'))!.body as Record<string, unknown>).track;
+  const cats = (rows: Array<[string, string]>) => ({ '/v3/public/pack-categories': { status: 200, json: { success: true, data: rows.map(([categoryKey, minTier]) => ({ categoryKey, name: categoryKey, family: 'x', packKey: 'RETAIL', minTier })) } } });
+
+  test('a free signup sends the track of the chosen category (handyman, professional, ecommerce)', async () => {
+    real();
+    try {
+      for (const [key, tier, track] of [['plumber', 'HANDYMAN', 'handyman'], ['chartered-accountant', 'PROFESSIONAL', 'professional'], ['general-store', 'ECOMMERCE', 'ecommerce']] as const) {
+        stub({ ...okAnswer, ...cats([[key, tier]]) });
+        await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: key }));
+        assert.equal(sentTrack(), track, key);
+      }
+    } finally { restore(); }
+  });
+  test('a paid plan keeps its own track, whatever the category says', async () => {
+    real();
+    try {
+      stub({ ...okAnswer, ...cats([['plumber', 'HANDYMAN']]) });
+      await handleRegister(req, body({ plan: 'ecommerce', categoryKey: 'plumber' }));
+      assert.equal(sentTrack(), 'ecommerce');
+    } finally { restore(); }
+  });
+  test('a category the list cannot answer for still sends a track (the smallest), never none', async () => {
+    real();
+    try {
+      stub({ ...okAnswer });
+      await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: 'unknown-one' }));
+      assert.equal(sentTrack(), DEFAULT_TRACK);
+      stub({ ...okAnswer, ...cats([['x', 'GOLD']]) });
+      await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: 'x' }));
+      assert.equal(sentTrack(), DEFAULT_TRACK, 'an unknown tier is not passed on');
+    } finally { restore(); }
+  });
+  test('the track values are the three the API accepts, and only those', () => {
+    assert.deepEqual([...TRACKS], ['handyman', 'professional', 'ecommerce']);
+    assert.equal(trackOfTier('PROFESSIONAL'), 'professional');
+    for (const v of ['free', '', undefined, null, 'leadspace', 'GOLD']) assert.equal(trackOfTier(v as string), null, String(v));
+  });
+  test('trackFor in sample mode: free falls to the category tier of the samples', async () => {
+    assert.equal(await trackFor('free', 'plumber'), 'handyman');
+    assert.equal(await trackFor('professional', 'plumber'), 'professional');
   });
 
   test('the documented refusals reach the right field', async () => {

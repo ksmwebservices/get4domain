@@ -13,6 +13,14 @@ export type FieldErrors = Partial<Record<RegisterField, RegisterErrorKey>>;
 
 export const PLAN_KEYS: readonly string[] = ['free', 'handyman', 'professional', 'ecommerce'];
 export const TERMS: readonly number[] = [3, 6, 12];
+/** The three tracks the API's POST /auth/register accepts (IsIn on `track`). */
+export const TRACKS = ['handyman', 'professional', 'ecommerce'] as const;
+export const DEFAULT_TRACK: (typeof TRACKS)[number] = 'handyman';
+/** A plan key or a category minimum tier ('HANDYMAN', 'professional', ...) to a track, or null when it is neither (the free plan, empty, unknown). */
+export function trackOfTier(v: string | undefined | null): (typeof TRACKS)[number] | null {
+  const t = String(v ?? '').trim().toLowerCase();
+  return (TRACKS as readonly string[]).includes(t) ? (t as (typeof TRACKS)[number]) : null;
+}
 export const SUBDOMAIN_MIN = 3;
 export const SUBDOMAIN_MAX = 40;
 
