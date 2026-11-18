@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res, UploadedFile, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { PREVIEW_HEADERS } from '../core/theme-preview-core';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 import { AuthenticatedUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RATE } from '../../common/throttling';
@@ -30,6 +31,7 @@ class ThemeListDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize?: number;
 }
+export class PreviewQueryDto { @IsOptional() @IsString() @MaxLength(60) pack?: string; @IsOptional() @IsString() @MaxLength(30) page?: string }
 class UploadBodyDto { @IsOptional() @IsString() @Matches(ID) vendorId?: string }
 class NoteDto { @IsString() @MaxLength(300) note!: string }
 /** The admin's record that the customer agreed to a custom theme going to the marketplace: a yes and a short note on how. Both are audited. */
@@ -67,6 +69,10 @@ export class AdminThemeMarketController {
 
   @Get('themes/:id') @ApiOperation({ summary: 'One theme version with its marketplace metadata, status, consent record and review note' })
   get(@Param('id') id: string) { return this.themes.get(id); }
+
+  @Throttle(RATE.themePreview) @Get('themes/:id/preview')
+  @ApiOperation({ summary: 'A real preview page of ANY stored version, draft included: the stored package drawn by the real renderer with the sample business of a pack (pack=KEY, default the theme\'s first pack; page=home|about|services|gallery|contact|item...). Strict content security policy, no cookie, never cached, never indexed.' })
+  async preview(@Param('id') id: string, @Query() q: PreviewQueryDto, @Res() res: Response): Promise<void> { const html = await this.themes.previewStored(id, q.pack, q.page); res.removeHeader('Set-Cookie'); res.status(200).set(PREVIEW_HEADERS).send(html); }
 
   @Post('themes/:id/submit') @HttpCode(200) @ApiOperation({ summary: 'Send a DRAFT for review (DRAFT to REVIEW)' })
   submit(@Param('id') id: string, @CurrentUser() u: AuthenticatedUser, @Req() req: Request) { return this.themes.submit(id, actorOf(u, req)); }

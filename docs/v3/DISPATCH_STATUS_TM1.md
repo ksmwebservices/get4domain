@@ -12,7 +12,7 @@ Branch `v3-theme-mp` (from `v3-build-be`). Worktree `C:\Get4Domain\get4domain-w2
 | M2 | DONE | (M2 commit) | package table (g4d_theme_market_packages), 8 admin routes, role matrix, 14 error codes, upload/validate/flow; migration applied to staging (rls-off 0, drift 2 documented); unit 18+7, int 6 |
 | M3 | DONE | (M3 commit) | renderer loads PUBLISHED packages at run time (30 s cache, dropped on publish/archive); private visibility; archived keeps working for current users; render failure falls back to previous or default theme; 13 tests |
 | M4 | DONE | (M4 commit) | private theme per customer (upload with vendorId, usable by that business only); publish-to-marketplace needs recorded consent (yes + note, audited, DB check) and a content-free check (name, addresses, phone, e-mail, own media by hash); 12 + 1 tests |
-| M5 | TODO | | |
+| M5 | DONE | (M5 commit) | public, vendor (owner) and admin marketplace routes: filters by pack, category, add-on, capability, tag, tier; detail; plan gate and fee via the existing switch; server-side preview with strict CSP and no cookie (public, vendor, admin draft); 15 tests |
 | M6 | TODO | | |
 | M7 | TODO | | |
 

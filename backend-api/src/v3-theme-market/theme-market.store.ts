@@ -35,6 +35,8 @@ export abstract class ThemeMarketStore {
   abstract transition(id: string, from: readonly ThemeStatus[], patch: ThemePatch, audit: AuditSpec, alsoArchiveOlderPublishedOfKey?: { key: string; below: number }): Promise<ThemeRow | null>;
   /** every row a vendor site may need to draw (PUBLISHED and ARCHIVED), with its bytes, for the runtime loader (M3) */
   abstract loadServable(): Promise<ThemeRowWithBytes[]>;
+  /** the metadata (no bytes) of every PUBLISHED and ARCHIVED row, newest version of a key first: what the marketplace listing is built from */
+  abstract servableMeta(): Promise<ThemeRow[]>;
   abstract vendorExists(vendorId: string): Promise<boolean>;
   /** the facts of the business a private theme is for, used to refuse a package that carries them (M4) */
   abstract vendorFacts(vendorId: string): Promise<{ name: string; email: string | null; phone: string | null; subdomain: string | null; customDomain: string | null; mediaHashes: string[] } | null>;

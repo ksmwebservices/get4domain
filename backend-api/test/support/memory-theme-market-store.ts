@@ -33,6 +33,7 @@ export class MemoryThemeMarketStore extends ThemeMarketStore {
     this.audits.push({ ...a, entityId: id }); return this.strip(r);
   }
   async loadServable(): Promise<ThemeRowWithBytes[]> { return this.rows.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED'); }
+  async servableMeta(): Promise<ThemeRow[]> { return this.rows.filter((r) => r.status === 'PUBLISHED' || r.status === 'ARCHIVED').sort((a, b) => a.key.localeCompare(b.key) || b.version - a.version).map((r) => this.strip(r)); }
   async vendorExists(vendorId: string): Promise<boolean> { return this.vendors.has(vendorId); }
   async vendorFacts(vendorId: string) { return this.vendors.get(vendorId) ?? null; }
 }

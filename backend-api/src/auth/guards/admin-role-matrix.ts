@@ -69,7 +69,7 @@ export const SEO_SUPER_ROUTES: Readonly<Record<string, readonly StaffRole[]>> = 
  * (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow, built from THEME_MARKET_ADMIN_WRITES). SALES, SUPPORT and every label are refused.
  */
 export const THEME_MARKET_READS: Readonly<Record<string, readonly StaffRole[]>> = {
-  'GET /v3/admin/theme-market/themes': OPS_AND_SUPER, 'GET /v3/admin/theme-market/themes/:id': OPS_AND_SUPER, 'POST /v3/admin/theme-market/validate': OPS_AND_SUPER,
+  'GET /v3/admin/theme-market/themes': OPS_AND_SUPER, 'GET /v3/admin/theme-market/themes/:id': OPS_AND_SUPER, 'GET /v3/admin/theme-market/themes/:id/preview': OPS_AND_SUPER, 'POST /v3/admin/theme-market/validate': OPS_AND_SUPER,
 };
 export const THEME_MARKET_ADMIN_WRITES: readonly string[] = [
   'POST /v3/admin/theme-market/themes', 'POST /v3/admin/theme-market/themes/:id/submit', 'POST /v3/admin/theme-market/themes/:id/return', 'POST /v3/admin/theme-market/themes/:id/publish', 'POST /v3/admin/theme-market/themes/:id/publish-to-marketplace', 'POST /v3/admin/theme-market/themes/:id/archive',

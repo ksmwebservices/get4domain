@@ -4,6 +4,7 @@ import { Actor } from '../plans/admin/audit.service';
 import { Kit, KIT, loadKit } from '../site-publish/renderer/renderer-loader';
 import { inspectPackage, PackageContext, PackageProblem, PACK_KEYS, ADDON_KEYS, CAPABILITY_KEYS, COMBINATION_TAGS } from './core/theme-package-core';
 import { ThemeChangeNotifier } from './theme-change-notifier';
+import { ThemePreviewService } from './theme-preview.service';
 import { packageInvalid, themeError } from './theme-market.errors';
 import { AuditSpec, ThemeFilter, ThemeMarketStore, ThemeRow, ThemeStatus, THEME_STATUSES } from './theme-market.store';
 
@@ -36,7 +37,20 @@ export type ThemeView = ReturnType<typeof themeView>;
 export class ThemeMarketService {
   clock: () => Date = () => new Date();
   private readonly kit: Kit;
-  constructor(private readonly store: ThemeMarketStore, private readonly notifier: ThemeChangeNotifier, @Optional() @Inject(KIT) kit?: Kit) { this.kit = kit ?? loadKit(); }
+  private readonly previews: ThemePreviewService;
+  constructor(private readonly store: ThemeMarketStore, private readonly notifier: ThemeChangeNotifier, @Optional() @Inject(KIT) kit?: Kit, @Optional() previews?: ThemePreviewService) { this.kit = kit ?? loadKit(); this.previews = previews ?? new ThemePreviewService(this.kit); }
+
+  /**
+   * An admin's preview of ANY stored version, draft included (so a theme is looked at before it is published): the stored package is read in memory, drawn with the sample business of a pack and returned as a finished page.
+   * The caller sends it with the preview headers (strict content security policy, no cookie).
+   */
+  async previewStored(id: string, pack: string | undefined, page: string | undefined): Promise<string> {
+    const row = await this.store.findWithBytes((await this.mustFind(id)).id);
+    if (!row) throw themeError(404, 'THEME_NOT_FOUND', 'That theme was not found.');
+    const r = this.kit.validatePackage(row.bytes);
+    if (!r.ok || !r.manifest) throw themeError(422, 'THEME_PREVIEW_FAILED', 'The stored package no longer passes the package rules, so it cannot be previewed.');
+    return this.previews.render(this.kit.themeFromFiles(r.files, null), String(pack ?? row.packs[0] ?? '').toUpperCase().slice(0, 60), String(page ?? 'home'));
+  }
 
   /** Keys that belong to the built-in library (and the kit's reference theme): a package may not take them. */
   private reservedKeys(): Set<string> { return new Set([...this.kit.listVendorThemeIds(), '_starter', 'kit-starter']); }

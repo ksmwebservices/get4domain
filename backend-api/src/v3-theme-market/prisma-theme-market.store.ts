@@ -75,6 +75,11 @@ export class PrismaThemeMarketStore extends ThemeMarketStore {
     return rows.map((r) => ({ ...row(r), bytes: Buffer.from(r.bytes) }));
   }
 
+  async servableMeta(): Promise<ThemeRow[]> {
+    const rows = await this.prisma.v3ThemeMarketPackage.findMany({ where: { status: { in: ['PUBLISHED', 'ARCHIVED'] } }, orderBy: [{ key: 'asc' }, { version: 'desc' }], select: LITE, take: 2000 });
+    return rows.map(row);
+  }
+
   async vendorExists(vendorId: string): Promise<boolean> { return !!(await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { id: true } })); }
 
   async vendorFacts(vendorId: string): Promise<{ name: string; email: string | null; phone: string | null; subdomain: string | null; customDomain: string | null; mediaHashes: string[] } | null> {

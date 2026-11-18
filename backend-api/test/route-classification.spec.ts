@@ -44,6 +44,8 @@ const OWNER_ONLY_ROUTES = [
   'POST /v3/me/site/theme/preview', 'POST /v3/me/site/theme/switch', 'GET /v3/me/site/theme/history',
   // B4B slice 5.20: the owner's own activity rows describe money and the business's public face: owner only
   'GET /v3/me/activity',
+  // TM1 M5: the marketplace view carries the theme switch fee and the plan state: owner only (the public list and preview are @Public)
+  'GET /v3/me/theme-market/themes', 'GET /v3/me/theme-market/themes/:key', 'GET /v3/me/theme-market/themes/:key/preview',
   // B4B slice 5.21: a business proof carries registration numbers and the takedown notice carries a legal reason: owner only
   'POST /v3/me/business-proof', 'GET /v3/me/business-proofs', 'GET /v3/me/takedown',
   // B4 slice 5.16c: a request holds and then charges the vendor's money and carries the work product: owner only
