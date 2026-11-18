@@ -38,9 +38,27 @@ Public addresses (`/product`, `/pricing`, `/industries/...`) are rewritten to `/
 | Subdomain availability | `GET /v3/public/subdomain-availability?name=` via `/directory-api/subdomain` | exists, used by the register form |
 | Backlink block, claim status | `/v3/directory/backlink-block/{id}`, `/v3/claim/{token}/status` | exist |
 
-Gaps (to list in the report, pages must use honest empty states): no public route that lists the 16 packs with their tabs (packs are data in `packs.ts`); no public route that lists the 58 seeded locations or the 53 directory categories except as facets inside a page model; no domain registrar availability route (registrar is off, so a custom domain box can only offer "connect a domain you own"). The backend source is not in this repo's `src`, so routes were read from the client code only.
+Gaps (to list in the report, pages must use honest empty states): no public route that lists the 16 packs with their tabs (packs are data in `packs.ts`); correction after section 6: `GET /v3/directory/locations` and `GET /v3/directory/categories` DO exist (place tree, category tree) and feed the city list and chips; no domain registrar availability route (registrar is off, so a custom domain box can only offer "connect a domain you own"). The backend source is not in this repo's `src`, so routes were read from the client code only.
 
 ## 5. Constraints seen
 - Copy and legal guard tests exist (`src/lib/v3-public/__tests__`); run only those: `npm.cmd run test:v3-public`.
 - `middleware.ts` sets the V3 route header and the directory gate; new routes must be added to `routes.ts` rules if they are not under `/v3-site` or the directory paths.
 - No ESLint config (G19), so verification is typecheck, build and the unit tests.
+
+## 6. Directory search: what the backend has (read from `get4domain-w2/backend-api/src/directory`, read only)
+Route: `GET /v3/directory/businesses?q=&location=&category=&page=&pageSize=` (public, rate limited, ETag cache). Also `GET /v3/directory/locations`, `GET /v3/directory/categories`, `GET /v3/directory/businesses/{slug}`.
+
+Works today:
+- **Name and description text**: `q` is split into up to 8 words; each word is a prefix match (`plumb:*`) against the generated `searchVector` = name + description text (GIN index). All words must match. If `pg_trgm` exists, a name similarity above 0.3 also matches (typo tolerance). Ranked by text rank, then name.
+- **Place**: `location` takes a slug path (`tamil-nadu/chennai`) or a single slug (shallowest match); it includes all places below it. An unknown place gives an empty result, never everything.
+- **Category**: `category` takes a category slug and includes its children. Unknown gives empty.
+- **Result fields**: slug, name, claimed, category, location path, description, `siteUrl` (the business's subdomain site when it has one), `siteState`, badges, `listingState`; phone, hours, services only after a claim. Sponsored items are labelled and never change organic order.
+
+Missing (to list in the report, not faked):
+1. `q` does NOT search the category name, sub category, services or keywords: the vector holds only name and description. "dentist" finds a business only if its name or description says so. Services of a business are in a separate table and are not in the vector.
+2. `location` is an exact place slug, not free text: "Adyar" or "chennai" works only if a place with that slug exists. The front end must turn typed text into a place using `/locations`.
+3. No suggestions route (as you type for categories and places). Front end plan: fetch the two trees once (cached) and filter them in the browser; business-name suggestions would need a new backend route.
+4. No synonyms ("pipe repair" to Plumber), no distance or "near me", no open-now or rating filter.
+5. Category keywords exist for the SEO block (`g4d_seo_category_keywords`) but are not joined into directory search.
+
+Front end plan for P3: one shared search component (home hero and directory use the same one): the "what" box maps a typed phrase to a category when it matches a category or sub category name (using `category=`), otherwise sends it as `q`; the "where" box maps to `location=` from the place tree. Result cards link to the directory page and to `siteUrl` (name.get4domain.com) when present. 0 listings today, so an honest empty state with "List your business" and "Claim a listing".
