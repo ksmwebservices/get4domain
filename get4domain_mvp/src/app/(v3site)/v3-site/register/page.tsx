@@ -56,6 +56,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           referral={referralCodeOk(jar.get(REFERRAL_COOKIE)?.value)}
           vendorUrl={vendorAppUrl()}
           suffix={base ? `.${base}` : ''}
+          subdomain={/^[a-z0-9-]{1,63}$/.test(one(q.subdomain).toLowerCase()) ? one(q.subdomain).toLowerCase() : ''}
         />
       </div>
     </>

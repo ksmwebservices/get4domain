@@ -40,3 +40,15 @@ export interface ClaimSearchItem { slug: string; name: string; place: string | n
 export interface ClaimCallResult<T = unknown> { ok: boolean; status: number; code: string | null; message: string | null; data: T | null }
 
 export interface ClaimStatusResult { valid: true; businessName: string; expiresAt: string }
+
+/** One node of the backend place tree (GET /v3/directory/locations) or category tree (GET /v3/directory/categories). */
+export interface TreeNode { slug: string; name: string; kind?: string; children: TreeNode[] }
+
+/** One business of GET /v3/directory/businesses as the backend sends it (only the fields the portal reads). */
+export interface RawBusiness {
+  slug?: string; name?: string; claimed?: boolean; description?: string | null;
+  category?: { slug?: string; name?: string } | null;
+  location?: { slug?: string; name?: string; path?: Array<{ slug?: string; name?: string }> } | null;
+  siteUrl?: string | null; siteState?: string | null; listingState?: string | null; badges?: string[]; sponsored?: boolean; label?: string;
+}
+export interface RawBusinessList { items?: RawBusiness[]; page?: number; pageSize?: number; total?: number }

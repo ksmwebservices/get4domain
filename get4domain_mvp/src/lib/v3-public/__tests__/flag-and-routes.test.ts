@@ -62,7 +62,7 @@ describe('the fixed routes the middleware answers with a 404 while the flag is o
   });
 
   test('the prefix list is the documented one', () => {
-    assert.deepEqual([...V3_PUBLIC_PREFIXES], ['/directory', '/claim', '/legal', '/account', '/sitemaps']);
+    assert.deepEqual([...V3_PUBLIC_PREFIXES], ['/directory', '/claim', '/legal', '/account', '/sitemaps', '/search']);
   });
 
   test('rewrite targets cannot be typed by a visitor', () => {

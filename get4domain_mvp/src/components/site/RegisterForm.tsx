@@ -25,6 +25,7 @@ interface Props {
   vendorUrl: string | null;
   /** ".main-domain" shown after the address box; empty when the main host is not set */
   suffix: string;
+  subdomain?: string;
 }
 
 const INPUT = 'mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900';
@@ -51,7 +52,7 @@ export default function RegisterForm(p: Props) {
   const inPack = useMemo(() => (p.pack ? p.categories.filter((c) => c.packKey === p.pack) : []), [p.pack, p.categories]);
   const [onlyPack, setOnlyPack] = useState(true);
   const limited = onlyPack && inPack.length > 0;
-  const [subdomain, setSubdomain] = useState('');
+  const [subdomain, setSubdomain] = useState(p.subdomain ?? '');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');

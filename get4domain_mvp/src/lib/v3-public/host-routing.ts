@@ -96,6 +96,8 @@ export function decideHost(req: HostRequest, cfg: HostConfig = readHostConfig(),
       if (!cls.canonical) return { action: 'redirect', to: `${originFor(base)}${pathname}${search}`, status: 308 };
       const rest = stripDirectoryPrefix(pathname);
       if (rest !== null && cfg.directory) return { action: 'redirect', to: `${originFor(cfg.directory)}${rest}${search}`, status: 308 };
+      // the search results page belongs to the directory host
+      if (firstSegment(pathname) === 'search' && cfg.directory) return { action: 'redirect', to: `${originFor(cfg.directory)}${pathname}${search}`, status: 308 };
       // The directory sitemaps list directory-host addresses, so they are answered on the directory host only.
       if (firstSegment(pathname) === 'sitemaps') return { action: 'not-found', host: 'main' };
       // a pack that is not published (the regulated four by default) is a real 404 here: a page cannot send one itself (root loading.tsx, gap G9)

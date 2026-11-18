@@ -2,7 +2,7 @@
  * The fixed top-level paths the V3 public site owns. With the flag off the middleware answers a plain 404 for them before anything renders.
  * The directory addresses (/{city} and the rest) are decided by the directory gate (gate.ts) before any page runs.
  */
-export const V3_PUBLIC_PREFIXES: readonly string[] = ['/directory', '/claim', '/legal', '/account', '/sitemaps'];
+export const V3_PUBLIC_PREFIXES: readonly string[] = ['/directory', '/claim', '/legal', '/account', '/sitemaps', '/search'];
 
 /** The internal page the directory gate rewrites an existing directory address to. */
 export const V3_PAGES_ROOT = '/directory-pages';

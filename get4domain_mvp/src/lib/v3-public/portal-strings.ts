@@ -37,7 +37,7 @@ export const PORTAL = {
     tabBusiness: 'Find a business',
     tabDomain: 'Find a domain or website name',
     whatLabel: 'What are you looking for?',
-    whatPlaceholder: 'Plumber, dentist, mobile shop',
+    whatPlaceholder: 'Plumber, dentist, AC repair',
     whereLabel: 'Where?',
     wherePlaceholder: 'City or area',
     submit: 'Search',
@@ -103,6 +103,7 @@ export const PORTAL = {
     ctaBody: 'Register, look over your site, and move to a paid plan when you want the main features.',
     ctaPrimary: 'Start free',
     ctaSecondary: 'See how it works',
+    learnMore: 'Learn more',
   },
 
   /** The six preview panels on the home page. `href` is a main-site path. */

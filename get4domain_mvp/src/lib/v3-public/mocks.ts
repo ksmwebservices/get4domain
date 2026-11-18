@@ -1,4 +1,4 @@
-import type { BacklinkBlock, BusinessFacts, Card, ClaimSearchItem, ListingState, Crumb, Facet, Link, PageModel, PageType } from './types';
+import type { BacklinkBlock, BusinessFacts, Card, ClaimSearchItem, ListingState, Crumb, Facet, Link, PageModel, PageType, RawBusinessList, TreeNode } from './types';
 
 /**
  * Fixtures for reviewing the public site without the API (V3_PUBLIC_USE_MOCKS=true, the default).
@@ -318,4 +318,37 @@ export function mockSitemap(route: string): string | null {
   if (route.endsWith('/index.xml')) return `${head}<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>${MOCK_ORIGIN}/sitemaps/directory-1.xml</loc></sitemap></sitemapindex>\n`;
   if (route.endsWith('/directory-1.xml')) return `${head}<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${MOCK_ORIGIN}/chennai/plumbers</loc></url><url><loc>${MOCK_ORIGIN}/business/anand-electricals</loc></url></urlset>\n`;
   return null;
+}
+
+/** The place and category trees of the fixtures, in the shape of GET /v3/directory/locations and /categories. */
+export function mockTrees(): { places: TreeNode[]; categories: TreeNode[] } {
+  const states = [...new Set(Object.values(CITY_STATE))];
+  const places: TreeNode[] = states.map((st) => ({
+    slug: slugOf(st), name: st, kind: 'STATE',
+    children: Object.keys(CITY_STATE).filter((c) => CITY_STATE[c] === st).map((c) => ({
+      slug: slugOf(c), name: c, kind: 'CITY',
+      children: [...new Set(BIZ.filter((b) => cityOf(b) === c).map((b) => b.locality))].map((l) => ({ slug: slugOf(l), name: l, kind: 'LOCALITY', children: [] })),
+    })),
+  }));
+  const categories: TreeNode[] = CATEGORY_NAMES.map((c) => ({ slug: slugOf(c), name: c, children: [] }));
+  return { places, categories };
+}
+
+/** GET /v3/directory/businesses over the fixtures: every word is a prefix of a word of the name or description (as the backend does), category and place are slugs. */
+export function mockList(q: string, location: string, category: string, page: number, pageSize: number): RawBusinessList {
+  const words = q.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const loc = location.split('/').filter(Boolean).pop() ?? '';
+  const inPlace = (b: Biz): boolean => {
+    if (!loc) return true;
+    const city = slugOf(cityOf(b));
+    return loc === city || loc === slugOf(b.locality) || loc === slugOf(CITY_STATE[cityOf(b)] ?? '');
+  };
+  const hits = BIZ.filter((b) => inPlace(b) && (!category || slugOf(b.category) === category) && words.every((w) => `${b.name} ${b.description}`.toLowerCase().split(/[^a-z0-9]+/).some((t) => t.startsWith(w))));
+  const items = hits.slice((page - 1) * pageSize, page * pageSize).map((b) => ({
+    slug: b.slug, name: b.name, claimed: b.claimed, description: b.description,
+    category: { slug: slugOf(b.category), name: b.category },
+    location: { slug: slugOf(b.locality), name: b.locality, path: [{ slug: slugOf(CITY_STATE[cityOf(b)]), name: CITY_STATE[cityOf(b)] }, { slug: slugOf(cityOf(b)), name: cityOf(b) }, { slug: slugOf(b.locality), name: b.locality }] },
+    siteUrl: b.site ? `https://${b.slug}.example.invalid` : null, siteState: b.site ? 'LIVE' : 'SEEDED', badges: b.verified ? ['VERIFIED'] : [], sponsored: false,
+  }));
+  return { items, page, pageSize, total: hits.length };
 }
