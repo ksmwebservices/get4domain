@@ -247,6 +247,115 @@
       "type": "boolean",
       "description": "true only for the kit's own _starter theme; never offered to vendors"
     },
+    "marketplace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packs"
+      ],
+      "description": "Marketplace metadata: who the theme is for and how it is found. The shape is checked here, the names by the backend.",
+      "properties": {
+        "packs": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,40}$"
+          },
+          "minItems": 1,
+          "description": "industry pack keys the theme is designed for"
+        },
+        "addons": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,40}$"
+          },
+          "description": "add-on pack keys the theme also draws (SHOP, ONLINE_ORDERING_DELIVERY, PHARMACY_COUNTER, HOME_SAMPLE_COLLECTION)"
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 14,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,40}$"
+          },
+          "description": "capability keys the theme draws"
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "maxLength": 60
+          },
+          "description": "combination tags, for example service-plus-shop"
+        },
+        "catalogueCategories": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 200,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "maxLength": 80
+          },
+          "description": "ids from the 196-category catalogue (the kit category ids stay in `categories`)"
+        },
+        "previews": {
+          "type": "array",
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "alt"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^assets/previews/[a-z0-9-]+\\.(png|jpg|jpeg|webp)$"
+              },
+              "alt": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 160
+              },
+              "page": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "maxLength": 30
+              }
+            }
+          }
+        },
+        "licence": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 300,
+          "description": "a plain note on who may use the theme; not legal wording"
+        },
+        "starter": {
+          "type": "boolean",
+          "description": "true for a starter theme built by the Get4Domain team (said honestly in the listing)"
+        },
+        "sourceVendorId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 40,
+          "description": "the vendor a custom theme was first built for; null for a theme built for the marketplace. The upload route sets the real value; a different non-null value is refused."
+        }
+      }
+    },
     "author": {
       "type": "string",
       "maxLength": 80

@@ -11,7 +11,10 @@ import * as path from 'path';
  * fly in a cache folder named after the hash of the kit sources, so the unit tests use the real renderer. In production a missing build is an error.
  */
 export interface KitCategory { id: string; label: string; track: string; family: string; schemaType: string; ctaPrimary: string; flow?: string; packKey?: string }
-export interface KitManifest { id: string; name: string; description?: string; tier: string; tracks: string[]; families: string[]; categories: string[]; internal?: boolean; version: number; fonts?: string[] }
+export interface KitMarketplace { packs: string[]; addons?: string[]; capabilities?: string[]; tags?: string[]; catalogueCategories?: string[]; previews?: Array<{ path: string; alt: string; page?: string }>; licence?: string; starter?: boolean; sourceVendorId?: string | null }
+export interface KitManifest { id: string; name: string; description?: string; tier: string; tracks: string[]; families: string[]; categories: string[]; internal?: boolean; version: number; fonts?: string[]; author?: string; marketplace?: KitMarketplace }
+/** What the kit's validatePackage answers: nothing is extracted or run; `errors` carry the kit's own rule code and the file path. */
+export interface KitPackageResult { ok: boolean; errors: Array<{ code: string; path: string; message: string }>; warnings: string[]; manifest: KitManifest | null; files: Record<string, Buffer> }
 export interface KitTheme { manifest: KitManifest; templates: Record<string, string>; css: { base?: string; tokens?: string; motion?: string; print?: string }; presets?: Record<string, unknown>; dir: string | null }
 export interface RenderInput {
   theme?: KitTheme; page: string | { slug: string; template?: string; item?: unknown; parent?: string };
@@ -20,13 +23,17 @@ export interface RenderInput {
 }
 export interface RenderSeo { title: string; description: string; canonical: string; structuredData: Record<string, unknown>; hreflang: Array<{ lang: string; href: string }> }
 export interface RenderResult { html: string; lang: string; seo: RenderSeo; slots: Array<{ name: string; rendered: boolean }>; warnings: string[]; template: string; variant?: { id: string } | null }
-export interface LintResult { ok: boolean; findings: Array<{ rule: string; message?: string; severity?: string }>; categories?: unknown[] }
+export interface LintResult { ok: boolean; findings: Array<{ rule: string; message?: string; severity?: string; level?: string; where?: string }>; categories?: unknown[] }
 
 export interface Kit {
   renderPage(input: RenderInput): RenderResult;
   /** makes an already rendered page listing-only (strips every call to action, adds the platform lines); used when the plan lapses or the vendor is suspended after publishing */
   listingOnlyHtml(html: string, texts: Record<string, string>): string;
   loadTheme(idOrDir: string): KitTheme;
+  /** a theme from an in-memory file map (a stored package): no disk access */
+  themeFromFiles(files: Record<string, Buffer>, dir?: string | null): KitTheme;
+  /** inspects a theme zip in memory (names, sizes, signatures, manifest, hash); nothing is extracted, parsed as code or fetched */
+  validatePackage(zip: Buffer): KitPackageResult;
   lintTheme(theme: KitTheme, opts?: Record<string, unknown>): LintResult;
   listVendorThemeIds(): string[];
   readThemeDir(dir: string): Record<string, Buffer>;
@@ -78,8 +85,8 @@ export function loadKit(): Kit {
   const render = at('lib/render.cjs'); const theme = at('lib/theme.cjs'); const lint = at('lib/lint.cjs'); const pack = at('lib/pack.cjs');
   const cats = at('lib/categories.cjs'); const fixtures = at('fixtures/index.cjs');
   const kit = {
-    renderPage: render.renderPage, listingOnlyHtml: render.listingOnlyHtml, loadTheme: theme.loadTheme, listVendorThemeIds: theme.listVendorThemeIds, lintTheme: lint.lintTheme,
-    readThemeDir: pack.readThemeDir, computeContentHash: pack.computeContentHash,
+    renderPage: render.renderPage, listingOnlyHtml: render.listingOnlyHtml, loadTheme: theme.loadTheme, themeFromFiles: theme.themeFromFiles, listVendorThemeIds: theme.listVendorThemeIds, lintTheme: lint.lintTheme,
+    readThemeDir: pack.readThemeDir, computeContentHash: pack.computeContentHash, validatePackage: pack.validatePackage,
     categoryById: cats.categoryById, hasCategory: cats.hasCategory, variantFor: cats.variantFor, CATEGORIES: cats.CATEGORIES, sampleContent: fixtures.sampleContent,
     categoryMap: () => JSON.parse(fs.readFileSync(path.join(dir, 'data', 'category-map.json'), 'utf8')) as { packs: Record<string, string[]> },
   } as unknown as Kit;

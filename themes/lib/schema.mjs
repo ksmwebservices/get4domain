@@ -12,7 +12,8 @@ const isType = (v, t) => (t === 'number' ? typeof v === 'number' : t === 'intege
 /** @returns {{path:string,code:string,message:string}[]} */
 export function validateAgainst(schema, value, path = '', out = []) {
   const err = (code, message) => out.push({ path, code, message });
-  if (schema.type && !isType(value, schema.type)) { err('type', `${path || 'value'} must be ${schema.type}, got ${typeOf(value)}`); return out; }
+  // `type` may be one name or a list of names (a nullable field is ['string', 'null'])
+  if (schema.type && !(Array.isArray(schema.type) ? schema.type : [schema.type]).some((t) => isType(value, t))) { err('type', `${path || 'value'} must be ${[].concat(schema.type).join(' or ')}, got ${typeOf(value)}`); return out; }
   if (schema.enum && !schema.enum.includes(value)) err('enum', `${path} must be one of: ${schema.enum.join(', ')}`);
   if (typeof value === 'string') {
     if (schema.pattern && !new RegExp(schema.pattern).test(value)) err('pattern', `${path} has the wrong format`);
