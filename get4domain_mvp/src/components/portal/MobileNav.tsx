@@ -103,7 +103,8 @@ export default function MobileNav({ links }: { links: HeaderLinks }) {
 
   const tab = (k: AppTab): string => `relative flex h-16 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-xs font-medium ${FOCUS} focus-visible:ring-inset ${active === k ? 'text-brand-700' : 'text-slate-600'}`;
   const mark = (k: AppTab): React.ReactNode => <span aria-hidden="true" className={`absolute inset-x-4 top-0 h-0.5 rounded-b-full ${active === k ? 'bg-brand-600' : 'bg-transparent'}`} />;
-  const ROW = `flex min-h-12 items-center rounded-xl px-4 text-base font-medium text-slate-800 hover:bg-slate-100 ${FOCUS}`;
+  const ROWB = `flex min-h-12 items-center rounded-xl px-4 text-base font-medium hover:bg-slate-100 ${FOCUS}`;
+  const ROW = `${ROWB} text-slate-800`;
 
   return (
     <>
@@ -131,7 +132,7 @@ export default function MobileNav({ links }: { links: HeaderLinks }) {
             </div>
             <ul className="pb-4">
               <li><A href={links.login} className={ROW} onClick={closeSheet}>{PORTAL.nav.signIn}</A></li>
-              <li><A href={links.register} className={`${ROW} text-brand-700`} onClick={closeSheet}>{PORTAL.nav.start}</A></li>
+              <li><A href={links.register} className={`${ROWB} font-semibold text-brand-700`} onClick={closeSheet}>{PORTAL.nav.start}</A></li>
               <li><A href={links.product} className={ROW} onClick={closeSheet}>{PORTAL.nav.product}</A></li>
               <li><A href={links.how} className={ROW} onClick={closeSheet}>{PORTAL.nav.how}</A></li>
               <li><A href={links.guides} className={ROW} onClick={closeSheet}>{PORTAL.nav.guides}</A></li>
