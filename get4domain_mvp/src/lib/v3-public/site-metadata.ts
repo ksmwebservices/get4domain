@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { siteConfig } from '@/constants/site';
 import { brandedTitle } from '@/lib/metadata';
 import { baseDomain, originFor, readHostConfig } from './hostnames';
 
@@ -23,11 +24,14 @@ export function canonicalFor(path: string): string | null {
 /** Metadata of a commercial public page: its own canonical on the main host, indexable (or not), no production address in the code. */
 export function siteMetadata(o: { title: string; description: string; path: string; noindex?: boolean }): Metadata {
   const canonical = canonicalFor(o.path);
+  // a title that already starts with the brand (the home title) is used as written; the others get " | Get4Domain" when that fits in 60 characters
+  const title = /^Get4Domain\b/.test(o.title) ? o.title : brandedTitle(o.title);
   return {
-    title: { absolute: brandedTitle(o.title) },
+    title: { absolute: title },
     description: o.description,
     alternates: canonical ? { canonical } : undefined,
     robots: o.noindex ? { index: false, follow: false } : { index: true, follow: true },
-    openGraph: { title: brandedTitle(o.title), description: o.description, type: 'website', ...(canonical ? { url: canonical } : {}) },
+    openGraph: { title, description: o.description, type: 'website', siteName: siteConfig.name, locale: 'en_IN', images: [siteConfig.ogImage], ...(canonical ? { url: canonical } : {}) },
+    twitter: { card: 'summary_large_image', title, description: o.description, images: [siteConfig.ogImage.url] },
   };
 }

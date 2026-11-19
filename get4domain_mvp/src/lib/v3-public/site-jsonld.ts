@@ -1,11 +1,13 @@
 import { netAmountPaise, PUBLIC_TERMS, type PublicPlans } from './plans';
 import { SITE } from './site-strings';
-import { mainOrigin } from './site-metadata';
+import { directoryOrigin, mainOrigin } from './site-metadata';
+
+const ORG_DESCRIPTION = 'A local business and domain directory, a domain search, and a business web app that puts every business online, makes it visible and captures enquiries.';
 
 /** JSON-LD of the commercial pages, as data (serialised and escaped by the JsonLd component). Prices only through offersLd, from the public price route; no ratings, no review markup. */
 export function organizationLd(): Record<string, unknown> {
   const origin = mainOrigin();
-  return { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.brand, ...(origin ? { url: `${origin}/` } : {}) };
+  return { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.brand, description: ORG_DESCRIPTION, ...(origin ? { url: `${origin}/` } : {}) };
 }
 
 /**
@@ -27,9 +29,18 @@ export function firmOrganizationLd(f: { legalName: string; address: string; gsti
   };
 }
 
+/** The WebSite block with its search action. The action points at the directory search (the q parameter) and is written only when the directory address is set: nothing is guessed. */
 export function webSiteLd(): Record<string, unknown> {
   const origin = mainOrigin();
-  return { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE.brand, ...(origin ? { url: `${origin}/` } : {}) };
+  const dir = directoryOrigin();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.brand,
+    description: ORG_DESCRIPTION,
+    ...(origin ? { url: `${origin}/` } : {}),
+    ...(dir ? { potentialAction: { '@type': 'SearchAction', target: { '@type': 'EntryPoint', urlTemplate: `${dir}/search?q={search_term_string}` }, 'query-input': 'required name=search_term_string' } } : {}),
+  };
 }
 
 export function faqLd(items: ReadonlyArray<{ q: string; a: string }>): Record<string, unknown> {

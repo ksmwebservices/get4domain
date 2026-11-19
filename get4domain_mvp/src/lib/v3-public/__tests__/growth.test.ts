@@ -152,13 +152,14 @@ describe('plan prices: monthly price, billed line, saving and Offer data come fr
 describe('positioning: a local business directory and search with a web app (P4.8)', () => {
   const at = (path: string): string => everything.find((s) => s.path === path)?.text ?? '';
   test('the hero, home, about, product and meta texts say directory, search, web app, enquiry capture and promotion', () => {
-    for (const t of [at('PORTAL.home.lead'), at('SITE.home.lead'), at('SITE.home.metaDescription'), at('MARKETING.product.lead'), at('MARKETING.product.metaDescription')]) {
+    for (const t of [at('SITE.home.lead'), at('SITE.home.metaDescription'), at('MARKETING.product.lead'), at('MARKETING.product.metaDescription')]) {
       assert.match(t, /enquiry capture/, t);
       assert.match(t, /promotion/, t);
     }
-    assert.match(at('PORTAL.home.eyebrow'), /directory, search and web app/);
-    assert.match(at('PORTAL.home.lead'), /keyword and place/);
-    assert.match(at('PORTAL.home.lead'), /subdomain directory/);
+    // the hero (P6.3) has its own owner wording: kicker, headline and sub line
+    assert.match(at('PORTAL.home.eyebrow'), /directory, domain search and web app/);
+    assert.match(at('PORTAL.home.lead'), /Get4Domain directory/);
+    assert.match(at('PORTAL.home.lead'), /promotion/);
     assert.match(at('SITE.home.lead'), /local business directory and search/);
   });
   test('the About text is a directory and search engine with a web app, and names SEO keywords, directory pages and the subdomain', async () => {

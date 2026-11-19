@@ -10,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: '/',
     name: BRAND_TITLE,
     short_name: 'Get4Domain',
-    description: 'Find local businesses, and get a business website on your own subdomain.',
+    description: 'Search local businesses and domain names, and put your business online with a website, a business web app and enquiry capture.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

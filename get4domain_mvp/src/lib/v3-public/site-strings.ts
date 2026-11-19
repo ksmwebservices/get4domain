@@ -34,8 +34,8 @@ export const SITE = {
 
   pricing: {
     title: 'Pricing',
-    metaTitle: 'Plans and pricing',
-    metaDescription: 'Plans for the web app: a website, business tools, enquiry capture and promotion through directory pages and your subdomain. Handyman, Professional or Ecommerce, billed quarterly, half-yearly or annually. Prices are without GST.',
+    metaTitle: 'Pro plans: business website and web app',
+    metaDescription: 'Pro plans for a business website and web app that captures enquiries, with promotion run by our team. Handyman, Professional or Ecommerce. Prices are without GST.',
     h1: 'Plans and pricing',
     intro: 'Start with a free site. Move to a Pro plan when you want the main features.',
     termLegend: 'Billing term',
@@ -104,8 +104,8 @@ export const SITE = {
 
   register: {
     title: 'Create your account',
-    metaTitle: 'Create your account',
-    metaDescription: 'Register your business and get a free site on your own subdomain.',
+    metaTitle: 'Create your business account and website',
+    metaDescription: 'Register your business for a free business website on your own subdomain and a listing in the local business directory. Check a domain name first with domain search.',
     h1: 'Start with a free site',
     intro: 'Your free site goes live right away. You can edit it and move to a Pro plan whenever you are ready.',
     planNote: 'Chosen plan',
@@ -232,16 +232,16 @@ export const SITE = {
 
   referral: {
     title: 'Referral link',
-    metaTitle: 'Referral link',
-    metaDescription: 'Start with a free site on Get4Domain.',
+    metaTitle: 'Start with a free business website',
+    metaDescription: 'Start with a free business website on Get4Domain, a local business directory with domain search and a business web app that captures enquiries.',
     invalidH1: 'This referral link is not active',
     invalidBody: 'The link may be mistyped or no longer in use. You can still start with a free site.',
     cta: 'Start free',
   },
 
   home: {
-    metaTitle: 'Local business directory, search and business websites',
-    metaDescription: 'A local business directory and search, with a web app for every business: a website, business tools, enquiry capture and promotion through directory pages and your own subdomain.',
+    metaTitle: 'Get4Domain | Local business and domain directory, domain search and web app',
+    metaDescription: 'Get4Domain is a local business and domain directory, a domain search and a business web app with enquiry capture and promotion run by our team in one Pro plan.',
     h1: 'A website for your business, live on your own subdomain',
     lead: 'Get4Domain is a local business directory and search, with a web app for every business: a website, business tools, enquiry capture, and promotion through our SEO keywords, directory pages and your own subdomain.',
     ctaPrimary: 'Start free',
@@ -265,8 +265,8 @@ export const SITE = {
   },
 
   how: {
-    metaTitle: 'How it works',
-    metaDescription: 'Register, get a free site on your own subdomain, and move to a Pro plan for the main features.',
+    metaTitle: 'How the directory and web app work',
+    metaDescription: 'Register, get a free business website on your own subdomain, appear in the local business directory, and move to a Pro plan for the business web app and enquiries.',
     h1: 'How it works',
     steps: [
       { title: '1. Register', body: 'Enter your business name, choose a category and pick the address of your site. Add your name, email and a password.' },
@@ -278,8 +278,8 @@ export const SITE = {
   },
 
   industries: {
-    metaTitle: 'Industries',
-    metaDescription: 'The business areas Get4Domain is set up for, and what each one gives your site.',
+    metaTitle: 'Business categories and industry websites',
+    metaDescription: 'The business categories Get4Domain is set up for, and what each gives your business website and business web app, from a directory listing to enquiries.',
     h1: 'Industries',
     intro: 'Each business area comes with starter content and the features that suit it. Choose yours to see what it gives your business.',
     viewLink: 'See what it gives',
@@ -315,8 +315,8 @@ export const SITE = {
   },
 
   features: {
-    metaTitle: 'Features',
-    metaDescription: 'What a Get4Domain site gives your business: a site on your subdomain, editing, a directory listing and the main features on a Pro plan.',
+    metaTitle: 'Features of the business website and web app',
+    metaDescription: 'What a Get4Domain business website gives you: a site on your subdomain, a directory listing, enquiries, and the business web app on a Pro plan.',
     h1: 'Features',
     groups: [
       { title: 'Your site', points: ['A site on your own subdomain', 'Starter content for your business area', 'Edit the content yourself'] },
@@ -328,16 +328,16 @@ export const SITE = {
   },
 
   about: {
-    metaTitle: 'About',
-    metaDescription: 'About Get4Domain and the firm behind it.',
+    metaTitle: 'About Get4Domain',
+    metaDescription: 'About Get4Domain, a local business directory with domain search and a business web app, and the firm behind it.',
     h1: 'About Get4Domain',
     body: ['Get4Domain helps businesses get a website on their own subdomain and the tools to run it.'],
     firmLine: 'Get4Domain is a service of {name}, {address}.',
   },
 
   contact: {
-    metaTitle: 'Contact',
-    metaDescription: 'How to reach Get4Domain.',
+    metaTitle: 'Contact Get4Domain',
+    metaDescription: 'How to reach Get4Domain for questions about the business directory, domain search, your business website and the custom domain pack.',
     h1: 'Contact',
     body: 'For help with your account, sign in to your business app and use the support section there. For anything else, write to us at the email address below.',
     emailLabel: 'Email',

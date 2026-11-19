@@ -3,7 +3,7 @@ export const siteConfig = {
   url: 'https://get4domain.com',
   tagline: 'Professional Business Launch Made Easy',
   description:
-    "India's SaaS platform for professional business websites, digital marketing and business management. Trusted by SMBs across India.",
+    'A local business and domain directory, a domain search, and a business web app that puts every business online, makes it visible and captures enquiries.',
   // Social-share image used for link previews (WhatsApp, Facebook, Instagram, X,
   // LinkedIn). This is the real hero section at the standard 1200x630 (1.91:1) size
   // that these platforms need to render a LARGE preview card; `type` emits
@@ -13,9 +13,15 @@ export const siteConfig = {
     width: 1200,
     height: 630,
     type: 'image/jpeg',
-    alt: 'Get4Domain — Turn your website into a WebApp. A professional industry website plus the full web-app behind it: leads, CRM, bookings, invoices, WhatsApp & AI content. From ₹999/mo.',
+    alt: 'Get4Domain: local business and domain directory, domain search and a business web app that puts your business online and captures enquiries.',
   },
   keywords: [
+    'local business directory',
+    'domain directory',
+    'domain search',
+    'business website',
+    'business web app',
+    'enquiries',
     'business website platform',
     'domain app india',
     'digital marketing saas',
@@ -44,12 +50,12 @@ export const siteConfig = {
 };
 
 // Brand wording used by the home page, the root layout metadata and the JSON-LD. Change it here only.
-export const BRAND_TAGLINE = 'Your Online Business Visibility Partner';
-// 52 characters; the brand is already first, so no " | Get4Domain" suffix.
-export const BRAND_TITLE = `Get4Domain – ${BRAND_TAGLINE}`;
-// 121 characters (limit 160).
+export const BRAND_TAGLINE = 'Local business and domain directory, domain search and web app';
+// The brand is already first, so no " | Get4Domain" suffix.
+export const BRAND_TITLE = `Get4Domain | ${BRAND_TAGLINE}`;
+// Under 160 characters.
 export const BRAND_DESCRIPTION =
-  'Get4Domain (get4domain.com) helps Indian businesses get a website, a domain and a directory listing, and be found online.';
+  'Get4Domain is a local business and domain directory, a domain search, and a business web app that puts every business online, makes it visible and captures enquiries.';
 
 export const navLinks = [
   { label: 'Products', href: '/products' },

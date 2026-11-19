@@ -59,7 +59,6 @@ export default async function HomePage() {
             <p className="text-sm font-semibold uppercase tracking-wide text-gold-300">{H.eyebrow}</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">{H.h1}</h1>
             <p className="mt-4 max-w-xl text-lg text-ink-200">{H.lead}</p>
-            <p className="mt-2 max-w-xl text-base font-medium text-gold-200">{GROWTH.heroLine}</p>
             <div className="mt-8 max-w-2xl">
               <SearchBox action={l.search} registerHref={register} suffix={base ? `.${base}` : ''} idPrefix="hero" />
             </div>

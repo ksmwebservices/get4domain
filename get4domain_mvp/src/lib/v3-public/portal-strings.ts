@@ -106,9 +106,9 @@ export const PORTAL = {
   },
 
   home: {
-    eyebrow: 'Local business directory, search and web app',
-    h1: 'Find any local business. Get a website for yours.',
-    lead: 'Search for a business by keyword and place, or find a website name on the Get4Domain subdomain directory. Every business also gets a website, business tools, enquiry capture and promotion.',
+    eyebrow: 'Local business directory, domain search and web app',
+    h1: 'Get your business online, found and getting enquiries.',
+    lead: 'Search local businesses and domain names on the Get4Domain directory. Every business gets a website, business tools and promotion run by our team, in one Pro plan.',
     popularHeading: 'Popular searches',
     popularLabel: 'Popular searches',
     popular: ['Plumber', 'Electrician', 'Dentist', 'Salon', 'Gym', 'Restaurant', 'Car workshop', 'Tuition centre'],
@@ -196,8 +196,8 @@ export const PORTAL = {
     next: 'Next page',
     backToDirectory: 'Back to the directory',
     couldNotSearch: 'The search could not be reached just now. Please try again.',
-    metaTitle: 'Find a local business',
-    metaDescription: 'Search businesses by what they do and where they are. Each result links to the business site.',
+    metaTitle: 'Local business directory search',
+    metaDescription: 'Search the local business directory by what a business does and where it is. Each result links to the business site and its directory page.',
     searchMetaTitle: 'Search results',
   },
 

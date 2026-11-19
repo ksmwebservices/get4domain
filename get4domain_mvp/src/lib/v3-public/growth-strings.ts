@@ -6,8 +6,8 @@
  */
 export const GROWTH = {
   nav: 'Growth',
-  metaTitle: 'What a Pro plan includes: a website, business tools and promotion run for you',
-  metaDescription: 'A Pro plan is a business website on your own subdomain, a business web app that captures enquiries, and promotion run by the Get4Domain team through directory pages and your subdomain.',
+  metaTitle: 'Pro plan: promotion and enquiries',
+  metaDescription: 'A Pro plan is a business website on your subdomain and a business web app that captures enquiries, with promotion run by the Get4Domain team.',
   h1: 'Get found and get enquiries',
   lead: 'A Pro plan is not only a website and a business app. It also includes promotion that our team sets up and manages, through our directory pages and your own Get4Domain subdomain, with enquiries captured in your business app.',
   honest: 'We set up and manage the work. We cannot promise a position in search results, a number of visitors or a number of enquiries, and we do not.',
@@ -77,7 +77,6 @@ export const GROWTH = {
   homeHeading: 'Run for you by Get4Domain',
   homeLead: 'On a Pro plan our team sets up and manages promotion, through the directory pages and your own subdomain site, with a monthly or yearly allowance by plan.',
   homeMore: 'See everything a Pro plan includes',
-  heroLine: 'Website, business tools and promotion in one Pro plan.',
 
   /** The footer column. */
   footerHeading: 'In a Pro plan',

@@ -92,8 +92,8 @@ export const MARKETING = {
   },
 
   product: {
-    metaTitle: 'Product',
-    metaDescription: 'The Get4Domain web app: a website for your business, business tools, enquiry capture, and promotion through our directory pages, SEO keywords and your own subdomain.',
+    metaTitle: 'Business web app: website, enquiries and tools',
+    metaDescription: 'The Get4Domain business web app: a business website, tools, enquiry capture, and promotion through our directory pages, keyword work and your own subdomain.',
     h1: 'Product',
     lead: 'Get4Domain is a local business directory and search, with a web app for every business: a website, business tools, enquiry capture and promotion. Each part has a page of its own.',
     viewLink: 'Read more',
@@ -164,8 +164,8 @@ export const MARKETING = {
         related: ['business-tools', 'website', 'reports'],
       },
       {
-        slug: 'directory', name: 'Directory', metaTitle: 'Business directory by city and category',
-        metaDescription: 'Browse businesses by city and category, or list yours. Every listing has a Visit site link to the business site.',
+        slug: 'directory', name: 'Directory', metaTitle: 'Local business directory by city and category',
+        metaDescription: 'Browse the local business directory by city and category, or list your business. Every listing has a Visit site link to the business site.',
         h1: 'Directory', lead: 'A directory of businesses by city and category. Every listing has a Visit site link that takes you to the business site.',
         gives: ['Listings by city and category', 'A page for each business', 'A Visit site link on every listing', 'A way for a business owner to claim a listing'],
         steps: [
@@ -215,8 +215,8 @@ export const MARKETING = {
         related: ['website', 'search-visibility', 'business-tools'],
       },
       {
-        slug: 'domains', name: 'Domains', metaTitle: 'Your own domain name for your site',
-        metaDescription: 'Start on your own subdomain, then connect a domain name of your own on a Pro plan. Step-by-step help in your business app.',
+        slug: 'domains', name: 'Domains', metaTitle: 'Domain search and your own domain name',
+        metaDescription: 'Search for a domain name, start on your own subdomain, then connect a domain name of your own on a Pro plan. Step-by-step help in your business app.',
         h1: 'Domains', lead: 'Your site starts on its own subdomain. On a Pro plan you can connect a domain name of your own.',
         gives: ['A site address on your own subdomain from the start', 'A domain name of your own on a Pro plan', 'Step-by-step connection in your business app', 'A choice of which address is your main one'],
         steps: [
@@ -232,8 +232,8 @@ export const MARKETING = {
         related: ['website', 'search-visibility', 'business-tools'],
       },
       {
-        slug: 'business-tools', name: 'Business tools', metaTitle: 'Business tools in your business app',
-        metaDescription: 'Customers, invoices, payments and the working areas of your business area, together in your business app.',
+        slug: 'business-tools', name: 'Business tools', metaTitle: 'Business web app tools for your business',
+        metaDescription: 'Customers, enquiries, invoices, payments and the working areas of your business area, together in your business web app.',
         h1: 'Business tools', lead: 'Your business app holds the tools for running your business, with working areas that suit your business area.',
         gives: ['Customers and their history', 'Invoices and payment requests', 'A wallet and plan billing', 'Team members with their own access', 'Working areas for your business area, such as jobs, orders, bookings or listings', 'Support from inside the app'],
         steps: [
@@ -280,8 +280,8 @@ export const MARKETING = {
   },
 
   guides: {
-    metaTitle: 'Guides for business websites',
-    metaDescription: 'Plain guides on what a business website needs, choosing a site address, how search engines find a site, handling enquiries and moving to a Pro plan.',
+    metaTitle: 'Guides: business website, domain and enquiries',
+    metaDescription: 'Plain guides on what a business website needs, choosing a site address and domain name, how search engines find a site, handling enquiries and moving to a Pro plan.',
     h1: 'Guides',
     lead: 'Short, plain guides for owners of small businesses. They explain the ideas and do not promise results.',
     read: 'Read the guide',

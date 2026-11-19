@@ -6,7 +6,7 @@ import type { LegalSection } from './legal-meta';
  */
 export const ABOUT_STRINGS = {
   path: '/about',
-  metaTitle: 'About us',
+  metaTitle: 'About Get4Domain: local business directory and web app',
   metaDescription: 'Get4Domain is a local business directory and search, with a web app for every business, operated by KSM QUANTUM TECHNOLOGIES in Chennai, Tamil Nadu, India.',
   h1: 'About Get4Domain',
   intro: 'Get4Domain is a local business directory and search engine: you find a business by keyword and place, or find a website name on the Get4Domain subdomain directory. It comes with a web app for every business: a website, business tools, an enquiry capture system, and promotion through our SEO keywords, directory pages and the business subdomain.',
@@ -52,7 +52,7 @@ export const ABOUT_STRINGS = {
 
 export const CONTACT_STRINGS = {
   path: '/contact',
-  metaTitle: 'Contact',
+  metaTitle: 'Contact Get4Domain',
   metaDescription: 'How to reach Get4Domain, operated by KSM QUANTUM TECHNOLOGIES in Chennai, Tamil Nadu, India: company details, support, payments and data requests.',
   h1: 'Contact',
   intro: 'This page tells you how to reach Get4Domain, which is operated by KSM QUANTUM TECHNOLOGIES.',
