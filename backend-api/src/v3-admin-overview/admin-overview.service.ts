@@ -179,7 +179,7 @@ export class AdminOverviewService {
   private async vendorSeries(): Promise<Dict> {
     const now = this.clock(); const from = seriesStart(now);
     const rows = await this.prisma.$queryRaw<Array<{ day: string; n: bigint }>>`
-      SELECT to_char(("createdAt" AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM "Vendor"
+      SELECT to_char((("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM "Vendor"
        WHERE "createdAt" >= ${from} AND role = 'VENDOR' AND "isSandbox" = false GROUP BY 1`;
     return { days: fillSeries(rows.map((r) => ({ day: r.day, n: num(r.n) })), now) };
   }
@@ -187,7 +187,7 @@ export class AdminOverviewService {
   private async enquirySeries(): Promise<Dict> {
     const now = this.clock(); const from = seriesStart(now);
     const rows = await this.prisma.$queryRaw<Array<{ day: string; n: bigint }>>`
-      SELECT to_char(("createdAt" AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM g4d_requests
+      SELECT to_char((("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM g4d_requests
        WHERE "createdAt" >= ${from} AND status <> 'SPAM' GROUP BY 1`;
     return { days: fillSeries(rows.map((r) => ({ day: r.day, n: num(r.n) })), now) };
   }
@@ -195,7 +195,7 @@ export class AdminOverviewService {
   private async paidOrderSeries(): Promise<Dict> {
     const now = this.clock(); const from = seriesStart(now);
     const rows = await this.prisma.$queryRaw<Array<{ day: string; n: bigint }>>`
-      SELECT to_char(("paidAt" AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM g4d_plan_orders
+      SELECT to_char((("paidAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Kolkata')::date, 'YYYY-MM-DD') AS day, count(*) AS n FROM g4d_plan_orders
        WHERE status = 'PAID' AND "paidAt" >= ${from} GROUP BY 1`;
     return { days: fillSeries(rows.map((r) => ({ day: r.day, n: num(r.n) })), now) };
   }

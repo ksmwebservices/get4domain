@@ -142,6 +142,16 @@ describe('K1.2 short cache and generatedAt', () => {
   });
 });
 
+describe('K1 series SQL labels the stored UTC time before converting to India time (found by the staging check)', () => {
+  it('all three day-grouping queries use (col AT TIME ZONE \'UTC\') AT TIME ZONE \'Asia/Kolkata\'', async () => {
+    const { s, queryRaw } = service('test');
+    await s.overview('SUPER_ADMIN');
+    const sqls = queryRaw.mock.calls.map((c) => (c[0] as unknown as string[]).join('?')).filter((q) => q.includes('to_char'));
+    expect(sqls).toHaveLength(3);
+    for (const q of sqls) { expect(q).toMatch(/AT TIME ZONE 'UTC'\) AT TIME ZONE 'Asia\/Kolkata'/); expect(q).not.toMatch(/"(createdAt|paidAt)" AT TIME ZONE 'Asia/); }
+  });
+});
+
 describe('K1 India-time helpers', () => {
   it('month edges follow India time (a payment at 01:00 IST on the 1st belongs to the new month)', () => {
     const e = istMonthEdges(new Date('2026-10-31T19:30:00.000Z'));   // 01:00 IST on 1 November
