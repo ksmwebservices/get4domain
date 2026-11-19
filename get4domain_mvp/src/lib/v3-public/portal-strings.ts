@@ -101,7 +101,7 @@ export const PORTAL = {
     customLabel: 'Already own a domain name?',
     customPlaceholder: 'yourbusiness.com',
     customCta: 'Connect a domain you own',
-    customNote: 'Registering new domain names opens soon. Until then you can connect a domain you already own, on a Pro plan.',
+    customNote: 'Registering a new domain name is not open yet. You can connect a domain you already own, on a Pro plan.',
     tryDomain: 'Check a website name',
   },
 

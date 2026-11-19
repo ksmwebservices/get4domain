@@ -64,50 +64,49 @@ describe('no ranking, traffic or enquiry promise anywhere on the public site', (
 });
 
 describe('the growth config', () => {
-  test('the five status labels are exactly the owner wording', () => {
-    assert.deepEqual(GROWTH_STATUS_LABEL, { included: 'Included', team: 'Included, done by our team', allowance: 'Included, with an allowance by plan', soon: 'Launching soon', addon: 'Add-on pack' });
+  test('the three labels are exactly the owner wording (P6.4); there is no "soon" label', () => {
+    assert.deepEqual(GROWTH_STATUS_LABEL, { included: 'Included', pro: 'Included in Pro', addon: 'Add-on pack, price on request' });
   });
   const keysOf = (st: string): string[] => GROWTH_SERVICES.filter((s) => s.statuses.includes(st as never)).map((s) => s.key).sort();
-  test('Included: the directory listing, the category-in-area pages, and the base site and tools', () => {
-    assert.deepEqual(keysOf('included'), ['dir-listing', 'dir-pages', 'sub-site', 'tools']);
+  test('Included (also on Free): the directory listing and pages', () => {
+    assert.deepEqual(keysOf('included'), ['dir-listing', 'dir-pages']);
   });
-  test('done by our team: SEO, AEO and GEO (subdomain and directory), meta, local keywords, Business Profile, Analytics and Search Console, Merchant', () => {
-    assert.deepEqual(keysOf('team'), ['analytics', 'dir-seo', 'gbp', 'local-keywords', 'merchant', 'meta', 'sub-seo']);
+  test('Included in Pro: the work run for you, and the tools the vendor app really has', () => {
+    assert.deepEqual(keysOf('pro'), ['analytics', 'billing', 'blogs', 'campaigns', 'enquiries', 'merchant', 'meta', 'poster', 'posts', 'promotion', 'reels', 'seo', 'spotlight', 'sub-site', 'team', 'tools', 'writing']);
   });
-  test('allowance by plan: spotlight, reels, poster, posts, blogs, content writing', () => {
-    assert.deepEqual(keysOf('allowance'), ['blogs', 'poster', 'posts', 'reels', 'spotlight', 'writing']);
+  test('add-on pack: the three custom domain items only', () => {
+    assert.deepEqual(keysOf('addon'), ['cd-hub', 'cd-seo', 'cd-social']);
   });
-  test('launching soon: directory ads, e-mail, SMS, WhatsApp, social posting', () => {
-    assert.deepEqual(keysOf('soon'), ['dir-ads', 'email', 'sms', 'social-posting', 'whatsapp']);
-  });
-  test('add-on pack: custom-domain SEO and paid ads only', () => {
-    assert.deepEqual(keysOf('addon'), ['cd-ads', 'cd-seo']);
-  });
-  test('every service has exactly one status', () => {
+  test('every service has exactly one label', () => {
     for (const s of GROWTH_SERVICES) assert.equal(s.statuses.length, 1, s.key);
   });
   test('reels and the poster are on the annual plan', () => {
     for (const k of ['reels', 'poster']) assert.equal(GROWTH_SERVICES.find((x) => x.key === k)!.note, 'On the annual plan');
   });
-  test('only the Merchant listing is Ecommerce-only', () => {
+  test('only the Merchant profile is Ecommerce-only', () => {
     assert.deepEqual(GROWTH_SERVICES.filter((s) => s.plans === 'ecommerce').map((s) => s.key), ['merchant']);
   });
   test('the Free plan has the directory listing, its pages and the subdomain site; everything else here is locked', () => {
     assert.deepEqual(GROWTH_SERVICES.filter((s) => s.free === 'included').map((s) => s.key).sort(), ['dir-listing', 'dir-pages', 'sub-site']);
   });
-  test('every service belongs to a group, keys are unique, and the six groups are the page sections', () => {
+  test('three groups, in the owner order; every service is in a group and keys are unique', () => {
     const keys = GROWTH_SERVICES.map((s) => s.key);
     assert.equal(new Set(keys).size, keys.length);
-    for (const s of GROWTH_SERVICES) assert.ok(GROWTH_GROUPS.some((g) => g.key === s.group), s.key);
+    assert.deepEqual(GROWTH_GROUPS.map((g) => g.name), ['Run for you by Get4Domain', 'Self-serve tools in your business app', 'Custom domain pack']);
+    for (const s of GROWTH_SERVICES) assert.ok(s.group === 'base' || GROWTH_GROUPS.some((g) => g.key === s.group), s.key);
     for (const g of GROWTH_GROUPS) assert.ok(servicesOf(g.key).length > 0, g.key);
-    assert.deepEqual(GROWTH_GROUPS.map((g) => g.name), ['Directory and local search', 'Your subdomain site', 'Google presence', 'Content and reels', 'Campaigns and social', 'Custom domain add-on']);
-    assert.ok(GROWTH_ONLY.every((s) => !s.base));
-    assert.deepEqual(statusLabels(GROWTH_SERVICES.find((s) => s.key === 'reels')!), ['Included, with an allowance by plan']);
+    assert.ok(GROWTH_ONLY.every((s) => s.group === 'run'));
+    assert.deepEqual(statusLabels(GROWTH_SERVICES.find((s) => s.key === 'reels')!), ['Included in Pro']);
+    assert.match(GROWTH_GROUPS[0].blurb, /monthly or yearly allowance by plan/);
   });
-  test('the copy says promotion is for the subdomain and directory pages, never a custom domain, and has no allowance number', () => {
+  test('the old labels are gone from every card and string', () => {
+    const all = JSON.stringify([GROWTH, GROWTH_GROUPS, GROWTH_SERVICES, GROWTH_STATUS_LABEL]);
+    assert.doesNotMatch(all, /Included, done by our team|Included, with an allowance by plan/);
+  });
+  test('the copy says promotion is for the subdomain and directory pages, never your own domain, and has no allowance number', () => {
     assert.match(GROWTH.promotionNote, /subdomain/);
     assert.match(GROWTH.promotionNote, /directory pages/);
-    assert.match(GROWTH.promotionNote, /custom domain are an add-on pack, price not set yet/);
+    assert.match(GROWTH.promotionNote, /custom domain pack is an add-on, price on request/);
     assert.match(GROWTH.allowanceNote, /monthly or yearly allowance by plan/);
   });
 });

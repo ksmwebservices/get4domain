@@ -90,7 +90,9 @@ export const SITE = {
     addonsPrice: 'Price not set yet',
     faqHeading: 'Questions about plans',
     faq: [
-      { q: 'How does the Free plan work?', a: 'You register yourself and your free site goes live right away on its own subdomain. You can edit its content. Free sites are informational. To use the main features, move to a Pro plan.' },
+      { q: 'How does the Free plan work?', a: 'You register yourself and your free site goes live right away on its own subdomain, with a listing in the directory. You can edit its content. Free sites are informational. When you want the business tools and the promotion run for you, move to one of the Pro plans.' },
+      { q: 'What does Get4Domain promote for me?', a: 'On a Pro plan our team promotes your business on the directory pages that list your category in your area and on your own Get4Domain subdomain, through search engines and Meta, and runs campaigns by SMS, e-mail and WhatsApp to your own customers who agreed to receive them. Reels, posters, posts and blogs are made by our team. How much you get depends on your plan. We cannot promise a position in search results or a number of enquiries.' },
+      { q: 'What is the custom domain pack?', a: 'If you connect a domain name of your own, the promotion we run does not run on it. The custom domain pack is an add-on that brings SEO, social media and a communication hub to your own domain. It is not part of a Pro plan and the price is on request, so ask us through the contact page.' },
       { q: 'How do I pay?', a: 'Payment happens inside your business app, through our payment gateway. This website never takes a payment and never asks for card details.' },
       { q: 'Are prices with or without GST?', a: 'Prices are shown without GST. GST is added as a separate line at checkout.' },
       { q: 'What happens when a Pro plan ends?', a: 'Your own domain name stops working and visitors are sent to your subdomain. Your data and your theme are kept.' },

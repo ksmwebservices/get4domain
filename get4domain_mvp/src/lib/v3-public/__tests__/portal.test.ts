@@ -38,7 +38,7 @@ describe('copy rules over the portal strings', () => {
   test('the only billing terms are quarterly, half-yearly and annual', () => assert.deepEqual(Object.keys(PORTAL.home.terms).map(Number), [3, 6, 12]));
   test('the GST line says prices are without GST', () => assert.match(PORTAL.home.gst, /without GST/));
   test('the domain note says new domain registration is not open yet and never claims availability', () => {
-    assert.match(PORTAL.search.customNote, /opens soon/);
+    assert.match(PORTAL.search.customNote, /not open yet/);
     assert.doesNotMatch(PORTAL.search.customNote + PORTAL.search.customCta, /available/i);
   });
 });

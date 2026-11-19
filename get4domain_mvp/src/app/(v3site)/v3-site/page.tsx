@@ -6,13 +6,13 @@ import DirectoryEmpty from '@/components/portal/DirectoryEmpty';
 import CategoryGrid from '@/components/portal/CategoryGrid';
 import FullBleed from '@/components/portal/FullBleed';
 import { BrowserFrame, DashboardScreen, DirectoryScreen, PanelPreview, PhoneFrame } from '@/components/portal/Mockups';
-import GrowthGrid from '@/components/portal/GrowthGrid';
+import GrowthGrid, { StatusChip } from '@/components/portal/GrowthGrid';
 import { navPacks } from '@/components/portal/nav-data';
 import PortalPricing from '@/components/portal/PortalPricing';
 import SearchBox from '@/components/portal/SearchBox';
 import { Band, CtaPanel, FaqAccordion, SectionHead } from '@/components/portal/Section';
 import { CARD, CHIP, CONTAINER, PROSE_LINK } from '@/components/portal/ui';
-import { GROWTH_ONLY } from '@/lib/v3-public/growth-config';
+import { GROWTH_ONLY, servicesOf } from '@/lib/v3-public/growth-config';
 import { GROWTH } from '@/lib/v3-public/growth-strings';
 import { getPageModel } from '@/lib/v3-public/data';
 import { assertV3Public } from '@/lib/v3-public/guard';
@@ -105,11 +105,32 @@ export default async function HomePage() {
         <p className="mt-6"><Link href={l.main('/industries')} className={PROSE_LINK}>{MARKETING.home.audienceLink}</Link></p>
       </Band>
 
-      {/* 2c. Get found and get enquiries: the growth services with their status labels (config: growth-config.ts) */}
-      <Band id="growth-title">
+      {/* 2c. How you get found (P6.5): four steps */}
+      <Band id="find-title">
+        <SectionHead id="find-title" title={GROWTH.findHeading} />
+        <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {GROWTH.find.map((s, i) => (
+            <li key={s.title} className={`${CARD} p-6`}>
+              <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
+              <h3 className="mt-4 text-lg font-bold text-ink-900">{s.title}</h3>
+              <p className="mt-2 text-sm text-slate-700">{s.body}</p>
+            </li>
+          ))}
+        </ol>
+      </Band>
+
+      {/* 2d. Run for you by Get4Domain: what a Pro plan includes (config: growth-config.ts) */}
+      <Band id="growth-title" tone="soft">
         <SectionHead id="growth-title" title={GROWTH.homeHeading} lead={GROWTH.homeLead} />
-        <div className="mt-8"><GrowthGrid services={GROWTH_ONLY} withSummary={false} /></div>
+        <p className="mt-4"><StatusChip status="pro" /></p>
+        <div className="mt-6"><GrowthGrid services={GROWTH_ONLY} withSummary={false} /></div>
         <p className="mt-6"><Link href={l.main('/growth')} className={PROSE_LINK}>{GROWTH.homeMore}</Link></p>
+      </Band>
+
+      {/* 2e. Business tools (P6.5): only what the business app has working today */}
+      <Band id="tools-title">
+        <SectionHead id="tools-title" title={GROWTH.toolsHeading} lead={GROWTH.toolsLead} />
+        <div className="mt-8"><GrowthGrid services={servicesOf('tools')} /></div>
       </Band>
 
       {/* 3. How it works */}

@@ -37,7 +37,7 @@ export function Steps({ id, heading, steps }: { id: string; heading: string; ste
   return (
     <section aria-labelledby={id} className="mt-12">
       <h2 id={id} className="text-2xl font-bold tracking-tight text-ink-900">{heading}</h2>
-      <ol className="mt-5 grid gap-4 md:grid-cols-3">
+      <ol className={`mt-5 grid gap-4 ${steps.length === 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'}`}>
         {steps.map((s, i) => (
           <li key={s.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>

@@ -74,14 +74,14 @@ export default async function PricingPage() {
               <tr key={row.label} className="border-b border-slate-200"><th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{row.label}</th><td className="py-2 pr-3 text-slate-700">{row.free}</td><td className="py-2 text-slate-700">{row.paid}</td></tr>
             ))}
             <tr className="border-b border-slate-300 bg-slate-50"><th scope="rowgroup" colSpan={3} className="py-2 pr-3 text-ink-900">{GROWTH.compareGrowthHeading}</th></tr>
-            {GROWTH_SERVICES.filter((svc) => !svc.base || svc.key === 'tools').map((svc) => (
+            {GROWTH_SERVICES.filter((svc) => svc.key !== 'sub-site').map((svc) => (
               <tr key={svc.key} className="border-b border-slate-200">
                 <th scope="row" className="py-2 pr-3 font-semibold text-ink-900">{svc.name}</th>
                 <td className="py-2 pr-3 text-slate-700">{svc.free === 'included' ? GROWTH.compareIncludedFree : GROWTH.compareLocked}</td>
                 <td className="py-2 text-slate-700">
                   {svc.plans === 'ecommerce' ? <span className="block font-medium">{GROWTH.compareEcommerceNote}</span> : null}
                   {svc.note ? <span className="block font-medium">{svc.note}.</span> : null}
-                  {svc.statuses.map((k) => <span key={k} className="block">{GROWTH_STATUS_LABEL[k]}{k === 'addon' ? `. ${GROWTH.addonPrice}` : ''}</span>)}
+                  {svc.statuses.map((k) => <span key={k} className="block">{GROWTH_STATUS_LABEL[k]}</span>)}
                 </td>
               </tr>
             ))}

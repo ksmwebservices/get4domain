@@ -1,15 +1,15 @@
-import { BarChart3, FileText, Globe, Image as ImageIcon, List, Mail, MapPin, Megaphone, MessageCircle, PenLine, Plus, Presentation, Search, Share2, Smartphone, Store, Tag, Video, Wrench, type LucideIcon } from 'lucide-react';
+import { BarChart3, FileText, Globe, Image as ImageIcon, Inbox, List, Mail, MapPin, Megaphone, MessageCircle, PenLine, Plus, Presentation, Receipt, Search, Share2, Store, Tag, Users, Video, Wrench, type LucideIcon } from 'lucide-react';
 import { GROWTH_STATUS_LABEL, type GrowthIcon, type GrowthService, type GrowthStatus } from '@/lib/v3-public/growth-config';
 import { GROWTH } from '@/lib/v3-public/growth-strings';
 import { CARD } from '@/components/portal/ui';
 
 const ICONS: Record<GrowthIcon, LucideIcon> = {
-  globe: Globe, wrench: Wrench, search: Search, pin: MapPin, chart: BarChart3, tag: Tag, store: Store, video: Video, pen: PenLine, file: FileText, mail: Mail, phone: Smartphone, chat: MessageCircle, share: Share2, list: List, megaphone: Megaphone, image: ImageIcon, presentation: Presentation, plus: Plus,
+  globe: Globe, wrench: Wrench, search: Search, pin: MapPin, chart: BarChart3, tag: Tag, store: Store, video: Video, pen: PenLine, file: FileText, mail: Mail, chat: MessageCircle, inbox: Inbox, receipt: Receipt, users: Users, share: Share2, list: List, megaphone: Megaphone, image: ImageIcon, presentation: Presentation, plus: Plus,
 };
 
 /** A status label as a chip. The text always says it in words, so colour is never the only signal. */
 export function StatusChip({ status }: { status: GrowthStatus }) {
-  const tone = status === 'soon' ? 'bg-gold-100 text-gold-900' : status === 'addon' ? 'bg-slate-100 text-slate-800' : status === 'allowance' ? 'bg-brand-50 text-brand-800' : 'bg-success-50 text-success-800';
+  const tone = status === 'addon' ? 'bg-slate-100 text-slate-800' : status === 'pro' ? 'bg-brand-50 text-brand-800' : 'bg-success-50 text-success-800';
   return <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${tone}`}>{GROWTH_STATUS_LABEL[status]}</span>;
 }
 
@@ -26,7 +26,7 @@ export default function GrowthGrid({ services, withSummary = true }: { services:
             {withSummary ? <p className="mt-1 flex-1 text-sm text-slate-700">{s.summary}</p> : <span className="flex-1" />}
             {s.note ? <p className="mt-2 text-xs font-semibold text-slate-700">{s.note}</p> : null}
             {s.plans === 'ecommerce' ? <p className="mt-2 text-xs font-semibold text-slate-700">{GROWTH.ecommerceOnly}</p> : null}
-            {s.statuses.length > 0 ? <p className="mt-3 flex flex-wrap gap-1.5">{s.statuses.map((k) => <StatusChip key={k} status={k} />)}{s.statuses.includes('addon') ? <span className="self-center text-xs text-slate-700">{GROWTH.addonPrice}</span> : null}</p> : null}
+            {s.statuses.length > 0 ? <p className="mt-3 flex flex-wrap gap-1.5">{s.statuses.map((k) => <StatusChip key={k} status={k} />)}</p> : null}
           </li>
         );
       })}

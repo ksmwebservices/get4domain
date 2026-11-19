@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import JsonLd from '@/components/directory/JsonLd';
 import GrowthGrid, { StatusChip } from '@/components/portal/GrowthGrid';
 import PageHead from '@/components/portal/PageHead';
@@ -25,6 +26,8 @@ export default function GrowthPage() {
       <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">{GROWTH.honest}</p>
       <CtaBox id="top-cta" heading={GROWTH.ctaHeading} links={[{ href: '/register', label: GROWTH.ctaStart }, { href: '/pricing', label: GROWTH.ctaPlans }]} />
 
+      <Steps id="find-title" heading={GROWTH.findHeading} steps={GROWTH.find} />
+
       <section aria-labelledby="model-title" className="mt-10">
         <h2 id="model-title" className="text-2xl font-bold tracking-tight text-ink-900">{GROWTH.modelHeading}</h2>
         <ul className="mt-4 grid gap-4 md:grid-cols-3">
@@ -39,9 +42,12 @@ export default function GrowthPage() {
 
       {GROWTH_GROUPS.map((g) => (
         <section key={g.key} id={growthAnchor(g.key)} aria-labelledby={`${growthAnchor(g.key)}-title`} className="mt-10 scroll-mt-24">
-          <h2 id={`${growthAnchor(g.key)}-title`} className="text-2xl font-bold tracking-tight text-ink-900">{g.name}</h2>
-          <p className="mb-4 mt-1 text-slate-700">{g.blurb}</p>
+          <h2 id={`${growthAnchor(g.key)}-title`} className="text-2xl font-bold tracking-tight text-ink-900">{g.key === 'tools' ? GROWTH.toolsHeading : g.name}</h2>
+          <p className="mt-2"><StatusChip status={g.key === 'addon' ? 'addon' : 'pro'} /></p>
+          <p className="mb-4 mt-2 text-slate-700">{g.key === 'tools' ? `${g.name}. ${GROWTH.toolsLead}` : g.key === 'addon' ? GROWTH.addonBody : g.blurb}</p>
           <GrowthGrid services={servicesOf(g.key)} />
+          {g.key === 'addon' ? <p className="mt-4"><Link href={GROWTH.addonHref} className="font-semibold text-brand-700 underline underline-offset-2">{GROWTH.addonLink}</Link></p> : null}
+          {g.key === 'run' ? <p className="mt-3 text-sm text-slate-600">{GROWTH.allowanceNote}</p> : null}
         </section>
       ))}
 
