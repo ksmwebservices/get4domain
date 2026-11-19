@@ -20,6 +20,9 @@ import { buildThemeSrcDoc, RawThemeFrame } from '@/engine/raw-theme-frame';
 import type { EngineSiteData } from '@/engine/types';
 import { withShell } from '@/engine/shell/with-shell';
 import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/site';
+import FreeSiteView from '@/components/site/FreeSiteView';
+import SiteBeingSetUp from '@/components/site/SiteBeingSetUp';
+import { fetchSiteState, freeViewOf, isFreeSite } from '@/lib/v3-public/site-state';
 
 // Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
 // within seconds. The vendor's private preview link (?preview=) is never cached.
@@ -63,6 +66,11 @@ async function fetchSite(subdomain: string, preview?: string, design?: string): 
   } catch {
     return null;
   }
+}
+
+/** The site-state route: does this address have a site at all (live or draft)? false when it has none or the API cannot say. */
+async function siteExists(subdomain: string): Promise<boolean> {
+  return (await fetchSiteState(API_BASE, subdomain))?.exists === true;
 }
 
 const priceStr = (p: string | null): string | undefined => {
@@ -112,8 +120,11 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const { subdomain, rest = [] } = await params;
   const { preview, design } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
-  // a site that does not exist or is still a draft answers 404 (the page body is the not-found page), so it can never be indexed
-  if (!site) notFound();
+  // an address with no site answers 404; an address that has one which cannot be shown yet (a draft, or not ready) says it is being set up. Both stay out of search.
+  if (!site) {
+    if (await siteExists(subdomain)) return { title: 'This site is being set up', robots: { index: false, follow: false } };
+    notFound();
+  }
   if (site.docV2 && site.themeRef) {
     const pkg = await fetchThemePackage(site.themeRef.id);
     if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: `/site/${subdomain}`, subdomain, preview: !!site.preview });
@@ -140,7 +151,13 @@ export default async function VendorSitePage({ params, searchParams }: { params:
   const { subdomain, rest = [] } = await params;
   const { preview, design, sent, e } = await searchParams;
   const site = await fetchSite(subdomain, preview, design);
-  if (!site) notFound();
+  if (!site) {
+    if (await siteExists(subdomain)) return <SiteBeingSetUp />;
+    notFound();
+  }
+
+  // A Free site is information only: no contact form, chat widget, button or e-mail, whatever design it has chosen.
+  if (isFreeSite(site)) return <FreeSiteView view={freeViewOf(site)} />;
 
   // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
   // design in an isolated iframe (pixel-identical, its own CSS/JS), with forms wired to
