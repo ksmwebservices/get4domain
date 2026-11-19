@@ -4,15 +4,15 @@ import LeadForm from './LeadForm';
 import { ReportBox, ViewBeacon } from './PageClient';
 import LeadSpaceApp from './themes/LeadSpaceApp';
 import type { PageModel } from './themes/model';
+import { siteApiBase } from '@/lib/v3-public/site-state';
 
 // Server rendered and cached for a minute: a LeadSpace page has to be fast on a phone and readable by search engines without running a script.
 export const revalidate = 60;
 
-const API = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 async function load(slug: string): Promise<{ status: 'ok'; page: PageModel } | { status: 'gone' | 'missing' }> {
   try {
-    const res = await fetch(`${API}/leadspace/public/page/${encodeURIComponent(slug)}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${siteApiBase()}/leadspace/public/page/${encodeURIComponent(slug)}`, { next: { revalidate: 60 } });
     if (res.status === 410) return { status: 'gone' };
     if (!res.ok) return { status: 'missing' };
     const json = (await res.json()) as { data: PageModel };

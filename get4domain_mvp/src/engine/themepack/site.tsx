@@ -16,19 +16,12 @@ import { extrasOf, groupsOf, itemsOf, pageSetOf, resolveRoute, type PageEntry, t
 import { parsedPage, renderNodes, type RenderCtx } from './render';
 import { submitFlow } from './actions';
 
+// The browser-facing address (theme pictures and files are loaded by the visitor's browser). Server reads use siteApiBase(): the runtime INTERNAL_API_URL first.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
 const BOOKING = new Set(['BOOKING', 'APPOINTMENT', 'SITE_VISIT']);
 
-/** A live theme package, cached for five minutes and refreshed when the theme changes (the tag is dropped on import). */
-export async function fetchThemePackage(id: string): Promise<ThemePackageData | null> {
-  try {
-    const res = await fetch(`${API_BASE}/themes/package/${encodeURIComponent(id)}`, { next: { tags: [`theme:${id}`], revalidate: 300 } });
-    if (!res.ok) return null;
-    const j = await res.json();
-    return (j.data ?? j) as ThemePackageData;
-  } catch { return null; }
-}
+export { fetchThemePackage } from './package-fetch';
 
 export interface ThemeOptions {
   /** the address the pages live under, for example /site/ravi-clinic */

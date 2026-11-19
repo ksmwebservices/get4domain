@@ -51,6 +51,8 @@ try {
       check(`plumberboy ${width}: the phone is plain text`, /Phone: \+91 98765 43210/.test(t.text) && !/href="tel:/.test(t.html));
       check(`plumberboy ${width}: no form, button, input, link, e-mail, WhatsApp or chat`, t.els.length === 0 && !/mailto:|wa\.me|whatsapp|chatbot/i.test(t.html) && !/@/.test(t.text), t.els.join(','));
       check(`plumberboy ${width}: no logo image and no address line is invented`, !/<img[^>]*alt="[^"]*logo/i.test(t.html) && !/Adyar|Chennai/.test(t.text));
+      const banner = await page.evaluate(() => { const i = document.querySelector('[data-testid=free-site] main img'); return i ? { src: i.getAttribute('src'), ok: i.complete && i.naturalWidth > 0, w: i.naturalWidth, shown: i.getBoundingClientRect().height > 20 } : null; });
+      check(`plumberboy ${width}: the /starter/ banner renders (loaded, not blank)`, !!banner && banner.src === '/starter/generic/hero.svg' && banner.ok && banner.shown, JSON.stringify(banner));
       check(`plumberboy ${width}: no sideways scroll`, await noScroll(page));
       await page.screenshot({ path: join(OUT, `free-information-page-${width}.png`), fullPage: true });
       await page.close();
@@ -62,6 +64,10 @@ try {
       const t = await page.evaluate(() => ({ title: document.title, text: document.body.innerText, free: !!document.querySelector('[data-testid=free-site]') }));
       check(`pro-unknown ${width}: a non-Free site with an unknown industry renders the generic design`, !t.free && /Pro Unknown/.test(t.title) && /Pro Unknown/.test(t.text) && !/404/.test(t.text), t.title);
       await page.close();
+      const th = await visit(width, 'themed-pro', errors);
+      const tt = await th.page.evaluate(() => ({ title: document.title, text: document.body.innerText, free: !!document.querySelector('[data-testid=free-site]') }));
+      check(`themed-pro ${width}: a themed Pro site renders (built-in design when its package is missing), never the Free page or a 404`, !tt.free && /Themed Pro/.test(tt.text) && !/404/.test(tt.text), tt.title);
+      await th.page.close();
       const q = await visit(width, 'draft-site', errors);
       check(`draft ${width}: still "This site is being set up"`, await q.page.evaluate(() => document.querySelector('h1')?.innerText === 'This site is being set up'));
       await q.page.close();
@@ -72,6 +78,7 @@ try {
     check(`page errors ${width}: none`, errors.length === 0, errors.join(' | ').slice(0, 200));
   }
   check('the fake backend was asked through the runtime address (the built-in address points nowhere)', fake.log.some((l) => l.startsWith('GET /cms/site')), fake.log.slice(0, 4).join(', '));
+  check('the theme package of the themed Pro site was asked from the same runtime address', fake.log.includes('GET /themes/package/t-missing'), fake.log.filter((l) => l.includes('themes')).join(', '));
 } finally {
   await browser.close();
   await fake.close();

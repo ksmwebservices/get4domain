@@ -12,9 +12,12 @@ const clean = (v: string | undefined): string | null => {
   }
 };
 
-/** Server-only API_BASE_URL first, then the public name. null when neither is a valid http(s) URL (the pages then show the error state). */
+/**
+ * The address the server asks, read when the request runs: the container's INTERNAL_API_URL first, then API_BASE_URL, then the public names (NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_API_URL,
+ * which are fixed at build time) as the last fallback. null when none is a valid http(s) URL (the pages then show the error state); there is no production default here.
+ */
 export function apiBase(env: Env = process.env): string | null {
-  return clean(env.API_BASE_URL) ?? clean(env.NEXT_PUBLIC_API_BASE_URL);
+  return clean(env.INTERNAL_API_URL) ?? clean(env.API_BASE_URL) ?? clean(env.NEXT_PUBLIC_API_BASE_URL) ?? clean(env.NEXT_PUBLIC_API_URL);
 }
 
 /** The vendor app (a separate Vite app). null when not configured: the screens then say it is not available yet. */

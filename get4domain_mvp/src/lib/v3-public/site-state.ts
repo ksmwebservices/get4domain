@@ -22,8 +22,10 @@ export function siteStateOf(json: unknown): SiteState | null {
  * then API_BASE_URL, then NEXT_PUBLIC_API_URL (which is fixed at build time), then the public default. The same order the /go and /ls pages use.
  */
 export const DEFAULT_PUBLIC_API = 'https://gapi.get4domain.com';
-export function siteApiBase(env: Record<string, string | undefined> = process.env): string {
-  for (const v of [env.INTERNAL_API_URL, env.API_BASE_URL, env.NEXT_PUBLIC_API_URL]) {
+export function siteApiBase(env?: Record<string, string | undefined>): string {
+  // static `process.env.NAME` reads (not process.env passed around), so a bundle that also runs in the browser still gets NEXT_PUBLIC_API_URL inlined; the other two are empty there
+  const list = env ? [env.INTERNAL_API_URL, env.API_BASE_URL, env.NEXT_PUBLIC_API_URL] : [process.env.INTERNAL_API_URL, process.env.API_BASE_URL, process.env.NEXT_PUBLIC_API_URL];
+  for (const v of list) {
     const t = String(v ?? '').trim().replace(/\/+$/, '');
     if (/^https?:\/\/[^\s]+$/i.test(t)) return t;
   }

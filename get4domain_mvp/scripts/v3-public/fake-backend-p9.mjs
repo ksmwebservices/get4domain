@@ -24,6 +24,9 @@ export const SITES = {
   plumberboy: PLUMBERBOY,
   // the live case again under a second name (used to prove which API address the renderer asks)
   'plumberboy-b': { ...PLUMBERBOY, vendor: { ...PLUMBERBOY.vendor, subdomain: 'plumberboy-b' } },
+  // a themed Pro site: its theme package is asked from the same API (the package route below answers 404 for it, so the page falls back to the built-in design)
+  'themed-pro': { ...PLUMBERBOY, vendor: { ...PLUMBERBOY.vendor, businessName: 'Themed Pro', industry: 'general', subdomain: 'themed-pro' }, cms: { ...baseCms, businessName: 'Themed Pro', tagline: 'A themed site', email: 'hello@example.com' }, plan: 'PRO', docV2: true,
+    pack: { key: 'general', name: 'General', config: {} }, themeRef: { id: 't-missing', key: 'sample-theme', version: 1, name: 'Sample' } },
   // a Pro site whose industry text is unknown: must render the generic design
   'pro-unknown': { ...PLUMBERBOY, vendor: { ...PLUMBERBOY.vendor, businessName: 'Pro Unknown', subdomain: 'pro-unknown' }, cms: { ...baseCms, businessName: 'Pro Unknown', email: 'hello@example.com' }, plan: 'PRO', docV2: false },
   // a Pro site with no plan field at all and an unknown industry (an older answer)
@@ -37,6 +40,8 @@ export function startFakeBackend(port = 3199) {
     const u = new URL(req.url, 'http://x');
     log.push(`${req.method} ${u.pathname}`);
     const json = (code, body) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(body)); };
+    const pk = /^\/themes\/package\/([a-z0-9-]+)$/.exec(u.pathname);
+    if (pk) return pk[1] === 't1' ? json(200, wrap({ id: 't1', manifest: { id: 'sample' }, pages: [], assets: [] })) : json(404, { success: false, statusCode: 404, message: 'Theme not found' });
     const m = /^\/cms\/(site|site-state)\/([a-z0-9-]+)$/.exec(u.pathname);
     if (!m) return json(404, { success: false, statusCode: 404, message: 'Not found' });
     const [, kind, sub] = m;
