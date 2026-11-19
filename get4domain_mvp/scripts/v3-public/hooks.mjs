@@ -14,6 +14,8 @@ function find(base) {
 }
 
 export async function resolve(specifier, context, next) {
+  // Next's own entry points are CommonJS files named without an extension; Node's ESM loader needs the extension
+  if (specifier === 'next/server' || specifier === 'next/headers' || specifier === 'next/navigation') return next(`${specifier}.js`, context);
   let base = null;
   if (specifier.startsWith('@/')) base = path.join(root, 'src', specifier.slice(2));
   else if ((specifier.startsWith('./') || specifier.startsWith('../')) && context.parentURL && context.parentURL.startsWith('file:')) {

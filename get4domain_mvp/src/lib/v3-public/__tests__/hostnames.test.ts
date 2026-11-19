@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { originFor, RESERVED_NAMES, RESERVED_PLATFORM_NAMES, RESERVED_V2_CLIENT_NAMES, baseDomain, classifyHost, isReservedName, isVendorLabel, normalizeHost, readHostConfig } from '../hostnames';
+import { originFor, RESERVED_BACKEND_NAMES, RESERVED_NAMES, RESERVED_PLATFORM_NAMES, RESERVED_V2_CLIENT_NAMES, baseDomain, classifyHost, isReservedName, isVendorLabel, normalizeHost, readHostConfig } from '../hostnames';
 
 // Sample names only (.invalid never resolves); the module has no host of its own.
 const ENV = {
@@ -14,7 +14,7 @@ describe('reserved names are data', () => {
   test('the owner list is all there', () => {
     for (const n of ['www', 'app', 'admin', 'api', 'gapi', 'directory', 'media', 'mail', 'send']) assert.ok(RESERVED_NAMES.has(n), n);
     assert.deepEqual([...RESERVED_V2_CLIENT_NAMES].sort(), ['allwintours', 'deebiphotography', 'indianambulance', 'jscomputersmobiles', 'ksmquantum', 'mrtravels', 's2travels', 'stepnrock', 'unicatherapy']);
-    assert.equal(RESERVED_NAMES.size, RESERVED_PLATFORM_NAMES.length + RESERVED_V2_CLIENT_NAMES.length, 'no name is listed twice');
+    assert.equal(RESERVED_NAMES.size, RESERVED_PLATFORM_NAMES.length + RESERVED_BACKEND_NAMES.length + RESERVED_V2_CLIENT_NAMES.length, 'no name is listed twice');
   });
   test('every name is a valid lower case label', () => {
     for (const n of RESERVED_NAMES) assert.match(n, /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/);

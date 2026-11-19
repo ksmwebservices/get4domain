@@ -7,7 +7,8 @@ import { isV3PublicEnabled, useMocks } from '@/lib/v3-public/flag';
 import { gateBody, gateDirectory } from '@/lib/v3-public/gate';
 import { DEV_VENDOR_HEADER, devVendorHost, devVendorViewEnabled, parseDevVendorPath } from '@/lib/v3-public/dev-vendor';
 import { decideHost } from '@/lib/v3-public/host-routing';
-import { baseDomain, readHostConfig } from '@/lib/v3-public/hostnames';
+import { baseDomain, classifyHost, readHostConfig, type HostConfig } from '@/lib/v3-public/hostnames';
+import { logHostNotRewritten } from '@/lib/v3-public/host-log';
 import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_ROOT, V3_ROBOTS_ROUTE, V3_ROUTE_HEADER, V3_VENDOR_SITE_ROOT } from '@/lib/v3-public/routes';
 import { isUnknownLiveIndustryPath, LIVE_INDUSTRY_IDS } from '@/lib/v3-public/industries';
 import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
@@ -38,15 +39,19 @@ function legacyDashboardRedirect(req: NextRequest): NextResponse {
 // and diverts to /talk-to-sales.
 // A vendor's own address (<name>.get4domain.com) is served by the shared site renderer at /site/<name>. Only hosts that nginx actually sends to this app reach
 // here, so a vendor whose address still points at its own hand-written app is untouched until nginx is changed for it. The main sites are never rewritten.
+// SITE_BASE is read with a static `process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN`, so the BUILD inlines it into this edge bundle (it is the only build-time value here; every host name below is read from the
+// runtime environment on each request). Vendor hosts are classified against it, NOT against MAIN_HOST: the portal hosts (v3site, v3app, ...) are ordinary names under the same base domain.
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
+/** The host names (read from the runtime environment on each request) with the vendor base domain on top: the build-inlined setting, or the default when it is not set. */
+const hostCfg = (): HostConfig => ({ ...readHostConfig(), vendorBase: SITE_BASE });
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'gapi', 'admin', 'mail', 'cdn', 'static', 'staging', 'demo']);
 function vendorHostRewrite(req: NextRequest): NextResponse | null {
-  const host = (req.headers.get('host') ?? '').toLowerCase().split(':')[0];
-  if (!host.endsWith(`.${SITE_BASE}`)) return null;
-  const sub = host.slice(0, -(SITE_BASE.length + 1));
-  if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(sub) || RESERVED_HOSTS.has(sub)) return null;
   const { pathname } = req.nextUrl;
   if (pathname.startsWith('/site/') || pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/uploads')) return null;
+  // any <name>.<base domain> that is not a portal host and not reserved (also with a port, a trailing dot or capital letters: normalizeHost) is a vendor host
+  const cls = classifyHost(req.headers.get('host'), hostCfg());
+  if (cls.kind !== 'vendor-site') return null;
+  const sub = cls.label;
   const url = req.nextUrl.clone();
   url.pathname = `/site/${sub}${pathname === '/' ? '' : pathname}`;
   return NextResponse.rewrite(url);
@@ -103,7 +108,7 @@ function hostLayer(req: NextRequest): { done: NextResponse } | { host: string } 
   const d = decideHost({
     host: req.headers.get('host'), pathname: req.nextUrl.pathname, search: req.nextUrl.search,
     isBusinessId: (s) => looksLikeBusinessId(s, useMocks()),
-  });
+  }, hostCfg());
   if (!d) return null;
   if (d.action === 'not-found') return { done: plainNotFound() };
   if (d.action === 'redirect') return { done: NextResponse.redirect(d.to, d.status) };
@@ -137,6 +142,8 @@ function devVendorRewrite(req: NextRequest): NextResponse | null {
 export async function middleware(req: NextRequest): Promise<NextResponse> {
   const dev = devVendorRewrite(req);
   if (dev) return dev;
+  // one throttled log line (host, class, reason code) whenever a request is not going to a vendor site
+  logHostNotRewritten(req.headers.get('host'), hostCfg());
   const layer = hostLayer(req);
   if (layer && 'done' in layer) return layer.done;
   const hostKind = layer?.host ?? null;
