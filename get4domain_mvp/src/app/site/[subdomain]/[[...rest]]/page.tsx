@@ -22,11 +22,12 @@ import { withShell } from '@/engine/shell/with-shell';
 import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/site';
 import FreeSiteView from '@/components/site/FreeSiteView';
 import SiteBeingSetUp from '@/components/site/SiteBeingSetUp';
-import { fetchSiteState, freeViewOf, isFreeSite } from '@/lib/v3-public/site-state';
+import { fetchSiteState, freeViewOf, isFreeSite, logVendorNotFound, siteApiBase, type VendorNotFoundReason } from '@/lib/v3-public/site-state';
 
 // Pages are fast because the vendor's data is cached for a minute and tagged `site:<subdomain>`; Publish drops that tag (POST /api/revalidate-site) so a change shows
 // within seconds. The vendor's private preview link (?preview=) is never cached.
 
+// The browser-facing address (a theme's forms post to it). The server's own reads use siteApiBase(): the runtime INTERNAL_API_URL first, because NEXT_PUBLIC_API_URL is fixed when the app is built.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://gapi.get4domain.com';
 
 interface VendorProduct {
@@ -58,7 +59,7 @@ interface SiteData {
 /** Fetch the live site for a subdomain (real, non-sandbox vendors only). */
 async function fetchSite(subdomain: string, preview?: string, design?: string): Promise<SiteData | null> {
   try {
-    const url = `${API_BASE}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : ''}`;
+    const url = `${siteApiBase()}/cms/site/${encodeURIComponent(subdomain)}${preview ? `?preview=${encodeURIComponent(preview)}${design ? `&design=${encodeURIComponent(design)}` : ''}` : ''}`;
     const res = await fetch(url, preview ? { cache: 'no-store' } : { next: { tags: [`site:${subdomain}`], revalidate: 60 } });
     if (!res.ok) return null;
     const json = await res.json();
@@ -70,7 +71,20 @@ async function fetchSite(subdomain: string, preview?: string, design?: string): 
 
 /** The site-state route: does this address have a site at all (live or draft)? false when it has none or the API cannot say. */
 async function siteExists(subdomain: string): Promise<boolean> {
-  return (await fetchSiteState(API_BASE, subdomain))?.exists === true;
+  return (await fetchSiteState(siteApiBase(), subdomain))?.exists === true;
+}
+
+/** The address has no site we can show: log why (one line, subdomain and reason code) and answer the normal not-found page. */
+async function missing(subdomain: string): Promise<never> {
+  const state = await fetchSiteState(siteApiBase(), subdomain);
+  logVendorNotFound(subdomain, state === null ? 'API_UNREACHABLE' : 'API_NOT_FOUND');
+  notFound();
+}
+
+/** A page of a site that exists but has no such page, or no design for it: log the reason and answer the normal not-found page. */
+function noPage(subdomain: string, reason: VendorNotFoundReason): never {
+  logVendorNotFound(subdomain, reason);
+  notFound();
 }
 
 const priceStr = (p: string | null): string | undefined => {
@@ -123,7 +137,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   // an address with no site answers 404; an address that has one which cannot be shown yet (a draft, or not ready) says it is being set up. Both stay out of search.
   if (!site) {
     if (await siteExists(subdomain)) return { title: 'This site is being set up', robots: { index: false, follow: false } };
-    notFound();
+    return missing(subdomain);
   }
   if (site.docV2 && site.themeRef) {
     const pkg = await fetchThemePackage(site.themeRef.id);
@@ -153,11 +167,16 @@ export default async function VendorSitePage({ params, searchParams }: { params:
   const site = await fetchSite(subdomain, preview, design);
   if (!site) {
     if (await siteExists(subdomain)) return <SiteBeingSetUp />;
-    notFound();
+    return missing(subdomain);
   }
 
-  // A Free site is information only: no contact form, chat widget, button or e-mail, whatever design it has chosen.
-  if (isFreeSite(site)) return <FreeSiteView view={freeViewOf(site)} />;
+  // A Free site is information only: no contact form, chat widget, button or e-mail, whatever design, industry text or theme it has (or has not).
+  // If its information page cannot even be put together, the site exists, so say it is being set up (and log why), never a bare 404.
+  if (isFreeSite(site)) {
+    let view: ReturnType<typeof freeViewOf> | null = null;
+    try { view = freeViewOf(site); } catch { logVendorNotFound(subdomain, 'FREE_RENDER_FAILED'); }
+    return view ? <FreeSiteView view={view} /> : <SiteBeingSetUp />;
+  }
 
   // Uploaded static-HTML theme wins first (Theme Marketplace): render the vendor's EXACT
   // design in an isolated iframe (pixel-identical, its own CSS/JS), with forms wired to
@@ -203,7 +222,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     const bar = site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null;
     if (rest[0] === 'p' && rest[1]) {
       const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
-      if (!pg) notFound();
+      if (!pg) return noPage(subdomain, 'INNER_PAGE_NOT_FOUND');
       return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
     }
     if (rest.length === 0 || rest[0] === 'home') {
@@ -223,7 +242,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
         </>
       );
     }
-    notFound();
+    return noPage(subdomain, 'NO_DESIGN');
   }
 
   // Industry-switch: if this vendor's industry has a bespoke engine site (Real
@@ -236,7 +255,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
   }
 
   const page = rest[0] ?? 'home';
-  if (!['home', 'listings', 'contact'].includes(page)) notFound();
+  if (!['home', 'listings', 'contact'].includes(page)) return noPage(subdomain, 'INNER_PAGE_NOT_FOUND');
 
   const cat = getCategory(site.vendor.industry);
   const brand = site.cms?.businessName || site.vendor.businessName;

@@ -20,7 +20,7 @@ export default function FreeSiteView({ view }: { view: FreeView }) {
       <main className="mx-auto max-w-3xl space-y-10 px-5 py-10">
         {view.banner ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={view.banner} alt={view.name} className="max-h-72 w-full rounded-2xl object-cover" />
+          <img src={view.banner} alt="" className="max-h-72 w-full rounded-2xl object-cover" />
         ) : null}
         {view.about ? (
           <section>

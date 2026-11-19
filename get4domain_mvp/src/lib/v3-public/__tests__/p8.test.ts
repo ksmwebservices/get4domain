@@ -32,8 +32,8 @@ describe('P8 site state: GET /cms/site-state/:subdomain', () => {
   });
   test('the renderer shows "being set up" only when the site exists, and keeps the 404 otherwise', () => {
     const page = read('app/site/[subdomain]/[[...rest]]/page.tsx');
-    assert.match(page, /fetchSiteState\(API_BASE, subdomain\)\)\?\.exists === true/);
-    assert.match(page, /if \(await siteExists\(subdomain\)\) return <SiteBeingSetUp \/>;\s*notFound\(\);/);
+    assert.match(page, /fetchSiteState\(siteApiBase\(\), subdomain\)\)\?\.exists === true/);
+    assert.match(page, /if \(await siteExists\(subdomain\)\) return <SiteBeingSetUp \/>;\s*return missing\(subdomain\);/);
     assert.match(page, /if \(await siteExists\(subdomain\)\) return \{ title: 'This site is being set up', robots: \{ index: false, follow: false \} \};/);
   });
   test('the "being set up" page is plain: a title, no link, form, button, e-mail or chat', () => {
@@ -75,7 +75,7 @@ describe('P8 a Free site never shows a form, chat, button or e-mail', () => {
   });
   test('the renderer puts the Free page before every design, template and theme', () => {
     const page = read('app/site/[subdomain]/[[...rest]]/page.tsx');
-    const free = page.indexOf('if (isFreeSite(site)) return <FreeSiteView');
+    const free = page.indexOf('if (isFreeSite(site)) {');
     assert.ok(free > 0);
     for (const later of ['themePages(site.theme)', 'templateFromThemeRow(site.theme)', 'if (site.docV2)', 'getEngineIndustry(', '<ChatBot />']) assert.ok(page.indexOf(later) > free, later);
   });

@@ -12,6 +12,7 @@ import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_
 import { isUnknownLiveIndustryPath, LIVE_INDUSTRY_IDS } from '@/lib/v3-public/industries';
 import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
 import { forwardedFor } from '@/lib/v3-public/proxy';
+import { logVendorNotFound, vendorHostReason } from '@/lib/v3-public/site-state';
 
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
@@ -157,7 +158,12 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
   const rewritten = hostKind === null || hostKind === 'vendor-site' ? vendorHostRewrite(req) : null;
   if (rewritten) return rewritten;
   // A vendor host that V3 does not know and the V2 renderer does not take (its own base domain differs, or the path is one the V2 rewrite leaves alone) is a plain 404, never the marketing page.
-  if (hostKind === 'vendor-site' && !v3Owns) return plainNotFound();
+  if (hostKind === 'vendor-site' && !v3Owns) {
+    // one log line with the reason, so the live logs say why this vendor host got a plain 404 (a subdomain and a code, nothing else)
+    const why = vendorHostReason(req.headers.get('host') ?? '', SITE_BASE, RESERVED_HOSTS, req.nextUrl.pathname);
+    if (why) logVendorNotFound(why.subdomain, why.reason);
+    return plainNotFound();
+  }
   const { pathname } = req.nextUrl;
   if (!isV3PublicEnabled() && isV3PublicPath(pathname)) {
     // Flag off: the fixed V3 public addresses do not exist. A plain 404 here, before any page renders, is a real HTTP 404.
