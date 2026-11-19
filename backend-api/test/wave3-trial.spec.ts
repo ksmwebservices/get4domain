@@ -24,6 +24,7 @@ import { FreeHomeContentService } from '../src/v3-trial/free-home-content.servic
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TrialController } from '../src/v3-trial/api/trial.controller';
 import { TrialSignupPolicy } from '../src/v3-trial/trial-signup.policy';
+import { withCats } from './support/listed-industries';
 
 /** Wave 3 Part G: self-service trial signup and the team that makes a business live. */
 const code = (e: unknown): string => ((e as { getResponse?: () => { code?: string } })?.getResponse?.() ?? (e as { response?: { code?: string } })?.response)?.code ?? '';
@@ -96,7 +97,7 @@ function world(initial: { subdomains?: string[]; hosts?: string[]; blocked?: str
   const hookCalls: unknown[][] = [];
   const hook = { afterRegister: async (...a: unknown[]) => { hookCalls.push(a); } };
   const jwt = { sign: () => 'token', decode: () => ({ sub: 'x' }) };
-  const auth = new AuthService(prisma as never, jwt as never, vendorsService as never, hook as never, undefined, policy);
+  const auth = new AuthService(withCats(prisma) as never, jwt as never, vendorsService as never, hook as never, undefined, policy);
   return { prisma, vendors, policy, auth, created, hookCalls, hosts };
 }
 const body = (over: Partial<RegisterDto> = {}): RegisterDto => ({ name: 'Asha', email: 'asha@example.com', password: 'StrongPass1', businessName: 'CareWell Clinic', industry: 'clinic', track: 'professional', ...over } as RegisterDto);

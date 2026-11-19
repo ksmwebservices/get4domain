@@ -386,6 +386,31 @@ export class CmsService {
     });
   }
 
+  private readonly stateCache = new Map<string, { at: number; v: { exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' } }>();
+  stateClock: () => number = () => Date.now();
+
+  /**
+   * S1.6: the only thing the public site app needs to tell an unfinished address from an unknown one. Same rule as getSiteBySubdomain (an unknown or sandbox vendor does not exist; a CMS row that is not LIVE is
+   * DRAFT), but nothing else leaves: no name, e-mail, phone or id. Kept 30 seconds in process memory (at most 2000 names), so a flood of guesses costs one read per name per half minute.
+   */
+  async siteState(subdomain: string): Promise<{ exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' }> {
+    const key = String(subdomain ?? '').trim().toLowerCase();
+    const none = { exists: false, status: 'NOT_FOUND' as const };
+    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(key)) return none;
+    const now = this.stateClock();
+    const hit = this.stateCache.get(key);
+    if (hit && now - hit.at < 30_000) return hit.v;
+    const vendor = await this.prisma.vendor.findUnique({ where: { subdomain: key }, select: { id: true, isSandbox: true } });
+    let v: { exists: boolean; status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' } = none;
+    if (vendor && !vendor.isSandbox) {
+      const cms = await this.prisma.vendorCMS.findUnique({ where: { vendorId: vendor.id }, select: { siteStatus: true } });
+      v = { exists: true, status: !cms || cms.siteStatus === 'LIVE' ? 'LIVE' : 'DRAFT' };
+    }
+    if (this.stateCache.size >= 2000) this.stateCache.clear();
+    this.stateCache.set(key, { at: now, v });
+    return v;
+  }
+
   /** Public: resolve a live (non-sandbox) vendor's public site by subdomain. */
   async getSiteBySubdomain(subdomain: string, previewToken?: string, designPreview?: string): Promise<{
     vendor: { id: string; businessName: string; industry: string; subdomain: string | null };

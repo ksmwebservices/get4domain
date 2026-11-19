@@ -14,6 +14,7 @@ import { ReferralsService, StaffActor } from '../src/v3-referrals/referrals.serv
 import { SUPER, VENDOR } from './support/billing-world';
 import { MemoryPartnersStore, MemoryReferralsStore } from './support/memory-referrals-store';
 import { flow } from './support/wave3-world';
+import { withCats } from './support/listed-industries';
 
 /** Wave 3 Part I: attribution (first touch wins), self-referral, slab tiers, month close, payouts, reversal, and what a partner can see. */
 const code = (e: unknown): string => ((e as { getResponse?: () => { code?: string } })?.getResponse?.() ?? (e as { response?: { code?: string } })?.response)?.code ?? '';
@@ -460,7 +461,7 @@ describe('registering with a referral code', () => {
     const vendors: Array<Record<string, unknown>> = [];
     const prisma = { vendor: { findUnique: async ({ where }: { where: { email?: string; subdomain?: string } }) => vendors.find((v) => (where.email && v.email === where.email) || (where.subdomain && v.subdomain === where.subdomain)) ?? null }, v3Domain: { findUnique: async () => null }, v3PlanSetting: { findMany: async () => [] }, adminTeamMember: { findUnique: async () => null }, teamMember: { findFirst: async () => null }, vendorAddon: { upsert: async () => ({}) } };
     const vendorsService = { create: async (dto: Record<string, unknown>) => { const v = { id: `v${vendors.length + 1}`, role: 'VENDOR', status: 'ACTIVE', isSandbox: false, ...dto, password: await bcrypt.hash(String(dto.password), 4) }; vendors.push(v); return v; } };
-    return new AuthService(prisma as never, { sign: () => 't', decode: () => ({ sub: 'x' }) } as never, vendorsService as never, undefined, undefined, undefined, referrals);
+    return new AuthService(withCats(prisma) as never, { sign: () => 't', decode: () => ({ sub: 'x' }) } as never, vendorsService as never, undefined, undefined, undefined, referrals);
   };
   const dto = (over: Partial<RegisterDto> = {}) => ({ name: 'N', email: 'n@example.com', password: 'StrongPass1', businessName: 'Biz One', industry: 'clinic', ...over }) as RegisterDto;
   it('passes the new vendor and the code to the attribution port', async () => {

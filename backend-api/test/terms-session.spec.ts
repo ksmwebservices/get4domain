@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from '../src/auth/auth.service';
 import { termsWorld } from './support/terms-world';
+import { withCats } from './support/listed-industries';
 
 /** The sign-in response carries termsAcceptanceRequired for a vendor session (slice 5.15). Staff sessions and a build without the terms module are unchanged. */
 describe('terms flag in the session', () => {
@@ -16,7 +17,7 @@ describe('terms flag in the session', () => {
 
   it('false before anything is published, true while a published version waits, false again after acceptance, true for the next version', async () => {
     const w = await termsWorld();
-    const svc = new AuthService(prismaFor(vendor) as never, jwt, {} as never, undefined, w.svc);
+    const svc = new AuthService(withCats(prismaFor(vendor)) as never, jwt, {} as never, undefined, w.svc);
     expect((await login(svc)).user.termsAcceptanceRequired).toBe(false);
     await w.publishRequired(); expect((await login(svc)).user.termsAcceptanceRequired).toBe(true); expect((await svc.me('va')).termsAcceptanceRequired).toBe(true);
     await w.acceptAll('va'); expect((await login(svc)).user.termsAcceptanceRequired).toBe(false);
@@ -26,13 +27,13 @@ describe('terms flag in the session', () => {
   it('a staff session never carries the flag, and a build without the terms module is unchanged', async () => {
     const w = await termsWorld(); await w.publishRequired();
     const staff = { ...vendor, role: 'ADMIN' };
-    expect((await login(new AuthService(prismaFor(staff) as never, jwt, {} as never, undefined, w.svc))).user).not.toHaveProperty('termsAcceptanceRequired');
-    const plain = await login(new AuthService(prismaFor(vendor) as never, jwt, {} as never)); expect(plain.user).not.toHaveProperty('termsAcceptanceRequired');
-    expect(await new AuthService(prismaFor(vendor) as never, jwt, {} as never).me('va')).not.toHaveProperty('termsAcceptanceRequired');
+    expect((await login(new AuthService(withCats(prismaFor(staff)) as never, jwt, {} as never, undefined, w.svc))).user).not.toHaveProperty('termsAcceptanceRequired');
+    const plain = await login(new AuthService(withCats(prismaFor(vendor)) as never, jwt, {} as never)); expect(plain.user).not.toHaveProperty('termsAcceptanceRequired');
+    expect(await new AuthService(withCats(prismaFor(vendor)) as never, jwt, {} as never).me('va')).not.toHaveProperty('termsAcceptanceRequired');
   });
   it('a failure of the flag never blocks a sign-in', async () => {
     const broken = { acceptanceRequired: async () => { throw new Error('db down'); } };
-    const r = await login(new AuthService(prismaFor(vendor) as never, jwt, {} as never, undefined, broken as never));
+    const r = await login(new AuthService(withCats(prismaFor(vendor)) as never, jwt, {} as never, undefined, broken as never));
     expect(r.accessToken).toBeTruthy(); expect(r.user).not.toHaveProperty('termsAcceptanceRequired');
   });
 });
@@ -44,7 +45,7 @@ describe('the first registration answer carries the terms flag (Dispatch G1 B5, 
     const vendors: Array<Record<string, unknown>> = [];
     const prisma = { vendor: { findUnique: async ({ where }: { where: { email?: string; id?: string; subdomain?: string } }) => vendors.find((v) => v.email === where.email || v.id === where.id || v.subdomain === where.subdomain) ?? null }, adminTeamMember: { findUnique: async () => null }, teamMember: { findFirst: async () => null }, vendorAddon: { upsert: async () => ({}) } };
     const vendorsService = { create: async (d: Record<string, unknown>) => { const v = { id: 'vnew', role: 'VENDOR', status: 'ACTIVE', isSandbox: false, ...d }; vendors.push(v); return v; } };
-    return new AuthService(prisma as never, jwt, vendorsService as never, undefined, flag as never);
+    return new AuthService(withCats(prisma) as never, jwt, vendorsService as never, undefined, flag as never);
   };
   it('says true while a published version waits, false when none does; the flag is a boolean, never a guess', async () => {
     const w = await termsWorld();

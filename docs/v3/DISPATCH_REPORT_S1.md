@@ -93,3 +93,17 @@ Staging: `node scripts/staging/s1-check.js` : **26 of 26 passed, 0 fixtures left
 - I could not read live. The cause is proven on staging and on the code of both sides; step 3 confirms it on the real vendor.
 - The site app was not run; no site app file was changed.
 - Retry and rebuild cannot know city, area or pincode (never stored).
+
+## Addendum S1.6 `GET /cms/site-state/:subdomain`
+Public, read only, `@Throttle(RATE.siteRead)`, `Cache-Control: public, max-age=30` plus a 30 second in-process cache (at most 2000 names). Answers only `{ exists: boolean, status: 'LIVE' | 'DRAFT' | 'NOT_FOUND' }`; an unknown, sandbox or malformed name is `{ exists: false, status: 'NOT_FOUND' }` with HTTP 200 (a malformed name costs no database read). Same rule as `GET /cms/site/:subdomain`: no CMS row or a LIVE row is LIVE, any other status is DRAFT. No name, e-mail, phone or id is ever in the answer (test). Route baseline row added (`public`). There is no role-matrix row because the matrix lists staff routes only; this one is public. This is the field the P8 prompt (item 2) waits for: `{ exists: true, status: 'DRAFT' }` is the "being set up" page, `NOT_FOUND` stays a 404.
+
+## Addendum S1.7 the public signup accepts only a listed category
+`POST /auth/register` now refuses an `industry` that is not an ACTIVE `V3PackCategory.categoryKey` (the list `GET /v3/public/pack-categories` returns): HTTP 400, code `INDUSTRY_NOT_IN_LIST` (registered with the exception filter through the pack error list), message `Choose your business category from the list.` An empty, blank, missing, non-string, mis-cased (`Plumber`) or space-padded value gets the same answer, and no vendor is made. The check runs after the replay of an existing account, so a vendor who registered earlier under an older value can still sign in. Partner, admin and import routes call `VendorsService.create` directly and are not touched (a test checks the vendor service does not contain the check).
+
+**ACTION NEEDED BEFORE THIS SHIPS: existing callers that send free text or ids that are not categoryKeys.** Checked against the 196 active categories on staging:
+- **The web signup form** (`get4domain_mvp/src/app/register/page.tsx`) sends the 20 ids of `src/data/industries-list.ts` (`travel, restaurant, clinic, hotel, salon, gym, realestate, education, retail, construction, events, finance, automobile, logistics, diagnostics, photography, professional, agriculture, coaching, technology`). **None of the 20 is a categoryKey, so every one is now refused.** The `?industry=` prefill from the demos uses the same ids.
+- **The LeadSpace signup** (`/register?product=leadspace`) sends the fixed value `general`, which is not a categoryKey: refused. (`scripts/leadspace/verify-app-pg.js` and `walkthrough-api.js` also post to `/auth/register` and will be refused unless they send a listed key.)
+- Existing unit tests that build `AuthService` with hand-made data now add `test/support/listed-industries.ts` (every key listed); nothing else about them changed.
+So the signup form must be changed (P8) to load `GET /v3/public/pack-categories` and send the chosen `categoryKey`, and LeadSpace needs a listed key (or an exemption, which I did not add because you asked for no exceptions). Deploy the backend and the form together, or signup is closed in between.
+
+Tests: `test/s1-addendum.spec.ts` (22). Affected suites rerun and green: s1-free-home, route-classification, pack-wire, admin-role-matrix, b2-registration-site, duplicate-paths, plans-registration, terms-session, wave3-referrals, wave3-trial.

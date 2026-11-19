@@ -8,6 +8,7 @@ import { VendorsService } from '../vendors/vendors.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { normalizeModules } from '../team/team-access';
 import { Optional } from '@nestjs/common';
+import { packError } from '../v3-packs/pack.errors';
 import { RegistrationHook, SiteAnswer } from '../plans/registration/registration.hook';
 import { TermsSessionFlag } from '../terms/terms-ports';
 import { TrialSignupPolicy } from '../v3-trial/trial-signup.policy';
@@ -64,6 +65,7 @@ export class AuthService {
     // A wrong password, or another business name, falls through to the usual refusal of a taken email.
     const prior = await this.prisma.vendor.findUnique({ where: { email: dto.email } });
     if (prior && prior.role === 'VENDOR' && prior.businessName === dto.businessName && (await bcrypt.compare(dto.password, prior.password))) return this.login({ email: dto.email, password: dto.password });
+    await this.requireListedIndustry(dto.industry);
     const subdomain = this.trial ? await this.trial.resolveSubdomain(dto.subdomain, dto.businessName) : await this.uniqueSubdomain(dto.businessName);
     const vendor = await this.vendorsService.create({
       name: dto.name,
@@ -109,6 +111,16 @@ export class AuthService {
       },
       ...(site ? { site } : {}),
     };
+  }
+
+  /**
+   * S1.7: the public signup accepts only a category from the same list as GET /v3/public/pack-categories (the active V3 pack categories). Free text made a vendor whose site could not be built or shown.
+   * Checked after the replay above, so an existing account that registered under an older value can still sign in. Partner, admin and import routes do not come through here.
+   */
+  private async requireListedIndustry(industry: unknown): Promise<void> {
+    const key = typeof industry === 'string' ? industry.trim() : '';
+    const row = key ? await this.prisma.v3PackCategory.findFirst({ where: { categoryKey: key, active: true }, select: { categoryKey: true } }) : null;
+    if (!row || row.categoryKey !== industry) throw packError(400, 'INDUSTRY_NOT_IN_LIST', 'Choose your business category from the list.');
   }
 
   /** Slugify the business name into an available subdomain (append -2, -3 … if taken). */

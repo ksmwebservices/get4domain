@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { RATE } from '../common/throttling';
 import { RequireModule } from '../common/decorators/require-module.decorator';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Category, VendorCMS, VendorProduct } from '@prisma/client';
@@ -36,6 +39,15 @@ export class CmsController {
   @ApiOperation({ summary: 'Update platform CMS settings (admin only)' })
   updatePlatformCms(@Body() dto: UpdatePlatformCmsDto): Promise<Record<string, string>> {
     return this.cmsService.updatePlatformCms(dto);
+  }
+
+  @Public()
+  @Throttle(RATE.siteRead)
+  @Get('site-state/:subdomain')
+  @ApiOperation({ summary: 'Whether a vendor address exists and is live: only { exists, status: LIVE | DRAFT | NOT_FOUND } (public; no name, e-mail, phone or id). An unknown address answers 200 NOT_FOUND. Cached 30 seconds.' })
+  siteState(@Param('subdomain') subdomain: string, @Res({ passthrough: true }) res: Response) {
+    res.set('Cache-Control', 'public, max-age=30');
+    return this.cmsService.siteState(subdomain);
   }
 
   @Public()

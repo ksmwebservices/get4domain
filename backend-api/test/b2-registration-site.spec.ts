@@ -3,6 +3,7 @@ import { AuthService } from '../src/auth/auth.service';
 import { RegistrationHook } from '../src/plans/registration/registration.hook';
 import { TrialSitePort } from '../src/plans/registration/trial-site.port';
 import { MeSiteController } from '../src/site-publish/api/me-site.controller';
+import { withCats } from './support/listed-industries';
 
 /** B2.1: registration creates the site. Track defaulted from the category, the answer carries the site, a failure is recorded and retryable. */
 function world(over: { tier?: string | null; setting?: unknown; plan?: () => Promise<unknown>; site?: () => Promise<unknown> } = {}) {
@@ -63,7 +64,7 @@ describe('B2.1 (b) the answer tells the truth', () => {
     const site = { status: 'LIVE', published: true, subdomain: 'biz', url: 'https://biz.get4domain.com' };
     const prisma = { vendor: { findUnique: jest.fn().mockResolvedValue(null) } };
     const vendors = { create: jest.fn().mockResolvedValue({ id: 'v1', name: 'A', email: 'a@x.invalid', role: 'VENDOR', businessName: 'Biz', industry: 'plumber', subdomain: 'biz' }) };
-    const svc = new AuthService(prisma as never, { sign: jest.fn().mockReturnValue('t') } as never, vendors as never, { afterRegister: jest.fn().mockResolvedValue(site) } as never);
+    const svc = new AuthService(withCats(prisma) as never, { sign: jest.fn().mockReturnValue('t') } as never, vendors as never, { afterRegister: jest.fn().mockResolvedValue(site) } as never);
     const out = await svc.register({ name: 'A', email: 'a@x.invalid', password: 'StrongPass1', businessName: 'Biz', industry: 'plumber' } as never);
     expect(out.site).toEqual(site);
   });

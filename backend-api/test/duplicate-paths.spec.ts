@@ -15,6 +15,7 @@ import { VendorsService } from '../src/vendors/vendors.service';
 import { directoryWorld } from './support/directory-world';
 import { MemoryDuplicateStore } from './support/memory-duplicate-store';
 import { ops, row, seededWorld, sup } from './support/seeded-world';
+import { withCats } from './support/listed-industries';
 
 /** D1: every creation path, with its own outcomes. The in-memory twin stands in for the database; everything else is the real code. */
 let store: MemoryDuplicateStore; let dup: DuplicateCheckService;
@@ -100,7 +101,7 @@ describe('VendorsService.create (POST /auth/register and POST /vendors)', () => 
 describe('AuthService.register hands the visitor path to the shared check', () => {
   const mk = (create: jest.Mock) => {
     const prisma = { vendor: { findUnique: jest.fn(async () => null) }, vendorAddon: { upsert: jest.fn() } };
-    return new AuthService(prisma as never, { sign: () => 'token', decode: () => null } as never, { create } as never);
+    return new AuthService(withCats(prisma) as never, { sign: () => 'token', decode: () => null } as never, { create } as never);
   };
   const body = { name: 'Ganesh K', email: 'new@example.com', password: 'StrongPass1', businessName: 'Sri Ganesh Plumbing', industry: 'plumber', phone: '9876543210', city: 'Chennai', area: 'T Nagar', pincode: '600017', confirmDistinct: true };
   it('a registration is a self-service path, and a referral-link registration is the REFERRAL path with the same outcomes', async () => {

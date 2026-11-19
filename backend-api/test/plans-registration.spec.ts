@@ -7,6 +7,7 @@ import { PlansRepository } from '../src/plans/entitlements/plans.repository';
 import { RegistrationHook } from '../src/plans/registration/registration.hook';
 import { SubscriptionsService } from '../src/plans/subscriptions/subscriptions.service';
 import { fakePrisma, T0 } from './support/fake-plans-prisma';
+import { withCats } from './support/listed-industries';
 
 /** S51.8: the registration hook. Behind a setting, idempotent, and a failure never blocks registration. */
 class NullRepo extends PlansRepository {
@@ -107,7 +108,7 @@ describe('AuthService.register calls the hook and is never blocked by it', () =>
     const prisma = { vendor: { findUnique: jest.fn().mockResolvedValue(null) }, vendorAddon: { upsert: jest.fn() } };
     const jwt = { sign: jest.fn().mockReturnValue('token') };
     const vendors = { create: jest.fn().mockResolvedValue({ id: 'v1', name: 'A', email: 'a@x.invalid', role: 'VENDOR', businessName: 'Biz', industry: 'plumber', subdomain: 'biz' }) };
-    return { svc: new AuthService(prisma as never, jwt as never, vendors as never, hook as never), vendors };
+    return { svc: new AuthService(withCats(prisma) as never, jwt as never, vendors as never, hook as never), vendors };
   };
 
   it('passes the new vendor id and the chosen track to the hook, after the vendor exists', async () => {
@@ -127,7 +128,7 @@ describe('AuthService.register calls the hook and is never blocked by it', () =>
   it('no hook configured (an app without the plans module): registration is unchanged', async () => {
     const prisma = { vendor: { findUnique: jest.fn().mockResolvedValue(null) } };
     const vendors = { create: jest.fn().mockResolvedValue({ id: 'v1', name: 'A', email: 'a@x.invalid', role: 'VENDOR', businessName: 'Biz', industry: 'plumber', subdomain: 'biz' }) };
-    const svc = new AuthService(prisma as never, { sign: jest.fn().mockReturnValue('t') } as never, vendors as never);
+    const svc = new AuthService(withCats(prisma) as never, { sign: jest.fn().mockReturnValue('t') } as never, vendors as never);
     await expect(svc.register(dto as never)).resolves.toMatchObject({ accessToken: 't' });
   });
 });
