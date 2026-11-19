@@ -285,7 +285,7 @@ export const S = {
             'A listing that has not been claimed was added from public information. Its owner can claim it, ask for a correction, or ask for it to be removed.',
           ] },
           { heading: 'Plans', body: [
-            'A Free site is an informational listing. Pro means any paid plan.',
+            'A Free site is an informational listing. Pro means any of the Pro plans.',
             'Prices exclude GST. The price that applies to you is the price shown when you choose a plan.',
           ] },
           { heading: 'Accounts', body: [
@@ -371,7 +371,7 @@ export const S = {
           { heading: 'Order and wording', body: [
             'Listings are shown in an order set by the directory rules. A listing may not describe itself with ranking claims or with claims we cannot check.',
           ] },
-          { heading: 'Free and paid', body: ['A Free site is an informational listing. Pro means any paid plan. Prices exclude GST.'] },
+          { heading: 'Free and Pro', body: ['A Free site is an informational listing. Pro means any of the Pro plans. Prices exclude GST.'] },
         ],
       },
     },

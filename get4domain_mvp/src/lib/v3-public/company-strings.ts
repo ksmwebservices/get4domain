@@ -15,7 +15,7 @@ export const ABOUT_STRINGS = {
       id: 'what-you-can-do',
       heading: 'What a business can do on Get4Domain',
       bullets: [
-        'Start with a free site. It is informational, and the main features need a paid plan.',
+        'Start with a free site. It is informational, and the main features need a Pro plan.',
         'Move to a Pro plan, billed quarterly, half-yearly or annually. Prices are shown without GST.',
         'Stop renewing a plan at any time. Access continues until the end of the term that is paid for.',
         'Use the wallet, which holds prepaid platform credit.',

@@ -119,7 +119,7 @@ describe('the company and partner pages', () => {
     assert.match(t, /local business directory and search engine/);
     assert.match(t, /operated by KSM QUANTUM TECHNOLOGIES, Tidel Park, Chennai, Tamil Nadu, India/);
     assert.doesNotMatch(t, /\b(founded|since|years|team|clients|customers|award|trusted by|established)\b/i);
-    assert.match(t, /informational, and the main features need a paid plan/);
+    assert.match(t, /informational, and the main features need a Pro plan/);
     assert.match(t, /Stop renewing a plan at any time/);
   });
   test('contact: help text exists for both the filled and the empty support details', () => {

@@ -10,7 +10,7 @@ export interface ProductPage {
   gives: readonly string[]; steps: readonly { title: string; body: string }[]; plan: string; faq: readonly Faq[]; related: readonly string[];
 }
 
-const PLAN_NOTE = 'Free sites are informational. Buttons, forms and contact links on your site need a paid plan. Prices are shown without GST.';
+const PLAN_NOTE = 'Free sites are informational. Buttons, forms and contact links on your site need a Pro plan. Prices are shown without GST.';
 
 export const MARKETING = {
   nav: { product: 'Product', guides: 'Guides', partners: 'Partners' },
@@ -32,7 +32,7 @@ export const MARKETING = {
     audienceBody: 'Get4Domain is for businesses that want a website of their own and the tools to run it: service providers, shops, practices, studios, schools and many other kinds of business. Each business area comes with starter content and working areas that suit it.',
     audienceLink: 'Browse industries',
     tracksHeading: 'Three business tracks',
-    tracksIntro: 'Every paid plan includes your website, the business tools and the promotion work done by our team. Choose the track that fits how your business works. You can start with a free site before you choose.',
+    tracksIntro: 'Every Pro plan includes your website, the business tools and the promotion work done by our team. Choose the track that fits how your business works. You can start with a free site before you choose.',
     tracks: [
       { name: 'Handyman', body: 'For one-person service businesses.' },
       { name: 'Professional', body: 'For firms and practices.' },
@@ -50,11 +50,11 @@ export const MARKETING = {
     guidesBody: 'Plain explanations of what a business website needs and how to get the most from yours.',
     guidesLink: 'Read the guides',
     ctaHeading: 'Start with a free site',
-    ctaBody: 'Register, check your site, and move to a paid plan when you want the main features.',
+    ctaBody: 'Register, check your site, and move to a Pro plan when you want the main features.',
     faq: [
       { q: 'What is Get4Domain?', a: 'Get4Domain gives a business a website on its own subdomain, starter content for its business area, and a business app to run it. You can start with a free site.' },
       { q: 'Who is it for?', a: 'Any business that wants a website of its own: service providers, shops, practices, studios, schools and more. The industries page lists the business areas.' },
-      { q: 'How do I start?', a: 'Register with your business name, category and site address. Your free site goes live right away. When you want the main features, choose a paid plan.' },
+      { q: 'How do I start?', a: 'Register with your business name, category and site address. Your free site goes live right away. When you want the main features, choose a Pro plan.' },
       { q: 'Is there a directory?', a: 'Yes. Businesses are listed by city and category, and each listing has a Visit site link to the business site.' },
     ] as readonly Faq[],
   },
@@ -68,7 +68,7 @@ export const MARKETING = {
       'Edit your site content in your business app: text, photos, pages and contact details.',
       'Choose a theme that suits your business area.',
       'Move to a Pro plan to turn on buttons, forms, contact links and the main features of your business area.',
-      'Connect a domain name of your own on a paid plan.',
+      'Connect a domain name of your own on a Pro plan.',
     ],
     moreHeading: 'Learn more',
     moreLinks: [
@@ -108,8 +108,8 @@ export const MARKETING = {
     ctaSecondary: 'See pricing',
     hubLink: 'All product pages',
     faq: [
-      { q: 'Do I need a paid plan to try Get4Domain?', a: 'No. You register yourself and your free site goes live right away on its own subdomain. Free sites are informational.' },
-      { q: 'Where do I manage everything?', a: 'In your business app. You edit your site there and, on a paid plan, use the tools for your business area.' },
+      { q: 'Do I need a Pro plan to try Get4Domain?', a: 'No. You register yourself and your free site goes live right away on its own subdomain. Free sites are informational.' },
+      { q: 'Where do I manage everything?', a: 'In your business app. You edit your site there and, on a Pro plan, use the tools for your business area.' },
     ] as readonly Faq[],
     pages: [
       {
@@ -149,7 +149,7 @@ export const MARKETING = {
       {
         slug: 'enquiries', name: 'Enquiries', metaTitle: 'Enquiries from your business site',
         metaDescription: 'Let visitors ask about your business from your site, and keep every enquiry in one place in your business app.',
-        h1: 'Enquiries', lead: 'On a paid plan, visitors can send an enquiry from your site. You see it in your business app and keep track of the reply.',
+        h1: 'Enquiries', lead: 'On a Pro plan, visitors can send an enquiry from your site. You see it in your business app and keep track of the reply.',
         gives: ['An enquiry form on your site', 'Every enquiry in one place in your business app', 'A record of each customer who gets in touch', 'Checks that keep unwanted messages out'],
         steps: [
           { title: 'A visitor asks', body: 'They fill in the form on your site and agree to be contacted about their enquiry.' },
@@ -158,7 +158,7 @@ export const MARKETING = {
         ],
         plan: PLAN_NOTE,
         faq: [
-          { q: 'Does a free site have an enquiry form?', a: 'No. Free sites are informational. Forms, buttons and contact links need a paid plan.' },
+          { q: 'Does a free site have an enquiry form?', a: 'No. Free sites are informational. Forms, buttons and contact links need a Pro plan.' },
           { q: 'Who sees the enquiries?', a: 'You and the team members you add to your business app.' },
         ],
         related: ['business-tools', 'website', 'reports'],
@@ -216,15 +216,15 @@ export const MARKETING = {
       },
       {
         slug: 'domains', name: 'Domains', metaTitle: 'Your own domain name for your site',
-        metaDescription: 'Start on your own subdomain, then connect a domain name of your own on a paid plan. Step-by-step help in your business app.',
-        h1: 'Domains', lead: 'Your site starts on its own subdomain. On a paid plan you can connect a domain name of your own.',
-        gives: ['A site address on your own subdomain from the start', 'A domain name of your own on a paid plan', 'Step-by-step connection in your business app', 'A choice of which address is your main one'],
+        metaDescription: 'Start on your own subdomain, then connect a domain name of your own on a Pro plan. Step-by-step help in your business app.',
+        h1: 'Domains', lead: 'Your site starts on its own subdomain. On a Pro plan you can connect a domain name of your own.',
+        gives: ['A site address on your own subdomain from the start', 'A domain name of your own on a Pro plan', 'Step-by-step connection in your business app', 'A choice of which address is your main one'],
         steps: [
           { title: 'Start on your subdomain', body: 'Your free site is live on the address you chose.' },
-          { title: 'Add your domain', body: 'On a paid plan, enter your domain name in your business app.' },
+          { title: 'Add your domain', body: 'On a Pro plan, enter your domain name in your business app.' },
           { title: 'Connect and check', body: 'Follow the steps to point the domain at your site, then check the connection.' },
         ],
-        plan: 'A domain name of your own needs a paid plan. When a paid plan ends, your own domain stops working and visitors are sent to your subdomain. Your data and your theme are kept.',
+        plan: 'A domain name of your own needs a Pro plan. When a Pro plan ends, your own domain stops working and visitors are sent to your subdomain. Your data and your theme are kept.',
         faq: [
           { q: 'Do I need a domain name to start?', a: 'No. Your free site lives on your own subdomain.' },
           { q: 'What happens to my domain if my plan ends?', a: 'Your own domain stops working and visitors are sent to your subdomain. Your data and your theme are kept.' },
@@ -241,7 +241,7 @@ export const MARKETING = {
           { title: 'Pick your working area', body: 'Your category decides which working areas you see.' },
           { title: 'Run your day', body: 'Record customers, send invoices and follow up on enquiries.' },
         ],
-        plan: 'The main features of your business area need a paid plan. Free sites are informational.',
+        plan: 'The main features of your business area need a Pro plan. Free sites are informational.',
         faq: [
           { q: 'Do all businesses get the same tools?', a: 'No. Your business area decides the working areas you see. The industries pages list them.' },
           { q: 'Can my team use it?', a: 'Yes. You can add team members and choose what each person can see.' },
@@ -260,7 +260,7 @@ export const MARKETING = {
     steps: [
       { title: 'We set you up', body: 'The Get4Domain team creates your partner account and your partner link.' },
       { title: 'You share your link', body: 'A business that opens your link and registers is connected to you.' },
-      { title: 'The business grows', body: 'When the business moves to a paid plan, your share is recorded.' },
+      { title: 'The business grows', body: 'When the business moves to a Pro plan, your share is recorded.' },
       { title: 'You are paid', body: 'You see your businesses, your share and your payouts in the partner portal.' },
     ],
     portalHeading: 'The partner portal',
@@ -281,7 +281,7 @@ export const MARKETING = {
 
   guides: {
     metaTitle: 'Guides for business websites',
-    metaDescription: 'Plain guides on what a business website needs, choosing a site address, how search engines find a site, handling enquiries and moving to a paid plan.',
+    metaDescription: 'Plain guides on what a business website needs, choosing a site address, how search engines find a site, handling enquiries and moving to a Pro plan.',
     h1: 'Guides',
     lead: 'Short, plain guides for owners of small businesses. They explain the ideas and do not promise results.',
     read: 'Read the guide',
@@ -300,7 +300,7 @@ export const MARKETING = {
           { h: 'Say who you are', body: ['Use your business name the way customers know it. Add a short sentence that says what kind of business you are.'] },
           { h: 'Say what you do', body: ['List your main services or products in plain words. A customer should understand what you provide without reading a long page.', 'Use the words your customers use, not the words of your trade.'] },
           { h: 'Say where you work', body: ['Name the town or area you serve. If customers come to you, add your address. If you go to them, list the areas you cover.'] },
-          { h: 'Make contact easy', body: ['Show one clear way to get in touch. On a paid plan your site can have an enquiry form and contact links. A free site is informational.'] },
+          { h: 'Make contact easy', body: ['Show one clear way to get in touch. On a Pro plan your site can have an enquiry form and contact links. A free site is informational.'] },
           { h: 'Keep it current', body: ['Change the content when your services, address or details change. An out-of-date page can send a customer to the wrong place.'] },
         ],
         links: ['choosing-your-site-address', 'how-search-engines-find-your-site'],
@@ -313,9 +313,9 @@ export const MARKETING = {
           { h: 'Keep it short', body: ['Short addresses are easier to remember and easier to type on a phone. Use your business name if it is available.'] },
           { h: 'Use letters, numbers and hyphens', body: ['An address can use letters, numbers and hyphens. It cannot start or end with a hyphen. Some names are reserved, and some are already taken.'] },
           { h: 'Say it aloud', body: ['If you would have to spell it out each time, choose another. Avoid spellings that are easy to get wrong.'] },
-          { h: 'Subdomain and domain name', body: ['Your site starts on your own subdomain. On a paid plan you can connect a domain name of your own. When a paid plan ends, your own domain stops working and visitors are sent to your subdomain.'] },
+          { h: 'Subdomain and domain name', body: ['Your site starts on your own subdomain. On a Pro plan you can connect a domain name of your own. When a Pro plan ends, your own domain stops working and visitors are sent to your subdomain.'] },
         ],
-        links: ['what-a-business-website-needs', 'from-free-to-paid-plan'],
+        links: ['what-a-business-website-needs', 'from-free-to-pro-plan'],
       },
       {
         slug: 'how-search-engines-find-your-site', title: 'How search engines find your site',
@@ -339,15 +339,15 @@ export const MARKETING = {
           { h: 'Follow up', body: ['If a customer has not answered, send one polite reminder. Then leave it.'] },
           { h: 'Respect consent', body: ['A person who sends an enquiry agrees to be contacted about that enquiry. Do not use their details for something else without asking.'] },
         ],
-        links: ['what-a-business-website-needs', 'from-free-to-paid-plan'],
+        links: ['what-a-business-website-needs', 'from-free-to-pro-plan'],
       },
       {
-        slug: 'from-free-to-paid-plan', title: 'From the Free plan to a paid plan',
-        metaDescription: 'What a free site gives you, what a paid plan adds, and how to decide when to move. Prices are shown without GST.',
-        lead: 'You can start with a free site and move to a paid plan when you want the main features.',
+        slug: 'from-free-to-pro-plan', title: 'From the Free plan to a Pro plan',
+        metaDescription: 'What a free site gives you, what a Pro plan adds, and how to decide when to move. Prices are shown without GST.',
+        lead: 'You can start with a free site and move to a Pro plan when you want the main features.',
         sections: [
           { h: 'What the Free plan gives you', body: ['A site on your own subdomain, starter content for your business area, and a listing in the directory. You can edit the content. Free sites are informational.'] },
-          { h: 'What a paid plan adds', body: ['Buttons, forms and contact links on your site, a domain name of your own, and the main features of your business area.'] },
+          { h: 'What a Pro plan adds', body: ['Buttons, forms and contact links on your site, a domain name of your own, and the main features of your business area.'] },
           { h: 'Choosing a plan', body: ['There are three plans: Handyman, Professional and Ecommerce. Handyman is for one-person service businesses, Professional is for firms and practices, and Ecommerce is for businesses that sell online.'] },
           { h: 'Billing terms and payment', body: ['Plans are billed quarterly, half-yearly or annually. Prices are shown without GST, and GST is added at checkout. Payment happens inside your business app, through our payment gateway.'] },
         ],
@@ -361,12 +361,12 @@ export const MARKETING = {
     lead: 'Get a free site made for a {name}. Move to a Pro plan when you want the main features of the {pack} area.',
     groupLine: 'Listed under: {family}.',
     givesHeading: 'Typical working areas',
-    givesIntro: 'A {name} uses the working areas of the {pack} pack, in the business app, on a paid plan.',
+    givesIntro: 'A {name} uses the working areas of the {pack} pack, in the business app, on a Pro plan.',
     howHeading: 'How it works',
     steps: [
       { title: 'Register', body: 'Tell us about your business. Your industry and category are already chosen.' },
       { title: 'Your free site is live', body: 'It goes live right away on your own subdomain, with starter content for a {name}. Edit it yourself.' },
-      { title: 'Move to a Pro plan', body: 'To use the main features, choose a paid plan and pay inside your business app.' },
+      { title: 'Move to a Pro plan', body: 'To use the main features, choose a Pro plan and pay inside your business app.' },
     ],
     note: 'Free sites are informational. Prices are shown without GST.',
     moreHeading: 'Other categories in {pack}',
@@ -376,10 +376,10 @@ export const MARKETING = {
     pricingLink: 'See pricing',
     faqHeading: 'Common questions',
     faq: [
-      { q: 'What does a {name} get?', a: 'A site on its own subdomain with starter content for a {name}, and the working areas of the {pack} pack on a paid plan: {gives}.' },
+      { q: 'What does a {name} get?', a: 'A site on its own subdomain with starter content for a {name}, and the working areas of the {pack} pack on a Pro plan: {gives}.' },
       { q: 'Do I pay to try it?', a: 'No. You register yourself and your free site goes live right away. Free sites are informational.' },
       { q: 'Can I change the starter content?', a: 'Yes. You edit the content of your site in your business app.' },
-      { q: 'Which plan do I need?', a: 'To use the main features, move to any of the three paid plans. The pricing page shows each plan and its billing terms, without GST.' },
+      { q: 'Which plan do I need?', a: 'To use the main features, move to any of the three Pro plans. The pricing page shows each plan and its billing terms, without GST.' },
     ] as readonly Faq[],
   },
 

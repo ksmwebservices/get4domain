@@ -71,7 +71,7 @@ describe('copy rules (all visible text is in the strings module)', () => {
     for (const { path, text } of defs) assert.match(text, /informational listing/i, `${path}: ${text}`);
     const pro = ALL.filter((s) => /\bPro means\b/.test(s.text));
     assert.ok(pro.length >= 2);
-    for (const { path, text } of pro) assert.match(text, /Pro means any paid plan/, `${path}: ${text}`);
+    for (const { path, text } of pro) assert.match(text, /Pro means any of the Pro plans/, `${path}: ${text}`);
   });
 
   test('the wallet text says no refunds and no cash-out', () => {

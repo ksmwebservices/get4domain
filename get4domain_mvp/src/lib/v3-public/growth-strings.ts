@@ -6,9 +6,9 @@
 export const GROWTH = {
   nav: 'Growth',
   metaTitle: 'Growth services: get found and get enquiries',
-  metaDescription: 'A paid plan is a website, the business tools and promotion work done by our team, through the directory pages and your own subdomain site.',
+  metaDescription: 'A Pro plan is a website, the business tools and promotion work done by our team, through the directory pages and your own subdomain site.',
   h1: 'Get found and get enquiries',
-  lead: 'A paid plan is not only a website and a business app. It also includes promotion that our team sets up and manages, through our directory pages and your own Get4Domain subdomain site.',
+  lead: 'A Pro plan is not only a website and a business app. It also includes promotion that our team sets up and manages, through our directory pages and your own Get4Domain subdomain site.',
   honest: 'We set up and manage the work. We cannot promise a position in search results, a number of visitors or a number of enquiries, and we do not.',
 
   modelHeading: 'Where promotion runs',
@@ -39,10 +39,10 @@ export const GROWTH = {
   addonPrice: 'Price not set yet',
 
   freeHeading: 'On the Free plan',
-  freeBody: 'The Free plan is a site with limited access, to get started. It has a directory listing. The promotion services stay locked until you move to a paid plan.',
+  freeBody: 'The Free plan is a site with limited access, to get started. It has a directory listing. The promotion services stay locked until you move to a Pro plan.',
 
-  ctaHeading: 'Start free, and move to a paid plan when you are ready',
-  ctaBody: 'Register with a free site first. Choose a paid plan when you want the website tools and the growth services.',
+  ctaHeading: 'Start free, and move to a Pro plan when you are ready',
+  ctaBody: 'Register with a free site first. Choose a Pro plan when you want the website tools and the growth services.',
   ctaStart: 'Start free',
   ctaPlans: 'See plans',
 
@@ -59,7 +59,7 @@ export const GROWTH = {
 
   /** The home section. */
   homeHeading: 'Get found and get enquiries',
-  homeLead: 'On a paid plan our team also sets up and manages promotion, through the directory pages and your own subdomain site. Here is what is in it and what is launching soon.',
+  homeLead: 'On a Pro plan our team also sets up and manages promotion, through the directory pages and your own subdomain site. Here is what is in it and what is launching soon.',
   homeMore: 'See all growth services',
   heroLine: 'Website, business tools and promotion in one plan.',
 
@@ -67,7 +67,7 @@ export const GROWTH = {
   footerHeading: 'Growth services',
   footerPlans: 'Plans',
   footerAll: 'All growth services',
-  footerCompare: 'Compare Free and paid',
+  footerCompare: 'Compare Free and Pro plans',
   footerFree: 'The Free plan',
   footerSeePlans: 'Pro plans',
 

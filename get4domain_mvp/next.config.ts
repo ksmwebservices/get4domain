@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
       // Both used to be page-level redirect() calls, which answer 307 (temporary). They moved for good, so 308.
       { source: '/products', destination: '/features', permanent: true },
       { source: '/digital-growth', destination: '/leadspace', permanent: true },
+      // P6.1: the guide was renamed from a paid plan to a Pro plan; the old address stays.
+      { source: '/guides/from-free-to-paid-plan', destination: '/guides/from-free-to-pro-plan', permanent: true },
     ];
   },
   // The service worker file is always fetched fresh (a stale worker could keep an old rule alive); it may control the whole site.

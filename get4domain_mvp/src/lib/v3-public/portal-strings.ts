@@ -101,7 +101,7 @@ export const PORTAL = {
     customLabel: 'Already own a domain name?',
     customPlaceholder: 'yourbusiness.com',
     customCta: 'Connect a domain you own',
-    customNote: 'Registering new domain names opens soon. Until then you can connect a domain you already own, on a paid plan.',
+    customNote: 'Registering new domain names opens soon. Until then you can connect a domain you already own, on a Pro plan.',
     tryDomain: 'Check a website name',
   },
 
@@ -140,7 +140,7 @@ export const PORTAL = {
     domainLead: 'Every business starts on its own address under get4domain.com. Check that yours is free.',
     faqHeading: 'Questions and answers',
     ctaHeading: 'Start with a free site',
-    ctaBody: 'Register, look over your site, and move to a paid plan when you want the main features.',
+    ctaBody: 'Register, look over your site, and move to a Pro plan when you want the main features.',
     ctaPrimary: 'Start free',
     ctaSecondary: 'See how it works',
     learnMore: 'Learn more',
