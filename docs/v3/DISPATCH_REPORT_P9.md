@@ -25,11 +25,40 @@ Proved locally, no guessing: two fake backends, the app built with a baked addre
 ## Choices
 - Kept the public default address as the last fallback (existing deployments rely on it), as the other pages do.
 - Log with `console.warn` (the renderer has no logger); one line per not-found.
-- `src/engine/themepack/site.tsx` and the theme pages still use the build-time address for theme package reads; not changed here (a Free or plain site does not use them). Worth the same fix.
+- (Superseded by P9.5 below: the theme package read now uses the runtime address too.)
 
 ## For the owner
 - Check that the site container sets `INTERNAL_API_URL` at run time (it does, per the report) and then look in the logs for `vendor_not_found` after the next deploy; the reason code tells which branch fired.
-- `/starter/generic/hero.svg` is **not in this app's `public/` folder** (`public/starter` has 25 industry folders, no `generic`), so the banner will be empty on the live site until that file is added here or served from another host.
+- `/starter/generic/hero.svg` was missing from this app; P9.6 below adds it. (Check that the public folder is copied into the site container image, as for the other `/starter/` pictures.)
+
+## P9.5 Same fix everywhere on the server (addendum)
+One helper, `siteApiBase()` (INTERNAL_API_URL, then API_BASE_URL, then NEXT_PUBLIC_API_URL, then the public default; read when the request runs). It uses static `process.env.X` reads, so it is also safe in a file that is bundled for the browser. The directory/vendor-host `apiBase()` (`lib/v3-public/config.ts`) got `INTERNAL_API_URL` first and `NEXT_PUBLIC_API_URL` last (still no default).
+Every use of `NEXT_PUBLIC_API_URL` in `src` (25 files) and the decision for each:
+
+| File | Kind | Decision |
+|---|---|---|
+| `engine/themepack/site.tsx` (`fetchThemePackage`, now in `engine/themepack/package-fetch.ts`) | server: theme package for a themed (Pro) site, also used by the site sitemap | **moved to `siteApiBase()`** |
+| same file, `assetBase` for theme files | address the visitor's browser loads | **kept public** (a container address would not work in a browser) |
+| `app/site/[subdomain]/[[...rest]]/page.tsx` | server reads moved in P9; the constant left is the address handed to the browser (theme form posts) | kept public for that use only |
+| `lib/site-public.ts` (robots.txt, sitemap.xml of a vendor host) | server | **moved** |
+| `app/theme-pack/[id]/[[...rest]]/page.tsx` (theme preview with sample content) | server | **moved** |
+| `lib/pricing.ts` (`fetchLivePricing`) | runs on the server and in the browser | **moved** (safe in both) |
+| `app/d/[token]/route.ts` (shared invoice page) | server | **moved** |
+| `app/api/demo/start`, `tour-pass`, `verify` routes | server | **moved** |
+| `app/go/[slug]/page.tsx`, `app/ls/[slug]/page.tsx`, `app/ls/[slug]/go/[n]/route.ts`, `app/sitemap-leadspace.xml/route.ts` | server; already read INTERNAL_API_URL first but skipped API_BASE_URL | **moved to the same helper** (one order everywhere) |
+| `app/theme-local-test/[[...slug]]/page.tsx` | passes the address to the theme for the browser | kept public |
+| `app/ls/[slug]/leadspace-client.ts` | browser beacons | kept public |
+| `app/customer/page.tsx`, `app/d/[token]/pay/page.tsx`, `app/theme-preview/[id]/page.tsx`, `bos/ui.tsx`, `domainapp/shared/InvoicingView.tsx` | `'use client'` | kept public |
+| `lib/api.ts`, `lib/auth.ts`, `lib/commerce.ts` | imported only by client pages (admin, dashboard) | kept public |
+| `lib/v3-public/config.ts` `apiBase()` (directory pages, vendor-host check, domain search, register, suggest) | server | **INTERNAL_API_URL added first** |
+Not touched: `scripts/` comments and `smoke.mjs` env (test setup only). No other variable names for the API address exist in `src`.
+Tests (`__tests__/p9b.test.ts`) that fail on the old behaviour: a themed Pro site's theme package is read from `INTERNAL_API_URL` when the built-in address points nowhere (old code returned null), the site data and package of the themed fixture come from the runtime address and the Pro site never gets the Free page, the `apiBase` order, `siteApiBase()` reads the process environment per call, every moved file asks `siteApiBase()` and no longer reads the build-time variable, and the browser-facing files are exactly the documented ones.
+
+## P9.6 Starter banner
+The backend (read only, `get4domain-w2`) can send two kinds of `/starter/` path: `GENERATED_BANNER = '/starter/generic/hero.svg'` (any trial site whose category has no pictures) and `/starter/<key>/hero.webp`, `g1..g4.webp` for the 24 seeded industry keys. All 24 key folders already exist here with all five pictures (tested); only `generic/hero.svg` was missing.
+Added `public/starter/generic/hero.svg` (1600x900, same size as the other heroes): a gradient in the brand blues `#1e3a8a`, `#1d4ed8`, `#3b82f6`, circles and two bars in white and the brand gold `#ffb420`. No text, no logo, no image, no script, no link; drawn by hand, no copied artwork; noted in `public/starter/LICENCE.md`. A test checks the file (shape, size, no text/image/script/link, only brand colours). The Free page shows it as a real image; the browser script confirms the image loads (not blank) at 375, 768 and 1280, and the server serves it as `image/svg+xml`.
 
 ## Verification
-`test:v3-public`: 549 pass, 0 fail (new `p9.test.ts`: the live shape through a real fake server, address order, banner and half-empty answers, log lines, host reasons; the P8 tests were updated for the renamed helpers). `tsc --noEmit` clean. `next build` passes. `scripts/v3-public/p9-shots.mjs` (fake backend `fake-backend-p9.mjs`; app built with a wrong baked address and given only the runtime address; requests for `plumberboy.get4domain.com` through a local host mapping) ALL PASSED at 375, 768, 1280: 200 with a title, the Free page with services and phone text, no form, button, link, e-mail or chat, the generic design for a Pro unknown industry, "being set up" for a draft, not-found for an unknown address, and the `vendor_not_found` line in the server log. `p8-shots.mjs` also passes on this build. Screenshots: `docs/v3/p9-shots/free-information-page-*.png`.
+`test:v3-public`: 558 pass (after P9.5 and P9.6), 0 fail (new `p9.test.ts`: the live shape through a real fake server, address order, banner and half-empty answers, log lines, host reasons; the P8 tests were updated for the renamed helpers). `tsc --noEmit` clean. `next build` passes. `scripts/v3-public/p9-shots.mjs` (fake backend `fake-backend-p9.mjs`; app built with a wrong baked address and given only the runtime address; requests for `plumberboy.get4domain.com` through a local host mapping) ALL PASSED at 375, 768, 1280: 200 with a title, the Free page with services and phone text, no form, button, link, e-mail or chat, the generic design for a Pro unknown industry, "being set up" for a draft, not-found for an unknown address, and the `vendor_not_found` line in the server log. `p8-shots.mjs` also passes on this build. Screenshots: `docs/v3/p9-shots/free-information-page-*.png`.
+
+**After the addendum:** `tsc --noEmit` clean, `next build` passes (built with a wrong baked address), `p9-shots.mjs` ALL PASSED (38 checks: adds the banner image really loading and a themed Pro site that renders and asks the runtime address for its theme package), `p8-shots.mjs` ALL PASSED on the same build.
