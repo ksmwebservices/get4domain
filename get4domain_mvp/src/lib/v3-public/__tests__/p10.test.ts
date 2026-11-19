@@ -60,6 +60,19 @@ describe('P10 the live case: Host plumberboy.get4domain.com with the live settin
   });
 });
 
+describe('P10 own internal links of a vendor site on its host', () => {
+  test('/site/<own name>/... is passed through (the browser prefetches these links), not answered with a 404', async () => {
+    for (const path of ['/site/plumberboy', '/site/plumberboy/contact', '/site/plumberboy/listings?_rsc=abc']) {
+      const r = await ask('plumberboy.get4domain.com', path);
+      assert.notEqual(r.status, 404, path);
+      assert.equal(r.headers.get('x-middleware-next'), '1', path);
+    }
+  });
+  test('a /site/<name> of another vendor is never reachable from this host', async () => {
+    for (const path of ['/site/other-vendor', '/site/other-vendor/contact', '/site/plumberboyx']) assert.equal((await ask('plumberboy.get4domain.com', path)).status, 404, path);
+  });
+});
+
 describe('P10 portal hosts keep working exactly as before', () => {
   test('v3site (main) serves the marketing home, v3directory the directory home', async () => {
     assert.equal(rewriteOf(await ask('v3site.get4domain.com')), '/v3-site');

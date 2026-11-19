@@ -47,11 +47,14 @@ const hostCfg = (): HostConfig => ({ ...readHostConfig(), vendorBase: SITE_BASE 
 const RESERVED_HOSTS = new Set(['www', 'app', 'api', 'gapi', 'admin', 'mail', 'cdn', 'static', 'staging', 'demo']);
 function vendorHostRewrite(req: NextRequest): NextResponse | null {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith('/site/') || pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/uploads')) return null;
   // any <name>.<base domain> that is not a portal host and not reserved (also with a port, a trailing dot or capital letters: normalizeHost) is a vendor host
   const cls = classifyHost(req.headers.get('host'), hostCfg());
   if (cls.kind !== 'vendor-site') return null;
   const sub = cls.label;
+  // The site's own internal links point at /site/<name>/...: a vendor host reaches ITS OWN such paths as they are (a visitor's browser prefetches them), never another vendor's.
+  if (pathname === `/site/${sub}` || pathname.startsWith(`/site/${sub}/`)) return NextResponse.next();
+  if (pathname.startsWith('/site/')) return null;
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/uploads')) return NextResponse.next();
   const url = req.nextUrl.clone();
   url.pathname = `/site/${sub}${pathname === '/' ? '' : pathname}`;
   return NextResponse.rewrite(url);
