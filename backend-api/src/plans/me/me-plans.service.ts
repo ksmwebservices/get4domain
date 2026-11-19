@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PageQueryDto, pageArgs, paged } from '../admin/plans-admin.common';
 import { RenderEntitlements, ResolvedFeature, toRenderEntitlements } from '../entitlements/entitlement-engine';
 import { EntitlementsService } from '../entitlements/entitlements.service';
+import { selectTaxRate } from '../pricing/price-quote';
+import { PlanOptions, shapePlanOptions } from './plan-options.core';
 
 export interface MyEntitlements {
   mode: string; plan: string | null; track: string | null; level: string | null; subscriptionStatus: string | null; graceWarning: boolean;
@@ -43,6 +45,24 @@ export class MePlansService {
       source: sub.source,
       price: typeof snap.amountPaise === 'number' ? { amountPaise: snap.amountPaise, currency: String(snap.currency ?? 'INR'), taxInclusive: snap.taxInclusive === true } : null,
     };
+  }
+
+  /**
+   * B6.2: the plans and terms the vendor may choose from. The track is the held plan's track, else the category chosen at registration (never the site). Only approved prices already in force are shown.
+   * Every read is keyed by the verified vendor id; nothing here is written.
+   */
+  async planOptions(vendorId: string, now: Date = new Date()): Promise<PlanOptions> {
+    const sub = (await this.prisma.v3PlanSubscription.findUnique({ where: { currentVendorId: vendorId }, include: { plan: { select: { track: true } } } }))
+      ?? (await this.prisma.v3PlanSubscription.findFirst({ where: { vendorId }, orderBy: { createdAt: 'desc' }, include: { plan: { select: { track: true } } } }));
+    const vendor = await this.prisma.vendor.findUnique({ where: { id: vendorId }, select: { industry: true } });
+    const cat = vendor?.industry ? await this.prisma.v3PackCategory.findUnique({ where: { categoryKey: vendor.industry }, select: { minTier: true } }) : null;
+    const [plans, prices, taxRows] = await Promise.all([
+      this.prisma.v3Plan.findMany({ where: { status: 'ACTIVE', isPublic: true } }),
+      this.prisma.v3PlanPrice.findMany({ where: { status: 'APPROVED', effectiveFrom: { lte: now } } }),
+      this.prisma.v3TaxRate.findMany({ where: { active: true } }),
+    ]);
+    const tax = selectTaxRate(taxRows.map((t) => ({ name: t.name, ratePercent: Number(t.ratePercent), appliesTo: t.appliesTo, active: t.active, validFrom: t.validFrom })), now);
+    return shapePlanOptions({ now, heldTrack: sub?.plan?.track ?? null, categoryTier: cat?.minTier ?? null, plans, prices, tax: tax ? { name: tax.name, ratePercent: tax.ratePercent } : null });
   }
 
   async events(vendorId: string, q: PageQueryDto) {

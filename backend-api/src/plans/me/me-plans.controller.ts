@@ -32,6 +32,13 @@ export class MePlansController {
   }
 
   @UseGuards(VendorOwnerGuard)
+  @Get('plan-options')
+  @ApiOperation({ summary: 'The paid plans and terms I may choose (owner only): the plans of my kind of business, and only terms with an approved price already in force; a plain reason when there are none' })
+  planOptions(@Tenant() tenant: TenantContext) {
+    return this.me.planOptions(tenant.vendorId);
+  }
+
+  @UseGuards(VendorOwnerGuard)
   @Get('subscription/events')
   @ApiOperation({ summary: 'The history of my plan changes (owner only, paginated)' })
   events(@Tenant() tenant: TenantContext, @Query() q: PageQueryDto) {
