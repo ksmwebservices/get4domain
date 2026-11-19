@@ -1,6 +1,6 @@
 import { useMocks } from './flag';
 import { accessTokenOf, requestHandoff } from './handoff-api';
-import { fetchCategories } from './packs';
+import { fetchCategories, fetchCategoryServices, type Category } from './packs';
 import { callApi } from './proxy';
 import { readReferral } from './referral';
 import { cleanSubdomain, duplicateAskOf, duplicateClaimOf, mapRegisterFailure, PLAN_KEYS, type DuplicateAsk, trackOfTier, TRACKS, DEFAULT_TRACK, subdomainProblem, subdomainStateOf, TERMS, validateRegister, type FieldErrors, type RegisterErrorKey, type RegisterInput, type SubdomainState } from './register';
@@ -68,6 +68,8 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
   const problems = validateRegister(input);
   if (Object.keys(problems).length) return fail(problems);
   if (useMocks()) {
+    const sample = await fetchCategories();
+    if (sample.kind !== 'ok' || !categoryKnown(sample.data, input.categoryKey)) return fail({ category: 'category' });
     if (MOCK_TAKEN_SUBDOMAINS.includes(input.subdomain)) return fail({ subdomain: 'subdomainTaken' });
     if (input.email.toLowerCase() === MOCK_TAKEN_EMAIL_REGISTER) return fail({ email: 'emailTaken' });
     // sample mode: a business called "Adyar Plumbing House" looks like an existing listing, so the "Is this your business?" step can be reviewed
@@ -76,12 +78,16 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
     }
     return { ok: true, fields: {}, general: null, handoff: MOCK_REGISTER_HANDOFF, site: 'pending', siteCreated: false, duplicate: null, claimSlug: null };
   }
+  // the category must be one of the API's own list: free text, a family label or a catalogue-only key is never sent (an unknown category breaks the site build)
+  const list = await fetchCategories();
+  if (list.kind !== 'ok') return fail({}, 'notAvailable');
+  if (!categoryKnown(list.data, input.categoryKey)) return fail({ category: 'category' });
   const referral = readReferral(req.headers.get('cookie'));
   const track = await trackFor(input.plan, input.categoryKey);
   const r = await callApi(req, '/auth/register', {
     method: 'POST',
     body: {
-      name: input.name, email: input.email, password: input.password, businessName: input.businessName, industry: input.industry || input.categoryKey, ...(input.phone ? { phone: input.phone } : {}),
+      name: input.name, email: input.email, password: input.password, businessName: input.businessName, industry: input.categoryKey, ...(input.phone ? { phone: input.phone } : {}),
       track, subdomain: input.subdomain,
       // the duplicate check's details: city, area and pincode always, GSTIN only when given, the answer only after the backend asked
       city: input.city, area: input.area, pincode: input.pincode, ...(input.gstin ? { gstin: input.gstin } : {}),
@@ -92,6 +98,16 @@ export async function handleRegister(req: Request, body: Record<string, unknown>
   if (!r) return fail({}, 'notAvailable');
   if (!r.ok) { const f = mapRegisterFailure(r.status, r.json); return fail(f.fields, f.general, { duplicate: duplicateAskOf(r.status, r.json), claimSlug: duplicateClaimOf(r.status, r.json) }); }
   return { ok: true, fields: {}, general: null, handoff: await requestHandoff(req, accessTokenOf(r.json)), site: siteStateOf(r.json), siteCreated: siteCreatedOf(r.json), duplicate: null, claimSlug: null };
+}
+
+/** true only when the key is a category id of the list the API (or the sample list) gave. */
+export function categoryKnown(list: readonly Pick<Category, 'categoryKey'>[], key: string): boolean {
+  return key !== '' && list.some((c) => c.categoryKey === key);
+}
+
+/** The starter services of one category for the form's chips (names only). */
+export async function handleCategoryServices(key: string): Promise<{ services: string[] }> {
+  return { services: await fetchCategoryServices(key.slice(0, 80)) };
 }
 
 /** The state of one address: the local rules first (no call for a shape or reserved problem), then the API. 'unknown' when it cannot be checked. */

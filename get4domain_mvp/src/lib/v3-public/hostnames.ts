@@ -49,6 +49,18 @@ export function baseDomain(cfg: HostConfig): string | null {
   return cfg.main ? cfg.main.replace(/^www\./, '') : null;
 }
 
+/** The domain every vendor address hangs from (NEXT_PUBLIC_SITE_BASE_DOMAIN, the same setting the vendor sites and the middleware use): `<name>.<this>`. Never the main host and never an internal label. */
+export const DEFAULT_SITE_BASE_DOMAIN = 'get4domain.com';
+export function siteBaseDomain(env: Env = process.env): string {
+  const raw = String(env.NEXT_PUBLIC_SITE_BASE_DOMAIN ?? '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^\.+/, '');
+  return /^[a-z0-9.-]+$/.test(raw) && raw.includes('.') || raw === 'localhost' ? raw : DEFAULT_SITE_BASE_DOMAIN;
+}
+
+/** The address a vendor site will have for a typed name: `<name>.<base>`; the name alone is never shown as an address. */
+export function vendorHost(name: string, base: string = siteBaseDomain()): string {
+  return `${String(name ?? '').trim().toLowerCase()}.${base}`;
+}
+
 export type ReservedRole = 'app' | 'admin' | 'api' | 'media' | 'name';
 
 export type HostClass =

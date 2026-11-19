@@ -3,14 +3,14 @@ import { cookies } from 'next/headers';
 import RegisterForm from '@/components/site/RegisterForm';
 import { vendorAppUrl } from '@/lib/v3-public/config';
 import { assertV3Public } from '@/lib/v3-public/guard';
-import { baseDomain, readHostConfig } from '@/lib/v3-public/hostnames';
+import { siteBaseDomain } from '@/lib/v3-public/hostnames';
 import { preselectableCategory } from '@/lib/v3-public/catalogue';
 import { publishedIndustries } from '@/lib/v3-public/industries';
 import { fetchCategories } from '@/lib/v3-public/packs';
 import { fetchPlans, PUBLIC_TERMS } from '@/lib/v3-public/plans';
 import { portalLinks } from '@/lib/v3-public/portal-links';
 import { portalPlanRows } from '@/lib/v3-public/portal-pricing';
-import { familyLabel, trackOfMinTier, type CatOption, type PlanChoice } from '@/lib/v3-public/register-plan';
+import { trackOfMinTier, type CatOption, type PlanChoice } from '@/lib/v3-public/register-plan';
 import { PLAN_KEYS, TERMS, trackOfTier } from '@/lib/v3-public/register';
 import { REFERRAL_COOKIE, referralCodeOk } from '@/lib/v3-public/referral';
 import { siteMetadata } from '@/lib/v3-public/site-metadata';
@@ -46,15 +46,14 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const options: CatOption[] = cats.kind === 'ok'
     ? cats.data.map((c) => ({ key: c.categoryKey, name: c.name, industry: c.family || c.packKey.toLowerCase(), packKey: c.packKey, family: c.family || c.packKey, track: trackOfMinTier(c.minTier) }))
     : [];
-  // the list comes from the API; the chosen category is added from the catalogue when the API list does not carry it yet (it has no known track, so it never moves the plan)
-  if (preset && !options.some((o) => o.key === preset.id)) options.push({ key: preset.id, name: preset.name, industry: preset.family || preset.packKey.toLowerCase(), packKey: preset.packKey, family: preset.family || familyLabel(preset.packKey), track: null });
-  const base = baseDomain(readHostConfig());
+  // only the API's own list is offered: a catalogue-only category is never added (the register route needs a category the backend knows)
+  const base = siteBaseDomain();
   const links = portalLinks('main');
   return (
     <RegisterForm
       categories={options}
-      categoriesFailed={cats.kind !== 'ok' && !preset}
-      category={preset?.id ?? null}
+      categoriesFailed={cats.kind !== 'ok'}
+      category={preset && options.some((o) => o.key === preset.id) ? preset.id : null}
       pack={packPage?.pack.key ?? null}
       packName={packPage?.pack.name ?? null}
       plan={plan}
@@ -66,7 +65,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       vendorUrl={vendorAppUrl()}
       pricingHref="/pricing"
       directoryBase={links.directoryPath('')}
-      suffix={base ? `.${base}` : ''}
+      baseDomain={base}
       subdomain={/^[a-z0-9-]{1,63}$/.test(one(q.subdomain).toLowerCase()) ? one(q.subdomain).toLowerCase() : ''}
     />
   );

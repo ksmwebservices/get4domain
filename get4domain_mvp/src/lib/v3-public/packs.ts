@@ -64,3 +64,17 @@ export function categoriesByPack(list: readonly Category[]): Map<string, Categor
   for (const c of list) { const a = m.get(c.packKey) ?? []; a.push(c); m.set(c.packKey, a); }
   return m;
 }
+
+/** Starter services of one category (GET /v3/public/pack-categories/:categoryKey `starterServices`): the only finer-than-category data the API has. Empty when it cannot be read or the category has none. */
+const SAMPLE_SERVICES: Readonly<Record<string, readonly string[]>> = { plumber: ['Pipe repair', 'Tap and fittings', 'Water tank cleaning'], electrician: ['Wiring', 'Fan and light fitting', 'Inverter and UPS'], 'dental-clinic': ['Check-up', 'Cleaning', 'Root canal'] };
+export async function fetchCategoryServices(categoryKey: string): Promise<string[]> {
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(categoryKey)) return [];
+  if (useMocks()) return [...(SAMPLE_SERVICES[categoryKey] ?? [])];
+  const base = apiBase();
+  if (!base) return [];
+  const r = await getJson<unknown>(`${base}/v3/public/pack-categories/${encodeURIComponent(categoryKey)}`, defaultRevalidate());
+  if (r.kind !== 'ok') return [];
+  const o = unwrap<unknown>(r.data);
+  const list = o && typeof o === 'object' ? (o as Record<string, unknown>).starterServices : null;
+  return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string' && x.trim().length > 0 && x.length <= 60).slice(0, 12) : [];
+}

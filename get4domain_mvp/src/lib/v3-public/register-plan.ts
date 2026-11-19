@@ -93,3 +93,15 @@ export function signInWithNext(vendorUrl: string | null, plan: string, term: num
   u.searchParams.set('next', checkoutNextPath(plan, term));
   return u.toString();
 }
+
+/** The business app's plain sign-in address (no plan, no next). null when no business app address is set or it is not http(s). */
+export function vendorSignInUrl(vendorUrl: string | null): string | null {
+  if (!vendorUrl) return null;
+  let u: URL;
+  try { u = new URL(vendorUrl); } catch { return null; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+  u.search = '';
+  u.hash = '';
+  u.pathname = `${u.pathname.replace(/\/+$/, '')}/login`;
+  return u.toString();
+}

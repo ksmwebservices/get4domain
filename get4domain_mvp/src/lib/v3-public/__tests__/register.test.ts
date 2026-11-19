@@ -182,7 +182,11 @@ describe('the site state of a registration answer', () => {
   test('the real registration answer of today (token and user only) is pending, and the result never says live', async () => {
     const saved = { fetch: globalThis.fetch, mocks: process.env.V3_PUBLIC_USE_MOCKS, base: process.env.API_BASE_URL };
     process.env.V3_PUBLIC_USE_MOCKS = 'false'; process.env.API_BASE_URL = 'http://api.invalid';
-    globalThis.fetch = (async (url: string | URL | Request) => new Response(JSON.stringify(String(url).endsWith('/auth/register') ? { data: { accessToken: 'tok-1', user: { subdomain: 'x' } } } : {}), { status: String(url).endsWith('/auth/register') ? 201 : 404, headers: { 'content-type': 'application/json' } })) as typeof fetch;
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      const u = String(url);
+      const json = u.endsWith('/auth/register') ? { data: { accessToken: 'tok-1', user: { subdomain: 'x' } } } : u.endsWith('/v3/public/pack-categories') ? { success: true, data: [{ categoryKey: 'plumber', name: 'Plumber', family: 'FIELD_SERVICE', packKey: 'FIELD_SERVICE', minTier: 'HANDYMAN' }] } : {};
+      return new Response(JSON.stringify(json), { status: u.endsWith('/auth/register') || u.endsWith('/pack-categories') ? (u.endsWith('/auth/register') ? 201 : 200) : 404, headers: { 'content-type': 'application/json' } });
+    }) as typeof fetch;
     try {
       const r = await handleRegister(req, body());
       assert.equal(r.ok, true);
@@ -250,12 +254,13 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
     if (saved.mocks === undefined) delete process.env.V3_PUBLIC_USE_MOCKS; else process.env.V3_PUBLIC_USE_MOCKS = saved.mocks;
     if (saved.base === undefined) delete process.env.API_BASE_URL; else process.env.API_BASE_URL = saved.base;
   };
+  const cats = (rows: Array<[string, string]>) => ({ '/v3/public/pack-categories': { status: 200, json: { success: true, data: rows.map(([categoryKey, minTier]) => ({ categoryKey, name: categoryKey, family: 'x', packKey: 'RETAIL', minTier })) } } });
   const real = (): void => { process.env.V3_PUBLIC_USE_MOCKS = 'false'; process.env.API_BASE_URL = 'http://api.invalid'; };
 
   test('201 with the login-shaped answer signs the owner in and sends only the contract fields', async () => {
     real();
     try {
-      stub({ '/auth/register': { status: 201, json: { success: true, statusCode: 201, data: { accessToken: 'tok-1', user: { id: 'u', name: 'M', email: 'e', role: 'VENDOR', businessName: 'B', industry: 'plumber', subdomain: 'sri-murugan' } } } }, '/v3/auth/handoff': { status: 200, json: { data: { code: 'h'.repeat(32) } } } });
+      stub({ ...cats([['plumber', 'PROFESSIONAL']]), '/auth/register': { status: 201, json: { success: true, statusCode: 201, data: { accessToken: 'tok-1', user: { id: 'u', name: 'M', email: 'e', role: 'VENDOR', businessName: 'B', industry: 'plumber', subdomain: 'sri-murugan' } } } }, '/v3/auth/handoff': { status: 200, json: { data: { code: 'h'.repeat(32) } } } });
       const r = await handleRegister(req, body());
       assert.equal(r.ok, true);
       const sent = calls.find((c) => c.url.endsWith('/auth/register'))!.body as Record<string, unknown>;
@@ -268,7 +273,6 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
 
   const okAnswer = { '/auth/register': { status: 201, json: { data: { accessToken: 'tok-1', user: { subdomain: 'x' } } } } };
   const sentTrack = (): unknown => (calls.find((c) => c.url.endsWith('/auth/register'))!.body as Record<string, unknown>).track;
-  const cats = (rows: Array<[string, string]>) => ({ '/v3/public/pack-categories': { status: 200, json: { success: true, data: rows.map(([categoryKey, minTier]) => ({ categoryKey, name: categoryKey, family: 'x', packKey: 'RETAIL', minTier })) } } });
 
   test('a free signup sends the track of the chosen category (handyman, professional, ecommerce)', async () => {
     real();
@@ -288,13 +292,14 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
       assert.equal(sentTrack(), 'ecommerce');
     } finally { restore(); }
   });
-  test('a category the list cannot answer for still sends a track (the smallest), never none', async () => {
+  test('a category the list does not carry is refused (P7), and a known one with an unreadable tier still sends the smallest track', async () => {
     real();
     try {
-      stub({ ...okAnswer });
-      await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: 'unknown-one' }));
-      assert.equal(sentTrack(), DEFAULT_TRACK);
       stub({ ...okAnswer, ...cats([['x', 'GOLD']]) });
+      const r = await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: 'unknown-one' }));
+      assert.equal(r.ok, false);
+      assert.equal(r.fields.category, 'category');
+      assert.equal(calls.some((c) => c.url.endsWith('/auth/register')), false);
       await handleRegister(req, body({ plan: 'free', termMonths: null, categoryKey: 'x' }));
       assert.equal(sentTrack(), DEFAULT_TRACK, 'an unknown tier is not passed on');
     } finally { restore(); }
@@ -312,13 +317,14 @@ describe('real mode: POST /auth/register answers 201 with data.accessToken (Wave
   test('the documented refusals reach the right field', async () => {
     real();
     try {
-      stub({ '/auth/register': { status: 409, json: { success: false, statusCode: 409, code: 'HOST_UNAVAILABLE', message: 'That address is not available.' } } });
+      const L = cats([['plumber', 'PROFESSIONAL']]);
+      stub({ ...L, '/auth/register': { status: 409, json: { success: false, statusCode: 409, code: 'HOST_UNAVAILABLE', message: 'That address is not available.' } } });
       assert.deepEqual((await handleRegister(req, body())).fields, { subdomain: 'subdomainTaken' });
-      stub({ '/auth/register': { status: 409, json: { success: false, statusCode: 409, message: 'A vendor with this email already exists' } } });
+      stub({ ...L, '/auth/register': { status: 409, json: { success: false, statusCode: 409, message: 'A vendor with this email already exists' } } });
       assert.deepEqual((await handleRegister(req, body())).fields, { email: 'emailTaken' });
-      stub({ '/auth/register': { status: 400, json: { success: false, statusCode: 400, message: 'Please check the form.', data: { fields: ['email'] } } } });
+      stub({ ...L, '/auth/register': { status: 400, json: { success: false, statusCode: 400, message: 'Please check the form.', data: { fields: ['email'] } } } });
       assert.deepEqual((await handleRegister(req, body())).fields, { email: 'email' });
-      stub({ '/auth/register': { status: 429, json: {} } });
+      stub({ ...L, '/auth/register': { status: 429, json: {} } });
       assert.equal((await handleRegister(req, body())).general, 'rate');
     } finally { restore(); }
   });

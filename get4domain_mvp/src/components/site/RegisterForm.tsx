@@ -6,7 +6,8 @@ import AcceptNotice from '@/components/site/AcceptNotice';
 import CategoryPicker from '@/components/site/CategoryPicker';
 import { handoffTarget } from '@/lib/v3-public/handoff';
 import { billedLine, PER_MONTH, PORTAL } from '@/lib/v3-public/portal-strings';
-import { categoriesForTrack, isProPlan, planAfterPick, signInWithNext, type CatOption, type PlanChoice } from '@/lib/v3-public/register-plan';
+import { categoriesForTrack, isProPlan, planAfterPick, signInWithNext, vendorSignInUrl, type CatOption, type PlanChoice } from '@/lib/v3-public/register-plan';
+import { vendorHost } from '@/lib/v3-public/hostnames';
 import { subdomainProblem, validateRegister, type DuplicateAsk, type FieldErrors, type RegisterErrorKey, type RegisterField, type SubdomainState } from '@/lib/v3-public/register';
 import { SITE } from '@/lib/v3-public/site-strings';
 
@@ -34,12 +35,12 @@ interface Props {
   /** where "Change plan" goes (the pricing page) and where a directory listing lives */
   pricingHref: string;
   directoryBase: string;
-  /** ".main-domain" shown after the address box; empty when the main host is not set */
-  suffix: string;
+  /** the real base domain (NEXT_PUBLIC_SITE_BASE_DOMAIN): the full address is `<name>.<baseDomain>` */
+  baseDomain: string;
   subdomain?: string;
 }
 
-interface Done { target: string | null; site: 'live' | 'pending'; siteCreated: boolean; held: boolean }
+interface Done { target: string | null; site: 'live' | 'pending'; siteCreated: boolean; held: boolean; host: string }
 interface Reply { ok: boolean; fields: FieldErrors; general: RegisterErrorKey | null; handoff: string | null; site?: 'live' | 'pending'; siteCreated?: boolean; duplicate?: DuplicateAsk | null; claimSlug?: string | null }
 
 const INPUT = 'mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900';
@@ -86,7 +87,9 @@ export default function RegisterForm(p: Props) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
   const [availability, setAvailability] = useState<SubdomainState | 'checking' | null>(null);
+  const [services, setServices] = useState<string[]>([]);
   const seq = useRef(0);
+  const svcSeq = useRef(0);
   const summary = useRef<HTMLDivElement>(null);
   const askRef = useRef<HTMLElement>(null);
 
@@ -122,6 +125,16 @@ export default function RegisterForm(p: Props) {
     return () => clearTimeout(t);
   }, [subdomain]);
 
+  // the chosen category's starter services (the only finer data the API has); shown as chips, never sent with the signup
+  useEffect(() => {
+    if (!categoryKey) { setServices([]); return; }
+    const mine = ++svcSeq.current;
+    fetch(`/directory-api/category-services?key=${encodeURIComponent(categoryKey)}`, { cache: 'no-store' })
+      .then((r) => r.json() as Promise<{ services?: string[] }>)
+      .then((j) => { if (mine === svcSeq.current) setServices(Array.isArray(j.services) ? j.services : []); })
+      .catch(() => { if (mine === svcSeq.current) setServices([]); });
+  }, [categoryKey]);
+
   const addressMessage = ((): { text: string; bad: boolean } | null => {
     if (errors.subdomain) return { text: R.errors[errors.subdomain], bad: true };
     if (availability === 'checking') return { text: R.checking, bad: false };
@@ -151,7 +164,8 @@ export default function RegisterForm(p: Props) {
     setGeneral(null);
     setClaimSlug(null);
     const cat = p.categories.find((c) => c.key === categoryKey);
-    const input = { businessName, categoryKey, industry: cat?.industry ?? '', subdomain, name, email, phone, password, acceptedTerms: accepted, plan: planKey, termMonths: pro ? term : null, city, area, pincode, gstin, confirmDistinct };
+    // the category is sent as its id from the list; if the id is not in the list nothing is sent
+    const input = { businessName, categoryKey: cat ? categoryKey : '', industry: '', subdomain, name, email, phone, password, acceptedTerms: accepted, plan: planKey, termMonths: pro ? term : null, city, area, pincode, gstin, confirmDistinct };
     const found = validateRegister(input);
     if (availability === 'taken' && !found.subdomain) found.subdomain = 'subdomainTaken';
     setErrors(found);
@@ -177,9 +191,8 @@ export default function RegisterForm(p: Props) {
     if (r.ok) {
       const site = r.site === 'live' ? 'live' : 'pending';
       const target = handoffTarget(p.vendorUrl, r.handoff);
-      setDone({ target, site, siteCreated: r.siteCreated === true || site === 'live', held: confirmDistinct });
-      // a Free account whose site the API says is live goes straight on; a Pro account stays here so "Continue to payment" is read and nothing is claimed as paid
-      if (!pro && target && site === 'live') window.location.assign(target);
+      setDone({ target, site, siteCreated: r.siteCreated === true || site === 'live', held: confirmDistinct, host: vendorHost(subdomain, p.baseDomain) });
+      // no automatic jump: the person is shown the result and the sign-in link; nothing is claimed as live or paid
       return;
     }
     setErrors(r.fields ?? {});
@@ -201,12 +214,14 @@ export default function RegisterForm(p: Props) {
         </section>
       );
     }
+    const signIn = vendorSignInUrl(p.vendorUrl);
     return (
       <section aria-labelledby="done-title" role="status" className="max-w-xl">
-        <h1 id="done-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{done.site === 'live' ? R.done.title : R.done.pendingTitle}</h1>
-        <p className="mt-3 text-slate-700">{done.site === 'live' ? R.done.body : R.done.pendingBody}{done.held ? ` ${R.duplicate.distinctNote}` : ''}</p>
-        {done.target ? <a href={done.target} className="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.done.cta}</a> : done.site === 'live' ? <p className="mt-3 text-slate-600">{R.done.noApp}</p> : null}
-        {done.site === 'pending' ? <p className="mt-3 text-sm"><Link href="/login" className="text-slate-900 underline">{R.done.pendingSignIn}</Link></p> : null}
+        <h1 id="done-title" className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">{R.done.creatingTitle}</h1>
+        <p className="mt-3 text-slate-700">{fill(R.done.creatingBody, { host: done.host })}{done.held ? ` ${R.duplicate.distinctNote}` : ''}</p>
+        <p className="mt-3 break-all text-base font-semibold text-ink-900" data-testid="done-host">{done.host}</p>
+        {signIn ? <a href={signIn} className="mt-4 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{R.done.creatingCta}</a> : <p className="mt-3 text-slate-600">{R.done.noApp}</p>}
+        <p className="mt-3 text-sm"><Link href="/login" className="text-slate-900 underline">{R.done.pendingSignIn}</Link></p>
       </section>
     );
   }
@@ -297,6 +312,13 @@ export default function RegisterForm(p: Props) {
               : null
           }
         />
+        {categoryKey && services.length > 0 ? (
+          <div className="mt-3" data-testid="category-services">
+            <p className="text-xs font-semibold text-slate-700">{R.subHeading}</p>
+            <ul className="mt-1 flex flex-wrap gap-2">{services.map((x) => <li key={x} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1 text-xs text-slate-800">{x}</li>)}</ul>
+            <p className="mt-1 text-xs text-slate-500">{R.subNote}</p>
+          </div>
+        ) : null}
         {p.categories.length === 0 && !p.categoriesFailed ? <p className="mt-1 text-sm text-slate-600" role="status">{R.noCategories}</p> : null}
       </Field>
 
@@ -318,8 +340,9 @@ export default function RegisterForm(p: Props) {
       <Field id="subdomain" label={R.labels.subdomain} hint={pro ? R.hints.subdomainPro : R.hints.subdomain} error={null}>
         <div className="flex items-center gap-1">
           <input id="subdomain" name="subdomain" autoComplete="off" autoCapitalize="none" spellCheck={false} value={subdomain} onChange={(e) => setSubdomain(e.target.value)} aria-invalid={addressMessage?.bad === true} aria-describedby={describedBy('subdomain', true, false) + ' subdomain-status'} className={INPUT} />
-          {p.suffix ? <span className="mt-1 whitespace-nowrap text-sm text-slate-600">{p.suffix}</span> : null}
+          <span className="mt-1 whitespace-nowrap text-sm text-slate-600" data-testid="address-suffix">.{p.baseDomain}</span>
         </div>
+        <p className="mt-1 break-all text-sm font-medium text-slate-900" data-testid="address-full">{subdomain.trim() ? fill(R.addressPreview, { host: vendorHost(subdomain, p.baseDomain) }) : R.addressEmpty}</p>
         <p id="subdomain-status" role="status" aria-live="polite" className={`mt-1 text-sm ${addressMessage?.bad ? 'text-red-700' : 'text-slate-600'}`}>{addressMessage?.text ?? ''}</p>
       </Field>
 
@@ -367,7 +390,9 @@ export default function RegisterForm(p: Props) {
         </section>
       ) : null}
 
-      {!ask ? <button type="submit" disabled={busy} className="min-h-[44px] rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60">{busy ? R.submitting : pro ? R.pro.submit : R.submit}</button> : null}
+      {!ask && !categoryKey ? <p id="submit-why" data-testid="category-why" className="mb-2 text-sm text-slate-700">{R.categoryWhy}</p> : null}
+      {busy ? <p role="status" data-testid="creating" className="mb-2 break-all text-sm text-slate-700">{R.creating}{!pro && subdomain.trim() ? ` ${vendorHost(subdomain, p.baseDomain)}` : ''}</p> : null}
+      {!ask ? <button type="submit" disabled={busy || !categoryKey} aria-describedby={!categoryKey ? 'submit-why' : undefined} className="min-h-[44px] rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60">{busy ? R.submitting : pro ? R.pro.submit : R.submit}</button> : null}
       <p className="mt-4 text-sm text-slate-600">{R.haveAccount} <Link href="/login" className="text-slate-900 underline">{R.signIn}</Link></p>
     </form>
   );
