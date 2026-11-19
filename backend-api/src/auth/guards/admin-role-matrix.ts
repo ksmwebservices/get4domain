@@ -266,6 +266,8 @@ export const ADMIN_ROLE_MATRIX: Readonly<Record<string, readonly StaffRole[]>> =
   // Wave 4 W8: the payout preview is read by OPERATIONS, ADMIN and SUPER_ADMIN (no PAN in it); the payouts CSV carries the PAN, so it is ADMIN and SUPER_ADMIN only (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow).
   'GET /v3/admin/commission/payouts/preview': OPS_AND_SUPER, 'GET /v3/admin/commission/payouts/export.csv': SUPER_ONLY,
   'GET /v3/admin/gst-rate': OPS_AND_SUPER, 'PUT /v3/admin/gst-rate': SUPER_ONLY,
+  // R1.1: the platform integration settings: SUPER_ADMIN only in every method (secrets are write-only)
+  'GET /v3/admin/integrations': SUPER_ONLY, 'GET /v3/admin/integrations/:provider': SUPER_ONLY, 'PUT /v3/admin/integrations/:provider': SUPER_ONLY, 'DELETE /v3/admin/integrations/:provider': SUPER_ONLY, 'POST /v3/admin/integrations/:provider/test': SUPER_ONLY,
   'GET /v3/admin/payment-gateway/credentials': SUPER_ONLY, 'PUT /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY, 'DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode': SUPER_ONLY,
   'GET /v3/admin/billing/held-payments': SUPER_ONLY, 'GET /v3/admin/billing/held-payments/:id': SUPER_ONLY, 'POST /v3/admin/billing/held-payments/:id/resolve': SUPER_ONLY,
   // Wave 3 Part I: referrals and commission. Reads are OPERATIONS, ADMIN (inherits) and SUPER_ADMIN; every write is ADMIN and SUPER_ADMIN (ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow). SALES, SUPPORT and the labels are refused. Changing an existing referrer is further limited to SUPER_ADMIN inside the service.

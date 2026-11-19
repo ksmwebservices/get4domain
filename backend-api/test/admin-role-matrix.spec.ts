@@ -205,6 +205,8 @@ SUPER_ONLY_ROUTES.push('GET /v3/admin/commission/payouts/export.csv'); MARKETING
 SUPER_ONLY_ROUTES.push('PUT /v3/admin/gst-rate'); MARKETING_DENIED.push('GET /v3/admin/gst-rate');
 // Wave 4 W6: the gateway keys, SUPER_ADMIN only and NOT extended to ADMIN (tested in wave4-gateway-credentials.spec.ts)
 SUPER_ONLY_ROUTES.push('GET /v3/admin/payment-gateway/credentials', 'PUT /v3/admin/payment-gateway/credentials/:gateway/:mode', 'DELETE /v3/admin/payment-gateway/credentials/:gateway/:mode');
+// R1.1: the platform integration settings, SUPER_ADMIN only in every method (tested in r1-integrations.spec.ts)
+SUPER_ONLY_ROUTES.push('GET /v3/admin/integrations', 'GET /v3/admin/integrations/:provider', 'PUT /v3/admin/integrations/:provider', 'DELETE /v3/admin/integrations/:provider', 'POST /v3/admin/integrations/:provider/test');
 SUPER_ONLY_ROUTES.push('GET /v3/admin/billing/held-payments', 'GET /v3/admin/billing/held-payments/:id', 'POST /v3/admin/billing/held-payments/:id/resolve');
 // Wave 3 Part I: referrals and commission. Reads OPERATIONS and SUPER_ADMIN (ADMIN inherits); writes SUPER_ADMIN in the base table and ADMIN through STAFF_ROLE_EXTENSIONS.ADMIN.allow (tested in wave3-referrals.spec.ts)
 SUPER_ONLY_ROUTES.push('POST /v3/admin/partners/:id/links', 'POST /v3/admin/referral-links/:id/disable', 'POST /v3/admin/commission/slabs', 'PUT /v3/admin/commission/slabs/:id', 'POST /v3/admin/commission/months/:month/close', 'POST /v3/admin/commission/payouts', 'PUT /v3/admin/vendors/:id/referral', 'POST /v3/admin/vendors/:id/referral/change');
@@ -227,7 +229,7 @@ MARKETING_DENIED.push('GET /v3/admin/theme-market/themes', 'GET /v3/admin/theme-
 describe('the oracle itself', () => {
   it('lists every AdminGuard route exactly once, and the scanner agrees with it in both directions', () => {
     const oracle = [...SUPER_ONLY_ROUTES, ...MARKETING_DENIED, ...ALL_STAFF_ROUTES, ...SEO_READS];
-    expect(oracle).toHaveLength(439);
+    expect(oracle).toHaveLength(444);
     expect(new Set(oracle).size).toBe(oracle.length);                              // no route listed twice
     expect([...scanned].sort()).toEqual([...oracle].sort());                       // nothing missing, nothing misspelled
   });
