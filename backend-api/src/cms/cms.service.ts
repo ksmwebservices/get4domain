@@ -432,6 +432,8 @@ export class CmsService {
     themeNotice: ThemeNotice | null;
     /** how many pages the plan allows (the home page counts as one) */
     pagesLimit: number;
+    /** S3.1: FREE when the vendor holds a Free plan, PRO on any other held plan; absent when no plan is held. Nothing else about the plan leaves. */
+    plan?: 'FREE' | 'PRO';
   }> {
     const vendor = await this.prisma.vendor.findUnique({ where: { subdomain } });
     if (!vendor || vendor.isSandbox) {
@@ -488,6 +490,8 @@ export class CmsService {
       cms = { ...cms, designKey: themeRef ? `${THEME_PREFIX}${themeRef.key}` : (want?.startsWith(THEME_PREFIX) ? packDefault : want) ?? null } as typeof cms;
     }
     const pagesLimit = flag?.enabled === true ? await this.pagesLimitFor(vendor.id) : 1;
+    const held = await this.prisma.v3PlanSubscription.findUnique({ where: { currentVendorId: vendor.id }, select: { plan: { select: { level: true } } } });   // S3.1: the CURRENT plan only (ACTIVE or GRACE)
+    const plan = held?.plan ? (held.plan.level === 'FREE' ? ('FREE' as const) : ('PRO' as const)) : undefined;
     const publicProducts = products.map((r) => toPublicProduct(r)).filter((p): p is PublicProduct => p !== null);
     const indexable = !preview && (!cmsRow || cmsRow.siteStatus === 'LIVE') && (flag?.enabled !== true || (!!cms && hasRealContent(cms as { about?: unknown; testimonials?: unknown; extras?: unknown }, publicProducts)));
     return {
@@ -503,6 +507,7 @@ export class CmsService {
       preview,
       indexable,
       themeRef, themeNotice, pagesLimit,
+      ...(plan ? { plan } : {}),
       products: publicProducts,
       theme: themeRow
         ? { id: themeRow.id, name: themeRow.name, industry: themeRow.industry, cssVars: themeRow.cssVars, layout: themeRow.layout, pages: themeRow.pages, css: themeRow.css, js: themeRow.js, fonts: themeRow.fonts }
