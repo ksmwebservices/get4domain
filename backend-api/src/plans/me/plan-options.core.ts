@@ -54,7 +54,7 @@ export function shapePlanOptions(r: PlanOptionRows): PlanOptions {
       const line = live ? priceLine(live, r.tax) : null;
       return line ? [{ termMonths, price: line, purchasable: line.totalMinor !== null }] : [];
     });
-    return { key: p.key, name: p.name, track: p.track, description: p.description, terms };
+    return { key: p.key, name: p.name, track, description: p.description, terms };   // the track as the three lower-case words, whatever case the plan row stores
   }).filter((p) => p.terms.length > 0);
   return plans.length === 0 ? empty('NO_APPROVED_PRICE') : { track, trackSource, plans, reason: null, message: null };
 }

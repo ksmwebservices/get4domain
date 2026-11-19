@@ -24,6 +24,14 @@ describe('B6.2 (a) only the annual term is approved', () => {
   });
 });
 
+describe('B6.2 plan rows store the track in upper case (as staging does)', () => {
+  it('matches the track whatever its case and answers it in lower case', () => {
+    const r = shapePlanOptions(rows({ heldTrack: 'HANDYMAN', plans: [plan('handyman_pro', 'HANDYMAN'), plan('ecommerce_pro', 'ECOMMERCE')], prices: [price('handyman_pro', 12), price('ecommerce_pro', 12)] }));
+    expect(r).toMatchObject({ track: 'handyman', trackSource: 'PLAN' });
+    expect(r.plans.map((p) => [p.key, p.track])).toEqual([['handyman_pro', 'handyman']]);
+  });
+});
+
 describe('B6.2 (b) every term approved', () => {
   it('shows 3, 6 and 12 in order, for this track only', () => {
     const r = shapePlanOptions(rows({ prices: [price('handyman_pro', 12), price('handyman_pro', 3), price('handyman_pro', 6), price('ecommerce_pro', 12)] }));
