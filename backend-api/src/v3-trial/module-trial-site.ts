@@ -18,14 +18,19 @@ export class ModuleTrialSite extends TrialSitePort {
 
   async createLiveTrialSite(i: TrialSiteInput): Promise<{ siteId: string; published: boolean }> {
     const provisioner = this.modules.get(SiteProvisioner, { strict: false });
-    const { siteId } = await provisioner.createDraftSite({ vendorId: i.vendorId, track: i.track, category: i.category, businessName: i.businessName, language: 'en', ...(i.city ? { city: i.city } : {}), ...(i.phone ? { phone: i.phone } : {}) });
+    const { siteId } = await this.stage('draft', () => provisioner.createDraftSite({ vendorId: i.vendorId, track: i.track, category: i.category, businessName: i.businessName, language: 'en', ...(i.city ? { city: i.city } : {}), ...(i.phone ? { phone: i.phone } : {}) }));
     await this.ensureBanner(i.vendorId);
     const build = this.modules.get(SiteBuildService, { strict: false });
     const publish = this.modules.get(PublishService, { strict: false });
     const actor = { type: 'VENDOR' as const, id: i.vendorId, ip: null };
-    const { publication } = await build.build(i.vendorId, { actor });
-    if (publication.status !== 'PUBLISHED') await publish.publish(i.vendorId, publication.id, actor);
+    const { publication } = await this.stage('build', () => build.build(i.vendorId, { actor }));
+    if (publication.status !== 'PUBLISHED') await this.stage('publish', () => publish.publish(i.vendorId, publication.id, actor));
     return { siteId, published: true };
+  }
+
+  /** B6.1: marks a failure with the stage that raised it (draft, build or publish) so the registration log and the failure record can say where it stopped. The error itself is re-thrown unchanged. */
+  private async stage<T>(name: 'draft' | 'build' | 'publish', run: () => Promise<T>): Promise<T> {
+    try { return await run(); } catch (e) { if (e && typeof e === 'object') (e as { siteStage?: string }).siteStage = name; throw e; }
   }
 
   /**

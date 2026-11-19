@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Inject, Injectable, Optional } f
 import { EntitlementsService } from '../../plans/entitlements/entitlements.service';
 import { Actor } from '../../plans/admin/audit.service';
 import { planError } from '../../plans/plans.errors';
-import { categoryFor } from '../content/content-adapter';
+import { categoryForTrack } from '../content/content-adapter';
 import { ContentSource } from '../content/content-source';
 import { resolveTheme } from '../content/theme-resolution';
 import { ThemeRenderService } from '../renderer/theme-render.service';
@@ -56,7 +56,7 @@ export class PublishService {
     const doc = await this.content.load(vendorId);
     const ent = await this.entitlements.resolve(vendorId);
     const kit = this.themes.kitApi;
-    const categoryId = doc ? categoryFor(doc, kit, kit.categoryMap()) : null;
+    const categoryId = doc ? categoryForTrack(doc, kit, kit.categoryMap(), ent.track) : null;
     if (doc && categoryId) {
       const f = ent.features['site.themes'];
       const storedTheme = (await this.repo.getSettings(vendorId))?.themeId ?? null;   // an archived marketplace theme keeps working for the business that already uses it

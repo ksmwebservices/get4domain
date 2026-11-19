@@ -43,6 +43,20 @@ export function categoryFor(doc: SourceDocument, kit: Kit, map: CategoryMap): st
   return null;
 }
 
+/**
+ * B6.1: the neutral kit category of a track, used ONLY when the vendor's own category (a free-text industry such as "handyman", or a catalogue key the kit and its pack map cannot place) matches no kit design.
+ * Without it the build stopped with PUBLISH_BLOCKED (CATEGORY) on every attempt and the vendor's retry could never succeed. These are the same pack fallbacks the directory uses (a test checks each against the built kit).
+ */
+export const TRACK_FALLBACK_CATEGORY: Readonly<Record<string, string>> = { handyman: 'plumber', professional: 'it-consultant', ecommerce: 'electronics-mobile' };
+
+/** The vendor's own kit category when there is one, else the neutral category of the track (when the track is known and the kit has that design), else null. */
+export function categoryForTrack(doc: SourceDocument, kit: Kit, map: CategoryMap, track: string | null | undefined): string | null {
+  const own = categoryFor(doc, kit, map);
+  if (own) return own;
+  const fb = track ? TRACK_FALLBACK_CATEGORY[track.toLowerCase()] : undefined;
+  return fb && kit.hasCategory(fb) ? fb : null;
+}
+
 export function limitsFrom(resolved: ResolvedEntitlements): SiteLimits {
   const lim = (k: string): number | null => (resolved.features[k]?.state === 'LIMITED' || resolved.features[k]?.state === 'ACTIVE' ? resolved.features[k].limit : null);
   return { pages: lim('site.pages'), services: lim('site.services'), gallery: lim('site.gallery'), faqs: lim('site.faqs') };

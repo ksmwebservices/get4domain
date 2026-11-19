@@ -75,11 +75,24 @@ export class RegistrationHook {
     }
   }
 
-  /** Logs without the error text, records FAILED plus a code on the vendor, answers FAILED. The code is the error's own `code` when it is a plain upper-case code, else the fallback. */
-  private async fail(vendorId: string, fallback: string, e: unknown): Promise<SiteAnswer> {
-    this.logger.warn(`${fallback} for vendor ${vendorId} (${e instanceof Error ? e.name : 'error'}).`);
-    const raw = e instanceof HttpException ? (e.getResponse() as { code?: unknown })?.code : undefined;
+  /**
+   * B6.1: what a failure says about itself, with no personal data and none of the error text: the registered code (siteProvisionCode), the stage that raised it (draft, build or publish, set by the trial site)
+   * and the rule (the registered missing-field codes of a blocked build or publish, for example CATEGORY). Exported for tests.
+   */
+  static describe(fallback: string, e: unknown): { code: string; stage: string | null; rule: string | null } {
+    const body = e instanceof HttpException ? (e.getResponse() as { code?: unknown; missing?: unknown }) : undefined;
+    const raw = body?.code;
     const code = typeof raw === 'string' && CODE.test(raw) ? raw : fallback;
+    const missing = Array.isArray(body?.missing) ? (body!.missing as Array<{ code?: unknown }>).map((m) => m?.code).filter((c): c is string => typeof c === 'string' && CODE.test(c)) : [];
+    const stage = (e as { siteStage?: unknown } | null)?.siteStage;
+    return { code, stage: typeof stage === 'string' && /^[a-z]{3,12}$/.test(stage) ? stage : null, rule: missing.length ? missing.slice(0, 6).join(',') : null };
+  }
+
+  /** Logs the registered code, stage and rule (never the error text), records FAILED plus the code on the vendor, answers FAILED. The code is the error's own `code` when it is a plain upper-case code, else the fallback. */
+  private async fail(vendorId: string, fallback: string, e: unknown): Promise<SiteAnswer> {
+    const d = RegistrationHook.describe(fallback, e);
+    this.logger.warn(`${fallback} for vendor ${vendorId}: siteProvisionCode=${d.code} stage=${d.stage ?? 'unknown'} rule=${d.rule ?? 'none'} (${e instanceof Error ? e.name : 'error'}).`);
+    const code = d.code;
     try { await this.prisma.vendor.update({ where: { id: vendorId }, data: { siteProvisionStatus: 'FAILED', siteProvisionCode: code, siteProvisionFailedAt: new Date() } }); }
     catch { this.logger.warn(`Could not record the site failure on vendor ${vendorId}.`); }
     return this.answer(vendorId, 'FAILED', false);

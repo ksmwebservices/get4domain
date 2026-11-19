@@ -95,8 +95,9 @@ describe('build', () => {
     expect(w.repo.pubs.size).toBe(0);
   });
 
-  it('a vendor with no known category cannot be built: PUBLISH_BLOCKED listing CATEGORY', async () => {
+  it('a vendor with no known category and no known track cannot be built: PUBLISH_BLOCKED listing CATEGORY', async () => {
     const w = siteWorld({ doc: doc('plumber', { vendor: { industry: 'general' }, cms: { packKey: null } }) });
+    w.state.ent = { ...w.state.ent, track: null };   // B6.1: with a known track the neutral design of the track is used instead (test/b6-site-category.spec.ts)
     let err: unknown; try { await w.build.build('v-plumber', { actor: STAFF }); } catch (e) { err = e; }
     expect(err).toBeInstanceOf(ConflictException); expect(code(err)).toBe('PUBLISH_BLOCKED');
     expect((err as ConflictException).getResponse()).toMatchObject({ missing: [{ code: 'CATEGORY' }] });

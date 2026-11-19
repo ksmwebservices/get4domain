@@ -6,7 +6,7 @@ import { B3SettingsService } from '../../b3-settings/b3-settings.service';
 import { VendorHosts } from './vendor-hosts';
 import { SiteLifecycle } from './site-lifecycle';
 import { planError } from '../../plans/plans.errors';
-import { categoryFor, limitsFrom, pageArgs, PlannedPage, planPages, toRendererInput } from '../content/content-adapter';
+import { categoryForTrack, limitsFrom, pageArgs, PlannedPage, planPages, toRendererInput } from '../content/content-adapter';
 import type { SourceDocument } from '../content/content-types';
 import { ContentSource } from '../content/content-source';
 import { SnapshotSink } from '../content/snapshot-sink';
@@ -74,12 +74,12 @@ export class SiteBuildService {
     const doc = await this.content.load(vendorId, opts.overlay ? { overlay: opts.overlay } : undefined);
     if (!doc) throw new NotFoundException(planError('UNKNOWN_VENDOR', 'That vendor does not exist.'));
     const kit = this.themes.kitApi;
-    const categoryId = categoryFor(doc, kit, kit.categoryMap());
+    const ent = await this.entitlements.resolve(vendorId);
+    const categoryId = categoryForTrack(doc, kit, kit.categoryMap(), ent.track);   // B6.1: a category the kit cannot place uses the neutral design of the vendor's track
     if (!categoryId) throw new ConflictException(siteError('PUBLISH_BLOCKED', 'This business has no category yet, so its site cannot be built.', { missing: [{ code: 'CATEGORY', label: 'The business needs a category' }] }));
     const cat = kit.categoryById(categoryId);
 
     const settings = await this.repo.getSettings(vendorId);
-    const ent = await this.entitlements.resolve(vendorId);
     const notes: string[] = [];
     const themeFeature = ent.features['site.themes'];
     let resolved = resolveTheme({
