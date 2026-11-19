@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Env } from './core/registrar-core';
-import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit, TransferEligibility, TransferReason, TransferRequest, TransferState } from './registrar.port';
+import { CostRow, OrderInfo, SuggestHit, RegisterRequest, RegistrantDetails, RegistrarError, RegistrarPort, SearchHit, TransferEligibility, TransferReason, TransferRequest, TransferState } from './registrar.port';
 
 /**
  * The ResellerClub adapter behind RegistrarPort (slice 5.6d, owner override 2).
@@ -17,19 +17,24 @@ import { CostRow, OrderInfo, RegisterRequest, RegistrantDetails, RegistrarError,
  * times out or fails on the server side is AMBIGUOUS (it may have happened); the caller then waits for reconciliation. The base URL is a setting (RESELLERCLUB_API_BASE) and DEFAULTS TO THE TEST BASE.
  */
 
-export interface HttpRequest { method: 'GET' | 'POST'; path: string; params: ReadonlyArray<readonly [string, string]> }
+export interface HttpRequest { method: 'GET' | 'POST'; path: string; params: ReadonlyArray<readonly [string, string]>; /** R1.2: the API base for this call (the saved mode: demo or live); absent = the environment's base */ base?: string }
 export interface HttpResponse { status: number; body: unknown }
 /** The one place that touches the network. Tests give a recorded one; production gives FetchHttp below. */
 export abstract class RegistrarHttp { abstract send(r: HttpRequest): Promise<HttpResponse> }
 
 export const TEST_BASE = 'https://test.httpapi.com/api';
+export const LIVE_BASE = 'https://httpapi.com/api';
+/** R1.2: the keys the SUPER_ADMIN saved in the integration settings (mode demo uses the test base, live the production base). Absent = the server environment applies. */
+export interface RcCredentials { userId: string; apiKey: string; mode: 'demo' | 'live' }
+export type RcCredentialSource = () => Promise<RcCredentials | null>;
+export const baseForMode = (m: 'demo' | 'live'): string => (m === 'live' ? LIVE_BASE : TEST_BASE);
 
 /** Real HTTP. A GET sends its parameters in the query string; a POST sends them as a form body, so a key never sits in a logged URL for a write. Never logs a URL, a parameter or a body. */
 /** Built by a factory in the module (it has plain constructor arguments, which Nest cannot inject). */
 export class FetchHttp extends RegistrarHttp {
   constructor(private readonly env: () => Env = () => process.env, private readonly timeoutMs: number = 20_000) { super(); }
   async send(r: HttpRequest): Promise<HttpResponse> {
-    const base = (this.env().RESELLERCLUB_API_BASE || TEST_BASE).replace(/\/+$/, '');
+    const base = (r.base || this.env().RESELLERCLUB_API_BASE || TEST_BASE).replace(/\/+$/, '');
     const qs = new URLSearchParams(); for (const [k, v] of r.params) qs.append(k, v);
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), this.timeoutMs);
     try {
@@ -39,7 +44,9 @@ export class FetchHttp extends RegistrarHttp {
       });
       let body: unknown = null; try { body = await res.json(); } catch { body = null; }
       return { status: res.status, body };
-    } catch { throw new RegistrarError('REGISTRAR_UNREACHABLE', r.method === 'GET', r.method === 'POST'); }   // a timeout or a dropped connection: for a write, it may have happened
+    } catch (e) {   // a timeout or a dropped connection: for a write, it may have happened
+      throw new RegistrarError(e && typeof e === 'object' && (e as { name?: string }).name === 'AbortError' ? 'REGISTRAR_TIMEOUT' : 'REGISTRAR_UNREACHABLE', r.method === 'GET', r.method === 'POST');
+    }
     finally { clearTimeout(timer); }
   }
 }
@@ -57,22 +64,44 @@ const epoch = (v: unknown): Date | null => { const n = Number(v); return Number.
 /** Built by a factory in the module together with its HTTP port. */
 export class ResellerClubAdapter extends RegistrarPort {
   private readonly logger = new Logger(ResellerClubAdapter.name);
-  constructor(private readonly http: RegistrarHttp, private readonly env: () => Env = () => process.env) { super(); }
+  /** pause between the attempts of a READ (overridable in tests) */
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms));
+  /** R1.2: a READ is tried up to this many times when it fails in a way that is worth repeating (timeout, dropped connection, server fault); a write is never repeated */
+  readAttempts = 3;
+  constructor(private readonly http: RegistrarHttp, private readonly env: () => Env = () => process.env, private readonly creds?: RcCredentialSource) { super(); }
 
-  private auth(): Array<readonly [string, string]> {
+  /** The saved keys when there are any, else the server environment; none at all is REGISTRAR_KEYS_MISSING (not configured). */
+  private async auth(): Promise<{ params: Array<readonly [string, string]>; base?: string }> {
+    const saved = this.creds ? await this.creds() : null;
+    if (saved) return { params: [['auth-userid', saved.userId], ['api-key', saved.apiKey]], base: baseForMode(saved.mode) };
     const e = this.env();
     if (!e.RESELLERCLUB_AUTH_USERID || !e.RESELLERCLUB_API_KEY) throw new RegistrarError('REGISTRAR_KEYS_MISSING', false);
-    return [['auth-userid', e.RESELLERCLUB_AUTH_USERID], ['api-key', e.RESELLERCLUB_API_KEY]];
+    return { params: [['auth-userid', e.RESELLERCLUB_AUTH_USERID], ['api-key', e.RESELLERCLUB_API_KEY]] };
   }
 
   /** One call. A refusal in the body (status ERROR) is a definite failure; a server fault on a write is ambiguous. The body's message is read only to pick a code and is never copied into an error. */
   private async call(method: 'GET' | 'POST', path: string, params: Array<readonly [string, string]>): Promise<unknown> {
-    const res = await this.http.send({ method, path, params: [...this.auth(), ...params] });
+    const attempts = method === 'GET' ? Math.max(1, this.readAttempts) : 1;   // reads only: a write that was sent may have happened
+    for (let n = 1; ; n++) {
+      try { return await this.callOnce(method, path, params); }
+      catch (e) {
+        if (n >= attempts || !(e instanceof RegistrarError) || !e.retryable) throw e;
+        await this.sleep(250 * n);
+      }
+    }
+  }
+
+  private async callOnce(method: 'GET' | 'POST', path: string, params: Array<readonly [string, string]>): Promise<unknown> {
+    const a = await this.auth();
+    const res = await this.http.send({ method, path, params: [...a.params, ...params], ...(a.base ? { base: a.base } : {}) });
     const b = rec(res.body);
+    const said = String(b.message ?? '').toLowerCase();
     if (res.status >= 500) throw new RegistrarError('REGISTRAR_SERVER_ERROR', method === 'GET', method === 'POST');
-    if (res.status === 401 || res.status === 403) throw new RegistrarError('REGISTRAR_NOT_AUTHORISED', false);   // a wrong key, or this server's address is not whitelisted
+    // R1.2 two distinct refusals: a key the reseller does not accept, and access denied (the server's IP address is not whitelisted yet: ResellerClub says "Access Denied. You are not allowed to perform this action")
+    if (/invalid credentials|authentication failed|invalid api.?key/.test(said)) throw new RegistrarError('REGISTRAR_BAD_KEYS', false);
+    if (res.status === 401 || res.status === 403 || /access denied|not allowed to perform/.test(said)) throw new RegistrarError('REGISTRAR_NOT_AUTHORISED', false);
     if (res.status >= 400 || String(b.status ?? '').toLowerCase() === 'error') {
-      const msg = String(b.message ?? '').toLowerCase();
+      const msg = said;
       this.logger.warn(`registrar refused ${method} ${path}: status ${res.status}`);
       throw new RegistrarError(msg.includes('insufficient') || msg.includes('balance') ? 'REGISTRAR_BALANCE_LOW' : msg.includes('not available') || msg.includes('already') ? 'DOMAIN_NOT_AVAILABLE' : 'REGISTRAR_REFUSED', false, false, hintOf(msg));
     }
@@ -86,6 +115,17 @@ export class ResellerClubAdapter extends RegistrarPort {
       const s = String(rec(info).status ?? 'unknown').toLowerCase();
       return { domain, status: s === 'available' ? 'AVAILABLE' : s === 'regthroughus' || s === 'regthroughothers' ? 'TAKEN' : 'UNKNOWN' } as SearchHit;
     });
+  }
+
+  /**
+   * R1.2, read only. TO VERIFY: GET /domains/v5/suggest-names.json with `keyword`, one `tld-only` per extension and `no-of-results`; ASSUMED answer: an object keyed by the keyword, each key holding an object that maps
+   * 'name.tld' to a status (available, taken or unknown). Only names the registrar itself marks available are returned, so a suggestion is never a guess.
+   */
+  async suggest(keyword: string, tlds: readonly string[], max: number): Promise<SuggestHit[]> {
+    const body = rec(await this.call('GET', '/domains/v5/suggest-names.json', [['keyword', keyword], ...tlds.map((t) => ['tld-only', t] as const), ['no-of-results', String(Math.max(1, Math.min(max, 20)))]]));
+    const out: SuggestHit[] = [];
+    for (const group of Object.values(body)) for (const [domain, status] of Object.entries(rec(group))) if (String(status ?? '').toLowerCase() === 'available' && /^[a-z0-9-]+(.[a-z0-9-]+)+$/i.test(domain)) out.push({ domain: domain.toLowerCase() });
+    return out.slice(0, max);
   }
 
   /**

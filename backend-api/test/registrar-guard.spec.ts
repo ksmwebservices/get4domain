@@ -54,7 +54,7 @@ describe('static: nothing here can reach the network or read a key by accident',
     for (const f of files) { const c = code(f); expect(c).not.toMatch(/(logger|console)\.\w+\([^)]*(API_KEY|apiKey|api-key|AUTH_USERID)/i); expect(c).not.toMatch(/new (RegistrarError|Error)\([^)]*(API_KEY|apiKey|AUTH_USERID)/); }
   });
   it('only the adapter and the settings read process.env; the store, the services and the controllers never do', () => {
-    expect(files.filter((f) => /process\.env/.test(code(f))).map(rel).sort()).toEqual(['doc-crypto.ts', 'registrar.module.ts', 'registrar.port.ts', 'resellerclub.adapter.ts']);
+    expect(files.filter((f) => /process\.env/.test(code(f))).map(rel).sort()).toEqual(['doc-crypto.ts', 'public-availability.service.ts', 'registrar.module.ts', 'registrar.port.ts', 'resellerclub.adapter.ts']);
   });
   it('the old ResellerClub service is never imported', () => {
     expect(files.filter((f) => /domains\/resellerclub\.service|ResellerClubService/.test(code(f))).map(rel)).toEqual([]);

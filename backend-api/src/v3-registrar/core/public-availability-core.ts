@@ -8,7 +8,9 @@ import { parseDomain } from './registrar-core';
  * "Available" is only ever said for a name the registrar itself answered AVAILABLE for. It is never a default, never a guess and never a fallback.
  */
 export type SubdomainState = 'AVAILABLE' | 'TAKEN' | 'RESERVED' | 'INVALID';
-export type CustomDomainState = 'REGISTRAR_OFF' | 'AVAILABLE' | 'TAKEN' | 'UNKNOWN' | 'NOT_FOR_SALE' | 'INVALID';
+export type CustomDomainState = 'REGISTRAR_OFF' | 'AVAILABLE' | 'TAKEN' | 'UNKNOWN' | 'NOT_FOR_SALE' | 'INVALID' | 'NOT_CONFIGURED' | 'ACCESS_DENIED' | 'TIMEOUT';
+/** R1.2: why the registrar did not answer, as the adapter reports it. NOT_CONFIGURED = no keys saved; ACCESS_DENIED = the registrar refused (its server address is not whitelisted yet, or the key is refused); TIMEOUT = no answer in time. */
+export type RegistrarFailure = 'NOT_CONFIGURED' | 'ACCESS_DENIED' | 'TIMEOUT' | 'UNREACHABLE' | 'BUSY';
 
 export interface SubdomainInput { available: boolean; name: string | null; reason: 'AVAILABLE' | 'INVALID' | 'RESERVED' | 'UNAVAILABLE'; message: string; similarTo?: string | null }
 export interface RegistrarHit { domain: string; status: 'AVAILABLE' | 'TAKEN' | 'UNKNOWN' }
@@ -21,6 +23,8 @@ export interface DomainAvailability {
     state: CustomDomainState; registrar: 'ON' | 'OFF'; message: string;
     /** one row per extension asked about, only when the registrar answered */
     results: Array<{ domain: string; state: 'AVAILABLE' | 'TAKEN' | 'UNKNOWN' }>;
+    /** names the registrar itself says are available, offered only when the asked name is taken; empty otherwise */
+    suggestions: string[];
   };
 }
 
@@ -31,6 +35,10 @@ export const CUSTOM_MESSAGES: Readonly<Record<CustomDomainState, string>> = Obje
   UNKNOWN: 'We could not check this name just now. Please try again.',
   NOT_FOR_SALE: 'We do not sell this kind of domain yet.',
   INVALID: 'Use letters, digits and hyphens, for example yourbusiness or yourbusiness.in.',
+  // R1.2: distinct states, one plain sentence each. The public sentence never says why the registrar refused (no server address, no key detail).
+  NOT_CONFIGURED: 'Domain search is being set up. Please try again later.',
+  ACCESS_DENIED: 'Domain search is being set up. Please try again later.',
+  TIMEOUT: 'Domain search is slow right now. Please try again in a moment.',
 });
 
 /** What was typed, split: the label before the first dot, the full domain when an extension was typed. */
@@ -49,14 +57,17 @@ const STATE_OF: Record<SubdomainInput['reason'], SubdomainState> = { AVAILABLE: 
 export function shapeAvailability(i: {
   typed: ReturnType<typeof readTyped>; subdomain: SubdomainInput | null;
   registrarOn: boolean; tldsOnSale: readonly string[]; hits: readonly RegistrarHit[] | null; registrarFailed: boolean;
+  /** R1.2: why it failed, when known; absent = the generic UNKNOWN. UNREACHABLE and BUSY stay UNKNOWN (try again). */
+  failure?: RegistrarFailure | null; suggestions?: readonly string[];
 }): DomainAvailability {
   const registrar: 'ON' | 'OFF' = i.registrarOn ? 'ON' : 'OFF';
   const sub = i.subdomain ? { state: STATE_OF[i.subdomain.reason], name: i.subdomain.available ? i.subdomain.name : null, message: i.subdomain.message, similarTo: i.subdomain.similarTo ?? null } : null;
-  const custom = (state: CustomDomainState, results: DomainAvailability['customDomain']['results'] = []): DomainAvailability['customDomain'] => ({ state, registrar, message: CUSTOM_MESSAGES[state], results });
+  const custom = (state: CustomDomainState, results: DomainAvailability['customDomain']['results'] = []): DomainAvailability['customDomain'] => ({ state, registrar, message: CUSTOM_MESSAGES[state], results, suggestions: state === 'TAKEN' ? [...(i.suggestions ?? [])].slice(0, 5) : [] });
   const name = i.typed.full ?? i.typed.label;
   if (!validLabel(i.typed.label)) return { name, subdomain: sub, customDomain: custom(i.typed.label ? 'INVALID' : 'INVALID') };
   if (!i.registrarOn) return { name, subdomain: sub, customDomain: custom('REGISTRAR_OFF') };
   if (i.tldsOnSale.length === 0 || (i.typed.tld !== null && !i.tldsOnSale.includes(i.typed.tld))) return { name, subdomain: sub, customDomain: custom('NOT_FOR_SALE') };
+  if (i.registrarFailed && (i.failure === 'NOT_CONFIGURED' || i.failure === 'ACCESS_DENIED' || i.failure === 'TIMEOUT')) return { name, subdomain: sub, customDomain: custom(i.failure) };
   if (i.registrarFailed || i.hits === null) return { name, subdomain: sub, customDomain: custom('UNKNOWN') };
   const asked = i.typed.full ? i.hits.filter((h) => h.domain.toLowerCase() === i.typed.full) : i.hits;
   const results = asked.map((h) => ({ domain: h.domain.toLowerCase(), state: h.status }));

@@ -2,6 +2,8 @@ import { Env, liveFlags } from './core/registrar-core';
 
 /** What the registrar tells us about a name. */
 export interface SearchHit { domain: string; status: 'AVAILABLE' | 'TAKEN' | 'UNKNOWN' }
+/** R1.2: a name the registrar itself says is available (a suggestion is never a guess) */
+export interface SuggestHit { domain: string }
 /** The registrant, built from the vendor's verified details. */
 export interface RegistrantDetails { name: string; company: string; email: string; addressLine1: string; city: string; state: string; country: string; zipcode: string; phoneCc: string; phone: string }
 export interface RegisterRequest { domain: string; years: number; customerId: string; contactId: string; nameServers: string[]; privacy: boolean }
@@ -25,6 +27,8 @@ export class RegistrarError extends Error {
 /** The registrar (ResellerClub), behind one port. Production binds the gated adapter; tests bind a fake. No call here is ever made live by Claude Code. */
 export abstract class RegistrarPort {
   abstract search(sld: string, tlds: readonly string[]): Promise<SearchHit[]>;
+  /** R1.2: read-only name suggestions. Not abstract: a port that cannot suggest answers REGISTRAR_NOT_SUPPORTED. */
+  async suggest(_keyword: string, _tlds: readonly string[], _max: number): Promise<SuggestHit[]> { throw new RegistrarError('REGISTRAR_NOT_SUPPORTED', false); }
   abstract costs(tlds: readonly string[]): Promise<Record<string, CostRow>>;
   abstract createCustomer(d: RegistrantDetails): Promise<string>;
   abstract createContact(customerId: string, d: RegistrantDetails): Promise<string>;
@@ -55,6 +59,7 @@ export class GatedRegistrarPort extends RegistrarPort {
   private write(): void { if (!liveFlags(this.env()).purchase) throw new RegistrarError('REGISTRAR_LIVE_DISABLED', false); }
   async search(sld: string, tlds: readonly string[]) { this.search_(); return this.inner.search(sld, tlds); }
   async costs(tlds: readonly string[]) { this.search_(); return this.inner.costs(tlds); }
+  async suggest(keyword: string, tlds: readonly string[], max: number) { this.search_(); return this.inner.suggest(keyword, tlds, max); }
   async createCustomer(d: RegistrantDetails) { this.write(); return this.inner.createCustomer(d); }
   async createContact(customerId: string, d: RegistrantDetails) { this.write(); return this.inner.createContact(customerId, d); }
   async register(r: RegisterRequest) { this.write(); return this.inner.register(r); }
