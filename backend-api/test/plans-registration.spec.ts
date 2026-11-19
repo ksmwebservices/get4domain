@@ -114,7 +114,7 @@ describe('AuthService.register calls the hook and is never blocked by it', () =>
     const hook = { afterRegister: jest.fn().mockResolvedValue(undefined) };
     const { svc } = make(hook);
     const out = await svc.register(dto as never);
-    expect(hook.afterRegister).toHaveBeenCalledWith('v1', 'handyman', { industry: 'plumber', businessName: 'Biz', phone: null });   // Wave 3 Part G: the business details ride along for the trial site
+    expect(hook.afterRegister).toHaveBeenCalledWith('v1', 'handyman', { industry: 'plumber', businessName: 'Biz', phone: null, city: null, area: null, pincode: null });   // Wave 3 Part G: the business details ride along for the trial site
     expect(out.accessToken).toBeDefined();
   });
 

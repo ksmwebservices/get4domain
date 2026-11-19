@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { TrialSitePort } from '../plans/registration/trial-site.port';
 import { DomainSettingsService } from '../site-domains/settings/domain-settings.service';
 import { TrialController } from './api/trial.controller';
+import { FreeHomeContentService } from './free-home-content.service';
 import { ModuleTrialSite } from './module-trial-site';
 import { TrialSignupPolicy } from './trial-signup.policy';
 
@@ -14,7 +15,7 @@ import { TrialSignupPolicy } from './trial-signup.policy';
 @Module({
   imports: [PrismaModule],
   controllers: [TrialController],
-  providers: [DomainSettingsService, TrialSignupPolicy, ModuleTrialSite, { provide: TrialSitePort, useExisting: ModuleTrialSite }],
+  providers: [DomainSettingsService, TrialSignupPolicy, FreeHomeContentService, ModuleTrialSite, { provide: TrialSitePort, useExisting: ModuleTrialSite }],
   exports: [TrialSignupPolicy, TrialSitePort],
 })
 export class V3TrialModule {}

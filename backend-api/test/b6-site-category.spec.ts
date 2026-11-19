@@ -6,6 +6,8 @@ import { ModuleTrialSite } from '../src/v3-trial/module-trial-site';
 import { SiteProvisioner } from '../src/provisioning/site/site-provisioner';
 import { PublishService } from '../src/site-publish/publish/publish.service';
 import { SiteBuildService } from '../src/site-publish/publish/site-build.service';
+import { FreeHomeContentService } from '../src/v3-trial/free-home-content.service';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { doc as makeDoc, entitlements } from './support/site-fixtures';
 import { OWNER, siteWorld, themeService } from './support/site-world';
 
@@ -86,6 +88,8 @@ describe('B6.1 the failure is logged and recorded with its code, stage and rule,
         [SiteProvisioner, { createDraftSite: async () => { if (over.draft) throw new Error('d'); return { siteId: 's1' }; } }],
         [SiteBuildService, { build: async () => { if (over.build) throw new Error('b'); return { publication: { id: 'p', status: 'DRAFT_PREVIEW' } }; } }],
         [PublishService, { publish: async () => { if (over.publish) throw new Error('p'); return {}; } }],
+        [FreeHomeContentService, { ensure: async () => undefined }],
+        [PrismaService, { vendorCMS: { findUnique: async () => null, updateMany: async () => ({ count: 1 }) } }],
       ]);
       return new ModuleTrialSite({ get: (t: unknown) => parts.get(t) ?? { vendorCMS: { findUnique: async () => null } } } as never);
     };

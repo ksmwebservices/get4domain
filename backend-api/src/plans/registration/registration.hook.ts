@@ -5,7 +5,7 @@ import { SubscriptionsService, TRACKS } from '../subscriptions/subscriptions.ser
 import { TrialSitePort } from './trial-site.port';
 
 /** What the signup form knew about the business, for the trial site (Wave 3 Part G). */
-export interface RegistrationInfo { industry: string; businessName: string; phone?: string | null }
+export interface RegistrationInfo { industry: string; businessName: string; phone?: string | null; city?: string | null; area?: string | null; pincode?: string | null }
 
 /**
  * What the registration answer says about the vendor's site, so the public page can tell the truth (B2.1):
@@ -67,7 +67,7 @@ export class RegistrationHook {
     if (!info || !this.trialSite) return this.answer(vendorId, 'NOT_SWITCHED_ON', false);
     // Wave 3 Part G: the Free trial site, live on the chosen subdomain. Its own failure leaves the plan and the signup untouched, and is recorded.
     try {
-      const made = await this.trialSite.createLiveTrialSite({ vendorId, track, category: info.industry, businessName: info.businessName, phone: info.phone ?? null });
+      const made = await this.trialSite.createLiveTrialSite({ vendorId, track, category: info.industry, businessName: info.businessName, phone: info.phone ?? null, city: info.city ?? null, area: info.area ?? null, pincode: info.pincode ?? null });
       await this.prisma.vendor.update({ where: { id: vendorId }, data: { siteProvisionStatus: null, siteProvisionCode: null, siteProvisionFailedAt: null } });
       return this.answer(vendorId, 'LIVE', made.published);
     } catch (e) {

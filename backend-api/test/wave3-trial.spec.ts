@@ -20,6 +20,8 @@ import { nextSteps } from '../src/v3-vendor-gaps/core/gaps-core';
 import { NextStepsService } from '../src/v3-packs/next-steps.service';
 import { availability, candidateSlug, padToMinimum, slugFromName } from '../src/v3-trial/core/trial-core';
 import { ModuleTrialSite } from '../src/v3-trial/module-trial-site';
+import { FreeHomeContentService } from '../src/v3-trial/free-home-content.service';
+import { PrismaService } from '../src/prisma/prisma.service';
 import { TrialController } from '../src/v3-trial/api/trial.controller';
 import { TrialSignupPolicy } from '../src/v3-trial/trial-signup.policy';
 
@@ -131,7 +133,7 @@ describe('registering with a chosen subdomain', () => {
     const r = await w.auth.register(body({ subdomain: 'carewell' }));
     expect(w.created[0]).toMatchObject({ subdomain: 'carewell', businessName: 'CareWell Clinic' });
     expect(r.user.subdomain).toBe('carewell');
-    expect(w.hookCalls[0]).toEqual(['new1', 'professional', { industry: 'clinic', businessName: 'CareWell Clinic', phone: null }]);
+    expect(w.hookCalls[0]).toEqual(['new1', 'professional', { industry: 'clinic', businessName: 'CareWell Clinic', phone: null, city: null, area: null, pincode: null }]);
   });
   it('refuses every reserved name and every look-alike with SUBDOMAIN_RESERVED, and creates nothing', async () => {
     const w = world();
@@ -230,18 +232,20 @@ describe('ModuleTrialSite', () => {
     const provisioner = { createDraftSite: async (i: Record<string, unknown>) => { calls.push(`draft:${i.category}:${i.language}:${i.track}`); return { siteId: 'site-1' }; } };
     const build = { build: async (v: string, o: { actor: { type: string; id: string } }) => { calls.push(`build:${v}:${o.actor.type}`); return { publication: { id: 'pub-1', status: published ? 'PUBLISHED' : 'DRAFT' } }; } };
     const publish = { publish: async (v: string, id: string) => { calls.push(`publish:${v}:${id}`); } };
-    const ref = { get: (token: unknown) => (token === SiteProvisioner ? provisioner : token === SiteBuildService ? build : token === PublishService ? publish : (() => { throw new Error('unknown token'); })()) };
+    const content = { ensure: async () => { calls.push('content'); } };   // S1.2
+    const prisma = { vendorCMS: { findUnique: async () => ({ siteStatus: 'DRAFT' }), update: async (a: { data: { siteStatus?: string } }) => { if (a.data.siteStatus) calls.push('live'); return {}; } } };   // S1.1
+    const ref = { get: (token: unknown) => (token === SiteProvisioner ? provisioner : token === SiteBuildService ? build : token === PublishService ? publish : token === FreeHomeContentService ? content : token === PrismaService ? prisma : (() => { throw new Error('unknown token'); })()) };
     return { site: new ModuleTrialSite(ref as never), calls };
   }
   const input = { vendorId: 'v1', track: 'professional', category: 'clinic', businessName: 'CareWell Clinic', phone: '+919876543210', city: 'Chennai' };
   it('builds the draft from the industry and the details, then builds and publishes it as the registering vendor', async () => {
     const m = modules(); const r = await m.site.createLiveTrialSite(input);
     expect(r).toEqual({ siteId: 'site-1', published: true });
-    expect(m.calls).toEqual(['draft:clinic:en:professional', 'build:v1:VENDOR', 'publish:v1:pub-1']);
+    expect(m.calls).toEqual(['draft:clinic:en:professional', 'content', 'live', 'build:v1:VENDOR', 'publish:v1:pub-1']);
   });
   it('does not publish a site that is already published', async () => {
     const m = modules(true); await m.site.createLiveTrialSite(input);
-    expect(m.calls).toEqual(['draft:clinic:en:professional', 'build:v1:VENDOR']);
+    expect(m.calls).toEqual(['draft:clinic:en:professional', 'content', 'live', 'build:v1:VENDOR']);
   });
   it('raises a failure to its caller, which swallows it (see the hook)', async () => {
     const site = new ModuleTrialSite({ get: () => { throw new Error('no such provider'); } } as never);

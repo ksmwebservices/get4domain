@@ -82,7 +82,7 @@ export function toRendererInput(doc: SourceDocument, o: AdapterOptions): Rendere
   const notes: string[] = [];
   const name = str(cms?.businessName) || doc.vendor.businessName;
   const phone = str(cms?.phone) || str(doc.vendor.phone);
-  const email = str(cms?.email) || doc.vendor.email;
+  const email = o.directions === false ? '' : str(cms?.email) || doc.vendor.email;   // S1.2: a Free site (no calls to action) never prints an e-mail address, not even the owner's login e-mail it used to fall back to
   const address = str(cms?.address);
   const sp = splitAddress(address);
   const ex = cms?.extras ?? {};

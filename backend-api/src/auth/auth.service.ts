@@ -89,7 +89,7 @@ export class AuthService {
     // V3 slice 5.1: the Free plan of the chosen track, only when the plan setting registrationProvisioning is on. It can never block a signup.
     // B2.1: no track is needed (the hook defaults it from the category); the answer carries what happened to the site.
     let site: SiteAnswer | undefined;
-    try { site = await this.v3Registration?.afterRegister(vendor.id, dto.track, { industry: dto.industry, businessName: dto.businessName, phone: dto.phone ?? null }); } catch { /* registration continues */ }
+    try { site = await this.v3Registration?.afterRegister(vendor.id, dto.track, { industry: dto.industry, businessName: dto.businessName, phone: dto.phone ?? null, city: dto.city ?? null, area: dto.area ?? null, pincode: dto.pincode ?? null }); } catch { /* registration continues */ }
 
     const accessToken = this.signToken({ sub: vendor.id, email: vendor.email, role: vendor.role });
     // Dispatch G1 B5 (audit journey 1 and 2): a first registration answer carried no `termsAcceptanceRequired`, so the vendor app did not know to ask for the Terms before the first publish. The flag never blocks a signup.
