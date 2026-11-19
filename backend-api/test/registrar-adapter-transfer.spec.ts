@@ -22,7 +22,7 @@ describe('eligibility (TO VERIFY: GET /domains/validate-transfer.json)', () => {
     for (const [message, reason] of cases) { const { http, a } = make(); http.next.push(refusal(message)); expect([message, await a.transferEligibility('oldshop.com')]).toEqual([message, { eligible: false, reason }]); }
   });
   it('a server fault is an error, never an answer of "not eligible"', async () => {
-    const { http, a } = make(); http.next.push({ status: 503, body: null });
+    const { http, a } = make(); a.sleep = async () => undefined; http.next.push({ status: 503, body: null }, { status: 503, body: null }, { status: 503, body: null });   // R1.2: a read is tried three times before it fails
     await expect(a.transferEligibility('oldshop.com')).rejects.toMatchObject({ code: 'REGISTRAR_SERVER_ERROR', retryable: true });
   });
 });
