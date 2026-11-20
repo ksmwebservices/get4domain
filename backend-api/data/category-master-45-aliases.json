@@ -1,0 +1,376 @@
+{
+ "_note": "NEEDS OWNER REVIEW. Reviewed alias table: an existing V3 category (g4d_pack_categories.categoryKey) that means the same business as a category of the 45-family master. Used only when the exact name does not match. A legacy category with no row here and no exact match is printed as unmatched for the owner to decide.",
+ "needsOwnerReview": true,
+ "aliases": [
+  {
+   "legacyKey": "carpenter",
+   "category": "carpenters",
+   "reason": "same business, different wording (\"Carpenters\")"
+  },
+  {
+   "legacyKey": "electrician",
+   "category": "electricians",
+   "reason": "same business, different wording (\"Electricians\")"
+  },
+  {
+   "legacyKey": "painter",
+   "category": "painters",
+   "reason": "same business, different wording (\"Painters\")"
+  },
+  {
+   "legacyKey": "plumber",
+   "category": "plumbers",
+   "reason": "same business, different wording (\"Plumbers\")"
+  },
+  {
+   "legacyKey": "locksmith",
+   "category": "locksmiths",
+   "reason": "same business, different wording (\"Locksmiths\")"
+  },
+  {
+   "legacyKey": "waterproofing-contractor",
+   "category": "waterproofing-contractors",
+   "reason": "same business, different wording (\"Waterproofing Contractors\")"
+  },
+  {
+   "legacyKey": "astrologer",
+   "category": "astrologers",
+   "reason": "same business, different wording (\"Astrologers\")"
+  },
+  {
+   "legacyKey": "business-consultant",
+   "category": "business-consultants",
+   "reason": "same business, different wording (\"Business Consultants\")"
+  },
+  {
+   "legacyKey": "digital-marketing-agency",
+   "category": "digital-marketing-agencies",
+   "reason": "same business, different wording (\"Digital Marketing Agencies\")"
+  },
+  {
+   "legacyKey": "export-import-consultant",
+   "category": "import-export-consultants",
+   "reason": "same business, different wording (\"Import Export Consultants\")"
+  },
+  {
+   "legacyKey": "it-consultant",
+   "category": "it-consultants",
+   "reason": "same business, different wording (\"IT Consultants\")"
+  },
+  {
+   "legacyKey": "photographer",
+   "category": "photographers",
+   "reason": "same business, different wording (\"Photographers\")"
+  },
+  {
+   "legacyKey": "videographer",
+   "category": "videographers",
+   "reason": "same business, different wording (\"Videographers\")"
+  },
+  {
+   "legacyKey": "web-design-agency",
+   "category": "web-design-agencies",
+   "reason": "same business, different wording (\"Web Design Agencies\")"
+  },
+  {
+   "legacyKey": "wedding-planner",
+   "category": "wedding-planners",
+   "reason": "same business, different wording (\"Wedding Planners\")"
+  },
+  {
+   "legacyKey": "coaching-centre",
+   "category": "coaching-centres",
+   "reason": "same business, different wording (\"Coaching Centres\")"
+  },
+  {
+   "legacyKey": "computer-training-institute",
+   "category": "computer-training-institutes",
+   "reason": "same business, different wording (\"Computer Training Institutes\")"
+  },
+  {
+   "legacyKey": "driving-school",
+   "category": "driving-schools",
+   "reason": "same business, different wording (\"Driving Schools\")"
+  },
+  {
+   "legacyKey": "sports-academy",
+   "category": "sports-academies",
+   "reason": "same business, different wording (\"Sports Academies\")"
+  },
+  {
+   "legacyKey": "dentist",
+   "category": "dentists",
+   "reason": "same business, different wording (\"Dentists\")"
+  },
+  {
+   "legacyKey": "pharmacy",
+   "category": "pharmacies",
+   "reason": "same business, different wording (\"Pharmacies\")"
+  },
+  {
+   "legacyKey": "veterinary-clinic",
+   "category": "veterinary-clinics",
+   "reason": "same business, different wording (\"Veterinary Clinics\")"
+  },
+  {
+   "legacyKey": "cloud-kitchen",
+   "category": "cloud-kitchens",
+   "reason": "same business, different wording (\"Cloud Kitchens\")"
+  },
+  {
+   "legacyKey": "food-delivery-service",
+   "category": "food-delivery",
+   "reason": "same business, different wording (\"Food Delivery\")"
+  },
+  {
+   "legacyKey": "tour-operator",
+   "category": "tour-operators",
+   "reason": "same business, different wording (\"Tour Operators\")"
+  },
+  {
+   "legacyKey": "tourist-guide",
+   "category": "tourist-guides",
+   "reason": "same business, different wording (\"Tourist Guides\")"
+  },
+  {
+   "legacyKey": "lawyer",
+   "category": "lawyers",
+   "reason": "same business, different wording (\"Lawyers\")"
+  },
+  {
+   "legacyKey": "real-estate-agent",
+   "category": "real-estate-agents",
+   "reason": "same business, different wording (\"Real Estate Agents\")"
+  },
+  {
+   "legacyKey": "vastu-consultant",
+   "category": "vastu-consultants",
+   "reason": "same business, different wording (\"Vastu Consultants\")"
+  },
+  {
+   "legacyKey": "ambulance-service",
+   "category": "ambulance-services",
+   "reason": "same business, different wording (\"Ambulance Services\")"
+  },
+  {
+   "legacyKey": "packers-movers",
+   "category": "packers-and-movers",
+   "reason": "same business, different wording (\"Packers & Movers\")"
+  },
+  {
+   "legacyKey": "flower-shop",
+   "category": "flower-shops",
+   "reason": "same business, different wording (\"Flower Shops\")"
+  },
+  {
+   "legacyKey": "footwear",
+   "category": "footwear-shops",
+   "reason": "same business, different wording (\"Footwear Shops\")"
+  },
+  {
+   "legacyKey": "optical-store",
+   "category": "optical-shops",
+   "reason": "same business, different wording (\"Optical Shops\")"
+  },
+  {
+   "legacyKey": "watches-store",
+   "category": "watch-shops",
+   "reason": "same business, different wording (\"Watch Shops\")"
+  },
+  {
+   "legacyKey": "medical-store",
+   "category": "medical-stores",
+   "reason": "same business, different wording (\"Medical Stores\")"
+  },
+  {
+   "legacyKey": "fruits-vegetables-store",
+   "category": "fruits-and-vegetable-shops",
+   "reason": "same business, different wording (\"Fruits & Vegetable Shops\")"
+  },
+  {
+   "legacyKey": "mehendi-artist",
+   "category": "mehndi-artists",
+   "reason": "same business, different wording (\"Mehndi Artists\")"
+  },
+  {
+   "legacyKey": "unisex-salon",
+   "category": "unisex-salons",
+   "reason": "same business, different wording (\"Unisex Salons\")"
+  },
+  {
+   "legacyKey": "mattress-bedding",
+   "category": "mattress-shops",
+   "reason": "same business, different wording (\"Mattress Shops\")"
+  },
+  {
+   "legacyKey": "kitchenware-utensils",
+   "category": "kitchenware-shops",
+   "reason": "same business, different wording (\"Kitchenware Shops\")"
+  },
+  {
+   "legacyKey": "home-decor-furnishing",
+   "category": "home-decor-shops",
+   "reason": "same business, different wording (\"Home Decor Shops\")"
+  },
+  {
+   "legacyKey": "audio-equipment-store",
+   "category": "audio-equipment-dealers",
+   "reason": "same business, different wording (\"Audio Equipment Dealers\")"
+  },
+  {
+   "legacyKey": "mobile-repair",
+   "category": "mobile-phone-repair",
+   "reason": "same business, different wording (\"Mobile Phone Repair\")"
+  },
+  {
+   "legacyKey": "water-purifier-ro-service",
+   "category": "water-purifier-repair",
+   "reason": "same business, different wording (\"Water Purifier Repair\")"
+  },
+  {
+   "legacyKey": "false-ceiling-gypsum",
+   "category": "false-ceiling",
+   "reason": "same business, different wording (\"False Ceiling\")"
+  },
+  {
+   "legacyKey": "glass-aluminium-fabrication",
+   "category": "glass-and-aluminium-works",
+   "reason": "same business, different wording (\"Glass & Aluminium Works\")"
+  },
+  {
+   "legacyKey": "modular-kitchen-installer",
+   "category": "modular-kitchen",
+   "reason": "same business, different wording (\"Modular Kitchen\")"
+  },
+  {
+   "legacyKey": "car-accessories-fitting",
+   "category": "car-accessories",
+   "reason": "same business, different wording (\"Car Accessories\")"
+  },
+  {
+   "legacyKey": "gym-fitness-centre",
+   "category": "fitness-centres",
+   "reason": "same business, different wording (\"Fitness Centres\")"
+  },
+  {
+   "legacyKey": "bridal-makeup-makeover",
+   "category": "bridal-makeup-artists",
+   "reason": "same business, different wording (\"Bridal Makeup Artists\")"
+  },
+  {
+   "legacyKey": "weight-loss-slimming-centre",
+   "category": "weight-loss-centres",
+   "reason": "same business, different wording (\"Weight Loss Centres\")"
+  },
+  {
+   "legacyKey": "software-development-company",
+   "category": "software-companies",
+   "reason": "same business, different wording (\"Software Companies\")"
+  },
+  {
+   "legacyKey": "banquet-function-hall",
+   "category": "banquet-halls",
+   "reason": "same business, different wording (\"Banquet Halls\")"
+  },
+  {
+   "legacyKey": "pg-hostel-accommodation",
+   "category": "pg-accommodations",
+   "reason": "same business, different wording (\"PG Accommodations\")"
+  },
+  {
+   "legacyKey": "tiffin-meal-service",
+   "category": "tiffin-services",
+   "reason": "same business, different wording (\"Tiffin Services\")"
+  },
+  {
+   "legacyKey": "loan-finance-agent",
+   "category": "loan-agents",
+   "reason": "same business, different wording (\"Loan Agents\")"
+  },
+  {
+   "legacyKey": "mutual-fund-distributor",
+   "category": "mutual-fund-agents",
+   "reason": "same business, different wording (\"Mutual Fund Agents\")"
+  },
+  {
+   "legacyKey": "goods-transport-company",
+   "category": "goods-transport",
+   "reason": "same business, different wording (\"Goods Transport\")"
+  },
+  {
+   "legacyKey": "freight-forwarding",
+   "category": "freight-forwarders",
+   "reason": "same business, different wording (\"Freight Forwarders\")"
+  },
+  {
+   "legacyKey": "warehousing-storage",
+   "category": "warehousing",
+   "reason": "same business, different wording (\"Warehousing\")"
+  },
+  {
+   "legacyKey": "interior-designer-architect",
+   "category": "interior-designers",
+   "reason": "same business, different wording (\"Interior Designers\")"
+  },
+  {
+   "legacyKey": "tutor-home-tuition",
+   "category": "home-tutors",
+   "reason": "same business, different wording (\"Home Tutors\")"
+  },
+  {
+   "legacyKey": "spoken-english-language-school",
+   "category": "spoken-english-classes",
+   "reason": "same business, different wording (\"Spoken English Classes\")"
+  },
+  {
+   "legacyKey": "dairy-milk-store",
+   "category": "dairy-products",
+   "reason": "same business, different wording (\"Dairy Products\")"
+  },
+  {
+   "legacyKey": "sports-fitness-goods",
+   "category": "sports-goods-dealers",
+   "reason": "same business, different wording (\"Sports Goods Dealers\")"
+  },
+  {
+   "legacyKey": "ladies-beauty-parlour",
+   "category": "beauty-parlours",
+   "reason": "same business, different wording (\"Beauty Parlours\")"
+  },
+  {
+   "legacyKey": "taxi-cab-service",
+   "category": "cab-services",
+   "reason": "same business, different wording (\"Cab Services\")"
+  },
+  {
+   "legacyKey": "courier-parcel-service",
+   "category": "courier-services",
+   "reason": "same business, different wording (\"Courier Services\")"
+  },
+  {
+   "legacyKey": "fire-safety-installer",
+   "category": "fire-safety-contractors",
+   "reason": "same business, different wording (\"Fire Safety Contractors\")"
+  },
+  {
+   "legacyKey": "tailoring-alterations",
+   "category": "tailoring-services",
+   "reason": "same business, different wording (\"Tailoring Services\")"
+  },
+  {
+   "legacyKey": "spa-massage-centre",
+   "category": "body-massage-centres",
+   "reason": "same business, different wording (\"Body Massage Centres\")"
+  },
+  {
+   "legacyKey": "event-planner",
+   "category": "event-organisers",
+   "reason": "same business, different wording (\"Event Organisers\")"
+  },
+  {
+   "legacyKey": "diagnostics-lab",
+   "category": "diagnostic-centres",
+   "reason": "same business, different wording (\"Diagnostic Centres\")"
+  }
+ ]
+}

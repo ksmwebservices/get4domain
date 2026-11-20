@@ -7514,10 +7514,97 @@ model V3PackCategory {
   updatedAt            DateTime @updatedAt
 
   pack V3Pack @relation(fields: [packKey], references: [key], onDelete: Restrict)
+  /// lane E1: where this category sits in the 45-family master (back relation only, no column)
+  taxonomyMap V3TaxonomyLegacyMap?
 
   @@index([packKey])
   @@index([family])
   @@map("g4d_pack_categories")
+}
+
+/// Lane E1 taxonomy. FAMILY = top level (the owner's 45). Reference data, not tenant data. plannedPackKey only records the pack lane E3 will build for the family: no foreign key, the pack does not exist yet.
+model V3TaxonomyFamily {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  sortOrder      Int      @unique
+  plannedPackKey String   @unique
+  /// which input file and version the row came from (for example REQ_CATEGORY_MASTER_45_FAMILIES@1)
+  sourceTag      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  categories V3TaxonomyFamilyCategory[]
+  relatedAsA V3TaxonomyRelatedFamily[]  @relation("RelatedA")
+  relatedAsB V3TaxonomyRelatedFamily[]  @relation("RelatedB")
+
+  @@map("g4d_taxonomy_families")
+}
+
+/// Lane E1 taxonomy. CATEGORY = second level (the 1,213 unique items). Stored ONCE and linked to every family it is listed in. Separate from g4d_pack_categories (the 196 vendor registration categories), which it never changes.
+model V3TaxonomyCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  sourceTag String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  families V3TaxonomyFamilyCategory[]
+  legacy   V3TaxonomyLegacyMap[]
+
+  @@map("g4d_taxonomy_categories")
+}
+
+/// Many to many: one row per (family, category) as listed in the owner's file. sortOrder is the position inside the family's list.
+model V3TaxonomyFamilyCategory {
+  id         String   @id @default(cuid())
+  familyId   String
+  categoryId String
+  sortOrder  Int
+  createdAt  DateTime @default(now())
+
+  family   V3TaxonomyFamily   @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  category V3TaxonomyCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([familyId, categoryId])
+  @@index([categoryId])
+  @@map("g4d_taxonomy_family_categories")
+}
+
+/// Symmetric relation stored ONCE: familyAId sorts before familyBId (a CHECK in the migration), so (A,B) and (B,A) cannot both exist. A vendor may pick categories from its own family and from related families. needsOwnerReview stays true until the owner signs the map off.
+model V3TaxonomyRelatedFamily {
+  id               String   @id @default(cuid())
+  familyAId        String
+  familyBId        String
+  reason           String
+  needsOwnerReview Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  familyA V3TaxonomyFamily @relation("RelatedA", fields: [familyAId], references: [id], onDelete: Restrict)
+  familyB V3TaxonomyFamily @relation("RelatedB", fields: [familyBId], references: [id], onDelete: Restrict)
+
+  @@unique([familyAId, familyBId])
+  @@index([familyBId])
+  @@map("g4d_taxonomy_related_families")
+}
+
+/// Where an existing V3 registration category (g4d_pack_categories) sits in the new structure: its category of the master, by exact name or by the reviewed alias table. The legacy row is never changed; one legacy category has at most one row here.
+model V3TaxonomyLegacyMap {
+  id                 String   @id @default(cuid())
+  legacyCategoryKey  String   @unique
+  taxonomyCategoryId String
+  /// EXACT (same name) or ALIAS (reviewed alias table)
+  matchKind          String
+  sourceTag          String
+  createdAt          DateTime @default(now())
+
+  category V3TaxonomyCategory @relation(fields: [taxonomyCategoryId], references: [id], onDelete: Restrict)
+  legacy   V3PackCategory     @relation(fields: [legacyCategoryKey], references: [categoryKey], onDelete: Restrict)
+
+  @@index([taxonomyCategoryId])
+  @@map("g4d_taxonomy_legacy_map")
 }
 
 /// A vendor's ONE primary pack (set at registration from the category; it never changes with the tier) and the starter services the vendor picked. Tenant data.

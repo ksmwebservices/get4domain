@@ -32,6 +32,7 @@ const ask = (q) => new Promise((resolve) => { const rl = readline.createInterfac
       if (!process.stdin.isTTY) return fail('--apply needs a terminal, so a person types the confirmation.', 2);
       if (!applyConfirmed(await ask('This WRITES to the LIVE database. Type LIVE to continue: '))) return fail('not confirmed; nothing was written.', 2);
     }
+    process.env.G4D_SEED_CONFIRMED = '1';   // the typed LIVE above is the confirmation a loader may rely on
     // for this one run the guard answers with the live connection (the staging guard file itself is not changed)
     const guard = require(path.join(__dirname, '..', 'staging', 'guard'));
     guard.loadStagingEnv = () => ({ DATABASE_URL: live.DATABASE_URL, DIRECT_URL: live.DIRECT_URL, mask: live.mask });

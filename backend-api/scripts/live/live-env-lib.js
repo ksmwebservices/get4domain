@@ -4,7 +4,7 @@
 /** The loaders that may be run against the live database. A new seed-v3-*.js loader must be added here on purpose (a test fails until it is). */
 const SEED_SCRIPTS = [
   'seed-v3-plans.js', 'seed-v3-wallet-settings.js', 'seed-v3-pay-settings.js', 'seed-v3-services.js', 'seed-v3-terms.js', 'seed-v3-alert-rules.js', 'seed-v3-mail-rules.js',
-  'seed-v3-directory.js', 'seed-v3-pack-engine.js', 'seed-v3-pack-tab-fields.js', 'seed-v3-profile-fields.js', 'seed-v3-catalogue-categories.js',
+  'seed-v3-directory.js', 'seed-v3-pack-engine.js', 'seed-v3-pack-tab-fields.js', 'seed-v3-profile-fields.js', 'seed-v3-catalogue-categories.js', 'seed-v3-taxonomy.js',
   'seo-category-keywords-load.js', 'banner-library-load.js',
 ];
 
