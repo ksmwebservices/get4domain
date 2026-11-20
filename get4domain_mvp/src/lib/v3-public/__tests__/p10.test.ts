@@ -61,15 +61,16 @@ describe('P10 the live case: Host plumberboy.get4domain.com with the live settin
 });
 
 describe('P10 own internal links of a vendor site on its host', () => {
-  test('/site/<own name>/... is passed through (the browser prefetches these links), not answered with a 404', async () => {
-    for (const path of ['/site/plumberboy', '/site/plumberboy/contact', '/site/plumberboy/listings?_rsc=abc']) {
-      const r = await ask('plumberboy.get4domain.com', path);
-      assert.notEqual(r.status, 404, path);
-      assert.equal(r.headers.get('x-middleware-next'), '1', path);
-    }
+  // A1: a vendor has no /site/<name> path address on any host (the full rule and its tests are in a1.test.ts)
+  test('/site/<own name>/... on the vendor own host is a 301 to the same page without the prefix', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({ exists: true, status: 'LIVE' }), { status: 200 })) as typeof fetch;
+    const r = await ask('plumberboy.get4domain.com', '/site/plumberboy/contact?x=1');
+    assert.equal(r.status, 301);
+    assert.equal(r.headers.get('location'), 'https://plumberboy.get4domain.com/contact?x=1');
   });
-  test('a /site/<name> of another vendor is never reachable from this host', async () => {
-    for (const path of ['/site/other-vendor', '/site/other-vendor/contact', '/site/plumberboyx']) assert.equal((await ask('plumberboy.get4domain.com', path)).status, 404, path);
+  test('a /site/<name> of a vendor that does not exist is a 404 on a vendor host too', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({ exists: false, status: 'NOT_FOUND' }), { status: 200 })) as typeof fetch;
+    for (const path of ['/site/other-vendor', '/site/other-vendor/contact']) assert.equal((await ask('plumberboy.get4domain.com', path)).status, 404, path);
   });
 });
 

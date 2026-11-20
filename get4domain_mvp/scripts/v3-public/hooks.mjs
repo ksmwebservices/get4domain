@@ -34,6 +34,8 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 const requireTs = createRequire(import.meta.url);
 export async function load(url, context, next) {
+  // A1: the engine imports JSON files the way the bundler does (no import attribute); the loader answers them as a default export
+  if (url.startsWith('file:') && url.endsWith('.json')) return { format: 'module', source: `export default ${readFileSync(fileURLToPath(url), 'utf8')};`, shortCircuit: true };
   if (url.startsWith('file:') && url.endsWith('.tsx')) {
     const ts = requireTs('typescript');
     const out = ts.transpileModule(readFileSync(fileURLToPath(url), 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }, fileName: fileURLToPath(url) });

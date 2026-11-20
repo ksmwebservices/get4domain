@@ -139,7 +139,7 @@ export function buildSiteDocModel(site: EngineSiteData): KitSiteModel {
     }
   }
   // extra pages the vendor wrote
-  for (const p of cms?.pages ?? []) addNav(`/site/${site.vendor.subdomain ?? ''}/p/${p.slug}`, p.title);
+  for (const p of cms?.pages ?? []) addNav(`/p/${p.slug}`, p.title);
   bottom.push(bn(cta.length > 12 ? 'Contact' : cta, 'book', '#enquiry', true));
 
   const choiceLabel = cap(pack.item.noun);
@@ -154,7 +154,7 @@ export function buildPageModel(site: EngineSiteData, page: { slug: string; title
   const base = buildSiteDocModel(site);
   return {
     ...base,
-    nav: [{ href: `/site/${site.vendor.subdomain ?? ''}`, label: 'Home' }, ...base.nav.filter((n) => n.href.startsWith('/site/'))],
+    nav: [{ href: '/', label: 'Home' }, ...base.nav.filter((n) => n.href.startsWith('/p/'))],
     sections: [
       { type: 'hero', variant: 'panel', headline: page.title, subline: '', image: '', ctaPrimary: { label: base.primaryCta.label, href: '#enquiry' } },
       { type: 'about', id: 'page', variant: 'centered', eyebrow: base.brand.name, title: page.title, text: page.body },

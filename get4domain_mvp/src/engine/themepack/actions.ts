@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
  * The real, no-script version of the primary-action popup: a form on its own page (/book, /enquire or /order) that sends through the same public action as the popup
  * (engine.enquiry into the vendor's CRM). Answers are short keys in the address, never text from the visitor, so a page can never echo something it was fed.
  */
-const BASE_RE = /^\/(site|theme-pack)\/[A-Za-z0-9._-]{1,80}$/;
+const BASE_RE = /^(\/(site|theme-pack)\/[A-Za-z0-9._-]{1,80})?$/; // empty = the vendor's own host (the address of a vendor is never a /site/<name> path)
 const KEEP_RE = /^[A-Za-z0-9._=&~-]{0,400}$/;
 const FLOWS = new Set(['book', 'enquire', 'order']);
 const SUB_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;

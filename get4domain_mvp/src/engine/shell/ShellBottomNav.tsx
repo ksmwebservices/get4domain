@@ -40,7 +40,8 @@ export default function ShellBottomNav() {
     if (!s.href) return false;
     if (s.href.startsWith('#')) return hash === s.href;
     const clean = s.href.split('#')[0];
-    return clean === runtime.base ? path === runtime.base || path === `${runtime.base}/` : path === clean || path.startsWith(`${clean}/`);
+    const home = runtime.base || '/';
+    return clean === home ? path === runtime.base || path === `${runtime.base}/` : path === clean || path.startsWith(`${clean}/`);
   };
   const cell = 'flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium';
   return (

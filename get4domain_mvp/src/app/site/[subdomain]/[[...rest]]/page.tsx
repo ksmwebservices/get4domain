@@ -14,8 +14,8 @@ import ThemeSite,{ fetchThemePackage, themeMetadata } from '@/engine/themepack/s
 import FreeSiteView from '@/components/site/FreeSiteView';
 import SiteApp from '@/components/site-kit/SiteApp';
 import { themeForSite } from '@/lib/v3-public/site-kit/resolver';
-import { buildSiteView, categoryLabel, pageTitle } from '@/lib/v3-public/site-kit/view';
-import { MANIFEST_PATH, ICON_PATH } from '@/lib/v3-public/site-kit/pwa';
+import { buildSiteView, categoryLabel } from '@/lib/v3-public/site-kit/view';
+import { buildHead } from '@/lib/v3-public/site-kit/head';
 import SiteBeingSetUp from '@/components/site/SiteBeingSetUp';
 import { fetchSiteState, freeViewOf, isFreeSite, logVendorNotFound, siteApiBase, type VendorNotFoundReason } from '@/lib/v3-public/site-state';
 
@@ -85,6 +85,8 @@ function noPage(subdomain: string, reason: VendorNotFoundReason): never {
 interface Params { subdomain: string; rest?: string[] }
 
 const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_BASE_DOMAIN || 'get4domain.com').toLowerCase();
+/** Links are written relative to the vendor's own host (/about, /p/news): a vendor has no /site/<name> path address (the middleware redirects that to the vendor host). */
+const VENDOR_BASE = '';
 
 type Query = { preview?: string; design?: string; sent?: string; e?: string };
 
@@ -97,31 +99,24 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
     if (await siteExists(subdomain)) return { title: 'This site is being set up', robots: { index: false, follow: false } };
     return missing(subdomain);
   }
-  if (site.docV2 && site.themeRef) {
-    const pkg = await fetchThemePackage(site.themeRef.id);
-    if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: `/site/${subdomain}`, subdomain, preview: !!site.preview });
-  }
-  const name = site.cms?.businessName || site.vendor.businessName;
   const category = categoryLabel(site.vendor.industry, site.pack?.name ?? null, site.pack?.key ?? null);
-  const free = isFreeSite(site);
-  // a Free site's title is always "<business name> | <real category> | Get4Domain"; a Pro site's own title is used as written, else the same form
-  const title = free ? pageTitle(name, category) : site.cms?.seoTitle || (site.docV2 ? `${name} — ${site.cms?.tagline ?? 'Official Website'}` : pageTitle(name, category));
-  // the vendor's own web app: a manifest (name, colours, icon) on the vendor's host and the iOS home-screen tags
-  const app = { manifest: MANIFEST_PATH, appleWebApp: { capable: true, title: name.slice(0, 30), statusBarStyle: 'default' as const }, icons: { icon: site.docV2 && site.cms?.favicon ? site.cms.favicon : `${ICON_PATH}?s=192`, apple: `${ICON_PATH}?s=180` } };
-  const description = site.cms?.seoDesc || site.cms?.about || `${name} — official website.`;
-  const share = site.cms?.ogImage || site.cms?.banner || site.cms?.logo;
-  return {
-    ...app,
-    // a vendor's own title is used exactly as written (the platform name is not added)
-    title: { absolute: title },
-    description,
-    keywords: site.cms?.seoKeywords ?? undefined,
-    // a preview, a draft, an unclaimed site, or a site that still shows only starter content is not offered to search engines
-    ...(site.preview || (site.docV2 && site.indexable === false) ? { robots: { index: false, follow: false } } : {}),
-    // one canonical address per page: the vendor's own host
-    ...(site.docV2 ? { alternates: { canonical: `https://${subdomain}.${SITE_BASE}${rest[0] === 'p' && rest[1] ? `/p/${rest[1]}` : ''}` } } : {}),
-    openGraph: { title, description, type: 'website', url: `https://${subdomain}.${SITE_BASE}`, images: share ? [{ url: share, alt: name }] : [] },
-  };
+  if (site.docV2 && site.themeRef && !isFreeSite(site)) {
+    const pkg = await fetchThemePackage(site.themeRef.id);
+    if (pkg) return themeMetadata(site as unknown as EngineSiteData, pkg, rest, { base: VENDOR_BASE, subdomain, preview: !!site.preview, category, baseDomain: SITE_BASE });
+  }
+  // the title of the page being shown (empty on the home page): a vendor-written page, an uploaded theme's page, or one of the built-in pages
+  const first = rest[0] ?? 'home';
+  let pageTitleText: string | null = null; let path = '/';
+  if (first === 'p' && rest[1]) {
+    const pg = (site.cms as { pages?: { slug: string; title: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
+    pageTitleText = pg?.title ?? null; path = `/p/${rest[1]}`;
+  } else if (first !== 'home') {
+    const themed = themePages(site.theme).find((p) => p.slug === first);
+    pageTitleText = themed?.title ?? (first === 'contact' ? 'Contact' : first === 'listings' ? 'Our listings' : first.replace(/[-_]+/g, ' ').replace(/^./, (c) => c.toUpperCase()));
+    path = `/${first}`;
+  }
+  const meta = buildHead({ site, subdomain, path, pageTitle: pageTitleText, category, baseDomain: SITE_BASE, noindex: !!(site.preview || (site.docV2 && site.indexable === false)) });
+  return meta;
 }
 
 export default async function VendorSitePage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Query> }) {
@@ -177,7 +172,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
         return (
           <>
             {site.preview ? <div role="status" className="fixed bottom-24 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-full bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-slate-900 shadow-lg md:bottom-5">Preview: this is how your site will look. It is not live until you publish.</div> : null}
-            <ThemeSite site={site as unknown as EngineSiteData} pkg={pkg} rest={rest} subdomain={subdomain} opts={{ base: `/site/${subdomain}`, mode: site.preview ? 'preview' : 'live', shop, checkoutMode, keep, flash: { sent: sent === '1', error: e } }} />
+            <ThemeSite site={site as unknown as EngineSiteData} pkg={pkg} rest={rest} subdomain={subdomain} opts={{ base: VENDOR_BASE, mode: site.preview ? 'preview' : 'live', shop, checkoutMode, keep, flash: { sent: sent === '1', error: e } }} />
           </>
         );
       }
@@ -186,7 +181,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
     if (rest[0] === 'p' && rest[1]) {
       const pg = (site.cms as { pages?: { slug: string; title: string; body: string }[] } | null)?.pages?.find((x) => x.slug === rest[1]);
       if (!pg) return noPage(subdomain, 'INNER_PAGE_NOT_FOUND');
-      return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
+      return <>{bar}<KitRenderer model={withShell(buildPageModel(site as unknown as EngineSiteData, pg), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: VENDOR_BASE, onHome: false })} mode={mode} shop={shop} checkoutMode={checkoutMode} /></>;
     }
     if (rest.length === 0 || rest[0] === 'home') {
       const ga = site.cms?.googleAnalyticsId?.trim();
@@ -201,7 +196,7 @@ export default async function VendorSitePage({ params, searchParams }: { params:
               <Script id="ga-init" strategy="afterInteractive">{`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`}</Script>
             </>
           ) : null}
-          <KitRenderer model={withShell(buildSiteDocModel(site as unknown as EngineSiteData), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: `/site/${subdomain}`, onHome: true })} mode={mode} shop={shop} checkoutMode={checkoutMode} />
+          <KitRenderer model={withShell(buildSiteDocModel(site as unknown as EngineSiteData), site as unknown as EngineSiteData, { mode: site.preview ? 'preview' : 'live', cart: shop, base: VENDOR_BASE, onHome: true })} mode={mode} shop={shop} checkoutMode={checkoutMode} />
         </>
       );
     }

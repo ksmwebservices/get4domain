@@ -21,7 +21,7 @@ export interface ShellRuntime {
   subdomain: string;
   /** live: really sends. preview and sample: the popup shows its success step but writes nothing. */
   mode: 'live' | 'preview' | 'sample';
-  /** the address the site's pages live under, for example /site/ravi-clinic */
+  /** the address the site's pages live under, "" on a vendor host (its pages are /about, /p/news, never a /site/<name> path) */
   base: string;
   family: string;
   goal: 'booking' | 'enquiry';

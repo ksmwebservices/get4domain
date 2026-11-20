@@ -74,7 +74,7 @@ describe('P8 a Free site never shows a form, chat, button or e-mail', () => {
     assert.ok(!/\.email\b/.test(c));
   });
   test('the renderer puts the Free page before every design, template and theme', () => {
-    const page = read('app/site/[subdomain]/[[...rest]]/page.tsx');
+    const page = read('app/site/[subdomain]/[[...rest]]/page.tsx').split('export default async function')[1]; // the renderer, not the head builder above it
     const free = page.indexOf('if (isFreeSite(site)) {');
     assert.ok(free > 0);
     for (const later of ['themePages(site.theme)', 'templateFromThemeRow(site.theme)', 'if (site.docV2)', 'getEngineIndustry(', '<SiteApp view={view}']) assert.ok(page.indexOf(later) > free, later);

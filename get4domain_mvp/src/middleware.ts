@@ -13,7 +13,8 @@ import { isInternalOnlyPath, isV3PublicPath, isVendorPlatformFilePath, V3_PAGES_
 import { isUnknownLiveIndustryPath, LIVE_INDUSTRY_IDS } from '@/lib/v3-public/industries';
 import { vendorOwnsHost } from '@/lib/v3-public/vendor-site';
 import { forwardedFor } from '@/lib/v3-public/proxy';
-import { logVendorNotFound, vendorHostReason } from '@/lib/v3-public/site-state';
+import { fetchSiteState, logVendorNotFound, siteApiBase, vendorHostReason } from '@/lib/v3-public/site-state';
+import { siteAddress } from '@/lib/v3-public/site-kit/address';
 
 /**
  * Dashboard v2: an OLD dashboard address (e.g. /dashboard/my-products, /dashboard/domain-app/billing) goes to its new home with a 308,
@@ -51,7 +52,7 @@ function vendorHostRewrite(req: NextRequest): NextResponse | null {
   const cls = classifyHost(req.headers.get('host'), hostCfg());
   if (cls.kind !== 'vendor-site') return null;
   const sub = cls.label;
-  // The site's own internal links point at /site/<name>/...: a vendor host reaches ITS OWN such paths as they are (a visitor's browser prefetches them), never another vendor's.
+  // A /site/<name> path never gets here for GET or HEAD (sitePathRedirect answered it); a vendor host reaches its own such path only for a POST (a form), never another vendor's.
   if (pathname === `/site/${sub}` || pathname.startsWith(`/site/${sub}/`)) return NextResponse.next();
   if (pathname.startsWith('/site/')) return null;
   if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.startsWith('/uploads')) return NextResponse.next();
@@ -142,9 +143,26 @@ function devVendorRewrite(req: NextRequest): NextResponse | null {
   return NextResponse.rewrite(url, { request: { headers } });
 }
 
+/**
+ * The address rule: a vendor has no /site/<name> path address. On any host, a GET or HEAD for /site/<name>[/...] is a 301 to the same page on <name>.<base domain> (query kept), or a
+ * real 404 when there is no such vendor (503 if the API cannot say). The renderer itself still runs at that path inside the app, reached only by the vendor-host rewrite below.
+ */
+async function sitePathRedirect(req: NextRequest): Promise<NextResponse | null> {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return null;
+  const a = siteAddress({ host: req.headers.get('host'), pathname: req.nextUrl.pathname, search: req.nextUrl.search, vendorBase: SITE_BASE });
+  if (a.kind === 'none') return null;
+  if (a.kind === 'invalid') return plainNotFound();
+  const state = await fetchSiteState(siteApiBase(), a.name);
+  if (state === null) return new NextResponse('Service unavailable', { status: 503, headers: { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' } });
+  if (!state.exists) { logVendorNotFound(a.name, 'API_NOT_FOUND'); return plainNotFound(); }
+  return NextResponse.redirect(a.to, 301);
+}
+
 export async function middleware(req: NextRequest): Promise<NextResponse> {
   const dev = devVendorRewrite(req);
   if (dev) return dev;
+  const pathAddress = await sitePathRedirect(req);
+  if (pathAddress) return pathAddress;
   // one throttled log line (host, class, reason code) whenever a request is not going to a vendor site
   logHostNotRewritten(req.headers.get('host'), hostCfg());
   const layer = hostLayer(req);
@@ -230,5 +248,5 @@ export async function middleware(req: NextRequest): Promise<NextResponse> {
 // the host rewrite needs every page path (not files, not framework paths); the demo and dashboard checks above still only act on their own paths
 // robots.txt and sitemap.xml are matched too, so a vendor's own host answers them for itself (the main host passes straight through)
 // /llms.txt and /assets/:path* are matched only so a V3 vendor host can answer them from its stored site; the middleware returns at once for them on every other host and with the flag off
-export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml', '/llms.txt', '/assets/:path*', '/_vendor/:path*'] };
+export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)', '/robots.txt', '/sitemap.xml', '/llms.txt', '/assets/:path*', '/_vendor/:path*', '/site/:path*'] };
 // /_vendor/:path* is matched only so the developer-only vendor view (dev-vendor.ts) also sees dotted paths such as sitemap.xml; with its switch off (always, in a production build) the middleware returns at once for it

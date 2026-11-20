@@ -61,12 +61,12 @@ function injectContent(html: string, site: SiteLike): string {
     Object.prototype.hasOwnProperty.call(map, key) ? map[key] : full);
 }
 
-/** Rewrite common intra-theme links (about.html, /about) to our /site/<sub>/<slug> routes. */
+/** Rewrite common intra-theme links (about.html, /about) to the vendor host's own /<slug> routes. */
 function rewriteLinks(html: string, base: string, slugs: Set<string>): string {
   return html.replace(/href\s*=\s*"([^"]+)"/g, (full, href: string) => {
     const clean = href.replace(/^\.?\//, '').replace(/\.html?$/i, '').replace(/\/$/, '');
     const slug = clean === '' || clean === 'index' || clean === 'home' ? 'home' : clean;
-    if (slug === 'home' || slugs.has(slug)) return `href="${base}/${slug}"`;
+    if (slug === 'home' || slugs.has(slug)) return `href="${slug === 'home' ? (base || '/') : `${base}/${slug}`}"`;
     return full; // external / anchor / asset links untouched
   });
 }
@@ -76,7 +76,7 @@ export function renderRawHtmlSite(
   opts: { subdomain: string; rest: string[] },
 ): ReactElement {
   const pages = themePages(site.theme);
-  const base = `/site/${opts.subdomain}`;
+  const base = '';
   const slugs = new Set(pages.map((p) => (p.slug === pages[0]?.slug ? 'home' : p.slug)));
   const requested = opts.rest[0] || 'home';
   const current = pages.find((p) => p.slug === requested) ?? (requested === 'home' ? pages[0] : undefined) ?? pages[0];
@@ -96,7 +96,7 @@ export function renderRawHtmlSite(
             const slug = i === 0 ? 'home' : p.slug;
             const active = (requested === slug) || (requested === 'home' && i === 0);
             return (
-              <Link key={p.slug} href={`${base}/${slug}`}
+              <Link key={p.slug} href={slug === 'home' ? '/' : `${base}/${slug}`}
                 className={`rounded-lg px-3 py-1.5 font-medium ${active ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
                 {p.title}
               </Link>

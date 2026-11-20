@@ -71,7 +71,8 @@ describe('P9 the live case: plumberboy (Free, unknown industry text, no theme, n
     const page = read(PAGE);
     assert.match(page, /logVendorNotFound\(subdomain, 'FREE_RENDER_FAILED'\)/);
     assert.match(page, /return view \? <FreeSiteView view=\{view\} \/> : <SiteBeingSetUp \/>;/);
-    assert.ok(page.indexOf('if (isFreeSite(site))') < page.indexOf('themePages(site.theme)'));
+    const body = page.split('export default async function')[1];
+    assert.ok(body.indexOf('if (isFreeSite(site))') < body.indexOf('themePages(site.theme)'));
   });
 
   test('a site that is not Free is never sent to the not-found page for its industry text: the generic design handles an unknown industry', () => {

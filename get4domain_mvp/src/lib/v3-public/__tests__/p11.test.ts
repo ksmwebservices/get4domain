@@ -207,7 +207,7 @@ describe('P11 the app shell', () => {
     assert.equal(shortNameOf('Plumber Boy'), 'Plumber Boy'); assert.equal(iconLetter('  plumber'), 'P'); assert.equal(iconLetter('???'), 'W');
     assert.equal(iconSize('512'), 512); assert.equal(iconSize('9999'), 192); assert.equal(iconSize(null), 192);
     const page = src('app/site/[subdomain]/[[...rest]]/page.tsx');
-    assert.match(page, /manifest: MANIFEST_PATH/); assert.equal(MANIFEST_PATH, '/app-manifest');
+    assert.match(src('lib/v3-public/site-kit/head.ts'), /manifest: MANIFEST_PATH/); assert.equal(MANIFEST_PATH, '/app-manifest');
     assert.match(src('app/site/[subdomain]/app-manifest/route.ts'), /application\/manifest\+json/);
     assert.match(src('app/site/[subdomain]/app-icon/route.ts'), /ImageResponse/);
   });
@@ -275,7 +275,8 @@ describe('P11 Free mode: information only', () => {
     assert.equal(freeViewOf(raw as never).category, 'Home repair and trades');
     assert.equal(freeViewOf({ ...raw, vendor: { ...raw.vendor, industry: 'restaurant' } } as never).category, 'Restaurant & Food');
     const page = src('app/site/[subdomain]/[[...rest]]/page.tsx');
-    assert.match(page, /free \? pageTitle\(name, category\)/);
+    // A1: every renderer takes its head from buildHead (<name> | <category> in <city>), tested in a1.test.ts
+    assert.match(page, /buildHead\(\{ site, subdomain/);
   });
   test('the Free page file has no link, button or form; an adapter turns the Free view into the kit view', () => {
     const c = src('components/site/FreeSiteView.tsx').replace(/\/\*[\s\S]*?\*\//g, '');

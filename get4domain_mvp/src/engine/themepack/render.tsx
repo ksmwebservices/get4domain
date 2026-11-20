@@ -73,9 +73,9 @@ function uri(attr: string, v: string, ctx: RenderCtx): string {
   if (t.startsWith('asset://')) { const flat = ctx.assets.get(t.slice(8)); return flat ? `${ctx.assetBase}${flat}` : ''; }
   if (/^\s*(javascript|vbscript|data):/i.test(t) && !/^data:image\/(png|jpeg|webp|svg\+xml);/i.test(t)) return '';
   if (attr !== 'href') return t;
-  if (t === '' || t === '/' || /^(index|home)\.html$/i.test(t)) return ctx.base;
+  if (t === '' || t === '/' || /^(index|home)\.html$/i.test(t)) return ctx.base || '/';
   if (/^(#|[a-z][a-z0-9+.-]*:|\/\/)/i.test(t)) return t;
-  if (t === ctx.base || t.startsWith(`${ctx.base}/`) || t.startsWith(`${ctx.base}#`)) return t; // an address the engine already made (an item's page)
+  if (ctx.base && (t === ctx.base || t.startsWith(`${ctx.base}/`) || t.startsWith(`${ctx.base}#`))) return t; // an address the engine already made (an item's page)
   const bare = t.replace(/^\/+/, '').replace(/^\.\//, '');
   const m = /^([a-z0-9-]+)\.html$/i.exec(bare);
   if (m) return ctx.pageHref[m[1].toLowerCase()] ?? `${ctx.base}/${m[1].toLowerCase()}`;

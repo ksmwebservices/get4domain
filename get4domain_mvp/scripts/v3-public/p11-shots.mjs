@@ -53,6 +53,9 @@ const facts = (page) => page.evaluate(() => {
     buttons: Array.from(document.querySelectorAll('button')).map((b) => b.dataset.testid || 'button'),
     links: Array.from(document.querySelectorAll('a')).map((a) => a.getAttribute('href') || ''),
     footText: foot ? foot.innerText : null, footSize: foot ? parseFloat(getComputedStyle(foot).fontSize) : null, footCount: (document.body.innerText.match(/Powered by/g) || []).length,
+    lang: document.documentElement.lang, desc: document.querySelector('meta[name=description]')?.content ?? '', canon: Array.from(document.querySelectorAll('link[rel=canonical]')).map((l) => l.href),
+    og: { title: document.querySelector('meta[property="og:title"]')?.content ?? '', desc: document.querySelector('meta[property="og:description"]')?.content ?? '', image: document.querySelector('meta[property="og:image"]')?.content ?? '', url: document.querySelector('meta[property="og:url"]')?.content ?? '' },
+    iconHref: document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '',
     manifestHref: document.querySelector('link[rel=manifest]')?.getAttribute('href') ?? null,
     appleTitle: document.querySelector('meta[name="apple-mobile-web-app-title"]')?.content ?? null,
     appleIcon: document.querySelector('link[rel=apple-touch-icon]')?.getAttribute('href') ?? null,
@@ -73,7 +76,8 @@ try {
       const f = await facts(page);
       check(`free ${sub} ${width}: renders the kit in info mode with the right theme`, status === 200 && f.mode === 'info' && f.theme === `${pack}-flagship`, `${status} ${f.mode} ${f.theme}`);
       check(`free ${sub} ${width}: one H1 and it is the business name`, f.h1.length === 1 && f.h1[0].trim().toLowerCase() === name.toLowerCase(), JSON.stringify(f.h1));
-      check(`free ${sub} ${width}: title is "<name> | <real category> | Get4Domain"`, f.title === `${name} | ${category} | Get4Domain`, f.title);
+      check(`free ${sub} ${width}: title is "<name> | <real category>[ in <city>]"`, f.title.startsWith(`${name} | ${category}`) && !/Get4Domain/.test(f.title), f.title);
+      check(`${sub} ${width}: head identity (one canonical on the vendor host, description, Open Graph, icon, lang, no /site/ link)`, f.canon.length === 1 && f.canon[0] === `https://${sub}.get4domain.com/` && f.desc.length > 20 && f.desc.length <= 160 && f.og.title === f.title && f.og.url.replace(/\/$/, '') === `https://${sub}.get4domain.com` && /^https?:\/\//.test(f.og.image) && !/\/starter\//.test(f.og.image) && /^\/app-icon\?s=/.test(f.iconHref) && f.lang === 'en-IN' && !f.links.some((h) => h.includes('/site/')), JSON.stringify({ c: f.canon, d: f.desc.length, og: f.og, i: f.iconHref, l: f.lang }));
       check(`free ${sub} ${width}: no form, input, chat or iframe; no tel, mailto, wa.me or external link; only the install button`, f.els.length === 0 && f.buttons.every((b) => b === 'install-app') && f.links.every((h) => h.startsWith('#')) && !/mailto:|tel:|wa\.me|chatbot/i.test(f.html), `${f.els} ${f.buttons} ${f.links.filter((h) => !h.startsWith('#'))}`);
       check(`free ${sub} ${width}: no e-mail or WhatsApp number on the page`, !/@|9190000|919000/.test(f.text.replace(/\+91 9\d{4} \d{5}/g, '')));
       check(`free ${sub} ${width}: no "Opening hours" placeholder line, no repeated sentence`, !/Hours: Opening hours|\nOpening hours\nOpening hours/.test(f.text) && (sub !== 'plumberboy' || (!f.text.includes('Opening hours') && (f.text.match(/Quick plumbing repairs at your door\./g) || []).length === 1)));
@@ -88,7 +92,7 @@ try {
       const { page, status } = await visit(width, `${sub}.get4domain.com`, errors);
       const f = await facts(page);
       check(`pro ${sub} ${width}: the kit in live mode, theme ${pack}-flagship`, status === 200 && f.mode === 'live' && f.theme === `${pack}-flagship`, `${status} ${f.mode} ${f.theme}`);
-      check(`pro ${sub} ${width}: H1 is the name, title has the real category`, f.h1.length === 1 && f.h1[0].trim().toLowerCase() === name.toLowerCase() && f.title === `${name} | ${category} | Get4Domain`, `${JSON.stringify(f.h1)} ${f.title}`);
+      check(`pro ${sub} ${width}: H1 is the name, title has the real category`, f.h1.length === 1 && f.h1[0].trim().toLowerCase() === name.toLowerCase() && f.title.startsWith(`${name} | `) && !/Get4Domain/.test(f.title), `${JSON.stringify(f.h1)} ${f.title}`);
       check(`pro ${sub} ${width}: call and enquire links work (tel, WhatsApp) and there is no chat or form`, f.links.some((h) => h.startsWith('tel:')) && f.els.length === 0 && !/chatbot/i.test(f.html), f.links.join(' ').slice(0, 160));
       check(`pro ${sub} ${width}: navigation and footer`, (phone ? f.bottomVisible && f.bottomFixed && !f.topVisible : !f.bottomVisible && f.topVisible) && f.footText === 'Powered by Get4Domain.com' && f.scrollOk, `${f.bottomLabels}`);
       if (phone) check(`pro ${sub} ${width}: bottom bar tabs are Home, Services, ... and Call/Enquire`, f.bottomLabels[0] === 'Home' && f.bottomLabels[1] === 'Services' && ['Call', 'Enquire'].includes(f.bottomLabels.at(-1)), f.bottomLabels.join(','));
@@ -148,6 +152,18 @@ try {
     const miss = await page.goto(`http://nobody-here.get4domain.com:${PORT}/app-manifest`);
     check('manifest: an unknown vendor has none (404)', miss.status() === 404);
     await page.close();
+  }
+  // the address rule, over real HTTP: /site/<name>... on the main host and on another vendor's host is a 301 to the vendor's own host, an unknown vendor is a 404
+  {
+    const http = await import('node:http');
+    const hit = (host, path) => new Promise((resolve, reject) => { const r = http.request({ host: '127.0.0.1', port: PORT, path, headers: { host: `${host}:${PORT}` } }, (res) => { res.resume(); resolve({ status: res.statusCode, location: res.headers.location ?? null }); }); r.on('error', reject); r.end(); });
+    // 127.0.0.1 is the loopback exemption of a developer machine, so the hosts below are the real names (the Host header decides, not the connection)
+    for (const [host, path, to] of [['get4domain.com', '/site/spice-route', 'https://spice-route.get4domain.com/'], ['get4domain.com', '/site/spice-route/p/news?x=1', 'https://spice-route.get4domain.com/p/news?x=1'], ['plumberboy.get4domain.com', '/site/spice-route/listings', 'https://spice-route.get4domain.com/listings'], ['spice-route.get4domain.com', '/site/spice-route/home', 'https://spice-route.get4domain.com/']]) {
+      const r = await hit(host, path);
+      check(`address rule: ${host}${path} -> 301 ${to}`, r.status === 301 && r.location === to, `${r.status} ${r.location}`);
+    }
+    const gone = await hit('get4domain.com', '/site/nobody-here/about');
+    check('address rule: /site/<no such vendor> is a 404', gone.status === 404 && !gone.location, `${gone.status} ${gone.location}`);
   }
   check('themes differ across packs (distinct hero and type combinations seen)', new Set([...seen.keys()].map((k) => k.split(':').slice(1).join(':'))).size >= 3, [...seen.keys()].join(' '));
 } finally {
