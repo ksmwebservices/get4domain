@@ -85,7 +85,8 @@ describe('E1 master data file', () => {
     const input = path.resolve(backend, '..', 'docs', 'v3', 'inputs', 'REQ_CATEGORY_MASTER_45_FAMILIES.md');
     if (!fs.existsSync(input)) return;   // the input file is not committed in every checkout
     const made = JSON.stringify(gen.buildMaster(gen.parseInput(fs.readFileSync(input, 'utf8'))), null, 1) + '\n';
-    expect(fs.readFileSync(path.join(backend, 'data', 'category-master-45.json'), 'utf8')).toBe(made);
+    const committed = fs.readFileSync(path.join(backend, 'data', 'category-master-45.json'), 'utf8').split('\r\n').join('\n');
+    expect(committed).toBe(made);
   });
   it('validateMaster catches a broken file', () => {
     const bad = clone(f.master) as MasterFile;
