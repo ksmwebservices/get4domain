@@ -2,6 +2,8 @@
  * The state of a vendor site address, for the public renderer (GET /cms/site-state/:subdomain -> { exists, status } with status LIVE, DRAFT or NOT_FOUND),
  * and the Free-plan rule of the renderer. Pure apart from the one fetch; no framework import.
  */
+import { categoryLabel, hoursLines } from './site-kit/view';
+
 export type SiteStatus = 'LIVE' | 'DRAFT' | 'NOT_FOUND';
 export interface SiteState { exists: boolean; status: SiteStatus }
 
@@ -84,12 +86,17 @@ export function isFreeSite(site: unknown): boolean {
 
 /** What a Free site shows: text and pictures only. No e-mail, no WhatsApp, no link, no form; the phone number is plain text. */
 export interface FreeItem { name: string; price: string | null; description: string | null; image: string | null }
-export interface FreeView { name: string; tagline: string | null; about: string | null; address: string | null; phone: string | null; logo: string | null; banner: string | null; items: FreeItem[] }
+export interface FreeView {
+  name: string; tagline: string | null; about: string | null; address: string | null; phone: string | null; logo: string | null; banner: string | null; items: FreeItem[];
+  /** P11: the real category (shown above the name), the opening-hours lines (empty = the line is hidden), and what picks the design (industry text, category-pack key, vendor host) */
+  category: string | null; hours: string[]; industry: string | null; packKey: string | null; host: string | null;
+}
 
 interface FreeSource {
-  vendor: { businessName: string };
-  cms: { businessName: string | null; tagline: string | null; about: string | null; address: string | null; phone: string | null; logo: string | null; banner: string | null } | null;
+  vendor: { businessName: string; industry?: string | null; subdomain?: string | null };
+  cms: { businessName: string | null; tagline: string | null; about: string | null; address: string | null; phone: string | null; logo: string | null; banner: string | null; hours?: unknown } | null;
   products: Array<{ name: string; price: string | null; description: string | null; image: string | null }>;
+  pack?: { key?: string | null; name?: string | null } | null;
 }
 
 export function freeViewOf(site: FreeSource): FreeView {
@@ -102,5 +109,8 @@ export function freeViewOf(site: FreeSource): FreeView {
     name: t(c?.businessName) ?? t(site.vendor?.businessName) ?? 'This business',
     tagline: t(c?.tagline), about: t(c?.about), address: t(c?.address), phone: t(c?.phone), logo: img(c?.logo), banner: img(c?.banner),
     items: list.filter((p) => p && typeof p.name === 'string' && p.name.trim()).slice(0, 24).map((p) => ({ name: p.name.trim(), price: t(p.price), description: t(p.description), image: img(p.image) })),
+    category: categoryLabel(site.vendor?.industry, site.pack?.name ?? null, site.pack?.key ?? null),
+    hours: hoursLines((c as { hours?: unknown } | null)?.hours),
+    industry: t(site.vendor?.industry), packKey: t(site.pack?.key), host: t(site.vendor?.subdomain),
   };
 }

@@ -100,6 +100,8 @@ describe('P9.6 /starter/... pictures never 404', () => {
 
   test('the Free page keeps a /starter/ banner and shows it as an image', () => {
     assert.equal(freeViewOf(JSON.parse(JSON.stringify(PLUMBERBOY))).banner, '/starter/generic/hero.svg');
-    assert.match(readSrc('components/site/FreeSiteView.tsx'), /<img src=\{view\.banner\}/);
+    // P11: the kit draws the banner (the vendor's own picture); the platform's neutral placeholder is replaced by the theme's own art
+    assert.match(readSrc('components/site-kit/SiteApp.tsx'), /<img className="sk-art" src=\{art\}/);
+    assert.match(readSrc('components/site-kit/SiteApp.tsx'), /view\.banner \?\? heroArt\(/);
   });
 });

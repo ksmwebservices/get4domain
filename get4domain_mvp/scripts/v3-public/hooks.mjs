@@ -27,3 +27,17 @@ export async function resolve(specifier, context, next) {
   }
   return next(specifier, context);
 }
+
+// P11: lets a test render a real component. A .tsx file is turned into plain JavaScript with the project's own TypeScript (JSX runtime, no build step, no new dependency).
+// Plain .ts files keep going through Node's own type stripping.
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const requireTs = createRequire(import.meta.url);
+export async function load(url, context, next) {
+  if (url.startsWith('file:') && url.endsWith('.tsx')) {
+    const ts = requireTs('typescript');
+    const out = ts.transpileModule(readFileSync(fileURLToPath(url), 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 }, fileName: fileURLToPath(url) });
+    return { format: 'module', source: out.outputText, shortCircuit: true };
+  }
+  return next(url, context);
+}

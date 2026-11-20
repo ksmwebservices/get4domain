@@ -78,9 +78,9 @@ describe('P9 the live case: plumberboy (Free, unknown industry text, no theme, n
     const page = read(PAGE);
     // the industry switch only runs a bespoke design when one exists, then the generic renderer follows with an optional category
     assert.match(page, /const engineIndustry = getEngineIndustry\(canonicalIndustryId\(site\.vendor\.industry\)\);\s*if \(engineIndustry && /);
-    assert.match(page, /const cat = getCategory\(site\.vendor\.industry\);/);
-    assert.match(page, /cat\?\.coverImage \|\| ''/);
-    assert.match(page, /const industryLabel = cat\?\.name \?\? 'business';/);
+    // P11: the generic design is the theme design kit; an unknown industry text resolves to the safe default pack, never to a not-found page
+    assert.match(page, /const \{ theme, pack \} = themeForSite\(site\);/);
+    assert.match(page, /<SiteApp view=\{view\} theme=\{theme\} \/>/);
   });
 });
 
