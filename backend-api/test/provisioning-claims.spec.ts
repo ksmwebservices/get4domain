@@ -163,6 +163,7 @@ describe('GET /v3/claim/:token/status (HTTP, real throttler)', () => {
         { provide: EmailService, useValue: { sendPlainText: async () => undefined } }, { provide: INVITE_ENV, useValue: {} },
       ],
     }).compile();
+    mod.get(ClaimsService).clock = () => NOW;   // tokens are issued relative to NOW (4 Nov 2026): the service under test must read the same clock, or they count as expired once the real date passes their 14 days
     app = mod.createNestApplication(); app.useGlobalInterceptors(new TransformInterceptor()); app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
   });
@@ -175,7 +176,7 @@ describe('GET /v3/claim/:token/status (HTTP, real throttler)', () => {
     expect(res.body.data).toEqual({ valid: true, businessName: 'Sri Ganesh Plumbing', expiresAt: expect.any(String) });
   });
   it('every invalid token gives the identical 404 body', async () => {
-    const used = await issue(w); await w.claims.markUsed(used.id, new Date());
+    const used = await issue(w); await w.claims.markUsed(used.id, NOW);
     const a = await request(app.getHttpServer()).get(`/v3/claim/${generateToken()}/status`);
     const b = await request(app.getHttpServer()).get(`/v3/claim/${used.raw}/status`);
     const c = await request(app.getHttpServer()).get('/v3/claim/short/status');
