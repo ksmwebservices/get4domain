@@ -22,7 +22,7 @@ exports[`dentist (professional): Free is a listing-only site the home page of th
 <meta name="twitter:description" content="Gentle dental care for the whole family. Meenakshi Dental Care has served Madurai families for years.">
 <meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
 <link rel="stylesheet" href="/assets/site.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dentist","name":"Meenakshi Dental Care","description":"Meenakshi Dental Care has served Madurai families for years.","url":"https://meenakshi-dental.get4domain.com","telephone":"+919876543211","email":"dr@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"4, Temple Street, Madurai 625001","addressLocality":"Madurai","postalCode":"625001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dentist","name":"Meenakshi Dental Care","description":"Meenakshi Dental Care has served Madurai families for years.","url":"https://meenakshi-dental.get4domain.com","telephone":"+919876543211","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"4, Temple Street, Madurai 625001","addressLocality":"Madurai","postalCode":"625001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Meenakshi Dental Care","item":"https://meenakshi-dental.get4domain.com/"}]}</script>
 </head>
 <body>
@@ -96,7 +96,7 @@ exports[`dentist (professional): Free is a listing-only site the home page of th
       <h2 class="sec-title">Contact</h2>
       <address class="addr">4, Temple Street, Madurai 625001</address>
       <p>+919876543211</p>
-      <p>dr@example.com</p>
+      
       <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
       <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">4, Temple Street, Madurai 625001</p></div>
       
@@ -139,7 +139,7 @@ exports[`jewellery (ecommerce): Free is a listing-only site the home page of the
 <meta name="twitter:description" content="Pure gold, honest making charges. Mangala Gold House is a family jeweller in Coimbatore.">
 <meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
 <link rel="stylesheet" href="/assets/site.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"JewelryStore","name":"Mangala Gold House","description":"Mangala Gold House is a family jeweller in Coimbatore.","url":"https://mangala-gold.get4domain.com","telephone":"+919876543212","email":"shop@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"88, Bazaar Street, Coimbatore 641001","addressLocality":"Coimbatore","postalCode":"641001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"JewelryStore","name":"Mangala Gold House","description":"Mangala Gold House is a family jeweller in Coimbatore.","url":"https://mangala-gold.get4domain.com","telephone":"+919876543212","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"88, Bazaar Street, Coimbatore 641001","addressLocality":"Coimbatore","postalCode":"641001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Mangala Gold House","item":"https://mangala-gold.get4domain.com/"}]}</script>
 </head>
 <body>
@@ -213,7 +213,7 @@ exports[`jewellery (ecommerce): Free is a listing-only site the home page of the
       <h2 class="sec-title">Contact</h2>
       <address class="addr">88, Bazaar Street, Coimbatore 641001</address>
       <p>+919876543212</p>
-      <p>shop@example.com</p>
+      
       <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
       <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">88, Bazaar Street, Coimbatore 641001</p></div>
       
@@ -256,7 +256,7 @@ exports[`plumber (handyman): Free is a listing-only site the home page of the Fr
 <meta name="twitter:description" content="Leaks fixed fast, every time. Sri Ganesh Plumbing serves Chennai. We explain the work before we start.">
 <meta name="twitter:image" content="https://cdn.example.test/banner.jpg">
 <link rel="stylesheet" href="/assets/site.css">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Plumber","name":"Sri Ganesh Plumbing","description":"Sri Ganesh Plumbing serves Chennai. We explain the work before we start.","url":"https://sri-ganesh-plumbing.get4domain.com","telephone":"+919876543210","email":"ganesh@example.com","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"12, Kamaraj Road, Chennai 600001","addressLocality":"Chennai","postalCode":"600001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Plumber","name":"Sri Ganesh Plumbing","description":"Sri Ganesh Plumbing serves Chennai. We explain the work before we start.","url":"https://sri-ganesh-plumbing.get4domain.com","telephone":"+919876543210","image":"https://cdn.example.test/banner.jpg","address":{"@type":"PostalAddress","streetAddress":"12, Kamaraj Road, Chennai 600001","addressLocality":"Chennai","postalCode":"600001","addressCountry":"IN"},"sameAs":["https://www.facebook.com/example.page"]}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Sri Ganesh Plumbing","item":"https://sri-ganesh-plumbing.get4domain.com/"}]}</script>
 </head>
 <body>
@@ -330,7 +330,7 @@ exports[`plumber (handyman): Free is a listing-only site the home page of the Fr
       <h2 class="sec-title">Contact</h2>
       <address class="addr">12, Kamaraj Road, Chennai 600001</address>
       <p>+919876543210</p>
-      <p>ganesh@example.com</p>
+      
       <div class="g4d-slot g4d-slot--social-links" data-g4d-slot="social-links"><ul class="g4d-social"><li><a href="https://www.facebook.com/example.page" rel="noopener noreferrer me" aria-label="Facebook">Facebook</a></li></ul></div>
       <div class="g4d-slot g4d-slot--map" data-g4d-slot="map"><p class="g4d-map__address">12, Kamaraj Road, Chennai 600001</p></div>
       
