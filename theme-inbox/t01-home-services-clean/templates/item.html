@@ -1,0 +1,24 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="{{ui.home}}">
+    <span class="brand__logo" data-g4d-if="site.logo"><img src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"></span>
+    <span class="brand__name" data-g4d-if-not="site.logo">{{site.name}}</span>
+  </a>
+  <g4d-header-nav label="{{ui.menu}}"></g4d-header-nav>
+  <g4d-action class="header-action" label="{{ui.call}}"></g4d-action>
+</header>
+<main id="main">
+  <section class="page-intro" data-g4d-section="item-intro" data-g4d-label="Service introduction" data-g4d-optional="false"><p class="eyebrow">{{item.category}}</p><h1>{{item.name}}</h1><p>{{item.description}}</p></section>
+  <section class="item-detail section" data-g4d-section="item-detail" data-g4d-label="Service detail" data-g4d-optional="false"><div class="item-detail__copy"><p class="eyebrow">{{item.badge}}</p><h2>{{item.name}}</h2><p>{{item.description}}</p><p class="service-card__price" data-g4d-if="item.price">{{item.price}}</p><p data-g4d-if="item.duration">{{item.duration}}</p><g4d-action label="{{cta.label}}"></g4d-action></div><div class="item-detail__image" data-g4d-if="item.image"><img src="{{item.image}}" alt="{{item.name}}" width="900" height="720" loading="lazy" decoding="async"></div><div class="item-detail__fallback" data-g4d-if-not="item.image" aria-hidden="true"><span class="fallback__orbit"></span></div></section>
+  <section class="section" data-g4d-section="related-services" data-g4d-label="Related services" data-g4d-optional="true" data-g4d-if="items"><div class="section-heading"><p class="eyebrow">{{terms.items}}</p><h2>{{terms.items}}</h2></div><div class="service-bento"><template data-g4d-each="items"><article class="service-card"><div class="service-card__image" data-g4d-if="item.image"><img src="{{item.image}}" alt="{{item.name}}" width="640" height="440" loading="lazy"></div><div class="service-card__body"><h3>{{item.name}}</h3><p>{{item.description}}</p><p data-g4d-if="item.price">{{item.price}}</p></div></article></template></div></section>
+  <section class="contact-panel" data-g4d-section="item-enquiry" data-g4d-label="Request this service" data-g4d-optional="false"><div><p class="eyebrow">{{ui.contact}}</p><h2>{{cta.label}}</h2></div><g4d-enquiry-form></g4d-enquiry-form></section>
+</main>
+<footer class="site-footer">
+  <div class="footer__brand"><strong>{{site.name}}</strong><p>{{site.tagline}}</p></div>
+  <div class="footer__links"><a href="/about">{{ui.about}}</a><a href="/gallery">{{ui.gallery}}</a><a href="/contact">{{ui.contact}}</a></div>
+  <g4d-listed-on-badge></g4d-listed-on-badge>
+  <g4d-share-qr></g4d-share-qr>
+  <g4d-footer variant="columns"></g4d-footer>
+</footer>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-bottom-nav></g4d-bottom-nav>

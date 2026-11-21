@@ -1,0 +1,65 @@
+{
+  "id": "road-sign-driving",
+  "version": 1,
+  "name": "Road Sign: driving school",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Road-sign blue and number-plate yellow theme for driving schools: figure-8 test-track hero, vehicle quick-pick, courses, slot timings, RTO services, FAQ.",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "education"
+  ],
+  "categories": [
+    "coaching-centre"
+  ],
+  "layoutVariantRules": {
+    "education": "card-stack"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Poppins",
+    "Inter",
+    "Noto Sans Tamil"
+  ],
+  "assets": [
+    {
+      "path": "assets/auto.svg",
+      "bytes": 1088,
+      "sha256": "73f1dfabf309efd192f93a8d1f8f0012e381466a3d04bd6b3e6f675a3b46ca41"
+    },
+    {
+      "path": "assets/bike.svg",
+      "bytes": 1408,
+      "sha256": "dfb1c5ef77732514c3c717a3176d261307053e24dbde46920a9cbc62f23f5c1c"
+    },
+    {
+      "path": "assets/car.svg",
+      "bytes": 1282,
+      "sha256": "8ccfb3b760fb15a859111b9361d91b8eed2a7ce1f5c1c6b1e1226a7b8b3156b1"
+    },
+    {
+      "path": "assets/rto.svg",
+      "bytes": 1022,
+      "sha256": "ced1c220f415b5361de15f1058d82ddd97e7ed63a69b041d36859caf112f9cf9"
+    },
+    {
+      "path": "assets/truck.svg",
+      "bytes": 1040,
+      "sha256": "1887f2c213ef30a974e1ed37f7fbe1363d086a1f695b723ed5e01bdd24f54a28"
+    }
+  ],
+  "contentHash": "c01c935762ab6baab0894665d5037a5d765292eb141d782ad2d29c01f3c7da0d"
+}

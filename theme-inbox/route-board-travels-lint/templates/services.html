@@ -1,0 +1,54 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header">
+  <div class="wrap head-row">
+    <a class="brand" href="/">
+      <img data-g4d-if="site.logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async">
+      <svg class="brand-mark" data-g4d-if-not="site.logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14" fill="#0B6B3A"/><path d="M10 40h44l-4-12H18z" fill="#FFB000" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/><circle cx="21" cy="42" r="5" fill="#fff" stroke="#10201A" stroke-width="3"/><circle cx="43" cy="42" r="5" fill="#fff" stroke="#10201A" stroke-width="3"/><path d="M26 22h12" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+      <span class="brand-name">{{site.name}}</span>
+    </a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-action class="btn btn--go btn--sm"></g4d-action>
+  </div>
+</header>
+<main id="main">
+  <section class="page-hero"><div class="wrap"><h1>{{page.title}}</h1><p data-g4d-if="page.intro">{{page.intro}}</p></div></section>
+  <section class="section" data-g4d-section="catalogue" data-g4d-label="Packages" data-g4d-optional="false">
+    <div class="wrap">
+      <template data-g4d-each="groups"><section id="group-{{group.slug}}" style="margin-bottom:44px">
+        <div class="sec-head"><h2>{{group.name}}</h2></div>
+        <div class="tickets"><template data-g4d-each="group.items"><article class="ticket">
+  <div class="art"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><img data-g4d-if="item.featured" src="{{item.image}}" alt="{{item.name}}" width="640" height="360" loading="lazy"></div>
+  <div class="ticket-main">
+    <h3>{{item.name}}</h3>
+    <p>{{item.description}}</p>
+    <p class="meta"><span data-g4d-if="item.duration">{{item.duration}}</span><span data-g4d-if="item.area">{{item.area}}</span></p>
+  </div>
+  <hr class="perf" aria-hidden="true">
+  <div class="ticket-stub"><span class="price" data-g4d-if="item.price">{{item.price}}</span><a class="btn btn--sm" href="{{item.href}}">{{ui.readMore}}</a><g4d-action class="btn btn--go btn--sm"></g4d-action></div>
+</article></template></div>
+      </section></template>
+      <div class="tickets" data-g4d-if-not="groups"><template data-g4d-each="items"><article class="ticket">
+  <div class="art"><span class="badge" data-g4d-if="item.badge">{{item.badge}}</span><img data-g4d-if="item.featured" src="{{item.image}}" alt="{{item.name}}" width="640" height="360" loading="lazy"></div>
+  <div class="ticket-main">
+    <h3>{{item.name}}</h3>
+    <p>{{item.description}}</p>
+    <p class="meta"><span data-g4d-if="item.duration">{{item.duration}}</span><span data-g4d-if="item.area">{{item.area}}</span></p>
+  </div>
+  <hr class="perf" aria-hidden="true">
+  <div class="ticket-stub"><span class="price" data-g4d-if="item.price">{{item.price}}</span><a class="btn btn--sm" href="{{item.href}}">{{ui.readMore}}</a><g4d-action class="btn btn--go btn--sm"></g4d-action></div>
+</article></template></div>
+    </div>
+  </section>
+  <section class="cta-band" data-g4d-section="cta" data-g4d-label="Call to action" data-g4d-optional="true">
+  <div class="wrap">
+    <div><h2>{{cta.label}}</h2><p data-g4d-if="site.tagline">{{site.tagline}}</p></div>
+    <div class="cta-actions"><g4d-action class="btn btn--go"></g4d-action><a class="btn" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{ui.call}} {{contact.phone}}</a></div>
+  </div>
+</section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-listed-on-badge></g4d-listed-on-badge>
+<g4d-share-qr></g4d-share-qr>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

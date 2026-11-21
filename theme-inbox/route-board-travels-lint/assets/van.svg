@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Tempo traveller van">
+<ellipse cx="160" cy="150" rx="140" ry="8" fill="#10201A" opacity=".14"/>
+<path d="M22 124V62c0-10 6-16 16-16h160c14 0 22 5 29 15l32 32c10 4 17 11 17 22v9z" fill="#FFFFFF" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M22 108h276v12H22z" fill="#0B6B3A"/>
+<g fill="#CFE9DD" stroke="#10201A" stroke-width="3"><rect x="36" y="58" width="42" height="30" rx="4"/><rect x="86" y="58" width="42" height="30" rx="4"/><rect x="136" y="58" width="42" height="30" rx="4"/><path d="M188 58h26c6 0 10 3 14 8l16 22h-56z" stroke-linejoin="round"/></g>
+<g fill="#10201A"><circle cx="82" cy="126" r="22"/><circle cx="242" cy="126" r="22"/></g>
+<g fill="#E3E9E5"><circle cx="82" cy="126" r="9"/><circle cx="242" cy="126" r="9"/></g>
+<rect x="300" y="96" width="8" height="9" rx="2" fill="#FFB000"/>
+</svg>

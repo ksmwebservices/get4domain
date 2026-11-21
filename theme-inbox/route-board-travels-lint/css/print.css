@@ -1,0 +1,7 @@
+@media print{
+  .g4d-theme{background:#fff;color:#000}
+  .g4d-theme .g4d-slot--bottom-nav,.g4d-theme .g4d-slot--whatsapp-float,.g4d-theme .g4d-slot--share-qr,.g4d-theme .g4d-slot--header-nav,.g4d-theme .g4d-slot--enquiry-form,.g4d-theme .bus,.g4d-theme .routeline{display:none}
+  .g4d-theme .site-header,.g4d-theme .hero,.g4d-theme .section{background:#fff;color:#000;padding:8px 0}
+  .g4d-theme a{color:#000;text-decoration:none}
+  .g4d-theme .ticket,.g4d-theme .stone{border:1px solid #000}
+}

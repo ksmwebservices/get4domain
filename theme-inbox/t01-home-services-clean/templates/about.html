@@ -1,0 +1,24 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="{{ui.home}}">
+    <span class="brand__logo" data-g4d-if="site.logo"><img src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"></span>
+    <span class="brand__name" data-g4d-if-not="site.logo">{{site.name}}</span>
+  </a>
+  <g4d-header-nav label="{{ui.menu}}"></g4d-header-nav>
+  <g4d-action class="header-action" label="{{ui.call}}"></g4d-action>
+</header>
+<main id="main">
+  <section class="page-intro" data-g4d-section="page-intro" data-g4d-label="About introduction" data-g4d-optional="false"><p class="eyebrow">{{ui.about}}</p><h1>{{page.title}}</h1><p>{{page.intro}}</p></section>
+  <section class="about-feature section" data-g4d-section="about" data-g4d-label="About story" data-g4d-optional="false"><div class="about-feature__copy"><p class="eyebrow">{{about.title}}</p><h2>{{about.title}}</h2><p>{{about.text}}</p></div><div class="about-feature__media" data-g4d-if="about.image"><img src="{{about.image}}" alt="{{about.imageAlt}}" width="900" height="720" loading="lazy" decoding="async"></div><div class="about-feature__fallback" data-g4d-if-not="about.image" aria-hidden="true"><span class="fallback__orbit"></span></div></section>
+  <section class="section" data-g4d-section="process" data-g4d-label="Our process" data-g4d-optional="true" data-g4d-if="steps"><div class="section-heading"><p class="eyebrow">{{ui.process}}</p><h2>{{ui.process}}</h2></div><ol class="process-grid"><template data-g4d-each="steps"><li class="process-card"><span class="process-card__number">{{step.n}}</span><h3>{{step.title}}</h3><p>{{step.desc}}</p></li></template></ol></section>
+  <section class="section" data-g4d-section="credentials" data-g4d-label="Credentials" data-g4d-optional="true" data-g4d-if="credentials"><div class="credential-grid"><template data-g4d-each="credentials"><article class="credential-card"><h2>{{credential.title}}</h2><p>{{credential.detail}}</p></article></template></div></section>
+</main>
+<footer class="site-footer">
+  <div class="footer__brand"><strong>{{site.name}}</strong><p>{{site.tagline}}</p></div>
+  <div class="footer__links"><a href="/about">{{ui.about}}</a><a href="/gallery">{{ui.gallery}}</a><a href="/contact">{{ui.contact}}</a></div>
+  <g4d-listed-on-badge></g4d-listed-on-badge>
+  <g4d-share-qr></g4d-share-qr>
+  <g4d-footer variant="columns"></g4d-footer>
+</footer>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-bottom-nav></g4d-bottom-nav>

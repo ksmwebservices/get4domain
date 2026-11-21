@@ -1,0 +1,23 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="{{ui.home}}">
+    <span class="brand__logo" data-g4d-if="site.logo"><img src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"></span>
+    <span class="brand__name" data-g4d-if-not="site.logo">{{site.name}}</span>
+  </a>
+  <g4d-header-nav label="{{ui.menu}}"></g4d-header-nav>
+  <g4d-action class="header-action" label="{{ui.call}}"></g4d-action>
+</header>
+<main id="main">
+  <section class="page-intro" data-g4d-section="page-intro" data-g4d-label="Page introduction" data-g4d-optional="false"><p class="eyebrow">{{site.name}}</p><h1>{{page.title}}</h1><p>{{page.intro}}</p></section>
+  <section class="section page-body" data-g4d-section="page-content" data-g4d-label="Page content" data-g4d-optional="false"><div>{{page.body}}</div></section>
+  <section class="section" data-g4d-section="service-areas" data-g4d-label="Service areas" data-g4d-optional="true" data-g4d-if="areas"><div class="section-heading"><p class="eyebrow">{{contact.city}}</p><h2>{{terms.groups}}</h2></div><ul class="area-chips"><template data-g4d-each="areas"><li>{{area.name}}</li></template></ul></section>
+</main>
+<footer class="site-footer">
+  <div class="footer__brand"><strong>{{site.name}}</strong><p>{{site.tagline}}</p></div>
+  <div class="footer__links"><a href="/about">{{ui.about}}</a><a href="/gallery">{{ui.gallery}}</a><a href="/contact">{{ui.contact}}</a></div>
+  <g4d-listed-on-badge></g4d-listed-on-badge>
+  <g4d-share-qr></g4d-share-qr>
+  <g4d-footer variant="columns"></g4d-footer>
+</footer>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-bottom-nav></g4d-bottom-nav>

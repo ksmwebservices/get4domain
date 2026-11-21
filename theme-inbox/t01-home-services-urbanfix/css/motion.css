@@ -1,0 +1,19 @@
+/* UrbanFix motion: the design's three animations, the hover lifts, and the reduced-motion rule. Only transform, opacity, clip-path and filter are animated. */
+.g4d-theme { --g4d-motion-speed: .5s; --g4d-motion-ease: cubic-bezier(.2, .7, .2, 1); --g4d-motion-distance: 20px; }
+.g4d-theme[data-motion=medium] { --g4d-motion-distance: 26px; }
+.g4d-theme[data-motion=rich] { --g4d-motion-speed: .8s; --g4d-motion-distance: 34px; }
+@keyframes uf-rise { from { opacity: .6; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes uf-float-in { from { opacity: .6; transform: translateX(25px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes uf-float { 0%, 100% { transform: translateY(0) rotate(4deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+@keyframes uf-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .g4d-theme .hero-photo { animation: uf-float-in .9s both; }
+  .g4d-theme .hero-note { animation: uf-rise .8s .25s both; }
+  .g4d-theme .floating-tag { animation: uf-float 4s ease-in-out infinite; }
+  .g4d-theme .g4d-slot--bottom-nav { animation: uf-slide-up var(--g4d-motion-speed) var(--g4d-motion-ease) both; }
+  .g4d-theme .g4d-slot--whatsapp-float { animation: uf-float 6s ease-in-out 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g4d-theme *, .g4d-theme *::before, .g4d-theme *::after { animation: none; transition: none; scroll-behavior: auto; }
+}
+.g4d-theme[data-motion=off] *, .g4d-theme[data-motion=off] *::before, .g4d-theme[data-motion=off] *::after { animation: none; transition: none; }

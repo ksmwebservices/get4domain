@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" role="img" aria-label="Heavy vehicle">
+<ellipse cx="180" cy="152" rx="150" ry="8" fill="#16202A" opacity=".14"/>
+<rect x="18" y="34" width="208" height="96" rx="6" fill="#0B4A9E" stroke="#16202A" stroke-width="3"/>
+<path d="M18 74h208" stroke="#FFC400" stroke-width="6"/>
+<path d="M232 56h54c8 0 14 4 18 10l22 34c3 5 4 9 4 14v16H232z" fill="#FFC400" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M246 66h40c4 0 7 2 9 5l14 22h-63z" fill="#D8ECFF" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<rect x="18" y="130" width="316" height="10" fill="#16202A"/>
+<g fill="#16202A"><circle cx="64" cy="138" r="20"/><circle cx="112" cy="138" r="20"/><circle cx="272" cy="138" r="20"/></g>
+<g fill="#E3E6DF"><circle cx="64" cy="138" r="8"/><circle cx="112" cy="138" r="8"/><circle cx="272" cy="138" r="8"/></g>
+<rect x="34" y="44" width="30" height="22" rx="3" fill="#fff"/>
+<path d="M42 48v14h12" fill="none" stroke="#D32F2F" stroke-width="5"/>
+</svg>

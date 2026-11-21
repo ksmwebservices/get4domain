@@ -1,0 +1,37 @@
+{
+  "id": "road-sign-driving",
+  "version": 1,
+  "name": "Road Sign: driving school",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Road-sign blue and number-plate yellow theme for driving schools: figure-8 test-track hero, vehicle quick-pick, courses, slot timings, RTO services, FAQ.",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "education"
+  ],
+  "categories": [
+    "coaching-centre"
+  ],
+  "layoutVariantRules": {
+    "education": "card-stack"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Poppins",
+    "Inter",
+    "Noto Sans Tamil"
+  ]
+}

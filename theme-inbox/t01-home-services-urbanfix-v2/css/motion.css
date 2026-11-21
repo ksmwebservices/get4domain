@@ -1,0 +1,7 @@
+/* UrbanFix v2 - motion. The original's three keyframes, moved unchanged; the animations themselves are still declared on the original rules in base.css. */
+.g4d-theme{--g4d-motion-speed:.5s;--g4d-motion-ease:cubic-bezier(.2,.7,.2,1);--g4d-motion-distance:20px}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatIn{from{opacity:0;transform:translateX(25px)}to{opacity:1;transform:translateX(0)}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(4deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@media (prefers-reduced-motion: reduce){.g4d-theme.g4d-theme.g4d-theme.g4d-theme *,.g4d-theme.g4d-theme.g4d-theme.g4d-theme *:before,.g4d-theme.g4d-theme.g4d-theme.g4d-theme *:after{scroll-behavior:auto;animation:none;animation-duration:.01ms;animation-iteration-count:1;transition-duration:.01ms}}
+.g4d-theme[data-motion=off] *,.g4d-theme[data-motion=off] *:before,.g4d-theme[data-motion=off] *:after{animation:none;transition:none}

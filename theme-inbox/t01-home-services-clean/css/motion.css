@@ -1,0 +1,15 @@
+/* Low motion: no hero hiding; scroll reveals are progressive enhancement only. */
+@media (prefers-reduced-motion:no-preference) {
+  .g4d-theme .service-card,.g4d-theme .process-card,.g4d-theme .gallery-card { transition:transform var(--g4d-motion-speed) var(--g4d-motion-ease),opacity var(--g4d-motion-speed) var(--g4d-motion-ease); }
+  .g4d-theme .service-card:hover,.g4d-theme .service-card:focus-within,.g4d-theme .gallery-card:hover { transform:translateY(calc(var(--g4d-motion-distance) * -.4)); }
+  .g4d-theme .hero__media img { transition:transform 900ms var(--g4d-motion-ease); }
+  .g4d-theme .hero__media:hover img { transform:scale(1.025); }
+  @supports (animation-timeline:view()) {
+    .g4d-theme .process-card,.g4d-theme .category-entry { animation:g4d-rise .55s var(--g4d-motion-ease) both; animation-timeline:view(); animation-range:entry 0% entry 20%; }
+  }
+  @keyframes g4d-rise { from { opacity:.72; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+}
+@media (prefers-reduced-motion:reduce) {
+  .g4d-theme *, .g4d-theme *::before, .g4d-theme *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+  .g4d-theme .hero__media img { transform:none!important; }
+}

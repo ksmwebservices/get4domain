@@ -1,0 +1,44 @@
+/* UrbanFix tokens. Design colours map to the --g4d tokens; the vendor may change only the accent (and approved fonts). */
+.g4d-theme {
+  --g4d-primary: #17211f;
+  --g4d-primary-contrast: #ffffff;
+  --g4d-accent: var(--g4d-pal-accent, #176b52);
+  --g4d-bg: #f7f7f2;
+  --g4d-surface: #ffffff;
+  --g4d-text: #17211f;
+  --g4d-muted: #5d6b66;
+  --g4d-border: #e7e9e2;
+  --g4d-radius: 24px;
+  --g4d-font-heading: 'Manrope', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', sans-serif;
+  --g4d-font-body: 'DM Sans', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', sans-serif;
+  --uf-on-accent: #ffffff;
+  --uf-mint: #dff1e9;
+  --uf-sage: #edf1e9;
+  --uf-lime: #d7f36a;
+  --uf-on-lime: #17211f;
+  --uf-orange: #f3a56c;
+  --uf-deep: #111a17;
+  --uf-panel: #26332e;
+  --uf-panel-line: #3b4942;
+  --uf-on-dark: #dbe6df;
+  --uf-on-dark-muted: #b8c4bd;
+  --uf-shadow: 0 18px 55px rgba(23, 45, 37, .10);
+  --uf-touch: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .g4d-theme {
+    --g4d-primary: #0b1210;
+    --g4d-primary-contrast: #e8f0ec;
+    --g4d-accent: var(--g4d-pal-accent-d, #5fcf9f);
+    --g4d-bg: #0f1715;
+    --g4d-surface: #17211f;
+    --g4d-text: #e8f0ec;
+    --g4d-muted: #a3b2ab;
+    --g4d-border: #2a3833;
+    --uf-on-accent: #06201a;
+    --uf-mint: #173b2f;
+    --uf-sage: #131e1b;
+    --uf-shadow: 0 18px 55px rgba(0, 0, 0, .35);
+  }
+}

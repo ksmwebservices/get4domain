@@ -1,0 +1,32 @@
+/* Accessible warm-neutral palette; dark values remain AA for body text. */
+.g4d-theme {
+  --g4d-primary: #176b68;
+  --g4d-primary-contrast: #ffffff;
+  --g4d-accent: #9c6628;
+  --g4d-bg: #fbfaf7;
+  --g4d-surface: #ffffff;
+  --g4d-text: #243238;
+  --g4d-muted: #59666b;
+  --g4d-border: #d9dfdc;
+  --g4d-radius: 20px;
+  --g4d-font-heading: "Inter", "Noto Sans Tamil", Arial, sans-serif;
+  --g4d-font-body: "DM Sans", "Noto Sans Tamil", Arial, sans-serif;
+  --g4d-motion-speed: 420ms;
+  --g4d-motion-ease: cubic-bezier(.2,.7,.2,1);
+  --g4d-motion-distance: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  .g4d-theme {
+    --g4d-primary: #79c9bd;
+    --g4d-primary-contrast: #102522;
+    --g4d-accent: #e9b979;
+    --g4d-bg: #111a19;
+    --g4d-surface: #1b2826;
+    --g4d-text: #f2f5f2;
+    --g4d-muted: #c0cbc7;
+    --g4d-border: #40514d;
+    --g4d-radius: 20px;
+    --g4d-font-heading: "Inter", "Noto Sans Tamil", Arial, sans-serif;
+    --g4d-font-body: "DM Sans", "Noto Sans Tamil", Arial, sans-serif;
+  }
+}

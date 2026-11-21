@@ -1,0 +1,33 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<div class="topbar"><div class="container"><span class="topbar__text" data-g4d-if="contact.address">&#10022; {{contact.address}}</span><g4d-open-now></g4d-open-now></div></div>
+<header class="nav-wrap"><div class="container nav">
+  <a class="brand" href="/"><span class="brand-mark" data-g4d-if-not="site.logo" aria-hidden="true"></span><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a>
+  <g4d-header-nav label="Main"></g4d-header-nav>
+  <div class="nav-actions"><a class="phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{contact.phone}}</a><g4d-action class="btn small"></g4d-action></div>
+</div></header>
+<main id="main">
+<section class="page-hero" data-g4d-section="intro" data-g4d-label="Heading" data-g4d-optional="false"><div class="container page-hero-grid">
+  <div><span class="eyebrow">{{site.name}}</span><h1>{{page.title}}</h1><p class="lead" data-g4d-if="page.intro">{{page.intro}}</p></div>
+  <div class="page-hero__art" aria-hidden="true"><span class="page-hero__ring"></span></div>
+</div></section>
+<section class="section" data-g4d-section="story" data-g4d-label="About" data-g4d-optional="false"><div class="container split">
+  <div class="photo-stack"><img data-g4d-if="about.image" src="{{about.image}}" alt="{{about.imageAlt}}" width="1000" height="480" loading="lazy" decoding="async"></div>
+  <div><h2>{{about.title}}</h2><div class="rich">{{about.text}}</div></div>
+</div></section>
+<section class="service-strip" data-g4d-section="stats" data-g4d-label="Numbers" data-g4d-optional="true" data-g4d-if="stats"><div class="container strip-grid"><template data-g4d-each="stats"><div class="strip-item"><div><strong>{{stat.value}}</strong><small>{{stat.label}}</small></div></div></template></div></section>
+<section class="section" data-g4d-section="team" data-g4d-label="Team" data-g4d-optional="true" data-g4d-if="team"><div class="container">
+  <div class="section-head"><div><span class="eyebrow">{{site.name}}</span><h2>{{terms.team}}</h2></div></div>
+  <div class="cards"><template data-g4d-each="team"><article class="service-card"><div class="card-img card-img--person"><span class="card-img__initial" aria-hidden="true">{{member.initial}}</span><img data-g4d-if="member.image" src="{{member.image}}" alt="{{member.name}}" width="600" height="440" loading="lazy" decoding="async"></div><div class="card-body"><h3>{{member.name}}</h3><p data-g4d-if="member.role">{{member.role}}</p></div></article></template></div>
+</div></section>
+<section class="section areas" data-g4d-section="credentials" data-g4d-label="Credentials" data-g4d-optional="true" data-g4d-if="credentials"><div class="container"><div class="area-list"><template data-g4d-each="credentials"><span class="area-pill"><strong>{{credential.title}}</strong> {{credential.detail}}</span></template></div></div></section>
+<section class="section" data-g4d-section="testimonials" data-g4d-label="Customer words" data-g4d-optional="true" data-g4d-if="testimonials"><div class="container"><div class="faq-list"><template data-g4d-each="testimonials"><figure class="faq-item quote"><blockquote>{{testimonial.quote}}</blockquote><figcaption>{{testimonial.author}} <small data-g4d-if="testimonial.note">{{testimonial.note}}</small></figcaption></figure></template></div></div></section>
+</main>
+<div class="footer"><div class="container footer-grid">
+  <a class="brand" href="/"><span class="brand-name">{{site.name}}</span></a>
+  <g4d-footer variant="columns"></g4d-footer>
+  <div class="footer-extra"><g4d-listed-on-badge></g4d-listed-on-badge><g4d-share-qr></g4d-share-qr></div>
+  <small class="copy">&copy; {{site.year}} {{site.name}}</small>
+</div></div>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

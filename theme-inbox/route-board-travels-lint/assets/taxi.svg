@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Cab">
+<ellipse cx="160" cy="150" rx="140" ry="8" fill="#10201A" opacity=".14"/>
+<path d="M26 118c0-16 10-24 32-30l30-30c7-7 15-9 26-9h84c12 0 21 4 29 12l27 27c26 5 40 12 40 30v12H26z" fill="#FFFFFF" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M26 112h268v10H26z" fill="#0B6B3A"/>
+<path d="M98 86l22-24h36v24z" fill="#CFE9DD" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M166 62h30c8 0 14 3 20 9l17 15h-67z" fill="#CFE9DD" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M162 62v24" stroke="#10201A" stroke-width="3"/>
+<rect x="120" y="36" width="64" height="20" rx="4" fill="#FFB000" stroke="#10201A" stroke-width="3"/>
+<path d="M132 46h40" stroke="#10201A" stroke-width="4" stroke-linecap="round"/>
+<g fill="#10201A"><circle cx="86" cy="124" r="24"/><circle cx="240" cy="124" r="24"/></g>
+<g fill="#E3E9E5"><circle cx="86" cy="124" r="10"/><circle cx="240" cy="124" r="10"/></g>
+<rect x="288" y="98" width="8" height="8" rx="2" fill="#FFB000"/>
+</svg>

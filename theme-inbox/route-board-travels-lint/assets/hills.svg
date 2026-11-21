@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Hill road">
+<circle cx="250" cy="40" r="20" fill="#FFB000" stroke="#10201A" stroke-width="3"/>
+<g stroke="#10201A" stroke-width="3" stroke-linejoin="round"><path d="M0 150L80 50l50 60 40-44 90 84z" fill="#0B6B3A"/><path d="M110 150l60-62 40 46 30-28 40 44z" fill="#14804A"/></g>
+<path d="M60 150c60-10 120-14 90-34-24-16-70-8-40-30" fill="none" stroke="#10201A" stroke-width="14" stroke-linecap="round"/>
+<path d="M60 150c60-10 120-14 90-34-24-16-70-8-40-30" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-dasharray="7 8"/>
+</svg>

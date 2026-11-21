@@ -1,0 +1,8 @@
+/* Business-card print: no navigation, no floating items, no slots that only work on screen. */
+@media print {
+  .g4d-theme { background: #fff; color: #111; font: 11pt/1.45 Arial, sans-serif; }
+  .g4d-theme .topbar, .g4d-theme .nav-wrap, .g4d-theme .g4d-slot--header-nav, .g4d-theme .g4d-slot--bottom-nav, .g4d-theme .g4d-slot--whatsapp-float, .g4d-theme .g4d-slot--action, .g4d-theme .g4d-slot--enquiry-form, .g4d-theme .g4d-slot--share-qr, .g4d-theme .g4d-slot--listed-on-badge, .g4d-theme .btn, .g4d-theme .skip-link { display: none; }
+  .g4d-theme .section { padding: 14pt 0; }
+  .g4d-theme :is(.contact, .footer, .areas, .page-hero, .service-strip) { background: #fff; color: #111; }
+  .g4d-theme a { text-decoration: underline; }
+}

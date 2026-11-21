@@ -1,0 +1,8 @@
+@media print {
+ .g4d-theme { background:#fff; color:#111; font:11pt/1.45 Arial,sans-serif; }
+ .g4d-theme .site-header,.g4d-theme .g4d-slot--header-nav,.g4d-theme .g4d-slot--bottom-nav,.g4d-theme .g4d-slot--whatsapp-float,.g4d-theme .g4d-slot--action,.g4d-theme .g4d-slot--enquiry-form { display:none; }
+ .g4d-theme .hero { display:block; min-height:0; padding:0 0 18pt; }
+ .g4d-theme .hero__media { display:none; }
+ .g4d-theme .service-card,.g4d-theme .contact-card { break-inside:avoid; box-shadow:none; border:1px solid #aaa; }
+ .g4d-theme a { text-decoration:none; }
+}

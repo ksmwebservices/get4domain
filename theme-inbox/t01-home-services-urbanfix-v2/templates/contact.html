@@ -1,0 +1,12 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<div class="topbar"><div class="container"><span data-g4d-if="contact.address">&#10022; {{contact.address}}</span><g4d-open-now></g4d-open-now></div></div>
+<header class="nav-wrap"><div class="container nav"><a class="brand" href="/"><span class="brand-mark" data-g4d-if-not="site.logo" aria-hidden="true"></span><img class="brand-logo" data-g4d-if="site.logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="38" height="38" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a><g4d-header-nav class="nav-links" label="Main"></g4d-header-nav><div class="nav-actions"><a class="phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{contact.phone}}</a><g4d-action class="btn small"></g4d-action></div></div></header>
+<main id="main">
+<section class="page-hero" data-g4d-section="intro" data-g4d-label="Heading" data-g4d-optional="false"><div class="container page-hero-grid"><div><span class="eyebrow">{{site.name}}</span><h1>{{page.title}}</h1><p class="lead" data-g4d-if="page.intro">{{page.intro}}</p></div><img data-g4d-if="about.image" src="{{about.image}}" alt="{{about.imageAlt}}" width="1000" height="667" loading="lazy" decoding="async"></div></section>
+<section class="section contact" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="false"><div class="container contact-grid"><div><div class="contact-details"><a data-g4d-if="contact.phone" href="{{contact.phoneHref}}">&#9742; &nbsp;{{contact.phone}}</a><a data-g4d-if="contact.email" href="mailto:{{contact.email}}">&#9993; &nbsp;{{contact.email}}</a><span data-g4d-if="contact.address">{{contact.address}}</span></div><g4d-hours variant="table"></g4d-hours><g4d-social></g4d-social></div><g4d-enquiry-form></g4d-enquiry-form></div></section>
+<section class="section areas" data-g4d-section="map" data-g4d-label="Map" data-g4d-optional="true"><div class="container"><div class="area-art"><div class="pin-card"><div class="pin" aria-hidden="true">&#8982;</div><g4d-map></g4d-map></div></div></div></section>
+</main>
+<div class="footer"><div class="container footer-grid"><a class="brand" href="/"><span class="brand-name">{{site.name}}</span></a><g4d-footer variant="minimal"></g4d-footer><div class="footer-extra"><g4d-listed-on-badge></g4d-listed-on-badge><g4d-share-qr></g4d-share-qr></div></div></div>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

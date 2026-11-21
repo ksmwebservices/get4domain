@@ -1,0 +1,37 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<header class="site-header">
+  <div class="wrap head-row">
+    <a class="brand" href="/">
+      <img data-g4d-if="site.logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="160" height="48" loading="lazy" decoding="async">
+      <svg class="brand-mark" data-g4d-if-not="site.logo" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><rect width="64" height="64" rx="14" fill="#0B6B3A"/><path d="M10 40h44l-4-12H18z" fill="#FFB000" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/><circle cx="21" cy="42" r="5" fill="#fff" stroke="#10201A" stroke-width="3"/><circle cx="43" cy="42" r="5" fill="#fff" stroke="#10201A" stroke-width="3"/><path d="M26 22h12" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>
+      <span class="brand-name">{{site.name}}</span>
+    </a>
+    <g4d-header-nav label="Main"></g4d-header-nav>
+    <g4d-action class="btn btn--go btn--sm"></g4d-action>
+  </div>
+</header>
+<main id="main">
+  <section class="page-hero"><div class="wrap"><h1>{{page.title}}</h1><p data-g4d-if="page.intro">{{page.intro}}</p></div></section>
+  <section class="section" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="false">
+    <div class="wrap split">
+  <div>
+    <ul class="contact-list">
+      <li data-g4d-if="contact.address"><b>{{ui.directions}}</b><address>{{contact.address}}</address></li>
+      <li data-g4d-if="contact.phone"><b>{{ui.call}}</b><a href="{{contact.phoneHref}}">{{contact.phone}}</a></li>
+      <li data-g4d-if="contact.whatsappHref"><b>{{ui.whatsapp}}</b><a href="{{contact.whatsappHref}}">{{contact.whatsapp}}</a></li>
+      <li data-g4d-if="contact.email"><a href="mailto:{{contact.email}}">{{contact.email}}</a></li>
+    </ul>
+    <g4d-hours variant="table"></g4d-hours>
+    <g4d-social></g4d-social>
+  </div>
+  <div><g4d-map></g4d-map></div>
+</div>
+<div class="wrap" style="margin-top:28px"><g4d-enquiry-form></g4d-enquiry-form></div>
+  </section>
+</main>
+<g4d-footer variant="columns"></g4d-footer>
+<g4d-listed-on-badge></g4d-listed-on-badge>
+<g4d-share-qr></g4d-share-qr>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

@@ -1,0 +1,38 @@
+/* Route Board: tokens. Light default, dark under prefers-color-scheme. */
+.g4d-theme{
+  --g4d-primary:#0B6B3A;
+  --g4d-primary-contrast:#FFFFFF;
+  --g4d-accent:#B84A00;
+  --g4d-bg:#F1F5F2;
+  --g4d-surface:#FFFFFF;
+  --g4d-text:#10201A;
+  --g4d-muted:#4B5F57;
+  --g4d-border:#D3DDD7;
+  --g4d-radius:14px;
+  --g4d-font-heading:"Lora","Noto Serif Tamil",Georgia,serif;
+  --g4d-font-body:"Inter","Noto Sans Tamil",system-ui,sans-serif;
+  --g4d-motion-speed:1;
+  --g4d-motion-ease:cubic-bezier(.2,.8,.2,1);
+  --g4d-motion-distance:8px;
+  --tp-on-accent:#FFFFFF;
+  --tp-led:#FFB000;
+  --tp-glass:#0A0F0D;
+  --tp-deep:#084D2A;
+  --tp-tint:#E3EFE8;
+  --tp-orange:#E8590C;
+}
+@media (prefers-color-scheme: dark){
+  .g4d-theme{
+    --g4d-primary:#14804A;
+    --g4d-primary-contrast:#FFFFFF;
+    --g4d-accent:#FF8A3D;
+    --g4d-bg:#0C1713;
+    --g4d-surface:#13221C;
+    --g4d-text:#EDF4F0;
+    --g4d-muted:#9DB3A9;
+    --g4d-border:#25382F;
+    --tp-on-accent:#0C1713;
+    --tp-deep:#0E5A33;
+    --tp-tint:#16271F;
+  }
+}

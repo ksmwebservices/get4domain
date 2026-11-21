@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Training car with L plate">
+<ellipse cx="160" cy="150" rx="140" ry="8" fill="#16202A" opacity=".14"/>
+<path d="M26 118c0-16 10-24 32-30l30-30c7-7 15-9 26-9h84c12 0 21 4 29 12l27 27c26 5 40 12 40 30v12H26z" fill="#FFC400"/>
+<path d="M26 118c0-16 10-24 32-30l30-30c7-7 15-9 26-9h84c12 0 21 4 29 12l27 27c26 5 40 12 40 30v12H26z" fill="none" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M98 86l22-24h36v24z" fill="#D8ECFF" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M166 62h30c8 0 14 3 20 9l17 15h-67z" fill="#D8ECFF" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M162 62v24" stroke="#16202A" stroke-width="3"/>
+<rect x="30" y="100" width="18" height="10" rx="2" fill="#D32F2F"/>
+<rect x="278" y="100" width="14" height="9" rx="2" fill="#fff"/>
+<g fill="#16202A"><circle cx="86" cy="124" r="24"/><circle cx="240" cy="124" r="24"/></g>
+<g fill="#E3E6DF"><circle cx="86" cy="124" r="10"/><circle cx="240" cy="124" r="10"/></g>
+<rect x="196" y="12" width="34" height="34" rx="4" fill="#fff" stroke="#16202A" stroke-width="3"/>
+<path d="M207 20v18h12" fill="none" stroke="#D32F2F" stroke-width="6" stroke-linecap="square"/>
+</svg>

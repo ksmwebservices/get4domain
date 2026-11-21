@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Medical trip">
+<ellipse cx="160" cy="150" rx="120" ry="7" fill="#10201A" opacity=".14"/>
+<rect x="70" y="30" width="180" height="110" rx="12" fill="#FFFFFF" stroke="#10201A" stroke-width="3"/>
+<path d="M144 54h32v28h28v32h-28v28h-32v-28h-28V82h28z" transform="translate(0 -14) scale(1 .85) translate(0 14)" fill="#D32F2F" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M90 130h140" stroke="#0B6B3A" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 10"/>
+</svg>

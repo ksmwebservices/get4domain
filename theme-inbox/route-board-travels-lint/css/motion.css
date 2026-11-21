@@ -1,0 +1,33 @@
+/* Motion: transform and opacity only. Off and reduced motion are static. */
+@keyframes tp-left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes tp-right{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@keyframes tp-glow{from{opacity:.55}to{opacity:1}}
+.g4d-theme[data-motion="Low"] .led-row--a .led-track,
+.g4d-theme[data-motion="Medium"] .led-row--a .led-track,
+.g4d-theme[data-motion="Rich"] .led-row--a .led-track{animation:tp-left calc(34s / var(--g4d-motion-speed)) linear infinite}
+.g4d-theme[data-motion="Low"] .led-row--b .led-track,
+.g4d-theme[data-motion="Medium"] .led-row--b .led-track,
+.g4d-theme[data-motion="Rich"] .led-row--b .led-track{animation:tp-right calc(46s / var(--g4d-motion-speed)) linear infinite}
+.g4d-theme[data-motion="Medium"] .bus .lamp,
+.g4d-theme[data-motion="Rich"] .bus .lamp{animation:tp-glow 2.4s ease-in-out infinite alternate}
+.g4d-theme[data-motion="Medium"] .ticket,
+.g4d-theme[data-motion="Rich"] .ticket,
+.g4d-theme[data-motion="Medium"] .stone,
+.g4d-theme[data-motion="Rich"] .stone,
+.g4d-theme[data-motion="Medium"] .tile,
+.g4d-theme[data-motion="Rich"] .tile{transition:transform .25s var(--g4d-motion-ease)}
+.g4d-theme[data-motion="Medium"] .ticket:hover,
+.g4d-theme[data-motion="Rich"] .ticket:hover,
+.g4d-theme[data-motion="Medium"] .stone:hover,
+.g4d-theme[data-motion="Rich"] .stone:hover,
+.g4d-theme[data-motion="Medium"] .tile:hover,
+.g4d-theme[data-motion="Rich"] .tile:hover{transform:translateY(calc(var(--g4d-motion-distance) * -.5))}
+.g4d-theme[data-motion="Off"] .led-row .led-track,
+.g4d-theme[data-motion="Off"] .bus .lamp{animation:none}
+@media (prefers-reduced-motion: reduce){
+  .g4d-theme[data-motion] .led-row .led-track,
+  .g4d-theme[data-motion] .bus .lamp,
+  .g4d-theme[data-motion] .ticket,
+  .g4d-theme[data-motion] .stone,
+  .g4d-theme[data-motion] .tile{animation:none;transition:none}
+}

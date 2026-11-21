@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" role="img" aria-label="Coach bus">
+<ellipse cx="180" cy="152" rx="160" ry="8" fill="#10201A" opacity=".14"/>
+<path d="M16 128V50c0-9 7-16 16-16h250c14 0 24 5 31 15l24 34c4 6 7 11 7 19v26z" fill="#E8590C" stroke="#10201A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M16 100h322v12H16z" fill="#FFFFFF"/>
+<g fill="#CFE9DD" stroke="#10201A" stroke-width="3"><rect x="30" y="48" width="40" height="36" rx="4"/><rect x="78" y="48" width="40" height="36" rx="4"/><rect x="126" y="48" width="40" height="36" rx="4"/><rect x="174" y="48" width="40" height="36" rx="4"/><rect x="222" y="48" width="40" height="36" rx="4"/><path d="M272 48h28c6 0 10 3 14 8l14 28h-56z" stroke-linejoin="round"/></g>
+<g fill="#10201A"><circle cx="78" cy="130" r="22"/><circle cx="282" cy="130" r="22"/></g>
+<g fill="#E3E9E5"><circle cx="78" cy="130" r="9"/><circle cx="282" cy="130" r="9"/></g>
+<rect x="340" y="96" width="8" height="9" rx="2" fill="#FFB000"/>
+</svg>

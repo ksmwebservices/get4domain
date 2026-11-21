@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Auto-rickshaw">
+<ellipse cx="164" cy="150" rx="130" ry="8" fill="#16202A" opacity=".14"/>
+<path d="M92 40h150c14 0 22 6 26 18l8 26v34H92z" fill="#FFC400" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M90 30h160c10 0 16 6 16 14v6H90z" fill="#16202A"/>
+<path d="M112 52h72v38h-72z" fill="#D8ECFF" stroke="#16202A" stroke-width="3"/>
+<path d="M196 52h32c8 0 14 4 17 12l6 26h-55z" fill="#D8ECFF" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M92 112h176" stroke="#16202A" stroke-width="3"/>
+<path d="M92 96h176v16H92z" fill="#0B4A9E"/>
+<path d="M92 118h60l-8 18" fill="none" stroke="#16202A" stroke-width="3"/>
+<g fill="#16202A"><circle cx="70" cy="128" r="22"/><circle cx="238" cy="128" r="22"/></g>
+<g fill="#E3E6DF"><circle cx="70" cy="128" r="9"/><circle cx="238" cy="128" r="9"/></g>
+<path d="M56 100l30-24" stroke="#16202A" stroke-width="6" stroke-linecap="round"/>
+<circle cx="272" cy="84" r="6" fill="#FFF3B0" stroke="#16202A" stroke-width="3"/>
+</svg>

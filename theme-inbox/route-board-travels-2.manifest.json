@@ -1,0 +1,116 @@
+{
+  "id": "route-board-travels",
+  "version": 2,
+  "name": "Route Board: travels, cabs and buses",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Highway-green and signal-orange theme for travel operators: bus-front hero with scrolling LED destination board, service tiles, ticket-style package cards, season and pilgrimage milestones, fleet and rates, booking route steps.",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "hospitality-property"
+  ],
+  "categories": [
+    "travel-agency"
+  ],
+  "layoutVariantRules": {
+    "hospitality-property": "fullbleed-booking"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Lora",
+    "Inter",
+    "Noto Sans Tamil"
+  ],
+  "marketplace": {
+    "packs": [
+      "HOSPITALITY_EVENTS"
+    ],
+    "catalogueCategories": [
+      "travel-agency"
+    ],
+    "licence": "Theme code: for use by Get4Domain vendors on their vendor websites. Illustrations are original vector art made for this theme. Fonts Lora and Inter: SIL OFL 1.1.",
+    "previews": [
+      {
+        "path": "assets/previews/travel-agency-en-home-1440.png",
+        "alt": "Route Board home page on a desktop screen, sample travel business",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/travel-agency-en-home-390.png",
+        "alt": "Route Board home page on a phone, sample travel business",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/travel-agency-en-services-1440.png",
+        "alt": "Route Board services page on a desktop screen, sample content",
+        "page": "services"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "path": "assets/bus.svg",
+      "bytes": 1009,
+      "sha256": "98a70badc6dbfa51d6b442f2cc01d06be1e6934b464502f667fbc7c53e12e65d"
+    },
+    {
+      "path": "assets/cross.svg",
+      "bytes": 580,
+      "sha256": "7246f2cc4bf51aa06e90f2bf041121dbdf19ae45399f94c8b760e81dc128ecce"
+    },
+    {
+      "path": "assets/favicon.svg",
+      "bytes": 402,
+      "sha256": "afb7741c356f116c1e9a5b29e28f360c8f9084c09cd918be1002fb4a9e1dc27e"
+    },
+    {
+      "path": "assets/gopuram.svg",
+      "bytes": 730,
+      "sha256": "929ab18cd5387a76cfb5c59a5907e7fd825254c515b6b8e1c19b7f33fcc3b2a0"
+    },
+    {
+      "path": "assets/hills.svg",
+      "bytes": 624,
+      "sha256": "c1d697062c25be5d48e97e90756a64164ab28627e2b905cb44d155500bba39eb"
+    },
+    {
+      "path": "assets/previews/travel-agency-en-home-1440.png",
+      "bytes": 620215,
+      "sha256": "cfa684715989934237ae144e23c1b099feb57ff4ea28746225efc9321e08a2c9"
+    },
+    {
+      "path": "assets/previews/travel-agency-en-home-390.png",
+      "bytes": 548716,
+      "sha256": "c228aae04b0f3525acdd7e22afe5c641da33f5dd7eb99368b49fc326a1bddecc"
+    },
+    {
+      "path": "assets/previews/travel-agency-en-services-1440.png",
+      "bytes": 228276,
+      "sha256": "25e1e71b37c36273fb17d2b3317b3dcf627fa2c5aba5f16966ae1c6f4f8fc04f"
+    },
+    {
+      "path": "assets/taxi.svg",
+      "bytes": 1108,
+      "sha256": "721b0c56edca645806f5e56f0b24da047fbf0764aea56fdeb522ea9ceffc2fe7"
+    },
+    {
+      "path": "assets/van.svg",
+      "bytes": 918,
+      "sha256": "f4fb4d9a4d9800a4da47b870cf92f37169d4620ba554413b88c20d6fd67b024f"
+    }
+  ],
+  "contentHash": "a2fb230c2fe51b7bfb8df40e9ec28972773f48e96ab2d5a9ab56c275ddb80e3c"
+}

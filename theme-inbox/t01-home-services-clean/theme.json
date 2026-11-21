@@ -1,0 +1,59 @@
+{
+  "id": "t01-home-services-clean",
+  "version": 1,
+  "name": "Home Services & Repairs — Clean",
+  "description": "A refined, image-led home services theme for local repair, installation and maintenance businesses.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services"
+  ],
+  "categories": [
+    "plumber",
+    "electrician",
+    "carpenter",
+    "painter",
+    "ac-appliance-repair",
+    "pest-control",
+    "home-cleaning",
+    "locksmith",
+    "packers-movers",
+    "mason-contractor",
+    "cctv-security-installer"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Inter",
+    "DM Sans",
+    "Noto Sans Tamil"
+  ],
+  "assets": [],
+  "contentHash": "",
+  "marketplace": {
+    "packs": [
+      "FIELD_SERVICE"
+    ],
+    "capabilities": [
+      "SERVICES"
+    ],
+    "licence": "For use by Get4Domain vendors on their vendor websites.",
+    "starter": true
+  }
+}

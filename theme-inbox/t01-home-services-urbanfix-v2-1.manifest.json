@@ -1,0 +1,129 @@
+{
+  "id": "t01-home-services-urbanfix-v2",
+  "version": 1,
+  "name": "Home Services - UrbanFix (faithful)",
+  "description": "A pixel-faithful build of the UrbanFix home-services design: green and lime, rounded cards, photo-led hero, for plumbers, electricians, AC and other field-service businesses.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services"
+  ],
+  "categories": [
+    "plumber",
+    "electrician",
+    "carpenter",
+    "painter",
+    "ac-appliance-repair",
+    "pest-control",
+    "home-cleaning",
+    "locksmith",
+    "packers-movers",
+    "mason-contractor",
+    "cctv-security-installer"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split"
+  },
+  "motion": {
+    "default": "Medium",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "DM Sans",
+    "Manrope"
+  ],
+  "marketplace": {
+    "packs": [
+      "FIELD_SERVICE"
+    ],
+    "capabilities": [
+      "SERVICES"
+    ],
+    "licence": "Photos: Unsplash License (free use), the original design photos, demo defaults only. Fonts DM Sans and Manrope: SIL OFL 1.1. Code: for Get4Domain vendors. Details: SOURCES.md.",
+    "starter": true
+  },
+  "assets": [
+    {
+      "path": "assets/about-professional.jpg",
+      "bytes": 82078,
+      "sha256": "a61f172b949ed9fe362711e9dfd132a7cce114cc96578174f0e5c96fec9d6464"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin-ext.woff2",
+      "bytes": 18228,
+      "sha256": "a5d38fe99f930275684999b462c7123faa063d9e44e73b4b241723d884aa0f49"
+    },
+    {
+      "path": "assets/fonts/dm-sans-latin.woff2",
+      "bytes": 36932,
+      "sha256": "9fea608a947e67020c33cad9a6fe3d60c54119dfb8cff87768a8117a15ed7543"
+    },
+    {
+      "path": "assets/fonts/manrope-latin-ext.woff2",
+      "bytes": 15160,
+      "sha256": "2f7335119075b2079f1d882530bbc18728461612bf90743203d73a74a48f4d9b"
+    },
+    {
+      "path": "assets/fonts/manrope-latin.woff2",
+      "bytes": 24532,
+      "sha256": "8c2def024c1bf31aacf3624ae3c4d701269b4ec3dc765c04830839f0d36b2d9e"
+    },
+    {
+      "path": "assets/gallery-1.jpg",
+      "bytes": 83853,
+      "sha256": "83eee426c98185be65a07b7e3c0125693f4da1517198f5b66aa801c7fb5531b2"
+    },
+    {
+      "path": "assets/gallery-2.jpg",
+      "bytes": 73630,
+      "sha256": "a939f21cb8f4842def5a3250ce00b868e6e0abb4fffc8ad4703406a9c0a31d2e"
+    },
+    {
+      "path": "assets/gallery-3.jpg",
+      "bytes": 74582,
+      "sha256": "7f0c56147bff5d59236da1457e308cb1b8f7403c6cd39a28daa522f7aa81d5bf"
+    },
+    {
+      "path": "assets/gallery-4.jpg",
+      "bytes": 72593,
+      "sha256": "8c6e54aa6a13fd847c8abbb67930ee5fca9b206fd85a05df67f5c61d6bec32e8"
+    },
+    {
+      "path": "assets/gallery-5.jpg",
+      "bytes": 66793,
+      "sha256": "3670a70b90a99b8280df174b38f769f9d5769ea267441b01acb58634ec8a329d"
+    },
+    {
+      "path": "assets/hero-technician.jpg",
+      "bytes": 128020,
+      "sha256": "cbce779b9d63dcdd59764c16b9e559e6a405b3fc2eabbd0266d5ee4cd652b87a"
+    },
+    {
+      "path": "assets/logo-urbanfix.svg",
+      "bytes": 283,
+      "sha256": "c0d17c3db5f6167f88bfeaa5df1c561e3ce8c72a80c9a746d8aa0c79dbac4343"
+    },
+    {
+      "path": "assets/service-electrical.jpg",
+      "bytes": 88184,
+      "sha256": "feb61cfdeb8fdc932f30ffea21597df5089330a4f8fe0f83147610d49cc37c44"
+    },
+    {
+      "path": "assets/service-plumbing.jpg",
+      "bytes": 183154,
+      "sha256": "60bfce2b947a0dd3a290fe5970898ee8869f78e421bb6b2cb49cc6d57c0c879f"
+    }
+  ],
+  "contentHash": "4c1bc21c4e98504389bec1fabc67774fc317d34f95b31fdcc36f48fe45e57887"
+}

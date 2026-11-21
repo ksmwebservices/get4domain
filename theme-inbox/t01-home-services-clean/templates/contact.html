@@ -1,0 +1,23 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="{{ui.home}}">
+    <span class="brand__logo" data-g4d-if="site.logo"><img src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"></span>
+    <span class="brand__name" data-g4d-if-not="site.logo">{{site.name}}</span>
+  </a>
+  <g4d-header-nav label="{{ui.menu}}"></g4d-header-nav>
+  <g4d-action class="header-action" label="{{ui.call}}"></g4d-action>
+</header>
+<main id="main">
+  <section class="page-intro" data-g4d-section="page-intro" data-g4d-label="Contact introduction" data-g4d-optional="false"><p class="eyebrow">{{ui.contact}}</p><h1>{{page.title}}</h1><p>{{page.intro}}</p></section>
+  <section class="contact-layout section" data-g4d-section="contact-details" data-g4d-label="Contact details" data-g4d-optional="false"><div class="contact-card"><p class="eyebrow">{{site.name}}</p><h2>{{ui.contact}}</h2><p data-g4d-if="contact.phone"><a href="{{contact.phoneHref}}">{{contact.phone}}</a></p><p data-g4d-if="contact.email"><a href="mailto:{{contact.email}}">{{contact.email}}</a></p><p data-g4d-if="contact.address">{{contact.address}}</p><h3>{{ui.hours}}</h3><p>{{hours}}</p><g4d-hours variant="table"></g4d-hours><g4d-open-now></g4d-open-now><g4d-social></g4d-social></div><div class="contact-card contact-card--map"><h2>{{contact.city}}</h2><g4d-map></g4d-map></div></section>
+  <section class="contact-panel" data-g4d-section="contact-enquiry" data-g4d-label="Send an enquiry" data-g4d-optional="false"><div><p class="eyebrow">{{ui.contact}}</p><h2>{{cta.label}}</h2><p>{{page.intro}}</p></div><g4d-enquiry-form></g4d-enquiry-form></section>
+</main>
+<footer class="site-footer">
+  <div class="footer__brand"><strong>{{site.name}}</strong><p>{{site.tagline}}</p></div>
+  <div class="footer__links"><a href="/about">{{ui.about}}</a><a href="/gallery">{{ui.gallery}}</a><a href="/contact">{{ui.contact}}</a></div>
+  <g4d-listed-on-badge></g4d-listed-on-badge>
+  <g4d-share-qr></g4d-share-qr>
+  <g4d-footer variant="columns"></g4d-footer>
+</footer>
+<g4d-whatsapp-float></g4d-whatsapp-float>
+<g4d-bottom-nav></g4d-bottom-nav>

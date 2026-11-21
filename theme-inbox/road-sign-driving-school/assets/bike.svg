@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img" aria-label="Two-wheeler">
+<ellipse cx="160" cy="150" rx="130" ry="8" fill="#16202A" opacity=".14"/>
+<g fill="#16202A"><circle cx="76" cy="118" r="32"/><circle cx="246" cy="118" r="32"/></g>
+<g fill="#E3E6DF"><circle cx="76" cy="118" r="13"/><circle cx="246" cy="118" r="13"/></g>
+<path d="M246 118l-34-52" stroke="#16202A" stroke-width="7" stroke-linecap="round"/>
+<path d="M196 60l22-4" stroke="#16202A" stroke-width="7" stroke-linecap="round"/>
+<path d="M118 78c10-22 52-24 74-8l-8 24h-66z" fill="#FFC400" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<path d="M60 84l62-8v12l-62 8z" fill="#0B4A9E" stroke="#16202A" stroke-width="3" stroke-linejoin="round"/>
+<rect x="132" y="96" width="42" height="28" rx="4" fill="#52606D" stroke="#16202A" stroke-width="3"/>
+<path d="M76 118l56-14M132 104l-10 14h54" fill="none" stroke="#16202A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="222" cy="66" r="9" fill="#FFF3B0" stroke="#16202A" stroke-width="3"/>
+<path d="M44 108c-12 0-18 4-24 10" stroke="#16202A" stroke-width="5" stroke-linecap="round" fill="none"/>
+<rect x="28" y="70" width="26" height="22" rx="3" fill="#fff" stroke="#16202A" stroke-width="3" transform="rotate(-8 41 81)"/>
+<path d="M36 74v14h8" fill="none" stroke="#D32F2F" stroke-width="5" transform="rotate(-8 41 81)"/>
+</svg>

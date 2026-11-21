@@ -1,0 +1,67 @@
+<a class="skip-link" href="#main">{{ui.skip}}</a>
+<g4d-claim-banner></g4d-claim-banner>
+<div class="topbar"><div class="container"><span class="topbar__text" data-g4d-if="contact.address">&#10022; {{contact.address}}</span><g4d-open-now></g4d-open-now></div></div>
+<header class="nav-wrap"><div class="container nav">
+  <a class="brand" href="/"><span class="brand-mark" data-g4d-if-not="site.logo" aria-hidden="true"></span><img data-g4d-if="site.logo" class="brand-logo" src="{{site.logo}}" alt="{{site.logoAlt}}" width="156" height="48" loading="lazy" decoding="async"><span class="brand-name">{{site.name}}</span></a>
+  <g4d-header-nav label="Main"></g4d-header-nav>
+  <div class="nav-actions"><a class="phone" data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{contact.phone}}</a><g4d-action class="btn small"></g4d-action></div>
+</div></header>
+<main id="main">
+<section class="hero" data-g4d-section="hero" data-g4d-label="Hero" data-g4d-optional="false"><div class="container hero-grid">
+  <div class="hero-copy">
+    <span class="eyebrow" data-g4d-if="site.tagline">{{site.tagline}}</span>
+    <h1>{{hero.title}}</h1>
+    <p class="lead" data-g4d-if="hero.subtitle">{{hero.subtitle}}</p>
+    <div class="hero-actions"><g4d-action class="btn"></g4d-action><a class="btn outline" data-g4d-if="cta.secondaryLabel" href="{{cta.secondaryHref}}">{{cta.secondaryLabel}}</a></div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-photo"><img data-g4d-if="hero.image" src="{{hero.image}}" alt="{{hero.imageAlt}}" width="1100" height="900" fetchpriority="high" decoding="async"></div>
+    <div class="floating-tag" data-g4d-if="hero.badge">{{hero.badge}}</div>
+    <div class="hero-note" data-g4d-if="credentials"><span class="note-icon" aria-hidden="true">&#10003;</span><ul class="note-list"><template data-g4d-each="credentials"><li><strong>{{credential.title}}</strong><small data-g4d-if="credential.detail">{{credential.detail}}</small></li></template></ul></div>
+  </div>
+</div></section>
+<section class="service-strip" data-g4d-section="trust" data-g4d-label="Trust points" data-g4d-optional="true" data-g4d-if="trust"><div class="container strip-grid"><template data-g4d-each="trust"><div class="strip-item"><span class="strip-icon" aria-hidden="true">{{point.n}}</span><div><strong>{{point.text}}</strong></div></div></template></div></section>
+<section class="section" id="services" data-g4d-section="services" data-g4d-label="Services" data-g4d-optional="true" data-g4d-if="items"><div class="container">
+  <div class="section-head"><div><span class="eyebrow">{{site.name}}</span><h2>{{terms.items}}</h2></div><a class="btn outline" href="/services">{{ui.viewAll}}</a></div>
+  <div class="cards"><template data-g4d-each="items"><article class="service-card" data-g4d-if="item.shown"><div class="card-img"><span class="card-img__initial" aria-hidden="true">{{item.initial}}</span><img data-g4d-if="item.featured" src="{{item.image}}" alt="{{item.name}}" width="900" height="440" loading="lazy" decoding="async"><span class="tag" data-g4d-if="item.badge">{{item.badge}}</span></div><div class="card-body"><h3><a href="{{item.href}}">{{item.name}}</a></h3><p data-g4d-if="item.description">{{item.description}}</p><div class="card-foot"><span class="price" data-g4d-if="item.price">{{item.price}}<small data-g4d-if="item.duration">{{item.duration}}</small></span><g4d-action class="text-link"></g4d-action></div></div></article></template></div>
+</div></section>
+<section class="section section--blocks" id="details" data-g4d-section="category-details" data-g4d-label="Details" data-g4d-optional="true" data-g4d-if="blocks"><div class="container">
+  <template data-g4d-each="blocks"><div class="block" data-block="{{block.key}}">
+    <div class="section-head"><div><span class="eyebrow">{{terms.items}}</span><h2>{{block.title}}</h2></div></div>
+    <div class="block-rows"><template data-g4d-each="block.items"><div class="block-row"><div><strong>{{entry.title}}</strong><p data-g4d-if="entry.detail">{{entry.detail}}</p></div><span class="block-row__price" data-g4d-if="entry.price">{{entry.price}}</span></div></template></div>
+  </div></template>
+</div></section>
+<section class="section section--how" id="how" data-g4d-section="process" data-g4d-label="How it works" data-g4d-optional="true" data-g4d-if="steps"><div class="container split">
+  <div class="photo-stack"><img data-g4d-if="about.image" src="{{about.image}}" alt="{{about.imageAlt}}" width="1000" height="480" loading="lazy" decoding="async"><div class="photo-stamp" data-g4d-if="about.image">{{site.name}}</div></div>
+  <div><span class="eyebrow">{{site.name}}</span><h2>{{ui.process}}</h2>
+    <div class="steps"><template data-g4d-each="steps"><div class="step"><span class="step-num">{{step.n}}</span><div><h3>{{step.title}}</h3><p data-g4d-if="step.desc">{{step.desc}}</p></div></div></template></div>
+  </div>
+</div></section>
+<section class="section areas" id="areas" data-g4d-section="areas" data-g4d-label="Service areas" data-g4d-optional="true" data-g4d-if="areas"><div class="container area-grid">
+  <div><span class="eyebrow">{{site.name}}</span><h2>{{contact.city}}</h2><div class="area-list"><template data-g4d-each="areas"><span class="area-pill">{{area.name}}</span></template></div></div>
+  <div class="area-art"><div class="pin-card"><div class="pin" aria-hidden="true">&#8982;</div><g4d-map></g4d-map></div></div>
+</div></section>
+<section class="section" data-g4d-section="gallery" data-g4d-label="Gallery" data-g4d-optional="true" data-g4d-if="gallery"><div class="container">
+  <div class="section-head"><div><span class="eyebrow">{{site.name}}</span><h2>{{ui.gallery}}</h2></div><a class="btn outline" href="/gallery">{{ui.viewAll}}</a></div>
+  <div class="gallery"><template data-g4d-each="gallery"><figure class="gallery-item" data-g4d-if="image.shown"><img src="{{image.src}}" alt="{{image.alt}}" width="900" height="600" loading="lazy" decoding="async"></figure></template></div>
+</div></section>
+<section class="section section--reviews" data-g4d-section="reviews" data-g4d-label="Reviews" data-g4d-optional="true"><div class="container"><g4d-reviews></g4d-reviews></div></section>
+<section class="section section--faq" id="faq" data-g4d-section="faq" data-g4d-label="Questions" data-g4d-optional="true" data-g4d-if="faqs"><div class="container faq-grid">
+  <div><span class="eyebrow">{{site.name}}</span><h2>{{ui.faq}}</h2><g4d-action class="btn outline"></g4d-action></div>
+  <div class="faq-list"><template data-g4d-each="faqs"><details class="faq-item"><summary>{{faq.q}}</summary><p>{{faq.a}}</p></details></template></div>
+</div></section>
+<section class="section contact" id="contact" data-g4d-section="contact" data-g4d-label="Contact" data-g4d-optional="true"><div class="container contact-grid">
+  <div><span class="eyebrow">{{site.name}}</span><h2>{{ui.contact}}</h2><p class="lead" data-g4d-if="site.tagline">{{site.tagline}}</p>
+    <div class="contact-details"><a data-g4d-if="contact.phone" href="{{contact.phoneHref}}">{{contact.phone}}</a><a data-g4d-if="contact.email" href="mailto:{{contact.email}}">{{contact.email}}</a></div>
+    <g4d-hours variant="table"></g4d-hours><g4d-social></g4d-social></div>
+  <g4d-enquiry-form></g4d-enquiry-form>
+</div></section>
+</main>
+<div class="footer"><div class="container footer-grid">
+  <a class="brand" href="/"><span class="brand-name">{{site.name}}</span></a>
+  <g4d-footer variant="columns"></g4d-footer>
+  <div class="footer-extra"><g4d-listed-on-badge></g4d-listed-on-badge><g4d-share-qr></g4d-share-qr></div>
+  <small class="copy">&copy; {{site.year}} {{site.name}}</small>
+</div></div>
+<g4d-bottom-nav></g4d-bottom-nav>
+<g4d-whatsapp-float></g4d-whatsapp-float>

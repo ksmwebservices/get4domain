@@ -1,0 +1,56 @@
+{
+  "id": "t01-home-services-urbanfix-v2",
+  "version": 1,
+  "name": "Home Services - UrbanFix (faithful)",
+  "description": "A pixel-faithful build of the UrbanFix home-services design: green and lime, rounded cards, photo-led hero, for plumbers, electricians, AC and other field-service businesses.",
+  "author": "Get4Domain",
+  "tier": "Standard",
+  "tracks": [
+    "handyman"
+  ],
+  "families": [
+    "home-services"
+  ],
+  "categories": [
+    "plumber",
+    "electrician",
+    "carpenter",
+    "painter",
+    "ac-appliance-repair",
+    "pest-control",
+    "home-cleaning",
+    "locksmith",
+    "packers-movers",
+    "mason-contractor",
+    "cctv-security-installer"
+  ],
+  "layoutVariantRules": {
+    "home-services": "bold-split"
+  },
+  "motion": {
+    "default": "Medium",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "DM Sans",
+    "Manrope"
+  ],
+  "marketplace": {
+    "packs": [
+      "FIELD_SERVICE"
+    ],
+    "capabilities": [
+      "SERVICES"
+    ],
+    "licence": "Photos: Unsplash License (free use), the original design photos, demo defaults only. Fonts DM Sans and Manrope: SIL OFL 1.1. Code: for Get4Domain vendors. Details: SOURCES.md.",
+    "starter": true
+  }
+}

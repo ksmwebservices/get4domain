@@ -1,0 +1,83 @@
+/* Motion. Only transform, opacity, clip-path, filter. Reduced motion and Off are fully static. */
+@keyframes rs-pave{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes rs-fade{from{opacity:0}to{opacity:1}}
+@keyframes rs-drive{
+0%{transform:translate(200px,115px) rotate(-56deg)}
+1.79%{transform:translate(211px,100px) rotate(-49deg)}
+3.57%{transform:translate(223px,87px) rotate(-42deg)}
+5.36%{transform:translate(236px,77px) rotate(-35deg)}
+7.14%{transform:translate(250px,69px) rotate(-27deg)}
+8.93%{transform:translate(263px,63px) rotate(-19deg)}
+10.71%{transform:translate(276px,60px) rotate(-10deg)}
+12.5%{transform:translate(289px,59px) rotate(0deg)}
+14.29%{transform:translate(301px,60px) rotate(11deg)}
+16.07%{transform:translate(311px,63px) rotate(24deg)}
+17.86%{transform:translate(321px,69px) rotate(38deg)}
+19.64%{transform:translate(329px,77px) rotate(53deg)}
+21.43%{transform:translate(335px,87px) rotate(67deg)}
+23.21%{transform:translate(339px,100px) rotate(79deg)}
+25%{transform:translate(340px,115px) rotate(90deg)}
+26.79%{transform:translate(339px,130px) rotate(101deg)}
+28.57%{transform:translate(335px,143px) rotate(113deg)}
+30.36%{transform:translate(329px,153px) rotate(127deg)}
+32.14%{transform:translate(321px,161px) rotate(142deg)}
+33.93%{transform:translate(311px,167px) rotate(156deg)}
+35.71%{transform:translate(301px,170px) rotate(169deg)}
+37.5%{transform:translate(289px,171px) rotate(180deg)}
+39.29%{transform:translate(276px,170px) rotate(190deg)}
+41.07%{transform:translate(263px,167px) rotate(199deg)}
+42.86%{transform:translate(250px,161px) rotate(207deg)}
+44.64%{transform:translate(236px,153px) rotate(215deg)}
+46.43%{transform:translate(223px,143px) rotate(222deg)}
+48.21%{transform:translate(211px,130px) rotate(229deg)}
+50%{transform:translate(200px,115px) rotate(236deg)}
+51.79%{transform:translate(189px,100px) rotate(229deg)}
+53.57%{transform:translate(177px,87px) rotate(222deg)}
+55.36%{transform:translate(164px,77px) rotate(215deg)}
+57.14%{transform:translate(150px,69px) rotate(207deg)}
+58.93%{transform:translate(137px,63px) rotate(199deg)}
+60.71%{transform:translate(124px,60px) rotate(190deg)}
+62.5%{transform:translate(111px,59px) rotate(180deg)}
+64.29%{transform:translate(99px,60px) rotate(169deg)}
+66.07%{transform:translate(89px,63px) rotate(156deg)}
+67.86%{transform:translate(79px,69px) rotate(142deg)}
+69.64%{transform:translate(71px,77px) rotate(127deg)}
+71.43%{transform:translate(65px,87px) rotate(113deg)}
+73.21%{transform:translate(61px,100px) rotate(101deg)}
+75%{transform:translate(60px,115px) rotate(90deg)}
+76.79%{transform:translate(61px,130px) rotate(79deg)}
+78.57%{transform:translate(65px,143px) rotate(67deg)}
+80.36%{transform:translate(71px,153px) rotate(53deg)}
+82.14%{transform:translate(79px,161px) rotate(38deg)}
+83.93%{transform:translate(89px,167px) rotate(24deg)}
+85.71%{transform:translate(99px,170px) rotate(11deg)}
+87.5%{transform:translate(111px,171px) rotate(0deg)}
+89.29%{transform:translate(124px,170px) rotate(-10deg)}
+91.07%{transform:translate(137px,167px) rotate(-19deg)}
+92.86%{transform:translate(150px,161px) rotate(-27deg)}
+94.64%{transform:translate(164px,153px) rotate(-35deg)}
+96.43%{transform:translate(177px,143px) rotate(-42deg)}
+98.21%{transform:translate(189px,130px) rotate(-49deg)}
+100%{transform:translate(200px,115px) rotate(-56deg)}
+}
+.g4d-theme .track .car{transform-box:view-box;transform:translate(200px,115px)}
+.g4d-theme[data-motion="Low"] .track .roadset,
+.g4d-theme[data-motion="Medium"] .track .roadset,
+.g4d-theme[data-motion="Rich"] .track .roadset{animation:rs-pave calc(1.7s / var(--g4d-motion-speed)) .2s var(--g4d-motion-ease) both}
+.g4d-theme[data-motion="Low"] .track .car,
+.g4d-theme[data-motion="Medium"] .track .car,
+.g4d-theme[data-motion="Rich"] .track .car{animation:rs-fade .4s 1.7s both,rs-drive calc(12s / var(--g4d-motion-speed)) 1.8s linear infinite}
+.g4d-theme[data-motion="Medium"] .course,
+.g4d-theme[data-motion="Rich"] .course,
+.g4d-theme[data-motion="Medium"] .pick a,
+.g4d-theme[data-motion="Rich"] .pick a{transition:transform .25s var(--g4d-motion-ease)}
+.g4d-theme[data-motion="Medium"] .course:hover,
+.g4d-theme[data-motion="Rich"] .course:hover,
+.g4d-theme[data-motion="Medium"] .pick a:hover,
+.g4d-theme[data-motion="Rich"] .pick a:hover{transform:translateY(calc(var(--g4d-motion-distance) * -.5))}
+.g4d-theme[data-motion="Rich"] .steps .n{animation:rs-fade .6s .3s both}
+.g4d-theme[data-motion="Off"] *{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){
+  .g4d-theme *{animation:none!important;transition:none!important}
+  .g4d-theme .track .car{transform:translate(200px,115px)}
+}

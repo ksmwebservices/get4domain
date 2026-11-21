@@ -1,0 +1,63 @@
+{
+  "id": "route-board-travels",
+  "version": 2,
+  "name": "Route Board: travels, cabs and buses",
+  "tier": "Standard",
+  "author": "Claude (Get4Domain design)",
+  "description": "Highway-green and signal-orange theme for travel operators: bus-front hero with scrolling LED destination board, service tiles, ticket-style package cards, season and pilgrimage milestones, fleet and rates, booking route steps.",
+  "tracks": [
+    "professional"
+  ],
+  "families": [
+    "hospitality-property"
+  ],
+  "categories": [
+    "travel-agency"
+  ],
+  "layoutVariantRules": {
+    "hospitality-property": "fullbleed-booking"
+  },
+  "motion": {
+    "default": "Low",
+    "variantDefaults": {}
+  },
+  "settingsSchema": {
+    "accent": true,
+    "fonts": true,
+    "logo": true,
+    "sectionOrder": true,
+    "sectionVisibility": true,
+    "motionIntensity": true
+  },
+  "fonts": [
+    "Lora",
+    "Inter",
+    "Noto Sans Tamil"
+  ],
+  "marketplace": {
+    "packs": [
+      "HOSPITALITY_EVENTS"
+    ],
+    "catalogueCategories": [
+      "travel-agency"
+    ],
+    "licence": "Theme code: for use by Get4Domain vendors on their vendor websites. Illustrations are original vector art made for this theme. Fonts Lora and Inter: SIL OFL 1.1.",
+    "previews": [
+      {
+        "path": "assets/previews/travel-agency-en-home-1440.png",
+        "alt": "Route Board home page on a desktop screen, sample travel business",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/travel-agency-en-home-390.png",
+        "alt": "Route Board home page on a phone, sample travel business",
+        "page": "home"
+      },
+      {
+        "path": "assets/previews/travel-agency-en-services-1440.png",
+        "alt": "Route Board services page on a desktop screen, sample content",
+        "page": "services"
+      }
+    ]
+  }
+}
