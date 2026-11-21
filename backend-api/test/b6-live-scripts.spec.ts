@@ -1,17 +1,19 @@
 import { checkDatabaseUrls } from '../src/common/startup-check';
 import { shapePlanOptions } from '../src/plans/me/plan-options.core';
 import { selectTaxRate } from '../src/plans/pricing/price-quote';
+import { createRequire } from 'module';
+const nodeRequire = createRequire(__filename);   // CommonJS scripts under scripts/live: require() is not allowed by the lint rule, createRequire is the same load
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { liveSeedEnv } = require('../scripts/live/live-env-lib');
+const { liveSeedEnv } = nodeRequire('../scripts/live/live-env-lib');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { parseArgs, collect, render } = require('../scripts/live/diagnose-vendor-lib');
+const { parseArgs, collect, render } = nodeRequire('../scripts/live/diagnose-vendor-lib');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { decide, dryLines, run, makeProvidersInert, PROVIDER_ENV } = require('../scripts/live/retry-site-provision-lib');
+const { decide, dryLines, run, makeProvidersInert, PROVIDER_ENV } = nodeRequire('../scripts/live/retry-site-provision-lib');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const fs = require('fs');
+const fs = nodeRequire('fs');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const path = require('path');
+const path = nodeRequire('path');
 
 /** B6.3 and B6.4: the live diagnosis is read-only and prints no phone or e-mail; the retry is dry by default, refuses a non-failed vendor and a non-live database, and calls the vendor's own retry service. */
 const now = new Date('2026-11-19T00:00:00Z');

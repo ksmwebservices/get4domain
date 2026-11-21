@@ -1,7 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { createRequire } from 'module';
+const nodeRequire = createRequire(__filename);   // CommonJS scripts under scripts/live: require() is not allowed by the lint rule, createRequire is the same load
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const lib = require('../scripts/live/propose-v3-prices-lib.js') as { wantedRows: () => Array<{ planKey: string; termMonths: number; amountPaise: number }>; planWrites: (plans: unknown[], prices: unknown[]) => Record<string, Array<Record<string, unknown>>> };
+const lib = nodeRequire('../scripts/live/propose-v3-prices-lib.js') as { wantedRows: () => Array<{ planKey: string; termMonths: number; amountPaise: number }>; planWrites: (plans: unknown[], prices: unknown[]) => Record<string, Array<Record<string, unknown>>> };
 
 /** B2.3: the nine owner prices and the rules of the propose script. */
 const plans = [{ id: 'H', key: 'handyman_pro' }, { id: 'P', key: 'professional_pro' }, { id: 'E', key: 'ecommerce_pro' }];

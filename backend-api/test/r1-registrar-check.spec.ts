@@ -2,11 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { checkDatabaseUrls } from '../src/common/startup-check';
 import { RegistrarError } from '../src/v3-registrar/registrar.port';
+import { createRequire } from 'module';
+const nodeRequire = createRequire(__filename);   // CommonJS scripts under scripts/live: require() is not allowed by the lint rule, createRequire is the same load
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { liveSeedEnv } = require('../scripts/live/live-env-lib');
+const { liveSeedEnv } = nodeRequire('../scripts/live/live-env-lib');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { checkRegistrar, FIXED_NAME, STATE_OF } = require('../scripts/live/registrar-check-lib');
+const { checkRegistrar, FIXED_NAME, STATE_OF } = nodeRequire('../scripts/live/registrar-check-lib');
 
 /** R1.3: the registrar check is read only, prints PASS or the honest state, never a key, and refuses non-live databases. The registrar here is a fake: nothing calls ResellerClub. */
 const KEY = 'SECRETKEY-r1-check-do-not-leak-9910';

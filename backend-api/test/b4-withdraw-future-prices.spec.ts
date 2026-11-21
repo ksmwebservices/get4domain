@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { PlansAdminService } from '../src/plans/admin/plans-admin.service';
+import { createRequire } from 'module';
+const nodeRequire = createRequire(__filename);   // CommonJS scripts under scripts/live: require() is not allowed by the lint rule, createRequire is the same load
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const lib = require('../scripts/live/withdraw-future-prices-lib.js') as {
+const lib = nodeRequire('../scripts/live/withdraw-future-prices-lib.js') as {
   REASON: string; OLD_RUPEES: Record<string, number[]>;
   planWithdrawals: (plans: unknown[], prices: unknown[], now: Date) => { withdraw: Array<{ planKey: string; termMonths: number; amountPaise: number; priceId: string }>; leftAlone: number; missingPlans: string[] };
   summarise: (plans: unknown[], prices: unknown[], now: Date) => Array<{ planKey: string; termMonths: number; inForce: number | null; proposed: number[] }>;

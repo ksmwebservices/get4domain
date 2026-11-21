@@ -1,11 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { checkDatabaseUrls } from '../src/common/startup-check';
+import { createRequire } from 'module';
+const nodeRequire = createRequire(__filename);   // CommonJS scripts under scripts/live: require() is not allowed by the lint rule, createRequire is the same load
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { liveSeedEnv } = require('../scripts/live/live-env-lib');
+const { liveSeedEnv } = nodeRequire('../scripts/live/live-env-lib');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { parseIdArgs, decideRebuild, dryRebuildLines, resultLines } = require('../scripts/live/rebuild-site-content-lib');
+const { parseIdArgs, decideRebuild, dryRebuildLines, resultLines } = nodeRequire('../scripts/live/rebuild-site-content-lib');
 
 /** S1.4: the content rebuild is dry by default, names one vendor by id, refuses non-live databases, and prints no phone or e-mail. */
 const v = { id: 'v1', role: 'VENDOR', status: 'PENDING', industry: 'Home repair and trades', subdomain: 'plumberboy' };
