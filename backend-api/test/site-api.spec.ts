@@ -16,6 +16,8 @@ import { SiteBuildService } from '../src/site-publish/publish/site-build.service
 import { SitePublicService } from '../src/site-publish/publish/site-public.service';
 import { SiteSettingsService } from '../src/site-publish/publish/site-settings.service';
 import { SiteRepository } from '../src/site-publish/publish/site.repository';
+import { RegistrationHook } from '../src/plans/registration/registration.hook';
+import { SiteProvisionFacts } from '../src/site-publish/publish/site-provision-facts.service';
 import { doc } from './support/site-fixtures';
 import { STAFF, siteWorld } from './support/site-world';
 
@@ -41,6 +43,9 @@ describe('site API', () => {
         throttlerGuardProvider, { provide: APP_GUARD, useClass: ModuleGuard }, SitePreviewService,
         { provide: SiteRepository, useValue: w.repo }, { provide: SiteBuildService, useValue: w.build }, { provide: PublishService, useValue: w.publish },
         { provide: SiteSettingsService, useValue: w.settings }, { provide: SitePublicService, useValue: w.pub },
+        // the controller asks the plans module (global in the app) for the registration hook, used only by POST /v3/me/site/create, which this spec does not call
+        { provide: SiteProvisionFacts, useValue: { provision: async () => ({ siteProvisionStatus: null, siteProvisionCode: null, siteProvisionFailedAt: null }), forAdmin: async () => ({ status: null, subdomain: null, address: null, siteProvisionStatus: null, siteProvisionCode: null, siteProvisionFailedAt: null }) } },
+        { provide: RegistrationHook, useValue: { createMySite: async () => ({ status: 'LIVE', published: true, subdomain: null, url: null }) } },
       ],
     }).compile();
     app = mod.createNestApplication();

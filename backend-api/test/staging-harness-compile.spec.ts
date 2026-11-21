@@ -11,6 +11,7 @@ import { FakeRazorpay } from './support/fake-razorpay';
 import { plansTestModuleMetadata } from './support/plans-test-app';
 import { provisioningTestModuleMetadata, ProvisioningTestOptions } from './support/provisioning-test-app';
 import { PlansModule } from '../src/plans/plans.module';
+import { DuplicateCheckModule } from '../src/v3-duplicates/duplicate-check.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { EmailModule } from '../src/email/email.module';
 import { B3SettingsModule } from '../src/b3-settings/b3-settings.module';
@@ -84,7 +85,7 @@ describe('staging harness: the test apps compile without a database', () => {
 
   // The real Batch 3 modules, as app.module.ts wires them: a constructor parameter typed as Pick<...> or an interface compiles to Object and needs @Inject.
   it('the production Batch 3 modules resolve together', async () => {
-    await compiles({ imports: [PrismaModule, PlansModule, EmailModule, B3SettingsModule, SitePublishModule, SiteDomainsModule, DirectoryModule, VendorLifecycleModule, SiteLifecycleModule, SeededSitesModule, RequestsOrdersModule, TermsModule], controllers: [], providers: [] });
+    await compiles({ imports: [PrismaModule, PlansModule, DuplicateCheckModule, EmailModule, B3SettingsModule, SitePublishModule, SiteDomainsModule, DirectoryModule, VendorLifecycleModule, SiteLifecycleModule, SeededSitesModule, RequestsOrdersModule, TermsModule], controllers: [], providers: [] });
   }, 60000);
 
   // The SEO block as app.module.ts wires it: the global facts module hands the site build the vendor's directory facts WITHOUT site-publish importing the directory.
