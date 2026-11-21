@@ -3,6 +3,7 @@ import { listableCategories } from '../src/directory/core/listable-categories';
 import { buildCategoryTree } from '../src/v3-admin-vendor-site/category-tree';
 import { AdminVendorSiteService } from '../src/v3-admin-vendor-site/admin-vendor-site.service';
 import { GENERATED_BANNER, ModuleTrialSite } from '../src/v3-trial/module-trial-site';
+import { FreeHomeContentService } from '../src/v3-trial/free-home-content.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SiteProvisioner } from '../src/provisioning/site/site-provisioner';
 import { SiteBuildService } from '../src/site-publish/publish/site-build.service';
@@ -67,8 +68,8 @@ describe('AdminVendorSiteService.create', () => {
 describe('the trial site banner', () => {
   const run = async (row: { banner: string; draft: unknown } | null) => {
     const updates: Array<Record<string, unknown>> = [];
-    const prisma = { vendorCMS: { findUnique: async () => row, update: async (a: { data: Record<string, unknown> }) => { updates.push(a.data); } } };
-    const ref = { get: (t: unknown) => (t === SiteProvisioner ? { createDraftSite: async () => ({ siteId: 's' }) } : t === SiteBuildService ? { build: async () => ({ publication: { id: 'p', status: 'PUBLISHED' } }) } : t === PublishService ? { publish: async () => undefined } : t === PrismaService ? prisma : (() => { throw new Error('x'); })()) };
+    const prisma = { vendorCMS: { findUnique: async () => (row === null ? null : { siteStatus: 'LIVE', ...row }),   /* siteStatus LIVE: the S1.1 go-live step then changes nothing, so only the banner writes are recorded */ update: async (a: { data: Record<string, unknown> }) => { updates.push(a.data); } } };
+    const ref = { get: (t: unknown) => (t === SiteProvisioner ? { createDraftSite: async () => ({ siteId: 's' }) } : t === SiteBuildService ? { build: async () => ({ publication: { id: 'p', status: 'PUBLISHED' } }) } : t === PublishService ? { publish: async () => undefined } : t === FreeHomeContentService ? { ensure: async () => undefined } : t === PrismaService ? prisma : (() => { throw new Error('x'); })()) };
     await new ModuleTrialSite(ref as never).createLiveTrialSite({ vendorId: 'v', track: 'professional', category: 'driving-school', businessName: 'B' });
     return updates;
   };
